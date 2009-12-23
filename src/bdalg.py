@@ -3,8 +3,11 @@
 # Author: Richard M. Murray
 # Date: 24 May 09
 # 
-# This file contains some standard control system plots: Bode plots,
-# Nyquist plots and pole-zero diagrams
+# This file contains some standard block diagram algebra.  If all
+# arguments are SISO transfer functions, the results are a transfer
+# function.  Otherwise, the computation is done in state space.
+#
+#! State space operations are not currently implemented.
 #
 # Copyright (c) 2009 by California Institute of Technology
 # All rights reserved.
@@ -38,29 +41,61 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: bdalg.py 802 2009-05-25 03:17:36Z murray $
+# $Id: bdalg.py 983 2009-10-10 20:59:05Z murray $
 
 import scipy as sp
-import xferfcn
+import xferfcn as tf
+import statesp as ss
 
-# Series interconnection between systems
-def series(sys1, sys2):
-    num = sp.polymul(sys1.num, sys2.num)
-    den = sp.polymul(sys1.den, sys2.den)
-    return xferfcn.TransferFunction(num, den)
-
-# Parallel interconnection between systems
-def parallel(sys1, sys2):
-    num = sp.polyadd(sp.polymul(sys1.num, sys2.den), \
-                         sp.polymul(sys2.num, sys1.den))
-    den = sp.polymul(sys1.den, sys2.den)
-    return xferfcn.TransferFunction(num, den)
-
-# Negate a transfer function
-def negate(sys):
-    return xferfcn.TransferFunction(-sys.num, sys.den)
+# Standard interconnections (implemented by objects)
+def series(sys1, sys2): return sys1 * sys2
+def parallel(sys1, sys2): return sys1 + sys2
+def negate(sys): return -sys;
 
 # Feedback interconnection between systems
-def feedback(sys1, sys2, sign=-1):
-    #! Not implemented
-    return None
+#! This should be optimized for better performance
+#! Needs to be updated to work for state space systems
+def feedback(sys1, sys2, **keywords):
+    # Grab keyword arguments
+    signparm = keywords.pop("sign", -1);
+
+    #
+    # Sort out which set of functions to call
+    #
+    # The main cases we are interested in are those where we use a
+    # constant for one of the arguments to the function, in which case
+    # we should use the other argument to figure out what type of
+    # object we are acting on.  Then call the feedback function for
+    # that object.
+    #
+
+    if (isinstance(sys1, tf.TransferFunction) and
+        (isinstance(sys2, tf.TransferFunction) or
+         isinstance(sys2, (int, long, float, complex)))):
+        # Use transfer function feedback function
+        return sys1.feedback(sys2, sign=signparm)
+
+    elif (isinstance(sys2, tf.TransferFunction) and
+          isinstance(sys1, (int, long, float, complex))):
+        # Convert sys1 to a transfer function and then perform operation
+        sys = tf.convertToTransferFunction(sys1);
+        return sys.feedback(sys2, sign=signparm)
+
+    elif (isinstance(sys1, ss.StateSpace) and
+          (isinstance(sys2, ss.StateSpace) or
+           isinstance(sys2, (int, long, float, complex)))):
+        # Use state space feedback function
+        return sys1.feedback(sys2, sign=signparm)
+
+    elif (isinstance(sys2, ss.StateSpace) and
+          isinstance(sys1, (int, long, float, complex))):
+        # Convert sys1 to state space system and then perform operation
+        sys = ss.convertToStateSpace(sys1);
+        return sys.feedback(sys2, sign=signparm)
+    
+    else:
+        # Assume that the first system has the right member function
+        return sys1.feedback(sys2, sign=signparm)
+        
+        raise TypeError("can't operate on give types")
+

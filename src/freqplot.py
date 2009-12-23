@@ -38,11 +38,12 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: freqplot.py 819 2009-05-29 21:28:07Z murray $
+# $Id: freqplot.py 983 2009-10-10 20:59:05Z murray $
 
 import matplotlib.pyplot as plt
 import scipy as sp
 from ctrlutil import unwrap
+from bdalg import feedback
 
 # Bode plot
 def bode(sys, omega=None):
@@ -50,7 +51,7 @@ def bode(sys, omega=None):
 
     Usage
     =====
-    bode(sys, omega=None)
+    (magh, phaseh) = bode(sys, omega=None)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -60,6 +61,16 @@ def bode(sys, omega=None):
         Linear input/output system
     omega : freq_range
         Range of frequencies (list or bounds)
+
+    Return values
+    -------------
+    magh : graphics handle to magnitude plot (for rescaling, etc)
+    phaseh : graphics handle to phase plot
+
+    Notes
+    -----
+    1. Use (mag, phase, freq) = sys.freqresp(freq) to generate the 
+       frequency response for a system.
     """
     # Select a default range if none is provided
     if (omega == None):
@@ -80,9 +91,12 @@ def bode(sys, omega=None):
     plt.subplot(212);
     plt.semilogx(omega, phase)
 
+    return (211, 212)
+
 # Nyquist plot
 def nyquist(sys, omega=None):
     # Select a default range if none is provided
+    #! This needs to be made more intelligent
     if (omega == None):
         omega = sp.logspace(-2, 2);
 
@@ -100,3 +114,30 @@ def nyquist(sys, omega=None):
     # Mark the -1 point
     plt.plot([-1], [0], '+k')
 
+# Gang of Four
+def gangof4(P, C, omega=None):
+    # Select a default range if none is provided
+    #! This needs to be made more intelligent
+    if (omega == None):
+        omega = sp.logspace(-2, 2);
+
+    # Compute the senstivity functions
+    L = P*C;
+
+    #! Replace with feedback when written
+    S = feedback(1, L);
+    T = L * S;
+
+    # Plot the four sensitivity functions
+    #! Need to add in the mag = 1 lines
+    mag, phase, omega = T.freqresp(omega);
+    plt.subplot(221); plt.loglog(omega, mag);
+
+    mag, phase, omega = (P*S).freqresp(omega);
+    plt.subplot(222); plt.loglog(omega, mag);
+
+    mag, phase, omega = (C*S).freqresp(omega);
+    plt.subplot(223); plt.loglog(omega, mag);
+
+    mag, phase, omega = S.freqresp(omega);
+    plt.subplot(224); plt.loglog(omega, mag);

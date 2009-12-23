@@ -53,16 +53,50 @@ import scipy as sp              # SciPy library (used all over)
 import scipy.signal as signal   # Signal processing library
 
 # Import MATLAB-like functions that are defined in other packages
-from scipy.signal import tf2ss, ss2tf, zpk2ss, ss2zpk
+from scipy.signal import zpk2ss, ss2zpk
 from scipy.signal import lsim, impulse, step
-from scipy import logspace
+from scipy import linspace, logspace
 
 # Import MATLAB-like functions that belong elsewhere in python-control
 from ctrlutil import unwrap
-from freqplot import bode, nyquist
-from statesp import MIMO
+from freqplot import bode, nyquist, gangof4
+from statesp import StateSpace
+from xferfcn import TransferFunction
+from bdalg import series, parallel, negate, feedback
+from pzmap import pzmap
 
 # Create a state space system from appropriate matrices
 def ss(A, B, C, D):
-    return MIMO(A, B, C, D)
+    return StateSpace(A, B, C, D)
 
+# Functions for creating a transfer function
+def tf(num, den): 
+    return TransferFunction(num, den)
+
+# Function for converting state space to transfer function
+def ss2tf(*args, **keywords):
+    if (len(args) == 4):
+        # Assume we were given the A, B, C, D matrix
+        return TransferFunction(*args)
+    elif (len(args) == 1):
+        # Assume we were given a system object (lti or StateSpace)
+        sys = args[0]
+        return TransferFunction(sys.A, sys.B, sys.C, sys.D)
+    else:
+        raise ValueError, "Needs 1 or 4 arguments."
+
+# Function for converting transfer function to state space
+def tf2ss(*args, **keywords):
+    if (len(args) == 2):
+        # Assume we were given the num, den
+        return TransferFunction(*args)
+    elif (len(args) == 1):
+        # Assume we were given a system object (lti or TransferFunction)
+        sys = args[0]
+        #! Should check to make sure object is a transfer function
+        return StateSpace(sys.A, sys.B, sys.C, sys.D)
+    else:
+        raise ValueError, "Needs 1 or 2 arguments."
+
+# Frequency response is handled by the system object
+def freqresp(H, omega): return H.freqresp(omega)

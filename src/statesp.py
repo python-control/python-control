@@ -3,7 +3,7 @@
 # Author: Richard M. Murray
 # Date: 24 May 09
 # 
-# This file contains the MIMO class, which is used to represent
+# This file contains the StateSpace class, which is used to represent
 # linear systems in state space.  This is the primary representation
 # for the control system library.
 #
@@ -39,23 +39,30 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: statesp.py 816 2009-05-29 21:06:27Z murray $
+# $Id: statesp.py 983 2009-10-10 20:59:05Z murray $
 
 import scipy as sp
 import scipy.signal as signal
+import xferfcn
+from scipy import concatenate, zeros
 
 #
-# MIMO class
+# StateSpace class
 #
-# The MIMO class is used throughout the control systems library to
+# The StateSpace class is used throughout the control systems library to
 # represent systems in statespace form.  This class is derived from
 # the ltisys class defined in the scipy.signal package, allowing many
 # of the functions that already existing in that package to be used
 # directly.
 #
-class MIMO(signal.lti):
-    """The MIMO class is used to represent linear input/output systems.
+class StateSpace(signal.lti):
+    """The StateSpace class is used to represent linear input/output systems.
     """
+    # Initialization 
+    def __init__(self, *args, **keywords):
+        # First initialize the parent object
+        signal.lti.__init__(self, *args, **keywords)
+
     # Style to use for printing
     def __str__(self):
         str =  "A = " + self.A.__str__() + "\n\n"
@@ -89,3 +96,134 @@ class MIMO(signal.lti):
     def evalfr(self, freq):
         #! Not implemented
         return None
+
+    # Negation of a system
+    def __neg__(self):
+        return StateSpace(self.A, self.B, -self.C, -self.D)
+
+    # Addition of two transfer functions (parallel interconnection)
+    def __add__(self, other):
+        # Check for a couple of special cases
+        if (isinstance(other, (int, long, float, complex))):
+            # Just adding a scalar; put it in the D matrix
+            A, B, C = self.A, self.B, self.C;
+            D = self.D + other;
+
+        else:
+            # Check to make sure the dimensions are OK
+            if ((self.inputs != other.inputs) or \
+                    (self.outputs != other.outputs)):
+                raise ValueError, "Systems have different shapes."
+
+            # Concatenate the various arrays
+            #! Pretty sure this is not correct
+            A = concatenate((
+                concatenate((self.A, zeros((self.A.shape[0],
+                                           other.A.shape[-1])))), \
+                    concatenate((zeros((other.A.shape[0], self.A.shape[-1])),
+                                other.A))))
+            B = self.B + other.B;
+            C = concatenate((self.C, other.C), axis=1)
+            D = self.D + other.D
+
+        return StateSpace(A, B, C, D)
+
+    # Reverse addition - just switch the arguments
+    def __radd__(self, other): return self.__add__(other)
+
+    # Subtraction of two transfer functions (parallel interconnection)
+    def __sub__(self, other):
+        return __add__(self, other.__neg__())
+
+    # Multiplication of two transfer functions (series interconnection)
+    def __mul__(self, other):
+        # Check for a couple of special cases
+        if (isinstance(other, (int, long, float, complex))):
+            # Just multiplying by a scalar; change the output
+            A, B = self.A, self.B;
+            C = self.C * other;
+            D = self.D * other;
+
+        else:
+            # Check to make sure the dimensions are OK
+            if ((self.inputs != other.inputs) or 
+                (self.outputs != other.outputs)):
+                raise ValueError, "State space systems have different shapes."
+
+            # Concatenate the various arrays
+            A = concatenate((
+                    concatenate((self.A, zeros((self.A.shape[0],
+                                                other.A.shape[-1]))), axis=1),
+                    concatenate((other.B * self.C, other.A), axis=1)))
+            B = concatenate((self.B, other.B * self.D))
+            C = concatenate((other.D * self.C, other.C), axis=1)
+            D = other.D * self.D
+
+        return StateSpace(A, B, C, D)
+
+    # Reverse multiplication of two transfer functions (series interconnection)
+    # Just need to convert LH argument to a state space object
+    def __rmul__(self, sys):
+        # Check for a couple of special cases
+        if (isinstance(other, (int, long, float, complex))):
+            # Just multiplying by a scalar; change the input
+            A, C = self.A, self.C;
+            B = self.B * other;
+            D = self.D * other;
+            return StateSpace(A, B, C, D)
+
+        else:
+            raise TypeError("can't interconnect systems")
+
+    # Feedback around a state space system
+    def feedback(self, other, sign=-1):
+        # Check for special cases
+        if (isinstance(other, (int, long, float, complex))):
+            # Scalar feedback - easy to include
+            A = self.A * sign*self.B*self.C;
+            B = self.B * sign*self.B*self.D;
+            C, D = self.C, self.D;
+
+        else:
+            # Check to make sure the dimensions are OK
+            if ((self.inputs != other.inputs) or 
+                (self.outputs != other.outputs)):
+                raise ValueError, "State space systems have different shapes."
+
+            # Concatenate the various arrays
+            sys1, sys2 = self, other;
+
+            # Make sure that we don't have an algebraic loop
+            #! Not implemented
+
+            #! Pretty sure this is not correct
+            A = concatenate((
+                concatenate((sys1.A, sys1.B * sys2.C), axis=1),
+                concatenate((sys2.B * sys1.C, sys2.A), axis=1)));
+            B = concatenate((sys1.B, sys2.B * sys1.D));
+            C = concatenate((sys1.C, sys1.D * sys2.C), axis=1);
+            D = sys1.D;
+
+        return StateSpace(A, B, C, D)
+
+#
+# convertToStateSpace - create a state space system from another type
+#
+# To allow scalar constants to be used in a simple way (k*P, 1+L), this
+# function allows the dimension of the input/output system to be specified
+# in the case of a scalar system
+#
+def convertToStateSpace(sys, inputs=1, outputs=1):
+    if (isinstance(sys, StateSpace) or
+        isinstance(sys, xferfcn.TransferFunction)):
+        # Already a state space system; just return it
+        return sys
+
+    elif (isinstance(sys, (int, long, float, complex))):
+        # Generate a simple state space system of the desired dimension
+        #! Doesn't work due to inconsistencies in ltisys
+        # return StateSpace([[]], [[]], [[]], sp.eye(outputs, inputs))
+        return StateSpace(-1, 0, 0, sp.eye(outputs, inputs))
+
+    else:
+        raise TypeError("can't convert given type to StateSpace system")

@@ -4,7 +4,13 @@
 # Date: 24 May 09
 #
 # This file contains the TransferFunction class and also functions
-# that operate on transfer functions.
+# that operate on transfer functions.  This class extends the
+# signal.lti class by adding some additional useful functions like
+# block diagram algebra.
+#
+# NOTE: Transfer function in this module are restricted to be SISO
+# systems.  To perform calcualtiosn on MIMO systems, you need to use
+# the state space module (statesp.py).
 #
 # Copyright (c) 2009 by California Institute of Technology
 # All rights reserved.
@@ -38,98 +44,189 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: xferfcn.py 813 2009-05-29 18:08:08Z murray $
+# $Id: xferfcn.py 983 2009-10-10 20:59:05Z murray $
 
 # External function declarations
 import scipy as sp
 import scipy.signal as signal
 import bdalg as bd
-from ctrlutil import unwrap
+import statesp
 
-# Functions for creating a transfer function
-def tf(num, den): 
-    return TransferFunction(num, den)
+class TransferFunction(signal.lti):
+    """The TransferFunction class is used to represent linear
+    input/output systems via its transfer function.
+    """
+    # Constructor
+    def __init__(self, *args, **keywords):
+        # First initialize the parent object
+        signal.lti.__init__(self, *args, **keywords)
 
-def ss2tf(A, B, C, D):
-    A, B, C, D = signal.abcd_normalize(A, B, C, D)
+        # Make sure that this is only a SISO function
+        if (self.inputs != 1 or self.outputs != 1):
+            raise NotImplementedError("MIMO transfer functions not supported")
 
-    # Save the size of the system
-    num_states = A.shape[0]
-    nout, nin = D.shape
-
-    # Compute the denominator from the A matrix
-    den = sp.poly(A)
-
-    # Compute the numerator based on zeros
-    #! Assumes single input/single output
-    num = sp.poly(A - sp.dot(B, C)) + (D[0] - 1) * den
-    
-    # Now construct the transfer function
-    return TransferFunction(num, den)
-
-class TransferFunction(object):
-    # Initialization with optional arguments
-    def __init__ (self, num, den):
-        # Save the numerator and denominator polynomials, for future use
-        self.num = sp.poly1d(num, variable='s');
-        self.den = sp.poly1d(den, variable='s');
-
+        # Now add a few more attributes
+        self.variable = 's'
+        
     # Style to use for printing (similar to MATLAB)
     def __str__(self):
-        # Convert the numerator and denominator polynomials to strings
-        numstr = _tfpolyToString(self.num);
-        denstr = _tfpolyToString(self.den);
+        labstr = ""
+        outstr = ""
+        for i in range(self.inputs):
+            for j in range(self.outputs):
+                # Create a label for the transfer function and extract
+                # numerator polynomial (depends on number of inputs/outputs)
+                if (self.inputs > 1 and self.outputs > 1):
+                    labstr = "H[] = "; lablen = 7;
+                    numstr = _tfpolyToString(self.num[i,j], self.variable);
+                elif (self.inputs > 1):
+                    labstr = "H[] = "; lablen = 7;
+                    numstr = _tfpolyToString(self.num[i], self.variable);
+                elif (self.outputs > 1):
+                    labstr = "H[] = "; lablen = 7;
+                    numstr = _tfpolyToString(self.num[j], self.variable);
+                else:
+                    labstr = ""; lablen = 0;
+                    numstr = _tfpolyToString(self.num, self.variable);
 
-        # Figure out the length of the separating line
-        dashcount = max(len(numstr), len(denstr))
-        dashes = '-' * dashcount
+                # Convert the (common) denominator polynomials to strings
+                denstr = _tfpolyToString(self.den, self.variable);
 
-        # Center the numerator or denominator
-        if (len(numstr) < dashcount):
-            numstr = ' ' * int(round((dashcount - len(numstr))/2)) + numstr
-        if (len(denstr) < dashcount): 
-            denstr = ' ' * int(round((dashcount - len(denstr))/2)) + denstr
+                # Figure out the length of the separating line
+                dashcount = max(len(numstr), len(denstr))
+                dashes = labstr + '-' * dashcount
 
-        # Put it all together
-        return numstr + "\n" + dashes + "\n" + denstr
+                # Center the numerator or denominator
+                if (len(numstr) < dashcount):
+                    numstr = ' ' * \
+                        int(round((dashcount - len(numstr))/2) + lablen) + \
+                        numstr
+                if (len(denstr) < dashcount): 
+                    denstr = ' ' * \
+                        int(round((dashcount - len(denstr))/2) + lablen) + \
+                        denstr
+
+                outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
+        return outstr
 
     # Negation of a transfer function
     def __neg__(self):
-        return bd.negate(self)
+        return TransferFunction(-self.num, self.den)
+
+    # Subtraction (use addition)
+    def __sub__(self, other): return self + (-other)
+    def __rsub__(self, other): return other + (-self)
 
     # Addition of two transfer functions (parallel interconnection)
-    def __add__(self, other):
-        return bd.parallel(self, other)
+    def __add__(self, sys):
+        # Convert the second argument to a transfer function
+        other = convertToTransferFunction(sys)
 
-    # Addition of two transfer functions (parallel interconnection)
-    def __sub__(self, other):
-        return bd.parallel(self, other.__neg__())
+        # Compute the numerator and denominator of the sum
+        den = sp.polymul(self.den, other.den)
+        num = sp.polyadd(sp.polymul(self.num, other.den), \
+                         sp.polymul(other.num, self.den))
+
+        return TransferFunction(num, den)
+
+    # Reverse addition - just switch the order
+    def __radd__(self, other): return self + other;
+
+    # Difference of two transfer functions
+    def __sub__(self, other): return __add__(self, -other)
+    def __rsub__(self, other): return __add__(other, -self)
 
     # Multiplication of two transfer functions (series interconnection)
-    def __mul__(self, other):
-        return bd.series(self, other)
+    def __mul__(self, sys):
+        # Make sure we have a transfer function (or convert to one)
+        other = convertToTransferFunction(sys)
 
-    # Method for generating the frequency response of the system
-    def freqresp(self, omega):
-        # Generate the frequency response at each frequency
-        fresp = map(self.evalfr, omega);
-        mag = sp.sqrt(sp.multiply(fresp, sp.conjugate(fresp)));
-        phase = unwrap(sp.angle(fresp)) * 180 / sp.pi;
+        # Compute the product of the transfer functions
+        num = sp.polymul(self.num, other.num)
+        den = sp.polymul(self.den, other.den)
+        return TransferFunction(num, den)
 
-        return mag, phase, omega
+    # Reverse multiplication - switch order (works for SISO)
+    def __rmul__(self, other): return self * other
+
+    # Division between transfer functions
+    def __div__(self, sys):
+        other = convertToTransferFunction(sys);
+        return TransferFunction(sp.polymul(self.num, other.den),
+                                sp.polymul(self.den, other.num));
+
+    # Reverse division 
+    def __rdiv__(self, sys):
+        other = convertToTransferFunction(sys);
+        return TransferFunction(sp.polymul(other.num, self.den),
+                                sp.polymul(other.den, self.num));
 
     # Method for evaluating a transfer function at one frequency
     def evalfr(self, freq):
-        return self.num(freq*1j) / self.den(freq*1j)
+        return sp.polyval(self.num, freq*1j) / sp.polyval(self.den, freq*1j)
+
+    # Method for generating the frequency response of the system
+    def freqresp(self, omega):
+        # Convert numerator and denomintator to 1D polynomials
+        num = sp.poly1d(self.num)
+        den = sp.poly1d(self.den)
+
+        # Generate the frequency response at each frequency
+        fresp = map(lambda w: num(w*1j) / den(w*1j), omega)
+
+        mag = sp.sqrt(sp.multiply(fresp, sp.conjugate(fresp)));
+        phase = sp.angle(fresp)
+
+        return mag, phase, omega
+
+    # Feedback around a trasnfer function
+    def feedback(sys1, sys2, sign=-1): 
+        # Get the numerator and denominator of the first system
+        if (isinstance(sys1, (int, long, float, complex))):
+            num1 = sys1; den1 = 1;
+        elif (isinstance(sys1, TransferFunction)):
+            num1 = sys1.num; den1 = sys1.den;
+        else:
+            raise TypeError
+
+        # Get the numerator and denominator of the second system
+        if (isinstance(sys2, (int, long, float, complex))):
+            num2 = sys2; den2 = 2;
+        elif (isinstance(sys2, TransferFunction)):
+            num2 = sys2.num; den2 = sys2.den;
+        else:
+            raise TypeError
+
+        # Compute sys1/(1 - sign*sys1*sys2)
+        num = sp.polymul(num1, den2);
+        den = sp.polysub(sp.polymul(den1, den2), sign * sp.polymul(num1, num2))
+
+        # Return the result as a transfer function
+        return TransferFunction(num, den)
+
+# Function to create a transfer function from another type
+def convertToTransferFunction(sys):
+    if (isinstance(sys, TransferFunction)):
+        # Already a transfer function; just return it
+        return sys
+
+    elif (isinstance(sys, statesp.StateSpace)):
+        # State space system, convert using signal.lti
+        return TransferFunction(sys.A, sys.B, sys.C, sys.D)
+
+    elif (isinstance(sys, (int, long, float, complex))):
+        # Convert a number into a transfer function
+        return TransferFunction(sys, 1)
+
+    else:
+        raise TypeError("can't convert given type to TransferFunction")
 
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
-def _tfpolyToString(poly):
+def _tfpolyToString(coeffs, var='s'):
     thestr = "0"
-    var = poly.variable
 
     # Compute the number of coefficients
-    coeffs = poly.coeffs
     N = len(coeffs)-1
 
     for k in range(len(coeffs)):
