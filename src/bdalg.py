@@ -41,7 +41,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: bdalg.py 983 2009-10-10 20:59:05Z murray $
+# $Id$
 
 import scipy as sp
 import xferfcn as tf

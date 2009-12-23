@@ -46,7 +46,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: statesp.py 808 2009-05-26 19:43:01Z murray $
+# $Id$
 
 # Libraries that we make use of 
 import scipy as sp              # SciPy library (used all over)
