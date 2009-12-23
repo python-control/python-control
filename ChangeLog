@@ -1,0 +1,9 @@
+2009-05-24  Richard Murray  <murray@kona-2.local>
+  * ./ Initial creation of package files and ChangeLog
+  * Using simpler text format since emacs python mode doesn't support
+    ChangeLog entries anyway
+	
+
+Local Variables:
+mode:text
+End:
