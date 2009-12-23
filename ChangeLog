@@ -1,0 +1,42 @@
+10 Oct 09, RMM: reset matplotlib import in secord-matlab
+  * Using 'from matplotlib import *' causes error with figures
+  * On my other computer, got error when trying to import 'matplotlib.pyplot'
+  * Need to sort out versions and figure out proper import structure
+
+13 Sep 09, RMM: added basic state space functionality
+  * Updated StateSpace routines to allow BD algebra with constants
+  * Updated pvtol-nested example to try to use state space representation
+    (not completely working yet)
+
+12 Sep 09, RMM: code restructuring for transfer functions
+  * Implemented feedback() method in bldalg; partially working
+    for mixture of TF, SS and numbers (not thoroughly tested yet)
+  * New feedback method for TransferFunctions
+  * Updated gangof4 to use new feedback function
+
+9 Sep 09, RMM: updated pzmap to generate a plot (turn off with Plot=False)
+
+8 Sep 09, RMM: rewrite of xferfcn to handle type casting better
+  * Appropriate functions now call convertToTransferFunction
+  * Restricted transfer function to SISO only
+
+7 Sep 09, RMM: additional fixes
+  * Implemented block diagram operations for SISO transfer functions
+  * Modified frequency response functions for transfer functions
+  * Added rudimentary pole/zero computations
+  * Added comments on things that need to be fixed (search for !)
+
+5 Sep 09, RMM: updates to get standard examples working
+  * Copied and converted pvtol_nested.py from AM08, Chapter 11
+  * Updated freqresp to use poly1d for computing values
+  * Added outputs to bode plot - return mag and phase subplot handles
+
+2009-05-24  Richard Murray  <murray@kona-2.local>
+  * ./ Initial creation of package files and ChangeLog
+  * Using simpler text format since emacs python mode doesn't support
+    ChangeLog entries anyway
+
+
+Local Variables:
+mode:text
+End:
