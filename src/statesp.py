@@ -39,7 +39,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: statesp.py 983 2009-10-10 20:59:05Z murray $
+# $Id$
 
 import scipy as sp
 import scipy.signal as signal
@@ -118,11 +118,11 @@ class StateSpace(signal.lti):
             # Concatenate the various arrays
             #! Pretty sure this is not correct
             A = concatenate((
-                concatenate((self.A, zeros((self.A.shape[0],
-                                           other.A.shape[-1])))), \
+                    concatenate((self.A, zeros((self.A.shape[0],
+                                                other.A.shape[-1]))), axis=1),
                     concatenate((zeros((other.A.shape[0], self.A.shape[-1])),
-                                other.A))))
-            B = self.B + other.B;
+                                other.A), axis=1)), axis=0)
+            B = concatenate((self.B, other.B))
             C = concatenate((self.C, other.C), axis=1)
             D = self.D + other.D
 
@@ -163,7 +163,7 @@ class StateSpace(signal.lti):
 
     # Reverse multiplication of two transfer functions (series interconnection)
     # Just need to convert LH argument to a state space object
-    def __rmul__(self, sys):
+    def __rmul__(self, other):
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just multiplying by a scalar; change the input
@@ -180,8 +180,8 @@ class StateSpace(signal.lti):
         # Check for special cases
         if (isinstance(other, (int, long, float, complex))):
             # Scalar feedback - easy to include
-            A = self.A * sign*self.B*self.C;
-            B = self.B * sign*self.B*self.D;
+            A = self.A + sign*self.B*self.C;
+            B = self.B + sign*self.B*self.D;
             C, D = self.C, self.D;
 
         else:
