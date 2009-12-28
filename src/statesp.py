@@ -116,16 +116,15 @@ class StateSpace(signal.lti):
                 raise ValueError, "Systems have different shapes."
 
             # Concatenate the various arrays
-            #! Pretty sure this is not correct
             A = concatenate((
-                    concatenate((self.A, zeros((self.A.shape[0],
-                                                other.A.shape[-1]))), axis=1),
-                    concatenate((zeros((other.A.shape[0], self.A.shape[-1])),
-                                other.A), axis=1)), axis=0)
-            B = concatenate((self.B, other.B))
+                concatenate((self.A, zeros((self.A.shape[0],
+                                           other.A.shape[-1]))),axis=1),
+                concatenate((zeros((other.A.shape[0], self.A.shape[-1])),
+                                other.A),axis=1)
+                            ),axis=0)
+            B = concatenate((self.B, other.B), axis=0)
             C = concatenate((self.C, other.C), axis=1)
             D = self.D + other.D
-
         return StateSpace(A, B, C, D)
 
     # Reverse addition - just switch the arguments
@@ -145,20 +144,20 @@ class StateSpace(signal.lti):
             D = self.D * other;
 
         else:
-            # Check to make sure the dimensions are OK
-            if ((self.inputs != other.inputs) or 
-                (self.outputs != other.outputs)):
-                raise ValueError, "State space systems have different shapes."
+           # Check to make sure the dimensions are OK
+           if (self.outputs != other.inputs):
+               raise ValueError, "Number of first's outputs must match number \
+                                    of second's inputs."
 
-            # Concatenate the various arrays
-            A = concatenate((
-                    concatenate((self.A, zeros((self.A.shape[0],
-                                                other.A.shape[-1]))), axis=1),
-                    concatenate((other.B * self.C, other.A), axis=1)))
-            B = concatenate((self.B, other.B * self.D))
-            C = concatenate((other.D * self.C, other.C), axis=1)
-            D = other.D * self.D
-
+           # Concatenate the various arrays
+           A = concatenate((
+                   concatenate(( self.A, zeros((self.A.shape[0],
+                                            other.A.shape[-1]))   ),axis=1),
+                   concatenate(( other.B*self.C,  other.A  ),axis=1),
+                   ),axis=0)
+           B = concatenate( (self.B, other.B*self.D), axis=0 )
+           C = concatenate( (other.D*self.C, other.C), axis=1 )
+           D = other.D*self.D
         return StateSpace(A, B, C, D)
 
     # Reverse multiplication of two transfer functions (series interconnection)
