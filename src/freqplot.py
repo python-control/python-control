@@ -78,6 +78,7 @@ def bode(sys, omega=None):
 
     # Get the magnitude and phase of the system
     mag, phase, omega = sys.freqresp(omega)
+    mag = 20*sp.log10(mag)
     phase = unwrap(phase*180/sp.pi, 360)
 
     # Get the dimensions of the current axis, which we will divide up
@@ -85,11 +86,18 @@ def bode(sys, omega=None):
 
     # Magnitude plot
     plt.subplot(211);
-    plt.loglog(omega, mag)
+    plt.semilogx(omega, mag)
+    plt.grid(True)
+    plt.grid(True, which='minor')
+    plt.ylabel("Magnitude (dB)")
 
     # Phase plot
     plt.subplot(212);
     plt.semilogx(omega, phase)
+    plt.grid(True)
+    plt.grid(True, which='minor')
+    plt.ylabel("Phase (deg)")
+    plt.xlabel("Frequency (rad/sec)")
 
     return (211, 212)
 
