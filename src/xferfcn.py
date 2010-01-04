@@ -191,7 +191,7 @@ class TransferFunction(signal.lti):
 
         # Get the numerator and denominator of the second system
         if (isinstance(sys2, (int, long, float, complex))):
-            num2 = sys2; den2 = 2;
+            num2 = sys2; den2 = 1;
         elif (isinstance(sys2, TransferFunction)):
             num2 = sys2.num; den2 = sys2.den;
         else:
