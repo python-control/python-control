@@ -46,12 +46,12 @@ from ctrlutil import unwrap
 from bdalg import feedback
 
 # Bode plot
-def bode(sys, omega=None):
+def bode(sys, omega=None, dB=False, Hz=False):
     """Bode plot for a system
 
     Usage
     =====
-    (magh, phaseh) = bode(sys, omega=None)
+    (magh, phaseh) = bode(sys, omega=None, dB=False, Hz=False)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -60,7 +60,11 @@ def bode(sys, omega=None):
     sys : linsys
         Linear input/output system
     omega : freq_range
-        Range of frequencies (list or bounds)
+        Range of frequencies (list or bounds) in rad/sec
+    dB : boolean
+        If True, plot result in dB
+    Hz : boolean
+        If True, plot frequency in Hz (omega must be provided in rad/sec)
 
     Return values
     -------------
@@ -78,7 +82,10 @@ def bode(sys, omega=None):
 
     # Get the magnitude and phase of the system
     mag, phase, omega = sys.freqresp(omega)
-    mag = 20*sp.log10(mag)
+    if Hz:
+        omega = omega/(2*sp.pi)
+    if dB:
+        mag = 20*sp.log10(mag)
     phase = unwrap(phase*180/sp.pi, 360)
 
     # Get the dimensions of the current axis, which we will divide up
@@ -89,7 +96,10 @@ def bode(sys, omega=None):
     plt.semilogx(omega, mag)
     plt.grid(True)
     plt.grid(True, which='minor')
-    plt.ylabel("Magnitude (dB)")
+    if dB:
+        plt.ylabel("Magnitude (dB)")
+    else:
+        plt.ylabel("Magnitude")
 
     # Phase plot
     plt.subplot(212);
@@ -97,7 +107,10 @@ def bode(sys, omega=None):
     plt.grid(True)
     plt.grid(True, which='minor')
     plt.ylabel("Phase (deg)")
-    plt.xlabel("Frequency (rad/sec)")
+    if Hz:
+        plt.xlabel("Frequency (Hz)")
+    else:
+        plt.xlabel("Frequency (rad/sec)")
 
     return (211, 212)
 
