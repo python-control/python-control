@@ -93,7 +93,10 @@ def bode(sys, omega=None, dB=False, Hz=False):
 
     # Magnitude plot
     plt.subplot(211);
-    plt.semilogx(omega, mag)
+    if dB:
+        plt.semilogx(omega, mag)
+    else:
+        plt.loglog(omega, mag)
     plt.grid(True)
     plt.grid(True, which='minor')
     if dB:
