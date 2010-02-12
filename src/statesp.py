@@ -178,30 +178,28 @@ class StateSpace(signal.lti):
     def feedback(self, other, sign=-1):
         # Check for special cases
         if (isinstance(other, (int, long, float, complex))):
-            # Scalar feedback - easy to include
-            A = self.A + sign*self.B*self.C;
-            B = self.B + sign*self.B*self.D;
-            C, D = self.C, self.D;
+            # Scalar feedback, create state space system that is this case
+            other = StateSpace([[0]], [[0]], [[0]], [[ other ]])
 
-        else:
-            # Check to make sure the dimensions are OK
-            if ((self.inputs != other.inputs) or 
-                (self.outputs != other.outputs)):
-                raise ValueError, "State space systems have different shapes."
+        # Check to make sure the dimensions are OK
+        if ((self.inputs != other.outputs) or (self.outputs != other.inputs)):
+                raise ValueError, "State space systems don't have compatible inputs/outputs for feedback."
 
-            # Concatenate the various arrays
-            sys1, sys2 = self, other;
-
-            # Make sure that we don't have an algebraic loop
-            #! Not implemented
-
-            #! Pretty sure this is not correct
-            A = concatenate((
-                concatenate((sys1.A, sys1.B * sys2.C), axis=1),
-                concatenate((sys2.B * sys1.C, sys2.A), axis=1)));
-            B = concatenate((sys1.B, sys2.B * sys1.D));
-            C = concatenate((sys1.C, sys1.D * sys2.C), axis=1);
-            D = sys1.D;
+        # note that if there is an algebraic loop then this matrix inversion won't work
+        # (I-D1 D2) or (I-D2 D1) will be singular
+        # the easiest way to get this is to have D1 = I, D2 = I
+        from scipy.linalg import inv
+        from numpy import eye
+        E21 = inv(eye(self.outputs)+sign*self.D*other.D)
+        E12 = inv(eye(self.inputs)+sign*other.D*self.D)
+        
+        A = concatenate((
+                concatenate(( self.A-sign*self.B*E12*other.D*self.C, -sign*self.B*E12*other.C ),axis=1),
+                concatenate(( other.B*E21*self.C, other.A-sign*other.B*E21*self.D*other.C ),axis=1),
+               ),axis=0)
+        B = concatenate( (self.B*E12, other.B*E21*self.D), axis=0 )
+        C = concatenate( (E21*self.C, -sign*E21*self.D*other.C), axis=1 )
+        D = E21*self.D
 
         return StateSpace(A, B, C, D)
 
