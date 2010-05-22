@@ -7,7 +7,7 @@
 # linear systems in state space.  This is the primary representation
 # for the control system library.
 #
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -50,7 +50,7 @@ from scipy import concatenate, zeros
 # StateSpace class
 #
 # The StateSpace class is used throughout the control systems library to
-# represent systems in statespace form.  This class is derived from
+# represent systems in state space form.  This class is derived from
 # the ltisys class defined in the scipy.signal package, allowing many
 # of the functions that already existing in that package to be used
 # directly.
@@ -74,14 +74,14 @@ class StateSpace(signal.lti):
     # Method for generating the frequency response of the system
     def freqresp(self, omega=None):
         # Generate and save a transfer function matrix
-        #! This is currently limited to SISO systems
+        #! TODO: This is currently limited to SISO systems
         nout, nin = self.D.shape
 
         # Compute the denominator from the A matrix
         den = sp.poly1d(sp.poly(self.A))
 
         # Compute the numerator based on zeros
-        #! This is currently limited to SISO systems
+        #! TODO: This is currently limited to SISO systems
         num = sp.poly1d(\
             sp.poly(self.A - sp.dot(self.B, self.C)) + (self.D[0] - 1) * den)
 
@@ -94,7 +94,7 @@ class StateSpace(signal.lti):
 
     # Method for evaluating a system at one frequency
     def evalfr(self, freq):
-        #! Not implemented
+        #! TODO: Not implemented
         return None
 
     # Negation of a system
@@ -188,6 +188,8 @@ class StateSpace(signal.lti):
         # note that if there is an algebraic loop then this matrix inversion won't work
         # (I-D1 D2) or (I-D2 D1) will be singular
         # the easiest way to get this is to have D1 = I, D2 = I
+        #! TODO: trap this error and report algebraic loop
+        #! TODO: use determinant instead of inverse??
         from scipy.linalg import inv
         from numpy import eye
         E21 = inv(eye(self.outputs)+sign*self.D*other.D)
@@ -218,8 +220,8 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
 
     elif (isinstance(sys, (int, long, float, complex))):
         # Generate a simple state space system of the desired dimension
-        #! Doesn't work due to inconsistencies in ltisys
-        # return StateSpace([[]], [[]], [[]], sp.eye(outputs, inputs))
+        # The following Doesn't work due to inconsistencies in ltisys:
+        #   return StateSpace([[]], [[]], [[]], sp.eye(outputs, inputs))
         return StateSpace(-1, 0, 0, sp.eye(outputs, inputs))
 
     else:
