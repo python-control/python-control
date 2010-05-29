@@ -111,14 +111,20 @@ class TransferFunction(signal.lti):
 
     # Negation of a transfer function
     def __neg__(self):
+        """Negate a transfer function"""
         return TransferFunction(-self.num, self.den)
 
     # Subtraction (use addition)
-    def __sub__(self, other): return self + (-other)
-    def __rsub__(self, other): return other + (-self)
+    def __sub__(self, other): 
+        """Subtract two transfer functions"""
+        return self + (-other)
+    def __rsub__(self, other): 
+        """Subtract two transfer functions"""
+        return other + (-self)
 
     # Addition of two transfer functions (parallel interconnection)
     def __add__(self, sys):
+        """Add two transfer functions (parallel connection)"""
         # Convert the second argument to a transfer function
         other = convertToTransferFunction(sys)
 
@@ -130,14 +136,13 @@ class TransferFunction(signal.lti):
         return TransferFunction(num, den)
 
     # Reverse addition - just switch the order
-    def __radd__(self, other): return self + other;
-
-    # Difference of two transfer functions
-    def __sub__(self, other): return __add__(self, -other)
-    def __rsub__(self, other): return __add__(other, -self)
+    def __radd__(self, other): 
+        """Add two transfer functions (parallel connection)"""
+        return self + other;
 
     # Multiplication of two transfer functions (series interconnection)
     def __mul__(self, sys):
+        """Multiply two transfer functions (serial connection)"""
         # Make sure we have a transfer function (or convert to one)
         other = convertToTransferFunction(sys)
 
@@ -147,26 +152,32 @@ class TransferFunction(signal.lti):
         return TransferFunction(num, den)
 
     # Reverse multiplication - switch order (works for SISO)
-    def __rmul__(self, other): return self * other
+    def __rmul__(self, other): 
+        """Multiply two transfer functions (serial connection)"""
+        return self * other
 
     # Division between transfer functions
     def __div__(self, sys):
+        """Divide two transfer functions"""
         other = convertToTransferFunction(sys);
         return TransferFunction(sp.polymul(self.num, other.den),
                                 sp.polymul(self.den, other.num));
 
     # Reverse division 
     def __rdiv__(self, sys):
+        """Divide two transfer functions"""
         other = convertToTransferFunction(sys);
         return TransferFunction(sp.polymul(other.num, self.den),
                                 sp.polymul(other.den, self.num));
 
     # Method for evaluating a transfer function at one frequency
     def evalfr(self, freq):
+        """Evaluate a transfer function at a single frequency"""
         return sp.polyval(self.num, freq*1j) / sp.polyval(self.den, freq*1j)
 
     # Method for generating the frequency response of the system
     def freqresp(self, omega):
+        """Evaluate a transfer function at a list of frequencies"""
         # Convert numerator and denomintator to 1D polynomials
         num = sp.poly1d(self.num)
         den = sp.poly1d(self.den)
@@ -181,6 +192,7 @@ class TransferFunction(signal.lti):
 
     # Feedback around a transfer function
     def feedback(sys1, sys2, sign=-1): 
+        """Feedback interconnection between two transfer functions"""
         # Get the numerator and denominator of the first system
         if (isinstance(sys1, (int, long, float, complex))):
             num1 = sys1; den1 = 1;
@@ -206,6 +218,7 @@ class TransferFunction(signal.lti):
 
 # Function to create a transfer function from another type
 def convertToTransferFunction(sys):
+    """Convert a system to a transfer fuction (if needed)"""
     if (isinstance(sys, TransferFunction)):
         # Already a transfer function; just return it
         return sys
@@ -224,6 +237,7 @@ def convertToTransferFunction(sys):
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
 def _tfpolyToString(coeffs, var='s'):
+    """Convert a transfer function polynomial to a string"""
     thestr = "0"
 
     # Compute the number of coefficients

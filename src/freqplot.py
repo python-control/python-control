@@ -119,6 +119,26 @@ def bode(sys, omega=None, dB=False, Hz=False):
 
 # Nyquist plot
 def nyquist(sys, omega=None):
+    """Nyquist plot for a system
+
+    Usage
+    =====
+    magh = nyquist(sys, omega=None)
+
+    Plots a Nyquist plot for the system over a (optional) frequency range.
+
+    Parameters
+    ----------
+    sys : linsys
+        Linear input/output system
+    omega : freq_range
+        Range of frequencies (list or bounds) in rad/sec
+
+    Return values
+    -------------
+    None
+    """
+
     # Select a default range if none is provided
     #! TODO: This needs to be made more intelligent
     if (omega == None):
@@ -140,6 +160,27 @@ def nyquist(sys, omega=None):
 
 # Gang of Four
 def gangof4(P, C, omega=None):
+    """Plot the "Gang of 4" transfer functions for a system
+
+    Usage
+    =====
+    gangof4(P, C, omega=None)
+
+    Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
+    [T, PS; CS, S]
+
+    Parameters
+    ----------
+    P, C : linsys
+        Linear input/output systems (process and control)
+    omega : freq_range
+        Range of frequencies (list or bounds) in rad/sec
+
+    Return values
+    -------------
+    None
+    """
+
     # Select a default range if none is provided
     #! TODO: This needs to be made more intelligent
     if (omega == None):

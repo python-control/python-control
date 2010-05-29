@@ -67,14 +67,23 @@ from pzmap import pzmap
 
 # Create a state space system from appropriate matrices
 def ss(A, B, C, D):
+    """Create a state space system from A, B, C, D"""
     return StateSpace(A, B, C, D)
 
 # Functions for creating a transfer function
 def tf(num, den): 
+    """Create a SISO transfer function given the numerator and denominator"""
     return TransferFunction(num, den)
 
 # Function for converting state space to transfer function
 def ss2tf(*args, **keywords):
+    """Transform a state space system to a transfer function
+    
+    Usage
+    =====
+    ss2tf(A, B, C, D)
+    ss2tf(sys) - sys should have attributes A, B, C, D
+    """
     if (len(args) == 4):
         # Assume we were given the A, B, C, D matrix
         return TransferFunction(*args)
@@ -87,6 +96,13 @@ def ss2tf(*args, **keywords):
 
 # Function for converting transfer function to state space
 def tf2ss(*args, **keywords):
+    """Transform a transfer function to a state space system
+    
+    Usage
+    =====
+    tf2ss(num, den)
+    ss2tf(sys) - sys should be a system object (lti or TransferFunction)
+    """
     if (len(args) == 2):
         # Assume we were given the num, den
         return TransferFunction(*args)
@@ -99,4 +115,6 @@ def tf2ss(*args, **keywords):
         raise ValueError, "Needs 1 or 2 arguments."
 
 # Frequency response is handled by the system object
-def freqresp(H, omega): return H.freqresp(omega)
+def freqresp(H, omega): 
+    """Return the frequency response for an object H at frequency omega"""
+    return H.freqresp(omega)

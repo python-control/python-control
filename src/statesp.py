@@ -73,6 +73,7 @@ class StateSpace(signal.lti):
 
     # Method for generating the frequency response of the system
     def freqresp(self, omega=None):
+        """Compute the response of a system to a list of frequencies"""
         # Generate and save a transfer function matrix
         #! TODO: This is currently limited to SISO systems
         nout, nin = self.D.shape
@@ -99,10 +100,12 @@ class StateSpace(signal.lti):
 
     # Negation of a system
     def __neg__(self):
+        """Negate a state space system"""
         return StateSpace(self.A, self.B, -self.C, -self.D)
 
     # Addition of two transfer functions (parallel interconnection)
     def __add__(self, other):
+        """Add two state space systems"""
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just adding a scalar; put it in the D matrix
@@ -128,14 +131,18 @@ class StateSpace(signal.lti):
         return StateSpace(A, B, C, D)
 
     # Reverse addition - just switch the arguments
-    def __radd__(self, other): return self.__add__(other)
+    def __radd__(self, other): 
+        """Add two state space systems"""
+        return self.__add__(other)
 
     # Subtraction of two transfer functions (parallel interconnection)
     def __sub__(self, other):
+        """Subtract two state space systems"""
         return __add__(self, other.__neg__())
 
     # Multiplication of two transfer functions (series interconnection)
     def __mul__(self, other):
+        """Serial interconnection between two state space systems"""
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just multiplying by a scalar; change the output
@@ -163,6 +170,7 @@ class StateSpace(signal.lti):
     # Reverse multiplication of two transfer functions (series interconnection)
     # Just need to convert LH argument to a state space object
     def __rmul__(self, other):
+        """Serial interconnection between two state space systems"""
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just multiplying by a scalar; change the input
@@ -176,6 +184,7 @@ class StateSpace(signal.lti):
 
     # Feedback around a state space system
     def feedback(self, other, sign=-1):
+        """Feedback interconnection between two state space systems"""
         # Check for special cases
         if (isinstance(other, (int, long, float, complex))):
             # Scalar feedback, create state space system that is this case
@@ -213,6 +222,7 @@ class StateSpace(signal.lti):
 # in the case of a scalar system
 #
 def convertToStateSpace(sys, inputs=1, outputs=1):
+    """Convert a system to state space form (if needed)"""
     if (isinstance(sys, StateSpace) or
         isinstance(sys, xferfcn.TransferFunction)):
         # Already a state space system; just return it

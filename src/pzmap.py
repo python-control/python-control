@@ -46,6 +46,7 @@ import xferfcn
 
 # Compute poles and zeros for a system
 def pzmap(sys, Plot=True):
+    """Plot a pole/zero map for a transfer function"""
     if (isinstance(sys, xferfcn.TransferFunction)):
         poles = sp.roots(sys.den);
         zeros = sp.roots(sys.num);
