@@ -9,7 +9,7 @@
 #
 #! State space operations are not currently implemented.
 #
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -53,8 +53,8 @@ def parallel(sys1, sys2): return sys1 + sys2
 def negate(sys): return -sys;
 
 # Feedback interconnection between systems
-#! This should be optimized for better performance
-#! Needs to be updated to work for state space systems
+#! TODO: This should be optimized for better performance
+#! TODO: Needs to be updated to work for state space systems
 def feedback(sys1, sys2, **keywords):
     # Grab keyword arguments
     signparm = keywords.pop("sign", -1);

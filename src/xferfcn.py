@@ -12,7 +12,7 @@
 # systems.  To perform calcualtiosn on MIMO systems, you need to use
 # the state space module (statesp.py).
 #
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -179,7 +179,7 @@ class TransferFunction(signal.lti):
 
         return mag, phase, omega
 
-    # Feedback around a trasnfer function
+    # Feedback around a transfer function
     def feedback(sys1, sys2, sign=-1): 
         # Get the numerator and denominator of the first system
         if (isinstance(sys1, (int, long, float, complex))):

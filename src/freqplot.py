@@ -6,7 +6,7 @@
 # This file contains some standard control system plots: Bode plots,
 # Nyquist plots and pole-zero diagrams
 #
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -89,7 +89,7 @@ def bode(sys, omega=None, dB=False, Hz=False):
     phase = unwrap(phase*180/sp.pi, 360)
 
     # Get the dimensions of the current axis, which we will divide up
-    #! Not current implemented; just use subplot for now
+    #! TODO: Not current implemented; just use subplot for now
 
     # Magnitude plot
     plt.subplot(211);
@@ -120,7 +120,7 @@ def bode(sys, omega=None, dB=False, Hz=False):
 # Nyquist plot
 def nyquist(sys, omega=None):
     # Select a default range if none is provided
-    #! This needs to be made more intelligent
+    #! TODO: This needs to be made more intelligent
     if (omega == None):
         omega = sp.logspace(-2, 2);
 
@@ -141,19 +141,17 @@ def nyquist(sys, omega=None):
 # Gang of Four
 def gangof4(P, C, omega=None):
     # Select a default range if none is provided
-    #! This needs to be made more intelligent
+    #! TODO: This needs to be made more intelligent
     if (omega == None):
         omega = sp.logspace(-2, 2);
 
     # Compute the senstivity functions
     L = P*C;
-
-    #! Replace with feedback when written
     S = feedback(1, L);
     T = L * S;
 
     # Plot the four sensitivity functions
-    #! Need to add in the mag = 1 lines
+    #! TODO: Need to add in the mag = 1 lines
     mag, phase, omega = T.freqresp(omega);
     plt.subplot(221); plt.loglog(omega, mag);
 
