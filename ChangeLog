@@ -1,3 +1,26 @@
+31 May 2010, RMM: added place() function using slycot
+  * New module: statefbk - functions to design state feedback controllers
+  * Uses Enrico Avventi slycot wrappers (http://github.com/avventi/Slycot)
+  * Also added some exception types: ControlSlycot and ControlDimension
+  * Added new example to test slycot interface (directly)
+
+29 May 2010, RMM: updated function documentation
+  * Added __doc__ strings for all current functions
+  * Added __doc__ string to matlab module, listing control toolbox functions
+
+22 May 2010, RMM: tweaked comments and released v0.3a
+  * Changed copyright information on modified files to 2010
+  * Updated "to do" comments to use "#! TODO:" as prefix
+
+11 Feb 2010, GR: implemented and tested state space feedback
+15 Jan 2010, GR: added new example, improved bode
+
+4 Jan 2010, GR: updated bode plots
+  * made bode plot more like matlab
+  * added options for plotting in dB, Hz
+
+27 Dec 2009, GR: important bug fix: feedback TFs were being divided by two
+  
 10 Oct 09, RMM: reset matplotlib import in secord-matlab
   * Using 'from matplotlib import *' causes error with figures
   * On my other computer, got error when trying to import 'matplotlib.pyplot'

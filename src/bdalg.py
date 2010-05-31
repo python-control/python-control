@@ -9,7 +9,7 @@
 #
 #! State space operations are not currently implemented.
 #
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -53,9 +53,40 @@ def parallel(sys1, sys2): return sys1 + sys2
 def negate(sys): return -sys;
 
 # Feedback interconnection between systems
-#! This should be optimized for better performance
-#! Needs to be updated to work for state space systems
+#! TODO: This should be optimized for better performance
+#! TODO: Needs to be updated to work for state space systems
 def feedback(sys1, sys2, **keywords):
+    """Feedback interconnection between two I/O systems
+
+    Usage
+    =====
+    sys = feedback(sys1, sys2, **keywords)
+
+    Compute the system corresponding to a feedback interconnection between
+    sys1 and sys2.
+
+    Parameters
+    ----------
+    sys1, sys2: linsys
+        Linear input/output systems
+
+    Return values
+    -------------
+    sys: linsys
+
+    Keywords
+    --------
+    sign: float
+        Sign of the interconnection (default = -1)
+
+    Notes
+    -----
+    1. This function calls calls xferfcn.feedback if the arguments are
+       all either scalars or SISO transfer functions.  If one or both
+       of the arguments are state space systems, then the remaining
+       arguments are converted to state space, as needed, and the
+       statesp.feedback function is used instead.  Finally, if none of
+       that works, then try using sys1.feedback."""
     # Grab keyword arguments
     signparm = keywords.pop("sign", -1);
 

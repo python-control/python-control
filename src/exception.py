@@ -1,12 +1,11 @@
-# pzmap.py - computations involving poles and zeros
+# exception.py - exception definitions for the control package
 #
 # Author: Richard M. Murray
-# Date: 7 Sep 09
+# Date: 31 May 2010
 # 
-# This file contains functions that compute poles, zeros and related
-# quantities for a linear system.
+# This file contains definitions of standard exceptions for the control package
 #
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -38,28 +37,13 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
+# $Id$
 
-import matplotlib.pyplot as plt
-import scipy as sp
-import xferfcn
+class ControlSlycot(Exception): 
+    """Exception for Slycot import.  Used when we can't import a function
+    from the slycot package"""
+    pass
 
-# Compute poles and zeros for a system
-def pzmap(sys, Plot=True):
-    """Plot a pole/zero map for a transfer function"""
-    if (isinstance(sys, xferfcn.TransferFunction)):
-        poles = sp.roots(sys.den);
-        zeros = sp.roots(sys.num);
-    else:
-        raise TypeException
-
-    if (Plot):
-        # Plot the locations of the poles and zeros
-        plt.plot(sp.real(poles), sp.imag(poles), 'x'); plt.hold(True);
-        plt.plot(sp.real(zeros), sp.imag(zeros), 'o'); 
-
-        # Add axes
-        #! Not implemented
-
-    # Return locations of poles and zeros as a tuple
-    return poles, zeros
+class ControlDimension(Exception): 
+    """Raised when dimensions of system objects are not correct"""
+    pass

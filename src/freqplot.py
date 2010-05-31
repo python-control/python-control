@@ -6,7 +6,7 @@
 # This file contains some standard control system plots: Bode plots,
 # Nyquist plots and pole-zero diagrams
 #
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -89,7 +89,7 @@ def bode(sys, omega=None, dB=False, Hz=False):
     phase = unwrap(phase*180/sp.pi, 360)
 
     # Get the dimensions of the current axis, which we will divide up
-    #! Not current implemented; just use subplot for now
+    #! TODO: Not current implemented; just use subplot for now
 
     # Magnitude plot
     plt.subplot(211);
@@ -119,8 +119,28 @@ def bode(sys, omega=None, dB=False, Hz=False):
 
 # Nyquist plot
 def nyquist(sys, omega=None):
+    """Nyquist plot for a system
+
+    Usage
+    =====
+    magh = nyquist(sys, omega=None)
+
+    Plots a Nyquist plot for the system over a (optional) frequency range.
+
+    Parameters
+    ----------
+    sys : linsys
+        Linear input/output system
+    omega : freq_range
+        Range of frequencies (list or bounds) in rad/sec
+
+    Return values
+    -------------
+    None
+    """
+
     # Select a default range if none is provided
-    #! This needs to be made more intelligent
+    #! TODO: This needs to be made more intelligent
     if (omega == None):
         omega = sp.logspace(-2, 2);
 
@@ -140,20 +160,39 @@ def nyquist(sys, omega=None):
 
 # Gang of Four
 def gangof4(P, C, omega=None):
+    """Plot the "Gang of 4" transfer functions for a system
+
+    Usage
+    =====
+    gangof4(P, C, omega=None)
+
+    Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
+    [T, PS; CS, S]
+
+    Parameters
+    ----------
+    P, C : linsys
+        Linear input/output systems (process and control)
+    omega : freq_range
+        Range of frequencies (list or bounds) in rad/sec
+
+    Return values
+    -------------
+    None
+    """
+
     # Select a default range if none is provided
-    #! This needs to be made more intelligent
+    #! TODO: This needs to be made more intelligent
     if (omega == None):
         omega = sp.logspace(-2, 2);
 
     # Compute the senstivity functions
     L = P*C;
-
-    #! Replace with feedback when written
     S = feedback(1, L);
     T = L * S;
 
     # Plot the four sensitivity functions
-    #! Need to add in the mag = 1 lines
+    #! TODO: Need to add in the mag = 1 lines
     mag, phase, omega = T.freqresp(omega);
     plt.subplot(221); plt.loglog(omega, mag);
 

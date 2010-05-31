@@ -60,3 +60,4 @@ from xferfcn import *
 from statesp import *
 from freqplot import *
 from bdalg import *
+from statefbk import *
