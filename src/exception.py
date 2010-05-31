@@ -1,11 +1,11 @@
-# __init__.py - initialization for control systems toolbox
+# exception.py - exception definitions for the control package
 #
 # Author: Richard M. Murray
-# Date: 24 May 09
+# Date: 31 May 2010
+# 
+# This file contains definitions of standard exceptions for the control package
 #
-# This file contains the initialization information from the control package.
-#
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -39,25 +39,11 @@
 # 
 # $Id$
 
-"""Control System Library
+class ControlSlycot(Exception): 
+    """Exception for Slycot import.  Used when we can't import a function
+    from the slycot package"""
+    pass
 
-The Python Control System Library (control) provides common functions
-for analyzing and designing feedback control systems.
-
-Common functions
-----------------
-tf      create a transfer function from num, den coefficients
-ss      create a state space system from A, B, C, D matrices
-pzk     create a transfer function from pole, zero, gain
-bode    generate a Bode plot for a linear I/O system
-nyquist generate a Nyquist plot for a linear I/O system
-lqr     linear quadratic regulator
-lqe     linear quadratic estimator
-"""
-
-# Import functions from within the control system library
-from xferfcn import *
-from statesp import *
-from freqplot import *
-from bdalg import *
-from statefbk import *
+class ControlDimension(Exception): 
+    """Raised when dimensions of system objects are not correct"""
+    pass

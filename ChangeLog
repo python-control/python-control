@@ -1,5 +1,12 @@
+31 May 2010, RMM: added place() function using slycot
+  * New module: statefbk - functions to design state feedback controllers
+  * Uses Enrico Avventi slycot wrappers (http://github.com/avventi/Slycot)
+  * Also added some exception types: ControlSlycot and ControlDimension
+  * Added new example to test slycot interface (directly)
+
 29 May 2010, RMM: updated function documentation
   * Added __doc__ strings for all current functions
+  * Added __doc__ string to matlab module, listing control toolbox functions
 
 22 May 2010, RMM: tweaked comments and released v0.3a
   * Changed copyright information on modified files to 2010
