@@ -41,7 +41,7 @@
 
 # External packages and modules
 import numpy as np
-from control.exception import ControlSlycot, ControlDimension
+from control.exception import *
 
 # Pole placement
 def place(A, B, p):
@@ -96,3 +96,91 @@ def place(A, B, p):
 
     # Return the gain matrix, with MATLAB gain convention
     return -F
+
+def lqr(*args, **keywords):
+    """Linear quadratic regulator design
+
+    Usage
+    =====
+    [K, S, E] = lqr(A, B, Q, R, [N])
+    [K, S, E] = lqr(sys, Q, R, [N])
+
+    The lqr() function computes the optimal state feedback controller
+    that minimizes the quadratic cost
+
+        J = \int_0^\infty x' Q x + u' R u + 2 x' N u
+
+    Inputs
+    ------
+    A, B: 2-d arrays with dynamics and input matrices
+    sys: linear I/O system 
+    Q, R: 2-d array with state and input weight matrices
+    N: optional 2-d array with cross weight matrix
+
+    Outputs
+    -------
+    K: 2-d array with state feedback gains
+    S: 2-d array with solution to Riccati equation
+    E: 1-d array with eigenvalues of the closed loop system
+    """
+
+    # Make sure that SLICOT is installed
+    try:
+        from slycot import sb02md
+        from slycot import sb02mt
+    except ImportError:
+        raise ControlSlycot("can't find slycot module 'sb02md' or 'sb02nt'")
+
+    # 
+    # Process the arguments and figure out what inputs we received
+    #
+    
+    # Get the system description
+    if (len(args) < 4):
+        raise ControlArgument("not enough input arguments")
+
+    elif (getattr(args[0], 'A', None) and 
+          getattr(args[0], 'B', None)):
+        # We were passed a system as the first argument; extract A and B
+        #! TODO: really just need to check for A and B attributes
+        A = np.array(args[0].A, ndmin=2, dtype=float);
+        B = np.array(args[0].B, ndmin=2, dtype=float);
+        index = 1;
+    else:
+        # Arguments should be A and B matrices
+        A = np.array(args[0], ndmin=2, dtype=float);
+        B = np.array(args[1], ndmin=2, dtype=float);
+        index = 2;
+
+    # Get the weighting matrices (converting to matrices, if needed)
+    Q = np.array(args[index], ndmin=2, dtype=float);
+    R = np.array(args[index+1], ndmin=2, dtype=float);
+    if (len(args) > index + 2): 
+        N = np.array(args[index+2], ndmin=2, dtype=float);
+    else:
+        N = np.zeros((Q.shape[0], R.shape[1]));
+
+    # Check dimensions for consistency
+    nstates = B.shape[0];
+    ninputs = B.shape[1];
+    if (A.shape[0] != nstates or A.shape[1] != nstates):
+        raise ControlDimension("inconsistent system dimensions")
+
+    elif (Q.shape[0] != nstates or Q.shape[1] != nstates or
+          R.shape[0] != ninputs or R.shape[1] != ninputs or
+          N.shape[0] != nstates or N.shape[1] != ninputs):
+        raise ControlDimension("incorrect weighting matrix dimensions")
+
+    # Compute the G matrix required by SB02MD
+    A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = \
+        sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N');
+
+    # Call the SLICOT function
+    X,rcond,w,S,U = sb02md(nstates, A_b, G, Q_b, 'C')
+
+    # Now compute the return value
+    K = np.linalg.inv(R) * (np.transpose(B) * X + np.transpose(N));
+    S = X;
+    E = w[0:nstates];
+
+    return K, S, E

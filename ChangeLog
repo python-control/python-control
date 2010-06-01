@@ -1,3 +1,16 @@
+2010-05-31  Richard Murray  <murray@sumatra.local>
+
+	* src/exception.py (ControlNotImplemented): added new exception, to
+	be used for functions that are not yet implemented
+
+	* src/statefbk.py (lqr): added lqr function (using slycot).  Still
+	needs to be verified to make sure calculations are correct.
+
+	* ChangeLog: converted to standard GNU formation (old style below)
+	* setup.py: updated package number to v0.3, changed URL to
+	sourceforge wiki
+
+------------------	
 31 May 2010, RMM: added place() function using slycot
   * New module: statefbk - functions to design state feedback controllers
   * Uses Enrico Avventi slycot wrappers (http://github.com/avventi/Slycot)

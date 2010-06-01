@@ -47,3 +47,11 @@ class ControlSlycot(Exception):
 class ControlDimension(Exception): 
     """Raised when dimensions of system objects are not correct"""
     pass
+
+class ControlArgument(Exception): 
+    """Raised when arguments to a function are not correct"""
+    pass
+
+class ControlNotImplemented(Exception):
+    """Functionality is not yet implemented"""
+    pass

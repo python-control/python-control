@@ -29,3 +29,4 @@ Basic functions to be added
 Instructions for building python package
   * python setup.py build 
   * python setup.py install
+  * python setup.py sdist

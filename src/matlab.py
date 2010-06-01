@@ -64,7 +64,7 @@ from statesp import StateSpace
 from xferfcn import TransferFunction
 from bdalg import series, parallel, negate, feedback
 from pzmap import pzmap
-from statefbk import place
+from statefbk import place, lqr
 
 __doc__ = """
 The control.matlab module defines functions that are roughly the
