@@ -40,6 +40,12 @@
 # 
 # $Id$
 
+# Packages that we need access to
+import scipy as sp
+import statesp
+import xferfcn
+
+# Specific functions that we use
 from scipy import pi
 
 # Utility function to unwrap an angle measurement
@@ -78,3 +84,12 @@ def unwrap(angle, period=2*pi):
 
     # return the updated list
     return angle
+
+# Determine if an object is a system
+def issys(object):
+    # Check for a member of one of the classes that we define here
+    if (isinstance(object, (statesp.StateSpace, xferfcn.TransferFunction))): 
+        return True
+    
+    # Didn't find anything that matched
+    return False

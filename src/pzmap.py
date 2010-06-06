@@ -45,6 +45,7 @@ import scipy as sp
 import xferfcn
 
 # Compute poles and zeros for a system
+#! TODO: extend this to handle state space systems
 def pzmap(sys, Plot=True):
     """Plot a pole/zero map for a transfer function"""
     if (isinstance(sys, xferfcn.TransferFunction)):

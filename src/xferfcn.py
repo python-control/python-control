@@ -190,6 +190,10 @@ class TransferFunction(signal.lti):
 
         return mag, phase, omega
 
+    # Compute poles and zeros
+    def poles(self): return sp.roots(self.den)
+    def zeros(self): return sp.roots(self.num)
+
     # Feedback around a transfer function
     def feedback(sys1, sys2, sign=-1): 
         """Feedback interconnection between two transfer functions"""
