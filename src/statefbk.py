@@ -41,6 +41,7 @@
 
 # External packages and modules
 import numpy as np
+import ctrlutil
 from control.exception import *
 
 # Pole placement
@@ -139,8 +140,7 @@ def lqr(*args, **keywords):
     if (len(args) < 4):
         raise ControlArgument("not enough input arguments")
 
-    elif (getattr(args[0], 'A', None) and 
-          getattr(args[0], 'B', None)):
+    elif (ctrlutil.issys(args[0])):
         # We were passed a system as the first argument; extract A and B
         #! TODO: really just need to check for A and B attributes
         A = np.array(args[0].A, ndmin=2, dtype=float);
@@ -179,7 +179,7 @@ def lqr(*args, **keywords):
     X,rcond,w,S,U = sb02md(nstates, A_b, G, Q_b, 'C')
 
     # Now compute the return value
-    K = np.linalg.inv(R) * (np.transpose(B) * X + np.transpose(N));
+    K = np.dot(np.linalg.inv(R), (np.dot(B.T, X) + N.T));
     S = X;
     E = w[0:nstates];
 
