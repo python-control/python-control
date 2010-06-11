@@ -112,8 +112,6 @@ Qu1a = diag([1, 1]);
 # Step response for the first input
 H1ax = ss(Ax - Bx*K1a[0,lat], Bx*K1a[0,lat]*xd[lat,:], Cx, Dx);
 (Tx, Yx) = step(H1ax, T=linspace(0,10,100));
-print Tx.shape
-print Yx.shape
 
 # Step response for the second input
 H1ay = ss(Ay - By*K1a[1,alt], By*K1a[1,alt]*yd[alt,:], Cy, Dy);

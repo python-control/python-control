@@ -52,7 +52,7 @@ def bode(syslist, omega=None, dB=False, Hz=False):
 
     Usage
     =====
-    (magh, phaseh) = bode(sys, omega=None, dB=False, Hz=False)
+    (magh, phaseh) = bode(syslist, omega=None, dB=False, Hz=False)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 

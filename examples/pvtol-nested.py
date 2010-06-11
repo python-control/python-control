@@ -144,5 +144,5 @@ print "Closed loop poles and zeros: ", P, Z
 
 # Gang of Four
 figure(11); clf();
-gangof4(Hi*Po, Co, linspace(-2, 3));
+gangof4(Hi*Po, Co);
 
