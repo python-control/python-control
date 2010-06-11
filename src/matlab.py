@@ -50,6 +50,7 @@
 
 # Libraries that we make use of 
 import scipy as sp              # SciPy library (used all over)
+import numpy as np              # NumPy library
 import scipy.signal as signal   # Signal processing library
 
 # Import MATLAB-like functions that are defined in other packages
@@ -57,11 +58,16 @@ from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
 from scipy.signal import lsim, impulse, step
 from scipy import linspace, logspace
 
-# Import MATLAB-like functions that belong elsewhere in python-control
-from ctrlutil import unwrap
-from freqplot import bode, nyquist, gangof4
+# Control system library
+import ctrlutil
+import freqplot
 from statesp import StateSpace
 from xferfcn import TransferFunction
+from exception import *
+
+# Import MATLAB-like functions that can be used as-is
+from ctrlutil import unwrap
+from freqplot import nyquist, gangof4
 from bdalg import series, parallel, negate, feedback
 from pzmap import pzmap
 from statefbk import place, lqr
@@ -304,3 +310,63 @@ def tf2ss(*args, **keywords):
 def freqresp(H, omega): 
     """Return the frequency response for an object H at frequency omega"""
     return H.freqresp(omega)
+
+# Bode plots
+def bode(*args, **keywords):
+    """Bode plot of the frequency response
+
+    Usage
+    =====
+    bode(sys)
+    bode(sys, w)
+    bode(sys1, sys2, ..., sysN)
+    bode(sys1, sys2, ..., sysN, w)
+    bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')
+    """
+
+    # If the first argument is a list, then assume python-control calling format
+    if (getattr(args[0], '__iter__', False)):
+        return freqplot.bode(*args, **keywords)
+
+    # Otherwise, run through the arguments and collect up arguments
+    syslist = []; plotstyle=[]; omega=None;
+    i = 0; 
+    while i < len(args):
+        # Check to see if this is a system of some sort
+        if (ctrlutil.issys(args[i])): 
+            # Append the system to our list of systems
+            syslist.append(args[i])
+            i += 1
+
+            # See if the next object is a plotsytle (string)
+            if (i < len(args) and isinstance(args[i], str)):
+                plotstyle.append(args[i])
+                i += 1
+
+            # Go on to the next argument
+            continue
+
+        # See if this is a frequency list
+        elif (isinstance(args[i], (list, np.ndarray))):
+            omega = args[i]
+            i += 1
+            break
+
+        else:
+            raise ControlArgument("unrecognized argument type")
+
+    # Check to make sure that we processed all arguments
+    if (i < len(args)):
+        raise ControlArgument("not all arguments processed")
+
+    # Check to make sure we got the same number of plotstyles as systems
+    if (len(plotstyle) != 0 and len(syslist) != len(plotstyle)):
+        raise ControlArgument("number of systems and plotstyles should be equal")
+
+    # Warn about unimplemented plotstyles
+    #! TODO: remove this when plot styles are implemented in bode()
+    if (len(plotstyle) != 0):
+        print("Warning (matabl.bode): plot styles not implemented");
+
+    # Call the bode command
+    return freqplot.bode(syslist, omega, **keywords)

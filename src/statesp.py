@@ -98,6 +98,18 @@ class StateSpace(signal.lti):
         #! TODO: Not implemented
         return None
 
+    # Compute poles and zeros
+    def poles(self): return sp.roots(sp.poly(self.A))
+    def zeros(self): 
+        den = sp.poly1d(sp.poly(self.A))
+
+        # Compute the numerator based on zeros
+        #! TODO: This is currently limited to SISO systems
+        num = sp.poly1d(\
+            sp.poly(self.A - sp.dot(self.B, self.C)) + (self.D[0] - 1) * den)
+
+        return (sp.roots(num))
+
     # Negation of a system
     def __neg__(self):
         """Negate a state space system"""

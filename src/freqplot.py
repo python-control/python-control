@@ -42,23 +42,24 @@
 
 import matplotlib.pyplot as plt
 import scipy as sp
+import numpy as np
 from ctrlutil import unwrap
 from bdalg import feedback
 
 # Bode plot
-def bode(sys, omega=None, dB=False, Hz=False):
+def bode(syslist, omega=None, dB=False, Hz=False):
     """Bode plot for a system
 
     Usage
     =====
-    (magh, phaseh) = bode(sys, omega=None, dB=False, Hz=False)
+    (magh, phaseh) = bode(syslist, omega=None, dB=False, Hz=False)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
-    sys : linsys
-        Linear input/output system
+    syslist : linsys
+        List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
     dB : boolean
@@ -76,44 +77,79 @@ def bode(sys, omega=None, dB=False, Hz=False):
     1. Use (mag, phase, freq) = sys.freqresp(freq) to generate the 
        frequency response for a system.
     """
+    # If argument was a singleton, turn it into a list
+    if (not getattr(syslist, '__iter__', False)):
+        syslist = (syslist,)
+
+    #
     # Select a default range if none is provided
+    #
+    # This code looks at the poles and zeros of all of the systems that
+    # we are plotting and sets the frequency range to be one decade above
+    # and below the min and max feature frequencies, rounded to the nearest
+    # integer.  It excludes poles and zeros at the origin.  If no features
+    # are found, it turns logspace(-1, 1)
+    #
     if (omega == None):
-        omega = sp.logspace(-2, 2);
+        # Find the list of all poles and zeros in the systems
+        features = np.array(())
+        for sys in syslist:
+            # Add new features to the list
+            features = np.concatenate((features, np.abs(sys.poles)))
+            features = np.concatenate((features, np.abs(sys.zeros)))
 
-    # Get the magnitude and phase of the system
-    mag, phase, omega = sys.freqresp(omega)
-    if Hz:
-        omega = omega/(2*sp.pi)
-    if dB:
-        mag = 20*sp.log10(mag)
-    phase = unwrap(phase*180/sp.pi, 360)
+        # Get rid of poles and zeros at the origin
+        features = features[features != 0];
 
-    # Get the dimensions of the current axis, which we will divide up
-    #! TODO: Not current implemented; just use subplot for now
+        # Make sure there is at least one point in the range
+        if (features.shape[0] == 0): features = [1];
 
-    # Magnitude plot
-    plt.subplot(211);
-    if dB:
-        plt.semilogx(omega, mag)
-    else:
-        plt.loglog(omega, mag)
-    plt.grid(True)
-    plt.grid(True, which='minor')
-    if dB:
-        plt.ylabel("Magnitude (dB)")
-    else:
-        plt.ylabel("Magnitude")
+        # Take the log of the features
+        features = np.log10(features)
 
-    # Phase plot
-    plt.subplot(212);
-    plt.semilogx(omega, phase)
-    plt.grid(True)
-    plt.grid(True, which='minor')
-    plt.ylabel("Phase (deg)")
-    if Hz:
-        plt.xlabel("Frequency (Hz)")
-    else:
-        plt.xlabel("Frequency (rad/sec)")
+        # Set the to be an order of magnitude beyond any features
+        omega = sp.logspace(np.floor(np.min(features))-1, 
+                            np.ceil(np.max(features))+1)
+
+    for sys in syslist:
+        # Get the magnitude and phase of the system
+        mag, phase, omega = sys.freqresp(omega)
+        if Hz: omega = omega/(2*sp.pi)
+        if dB: mag = 20*sp.log10(mag)
+        phase = unwrap(phase*180/sp.pi, 360)
+
+        # Get the dimensions of the current axis, which we will divide up
+        #! TODO: Not current implemented; just use subplot for now
+
+        # Magnitude plot
+        plt.subplot(211); 
+        if dB:
+            plt.semilogx(omega, mag)
+            plt.ylabel("Magnitude (dB)")
+        else:
+            plt.loglog(omega, mag)
+            plt.ylabel("Magnitude")
+
+        # Add a grid to the plot
+        plt.grid(True)
+        plt.grid(True, which='minor')
+        plt.hold(True);
+
+        # Phase plot
+        plt.subplot(212);
+        plt.semilogx(omega, phase)
+        plt.hold(True)
+
+        # Add a grid to the plot
+        plt.grid(True)
+        plt.grid(True, which='minor')
+        plt.ylabel("Phase (deg)")
+
+        # Label the frequency axis
+        if Hz:
+            plt.xlabel("Frequency (Hz)")
+        else:
+            plt.xlabel("Frequency (rad/sec)")
 
     return (211, 212)
 

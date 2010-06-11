@@ -1,3 +1,27 @@
+2010-06-06  Richard Murray  <murray@sumatra.local>
+
+	* examples/pvtol-lqr.py: Added example to test out LQR routines
+
+	* src/matlab.py (bode): created a wrapper that allows MATLAB style
+	arguments for bode (eg, bode(sys1, sys2))
+
+	* src/ctrlutil.py (issys): added new function to check if an object
+	is a system (state space or transfer function).  Will generalize
+	this latter to look for other compatible classes.
+
+	* src/freqplot.py (bode): Compute frequency range of bode plot based
+	on poles and zeros
+	(bode): Allow bode plot to be passed a list (or tuple) as the first
+	argument, in which case multiple bode plots are generated
+
+	* src/statesp.py (StateSpace.zeros): new function to compute zeros
+	for a state space system
+	(StateSpace): defined new functions to compute poles of a state
+	space system
+
+	* src/xferfcn.py (TransferFunction): defined new functions to
+	compute poles and zeros of a transfer function.
+
 2010-05-31  Richard Murray  <murray@sumatra.local>
 
 	* src/exception.py (ControlNotImplemented): added new exception, to
