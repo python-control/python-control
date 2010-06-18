@@ -40,7 +40,7 @@
 #     or a controls.TransferFunction object.
 #   * Added some comments to make sure I understand the code
 # 
-# $Id: $
+# $Id$
 
 # Packages used by this module
 from scipy import *
