@@ -1,5 +1,5 @@
 # controls.py - Ryan Krauss's control module
-# $Id$
+# $Id: $
 
 """This module is for analyzing linear, time-invariant dynamic systems
 and feedback control systems using the Laplace transform.  The heart
