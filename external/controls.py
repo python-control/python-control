@@ -11,10 +11,13 @@ import glob, pdb
 from math import atan2, log10
 
 from scipy import *
+from scipy import signal
+from scipy import interpolate, integrate
 from scipy.linalg import inv as inverse
 from scipy.optimize import newton, fmin, fminbound
-from scipy.io import read_array, save, loadmat, write_array
+#from scipy.io import read_array, save, loadmat, write_array
 from scipy import signal
+from numpy.linalg import LinAlgError
 
 from  IPython.Debugger import Pdb
 
@@ -22,7 +25,7 @@ import sys, os, copy, time
 
 from matplotlib.ticker import LogFormatterMathtext
 
-version = '1.1.0'
+version = '1.1.4'
 
 class MyFormatter(LogFormatterMathtext):
    def __call__(self, x, pos=None):
@@ -126,7 +129,10 @@ def fit_discrete_response(output_vect, input_vect, numorder, denorder):
 
 def prependzeros(num, den):
     nd = len(den)
-    nn = len(num)
+    if isscalar(num):
+       nn = 1
+    else:
+       nn = len(num)
     if nn < nd:
         zvect = zeros(nd-nn)
         numout = r_[zvect, num]
@@ -388,25 +394,41 @@ class TransferFunction(signal.lti):
     def __setattr__(self, attr, val):
         realizable = False
         if hasattr(self, 'den') and hasattr(self, 'num'):
-           realizable = _realizable(self.num, self.den)
+            realizable = _realizable(self.num, self.den)
         if realizable:
-           signal.lti.__setattr__(self, attr, val)
+            signal.lti.__setattr__(self, attr, val)
         else:
-           self.__dict__[attr] = val
+            self.__dict__[attr] = val
 
           
-    def __init__(self, num, den, dt=0.01, maxt=5.0, myvar='s'):
+    def __init__(self, num, den, dt=0.01, maxt=5.0, myvar='s', label='G'):
         """num and den are either scalar constants or lists that are
         passed to scipy.poly1d to create a list of coefficients."""
         #print('in TransferFunction.__init__, dt=%s' % dt)
         if _realizable(num, den):
-            signal.lti.__init__(self, num, den)
+            num = atleast_1d(num)
+            den = atleast_1d(den)
+            start_num_ind = nonzero(num)[0][0]
+            start_den_ind = nonzero(den)[0][0]
+            num_ = num[start_num_ind:]
+            den_ = den[start_den_ind:]
+            signal.lti.__init__(self, num_, den_)
+        else:
+            z, p, k = signal.tf2zpk(num, den)
+            self.gain = k
         self.num = poly1d(num)
         self.den = poly1d(den) 
         self.dt = dt
         self.myvar = myvar
         self.maxt = maxt
+        self.label = label
 
+
+    def print_poles(self, label=None):
+       if label is None:
+          label = self.label
+       print(label +' poles =' + str(self.poles))
+       
 
     def __repr__(self, labelstr='controls.TransferFunction'):
         nstr=str(self.num)#.strip()
@@ -502,6 +524,16 @@ class TransferFunction(signal.lti):
         return self.dt
 
 
+    def simplify(self, rtol=1e-5, atol=1e-10):
+        """Return a new TransferFunction object with poles and zeros
+        that nearly cancel (within real or absolutie tolerance rtol
+        and atol) removed."""
+        gain = self.gain
+        new_num, new_den = polyfactor(self.num, self.den, prepend=False)
+        newtf = self.__class__(new_num*gain, new_den)
+        return newtf
+
+                 
     def ToLatex(self, eps=1e-12, fmt='%0.5g', ds=True):
         mynum = self.num
         myden = self.den
@@ -590,7 +622,7 @@ class TransferFunction(signal.lti):
     def rlocfind(self, poleloc):
         self.poleloc = poleloc
         kinit,pinit = _k_poles(self,poleloc)
-        k = optimize.fmin(self.opt,[kinit])[0]
+        k = fmin(self.opt,[kinit])[0]
         poles = self._RLFindRoots([k])
         poles = self._RLSortRoots(poles)
         return k, poles
@@ -646,24 +678,100 @@ class TransferFunction(signal.lti):
         self.num = self.num/const
         self.den = self.den/const
 
-    def lsim(self, u, t, interp=0, returnall=False, X0=None):
+    def lsim(self, u, t, interp=0, returnall=False, X0=None, hmax=None):
         """Find the response of the TransferFunction to the input u
         with time vector t.  Uses signal.lsim.
 
         return y the response of the system."""
+        try:
+           out = signal.lsim(self, u, t, interp=interp, X0=X0)
+        except LinAlgError:
+           #if the system has a pure integrator, lsim won't work.
+           #Call lsim2.
+           out = self.lsim2(u, t, X0=X0, returnall=True, hmax=hmax)
+                 #override returnall because it is handled below
         if returnall:#most users will just want the system output y,
                      #but some will need the (t, y, x) tuple that
                      #signal.lsim returns
-            return signal.lsim(self, u, t, interp=interp, X0=X0)
+            return out
         else:
-            return signal.lsim(self, u, t, interp=interp, X0=X0)[1]
+            return out[1]
 
-    def lsim2(self, u, t, returnall=False, X0=None):
-        #tempsys=signal.lti(self.num,self.den)
-        if returnall:
-            return signal.lsim2(self, u, t, X0=X0)
-        else:
-            return signal.lsim2(self, u, t, X0=X0)[1]
+##     def lsim2(self, u, t, returnall=False, X0=None):
+##         #tempsys=signal.lti(self.num,self.den)
+##         if returnall:
+##             return signal.lsim2(self, u, t, X0=X0)
+##         else:
+##             return signal.lsim2(self, u, t, X0=X0)[1]
+
+    def lsim2(self, U, T, X0=None, returnall=False, hmax=None):
+       """Simulate output of a continuous-time linear system, using ODE solver.
+
+       Inputs:
+
+           system -- an instance of the LTI class or a tuple describing the
+           system.  The following gives the number of elements in
+           the tuple and the interpretation.
+           2 (num, den)
+           3 (zeros, poles, gain)
+           4 (A, B, C, D)
+       U -- an input array describing the input at each time T
+             (linear interpolation is assumed between given times).
+             If there are multiple inputs, then each column of the
+             rank-2 array represents an input.
+       T -- the time steps at which the input is defined and at which
+             the output is desired.
+       X0 -- (optional, default=0) the initial conditions on the state vector.
+
+       Outputs: (T, yout, xout)
+
+       T -- the time values for the output.
+       yout -- the response of the system.
+       xout -- the time-evolution of the state-vector.
+       """
+       # system is an lti system or a sequence
+       #  with 2 (num, den)
+       #       3 (zeros, poles, gain)
+       #       4 (A, B, C, D)
+       #  describing the system
+       #  U is an input vector at times T
+       #   if system describes multiple outputs
+       #   then U can be a rank-2 array with the number of columns
+       #   being the number of inputs
+
+       # rather than use lsim, use direct integration and matrix-exponential.
+       if hmax is None:
+          hmax = T[1]-T[0]
+       U = atleast_1d(U)
+       T = atleast_1d(T)
+       if len(U.shape) == 1:
+           U = U.reshape((U.shape[0],1))
+       sU = U.shape
+       if len(T.shape) != 1:
+           raise ValueError, "T must be a rank-1 array."
+       if sU[0] != len(T):
+           raise ValueError, "U must have the same number of rows as elements in T."
+       if sU[1] != self.inputs:
+           raise ValueError, "System does not define that many inputs."
+
+       if X0 is None:
+           X0 = zeros(self.B.shape[0],self.A.dtype)
+
+       # for each output point directly integrate assume zero-order hold
+       #   or linear interpolation.
+
+       ufunc = interpolate.interp1d(T, U, kind='linear', axis=0, \
+                                    bounds_error=False)
+
+       def fprime(x, t, self, ufunc):
+           return dot(self.A,x) + squeeze(dot(self.B,nan_to_num(ufunc([t]))))
+
+       xout = integrate.odeint(fprime, X0, T, args=(self, ufunc), hmax=hmax)
+       yout = dot(self.C,transpose(xout)) + dot(self.D,transpose(U))
+       if returnall:
+          return T, squeeze(transpose(yout)), xout
+       else:
+          return squeeze(transpose(yout))
 
 
     def residue(self, tol=1e-3, verbose=0):
@@ -748,7 +856,8 @@ class TransferFunction(signal.lti):
     
 
     def FreqResp(self, f, fignum=1, fig=None, clear=True, \
-                 grid=True, legend=None, legloc=1, legsub=1, **kwargs):
+                 grid=True, legend=None, legloc=1, legsub=1, \
+                 use_rad=False, **kwargs):
         """Compute the frequency response of the transfer function
         using the frequency vector f, returning a complex vector.
 
@@ -765,10 +874,14 @@ class TransferFunction(signal.lti):
         if testvect.all():
            s=f#then you really sent me s and not f
         else:
-           s=2.0j*pi*f
+           if use_rad:
+              s = 1.0j*f
+           else:
+              s=2.0j*pi*f
         self.comp = self.num(s)/self.den(s)
         self.dBmag = 20*log10(abs(self.comp))
-        self.phase = angle(self.comp,1)
+        rphase = unwrap(angle(self.comp))
+        self.phase = rphase*180.0/pi
         
         if fig is None:
             if fignum is not None:
@@ -778,19 +891,19 @@ class TransferFunction(signal.lti):
         if fig is not None:
             if clear:
                 fig.clf()
+                ax1 = fig.add_subplot(2,1,1)
+                ax2 = fig.add_subplot(2,1,2, sharex=ax1)
+            else:
+                ax1 = fig.axes[0]
+                ax2 = fig.axes[1]
 
         if fig is not None:
-            myargs=['linetype','colors','linewidth']
+            myargs=['linetype','linewidth']
             subkwargs={}
             for key in myargs:
                 if kwargs.has_key(key):
                     subkwargs[key]=kwargs[key]
-            if clear:
-                fig.clf()
-            ax1 = fig.add_subplot(2,1,1)
-            #if clear:
-            #    ax1.cla()
-            myind=ax1._get_lines.count
+            #myind=ax1._get_lines.count
             mylines=_PlotMag(f, self, axis=ax1, **subkwargs)
             ax1.set_ylabel('Mag. Ratio (dB)')
             ax1.xaxis.set_major_formatter(MyFormatter())
@@ -798,12 +911,12 @@ class TransferFunction(signal.lti):
                ax1.grid(1)
             if legend is not None and legsub==1:
                ax1.legend(legend, legloc)
-            ax2 = fig.add_subplot(2,1,2, sharex=ax1)
-            #if clear:
-            #    ax2.cla()
             mylines=_PlotPhase(f, self, axis=ax2, **subkwargs)
             ax2.set_ylabel('Phase (deg.)')
-            ax2.set_xlabel('Freq. (Hz)')
+            if use_rad:
+               ax2.set_xlabel('$\\omega$ (rad./sec.)')
+            else:
+               ax2.set_xlabel('Freq. (Hz)')
             ax2.xaxis.set_major_formatter(MyFormatter())
             if grid:
                ax2.grid(1)
@@ -1142,7 +1255,7 @@ class TransferFunction(signal.lti):
             yvect = shift(yvect, curY)
         return Ydig*dv
 
-
+TF = TransferFunction
 
 class Input(TransferFunction):
     def __repr__(self):
@@ -1259,7 +1372,16 @@ def sat(vin, vmax=2.0):
     else:
         return vin
 
-
+class ButterworthFilter(Compensator):
+    def __init__(self,fc,mag=1.0):
+        """Create a compensator that is a second order Butterworth
+        filter.  fc is the corner frequency in Hz and mag is the low
+        frequency magnitude so that the transfer function will be
+        mag*wn**2/(s**2+2*z*wn*s+wn**2) where z=1/sqrt(2) and
+        wn=2.0*pi*fc."""
+        z=1.0/sqrt(2.0)
+        wn=2.0*pi*fc
+        Compensator.__init__(self,mag*wn**2,[1.0,2.0*z*wn,wn**2])
 
 class Closed_Loop_System_with_Sat(object):
    def __init__(self, plant_tf, Kp, sat):
