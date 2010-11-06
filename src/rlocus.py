@@ -53,7 +53,7 @@ def RootLocus(sys, kvect, fig=None, fignum=1, \
     of kvect."""
 
     # Convert numerator and denominator to polynomials if they aren't
-    (num, den) = _systopoly1d(sys);
+    (nump, denp) = _systopoly1d(sys);
 
     # Set up the figure
     if fig is None:
@@ -68,11 +68,11 @@ def RootLocus(sys, kvect, fig=None, fignum=1, \
     mymat = _RLSortRoots(sys, mymat)
 
     # plot open loop poles
-    poles = array(den.r)
+    poles = array(denp.r)
     ax.plot(real(poles), imag(poles), 'x')
 
     # plot open loop zeros
-    zeros = array(num.r)
+    zeros = array(nump.r)
     if zeros.any():
         ax.plot(real(zeros), imag(zeros), 'o')
 
@@ -94,23 +94,23 @@ def _systopoly1d(sys):
     """Extract numerator and denominator polynomails for a system"""
 
     # Start by extracting the numerator and denominator from system object
-    num = sys.num; den = sys.den;
+    nump = sys.num; denp = sys.den;
 
     # Check to see if num, den are already polynomials; otherwise convert
-    if (not isinstance(num, poly1d)): num = poly1d(num)
-    if (not isinstance(den, poly1d)): den = poly1d(den)
+    if (not isinstance(nump, poly1d)): nump = poly1d(nump)
+    if (not isinstance(denp, poly1d)): denp = poly1d(denp)
 
-    return (num, den)
+    return (nump, denp)
 
 def _RLFindRoots(sys, kvect):
     """Find the roots for the root locus."""
 
     # Convert numerator and denominator to polynomials if they aren't
-    (num, den) = _systopoly1d(sys);
+    (nump, denp) = _systopoly1d(sys);
 
     roots = []
     for k in kvect:
-        curpoly = den + k * num
+        curpoly = denp + k * nump
         curroots = curpoly.r
         curroots.sort()
         roots.append(curroots)

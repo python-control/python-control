@@ -1,3 +1,45 @@
+2010-11-05  Richard Murray  <murray@sumatra.local>
+
+	* external/yottalab.py: New file containing Roberto Bucher's control
+	library functions.  OK to start pulling these into the main library,
+	with attribution, but note that they use modifications of the
+	default library => some rewrites will be needed.
+
+2010-09-11  Richard Murray  <murray@sumatra.local>
+
+	* src/matlab.py (step): Added local step response function that uses
+	lsim2() instead of signal.step (which can't handle integrators).
+	This function may not be needed when new scipy step2() function is
+	available.
+	(impulse): Added local impulse response function that sets the
+	initial condition based on the input matrix and then uses the
+	lsim2() function to compute the response.
+
+	* examples/test-response.py: Added test script for making sure that
+	time repsonse functions are working as desired
+
+	* src/matlab.py (lsim): Added local version of lsim that calls
+	signal.lsim2 (actual ODE integrator)
+
+2010-09-06  Richard Murray  <murray@sumatra.local>
+
+	* src/statefbk.py (ctrb): new function for testing controllability
+	* src/statefbk.py (obsv): new function for testing observabiilty
+
+2010-09-02  Richard Murray  <murray@sumatra.local>
+
+	* src/statefbk.py (place): Use np.size() instead of len() for
+	finding length of placed_eigs for better compatability with
+	different python versions [courtesy of Roberto Bucher]
+
+	* src/delay.py (pade): New file for delay-based computations +
+	initial implementation of pade() [courtesy Sawyer Fuller]
+
+2010-06-17  Richard Murray  <murray@sumatra.local>
+
+	* src/rlocus.py: changed num, den to nump, denp for clarity
+	* src/rlocus.py: new file with Ryan Krauss's root locus code
+
 2010-06-06  Richard Murray  <murray@sumatra.local>
 
 	* examples/pvtol-lqr.py: Added example to test out LQR routines

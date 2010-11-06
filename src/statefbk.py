@@ -1,6 +1,6 @@
 # statefbk.py - tools for state feedback control
 #
-# Author: Richard M. Murray
+# Author: Richard M. Murray, Roberto Bucher
 # Date: 31 May 2010
 # 
 # This file contains routines for designing state space controllers
@@ -92,7 +92,7 @@ def place(A, B, p):
 
     # Call SLICOT routine to place the eigenvalues
     A_z,w,nfp,nap,nup,F,Z = \
-        sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
+        sb01bd(B_mat.shape[0], B_mat.shape[1], np.size(placed_eigs), alpha,
                A_mat, B_mat, placed_eigs, 'C');
 
     # Return the gain matrix, with MATLAB gain convention
@@ -184,3 +184,57 @@ def lqr(*args, **keywords):
     E = w[0:nstates];
 
     return K, S, E
+
+def ctrb(A,B):       
+    """Controllabilty matrix
+
+    Usage
+    =====
+    Wc = ctrb(A, B)
+
+    Inputs
+    ------
+    A, B: Dynamics and input matrix of the system
+
+    Outputs
+    -------
+    Wc: Controllability matrix
+    """
+
+    # Convert input parameters to matrices (if they aren't already)
+    amat = np.mat(A)
+    bmat = np.mat(B)
+    n = np.shape(amat)[0]
+
+    # Construct the controllability matrix
+    ctrb = bmat
+    for i in range(1, n):
+        ctrb = np.vstack((ctrb, amat**i*bmat))
+    return ctrb
+
+def obsv(A, C):       
+    """Observability matrix
+
+    Usage
+    =====
+    Wc = obsv(A, C)
+
+    Inputs
+    ------
+    A, C: Dynamics and output matrix of the system
+
+    Outputs
+    -------
+    Wc: Observability matrix
+    """
+
+    # Convert input parameters to matrices (if they aren't already)
+    amat = np.mat(A)
+    cmat = np.mat(C)
+    n = np.shape(amat)[0]
+
+    # Construct the controllability matrix
+    obsv = cmat
+    for i in range(1, n):
+        obsv = np.hstack((obsv, cmat*amat**i))
+    return obsv

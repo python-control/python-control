@@ -1,8 +1,42 @@
 List of Pending changes for control-python
 RMM, 5 Sep 09
 
+This file contains brief notes on features that need to be added to
+the python control library.  Mainly intended to keep track of "bigger
+picture" things that need to be done.
+
+--> See src/matlab.py for a list of MATLAB functions that eventually need
+    to be implemented.
+
+OPEN BUGS
+  * step() doesn't handle systems with a pole at the origin (use lsim2)
+
+Transfer code from Roberto Bucher's yottalab to python-control
+  acker       - pole placement using Ackermann method
+  c2d         - contimous to discrete time conversion
+  full_obs    - full order observer
+  red_obs     - reduced order observer
+  comp_form   - state feedback controller+observer in compact form
+  comp_form_i - state feedback controller+observer+integ in compact form
+  dsimul      - simulate discrete time systems
+  dstep       - step response (plot) of discrete time systems
+  dimpulse    - imoulse response (plot) of discrete time systems
+  bb_step     - step response (plot) of continous time systems
+  sysctr      - system+controller+observer+feedback
+  care        - Solve Riccati equation for contimous time systems
+  dare        - Solve Riccati equation for discrete time systems
+  dlqr        - discrete linear quadratic regulator
+  minreal     - minimal state space representation
+
+Transfer code from Ryan Krauss's control.py to python-control
+  * phase margin computations (as part of margin command)
+  * step reponse
+  * c2d, c2d_tustin (compare to Bucher version first)
+
 Examples and test cases
+  * Put together unit tests for all functions (after deciding on framework)
   * Figure out how to import 'figure' command properly (version issue?)
+  * Figure out source of BadCoefficients warning messages (pvtol-lqr and others)
 
 TransferFunction class fixes
   * evalfr is not working (num, den stored as ndarrays, not poly1ds)
@@ -16,12 +50,11 @@ State space class fixes
   * Implement pzmap for state space systems
 
 LTI updates
-  * Try to get control.matlab.step semantics to be closer to MATLAB
+  * Implement control.matlab.step (with semantics similar to MATLAB)
 
 Basic functions to be added
   * margin - compute gain and phase margin (no plot)
   * lqr - compute optimal feedback gains (use SLICOT SB02ND.f)
-  * lqe - compute optimal feedback gains (use SLICOT SB02ND.f)
   * lyap - solve Lyapunov equation (use SLICOT SB03MD.f)
   * See http://www.slicot.org/shared/libindex.html for list of functions
 

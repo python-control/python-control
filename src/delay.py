@@ -1,11 +1,12 @@
-# __init__.py - initialization for control systems toolbox
+# delay.py - functions involving time delays
 #
-# Author: Richard M. Murray
-# Date: 24 May 09
+# Author: Sawyer Fuller
+# Date: 26 Aug 2010
+# 
+# This file contains functions for implementing time delays (currently
+# only the pade() function).
 #
-# This file contains the initialization information from the control package.
-#
-# Copyright (c) 2009 by California Institute of Technology
+# Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -37,28 +38,31 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id$
+# $Id: pade.py 17 2010-05-29 23:50:52Z murrayrm $
 
-"""Control System Library
+def pade(T, n=1):
+    """ 
+    Return the numerator and denominator coefficients of the Pade approximation.
+    
+    Inputs:
+        T   -->   time delay
+        n   -->   order of approximation
+        
+    Outputs:       
+        num, den -->  arrays in descending powers of s.
 
-The Python Control System Library (control) provides common functions
-for analyzing and designing feedback control systems.
-
-Common functions
-----------------
-tf      create a transfer function from num, den coefficients
-ss      create a state space system from A, B, C, D matrices
-pzk     create a transfer function from pole, zero, gain
-bode    generate a Bode plot for a linear I/O system
-nyquist generate a Nyquist plot for a linear I/O system
-lqr     linear quadratic regulator
-lqe     linear quadratic estimator
-"""
-
-# Import functions from within the control system library
-from xferfcn import *
-from statesp import *
-from freqplot import *
-from bdalg import *
-from statefbk import *
-from delay import *
+    Based on an algorithm in Golub and van Loan, "Matrix Computation" 3rd.
+    Ed. pp. 572-574.
+    """
+    num = [0. for i in range(n+1)]
+    num[-1] = 1.
+    den = [0. for i in range(n+1)]
+    den[-1] = 1.
+    c = 1.
+    for k in range(1, n+1):
+        c = T * c * (n - k + 1)/(2 * n - k + 1)/k
+        num[n - k] = c * (-1)**k
+        den[n - k] = c 
+    num = [coeff/den[0] for coeff in num]
+    den = [coeff/den[0] for coeff in den]
+    return num, den 

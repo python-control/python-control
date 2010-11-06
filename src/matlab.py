@@ -55,7 +55,6 @@ import scipy.signal as signal   # Signal processing library
 
 # Import MATLAB-like functions that are defined in other packages
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
-from scipy.signal import lsim, impulse, step
 from scipy import linspace, logspace
 
 # Control system library
@@ -70,7 +69,8 @@ from ctrlutil import unwrap
 from freqplot import nyquist, gangof4
 from bdalg import series, parallel, negate, feedback
 from pzmap import pzmap
-from statefbk import place, lqr
+from statefbk import ctrb, obsv, place, lqr
+from delay import pade
 
 __doc__ = """
 The control.matlab module defines functions that are roughly the
@@ -191,8 +191,8 @@ State-space (SS) models
    drss           - random stable discrete-time state-space models
    ss2ss          - state coordinate transformation
    canon          - canonical forms of state-space models
-   ctrb           - controllability matrix
-   obsv           - observability matrix
+*  ctrb           - controllability matrix
+*  obsv           - observability matrix
    gram           - controllability and observability gramians
    ss/prescale    - optimal scaling of state-space models.  
    balreal        - gramian-based input/output balancing
@@ -214,7 +214,7 @@ Time delays
    lti/hasdelay   - true for models with time delays
    lti/totaldelay - total delay between each input/output pair
    lti/delay2z    - replace delays by poles at z=0 or FRD phase shift
-   pade           - pade approximation of time delays
+*  pade           - pade approximation of time delays
  
 Model dimensions and characteristics
    class          - model type ('tf', 'zpk', 'ss', or 'frd')
@@ -370,3 +370,89 @@ def bode(*args, **keywords):
 
     # Call the bode command
     return freqplot.bode(syslist, omega, **keywords)
+
+#
+# Modifications to scipy.signal functions
+#
+
+# Redefine lsim to use lsim2 
+def lsim(*args, **keywords):
+    """Simulate the output of a linear system
+
+    Usage
+    =====
+    (T, yout, xout) = lsim(sys, u, T, X0)
+
+    Inputs:
+      sys       LTI system
+      u         input array giving input at each time T
+      T         time steps at which the input is defined
+      X0        initial condition (optional, default = 0)
+
+    Outputs:
+      T         time values of the output
+      yout      response of the system
+      xout      time evolution of the state vector
+    """
+    return sp.signal.lsim2(*args, **keywords)
+
+#! Redefine step to use lsim2 
+#! Not yet implemented
+def step(*args, **keywords):
+    """Step response of a linear system
+
+    Usage
+    =====
+    (T, yout) = step(sys, T, X0)
+
+    Inputs:
+      sys       LTI system
+      T         time steps (optional; autocomputed if not gien)
+      X0        initial condition (optional, default = 0)
+
+    Outputs:
+      T         time values of the output
+      yout      response of the system
+    """
+    return sp.signal.step(*args, **keywords)
+
+# Redefine initial to use lsim2
+#! Not yet implemented (uses step for now)
+def initial(*args, **keywords):
+    """Initial condition response of a linear system
+
+    Usage
+    =====
+    (T, yout) = initial(sys, T, X0)
+
+    Inputs:
+      sys       LTI system
+      T         time steps (optional; autocomputed if not gien)
+      X0        initial condition (optional, default = 0)
+
+    Outputs:
+      T         time values of the output
+      yout      response of the system
+    """
+    return sp.signal.initial(*args, **keywords)
+
+# Redefine impulse to use initial()
+#! Not yet implemented (uses impulse for now)
+def impulse(*args, **keywords):
+    """Step response of a linear system
+
+    Usage
+    =====
+    (T, yout) = impulse(sys, T, X0)
+
+    Inputs:
+      sys       LTI system
+      T         time steps (optional; autocomputed if not gien)
+      X0        initial condition (optional, default = 0)
+
+    Outputs:
+      T         time values of the output
+      yout      response of the system
+    """
+    return sp.signal.impulse(*args, **keywords)
+
