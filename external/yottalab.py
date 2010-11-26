@@ -1,3 +1,5 @@
+# yottalab.py - Roberto Bucher's yottalab library
+
 """
 This is a procedural interface to the yttalab library
 
