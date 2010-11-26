@@ -82,6 +82,7 @@ T = feedback(L, 1);
 #! Not yet implemented
 # (gm, pm, wgc, wpc) = margin(L); 
 
+#! TODO: this figure has something wrong; axis limits mismatch
 figure(6); clf; subplot(221);
 (magh, phaseh) = bode(L);
 
