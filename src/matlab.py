@@ -66,7 +66,7 @@ from exception import *
 
 # Import MATLAB-like functions that can be used as-is
 from ctrlutil import unwrap
-from freqplot import nyquist, gangof4
+from freqplot import nyquist, nichols, gangof4
 from bdalg import series, parallel, negate, feedback
 from pzmap import pzmap
 from statefbk import ctrb, obsv, place, lqr
@@ -155,7 +155,7 @@ Frequency-domain analysis
    lti/bodemag    - Bode magnitude diagram only
    sigma          - singular value frequency plot
 *  nyquist        - Nyquist plot
-   nichols        - Nichols plot
+*  nichols        - Nichols plot
    margin         - gain and phase margins
    lti/allmargin  - all crossover frequencies and related gain/phase margins
    lti/freqresp   - frequency response over a frequency grid
