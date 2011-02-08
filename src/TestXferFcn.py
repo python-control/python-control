@@ -430,5 +430,8 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_almost_equal(tfsys.num[i][j], num[i][j])
                 np.testing.assert_array_almost_equal(tfsys.den[i][j], den[i][j])
 
+def suite():
+    return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)
+
 if __name__ == "__main__":
     unittest.main()

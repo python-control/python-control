@@ -60,5 +60,8 @@ class TestConvert(unittest.TestCase):
                     sys4 = matlab.tf(sys3)
                     self.printSys(sys4, 4)
 
+def suite():
+   return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
+
 if __name__ == "__main__":
     unittest.main()

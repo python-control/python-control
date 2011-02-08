@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
+### MUST BE CONVERTED TO A UNIT TEST!!!
+
+
 # Script to test frequency response and frequency response plots like bode, nyquist and gang of 4.
 # Especially need to ensure that nothing SISO is broken and that MIMO at least handles exceptions and has some default to SISO in place.
 
+
+import unittest
 from statesp import StateSpace
 from matlab import ss, tf, bode
 import numpy as np
@@ -50,3 +55,6 @@ bode(systf)
 
 #plt.figure(4)
 #bode(sysMIMO,omega)
+
+def suite():
+   return unittest.TestLoader().loadTestsFromTestCase(TestConvert)

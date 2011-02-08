@@ -62,3 +62,5 @@ from freqplot import *
 from bdalg import *
 from statefbk import *
 from delay import *
+
+from test import *

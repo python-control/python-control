@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+
+#### THIS MUST BE MADE INTO A UNITTEST TO BE PART OF THE TESTING FUNCTIONS!!!!
+
+
 import numpy as np
 from slycot import tb04ad, td04ad
 import matlab
@@ -27,4 +32,11 @@ for states in range(1, maxStates):
                     sys4 = tb04ad(states,inputs,outputs,sys3[1][0:states,0:states],sys3[2][0:states,0:inputs],sys3[3][0:outputs,0:states],sys3[4],outputs,outputs,inputs)
                     print "sys4"
                     print sys4
+
+#These are here for once the above is made into a unittest.
+def suite():
+   return unittest.TestLoader().loadTestsFromTestCase(TestSlycot)
+
+if __name__=='__main__':
+	unittest.main()
 

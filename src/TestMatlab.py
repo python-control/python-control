@@ -40,5 +40,8 @@ class TestMatlab(unittest.TestCase):
 #        np.testing.assert_array_almost_equal(yout, youttrue,decimal=4)
 
 
+def suite():
+   return unittest.TestLoader().loadTestsFromTestCase(TestMatlab)
+
 if __name__ == '__main__':
     unittest.main()

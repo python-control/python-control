@@ -199,6 +199,11 @@ class TestDrss(unittest.TestCase):
                     p = sys.pole()
                     for z in p:
                         self.assertTrue(abs(z) < 1)
-                        
+                
+
+def suite():
+   return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
+
+        
 if __name__ == "__main__":
     unittest.main()

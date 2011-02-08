@@ -159,6 +159,8 @@ class TestFeedback(unittest.TestCase):
             [[[1., 4., 11., 16., 13.]]])
         np.testing.assert_array_almost_equal(ans2.num, [[[1., 4., 7., 6.]]])
         np.testing.assert_array_almost_equal(ans2.den, [[[1., 4., 9., 8., 5.]]])
+def suite():
+    return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
 
 if __name__ == "__main__":
     unittest.main()
