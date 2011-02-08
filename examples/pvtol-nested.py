@@ -10,6 +10,7 @@
 
 from matplotlib.pyplot import * # Grab MATLAB plotting functions
 from control.matlab import *    # MATLAB-like functions
+import numpy as np
 
 # System parameters
 m = 4;				# mass of aircraft
@@ -23,8 +24,8 @@ Pi = tf([r], [J, 0, 0]);	# inner loop (roll)
 Po = tf([1], [m, c, 0]);	# outer loop (position)
 
 # Use state space versions
-# Pi = tf2ss(Pi);
-# Po = tf2ss(Po);
+Pi = tf2ss(Pi);
+Po = tf2ss(Po);
 
 #
 # Inner loop control design
@@ -97,7 +98,7 @@ phase = phase - 360;
 subplot(phaseh);
 semilogx([10^-4, 10^3], [-180, -180], 'k-')
 hold(True);
-semilogx(w, phase, 'b-')
+semilogx(w, np.squeeze(phase), 'b-')
 axis([10^-4, 10^3, -360, 0]);
 xlabel('Frequency [deg]'); ylabel('Phase [deg]');
 # set(gca, 'YTick', [-360, -270, -180, -90, 0]);
@@ -134,10 +135,10 @@ color = 'b';
 
 figure(9); 
 (Tvec, Yvec) = step(T, None, linspace(1, 20));
-plot(Tvec, Yvec); hold(True);
+plot(Tvec.T, Yvec.T); hold(True);
 
 (Tvec, Yvec) = step(Co*S, None, linspace(1, 20));
-plot(Tvec, Yvec);
+plot(Tvec.T, Yvec.T);
 
 figure(10); clf();
 (P, Z) = pzmap(T, Plot=True)

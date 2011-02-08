@@ -73,7 +73,7 @@ $Id: statepy 21 2010-06-06 17:29:42Z murrayrm $
 """
 
 from numpy import all, angle, any, array, concatenate, cos, delete, dot, \
-    empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, sin, zeros
+    empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, zeros
 from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
@@ -456,6 +456,8 @@ cannot take keywords.")
         # TODO: transfer function to state space conversion is still buggy!
         print "Warning: transfer function to state space conversion by td04ad \
 is still buggy!"
+        #print num
+        #print shape(num)
         ssout = td04ad(sys.inputs, sys.outputs, index, den, num)
     
         states = ssout[0]

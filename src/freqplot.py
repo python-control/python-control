@@ -177,7 +177,12 @@ def nyquist(syslist, omega=None):
     # Select a default range if none is provided
     if (omega == None):
         omega = default_frequency_range(syslist)
-
+    # Interpolate between wmin and wmax if a tuple or list are provided
+    elif (isinstance(omega,list) | isinstance(omega,tuple)):
+        # Only accept tuple or list of length 2
+        if (len(omega) != 2):
+            raise ValueError("Supported frequency arguments are (wmin,wmax) tuple or list, or frequency vector. ")
+        omega = np.logspace(np.log10(omega[0]),np.log10(omega[1]),num=50,endpoint=True,base=10.0)
     for sys in syslist:
         if (sys.inputs > 1 or sys.outputs > 1):
             #TODO: Add MIMO nyquist plots. 
