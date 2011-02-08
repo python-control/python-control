@@ -68,10 +68,11 @@ def unwrap(angle, period=2*pi):
     """
     wrap = 0;
     last = angle[0];
+
     for k in range(len(angle)):
         # See if we need to account for angle wrapping
         if (angle[k] - last > period/2):
-            wrap = -period
+           wrap = -period
         elif (last - angle[k] > period/2):
             wrap = period
 

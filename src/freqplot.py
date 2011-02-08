@@ -88,49 +88,55 @@ def bode(syslist, omega=None, dB=False, Hz=False):
     if (not getattr(syslist, '__iter__', False)):
         syslist = (syslist,)
 
-    # Select a default range if none is provided
-    if (omega == None):
-        omega = default_frequency_range(syslist)
-
     for sys in syslist:
-        # Get the magnitude and phase of the system
-        mag, phase, omega = sys.freqresp(omega)
-        if Hz: omega = omega/(2*sp.pi)
-        if dB: mag = 20*sp.log10(mag)
-        phase = unwrap(phase*180/sp.pi, 360)
-
-        # Get the dimensions of the current axis, which we will divide up
-        #! TODO: Not current implemented; just use subplot for now
-
-        # Magnitude plot
-        plt.subplot(211); 
-        if dB:
-            plt.semilogx(omega, mag)
-            plt.ylabel("Magnitude (dB)")
+        if (sys.inputs > 1 or sys.outputs > 1):
+            #TODO: Add MIMO bode plots. 
+            raise NotImplementedError("Bode is currently only implemented for SISO systems.")
         else:
-            plt.loglog(omega, mag)
-            plt.ylabel("Magnitude")
+            # Select a default range if none is provided
+            if (omega == None):
+                omega = default_frequency_range(syslist)
 
-        # Add a grid to the plot
-        plt.grid(True)
-        plt.grid(True, which='minor')
-        plt.hold(True);
+            # Get the magnitude and phase of the system
+            mag_tmp, phase_tmp, omega = sys.freqresp(omega)
+            mag = np.squeeze(mag_tmp)
+            phase = np.squeeze(phase_tmp)
+            if Hz: omega = omega/(2*sp.pi)
+            if dB: mag = 20*sp.log10(mag)
+            phase = unwrap(phase*180/sp.pi, 360)
 
-        # Phase plot
-        plt.subplot(212);
-        plt.semilogx(omega, phase)
-        plt.hold(True)
+            # Get the dimensions of the current axis, which we will divide up
+            #! TODO: Not current implemented; just use subplot for now
 
-        # Add a grid to the plot
-        plt.grid(True)
-        plt.grid(True, which='minor')
-        plt.ylabel("Phase (deg)")
+            # Magnitude plot
+            plt.subplot(211); 
+            if dB:
+                plt.semilogx(omega, mag)
+                plt.ylabel("Magnitude (dB)")
+            else:
+                plt.loglog(omega, mag)
+                plt.ylabel("Magnitude")
 
-        # Label the frequency axis
-        if Hz:
-            plt.xlabel("Frequency (Hz)")
-        else:
-            plt.xlabel("Frequency (rad/sec)")
+            # Add a grid to the plot
+            plt.grid(True)
+            plt.grid(True, which='minor')
+            plt.hold(True);
+
+            # Phase plot
+            plt.subplot(212);
+            plt.semilogx(omega, phase)
+            plt.hold(True)
+
+            # Add a grid to the plot
+            plt.grid(True)
+            plt.grid(True, which='minor')
+            plt.ylabel("Phase (deg)")
+
+            # Label the frequency axis
+            if Hz:
+                plt.xlabel("Frequency (Hz)")
+            else:
+                plt.xlabel("Frequency (rad/sec)")
 
     return (211, 212)
 
@@ -316,8 +322,8 @@ def default_frequency_range(syslist):
     features = np.array(())
     for sys in syslist:
         # Add new features to the list
-        features = np.concatenate((features, np.abs(sys.poles)))
-        features = np.concatenate((features, np.abs(sys.zeros)))
+        features = np.concatenate((features, np.abs(sys.pole())))
+        features = np.concatenate((features, np.abs(sys.zero())))
 
     # Get rid of poles and zeros at the origin
     features = features[features != 0];

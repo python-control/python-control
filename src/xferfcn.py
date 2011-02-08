@@ -413,8 +413,12 @@ implemented only for SISO systems.")
     def zero(self): 
         """Compute the zeros of a transfer function."""
         
-        raise NotImplementedError("TransferFunction.zero is not implemented \
-yet.")
+        if (self.inputs > 1 or self.outputs > 1):
+            raise NotImplementedError("TransferFunction.zero is currently \
+only implemented for SISO systems.")
+        else:
+            #for now, just give zeros of a SISO tf 
+            return roots(self.num[0][0])
 
     def feedback(self, other, sign=-1): 
         """Feedback interconnection between two LTI objects."""
