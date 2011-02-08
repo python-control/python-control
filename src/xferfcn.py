@@ -72,8 +72,8 @@ $Id: xferfcn.py 21 2010-06-06 17:29:42Z murrayrm $
 """
 
 # External function declarations
-from numpy import angle, array, empty, ndarray, ones, polyadd, polymul, \
-    polyval, roots, zeros
+from numpy import angle, array, empty, finfo, insert, ndarray, ones, polyadd, \
+    polymul, polyval, roots, sort, zeros
 from scipy.signal import lti
 from copy import deepcopy
 from slycot import tb04ad
@@ -470,32 +470,107 @@ only implemented for SISO functions.")
         >>> n, d = sys._common_den()
         
         computes the single denominator containing all the poles of sys.den, and
-        reports it as the array d.
-
-        The output numerator array n is modified to use the common denominator.
-        It is an sys.outputs-by-sys.inputs-by-[something] array.
+        reports it as the array d.  The output numerator array n is modified to
+        use the common denominator.  It is an sys.outputs-by-sys.inputs-by-
+        [something] array.
 
         """
          
-        # Preallocate some variables.  Start by figuring out the maximum number
-        # of numerator coefficients.
-        numcoeffs = 0
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                numcoeffs = max(numcoeffs, len(self.num[i][j]))
-        # The output 3-D adjusted numerator array.
-        num = empty((i, j, numcoeffs))
-        # A list to keep track of roots found as we scan self.den.
+        # A sorted list to keep track of cumulative poles found as we scan
+        # self.den.
         poles = []
-        # A 3-D list to keep track of common denominator roots not present in
+        # A 3-D list to keep track of common denominator poles not present in
         # the self.den[i][j].
         missingpoles = [[[] for j in range(self.inputs)] for i in
             range(self.outputs)]
 
-        for i in range(sys.outputs):
-            for j in range(sys.inputs):
-                currentpoles = roots(self.den[i][j])
-                #TODO: finish this
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                # A sorted array of the poles of this SISO denominator.
+                currentpoles = sort(roots(self.den[i][j]))
+
+                cp_ind = 0 # Index in currentpoles.
+                p_ind = 0 # Index in poles.
+
+                # Crawl along the list of current poles and the list of
+                # cumulative poles, until one of them reaches the end.  Keep in
+                # mind that both lists are always sorted.
+                while cp_ind < len(currentpoles) and p_ind < len(poles):
+                    if abs(currentpoles[cp_ind] - poles[p_ind]) < (10 *
+                        finfo(float).eps):
+                        # If the current element of both lists match, then we're
+                        # good.  Move to the next pair of elements.
+                        cp_ind += 1
+                    elif currentpoles[cp_ind] <  poles[p_ind]:
+                        # We found a pole in this transfer function that's not
+                        # in the list of cumulative poles.  Add it to the list.
+                        poles.insert(p_ind, currentpoles[cp_ind])
+                        # Now mark this pole as "missing" in all previous
+                        # denominators.
+                        for k in range(i):
+                            for m in range(self.inputs):
+                                # All previous rows.
+                                missingpoles[k][m].append(currentpoles[cp_ind])
+                        for m in range(j):
+                            # This row only.
+                            missingpoles[i][m].append(currentpoles[cp_ind])
+                        cp_ind += 1
+                    else:
+                        # There is a pole in the cumulative list of poles that
+                        # is not in our transfer function denominator.  Mark
+                        # this pole as "missing", and do not increment cp_ind.
+                        missingpoles[i][j].append(poles[p_ind])
+                    p_ind += 1
+
+                if cp_ind == len(currentpoles) and p_ind < len(poles):
+                    # If we finished scanning currentpoles first, then all the
+                    # remaining cumulative poles are missing poles.
+                    missingpoles[i][j].extend(poles[p_ind:])
+                elif cp_ind < len(currentpoles) and p_ind == len(poles):
+                    # If we finished scanning the cumulative poles first, then
+                    # all the reamining currentpoles need to be added to poles.
+                    poles.extend(currentpoles[cp_ind:])
+                    # Now mark these poles as "missing" in previous
+                    # denominators.
+                    for k in range(i):
+                        for m in range(self.inputs):
+                            # All previous rows.
+                            missingpoles[k][m].extend(currentpoles[cp_ind:])
+                    for m in range(j):
+                        # This row only.
+                        missingpoles[i][m].extend(currentpoles[cp_ind:])
+        
+        # Construct the common denominator.
+        den = 1.
+        for p in poles:
+            den = polymul(den, [1., -p])
+
+        # Modify the numerators so that they each take the common denominator.
+        num = deepcopy(self.num)
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                # The common denominator has leading coefficient 1.  Scale out
+                # the existing denominator's leading coefficient.
+                assert self.den[i][j][0], "The i = %i, j = %i denominator has \
+a zero leading coefficient." % (i, j)
+                num[i][j] = num[i][j] / self.den[i][j][0]
+                # Multiply in the missing poles.
+                for p in missingpoles[i][j]:
+                    num[i][j] = polymul(num[i][j], [1., -p])
+        # Find the largest numerator polynomial size.
+        largest = 0
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                largest = max(largest, len(num[i][j]))
+        # Pad all smaller numerator polynomials with zeros.
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                num[i][j] = insert(num[i][j], zeros(largest - len(num[i][j])),
+                    zeros(largest - len(num[i][j])))
+        # Finally, convert the numerator to a 3-D array.
+        num = array(num)
+
+        return num, den
 
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
