@@ -77,6 +77,112 @@ def hsvd(sys):
     # Return the Hankel singular values
     return hsv
 
+def modred(sys,ELIM,method):
+    """Model reduction of sys by eliminating the states in ELIM using a given method
+
+    Usage
+    =====
+    rsys = modred(sys,ELIM,method) 
+
+    Inputs
+    ======
+    sys : original system to reduce
+    ELIM : vector of states to eliminate
+    method : method of removing states in ELIM (truncate or matchdc)
+
+    Outputs
+    =======
+    rsys : a reduced order model 
+
+    """
+
+    #Check for ss system object, need a utility for this?
+
+    #TODO: Check for continous or discrete, only continuous supported right now
+        # if isCont():
+        #    dico = 'C'
+        # elif isDisc():
+        #    dico = 'D'
+        # else:
+    dico = 'C'
+
+    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
+        # or a method of the StateSpace class?
+    D,V = np.linalg.eig(sys.A)
+    for e in D:
+        if e.real >= 0:
+            raise ValueError, "Oops, the system is unstable!"
+
+    if method=='matchdc':
+        print "matchdc"
+    elif method=='truncate':
+        print "truncate"
+    else:
+        raise ValueError, "Oops, method is not supported!"
+
+    #Compute rhs using the Slycot routine XXXXXX 
+        #make sure Slycot is installed
+    #try:
+    #    from slycot import XXXXXX
+    #except ImportError:
+    #    raise ControlSlycot("can't find slycot module 'XXXXXX'")
+    rsys = 0.
+    return rsys
+
+def balred(sys,orders,elimination,method):
+    """Balanced reduced order model of sys of a given order.  States are eliminated based on Hankel singular value.
+
+    Usage
+    =====
+    rsys = balred(sys,order,elimination,method) 
+
+    Inputs
+    ======
+    sys : original system to reduce
+    orders : desired order of reduced order model (if a vector, returns a vector of systems)
+    elimination : if elimination is specified, use 'method'
+    method : method of removing states (truncate or matchdc)
+
+    Outputs
+    =======
+    rsys : a reduced order model 
+
+    """
+
+    #Check for ss system object, need a utility for this?
+
+    #TODO: Check for continous or discrete, only continuous supported right now
+        # if isCont():
+        #    dico = 'C'
+        # elif isDisc():
+        #    dico = 'D'
+        # else:
+    dico = 'C'
+
+    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
+        # or a method of the StateSpace class?
+    D,V = np.linalg.eig(sys.A)
+    for e in D:
+        if e.real >= 0:
+            raise ValueError, "Oops, the system is unstable!"
+   
+    if method=='matchdc':
+        print "matchdc"
+    elif method=='truncate':
+        print "truncate"
+    else:
+        raise ValueError, "Oops, method is not supported!"
+
+    #Compute rhs using the Slycot routine XXXXXX 
+        #make sure Slycot is installed
+    #try:
+    #    from slycot import XXXXXX
+    #except ImportError:
+    #    raise ControlSlycot("can't find slycot module 'XXXXXX'")
+    rsys = 0.
+    return rsys
+
+
 def era(YY,m,n,nin,nout,r):
     """Calculate an ERA model of order r based on the impulse-response data YY
 

@@ -267,11 +267,11 @@ def gram(sys,type):
     if type=='c':
         print "controllable"
         trana = 'T'
-        C = -sys.B*sys.B.transpose()
+        C = -np.dot(sys.B,sys.B.transpose())
     elif type=='o':
         print "observable"
         trana = 'N'
-        C = -sys.C.transpose()*sys.C
+        C = -np.dot(sys.C.transpose(),sys.C)
     else:
         raise ValueError, "Oops, neither observable, nor controllable!"
 
