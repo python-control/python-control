@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from xferfcn import xTransferFunction
+from xferfcn import TransferFunction
 import unittest
 
 class TestXferFcn(unittest.TestCase):
@@ -15,42 +15,42 @@ class TestXferFcn(unittest.TestCase):
     def testBadInputType(self):
         """Give the constructor invalid input types."""
         
-        self.assertRaises(TypeError, xTransferFunction, [[0., 1.], [2., 3.]],
+        self.assertRaises(TypeError, TransferFunction, [[0., 1.], [2., 3.]],
             [[5., 2.], [3., 0.]])
             
     def testInconsistentDimension(self):
         """Give the constructor a numerator and denominator of different
         sizes."""
         
-        self.assertRaises(ValueError, xTransferFunction, [[[1.]]],
+        self.assertRaises(ValueError, TransferFunction, [[[1.]]],
             [[[1.], [2., 3.]]])
-        self.assertRaises(ValueError, xTransferFunction, [[[1.]]],
+        self.assertRaises(ValueError, TransferFunction, [[[1.]]],
             [[[1.]], [[2., 3.]]])
-        self.assertRaises(ValueError, xTransferFunction, [[[1.]]],
+        self.assertRaises(ValueError, TransferFunction, [[[1.]]],
             [[[1.], [1., 2.]], [[5., 2.], [2., 3.]]])
     
     def testInconsistentColumns(self):
         """Give the constructor inputs that do not have the same number of
         columns in each row."""
         
-        self.assertRaises(ValueError, xTransferFunction, 1.,
+        self.assertRaises(ValueError, TransferFunction, 1.,
             [[[1.]], [[2.], [3.]]])
-        self.assertRaises(ValueError, xTransferFunction, [[[1.]], [[2.], [3.]]],
+        self.assertRaises(ValueError, TransferFunction, [[[1.]], [[2.], [3.]]],
             1.)
             
     def testZeroDenominator(self):
         """Give the constructor a transfer function with a zero denominator."""
         
-        self.assertRaises(ValueError, xTransferFunction, 1., 0.)
-        self.assertRaises(ValueError, xTransferFunction,
+        self.assertRaises(ValueError, TransferFunction, 1., 0.)
+        self.assertRaises(ValueError, TransferFunction,
             [[[1.], [2., 3.]], [[-1., 4.], [3., 2.]]],
             [[[1., 0.], [0.]], [[0., 0.], [2.]]])
             
     def testAddInconsistentDimension(self):
         """Add two transfer function matrices of different sizes."""
         
-        sys1 = xTransferFunction([[[1., 2.]]], [[[4., 5.]]])
-        sys2 = xTransferFunction([[[4., 3.]], [[1., 2.]]],
+        sys1 = TransferFunction([[[1., 2.]]], [[[4., 5.]]])
+        sys2 = TransferFunction([[[4., 3.]], [[1., 2.]]],
             [[[1., 6.]], [[2., 4.]]])
         self.assertRaises(ValueError, sys1.__add__, sys2)
         self.assertRaises(ValueError, sys1.__sub__, sys2)
@@ -60,21 +60,21 @@ class TestXferFcn(unittest.TestCase):
     def testMulInconsistentDimension(self):
         """Multiply two transfer function matrices of incompatible sizes."""
         
-        sys1 = xTransferFunction([[[1., 2.], [4., 5.]], [[2., 5.], [4., 3.]]],
+        sys1 = TransferFunction([[[1., 2.], [4., 5.]], [[2., 5.], [4., 3.]]],
             [[[6., 2.], [4., 1.]], [[6., 7.], [2., 4.]]])
-        sys2 = xTransferFunction([[[1.]], [[2.]], [[3.]]], 
+        sys2 = TransferFunction([[[1.]], [[2.]], [[3.]]], 
             [[[4.]], [[5.]], [[6.]]])
         self.assertRaises(ValueError, sys1.__mul__, sys2)
         self.assertRaises(ValueError, sys2.__mul__, sys1)
         self.assertRaises(ValueError, sys1.__rmul__, sys2)
         self.assertRaises(ValueError, sys2.__rmul__, sys1)
     
-    # Tests for xTransferFunction._truncatecoeff
+    # Tests for TransferFunction._truncatecoeff
     
     def testTruncateCoeff1(self):
         """Remove extraneous zeros in polynomial representations."""
         
-        sys1 = xTransferFunction([0., 0., 1., 2.], [[[0., 0., 0., 3., 2., 1.]]])
+        sys1 = TransferFunction([0., 0., 1., 2.], [[[0., 0., 0., 3., 2., 1.]]])
         
         np.testing.assert_array_equal(sys1.num, [[[1., 2.]]])
         np.testing.assert_array_equal(sys1.den, [[[3., 2., 1.]]])
@@ -82,17 +82,17 @@ class TestXferFcn(unittest.TestCase):
     def testTruncateCoeff2(self):
         """Remove extraneous zeros in polynomial representations."""
         
-        sys1 = xTransferFunction([0., 0., 0.], 1.)
+        sys1 = TransferFunction([0., 0., 0.], 1.)
         
         np.testing.assert_array_equal(sys1.num, [[[0.]]])
         np.testing.assert_array_equal(sys1.den, [[[1.]]])
     
-    # Tests for xTransferFunction.__neg__
+    # Tests for TransferFunction.__neg__
     
     def testNegScalar(self):
         """Negate a direct feedthrough system."""
         
-        sys1 = xTransferFunction(2., np.array([-3]))
+        sys1 = TransferFunction(2., np.array([-3]))
         sys2 = - sys1
         
         np.testing.assert_array_equal(sys2.num, [[[-2.]]])
@@ -101,7 +101,7 @@ class TestXferFcn(unittest.TestCase):
     def testNegSISO(self):
         """Negate a SISO system."""
         
-        sys1 = xTransferFunction([1., 3., 5], [1., 6., 2., -1.])
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1.])
         sys2 = - sys1
         
         np.testing.assert_array_equal(sys2.num, [[[-1., -3., -5.]]])
@@ -117,22 +117,22 @@ class TestXferFcn(unittest.TestCase):
         den1 = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
                 [[3., 0., .0], [2., -1., -1.], [1.]]]
                 
-        sys1 = xTransferFunction(num1, den1)
+        sys1 = TransferFunction(num1, den1)
         sys2 = - sys1
-        sys3 = xTransferFunction(num3, den1)
+        sys3 = TransferFunction(num3, den1)
         
         for i in range(sys3.outputs):
             for j in range(sys3.inputs):
                 np.testing.assert_array_equal(sys2.num[i][j], sys3.num[i][j])
                 np.testing.assert_array_equal(sys2.den[i][j], sys3.den[i][j])
                
-    # Tests for xTransferFunction.__add__
+    # Tests for TransferFunction.__add__
     
     def testAddScalar(self):
         """Add two direct feedthrough systems."""
         
-        sys1 = xTransferFunction(1., [[[1.]]])
-        sys2 = xTransferFunction(np.array([2.]), [1.])
+        sys1 = TransferFunction(1., [[[1.]]])
+        sys2 = TransferFunction(np.array([2.]), [1.])
         sys3 = sys1 + sys2
         
         np.testing.assert_array_equal(sys3.num, 3.)
@@ -141,8 +141,8 @@ class TestXferFcn(unittest.TestCase):
     def testAddSISO(self):
         """Add two SISO systems."""
         
-        sys1 = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
-        sys2 = xTransferFunction([[np.array([-1., 3.])]], [[[1., 0., -1.]]])
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys2 = TransferFunction([[np.array([-1., 3.])]], [[[1., 0., -1.]]])
         sys3 = sys1 + sys2
         
         # If sys3.num is [[[0., 20., 4., -8.]]], then this is wrong!
@@ -165,8 +165,8 @@ class TestXferFcn(unittest.TestCase):
         den3 = [[[3., -2., -4.], [1., 2., 3., 0., 0.], [-2., -1., 1.]],
                 [[-12., -9., 6., 0., 0.], [2., -1., -1.], [1., 0.]]]
                 
-        sys1 = xTransferFunction(num1, den1)
-        sys2 = xTransferFunction(num2, den2)
+        sys1 = TransferFunction(num1, den1)
+        sys2 = TransferFunction(num2, den2)
         sys3 = sys1 + sys2
 
         for i in range(sys3.outputs):
@@ -174,13 +174,13 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
     
-    # Tests for xTransferFunction.__sub__
+    # Tests for TransferFunction.__sub__
     
     def testSubScalar(self):
         """Add two direct feedthrough systems."""
         
-        sys1 = xTransferFunction(1., [[[1.]]])
-        sys2 = xTransferFunction(np.array([2.]), [1.])
+        sys1 = TransferFunction(1., [[[1.]]])
+        sys2 = TransferFunction(np.array([2.]), [1.])
         sys3 = sys1 - sys2
         
         np.testing.assert_array_equal(sys3.num, -1.)
@@ -189,8 +189,8 @@ class TestXferFcn(unittest.TestCase):
     def testSubSISO(self):
         """Add two SISO systems."""
         
-        sys1 = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
-        sys2 = xTransferFunction([[np.array([-1., 3.])]], [[[1., 0., -1.]]])
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys2 = TransferFunction([[np.array([-1., 3.])]], [[[1., 0., -1.]]])
         sys3 = sys1 - sys2
         sys4 = sys2 - sys1
         
@@ -215,8 +215,8 @@ class TestXferFcn(unittest.TestCase):
         den3 = [[[3., -2., -4], [1., 2., 3., 0., 0.], [1]],
                 [[-12., -9., 6., 0., 0.], [2., -1., -1], [1., 0.]]]
                 
-        sys1 = xTransferFunction(num1, den1)
-        sys2 = xTransferFunction(num2, den2)
+        sys1 = TransferFunction(num1, den1)
+        sys2 = TransferFunction(num2, den2)
         sys3 = sys1 - sys2
 
         for i in range(sys3.outputs):
@@ -224,13 +224,13 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
                
-    # Tests for xTransferFunction.__mul__
+    # Tests for TransferFunction.__mul__
     
     def testMulScalar(self):
         """Multiply two direct feedthrough systems."""
         
-        sys1 = xTransferFunction(2., [1.])
-        sys2 = xTransferFunction(1., 4.)
+        sys1 = TransferFunction(2., [1.])
+        sys2 = TransferFunction(1., 4.)
         sys3 = sys1 * sys2
         sys4 = sys1 * sys2
         
@@ -242,8 +242,8 @@ class TestXferFcn(unittest.TestCase):
     def testMulSISO(self):
         """Multiply two SISO systems."""
         
-        sys1 = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
-        sys2 = xTransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]])
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]])
         sys3 = sys1 * sys2
         sys4 = sys2 * sys1
         
@@ -273,8 +273,8 @@ class TestXferFcn(unittest.TestCase):
                   0., 0.]],
                 [[-48., 60., 84., -81., -45., 21., 9., 0., 0., 0., 0., 0., 0.]]]
         
-        sys1 = xTransferFunction(num1, den1)
-        sys2 = xTransferFunction(num2, den2)
+        sys1 = TransferFunction(num1, den1)
+        sys2 = TransferFunction(num2, den2)
         sys3 = sys1 * sys2
         
         for i in range(sys3.outputs):
@@ -282,13 +282,13 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
 
-    # Tests for xTransferFunction.__div__
+    # Tests for TransferFunction.__div__
     
     def testDivScalar(self):
         """Divide two direct feedthrough systems."""
         
-        sys1 = xTransferFunction(np.array([3.]), -4.)
-        sys2 = xTransferFunction(5., 2.)
+        sys1 = TransferFunction(np.array([3.]), -4.)
+        sys2 = TransferFunction(5., 2.)
         sys3 = sys1 / sys2
         
         np.testing.assert_array_equal(sys3.num, [[[6.]]])
@@ -297,8 +297,8 @@ class TestXferFcn(unittest.TestCase):
     def testDivSISO(self):
         """Divide two SISO systems."""
         
-        sys1 = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
-        sys2 = xTransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]])
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]])
         sys3 = sys1 / sys2
         sys4 = sys2 / sys1
         
@@ -307,12 +307,12 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, sys3.den)
         np.testing.assert_array_equal(sys4.den, sys3.num)
         
-    # Tests for xTransferFunction.evalfr.
+    # Tests for TransferFunction.evalfr.
 
     def testEvalFrSISO(self):
         """Evaluate the frequency response of a SISO system at one frequency."""
 
-        sys = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
 
         np.testing.assert_array_almost_equal(sys.evalfr(1.),
             np.array([[-0.5 - 0.5j]]))
@@ -326,20 +326,20 @@ class TestXferFcn(unittest.TestCase):
                [[1.], [4., 0.], [1., -4., 3.]]]
         den = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
                [[3., 0., .0], [2., -1., -1.], [1.]]]
-        sys = xTransferFunction(num, den)
+        sys = TransferFunction(num, den)
         resp = [[0.147058823529412 + 0.0882352941176471j, -0.75, 1.],
                 [-0.083333333333333, -0.188235294117647 - 0.847058823529412j,
                  -1. - 8.j]]
         
         np.testing.assert_array_almost_equal(sys.evalfr(2.), resp)
 
-    # Tests for xTransferFunction.freqresp.
+    # Tests for TransferFunction.freqresp.
 
     def testFreqRespSISO(self):
         """Evaluate the magnitude and phase of a SISO system at multiple
         frequencies."""
 
-        sys = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
 
         truemag = [[[4.63507337473906, 0.707106781186548, 0.0866592803995351]]]
         truephase = [[[-2.89596891081488, -2.35619449019234,
@@ -360,7 +360,7 @@ class TestXferFcn(unittest.TestCase):
                [[1.], [4., 0.], [1., -4., 3.]]]
         den = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
                [[3., 0., .0], [2., -1., -1.], [1.]]]
-        sys = xTransferFunction(num, den)
+        sys = TransferFunction(num, den)
         
         trueomega = [0.1, 1., 10.]
         truemag = [[[0.496287094505259, 0.307147558416976, 0.0334738176210382],
@@ -380,12 +380,12 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_equal(omega, trueomega)
 
-    # Tests for xTransferFunction.feedback.
+    # Tests for TransferFunction.feedback.
         
     def testFeedbackSISO(self):
         
-        sys1 = xTransferFunction([-1., 4.], [1., 3., 5.])
-        sys2 = xTransferFunction([2., 3., 0.], [1., -3., 4., 0])
+        sys1 = TransferFunction([-1., 4.], [1., 3., 5.])
+        sys2 = TransferFunction([2., 3., 0.], [1., -3., 4., 0])
 
         sys3 = sys1.feedback(sys2)
         sys4 = sys1.feedback(sys2, 1)

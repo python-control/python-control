@@ -47,6 +47,21 @@ import scipy as sp
 import xferfcn as tf
 import statesp as ss
 
+def series(sys1, sys2):
+    """Return the series connection sys1 * sys2 for --> sys2 --> sys1 -->."""
+    
+    return sys1 * sys2
+
+def parallel(sys1, sys2):
+    """Return the parallel connection sys1 + sys2."""
+    
+    return sys1 + sys2
+
+def negate(sys):
+    """Return the negative of a system."""
+    
+    return -sys;
+
 def feedback(sys1, sys2, sign=-1):
     """Feedback interconnection between two I/O systems.
 
@@ -79,11 +94,11 @@ def feedback(sys1, sys2, sign=-1):
        xferfcn.feedback."""
   
     # Check for correct input types.
-    if not isinstance(sys1, (int, long, float, complex, tf.xTransferFunction,
+    if not isinstance(sys1, (int, long, float, complex, tf.TransferFunction,
         ss.StateSpace)):
         raise TypeError("sys1 must be a TransferFunction or StateSpace object, \
 or a scalar.")
-    if not isinstance(sys2, (int, long, float, complex, tf.xTransferFunction,
+    if not isinstance(sys2, (int, long, float, complex, tf.TransferFunction,
         ss.StateSpace)):
         raise TypeError("sys2 must be a TransferFunction or StateSpace object, \
 or a scalar.")
@@ -91,7 +106,7 @@ or a scalar.")
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.
     if isinstance(sys1, (int, long, float, complex)):
-        if isinstance(sys2, tf.xTransferFunction):
+        if isinstance(sys2, tf.TransferFunction):
             sys1 = tf.convertToTransferFunction(sys1)
         elif isinstance(sys2, ss.StateSpace):
             sys1 = ss.convertToStateSpace(sys1)

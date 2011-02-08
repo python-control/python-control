@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from xferfcn import xTransferFunction
+from xferfcn import TransferFunction
 from statesp import StateSpace
 from bdalg import feedback
 import unittest
@@ -15,7 +15,7 @@ class TestFeedback(unittest.TestCase):
         """This contains some random LTI systems and scalars for testing."""
 
         # Two random SISO systems.
-        self.sys1 = xTransferFunction([1, 2], [1, 2, 3])
+        self.sys1 = TransferFunction([1, 2], [1, 2, 3])
         self.sys2 = StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
             [[1., 0.]], [[0.]])
         # Two random scalars.

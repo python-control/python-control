@@ -54,7 +54,7 @@ import bdalg as bd
 import statesp
 from lti2 import Lti2
 
-class xTransferFunction(Lti2):
+class TransferFunction(Lti2):
     """The TransferFunction class is derived from the Lti2 parent class.  The
     main data members are 'num' and 'den', which are 2-D lists of arrays
     containing MIMO numerator and denominator coefficients.  For example,
@@ -210,13 +210,13 @@ denominator." % (j + 1, i + 1))
             for j in range(self.inputs):
                 num[i][j] *= -1
         
-        return xTransferFunction(num, self.den)
+        return TransferFunction(num, self.den)
         
     def __add__(self, other):
         """Add two transfer functions (parallel connection)."""
         
         # Convert the second argument to a transfer function.
-        if not isinstance(other, xTransferFunction):
+        if not isinstance(other, TransferFunction):
             other = convertToTransferFunction(other, self.inputs, self.outputs)
 
         # Check that the input-output sizes are consistent.
@@ -236,7 +236,7 @@ second has %i." % (self.outputs, other.outputs))
                 num[i][j], den[i][j] = _addSISO(self.num[i][j], self.den[i][j],
                     other.num[i][j], other.den[i][j])
 
-        return xTransferFunction(num, den)
+        return TransferFunction(num, den)
  
     def __radd__(self, other): 
         """Add two transfer functions (parallel connection)."""
@@ -257,7 +257,7 @@ second has %i." % (self.outputs, other.outputs))
         """Multiply two transfer functions (serial connection)."""
         
         # Convert the second argument to a transfer function.
-        if not isinstance(other, xTransferFunction):
+        if not isinstance(other, TransferFunction):
             other = convertToTransferFunction(other, self.inputs, self.inputs)
             
         # Check that the input-output sizes are consistent.
@@ -285,7 +285,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                     num[i][j], den[i][j] = _addSISO(num[i][j], den[i][j],
                         num_summand[k], den_summand[k])
         
-        return xTransferFunction(num, den)
+        return TransferFunction(num, den)
 
     def __rmul__(self, other): 
         """Multiply two transfer functions (serial connection)."""
@@ -298,17 +298,17 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         
         if self.inputs > 1 or self.outputs > 1 or \
             other.inputs > 1 or other.outputs > 1:
-            raise NotImplementedError("xTransferFunction.__div__ is currently \
+            raise NotImplementedError("TransferFunction.__div__ is currently \
 implemented only for SISO systems.")
 
         # Convert the second argument to a transfer function.
-        if not isinstance(other, xTransferFunction):
+        if not isinstance(other, TransferFunction):
             other = convertToTransferFunction(other, 1, 1)
 
         num = sp.polymul(self.num[0][0], other.den[0][0])
         den = sp.polymul(self.den[0][0], other.num[0][0])
         
-        return xTransferFunction(num, den)
+        return TransferFunction(num, den)
        
     # TODO: Division of MIMO transfer function objects is quite difficult.
     def __rdiv__(self, other):
@@ -316,7 +316,7 @@ implemented only for SISO systems.")
         
         if self.inputs > 1 or self.outputs > 1 or \
             other.inputs > 1 or other.outputs > 1:
-            raise NotImplementedError("xTransferFunction.__rdiv__ is currently \
+            raise NotImplementedError("TransferFunction.__rdiv__ is currently \
 implemented only for SISO systems.")
 
         return other / self
@@ -371,7 +371,7 @@ implemented only for SISO systems.")
 
         if self.inputs > 1 or self.outputs > 1 or \
             other.inputs > 1 or other.outputs > 1:
-            raise NotImplementedError("xTransferFunction.feedback is currently \
+            raise NotImplementedError("TransferFunction.feedback is currently \
 only implemented for SISO functions.")
 
         num1 = self.num[0][0]
@@ -382,184 +382,12 @@ only implemented for SISO functions.")
         num = sp.polymul(num1, den2)
         den = sp.polyadd(sp.polymul(den2, den1), -sign * sp.polymul(num2, num1))
 
-        return xTransferFunction(num, den)
+        return TransferFunction(num, den)
 
         # For MIMO or SISO systems, the analytic expression is
         #     self / (1 - sign * other * self)
         # But this does not work correctly because the state size will be too
         # large.
-
-# This is the old TransferFunction class.  It will be superceded by the
-# xTransferFunction class (which will be renamed TransferFunction) when it is
-# completed.
-class TransferFunction(signal.lti):
-    """The TransferFunction class is used to represent linear
-    input/output systems via its transfer function.
-    """
-    # Constructor
-    def __init__(self, *args, **keywords):
-        # First initialize the parent object
-        signal.lti.__init__(self, *args, **keywords)
-
-        # Make sure that this is only a SISO function
-        if (self.inputs != 1 or self.outputs != 1):
-            raise NotImplementedError("MIMO transfer functions not supported")
-
-        # Now add a few more attributes
-        self.variable = 's'
-        
-    # Style to use for printing (similar to MATLAB)
-    def __str__(self):
-        labstr = ""
-        outstr = ""
-        for i in range(self.inputs):
-            for j in range(self.outputs):
-                # Create a label for the transfer function and extract
-                # numerator polynomial (depends on number of inputs/outputs)
-                if (self.inputs > 1 and self.outputs > 1):
-                    labstr = "H[] = "; lablen = 7;
-                    numstr = _tfpolyToString(self.num[i,j], self.variable);
-                elif (self.inputs > 1):
-                    labstr = "H[] = "; lablen = 7;
-                    numstr = _tfpolyToString(self.num[i], self.variable);
-                elif (self.outputs > 1):
-                    labstr = "H[] = "; lablen = 7;
-                    numstr = _tfpolyToString(self.num[j], self.variable);
-                else:
-                    labstr = ""; lablen = 0;
-                    numstr = _tfpolyToString(self.num, self.variable);
-
-                # Convert the (common) denominator polynomials to strings
-                denstr = _tfpolyToString(self.den, self.variable);
-
-                # Figure out the length of the separating line
-                dashcount = max(len(numstr), len(denstr))
-                dashes = labstr + '-' * dashcount
-
-                # Center the numerator or denominator
-                if (len(numstr) < dashcount):
-                    numstr = ' ' * \
-                        int(round((dashcount - len(numstr))/2) + lablen) + \
-                        numstr
-                if (len(denstr) < dashcount): 
-                    denstr = ' ' * \
-                        int(round((dashcount - len(denstr))/2) + lablen) + \
-                        denstr
-
-                outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
-        return outstr
-
-    # Negation of a transfer function
-    def __neg__(self):
-        """Negate a transfer function"""
-        return TransferFunction(-self.num, self.den)
-
-    # Subtraction (use addition)
-    def __sub__(self, other): 
-        """Subtract two transfer functions"""
-        return self + (-other)
-        
-    def __rsub__(self, other): 
-        """Subtract two transfer functions"""
-        return other + (-self)
-
-    # Addition of two transfer functions (parallel interconnection)
-    def __add__(self, sys):
-        """Add two transfer functions (parallel connection)"""
-        # Convert the second argument to a transfer function
-        other = convertToTransferFunction(sys)
-
-        # Compute the numerator and denominator of the sum
-        den = sp.polymul(self.den, other.den)
-        num = sp.polyadd(sp.polymul(self.num, other.den), \
-                         sp.polymul(other.num, self.den))
-
-        return TransferFunction(num, den)
-
-    # Reverse addition - just switch the order
-    def __radd__(self, other): 
-        """Add two transfer functions (parallel connection)"""
-        return self + other;
-
-    # Multiplication of two transfer functions (series interconnection)
-    def __mul__(self, sys):
-        """Multiply two transfer functions (serial connection)"""
-        # Make sure we have a transfer function (or convert to one)
-        other = convertToTransferFunction(sys)
-
-        # Compute the product of the transfer functions
-        num = sp.polymul(self.num, other.num)
-        den = sp.polymul(self.den, other.den)
-        return TransferFunction(num, den)
-
-    # Reverse multiplication - switch order (works for SISO)
-    def __rmul__(self, other): 
-        """Multiply two transfer functions (serial connection)"""
-        return self * other
-
-    # Division between transfer functions
-    def __div__(self, sys):
-        """Divide two transfer functions"""
-        other = convertToTransferFunction(sys);
-        return TransferFunction(sp.polymul(self.num, other.den),
-                                sp.polymul(self.den, other.num));
-
-    # Reverse division 
-    def __rdiv__(self, sys):
-        """Divide two transfer functions"""
-        other = convertToTransferFunction(sys);
-        return TransferFunction(sp.polymul(other.num, self.den),
-                                sp.polymul(other.den, self.num));
-
-    # Method for evaluating a transfer function at one frequency
-    def evalfr(self, freq):
-        """Evaluate a transfer function at a single frequency"""
-        return sp.polyval(self.num, freq*1j) / sp.polyval(self.den, freq*1j)
-
-    # Method for generating the frequency response of the system
-    def freqresp(self, omega):
-        """Evaluate a transfer function at a list of frequencies"""
-        # Convert numerator and denomintator to 1D polynomials
-        num = sp.poly1d(self.num)
-        den = sp.poly1d(self.den)
-
-        # Generate the frequency response at each frequency
-        fresp = map(lambda w: num(w*1j) / den(w*1j), omega)
-
-        mag = sp.sqrt(sp.multiply(fresp, sp.conjugate(fresp)));
-        phase = sp.angle(fresp)
-
-        return mag, phase, omega
-
-    # Compute poles and zeros
-    def poles(self): return sp.roots(self.den)
-    def zeros(self): return sp.roots(self.num)
-
-    # Feedback around a transfer function
-    def feedback(sys1, sys2, sign=-1): 
-        """Feedback interconnection between two transfer functions"""
-        # Get the numerator and denominator of the first system
-        if (isinstance(sys1, (int, long, float, complex))):
-            num1 = sys1; den1 = 1;
-        elif (isinstance(sys1, TransferFunction)):
-            num1 = sys1.num; den1 = sys1.den;
-        else:
-            raise TypeError
-
-        # Get the numerator and denominator of the second system
-        if (isinstance(sys2, (int, long, float, complex))):
-            num2 = sys2; den2 = 1;
-        elif (isinstance(sys2, TransferFunction)):
-            num2 = sys2.num; den2 = sys2.den;
-        else:
-            raise TypeError
-
-        # Compute sys1/(1 - sign*sys1*sys2)
-        num = sp.polymul(num1, den2);
-        den = sp.polysub(sp.polymul(den1, den2), sign * sp.polymul(num1, num2))
-
-        # Return the result as a transfer function
-        return TransferFunction(num, den)
 
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
@@ -622,7 +450,7 @@ def _addSISO(num1, den1, num2, den2):
 def convertToTransferFunction(sys, inputs=1, outputs=1):
     """Convert a system to transfer function form (if needed.)"""
 
-    if isinstance(sys, xTransferFunction):
+    if isinstance(sys, TransferFunction):
         return sys
     elif isinstance(sys, statesp.StateSpace):
         raise NotImplementedError("State space to transfer function conversion \
@@ -634,6 +462,6 @@ is not implemented yet.")
         for i in range(min(inputs, outputs)):
             num[i][i] = [sys]
         
-        return xTransferFunction(num, den)
+        return TransferFunction(num, den)
     else:
-        raise TypeError("Can't convert given type to xTransferFunction system.")
+        raise TypeError("Can't convert given type to TransferFunction system.")
