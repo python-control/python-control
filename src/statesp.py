@@ -195,7 +195,7 @@ class StateSpace(Lti2):
            # Check to make sure the dimensions are OK
            if (self.outputs != other.inputs):
                raise ValueError, "Number of first's outputs must match number \
-                                    of second's inputs."
+of second's inputs."
 
            # Concatenate the various arrays
            A = concatenate((
@@ -236,7 +236,7 @@ class StateSpace(Lti2):
         # Check to make sure the dimensions are OK
         if ((self.inputs != other.outputs) or (self.outputs != other.inputs)):
                 raise ValueError, "State space systems don't have compatible \
-                inputs/outputs for feedback."
+inputs/outputs for feedback."
 
         # note that if there is an algebraic loop then this matrix inversion
         # won't work

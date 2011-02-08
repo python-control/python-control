@@ -111,10 +111,31 @@ the same number of\nelements.")
         self.den = den
         Lti2.__init__(self, inputs, outputs)
         
+        self.truncatecoeff()
+        
     def __str__(self):
         """String representation of the transfer function."""
     
         pass
+    
+    def truncatecoeff(self):
+        """Remove extraneous zero coefficients from polynomials in numerator and
+        denominator matrices."""
+
+        data = [self.num, self.den]
+        
+        for p in range(len(data)):
+            for i in range(self.outputs):
+                for j in range(self.inputs):
+                    # Find the first nontrivial coefficient.
+                    k = 0
+                    while not data[p][i][j][k]:
+                        k += 1
+                    
+                    # Now truncate the trivial coefficients.
+                    data[p][i][j] = data[p][i][j][k:]
+                    
+        [self.num, self.den] = data
     
     def __neg__(self):
         """Negate a transfer function."""
@@ -128,16 +149,22 @@ the same number of\nelements.")
         if not isinstance(other, xTransferFunction):
             other = ss2tf(other)
 
+        # Check that the input-output sizes are consistent.
+        if self.inputs != other.inputs:
+            raise ValueError("The two systems to be added must have the same \
+input size.")
+        if self.outputs != other.outputs:
+            raise ValueError("The two systems to be added must have the same \
+output size.")
+
         # Preallocate the numerator and denominator of the sum.
         num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
         den = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                num[i][j] = sp.polyadd(
-                    sp.polymul(self.num[i][j], other.den[i][j]),
-                    sp.polymul(other.num[i][j], self.den[i][j]))
-                den[i][j] = sp.polymul(self.den[i][j], other.den[i][j])
+                num[i][j], den[i][j] = addSISO(self.num[i][j], self.den[i][j],
+                    other.num[i][j], other.den[i][j])
 
         return xTransferFunction(num, den)
  
@@ -156,10 +183,39 @@ the same number of\nelements.")
         
         return other + (-self)
 
-    def __mul__(self, sys):
+    def __mul__(self, other):
         """Multiply two transfer functions (serial connection)"""
         
-        pass
+        # Convert the second argument to a transfer function.
+        if not isinstance(other, xTransferFunction):
+            other = ss2tf(other)
+            
+        # Check that the input-output sizes are consistent.
+        if self.inputs != other.outputs:
+            raise ValueError("C = A * B: A must have the same number of \
+columns (inputs) as B has\nrows (outputs).")
+
+        inputs = other.inputs
+        outputs = self.outputs
+        
+        # Preallocate the numerator and denominator of the sum.
+        num = [[[0] for j in range(inputs)] for i in range(outputs)]
+        den = [[[0] for j in range(inputs)] for i in range(outputs)]
+        
+        # Temporary storage for the summands needed to find the (i, j)th element
+        # of the product.
+        num_summand = [[] for k in range(self.inputs)]
+        den_summand = [[] for k in range(self.inputs)]
+        
+        for i in range(outputs): # Iterate through rows of product.
+            for j in range(inputs): # Iterate through columns of product.
+                for k in range(self.inputs): # Multiply & add.
+                    num_summand[k] = sp.polymul(self.num[i][k], other.num[k][j])
+                    den_summand[k] = sp.polymul(self.den[i][k], other.den[k][j])
+                    num[i][j], den[i][j] = addSISO(num[i][j], den[i][j],
+                        num_summand[k], den_summand[k])
+        
+        return xTransferFunction(num, den)
 
     def __rmul__(self, other): 
         """Multiply two transfer functions (serial connection)"""
@@ -371,11 +427,6 @@ class TransferFunction(signal.lti):
         # Return the result as a transfer function
         return TransferFunction(num, den)
 
-def ss2tf(sys):
-    """Convert a state space object to a transfer function object."""
-
-    pass
-
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
 def _tfpolyToString(coeffs, var='s'):
@@ -424,3 +475,17 @@ def _tfpolyToString(coeffs, var='s'):
         else:
             thestr = newstr
     return thestr
+    
+def addSISO(num1, den1, num2, den2):
+    """Return num/den = num1/den1 + num2/den2, where each numerator and
+    denominator is a list of polynomial coefficients."""
+    
+    num = sp.polyadd(sp.polymul(num1, den2), sp.polymul(num2, den1))
+    den = sp.polymul(den1, den2)
+    
+    return num, den
+    
+def ss2tf(sys):
+    """Convert a state space object to a transfer function object."""
+
+    pass
