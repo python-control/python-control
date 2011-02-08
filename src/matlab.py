@@ -1,52 +1,57 @@
-# matlab.py - MATLAB emulation functions
-#
-# Author: Richard M. Murray
-# Date: 29 May 09
-# 
-# This file contains a number of functions that emulate some of the
-# functionality of MATLAB.  The intent of these functions is to
-# provide a simple interface to the python control systems library
-# (python-control) for people who are familiar with the MATLAB Control
-# Systems Toolbox (tm).  Most of the functions are just calls to
-# python-control functions defined elsewhere.  Use 'from
-# control.matlab import *' in python to include all of the functions
-# defined here.  Functions that are defined in other libraries that
-# have the same names as their MATLAB equivalents are automatically
-# imported here.
-#
-# Copyright (c) 2009 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-# 
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-# 
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-# 
-# $Id: matlab.py 33 2010-11-26 21:59:57Z murrayrm $
+"""matlab.py
+
+MATLAB emulation functions.
+
+This file contains a number of functions that emulate some of the
+functionality of MATLAB.  The intent of these functions is to
+provide a simple interface to the python control systems library
+(python-control) for people who are familiar with the MATLAB Control
+Systems Toolbox (tm).  Most of the functions are just calls to
+python-control functions defined elsewhere.  Use 'from
+control.matlab import *' in python to include all of the functions
+defined here.  Functions that are defined in other libraries that
+have the same names as their MATLAB equivalents are automatically
+imported here.
+
+Copyright (c) 2009 by California Institute of Technology
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the California Institute of Technology nor
+   the names of its contributors may be used to endorse or promote
+   products derived from this software without specific prior
+   written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
+OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+Author: Richard M. Murray
+Date: 29 May 09
+Revised: Kevin K. Chen, Dec 10
+
+$Id: matlab.py 33 2010-11-26 21:59:57Z murrayrm $
+
+"""
 
 # Libraries that we make use of 
 import scipy as sp              # SciPy library (used all over)
@@ -72,7 +77,7 @@ from pzmap import pzmap
 from statefbk import ctrb, obsv, gram, place, lqr
 from delay import pade
 
-__doc__ = """
+__doc__ += """
 The control.matlab module defines functions that are roughly the
 equivalents of those in the MATLAB Control Toolbox.  Items marked by a 
 '*' are currently implemented; those marked with a '-' are not planned
@@ -255,16 +260,44 @@ Additional functions
 * linspace      - generate a set of numbers that are linearly spaced
 * logspace      - generate a set of numbers that are logarithmically spaced
 * unwrap        - unwrap a phase angle to give a continuous curve
+
 """
 
 def ss(*args):
-    """Create a state space system.
+    """
+    Create a state space system.
 
-    Usage
-    =====
-    ss(A, B, C, D)
-    ss(sys)"""
-    
+    Parameters
+    ----------
+    A: numpy matrix or matrix-like object
+    B: numpy matrix or matrix-like object
+    C: numpy matrix or matrix-like object
+    D: numpy matrix or matrix-like object
+    sys: StateSpace or TransferFunction object
+    ss accepts a set of A, B, C, D matrices or sys.
+
+    Returns
+    -------
+    out: StateSpace object
+
+    Raises
+    ------
+    ValueError
+        if matrix sizes are not self-consistent
+
+    See Also
+    --------
+    tf
+    ss2tf
+    tf2ss
+
+    Examples
+    --------
+    >>> sys = ss(A, B, C, D) # Create a StateSpace object from these matrices.
+    >>> sys = ss(sys1) # Convert a TransferFunction to a StateSpace object.
+
+    """ 
+
     if len(args) == 4:
         return StateSpace(args[0], args[1], args[2], args[3])
     elif len(args) == 1:
@@ -275,20 +308,54 @@ def ss(*args):
             return tf2ss(sys)
         else:
             raise TypeError("ss(sys): sys must be a StateSpace or \
-TransferFunction object.")
+TransferFunction object.  It is %s." % type(sys))
     else:
         raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
 def tf(*args): 
-    """Create a transfer function system.
+    """
+    Create a transfer function system.
 
-    Usage
-    =====
-    tf(num, den)
-    tf(sys)
-    
-    num and den can be scalars or vectors for SISO systems, or lists of lists of
-    vectors for MIMO systems."""
+    Parameters
+    ----------
+    num: vector, or list of lists of vectors
+    den: vector, or list of lists of vectors
+    sys: StateSpace or TransferFunction object
+    tf accepts a num and den, or sys.
+
+    Returns
+    -------
+    out: TransferFunction object
+
+    Raises
+    ------
+    ValueError
+        if num and den have invalid or unequal dimensions
+    TypeError
+        if num or den are of incorrect type
+
+    See Also
+    --------
+    ss
+    ss2tf
+    tf2ss
+
+    Notes
+    --------
+    num[i][j] is the vector of polynomial coefficients of the transfer function
+    numerator from the (j+1)st output to the (i+1)st input.  den[i][j] works the
+    same way.
+
+    Examples
+    --------
+    >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
+    >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
+    >>> sys = tf(num, den)
+    The transfer function from the 2nd input to the 1st output is
+        (3s + 4) / (6s^2 + 5s + 4).
+    >>> sys = tf(sys1) # Convert a StateSpace to a TransferFunction object.
+
+    """
 
     if len(args) == 2:
        return TransferFunction(args[0], args[1])
@@ -300,37 +367,106 @@ def tf(*args):
             return sys
         else:
             raise TypeError("tf(sys): sys must be a StateSpace or \
-TransferFunction object.") 
+TransferFunction object.  It is %s." % type(sys)) 
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 def ss2tf(*args):
-    """Transform a state space system to a transfer function.
+    """
+    Transform a state space system to a transfer function.
     
-    Usage
-    =====
-    ss2tf(A, B, C, D)
-    ss2tf(sys) - sys should have attributes A, B, C, D"""
-    
+    Parameters
+    ----------
+    A: numpy matrix or matrix-like object
+    B: numpy matrix or matrix-like object
+    C: numpy matrix or matrix-like object
+    D: numpy matrix or matrix-like object
+    sys: StateSpace object
+    ss accepts a set of A, B, C, D matrices or a StateSpace object.
+
+    Returns
+    -------
+    out: TransferFunction object
+
+    Raises
+    ------
+    ValueError
+        if matrix sizes are not self-consistent, or if an invalid number of
+        arguments is passed in
+    TypeError
+        if sys is not a StateSpace object
+
+    See Also
+    --------
+    tf
+    ss
+    tf2ss
+
+    Examples
+    --------
+    >>> sys = ss2tf(A, B, C, D)
+    >>> sys = ss2tf(sys1) # Convert a StateSpace to a TransferFunction object.
+
+    """
+
     if len(args) == 4:
         # Assume we were given the A, B, C, D matrix
         return convertToTransferFunction(StateSpace(args[0], args[1], args[2],
             args[3]))
     elif len(args) == 1:
         sys = args[0]
-        if not isinstance(sys, StateSpace):
-            raise TypeError("ss2tf(sys): sys must be a StateSpace object.")
-        return convertToTransferFunction(sys)
+        if isinstance(sys, StateSpace):
+            return convertToTransferFunction(sys)
+        else:
+            raise TypeError("ss2tf(sys): sys must be a StateSpace object.  It \
+is %s." % type(sys))
     else:
         raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
 def tf2ss(*args):
-    """Transform a transfer function to a state space system.
-    
-    Usage
-    =====
-    tf2ss(num, den)
-    tf2ss(sys) - sys should be a system object (lti or TransferFunction)"""
+    """
+    Transform a transfer function to a state space system.
+
+    Parameters
+    ----------
+    num: vector, or list of lists of vectors
+    den: vector, or list of lists of vectors
+    sys: TransferFunction object
+    tf2ss accepts num and den, or sys.
+
+    Returns
+    -------
+    out: StateSpace object
+
+    Raises
+    ------
+    ValueError
+        if num and den have invalid or unequal dimensions, or if an invalid
+        number of arguments is passed in
+    TypeError
+        if num or den are of incorrect type, or if sys is not a TransferFunction
+        object
+
+    See Also
+    --------
+    ss
+    tf
+    ss2tf
+
+    Notes
+    --------
+    num[i][j] is the vector of polynomial coefficients of the transfer function
+    numerator from the (j+1)st output to the (i+1)st input.  den[i][j] works the
+    same way.
+
+    Examples
+    --------
+    >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
+    >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
+    >>> sys = tf2ss(num, den)
+    >>> sys = tf2ss(sys1) # Convert a TransferFunction to a StateSpace object.
+
+    """
 
     if len(args) == 2:
         # Assume we were given the num, den
@@ -459,10 +595,6 @@ def lsim(*args, **keywords):
       yout      response of the system
       xout      time evolution of the state vector
     """
-    sys = args[0]
-    ltiobjs = sys.returnScipySignalLti()
-    ltiobj = ltiobjs[0][0]
- 
     return sp.signal.lsim2(*args, **keywords)
 
 #! Redefine step to use lsim2 
@@ -483,18 +615,7 @@ def step(*args, **keywords):
       T         time values of the output
       yout      response of the system
     """
-    sys = args[0]
-    ltiobjs = sys.returnScipySignalLti()
-    ltiobj = ltiobjs[0][0]
-    newargs = []
-    newargs.append(ltiobj)
-    for i in range(1, len(args)):
-        newargs.append(args[i])
-    newargs = tuple(newargs)
-    print len(args)
-    print len(newargs)    
-
-    return sp.signal.step(*newargs, **keywords)
+    return sp.signal.step(*args, **keywords)
 
 # Redefine initial to use lsim2
 #! Not yet implemented (uses step for now)
@@ -514,10 +635,6 @@ def initial(*args, **keywords):
       T         time values of the output
       yout      response of the system
     """
-    sys = args[0]
-    ltiobjs = sys.returnScipySignalLti()
-    ltiobj = ltiobjs[0][0]
-
     return sp.signal.initial(*args, **keywords)
 
 # Redefine impulse to use initial()
@@ -538,9 +655,5 @@ def impulse(*args, **keywords):
       T         time values of the output
       yout      response of the system
     """
-    sys = args[0]
-    ltiobjs = sys.returnScipySignalLti()
-    ltiobj = ltiobjs[0][0]
-
-    return sp.signal.impulse(ltiobj, **keywords)
+    return sp.signal.impulse(*args, **keywords)
 

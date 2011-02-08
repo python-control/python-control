@@ -1,67 +1,104 @@
-# stateSpace.py - state space class for control systems library
-#
-# Author: Richard M. Murray
-# Date: 24 May 09
-# 
-# This file contains the StateSpace class, which is used to represent
-# linear systems in state space.  This is the primary representation
-# for the control system library.
-#
-# Copyright (c) 2010 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-# 
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-# 
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-# 
-# $Id: statesp.py 21 2010-06-06 17:29:42Z murrayrm $
+"""stateSpace.py
 
-import scipy as sp
-from scipy import concatenate, zeros
-from numpy.linalg import solve
-import xferfcn
+State space representation and functions.
+
+This file contains the StateSpace class, which is used to represent
+linear systems in state space.  This is the primary representation
+for the python-control library.
+
+Routines in this module:
+
+StateSpace.__init__
+StateSpace.__str__
+StateSpace.__neg__
+StateSpace.__add__
+StateSpace.__radd__
+StateSpace.__sub__
+StateSpace.__rsub__
+StateSpace.__mul__
+StateSpace.__rmul__
+StateSpace.__div__
+StateSpace.__rdiv__
+StateSpace.evalfr
+StateSpace.freqresp
+StateSpace.pole
+StateSpace.zero
+StateSpace.feedback
+StateSpace.returnScipySignalLti
+convertToStateSpace
+rss_generate
+
+Copyright (c) 2010 by California Institute of Technology
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the California Institute of Technology nor
+   the names of its contributors may be used to endorse or promote
+   products derived from this software without specific prior
+   written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
+OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+Author: Richard M. Murray
+Date: 24 May 09
+Revised: Kevin K. Chen, Dec 10
+
+$Id: statepy 21 2010-06-06 17:29:42Z murrayrm $
+
+"""
+
+from numpy import angle, any, concatenate, cos, dot, empty, exp, eye, pi, \
+    poly, poly1d, matrix, roots, sin, zeros
+from numpy.random import rand, randn
+from numpy.linalg import inv, det, solve
+from numpy.linalg.linalg import LinAlgError
+from scipy.signal import lti
 from lti import Lti
+import xferfcn
 
 class StateSpace(Lti):
-    """The StateSpace class is used throughout the python-control library to
-    represent systems in state space form.  This class is derived from the Lti2
-    base class."""
+
+    """The StateSpace class represents state space instances and functions.
+    
+    The StateSpace class is used throughout the python-control library to
+    represent systems in state space form.  This class is derived from the Lti
+    base class.
+    
+    The main data members are the A, B, C, and D matrices.  The class also keeps
+    track of the number of states (i.e., the size of A).
+    
+    """
 
     def __init__(self, A=0, B=0, C=0, D=1): 
-        """StateSpace constructor.  The default constructor is the unit gain
-        direct feedthrough system."""
+        """Construct a state space object.  The default is unit static gain."""
         
         # Here we're going to convert inputs to matrices, if the user gave a
         # non-matrix type.
         matrices = [A, B, C, D] 
         for i in range(len(matrices)):
             # Convert to matrix first, if necessary.
-            matrices[i] = sp.matrix(matrices[i])     
+            matrices[i] = matrix(matrices[i])     
         [A, B, C, D] = matrices
 
         self.A = A
@@ -85,7 +122,7 @@ class StateSpace(Lti):
             raise ValueError("D must have the same row size as C.")
 
     def __str__(self):
-        """Style to use for printing."""
+        """String representation of the state space."""
 
         str =  "A = " + self.A.__str__() + "\n\n"
         str += "B = " + self.B.__str__() + "\n\n"
@@ -101,17 +138,18 @@ class StateSpace(Lti):
 
     # Addition of two transfer functions (parallel interconnection)
     def __add__(self, other):
-        """Add two state space systems."""
+        """Add two LTI systems (parallel connection)."""
         
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just adding a scalar; put it in the D matrix
             A, B, C = self.A, self.B, self.C;
             D = self.D + other;
-
         else:
+            other = convertToStateSpace(other)
+
             # Check to make sure the dimensions are OK
-            if ((self.inputs != other.inputs) or \
+            if ((self.inputs != other.inputs) or 
                     (self.outputs != other.outputs)):
                 raise ValueError, "Systems have different shapes."
 
@@ -125,52 +163,59 @@ class StateSpace(Lti):
             B = concatenate((self.B, other.B), axis=0)
             C = concatenate((self.C, other.C), axis=1)
             D = self.D + other.D
+
         return StateSpace(A, B, C, D)
 
     # Reverse addition - just switch the arguments
     def __radd__(self, other): 
-        """Add two state space systems."""
+        """Reverse add two LTI systems (parallel connection)."""
         
-        return self.__add__(other)
+        return self + other
 
     # Subtraction of two transfer functions (parallel interconnection)
     def __sub__(self, other):
-        """Subtract two state space systems."""
+        """Subtract two LTI systems."""
         
-        return self.__add__(-other)
+        return self + (-other)
+
+    def __rsub__(self, other):
+        """Reverse subtract two LTI systems."""
+
+        return other + (-self)
 
     # Multiplication of two transfer functions (series interconnection)
     def __mul__(self, other):
-        """Serial interconnection between two state space systems."""
+        """Multiply two LTI objects (serial connection)."""
         
         # Check for a couple of special cases
         if isinstance(other, (int, long, float, complex)):
             # Just multiplying by a scalar; change the output
-            A, B = self.A, self.B;
-            C = self.C * other;
-            D = self.D * other;
+            A, B = self.A, self.B
+            C = self.C * other
+            D = self.D * other
         else:
-           # Check to make sure the dimensions are OK
-           if (self.outputs != other.inputs):
-               raise ValueError, "Number of first's outputs must match number \
-of second's inputs."
+            other = convertToStateSpace(other)
 
-           # Concatenate the various arrays
-           A = concatenate(
-            (concatenate((other.A, zeros((other.A.shape[0], self.A.shape[1]))), 
-                axis=1),
-             concatenate((self.B * other.C, self.A), axis=1)),
-            axis=0)
-           B = concatenate((other.B, self.B * other.D), axis=0)
-           C = concatenate((self.D * other.C, self.C),axis=1)
-           D = self.D * other.D
+            # Check to make sure the dimensions are OK
+            if self.inputs != other.outputs:
+                raise ValueError("C = A * B: A has %i column(s) (input(s)), \
+but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
+
+            # Concatenate the various arrays
+            A = concatenate(
+                (concatenate((other.A, zeros((other.A.shape[0], self.A.shape[1]))), 
+                 axis=1),
+                concatenate((self.B * other.C, self.A), axis=1)), axis=0)
+            B = concatenate((other.B, self.B * other.D), axis=0)
+            C = concatenate((self.D * other.C, self.C),axis=1)
+            D = self.D * other.D
 
         return StateSpace(A, B, C, D)
 
     # Reverse multiplication of two transfer functions (series interconnection)
     # Just need to convert LH argument to a state space object
     def __rmul__(self, other):
-        """Serial interconnection between two state space systems"""
+        """Reverse multiply two LTI objects (serial connection)."""
         
         # Check for a couple of special cases
         if isinstance(other, (int, long, float, complex)):
@@ -183,11 +228,61 @@ of second's inputs."
         else:
             raise TypeError("can't interconnect systems")
 
+    # TODO: __div__ and __rdiv__ are not written yet.
+    def __div__(self, other):
+        """Divide two LTI systems."""
+
+        raise NotImplementedError("StateSpace.__div__ is not implemented yet.")
+
+    def __rdiv__(self, other):
+        """Reverse divide two LTI systems."""
+
+        raise NotImplementedError("StateSpace.__rdiv__ is not implemented yet.")
+
+    def evalfr(self, omega):
+        """Evaluate a SS system's transfer function at a single frequency.
+
+        self.evalfr(omega) returns the value of the transfer function matrix with
+        input value s = i * omega.
+
+        """
+        
+        fresp = self.C * solve(omega * 1.j * eye(self.states) - self.A,
+            self.B) + self.D
+
+        return fresp
+
+    # Method for generating the frequency response of the system
+    def freqresp(self, omega=None):
+        """Evaluate the system's transfer func. at a list of ang. frequencies.
+
+        mag, phase, omega = self.freqresp(omega)
+
+        reports the value of the magnitude, phase, and angular frequency of the
+        system's transfer function matrix evaluated at s = i * omega, where
+        omega is a list of angular frequencies.
+
+        """
+        
+        # Preallocate outputs.
+        numfreq = len(omega)
+        mag = empty((self.outputs, self.inputs, numfreq))
+        phase = empty((self.outputs, self.inputs, numfreq))
+        fresp = empty((self.outputs, self.inputs, numfreq), dtype=complex)
+
+        for k in range(numfreq):
+            fresp[:, :, k] = self.evalfr(omega[k])
+
+        mag = abs(fresp)
+        phase = angle(fresp)
+
+        return mag, phase, omega
+
     # Compute poles and zeros
     def pole(self):
         """Compute the poles of a state space system."""
 
-        return sp.roots(sp.poly(self.A))
+        return roots(poly(self.A))
 
     def zero(self): 
         """Compute the zeros of a state space system."""
@@ -196,55 +291,24 @@ of second's inputs."
             raise NotImplementedError("StateSpace.zeros is currently \
 implemented only for SISO systems.")
 
-        den = sp.poly1d(sp.poly(self.A))
+        den = poly1d(poly(self.A))
         # Compute the numerator based on zeros
         #! TODO: This is currently limited to SISO systems
-        num = sp.poly1d(\
-            sp.poly(self.A - sp.dot(self.B, self.C)) + (self.D[0, 0] - 1) * den)
+        num = poly1d(\
+            poly(self.A - dot(self.B, self.C)) + (self.D[0, 0] - 1) * den)
 
-        return (sp.roots(num))
-
-    def evalfr(self, freq):
-        """Method for evaluating a system at one frequency."""
-        
-        fresp = self.C * solve(freq * 1.j * sp.eye(self.states) - self.A,
-            self.B) + self.D
-        return fresp
-
-    # Method for generating the frequency response of the system
-    def freqresp(self, omega=None):
-        """Compute the response of a system to a list of frequencies."""
-        
-        # Preallocate outputs.
-        numfreq = len(omega)
-        mag = sp.empty((self.outputs, self.inputs, numfreq))
-        phase = sp.empty((self.outputs, self.inputs, numfreq))
-        fresp = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
-
-        for k in range(numfreq):
-            fresp[:, :, k] = self.evalfr(omega[k])
-
-        mag = abs(fresp)
-        phase = sp.angle(fresp)
-
-        return mag, phase, omega
+        return (roots(num))
 
     # Feedback around a state space system
     def feedback(self, other, sign=-1):
-        """Feedback interconnection between two state space systems."""
-        
-        # Check for special cases
-        if (isinstance(other, (int, long, float, complex))):
-            # Scalar feedback, create state space system that is this case
-            other = StateSpace([[0]], [[0]], [[0]], [[ other ]])
+        """Feedback interconnection between two LTI systems."""
+ 
+        other = convertToStateSpace(other)
 
         # Check to make sure the dimensions are OK
         if ((self.inputs != other.outputs) or (self.outputs != other.inputs)):
                 raise ValueError, "State space systems don't have compatible \
 inputs/outputs for feedback."
-
-        from numpy.linalg import inv, det
-        from numpy import eye
 
         A1 = self.A
         B1 = self.B
@@ -276,16 +340,15 @@ inputs/outputs for feedback."
         return StateSpace(A, B, C, D)
 
     def returnScipySignalLti(self):
-        """Return a list of a list of scipy.signal.lti objects for a MIMO
-        system.  For instance,
+        """Return a list of a list of scipy.signal.lti objects.
+
+        For instance,
 
         >>> out = ssobject.returnScipySignalLti()
         >>> out[3][5]
 
         is a signal.scipy.lti object corresponding to the transfer function from
         the 6th input to the 4th output."""
-
-        from scipy.signal import lti
 
         # Preallocate the output.
         out = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
@@ -298,31 +361,39 @@ inputs/outputs for feedback."
         return out
 
 def convertToStateSpace(sys, inputs=1, outputs=1):
-    """Convert a system to state space form (if needed).  If sys is a scalar,
-    then the number of inputs and outputs can be specified manually."""
+    """Convert a system to state space form (if needed).
+
+    If sys is already a state space, then it is returned.  If sys is a transfer
+    function object, then it is converted to a state space and returned.  If sys
+    is a scalar, then the number of inputs and outputs can be specified
+    manually.
+    
+    """
     
     if isinstance(sys, StateSpace):
         # Already a state space system; just return it
         return sys
     elif isinstance(sys, xferfcn.TransferFunction):
+        # TODO: Wrap SLICOT to do transfer function to state space conversion.
         raise NotImplementedError("Transfer function to state space conversion \
 is not implemented yet.")
     elif (isinstance(sys, (int, long, float, complex))):
         # Generate a simple state space system of the desired dimension
         # The following Doesn't work due to inconsistencies in ltisys:
-        #   return StateSpace([[]], [[]], [[]], sp.eye(outputs, inputs))
+        #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), 
-            sys * sp.eye(outputs, inputs))
+            sys * eye(outputs, inputs))
     else:
         raise TypeError("Can't convert given type to StateSpace system.")
     
 def rss_generate(states, inputs, outputs, type):
-    """This does the actual random state space generation expected from rss and
-    drss.  type is 'c' for continuous systems and 'd' for discrete systems."""
-
-    import numpy
-    from numpy.random import rand, randn
+    """Generate a random state space.
     
+    This does the actual random state space generation expected from rss and
+    drss.  type is 'c' for continuous systems and 'd' for discrete systems.
+    
+    """
+ 
     # Probability of repeating a previous root.
     pRepeat = 0.05
     # Probability of choosing a real root.  Note that when choosing a complex
@@ -337,7 +408,7 @@ def rss_generate(states, inputs, outputs, type):
     pDzero = 0.5
 
     # Make some poles for A.  Preallocate a complex array.
-    poles = numpy.zeros(states) + numpy.zeros(states) * 0.j
+    poles = zeros(states) + zeros(states) * 0.j
     i = 0
 
     while i < states:
@@ -355,24 +426,24 @@ def rss_generate(states, inputs, outputs, type):
         elif rand() < pReal or i == states - 1:
             # No-oscillation pole.
             if type == 'c':
-                poles[i] = -sp.exp(randn()) + 0.j
+                poles[i] = -exp(randn()) + 0.j
             elif type == 'd':
                 poles[i] = 2. * rand() - 1.
             i += 1
         else:
             # Complex conjugate pair of oscillating poles.
             if type == 'c':
-                poles[i] = complex(-sp.exp(randn()), 3. * sp.exp(randn()))
+                poles[i] = complex(-exp(randn()), 3. * exp(randn()))
             elif type == 'd':
                 mag = rand()
-                phase = 2. * numpy.pi * rand()
-                poles[i] = complex(mag * numpy.cos(phase), 
-                    mag * numpy.sin(phase))
+                phase = 2. * pi * rand()
+                poles[i] = complex(mag * cos(phase), 
+                    mag * sin(phase))
             poles[i+1] = complex(poles[i].real, -poles[i].imag)
             i += 2
 
     # Now put the poles in A as real blocks on the diagonal.
-    A = numpy.zeros((states, states))
+    A = zeros((states, states))
     i = 0
     while i < states:
         if poles[i].imag == 0:
@@ -387,9 +458,9 @@ def rss_generate(states, inputs, outputs, type):
     while True:
         T = randn(states, states)
         try:
-            A = numpy.dot(solve(T, A), T) # A = T \ A * T
+            A = dot(solve(T, A), T) # A = T \ A * T
             break
-        except numpy.linalg.linalg.LinAlgError:
+        except LinAlgError:
             # In the unlikely event that T is rank-deficient, iterate again.
             pass
 
@@ -401,14 +472,14 @@ def rss_generate(states, inputs, outputs, type):
     # Make masks to zero out some of the elements.
     while True:
         Bmask = rand(states, inputs) < pBCmask 
-        if sp.any(Bmask): # Retry if we get all zeros.
+        if any(Bmask): # Retry if we get all zeros.
             break
     while True:
         Cmask = rand(outputs, states) < pBCmask
-        if sp.any(Cmask): # Retry if we get all zeros.
+        if any(Cmask): # Retry if we get all zeros.
             break
     if rand() < pDzero:
-        Dmask = numpy.zeros((outputs, inputs))
+        Dmask = zeros((outputs, inputs))
     else:
         Dmask = rand(outputs, inputs) < pDmask
 
