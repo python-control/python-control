@@ -27,10 +27,10 @@ class TestConvert(unittest.TestCase):
                     print "sys1:\n", sys
                     sys2 = matlab.tf(sys)
                     print "sys2:\n", sys2
-                    sys3 = matlab.ss(sys2)
-                    print "sys3:\n", sys3
-                    sys4 = matlab.tf(sys3)
-                    print "sys4:\n", sys4
+                    #sys3 = matlab.ss(sys2)
+                    #print "sys3:\n", sys3
+                    #sys4 = matlab.tf(sys3)
+                    #print "sys4:\n", sys4
 
 if __name__ == "__main__":
     unittest.main()

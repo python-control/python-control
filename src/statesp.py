@@ -437,7 +437,6 @@ cannot take keywords.")
         # Repeat the common denominator along the rows.
         den = array([den for i in range(sys.outputs)])
 
-        print "outputs = %g\n" % sys.outputs
         ssout = td04ad(sys.inputs, sys.outputs, index, den, num)
 
         states = ssout[0]
