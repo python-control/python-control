@@ -42,46 +42,25 @@
 # $Id: statesp.py 21 2010-06-06 17:29:42Z murrayrm $
 
 import scipy as sp
-import scipy.signal as signal
-import xferfcn
 from scipy import concatenate, zeros
-
-class Lti2:
-    """The Lti2 is a parent class to the StateSpace and TransferFunction child
-    classes.  It only contains the number of inputs and outputs, but this can be
-    expanded in the future."""
-    
-    def __init__(self, inputs=1, outputs=1):
-        # Data members common to StateSpace and TransferFunction.
-        self.inputs = inputs
-        self.outputs = outputs
+import xferfcn
+from lti2 import Lti2
 
 class StateSpace(Lti2):
     """The StateSpace class is used throughout the python-control library to
     represent systems in state space form.  This class is derived from the Lti2
     base class."""
 
-    def __init__(self, A, B, C, D): 
-        # Here we're going to convert inputs to matrices, if the user gave a non
-        # 2-D array or matrix type.
-        matrices = [A, B, C, D]
+    def __init__(self, A=0, B=0, C=0, D=1): 
+        """StateSpace constructor.  The default constructor is the unit gain
+        direct feedthrough system."""
+        
+        # Here we're going to convert inputs to matrices, if the user gave a
+        # non-matrix type.
+        matrices = [A, B, C, D] 
         for i in range(len(matrices)):
-            if (isinstance(matrices[i], (int, long, float, complex))):
-                # Convert scalars to matrices, if necessary.
-                matrices[i] = sp.matrix(matrices[i])
-            elif isinstance(matrices[i], sp.ndarray):
-                # Convert 0- or 1-D arrays to matrices, if necessary.
-                if len(matrices[i].shape) < 2:
-                    matrices[i] = sp.matrix(matrices[i])
-                elif len(matrices[i].shape) == 2:
-                    # If we're already a 2-D array or a matrix, then perfect!
-                    pass
-                else:
-                    raise ValueError("A, B, C, and D cannot have > 2 \
-                    dimensions.")
-            else:
-                # If the user gave us a non-numeric type.
-                raise ValueError("A, B, C, and D must be arrays or matrices.")
+            # Convert to matrix first, if necessary.
+            matrices[i] = sp.matrix(matrices[i])     
         [A, B, C, D] = matrices
 
         self.A = A

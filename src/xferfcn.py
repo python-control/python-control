@@ -51,6 +51,68 @@ import scipy as sp
 import scipy.signal as signal
 import bdalg as bd
 import statesp
+from lti2 import Lti2
+
+class xTransferFunction(Lti2):
+    """The TransferFunction class is derived from the Lti2 parent class.  The
+    main data members are 'num' and 'den', which are 3-D numpy arrays of
+    MIMO numerator and denominator coefficients.  For instance,
+    
+    >>> num[2, 5] = numpy.array([1, 4, 8])
+    
+    means that the numerator of the transfer function from the 6th input to the
+    3rd output is set to s^2 + 4s + 8.
+    
+    Note that numpy requires all polynomials in within an array to have the same
+    order.  Be sure to pad leading coefficients with 0 as necessary."""
+    
+    def __init__(self, num=sp.array([[[1.]]]), den=sp.array([[[1.]]])):
+        """This is the constructor.  The default transfer function is 1 (unit
+        gain direct feedthrough)."""
+        
+        # Make num and den into 3-d numpy arrays, if necessary.
+        data = [num, den]
+        for i in range(len(data)):
+            if isinstance(data[i], (int, long, float, complex)):
+                # Convert scalar to 3-d array.
+                data[i] = sp.array([[[data[i]]]])
+            elif isinstance(data[i], sp.ndarray):
+                if data[i].ndim == 0:
+                    # Convert scalar to 3-d array.
+                    data[i] = sp.array([[[data[i]]]])
+                elif data[i].ndim == 1:
+                    # Convert SISO transfer function polynomial to 3-d array.
+                    data[i] = sp.array([[data[i]]])
+                elif data[i].ndim == 3:
+                    # We already have a MIMO system.
+                    pass
+                else:
+                    # If the user passed in a anything else, then it's unclear
+                    # what the meaning is.
+                    raise ValueError("The numerator and denominator inputs \
+                    must be scalars or vectors (for SISO), or 3-d arrays (for \
+                    MIMO).")
+        [num, den] = data
+        
+        print num
+        print den
+        
+        inputs = num.shape[1]
+        outputs = num.shape[0]
+        
+        if inputs != den.shape[1]:
+            raise ValueError("The numerator and denominator matrices must have \
+            the same column (input) size.")
+        if outputs != den.shape[0]:
+            raise ValueError("The numerator and denominator matrices must have \
+            the same row (output) size.")
+        
+        self.num = num
+        self.den = den
+        Lti2.__init__(self, inputs, outputs)
+        
+        print self.inputs
+        print self.outputs
 
 class TransferFunction(signal.lti):
     """The TransferFunction class is used to represent linear
