@@ -266,7 +266,6 @@ def gram(sys,type):
     >>> Wo = gram(sys,'o')
 
     """
-
     #Check for ss system object, need a utility for this?
 
     #TODO: Check for continous or discrete, only continuous supported right now
@@ -283,7 +282,6 @@ def gram(sys,type):
     for e in D:
         if e.real >= 0:
             raise ValueError, "Oops, the system is unstable!"
-
     if type=='c':
         trana = 'T'
         C = -np.dot(sys.B,sys.B.transpose())

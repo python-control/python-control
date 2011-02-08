@@ -63,5 +63,16 @@ class TestStatefbk(unittest.TestCase):
         Wo = gram(sys,'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
+    def testGramWo2(self):
+        A = np.matrix("1. -2.; 3. -4.")
+        B = np.matrix("5.; 7.")
+        C = np.matrix("6. 8.")
+        D = np.matrix("9.")
+        sys = ss(A,B,C,D)
+        Wotrue = np.matrix("198. -72.; -72. 44.")
+        Wo = gram(sys,'o')
+        np.testing.assert_array_almost_equal(Wo, Wotrue)
+
+
 if __name__ == '__main__':
     unittest.main()

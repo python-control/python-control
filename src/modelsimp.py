@@ -72,10 +72,9 @@ def hsvd(sys):
     >>> H = hsvd(sys)
 
     """
-
+    sys2 = StateSpace(sys.A,sys.B,sys.C,sys.D)
     Wc = gram(sys,'c')
-    Wo = gram(sys,'o')
-
+    Wo = gram(sys2,'o')
     WoWc = np.dot(Wo, Wc)
     w, v = np.linalg.eig(WoWc)
 
