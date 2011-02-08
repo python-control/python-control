@@ -48,10 +48,6 @@
 
 # External function declarations
 import scipy as sp
-import scipy.signal as signal
-import copy
-import bdalg as bd
-import statesp
 from lti2 import Lti2
 
 class TransferFunction(Lti2):
@@ -67,7 +63,7 @@ class TransferFunction(Lti2):
     def __init__(self, num=1, den=1):
         """This is the constructor.  The default transfer function is 1 (unit
         gain direct feedthrough)."""
-
+ 
         # Make num and den into lists of lists of arrays, if necessary.  Beware:
         # this is a shallow copy!  This should be okay, but be careful.
         data = [num, den]
@@ -205,6 +201,8 @@ denominator." % (j + 1, i + 1))
     def __neg__(self):
         """Negate a transfer function."""
         
+        import copy
+
         num = copy.deepcopy(self.num)
         for i in range(self.outputs):
             for j in range(self.inputs):
@@ -389,6 +387,27 @@ only implemented for SISO functions.")
         # But this does not work correctly because the state size will be too
         # large.
 
+    def returnScipySignalLti(self):
+        """Return a list of a list of scipy.signal.lti objects for a MIMO
+        system.  For instance,
+        
+        >>> out = ssobject.returnSignalScipyLti()
+        >>> out[3][5]
+            
+        is a signal.scipy.lti object corresponding to the transfer function from
+        the 6th input to the 4th output."""
+
+        from scipy.signal import lti
+
+        # Preallocate the output.
+        out = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                out[i][j] = lti(self.num[i][j], self.den[i][j])
+            
+        return out 
+
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
 def _tfpolyToString(coeffs, var='s'):
@@ -448,7 +467,10 @@ def _addSISO(num1, den1, num2, den2):
     return num, den
 
 def convertToTransferFunction(sys, inputs=1, outputs=1):
-    """Convert a system to transfer function form (if needed.)"""
+    """Convert a system to transfer function form (if needed).  If sys is a
+    scalar, then the number of inputs and outputs can be specified manually."""
+    
+    import statesp
 
     if isinstance(sys, TransferFunction):
         return sys

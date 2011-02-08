@@ -275,15 +275,31 @@ inputs/outputs for feedback."
 
         return StateSpace(A, B, C, D)
 
-#
-# convertToStateSpace - create a state space system from another type
-#
-# To allow scalar constants to be used in a simple way (k*P, 1+L), this
-# function allows the dimension of the input/output system to be specified
-# in the case of a scalar system
-#
+    def returnScipySignalLti(self):
+        """Return a list of a list of scipy.signal.lti objects for a MIMO
+        system.  For instance,
+
+        >>> out = ssobject.returnSignalScipyLti()
+        >>> out[3][5]
+
+        is a signal.scipy.lti object corresponding to the transfer function from
+        the 6th input to the 4th output."""
+
+        from scipy.signal import lti
+
+        # Preallocate the output.
+        out = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                out[i][j] = lti(self.A, self.B[:, j], self.C[i, :],
+                    self.D[i, j])
+
+        return out
+
 def convertToStateSpace(sys, inputs=1, outputs=1):
-    """Convert a system to state space form (if needed)."""
+    """Convert a system to state space form (if needed).  If sys is a scalar,
+    then the number of inputs and outputs can be specified manually."""
     
     if isinstance(sys, StateSpace):
         # Already a state space system; just return it
@@ -371,7 +387,7 @@ def rss_generate(states, inputs, outputs, type):
     while True:
         T = randn(states, states)
         try:
-            A = numpy.dot(numpy.linalg.solve(T, A), T) # A = T \ A * T
+            A = numpy.dot(solve(T, A), T) # A = T \ A * T
             break
         except numpy.linalg.linalg.LinAlgError:
             # In the unlikely event that T is rank-deficient, iterate again.
