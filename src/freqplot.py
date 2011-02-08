@@ -54,7 +54,7 @@ from bdalg import feedback
 #
    
 # Bode plot
-def bode(syslist, omega=None, dB=False, Hz=False):
+def bode(syslist, omega=None, dB=False, Hz=False, color=None):
     """Bode plot for a system
 
     Usage
@@ -111,10 +111,16 @@ def bode(syslist, omega=None, dB=False, Hz=False):
             # Magnitude plot
             plt.subplot(211); 
             if dB:
-                plt.semilogx(omega, mag)
+                if color==None:
+                    plt.semilogx(omega, mag)
+                else:
+                    plt.semilogx(omega, mag, color=color)
                 plt.ylabel("Magnitude (dB)")
             else:
-                plt.loglog(omega, mag)
+                if color==None:
+                    plt.loglog(omega, mag)
+                else: 
+                    plt.loglog(omega, mag, color=color) 
                 plt.ylabel("Magnitude")
 
             # Add a grid to the plot
@@ -124,7 +130,10 @@ def bode(syslist, omega=None, dB=False, Hz=False):
 
             # Phase plot
             plt.subplot(212);
-            plt.semilogx(omega, phase)
+            if color==None:
+                plt.semilogx(omega, phase)
+            else:
+                plt.semilogx(omega, phase, color=color)
             plt.hold(True)
 
             # Add a grid to the plot
