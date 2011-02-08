@@ -111,14 +111,43 @@ the same number of\nelements.")
         self.den = den
         Lti2.__init__(self, inputs, outputs)
         
-        self.truncatecoeff()
+        self._truncatecoeff()
         
     def __str__(self):
         """String representation of the transfer function."""
+        
+        mimo = self.inputs > 1 or self.outputs > 1  
+        outstr = ""
+        
+        for i in range(self.inputs):
+            for j in range(self.outputs):
+                if mimo:
+                    outstr += "\nInput %i to output %i:" % (i + 1, j + 1)
+                    
+                lablen = 0
+                
+                # Convert the numerator and denominator polynomials to strings.
+                numstr = _tfpolyToString(self.num[j][i]);
+                denstr = _tfpolyToString(self.den[j][i]);
+
+                # Figure out the length of the separating line
+                dashcount = max(len(numstr), len(denstr))
+                dashes = '-' * dashcount
+
+                # Center the numerator or denominator
+                if (len(numstr) < dashcount):
+                    numstr = ' ' * \
+                        int(round((dashcount - len(numstr))/2) + lablen) + \
+                        numstr
+                if (len(denstr) < dashcount): 
+                    denstr = ' ' * \
+                        int(round((dashcount - len(denstr))/2) + lablen) + \
+                        denstr
+
+                outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
+        return outstr
     
-        pass
-    
-    def truncatecoeff(self):
+    def _truncatecoeff(self):
         """Remove extraneous zero coefficients from polynomials in numerator and
         denominator matrices."""
 
