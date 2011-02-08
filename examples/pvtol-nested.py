@@ -24,8 +24,8 @@ Pi = tf([r], [J, 0, 0]);	# inner loop (roll)
 Po = tf([1], [m, c, 0]);	# outer loop (position)
 
 # Use state space versions
-# Pi = tf2ss(Pi);
-# Po = tf2ss(Po);
+Pi = tf2ss(Pi);
+Po = tf2ss(Po);
 
 #
 # Inner loop control design

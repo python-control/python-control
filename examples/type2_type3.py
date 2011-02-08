@@ -15,7 +15,7 @@ Ki = Kp/2.
 Kii = Ki
 
 # Plant transfer function from torque to rate
-inertia = integrator*(1/J)
+inertia = integrator*1/J
 friction = b # transfer function from rate to torque
 P = inertia # friction is modelled as a separate block
 
