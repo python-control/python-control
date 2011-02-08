@@ -56,7 +56,7 @@ def findTests(testdir='./'):
 ###############################################################################
   
   
-def tests():
+def tests(verbosity=2):
   import unittest
   try: #auto test discovery is only implemented in python 2.7+
     start_dir='./' #change to a tests directory eventually.
@@ -74,19 +74,13 @@ def tests():
       t.run(tests)
       print 'Completed tests in',mod
   except: 
-    #If can't do auto discovery, for now it is hard-coded. This is not ideal for
-    #when new tests are added or existing ones are reorganized/renamed.
-    
-    #remove all of the print commands once tests are debugged and converted to 
-    #unittests.
-    
-    print 'Tests may be incomplete'
-    t=unittest.TextTestRunner()
-
+    #find the modules ourselves without unittest discovery
     testModules = findTests()
+    print 'Tests may be incomplete, will attempt to run tests in modules:'
+    for m in testModules:
+        print m
 
-    suite = unittest.TestSuite() 
-    suiteList=[]
+    suiteList=[] #list of unittest.TestSuite objects
     for mod in testModules:
       exec('import '+mod+' as currentModule')
       #After tests have been debugged and made into unittests, remove 
@@ -101,8 +95,8 @@ def tests():
         print 'The test module '+mod+' doesnt have '+\
           'a proper suite() function that returns a unittest.TestSuite object'+\
             ' Please fix this!'
-    alltests = unittest.TestSuite(suiteList)
-    t.run(unittest.TestSuite(alltests)) 
+    t=unittest.TextTestRunner(verbosity=verbosity)
+    t.run(unittest.TestSuite(unittest.TestSuite(suiteList))) 
 
 ###############################################################################
     
