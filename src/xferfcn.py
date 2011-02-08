@@ -145,8 +145,6 @@ denominator." % (j + 1, i + 1))
                 if mimo:
                     outstr += "\nInput %i to output %i:" % (i + 1, j + 1)
                     
-                lablen = 0
-                
                 # Convert the numerator and denominator polynomials to strings.
                 numstr = _tfpolyToString(self.num[j][i]);
                 denstr = _tfpolyToString(self.den[j][i]);
@@ -158,11 +156,11 @@ denominator." % (j + 1, i + 1))
                 # Center the numerator or denominator
                 if (len(numstr) < dashcount):
                     numstr = ' ' * \
-                        int(round((dashcount - len(numstr))/2) + lablen) + \
+                        int(round((dashcount - len(numstr))/2)) + \
                         numstr
                 if (len(denstr) < dashcount): 
                     denstr = ' ' * \
-                        int(round((dashcount - len(denstr))/2) + lablen) + \
+                        int(round((dashcount - len(denstr))/2)) + \
                         denstr
 
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
@@ -229,7 +227,7 @@ second has %i." % (self.outputs, other.outputs))
         return xTransferFunction(num, den)
  
     def __radd__(self, other): 
-        """Add two transfer functions (parallel connection)"""
+        """Add two transfer functions (parallel connection)."""
         
         return self + other;
         
@@ -244,7 +242,7 @@ second has %i." % (self.outputs, other.outputs))
         return other + (-self)
 
     def __mul__(self, other):
-        """Multiply two transfer functions (serial connection)"""
+        """Multiply two transfer functions (serial connection)."""
         
         # Convert the second argument to a transfer function.
         if not isinstance(other, xTransferFunction):
@@ -278,13 +276,13 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return xTransferFunction(num, den)
 
     def __rmul__(self, other): 
-        """Multiply two transfer functions (serial connection)"""
+        """Multiply two transfer functions (serial connection)."""
         
         return self * other
 
     # TODO: Division of MIMO transfer function objects is quite difficult.
     def __div__(self, other):
-        """Divide two transfer functions"""
+        """Divide two transfer functions."""
         
         if self.inputs > 1 or self.outputs > 1 or \
             other.inputs > 1 or other.outputs > 1:
@@ -302,7 +300,7 @@ implemented only for SISO systems.")
        
     # TODO: Division of MIMO transfer function objects is quite difficult.
     def __rdiv__(self, other):
-        """Reverse divide two transfer functions"""
+        """Reverse divide two transfer functions."""
         
         if self.inputs > 1 or self.outputs > 1 or \
             other.inputs > 1 or other.outputs > 1:
@@ -312,7 +310,7 @@ implemented only for SISO systems.")
         return other / self
         
     def evalfr(self, freq):
-        """Evaluate a transfer function at a single frequency"""
+        """Evaluate a transfer function at a single frequency."""
 
         # Preallocate the output.
         out = sp.empty((self.outputs, self.inputs), dtype=complex)
@@ -325,14 +323,13 @@ implemented only for SISO systems.")
         return out
 
     # Method for generating the frequency response of the system
-    def freqresp(self, omega):
-        """Evaluate a transfer function at a list of frequencies"""
+    def freqresp(self, omega=None):
+        """Evaluate a transfer function at a list of frequencies."""
         
-        numfreq = len(omega)
-
         # Preallocate outputs.
-        mag = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
-        phase = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
+        numfreq = len(omega)
+        mag = sp.empty((self.outputs, self.inputs, numfreq))
+        phase = sp.empty((self.outputs, self.inputs, numfreq))
 
         for i in range(self.outputs):
             for j in range(self.inputs):
@@ -340,8 +337,8 @@ implemented only for SISO systems.")
                     sp.polyval(self.den[i][j], w * 1.j), omega)
                 fresp = sp.array(fresp)
 
-                mag[i][j] = abs(fresp)
-                phase[i][j] = sp.angle(fresp)
+                mag[i, j] = abs(fresp)
+                phase[i, j] = sp.angle(fresp)
 
         return mag, phase, omega
 
@@ -356,7 +353,7 @@ implemented only for SISO systems.")
         pass
 
     def feedback(sys1, sys2, sign=-1): 
-        """Feedback interconnection between two transfer functions"""
+        """Feedback interconnection between two transfer functions."""
         
         pass
 

@@ -43,6 +43,7 @@
 
 import scipy as sp
 from scipy import concatenate, zeros
+from numpy.linalg import solve
 import xferfcn
 from lti2 import Lti2
 
@@ -92,33 +93,30 @@ class StateSpace(Lti2):
         str += "D = " + self.D.__str__() + "\n"
         return str
 
+    def evalfr(self, freq):
+        """Method for evaluating a system at one frequency."""
+        
+        fresp = self.C * solve(freq * 1.j * sp.eye(self.states) - self.A,
+            self.B) + self.D
+        return fresp
+
     # Method for generating the frequency response of the system
     def freqresp(self, omega=None):
         """Compute the response of a system to a list of frequencies."""
         
-        # Generate and save a transfer function matrix
-        #! TODO: This is currently limited to SISO systems
-        #nout, nin = self.D.shape
+        # Preallocate outputs.
+        numfreq = len(omega)
+        mag = sp.empty((self.outputs, self.inputs, numfreq))
+        phase = sp.empty((self.outputs, self.inputs, numfreq))
+        fresp = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
 
-        # Compute the denominator from the A matrix
-        den = sp.poly1d(sp.poly(self.A))
+        for k in range(numfreq):
+            fresp[:, :, k] = self.evalfr(omega[k])
 
-        # Compute the numerator based on zeros
-        #! TODO: This is currently limited to SISO systems
-        num = sp.poly1d(\
-            sp.poly(self.A - sp.dot(self.B, self.C)) + (self.D[0] - 1) * den)
-
-        # Generate the frequency response at each frequency
-        fresp = map(lambda w: num(w*1j) / den(w*1j), omega)
-        mag = sp.sqrt(sp.multiply(fresp, sp.conjugate(fresp)))
+        mag = abs(fresp)
         phase = sp.angle(fresp)
 
         return mag, phase, omega
-
-    # Method for evaluating a system at one frequency
-    def evalfr(self, freq):
-        #! TODO: Not implemented
-        return None
 
     # Compute poles and zeros
     def poles(self):

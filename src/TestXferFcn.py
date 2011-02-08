@@ -377,7 +377,7 @@ class TestXferFcn(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(mag, truemag)
         np.testing.assert_array_almost_equal(phase, truephase)
-        np.testing.assert_array_almost_equal(omega, trueomega)
+        np.testing.assert_array_equal(omega, trueomega)
 
          
 if __name__ == "__main__":
