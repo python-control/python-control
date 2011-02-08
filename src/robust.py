@@ -49,19 +49,29 @@ from statesp import StateSpace
 def h2syn(P,nmeas,ncon):
     """H_2 control synthesis for plant P.
 
-    Usage
-    =====
-    K = h2syn(P,nmeas,ncon)
+    Parameters
+    ----------
+    P: partitioned lti plant (State-space sys)
+    nmeas: number of measurements (input to controller)
+    ncon: number of control inputs (output from controller)
 
-    Inputs
-    ======
-    P : partitioned lti plant
-    nmeas : number of measurements (input to controller)
-    ncon : number of control inputs (output from controller)
+    Returns
+    -------
+    K: controller to stabilize P (State-space sys)
 
-    Outputs
-    =======
-    K : controller to stabilize P
+    Raises
+    ------
+    ImportError
+        if slycot routine sb10hd is not loaded
+
+    See Also
+    --------
+    StateSpace
+
+    Examples
+    --------
+    >>> K = h2syn(P,nmeas,ncon)
+
     """
 
     #Check for ss system object, need a utility for this?
@@ -95,22 +105,32 @@ def h2syn(P,nmeas,ncon):
 def hinfsyn(P,nmeas,ncon):
     """H_{inf} control synthesis for plant P.
 
-    Usage
-    =====
-    K, CL, gam, info = hinfsyn(P,nmeas,ncon)
+    Parameters
+    ----------
+    P: partitioned lti plant
+    nmeas: number of measurements (input to controller)
+    ncon: number of control inputs (output from controller)
 
-    Inputs
-    ======
-    P : partitioned lti plant
-    nmeas : number of measurements (input to controller)
-    ncon : number of control inputs (output from controller)
+    Returns
+    -------
+    K: controller to stabilize P (State-space sys)
+    CL: closed loop system (State-space sys)
+    gam: infinity norm of closed loop system
+    info: info returned from siycot routine
 
-    Outputs
-    =======
-    K : controller to stabilize P
-    CL : closed loop system 
-    gam : infinity norm of closed loop system
-    info : info returned from siycot routine
+    Raises
+    ------
+    ImportError
+        if slycot routine sb10ad is not loaded
+
+    See Also
+    --------
+    StateSpace
+
+    Examples
+    --------
+    >>> K, CL, gam, info = hinfsyn(P,nmeas,ncon)
+
     """
 
     #Check for ss system object, need a utility for this?

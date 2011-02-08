@@ -188,17 +188,18 @@ def lqr(*args, **keywords):
 def ctrb(A,B):       
     """Controllabilty matrix
 
-    Usage
-    =====
-    C = ctrb(A, B)
-
-    Inputs
-    ------
+    Parameters
+    ----------
     A, B: Dynamics and input matrix of the system
 
-    Outputs
+    Returns
     -------
     C: Controllability matrix
+
+    Examples
+    --------
+    >>> C = ctrb(A, B)
+
     """
 
     # Convert input parameters to matrices (if they aren't already)
@@ -214,18 +215,19 @@ def ctrb(A,B):
 def obsv(A, C):       
     """Observability matrix
 
-    Usage
-    =====
-    O = obsv(A, C)
-
-    Inputs
-    ------
+    Parameters
+    ----------
     A, C: Dynamics and output matrix of the system
 
-    Outputs
+    Returns
     -------
     O: Observability matrix
-    """
+
+    Examples
+    --------
+    >>> O = obsv(A, C)
+
+   """
 
     # Convert input parameters to matrices (if they aren't already)
     amat = np.mat(A)
@@ -239,12 +241,30 @@ def obsv(A, C):
     return obsv
 
 def gram(sys,type):
-    """Gramian
-    
-    Usage
-    =====
-    Wc = gram(sys,'c')
-    Wo = gram(sys,'o')
+    """Gramian (controllability or observability)
+ 
+    Parameters
+    ----------
+    sys: state-space system to compute Gramian for
+    type: type is either 'c' (controllability) or 'o' (observability)
+
+    Returns
+    -------
+    gram: Gramian of system
+
+    Raises
+    ------   
+    ValueError
+        if `type` is not 'c' or 'o'
+        if system is unstable (sys.A has eigenvalues not in left half plane)
+    ImportError
+        if slycot routin sb03md cannot be found
+
+    Examples
+    --------
+    >>> Wc = gram(sys,'c')
+    >>> Wo = gram(sys,'o')
+
     """
 
     #Check for ss system object, need a utility for this?

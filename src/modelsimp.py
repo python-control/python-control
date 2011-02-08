@@ -69,7 +69,7 @@ def hsvd(sys):
 
     Examples
     --------
-    H = hsvd(sys)
+    >>> H = hsvd(sys)
 
     """
 
@@ -107,7 +107,7 @@ def modred(sys,ELIM,method):
 
     Examples
     --------
-    rsys = modred(sys,ELIM,method)
+    >>> rsys = modred(sys,ELIM,method='truncate')
 
     """
 
@@ -193,7 +193,7 @@ def balred(sys,orders,method='truncate'):
 
     Examples
     --------
-    rsys = balred(sys,order,elimination,method) 
+    >>> rsys = balred(sys,order,method='truncate') 
 
     """
 
@@ -245,41 +245,44 @@ def balred(sys,orders,method='truncate'):
 def era(YY,m,n,nin,nout,r):
     """Calculate an ERA model of order r based on the impulse-response data YY
 
-    Usage
-    =====
-    sys = era(YY,m,n,nin,nout,r)
+    Parameters
+    ----------
+    YY: nout x nin dimensional impulse-response data
+    m: number of rows in Hankel matrix
+    n: number of columns in Hankel matrix
+    nin: number of input variables
+    nout: number of output variables
+    r: order of model
 
-    Inputs
-    ------
-    YY : nout x nin dimensional impulse-response data
-    m  : number of rows in Hankel matrix
-    n  : number of columns in Hankel matrix
-    nin : number of input variables
-    nout : number of output variables
-    r : order of model
-
-    Outputs
+    Returns
     -------
-    sys : a reduced order model sys=ss(Ar,Br,Cr,Dr) 
+    sys: a reduced order model sys=ss(Ar,Br,Cr,Dr) 
+
+    Examples
+    --------
+    >>> rsys = era(YY,m,n,nin,nout,r)
 
     """
 def markov(Y,U,M):
     """Calculate the first M Markov parameters [D CB CAB ...] from input U, output Y
 
-    Usage
-    =====
-    H = markov(Y,U,M)
+    Parameters
+    ----------
+    Y: output data 
+    U: input data
+    M: number of Markov parameters to output
+
+    Returns
+    -------
+    H: first M Markov parameters
+
+    Notes
+    -----
     Currently only works for SISO
 
-    Inputs
-    ------
-    Y : output data 
-    U : input data
-    M : number of Markov parameters to output
-
-    Outputs
-    -------
-    H : first M Markov parameters
+    Examples
+    --------
+    >>> H = markov(Y,U,M)
 
     """
 
