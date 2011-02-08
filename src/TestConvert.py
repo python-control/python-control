@@ -4,11 +4,10 @@
 
 Test state space and transfer function conversion.
 
-Currently, this unit test script is not complete.  Ideally, it would convert
+Currently, this unit test script is not complete.  It converts
 several random state spaces back and forth between state space and transfer
-function representations, and assert that the conversion outputs are correct.
-As they currently stand, the td04ad and tb04ad functions appear to be buggy from
-time to time.  Therefore, this script can be used to diagnose the errors.
+function representations, and asserts that the conversion outputs are correct.
+As it stands, tests pass but there is some rounding error in one of the conversions leading to imaginary numbers. See the warning message. This script may be used to diagnose errors.
 
 """
 
@@ -29,7 +28,7 @@ class TestConvert(unittest.TestCase):
         # Maximum number of inputs and outputs to test + 1
         self.maxIO = 3
         # Set to True to print systems to the output.
-        self.debug = False
+        self.debug = True
 
     def printSys(self, sys, ind):
         """Print system to the standard output."""
@@ -51,7 +50,7 @@ class TestConvert(unittest.TestCase):
 
                     sys2 = matlab.tf(sys1)
                     self.printSys(sys2, 2)
-
+                   
                     sys3 = matlab.ss(sys2)
                     self.printSys(sys3, 3)
 

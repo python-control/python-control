@@ -449,9 +449,11 @@ cannot take keywords.")
         index = [len(den) - 1 for i in range(sys.outputs)]
         # Repeat the common denominator along the rows.
         den = array([den for i in range(sys.outputs)])
-
+        #print index
+        #print den
+        #print num
         ssout = td04ad(sys.inputs, sys.outputs, index, den, num)
-
+    
         states = ssout[0]
         return StateSpace(ssout[1][:states, :states],
             ssout[2][:states, :sys.inputs], 
