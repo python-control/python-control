@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from statefbk import ctrb, obsv, place, lqr
+from statefbk import ctrb, obsv, place, lqr, gram
+from matlab import *
 import numpy as N
 import unittest
 
@@ -41,6 +42,28 @@ class TestStatefbk(unittest.TestCase):
         C = N.transpose(B)
         Wo = N.transpose(obsv(A,C));
         N.testing.assert_array_almost_equal(Wc,Wo)
+
+    def testGramWc(self):
+        A = N.matrix("1. -2.; 3. -4.")
+        B = N.matrix("5. 6.; 7. 8.")
+        C = N.matrix("4. 5.; 6. 7.")
+        D = N.matrix("13. 14.; 15. 16.")
+    #    sys = ss(A, B, C, D)
+        sys = 1.
+        Wctrue = N.matrix("18.5 24.5; 24.5 32.5")
+        Wc = gram(sys,'c')
+        N.testing.assert_array_almost_equal(Wc, Wctrue)
+
+    def testGramWo(self):
+        A = N.matrix("1. -2.; 3. -4.")
+        B = N.matrix("5. 6.; 7. 8.")
+        C = N.matrix("4. 5.; 6. 7.")
+        D = N.matrix("13. 14.; 15. 16.")
+        sys = ss(A, B, C, D)
+        sys = 1.
+        Wotrue = N.matrix("257.5 -94.5; -94.5 56.5")
+        Wo = gram(sys,'o')
+        N.testing.assert_array_almost_equal(Wo, Wotrue)
 
 if __name__ == '__main__':
     unittest.main()

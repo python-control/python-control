@@ -190,7 +190,7 @@ def ctrb(A,B):
 
     Usage
     =====
-    Wc = ctrb(A, B)
+    C = ctrb(A, B)
 
     Inputs
     ------
@@ -198,7 +198,7 @@ def ctrb(A,B):
 
     Outputs
     -------
-    Wc: Controllability matrix
+    C: Controllability matrix
     """
 
     # Convert input parameters to matrices (if they aren't already)
@@ -216,7 +216,7 @@ def obsv(A, C):
 
     Usage
     =====
-    Wc = obsv(A, C)
+    O = obsv(A, C)
 
     Inputs
     ------
@@ -224,7 +224,7 @@ def obsv(A, C):
 
     Outputs
     -------
-    Wc: Observability matrix
+    O: Observability matrix
     """
 
     # Convert input parameters to matrices (if they aren't already)
@@ -237,3 +237,22 @@ def obsv(A, C):
     for i in range(1, n):
         obsv = np.vstack((obsv, cmat*amat**i))
     return obsv
+
+def gram(sys,type):
+    """Gramian
+    
+    Usage
+    =====
+    Wc = gram(sys,'c')
+    Wo = gram(sys,'o')
+    """
+    
+    if type=='c':
+        print "controllable"
+    elif type=='o':
+        print "observable"
+    else: 
+        raise ValueError, "Oops, neither observable, nor controllable!"
+
+    gram = 0.
+    return gram
