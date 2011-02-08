@@ -68,12 +68,13 @@ $Id: statepy 21 2010-06-06 17:29:42Z murrayrm $
 
 """
 
-from numpy import angle, any, array, concatenate, cos, dot, empty, exp, eye, \
-    ones, pi, poly, poly1d, matrix, roots, sin, zeros
+from numpy import all, angle, any, array, concatenate, cos, delete, dot, \
+    empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, sin, zeros
 from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
+from slycot import td04ad
 from lti import Lti
 import xferfcn
 
@@ -120,6 +121,46 @@ class StateSpace(Lti):
             raise ValueError("D must have the same column size as B.")
         if self.outputs != D.shape[0]:
             raise ValueError("D must have the same row size as C.")
+
+        # Check for states that don't do anything, and remove them.
+        self._remove_useless_states()
+
+    def _remove_useless_states(self):
+        """Check for states that don't do anything, and remove them.
+
+        Scan the A, B, and C matrices for rows or columns of zeros.  If the
+        zeros are such that a particular state has no effect on the input-output
+        dynamics, then remove that state from the A, B, and C matrices.
+
+        """
+
+        # Indices of useless states.
+        useless = []
+
+        # Search for useless states.
+        for i in range(self.states):
+            if (all(self.A[i, :] == zeros((1, self.states))) and
+                all(self.B[i, :] == zeros((1, self.inputs)))):
+                useless.append(i)
+                # To avoid duplucate indices in useless, jump to the next
+                # iteration.
+                continue
+            if (all(self.A[:, i] == zeros((self.states, 1))) and
+                all(self.C[:, i] == zeros((self.outputs, 1)))):
+                useless.append(i)
+        
+        # Remove the useless states.
+        if all(useless == range(self.states)):
+            # All the states were useless.
+            self.A = 0
+            self.B = zeros((1, self.inputs))
+            self.C = zeros((self.outputs, 1))
+        else:
+            # A more typical scenario.
+            self.A = delete(self.A, useless, 0)
+            self.A = delete(self.A, useless, 1)
+            self.B = delete(self.B, useless, 0)
+            self.C = delete(self.C, useless, 1)
 
     def __str__(self):
         """String representation of the state space."""
@@ -374,15 +415,23 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
         # Already a state space system; just return it
         return sys
     elif isinstance(sys, xferfcn.TransferFunction):
-        # TODO: Wrap SLICOT to do transfer function to state space conversion.
-        raise NotImplementedError("Transfer function to state space conversion \
-is not implemented yet.")
-    elif (isinstance(sys, (int, long, float, complex))):
+        # Change the numerator and denominator arrays so that the transfer
+        # function matrix has a common denominator.
+        num, den = sys._common_den()
+        # Make a list of the orders of the denominator polynomials.
+        index = [len(den) for i in range(sys.outputs)]
+        # Repeat the common denominator along the rows.
+        den = array([den for i in range(sys.outputs)])
+
+        ssout = td04ad(sys.inputs, sys.outputs, index, num, den)
+        
+        return StateSpace(ssout[1], ssout[2], ssout[3], ssout[4])
+    elif isinstance(sys, (int, long, float, complex)):
         # Generate a simple state space system of the desired dimension
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), 
-            sys * ones(outputs, inputs))
+            sys * ones((outputs, inputs)))
     else:
         raise TypeError("Can't convert given type to StateSpace system.")
     

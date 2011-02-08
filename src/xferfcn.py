@@ -26,6 +26,7 @@ TransferFunction.pole
 TransferFunction.zero
 TransferFunction.feedback
 TransferFunction.returnScipySignalLti
+TransferFunction._common_den
 _tfpolyToString
 _addSISO
 convertToTransferFunction
@@ -72,7 +73,7 @@ $Id: xferfcn.py 21 2010-06-06 17:29:42Z murrayrm $
 
 # External function declarations
 from numpy import angle, array, empty, ndarray, ones, polyadd, polymul, \
-    polyval, zeros
+    polyval, roots, zeros
 from scipy.signal import lti
 from copy import deepcopy
 from slycot import tb04ad
@@ -406,9 +407,9 @@ implemented only for SISO systems.")
     def pole(self):
         """Compute the poles of a transfer function."""
         
-        raise NotImplementedError("TransferFunction.pole is not implemented \
-yet.")
-        
+        num, den = self._common_den()
+        return roots(den) 
+
     def zero(self): 
         """Compute the zeros of a transfer function."""
         
@@ -462,6 +463,39 @@ only implemented for SISO functions.")
                 out[i][j] = lti(self.num[i][j], self.den[i][j])
             
         return out 
+
+    def _common_den(self):
+        """Compute MIMO common denominator; return it and an adjusted numerator.
+        
+        >>> n, d = sys._common_den()
+        
+        computes the single denominator containing all the poles of sys.den, and
+        reports it as the array d.
+
+        The output numerator array n is modified to use the common denominator.
+        It is an sys.outputs-by-sys.inputs-by-[something] array.
+
+        """
+         
+        # Preallocate some variables.  Start by figuring out the maximum number
+        # of numerator coefficients.
+        numcoeffs = 0
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                numcoeffs = max(numcoeffs, len(self.num[i][j]))
+        # The output 3-D adjusted numerator array.
+        num = empty((i, j, numcoeffs))
+        # A list to keep track of roots found as we scan self.den.
+        poles = []
+        # A 3-D list to keep track of common denominator roots not present in
+        # the self.den[i][j].
+        missingpoles = [[[] for j in range(self.inputs)] for i in
+            range(self.outputs)]
+
+        for i in range(sys.outputs):
+            for j in range(sys.inputs):
+                currentpoles = roots(self.den[i][j])
+                #TODO: finish this
 
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
