@@ -49,6 +49,7 @@
 # External function declarations
 import scipy as sp
 import scipy.signal as signal
+import copy
 import bdalg as bd
 import statesp
 from lti2 import Lti2
@@ -58,7 +59,7 @@ class xTransferFunction(Lti2):
     main data members are 'num' and 'den', which are 2-D lists of arrays
     containing MIMO numerator and denominator coefficients.  For example,
 
-    >>> num[2][5] = [1., 4., 8.]
+    >>> num[2][5] = numpy.array([1., 4., 8.])
     
     means that the numerator of the transfer function from the 6th input to the
     3rd output is set to s^2 + 4s + 8."""
@@ -67,27 +68,32 @@ class xTransferFunction(Lti2):
         """This is the constructor.  The default transfer function is 1 (unit
         gain direct feedthrough)."""
 
-        # Make num and den into lists of lists of arrays, if necessary.
+        # Make num and den into lists of lists of arrays, if necessary.  Beware:
+        # this is a shallow copy!  This should be okay, but be careful.
         data = [num, den]
         for i in range(len(data)):
             if isinstance(data[i], (int, float, long, complex)):
                 # Convert scalar to list of list of array.
-                data[i] = [[[data[i]]]]
+                data[i] = [[sp.array([data[i]])]]
             elif isinstance(data[i], (list, tuple, sp.ndarray)) and \
                 isinstance(data[i][0], (int, float, long, complex)):
                 # Convert array to list of list of array.
-                data[i] = [[data[i]]]
-            elif isinstance(data[i], (list, tuple, sp.ndarray)) and \
-                isinstance(data[i][0], (list, tuple, sp.ndarray)) and \
+                data[i] = [[sp.array(data[i])]]
+            elif isinstance(data[i], list) and \
+                isinstance(data[i][0], list) and \
                 isinstance(data[i][0][0], (list, tuple, sp.ndarray)) and \
                 isinstance(data[i][0][0][0], (int, float, long, complex)):
-                # We already have the right format.
-                pass
+                # We might already have the right format.  Convert the
+                # coefficient vectors to arrays, if necessary.
+                for j in range(len(data[i])):
+                    for k in range(len(data[i][j])):
+                        data[i][j][k] = sp.array(data[i][j][k])
             else:
                 # If the user passed in anything else, then it's unclear what
                 # the meaning is.
                 raise ValueError("The numerator and denominator inputs must be \
-scalars or arrays (for\nSISO), or lists of lists of arrays (for MIMO).")
+scalars or vectors (for\nSISO), or lists of lists of vectors (for SISO or \
+MIMO).")
         [num, den] = data
         
         inputs = len(num[0])
@@ -166,8 +172,8 @@ denominator." % (j + 1, i + 1))
         """Remove extraneous zero coefficients from polynomials in numerator and
         denominator matrices."""
 
+        # Beware: this is a shallow copy.
         data = [self.num, self.den]
-        
         for p in range(len(data)):
             for i in range(self.outputs):
                 for j in range(self.inputs):
@@ -177,14 +183,18 @@ denominator." % (j + 1, i + 1))
                         k += 1
                     
                     # Now truncate the trivial coefficients.
-                    data[p][i][j] = data[p][i][j][k:]
-                    
+                    data[p][i][j] = data[p][i][j][k:]        
         [self.num, self.den] = data
     
     def __neg__(self):
         """Negate a transfer function."""
         
-        return xTransferFunction(-self.num, self.den)
+        num = copy.deepcopy(self.num)
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                num[i][j] *= -1
+        
+        return xTransferFunction(num, self.den)
         
     def __add__(self, other):
         """Add two transfer functions (parallel connection)."""
@@ -285,7 +295,7 @@ implemented only for SISO systems.")
         return xTransferFunction(num, den)
        
     # TODO: Division of MIMO transfer function objects is quite difficult.
-    def __rdiv__(self, sys):
+    def __rdiv__(self, other):
         """Reverse divide two transfer functions"""
         
         if self.inputs > 1 or self.outputs > 1 or \
@@ -293,14 +303,7 @@ implemented only for SISO systems.")
             raise NotImplementedError("xTransferFunction.__rdiv__ is currently \
 implemented only for SISO systems.")
 
-        # Convert the second argument to a transfer function.
-        if not isinstance(other, xTransferFunction):
-            other = ss2tf(other)
-
-        num = sp.polymul(self.den[0][0], other.num[0][0])
-        den = sp.polymul(self.num[0][0], other.den[0][0])
-        
-        return xTransferFunction(num, den)
+        return other / self
         
     def evalfr(self, freq):
         """Evaluate a transfer function at a single frequency"""
@@ -329,6 +332,9 @@ implemented only for SISO systems.")
         
         pass
 
+# This is the old TransferFunction class.  It will be superceded by the
+# xTransferFunction class (which will be renamed TransferFunction) when it is
+# completed.
 class TransferFunction(signal.lti):
     """The TransferFunction class is used to represent linear
     input/output systems via its transfer function.
