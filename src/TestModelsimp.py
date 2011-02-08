@@ -101,14 +101,14 @@ class TestModelsimp(unittest.TestCase):
         sys = ss(A,B,C,D)
         orders = 2
         rsys = balred(sys,orders,'elimination','truncate')
-        Artrue = np.matrix('-1.95, 0.6203; 2.314, -0.8432')
-        Brtrue = np.matrix('0.7221; -0.6306')
-        Crtrue = np.matrix('1.132, -0.2667')
+        Artrue = np.matrix('-1.958, -1.194; -1.194, -0.8344')
+        Brtrue = np.matrix('0.9057; 0.4068')
+        Crtrue = np.matrix('0.9057, 0.4068')
         Drtrue = np.matrix('0.')
-        np.testing.assert_array_almost_equal(sys.A, Artrue)
-        np.testing.assert_array_almost_equal(sys.B, Brtrue)
-        np.testing.assert_array_almost_equal(sys.C, Crtrue)
-        np.testing.assert_array_almost_equal(sys.D, Drtrue)
+        np.testing.assert_array_almost_equal(rsys.A, Artrue,decimal=2)
+        np.testing.assert_array_almost_equal(rsys.B, Brtrue,decimal=4)
+        np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=4)
+        np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=4)
 
 
 

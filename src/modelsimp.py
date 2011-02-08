@@ -44,6 +44,7 @@ import numpy as np
 import ctrlutil
 from control.exception import *
 from statefbk import *
+from statesp import StateSpace
 
 # Hankel Singular Value Decomposition
 #   The following returns the Hankel singular values, which are singular values of the matrix formed by multiplying the controllability and observability grammians
@@ -167,21 +168,33 @@ def balred(sys,orders,elimination,method):
             raise ValueError, "Oops, the system is unstable!"
    
     if method=='matchdc':
-        print "matchdc"
+        raise ValueError, "MatchDC not yet supported!"
     elif method=='truncate':
-        print "truncate"
+        try:
+            from slycot import ab09ad
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine ab09ad")
+        job = 'B' # balanced (B) or not (N)
+        equil = 'N'  # scale (S) or not (N) 
+        ordsel = 'F'  # fixed truncation level (F) or find the truncation level given tol (A)
+        n = np.size(sys.A,0)
+        m = np.size(sys.B,1)
+        p = np.size(sys.C,0)
+        nr = orders
+        tol = 0.
+        out = ab09ad(dico,job,equil,ordsel, n, m, p, nr, sys.A, sys.B, sys.C,tol) 
+        Ar = out[0][0:nr,0:nr]
+        Br = out[1][0:nr,0:m]
+        Cr = out[2][0:p,0:nr]
+        hsv = out[3]
+        iwarn = out[4]
+        info = out[5]
+   
+        rsys = StateSpace(Ar, Br, Cr, sys.D)
     else:
         raise ValueError, "Oops, method is not supported!"
 
-    #Compute rhs using the Slycot routine XXXXXX 
-        #make sure Slycot is installed
-    #try:
-    #    from slycot import XXXXXX
-    #except ImportError:
-    #    raise ControlSlycot("can't find slycot module 'XXXXXX'")
-    rsys = 0.
     return rsys
-
 
 def era(YY,m,n,nin,nout,r):
     """Calculate an ERA model of order r based on the impulse-response data YY
