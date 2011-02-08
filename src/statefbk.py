@@ -205,11 +205,10 @@ def ctrb(A,B):
     amat = np.mat(A)
     bmat = np.mat(B)
     n = np.shape(amat)[0]
-
     # Construct the controllability matrix
     ctrb = bmat
     for i in range(1, n):
-        ctrb = np.vstack((ctrb, amat**i*bmat))
+        ctrb = np.hstack((ctrb, amat**i*bmat))
     return ctrb
 
 def obsv(A, C):       
@@ -236,5 +235,5 @@ def obsv(A, C):
     # Construct the controllability matrix
     obsv = cmat
     for i in range(1, n):
-        obsv = np.hstack((obsv, cmat*amat**i))
+        obsv = np.vstack((obsv, cmat*amat**i))
     return obsv
