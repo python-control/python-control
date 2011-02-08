@@ -306,5 +306,79 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, sys3.den)
         np.testing.assert_array_equal(sys4.den, sys3.num)
         
+    # Tests for xTransferFunction.evalfr.
+
+    def testEvalFrSISO(self):
+        """Evaluate the frequency response of a SISO system at one frequency."""
+
+        sys = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
+
+        np.testing.assert_array_almost_equal(sys.evalfr(1.),
+            np.array([[-0.5 - 0.5j]]))
+        np.testing.assert_array_almost_equal(sys.evalfr(32.),
+            np.array([[0.00281959302585077 - 0.030628473607392j]]))
+
+    def testEvalFrMIMO(self):
+        """Evaluate the frequency response of a MIMO system at one frequency."""
+
+        num = [[[1., 2.], [0., 3.], [2., -1.]],
+               [[1.], [4., 0.], [1., -4., 3.]]]
+        den = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
+               [[3., 0., .0], [2., -1., -1.], [1.]]]
+        sys = xTransferFunction(num, den)
+        resp = [[0.147058823529412 + 0.0882352941176471j, -0.75, 1.],
+                [-0.083333333333333, -0.188235294117647 - 0.847058823529412j,
+                 -1. - 8.j]]
+        
+        np.testing.assert_array_almost_equal(sys.evalfr(2.), resp)
+
+    # Tests for xTransferFunction.freqresp.
+
+    def testFRespSISO(self):
+        """Evaluate the magnitude and phase of a SISO system at multiple
+        frequencies."""
+
+        sys = xTransferFunction([1., 3., 5], [1., 6., 2., -1])
+
+        truemag = [[[4.63507337473906, 0.707106781186548, 0.0866592803995351]]]
+        truephase = [[[-2.89596891081488, -2.35619449019234,
+                       -1.32655885133871]]]
+        trueomega = [0.1, 1., 10.]
+
+        mag, phase, omega = sys.freqresp(trueomega)
+
+        np.testing.assert_array_almost_equal(mag, truemag)
+        np.testing.assert_array_almost_equal(phase, truephase)
+        np.testing.assert_array_almost_equal(omega, trueomega)
+
+    def testFRespMIMO(self):
+        """Evaluate the magnitude and phase of a MIMO system at multiple
+        frequencies."""
+
+        num = [[[1., 2.], [0., 3.], [2., -1.]],
+               [[1.], [4., 0.], [1., -4., 3.]]]
+        den = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
+               [[3., 0., .0], [2., -1., -1.], [1.]]]
+        sys = xTransferFunction(num, den)
+        
+        trueomega = [0.1, 1., 10.]
+        truemag = [[[0.496287094505259, 0.307147558416976, 0.0334738176210382],
+                    [300., 3., 0.03], [1., 1., 1.]],
+                   [[33.3333333333333, 0.333333333333333, 0.00333333333333333],
+                    [0.390285696125482, 1.26491106406735, 0.198759144198533],
+                    [3.01663720059274, 4.47213595499958, 104.92378186093]]]
+        truephase = [[[3.7128711165168e-4, 0.185347949995695, 1.30770596539255],
+                      [-np.pi, -np.pi, -np.pi], [0., 0., 0.]],
+                     [[-np.pi, -np.pi, -np.pi],
+                      [-1.66852323415362, -1.89254688119154, -1.62050658356412],
+                      [-0.132989648369409, -1.1071487177940, -2.7504672066207]]]
+
+        mag, phase, omega = sys.freqresp(trueomega)
+
+        np.testing.assert_array_almost_equal(mag, truemag)
+        np.testing.assert_array_almost_equal(phase, truephase)
+        np.testing.assert_array_almost_equal(omega, trueomega)
+
+         
 if __name__ == "__main__":
     unittest.main()

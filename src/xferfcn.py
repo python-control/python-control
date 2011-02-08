@@ -314,14 +314,36 @@ implemented only for SISO systems.")
     def evalfr(self, freq):
         """Evaluate a transfer function at a single frequency"""
 
-        # return sp.polyval(self.num, freq*1j) / sp.polyval(self.den, freq*1j)
-        pass
+        # Preallocate the output.
+        out = sp.empty((self.outputs, self.inputs), dtype=complex)
+
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                out[i][j] = sp.polyval(self.num[i][j], freq * 1.j) / \
+                    sp.polyval(self.den[i][j], freq * 1.j)
+
+        return out
 
     # Method for generating the frequency response of the system
     def freqresp(self, omega):
         """Evaluate a transfer function at a list of frequencies"""
         
-        pass
+        numfreq = len(omega)
+
+        # Preallocate outputs.
+        mag = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
+        phase = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
+
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                fresp = map(lambda w: sp.polyval(self.num[i][j], w * 1.j) / \
+                    sp.polyval(self.den[i][j], w * 1.j), omega)
+                fresp = sp.array(fresp)
+
+                mag[i][j] = abs(fresp)
+                phase[i][j] = sp.angle(fresp)
+
+        return mag, phase, omega
 
     def poles(self):
         """Compute poles of a transfer function."""
