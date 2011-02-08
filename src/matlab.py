@@ -60,8 +60,8 @@ from scipy import linspace, logspace
 # Control system library
 import ctrlutil
 import freqplot
-from statesp import StateSpace, rss_generate
-from xferfcn import TransferFunction
+from statesp import StateSpace, rss_generate, convertToStateSpace
+from xferfcn import TransferFunction, convertToTransferFunction
 from exception import *
 
 # Import MATLAB-like functions that can be used as-is
@@ -100,17 +100,17 @@ Data extraction
    ss/getDelayModel - access internal delay model (state space only)
  
 Conversions
-   tf             - conversion to transfer function
+*  tf             - conversion to transfer function
    zpk            - conversion to zero/pole/gain
-   ss             - conversion to state space
+*  ss             - conversion to state space
    frd            - conversion to frequency data
    c2d            - continuous to discrete conversion
    d2c            - discrete to continuous conversion
    d2d            - resample discrete-time model
    upsample       - upsample discrete-time LTI systems
-   ss2tf          - state space to transfer function
+*  ss2tf          - state space to transfer function
    ss2zpk         - transfer function to zero-pole-gain
-   tf2ss          - transfer function to state space
+*  tf2ss          - transfer function to state space
    tf2zpk         - transfer function to zero-pole-gain
    zpk2ss         - zero-pole-gain to state space
    zpk2tf         - zero-pole-gain to transfer function
@@ -257,54 +257,92 @@ Additional functions
 * unwrap        - unwrap a phase angle to give a continuous curve
 """
 
-# Create a state space system from appropriate matrices
-def ss(A, B, C, D):
-    """Create a state space system from A, B, C, D"""
-    return StateSpace(A, B, C, D)
+def ss(*args):
+    """Create a state space system.
 
-# Functions for creating a transfer function
-def tf(num, den): 
-    """Create a SISO transfer function given the numerator and denominator"""
-    return TransferFunction(num, den)
+    Usage
+    =====
+    ss(A, B, C, D)
+    ss(sys)"""
+    
+    if len(args) == 4:
+        return StateSpace(args[0], args[1], args[2], args[3])
+    elif len(args) == 1:
+        sys = args[0]
+        if isinstance(sys, StateSpace):
+            return sys
+        elif isinstance(sys, TransferFunction):
+            return tf2ss(sys)
+        else:
+            raise TypeError("ss(sys): sys must be a StateSpace or \
+TransferFunction object.")
+    else:
+        raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-# Function for converting state space to transfer function
-def ss2tf(*args, **keywords):
-    """Transform a state space system to a transfer function
+def tf(*args): 
+    """Create a transfer function system.
+
+    Usage
+    =====
+    tf(num, den)
+    tf(sys)
+    
+    num and den can be scalars or vectors for SISO systems, or lists of lists of
+    vectors for MIMO systems."""
+
+    if len(args) == 2:
+       return TransferFunction(args[0], args[1])
+    elif len(args) == 1:
+        sys = args[0]
+        if isinstance(sys, StateSpace):
+            return ss2tf(sys)
+        elif isinstance(sys, TransferFunction):
+            return sys
+        else:
+            raise TypeError("tf(sys): sys must be a StateSpace or \
+TransferFunction object.") 
+    else:
+        raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
+
+def ss2tf(*args):
+    """Transform a state space system to a transfer function.
     
     Usage
     =====
     ss2tf(A, B, C, D)
-    ss2tf(sys) - sys should have attributes A, B, C, D
-    """
-    if (len(args) == 4):
+    ss2tf(sys) - sys should have attributes A, B, C, D"""
+    
+    if len(args) == 4:
         # Assume we were given the A, B, C, D matrix
-        return TransferFunction(*args)
-    elif (len(args) == 1):
-        # Assume we were given a system object (lti or StateSpace)
+        return convertToTransferFunction(StateSpace(args[0], args[1], args[2],
+            args[3]))
+    elif len(args) == 1:
         sys = args[0]
-        return TransferFunction(sys.A, sys.B, sys.C, sys.D)
+        if not isinstance(sys, StateSpace):
+            raise TypeError("ss2tf(sys): sys must be a StateSpace object.")
+        return convertToTransferFunction(sys)
     else:
-        raise ValueError, "Needs 1 or 4 arguments."
+        raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-# Function for converting transfer function to state space
-def tf2ss(*args, **keywords):
-    """Transform a transfer function to a state space system
+def tf2ss(*args):
+    """Transform a transfer function to a state space system.
     
     Usage
     =====
     tf2ss(num, den)
-    ss2tf(sys) - sys should be a system object (lti or TransferFunction)
-    """
-    if (len(args) == 2):
+    tf2ss(sys) - sys should be a system object (lti or TransferFunction)"""
+
+    if len(args) == 2:
         # Assume we were given the num, den
-        return TransferFunction(*args)
-    elif (len(args) == 1):
-        # Assume we were given a system object (lti or TransferFunction)
+        return convertToStateSpace(TransferFunction(args[0], args[1]))
+    elif len(args) == 1:
         sys = args[0]
-        #! Should check to make sure object is a transfer function
-        return StateSpace(sys.A, sys.B, sys.C, sys.D)
+        if not isinstance(sys, TransferFunction):
+            raise TypeError("tf2ss(sys): sys must be a TransferFunction \
+object.")
+        return convertToStateSpace(sys)
     else:
-        raise ValueError, "Needs 1 or 2 arguments."
+        raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 def rss(states=1, inputs=1, outputs=1):
     """Create a stable continuous random state space object."""
