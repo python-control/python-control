@@ -46,18 +46,20 @@ import scipy.signal as signal
 import xferfcn
 from scipy import concatenate, zeros
 
-#
-# StateSpace class
-#
-# The StateSpace class is used throughout the control systems library to
-# represent systems in state space form.  This class is derived from
-# the ltisys class defined in the scipy.signal package, allowing many
-# of the functions that already existing in that package to be used
-# directly.
-#
-class StateSpace:
-    """The StateSpace class is used to represent linear input/output systems.
-    """
+class Lti2:
+    """The Lti2 is a parent class to the StateSpace and TransferFunction child
+    classes.  It only contains the number of inputs and outputs, but this can be
+    expanded in the future."""
+    
+    def __init__(self, inputs=1, outputs=1):
+        # Data members common to StateSpace and TransferFunction.
+        self.inputs = inputs
+        self.outputs = outputs
+
+class StateSpace(Lti2):
+    """The StateSpace class is used throughout the python-control library to
+    represent systems in state space form.  This class is derived from the Lti2
+    base class."""
 
     def __init__(self, A, B, C, D): 
         # Here we're going to convert inputs to matrices, if the user gave a non
@@ -88,8 +90,7 @@ class StateSpace:
         self.D = D
 
         self.states = A.shape[0]
-        self.inputs = B.shape[1]
-        self.outputs = C.shape[0]
+        Lti2.__init__(self, B.shape[1], C.shape[0])
         
         # Check that the matrix sizes are consistent.
         if self.states != A.shape[1]:
@@ -103,8 +104,9 @@ class StateSpace:
         if self.outputs != D.shape[0]:
             raise ValueError("D must have the same row size as C.")
 
-    # Style to use for printing
     def __str__(self):
+        """Style to use for printing."""
+
         str =  "A = " + self.A.__str__() + "\n\n"
         str += "B = " + self.B.__str__() + "\n\n"
         str += "C = " + self.C.__str__() + "\n\n"
@@ -113,7 +115,8 @@ class StateSpace:
 
     # Method for generating the frequency response of the system
     def freqresp(self, omega=None):
-        """Compute the response of a system to a list of frequencies"""
+        """Compute the response of a system to a list of frequencies."""
+        
         # Generate and save a transfer function matrix
         #! TODO: This is currently limited to SISO systems
         #nout, nin = self.D.shape
@@ -154,12 +157,14 @@ class StateSpace:
 
     # Negation of a system
     def __neg__(self):
-        """Negate a state space system"""
+        """Negate a state space system."""
+        
         return StateSpace(self.A, self.B, -self.C, -self.D)
 
     # Addition of two transfer functions (parallel interconnection)
     def __add__(self, other):
-        """Add two state space systems"""
+        """Add two state space systems."""
+        
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just adding a scalar; put it in the D matrix
@@ -186,17 +191,20 @@ class StateSpace:
 
     # Reverse addition - just switch the arguments
     def __radd__(self, other): 
-        """Add two state space systems"""
+        """Add two state space systems."""
+        
         return self.__add__(other)
 
     # Subtraction of two transfer functions (parallel interconnection)
     def __sub__(self, other):
-        """Subtract two state space systems"""
+        """Subtract two state space systems."""
+        
         return __add__(self, other.__neg__())
 
     # Multiplication of two transfer functions (series interconnection)
     def __mul__(self, other):
-        """Serial interconnection between two state space systems"""
+        """Serial interconnection between two state space systems."""
+        
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just multiplying by a scalar; change the output
@@ -225,6 +233,7 @@ class StateSpace:
     # Just need to convert LH argument to a state space object
     def __rmul__(self, other):
         """Serial interconnection between two state space systems"""
+        
         # Check for a couple of special cases
         if (isinstance(other, (int, long, float, complex))):
             # Just multiplying by a scalar; change the input
@@ -238,7 +247,8 @@ class StateSpace:
 
     # Feedback around a state space system
     def feedback(self, other, sign=-1):
-        """Feedback interconnection between two state space systems"""
+        """Feedback interconnection between two state space systems."""
+        
         # Check for special cases
         if (isinstance(other, (int, long, float, complex))):
             # Scalar feedback, create state space system that is this case
@@ -281,6 +291,7 @@ class StateSpace:
 #
 def convertToStateSpace(sys, inputs=1, outputs=1):
     """Convert a system to state space form (if needed)"""
+    
     if isinstance(sys, StateSpace):
         # Already a state space system; just return it
         return sys
