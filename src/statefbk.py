@@ -246,13 +246,44 @@ def gram(sys,type):
     Wc = gram(sys,'c')
     Wo = gram(sys,'o')
     """
-    
+
+    #Check for ss system object, need a utility for this?
+
+    #TODO: Check for continous or discrete, only continuous supported right now
+        # if isCont():
+        #    dico = 'C'
+        # elif isDisc():
+        #    dico = 'D'
+        # else:
+    dico = 'C'
+
+    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
+        # or a method of the StateSpace class?
+    D,V = np.linalg.eig(sys.A)
+    for e in D:
+        if e.real >= 0:
+            raise ValueError, "Oops, the system is unstable!"
+
     if type=='c':
         print "controllable"
+        trana = 'T'
+        C = -sys.B*sys.B.transpose()
     elif type=='o':
         print "observable"
-    else: 
+        trana = 'N'
+        C = -sys.C.transpose()*sys.C
+    else:
         raise ValueError, "Oops, neither observable, nor controllable!"
 
-    gram = 0.
+    #Compute Gramian by the Slycot routine sb03md
+        #make sure Slycot is installed
+    try:
+        from slycot import sb03md
+    except ImportError:
+        raise ControlSlycot("can't find slycot module 'sb03md'")
+    n = sys.states
+    U = np.zeros((n,n))
+    out = sb03md(n, C, sys.A, U, dico, 'X', 'N', trana)
+    gram = out[0]
     return gram
+
