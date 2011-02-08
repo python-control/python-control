@@ -109,27 +109,57 @@ def modred(sys,ELIM,method):
         # else:
     dico = 'C'
 
-    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
-        # or a method of the StateSpace class?
+    #Check system is stable
     D,V = np.linalg.eig(sys.A)
     for e in D:
         if e.real >= 0:
             raise ValueError, "Oops, the system is unstable!"
+    print ELIM 
+    ELIM = np.sort(ELIM)
+    print ELIM
+    NELIM = []
+    # Create list of elements not to eliminate (NELIM)
+    for i in range(0,len(sys.A)):
+        if i not in ELIM:
+            NELIM.append(i)
+    print NELIM
+    # A1 is a matrix of all columns of sys.A not to eliminate
+    A1 = sys.A[:,NELIM[0]]
+    for i in NELIM[1:]:
+        A1 = np.hstack((A1, sys.A[:,i]))
+    A11 = A1[NELIM,:]  
+    A21 = A1[ELIM,:]  
+    # A2 is a matrix of all columns of sys.A to eliminate
+    A2 = sys.A[:,ELIM[0]]
+    for i in ELIM[1:]:
+        A2 = np.hstack((A2, sys.A[:,i]))
+    A12 = A2[NELIM,:]
+    A22 = A2[ELIM,:]
+
+    C1 = sys.C[:,NELIM]
+    C2 = sys.C[:,ELIM]
+    B1 = sys.B[NELIM,:]
+    B2 = sys.B[ELIM,:]
+
+    print np.shape(A22)
+    A22I = np.linalg.inv(A22)
 
     if method=='matchdc':
-        raise ValueError, "Not supported yet!"
+        # if matchdc, residualize
+        Ar = A11 - A12*A22.I*A21
+        Br = B1 - A12*A22.I*B2
+        Cr = C1 - C2*A22.I*A21
+        Dr = sys.D - C2*A22.I*B2
     elif method=='truncate':
-        raise ValueError, "Not supported yet!"
+        # if truncate, simply discard state x2
+        Ar = A11 
+        Br = B1
+        Cr = C1
+        Dr = sys.D 
     else:
         raise ValueError, "Oops, method is not supported!"
 
-    #Compute rhs using the Slycot routine XXXXXX 
-        #make sure Slycot is installed
-    #try:
-    #    from slycot import XXXXXX
-    #except ImportError:
-    #    raise ControlSlycot("can't find slycot module 'XXXXXX'")
-    rsys = 0.
+    rsys = StateSpace(Ar,Br,Cr,Dr)
     return rsys
 
 def balred(sys,orders,method='truncate'):
@@ -162,8 +192,7 @@ def balred(sys,orders,method='truncate'):
         # else:
     dico = 'C'
 
-    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
-        # or a method of the StateSpace class?
+    #Check system is stable
     D,V = np.linalg.eig(sys.A)
     for e in D:
         if e.real >= 0:

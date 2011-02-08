@@ -35,15 +35,15 @@ class TestModelsimp(unittest.TestCase):
         C = np.matrix('-0.9057, -0.4068, 0.3263, -0.3474')
         D = np.matrix('0.')
         sys = ss(A,B,C,D)
-        rsys = modred(sys,np.matrix('3, 4'),'matchdc')
+        rsys = modred(sys,[2, 3],'matchdc')
         Artrue = np.matrix('-4.431, -4.552; -4.552, -5.361')
         Brtrue = np.matrix('-1.362; -1.031')
         Crtrue = np.matrix('-1.362, -1.031')
         Drtrue = np.matrix('-0.08384')
-        np.testing.assert_array_almost_equal(sys.A, Artrue)
-        np.testing.assert_array_almost_equal(sys.B, Brtrue)
-        np.testing.assert_array_almost_equal(sys.C, Crtrue)
-        np.testing.assert_array_almost_equal(sys.D, Drtrue)
+        np.testing.assert_array_almost_equal(rsys.A, Artrue,decimal=3)
+        np.testing.assert_array_almost_equal(rsys.B, Brtrue,decimal=3)
+        np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=3)
+        np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=2)
 
     def testModredTruncate(self):
         #balanced realization computed in matlab for the transfer function:
@@ -56,15 +56,15 @@ class TestModelsimp(unittest.TestCase):
         C = np.matrix('-0.9057, -0.4068, 0.3263, -0.3474')
         D = np.matrix('0.')
         sys = ss(A,B,C,D)
-        rsys = modred(sys,np.matrix('3, 4'),'truncate')
+        rsys = modred(sys,[2, 3],'truncate')
         Artrue = np.matrix('-1.958, -1.194; -1.194, -0.8344')
-        Brtrue = np.matrix('-0.9057, -0.4068')
+        Brtrue = np.matrix('-0.9057; -0.4068')
         Crtrue = np.matrix('-0.9057, -0.4068')
         Drtrue = np.matrix('0.')
-        np.testing.assert_array_almost_equal(sys.A, Artrue)
-        np.testing.assert_array_almost_equal(sys.B, Brtrue)
-        np.testing.assert_array_almost_equal(sys.C, Crtrue)
-        np.testing.assert_array_almost_equal(sys.D, Drtrue)
+        np.testing.assert_array_almost_equal(rsys.A, Artrue)
+        np.testing.assert_array_almost_equal(rsys.B, Brtrue)
+        np.testing.assert_array_almost_equal(rsys.C, Crtrue)
+        np.testing.assert_array_almost_equal(rsys.D, Drtrue)
 
     def testBalredMatchDC(self):
         #controlable canonical realization computed in matlab for the transfer function:
