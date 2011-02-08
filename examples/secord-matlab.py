@@ -18,7 +18,7 @@ sys = ss(A, B, C, 0);
 # Step response for the system
 figure(1)
 T, yout = step(sys)
-plot(T.T, yout.T)
+plot(T, yout)
 
 # Bode plot for the system
 figure(2)

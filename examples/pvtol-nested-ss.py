@@ -10,7 +10,6 @@
 
 from matplotlib.pyplot import * # Grab MATLAB plotting functions
 from control.matlab import *    # MATLAB-like functions
-import numpy as np
 
 # System parameters
 m = 4;				# mass of aircraft
@@ -108,7 +107,7 @@ phase = phase - 360;
 subplot(phaseh);
 semilogx([10^-4, 10^3], [-180, -180], 'k-')
 hold(True);
-semilogx(w, np.squeeze(phase), 'b-')
+semilogx(w, phase, 'b-')
 axis([10^-4, 10^3, -360, 0]);
 xlabel('Frequency [deg]'); ylabel('Phase [deg]');
 # set(gca, 'YTick', [-360, -270, -180, -90, 0]);
@@ -145,15 +144,14 @@ color = 'b';
 
 figure(9); 
 (Tvec, Yvec) = step(T, None, linspace(1, 20));
-plot(Tvec.T, Yvec.T); hold(True);
+plot(Tvec, Yvec); hold(True);
 
 (Tvec, Yvec) = step(Co*S, None, linspace(1, 20));
-plot(Tvec.T, Yvec.T);
+plot(Tvec, Yvec);
 
-#TODO: PZmap for statespace systems has not yet been implemented.
 figure(10); clf();
-#(P, Z) = pzmap(T, Plot=True)
-#print "Closed loop poles and zeros: ", P, Z
+(P, Z) = pzmap(T, Plot=True)
+print "Closed loop poles and zeros: ", P, Z
 
 # Gang of Four
 figure(11); clf();

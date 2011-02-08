@@ -344,13 +344,13 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __div__(self, other):
         """Divide two LTI objects."""
         
-        # Convert the second argument to a transfer function.
-        other = _convertToTransferFunction(other)
-
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError("TransferFunction.__div__ is currently \
 implemented only for SISO systems.")
+
+        # Convert the second argument to a transfer function.
+        other = _convertToTransferFunction(other)
 
         num = polymul(self.num[0][0], other.den[0][0])
         den = polymul(self.den[0][0], other.num[0][0])
@@ -487,9 +487,8 @@ only implemented for SISO functions.")
         
         computes the single denominator containing all the poles of sys.den, and
         reports it as the array d.  The output numerator array n is modified to
-        use the common denominator; the coefficient arrays are also padded with
-        zeros to be the same size as d.  n is an sys.outputs-by-sys.inputs-by-
-        len(d) array.
+        use the common denominator.  It is an sys.outputs-by-sys.inputs-by-
+        [something] array.
 
         """
         
@@ -589,12 +588,16 @@ a zero leading coefficient." % (i, j)
                 # Multiply in the missing poles.
                 for p in missingpoles[i][j]:
                     num[i][j] = polymul(num[i][j], [1., -p])
-        # Pad all numerator polynomials with zeros so that the numerator arrays
-        # are the same size as the denominator.
+        # Find the largest numerator polynomial size.
+        largest = 0
         for i in range(self.outputs):
             for j in range(self.inputs):
-                num[i][j] = insert(num[i][j], zeros(len(den) - len(num[i][j])),
-                    zeros(len(den) - len(num[i][j])))
+                largest = max(largest, len(num[i][j]))
+        # Pad all smaller numerator polynomials with zeros.
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                num[i][j] = insert(num[i][j], zeros(largest - len(num[i][j])),
+                    zeros(largest - len(num[i][j])))
         # Finally, convert the numerator to a 3-D array.
         num = array(num)
         # Remove trivial imaginary parts.  Check for nontrivial imaginary parts.

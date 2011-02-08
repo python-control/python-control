@@ -42,7 +42,6 @@
 
 import matplotlib.pyplot as plt
 import scipy as sp
-import numpy as np
 import xferfcn
 
 # Compute poles and zeros for a system
@@ -50,10 +49,10 @@ import xferfcn
 def pzmap(sys, Plot=True):
     """Plot a pole/zero map for a transfer function"""
     if (isinstance(sys, xferfcn.TransferFunction)):
-        poles = sp.roots(np.squeeze(np.asarray(sys.den)));
-        zeros = sp.roots(np.squeeze(np.asarray(sys.num)));
+        poles = sp.roots(sys.den);
+        zeros = sp.roots(sys.num);
     else:
-        raise NotImplementedError("pzmap not implemented for state space systems yet.")
+        raise TypeException
 
     if (Plot):
         # Plot the locations of the poles and zeros
