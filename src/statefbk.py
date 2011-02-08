@@ -265,11 +265,9 @@ def gram(sys,type):
             raise ValueError, "Oops, the system is unstable!"
 
     if type=='c':
-        print "controllable"
         trana = 'T'
         C = -np.dot(sys.B,sys.B.transpose())
     elif type=='o':
-        print "observable"
         trana = 'N'
         C = -np.dot(sys.C.transpose(),sys.C)
     else:

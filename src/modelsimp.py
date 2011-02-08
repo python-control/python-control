@@ -75,6 +75,8 @@ def hsvd(sys):
 
     hsv = np.sqrt(w)
     hsv = np.matrix(hsv)
+    hsv = np.sort(hsv)
+    hsv = np.fliplr(hsv)
     # Return the Hankel singular values
     return hsv
 
@@ -115,9 +117,9 @@ def modred(sys,ELIM,method):
             raise ValueError, "Oops, the system is unstable!"
 
     if method=='matchdc':
-        print "matchdc"
+        raise ValueError, "Not supported yet!"
     elif method=='truncate':
-        print "truncate"
+        raise ValueError, "Not supported yet!"
     else:
         raise ValueError, "Oops, method is not supported!"
 
@@ -130,7 +132,7 @@ def modred(sys,ELIM,method):
     rsys = 0.
     return rsys
 
-def balred(sys,orders,elimination,method):
+def balred(sys,orders,method='truncate'):
     """Balanced reduced order model of sys of a given order.  States are eliminated based on Hankel singular value.
 
     Usage

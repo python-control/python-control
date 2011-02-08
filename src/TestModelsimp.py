@@ -78,7 +78,7 @@ class TestModelsimp(unittest.TestCase):
         D = np.matrix('0.')
         sys = ss(A,B,C,D)
         orders = 1
-        rsys = balred(sys,orders,'elimination','matchdc')
+        rsys = balred(sys,orders,method='matchdc')
         Artrue = np.matrix('-0.566')
         Brtrue = np.matrix('-0.414')
         Crtrue = np.matrix('-0.5728')
@@ -100,7 +100,7 @@ class TestModelsimp(unittest.TestCase):
         D = np.matrix('0.')
         sys = ss(A,B,C,D)
         orders = 2
-        rsys = balred(sys,orders,'elimination','truncate')
+        rsys = balred(sys,orders,method='truncate')
         Artrue = np.matrix('-1.958, -1.194; -1.194, -0.8344')
         Brtrue = np.matrix('0.9057; 0.4068')
         Crtrue = np.matrix('0.9057, 0.4068')
