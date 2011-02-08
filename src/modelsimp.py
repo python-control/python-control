@@ -51,19 +51,25 @@ from statesp import StateSpace
 def hsvd(sys):
     """Calculate the Hankel singular values
 
-    Usage
-    =====
-    H = hsvd(sys)
-
-    The Hankel singular values are the singular values of the Hankel operator.  In practice, we compute the square root of the eigenvalues of the matrix formed by taking the product of the observability and controllability gramians.  There are other (more efficient) methods based on solving the Lyapunov equation in a particular way (more details soon).  
-
-    Inputs
-    ------
+    Parameters
+    ----------
     sys : a state space system 
 
-    Outputs
+    Returns
     -------
     H : a list of Hankel singular values 
+
+    See Also
+    --------
+    gram
+
+    Notes
+    -----
+    The Hankel singular values are the singular values of the Hankel operator.  In practice, we compute the square root of the eigenvalues of the matrix formed by taking the product of the observability and controllability gramians.  There are other (more efficient) methods based on solving the Lyapunov equation in a particular way (more details soon).  
+
+    Examples
+    --------
+    H = hsvd(sys)
 
     """
 
@@ -83,19 +89,25 @@ def hsvd(sys):
 def modred(sys,ELIM,method):
     """Model reduction of sys by eliminating the states in ELIM using a given method
 
-    Usage
-    =====
-    rsys = modred(sys,ELIM,method) 
+    Parameters
+    ----------
+    sys: original system to reduce
+    ELIM: vector of states to eliminate
+    method: method of removing states in ELIM (truncate or matchdc)
 
-    Inputs
-    ======
-    sys : original system to reduce
-    ELIM : vector of states to eliminate
-    method : method of removing states in ELIM (truncate or matchdc)
+    Returns
+    -------
+    rsys: a reduced order model 
 
-    Outputs
-    =======
-    rsys : a reduced order model 
+    Raises
+    ------
+    ValueError
+        if `method` is not either `matchdc` or `truncate`
+        if eigenvalues of `sys.A` are not all in left half plane (sys must be stable) 
+
+    Examples
+    --------
+    rsys = modred(sys,ELIM,method)
 
     """
 
@@ -114,15 +126,12 @@ def modred(sys,ELIM,method):
     for e in D:
         if e.real >= 0:
             raise ValueError, "Oops, the system is unstable!"
-    print ELIM 
     ELIM = np.sort(ELIM)
-    print ELIM
     NELIM = []
     # Create list of elements not to eliminate (NELIM)
     for i in range(0,len(sys.A)):
         if i not in ELIM:
             NELIM.append(i)
-    print NELIM
     # A1 is a matrix of all columns of sys.A not to eliminate
     A1 = sys.A[:,NELIM[0]]
     for i in NELIM[1:]:
@@ -141,7 +150,6 @@ def modred(sys,ELIM,method):
     B1 = sys.B[NELIM,:]
     B2 = sys.B[ELIM,:]
 
-    print np.shape(A22)
     A22I = np.linalg.inv(A22)
 
     if method=='matchdc':
@@ -165,20 +173,27 @@ def modred(sys,ELIM,method):
 def balred(sys,orders,method='truncate'):
     """Balanced reduced order model of sys of a given order.  States are eliminated based on Hankel singular value.
 
-    Usage
-    =====
+    Parameters
+    ----------
+    sys: original system to reduce
+    orders: desired order of reduced order model (if a vector, returns a vector of systems)
+    method: method of removing states (truncate or matchdc)
+
+    Returns
+    -------
+    rsys: a reduced order model 
+
+    Raises
+    ------
+    ValueError
+        if `method` is not `truncate`
+        if eigenvalues of `sys.A` are not all in left half plane (sys must be stable) 
+    ImportError
+        if slycot routine ab09ad is not found 
+
+    Examples
+    --------
     rsys = balred(sys,order,elimination,method) 
-
-    Inputs
-    ======
-    sys : original system to reduce
-    orders : desired order of reduced order model (if a vector, returns a vector of systems)
-    elimination : if elimination is specified, use 'method'
-    method : method of removing states (truncate or matchdc)
-
-    Outputs
-    =======
-    rsys : a reduced order model 
 
     """
 
