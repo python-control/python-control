@@ -55,69 +55,92 @@ from lti2 import Lti2
 
 class xTransferFunction(Lti2):
     """The TransferFunction class is derived from the Lti2 parent class.  The
-    main data members are 'num' and 'den', which are 3-D numpy arrays of
-    MIMO numerator and denominator coefficients.  For instance,
-    
-    >>> num[2, 5] = numpy.array([1, 4, 8])
+    main data members are 'num' and 'den', which are 2-D lists of arrays
+    containing MIMO numerator and denominator coefficients.  For example,
+
+    >>> num[2][5] = [1., 4., 8.]
     
     means that the numerator of the transfer function from the 6th input to the
-    3rd output is set to s^2 + 4s + 8.
+    3rd output is set to s^2 + 4s + 8."""
     
-    Note that numpy requires all polynomials in within an array to have the same
-    order.  Be sure to pad leading coefficients with 0 as necessary."""
-    
-    def __init__(self, num=sp.array([[[1.]]]), den=sp.array([[[1.]]])):
+    def __init__(self, num=1, den=1):
         """This is the constructor.  The default transfer function is 1 (unit
         gain direct feedthrough)."""
-        
+
         # Make num and den into 3-d numpy arrays, if necessary.
         data = [num, den]
         for i in range(len(data)):
-            # Convert non-array types to array first.
-            data[i] = sp.array(data[i])
-            
-            if data[i].ndim == 0:
-                # Convert scalar to 3-d array.
-                data[i] = sp.array([[[data[i]]]])
-            elif data[i].ndim == 1:
-                # Convert SISO transfer function polynomial to 3-d array.
-                data[i] = sp.array([[data[i]]])
-            elif data[i].ndim == 3:
-                # We already have a MIMO system.
+            if isinstance(data[i], (int, float, long, complex)):
+                # Convert scalar to list of list of array.
+                data[i] = [[[data[i]]]]
+            elif isinstance(data[i], (list, tuple, sp.ndarray)) and \
+                isinstance(data[i][0], (int, float, long, complex)):
+                # Convert array to list of list of array.
+                data[i] = [[data[i]]]
+            elif isinstance(data[i], (list, tuple, sp.ndarray)) and \
+                isinstance(data[i][0], (list, tuple, sp.ndarray)) and \
+                isinstance(data[i][0][0], (list, tuple, sp.ndarray)) and \
+                isinstance(data[i][0][0][0], (int, float, long, complex)):
+                # We already have the right format.
                 pass
             else:
-                # If the user passed in a anything else, then it's unclear
-                # what the meaning is.
+                # If the user passed in anything else, then it's unclear what
+                # the meaning is.
                 raise ValueError("The numerator and denominator inputs must be \
-                scalars or vectors (for SISO), or 3-d arrays (for MIMO).")
+scalars or arrays (for\nSISO), or lists of lists of arrays (for MIMO).")
         [num, den] = data
         
-        inputs = num.shape[1]
-        outputs = num.shape[0]
+        inputs = len(num[0])
+        outputs = len(num)
         
-        if inputs != den.shape[1]:
+        if inputs != len(den[0]):
             raise ValueError("The numerator and denominator matrices must have \
-            the same column (input) size.")
-        if outputs != den.shape[0]:
+the same column\n(input) size.")
+        if outputs != len(den):
             raise ValueError("The numerator and denominator matrices must have \
-            the same row (output) size.")
-        
+the same row\n(output) size.")
+        for i in range(1, outputs):
+            if len(num[i]) != inputs:
+                raise ValueError("Each row of the numerator matrix must have \
+the same number of\nelements.")
+            if len(den[i]) != inputs:
+                raise ValueError("Each row of the denominator matrix must have \
+the same number of\nelements.")
+
         self.num = num
         self.den = den
         Lti2.__init__(self, inputs, outputs)
         
-    def __str__(self): pass
+    def __str__(self):
+        """String representation of the transfer function."""
+    
+        pass
     
     def __neg__(self):
         """Negate a transfer function."""
         
         return xTransferFunction(-self.num, self.den)
         
-    def __add__(self, sys):
+    def __add__(self, other):
         """Add two transfer functions (parallel connection)."""
-    
-    pass
-    
+        
+        # Convert the second argument to a transfer function.
+        if not isinstance(other, xTransferFunction):
+            other = ss2tf(other)
+
+        # Preallocate the numerator and denominator of the sum.
+        num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+        den = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                num[i][j] = sp.polyadd(
+                    sp.polymul(self.num[i][j], other.den[i][j]),
+                    sp.polymul(other.num[i][j], self.den[i][j]))
+                den[i][j] = sp.polymul(self.den[i][j], other.den[i][j])
+
+        return xTransferFunction(num, den)
+ 
     def __radd__(self, other): 
         """Add two transfer functions (parallel connection)"""
         
@@ -348,23 +371,10 @@ class TransferFunction(signal.lti):
         # Return the result as a transfer function
         return TransferFunction(num, den)
 
-# Function to create a transfer function from another type
-def convertToTransferFunction(sys):
-    """Convert a system to a transfer fuction (if needed)"""
-    if (isinstance(sys, TransferFunction)):
-        # Already a transfer function; just return it
-        return sys
+def ss2tf(sys):
+    """Convert a state space object to a transfer function object."""
 
-    elif (isinstance(sys, statesp.StateSpace)):
-        # State space system, convert using signal.lti
-        return TransferFunction(sys.A, sys.B, sys.C, sys.D)
-
-    elif (isinstance(sys, (int, long, float, complex))):
-        # Convert a number into a transfer function
-        return TransferFunction(sys, 1)
-
-    else:
-        raise TypeError("can't convert given type to TransferFunction")
+    pass
 
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library
