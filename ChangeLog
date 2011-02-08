@@ -1,0 +1,144 @@
+2010-11-05  Richard Murray  <murray@sumatra.local>
+
+	* external/yottalab.py: New file containing Roberto Bucher's control
+	library functions.  OK to start pulling these into the main library,
+	with attribution, but note that they use modifications of the
+	default library => some rewrites will be needed.
+
+2010-09-11  Richard Murray  <murray@sumatra.local>
+
+	* src/matlab.py (step): Added local step response function that uses
+	lsim2() instead of signal.step (which can't handle integrators).
+	This function may not be needed when new scipy step2() function is
+	available.
+	(impulse): Added local impulse response function that sets the
+	initial condition based on the input matrix and then uses the
+	lsim2() function to compute the response.
+
+	* examples/test-response.py: Added test script for making sure that
+	time repsonse functions are working as desired
+
+	* src/matlab.py (lsim): Added local version of lsim that calls
+	signal.lsim2 (actual ODE integrator)
+
+2010-09-06  Richard Murray  <murray@sumatra.local>
+
+	* src/statefbk.py (ctrb): new function for testing controllability
+	* src/statefbk.py (obsv): new function for testing observabiilty
+
+2010-09-02  Richard Murray  <murray@sumatra.local>
+
+	* src/statefbk.py (place): Use np.size() instead of len() for
+	finding length of placed_eigs for better compatability with
+	different python versions [courtesy of Roberto Bucher]
+
+	* src/delay.py (pade): New file for delay-based computations +
+	initial implementation of pade() [courtesy Sawyer Fuller]
+
+2010-06-17  Richard Murray  <murray@sumatra.local>
+
+	* src/rlocus.py: changed num, den to nump, denp for clarity
+	* src/rlocus.py: new file with Ryan Krauss's root locus code
+
+2010-06-06  Richard Murray  <murray@sumatra.local>
+
+	* examples/pvtol-lqr.py: Added example to test out LQR routines
+
+	* src/matlab.py (bode): created a wrapper that allows MATLAB style
+	arguments for bode (eg, bode(sys1, sys2))
+
+	* src/ctrlutil.py (issys): added new function to check if an object
+	is a system (state space or transfer function).  Will generalize
+	this latter to look for other compatible classes.
+
+	* src/freqplot.py (bode): Compute frequency range of bode plot based
+	on poles and zeros
+	(bode): Allow bode plot to be passed a list (or tuple) as the first
+	argument, in which case multiple bode plots are generated
+
+	* src/statesp.py (StateSpace.zeros): new function to compute zeros
+	for a state space system
+	(StateSpace): defined new functions to compute poles of a state
+	space system
+
+	* src/xferfcn.py (TransferFunction): defined new functions to
+	compute poles and zeros of a transfer function.
+
+2010-05-31  Richard Murray  <murray@sumatra.local>
+
+	* src/exception.py (ControlNotImplemented): added new exception, to
+	be used for functions that are not yet implemented
+
+	* src/statefbk.py (lqr): added lqr function (using slycot).  Still
+	needs to be verified to make sure calculations are correct.
+
+	* ChangeLog: converted to standard GNU formation (old style below)
+	* setup.py: updated package number to v0.3, changed URL to
+	sourceforge wiki
+
+------------------	
+31 May 2010, RMM: added place() function using slycot
+  * New module: statefbk - functions to design state feedback controllers
+  * Uses Enrico Avventi slycot wrappers (http://github.com/avventi/Slycot)
+  * Also added some exception types: ControlSlycot and ControlDimension
+  * Added new example to test slycot interface (directly)
+
+29 May 2010, RMM: updated function documentation
+  * Added __doc__ strings for all current functions
+  * Added __doc__ string to matlab module, listing control toolbox functions
+
+22 May 2010, RMM: tweaked comments and released v0.3a
+  * Changed copyright information on modified files to 2010
+  * Updated "to do" comments to use "#! TODO:" as prefix
+
+11 Feb 2010, GR: implemented and tested state space feedback
+15 Jan 2010, GR: added new example, improved bode
+
+4 Jan 2010, GR: updated bode plots
+  * made bode plot more like matlab
+  * added options for plotting in dB, Hz
+
+27 Dec 2009, GR: important bug fix: feedback TFs were being divided by two
+  
+10 Oct 09, RMM: reset matplotlib import in secord-matlab
+  * Using 'from matplotlib import *' causes error with figures
+  * On my other computer, got error when trying to import 'matplotlib.pyplot'
+  * Need to sort out versions and figure out proper import structure
+
+13 Sep 09, RMM: added basic state space functionality
+  * Updated StateSpace routines to allow BD algebra with constants
+  * Updated pvtol-nested example to try to use state space representation
+    (not completely working yet)
+
+12 Sep 09, RMM: code restructuring for transfer functions
+  * Implemented feedback() method in bldalg; partially working
+    for mixture of TF, SS and numbers (not thoroughly tested yet)
+  * New feedback method for TransferFunctions
+  * Updated gangof4 to use new feedback function
+
+9 Sep 09, RMM: updated pzmap to generate a plot (turn off with Plot=False)
+
+8 Sep 09, RMM: rewrite of xferfcn to handle type casting better
+  * Appropriate functions now call convertToTransferFunction
+  * Restricted transfer function to SISO only
+
+7 Sep 09, RMM: additional fixes
+  * Implemented block diagram operations for SISO transfer functions
+  * Modified frequency response functions for transfer functions
+  * Added rudimentary pole/zero computations
+  * Added comments on things that need to be fixed (search for !)
+
+5 Sep 09, RMM: updates to get standard examples working
+  * Copied and converted pvtol_nested.py from AM08, Chapter 11
+  * Updated freqresp to use poly1d for computing values
+  * Added outputs to bode plot - return mag and phase subplot handles
+
+2009-05-24  Richard Murray  <murray@kona-2.local>
+  * ./ Initial creation of package files and ChangeLog
+  * Using simpler text format since emacs python mode doesn't support
+    ChangeLog entries anyway
+
+
+Local Variables:
+mode:text
+End:
