@@ -459,6 +459,10 @@ def lsim(*args, **keywords):
       yout      response of the system
       xout      time evolution of the state vector
     """
+    sys = args[0]
+    ltiobjs = sys.returnScipySignalLti()
+    ltiobj = ltiobjs[0][0]
+ 
     return sp.signal.lsim2(*args, **keywords)
 
 #! Redefine step to use lsim2 
@@ -510,6 +514,10 @@ def initial(*args, **keywords):
       T         time values of the output
       yout      response of the system
     """
+    sys = args[0]
+    ltiobjs = sys.returnScipySignalLti()
+    ltiobj = ltiobjs[0][0]
+
     return sp.signal.initial(*args, **keywords)
 
 # Redefine impulse to use initial()
