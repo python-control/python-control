@@ -646,7 +646,7 @@ def freqresp(sys, omega):
     Parameters
     ----------
     sys: StateSpace or TransferFunction object
-    omega: list, tuple, or ndarray
+    omega: list or ndarray
 
     Returns
     -------
@@ -662,7 +662,8 @@ def freqresp(sys, omega):
     Notes
     -----
     This function is a wrapper for StateSpace.freqresp and
-    TransferFunction.freqresp.
+    TransferFunction.freqresp.  The output omega is a sorted version of the
+    input omega.
 
     Examples
     --------

@@ -386,7 +386,7 @@ implemented only for SISO systems.")
 
         reports the value of the magnitude, phase, and angular frequency of the 
         transfer function matrix evaluated at s = i * omega, where omega is a
-        list of angular frequencies.
+        list of angular frequencies, and is a sorted version of the input omega.
 
         """
         
@@ -394,6 +394,8 @@ implemented only for SISO systems.")
         numfreq = len(omega)
         mag = empty((self.outputs, self.inputs, numfreq))
         phase = empty((self.outputs, self.inputs, numfreq))
+
+        omega.sort()
 
         for i in range(self.outputs):
             for j in range(self.inputs):

@@ -301,7 +301,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         reports the value of the magnitude, phase, and angular frequency of the
         system's transfer function matrix evaluated at s = i * omega, where
-        omega is a list of angular frequencies.
+        omega is a list of angular frequencies, and is a sorted version of the
+        input omega.
 
         """
         
@@ -310,6 +311,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         mag = empty((self.outputs, self.inputs, numfreq))
         phase = empty((self.outputs, self.inputs, numfreq))
         fresp = empty((self.outputs, self.inputs, numfreq), dtype=complex)
+
+        omega.sort()
 
         for k in range(numfreq):
             fresp[:, :, k] = self.evalfr(omega[k])
