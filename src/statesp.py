@@ -60,6 +60,28 @@ class StateSpace:
     """
 
     def __init__(self, A, B, C, D): 
+        # Here we're going to convert inputs to matrices, if the user gave a non
+        # 2-D array or matrix type.
+        matrices = [A, B, C, D]
+        for i in range(len(matrices)):
+            if (isinstance(matrices[i], (int, long, float, complex))):
+                # Convert scalars to matrices, if necessary.
+                matrices[i] = sp.matrix(matrices[i])
+            elif isinstance(matrices[i], sp.ndarray):
+                # Convert 0- or 1-D arrays to matrices, if necessary.
+                if len(matrices[i].shape) < 2:
+                    matrices[i] = sp.matrix(matrices[i])
+                elif len(matrices[i].shape) == 2:
+                    # If we're already a 2-D array or a matrix, then perfect!
+                    pass
+                else:
+                    raise ValueError("A, B, C, and D cannot have > 2 \
+                    dimensions.")
+            else:
+                # If the user gave us a non-numeric type.
+                raise ValueError("A, B, C, and D must be arrays or matrices.")
+        [A, B, C, D] = matrices
+
         self.A = A
         self.B = B
         self.C = C
@@ -68,11 +90,6 @@ class StateSpace:
         self.states = A.shape[0]
         self.inputs = B.shape[1]
         self.outputs = C.shape[0]
-        
-        # Check that the inputs are arrays or matrices.
-        if not (isinstance(A, sp.ndarray) and isinstance(B, sp.ndarray) and
-            isinstance(C, sp.ndarray) and isinstance(D, sp.ndarray)):
-            raise ValueError("A, B, C, and D must be arrays or matrices.")
         
         # Check that the matrix sizes are consistent.
         if self.states != A.shape[1]:
