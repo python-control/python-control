@@ -101,8 +101,28 @@ class TransferFunction(Lti):
     
     """
     
-    def __init__(self, num=1, den=1):
-        """Construct a transfer function.  The default is unit static gain."""
+    def __init__(self, *args):
+        """Construct a transfer function.
+        
+        The default constructor is TransferFunction(num, den), where num and den
+        are lists of lists of arrays containing polynomial coefficients.  To
+        call the copy constructor, call TransferFunction(sys), where sys is a
+        TransferFunction object.
+
+        """
+
+        if len(args) == 2:
+            # The user provided a numerator and a denominator.
+            (num, den) = args
+        elif len(args) == 1:
+            # Use the copy constructor.
+            if not isinstance(args[0], TransferFunction):
+                raise TypeError("The one-argument constructor can only take in \
+a TransferFunction object.  Received %s." % type(args[0]))
+            num = args[0].num
+            den = args[0].den
+        else:
+            raise ValueError("Needs 1 or 2 arguments; receivd %i." % len(args))
 
         # Make num and den into lists of lists of arrays, if necessary.  Beware:
         # this is a shallow copy!  This should be okay, but be careful.
@@ -211,11 +231,6 @@ denominator." % (j + 1, i + 1))
                         data[p][i][j] = data[p][i][j][nonzero:]        
         [self.num, self.den] = data
     
-    def copy(self):
-        """Return a deep copy of the instance."""
-
-        return deepcopy(self)
-
     def __str__(self):
         """String representation of the transfer function."""
         

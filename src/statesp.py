@@ -78,7 +78,6 @@ from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
-from copy import deepcopy
 from slycot import td04ad
 from lti import Lti
 import xferfcn
@@ -96,9 +95,30 @@ class StateSpace(Lti):
     
     """
 
-    def __init__(self, A=0, B=0, C=0, D=1): 
-        """Construct a state space object.  The default is unit static gain."""
+    def __init__(self, *args): 
+        """Construct a state space object.
         
+        The default constructor is StateSpace(A, B, C, D), where A, B, C, D are
+        matrices or equivalent objects.  To call the copy constructor, call
+        StateSpace(sys), where sys is a StateSpace object.
+
+        """
+        
+        if len(args) == 4:
+            # The user provided A, B, C, and D matrices.
+            (A, B, C, D) = args
+        elif len(args) == 1:
+            # Use the copy constructor.
+            if not isinstance(args[0], StateSpace):
+                raise TypeError("The one-argument constructor can only take in \
+a StateSpace object.  Recived %s." % type(args[0]))
+            A = args[0].A
+            B = args[0].B
+            C = args[0].C
+            D = args[0].D
+        else:
+            raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
+
         # Here we're going to convert inputs to matrices, if the user gave a
         # non-matrix type.
         matrices = [A, B, C, D] 
@@ -170,11 +190,6 @@ class StateSpace(Lti):
         self.states = self.A.shape[0]
         self.inputs = self.B.shape[1]
         self.outputs = self.C.shape[0]
-
-    def copy(self):
-        """Return a deep copy of the instance."""
-
-        return deepcopy(self)
 
     def __str__(self):
         """String representation of the state space."""

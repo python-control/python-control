@@ -59,6 +59,7 @@ $Id: matlab.py 33 2010-11-26 21:59:57Z murrayrm $
 import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
 import scipy.signal as signal   # Signal processing library
+from copy import deepcopy
 
 # Import MATLAB-like functions that are defined in other packages
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
@@ -305,7 +306,7 @@ def ss(*args):
     elif len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
-            return sys
+            return deepcopy(sys)
         elif isinstance(sys, TransferFunction):
             return tf2ss(sys)
         else:
@@ -366,7 +367,7 @@ def tf(*args):
         if isinstance(sys, StateSpace):
             return ss2tf(sys)
         elif isinstance(sys, TransferFunction):
-            return sys
+            return deepcopy(sys)
         else:
             raise TypeError("tf(sys): sys must be a StateSpace or \
 TransferFunction object.  It is %s." % type(sys)) 
