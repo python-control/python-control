@@ -57,13 +57,22 @@ class TestXferFcn(unittest.TestCase):
                 
         sys1 = xTransferFunction(num1, den1)
         sys2 = xTransferFunction(num2, den2)
-        
         sys3 = sys1 + sys2
 
         for i in range(sys3.outputs):
             for j in range(sys3.inputs):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
+                
+    def testMulSISO1(self):
+        """Multiply two direct feedthrough systems."""
+        
+        sys1 = xTransferFunction(2., [1.])
+        sys2 = xTransferFunction(1., 4.)
+        sys3 = sys1 * sys2
+        
+        np.testing.assert_array_equal(sys3.num, [[[2.]]])
+        np.testing.assert_array_equal(sys3.den, [[[4.]]])
 
 if __name__ == "__main__":
     unittest.main()

@@ -67,7 +67,7 @@ class xTransferFunction(Lti2):
         """This is the constructor.  The default transfer function is 1 (unit
         gain direct feedthrough)."""
 
-        # Make num and den into 3-d numpy arrays, if necessary.
+        # Make num and den into lists of lists of arrays, if necessary.
         data = [num, den]
         for i in range(len(data)):
             if isinstance(data[i], (int, float, long, complex)):
@@ -93,19 +93,34 @@ scalars or arrays (for\nSISO), or lists of lists of arrays (for MIMO).")
         inputs = len(num[0])
         outputs = len(num)
         
+        # Make sure the numerator and denominator matrices have consistent
+        # sizes.
         if inputs != len(den[0]):
-            raise ValueError("The numerator and denominator matrices must have \
-the same column\n(input) size.")
+            raise ValueError("The numerator has %i input(s), but the \
+denominator has %i\ninput(s)." % (inputs, len(den[0])))
         if outputs != len(den):
-            raise ValueError("The numerator and denominator matrices must have \
-the same row\n(output) size.")
-        for i in range(1, outputs):
+            raise ValueError("The numerator has %i output(s), but the \
+denominator has %i\noutput(s)." % (outputs, len(den)))
+        
+        # Make sure that each row has the same number of columns.
+        for i in range(outputs):
             if len(num[i]) != inputs:
-                raise ValueError("Each row of the numerator matrix must have \
-the same number of\nelements.")
+                raise ValueError("Row 0 of the numerator matrix has %i \
+elements, but row %i\nhas %i." % (inputs, i, len(num[i])))
             if len(den[i]) != inputs:
-                raise ValueError("Each row of the denominator matrix must have \
-the same number of\nelements.")
+                raise ValueError("Row 0 of the denominator matrix has %i \
+elements, but row %i\nhas %i." % (inputs, i, len(den[i])))
+            
+            # Check that we don't have any zero denominators.
+            for j in range(inputs):
+                iszero = True
+                for k in den[i][j]:
+                    if k:
+                        iszero = False
+                        break
+                if iszero:
+                    raise ValueError("Input %i, output %i has a zero \
+denominator." % (j + 1, i + 1))
 
         self.num = num
         self.den = den
@@ -180,11 +195,11 @@ the same number of\nelements.")
 
         # Check that the input-output sizes are consistent.
         if self.inputs != other.inputs:
-            raise ValueError("The two systems to be added must have the same \
-input size.")
+            raise ValueError("The first summand has %i input(s), but the second \
+has %i." % (self.inputs, other.inputs))
         if self.outputs != other.outputs:
-            raise ValueError("The two systems to be added must have the same \
-output size.")
+            raise ValueError("The first summand has %i output(s), but the second \
+has %i." % (self.outputs, other.outputs))
 
         # Preallocate the numerator and denominator of the sum.
         num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
@@ -192,7 +207,7 @@ output size.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                num[i][j], den[i][j] = addSISO(self.num[i][j], self.den[i][j],
+                num[i][j], den[i][j] = _addSISO(self.num[i][j], self.den[i][j],
                     other.num[i][j], other.den[i][j])
 
         return xTransferFunction(num, den)
@@ -221,15 +236,15 @@ output size.")
             
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
-            raise ValueError("C = A * B: A must have the same number of \
-columns (inputs) as B has\nrows (outputs).")
+            raise ValueError("C = A * B: A has %i column(s) (input(s)), but B \
+has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         inputs = other.inputs
         outputs = self.outputs
         
         # Preallocate the numerator and denominator of the sum.
         num = [[[0] for j in range(inputs)] for i in range(outputs)]
-        den = [[[0] for j in range(inputs)] for i in range(outputs)]
+        den = [[[1] for j in range(inputs)] for i in range(outputs)]
         
         # Temporary storage for the summands needed to find the (i, j)th element
         # of the product.
@@ -241,7 +256,7 @@ columns (inputs) as B has\nrows (outputs).")
                 for k in range(self.inputs): # Multiply & add.
                     num_summand[k] = sp.polymul(self.num[i][k], other.num[k][j])
                     den_summand[k] = sp.polymul(self.den[i][k], other.den[k][j])
-                    num[i][j], den[i][j] = addSISO(num[i][j], den[i][j],
+                    num[i][j], den[i][j] = _addSISO(num[i][j], den[i][j],
                         num_summand[k], den_summand[k])
         
         return xTransferFunction(num, den)
@@ -251,15 +266,41 @@ columns (inputs) as B has\nrows (outputs).")
         
         return self * other
 
-    def __div__(self, sys):
+    # TODO: Division of MIMO transfer function objects is quite difficult.
+    def __div__(self, other):
         """Divide two transfer functions"""
         
-        pass
+        if self.inputs > 1 or self.outputs > 1 or \
+            other.inputs > 1 or other.outputs > 1:
+            raise NotImplementedError("xTransferFunction.__div__ is currently \
+implemented only for SISO systems.")
+
+        # Convert the second argument to a transfer function.
+        if not isinstance(other, xTransferFunction):
+            other = ss2tf(other)
+
+        num = sp.polymul(self.num[0][0], other.den[0][0])
+        den = sp.polymul(self.den[0][0], other.num[0][0])
         
+        return xTransferFunction(num, den)
+       
+    # TODO: Division of MIMO transfer function objects is quite difficult.
     def __rdiv__(self, sys):
         """Reverse divide two transfer functions"""
         
-        pass
+        if self.inputs > 1 or self.outputs > 1 or \
+            other.inputs > 1 or other.outputs > 1:
+            raise NotImplementedError("xTransferFunction.__rdiv__ is currently \
+implemented only for SISO systems.")
+
+        # Convert the second argument to a transfer function.
+        if not isinstance(other, xTransferFunction):
+            other = ss2tf(other)
+
+        num = sp.polymul(self.den[0][0], other.num[0][0])
+        den = sp.polymul(self.num[0][0], other.den[0][0])
+        
+        return xTransferFunction(num, den)
         
     def evalfr(self, freq):
         """Evaluate a transfer function at a single frequency"""
@@ -354,6 +395,7 @@ class TransferFunction(signal.lti):
     def __sub__(self, other): 
         """Subtract two transfer functions"""
         return self + (-other)
+        
     def __rsub__(self, other): 
         """Subtract two transfer functions"""
         return other + (-self)
@@ -505,7 +547,7 @@ def _tfpolyToString(coeffs, var='s'):
             thestr = newstr
     return thestr
     
-def addSISO(num1, den1, num2, den2):
+def _addSISO(num1, den1, num2, den2):
     """Return num/den = num1/den1 + num2/den2, where each numerator and
     denominator is a list of polynomial coefficients."""
     
