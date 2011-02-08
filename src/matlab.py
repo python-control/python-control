@@ -8,7 +8,7 @@ provide a simple interface to the python control systems library
 (python-control) for people who are familiar with the MATLAB Control
 Systems Toolbox (tm).  Most of the functions are just calls to
 python-control functions defined elsewhere.  Use 'from
-control.matlab import *' in python to include all of the functions
+control.matlab import \*' in python to include all of the functions
 defined here.  Functions that are defined in other libraries that
 have the same names as their MATLAB equivalents are automatically
 imported here.
@@ -67,7 +67,7 @@ import ctrlutil
 import freqplot
 from statesp import StateSpace, rss_generate, convertToStateSpace
 from xferfcn import TransferFunction, convertToTransferFunction
-from exception import *
+from exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
 from ctrlutil import unwrap
@@ -80,13 +80,13 @@ from delay import pade
 __doc__ += """
 The control.matlab module defines functions that are roughly the
 equivalents of those in the MATLAB Control Toolbox.  Items marked by a 
-'*' are currently implemented; those marked with a '-' are not planned
+\* are currently implemented; those marked with a ``-`` are not planned
 for implementation.
 
 Creating linear models.
-* tf             - create transfer function (TF) models
+\* tf             - create transfer function (TF) models
   zpk            - create zero/pole/gain (ZPK) models.
-* ss             - create state-space (SS) models
+\* ss             - create state-space (SS) models
   dss            - create descriptor state-space models
   delayss        - create state-space models with delayed terms
   frd            - create frequency response data (FRD) models
@@ -105,26 +105,26 @@ Data extraction
    ss/getDelayModel - access internal delay model (state space only)
  
 Conversions
-*  tf             - conversion to transfer function
+\*  tf             - conversion to transfer function
    zpk            - conversion to zero/pole/gain
-*  ss             - conversion to state space
+\*  ss             - conversion to state space
    frd            - conversion to frequency data
    c2d            - continuous to discrete conversion
    d2c            - discrete to continuous conversion
    d2d            - resample discrete-time model
    upsample       - upsample discrete-time LTI systems
-*  ss2tf          - state space to transfer function
+\*  ss2tf          - state space to transfer function
    ss2zpk         - transfer function to zero-pole-gain
-*  tf2ss          - transfer function to state space
+\*  tf2ss          - transfer function to state space
    tf2zpk         - transfer function to zero-pole-gain
    zpk2ss         - zero-pole-gain to state space
    zpk2tf         - zero-pole-gain to transfer function
  
 System interconnections
    append         - group LTI models by appending inputs and outputs
-*  parallel       - connect LTI models in parallel (see also overloaded +)
-*  series         - connect LTI models in series (see also overloaded *)
-*  feedback       - connect lti models with a feedback loop
+\*  parallel       - connect LTI models in parallel (see also overloaded +)
+\*  series         - connect LTI models in series (see also overloaded \*)
+\*  feedback       - connect lti models with a feedback loop
    lti/lft        - generalized feedback interconnection
    lti/connect    - arbitrary interconnection of lti models
    sumblk         - specify summing junction (for use with connect)
@@ -134,10 +134,10 @@ System gain and dynamics
    dcgain         - steady-state (D.C.) gain
    lti/bandwidth  - system bandwidth
    lti/norm       - h2 and Hinfinity norms of LTI models
-*  lti/pole       - system poles
+\*  lti/pole       - system poles
    lti/zero       - system (transmission) zeros
    lti/order      - model order (number of states)
-*  pzmap          - pole-zero map
+\*  pzmap          - pole-zero map
    lti/iopzmap    - input/output pole-zero map
    damp           - natural frequency and damping of system poles
    esort          - sort continuous poles by real part
@@ -146,25 +146,25 @@ System gain and dynamics
    lti/modsep     - region-based modal decomposition
  
 Time-domain analysis
-*  step           - step response
+\*  step           - step response
    stepinfo       - step response characteristics (rise time, ...)
-*  impulse        - impulse response
+\*  impulse        - impulse response
    initial        - free response with initial conditions
-*  lsim           - response to user-defined input signal
+\*  lsim           - response to user-defined input signal
    lsiminfo       - linear response characteristics
    gensig         - generate input signal for LSIM
    covar          - covariance of response to white noise
  
 Frequency-domain analysis
-*  bode           - Bode plot of the frequency response
+\*  bode           - Bode plot of the frequency response
    lti/bodemag    - Bode magnitude diagram only
    sigma          - singular value frequency plot
-*  nyquist        - Nyquist plot
-*  nichols        - Nichols plot
+\*  nyquist        - Nyquist plot
+\*  nichols        - Nichols plot
    margin         - gain and phase margins
    lti/allmargin  - all crossover frequencies and related gain/phase margins
-*  lti/freqresp   - frequency response over a frequency grid
-*  lti/evalfr     - evaluate frequency response at given frequency
+\*  lti/freqresp   - frequency response over a frequency grid
+\*  lti/evalfr     - evaluate frequency response at given frequency
  
 Model simplification
    minreal        - minimal realization and pole/zero cancellation
@@ -192,13 +192,13 @@ LQR/LQG design
    augstate       - augment output by appending states
  
 State-space (SS) models
-*  rss            - random stable continuous-time state-space models
-*  drss           - random stable discrete-time state-space models
+\*  rss            - random stable continuous-time state-space models
+\*  drss           - random stable discrete-time state-space models
    ss2ss          - state coordinate transformation
    canon          - canonical forms of state-space models
-*  ctrb           - controllability matrix
-*  obsv           - observability matrix
-*  gram           - controllability and observability gramians
+\*  ctrb           - controllability matrix
+\*  obsv           - observability matrix
+\*  gram           - controllability and observability gramians
    ss/prescale    - optimal scaling of state-space models.  
    balreal        - gramian-based input/output balancing
    ss/xperm       - reorder states.   
@@ -219,7 +219,7 @@ Time delays
    lti/hasdelay   - true for models with time delays
    lti/totaldelay - total delay between each input/output pair
    lti/delay2z    - replace delays by poles at z=0 or FRD phase shift
-*  pade           - pade approximation of time delays
+\*  pade           - pade approximation of time delays
  
 Model dimensions and characteristics
    class          - model type ('tf', 'zpk', 'ss', or 'frd')
@@ -235,14 +235,14 @@ Model dimensions and characteristics
    lti/reshape    - reshape array of linear models
  
 Overloaded arithmetic operations
-*  + and -        - add and subtract systems (parallel connection)
-*  *              - multiply systems (series connection)
-*  /              - left divide -- sys1\sys2 means inv(sys1)*sys2
-*  /              - right divide -- sys1/sys2 means sys1*inv(sys2)
+\*  + and -        - add and subtract systems (parallel connection)
+\*  \*              - multiply systems (series connection)
+\*  /              - left divide -- sys1\sys2 means inv(sys1)\*sys2
+\*  /              - right divide -- sys1/sys2 means sys1\*inv(sys2)
    ^              - powers of a given system
    '              - pertransposition
    .'             - transposition of input/output map
-   .*             - element-by-element multiplication
+   .\*             - element-by-element multiplication
    [..]           - concatenate models along inputs or outputs
    lti/stack      - stack models/arrays along some array dimension
    lti/inv        - inverse of an LTI system
@@ -256,10 +256,10 @@ Matrix equation solvers and linear algebra
   bdschur             - block diagonalization of a square matrix
 
 Additional functions
-* gangof4       - generate the Gang of 4 sensitivity plots
-* linspace      - generate a set of numbers that are linearly spaced
-* logspace      - generate a set of numbers that are logarithmically spaced
-* unwrap        - unwrap a phase angle to give a continuous curve
+\* gangof4       - generate the Gang of 4 sensitivity plots
+\* linspace      - generate a set of numbers that are linearly spaced
+\* logspace      - generate a set of numbers that are logarithmically spaced
+\* unwrap        - unwrap a phase angle to give a continuous curve
 
 """
 

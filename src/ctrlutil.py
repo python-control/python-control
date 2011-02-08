@@ -43,23 +43,24 @@
 # Packages that we need access to
 import scipy as sp
 import statesp
-import xferfcn
+import xferfcn 
 
 # Specific functions that we use
 from scipy import pi
 
 # Utility function to unwrap an angle measurement
+
 def unwrap(angle, period=2*pi):
     """Unwrap a phase angle to give a continuous curve
 
-    Usage: Y = unwrap(X, period=2*pi)
+    Usage: Y = unwrap(X, period=2``*``pi)
     
     Parameters
     ----------
     X : array_like
         Input array
     period : number
-        Input period (usually either 2*pi or 360)
+        Input period (usually either 2``*``pi or 360)
 
     Returns
     -------
