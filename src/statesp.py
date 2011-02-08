@@ -437,7 +437,7 @@ cannot take keywords.")
         # Repeat the common denominator along the rows.
         den = array([den for i in range(sys.outputs)])
 
-        ssout = td04ad(sys.inputs, sys.outputs, index, num, den)
+        ssout = td04ad(sys.inputs, sys.outputs, index, den, num)
 
         return StateSpace(ssout[1], ssout[2], ssout[3], ssout[4])
     elif isinstance(sys, (int, long, float, complex)):
