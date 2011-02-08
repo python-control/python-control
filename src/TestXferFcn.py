@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import numpy as np
-from xferfcn import TransferFunction
+from statesp import StateSpace
+from xferfcn import TransferFunction, convertToTransferFunction
 import unittest
 
 class TestXferFcn(unittest.TestCase):
@@ -383,7 +384,8 @@ class TestXferFcn(unittest.TestCase):
     # Tests for TransferFunction.feedback.
         
     def testFeedbackSISO(self):
-        
+        """Test for correct SISO transfer function feedback."""
+
         sys1 = TransferFunction([-1., 4.], [1., 3., 5.])
         sys2 = TransferFunction([2., 3., 0.], [1., -3., 4., 0])
 
@@ -395,5 +397,27 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, [[[-1., 7., -16., 16., 0.]]])
         np.testing.assert_array_equal(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
              
+    def testConvertToTransferFunction(self):
+        """Test for correct state space to transfer function conversion."""
+
+        A = [[1., -2.], [-3., 4.]]
+        B = [[6., 5.], [4., 3.]]
+        C = [[1., -2.], [3., -4.], [5., -6.]]
+        D = [[1., 0.], [0., 1.], [1., 0.]]
+        sys = StateSpace(A, B, C, D)
+
+        tfsys = convertToTransferFunction(sys)
+
+        num = [[np.array([1., -7., 10.]), np.array([-1., 10.])],
+               [np.array([2., -8.]), np.array([1., -2., -8.])],
+               [np.array([1., 1., -30.]), np.array([7., -22.])]]
+        den = [[np.array([1., -5., -2.]) for j in range(sys.inputs)] 
+            for i in range(sys.outputs)]
+
+        for i in range(sys.outputs):
+            for j in range(sys.inputs):
+                np.testing.assert_array_almost_equal(tfsys.num[i][j], num[i][j])
+                np.testing.assert_array_almost_equal(tfsys.den[i][j], den[i][j])
+
 if __name__ == "__main__":
     unittest.main()

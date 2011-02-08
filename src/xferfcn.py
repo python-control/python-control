@@ -75,6 +75,7 @@ from numpy import angle, array, empty, ndarray, ones, polyadd, polymul, \
     polyval, zeros
 from scipy.signal import lti
 from copy import deepcopy
+from slycot import tb04ad
 from lti import Lti
 import statesp
 
@@ -397,8 +398,8 @@ implemented only for SISO systems.")
                     polyval(self.den[i][j], w * 1.j)), omega)
                 fresp = array(fresp)
 
-                mag[i, j] = abs(fresp)
-                phase[i, j] = angle(fresp)
+                mag[i, j, :] = abs(fresp)
+                phase[i, j, :] = angle(fresp)
 
         return mag, phase, omega
 
@@ -537,15 +538,24 @@ def convertToTransferFunction(sys, inputs=1, outputs=1):
     if isinstance(sys, TransferFunction):
         return sys
     elif isinstance(sys, statesp.StateSpace):
-        # TODO: Wrap SLICOT to do state space to transfer function conversion.
-        raise NotImplementedError("State space to transfer function conversion \
-is not implemented yet.")
+        # Use Slycot to make the transformation.
+        tfout = tb04ad(sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
+            sys.D, sys.outputs, sys.outputs, sys.inputs)
+
+        # Preallocate outputs.
+        num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+        den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+
+        for i in range(sys.outputs):
+            for j in range(sys.inputs):
+                num[i][j] = list(tfout[6][i, j, :])
+                # Each transfer function matrix row has a common denominator.
+                den[i][j] = list(tfout[5][i, :])
+
+        return TransferFunction(num, den)
     elif isinstance(sys, (int, long, float, complex)):
-        # Make an identity system.
-        num = [[[0] for j in range(inputs)] for i in range(outputs)]
+        num = [[[sys] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
-        for i in range(min(inputs, outputs)):
-            num[i][i] = [sys]
         
         return TransferFunction(num, den)
     else:

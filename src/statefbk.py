@@ -42,7 +42,7 @@
 # External packages and modules
 import numpy as np
 import ctrlutil
-from control.exception import *
+from exception import *
 
 # Pole placement
 def place(A, B, p):

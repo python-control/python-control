@@ -69,7 +69,7 @@ $Id: statepy 21 2010-06-06 17:29:42Z murrayrm $
 """
 
 from numpy import angle, any, array, concatenate, cos, dot, empty, exp, eye, \
-    pi, poly, poly1d, matrix, roots, sin, zeros
+    ones, pi, poly, poly1d, matrix, roots, sin, zeros
 from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
@@ -382,7 +382,7 @@ is not implemented yet.")
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), 
-            sys * eye(outputs, inputs))
+            sys * ones(outputs, inputs))
     else:
         raise TypeError("Can't convert given type to StateSpace system.")
     
