@@ -179,17 +179,22 @@ def nyquist(syslist, omega=None):
         omega = default_frequency_range(syslist)
 
     for sys in syslist:
-        # Get the magnitude and phase of the system
-        mag, phase, omega = sys.freqresp(omega)
+        if (sys.inputs > 1 or sys.outputs > 1):
+            #TODO: Add MIMO nyquist plots. 
+            raise NotImplementedError("Nyquist is currently only implemented for SISO systems.")
+        else:
+            # Get the magnitude and phase of the system
+            mag_tmp, phase_tmp, omega = sys.freqresp(omega)
+            mag = np.squeeze(mag_tmp)
+            phase = np.squeeze(phase_tmp)
+ 
+            # Compute the primary curve
+            x = sp.multiply(mag, sp.cos(phase));
+            y = sp.multiply(mag, sp.sin(phase));
     
-        # Compute the primary curve
-        x = sp.multiply(mag, sp.cos(phase));
-        y = sp.multiply(mag, sp.sin(phase));
-    
-        # Plot the primary curve and mirror image
-        plt.plot(x, y, '-');
-        plt.plot(x, -y, '--');
-
+            # Plot the primary curve and mirror image
+            plt.plot(x, y, '-');
+            plt.plot(x, -y, '--');
     # Mark the -1 point
     plt.plot([-1], [0], 'r+')
 
@@ -225,17 +230,24 @@ def nichols(syslist, omega=None):
     if (omega == None):
         omega = default_frequency_range(syslist)
 
+
     for sys in syslist:
-        # Get the magnitude and phase of the system
-        mag, phase, omega = sys.freqresp(omega)
+        if (sys.inputs > 1 or sys.outputs > 1):
+            #TODO: Add MIMO nichols plots. 
+            raise NotImplementedError("Nichols is currently only implemented for SISO systems.")
+        else:
+            # Get the magnitude and phase of the system
+            mag_tmp, phase_tmp, omega = sys.freqresp(omega)
+            mag = np.squeeze(mag_tmp)
+            phase = np.squeeze(phase_tmp)
+ 
+            # Convert to Nichols-plot format (phase in degrees, 
+            # and magnitude in dB)
+            x = unwrap(sp.degrees(phase), 360)
+            y = 20*sp.log10(mag)
     
-        # Convert to Nichols-plot format (phase in degrees, 
-        # and magnitude in dB)
-        x = unwrap(sp.degrees(phase), 360)
-        y = 20*sp.log10(mag)
-    
-        # Generate the plot
-        plt.plot(x, y)
+            # Generate the plot
+            plt.plot(x, y)
         
     plt.xlabel('Phase (deg)')
     plt.ylabel('Magnitude (dB)')
@@ -267,30 +279,42 @@ def gangof4(P, C, omega=None):
     -------------
     None
     """
+    if (P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs >1):
+        #TODO: Add MIMO go4 plots. 
+        raise NotImplementedError("Gang of four is currently only implemented for SISO systems.")
+    else:
+ 
+        # Select a default range if none is provided
+        #! TODO: This needs to be made more intelligent
+        if (omega == None):
+            omega = default_frequency_range((P,C))
 
-    # Select a default range if none is provided
-    #! TODO: This needs to be made more intelligent
-    if (omega == None):
-        omega = default_frequency_range((P,C))
+        # Compute the senstivity functions
+        L = P*C;
+        S = feedback(1, L);
+        T = L * S;
 
-    # Compute the senstivity functions
-    L = P*C;
-    S = feedback(1, L);
-    T = L * S;
+        # Plot the four sensitivity functions
+        #! TODO: Need to add in the mag = 1 lines
+        mag_tmp, phase_tmp, omega = T.freqresp(omega);
+        mag = np.squeeze(mag_tmp)
+        phase = np.squeeze(phase_tmp)
+        plt.subplot(221); plt.loglog(omega, mag);
 
-    # Plot the four sensitivity functions
-    #! TODO: Need to add in the mag = 1 lines
-    mag, phase, omega = T.freqresp(omega);
-    plt.subplot(221); plt.loglog(omega, mag);
+        mag_tmp, phase_tmp, omega = (P*S).freqresp(omega);
+        mag = np.squeeze(mag_tmp)
+        phase = np.squeeze(phase_tmp)
+        plt.subplot(222); plt.loglog(omega, mag);
 
-    mag, phase, omega = (P*S).freqresp(omega);
-    plt.subplot(222); plt.loglog(omega, mag);
+        mag_tmp, phase_tmp, omega = (C*S).freqresp(omega);
+        mag = np.squeeze(mag_tmp)
+        phase = np.squeeze(phase_tmp)
+        plt.subplot(223); plt.loglog(omega, mag);
 
-    mag, phase, omega = (C*S).freqresp(omega);
-    plt.subplot(223); plt.loglog(omega, mag);
-
-    mag, phase, omega = S.freqresp(omega);
-    plt.subplot(224); plt.loglog(omega, mag);
+        mag_tmp, phase_tmp, omega = S.freqresp(omega);
+        mag = np.squeeze(mag_tmp)
+        phase = np.squeeze(phase_tmp)
+        plt.subplot(224); plt.loglog(omega, mag);
 
 #
 # Utility functions
