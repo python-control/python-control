@@ -599,7 +599,7 @@ def lsim(*args, **keywords):
     ltiobjs = sys.returnScipySignalLti()
     ltiobj = ltiobjs[0][0]
  
-    return sp.signal.lsim2(*args, **keywords)
+    return sp.signal.lsim2(ltiobj, **keywords)
 
 #! Redefine step to use lsim2 
 #! Not yet implemented
@@ -622,15 +622,8 @@ def step(*args, **keywords):
     sys = args[0]
     ltiobjs = sys.returnScipySignalLti()
     ltiobj = ltiobjs[0][0]
-    newargs = []
-    newargs.append(ltiobj)
-    for i in range(1, len(args)):
-        newargs.append(args[i])
-    newargs = tuple(newargs)
-    print len(args)
-    print len(newargs)    
 
-    return sp.signal.step(*newargs, **keywords)
+    return sp.signal.step(ltiobj, **keywords)
 
 # Redefine initial to use lsim2
 #! Not yet implemented (uses step for now)
@@ -654,7 +647,7 @@ def initial(*args, **keywords):
     ltiobjs = sys.returnScipySignalLti()
     ltiobj = ltiobjs[0][0]
 
-    return sp.signal.initial(*args, **keywords)
+    return sp.signal.initial(ltiobj, **keywords)
 
 # Redefine impulse to use initial()
 #! Not yet implemented (uses impulse for now)
