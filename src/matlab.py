@@ -274,7 +274,7 @@ def ss(*args):
     C: numpy matrix or matrix-like object
     D: numpy matrix or matrix-like object
     sys: StateSpace or TransferFunction object
-    ss accepts a set of A, B, C, D matrices or sys.
+    ss accepts a set of `A`, `B`, `C`, `D` matrices or `sys`.
 
     Returns
     -------
@@ -321,7 +321,7 @@ def tf(*args):
     num: vector, or list of lists of vectors
     den: vector, or list of lists of vectors
     sys: StateSpace or TransferFunction object
-    tf accepts a num and den, or sys.
+    tf accepts a `num` and `den`, or `sys``.
 
     Returns
     -------
@@ -330,9 +330,9 @@ def tf(*args):
     Raises
     ------
     ValueError
-        if num and den have invalid or unequal dimensions
+        if `num` and `den` have invalid or unequal dimensions
     TypeError
-        if num or den are of incorrect type
+        if `num` or `den` are of incorrect type
 
     See Also
     --------
@@ -342,9 +342,9 @@ def tf(*args):
 
     Notes
     --------
-    num[i][j] is the vector of polynomial coefficients of the transfer function
-    numerator from the (j+1)st output to the (i+1)st input.  den[i][j] works the
-    same way.
+    `num`[`i`][`j`] is the vector of polynomial coefficients of the transfer
+    function  numerator from the (`j`+1)st output to the (`i`+1)st input.
+    `den`[`i`][`j`] works the same way.
 
     Examples
     --------
@@ -382,7 +382,7 @@ def ss2tf(*args):
     C: numpy matrix or matrix-like object
     D: numpy matrix or matrix-like object
     sys: StateSpace object
-    ss accepts a set of A, B, C, D matrices or a StateSpace object.
+    ss accepts a set of `A`, `B`, `C`, `D` matrices, or `sys`.
 
     Returns
     -------
@@ -394,7 +394,7 @@ def ss2tf(*args):
         if matrix sizes are not self-consistent, or if an invalid number of
         arguments is passed in
     TypeError
-        if sys is not a StateSpace object
+        if `sys` is not a StateSpace object
 
     See Also
     --------
@@ -432,7 +432,7 @@ def tf2ss(*args):
     num: vector, or list of lists of vectors
     den: vector, or list of lists of vectors
     sys: TransferFunction object
-    tf2ss accepts num and den, or sys.
+    tf2ss accepts `num` and `den`, or `sys`.
 
     Returns
     -------
@@ -441,11 +441,11 @@ def tf2ss(*args):
     Raises
     ------
     ValueError
-        if num and den have invalid or unequal dimensions, or if an invalid
+        if `num` and `den` have invalid or unequal dimensions, or if an invalid
         number of arguments is passed in
     TypeError
-        if num or den are of incorrect type, or if sys is not a TransferFunction
-        object
+        if `num` or `den` are of incorrect type, or if sys is not a
+        TransferFunction object
 
     See Also
     --------
@@ -455,9 +455,9 @@ def tf2ss(*args):
 
     Notes
     --------
-    num[i][j] is the vector of polynomial coefficients of the transfer function
-    numerator from the (j+1)st output to the (i+1)st input.  den[i][j] works the
-    same way.
+    `num`[`i`][`j`] is the vector of polynomial coefficients of the transfer
+    function numerator from the (`j`+1)st output to the (`i`+1)st input.
+    `den`[`i`][`j`] works the same way.
 
     Examples
     --------
@@ -481,34 +481,202 @@ object.")
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 def rss(states=1, inputs=1, outputs=1):
-    """Create a stable continuous random state space object."""
+    """
+    Create a stable continuous random state space object.
+    
+    Parameters
+    ----------
+    states: integer
+    inputs: integer
+    outputs: integer
+
+    Returns
+    -------
+    sys: StateSpace object
+
+    Raises
+    ------
+    ValueError
+        if any input is not a positive integer
+
+    See Also
+    --------
+    drss
+    
+    Notes
+    -----
+    If the number of states, inputs, or outputs is not specified, then the
+    missing numbers are assumed to be 1.  The poles of the returned system will
+    always have a negative real part.
+     
+    """
     
     return rss_generate(states, inputs, outputs, 'c')
     
 def drss(states=1, inputs=1, outputs=1):
-    """Create a stable discrete random state space object."""
+    """
+    Create a stable discrete random state space object.
+    
+    Parameters
+    ----------
+    states: integer
+    inputs: integer
+    outputs: integer
+
+    Returns
+    -------
+    sys: StateSpace object
+
+    Raises
+    ------
+    ValueError
+        if any input is not a positive integer
+
+    See Also
+    --------
+    rss
+    
+    Notes
+    -----
+    If the number of states, inputs, or outputs is not specified, then the
+    missing numbers are assumed to be 1.  The poles of the returned system will
+    always have a magnitude less than 1.
+     
+    """
     
     return rss_generate(states, inputs, outputs, 'd')
     
 def pole(sys):
-    """Return system poles."""
+    """
+    Return system poles.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction object
+
+    Returns
+    -------
+    poles: ndarray
+
+    Raises
+    ------
+    NotImplementedError
+        when called on a TransferFunction object
+
+    See Also
+    --------
+    zero
+
+    Notes
+    -----
+    This function is a wrapper for StateSpace.pole and TransferFunction.pole.
+
+    """
 
     return sys.pole()
     
 def zero(sys):
-    """Return system zeros."""
+    """
+    Return system zeros.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction object
+
+    Returns
+    -------
+    zeros: ndarray
+
+    Raises
+    ------
+    NotImplementedError
+        when called on a TransferFunction object or a MIMO StateSpace object
+
+    See Also
+    --------
+    pole
+
+    Notes
+    -----
+    This function is a wrapper for StateSpace.zero and TransferFunction.zero.
+
+    """
 
     return sys.zero()
 
 def evalfr(sys, omega):
-    """Evaluate the transfer function of an LTI system at a single frequency
-    omega."""
+    """
+    Evaluate the transfer function of an LTI system at an angular frequency.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction object
+    omega: scalar
+
+    Returns
+    -------
+    fresp: ndarray
+
+    See Also
+    --------
+    freqresp
+    bode
+
+    Notes
+    -----
+    This function is a wrapper for StateSpace.evalfr and
+    TransferFunction.evalfr.
+
+    Examples
+    --------
+    >>> sys = rss(3, 2, 2)
+    >>> evalfr(sys, 1.)
+    array([[  4.09376126 -6.2171555j ,  23.71332080-35.24245284j],
+           [  0.83405186 -1.82896006j,   8.10962251-12.66640309j]])
+    This is the transfer function matrix evaluated at s = i.
+
+    """
 
     return sys.evalfr(omega)
 
 def freqresp(sys, omega): 
-    """Return the frequency response for an LTI object at a list of frequencies
-     omega."""
+    """
+    Frequency response of an LTI system at multiple angular frequencies.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction object
+    omega: list, tuple, or ndarray
+
+    Returns
+    -------
+    mag: ndarray
+    phase: ndarray
+    omega: list, tuple, or ndarray
+
+    See Also
+    --------
+    evalfr
+    bode
+
+    Notes
+    -----
+    This function is a wrapper for StateSpace.freqresp and
+    TransferFunction.freqresp.
+
+    Examples
+    --------
+    >>> sys = rss(3, 2, 2)
+    >>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
+    >>> mag[0, 1, :]
+    array([ 55.43747231,  42.47766549,   1.97225895])
+    >>> phase[1, 0, :]
+    array([-0.12611087, -1.14294316,  2.5764547 ])
+    This is the magnitude of the frequency response from the 2nd input to the
+    1st output, and the phase (in radians) of the frequency response from the
+    1st input to the 2nd output, for s = 0.1i, i, 10i.
+
+    """
 
     return sys.freqresp(omega)
 

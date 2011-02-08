@@ -68,7 +68,7 @@ def series(sys1, sys2):
     Raises
     ------
     ValueError
-        if sys2.inputs does not equal sys1.outputs
+        if `sys2.inputs` does not equal `sys1.outputs`
 
     See Also
     --------
@@ -78,8 +78,8 @@ def series(sys1, sys2):
     Notes
     -----
     This function is a wrapper for the __mul__ function in the StateSpace and
-    TransferFunction classes.  The output type is usually the type of sys2.  If
-    sys2 is a scalar, then the output type is the type of sys1.
+    TransferFunction classes.  The output type is usually the type of `sys2`.
+    If `sys2` is a scalar, then the output type is the type of `sys1`.
 
     Examples
     --------
@@ -105,7 +105,7 @@ def parallel(sys1, sys2):
     Raises
     ------
     ValueError
-        if sys1 and sys2 do not have the same numbers of inputs and outputs
+        if `sys1` and `sys2` do not have the same numbers of inputs and outputs
             
     See Also
     --------
@@ -115,8 +115,8 @@ def parallel(sys1, sys2):
     Notes
     -----
     This function is a wrapper for the __add__ function in the StateSpace and
-    TransferFunction classes.  The output type is usually the type of sys1.  If
-    sys1 is a scalar, then the output type is the type of sys2.
+    TransferFunction classes.  The output type is usually the type of `sys1`.  If
+    `sys1` is a scalar, then the output type is the type of `sys2`.
 
     Examples
     -------
@@ -162,9 +162,9 @@ def feedback(sys1, sys2, sign=-1):
     sys2: scalar, StateSpace, or TransferFunction
     The feedback plant (often a feedback controller).
     sign: scalar
-    The sign of feedback.  sign = -1 indicates negative feedback, and sign = 1
-    indicates positive feedback.  sign is an optional argument; it assumes a
-    value of -1 if not specified.
+    The sign of feedback.  `sign` = -1 indicates negative feedback, and
+    `sign` = 1 indicates positive feedback.  `sign` is an optional argument; it
+    assumes a value of -1 if not specified.
 
     Returns
     -------
@@ -173,8 +173,8 @@ def feedback(sys1, sys2, sign=-1):
     Raises
     ------
     ValueError
-        if sys1 does not have as many inputs as sys2 has outputs, or if sys2
-        does not have as many inputs as sys1 has outputs
+        if `sys1` does not have as many inputs as `sys2` has outputs, or if
+        `sys2` does not have as many inputs as `sys1` has outputs
     NotImplementedError
         if an attempt is made to perform a feedback on a MIMO TransferFunction
         object
@@ -187,11 +187,11 @@ def feedback(sys1, sys2, sign=-1):
     Notes
     ----
     This function is a wrapper for the feedback function in the StateSpace and
-    TransferFunction classes.  It calls TransferFunction.feedback if sys1 is a
-    TransferFunction object, and StateSpace.feedback if sys1 is a StateSpace
-    object.  If sys1 is a scalar, then it is converted to sys2's type, and the
-    corresponding feedback function is used.  If sys1 and sys2 are both scalars,
-    then TransferFunction.feedback is used.
+    TransferFunction classes.  It calls TransferFunction.feedback if `sys1` is a
+    TransferFunction object, and StateSpace.feedback if `sys1` is a StateSpace
+    object.  If `sys1` is a scalar, then it is converted to `sys2`'s type, and
+    the corresponding feedback function is used.  If `sys1` and `sys2` are both
+    scalars, then TransferFunction.feedback is used.
   
     """
 

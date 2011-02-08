@@ -106,14 +106,14 @@ class TransferFunction(Lti):
             if isinstance(data[i], (int, float, long, complex)):
                 # Convert scalar to list of list of array.
                 data[i] = [[array([data[i]])]]
-            elif isinstance(data[i], (list, tuple, ndarray)) and \
-                isinstance(data[i][0], (int, float, long, complex)):
+            elif (isinstance(data[i], (list, tuple, ndarray)) and 
+                isinstance(data[i][0], (int, float, long, complex))):
                 # Convert array to list of list of array.
                 data[i] = [[array(data[i])]]
-            elif isinstance(data[i], list) and \
-                isinstance(data[i][0], list) and \
-                isinstance(data[i][0][0], (list, tuple, ndarray)) and \
-                isinstance(data[i][0][0][0], (int, float, long, complex)):
+            elif (isinstance(data[i], list) and 
+                isinstance(data[i][0], list) and 
+                isinstance(data[i][0][0], (list, tuple, ndarray)) and 
+                isinstance(data[i][0][0][0], (int, float, long, complex))):
                 # We might already have the right format.  Convert the
                 # coefficient vectors to arrays, if necessary.
                 for j in range(len(data[i])):
@@ -226,14 +226,12 @@ denominator." % (j + 1, i + 1))
                 dashes = '-' * dashcount
 
                 # Center the numerator or denominator
-                if (len(numstr) < dashcount):
-                    numstr = ' ' * \
-                        int(round((dashcount - len(numstr))/2)) + \
-                        numstr
-                if (len(denstr) < dashcount): 
-                    denstr = ' ' * \
-                        int(round((dashcount - len(denstr))/2)) + \
-                        denstr
+                if len(numstr) < dashcount:
+                    numstr = (' ' * int(round((dashcount - len(numstr))/2)) + 
+                        numstr)
+                if len(denstr) < dashcount: 
+                    denstr = (' ' * int(round((dashcount - len(denstr))/2)) + 
+                        denstr)
 
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
         return outstr
@@ -334,8 +332,8 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __div__(self, other):
         """Divide two LTI objects."""
         
-        if self.inputs > 1 or self.outputs > 1 or \
-            other.inputs > 1 or other.outputs > 1:
+        if (self.inputs > 1 or self.outputs > 1 or 
+            other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError("TransferFunction.__div__ is currently \
 implemented only for SISO systems.")
 
@@ -351,8 +349,8 @@ implemented only for SISO systems.")
     def __rdiv__(self, other):
         """Reverse divide two LTI objects."""
         
-        if self.inputs > 1 or self.outputs > 1 or \
-            other.inputs > 1 or other.outputs > 1:
+        if (self.inputs > 1 or self.outputs > 1 or 
+            other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError("TransferFunction.__rdiv__ is currently \
 implemented only for SISO systems.")
 
@@ -371,13 +369,13 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = polyval(self.num[i][j], omega * 1.j) / \
-                    polyval(self.den[i][j], omega * 1.j)
+                out[i][j] = (polyval(self.num[i][j], omega * 1.j) / 
+                    polyval(self.den[i][j], omega * 1.j))
 
         return out
 
     # Method for generating the frequency response of the system
-    def freqresp(self, omega=None):
+    def freqresp(self, omega):
         """Evaluate a transfer function at a list of angular frequencies.
 
         mag, phase, omega = self.freqresp(omega)
@@ -395,8 +393,8 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                fresp = map(lambda w: polyval(self.num[i][j], w * 1.j) / \
-                    polyval(self.den[i][j], w * 1.j), omega)
+                fresp = map(lambda w: (polyval(self.num[i][j], w * 1.j) / 
+                    polyval(self.den[i][j], w * 1.j)), omega)
                 fresp = array(fresp)
 
                 mag[i, j] = abs(fresp)
@@ -407,20 +405,22 @@ implemented only for SISO systems.")
     def pole(self):
         """Compute the poles of a transfer function."""
         
-        pass
+        raise NotImplementedError("TransferFunction.pole is not implemented \
+yet.")
         
     def zero(self): 
         """Compute the zeros of a transfer function."""
         
-        pass
+        raise NotImplementedError("TransferFunction.zero is not implemented \
+yet.")
 
     def feedback(self, other, sign=-1): 
         """Feedback interconnection between two LTI objects."""
         
         other = convertToTransferFunction(other)
 
-        if self.inputs > 1 or self.outputs > 1 or \
-            other.inputs > 1 or other.outputs > 1:
+        if (self.inputs > 1 or self.outputs > 1 or 
+            other.inputs > 1 or other.outputs > 1):
             # TODO: MIMO feedback
             raise NotImplementedError("TransferFunction.feedback is currently \
 only implemented for SISO functions.")

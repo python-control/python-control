@@ -68,8 +68,8 @@ $Id: statepy 21 2010-06-06 17:29:42Z murrayrm $
 
 """
 
-from numpy import angle, any, concatenate, cos, dot, empty, exp, eye, pi, \
-    poly, poly1d, matrix, roots, sin, zeros
+from numpy import angle, any, array, concatenate, cos, dot, empty, exp, eye, \
+    pi, poly, poly1d, matrix, roots, sin, zeros
 from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
@@ -250,10 +250,10 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         fresp = self.C * solve(omega * 1.j * eye(self.states) - self.A,
             self.B) + self.D
 
-        return fresp
+        return array(fresp)
 
     # Method for generating the frequency response of the system
-    def freqresp(self, omega=None):
+    def freqresp(self, omega):
         """Evaluate the system's transfer func. at a list of ang. frequencies.
 
         mag, phase, omega = self.freqresp(omega)
@@ -294,10 +294,10 @@ implemented only for SISO systems.")
         den = poly1d(poly(self.A))
         # Compute the numerator based on zeros
         #! TODO: This is currently limited to SISO systems
-        num = poly1d(\
-            poly(self.A - dot(self.B, self.C)) + (self.D[0, 0] - 1) * den)
+        num = poly1d(poly(self.A - dot(self.B, self.C)) + ((self.D[0, 0] - 1) *
+            den))
 
-        return (roots(num))
+        return roots(num)
 
     # Feedback around a state space system
     def feedback(self, other, sign=-1):
@@ -406,6 +406,17 @@ def rss_generate(states, inputs, outputs, type):
     pDmask = 0.3
     # Probability that D = 0.
     pDzero = 0.5
+
+    # Check for valid input arguments.
+    if states < 1 or states % 1:
+        raise ValueError(("states must be a positive integer.  states = %g." % 
+            states))
+    if inputs < 1 or inputs % 1:
+        raise ValueError(("inputs must be a positive integer.  inputs = %g." %
+            inputs))
+    if outputs < 1 or outputs % 1:
+        raise ValueError(("outputs must be a positive integer.  outputs = %g." %
+            outputs))
 
     # Make some poles for A.  Preallocate a complex array.
     poles = zeros(states) + zeros(states) * 0.j
