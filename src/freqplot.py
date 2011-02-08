@@ -153,12 +153,12 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
     return mag, phase, omega
 
 # Nyquist plot
-def nyquist(syslist, omega=None):
+def nyquist(syslist, omega=None, Plot=True):
     """Nyquist plot for a system
 
     Usage
     =====
-    magh = nyquist(sys, omega=None)
+    real, imag, freq = nyquist(sys, omega=None, Plot=True)
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
@@ -168,10 +168,14 @@ def nyquist(syslist, omega=None):
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
+    Plot : boolean
+        if True, plot magnitude
 
     Return values
     -------------
-    None
+    real : real part of the frequency response array
+    imag : imaginary part of the frequency response array
+    freq : frequencies
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
@@ -199,22 +203,25 @@ def nyquist(syslist, omega=None):
             # Compute the primary curve
             x = sp.multiply(mag, sp.cos(phase));
             y = sp.multiply(mag, sp.sin(phase));
-    
-            # Plot the primary curve and mirror image
-            plt.plot(x, y, '-');
-            plt.plot(x, -y, '--');
-    # Mark the -1 point
-    plt.plot([-1], [0], 'r+')
+
+            if (Plot):    
+                # Plot the primary curve and mirror image
+                plt.plot(x, y, '-');
+                plt.plot(x, -y, '--');
+                # Mark the -1 point
+                plt.plot([-1], [0], 'r+')
+
+        return x, y, omega
 
 # Nichols plot
 # Contributed by Allan McInnes <Allan.McInnes@canterbury.ac.nz>
 #! TODO: need unit test code
-def nichols(syslist, omega=None):
+def nichols(syslist, omega=None, Plot=True):
     """Nichols plot for a system
 
     Usage
     =====
-    magh = nichols(sys, omega=None)
+    mag, phase, freq = nichols(sys, omega=None, Plot=True)
 
     Plots a Nichols plot for the system over a (optional) frequency range.
 
@@ -224,10 +231,15 @@ def nichols(syslist, omega=None):
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
+    Plot : boolean
+        if True, plot the Nichols frequency response 
 
     Return values
     -------------
-    None
+    mag : array of magnitudes
+    phase : array of phases
+    freq : array of frequencies
+
     """
 
     # If argument was a singleton, turn it into a list
@@ -254,16 +266,19 @@ def nichols(syslist, omega=None):
             x = unwrap(sp.degrees(phase), 360)
             y = 20*sp.log10(mag)
     
-            # Generate the plot
-            plt.plot(x, y)
+            if (Plot):
+                # Generate the plot
+                plt.plot(x, y)
         
-    plt.xlabel('Phase (deg)')
-    plt.ylabel('Magnitude (dB)')
-    plt.title('Nichols Plot')
+                plt.xlabel('Phase (deg)')
+                plt.ylabel('Magnitude (dB)')
+                plt.title('Nichols Plot')
 
-    # Mark the -180 point
-    plt.plot([-180], [0], 'r+')
+                # Mark the -180 point
+                plt.plot([-180], [0], 'r+')
     
+            return mag, phase, omega
+
 # Gang of Four
 #! TODO: think about how (and whether) to handle lists of systems
 def gangof4(P, C, omega=None):
