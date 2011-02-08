@@ -710,7 +710,8 @@ is still buggy!"
                 num[i][j] = list(tfout[6][i, j, :])
                 # Each transfer function matrix row has a common denominator.
                 den[i][j] = list(tfout[5][i, :])
-
+        print num
+        print den
         return TransferFunction(num, den)
     elif isinstance(sys, (int, long, float, complex)):
         if "inputs" in kw:

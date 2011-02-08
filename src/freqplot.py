@@ -54,12 +54,12 @@ from bdalg import feedback
 #
    
 # Bode plot
-def bode(syslist, omega=None, dB=False, Hz=False, color=None):
+def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
     """Bode plot for a system
 
     Usage
     =====
-    (magh, phaseh) = bode(syslist, omega=None, dB=False, Hz=False)
+    (magh, phaseh, omega) = bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -73,16 +73,18 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None):
         If True, plot result in dB
     Hz : boolean
         If True, plot frequency in Hz (omega must be provided in rad/sec)
+    Plot : boolean
+        If True, plot magnitude and phase
 
     Return values
     -------------
-    magh : graphics handle to magnitude plot (for rescaling, etc)
-    phaseh : graphics handle to phase plot
+    magh : magnitude array
+    phaseh : phase array
+    omega : frequency array
 
     Notes
     -----
-    1. Use (mag, phase, freq) = sys.freqresp(freq) to generate the 
-       frequency response for a system.
+    1. Alternatively, may use (mag, phase, freq) = sys.freqresp(freq) to generate the frequency response for a system.
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
@@ -108,46 +110,47 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None):
             # Get the dimensions of the current axis, which we will divide up
             #! TODO: Not current implemented; just use subplot for now
 
-            # Magnitude plot
-            plt.subplot(211); 
-            if dB:
-                if color==None:
-                    plt.semilogx(omega, mag)
+            if (Plot):
+                # Magnitude plot
+                plt.subplot(211); 
+                if dB:
+                    if color==None:
+                        plt.semilogx(omega, mag)
+                    else:
+                        plt.semilogx(omega, mag, color=color)
+                    plt.ylabel("Magnitude (dB)")
                 else:
-                    plt.semilogx(omega, mag, color=color)
-                plt.ylabel("Magnitude (dB)")
-            else:
+                    if color==None:
+                        plt.loglog(omega, mag)
+                    else: 
+                        plt.loglog(omega, mag, color=color) 
+                    plt.ylabel("Magnitude")
+
+                # Add a grid to the plot
+                plt.grid(True)
+                plt.grid(True, which='minor')
+                plt.hold(True);
+
+                # Phase plot
+                plt.subplot(212);
                 if color==None:
-                    plt.loglog(omega, mag)
-                else: 
-                    plt.loglog(omega, mag, color=color) 
-                plt.ylabel("Magnitude")
+                    plt.semilogx(omega, phase)
+                else:
+                    plt.semilogx(omega, phase, color=color)
+                plt.hold(True)
 
-            # Add a grid to the plot
-            plt.grid(True)
-            plt.grid(True, which='minor')
-            plt.hold(True);
+                # Add a grid to the plot
+                plt.grid(True)
+                plt.grid(True, which='minor')
+                plt.ylabel("Phase (deg)")
 
-            # Phase plot
-            plt.subplot(212);
-            if color==None:
-                plt.semilogx(omega, phase)
-            else:
-                plt.semilogx(omega, phase, color=color)
-            plt.hold(True)
+                # Label the frequency axis
+                if Hz:
+                    plt.xlabel("Frequency (Hz)")
+                else:
+                    plt.xlabel("Frequency (rad/sec)")
 
-            # Add a grid to the plot
-            plt.grid(True)
-            plt.grid(True, which='minor')
-            plt.ylabel("Phase (deg)")
-
-            # Label the frequency axis
-            if Hz:
-                plt.xlabel("Frequency (Hz)")
-            else:
-                plt.xlabel("Frequency (rad/sec)")
-
-    return (211, 212)
+    return mag, phase, omega
 
 # Nyquist plot
 def nyquist(syslist, omega=None):

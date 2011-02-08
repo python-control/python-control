@@ -207,6 +207,8 @@ def balred(sys,orders,method='truncate'):
 
     #Check system is stable
     D,V = np.linalg.eig(sys.A)
+    print D.shape
+    print D
     for e in D:
         if e.real >= 0:
             raise ValueError, "Oops, the system is unstable!"

@@ -22,7 +22,7 @@ plot(T.T, yout.T)
 
 # Bode plot for the system
 figure(2)
-bode(sys, logspace(-2, 2))
+mag,phase,om = bode(sys, logspace(-2, 2),Plot=True)
 
 # Nyquist plot for the system
 figure(3)
