@@ -73,29 +73,24 @@ class xTransferFunction(Lti2):
         # Make num and den into 3-d numpy arrays, if necessary.
         data = [num, den]
         for i in range(len(data)):
-            if isinstance(data[i], (int, long, float, complex)):
+            # Convert non-array types to array first.
+            data[i] = sp.array(data[i])
+            
+            if data[i].ndim == 0:
                 # Convert scalar to 3-d array.
                 data[i] = sp.array([[[data[i]]]])
-            elif isinstance(data[i], sp.ndarray):
-                if data[i].ndim == 0:
-                    # Convert scalar to 3-d array.
-                    data[i] = sp.array([[[data[i]]]])
-                elif data[i].ndim == 1:
-                    # Convert SISO transfer function polynomial to 3-d array.
-                    data[i] = sp.array([[data[i]]])
-                elif data[i].ndim == 3:
-                    # We already have a MIMO system.
-                    pass
-                else:
-                    # If the user passed in a anything else, then it's unclear
-                    # what the meaning is.
-                    raise ValueError("The numerator and denominator inputs \
-                    must be scalars or vectors (for SISO), or 3-d arrays (for \
-                    MIMO).")
+            elif data[i].ndim == 1:
+                # Convert SISO transfer function polynomial to 3-d array.
+                data[i] = sp.array([[data[i]]])
+            elif data[i].ndim == 3:
+                # We already have a MIMO system.
+                pass
+            else:
+                # If the user passed in a anything else, then it's unclear
+                # what the meaning is.
+                raise ValueError("The numerator and denominator inputs must be \
+                scalars or vectors (for SISO), or 3-d arrays (for MIMO).")
         [num, den] = data
-        
-        print num
-        print den
         
         inputs = num.shape[1]
         outputs = num.shape[0]
@@ -111,8 +106,79 @@ class xTransferFunction(Lti2):
         self.den = den
         Lti2.__init__(self, inputs, outputs)
         
-        print self.inputs
-        print self.outputs
+    def __str__(self): pass
+    
+    def __neg__(self):
+        """Negate a transfer function."""
+        
+        return xTransferFunction(-self.num, self.den)
+        
+    def __add__(self, sys):
+        """Add two transfer functions (parallel connection)."""
+    
+    pass
+    
+    def __radd__(self, other): 
+        """Add two transfer functions (parallel connection)"""
+        
+        return self + other;
+        
+    def __sub__(self, other): 
+        """Subtract two transfer functions."""
+        
+        return self + (-other)
+        
+    def __rsub__(self, other): 
+        """Subtract two transfer functions."""
+        
+        return other + (-self)
+
+    def __mul__(self, sys):
+        """Multiply two transfer functions (serial connection)"""
+        
+        pass
+
+    def __rmul__(self, other): 
+        """Multiply two transfer functions (serial connection)"""
+        
+        return self * other
+
+    def __div__(self, sys):
+        """Divide two transfer functions"""
+        
+        pass
+        
+    def __rdiv__(self, sys):
+        """Reverse divide two transfer functions"""
+        
+        pass
+        
+    def evalfr(self, freq):
+        """Evaluate a transfer function at a single frequency"""
+
+        # return sp.polyval(self.num, freq*1j) / sp.polyval(self.den, freq*1j)
+        pass
+
+    # Method for generating the frequency response of the system
+    def freqresp(self, omega):
+        """Evaluate a transfer function at a list of frequencies"""
+        
+        pass
+
+    def poles(self):
+        """Compute poles of a transfer function."""
+        
+        pass
+        
+    def zeros(self): 
+        """Compute zeros of a transfer function."""
+        
+        pass
+
+    def feedback(sys1, sys2, sign=-1): 
+        """Feedback interconnection between two transfer functions"""
+        
+        pass
 
 class TransferFunction(signal.lti):
     """The TransferFunction class is used to represent linear
