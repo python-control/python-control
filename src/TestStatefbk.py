@@ -48,8 +48,7 @@ class TestStatefbk(unittest.TestCase):
         B = np.matrix("5. 6.; 7. 8.")
         C = np.matrix("4. 5.; 6. 7.")
         D = np.matrix("13. 14.; 15. 16.")
-    #    sys = ss(A, B, C, D)
-        sys = 1.
+        sys = ss(A, B, C, D)
         Wctrue = np.matrix("18.5 24.5; 24.5 32.5")
         Wc = gram(sys,'c')
         np.testing.assert_array_almost_equal(Wc, Wctrue)
@@ -60,7 +59,6 @@ class TestStatefbk(unittest.TestCase):
         C = np.matrix("4. 5.; 6. 7.")
         D = np.matrix("13. 14.; 15. 16.")
         sys = ss(A, B, C, D)
-        sys = 1.
         Wotrue = np.matrix("257.5 -94.5; -94.5 56.5")
         Wo = gram(sys,'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)

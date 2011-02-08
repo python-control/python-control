@@ -53,6 +53,8 @@ def hsvd(sys):
     =====
     H = hsvd(sys)
 
+    The Hankel singular values are the singular values of the Hankel operator.  In practice, we compute the square root of the eigenvalues of the matrix formed by taking the product of the observability and controllability gramians.  There are other (more efficient) methods based on solving the Lyapunov equation in a particular way (more details soon).  
+
     Inputs
     ------
     sys : a state space system 
@@ -63,15 +65,16 @@ def hsvd(sys):
 
     """
 
-    # Make sure that SLICOT is installed
-    try:
-        from slycot import sb01bd
-    except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb01bd'")
- 
-    H = 1.
+    Wc = gram(sys,'c')
+    Wo = gram(sys,'o')
+
+    WoWc = np.dot(Wo, Wc)
+    w, v = LA.eig(WoWc)
+
+    hsv = np.sqrt(w)
+    hsv = np.matrix(hsv)
     # Return the Hankel singular values
-    return H
+    return hsv
 
 def era(YY,m,n,nin,nout,r):
     """Calculate an ERA model of order r based on the impulse-response data YY
@@ -100,6 +103,7 @@ def markov(Y,U,M):
     Usage
     =====
     H = markov(Y,U,M)
+    Currently only works for SISO
 
     Inputs
     ------
@@ -113,3 +117,23 @@ def markov(Y,U,M):
 
     """
 
+    # Convert input parameters to matrices (if they aren't already)
+    Ymat = np.mat(Y)
+    Umat = np.mat(U)
+    n = np.size(U)
+
+    # Construct a matrix of control inputs to invert
+    UU = Umat
+    for i in range(1, M-1):
+        newCol = np.vstack((0, UU[0:n-1,i-2]))
+        UU = np.hstack((UU, newCol))
+    Ulast = np.vstack((0, UU[0:n-1,M-2]))
+    for i in range(n-1,0,-1):
+        Ulast[i] = np.sum(Ulast[0:i-1])
+    UU = np.hstack((UU, Ulast))
+
+    # Invert and solve for Markov parameters
+    H = UU.I
+    H = np.dot(H, Y)
+
+    return H
