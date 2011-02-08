@@ -212,6 +212,7 @@ denominator." % (j + 1, i + 1))
         """
 
         # Beware: this is a shallow copy.  This should be okay.
+        tol = 1e-16
         data = [self.num, self.den]
         for p in range(len(data)):
             for i in range(self.outputs):
@@ -219,7 +220,7 @@ denominator." % (j + 1, i + 1))
                     # Find the first nontrivial coefficient.
                     nonzero = None
                     for k in range(data[p][i][j].size):
-                        if data[p][i][j][k]:
+                        if (data[p][i][j][k]):
                             nonzero = k
                             break
                             
@@ -594,6 +595,8 @@ imaginary part: %g" % quad.imag.max()
 
         # Modify the numerators so that they each take the common denominator.
         num = deepcopy(self.num)
+        if isinstance(den,float):
+            den = array([den])
         for i in range(self.outputs):
             for j in range(self.inputs):
                 # The common denominator has leading coefficient 1.  Scale out
@@ -713,8 +716,8 @@ cannot take keywords.")
         # buggy!
         print "Warning: state space to transfer function conversion by tb04ad \
 is still buggy!"
-        tfout = tb04ad(sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
-            sys.D, sys.outputs, sys.outputs, sys.inputs)
+        tfout = tb04ad('R',sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
+            sys.D,tol1=1e-10)
 
         # Preallocate outputs.
         num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]

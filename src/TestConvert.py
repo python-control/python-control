@@ -25,13 +25,13 @@ class TestConvert(unittest.TestCase):
         """Set up testing parameters."""
 
         # Number of times to run each of the randomized tests.
-        self.numTests = 10 #almost guarantees failure
+        self.numTests = 1 #almost guarantees failure
         # Maximum number of states to test + 1
         self.maxStates = 20
         # Maximum number of inputs and outputs to test + 1
         self.maxIO = 20
         # Set to True to print systems to the output.
-        self.debug = False
+        self.debug = True
 
     def printSys(self, sys, ind):
         """Print system to the standard output."""

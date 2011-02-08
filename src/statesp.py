@@ -163,6 +163,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         useless = []
 
         # Search for useless states.
+        tol = 1e-16
         for i in range(self.states):
             if (all(self.A[i, :] == zeros((1, self.states))) and
                 all(self.B[i, :] == zeros((1, self.inputs)))):
@@ -473,7 +474,7 @@ cannot take keywords.")
 is still buggy! Advise converting state space sys back to tf to verify the transformation was correct."
         #print num
         #print shape(num)
-        ssout = td04ad(sys.inputs, sys.outputs, index, den, num)
+        ssout = td04ad('R',sys.inputs, sys.outputs, index, den, num,tol=1e-8)
     
         states = ssout[0]
         return StateSpace(ssout[1][:states, :states],
