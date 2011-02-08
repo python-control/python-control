@@ -455,7 +455,7 @@ cannot take keywords.")
         den = array([den for i in range(sys.outputs)])
         # TODO: transfer function to state space conversion is still buggy!
         print "Warning: transfer function to state space conversion by td04ad \
-is still buggy!"
+is still buggy! Advise converting state space sys back to tf to verify the transformation was correct."
         #print num
         #print shape(num)
         ssout = td04ad(sys.inputs, sys.outputs, index, den, num)
