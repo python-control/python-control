@@ -243,26 +243,35 @@ of second's inputs."
                 raise ValueError, "State space systems don't have compatible \
 inputs/outputs for feedback."
 
-        # note that if there is an algebraic loop then this matrix inversion
-        # won't work
-        # (I-D1 D2) or (I-D2 D1) will be singular
-        # the easiest way to get this is to have D1 = I, D2 = I
-        #! TODO: trap this error and report algebraic loop
-        #! TODO: use determinant instead of inverse??
-        from scipy.linalg import inv
+        from numpy.linalg import inv, det
         from numpy import eye
-        E21 = inv(eye(self.outputs)+sign*self.D*other.D)
-        E12 = inv(eye(self.inputs)+sign*other.D*self.D)
+
+        A1 = self.A
+        B1 = self.B
+        C1 = self.C
+        D1 = self.D
+        A2 = other.A
+        B2 = other.B
+        C2 = other.C
+        D2 = other.D
         
-        A = concatenate((
-                concatenate(( self.A-sign*self.B*E12*other.D*self.C,
-                    -sign*self.B*E12*other.C ),axis=1),
-                concatenate(( other.B*E21*self.C,
-                    other.A-sign*other.B*E21*self.D*other.C ),axis=1),),
-                axis=0)
-        B = concatenate( (self.B*E12, other.B*E21*self.D), axis=0 )
-        C = concatenate( (E21*self.C, -sign*E21*self.D*other.C), axis=1 )
-        D = E21*self.D
+        F = eye(self.inputs) - sign * D2 * D1
+        if abs(det(F)) < 1.e-6:
+            raise ValueError("I - sign * D2 * D1 is singular.")
+
+        E = inv(F)
+        T1 = eye(self.outputs) + sign * D1 * E * D2
+        T2 = eye(self.inputs) + sign * E * D2 * D1
+
+        A = concatenate(
+            (concatenate(
+                (A1 + sign * B1 * E * D2 * C1, sign * B1 * E * C2), axis=1),
+            concatenate(
+                (B2 * T1 * C1, A2 + sign * B2 * D1 * E * C2), axis=1)),
+            axis=0)
+        B = concatenate((B1 * T2, B2 * D1 * T2), axis=0)
+        C = concatenate((T1 * C1, sign * D1 * E * C2), axis=1)
+        D = D1 * T2
 
         return StateSpace(A, B, C, D)
 

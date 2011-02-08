@@ -47,86 +47,56 @@ import scipy as sp
 import xferfcn as tf
 import statesp as ss
 
-# Standard interconnections (implemented by objects)
-def series(sys1, sys2): return sys1 * sys2
-def parallel(sys1, sys2): return sys1 + sys2
-def negate(sys): return -sys;
-
-# Feedback interconnection between systems
-#! TODO: This should be optimized for better performance
-#! TODO: Needs to be updated to work for state space systems
-def feedback(sys1, sys2, **keywords):
-    """Feedback interconnection between two I/O systems
+def feedback(sys1, sys2, sign=-1):
+    """Feedback interconnection between two I/O systems.
 
     Usage
     =====
-    sys = feedback(sys1, sys2, **keywords)
+    sys = feedback(sys1, sys2)
+    sys = feedback(sys1, sys2, sign)
 
     Compute the system corresponding to a feedback interconnection between
-    sys1 and sys2.
+    sys1 and sys2.  When sign is not specified, it assumes a value of -1
+    (negative feedback).  A sign of 1 indicates positive feedback.
 
     Parameters
     ----------
     sys1, sys2: linsys
         Linear input/output systems
+    sign: scalar
+        Feedback sign.
 
     Return values
     -------------
     sys: linsys
 
-    Keywords
-    --------
-    sign: float
-        Sign of the interconnection (default = -1)
-
     Notes
     -----
-    1. This function calls calls xferfcn.feedback if the arguments are
-       all either scalars or SISO transfer functions.  If one or both
-       of the arguments are state space systems, then the remaining
-       arguments are converted to state space, as needed, and the
-       statesp.feedback function is used instead.  Finally, if none of
-       that works, then try using sys1.feedback."""
-    # Grab keyword arguments
-    signparm = keywords.pop("sign", -1);
+    1. This function calls calls xferfcn.feedback if sys1 is a TransferFunction
+       object and statesp.feedback if sys1 is a StateSpace object.  If sys1 is a
+       scalar, then it is converted to sys2's type, and the corresponding
+       feedback function is used.  If sys1 and sys2 are both scalars, then use
+       xferfcn.feedback."""
+  
+    # Check for correct input types.
+    if not isinstance(sys1, (int, long, float, complex, tf.xTransferFunction,
+        ss.StateSpace)):
+        raise TypeError("sys1 must be a TransferFunction or StateSpace object, \
+or a scalar.")
+    if not isinstance(sys2, (int, long, float, complex, tf.xTransferFunction,
+        ss.StateSpace)):
+        raise TypeError("sys2 must be a TransferFunction or StateSpace object, \
+or a scalar.")
 
-    #
-    # Sort out which set of functions to call
-    #
-    # The main cases we are interested in are those where we use a
-    # constant for one of the arguments to the function, in which case
-    # we should use the other argument to figure out what type of
-    # object we are acting on.  Then call the feedback function for
-    # that object.
-    #
+    # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
+    # its feedback member function.
+    if isinstance(sys1, (int, long, float, complex)):
+        if isinstance(sys2, tf.xTransferFunction):
+            sys1 = tf.convertToTransferFunction(sys1)
+        elif isinstance(sys2, ss.StateSpace):
+            sys1 = ss.convertToStateSpace(sys1)
+        else: # sys2 is a scalar.
+            sys1 = tf.convertToTransferFunction(sys1)
+            sys2 = tf.convertToTransferFunction(sys2)
 
-    if (isinstance(sys1, tf.TransferFunction) and
-        (isinstance(sys2, tf.TransferFunction) or
-         isinstance(sys2, (int, long, float, complex)))):
-        # Use transfer function feedback function
-        return sys1.feedback(sys2, sign=signparm)
-
-    elif (isinstance(sys2, tf.TransferFunction) and
-          isinstance(sys1, (int, long, float, complex))):
-        # Convert sys1 to a transfer function and then perform operation
-        sys = tf.convertToTransferFunction(sys1);
-        return sys.feedback(sys2, sign=signparm)
-
-    elif (isinstance(sys1, ss.StateSpace) and
-          (isinstance(sys2, ss.StateSpace) or
-           isinstance(sys2, (int, long, float, complex)))):
-        # Use state space feedback function
-        return sys1.feedback(sys2, sign=signparm)
-
-    elif (isinstance(sys2, ss.StateSpace) and
-          isinstance(sys1, (int, long, float, complex))):
-        # Convert sys1 to state space system and then perform operation
-        sys = ss.convertToStateSpace(sys1);
-        return sys.feedback(sys2, sign=signparm)
-    
-    else:
-        # Assume that the first system has the right member function
-        return sys1.feedback(sys2, sign=signparm)
-        
-        raise TypeError("can't operate on give types")
-
+    return sys1.feedback(sys2, sign)
