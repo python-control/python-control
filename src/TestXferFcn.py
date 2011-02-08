@@ -14,7 +14,7 @@ class TestXferFcn(unittest.TestCase):
     def testBadInputType(self):
         """Give the constructor invalid input types."""
         
-        self.assertRaises(ValueError, xTransferFunction, [[0., 1.], [2., 3.]],
+        self.assertRaises(TypeError, xTransferFunction, [[0., 1.], [2., 3.]],
             [[5., 2.], [3., 0.]])
             
     def testInconsistentDimension(self):
@@ -334,7 +334,7 @@ class TestXferFcn(unittest.TestCase):
 
     # Tests for xTransferFunction.freqresp.
 
-    def testFRespSISO(self):
+    def testFreqRespSISO(self):
         """Evaluate the magnitude and phase of a SISO system at multiple
         frequencies."""
 
@@ -351,7 +351,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_almost_equal(omega, trueomega)
 
-    def testFRespMIMO(self):
+    def testFreqRespMIMO(self):
         """Evaluate the magnitude and phase of a MIMO system at multiple
         frequencies."""
 

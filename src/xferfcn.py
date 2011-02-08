@@ -91,7 +91,7 @@ class xTransferFunction(Lti2):
             else:
                 # If the user passed in anything else, then it's unclear what
                 # the meaning is.
-                raise ValueError("The numerator and denominator inputs must be \
+                raise TypeError("The numerator and denominator inputs must be \
 scalars or vectors (for\nSISO), or lists of lists of vectors (for SISO or \
 MIMO).")
         [num, den] = data
@@ -205,7 +205,7 @@ denominator." % (j + 1, i + 1))
         
         # Convert the second argument to a transfer function.
         if not isinstance(other, xTransferFunction):
-            other = ss2tf(other)
+            other = convertToTransferFunction(other, self.inputs, self.outputs)
 
         # Check that the input-output sizes are consistent.
         if self.inputs != other.inputs:
@@ -246,7 +246,7 @@ second has %i." % (self.outputs, other.outputs))
         
         # Convert the second argument to a transfer function.
         if not isinstance(other, xTransferFunction):
-            other = ss2tf(other)
+            other = convertToTransferFunction(other, self.outputs, self.outputs)
             
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
@@ -291,7 +291,7 @@ implemented only for SISO systems.")
 
         # Convert the second argument to a transfer function.
         if not isinstance(other, xTransferFunction):
-            other = ss2tf(other)
+            other = convertToTransferFunction(other, 1, 1)
 
         num = sp.polymul(self.num[0][0], other.den[0][0])
         den = sp.polymul(self.den[0][0], other.num[0][0])
@@ -586,8 +586,16 @@ def _addSISO(num1, den1, num2, den2):
     den = sp.polymul(den1, den2)
     
     return num, den
-    
-def ss2tf(sys):
-    """Convert a state space object to a transfer function object."""
 
-    pass
+def convertToTransferFunction(sys, inputs=1, outputs=1):
+    """Convert a system to transfer function form (if needed.)"""
+
+    if isinstance(sys, xTransferFunction):
+        return sys
+    elif isinstance(sys, statesp.StateSpace):
+        pass #TODO: convert TF to SS
+    elif isinstance(sys, (int, long, float, complex)):
+        coeff = sp.eye(outputs, inputs)
+        return xTransferFunction(sys * coeff, coeff)
+    else:
+        raise TypeError("Can't convert given type to StateSpace system.")

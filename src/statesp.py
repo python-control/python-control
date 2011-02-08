@@ -267,7 +267,7 @@ inputs/outputs for feedback."
 # in the case of a scalar system
 #
 def convertToStateSpace(sys, inputs=1, outputs=1):
-    """Convert a system to state space form (if needed)"""
+    """Convert a system to state space form (if needed)."""
     
     if isinstance(sys, StateSpace):
         # Already a state space system; just return it
@@ -278,11 +278,10 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
         # Generate a simple state space system of the desired dimension
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], sp.eye(outputs, inputs))
-        return StateSpace(-1, zeros((1, inputs)), zeros((outputs, 1)), 
-            sp.eye(outputs, inputs))
-
+        return StateSpace(0, zeros((1, inputs)), zeros((outputs, 1)), 
+            sys * sp.eye(outputs, inputs))
     else:
-        raise TypeError("can't convert given type to StateSpace system")
+        raise TypeError("Can't convert given type to StateSpace system.")
     
 def rss_generate(states, inputs, outputs, type):
     """This does the actual random state space generation expected from rss and

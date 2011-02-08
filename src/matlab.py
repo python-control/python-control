@@ -69,7 +69,7 @@ from ctrlutil import unwrap
 from freqplot import nyquist, nichols, gangof4
 from bdalg import series, parallel, negate, feedback
 from pzmap import pzmap
-from statefbk import ctrb, obsv, place, lqr
+from statefbk import ctrb, obsv, gram, place, lqr
 from delay import pade
 
 __doc__ = """
@@ -158,8 +158,8 @@ Frequency-domain analysis
 *  nichols        - Nichols plot
    margin         - gain and phase margins
    lti/allmargin  - all crossover frequencies and related gain/phase margins
-   lti/freqresp   - frequency response over a frequency grid
-   lti/evalfr     - evaluate frequency response at given frequency
+*  lti/freqresp   - frequency response over a frequency grid
+*  lti/evalfr     - evaluate frequency response at given frequency
  
 Model simplification
    minreal        - minimal realization and pole/zero cancellation
@@ -193,7 +193,7 @@ State-space (SS) models
    canon          - canonical forms of state-space models
 *  ctrb           - controllability matrix
 *  obsv           - observability matrix
-   gram           - controllability and observability gramians
+*  gram           - controllability and observability gramians
    ss/prescale    - optimal scaling of state-space models.  
    balreal        - gramian-based input/output balancing
    ss/xperm       - reorder states.   
@@ -317,12 +317,21 @@ def drss(states=1, inputs=1, outputs=1):
     return rss_generate(states, inputs, outputs, 'd')
     
 def pole(sys):
+    """Return system poles."""
+
     return sys.poles()
     
-# Frequency response is handled by the system object
-def freqresp(H, omega): 
-    """Return the frequency response for an object H at frequency omega"""
-    return H.freqresp(omega)
+def evalfr(sys, omega):
+    """Evaluate the transfer function of an LTI system at a single frequency
+    omega."""
+
+    return sys.evalfr(omega)
+
+def freqresp(sys, omega): 
+    """Return the frequency response for an LTI object at a list of frequencies
+     omega."""
+
+    return sys.freqresp(omega)
 
 # Bode plots
 def bode(*args, **keywords):
