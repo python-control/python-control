@@ -120,11 +120,18 @@ class StateSpace(Lti2):
 
     # Compute poles and zeros
     def poles(self):
+        """Compute the poles of a state space system."""
+
         return sp.roots(sp.poly(self.A))
 
     def zeros(self): 
-        den = sp.poly1d(sp.poly(self.A))
+        """Compute the zeros of a state space system."""
 
+        if self.inputs > 1 or self.outputs > 1:
+            raise NotImplementedError("StateSpace.zeros is currently \
+implemented only for SISO systems.")
+
+        den = sp.poly1d(sp.poly(self.A))
         # Compute the numerator based on zeros
         #! TODO: This is currently limited to SISO systems
         num = sp.poly1d(\
@@ -273,12 +280,13 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
         # Already a state space system; just return it
         return sys
     elif isinstance(sys, xferfcn.TransferFunction):
-        pass # TODO: convert SS to TF
+        raise NotImplementedError("Transfer function to state space conversion \
+is not implemented yet.")
     elif (isinstance(sys, (int, long, float, complex))):
         # Generate a simple state space system of the desired dimension
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], sp.eye(outputs, inputs))
-        return StateSpace(0, zeros((1, inputs)), zeros((outputs, 1)), 
+        return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), 
             sys * sp.eye(outputs, inputs))
     else:
         raise TypeError("Can't convert given type to StateSpace system.")

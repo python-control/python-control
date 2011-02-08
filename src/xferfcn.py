@@ -108,8 +108,8 @@ denominator has %i\ninput(s)." % (inputs, len(den[0])))
             raise ValueError("The numerator has %i output(s), but the \
 denominator has %i\noutput(s)." % (outputs, len(den)))
         
-        # Make sure that each row has the same number of columns.
         for i in range(outputs):
+            # Make sure that each row has the same number of columns.
             if len(num[i]) != inputs:
                 raise ValueError("Row 0 of the numerator matrix has %i \
 elements, but row %i\nhas %i." % (inputs, i, len(num[i])))
@@ -117,16 +117,28 @@ elements, but row %i\nhas %i." % (inputs, i, len(num[i])))
                 raise ValueError("Row 0 of the denominator matrix has %i \
 elements, but row %i\nhas %i." % (inputs, i, len(den[i])))
             
-            # Check that we don't have any zero denominators.
+            # TODO: Right now these checks are only done during construction.
+            # It might be worthwhile to think of a way to perform checks if the
+            # user modifies the transfer function after construction.
             for j in range(inputs):
-                iszero = True
+                # Check that we don't have any zero denominators.
+                zeroden = True
                 for k in den[i][j]:
                     if k:
-                        iszero = False
+                        zeroden = False
                         break
-                if iszero:
+                if zeroden:
                     raise ValueError("Input %i, output %i has a zero \
 denominator." % (j + 1, i + 1))
+
+                # If we have zero numerators, set the denominator to 1.
+                zeronum = True
+                for k in num[i][j]:
+                    if k:
+                        zeronum = False
+                        break
+                if zeronum:
+                    den[i][j] = sp.ones(1)
 
         self.num = num
         self.den = den
@@ -246,7 +258,7 @@ second has %i." % (self.outputs, other.outputs))
         
         # Convert the second argument to a transfer function.
         if not isinstance(other, xTransferFunction):
-            other = convertToTransferFunction(other, self.outputs, self.outputs)
+            other = convertToTransferFunction(other, self.inputs, self.inputs)
             
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
@@ -352,10 +364,30 @@ implemented only for SISO systems.")
         
         pass
 
-    def feedback(sys1, sys2, sign=-1): 
+    def feedback(self, other, sign=-1): 
         """Feedback interconnection between two transfer functions."""
         
-        pass
+        other = convertToTransferFunction(other)
+
+        if self.inputs > 1 or self.outputs > 1 or \
+            other.inputs > 1 or other.outputs > 1:
+            raise NotImplementedError("xTransferFunction.feedback is currently \
+only implemented for SISO functions.")
+
+        num1 = self.num[0][0]
+        den1 = self.den[0][0]
+        num2 = other.num[0][0]
+        den2 = other.den[0][0]
+
+        num = sp.polymul(num1, den2)
+        den = sp.polyadd(sp.polymul(den2, den1), -sign * sp.polymul(num2, num1))
+
+        return xTransferFunction(num, den)
+
+        # For MIMO or SISO systems, the analytic expression is
+        #     self / (1 - sign * other * self)
+        # But this does not work correctly because the state size will be too
+        # large.
 
 # This is the old TransferFunction class.  It will be superceded by the
 # xTransferFunction class (which will be renamed TransferFunction) when it is
@@ -593,9 +625,15 @@ def convertToTransferFunction(sys, inputs=1, outputs=1):
     if isinstance(sys, xTransferFunction):
         return sys
     elif isinstance(sys, statesp.StateSpace):
-        pass #TODO: convert TF to SS
+        raise NotImplementedError("State space to transfer function conversion \
+is not implemented yet.")
     elif isinstance(sys, (int, long, float, complex)):
-        coeff = sp.eye(outputs, inputs)
-        return xTransferFunction(sys * coeff, coeff)
+        # Make an identity system.
+        num = [[[0] for j in range(inputs)] for i in range(outputs)]
+        den = [[[1] for j in range(inputs)] for i in range(outputs)]
+        for i in range(min(inputs, outputs)):
+            num[i][i] = [sys]
+        
+        return xTransferFunction(num, den)
     else:
-        raise TypeError("Can't convert given type to StateSpace system.")
+        raise TypeError("Can't convert given type to xTransferFunction system.")

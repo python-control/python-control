@@ -7,7 +7,8 @@ import unittest
 class TestXferFcn(unittest.TestCase):
     """These are tests for functionality and correct reporting of the transfer
     function class.  Throughout these tests, we will give different input
-    formats to the xTranferFunction constructor, to try to break it."""
+    formats to the xTranferFunction constructor, to try to break it.  These
+    tests have been verified in MATLAB."""
     
     # Tests for raising exceptions.
    
@@ -211,7 +212,7 @@ class TestXferFcn(unittest.TestCase):
                 [[-4., -3., 2.], [0., 1.], [1., 0.]]]
         num3 = [[[-3., 1., 2.], [1., 6., 9.], [0.]],
                 [[-3., -10., -3., 2], [2., 3., 1., -2], [1., -4., 3., -4]]]
-        den3 = [[[3., -2., -4], [1., 2., 3., 0., 0.], [-2., -1., 1.]],
+        den3 = [[[3., -2., -4], [1., 2., 3., 0., 0.], [1]],
                 [[-12., -9., 6., 0., 0.], [2., -1., -1], [1., 0.]]]
                 
         sys1 = xTransferFunction(num1, den1)
@@ -379,6 +380,20 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_equal(omega, trueomega)
 
-         
+    # Tests for xTransferFunction.feedback.
+        
+    def testFeedbackSISO(self):
+        
+        sys1 = xTransferFunction([-1., 4.], [1., 3., 5.])
+        sys2 = xTransferFunction([2., 3., 0.], [1., -3., 4., 0])
+
+        sys3 = sys1.feedback(sys2)
+        sys4 = sys1.feedback(sys2, 1)
+
+        np.testing.assert_array_equal(sys3.num, [[[-1., 7., -16., 16., 0.]]])
+        np.testing.assert_array_equal(sys3.den, [[[1., 0., -2., 2., 32., 0.]]])
+        np.testing.assert_array_equal(sys4.num, [[[-1., 7., -16., 16., 0.]]])
+        np.testing.assert_array_equal(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
+             
 if __name__ == "__main__":
     unittest.main()
