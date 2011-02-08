@@ -129,7 +129,7 @@ System gain and dynamics
    dcgain         - steady-state (D.C.) gain
    lti/bandwidth  - system bandwidth
    lti/norm       - h2 and Hinfinity norms of LTI models
-   lti/pole       - system poles
+*  lti/pole       - system poles
    lti/zero       - system (transmission) zeros
    lti/order      - model order (number of states)
 *  pzmap          - pole-zero map
@@ -315,6 +315,9 @@ def drss(states=1, inputs=1, outputs=1):
     """Create a stable discrete random state space object."""
     
     return rss_generate(states, inputs, outputs, 'd')
+    
+def pole(sys):
+    return sys.poles()
     
 # Frequency response is handled by the system object
 def freqresp(H, omega): 
