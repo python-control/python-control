@@ -43,6 +43,7 @@
 import numpy as np
 import ctrlutil
 from exception import *
+import statesp
 
 # Pole placement
 def place(A, B, p):
@@ -255,6 +256,7 @@ def gram(sys,type):
     Raises
     ------   
     ValueError
+        if system is not instance of StateSpace class
         if `type` is not 'c' or 'o'
         if system is unstable (sys.A has eigenvalues not in left half plane)
     ImportError
@@ -267,10 +269,10 @@ def gram(sys,type):
 
     """
 
-    from copy import deepcopy
-
-    #Check for ss system object, need a utility for this?
-
+    #Check for ss system object
+    if not isinstance(sys,statesp.StateSpace):
+        raise ValueError, "System must be StateSpace!"
+    
     #TODO: Check for continous or discrete, only continuous supported right now
         # if isCont():
         #    dico = 'C'
@@ -302,7 +304,7 @@ def gram(sys,type):
         raise ControlSlycot("can't find slycot module 'sb03md'")
     n = sys.states
     U = np.zeros((n,n))
-    A = deepcopy(sys.A)
+    A = sys.A    
     out = sb03md(n, C, A, U, dico, 'X', 'N', trana)
     gram = out[0]
     return gram

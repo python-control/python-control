@@ -73,6 +73,12 @@ class TestStatefbk(unittest.TestCase):
         Wo = gram(sys,'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
+    def testGramsys(self):
+        num =[1.]
+        den = [1., 1., 1.]
+        sys = tf(num,den)
+        self.assertRaises(ValueError, gram, sys, 'o')
+        self.assertRaises(ValueError, gram, sys, 'c')
 
 if __name__ == '__main__':
     unittest.main()
