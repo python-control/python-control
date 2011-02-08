@@ -60,7 +60,7 @@ from scipy import linspace, logspace
 # Control system library
 import ctrlutil
 import freqplot
-from statesp import StateSpace
+from statesp import StateSpace, rss_generate
 from xferfcn import TransferFunction
 from exception import *
 
@@ -187,8 +187,8 @@ LQR/LQG design
    augstate       - augment output by appending states
  
 State-space (SS) models
-   rss            - random stable continuous-time state-space models
-   drss           - random stable discrete-time state-space models
+*  rss            - random stable continuous-time state-space models
+*  drss           - random stable discrete-time state-space models
    ss2ss          - state coordinate transformation
    canon          - canonical forms of state-space models
 *  ctrb           - controllability matrix
@@ -306,6 +306,16 @@ def tf2ss(*args, **keywords):
     else:
         raise ValueError, "Needs 1 or 2 arguments."
 
+def rss(states=1, inputs=1, outputs=1):
+    """Create a stable continuous random state space object."""
+    
+    return rss_generate(states, inputs, outputs, 'c')
+    
+def drss(states=1, inputs=1, outputs=1):
+    """Create a stable discrete random state space object."""
+    
+    return rss_generate(states, inputs, outputs, 'd')
+    
 # Frequency response is handled by the system object
 def freqresp(H, omega): 
     """Return the frequency response for an object H at frequency omega"""

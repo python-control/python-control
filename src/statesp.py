@@ -295,16 +295,6 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
 
     else:
         raise TypeError("can't convert given type to StateSpace system")
-
-def rss(states=1, inputs=1, outputs=1):
-    """Create a stable continuous random state space object."""
-    
-    return rss_generate(states, inputs, outputs, 'c')
-    
-def drss(states=1, inputs=1, outputs=1):
-    """Create a stable discrete random state space object."""
-    
-    return rss_generate(states, inputs, outputs, 'd')
     
 def rss_generate(states, inputs, outputs, type):
     """This does the actual random state space generation expected from rss and

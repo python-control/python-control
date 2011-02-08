@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-import statesp as ss
+import matlab
 import unittest
 
 class TestRss(unittest.TestCase):
@@ -22,7 +22,7 @@ class TestRss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = ss.rss(states, inputs, outputs)
+                    sys = matlab.rss(states, inputs, outputs)
                     self.assertEqual(sys.states, states)
                     self.assertEqual(sys.inputs, inputs)
                     self.assertEqual(sys.outputs, outputs)
@@ -33,7 +33,7 @@ class TestRss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = ss.rss(states, inputs, outputs)
+                    sys = matlab.rss(states, inputs, outputs)
                     p = sys.poles()
                     for z in p:
                         self.assertTrue(z.real < 0)
@@ -56,7 +56,7 @@ class TestDrss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = ss.drss(states, inputs, outputs)
+                    sys = matlab.drss(states, inputs, outputs)
                     self.assertEqual(sys.states, states)
                     self.assertEqual(sys.inputs, inputs)
                     self.assertEqual(sys.outputs, outputs)
@@ -67,7 +67,7 @@ class TestDrss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = ss.drss(states, inputs, outputs)
+                    sys = matlab.drss(states, inputs, outputs)
                     p = sys.poles()
                     for z in p:
                         self.assertTrue(abs(z) < 1)
