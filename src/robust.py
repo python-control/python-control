@@ -47,15 +47,15 @@ from statefbk import *
 from statesp import StateSpace
 
 def h2syn(P,nmeas,ncon):
-    """H_2 control synthesis for plant.
+    """H_2 control synthesis for plant P.
 
     Usage
     =====
-    K, rcond, info = h2syn(plant,nmeas,ncon)
+    K = h2syn(P,nmeas,ncon)
 
     Inputs
     ======
-    plant : partitioned lti plant
+    P : partitioned lti plant
     nmeas : number of measurements (input to controller)
     ncon : number of control inputs (output from controller)
 
@@ -74,12 +74,6 @@ def h2syn(P,nmeas,ncon):
         # else:
     dico = 'C'
 
-    #Check system is stable
-    D,V = np.linalg.eig(P.A)
-    for e in D:
-        if e.real >= 0:
-            raise ValueError, "Oops, the system is unstable!"
-   
     try:
         from slycot import sb10hd
     except ImportError:
@@ -97,3 +91,63 @@ def h2syn(P,nmeas,ncon):
     K = StateSpace(Ak, Bk, Ck, Dk)
 
     return K
+
+def hinfsyn(P,nmeas,ncon):
+    """H_{inf} control synthesis for plant P.
+
+    Usage
+    =====
+    K, CL, gam, info = hinfsyn(P,nmeas,ncon)
+
+    Inputs
+    ======
+    P : partitioned lti plant
+    nmeas : number of measurements (input to controller)
+    ncon : number of control inputs (output from controller)
+
+    Outputs
+    =======
+    K : controller to stabilize P
+    CL : closed loop system 
+    gam : infinity norm of closed loop system
+    info : info returned from siycot routine
+    """
+
+    #Check for ss system object, need a utility for this?
+
+    #TODO: Check for continous or discrete, only continuous supported right now
+        # if isCont():
+        #    dico = 'C'
+        # elif isDisc():
+        #    dico = 'D'
+        # else:
+    dico = 'C'
+
+    try:
+        from slycot import sb10ad
+    except ImportError:
+        raise ControlSlycot("can't find slycot subroutine sb10ad")
+
+    job = 3
+    n = np.size(P.A,0)
+    m = np.size(P.B,1)
+    np = np.size(P.C,0)
+    gamma = 1.e100
+    out = sb10ad(job,n,m,np,ncon,nmeas,gamma,P.A,P.B,P.C,P.D)
+    gam = out[0]
+    Ak = out[1]
+    Bk = out[2]
+    Ck = out[3]
+    Dk = out[4]
+    Ac = out[5]
+    Bc = out[6]
+    Cc = out[7]
+    Dc = out[8]
+    rcond = out[9]
+    info = out[10]
+
+    K = StateSpace(Ak, Bk, Ck, Dk)
+    CL = StateSpace(Ac, Bc, Cc, Dc)
+
+    return K, CL, gam, info
+
