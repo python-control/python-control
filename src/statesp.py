@@ -55,13 +55,31 @@ from scipy import concatenate, zeros
 # of the functions that already existing in that package to be used
 # directly.
 #
-class StateSpace(signal.lti):
+class StateSpace:
     """The StateSpace class is used to represent linear input/output systems.
     """
     # Initialization 
-    def __init__(self, *args, **keywords):
-        # First initialize the parent object
-        signal.lti.__init__(self, *args, **keywords)
+    def __init__(self, A, B, C, D): 
+        self.A = A
+        self.B = B
+        self.C = C
+        self.D = D
+
+        self.states = A.shape[0]
+        self.inputs = B.shape[1]
+        self.outputs = C.shape[0]
+
+        # Check that the matrix sizes are consistent.
+        if self.states != A.shape[1]:
+            raise ValueError("A must be square.")
+        if self.states != B.shape[0]:
+            raise ValueError("B must have the same row size as A.")
+        if self.states != C.shape[1]:
+            raise ValueError("C must have the same column size as A.")
+        if self.inputs != D.shape[1]:
+            raise ValueError("D must have the same column size as B.")
+        if self.outputs != D.shape[0]:
+            raise ValueError("D must have the same row size as C.")
 
     # Style to use for printing
     def __str__(self):
@@ -76,7 +94,7 @@ class StateSpace(signal.lti):
         """Compute the response of a system to a list of frequencies"""
         # Generate and save a transfer function matrix
         #! TODO: This is currently limited to SISO systems
-        nout, nin = self.D.shape
+        #nout, nin = self.D.shape
 
         # Compute the denominator from the A matrix
         den = sp.poly1d(sp.poly(self.A))
@@ -99,7 +117,9 @@ class StateSpace(signal.lti):
         return None
 
     # Compute poles and zeros
-    def poles(self): return sp.roots(sp.poly(self.A))
+    def poles(self):
+        return sp.roots(sp.poly(self.A))
+
     def zeros(self): 
         den = sp.poly1d(sp.poly(self.A))
 
@@ -248,3 +268,83 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
 
     else:
         raise TypeError("can't convert given type to StateSpace system")
+
+def rss(states=1, inputs=1, outputs=1):
+    """Create a stable random state space object."""
+    
+    import numpy
+    from numpy.random import rand, randn
+
+    # Make some poles for A.  Preallocate a complex array.
+    poles = numpy.zeros(states) + numpy.zeros(states) * 0.j
+    i = 0
+    while i < states - 1:
+        if rand() < 0.05 and i != 0:
+            # Small chance of copying poles, if we're not at the first element.
+            if poles[i-1].imag == 0:
+                # Copy previous real pole.
+                poles[i] = poles[i-1]
+                i += 1
+            else:
+                # Copy previous complex conjugate pair of poles.
+                poles[i:i+2] = poles[i-2:i]
+                i += 2
+        elif rand() < 0.6:
+            # Real pole.
+            poles[i] = -sp.exp(randn()) + 0.j
+            i += 1
+        else:
+            # Complex conjugate pair of poles.
+            poles[i] = complex(-sp.exp(randn()), sp.exp(randn()))
+            poles[i+1] = complex(poles[i].real, -poles[i].imag)
+            i += 2
+    # When we reach this point, we either have one or zero poles left to fill.
+    # Put a real pole if there is one space left.
+    if i == states - 1:
+        poles[i] = -sp.exp(randn()) + 0.j
+
+    # Now put the poles in A as real blocks on the diagonal.
+    A = numpy.zeros((states, states))
+    i = 0
+    while i < states:
+        if poles[i].imag == 0:
+            A[i, i] = poles[i].real
+            i += 1
+        else:
+            A[i, i] = A[i+1, i+1] = poles[i].real
+            A[i, i+1] = poles[i].imag
+            A[i+1, i] = -poles[i].imag
+            i += 2
+
+    # Finally, apply a transformation so that A is not block-diagonal.
+    while True:
+        T = randn(states, states)
+        try:
+            A = numpy.dot(numpy.linalg.solve(T, A), T) # A = T \ A * T
+            break
+        except numpy.linalg.linalg.LinAlgError:
+            # In the unlikely event that T is rank-deficient, iterate again.
+            pass
+
+    # Make the remaining matrices.
+    B = randn(states, inputs)
+    C = randn(outputs, states)
+    D = randn(outputs, inputs)
+
+    # Make masks to zero out some of the elements.
+    while True:
+        B_mask = rand(states, inputs) < 0.8
+        if sp.any(B_mask): # Retry if we get all zeros.
+            break
+    while True:
+        C_mask = rand(outputs, states) < 0.8
+        if sp.any(C_mask): # Retry if we get all zeros.
+            break
+    D_mask = rand(outputs, inputs) < 0.3
+
+    # Apply masks.
+    B = B * B_mask
+    C = C * C_mask
+    D = D * D_mask
+
+    return StateSpace(A, B, C, D)
