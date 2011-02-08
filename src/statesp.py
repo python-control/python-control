@@ -401,20 +401,34 @@ inputs/outputs for feedback."
 
         return out
 
-def convertToStateSpace(sys, inputs=1, outputs=1):
+def convertToStateSpace(sys, **kw):
     """Convert a system to state space form (if needed).
 
     If sys is already a state space, then it is returned.  If sys is a transfer
     function object, then it is converted to a state space and returned.  If sys
     is a scalar, then the number of inputs and outputs can be specified
-    manually.
+    manually, as in:
+
+    >>> sys = convertToStateSpace(3.) # Assumes inputs = outputs = 1
+    >>> sys = convertToStateSpace(1., inputs=3, outputs=2)
+
+    In the latter example, A = B = C = 0 and D = [[1., 1., 1.]
+                                                  [1., 1., 1.]].
     
     """
     
     if isinstance(sys, StateSpace):
+        if len(kw):
+            raise TypeError("If sys is a StateSpace, convertToStateSpace \
+cannot take keywords.")
+
         # Already a state space system; just return it
         return sys
     elif isinstance(sys, xferfcn.TransferFunction):
+        if len(kw):
+            raise TypeError("If sys is a TransferFunction, convertToStateSpace \
+cannot take keywords.")
+
         # Change the numerator and denominator arrays so that the transfer
         # function matrix has a common denominator.
         num, den = sys._common_den()
@@ -427,6 +441,15 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
 
         return StateSpace(ssout[1], ssout[2], ssout[3], ssout[4])
     elif isinstance(sys, (int, long, float, complex)):
+        if "inputs" in kw:
+            inputs = kw["inputs"]
+        else:
+            inputs = 1
+        if "outputs" in kw:
+            outputs = kw["outputs"]
+        else:
+            outputs = 1
+
         # Generate a simple state space system of the desired dimension
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))

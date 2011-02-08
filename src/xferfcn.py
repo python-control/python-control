@@ -253,7 +253,8 @@ denominator." % (j + 1, i + 1))
         
         # Convert the second argument to a transfer function.
         if not isinstance(other, TransferFunction):
-            other = convertToTransferFunction(other, self.inputs, self.outputs)
+            other = convertToTransferFunction(other, inputs=self.inputs, 
+                outputs=self.outputs)
 
         # Check that the input-output sizes are consistent.
         if self.inputs != other.inputs:
@@ -294,7 +295,8 @@ second has %i." % (self.outputs, other.outputs))
         
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, long, complex)):
-            other = convertToTransferFunction(other, self.inputs, self.inputs)
+            other = convertToTransferFunction(other, inputs=self.inputs, 
+                outputs=self.inputs)
         else:
             other = convertToTransferFunction(other)
             
@@ -413,7 +415,7 @@ implemented only for SISO systems.")
     def zero(self): 
         """Compute the zeros of a transfer function."""
         
-        if (self.inputs > 1 or self.outputs > 1):
+        if self.inputs > 1 or self.outputs > 1:
             raise NotImplementedError("TransferFunction.zero is currently \
 only implemented for SISO systems.")
         else:
@@ -638,19 +640,33 @@ def _addSISO(num1, den1, num2, den2):
     
     return num, den
 
-def convertToTransferFunction(sys, inputs=1, outputs=1):
+def convertToTransferFunction(sys, **kw):
     """Convert a system to transfer function form (if needed).
     
     If sys is already a transfer function, then it is returned.  If sys is a
     state space object, then it is converted to a transfer function and
     returned.  If sys is a scalar, then the number of inputs and outputs can be
-    specified manually.
+    specified manually, as in:
+
+    >>> sys = convertToTransferFunction(3.) # Assumes inputs = outputs = 1
+    >>> sys = convertToTransferFunction(1., inputs=3, outputs=2)
+
+    In the latter example, sys's matrix transfer function is [[1., 1., 1.]
+                                                              [1., 1., 1.]].
     
     """
     
     if isinstance(sys, TransferFunction):
+        if len(kw):
+            raise TypeError("If sys is a TransferFunction, \
+convertToTransferFunction cannot take keywords.")
+
         return sys
     elif isinstance(sys, statesp.StateSpace):
+        if len(kw):
+            raise TypeError("If sys is a StateSpace, convertToTransferFunction \
+cannot take keywords.")
+
         # Use Slycot to make the transformation.
         tfout = tb04ad(sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
             sys.D, sys.outputs, sys.outputs, sys.inputs)
@@ -667,6 +683,15 @@ def convertToTransferFunction(sys, inputs=1, outputs=1):
 
         return TransferFunction(num, den)
     elif isinstance(sys, (int, long, float, complex)):
+        if "inputs" in kw:
+            inputs = kw["inputs"]
+        else:
+            inputs = 1
+        if "outputs" in kw:
+            outputs = kw["outputs"]
+        else:
+            outputs = 1
+
         num = [[[sys] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
         

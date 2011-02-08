@@ -381,6 +381,17 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_equal(omega, trueomega)
 
+    # Tests for TransferFunction.pole and TransferFunction.zero.
+
+    def testPoleMIMO(self):
+        """Test for correct MIMO poles."""
+
+        sys = TransferFunction([[[1.], [1.]], [[1.], [1.]]],
+            [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
+        p = sys.pole()
+
+        np.testing.assert_array_almost_equal(p, [-7., -3., -2., -2.])
+
     # Tests for TransferFunction.feedback.
         
     def testFeedbackSISO(self):
