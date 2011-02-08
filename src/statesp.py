@@ -281,16 +281,17 @@ class StateSpace:
 #
 def convertToStateSpace(sys, inputs=1, outputs=1):
     """Convert a system to state space form (if needed)"""
-    if (isinstance(sys, StateSpace) or
-        isinstance(sys, xferfcn.TransferFunction)):
+    if isinstance(sys, StateSpace):
         # Already a state space system; just return it
         return sys
-
+    elif isinstance(sys, xferfcn.TransferFunction):
+        pass # TODO: convert SS to TF
     elif (isinstance(sys, (int, long, float, complex))):
         # Generate a simple state space system of the desired dimension
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], sp.eye(outputs, inputs))
-        return StateSpace(-1, 0, 0, sp.eye(outputs, inputs))
+        return StateSpace(-1, zeros((1, inputs)), zeros((outputs, 1)), 
+            sp.eye(outputs, inputs))
 
     else:
         raise TypeError("can't convert given type to StateSpace system")
