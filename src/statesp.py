@@ -93,52 +93,6 @@ class StateSpace(Lti):
         str += "D = " + self.D.__str__() + "\n"
         return str
 
-    def evalfr(self, freq):
-        """Method for evaluating a system at one frequency."""
-        
-        fresp = self.C * solve(freq * 1.j * sp.eye(self.states) - self.A,
-            self.B) + self.D
-        return fresp
-
-    # Method for generating the frequency response of the system
-    def freqresp(self, omega=None):
-        """Compute the response of a system to a list of frequencies."""
-        
-        # Preallocate outputs.
-        numfreq = len(omega)
-        mag = sp.empty((self.outputs, self.inputs, numfreq))
-        phase = sp.empty((self.outputs, self.inputs, numfreq))
-        fresp = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
-
-        for k in range(numfreq):
-            fresp[:, :, k] = self.evalfr(omega[k])
-
-        mag = abs(fresp)
-        phase = sp.angle(fresp)
-
-        return mag, phase, omega
-
-    # Compute poles and zeros
-    def poles(self):
-        """Compute the poles of a state space system."""
-
-        return sp.roots(sp.poly(self.A))
-
-    def zeros(self): 
-        """Compute the zeros of a state space system."""
-
-        if self.inputs > 1 or self.outputs > 1:
-            raise NotImplementedError("StateSpace.zeros is currently \
-implemented only for SISO systems.")
-
-        den = sp.poly1d(sp.poly(self.A))
-        # Compute the numerator based on zeros
-        #! TODO: This is currently limited to SISO systems
-        num = sp.poly1d(\
-            sp.poly(self.A - sp.dot(self.B, self.C)) + (self.D[0] - 1) * den)
-
-        return (sp.roots(num))
-
     # Negation of a system
     def __neg__(self):
         """Negate a state space system."""
@@ -183,19 +137,18 @@ implemented only for SISO systems.")
     def __sub__(self, other):
         """Subtract two state space systems."""
         
-        return __add__(self, other.__neg__())
+        return self.__add__(-other)
 
     # Multiplication of two transfer functions (series interconnection)
     def __mul__(self, other):
         """Serial interconnection between two state space systems."""
         
         # Check for a couple of special cases
-        if (isinstance(other, (int, long, float, complex))):
+        if isinstance(other, (int, long, float, complex)):
             # Just multiplying by a scalar; change the output
             A, B = self.A, self.B;
             C = self.C * other;
             D = self.D * other;
-
         else:
            # Check to make sure the dimensions are OK
            if (self.outputs != other.inputs):
@@ -203,14 +156,15 @@ implemented only for SISO systems.")
 of second's inputs."
 
            # Concatenate the various arrays
-           A = concatenate((
-                   concatenate(( self.A, zeros((self.A.shape[0],
-                                            other.A.shape[-1]))   ),axis=1),
-                   concatenate(( other.B*self.C,  other.A  ),axis=1),
-                   ),axis=0)
-           B = concatenate( (self.B, other.B*self.D), axis=0 )
-           C = concatenate( (other.D*self.C, other.C), axis=1 )
-           D = other.D*self.D
+           A = concatenate(
+            (concatenate((other.A, zeros((other.A.shape[0], self.A.shape[1]))), 
+                axis=1),
+             concatenate((self.B * other.C, self.A), axis=1)),
+            axis=0)
+           B = concatenate((other.B, self.B * other.D), axis=0)
+           C = concatenate((self.D * other.C, self.C),axis=1)
+           D = self.D * other.D
+
         return StateSpace(A, B, C, D)
 
     # Reverse multiplication of two transfer functions (series interconnection)
@@ -219,7 +173,7 @@ of second's inputs."
         """Serial interconnection between two state space systems"""
         
         # Check for a couple of special cases
-        if (isinstance(other, (int, long, float, complex))):
+        if isinstance(other, (int, long, float, complex)):
             # Just multiplying by a scalar; change the input
             A, C = self.A, self.C;
             B = self.B * other;
@@ -228,6 +182,52 @@ of second's inputs."
 
         else:
             raise TypeError("can't interconnect systems")
+
+    # Compute poles and zeros
+    def pole(self):
+        """Compute the poles of a state space system."""
+
+        return sp.roots(sp.poly(self.A))
+
+    def zero(self): 
+        """Compute the zeros of a state space system."""
+
+        if self.inputs > 1 or self.outputs > 1:
+            raise NotImplementedError("StateSpace.zeros is currently \
+implemented only for SISO systems.")
+
+        den = sp.poly1d(sp.poly(self.A))
+        # Compute the numerator based on zeros
+        #! TODO: This is currently limited to SISO systems
+        num = sp.poly1d(\
+            sp.poly(self.A - sp.dot(self.B, self.C)) + (self.D[0, 0] - 1) * den)
+
+        return (sp.roots(num))
+
+    def evalfr(self, freq):
+        """Method for evaluating a system at one frequency."""
+        
+        fresp = self.C * solve(freq * 1.j * sp.eye(self.states) - self.A,
+            self.B) + self.D
+        return fresp
+
+    # Method for generating the frequency response of the system
+    def freqresp(self, omega=None):
+        """Compute the response of a system to a list of frequencies."""
+        
+        # Preallocate outputs.
+        numfreq = len(omega)
+        mag = sp.empty((self.outputs, self.inputs, numfreq))
+        phase = sp.empty((self.outputs, self.inputs, numfreq))
+        fresp = sp.empty((self.outputs, self.inputs, numfreq), dtype=complex)
+
+        for k in range(numfreq):
+            fresp[:, :, k] = self.evalfr(omega[k])
+
+        mag = abs(fresp)
+        phase = sp.angle(fresp)
+
+        return mag, phase, omega
 
     # Feedback around a state space system
     def feedback(self, other, sign=-1):

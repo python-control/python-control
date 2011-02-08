@@ -357,8 +357,13 @@ def drss(states=1, inputs=1, outputs=1):
 def pole(sys):
     """Return system poles."""
 
-    return sys.poles()
+    return sys.pole()
     
+def zero(sys):
+    """Return system zeros."""
+
+    return sys.zero()
+
 def evalfr(sys, omega):
     """Evaluate the transfer function of an LTI system at a single frequency
     omega."""

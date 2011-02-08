@@ -352,12 +352,12 @@ implemented only for SISO systems.")
 
         return mag, phase, omega
 
-    def poles(self):
+    def pole(self):
         """Compute poles of a transfer function."""
         
         pass
         
-    def zeros(self): 
+    def zero(self): 
         """Compute zeros of a transfer function."""
         
         pass

@@ -8,6 +8,89 @@ import unittest
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
 
+    def setUp(self):
+        """Set up a MIMO system to test operations on."""
+
+        A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
+        B = [[1., 4.], [-3., -3.], [-2., 1.]]
+        C = [[4., 2., -3.], [1., 4., 3.]]
+        D = [[-2., 4.], [0., 1.]]
+        
+        a = [[4., 1.], [2., -3]]
+        b = [[5., 2.], [-3., -3.]]
+        c = [[2., -4], [0., 1.]]
+        d = [[3., 2.], [1., -1.]]
+
+        self.sys1 = StateSpace(A, B, C, D) 
+        self.sys2 = StateSpace(a, b, c, d)
+
+    def testPole(self):
+        """Evaluate the poles of a MIMO system."""
+
+        p = self.sys1.pole()
+
+        np.testing.assert_array_almost_equal(p, [3.34747678408874,
+            -3.17373839204437 + 1.47492908003839j,
+            -3.17373839204437 - 1.47492908003839j])
+
+    def testZero(self):
+        """Evaluate the zeros of a SISO system."""
+
+        sys = StateSpace(self.sys1.A, [[3.], [-2.], [4.]], [[-1., 3., 2.]], [[-4.]])
+        z = sys.zero()
+
+        np.testing.assert_array_almost_equal(z, [4.26864638637134,
+            -3.75932319318567 + 1.10087776649554j,
+            -3.75932319318567 - 1.10087776649554j])
+
+    def testAdd(self):
+        """Add two MIMO systems."""
+
+        A = [[-3., 4., 2., 0., 0.], [-1., -3., 0., 0., 0.],
+             [2., 5., 3., 0., 0.], [0., 0., 0., 4., 1.], [0., 0., 0., 2., -3.]]
+        B = [[1., 4.], [-3., -3.], [-2., 1.], [5., 2.], [-3., -3.]]
+        C = [[4., 2., -3., 2., -4.], [1., 4., 3., 0., 1.]]
+        D = [[1., 6.], [1., 0.]]
+
+        sys = self.sys1 + self.sys2
+        
+        np.testing.assert_array_almost_equal(sys.A, A)
+        np.testing.assert_array_almost_equal(sys.B, B)
+        np.testing.assert_array_almost_equal(sys.C, C)
+        np.testing.assert_array_almost_equal(sys.D, D)
+
+    def testSub(self):
+        """Subtract two MIMO systems."""
+
+        A = [[-3., 4., 2., 0., 0.], [-1., -3., 0., 0., 0.],
+             [2., 5., 3., 0., 0.], [0., 0., 0., 4., 1.], [0., 0., 0., 2., -3.]]
+        B = [[1., 4.], [-3., -3.], [-2., 1.], [5., 2.], [-3., -3.]]
+        C = [[4., 2., -3., -2., 4.], [1., 4., 3., 0., -1.]]
+        D = [[-5., 2.], [-1., 2.]]
+
+        sys = self.sys1 - self.sys2
+
+        np.testing.assert_array_almost_equal(sys.A, A)
+        np.testing.assert_array_almost_equal(sys.B, B)
+        np.testing.assert_array_almost_equal(sys.C, C)
+        np.testing.assert_array_almost_equal(sys.D, D)
+
+    def testMul(self):
+        """Multiply two MIMO systems."""
+
+        A = [[4., 1., 0., 0., 0.], [2., -3., 0., 0., 0.], [2., 0., -3., 4., 2.],
+             [-6., 9., -1., -3., 0.], [-4., 9., 2., 5., 3.]]
+        B = [[5., 2.], [-3., -3.], [7., -2.], [-12., -3.], [-5., -5.]]
+        C = [[-4., 12., 4., 2., -3.], [0., 1., 1., 4., 3.]]
+        D = [[-2., -8.], [1., -1.]]
+
+        sys = self.sys1 * self.sys2
+        
+        np.testing.assert_array_almost_equal(sys.A, A)
+        np.testing.assert_array_almost_equal(sys.B, B)
+        np.testing.assert_array_almost_equal(sys.C, C)
+        np.testing.assert_array_almost_equal(sys.D, D)
+
     def testEvalFr(self):
         """Evaluate the frequency response at one frequency."""
 
@@ -79,7 +162,7 @@ class TestRss(unittest.TestCase):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
                     sys = matlab.rss(states, inputs, outputs)
-                    p = sys.poles()
+                    p = sys.pole()
                     for z in p:
                         self.assertTrue(z.real < 0)
 
@@ -113,7 +196,7 @@ class TestDrss(unittest.TestCase):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
                     sys = matlab.drss(states, inputs, outputs)
-                    p = sys.poles()
+                    p = sys.pole()
                     for z in p:
                         self.assertTrue(abs(z) < 1)
                         
