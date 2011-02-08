@@ -75,7 +75,9 @@ def tests(verbosity=2):
       print 'Completed tests in',mod
   except: 
     #find the modules ourselves without unittest discovery
-    testModules = findTests()
+    #testModules = findTests()
+    testModules =['TestBDAlg','TestConvert','TestFreqRsp','TestMatlab','TestModelsimp',\
+      'TestSlycot','TestStatefbk','TestStateSp','TestXferFcn']
     print 'Tests may be incomplete, will attempt to run tests in modules:'
     for m in testModules:
         print m
