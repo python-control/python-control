@@ -52,7 +52,7 @@ def pzmap(sys, Plot=True):
         poles = sp.roots(sys.den);
         zeros = sp.roots(sys.num);
     else:
-        raise TypeException
+        raise NotImplementedError("pzmap not implemented for state space systems yet.")
 
     if (Plot):
         # Plot the locations of the poles and zeros
