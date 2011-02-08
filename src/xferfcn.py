@@ -48,9 +48,9 @@
 
 # External function declarations
 import scipy as sp
-from lti2 import Lti2
+from lti import Lti
 
-class TransferFunction(Lti2):
+class TransferFunction(Lti):
     """The TransferFunction class is derived from the Lti2 parent class.  The
     main data members are 'num' and 'den', which are 2-D lists of arrays
     containing MIMO numerator and denominator coefficients.  For example,
@@ -138,7 +138,7 @@ denominator." % (j + 1, i + 1))
 
         self.num = num
         self.den = den
-        Lti2.__init__(self, inputs, outputs)
+        Lti.__init__(self, inputs, outputs)
         
         self._truncatecoeff()
         

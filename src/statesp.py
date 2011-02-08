@@ -45,9 +45,9 @@ import scipy as sp
 from scipy import concatenate, zeros
 from numpy.linalg import solve
 import xferfcn
-from lti2 import Lti2
+from lti import Lti
 
-class StateSpace(Lti2):
+class StateSpace(Lti):
     """The StateSpace class is used throughout the python-control library to
     represent systems in state space form.  This class is derived from the Lti2
     base class."""
@@ -70,7 +70,7 @@ class StateSpace(Lti2):
         self.D = D
 
         self.states = A.shape[0]
-        Lti2.__init__(self, B.shape[1], C.shape[0])
+        Lti.__init__(self, B.shape[1], C.shape[0])
         
         # Check that the matrix sizes are consistent.
         if self.states != A.shape[1]:

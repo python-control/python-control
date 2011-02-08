@@ -1,5 +1,5 @@
-class Lti2:
-    """The Lti2 is a parent class to the StateSpace and TransferFunction child
+class Lti:
+    """The Lti is a parent class to the StateSpace and TransferFunction child
     classes.  It only contains the number of inputs and outputs, but this can be
     expanded in the future."""
     
