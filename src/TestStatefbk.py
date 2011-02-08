@@ -32,6 +32,15 @@ class TestStatefbk(unittest.TestCase):
         Wotrue = N.matrix("5. 6.; 7. 8.; 23. 34.; 31. 46.")
         Wo = obsv(A,C)
         N.testing.assert_array_almost_equal(Wo, Wotrue)
+    
+    def testCtrbObsvDuality(self):
+        A = N.matrix("1.2 -2.3; 3.4 -4.5")
+        B = N.matrix("5.8 6.9; 8. 9.1")
+        Wc = ctrb(A,B);
+        A = N.transpose(A)
+        C = N.transpose(B)
+        Wo = N.transpose(obsv(A,C));
+        N.testing.assert_array_almost_equal(Wc,Wo)
 
 if __name__ == '__main__':
     unittest.main()
