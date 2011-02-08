@@ -75,8 +75,8 @@ $Id: xferfcn.py 21 2010-06-06 17:29:42Z murrayrm $
 """
 
 # External function declarations
-from numpy import angle, array, empty, finfo, insert, ndarray, ones, polyadd, \
-    polymul, polyval, roots, sort, zeros
+from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
+    polyadd, polymul, polyval, roots, sort, sqrt, zeros
 from scipy.signal import lti
 from copy import deepcopy
 from slycot import tb04ad
@@ -491,7 +491,10 @@ only implemented for SISO functions.")
         [something] array.
 
         """
-         
+        
+        # Machine precision for floats.
+        eps = finfo(float).eps
+
         # A sorted list to keep track of cumulative poles found as we scan
         # self.den.
         poles = []
@@ -512,8 +515,7 @@ only implemented for SISO functions.")
                 # cumulative poles, until one of them reaches the end.  Keep in
                 # mind that both lists are always sorted.
                 while cp_ind < len(currentpoles) and p_ind < len(poles):
-                    if abs(currentpoles[cp_ind] - poles[p_ind]) < (10 *
-                        finfo(float).eps):
+                    if abs(currentpoles[cp_ind] - poles[p_ind]) < (10 * eps):
                         # If the current element of both lists match, then we're
                         # good.  Move to the next pair of elements.
                         cp_ind += 1
@@ -558,8 +560,21 @@ only implemented for SISO functions.")
         
         # Construct the common denominator.
         den = 1.
-        for p in poles:
-            den = polymul(den, [1., -p])
+        n = 0
+        while n < len(poles):
+            if abs(poles[n].imag) > 10 * eps:
+                # To prevent buildup of imaginary part error, handle complex
+                # pole pairs together.
+                quad = polymul([1., -poles[n]], [1., -poles[n+1]])
+                assert all(quad.imag < eps), "The quadratic has a nontrivial \
+imaginary part: %g" % quad.imag.max()
+                quad = quad.real
+
+                den = polymul(den, quad)
+                n += 2
+            else:
+                den = polymul(den, [1., -poles[n].real])
+                n += 1
 
         # Modify the numerators so that they each take the common denominator.
         num = deepcopy(self.num)
@@ -585,6 +600,11 @@ a zero leading coefficient." % (i, j)
                     zeros(largest - len(num[i][j])))
         # Finally, convert the numerator to a 3-D array.
         num = array(num)
+        # Remove trivial imaginary parts.  Check for nontrivial imaginary parts.
+        if any(abs(num.imag) > sqrt(eps)):
+            print ("Warning: The numerator has a nontrivial nontrivial part: %g"
+                % abs(num.imag).max())
+        num = num.real
 
         return num, den
 

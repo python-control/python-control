@@ -38,7 +38,6 @@ class TestFeedback(unittest.TestCase):
         ans1 = feedback(self.x1, self.sys2)
         ans2 = feedback(self.x1, self.sys2, 1.)
         
-        # This one doesn't work yet.  The feedback system has too many states.
         np.testing.assert_array_almost_equal(ans1.A, [[-1.5, 4.], [13., 2.]])
         np.testing.assert_array_almost_equal(ans1.B, [[2.5], [-10.]])
         np.testing.assert_array_almost_equal(ans1.C, [[-2.5, 0.]])
@@ -65,7 +64,6 @@ class TestFeedback(unittest.TestCase):
         ans1 = feedback(self.sys2, self.x1)
         ans2 = feedback(self.sys2, self.x1, 1.)
 
-        # This one doesn't work yet.  The feedback system has too many states.
         np.testing.assert_array_almost_equal(ans1.A, [[-1.5, 4.], [13., 2.]])
         np.testing.assert_array_almost_equal(ans1.B, [[1.], [-4.]])
         np.testing.assert_array_almost_equal(ans1.C, [[1., 0.]])

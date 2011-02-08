@@ -4,10 +4,13 @@
 
 Test state space and transfer function conversion.
 
-Currently, this unit test script is not complete.  It converts
-several random state spaces back and forth between state space and transfer
-function representations, and asserts that the conversion outputs are correct.
-As it stands, tests pass but there is some rounding error in one of the conversions leading to imaginary numbers. See the warning message. This script may be used to diagnose errors.
+Currently, this unit test script is not complete.  It converts several random
+state spaces back and forth between state space and transfer function
+representations.  Ideally, it should be able to assert that the conversion
+outputs are correct.  This is not yet implemented.
+
+Also, the conversion seems to enter an infinite loop once in a while.  The cause
+of this is unknown.
 
 """
 
@@ -22,11 +25,11 @@ class TestConvert(unittest.TestCase):
         """Set up testing parameters."""
 
         # Number of times to run each of the randomized tests.
-        self.numTests = 1
+        self.numTests = 10
         # Maximum number of states to test + 1
-        self.maxStates = 3
+        self.maxStates = 2
         # Maximum number of inputs and outputs to test + 1
-        self.maxIO = 3
+        self.maxIO = 2
         # Set to True to print systems to the output.
         self.debug = True
 
