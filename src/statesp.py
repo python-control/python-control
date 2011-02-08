@@ -279,7 +279,7 @@ inputs/outputs for feedback."
         """Return a list of a list of scipy.signal.lti objects for a MIMO
         system.  For instance,
 
-        >>> out = ssobject.returnSignalScipyLti()
+        >>> out = ssobject.returnScipySignalLti()
         >>> out[3][5]
 
         is a signal.scipy.lti object corresponding to the transfer function from
