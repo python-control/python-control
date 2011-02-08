@@ -172,18 +172,24 @@ denominator." % (j + 1, i + 1))
         """Remove extraneous zero coefficients from polynomials in numerator and
         denominator matrices."""
 
-        # Beware: this is a shallow copy.
+        # Beware: this is a shallow copy.  This should be okay.
         data = [self.num, self.den]
         for p in range(len(data)):
             for i in range(self.outputs):
                 for j in range(self.inputs):
                     # Find the first nontrivial coefficient.
-                    k = 0
-                    while not data[p][i][j][k]:
-                        k += 1
-                    
-                    # Now truncate the trivial coefficients.
-                    data[p][i][j] = data[p][i][j][k:]        
+                    nonzero = None
+                    for k in range(data[p][i][j].size):
+                        if data[p][i][j][k]:
+                            nonzero = k
+                            break
+                            
+                    if nonzero is None:
+                        # The array is all zeros.
+                        data[p][i][j] = sp.zeros(1)
+                    else:
+                        # Truncate the trivial coefficients.
+                        data[p][i][j] = data[p][i][j][nonzero:]        
         [self.num, self.den] = data
     
     def __neg__(self):
@@ -205,11 +211,11 @@ denominator." % (j + 1, i + 1))
 
         # Check that the input-output sizes are consistent.
         if self.inputs != other.inputs:
-            raise ValueError("The first summand has %i input(s), but the second \
-has %i." % (self.inputs, other.inputs))
+            raise ValueError("The first summand has %i input(s), but the \
+second has %i." % (self.inputs, other.inputs))
         if self.outputs != other.outputs:
-            raise ValueError("The first summand has %i output(s), but the second \
-has %i." % (self.outputs, other.outputs))
+            raise ValueError("The first summand has %i output(s), but the \
+second has %i." % (self.outputs, other.outputs))
 
         # Preallocate the numerator and denominator of the sum.
         num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]

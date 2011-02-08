@@ -9,13 +9,84 @@ class TestXferFcn(unittest.TestCase):
     function class.  Throughout these tests, we will give different input
     formats to the xTranferFunction constructor, to try to break it."""
     
-    def testTruncateCoeff(self):
+    # Tests for raising exceptions.
+   
+    def testBadInputType(self):
+        """Give the constructor invalid input types."""
+        
+        self.assertRaises(ValueError, xTransferFunction, [[0., 1.], [2., 3.]],
+            [[5., 2.], [3., 0.]])
+            
+    def testInconsistentDimension(self):
+        """Give the constructor a numerator and denominator of different
+        sizes."""
+        
+        self.assertRaises(ValueError, xTransferFunction, [[[1.]]],
+            [[[1.], [2., 3.]]])
+        self.assertRaises(ValueError, xTransferFunction, [[[1.]]],
+            [[[1.]], [[2., 3.]]])
+        self.assertRaises(ValueError, xTransferFunction, [[[1.]]],
+            [[[1.], [1., 2.]], [[5., 2.], [2., 3.]]])
+    
+    def testInconsistentColumns(self):
+        """Give the constructor inputs that do not have the same number of
+        columns in each row."""
+        
+        self.assertRaises(ValueError, xTransferFunction, 1.,
+            [[[1.]], [[2.], [3.]]])
+        self.assertRaises(ValueError, xTransferFunction, [[[1.]], [[2.], [3.]]],
+            1.)
+            
+    def testZeroDenominator(self):
+        """Give the constructor a transfer function with a zero denominator."""
+        
+        self.assertRaises(ValueError, xTransferFunction, 1., 0.)
+        self.assertRaises(ValueError, xTransferFunction,
+            [[[1.], [2., 3.]], [[-1., 4.], [3., 2.]]],
+            [[[1., 0.], [0.]], [[0., 0.], [2.]]])
+            
+    def testAddInconsistentDimension(self):
+        """Add two transfer function matrices of different sizes."""
+        
+        sys1 = xTransferFunction([[[1., 2.]]], [[[4., 5.]]])
+        sys2 = xTransferFunction([[[4., 3.]], [[1., 2.]]],
+            [[[1., 6.]], [[2., 4.]]])
+        self.assertRaises(ValueError, sys1.__add__, sys2)
+        self.assertRaises(ValueError, sys1.__sub__, sys2)
+        self.assertRaises(ValueError, sys1.__radd__, sys2)
+        self.assertRaises(ValueError, sys1.__rsub__, sys2)
+        
+    def testMulInconsistentDimension(self):
+        """Multiply two transfer function matrices of incompatible sizes."""
+        
+        sys1 = xTransferFunction([[[1., 2.], [4., 5.]], [[2., 5.], [4., 3.]]],
+            [[[6., 2.], [4., 1.]], [[6., 7.], [2., 4.]]])
+        sys2 = xTransferFunction([[[1.]], [[2.]], [[3.]]], 
+            [[[4.]], [[5.]], [[6.]]])
+        self.assertRaises(ValueError, sys1.__mul__, sys2)
+        self.assertRaises(ValueError, sys2.__mul__, sys1)
+        self.assertRaises(ValueError, sys1.__rmul__, sys2)
+        self.assertRaises(ValueError, sys2.__rmul__, sys1)
+    
+    # Tests for xTransferFunction._truncatecoeff
+    
+    def testTruncateCoeff1(self):
         """Remove extraneous zeros in polynomial representations."""
         
         sys1 = xTransferFunction([0., 0., 1., 2.], [[[0., 0., 0., 3., 2., 1.]]])
         
         np.testing.assert_array_equal(sys1.num, [[[1., 2.]]])
         np.testing.assert_array_equal(sys1.den, [[[3., 2., 1.]]])
+        
+    def testTruncateCoeff2(self):
+        """Remove extraneous zeros in polynomial representations."""
+        
+        sys1 = xTransferFunction([0., 0., 0.], 1.)
+        
+        np.testing.assert_array_equal(sys1.num, [[[0.]]])
+        np.testing.assert_array_equal(sys1.den, [[[1.]]])
+    
+    # Tests for xTransferFunction.__neg__
     
     def testNegScalar(self):
         """Negate a direct feedthrough system."""
@@ -53,7 +124,9 @@ class TestXferFcn(unittest.TestCase):
             for j in range(sys3.inputs):
                 np.testing.assert_array_equal(sys2.num[i][j], sys3.num[i][j])
                 np.testing.assert_array_equal(sys2.den[i][j], sys3.den[i][j])
-                
+               
+    # Tests for xTransferFunction.__add__
+    
     def testAddScalar(self):
         """Add two direct feedthrough systems."""
         
@@ -100,6 +173,8 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
     
+    # Tests for xTransferFunction.__sub__
+    
     def testSubScalar(self):
         """Add two direct feedthrough systems."""
         
@@ -134,20 +209,22 @@ class TestXferFcn(unittest.TestCase):
                 [[1., 2.], [-1., -2.], [4.]]]
         den2 = [[[-1.], [1., 2., 3.], [-1., -1.]],
                 [[-4., -3., 2.], [0., 1.], [1., 0.]]]
-        num3 = [[[3., -3., -6], [5., 6., 9.], [-4., -2., 2]],
-                [[3., 2., -3., 2], [-2., -3., 7., 2.], [1., -4., 3., 4]]]
-        den3 = [[[3., -2., -4.], [1., 2., 3., 0., 0.], [-2., -1., 1.]],
-                [[-12., -9., 6., 0., 0.], [2., -1., -1.], [1., 0.]]]
+        num3 = [[[-3., 1., 2.], [1., 6., 9.], [0.]],
+                [[-3., -10., -3., 2], [2., 3., 1., -2], [1., -4., 3., -4]]]
+        den3 = [[[3., -2., -4], [1., 2., 3., 0., 0.], [-2., -1., 1.]],
+                [[-12., -9., 6., 0., 0.], [2., -1., -1], [1., 0.]]]
                 
         sys1 = xTransferFunction(num1, den1)
         sys2 = xTransferFunction(num2, den2)
-        sys3 = sys1 + sys2
+        sys3 = sys1 - sys2
 
         for i in range(sys3.outputs):
             for j in range(sys3.inputs):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
-                
+               
+    # Tests for xTransferFunction.__mul__
+    
     def testMulScalar(self):
         """Multiply two direct feedthrough systems."""
         
@@ -204,6 +281,8 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
 
+    # Tests for xTransferFunction.__div__
+    
     def testDivScalar(self):
         """Divide two direct feedthrough systems."""
         
