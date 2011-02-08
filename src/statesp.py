@@ -9,6 +9,8 @@ for the python-control library.
 Routines in this module:
 
 StateSpace.__init__
+StateSpace._remove_useless_states
+StateSpace.copy
 StateSpace.__str__
 StateSpace.__neg__
 StateSpace.__add__
@@ -26,9 +28,11 @@ StateSpace.zero
 StateSpace.feedback
 StateSpace.returnScipySignalLti
 convertToStateSpace
-rss_generate
+_rss_generate
 
-Copyright (c) 2010 by California Institute of Technology
+"""
+
+"""Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -74,6 +78,7 @@ from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
+from copy import deepcopy
 from slycot import td04ad
 from lti import Lti
 import xferfcn
@@ -162,6 +167,11 @@ class StateSpace(Lti):
             self.B = delete(self.B, useless, 0)
             self.C = delete(self.C, useless, 1)
 
+    def copy(self):
+        """Return a deep copy of the instance."""
+
+        return deepcopy(self)
+
     def __str__(self):
         """String representation of the state space."""
 
@@ -207,9 +217,9 @@ class StateSpace(Lti):
 
         return StateSpace(A, B, C, D)
 
-    # Reverse addition - just switch the arguments
+    # Right addition - just switch the arguments
     def __radd__(self, other): 
-        """Reverse add two LTI systems (parallel connection)."""
+        """Right add two LTI systems (parallel connection)."""
         
         return self + other
 
@@ -220,7 +230,7 @@ class StateSpace(Lti):
         return self + (-other)
 
     def __rsub__(self, other):
-        """Reverse subtract two LTI systems."""
+        """Right subtract two LTI systems."""
 
         return other + (-self)
 
@@ -253,10 +263,10 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         return StateSpace(A, B, C, D)
 
-    # Reverse multiplication of two transfer functions (series interconnection)
+    # Right multiplication of two transfer functions (series interconnection)
     # Just need to convert LH argument to a state space object
     def __rmul__(self, other):
-        """Reverse multiply two LTI objects (serial connection)."""
+        """Right multiply two LTI objects (serial connection)."""
         
         # Check for a couple of special cases
         if isinstance(other, (int, long, float, complex)):
@@ -276,7 +286,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         raise NotImplementedError("StateSpace.__div__ is not implemented yet.")
 
     def __rdiv__(self, other):
-        """Reverse divide two LTI systems."""
+        """Right divide two LTI systems."""
 
         raise NotImplementedError("StateSpace.__rdiv__ is not implemented yet.")
 
@@ -465,7 +475,7 @@ cannot take keywords.")
     else:
         raise TypeError("Can't convert given type to StateSpace system.")
     
-def rss_generate(states, inputs, outputs, type):
+def _rss_generate(states, inputs, outputs, type):
     """Generate a random state space.
     
     This does the actual random state space generation expected from rss and

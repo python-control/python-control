@@ -21,6 +21,7 @@ class Lti:
     "virtual" functions.  These are:
 
     __init__
+    copy
     __str__
     __neg__
     __add__

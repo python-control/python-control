@@ -9,7 +9,9 @@ parallel
 negate
 feedback
 
-Copyright (c) 2010 by California Institute of Technology
+"""
+
+"""Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

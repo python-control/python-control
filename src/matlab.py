@@ -13,7 +13,9 @@ defined here.  Functions that are defined in other libraries that
 have the same names as their MATLAB equivalents are automatically
 imported here.
 
-Copyright (c) 2009 by California Institute of Technology
+"""
+
+"""Copyright (c) 2009 by California Institute of Technology
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -65,7 +67,7 @@ from scipy import linspace, logspace
 # Control system library
 import ctrlutil
 import freqplot
-from statesp import StateSpace, rss_generate, convertToStateSpace
+from statesp import StateSpace, _rss_generate, convertToStateSpace
 from xferfcn import TransferFunction, convertToTransferFunction
 from exception import ControlArgument
 
@@ -511,7 +513,7 @@ def rss(states=1, inputs=1, outputs=1):
      
     """
     
-    return rss_generate(states, inputs, outputs, 'c')
+    return _rss_generate(states, inputs, outputs, 'c')
     
 def drss(states=1, inputs=1, outputs=1):
     """
@@ -544,7 +546,7 @@ def drss(states=1, inputs=1, outputs=1):
      
     """
     
-    return rss_generate(states, inputs, outputs, 'd')
+    return _rss_generate(states, inputs, outputs, 'd')
     
 def pole(sys):
     """

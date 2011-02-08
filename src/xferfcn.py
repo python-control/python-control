@@ -10,6 +10,7 @@ Routines in this module:
 
 TransferFunction.__init__
 TransferFunction._truncatecoeff
+TransferFunction.copy
 TransferFunction.__str__
 TransferFunction.__neg__
 TransferFunction.__add__
@@ -31,7 +32,9 @@ _tfpolyToString
 _addSISO
 convertToTransferFunction
 
-Copyright (c) 2010 by California Institute of Technology
+"""
+
+"""Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -208,6 +211,11 @@ denominator." % (j + 1, i + 1))
                         data[p][i][j] = data[p][i][j][nonzero:]        
         [self.num, self.den] = data
     
+    def copy(self):
+        """Return a deep copy of the instance."""
+
+        return deepcopy(self)
+
     def __str__(self):
         """String representation of the transfer function."""
         
@@ -276,7 +284,7 @@ second has %i." % (self.outputs, other.outputs))
         return TransferFunction(num, den)
  
     def __radd__(self, other): 
-        """Reverse add two LTI objects (parallel connection)."""
+        """Right add two LTI objects (parallel connection)."""
         
         return self + other;
         
@@ -286,7 +294,7 @@ second has %i." % (self.outputs, other.outputs))
         return self + (-other)
         
     def __rsub__(self, other): 
-        """Reverse subtract two LTI objects."""
+        """Right subtract two LTI objects."""
         
         return other + (-self)
 
@@ -328,7 +336,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return TransferFunction(num, den)
 
     def __rmul__(self, other): 
-        """Reverse multiply two LTI objects (serial connection)."""
+        """Right multiply two LTI objects (serial connection)."""
         
         return self * other
 
@@ -351,7 +359,7 @@ implemented only for SISO systems.")
        
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rdiv__(self, other):
-        """Reverse divide two LTI objects."""
+        """Right divide two LTI objects."""
         
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
