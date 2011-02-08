@@ -697,7 +697,10 @@ _convertToTransferFunction cannot take keywords.")
             raise TypeError("If sys is a StateSpace, _convertToTransferFunction \
 cannot take keywords.")
 
-        # Use Slycot to make the transformation.
+        # Use Slycot to make the transformation.  TODO: this is still somewhat
+        # buggy!
+        print "Warning: state space to transfer function conversion by tb04ad \
+is still buggy!"
         tfout = tb04ad(sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
             sys.D, sys.outputs, sys.outputs, sys.inputs)
 

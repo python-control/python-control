@@ -27,9 +27,9 @@ class TestConvert(unittest.TestCase):
         # Number of times to run each of the randomized tests.
         self.numTests = 10
         # Maximum number of states to test + 1
-        self.maxStates = 2
+        self.maxStates = 3
         # Maximum number of inputs and outputs to test + 1
-        self.maxIO = 2
+        self.maxIO = 3
         # Set to True to print systems to the output.
         self.debug = True
 
