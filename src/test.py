@@ -17,6 +17,45 @@ def tests_old():
     print SP.Popen(['./'+test],stdout=SP.PIPE).communicate()[0]
     print 'Completed',test
 
+
+###############################################################################
+
+def getFileList(dir,fileExtension=''):
+  """ Finds all files in the given directory that have the given file extension"""
+  filesRaw = SP.Popen(['ls',dir],stdout=SP.PIPE).communicate()[0]
+  #files separated by endlines
+  filename= ''
+  fileList=[]
+  #print 'filesRaw is ',filesRaw
+  for c in filesRaw:
+    if c!='\n':
+      filename+=c
+    else: #completed file name
+      if fileExtension != '' and filename[-len(fileExtension):] == fileExtension:
+        fileList.append(filename)
+      else:
+        pass #fileList.append(dir+filename)
+      filename=''
+  return fileList
+
+###############################################################################
+
+
+def findTests(testdir='./'):
+  """Since python <2.7 doesn't have test discovery, this finds tests in the 
+  provided directory. The default is to check the current directory. Any files
+  that match test* or Test* are considered unittest modules and checked for 
+  a module.suite() function (in tests())."""
+  fileList = getFileList(testdir,fileExtension='.py')
+  testModules= []
+  for fileName in fileList:
+    if (fileName[:4] =='test' or fileName[:4]=='Test') and fileName!='test.py':
+       testModules.append(fileName[:-len('.py')])
+  return testModules
+  
+###############################################################################
+  
+  
 def tests():
   import unittest
   try: #auto test discovery is only implemented in python 2.7+
@@ -43,21 +82,29 @@ def tests():
     
     print 'Tests may be incomplete'
     t=unittest.TextTestRunner()
-    
-    testModules = ['TestBDAlg','TestConvert','TestFreqRsp','TestMatlab','TestModelsimp',\
-      'TestStateSp','TestStatefbk','TestXferFcn'] #add additional tests here, or discovery?
+
+    testModules = findTests()
+
     suite = unittest.TestSuite() 
+    suiteList=[]
     for mod in testModules:
       exec('import '+mod+' as currentModule')
-      print 'TEST',mod
-      suite = currentModule.suite()
-      t.run(suite)
       #After tests have been debugged and made into unittests, remove 
       #the above (except the import) and replace with something like this:
-      #suiteList.append(ts.suite())
-      #alltests = unittest.TestSuite(suiteList)
-      #t.run(alltests) 
-     
+      try:
+        currentSuite = currentModule.suite()
+        if isinstance(currentSuite,unittest.TestSuite):
+          suiteList.append(currentModule.suite())
+        else:
+          print mod+'.suite() doesnt return a unittest.TestSuite!, please fix!'
+      except:
+        print 'The test module '+mod+' doesnt have '+\
+          'a proper suite() function that returns a unittest.TestSuite object'+\
+            ' Please fix this!'
+    alltests = unittest.TestSuite(suiteList)
+    t.run(unittest.TestSuite(alltests)) 
+
+###############################################################################
     
 if __name__=='__main__':
   tests()

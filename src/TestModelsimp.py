@@ -88,6 +88,8 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=4)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=4)
 
+def suite():
+   return unittest.TestLoader().loadTestsFromTestCase(TestModelsimp)
 
 
 if __name__ == '__main__':

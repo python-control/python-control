@@ -56,5 +56,8 @@ bode(systf)
 #plt.figure(4)
 #bode(sysMIMO,omega)
 
+
 def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
+   pass
+   #Uncomment this once it is a real unittest
+   #return unittest.TestLoader().loadTestsFromTestCase(TestFreqRsp)

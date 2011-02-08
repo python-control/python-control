@@ -80,5 +80,9 @@ class TestStatefbk(unittest.TestCase):
         self.assertRaises(ValueError, gram, sys, 'o')
         self.assertRaises(ValueError, gram, sys, 'c')
 
+def suite():
+   return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
+
+
 if __name__ == '__main__':
     unittest.main()
