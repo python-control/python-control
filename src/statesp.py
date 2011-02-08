@@ -58,7 +58,7 @@ from scipy import concatenate, zeros
 class StateSpace:
     """The StateSpace class is used to represent linear input/output systems.
     """
-    # Initialization 
+
     def __init__(self, A, B, C, D): 
         self.A = A
         self.B = B
@@ -68,7 +68,12 @@ class StateSpace:
         self.states = A.shape[0]
         self.inputs = B.shape[1]
         self.outputs = C.shape[0]
-
+        
+        # Check that the inputs are arrays or matrices.
+        if not (isinstance(A, sp.ndarray) and isinstance(B, sp.ndarray) and
+            isinstance(C, sp.ndarray) and isinstance(D, sp.ndarray)):
+            raise ValueError("A, B, C, and D must be arrays or matrices.")
+        
         # Check that the matrix sizes are consistent.
         if self.states != A.shape[1]:
             raise ValueError("A must be square.")
@@ -224,9 +229,11 @@ class StateSpace:
 
         # Check to make sure the dimensions are OK
         if ((self.inputs != other.outputs) or (self.outputs != other.inputs)):
-                raise ValueError, "State space systems don't have compatible inputs/outputs for feedback."
+                raise ValueError, "State space systems don't have compatible \
+                inputs/outputs for feedback."
 
-        # note that if there is an algebraic loop then this matrix inversion won't work
+        # note that if there is an algebraic loop then this matrix inversion
+        # won't work
         # (I-D1 D2) or (I-D2 D1) will be singular
         # the easiest way to get this is to have D1 = I, D2 = I
         #! TODO: trap this error and report algebraic loop
@@ -237,9 +244,11 @@ class StateSpace:
         E12 = inv(eye(self.inputs)+sign*other.D*self.D)
         
         A = concatenate((
-                concatenate(( self.A-sign*self.B*E12*other.D*self.C, -sign*self.B*E12*other.C ),axis=1),
-                concatenate(( other.B*E21*self.C, other.A-sign*other.B*E21*self.D*other.C ),axis=1),
-               ),axis=0)
+                concatenate(( self.A-sign*self.B*E12*other.D*self.C,
+                    -sign*self.B*E12*other.C ),axis=1),
+                concatenate(( other.B*E21*self.C,
+                    other.A-sign*other.B*E21*self.D*other.C ),axis=1),),
+                axis=0)
         B = concatenate( (self.B*E12, other.B*E21*self.D), axis=0 )
         C = concatenate( (E21*self.C, -sign*E21*self.D*other.C), axis=1 )
         D = E21*self.D
@@ -270,17 +279,43 @@ def convertToStateSpace(sys, inputs=1, outputs=1):
         raise TypeError("can't convert given type to StateSpace system")
 
 def rss(states=1, inputs=1, outputs=1):
-    """Create a stable random state space object."""
+    """Create a stable continuous random state space object."""
     
+    return rss_generate(states, inputs, outputs, 'c')
+    
+def drss(states=1, inputs=1, outputs=1):
+    """Create a stable discrete random state space object."""
+    
+    return rss_generate(states, inputs, outputs, 'd')
+    
+def rss_generate(states, inputs, outputs, type):
+    """This does the actual random state space generation expected from rss and
+    drss.  type is 'c' for continuous systems and 'd' for discrete systems."""
+
     import numpy
     from numpy.random import rand, randn
+    
+    # Probability of repeating a previous root.
+    pRepeat = 0.05
+    # Probability of choosing a real root.  Note that when choosing a complex
+    # root, the conjugate gets chosen as well.  So the expected proportion of
+    # real roots is pReal / (pReal + 2 * (1 - pReal)).
+    pReal = 0.6
+    # Probability that an element in B or C will not be masked out.
+    pBCmask = 0.8
+    # Probability that an element in D will not be masked out.
+    pDmask = 0.3
+    # Probability that D = 0.
+    pDzero = 0.5
 
     # Make some poles for A.  Preallocate a complex array.
     poles = numpy.zeros(states) + numpy.zeros(states) * 0.j
     i = 0
-    while i < states - 1:
-        if rand() < 0.05 and i != 0:
-            # Small chance of copying poles, if we're not at the first element.
+
+    while i < states:
+        if rand() < pRepeat and i != 0 and i != states - 1:
+            # Small chance of copying poles, if we're not at the first or last
+            # element.
             if poles[i-1].imag == 0:
                 # Copy previous real pole.
                 poles[i] = poles[i-1]
@@ -289,19 +324,24 @@ def rss(states=1, inputs=1, outputs=1):
                 # Copy previous complex conjugate pair of poles.
                 poles[i:i+2] = poles[i-2:i]
                 i += 2
-        elif rand() < 0.6:
-            # Real pole.
-            poles[i] = -sp.exp(randn()) + 0.j
+        elif rand() < pReal or i == states - 1:
+            # No-oscillation pole.
+            if type == 'c':
+                poles[i] = -sp.exp(randn()) + 0.j
+            elif type == 'd':
+                poles[i] = 2. * rand() - 1.
             i += 1
         else:
-            # Complex conjugate pair of poles.
-            poles[i] = complex(-sp.exp(randn()), sp.exp(randn()))
+            # Complex conjugate pair of oscillating poles.
+            if type == 'c':
+                poles[i] = complex(-sp.exp(randn()), 3. * sp.exp(randn()))
+            elif type == 'd':
+                mag = rand()
+                phase = 2. * numpy.pi * rand()
+                poles[i] = complex(mag * numpy.cos(phase), 
+                    mag * numpy.sin(phase))
             poles[i+1] = complex(poles[i].real, -poles[i].imag)
             i += 2
-    # When we reach this point, we either have one or zero poles left to fill.
-    # Put a real pole if there is one space left.
-    if i == states - 1:
-        poles[i] = -sp.exp(randn()) + 0.j
 
     # Now put the poles in A as real blocks on the diagonal.
     A = numpy.zeros((states, states))
@@ -315,7 +355,6 @@ def rss(states=1, inputs=1, outputs=1):
             A[i, i+1] = poles[i].imag
             A[i+1, i] = -poles[i].imag
             i += 2
-
     # Finally, apply a transformation so that A is not block-diagonal.
     while True:
         T = randn(states, states)
@@ -333,18 +372,21 @@ def rss(states=1, inputs=1, outputs=1):
 
     # Make masks to zero out some of the elements.
     while True:
-        B_mask = rand(states, inputs) < 0.8
-        if sp.any(B_mask): # Retry if we get all zeros.
+        Bmask = rand(states, inputs) < pBCmask 
+        if sp.any(Bmask): # Retry if we get all zeros.
             break
     while True:
-        C_mask = rand(outputs, states) < 0.8
-        if sp.any(C_mask): # Retry if we get all zeros.
+        Cmask = rand(outputs, states) < pBCmask
+        if sp.any(Cmask): # Retry if we get all zeros.
             break
-    D_mask = rand(outputs, inputs) < 0.3
+    if rand() < pDzero:
+        Dmask = numpy.zeros((outputs, inputs))
+    else:
+        Dmask = rand(outputs, inputs) < pDmask
 
     # Apply masks.
-    B = B * B_mask
-    C = C * C_mask
-    D = D * D_mask
+    B = B * Bmask
+    C = C * Cmask
+    D = D * Dmask
 
     return StateSpace(A, B, C, D)
