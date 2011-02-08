@@ -266,6 +266,9 @@ def gram(sys,type):
     >>> Wo = gram(sys,'o')
 
     """
+
+    from copy import deepcopy
+
     #Check for ss system object, need a utility for this?
 
     #TODO: Check for continous or discrete, only continuous supported right now
@@ -299,7 +302,8 @@ def gram(sys,type):
         raise ControlSlycot("can't find slycot module 'sb03md'")
     n = sys.states
     U = np.zeros((n,n))
-    out = sb03md(n, C, sys.A, U, dico, 'X', 'N', trana)
+    A = deepcopy(sys.A)
+    out = sb03md(n, C, A, U, dico, 'X', 'N', trana)
     gram = out[0]
     return gram
 
