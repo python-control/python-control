@@ -66,28 +66,6 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(rsys.C, Crtrue)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue)
 
-#    def testBalredMatchDC(self):
-#        #controlable canonical realization computed in matlab for the transfer function:
-#        # num = [1 11 45 32], den = [1 15 60 200 60]
-#        A = np.matrix('-15., -7.5, -6.25, -1.875; \
-#        8., 0., 0., 0.; \
-#        0., 4., 0., 0.; \
-#        0., 0., 1., 0.')
-#        B = np.matrix('2.; 0.; 0.; 0.')
-#        C = np.matrix('0.5, 0.6875, 0.7031, 0.5')
-#        D = np.matrix('0.')
-#        sys = ss(A,B,C,D)
-#        orders = 1
-#        rsys = balred(sys,orders,method='matchdc')
-#        Artrue = np.matrix('-0.566')
-#        Brtrue = np.matrix('-0.414')
-#        Crtrue = np.matrix('-0.5728')
-#        Drtrue = np.matrix('0.1145')
-#        np.testing.assert_array_almost_equal(sys.A, Artrue)
-#        np.testing.assert_array_almost_equal(sys.B, Brtrue)
-#        np.testing.assert_array_almost_equal(sys.C, Crtrue)
-#        np.testing.assert_array_almost_equal(sys.D, Drtrue)
-
     def testBalredTruncate(self):
         #controlable canonical realization computed in matlab for the transfer function:
         # num = [1 11 45 32], den = [1 15 60 200 60]
