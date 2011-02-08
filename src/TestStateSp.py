@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import numpy as np
+import unittest
 import matlab
 from statesp import StateSpace
-import unittest
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""

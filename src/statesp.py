@@ -433,13 +433,18 @@ cannot take keywords.")
         # function matrix has a common denominator.
         num, den = sys._common_den()
         # Make a list of the orders of the denominator polynomials.
-        index = [len(den) for i in range(sys.outputs)]
+        index = [len(den) - 1 for i in range(sys.outputs)]
         # Repeat the common denominator along the rows.
         den = array([den for i in range(sys.outputs)])
 
+        print "outputs = %g\n" % sys.outputs
         ssout = td04ad(sys.inputs, sys.outputs, index, den, num)
 
-        return StateSpace(ssout[1], ssout[2], ssout[3], ssout[4])
+        states = ssout[0]
+        return StateSpace(ssout[1][:states, :states],
+            ssout[2][:states, :sys.inputs], 
+            ssout[3][:sys.outputs, :states], 
+            ssout[4])
     elif isinstance(sys, (int, long, float, complex)):
         if "inputs" in kw:
             inputs = kw["inputs"]
