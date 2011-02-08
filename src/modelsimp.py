@@ -43,6 +43,7 @@
 import numpy as np
 import ctrlutil
 from control.exception import *
+from statefbk import *
 
 # Hankel Singular Value Decomposition
 #   The following returns the Hankel singular values, which are singular values of the matrix formed by multiplying the controllability and observability grammians
@@ -69,7 +70,7 @@ def hsvd(sys):
     Wo = gram(sys,'o')
 
     WoWc = np.dot(Wo, Wc)
-    w, v = LA.eig(WoWc)
+    w, v = np.linalg.eig(WoWc)
 
     hsv = np.sqrt(w)
     hsv = np.matrix(hsv)
