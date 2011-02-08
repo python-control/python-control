@@ -27,7 +27,7 @@ StateSpace.pole
 StateSpace.zero
 StateSpace.feedback
 StateSpace.returnScipySignalLti
-convertToStateSpace
+_convertToStateSpace
 _rss_generate
 
 """
@@ -197,7 +197,7 @@ class StateSpace(Lti):
             A, B, C = self.A, self.B, self.C;
             D = self.D + other;
         else:
-            other = convertToStateSpace(other)
+            other = _convertToStateSpace(other)
 
             # Check to make sure the dimensions are OK
             if ((self.inputs != other.inputs) or 
@@ -245,7 +245,7 @@ class StateSpace(Lti):
             C = self.C * other
             D = self.D * other
         else:
-            other = convertToStateSpace(other)
+            other = _convertToStateSpace(other)
 
             # Check to make sure the dimensions are OK
             if self.inputs != other.outputs:
@@ -357,7 +357,7 @@ implemented only for SISO systems.")
     def feedback(self, other, sign=-1):
         """Feedback interconnection between two LTI systems."""
  
-        other = convertToStateSpace(other)
+        other = _convertToStateSpace(other)
 
         # Check to make sure the dimensions are OK
         if ((self.inputs != other.outputs) or (self.outputs != other.inputs)):
@@ -414,7 +414,7 @@ inputs/outputs for feedback."
 
         return out
 
-def convertToStateSpace(sys, **kw):
+def _convertToStateSpace(sys, **kw):
     """Convert a system to state space form (if needed).
 
     If sys is already a state space, then it is returned.  If sys is a transfer
@@ -422,8 +422,8 @@ def convertToStateSpace(sys, **kw):
     is a scalar, then the number of inputs and outputs can be specified
     manually, as in:
 
-    >>> sys = convertToStateSpace(3.) # Assumes inputs = outputs = 1
-    >>> sys = convertToStateSpace(1., inputs=3, outputs=2)
+    >>> sys = _convertToStateSpace(3.) # Assumes inputs = outputs = 1
+    >>> sys = _convertToStateSpace(1., inputs=3, outputs=2)
 
     In the latter example, A = B = C = 0 and D = [[1., 1., 1.]
                                                   [1., 1., 1.]].
@@ -432,14 +432,14 @@ def convertToStateSpace(sys, **kw):
     
     if isinstance(sys, StateSpace):
         if len(kw):
-            raise TypeError("If sys is a StateSpace, convertToStateSpace \
+            raise TypeError("If sys is a StateSpace, _convertToStateSpace \
 cannot take keywords.")
 
         # Already a state space system; just return it
         return sys
     elif isinstance(sys, xferfcn.TransferFunction):
         if len(kw):
-            raise TypeError("If sys is a TransferFunction, convertToStateSpace \
+            raise TypeError("If sys is a TransferFunction, _convertToStateSpace \
 cannot take keywords.")
 
         # Change the numerator and denominator arrays so that the transfer

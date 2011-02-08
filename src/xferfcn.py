@@ -30,7 +30,7 @@ TransferFunction.returnScipySignalLti
 TransferFunction._common_den
 _tfpolyToString
 _addSISO
-convertToTransferFunction
+_convertToTransferFunction
 
 """
 
@@ -261,7 +261,7 @@ denominator." % (j + 1, i + 1))
         
         # Convert the second argument to a transfer function.
         if not isinstance(other, TransferFunction):
-            other = convertToTransferFunction(other, inputs=self.inputs, 
+            other = _convertToTransferFunction(other, inputs=self.inputs, 
                 outputs=self.outputs)
 
         # Check that the input-output sizes are consistent.
@@ -303,10 +303,10 @@ second has %i." % (self.outputs, other.outputs))
         
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, long, complex)):
-            other = convertToTransferFunction(other, inputs=self.inputs, 
+            other = _convertToTransferFunction(other, inputs=self.inputs, 
                 outputs=self.inputs)
         else:
-            other = convertToTransferFunction(other)
+            other = _convertToTransferFunction(other)
             
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
@@ -350,7 +350,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 implemented only for SISO systems.")
 
         # Convert the second argument to a transfer function.
-        other = convertToTransferFunction(other)
+        other = _convertToTransferFunction(other)
 
         num = polymul(self.num[0][0], other.den[0][0])
         den = polymul(self.den[0][0], other.num[0][0])
@@ -435,7 +435,7 @@ only implemented for SISO systems.")
     def feedback(self, other, sign=-1): 
         """Feedback interconnection between two LTI objects."""
         
-        other = convertToTransferFunction(other)
+        other = _convertToTransferFunction(other)
 
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
@@ -650,7 +650,7 @@ def _addSISO(num1, den1, num2, den2):
     
     return num, den
 
-def convertToTransferFunction(sys, **kw):
+def _convertToTransferFunction(sys, **kw):
     """Convert a system to transfer function form (if needed).
     
     If sys is already a transfer function, then it is returned.  If sys is a
@@ -658,8 +658,8 @@ def convertToTransferFunction(sys, **kw):
     returned.  If sys is a scalar, then the number of inputs and outputs can be
     specified manually, as in:
 
-    >>> sys = convertToTransferFunction(3.) # Assumes inputs = outputs = 1
-    >>> sys = convertToTransferFunction(1., inputs=3, outputs=2)
+    >>> sys = _convertToTransferFunction(3.) # Assumes inputs = outputs = 1
+    >>> sys = _convertToTransferFunction(1., inputs=3, outputs=2)
 
     In the latter example, sys's matrix transfer function is [[1., 1., 1.]
                                                               [1., 1., 1.]].
@@ -669,12 +669,12 @@ def convertToTransferFunction(sys, **kw):
     if isinstance(sys, TransferFunction):
         if len(kw):
             raise TypeError("If sys is a TransferFunction, \
-convertToTransferFunction cannot take keywords.")
+_convertToTransferFunction cannot take keywords.")
 
         return sys
     elif isinstance(sys, statesp.StateSpace):
         if len(kw):
-            raise TypeError("If sys is a StateSpace, convertToTransferFunction \
+            raise TypeError("If sys is a StateSpace, _convertToTransferFunction \
 cannot take keywords.")
 
         # Use Slycot to make the transformation.

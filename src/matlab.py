@@ -67,8 +67,8 @@ from scipy import linspace, logspace
 # Control system library
 import ctrlutil
 import freqplot
-from statesp import StateSpace, _rss_generate, convertToStateSpace
-from xferfcn import TransferFunction, convertToTransferFunction
+from statesp import StateSpace, _rss_generate, _convertToStateSpace
+from xferfcn import TransferFunction, _convertToTransferFunction
 from exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
@@ -413,12 +413,12 @@ def ss2tf(*args):
 
     if len(args) == 4:
         # Assume we were given the A, B, C, D matrix
-        return convertToTransferFunction(StateSpace(args[0], args[1], args[2],
+        return _convertToTransferFunction(StateSpace(args[0], args[1], args[2],
             args[3]))
     elif len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
-            return convertToTransferFunction(sys)
+            return _convertToTransferFunction(sys)
         else:
             raise TypeError("ss2tf(sys): sys must be a StateSpace object.  It \
 is %s." % type(sys))
@@ -472,13 +472,13 @@ def tf2ss(*args):
 
     if len(args) == 2:
         # Assume we were given the num, den
-        return convertToStateSpace(TransferFunction(args[0], args[1]))
+        return _convertToStateSpace(TransferFunction(args[0], args[1]))
     elif len(args) == 1:
         sys = args[0]
         if not isinstance(sys, TransferFunction):
             raise TypeError("tf2ss(sys): sys must be a TransferFunction \
 object.")
-        return convertToStateSpace(sys)
+        return _convertToStateSpace(sys)
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 

@@ -2,7 +2,7 @@
 
 import numpy as np
 from statesp import StateSpace
-from xferfcn import TransferFunction, convertToTransferFunction
+from xferfcn import TransferFunction, _convertToTransferFunction
 import unittest
 
 class TestXferFcn(unittest.TestCase):
@@ -417,7 +417,7 @@ class TestXferFcn(unittest.TestCase):
         D = [[1., 0.], [0., 1.], [1., 0.]]
         sys = StateSpace(A, B, C, D)
 
-        tfsys = convertToTransferFunction(sys)
+        tfsys = _convertToTransferFunction(sys)
 
         num = [[np.array([1., -7., 10.]), np.array([-1., 10.])],
                [np.array([2., -8.]), np.array([1., -2., -8.])],

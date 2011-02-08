@@ -211,11 +211,11 @@ or a scalar.")
     # its feedback member function.
     if isinstance(sys1, (int, long, float, complex)):
         if isinstance(sys2, tf.TransferFunction):
-            sys1 = tf.convertToTransferFunction(sys1)
+            sys1 = tf._convertToTransferFunction(sys1)
         elif isinstance(sys2, ss.StateSpace):
-            sys1 = ss.convertToStateSpace(sys1)
+            sys1 = ss._convertToStateSpace(sys1)
         else: # sys2 is a scalar.
-            sys1 = tf.convertToTransferFunction(sys1)
-            sys2 = tf.convertToTransferFunction(sys2)
+            sys1 = tf._convertToTransferFunction(sys1)
+            sys2 = tf._convertToTransferFunction(sys2)
 
     return sys1.feedback(sys2, sign)
