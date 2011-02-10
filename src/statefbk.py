@@ -177,7 +177,7 @@ def lqr(*args, **keywords):
         sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N');
 
     # Call the SLICOT function
-    X,rcond,w,S,U = sb02md(nstates, A_b, G, Q_b, 'C')
+    X,rcond,w,S,U,A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
 
     # Now compute the return value
     K = np.dot(np.linalg.inv(R), (np.dot(B.T, X) + N.T));
@@ -288,10 +288,10 @@ def gram(sys,type):
         if e.real >= 0:
             raise ValueError, "Oops, the system is unstable!"
     if type=='c':
-        trana = 'T'
+        tra = 'T'
         C = -np.dot(sys.B,sys.B.transpose())
     elif type=='o':
-        trana = 'N'
+        tra = 'N'
         C = -np.dot(sys.C.transpose(),sys.C)
     else:
         raise ValueError, "Oops, neither observable, nor controllable!"
@@ -305,7 +305,7 @@ def gram(sys,type):
     n = sys.states
     U = np.zeros((n,n))
     A = sys.A    
-    out = sb03md(n, C, A, U, dico, 'X', 'N', trana)
-    gram = out[0]
+    X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
+    gram = X
     return gram
 

@@ -212,7 +212,6 @@ denominator." % (j + 1, i + 1))
         """
 
         # Beware: this is a shallow copy.  This should be okay.
-        tol = 1e-16
         data = [self.num, self.den]
         for p in range(len(data)):
             for i in range(self.outputs):
@@ -717,7 +716,7 @@ cannot take keywords.")
         print "Warning: state space to transfer function conversion by tb04ad \
 is still buggy!"
         tfout = tb04ad('R',sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
-            sys.D,tol1=1e-10)
+            sys.D,tol1=0.0)
 
         # Preallocate outputs.
         num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
