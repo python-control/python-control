@@ -176,7 +176,7 @@ def lqr(*args, **keywords):
         sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N');
 
     # Call the SLICOT function
-    X,rcond,w,S,U = sb02md(nstates, A_b, G, Q_b, 'C')
+    X,rcond,w,S,U,A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
 
     # Now compute the return value
     K = np.dot(np.linalg.inv(R), (np.dot(B.T, X) + N.T));
