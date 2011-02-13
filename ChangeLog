@@ -1,3 +1,16 @@
+2011-02-12  Richard Murray  <murray@sumatra.local>
+
+	* setup.py: Updated version number to 0.3d, in preparation for release
+
+	* src/statefbk.py (lqr): Updated sb02md calling signature to match
+	latest slycot version (Lauren Padilla)
+
+	* src/freqplot.py (nichols_grid): new function from Allan McInnes
+	<allan.mcinnes@canterbury.ac.nz> to generate a Nichols chart for a
+	given plot (equivalent to ngrid in MATLAB).
+
+	* src/matlab.py (ngrid): MATLAB compatible ngrid() command
+
 2010-11-05  Richard Murray  <murray@sumatra.local>
 
 	* external/yottalab.py: New file containing Roberto Bucher's control
