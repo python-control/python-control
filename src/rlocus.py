@@ -40,7 +40,7 @@
 #     or a controls.TransferFunction object.
 #   * Added some comments to make sure I understand the code
 # 
-# $Id: rlocus.py 29 2010-11-06 13:03:55Z murrayrm $
+# $Id$
 
 # Packages used by this module
 from scipy import *

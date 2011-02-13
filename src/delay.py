@@ -38,7 +38,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: pade.py 17 2010-05-29 23:50:52Z murrayrm $
+# $Id$
 
 def pade(T, n=1):
     """ 

@@ -47,7 +47,7 @@ Author: Richard M. Murray
 Date: 24 May 09
 Revised: Kevin K. Chen, Dec 10
 
-$Id: bdalg.py 17 2010-05-29 23:50:52Z murrayrm $
+$Id$
 
 """
 

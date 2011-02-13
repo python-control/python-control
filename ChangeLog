@@ -1,3 +1,18 @@
+2011-02-13  Richard Murray  <murray@sumatra.local>
+
+	* src/*.py: added svn:keywords Id properly
+
+	* src/matlab.py (ngrid): added ngrid() from v0.3d
+
+	* src/freqplot.py (nichols_grid, closed_loop_contours, m_circles,
+	n_circles): copied over changes from Allan McInnes in v0.3d; ngrid()
+	functiality + split out some of the nichols chart code into separate
+	functions
+
+2011-02-12  Richard Murray  <murray@sumatra.local>
+
+	* setup.py: updated version number to 0.4a
+
 2010-11-05  Richard Murray  <murray@sumatra.local>
 
 	* external/yottalab.py: New file containing Roberto Bucher's control

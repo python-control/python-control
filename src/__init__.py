@@ -37,7 +37,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: __init__.py 29 2010-11-06 13:03:55Z murrayrm $
+# $Id$
 
 """Control System Library
 

@@ -70,7 +70,7 @@ Author: Richard M. Murray
 Date: 24 May 09
 Revised: Kevin K. Chewn, Dec 10
 
-$Id: xferfcn.py 21 2010-06-06 17:29:42Z murrayrm $
+$Id$
 
 """
 

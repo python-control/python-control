@@ -38,7 +38,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 # 
-# $Id: ctrlutil.py 21 2010-06-06 17:29:42Z murrayrm $
+# $Id$
 
 # Packages that we need access to
 import scipy as sp
