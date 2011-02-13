@@ -371,6 +371,16 @@ def bode(*args, **keywords):
     # Call the bode command
     return freqplot.bode(syslist, omega, **keywords)
 
+# Nichols chart grid
+def ngrid():
+    """Nichols chart grid.
+
+    Usage
+    =====
+    ngrid()
+    """
+    freqplot.nichols_grid()
+
 #
 # Modifications to scipy.signal functions
 #

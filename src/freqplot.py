@@ -229,6 +229,74 @@ def nichols(syslist, omega=None):
     # Mark the -180 point
     plt.plot([-180], [0], 'r+')
     
+# Nichols grid
+def nichols_grid():
+    """Nichols chart grid
+    
+    Usage
+    =====
+    nichols_grid()
+
+    Plots a Nichols chart grid on the current axis.
+
+    Parameters
+    ----------
+    None
+
+    Return values
+    -------------
+    None    
+    """
+    gmin_default = -40.0 # dB
+    gain_step = 20.0     # dB
+
+    if plt.gcf().gca().has_data():
+        pmin, pmax, gmin, gmax = plt.axis()
+    else:
+        pmin, pmax = -360.0, 0.0
+        gmin, gmax = gmin_default, 40.0
+
+    # Determine the bounds of the chart
+    mags_low_end = np.min([gmin_default, gain_step*np.floor(gmin/gain_step)])
+    phases_low_end = 360.0*np.ceil(pmin/360.0)
+    phases_high_end = 360.0*(1.0 + np.ceil(pmax/360.0))
+
+    # M-circle magnitudes - we adjust the lower end of the range to match
+    # any existing data
+    mags_fixed = np.array([-20.0, -12.0, -6.0, -3.0, -1.0, -0.5, 0.0,
+                                 0.25, 0.5, 1.0, 3.0, 6.0, 12.0])
+    mags_adjustable = np.arange(mags_low_end, np.min(mags_fixed), gain_step)
+    mags = np.concatenate((mags_adjustable, mags_fixed))
+                     
+    # N-circle phases (should be in the range -360 to 0)
+    phases = np.array([-0.25, -10.0, -20.0, -30.0, -45.0, -60.0, -90.0,
+                       -120.0, -150.0, -180.0, -210.0, -240.0, -270.0,
+                       -310.0, -325.0, -340.0, -350.0, -359.75])
+    # Find the M-contours
+    mcs = m_circles(mags, pmin=np.min(phases), pmax=np.max(phases))
+    mag_m = 20*sp.log10(np.abs(mcs))
+    phase_m = sp.mod(sp.degrees(sp.angle(mcs)), -360.0) # Unwrap
+
+    # Find the N-contours
+    ncs = n_circles(phases, gmin=np.min(mags), gmax=np.max(mags))
+    mag_n = 20*sp.log10(np.abs(ncs))
+    phase_n = sp.mod(sp.degrees(sp.angle(ncs)), -360.0) # Unwrap
+
+    # Plot the contours
+    for phase_offset in np.arange(phases_low_end, phases_high_end, 360.0):
+        plt.plot(phase_m + phase_offset, mag_m, color='gray',
+                 linestyle='dashed', zorder=0)
+        plt.plot(phase_n + phase_offset, mag_n, color='gray',
+                 linestyle='dashed', zorder=0)
+
+    # Add magnitude labels
+    for x, y, m in zip(phase_m[:][-1], mag_m[:][-1], mags):
+        align = 'right' if m < 0.0 else 'left'
+        plt.text(x, y, str(m) + ' dB', size='small', ha=align)
+
+    # Make sure axes conform to any pre-existing plot.
+    plt.axis([pmin, pmax, gmin, gmax])
+
 # Gang of Four
 #! TODO: think about how (and whether) to handle lists of systems
 def gangof4(P, C, omega=None):
@@ -333,3 +401,55 @@ def default_frequency_range(syslist):
                         np.ceil(np.max(features))+1)   
                         
     return omega
+
+# M-circle
+def m_circles(mags, pmin=-359.75, pmax=-0.25):
+    """Constant-magnitude contours of the function H = G/(1+G).
+
+    Usage
+    =====
+    contour = m_circle(mags)
+
+    Parameters
+    ----------
+    mags : array-like
+        Array of magnitudes in dB of the M-circles
+
+    Return values
+    -------------
+    contour : complex array
+        Array of complex numbers corresponding to the contour.
+    """
+    # Compute the contours in H-space
+    phases = sp.radians(sp.linspace(pmin, pmax, 500))
+    Hmag, Hphase = sp.meshgrid(10.0**(mags/20.0), phases)
+    H = Hmag*sp.exp(1.j*Hphase)
+    
+    # Invert H = G/(1+G) to get an expression for the contour in G-space
+    return H/(1.0 - H)
+
+# N-circle
+def n_circles(phases, gmin=-40.0, gmax=12.0):
+    """Constant-phase contours of the function H = G/(1+G).
+
+    Usage
+    ===== 
+    contour = n_circle(angles)
+
+    Parameters
+    ----------
+    phases : array-like
+        Array of phases in degrees of the N-circle
+
+    Return values
+    -------------
+    contour : complex array
+        Array of complex numbers corresponding to the contours.
+    """
+    # Compute the contours in H-space
+    mags = sp.linspace(10**(gmin/20.0), 10**(gmax/20.0), 2000)
+    Hphase, Hmag = sp.meshgrid(sp.radians(phases), mags)
+    H = Hmag*sp.exp(1.j*Hphase)
+
+    # Invert H = G/(1+G) to get an expression for the contours in G-space
+    return H/(1.0 - H)
