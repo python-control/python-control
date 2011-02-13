@@ -247,55 +247,69 @@ def nichols_grid():
     -------------
     None    
     """
-    gmin_default = -40.0 # dB
-    gain_step = 20.0     # dB
+    mag_min_default = -40.0 # dB
+    mag_step = 20.0         # dB
 
+    # Chart defaults
+    phase_min, phase_max, mag_min, mag_max = -360.0, 0.0, mag_min_default, 40.0
+
+    # Set actual chart bounds based on current plot
     if plt.gcf().gca().has_data():
-        pmin, pmax, gmin, gmax = plt.axis()
-    else:
-        pmin, pmax = -360.0, 0.0
-        gmin, gmax = gmin_default, 40.0
-
-    # Determine the bounds of the chart
-    mags_low_end = np.min([gmin_default, gain_step*np.floor(gmin/gain_step)])
-    phases_low_end = 360.0*np.ceil(pmin/360.0)
-    phases_high_end = 360.0*(1.0 + np.ceil(pmax/360.0))
-
-    # M-circle magnitudes - we adjust the lower end of the range to match
-    # any existing data
-    mags_fixed = np.array([-20.0, -12.0, -6.0, -3.0, -1.0, -0.5, 0.0,
+        phase_min, phase_max, mag_min, mag_max = plt.axis()
+        
+    # M-circle magnitudes.
+    # The "fixed" set are always generated, since this guarantees a recognizable
+    # Nichols chart grid.
+    mags_fixed = np.array([-40.0, -20.0, -12.0, -6.0, -3.0, -1.0, -0.5, 0.0,
                                  0.25, 0.5, 1.0, 3.0, 6.0, 12.0])
-    mags_adjustable = np.arange(mags_low_end, np.min(mags_fixed), gain_step)
-    mags = np.concatenate((mags_adjustable, mags_fixed))
+
+    if mag_min < mag_min_default:
+        # Outside the "fixed" set of magnitudes, the generated M-circles
+        # are extended in steps of 'mag_step' dB to cover anything made
+        # visible by the range of the existing plot
+        mags_adjust = np.arange(mag_step*np.floor(mag_min/mag_step),
+                                mag_min_default, mag_step)
+        mags = np.concatenate((mags_adjust, mags_fixed))
+    else:
+        mags = mags_fixed
                      
     # N-circle phases (should be in the range -360 to 0)
     phases = np.array([-0.25, -10.0, -20.0, -30.0, -45.0, -60.0, -90.0,
                        -120.0, -150.0, -180.0, -210.0, -240.0, -270.0,
                        -310.0, -325.0, -340.0, -350.0, -359.75])
+
     # Find the M-contours
-    mcs = m_circles(mags, pmin=np.min(phases), pmax=np.max(phases))
-    mag_m = 20*sp.log10(np.abs(mcs))
-    phase_m = sp.mod(sp.degrees(sp.angle(mcs)), -360.0) # Unwrap
+    m = m_circles(mags, phase_min=np.min(phases), phase_max=np.max(phases))
+    m_mag = 20*sp.log10(np.abs(m))
+    m_phase = sp.mod(sp.degrees(sp.angle(m)), -360.0) # Unwrap
 
     # Find the N-contours
-    ncs = n_circles(phases, gmin=np.min(mags), gmax=np.max(mags))
-    mag_n = 20*sp.log10(np.abs(ncs))
-    phase_n = sp.mod(sp.degrees(sp.angle(ncs)), -360.0) # Unwrap
+    n = n_circles(phases, mag_min=np.min(mags), mag_max=np.max(mags))
+    n_mag = 20*sp.log10(np.abs(n))
+    n_phase = sp.mod(sp.degrees(sp.angle(n)), -360.0) # Unwrap
 
-    # Plot the contours
-    for phase_offset in np.arange(phases_low_end, phases_high_end, 360.0):
-        plt.plot(phase_m + phase_offset, mag_m, color='gray',
+    # Plot the contours behind other plot elements.
+    # The "phase offset" is used to produce copies of the chart that cover
+    # the entire range of the plotted data, starting from a base chart computed
+    # over the range -360 < phase < 0 (see above). Given the range 
+    # the base chart is computed over, the phase offset should be 0
+    # for -360 < phase_min < 0.
+    phase_offset_min = 360.0*np.ceil(phase_min/360.0)
+    phase_offset_max = 360.0*np.ceil(phase_max/360.0) + 360.0
+    phase_offsets = np.arange(phase_offset_min, phase_offset_max, 360.0)
+    for phase_offset in phase_offsets:
+        plt.plot(m_phase + phase_offset, m_mag, color='gray',
                  linestyle='dashed', zorder=0)
-        plt.plot(phase_n + phase_offset, mag_n, color='gray',
+        plt.plot(n_phase + phase_offset, n_mag, color='gray',
                  linestyle='dashed', zorder=0)
 
     # Add magnitude labels
-    for x, y, m in zip(phase_m[:][-1], mag_m[:][-1], mags):
+    for x, y, m in zip(m_phase[:][-1], m_mag[:][-1], mags):
         align = 'right' if m < 0.0 else 'left'
         plt.text(x, y, str(m) + ' dB', size='small', ha=align)
 
     # Make sure axes conform to any pre-existing plot.
-    plt.axis([pmin, pmax, gmin, gmax])
+    plt.axis([phase_min, phase_max, mag_min, mag_max])
 
 # Gang of Four
 #! TODO: think about how (and whether) to handle lists of systems
@@ -402,54 +416,84 @@ def default_frequency_range(syslist):
                         
     return omega
 
+# Compute contours of a closed-loop transfer function
+def closed_loop_contours(Hmag, Hphase):
+    """Contours of the function H = G/(1+G).
+
+    Usage
+    =====
+    contours = closed_loop_contours(mags, phases)
+
+    Parameters
+    ----------
+    mags : array-like
+        Meshgrid array of magnitudes of the contours
+    phases : array-like
+        Meshgrid array of phases in radians of the contours
+
+    Return values
+    -------------
+    contours : complex array
+        Array of complex numbers corresponding to the contours.
+    """
+    # Compute the contours in H-space
+    H = Hmag*sp.exp(1.j*Hphase)
+
+    # Invert H = G/(1+G) to get an expression for the contours in G-space
+    return H/(1.0 - H)
+
 # M-circle
-def m_circles(mags, pmin=-359.75, pmax=-0.25):
+def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     """Constant-magnitude contours of the function H = G/(1+G).
 
     Usage
     =====
-    contour = m_circle(mags)
+    contours = m_circles(mags)
 
     Parameters
     ----------
     mags : array-like
         Array of magnitudes in dB of the M-circles
+    phase_min : degrees
+        Minimum phase in degrees of the N-circles
+    phase_max : degrees
+        Maximum phase in degrees of the N-circles
 
     Return values
     -------------
-    contour : complex array
-        Array of complex numbers corresponding to the contour.
+    contours : complex array
+        Array of complex numbers corresponding to the contours.
     """
-    # Compute the contours in H-space
-    phases = sp.radians(sp.linspace(pmin, pmax, 500))
+    # Convert magnitudes and phase range into a grid suitable for
+    # building contours
+    phases = sp.radians(sp.linspace(phase_min, phase_max, 500))
     Hmag, Hphase = sp.meshgrid(10.0**(mags/20.0), phases)
-    H = Hmag*sp.exp(1.j*Hphase)
-    
-    # Invert H = G/(1+G) to get an expression for the contour in G-space
-    return H/(1.0 - H)
+    return closed_loop_contours(Hmag, Hphase)
 
 # N-circle
-def n_circles(phases, gmin=-40.0, gmax=12.0):
+def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     """Constant-phase contours of the function H = G/(1+G).
 
     Usage
     ===== 
-    contour = n_circle(angles)
+    contour = n_circles(angles)
 
     Parameters
     ----------
     phases : array-like
-        Array of phases in degrees of the N-circle
+        Array of phases in degrees of the N-circles
+    mag_min : dB
+        Minimum magnitude in dB of the N-circles
+    mag_max : dB
+        Maximum magnitude in dB of the N-circles
 
     Return values
     -------------
-    contour : complex array
+    contours : complex array
         Array of complex numbers corresponding to the contours.
     """
-    # Compute the contours in H-space
-    mags = sp.linspace(10**(gmin/20.0), 10**(gmax/20.0), 2000)
+    # Convert phases and magnitude range into a grid suitable for
+    # building contours    
+    mags = sp.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
     Hphase, Hmag = sp.meshgrid(sp.radians(phases), mags)
-    H = Hmag*sp.exp(1.j*Hphase)
-
-    # Invert H = G/(1+G) to get an expression for the contours in G-space
-    return H/(1.0 - H)
+    return closed_loop_contours(Hmag, Hphase)
