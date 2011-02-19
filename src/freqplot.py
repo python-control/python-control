@@ -178,6 +178,83 @@ def nyquist(syslist, omega=None):
     # Mark the -1 point
     plt.plot([-1], [0], 'r+')
 
+# Nyquist grid
+#! TODO: Consider making linestyle configurable
+def nyquist_grid(cl_mags=None, cl_phases=None):
+    """Nyquist plot grid of M-circles and N-circles (aka "Hall chart")
+
+    Usage
+    =====
+    nyquist_grid()
+
+    Plots a grid of M-circles and N-circles on the current axis, or
+    creates a default grid if no plot already exists.
+
+    Parameters
+    ----------
+    cl_mags : array-like (dB)
+        Array of closed-loop magnitudes defining a custom set of
+        M-circle iso-gain lines.
+    cl_phases : array-like (degrees)
+        Array of closed-loop phases defining a custom set of
+        N-circle iso-phase lines. Must be in the range -180.0 < cl_phases < 180.0
+
+    Return values
+    -------------
+    None
+    """
+    # Default chart size
+    re_min = -4.0
+    re_max = 3.0
+    im_min = -2.0
+    im_max = 2.0
+
+    # Find bounds of the current dataset, if there is one.
+    if plt.gcf().gca().has_data():
+        re_min, re_max, im_min, im_max = plt.axis()
+
+    # M-circle magnitudes.
+    if cl_mags is None:
+        cl_mags = np.array([-20.0, -10.0, -6.0, -4.0, -2.0, 0.0,
+                            2.0, 4.0, 6.0, 10.0, 20.0])
+
+    # N-circle phases (should be in the range -180.0 to 180.0)
+    if cl_phases is None:
+        cl_phases = np.array([-90.0, -60.0, -45.0, -30.0, -15.0,
+                              15.0, 30.0, 45.0, 60.0, 90.0])
+    else:
+        assert ((-180.0 < np.min(cl_phases)) and (np.max(cl_phases) < 180.0))
+
+    # Find the M-contours and N-contours
+    m = m_circles(cl_mags, phase_min=0.0, phase_max=359.99)
+    n = n_circles(cl_phases, mag_min=-40.0, mag_max=40.0)
+
+    # Draw contours
+    plt.plot(np.real(m), np.imag(m), color='gray', linestyle='dotted', zorder=0)
+    plt.plot(np.real(n), np.imag(n), color='gray', linestyle='dotted', zorder=0)
+
+    # Add magnitude labels
+    for i in range(0, len(cl_mags)):
+        if not cl_mags[i] == 0.0:
+            mag = 10.0**(cl_mags[i]/20.0)
+            x = -mag**2.0/(mag**2.0 - 1.0)   # Center of the M-circle
+            y = np.abs(mag/(mag**2.0 - 1.0)) # Maximum point
+        else:
+            x, y = -0.5, im_max
+        plt.text(x, y, str(cl_mags[i]) + ' dB', size='small', color='gray')
+
+    # Add phase labels
+    for i in range(0, len(cl_phases)):
+        y = np.sign(cl_phases[i])*np.max(np.abs(np.imag(n)[:,i]))
+        p = str(cl_phases[i])
+        plt.text(-0.5, y, p + '$^\circ$', size='small', color='gray')
+        
+    # Fit axes to original plot
+    plt.axis([re_min, re_max, im_min, im_max])
+
+# Make an alias
+hall_grid = nyquist_grid
+
 # Nichols plot
 # Contributed by Allan McInnes <Allan.McInnes@canterbury.ac.nz>
 #! TODO: need unit test code
@@ -209,7 +286,7 @@ def nichols(syslist, omega=None, grid=True):
         syslist = (syslist,)
 
     # Select a default range if none is provided
-    if (omega == None):
+    if omega is None:
         omega = default_frequency_range(syslist)
 
     for sys in syslist:
@@ -236,7 +313,8 @@ def nichols(syslist, omega=None, grid=True):
         nichols_grid()
     
 # Nichols grid
-def nichols_grid(**kwargs):
+#! TODO: Consider making linestyle configurable
+def nichols_grid(cl_mags=None, cl_phases=None):
     """Nichols chart grid
     
     Usage
@@ -270,10 +348,7 @@ def nichols_grid(**kwargs):
         ol_phase_min, ol_phase_max, ol_mag_min, ol_mag_max = plt.axis()
 
     # M-circle magnitudes.
-    if kwargs.has_key('cl_mags'):
-        # Custom chart
-        cl_mags = kwargs['cl_mags']
-    else:
+    if cl_mags is None:
         # Default chart magnitudes
         # The key set of magnitudes are always generated, since this
         # guarantees a recognizable Nichols chart grid.
@@ -289,11 +364,7 @@ def nichols_grid(**kwargs):
         cl_mags = np.concatenate((extended_cl_mags, key_cl_mags))
                      
     # N-circle phases (should be in the range -360 to 0)
-    if kwargs.has_key('cl_phases'):
-        # Custom chart
-        cl_phases = kwargs['cl_phases']
-        assert ((-360.0 < np.min(cl_phases)) and (np.max(cl_phases) < 0.0)) 
-    else:
+    if cl_phases is None:
         # Choose a reasonable set of default phases (denser if the open-loop
         # data is restricted to a relatively small range of phases).
         key_cl_phases = np.array([-0.25, -45.0, -90.0, -180.0, -270.0, -325.0, -359.75])
@@ -302,6 +373,8 @@ def nichols_grid(**kwargs):
         else:
             other_cl_phases = np.arange(-10.0, -360.0, -20.0)
         cl_phases = np.concatenate((key_cl_phases, other_cl_phases))
+    else:
+        assert ((-360.0 < np.min(cl_phases)) and (np.max(cl_phases) < 0.0))
 
     # Find the M-contours
     m = m_circles(cl_mags, phase_min=np.min(cl_phases), phase_max=np.max(cl_phases))
@@ -326,14 +399,14 @@ def nichols_grid(**kwargs):
     for phase_offset in phase_offsets:
         # Draw M and N contours
         plt.plot(m_phase + phase_offset, m_mag, color='gray',
-                 linestyle='dashed', zorder=0)
+                 linestyle='dotted', zorder=0)
         plt.plot(n_phase + phase_offset, n_mag, color='gray',
-                 linestyle='dashed', zorder=0)
+                 linestyle='dotted', zorder=0)
 
         # Add magnitude labels
         for x, y, m in zip(m_phase[:][-1] + phase_offset, m_mag[:][-1], cl_mags):
             align = 'right' if m < 0.0 else 'left'
-            plt.text(x, y, str(m) + ' dB', size='small', ha=align)
+            plt.text(x, y, str(m) + ' dB', size='small', ha=align, color='gray')
 
     # Fit axes to generated chart
     plt.axis([phase_offset_min - 360.0, phase_offset_max - 360.0,
@@ -500,7 +573,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     """
     # Convert magnitudes and phase range into a grid suitable for
     # building contours
-    phases = sp.radians(sp.linspace(phase_min, phase_max, 500))
+    phases = sp.radians(sp.linspace(phase_min, phase_max, 2000))
     Gcl_mags, Gcl_phases = sp.meshgrid(10.0**(mags/20.0), phases)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
 
