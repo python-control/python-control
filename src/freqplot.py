@@ -192,10 +192,10 @@ def nyquist_grid(cl_mags=None, cl_phases=None):
 
     Parameters
     ----------
-    cl_mags : array-like (dB)
+    cl_mags : array-like (dB), optional
         Array of closed-loop magnitudes defining a custom set of
         M-circle iso-gain lines.
-    cl_phases : array-like (degrees)
+    cl_phases : array-like (degrees), optional
         Array of closed-loop phases defining a custom set of
         N-circle iso-phase lines. Must be in the range -180.0 < cl_phases < 180.0
 
@@ -273,8 +273,8 @@ def nichols(syslist, omega=None, grid=True):
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
-    grid : boolean
-        True if the plot should include a Nichols-chart grid
+    grid : boolean, optional
+        True if the plot should include a Nichols-chart grid. Default is True.
 
     Return values
     -------------
@@ -326,10 +326,10 @@ def nichols_grid(cl_mags=None, cl_phases=None):
 
     Parameters
     ----------
-    cl_mags : array-like (dB)
+    cl_mags : array-like (dB), optional
         Array of closed-loop magnitudes defining the iso-gain lines on a
         custom Nichols chart.
-    cl_phases : array-like (degrees)
+    cl_phases : array-like (degrees), optional
         Array of closed-loop phases defining the iso-phase lines on a custom
         Nichols chart. Must be in the range -360 < cl_phases < 0
 
@@ -468,7 +468,7 @@ def gangof4(P, C, omega=None):
 #
    
 # Compute reasonable defaults for axes
-def default_frequency_range(syslist):
+def default_frequency_range(syslist, num=1000):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
@@ -483,6 +483,8 @@ def default_frequency_range(syslist):
     ----------
     syslist : linsys
         List of linear input/output systems (single system is OK)
+    num : integer, optional
+        Number of samples to generate. Default is 50.
 
     Return values
     -------------
@@ -495,6 +497,10 @@ def default_frequency_range(syslist):
     # integer.  It excludes poles and zeros at the origin.  If no features
     # are found, it turns logspace(-1, 1)
     
+    # If argument was a singleton, turn it into a list
+    if (not getattr(syslist, '__iter__', False)):
+        syslist = (syslist,)
+
     # Find the list of all poles and zeros in the systems
     features = np.array(())
     for sys in syslist:
@@ -513,7 +519,7 @@ def default_frequency_range(syslist):
 
     # Set the range to be an order of magnitude beyond any features
     omega = sp.logspace(np.floor(np.min(features))-1, 
-                        np.ceil(np.max(features))+1)   
+                        np.ceil(np.max(features))+1, num)
                         
     return omega
 
