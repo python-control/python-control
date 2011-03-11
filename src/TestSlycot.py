@@ -44,16 +44,15 @@ class TestSlycot(unittest.TestCase):
                         
                         
                         tfOriginal_Actrb, tfOriginal_Bctrb, tfOriginal_Cctrb, tfOrigingal_nctrb, tfOriginal_index,\
-                            tfOriginal_dcoeff, tfOriginal_ucoeff = tb04ad('R',states,inputs,outputs,\
+                            tfOriginal_dcoeff, tfOriginal_ucoeff = tb04ad(states,inputs,outputs,\
                             ssOriginal.A,ssOriginal.B,ssOriginal.C,ssOriginal.D,tol1=0.0)
                         
                         ssTransformed_nr, ssTransformed_A, ssTransformed_B, ssTransformed_C, ssTransformed_D\
                             = td04ad('R',inputs,outputs,tfOriginal_index,tfOriginal_dcoeff,tfOriginal_ucoeff,tol=0.0)
                         
                         tfTransformed_Actrb, tfTransformed_Bctrb, tfTransformed_Cctrb, tfTransformed_nctrb,\
-                            tfTransformed_index, tfTransformed_dcoeff, tfTransformed_ucoeff = tb04ad('R',\
-                            ssTransformed_nr,inputs,outputs,ssTransformed_A, ssTransformed_B, ssTransformed_C,\
-                            ssTransformed_D,tol1=0.0)
+                            tfTransformed_index, tfTransformed_dcoeff, tfTransformed_ucoeff = tb04ad(ssTransformed_nr,\
+                            inputs,outputs,ssTransformed_A, ssTransformed_B, ssTransformed_C,ssTransformed_D,tol1=0.0)
                         #print 'size(Trans_A)=',ssTransformed_A.shape
                         print '===== Transformed SS =========='
                         print matlab.ss(ssTransformed_A, ssTransformed_B, ssTransformed_C, ssTransformed_D)
@@ -82,14 +81,14 @@ class TestSlycot(unittest.TestCase):
                         ssOriginal = matlab.rss(states, inputs, outputs)
                         
                         tfOriginal_Actrb, tfOriginal_Bctrb, tfOriginal_Cctrb, tfOrigingal_nctrb, tfOriginal_index,\
-                            tfOriginal_dcoeff, tfOriginal_ucoeff = tb04ad('R',states,inputs,outputs,\
+                            tfOriginal_dcoeff, tfOriginal_ucoeff = tb04ad(states,inputs,outputs,\
                             ssOriginal.A,ssOriginal.B,ssOriginal.C,ssOriginal.D,tol1=0.0)
                         
                         ssTransformed_nr, ssTransformed_A, ssTransformed_B, ssTransformed_C, ssTransformed_D\
                             = td04ad('R',inputs,outputs,tfOriginal_index,tfOriginal_dcoeff,tfOriginal_ucoeff,tol=0.0)
                         
                         tfTransformed_Actrb, tfTransformed_Bctrb, tfTransformed_Cctrb, tfTransformed_nctrb,\
-                            tfTransformed_index, tfTransformed_dcoeff, tfTransformed_ucoeff = tb04ad('R',\
+                            tfTransformed_index, tfTransformed_dcoeff, tfTransformed_ucoeff = tb04ad(\
                             ssTransformed_nr,inputs,outputs,ssTransformed_A, ssTransformed_B, ssTransformed_C,\
                             ssTransformed_D,tol1=0.0)
 

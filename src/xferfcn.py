@@ -715,7 +715,7 @@ cannot take keywords.")
         # buggy!
         print "Warning: state space to transfer function conversion by tb04ad \
 is still buggy!"
-        tfout = tb04ad('R',sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
+        tfout = tb04ad(sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
             sys.D,tol1=0.0)
 
         # Preallocate outputs.
