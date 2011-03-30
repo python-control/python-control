@@ -88,17 +88,17 @@ figure(6); clf; subplot(221);
 
 # Add crossover line
 subplot(magh); hold(True);
-loglog([10^-4, 10^3], [1, 1], 'k-')
+loglog([1e-4, 1e3], [1, 1], 'k-')
 
 # Replot phase starting at -90 degrees
 bode(L, logspace(-4, 3));
 (mag, phase, w) = freqresp(L, logspace(-4, 3));
 phase = phase - 360;
 subplot(phaseh);
-semilogx([10^-4, 10^3], [-180, -180], 'k-')
+semilogx([10^-4, 1e3], [-180, -180], 'k-')
 hold(True);
 semilogx(w, phase, 'b-')
-axis([10^-4, 10^3, -360, 0]);
+axis([1e-4, 10^3, -360, 0]);
 xlabel('Frequency [deg]'); ylabel('Phase [deg]');
 # set(gca, 'YTick', [-360, -270, -180, -90, 0]);
 # set(gca, 'XTick', [10^-4, 10^-2, 1, 100]);
