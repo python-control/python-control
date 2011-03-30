@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+#
+# modelsimp_test.py - test model reduction functions
+# RMM, 30 Mar 2011 (based on TestModelSimp from v0.4a)
 
-from modelsimp import *
-from matlab import *
-import numpy as np
 import unittest
+import numpy as np
+from control.modelsimp import *
+from control.matlab import *
 
 class TestModelsimp(unittest.TestCase):
     def testHSVD(self):

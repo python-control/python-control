@@ -1,10 +1,13 @@
 #!/usr/bin/env python
+#
+# bdalg_test.py - test suit for block diagram algebra
+# RMM, 30 Mar 2011 (based on TestBDAlg from v0.4a)
 
-import numpy as np
-from xferfcn import TransferFunction
-from statesp import StateSpace
-from bdalg import feedback
 import unittest
+import numpy as np
+from control.xferfcn import TransferFunction
+from control.statesp import StateSpace
+from control.bdalg import feedback
 
 class TestFeedback(unittest.TestCase):
     """These are tests for the feedback function in bdalg.py.  Currently, some
@@ -159,6 +162,7 @@ class TestFeedback(unittest.TestCase):
             [[[1., 4., 11., 16., 13.]]])
         np.testing.assert_array_almost_equal(ans2.num, [[[1., 4., 7., 6.]]])
         np.testing.assert_array_almost_equal(ans2.den, [[[1., 4., 9., 8., 5.]]])
+
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
 

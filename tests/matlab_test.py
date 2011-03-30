@@ -1,8 +1,11 @@
 #!/usr/bin/env python
+#
+# matlab_test.py - test MATLAB compatibility
+# RMM, 30 Mar 2011 (based on TestMatlab from v0.4a)
 
-from matlab import *
-import numpy as np
 import unittest
+import numpy as np
+from control.matlab import *
 
 class TestMatlab(unittest.TestCase):
     def testStep(self):

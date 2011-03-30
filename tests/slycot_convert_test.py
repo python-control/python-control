@@ -1,11 +1,12 @@
 #!/usr/bin/env python
+#
+# slycot_convert_test.py - test SLICOT-based conversions
+# RMM, 30 Mar 2011 (based on TestSlycot from v0.4a)
 
-
+import unittest
 import numpy as np
 from slycot import tb04ad, td04ad
-import matlab
-import unittest
-
+import control.matlab as matlab
 
 class TestSlycot(unittest.TestCase):
     """TestSlycot compares transfer function and state space conversions for

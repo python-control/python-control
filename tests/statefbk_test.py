@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+#
+# statefbk_test.py - test state feedback functions
+# RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 
-from statefbk import ctrb, obsv, place, lqr, gram
-from matlab import *
-import numpy as np
 import unittest
+import numpy as np
+from control.statefbk import ctrb, obsv, place, lqr, gram
+from control.matlab import *
 
 class TestStatefbk(unittest.TestCase):
     def testCtrbSISO(self):

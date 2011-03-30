@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+#
+# xferfcn_test.py - test TransferFunction class
+# RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
 
-import numpy as np
-from statesp import StateSpace
-from xferfcn import TransferFunction, _convertToTransferFunction
 import unittest
+import numpy as np
+from control.statesp import StateSpace
+from control.xferfcn import TransferFunction, _convertToTransferFunction
 
 class TestXferFcn(unittest.TestCase):
     """These are tests for functionality and correct reporting of the transfer

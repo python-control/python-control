@@ -1,3 +1,15 @@
+2011-03-30  Richard Murray  <murray@malabar.local>
+
+	* tests/: added top level subdirectory, to be used for unit tests.
+	The idea in putting the code here is that you can do 'setup.py test'
+	during installation to make sure everything is working correctly.
+	The test code would normally *not* be callable from the installed
+	module. 
+
+	* tests/*_test.py: moved from src/Test*.py
+
+	* setup.py: updated version number.
+
 2011-02-13  Richard Murray  <murray@sumatra.local>
 
 	* src/*.py: added svn:keywords Id properly

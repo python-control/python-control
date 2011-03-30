@@ -14,9 +14,9 @@ of this is unknown.
 
 """
 
-import numpy as np
-import matlab
 import unittest
+import numpy as np
+import control.matlab as matlab
 
 class TestConvert(unittest.TestCase):
     """Test state space and transfer function conversions."""

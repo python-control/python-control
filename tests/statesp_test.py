@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+#
+# statesp_test.py - test state space class
+# RMM, 30 Mar 2011 (based on TestStateSp from v0.4a)
 
-import numpy as np
 import unittest
-import matlab
-from statesp import StateSpace
+import numpy as np
+import control.matlab
+from control.statesp import StateSpace
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""

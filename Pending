@@ -9,7 +9,10 @@ picture" things that need to be done.
     to be implemented.
 
 OPEN BUGS
-  * step() doesn't handle systems with a pole at the origin (use lsim2)
+  * matlab.step() doesn't handle systems with a pole at the origin (use lsim2)
+  * tests/convert_test.py not working yet
+  * tests/test_all.py should report on failed tests
+  * tests/freqresp.py needs to be converted to unit test
 
 Transfer code from Roberto Bucher's yottalab to python-control
   acker       - pole placement using Ackermann method
