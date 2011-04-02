@@ -1,0 +1,15 @@
+Sphinx Documentation
+--------------------
+
+Note: Sphinx actually runs and imports python code, so broken code, or code not in conf.py sys.path, cannot be documented!
+
+1.  Get Sphinx [http://sphinx.pocoo.org/]
+    [python setup.py build/install]
+
+2.  Install numpydoc [http://pypi.python.org/pypi/numpydoc]
+
+3.  In Makefile point to your own copy of sphinx-build, e.g.
+    [SPHINXBUILD   = /Users/steve/CODES/Sphinx-1.0.6/sphinx-build.py]
+
+4.  >> touch *.rst
+    >> make html  [or make latex]

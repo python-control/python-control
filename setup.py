@@ -3,12 +3,12 @@
 from distutils.core import setup
 
 setup(name='control',
-      version='0.3d',
+      version='0.4b',
       description='Python Control Systems Library',
       author='Richard Murray',
       author_email='murray@cds.caltech.edu',
       url='http://python-control.sourceforge.net',
       requires='scipy',
-      package_dir = {'control':'src'},
       packages=['control'],
+      package_dir = {'control':'src'},
      )

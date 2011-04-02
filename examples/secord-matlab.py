@@ -18,11 +18,11 @@ sys = ss(A, B, C, 0);
 # Step response for the system
 figure(1)
 T, yout = step(sys)
-plot(T, yout)
+plot(T.T, yout.T)
 
 # Bode plot for the system
 figure(2)
-bode(sys, logspace(-2, 2))
+mag,phase,om = bode(sys, logspace(-2, 2),Plot=True)
 
 # Nyquist plot for the system
 figure(3)

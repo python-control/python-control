@@ -42,7 +42,8 @@
 # External packages and modules
 import numpy as np
 import ctrlutil
-from control.exception import *
+from exception import *
+import statesp
 
 # Pole placement
 def place(A, B, p):
@@ -188,45 +189,46 @@ def lqr(*args, **keywords):
 def ctrb(A,B):       
     """Controllabilty matrix
 
-    Usage
-    =====
-    Wc = ctrb(A, B)
-
-    Inputs
-    ------
+    Parameters
+    ----------
     A, B: Dynamics and input matrix of the system
 
-    Outputs
+    Returns
     -------
-    Wc: Controllability matrix
+    C: Controllability matrix
+
+    Examples
+    --------
+    >>> C = ctrb(A, B)
+
     """
 
     # Convert input parameters to matrices (if they aren't already)
     amat = np.mat(A)
     bmat = np.mat(B)
     n = np.shape(amat)[0]
-
     # Construct the controllability matrix
     ctrb = bmat
     for i in range(1, n):
-        ctrb = np.vstack((ctrb, amat**i*bmat))
+        ctrb = np.hstack((ctrb, amat**i*bmat))
     return ctrb
 
 def obsv(A, C):       
     """Observability matrix
 
-    Usage
-    =====
-    Wc = obsv(A, C)
-
-    Inputs
-    ------
+    Parameters
+    ----------
     A, C: Dynamics and output matrix of the system
 
-    Outputs
+    Returns
     -------
-    Wc: Observability matrix
-    """
+    O: Observability matrix
+
+    Examples
+    --------
+    >>> O = obsv(A, C)
+
+   """
 
     # Convert input parameters to matrices (if they aren't already)
     amat = np.mat(A)
@@ -236,5 +238,74 @@ def obsv(A, C):
     # Construct the controllability matrix
     obsv = cmat
     for i in range(1, n):
-        obsv = np.hstack((obsv, cmat*amat**i))
+        obsv = np.vstack((obsv, cmat*amat**i))
     return obsv
+
+def gram(sys,type):
+    """Gramian (controllability or observability)
+ 
+    Parameters
+    ----------
+    sys: state-space system to compute Gramian for
+    type: type is either 'c' (controllability) or 'o' (observability)
+
+    Returns
+    -------
+    gram: Gramian of system
+
+    Raises
+    ------   
+    ValueError
+        if system is not instance of StateSpace class
+        if `type` is not 'c' or 'o'
+        if system is unstable (sys.A has eigenvalues not in left half plane)
+    ImportError
+        if slycot routin sb03md cannot be found
+
+    Examples
+    --------
+    >>> Wc = gram(sys,'c')
+    >>> Wo = gram(sys,'o')
+
+    """
+
+    #Check for ss system object
+    if not isinstance(sys,statesp.StateSpace):
+        raise ValueError, "System must be StateSpace!"
+    
+    #TODO: Check for continous or discrete, only continuous supported right now
+        # if isCont():
+        #    dico = 'C'
+        # elif isDisc():
+        #    dico = 'D'
+        # else:
+    dico = 'C'
+
+    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
+        # or a method of the StateSpace class?
+    D,V = np.linalg.eig(sys.A)
+    for e in D:
+        if e.real >= 0:
+            raise ValueError, "Oops, the system is unstable!"
+    if type=='c':
+        tra = 'T'
+        C = -np.dot(sys.B,sys.B.transpose())
+    elif type=='o':
+        tra = 'N'
+        C = -np.dot(sys.C.transpose(),sys.C)
+    else:
+        raise ValueError, "Oops, neither observable, nor controllable!"
+
+    #Compute Gramian by the Slycot routine sb03md
+        #make sure Slycot is installed
+    try:
+        from slycot import sb03md
+    except ImportError:
+        raise ControlSlycot("can't find slycot module 'sb03md'")
+    n = sys.states
+    U = np.zeros((n,n))
+    A = sys.A    
+    X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
+    gram = X
+    return gram
+

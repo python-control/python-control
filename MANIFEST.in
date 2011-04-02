@@ -1,5 +1,0 @@
-include README
-include setup.py
-include src/*.py
-include examples/README examples/*.py
-prune examples/*-test.py

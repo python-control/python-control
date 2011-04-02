@@ -9,7 +9,10 @@ picture" things that need to be done.
     to be implemented.
 
 OPEN BUGS
-  * step() doesn't handle systems with a pole at the origin (use lsim2)
+  * matlab.step() doesn't handle systems with a pole at the origin (use lsim2)
+  * TF <-> SS transformations are buggy; see tests/convert_test.py
+  * hsvd returns different value than MATLAB (2010a); see modelsimp_test.py
+  * MIMO common denominator fails unit test; see convert_test.py
 
 Transfer code from Roberto Bucher's yottalab to python-control
   acker       - pole placement using Ackermann method
@@ -37,6 +40,9 @@ Examples and test cases
   * Put together unit tests for all functions (after deciding on framework)
   * Figure out how to import 'figure' command properly (version issue?)
   * Figure out source of BadCoefficients warning messages (pvtol-lqr and others)
+  * tests/test_all.py should report on failed tests
+  * tests/freqresp.py needs to be converted to unit test
+  * Convert examples/test-{response,statefbk}.py to unit tests
 
 TransferFunction class fixes
   * evalfr is not working (num, den stored as ndarrays, not poly1ds)
