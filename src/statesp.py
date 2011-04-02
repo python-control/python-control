@@ -78,7 +78,6 @@ from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
-from slycot import td04ad
 from lti import Lti
 import xferfcn
 
@@ -457,6 +456,7 @@ cannot take keywords.")
         # Already a state space system; just return it
         return sys
     elif isinstance(sys, xferfcn.TransferFunction):
+        from slycot import td04ad
         if len(kw):
             raise TypeError("If sys is a TransferFunction, _convertToStateSpace \
 cannot take keywords.")

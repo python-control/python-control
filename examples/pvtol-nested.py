@@ -84,22 +84,22 @@ T = feedback(L, 1);
 # (gm, pm, wgc, wpc) = margin(L); 
 
 #! TODO: this figure has something wrong; axis limits mismatch
-figure(6); clf; subplot(221);
-(magh, phaseh) = bode(L);
+figure(6); clf; 
+bode(L);
 
 # Add crossover line
-subplot(magh); hold(True);
-loglog([10^-4, 10^3], [1, 1], 'k-')
+subplot(211); hold(True);
+loglog([1e-4, 1e3], [1, 1], 'k-')
 
 # Replot phase starting at -90 degrees
 bode(L, logspace(-4, 3));
 (mag, phase, w) = freqresp(L, logspace(-4, 3));
 phase = phase - 360;
-subplot(phaseh);
-semilogx([10^-4, 10^3], [-180, -180], 'k-')
+subplot(212);
+semilogx([1e-4, 1e3], [-180, -180], 'k-')
 hold(True);
 semilogx(w, np.squeeze(phase), 'b-')
-axis([10^-4, 10^3, -360, 0]);
+axis([1e-4, 1e3, -360, 0]);
 xlabel('Frequency [deg]'); ylabel('Phase [deg]');
 # set(gca, 'YTick', [-360, -270, -180, -90, 0]);
 # set(gca, 'XTick', [10^-4, 10^-2, 1, 100]);

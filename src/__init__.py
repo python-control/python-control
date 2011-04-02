@@ -59,6 +59,7 @@ lqe     linear quadratic estimator
 from xferfcn import *
 from statesp import *
 from freqplot import *
+from nichols import *
 from bdalg import *
 from statefbk import *
 from delay import *

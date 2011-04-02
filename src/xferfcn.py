@@ -79,7 +79,6 @@ from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros
 from scipy.signal import lti
 from copy import deepcopy
-from slycot import tb04ad
 from lti import Lti
 import statesp
 
@@ -707,6 +706,7 @@ _convertToTransferFunction cannot take keywords.")
 
         return sys
     elif isinstance(sys, statesp.StateSpace):
+        from slycot import tb04ad
         if len(kw):
             raise TypeError("If sys is a StateSpace, _convertToTransferFunction \
 cannot take keywords.")

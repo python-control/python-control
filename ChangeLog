@@ -1,3 +1,27 @@
+2011-03-31  Richard Murray  <murray@malabar.local>
+
+	* examples/pvtol-nested.py: updated stability margin plot to use
+	proper calling format for bode().
+
+	* src/statesp.py (_convertToStateSpace): moved slycot import
+	to the location where it is actually needed (allows running some
+	commands without slycot installed)
+
+	* src/xferfcn.py (_convertToTransferFunction): moved slycot import
+	to the location where it is actually needed (allows running some
+	commands without slycot installed)
+
+	* src/nichols.py: new file for Nichols plot routines; move
+	nichols(), nichols_grid(), closed_loop_contours(), m_circles(),
+	n_circles()
+
+	* src/__init__.py, src/freqresp.py, src/matlab.py: updated to match
+	new file structure for Nichols charts
+
+	* src/nichols.py (nichols): updated processing of freqresp to take
+	into account the fact that return arguments are now a matrix of
+	results (even for a SISO system)
+
 2011-03-30  Richard Murray  <murray@malabar.local>
 
 	* tests/: added top level subdirectory, to be used for unit tests.
