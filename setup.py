@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='control',
-      version='0.4b',
+      version='0.4c',
       description='Python Control Systems Library',
       author='Richard Murray',
       author_email='murray@cds.caltech.edu',
