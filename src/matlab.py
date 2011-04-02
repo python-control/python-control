@@ -75,7 +75,7 @@ from exception import ControlArgument
 # Import MATLAB-like functions that can be used as-is
 from ctrlutil import unwrap
 from freqplot import nyquist, gangof4
-from nichols import nichols, nichols_grid
+from nichols import nichols
 from bdalg import series, parallel, negate, feedback
 from pzmap import pzmap
 from statefbk import ctrb, obsv, gram, place, lqr
@@ -753,6 +753,7 @@ def ngrid():
     =====
     ngrid()
     """
+    from nichols import nichols_grid
     nichols_grid()
 
 #

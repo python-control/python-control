@@ -20,13 +20,13 @@ class TestStateSpace(unittest.TestCase):
         
         self.sys = StateSpace(A, B, C, D) 
 
-    def testNichols(self):
+    def testNicholsPlain(self):
         """Generate a Nichols plot."""
         nichols(self.sys)
 
     def testNgrid(self):
         """Generate a Nichols plot."""
-        nichols(self.sys)
+        nichols(self.sys, grid=False)
         ngrid()
 
 def suite():

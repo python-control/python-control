@@ -4,7 +4,8 @@
 # Date: 24 May 09
 # 
 # This file contains some standard control system plots: Bode plots,
-# Nyquist plots, Nichols plots and pole-zero diagrams
+# Nyquist plots and pole-zero diagrams.  The code for Nichols charts
+# is in nichols.py.
 #
 # Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.

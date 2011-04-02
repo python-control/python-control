@@ -1,3 +1,15 @@
+2011-04-02  Richard Murray  <murray@malabar.local>
+
+	* tests/nichols_test.py (TestStateSpace.testNgrid): updated testcode
+	to turn off grid in initial Nichols chart plot.
+
+	* src/freqplot.py: updated comments at top of file to reflect
+	nichols chart move
+
+	* src/nichols.py: transferred over changes from v0.3d
+
+	* src/matlab.py (ngrid): moved import to function
+
 2011-03-31  Richard Murray  <murray@malabar.local>
 
 	* examples/pvtol-nested.py: updated stability margin plot to use
