@@ -7,7 +7,7 @@ import unittest                 # unit test module
 import re                       # regular expressions
 import os                       # operating system commands
 
-def test_all(verbosity=2):
+def test_all(verbosity=0):
     """ Runs all tests written for python-control.
     """
     try:                      # autodiscovery (python 2.7+)

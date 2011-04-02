@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""TestConvert.py
+"""convert_test.py
 
 Test state space and transfer function conversion.
 
@@ -40,7 +40,7 @@ class TestConvert(unittest.TestCase):
             print "sys%i:\n" % ind
             print sys
 
-    def testConvert(self):
+    def testConvert(self, verbose=0):
         """Test state space to transfer function conversion."""
         #Currently it only tests that a TF->SS->TF generates an unchanged TF
         
@@ -52,16 +52,20 @@ class TestConvert(unittest.TestCase):
                     #start with a random SS system and transform to TF
                     #then back to SS, check that the matrices are the same.
                     ssOriginal = matlab.rss(states, inputs, outputs)
-                    self.printSys(ssOriginal, 1)
+                    if (verbose):
+                        self.printSys(ssOriginal, 1)
 
                     tfOriginal = matlab.tf(ssOriginal)
-                    self.printSys(tfOriginal, 2)
+                    if (verbose):
+                        self.printSys(tfOriginal, 2)
                     
                     ssTransformed = matlab.ss(tfOriginal)
-                    self.printSys(ssTransformed, 3)
+                    if (verbose):
+                        self.printSys(ssTransformed, 3)
 
                     tfTransformed = matlab.tf(ssTransformed)
-                    self.printSys(tfTransformed, 4)
+                    if (verbose):
+                        self.printSys(tfTransformed, 4)
                     
                     for inputNum in range(inputs):
                         for outputNum in range(outputs):
@@ -81,8 +85,6 @@ class TestConvert(unittest.TestCase):
                     #[mag,phase,freq]=bode(sys)
                     #it doesn't seem to......
                     #This should be added.
-                    
-                    
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)

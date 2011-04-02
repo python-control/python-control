@@ -16,7 +16,7 @@ class TestModelsimp(unittest.TestCase):
         D = np.matrix("9.")
         sys = ss(A,B,C,D)
         hsv = hsvd(sys)
-        hsvtrue = np.matrix("24.42686 0.5731395")
+        hsvtrue = np.matrix("24.42686 0.5731395") # from MATLAB
         np.testing.assert_array_almost_equal(hsv, hsvtrue)
 
     def testMarkov(self):

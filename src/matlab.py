@@ -80,6 +80,7 @@ from bdalg import series, parallel, negate, feedback
 from pzmap import pzmap
 from statefbk import ctrb, obsv, gram, place, lqr
 from delay import pade
+from modelsimp import hsvd, balred, modred
 
 __doc__ += """
 The control.matlab module defines functions that are roughly the
@@ -139,9 +140,9 @@ System gain and dynamics
    lti/bandwidth  - system bandwidth
    lti/norm       - h2 and Hinfinity norms of LTI models
 \*  lti/pole       - system poles
-   lti/zero       - system (transmission) zeros
+\*  lti/zero       - system (transmission) zeros
    lti/order      - model order (number of states)
-\*  pzmap          - pole-zero map
+\*  pzmap          - pole-zero map (TF only)
    lti/iopzmap    - input/output pole-zero map
    damp           - natural frequency and damping of system poles
    esort          - sort continuous poles by real part
@@ -173,19 +174,20 @@ Frequency-domain analysis
 Model simplification
    minreal        - minimal realization and pole/zero cancellation
    ss/sminreal    - structurally minimal realization (state space)
-   lti/hsvd       - hankel singular values (state contributions)
-   lti/balred     - reduced-order approximations of LTI models
-   ss/modred      - model order reduction
+\*  lti/hsvd       - hankel singular values (state contributions)
+\*  lti/balred     - reduced-order approximations of LTI models
+\*  ss/modred      - model order reduction
  
 Compensator design
    rlocus         - evans root locus
-   place          - pole placement
+\*  place          - pole placement
    estim          - form estimator given estimator gain
    reg            - form regulator given state-feedback and estimator gains
  
 LQR/LQG design
    ss/lqg         - single-step LQG design
-   lqr, dlqr      - linear-Quadratic (LQ) state-feedback regulator
+\*  lqr            - linear-Quadratic (LQ) state-feedback regulator
+\*  dlqr           - discrete-time LQ state-feedback regulator
    lqry           - lq regulator with output weighting
    lqrd           - discrete LQ regulator for continuous plant
    ss/lqi         - linear-Quadratic-Integral (LQI) controller

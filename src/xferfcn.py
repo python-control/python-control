@@ -713,8 +713,6 @@ cannot take keywords.")
 
         # Use Slycot to make the transformation.  TODO: this is still somewhat
         # buggy!
-        print "Warning: state space to transfer function conversion by tb04ad \
-is still buggy!"
         tfout = tb04ad(sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
             sys.D,tol1=0.0)
 
@@ -727,8 +725,8 @@ is still buggy!"
                 num[i][j] = list(tfout[6][i, j, :])
                 # Each transfer function matrix row has a common denominator.
                 den[i][j] = list(tfout[5][i, :])
-        print num
-        print den
+        # print num
+        # print den
         return TransferFunction(num, den)
     elif isinstance(sys, (int, long, float, complex)):
         if "inputs" in kw:

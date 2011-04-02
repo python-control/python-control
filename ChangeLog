@@ -1,5 +1,31 @@
 2011-04-02  Richard Murray  <murray@malabar.local>
 
+	* src/__init__.py: removed import of tests module (moved to tests/)
+
+	* src/matlab.py: Added hsvd, balred, modred to list of functions
+	that are imported for use as is.  Updated documentation string to
+	indicate that these are implemented, along with a few other
+	functions (zero, lqr) that weren't properly listed.
+
+	* src/modelsimp.py (balred): Removed extraneous print statements
+	(modred): Set method to be 'matchdc' by default (to match MATLAB)
+
+	* src/__init__.py: added missing import of modelsimp functions
+
+	* tests/slycot_convert_test.py (TestSlycot.testTF): turned off print
+	statements in unit test to make it easier to see results.  Use
+	verbose=True to turn back on.
+
+	* tests/convert_test.py (TestConvert.testConvert): got rid of print
+	statements in unittest; clutters the output so that you can't see
+	the errors clearly.  Use verbose=True to turn back on.
+
+	* src/statesp.py (_convertToStateSpace): removed "buggy" print
+	statements 
+
+	* src/xferfcn.py (_convertToTransferFunction): removed "buggy" print
+	statements 
+
 	* tests/nichols_test.py (TestStateSpace.testNgrid): updated testcode
 	to turn off grid in initial Nichols chart plot.
 

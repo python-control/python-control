@@ -26,22 +26,21 @@ class TestSlycot(unittest.TestCase):
         self.maxI = 1 
         self.maxO = 1
 
-    def testTF(self):
+    def testTF(self, verbose=False):
         """ Directly tests the functions tb04ad and td04ad through direct comparison of transfer function coefficients.
-            Similar to TestConvert, but tests at a lower level.
+            Similar to convert_test, but tests at a lower level.
         """
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxI+1):
                 for outputs in range(1, self.maxO+1):
                     for testNum in range(self.numTests):
-                        
                         ssOriginal = matlab.rss(states, inputs, outputs)
-                        
-                        print '====== Original SS =========='
-                        print ssOriginal
-                        print 'states=',states
-                        print 'inputs=',inputs
-                        print 'outputs=',outputs
+                        if (verbose):
+                            print '====== Original SS =========='
+                            print ssOriginal
+                            print 'states=',states
+                            print 'inputs=',inputs
+                            print 'outputs=',outputs
                         
                         
                         tfOriginal_Actrb, tfOriginal_Bctrb, tfOriginal_Cctrb, tfOrigingal_nctrb, tfOriginal_index,\
@@ -55,15 +54,16 @@ class TestSlycot(unittest.TestCase):
                             tfTransformed_index, tfTransformed_dcoeff, tfTransformed_ucoeff = tb04ad(ssTransformed_nr,\
                             inputs,outputs,ssTransformed_A, ssTransformed_B, ssTransformed_C,ssTransformed_D,tol1=0.0)
                         #print 'size(Trans_A)=',ssTransformed_A.shape
-                        print '===== Transformed SS =========='
-                        print matlab.ss(ssTransformed_A, ssTransformed_B, ssTransformed_C, ssTransformed_D)
-                        #print 'Trans_nr=',ssTransformed_nr                      
-                        #print 'tfOrig_index=',tfOriginal_index
-                        #print 'tfOrig_ucoeff=',tfOriginal_ucoeff
-                        #print 'tfOrig_dcoeff=',tfOriginal_dcoeff
-                        #print 'tfTrans_index=',tfTransformed_index
-                        #print 'tfTrans_ucoeff=',tfTransformed_ucoeff
-                        #print 'tfTrans_dcoeff=',tfTransformed_dcoeff
+                        if (verbose):
+                            print '===== Transformed SS =========='
+                            print matlab.ss(ssTransformed_A, ssTransformed_B, ssTransformed_C, ssTransformed_D)
+                            # print 'Trans_nr=',ssTransformed_nr                      
+                            # print 'tfOrig_index=',tfOriginal_index
+                            # print 'tfOrig_ucoeff=',tfOriginal_ucoeff
+                            # print 'tfOrig_dcoeff=',tfOriginal_dcoeff
+                            # print 'tfTrans_index=',tfTransformed_index
+                            # print 'tfTrans_ucoeff=',tfTransformed_ucoeff
+                            # print 'tfTrans_dcoeff=',tfTransformed_dcoeff
                        #Compare the TF directly, must match
                         #numerators
                         np.testing.assert_array_almost_equal(tfOriginal_ucoeff,tfTransformed_ucoeff,decimal=3)
