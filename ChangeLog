@@ -1,5 +1,10 @@
 2011-04-02  Richard Murray  <murray@malabar.local>
 
+	* MANIFEST.in: Added MANIFEST.in file to include examples and tests
+	in source distribution
+
+	* README: Updated to include information on how to run unit tests.
+
 	* setup.py: updated version number to 0.4c
 
 ---- control-0.4b released -----
