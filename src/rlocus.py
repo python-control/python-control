@@ -37,64 +37,92 @@
 #   * Added BSD copyright info to file (per Ryan)
 #   * Added code to convert (num, den) to poly1d's if they aren't already.
 #     This allows Ryan's code to run on a standard signal.ltisys object
-#     or a controls.TransferFunction object.
+#     or a control.TransferFunction object.
 #   * Added some comments to make sure I understand the code
+#
+# RMM, 2 April 2011: modified to work with new Lti structure (see ChangeLog)
+#   * Not tested: should still work on signal.ltisys objects
 # 
 # $Id$
 
 # Packages used by this module
 from scipy import *
+import scipy.signal             # signal processing toolbox
+import pylab                    # plotting routines
+import xferfcn                  # transfer function manipulation
 
 # Main function: compute a root locus diagram
-def RootLocus(sys, kvect, fig=None, fignum=1, \
-                  clear=True, xlim=None, ylim=None, plotstr='-'):
+def RootLocus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
     """Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
-    of kvect."""
+    of kvect.
+
+    Parameters
+    ----------
+    sys : linsys
+        Linear input/output systems (SISO only, for now)
+    klist : gain_range (default = None)
+        List of gains to use in computing diagram
+    Plot : boolean (default = True)
+        If True, plot magnitude and phase
+
+    Return values
+    -------------
+    rlist : list of computed root locations
+    klist : list of gains
+    """
 
     # Convert numerator and denominator to polynomials if they aren't
     (nump, denp) = _systopoly1d(sys);
-
-    # Set up the figure
-    if fig is None:
-        import pylab
-        fig = pylab.figure(fignum)
-    if clear:
-        fig.clf()
-    ax = fig.add_subplot(111)
 
     # Compute out the loci
     mymat = _RLFindRoots(sys, kvect)
     mymat = _RLSortRoots(sys, mymat)
 
-    # plot open loop poles
-    poles = array(denp.r)
-    ax.plot(real(poles), imag(poles), 'x')
+    # Create the plot
+    if (Plot):
+        ax = pylab.axes();
 
-    # plot open loop zeros
-    zeros = array(nump.r)
-    if zeros.any():
-        ax.plot(real(zeros), imag(zeros), 'o')
+        # plot open loop poles
+        poles = array(denp.r)
+        ax.plot(real(poles), imag(poles), 'x')
 
-    # Now plot the loci
-    for col in mymat.T:
-        ax.plot(real(col), imag(col), plotstr)
+        # plot open loop zeros
+        zeros = array(nump.r)
+        if zeros.any():
+            ax.plot(real(zeros), imag(zeros), 'o')
 
-    # Set up plot axes and labels
-    if xlim:
-        ax.set_xlim(xlim)
-    if ylim:
-        ax.set_ylim(ylim)
-    ax.set_xlabel('Real')
-    ax.set_ylabel('Imaginary')
+        # Now plot the loci
+        for col in mymat.T:
+            ax.plot(real(col), imag(col), plotstr)
+
+        # Set up plot axes and labels
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+        ax.set_xlabel('Real')
+        ax.set_ylabel('Imaginary')
+
     return mymat
 
 # Utility function to extract numerator and denominator polynomials
 def _systopoly1d(sys):
     """Extract numerator and denominator polynomails for a system"""
+    # Allow inputs from the signal processing toolbox
+    if (isinstance(sys, scipy.signal.lti)):
+        nump = sys.num; denp = sys.den;
 
-    # Start by extracting the numerator and denominator from system object
-    nump = sys.num; denp = sys.den;
+    else:
+        # Convert to a transfer function, if needed
+        sys = xferfcn._convertToTransferFunction(sys)
+
+        # Make sure we have a SISO system
+        if (sys.inputs > 1 or sys.outputs > 1):
+            raise ControlMIMONotImplemented()
+
+        # Start by extracting the numerator and denominator from system object
+        nump = sys.num[0][0]; denp = sys.den[0][0];
 
     # Check to see if num, den are already polynomials; otherwise convert
     if (not isinstance(nump, poly1d)): nump = poly1d(nump)

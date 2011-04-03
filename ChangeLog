@@ -1,5 +1,38 @@
 2011-04-02  Richard Murray  <murray@malabar.local>
 
+	* src/xferfcn.py (TransferFunction.__add__): fixed bug when adding a
+	transfer function to state space system; _convertToTransferFunction
+	was being called with input/output keywords.  Picked up in unit test.
+
+	* tests/matlab_test.py: added calls to all of the functions that are
+	currently implemented in the library, to make sure there are no
+	hidden issues.  These calls do *not* test functionality, they just
+	make sure that MATLAB compatibility functions accept the right types
+	of arguments.
+
+	* examples/secord-matlab.py: added root locus plot to list of
+	figures that are produced
+
+	* src/__init__.py: added rlocus to list of modules that are imported
+	by control module
+
+	* src/exception.py (ControlMIMONotImplemented): added exception for
+	functions that are not yet implemented for MIMO systems
+
+	* src/xferfcn.py (TransferFunction.__init__): convert integer
+	numerator and denominator objects to floats to eliminate errors when
+	creating common denominator (also used on pole command).  This fixes
+	and error were tf([1], [1, 2, 1]).pole() would generate an error.
+
+	* src/freqplot.py (bode): Tweaked documentation string to remove 'h'
+	from mag and phase return arguments
+
+	* src/rlocus.py (RootLocus): removed commands that set figure number
+	inside of RootLocus command, for consistency with other frequency
+	plot routines.  Added Plot=True argument and updated documentation.
+
+	* src/matlab.py: added rlocus() command (calls RootLocus)
+
 	* MANIFEST.in: Added MANIFEST.in file to include examples and tests
 	in source distribution
 

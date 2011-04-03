@@ -60,7 +60,7 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
 
     Usage
     =====
-    (magh, phaseh, omega) = bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True)
+    (mag, phase, omega) = bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -79,8 +79,8 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
 
     Return values
     -------------
-    magh : magnitude array
-    phaseh : phase array
+    mag : magnitude array
+    phase : phase array
     omega : frequency array
 
     Notes

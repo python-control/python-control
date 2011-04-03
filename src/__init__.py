@@ -64,3 +64,4 @@ from bdalg import *
 from statefbk import *
 from delay import *
 from modelsimp import *
+from rlocus import *

@@ -27,3 +27,7 @@ mag,phase,om = bode(sys, logspace(-2, 2),Plot=True)
 # Nyquist plot for the system
 figure(3)
 nyquist(sys, logspace(-2, 2))
+
+# Root lcous plut for the system
+figure(4)
+rlocus(sys)

@@ -179,7 +179,7 @@ Model simplification
 \*  ss/modred      - model order reduction
  
 Compensator design
-   rlocus         - evans root locus
+\*  rlocus         - evans root locus
 \*  place          - pole placement
    estim          - form estimator given estimator gain
    reg            - form regulator given state-feedback and estimator gains
@@ -187,7 +187,7 @@ Compensator design
 LQR/LQG design
    ss/lqg         - single-step LQG design
 \*  lqr            - linear-Quadratic (LQ) state-feedback regulator
-\*  dlqr           - discrete-time LQ state-feedback regulator
+   dlqr           - discrete-time LQ state-feedback regulator
    lqry           - lq regulator with output weighting
    lqrd           - discrete LQ regulator for continuous plant
    ss/lqi         - linear-Quadratic-Integral (LQI) controller
@@ -243,8 +243,8 @@ Model dimensions and characteristics
 Overloaded arithmetic operations
 \*  + and -        - add and subtract systems (parallel connection)
 \*  \*              - multiply systems (series connection)
-\*  /              - left divide -- sys1\sys2 means inv(sys1)\*sys2
-\*  /              - right divide -- sys1/sys2 means sys1\*inv(sys2)
+   /              - left divide -- sys1\sys2 means inv(sys1)\*sys2
+-  \              - right divide -- sys1/sys2 means sys1\*inv(sys2)
    ^              - powers of a given system
    '              - pertransposition
    .'             - transposition of input/output map
@@ -758,12 +758,35 @@ def ngrid():
     from nichols import nichols_grid
     nichols_grid()
 
+# Root locus plot
+def rlocus(sys, klist = None, **keywords):
+    """Root locus plot
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction object
+    klist: optional list of gains
+
+    Returns
+    -------
+    rlist: list of roots for each gain
+    klist: list of gains used to compute roots
+    """
+    from rlocus import RootLocus
+    if (klist == None):
+        #! TODO: update with a smart cacluation of the gains
+        klist = logspace(-3, 3)
+
+    rlist = RootLocus(sys, klist, **keywords)
+    return rlist, klist
+    
+
 #
 # Modifications to scipy.signal functions
 #
 
 # Redefine lsim to use lsim2 
-def lsim(*args, **keywords):
+def lsim(sys, U=None, T=None, X0=None, **keywords):
     """Simulate the output of a linear system
 
     Examples
@@ -784,11 +807,12 @@ def lsim(*args, **keywords):
     yout: response of the system
     xout: time evolution of the state vector
     """
-    sys = args[0]
+    # Convert the system to an signal.lti for simulation
+    #! This should send a warning for MIMO systems
     ltiobjs = sys.returnScipySignalLti()
     ltiobj = ltiobjs[0][0]
- 
-    return sp.signal.lsim2(ltiobj, **keywords)
+
+    return sp.signal.lsim2(ltiobj, U, T, X0, **keywords)
 
 #! Redefine step to use lsim2 
 #! Not yet implemented

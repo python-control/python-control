@@ -12,7 +12,7 @@ OPEN BUGS
   * matlab.step() doesn't handle systems with a pole at the origin (use lsim2)
   * TF <-> SS transformations are buggy; see tests/convert_test.py
   * hsvd returns different value than MATLAB (2010a); see modelsimp_test.py
-  * MIMO common denominator fails unit test; see convert_test.py
+  * lsim doesn't work for StateSpace systems (signal.lsim2 bug??)
 
 Transfer code from Roberto Bucher's yottalab to python-control
   acker       - pole placement using Ackermann method
@@ -44,23 +44,15 @@ Examples and test cases
   * tests/freqresp.py needs to be converted to unit test
   * Convert examples/test-{response,statefbk}.py to unit tests
 
-TransferFunction class fixes
-  * evalfr is not working (num, den stored as ndarrays, not poly1ds)
-
-Block diagram algebra fixes
-  * Implement state space block diagram algebra
-  * Produce minimal realizations to avoid later errors
+Root locus plot improvements
+  * Make sure that scipy.signal.lti objects still work
+  * Update calling syntax to be consistent with other plotting commands
 
 State space class fixes
-  * Convert pvtol to state space systems and rerun example
   * Implement pzmap for state space systems
-
-LTI updates
-  * Implement control.matlab.step (with semantics similar to MATLAB)
 
 Basic functions to be added
   * margin - compute gain and phase margin (no plot)
-  * lqr - compute optimal feedback gains (use SLICOT SB02ND.f)
   * lyap - solve Lyapunov equation (use SLICOT SB03MD.f)
   * See http://www.slicot.org/shared/libindex.html for list of functions
 

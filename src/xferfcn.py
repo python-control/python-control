@@ -129,11 +129,20 @@ a TransferFunction object.  Received %s." % type(args[0]))
         for i in range(len(data)):
             if isinstance(data[i], (int, float, long, complex)):
                 # Convert scalar to list of list of array.
-                data[i] = [[array([data[i]])]]
+                if (isinstance(data[i], int)):
+                    # Convert integers to floats at this point
+                    data[i] = [[array([data[i]], dtype=float)]]
+                else:
+                    data[i] = [[array([data[i]])]]
             elif (isinstance(data[i], (list, tuple, ndarray)) and 
                 isinstance(data[i][0], (int, float, long, complex))):
                 # Convert array to list of list of array.
-                data[i] = [[array(data[i])]]
+                if (isinstance(data[i][0], int)):
+                    # Convert integers to floats at this point
+                    #! Not sure this covers all cases correctly
+                    data[i] = [[array(data[i], dtype=float)]]
+                else:
+                    data[i] = [[array(data[i])]]
             elif (isinstance(data[i], list) and 
                 isinstance(data[i][0], list) and 
                 isinstance(data[i][0][0], (list, tuple, ndarray)) and 
@@ -142,7 +151,10 @@ a TransferFunction object.  Received %s." % type(args[0]))
                 # coefficient vectors to arrays, if necessary.
                 for j in range(len(data[i])):
                     for k in range(len(data[i][j])):
-                        data[i][j][k] = array(data[i][j][k])
+                        if (isinstance(data[i][j][k], int)):
+                            data[i][j][k] = array(data[i][j][k], dtype=float)
+                        else:
+                            data[i][j][k] = array(data[i][j][k])
             else:
                 # If the user passed in anything else, then it's unclear what
                 # the meaning is.
@@ -274,7 +286,9 @@ denominator." % (j + 1, i + 1))
         """Add two LTI objects (parallel connection)."""
         
         # Convert the second argument to a transfer function.
-        if not isinstance(other, TransferFunction):
+        if (isinstance(other, statesp.StateSpace)):
+            other = _convertToTransferFunction(other)
+        elif not isinstance(other, TransferFunction):
             other = _convertToTransferFunction(other, inputs=self.inputs, 
                 outputs=self.outputs)
 
@@ -513,6 +527,7 @@ only implemented for SISO functions.")
         # A sorted list to keep track of cumulative poles found as we scan
         # self.den.
         poles = []
+
         # A 3-D list to keep track of common denominator poles not present in
         # the self.den[i][j].
         missingpoles = [[[] for j in range(self.inputs)] for i in

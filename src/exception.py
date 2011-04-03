@@ -52,6 +52,10 @@ class ControlArgument(Exception):
     """Raised when arguments to a function are not correct"""
     pass
 
+class ControlMIMONotImplemented(Exception):
+    """Function is not currently implemented for MIMO systems"""
+    pass
+
 class ControlNotImplemented(Exception):
     """Functionality is not yet implemented"""
     pass
