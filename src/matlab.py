@@ -781,6 +781,39 @@ def rlocus(sys, klist = None, **keywords):
     return rlist, klist
     
 
+def margin(*args):
+    """Calculate gain and phase margins and associated crossover frequencies
+
+    Usage:
+    gm, pm, wg, wp = margin(sys)
+    gm, pm, wg, wp = margin(mag,phase,w)
+    
+    Parameters
+    ----------
+    sys : linsys
+        Linear SISO system
+    mag, phase, w : array_like
+        Input magnitude, phase (in deg.), and frequencies (rad/sec) from bode
+        frequency response data
+
+    Returns
+    -------
+    gm, pm, wg, wp : float
+        Gain margin gm, phase margin pm (in deg), and associated crossover
+        frequencies wg and wp (in rad/sec) of SISO open-loop. If more than
+        one crossover frequency is detected, returns the lowest corresponding
+        margin. 
+    """
+    if len(args) == 1:
+        sys = args[0]
+        margins = freqplot.margin(sys)
+    elif len(args) == 3:
+        margins = freqplot.margin(args)
+    else: 
+        raise ValueError("Margin needs 1 or 3 arguments; received %i." 
+            % len(args))
+            
+    return margins[0], margins[1], margins[3], margins[4]
 #
 # Modifications to scipy.signal functions
 #

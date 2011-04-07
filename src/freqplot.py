@@ -55,12 +55,13 @@ from bdalg import feedback
 #
    
 # Bode plot
-def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
+def bode(syslist, omega=None, dB=False, Hz=False, deg=True, 
+        color=None, Plot=True):
     """Bode plot for a system
 
     Usage
     =====
-    (mag, phase, omega) = bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True)
+    (mag, phase, omega) = bode(syslist, omega=None, dB=False, Hz=False, color=None, deg=True, Plot=True)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -74,23 +75,30 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
         If True, plot result in dB
     Hz : boolean
         If True, plot frequency in Hz (omega must be provided in rad/sec)
+    color : matplotlib color
+        Color of line in bode plot
+    deg : boolean
+        If True, return phase in degrees (else radians)
     Plot : boolean
         If True, plot magnitude and phase
 
     Return values
     -------------
-    mag : magnitude array
-    phase : phase array
-    omega : frequency array
+    mag : magnitude array (list if len(syslist) > 1)
+    phase : phase array (list if len(syslist) > 1)
+    omega : frequency array (list if len(syslist) > 1)
 
     Notes
     -----
-    1. Alternatively, may use (mag, phase, freq) = sys.freqresp(freq) to generate the frequency response for a system.
+    1. Alternatively, you may use the lower-level method 
+    (mag, phase, freq) = sys.freqresp(freq) to generate the frequency 
+    response for a system, but it returns a MIMO response.
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
         syslist = (syslist,)
 
+    mags, phases, omegas = [], [], []
     for sys in syslist:
         if (sys.inputs > 1 or sys.outputs > 1):
             #TODO: Add MIMO bode plots. 
@@ -104,10 +112,14 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
             mag_tmp, phase_tmp, omega = sys.freqresp(omega)
             mag = np.squeeze(mag_tmp)
             phase = np.squeeze(phase_tmp)
+            phase = unwrap(phase)
             if Hz: omega = omega/(2*sp.pi)
             if dB: mag = 20*sp.log10(mag)
-            phase = unwrap(phase*180/sp.pi, 360)
-
+            if deg: phase = phase * 180 / sp.pi
+            
+            mags.append(mag)
+            phases.append(phase)
+            omegas.append(omega)
             # Get the dimensions of the current axis, which we will divide up
             #! TODO: Not current implemented; just use subplot for now
 
@@ -134,10 +146,14 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
 
                 # Phase plot
                 plt.subplot(212);
-                if color==None:
-                    plt.semilogx(omega, phase)
+                if deg: 
+                    phase_deg = phase
                 else:
-                    plt.semilogx(omega, phase, color=color)
+                    phase_deg = phase * 180 / sp.pi
+                if color==None:
+                    plt.semilogx(omega, phase_deg)
+                else:
+                    plt.semilogx(omega, phase_deg, color=color)
                 plt.hold(True)
 
                 # Add a grid to the plot
@@ -151,7 +167,10 @@ def bode(syslist, omega=None, dB=False, Hz=False, color=None, Plot=True):
                 else:
                     plt.xlabel("Frequency (rad/sec)")
 
-    return mag, phase, omega
+    if len(syslist) == 1:
+        return mags[0], phases[0], omegas[0]
+    else:
+        return mags, phases, omegas
 
 # Nyquist plot
 def nyquist(syslist, omega=None, Plot=True):
@@ -274,6 +293,101 @@ def gangof4(P, C, omega=None):
         phase = np.squeeze(phase_tmp)
         plt.subplot(224); plt.loglog(omega, mag);
 
+
+# gain and phase margins
+# contributed by Sawyer B. Fuller <minster@caltech.edu>
+def margin(sysdata, deg=True):
+    """Calculate gain and phase margins and associated crossover frequencies
+
+    Usage:
+    
+    gm, pm, sm, wg, wp, ws = margin(sysdata, deg=True)
+    
+    Parameters
+    ----------
+    sysdata: linsys or (mag, phase, omega) sequence 
+        sys : linsys
+            Linear SISO system
+        mag, phase, omega : sequence of array_like
+            Input magnitude, phase, and frequencies (rad/sec) sequence from 
+            bode frequency response data 
+    deg=True: boolean  
+        If true, all input and output phases in degrees, else in radians
+        
+    Returns
+    -------
+    gm, pm, sm, wg, wp, ws: float
+        Gain margin gm, phase margin pm, stability margin sm, and 
+        associated crossover
+        frequencies wg, wp, and ws of SISO open-loop. If more than
+        one crossover frequency is detected, returns the lowest corresponding
+        margin. 
+    """
+    #TODO do this precisely without the effects of discretization of frequencies?
+    #TODO assumes SISO
+    #TODO unit tests, margin plot
+
+    if (not getattr(sysdata, '__iter__', False)):
+        sys = sysdata
+        mag, phase, omega = bode(sys, deg=deg, Plot=False)
+    elif len(sysdata) == 3:
+        mag, phase, omega = sysdata
+    else: 
+        raise ValueError("Margin sysdata must be either a linear system or a 3-sequence of mag, phase, omega.")
+        
+    if deg:
+        cycle = 360. 
+        crossover = 180. 
+    else:
+        cycle = 2 * np.pi
+        crossover = np.pi
+        
+    wrapped_phase = -np.mod(phase, cycle)
+    
+    # phase margin from minimum phase among all gain crossovers
+    neg_mag_crossings_i = np.nonzero(np.diff(mag < 1) > 0)[0]
+    mag_crossings_p = wrapped_phase[neg_mag_crossings_i]
+    if len(neg_mag_crossings_i) == 0:
+        if mag[0] < 1: # gain always less than one
+            wp = np.nan
+            pm = np.inf
+        else: # gain always greater than one
+            print "margin: no magnitude crossings found"
+            wp = np.nan
+            pm = np.nan
+    else:
+        min_mag_crossing_i = neg_mag_crossings_i[np.argmin(mag_crossings_p)]
+        wp = omega[min_mag_crossing_i]
+        pm = crossover + phase[min_mag_crossing_i] 
+        if pm < 0:
+            print "warning: system unstable: negative phase margin"
+    
+    # gain margin from minimum gain margin among all phase crossovers
+    neg_phase_crossings_i = np.nonzero(np.diff(wrapped_phase < -crossover) > 0)[0]
+    neg_phase_crossings_g = mag[neg_phase_crossings_i]
+    if len(neg_phase_crossings_i) == 0:
+        wg = np.nan
+        gm = np.inf
+    else:
+        min_phase_crossing_i = neg_phase_crossings_i[
+            np.argmax(neg_phase_crossings_g)]
+        wg = omega[min_phase_crossing_i]
+        gm = abs(1/mag[min_phase_crossing_i])
+        if gm < 1: 
+            print "warning: system unstable: gain margin < 1"    
+
+    # stability margin from minimum abs distance from -1 point
+    if deg:
+        phase_rad = phase * np.pi / 180.
+    else:
+        phase_rad = phase
+    L = mag * np.exp(1j * phase_rad) # complex loop response to -1 pt
+    min_Lplus1_i = np.argmin(np.abs(L + 1))
+    sm = np.abs(L[min_Lplus1_i] + 1)
+    ws = phase[min_Lplus1_i]
+
+    return gm, pm, sm, wg, wp, ws 
+
 #
 # Utility functions
 #
@@ -311,6 +425,10 @@ def default_frequency_range(syslist):
     
     # Find the list of all poles and zeros in the systems
     features = np.array(())
+    
+    # detect if single sys passed by checking if it is sequence-like
+    if (not getattr(syslist, '__iter__', False)):
+        syslist = (syslist,)
     for sys in syslist:
         # Add new features to the list
         features = np.concatenate((features, np.abs(sys.pole())))
