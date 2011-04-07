@@ -54,15 +54,19 @@ def pade(T, n=1):
     Based on an algorithm in Golub and van Loan, "Matrix Computation" 3rd.
     Ed. pp. 572-574.
     """
-    num = [0. for i in range(n+1)]
-    num[-1] = 1.
-    den = [0. for i in range(n+1)]
-    den[-1] = 1.
-    c = 1.
-    for k in range(1, n+1):
-        c = T * c * (n - k + 1)/(2 * n - k + 1)/k
-        num[n - k] = c * (-1)**k
-        den[n - k] = c 
-    num = [coeff/den[0] for coeff in num]
-    den = [coeff/den[0] for coeff in den]
+    if T == 0:
+        num = [1,]
+        den = [1,]
+    else:
+        num = [0. for i in range(n+1)]
+        num[-1] = 1.
+        den = [0. for i in range(n+1)]
+        den[-1] = 1.
+        c = 1.
+        for k in range(1, n+1):
+            c = T * c * (n - k + 1)/(2 * n - k + 1)/k
+            num[n - k] = c * (-1)**k
+            den[n - k] = c 
+        num = [coeff/den[0] for coeff in num]
+        den = [coeff/den[0] for coeff in den]
     return num, den 
