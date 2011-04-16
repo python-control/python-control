@@ -372,8 +372,12 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __div__(self, other):
         """Divide two LTI objects."""
         
-        # Convert the second argument to a transfer function.
-        other = _convertToTransferFunction(other)
+        if isinstance(other, (int, float, long, complex)):
+            other = _convertToTransferFunction(other, inputs=self.inputs, 
+                outputs=self.inputs)
+        else:
+            other = _convertToTransferFunction(other)
+
 
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
@@ -388,6 +392,11 @@ implemented only for SISO systems.")
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rdiv__(self, other):
         """Right divide two LTI objects."""
+        if isinstance(other, (int, float, long, complex)):
+            other = _convertToTransferFunction(other, inputs=self.inputs, 
+                outputs=self.inputs)
+        else:
+            other = _convertToTransferFunction(other)
         
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
@@ -395,6 +404,16 @@ implemented only for SISO systems.")
 implemented only for SISO systems.")
 
         return other / self
+    def __pow__(self,other):
+        if not type(other) == int:
+            raise ValueError("Exponent must be an integer")
+        if other == 0:
+            return TransferFunction([1],[1]) #unity
+        if other > 0:
+            return self * (self**(other-1))
+        if other < 0:
+            return (TransferFunction([1],[1]) / self) * (self**(other+1))
+            
         
     def evalfr(self, omega):
         """Evaluate a transfer function at a single angular frequency.
