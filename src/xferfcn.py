@@ -643,8 +643,10 @@ a zero leading coefficient." % (i, j)
         # are the same size as the denominator.
         for i in range(self.outputs):
             for j in range(self.inputs):
-                num[i][j] = insert(num[i][j], zeros(len(den) - len(num[i][j])),
-                    zeros(len(den) - len(num[i][j])))
+                pad = len(den) - len(num[i][j]) 
+                if(pad>0):
+                    num[i][j] = insert(num[i][j], zeros(pad),
+                        zeros(pad))
         # Finally, convert the numerator to a 3-D array.
         num = array(num)
         # Remove trivial imaginary parts.  Check for nontrivial imaginary parts.
