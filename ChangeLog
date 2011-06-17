@@ -1,3 +1,20 @@
+2011-06-16  Richard Murray  <murray@malabar.local>
+
+	* src/matlab.py: import mateqn functions
+
+	* src/__init__.py: import mateqn functions
+
+	* tests/test_all.py: added unit tests for matrix solvers, converting
+	to standard format along the way.  Seems to work even if slycot
+	routines are not in place, but I'm not sure if this is for the right
+	reasons...
+
+	* src/mateqn.py: added matrix solvers from LTH (Ola Johnsson, Jerker
+	Nordh, Bjorn Olofsson, Vanessa Romero).  Moved slycot function
+	checks to the portion of the code where they are used, so that
+	missing slycot doesn't mess up initialization if proper version of
+	slycot is not available.
+
 2011-04-02  Richard Murray  <murray@malabar.local>
 
 	* src/xferfcn.py (TransferFunction.__add__): fixed bug when adding a

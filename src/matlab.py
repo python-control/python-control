@@ -81,6 +81,7 @@ from pzmap import pzmap
 from statefbk import ctrb, obsv, gram, place, lqr
 from delay import pade
 from modelsimp import hsvd, balred, modred
+from mateqn import lyap, dlyap, dare, care
 
 __doc__ += """
 The control.matlab module defines functions that are roughly the
@@ -255,9 +256,9 @@ Overloaded arithmetic operations
    lti/conj       - complex conjugation of model coefficients
  
 Matrix equation solvers and linear algebra
-  lyap, dlyap         - solve Lyapunov equations
+\* lyap, dlyap         - solve Lyapunov equations
   lyapchol, dlyapchol - square-root Lyapunov solvers
-  care, dare          - solve algebraic Riccati equations
+\* care, dare          - solve algebraic Riccati equations
   gcare, gdare        - generalized Riccati solvers
   bdschur             - block diagonalization of a square matrix
 
