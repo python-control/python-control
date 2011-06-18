@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """stateSpace.py
 
 State space representation and functions.
@@ -72,8 +73,9 @@ $Id$
 
 """
 
-from numpy import all, angle, any, array, concatenate, cos, delete, dot, \
-    empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, zeros
+from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
+    dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
+    zeros
 from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
@@ -427,8 +429,8 @@ inputs/outputs for feedback."
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = lti(self.A, self.B[:, j], self.C[i, :],
-                    self.D[i, j])
+                out[i][j] = lti(asarray(self.A), asarray(self.B[:, j]), 
+                                asarray(self.C[i, :]), asarray(self.D[i, j]))
 
         return out
 

@@ -10,6 +10,7 @@
 
 import unittest
 import numpy as np
+import scipy as sp
 from control.matlab import *
 
 class TestMatlab(unittest.TestCase):
@@ -30,7 +31,22 @@ class TestMatlab(unittest.TestCase):
         self.siso_ss2 = ss(self.siso_tf2);
         self.siso_ss3 = tf2ss(self.siso_tf3);
         self.siso_tf4 = ss2tf(self.siso_ss2);
-
+        
+        #Create MIMO system, contains ``siso_ss1`` twice
+        A = np.matrix("1. -2. 0.  0.;"
+                      "3. -4. 0.  0.;"
+                      "0.  0. 1. -2.;"
+                      "0.  0. 3. -4. ")
+        B = np.matrix("5. 0.;"
+                      "7. 0.;"
+                      "0. 5.;"
+                      "0. 7. ")
+        C = np.matrix("6. 8. 0. 0.;"
+                      "0. 0. 6. 8. ")
+        D = np.matrix("9. 0.;"
+                      "0. 9. ")
+        self.mimo_ss1 = ss(A, B, C, D)
+        
     def testParallel(self):
         sys1 = parallel(self.siso_ss1, self.siso_ss2)
         sys1 = parallel(self.siso_ss1, self.siso_tf2)
@@ -74,33 +90,137 @@ class TestMatlab(unittest.TestCase):
         pzmap(self.siso_tf2, Plot=False);
 
     def testStep(self):
+        #Test SISO system
         sys = self.siso_ss1
         t = np.linspace(0, 1, 10)
-        t, yout = step(sys, T=t)
-        youttrue = np.matrix("9. 17.6457 24.7072 30.4855 35.2234 39.1165 42.3227 44.9694 47.1599 48.9776") 
-        np.testing.assert_array_almost_equal(yout, youttrue,decimal=4)
+        youttrue = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165, 
+                             42.3227, 44.9694, 47.1599, 48.9776]) 
+        tout, yout = step(sys, T=t)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        # Play with arguments
+        tout, yout = step(sys, T=t, X0=0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        X0 = np.array([0, 0]);
+        tout, yout = step(sys, T=t, X0=X0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        #Test MIMO system, which contains ``siso_ss1`` twice
+        sys = self.mimo_ss1
+        _t, y_00 = step(sys, T=t, input=0, output=0)
+        _t, y_11 = step(sys, T=t, input=1, output=1)
+        np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testImpulse(self):
+        #Test SISO system
         sys = self.siso_ss1
         t = np.linspace(0, 1, 10)
-        t, yout = impulse(sys, T=t)
-        youttrue = np.matrix("86. 70.1808 57.3753 46.9975 38.5766 31.7344 26.1668 21.6292 17.9245 14.8945") 
-        np.testing.assert_array_almost_equal(yout, youttrue,decimal=4)
+        youttrue = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766, 31.7344, 
+                             26.1668, 21.6292, 17.9245, 14.8945]) 
+        tout, yout = impulse(sys, T=t)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
 
-#    def testInitial(self):
+        #Test MIMO system, which contains ``siso_ss1`` twice
+        sys = self.mimo_ss1
+        _t, y_00 = impulse(sys, T=t, input=0, output=0)
+        _t, y_11 = impulse(sys, T=t, input=1, output=1)
+        np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
+
+    def testInitial(self):
+        #Test SISO system
         sys = self.siso_ss1
-#        t = np.linspace(0, 1, 10)
-#        x0 = np.matrix(".5; 1.")
-#        t, yout = initial(sys, T=t, X0=x0)
-#        youttrue = np.matrix("11. 8.1494 5.9361 4.2258 2.9118 1.9092 1.1508 0.5833 0.1645 -0.1391") 
-#        np.testing.assert_array_almost_equal(yout, youttrue,decimal=4)
+        t = np.linspace(0, 1, 10)
+        x0 = np.matrix(".5; 1.")
+        youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092, 
+                             1.1508, 0.5833, 0.1645, -0.1391]) 
+        tout, yout = initial(sys, T=t, X0=x0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        #Test MIMO system, which contains ``siso_ss1`` twice
+        sys = self.mimo_ss1
+        x0 = np.matrix(".5; 1.; .5; 1.")
+        _t, y_00 = initial(sys, T=t, X0=x0, input=0, output=0)
+        _t, y_11 = initial(sys, T=t, X0=x0, input=1, output=1)
+        np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testLsim(self):
-        T = range(1, 100)
-        u = np.sin(T)
-        lsim(self.siso_tf1, u, T)
-        # lsim(self.siso_ss1, u, T)                     # generates error??
-        # lsim(self.siso_ss1, u, T, self.siso_ss1.B)
+        t = np.linspace(0, 1, 10)
+        
+        #compute step response - test with state space, and transfer function
+        #objects
+        u = np.array([1., 1, 1, 1, 1, 1, 1, 1, 1, 1])
+        youttrue = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165, 
+                             42.3227, 44.9694, 47.1599, 48.9776]) 
+        tout, yout, _xout = lsim(self.siso_ss1, u, t)   
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+        _t, yout, _xout = lsim(self.siso_tf3, u, t)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        
+        #test with initial value and special algorithm for ``U=0``
+        u=0
+        x0 = np.matrix(".5; 1.")
+        youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092, 
+                             1.1508, 0.5833, 0.1645, -0.1391]) 
+        _t, yout, _xout = lsim(self.siso_ss1, u, t, x0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        
+        #Test MIMO system, which contains ``siso_ss1`` twice
+        #first system: initial value, second system: step response
+        u = np.array([[0., 1.], [0, 1], [0, 1], [0, 1], [0, 1],
+                      [0, 1], [0, 1], [0, 1], [0, 1], [0, 1]])
+        x0 = np.matrix(".5; 1; 0; 0")
+        youttrue = np.array([[11., 9.], [8.1494, 17.6457], [5.9361, 24.7072],
+                             [4.2258, 30.4855], [2.9118, 35.2234],
+                             [1.9092, 39.1165], [1.1508, 42.3227], 
+                             [0.5833, 44.9694], [0.1645, 47.1599], 
+                             [-0.1391, 48.9776]])
+        _t, yout, _xout = lsim(self.mimo_ss1, u, t, x0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        
+    def testDcgain(self):
+        #Create different forms of a SISO system
+        A, B, C, D = self.siso_ss1.A, self.siso_ss1.B, self.siso_ss1.C, \
+                     self.siso_ss1.D
+        Z, P, k = sp.signal.ss2zpk(A, B, C, D)
+        num, den = sp.signal.ss2tf(A, B, C, D)
+        sys_ss = self.siso_ss1
+        
+        #Compute the gain with ``dcgain``
+        gain_abcd = dcgain(A, B, C, D)
+        gain_zpk = dcgain(Z, P, k)
+        gain_numden = dcgain(np.squeeze(num), den)
+        gain_sys_ss = dcgain(sys_ss)
+        print
+        print 'gain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk
+        print 'gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss
+        
+        #Compute the gain with a long simulation
+        t = linspace(0, 1000, 1000)
+        _t, y = step(sys_ss, t)
+        gain_sim = y[-1]
+        print 'gain_sim:', gain_sim
+        
+        #All gain values must be approximately equal to the known gain
+        np.testing.assert_array_almost_equal(
+            [gain_abcd[0,0], gain_zpk[0,0], gain_numden[0,0], gain_sys_ss[0,0], 
+             gain_sim],
+            [59, 59, 59, 59, 59])
+        
+        #Test with MIMO system, which contains ``siso_ss1`` twice
+        gain_mimo = dcgain(self.mimo_ss1)
+        print 'gain_mimo: \n', gain_mimo
+        np.testing.assert_array_almost_equal(gain_mimo, [[59., 0 ], 
+                                                         [0,  59.]])
 
     def testBode(self):
         bode(self.siso_ss1)

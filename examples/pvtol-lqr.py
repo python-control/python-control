@@ -119,7 +119,7 @@ H1ay = ss(Ay - By*K1a[1,alt], By*K1a[1,alt]*yd[alt,:], Cy, Dy);
 
 subplot(221); title("Identity weights")
 # plot(T, Y[:,1, 1], '-', T, Y[:,2, 2], '--'); hold(True);
-plot(Tx.T, Yx[0,:].T, '-', Ty.T, Yy[0,:].T, '--'); hold(True);
+plot(Tx.T, Yx.T, '-', Ty.T, Yy.T, '--'); hold(True);
 plot([0, 10], [1, 1], 'k-'); hold(True);
 
 axis([0, 10, -0.1, 1.4]); 
@@ -141,9 +141,9 @@ H1cx = ss(Ax - Bx*K1c[0,lat], Bx*K1c[0,lat]*xd[lat,:],Cx, Dx);
 [T3, Y3] = step(H1cx, T=linspace(0,10,100));
 
 subplot(222); title("Effect of input weights")
-plot(T1.T, Y1[0,:].T, 'b-'); hold(True);
-plot(T2.T, Y2[0,:].T, 'b-'); hold(True);
-plot(T3.T, Y3[0,:].T, 'b-'); hold(True);
+plot(T1.T, Y1.T, 'b-'); hold(True);
+plot(T2.T, Y2.T, 'b-'); hold(True);
+plot(T3.T, Y3.T, 'b-'); hold(True);
 plot([0 ,10], [1, 1], 'k-'); hold(True);
 
 axis([0, 10, -0.1, 1.4]); 
@@ -162,7 +162,7 @@ H2y = ss(Ay - By*K2[1,alt], By*K2[1,alt]*yd[alt,:], Cy, Dy);
 subplot(223); title("Output weighting")
 [T2x, Y2x] = step(H2x, T=linspace(0,10,100));
 [T2y, Y2y] = step(H2y, T=linspace(0,10,100));
-plot(T2x.T, Y2x[0,:].T, T2y.T, Y2y[0,:].T)
+plot(T2x.T, Y2x.T, T2y.T, Y2y.T)
 ylabel('position');
 xlabel('time'); ylabel('position');
 legend(('x', 'y'), loc='lower right');
@@ -185,7 +185,7 @@ subplot(224)
 # step(H3x, H3y, 10);
 [T3x, Y3x] = step(H3x, T=linspace(0,10,100));
 [T3y, Y3y] = step(H3y, T=linspace(0,10,100));
-plot(T3x.T, Y3x[0,:].T, T3y.T, Y3y[0,:].T)
+plot(T3x.T, Y3x.T, T3y.T, Y3y.T)
 title("Physically motivated weights")
 xlabel('time'); 
 legend(('x', 'y'), loc='lower right');

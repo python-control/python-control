@@ -26,7 +26,8 @@ sys.path.append(os.path.abspath('../src'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc','numpydoc']
+extensions = ['sphinx.ext.autodoc', 'numpydoc', 'sphinx.ext.pngmath', 
+              'sphinx.ext.intersphinx']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -86,6 +87,10 @@ pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
+
+#This config value contains the locations and names of other projects that 
+#should be linked to in this documentation.
+intersphinx_mapping = {'scipy':('http://docs.scipy.org/doc/scipy/reference/', None)}
 
 
 # -- Options for HTML output ---------------------------------------------------

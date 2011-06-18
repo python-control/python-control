@@ -66,3 +66,5 @@ from delay import *
 from modelsimp import *
 from rlocus import *
 from mateqn import *
+from timeresp import ForcedResponse, InitialResponse, StepResponse, \
+    ImpulseResponse

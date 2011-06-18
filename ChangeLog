@@ -1,3 +1,66 @@
+2011-06-18  Richard Murray  <murray@malabar.local>
+
+	* src/timeresp.py, src/matlab.py: moved documentation about time
+	series convention from matlab.py to timeresp.py
+
+	* examples/pvtol-nested-ss.py: Fixed bug in call to step (wrong
+	second argument)
+
+	* tests/matlab_test.py: Updated tests to use MATLAB time response
+	conventions.
+
+	* tests/timeresp_test.py: Created unit tests for timeresp module,
+	based on matlab_test.py
+
+2011-06-17  Richard Murray  <murray@malabar.local>
+
+	* src/timeresp.py (ForcedResponse): swapped order of input and time
+	arguments for linear response, following Eike's comment "T must
+	always be supplied by the user, but U has a useful default value of
+	0." 
+
+	* src/matlab.py: moved code for lsim, initial, step, and impulse to
+	timeresp.py and put in new routes that call timeresp.* versions of
+	the functions with transposeData set to True.
+
+	* src/timesim.py (_check_convert_array): added transpose argument
+	that will transpose input data before processing it.
+
+	* src/timesim.py: renamed lsim, initial, step, and impulse functions
+	to ForcedResponse, InitialResponse, StepResponse and
+	ImpulseResponse.  These versions use Eike Welk's input ordering.
+
+	* examples/pvtol-nested.py: calls to step() had screwed up inputs.
+	Fixed. 
+
+2011-06-17  Richard Murray  <murray@malabar.local>
+
+	* src/matlab.py: added MIMO extensions from Eike Welk on 12 Jun
+	2011: adds MIMO capabilities for ``lsim``, ``step``, ``impulse``,
+	``initial`` 
+
+	* src/matlab.py: added changes from Eike Welk on 12 May 2011:
+
+	  - An implementation of the four simulation functions ``lsim``,
+  	    ``step``, ``initial``, and ``impulse`` of the module ``matlab``. 
+
+          - Adds a function ``dcgain`` to the ``matlab`` module, which
+  	    computes the gain of a linear system for steady state and
+	    constant input. 
+
+          - The patch contains a bug fix for class ``StateSpace``, which
+	    enables it to work properly together with Scipy's ``signal``
+	    module.  
+
+          - The simulation functions' return values are changed (back?) to
+	    arrays, because matrices confuse Matplotlib.
+
+	  - New times series convention: see _time-series-convention section
+ 	    of matlab documentation
+
+	  - SISO simulation data are squeezed on output.  To turn this off,
+	    pass the option squeeze=False
+
 ---- control-0.4c released -----
 
 2011-06-17  Richard Murray  <murray@dhcp096.fhl.washington.edu>
