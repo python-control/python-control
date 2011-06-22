@@ -1,3 +1,13 @@
+2011-06-22  Richard Murray  <murray@malabar.local>
+
+	* doc/intro.rst: Added a slightly more general introduction, with a
+	pointer to the python-control wiki (on sf.net)
+
+	* doc/Makefile: Changed path to sphinx-build to assume it is in the
+	users path (as opposed to an explicit path)
+
+	* doc/conf.py: Added release information into documentation file
+
 2011-06-21  Richard Murray  <murray@malabar.local>
 
 	* src/statesp.py (_mimo2siso): Moved function from matlab.py.
