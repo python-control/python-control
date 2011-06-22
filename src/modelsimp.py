@@ -47,17 +47,21 @@ from statefbk import *
 from statesp import StateSpace
 
 # Hankel Singular Value Decomposition
-#   The following returns the Hankel singular values, which are singular values of the matrix formed by multiplying the controllability and observability grammians
+#   The following returns the Hankel singular values, which are singular values 
+#of the matrix formed by multiplying the controllability and observability 
+#grammians
 def hsvd(sys):
-    """Calculate the Hankel singular values
+    """Calculate the Hankel singular values.
 
     Parameters
     ----------
-    sys : a state space system 
+    sys : StateSpace
+        A state space system 
 
     Returns
     -------
-    H : a list of Hankel singular values 
+    H : Matrix
+        A list of Hankel singular values 
 
     See Also
     --------
@@ -65,7 +69,11 @@ def hsvd(sys):
 
     Notes
     -----
-    The Hankel singular values are the singular values of the Hankel operator.  In practice, we compute the square root of the eigenvalues of the matrix formed by taking the product of the observability and controllability gramians.  There are other (more efficient) methods based on solving the Lyapunov equation in a particular way (more details soon).  
+    The Hankel singular values are the singular values of the Hankel operator.  
+    In practice, we compute the square root of the eigenvalues of the matrix 
+    formed by taking the product of the observability and controllability 
+    gramians.  There are other (more efficient) methods based on solving the 
+    Lyapunov equation in a particular way (more details soon).  
 
     Examples
     --------
@@ -84,29 +92,36 @@ def hsvd(sys):
     # Return the Hankel singular values
     return hsv
 
-def modred(sys,ELIM,method='matchdc'):
-    """Model reduction of sys by eliminating the states in ELIM using a given method
+def modred(sys, ELIM, method='matchdc'):
+    """
+    Model reduction of `sys` by eliminating the states in `ELIM` using a given 
+    method.
 
     Parameters
     ----------
-    sys: original system to reduce
-    ELIM: vector of states to eliminate
-    method: method of removing states in ELIM (truncate or matchdc)
+    sys: StateSpace
+        Original system to reduce
+    ELIM: array
+        Vector of states to eliminate
+    method: string
+        Method of removing states in `ELIM`: either ``'truncate'`` or 
+        ``'matchdc'``.
 
     Returns
     -------
-    rsys: a reduced order model 
+    rsys: StateSpace
+        A reduced order model 
 
     Raises
     ------
     ValueError
-        if `method` is not either `matchdc` or `truncate`
-        if eigenvalues of `sys.A` are not all in left half plane (sys must be stable) 
+        * if `method` is not either ``'matchdc'`` or ``'truncate'``
+        * if eigenvalues of `sys.A` are not all in left half plane 
+          (`sys` must be stable) 
 
     Examples
     --------
-    >>> rsys = modred(sys,ELIM,method='truncate')
-
+    >>> rsys = modred(sys, ELIM, method='truncate')
     """
 
     #Check for ss system object, need a utility for this?
@@ -168,30 +183,38 @@ def modred(sys,ELIM,method='matchdc'):
     rsys = StateSpace(Ar,Br,Cr,Dr)
     return rsys
 
-def balred(sys,orders,method='truncate'):
-    """Balanced reduced order model of sys of a given order.  States are eliminated based on Hankel singular value.
+def balred(sys, orders, method='truncate'):
+    """
+    Balanced reduced order model of sys of a given order.  
+    States are eliminated based on Hankel singular value.
 
     Parameters
     ----------
-    sys: original system to reduce
-    orders: desired order of reduced order model (if a vector, returns a vector of systems)
-    method: method of removing states (truncate or matchdc)
+    sys: StateSpace
+        Original system to reduce
+    orders: integer or array of integer
+        Desired order of reduced order model (if a vector, returns a vector 
+        of systems)
+    method: string
+        Method of removing states, either ``'truncate'`` or ``'matchdc'``.
 
     Returns
     -------
-    rsys: a reduced order model 
+    rsys: StateSpace
+        A reduced order model 
 
     Raises
     ------
     ValueError
-        if `method` is not `truncate`
-        if eigenvalues of `sys.A` are not all in left half plane (sys must be stable) 
+        * if `method` is not ``'truncate'``
+        * if eigenvalues of `sys.A` are not all in left half plane 
+          (`sys` must be stable) 
     ImportError
         if slycot routine ab09ad is not found 
 
     Examples
     --------
-    >>> rsys = balred(sys,order,method='truncate') 
+    >>> rsys = balred(sys, order, method='truncate') 
 
     """
 
@@ -233,39 +256,56 @@ def balred(sys,orders,method='truncate'):
 
     return rsys
 
-def era(YY,m,n,nin,nout,r):
-    """Calculate an ERA model of order r based on the impulse-response data YY
-
+def era(YY, m, n, nin, nout, r):
+    """
+    Calculate an ERA model of order `r` based on the impulse-response data `YY`.
+    
+    .. note:: This function is not implemented yet.
+    
     Parameters
     ----------
-    YY: nout x nin dimensional impulse-response data
-    m: number of rows in Hankel matrix
-    n: number of columns in Hankel matrix
-    nin: number of input variables
-    nout: number of output variables
-    r: order of model
+    YY: array
+        `nout` x `nin` dimensional impulse-response data
+    m: integer
+        Number of rows in Hankel matrix
+    n: integer
+        Number of columns in Hankel matrix
+    nin: integer
+        Number of input variables
+    nout: integer
+        Number of output variables
+    r: integer
+        Order of model
 
     Returns
     -------
-    sys: a reduced order model sys=ss(Ar,Br,Cr,Dr) 
+    sys: StateSpace
+        A reduced order model sys=ss(Ar,Br,Cr,Dr) 
 
     Examples
     --------
-    >>> rsys = era(YY,m,n,nin,nout,r)
-
+    >>> rsys = era(YY, m, n, nin, nout, r)
     """
-def markov(Y,U,M):
-    """Calculate the first M Markov parameters [D CB CAB ...] from input U, output Y
+    raise NotImplementedError('This function is not implemented yet.')
+
+def markov(Y, U, M):
+    """
+    Calculate the first `M` Markov parameters [D CB CAB ...] 
+    from input `U`, output `Y`.
 
     Parameters
     ----------
-    Y: output data 
-    U: input data
-    M: number of Markov parameters to output
+    Y: array_like
+        Output data 
+    U: array_like
+        Input data
+    M: integer
+        Number of Markov parameters to output
 
     Returns
     -------
-    H: first M Markov parameters
+    H: matrix
+        First M Markov parameters
 
     Notes
     -----
@@ -273,8 +313,7 @@ def markov(Y,U,M):
 
     Examples
     --------
-    >>> H = markov(Y,U,M)
-
+    >>> H = markov(Y, U, M)
     """
 
     # Convert input parameters to matrices (if they aren't already)

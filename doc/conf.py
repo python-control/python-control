@@ -19,6 +19,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.append(os.path.abspath('../src'))
 
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -26,8 +27,14 @@ sys.path.append(os.path.abspath('../src'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
+# Additional interesting extensions:
+#   ``sphinx.ext.autosummary`` : Generate function/method/attribute summary 
+#                                lists
+#   ``sphinx.ext.extlinks``    : Shorten external links 
+#   ``sphinx.ext.viewcode``    : Include highlighted source code in the 
+#                                documentation
 extensions = ['sphinx.ext.autodoc', 'numpydoc', 'sphinx.ext.pngmath', 
-              'sphinx.ext.intersphinx']
+              'sphinx.ext.intersphinx', 'sphinx.ext.todo']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -90,7 +97,13 @@ pygments_style = 'sphinx'
 
 #This config value contains the locations and names of other projects that 
 #should be linked to in this documentation.
-intersphinx_mapping = {'scipy':('http://docs.scipy.org/doc/scipy/reference/', None)}
+intersphinx_mapping = \
+    {'scipy':('http://docs.scipy.org/doc/scipy/reference/', None),
+     'numpy':('http://docs.scipy.org/doc/numpy/reference/', None)}
+
+#If this is True, todo and todolist produce output, else they produce nothing. 
+#The default is False.
+todo_include_todos = True
 
 
 # -- Options for HTML output ---------------------------------------------------

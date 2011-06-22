@@ -49,23 +49,19 @@ from freqplot import default_frequency_range
 def nichols(syslist, omega=None, grid=True):
     """Nichols plot for a system
 
-    Usage
-    =====
-    magh = nichols(sys, omega=None)
-
     Plots a Nichols plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
-    syslist : linsys
+    syslist : list of Lti, or Lti
         List of linear input/output systems (single system is OK)
-    omega : freq_range
+    omega : array_like
         Range of frequencies (list or bounds) in rad/sec
     grid : boolean, optional
         True if the plot should include a Nichols-chart grid. Default is True.
 
-    Return values
-    -------------
+    Returns
+    -------
     None
     """
 

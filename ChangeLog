@@ -1,3 +1,21 @@
+2011-06-21  Richard Murray  <murray@malabar.local>
+
+	* src/statesp.py (_mimo2siso): Moved function from matlab.py.
+
+	* src/timeresp.py: added file documentation + split out and updated
+	copyright info.  Small corrections to documentation.
+	(InitialResponse): Added missing transpose argument in call to
+	ForcedResponse 
+
+	* src/matlab.py: minor changes to documentation to avoid line wraps
+	on standard (80 col) terminal window
+
+	* src/matlab.py: removed time-series convention documentation from
+	matlab.py since current MATLAB version uses standard conventions.
+	This documentation is currently in timeresp.py.
+
+	* src/*, doc/*: added Eike Welk's documentation modifications
+
 2011-06-18  Richard Murray  <murray@malabar.local>
 
 	* src/timeresp.py, src/matlab.py: moved documentation about time

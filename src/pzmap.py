@@ -41,27 +41,54 @@
 # $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
 
 import matplotlib.pyplot as plt
-import scipy as sp
-import numpy as np
-import xferfcn
+#import scipy as sp
+#import numpy as np
+from numpy import real, imag
+from lti import Lti
 
-# Compute poles and zeros for a system
-#! TODO: extend this to handle state space systems
-def pzmap(sys, Plot=True):
-    """Plot a pole/zero map for a transfer function"""
-    if (isinstance(sys, xferfcn.TransferFunction)):
-        poles = sp.roots(np.squeeze(np.asarray(sys.den)));
-        zeros = sp.roots(np.squeeze(np.asarray(sys.num)));
-    else:
-        raise NotImplementedError("pzmap not implemented for state space systems yet.")
+# TODO: Implement more elegant cross-style axes. See:
+#    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
+#    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
+def pzmap(sys, Plot=True, title='Pole Zero Map'):
+    """
+    Plot a pole/zero map for a linear system.
+    
+    Parameters
+    ----------
+    sys: Lti (StateSpace or TransferFunction)
+        Linear system for which poles and zeros are computed.
+    Plot: bool
+        If ``True`` a graph is generated with Matplotlib, 
+        otherwise the poles and zeros are only computed and returned.
+    
+    Returns
+    -------
+    pole: array
+        The systems poles
+    zeros: array
+        The system's zeros.
+    """
+    if not isinstance(sys, Lti):
+        raise TypeError('Argument ``sys``: must be a linear system.')
+    
+    poles = sys.pole()
+    zeros = sys.zero()
 
     if (Plot):
         # Plot the locations of the poles and zeros
-        plt.plot(sp.real(poles), sp.imag(poles), 'x'); plt.hold(True);
-        plt.plot(sp.real(zeros), sp.imag(zeros), 'o'); 
-
+        if len(poles) > 0:
+            plt.scatter(real(poles), imag(poles), s=50, marker='x')
+        if len(zeros) > 0:
+            plt.scatter(real(zeros), imag(zeros), s=50, marker='o', 
+                        facecolors='none')
         # Add axes
-        #! Not implemented
+        #Somewhat silly workaround 
+        plt.axhline(y=0, color='black')
+        plt.axvline(x=0, color='black')
+        plt.xlabel('Re')  
+        plt.ylabel('Im')  
+        
+        plt.title(title)
 
     # Return locations of poles and zeros as a tuple
     return poles, zeros

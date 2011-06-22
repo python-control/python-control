@@ -3,6 +3,13 @@
 
 Time domain simulation.
 
+This file contains a collection of functions that calculate time responses for linear systems.
+"""
+
+"""Copyright (c) 2011 by California Institute of Technology
+All rights reserved.
+
+Copyright (c) 2011 by Eike Welk
 Copyright (c) 2010 by SciPy Developers
 
 Redistribution and use in source and binary forms, with or without
@@ -43,16 +50,17 @@ $Id: matlab.py 157 2011-06-17 23:51:46Z murrayrm $
 Convention for Time Series
 --------------------------
 
-This is a convention for function arguments and return values that 
-represent time series: sequences of values that change over time. It is used  
-throughout the library, for example in the functions :func:`lsim`, :func:`step`, 
-:func:`impulse`, and :func:`initial`.
+This is a convention for function arguments and return values that
+represent time series: sequences of values that change over time. It
+is used throughout the library, for example in the functions
+:func:`ForcedResponse`, :func:`StepResponse`, :func:`ImpulseResponse`,
+and :func:`InitialResponse`.
 
 .. note::
     This convention is different from the convention used in the library
     :mod:`scipy.signal`. In Scipy's convention the meaning of rows and columns 
-    is interchanged. All 2D values must be transposed when they are used with 
-    functions from :mod:`scipy.signal`.
+    is interchanged.  Thus, all 2D values must be transposed when they are
+    used with functions from :mod:`scipy.signal`.
 
 Types:
 
@@ -75,6 +83,9 @@ points in time, rows are different components. When there is only one row, a
       
       Same for X, Y
 
+So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:] 
+is the sequence of values for the system's second input. 
+
 The initial conditions are either 1D, or 2D with shape (j, 1)::
 
      X0 = [[x1]
@@ -82,9 +93,6 @@ The initial conditions are either 1D, or 2D with shape (j, 1)::
            ...
            ...
            [xj]]
-
-So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:] 
-is the sequence of values for the system's second input. 
 
 As all simulation functions return *arrays*, plotting is convenient::
 
@@ -114,7 +122,7 @@ import numpy as np              # NumPy library
 from scipy.signal.ltisys import _default_response_times
 from copy import deepcopy
 import warnings
-from statesp import StateSpace, _rss_generate, _convertToStateSpace
+from statesp import StateSpace, _rss_generate, _convertToStateSpace, _mimo2siso
 from lti import Lti             # base class of StateSpace, TransferFunction
 
 #
@@ -424,7 +432,7 @@ def StepResponse(sys, T=None, X0=0., input=0, output=0, \
     U = np.ones_like(T)
 
     T, yout, _xout = ForcedResponse(sys, T, U, X0, 
-                                    transpose = transpose, **keywords)
+                                    transpose=transpose, **keywords)
 
     return T, yout
 
@@ -497,7 +505,8 @@ def InitialResponse(sys, T=None, X0=0., input=0, output=0, transpose=False,
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)
 
-    T, yout, _xout = ForcedResponse(sys, T, U, X0, **keywords)
+    T, yout, _xout = ForcedResponse(sys, T, U, X0, transpose=transpose,
+                                    **keywords)
     return T, yout
 
 
@@ -591,62 +600,4 @@ def ImpulseResponse(sys, T=None, X0=0., input=0, output=0,
     T, yout, _xout  = ForcedResponse(sys, T, U, new_X0, \
                           transpose=transpose, **keywords)
     return T, yout
-
-#! TODO: this function probably belongs in a different file
-def _mimo2siso(sys, input, output, warn_conversion):
-    #pylint: disable=W0622
-    """
-    Convert a MIMO system to a SISO system. (Convert a system with multiple
-    inputs and/or outputs, to a system with a single input and output.)
-    
-    The input and output that are used in the SISO system can be selected 
-    with the parameters ``input`` and ``output``. All other inputs are set 
-    to 0, all other outputs are ignored.
-    
-    If ``sys`` is already a SISO system, it will be returned unaltered. 
-    
-    Parameters:
-    
-    sys: StateSpace
-        Linear (MIMO) system that should be converted.
-    input: int
-        Index of the input that will become the SISO system's only input.
-    output: int
-        Index of the output that will become the SISO system's only output.
-    warn_conversion: bool
-        If True: print a warning message when sys is a MIMO system. 
-        Warn that a conversion will take place.
-        
-    Returns:
-    
-    sys: StateSpace
-        The converted (SISO) system.
-    """
-    if not (isinstance(input, int) and isinstance(output, int)):
-        raise TypeError("Parameters ``input`` and ``output`` must both "
-                        "be integer numbers.")
-    if not (0 <= input < sys.inputs):
-        raise ValueError("Selected input does not exist. "
-                         "Selected input: {sel}, "
-                         "number of system inputs: {ext}."
-                         .format(sel=input, ext=sys.inputs))
-    if not (0 <= output < sys.outputs):
-        raise ValueError("Selected output does not exist. "
-                         "Selected output: {sel}, "
-                         "number of system outputs: {ext}."
-                         .format(sel=output, ext=sys.outputs))
-    #Convert sys to SISO if necessary
-    if sys.inputs > 1 or sys.outputs > 1:
-        if warn_conversion:
-            warnings.warn("Converting MIMO system to SISO system. "
-                          "Only input {i} and output {o} are used."
-                          .format(i=input, o=output))
-        # $X = A*X + B*U
-        #  Y = C*X + D*U
-        new_B = sys.B[:, input]
-        new_C = sys.C[output, :]
-        new_D = sys.D[output, input]
-        sys = StateSpace(sys.A, new_B, new_C, new_D)
-        
-    return sys
 

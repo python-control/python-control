@@ -40,17 +40,29 @@
 # 
 # $Id$
 
+from __future__ import division
+
+
 def pade(T, n=1):
     """ 
+    Create a linear system that approximates a delay.
+    
     Return the numerator and denominator coefficients of the Pade approximation.
     
-    Inputs:
-        T   -->   time delay
-        n   -->   order of approximation
+    Parameters
+    ----------
+    T : number
+        time delay
+    n : integer
+        order of approximation
         
-    Outputs:       
-        num, den -->  arrays in descending powers of s.
-
+    Returns
+    -------       
+    num, den : array
+        Polynomial coefficients of the delay model, in descending powers of s.
+    
+    Notes
+    -----
     Based on an algorithm in Golub and van Loan, "Matrix Computation" 3rd.
     Ed. pp. 572-574.
     """

@@ -80,6 +80,7 @@ from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
+import warnings
 from lti import Lti
 import xferfcn
 
@@ -612,3 +613,62 @@ def _rss_generate(states, inputs, outputs, type):
     D = D * Dmask
 
     return StateSpace(A, B, C, D)
+
+# Convert a MIMO system to a SISO system
+def _mimo2siso(sys, input, output, warn_conversion):
+    #pylint: disable=W0622
+    """
+    Convert a MIMO system to a SISO system. (Convert a system with multiple
+    inputs and/or outputs, to a system with a single input and output.)
+    
+    The input and output that are used in the SISO system can be selected 
+    with the parameters ``input`` and ``output``. All other inputs are set 
+    to 0, all other outputs are ignored.
+    
+    If ``sys`` is already a SISO system, it will be returned unaltered. 
+    
+    Parameters:
+    
+    sys: StateSpace
+        Linear (MIMO) system that should be converted.
+    input: int
+        Index of the input that will become the SISO system's only input.
+    output: int
+        Index of the output that will become the SISO system's only output.
+    warn_conversion: bool
+        If True: print a warning message when sys is a MIMO system. 
+        Warn that a conversion will take place.
+        
+    Returns:
+    
+    sys: StateSpace
+        The converted (SISO) system.
+    """
+    if not (isinstance(input, int) and isinstance(output, int)):
+        raise TypeError("Parameters ``input`` and ``output`` must both "
+                        "be integer numbers.")
+    if not (0 <= input < sys.inputs):
+        raise ValueError("Selected input does not exist. "
+                         "Selected input: {sel}, "
+                         "number of system inputs: {ext}."
+                         .format(sel=input, ext=sys.inputs))
+    if not (0 <= output < sys.outputs):
+        raise ValueError("Selected output does not exist. "
+                         "Selected output: {sel}, "
+                         "number of system outputs: {ext}."
+                         .format(sel=output, ext=sys.outputs))
+    #Convert sys to SISO if necessary
+    if sys.inputs > 1 or sys.outputs > 1:
+        if warn_conversion:
+            warnings.warn("Converting MIMO system to SISO system. "
+                          "Only input {i} and output {o} are used."
+                          .format(i=input, o=output))
+        # $X = A*X + B*U
+        #  Y = C*X + D*U
+        new_B = sys.B[:, input]
+        new_C = sys.C[output, :]
+        new_D = sys.D[output, input]
+        sys = StateSpace(sys.A, new_B, new_C, new_D)
+        
+    return sys
+

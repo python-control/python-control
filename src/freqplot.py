@@ -59,10 +59,6 @@ def bode(syslist, omega=None, dB=False, Hz=False, deg=True,
         color=None, Plot=True):
     """Bode plot for a system
 
-    Usage
-    =====
-    (mag, phase, omega) = bode(syslist, omega=None, dB=False, Hz=False, color=None, deg=True, Plot=True)
-
     Plots a Bode plot for the system over a (optional) frequency range.
 
     Parameters
@@ -82,17 +78,26 @@ def bode(syslist, omega=None, dB=False, Hz=False, deg=True,
     Plot : boolean
         If True, plot magnitude and phase
 
-    Return values
-    -------------
-    mag : magnitude array (list if len(syslist) > 1)
-    phase : phase array (list if len(syslist) > 1)
-    omega : frequency array (list if len(syslist) > 1)
-
+    Returns
+    -------
+    mag : array (list if len(syslist) > 1)
+        magnitude
+    phase : array (list if len(syslist) > 1)
+        phase
+    omega : array (list if len(syslist) > 1)
+        frequency
+    
     Notes
     -----
     1. Alternatively, you may use the lower-level method 
     (mag, phase, freq) = sys.freqresp(freq) to generate the frequency 
     response for a system, but it returns a MIMO response.
+
+    Examples
+    --------
+    >>> from matlab import ss
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> mag, phase, omega = bode(sys)
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
@@ -176,26 +181,31 @@ def bode(syslist, omega=None, dB=False, Hz=False, deg=True,
 def nyquist(syslist, omega=None, Plot=True):
     """Nyquist plot for a system
 
-    Usage
-    =====
-    real, imag, freq = nyquist(sys, omega=None, Plot=True)
-
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
-    syslist : linsys
+    syslist : list of Lti
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
     Plot : boolean
         if True, plot magnitude
 
-    Return values
-    -------------
-    real : real part of the frequency response array
-    imag : imaginary part of the frequency response array
-    freq : frequencies
+    Returns
+    -------
+    real : array
+        real part of the frequency response array
+    imag : array
+        imaginary part of the frequency response array
+    freq : array
+        frequencies
+
+    Examples
+    --------
+    >>> from matlab import ss
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> real, imag, freq = nyquist(sys)
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
@@ -238,22 +248,18 @@ def nyquist(syslist, omega=None, Plot=True):
 def gangof4(P, C, omega=None):
     """Plot the "Gang of 4" transfer functions for a system
 
-    Usage
-    =====
-    gangof4(P, C, omega=None)
-
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
     [T, PS; CS, S]
 
     Parameters
     ----------
-    P, C : linsys
+    P, C : Lti
         Linear input/output systems (process and control)
-    omega : freq_range
+    omega : array
         Range of frequencies (list or bounds) in rad/sec
 
-    Return values
-    -------------
+    Returns
+    -------
     None
     """
     if (P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs >1):
@@ -400,22 +406,24 @@ def default_frequency_range(syslist):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
-    Usage
-    =====
-    omega = default_frequency_range(syslist)
-
     Finds a reasonable default frequency range by examining the features
     (poles and zeros) of the systems in syslist.
 
     Parameters
     ----------
-    syslist : linsys
+    syslist : list of Lti
         List of linear input/output systems (single system is OK)
 
-    Return values
-    -------------
-    omega : freq_range
+    Return
+    ------
+    omega : array
         Range of frequencies in rad/sec
+
+    Examples
+    --------
+    >>> from matlab import ss
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> omega = default_frequency_range(sys)
     """
     # This code looks at the poles and zeros of all of the systems that
     # we are plotting and sets the frequency range to be one decade above
