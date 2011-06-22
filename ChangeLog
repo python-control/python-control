@@ -1,5 +1,11 @@
 2011-06-22  Richard Murray  <murray@malabar.local>
 
+	* doc/intro.rst: fixed some small types
+	
+	* doc/control.tex: removed (no longer needed)
+
+2011-06-22  Richard Murray  <murray@malabar.local>
+
 	* doc/intro.rst: Added a slightly more general introduction, with a
 	pointer to the python-control wiki (on sf.net)
 

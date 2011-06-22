@@ -13,7 +13,7 @@ Feedback Systems by Åström and Murray. A MATLAB compatibility package
 the commands available in the MATLAB Control Systems Toolbox.
 
 In addition to the documentation here, there is a project wiki that
-contains some addional informaiton about how to use the package
+contains some additional information about how to use the package
 (including some detailed worked examples):
 
   http://python-control.sourceforge.net
