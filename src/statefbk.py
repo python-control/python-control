@@ -328,7 +328,7 @@ def gram(sys,type):
         raise ControlSlycot("can't find slycot module 'sb03md'")
     n = sys.states
     U = np.zeros((n,n))
-    A = sys.A    
+    A = np.array(sys.A)         # convert to NumPy array for slycot
     X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
     gram = X
     return gram

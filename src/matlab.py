@@ -1128,21 +1128,217 @@ def dcgain(*args):
 # Call corresponding functions in timeresp, with arguments transposed
 
 def step(sys, T=None, X0=0., input=0, output=0, **keywords):
+    '''
+    Step response of a linear system
+    
+    If the system has multiple inputs or outputs (MIMO), one input and one 
+    output have to be selected for the simulation. The parameters `input` 
+    and `output` do this. All other inputs are set to 0, all other outputs 
+    are ignored.
+    
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    X0: array-like or number, optional
+        Initial condition (default = 0)
+
+        Numbers are converted to constant arrays with the correct shape.
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        Index of the output that will be used in this simulation.
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`control.ForcedResponse`, which in turn passes them on to
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+    Returns
+    -------
+    T: array
+        Time values of the output
+
+    yout: array
+        Response of the system
+    
+    See Also
+    --------
+    lsim, initial, impulse
+
+    Examples
+    --------
+    >>> T, yout = step(sys, T, X0)
+    '''
     T, yout = timeresp.StepResponse(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
     return T, yout
 
-def impulse(sys, T=None, X0=0., input=0, output=0, **keywords):
-    T, yout = timeresp.ImpulseResponse(sys, T, X0, input, output, 
+def impulse(sys, T=None, input=0, output=0, **keywords):
+    '''
+    Impulse response of a linear system
+    
+    If the system has multiple inputs or outputs (MIMO), one input and
+    one output must be selected for the simulation. The parameters
+    `input` and `output` do this. All other inputs are set to 0, all
+    other outputs are ignored.
+    
+    Parameters
+    ----------
+    sys: StateSpace, TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        Index of the output that will be used in this simulation.
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`lsim`, which in turn passes them on to
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+    Returns
+    -------
+    T: array
+        Time values of the output
+    yout: array
+        Response of the system
+    
+    See Also
+    --------
+    lsim, step, initial
+
+    Examples
+    --------
+    >>> T, yout = impulse(sys, T) 
+    '''
+    T, yout = timeresp.ImpulseResponse(sys, T, 0, input, output, 
                                    transpose = True, **keywords)
     return T, yout
 
 def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
+    '''
+    Initial condition response of a linear system
+    
+    If the system has multiple inputs or outputs (MIMO), one input and one 
+    output have to be selected for the simulation. The parameters `input` 
+    and `output` do this. All other inputs are set to 0, all other outputs 
+    are ignored.
+    
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    X0: array-like object or number, optional
+        Initial condition (default = 0)
+
+        Numbers are converted to constant arrays with the correct shape.
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        Index of the output that will be used in this simulation.
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`lsim`, which in turn passes them on to
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+
+    Returns
+    -------
+    T: array
+        Time values of the output
+    yout: array
+        Response of the system
+    
+    See Also
+    --------
+    lsim, step, impulse
+
+    Examples
+    --------
+    >>> T, yout = initial(sys, T, X0)
+    '''
     T, yout = timeresp.InitialResponse(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
     return T, yout
 
 def lsim(sys, U=0., T=None, X0=0., **keywords):
+    '''
+    Simulate the output of a linear system.
+    
+    As a convenience for parameters `U`, `X0`:
+    Numbers (scalars) are converted to constant arrays with the correct shape.
+    The correct shape is inferred from arguments `sys` and `T`. 
+    
+    Parameters
+    ----------
+    sys: Lti (StateSpace, or TransferFunction)
+        LTI system to simulate
+        
+    U: array-like or number, optional
+        Input array giving input at each time `T` (default = 0).
+        
+        If `U` is ``None`` or ``0``, a special algorithm is used. This special 
+        algorithm is faster than the general algorithm, which is used otherwise.
+        
+    T: array-like 
+        Time steps at which the input is defined, numbers must be (strictly 
+        monotonic) increasing. 
+        
+    X0: array-like or number, optional
+        Initial condition (default = 0). 
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+    Returns
+    -------
+    T: array
+        Time values of the output. 
+    yout: array
+        Response of the system. 
+    xout: array
+        Time evolution of the state vector. 
+    
+    See Also
+    --------
+    step, initial, impulse
+    
+    Examples
+    --------
+    >>> T, yout, xout = lsim(sys, U, T, X0)
+    '''
     T, yout, xout = timeresp.ForcedResponse(sys, T, U, X0,
                                              transpose = True, **keywords)
     return T, yout, xout

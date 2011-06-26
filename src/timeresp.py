@@ -419,11 +419,11 @@ def StepResponse(sys, T=None, X0=0., input=0, output=0, \
     
     See Also
     --------
-    lsim, initial, impulse
+    ForcedResponse, InitialResponse, ImpulseResponse
 
     Examples
     --------
-    >>> T, yout = step(sys, T, X0)
+    >>> T, yout = StepResponse(sys, T, X0)
     """
     sys = _convertToStateSpace(sys)
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
@@ -491,11 +491,11 @@ def InitialResponse(sys, T=None, X0=0., input=0, output=0, transpose=False,
     
     See Also
     --------
-    lsim, step, impulse
+    ForcedResponse, ImpulseResponse, StepResponse
 
     Examples
     --------
-    >>> T, yout = InitialResponsesys, T, X0)
+    >>> T, yout = InitialResponse(sys, T, X0)
     """
     sys = _convertToStateSpace(sys) 
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
@@ -564,7 +564,7 @@ def ImpulseResponse(sys, T=None, X0=0., input=0, output=0,
     
     See Also
     --------
-    lsim, step, initial
+    ForcedReponse, InitialResponse, StepResponse
 
     Examples
     --------

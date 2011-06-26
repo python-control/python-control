@@ -527,21 +527,45 @@ only implemented for SISO functions.")
             
         return out 
 
-    def _common_den(self):
-        """Compute MIMO common denominator; return it and an adjusted numerator.
+    def _common_den(self, imag_tol=None):
+        """
+        Compute MIMO common denominator; return it and an adjusted numerator.
         
-        >>> n, d = sys._common_den()
-        
-        computes the single denominator containing all the poles of sys.den, and
-        reports it as the array d.  The output numerator array n is modified to
-        use the common denominator; the coefficient arrays are also padded with
-        zeros to be the same size as d.  n is an sys.outputs-by-sys.inputs-by-
-        len(d) array.
+        This function computes the single denominator containing all
+        the poles of sys.den, and reports it as the array d.  The
+        output numerator array n is modified to use the common
+        denominator; the coefficient arrays are also padded with zeros
+        to be the same size as d.  n is an sys.outputs by sys.inputs
+        by len(d) array.
 
+        Parameters
+        ----------
+        imag_tol: float
+            Threshold for the imaginary part of a root to use in detecting
+            complex poles
+
+        Returns
+        -------
+        num: array
+            Multi-dimensional array of numerator coefficients. num[i][j]
+            gives the numerator coefficient array for the ith input and jth
+            output
+
+        den: array
+            Array of coefficients for common denominator polynomial
+
+        Examples
+        --------
+        >>> n, d = sys._common_den()
+       
         """
         
         # Machine precision for floats.
         eps = finfo(float).eps
+
+        # Decide on the tolerance to use in deciding of a pole is complex 
+        if (imag_tol == None):
+            imag_tol = 1e-8     #! TODO: figure out the right number to use
 
         # A sorted list to keep track of cumulative poles found as we scan
         # self.den.
@@ -615,8 +639,9 @@ only implemented for SISO functions.")
                 # To prevent buildup of imaginary part error, handle complex
                 # pole pairs together.
                 quad = polymul([1., -poles[n]], [1., -poles[n+1]])
-                assert all(quad.imag < eps), "The quadratic has a nontrivial \
-imaginary part: %g" % quad.imag.max()
+                assert all(quad.imag < 10 * eps), \
+                    "The quadratic has a nontrivial imaginary part: %g" \
+                    % quad.imag.max()
                 quad = quad.real
 
                 den = polymul(den, quad)
@@ -747,10 +772,10 @@ _convertToTransferFunction cannot take keywords.")
             raise TypeError("If sys is a StateSpace, _convertToTransferFunction \
 cannot take keywords.")
 
-        # Use Slycot to make the transformation.  TODO: this is still somewhat
-        # buggy!
-        tfout = tb04ad(sys.states, sys.inputs, sys.outputs, sys.A, sys.B, sys.C,
-            sys.D,tol1=0.0)
+        # Use Slycot to make the transformation
+        # Make sure to convert system matrices to numpy arrays
+        tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
+                       array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
 
         # Preallocate outputs.
         num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]

@@ -8,9 +8,10 @@ The python-control package is a set of python classes and functions
 that implement common operations for the analysis and design of
 feedback control systems.  The initial goal is to implement all of the
 functionality required to work through the examples in the textbook
-Feedback Systems by Åström and Murray. A MATLAB compatibility package
-(control.matlab) is available that provides functions corresponding to
-the commands available in the MATLAB Control Systems Toolbox.
+Feedback Systems by Astrom and Murray. A MATLAB compatibility package
+(control.matlab) is available that provides many of the common
+functions corresponding to commands available in the MATLAB Control
+Systems Toolbox.
 
 In addition to the documentation here, there is a project wiki that
 contains some additional information about how to use the package
@@ -26,3 +27,19 @@ Some Differences from MATLAB
 * Transfer functions are only implemented for SISO systems (due to
   limitations in the underlying signals.lti class); use state space
   representations for MIMO systems.
+
+Getting Started
+---------------
+1. Download the latest release from http:sf.net/projects/python-control/files.
+2. Untar the source code in a temporary directory and run 'python setup.py
+   install' to build and install the code
+3. To see if things are working correctly, run ipython -pylab and run the 
+   script 'examples/secord-matlab.py'.  This should generate a set response,
+   Bode plot and Nyquist plot for a simple second order system.
+4. To see the commands that are available, run the following commands in
+   ipython::
+     >>> import control
+     >>> ?control.matlab
+5. If you want to have a MATLAB-like environment for running the control
+   toolbox, use::
+     >>> from control.matlab import *

@@ -1,3 +1,27 @@
+2011-06-25  Richard Murray  <murray@malabar.local>
+
+	* src/xferfcn.py (TransferFunction._common_den): changed tolerance
+	for detecting complex valued poles to a user-settable parameter,
+	with default value 1e-8.  This was an attempt to fix errors in the
+	convert_test.py unittest script (conversion routine was
+	misclassifying some poles as imaginary when they weren't).
+
+	* src/xferfcn.py (_convertToTransferFunction): converted arguments
+	to tb04ad to numpy arrays; fixes a unit test error in convert_test.py.
+
+	* src/statefbk.py (gram): convert system matrix passed to sb03md to
+	numpy array; this fixes a unit test error in modelsimp_test.py.
+
+	* src/matlab.py (impulse): got rid of X0 argument for impulse
+	response (not implemented in MATLAB).
+
+	* doc/intro.rst: added some quick start information
+
+	* src/matlab.py: added documentation for step, impulse, initial, lsim
+
+	* src/timeresp.py: fixed some MATLAB specific function names in
+	function doc strings
+
 2011-06-22  Richard Murray  <murray@malabar.local>
 
 	* doc/intro.rst: fixed some small types
