@@ -21,6 +21,13 @@ contains some additional information about how to use the package
 
 Some Differences from MATLAB
 ----------------------------
+The python-control package makes use of NumPy and SciPy.  A list of
+general differences between NumPy and MATLAB can be found here:
+
+  http://www.scipy.org/NumPy_for_Matlab_Users
+
+In terms of the python-control package more specifically, here are
+some thing to keep in mind:
 * You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
 * Functions that return multiple arguments use tuples
 * Can't use braces for collections; use tuples instead
@@ -30,7 +37,7 @@ Some Differences from MATLAB
 
 Getting Started
 ---------------
-1. Download the latest release from http:sf.net/projects/python-control/files.
+1. Download latest release from http://sf.net/projects/python-control/files.
 2. Untar the source code in a temporary directory and run 'python setup.py
    install' to build and install the code
 3. To see if things are working correctly, run ipython -pylab and run the 
@@ -38,8 +45,8 @@ Getting Started
    Bode plot and Nyquist plot for a simple second order system.
 4. To see the commands that are available, run the following commands in
    ipython::
-     >>> import control
-     >>> ?control.matlab
+       >>> import control
+       >>> ?control.matlab
 5. If you want to have a MATLAB-like environment for running the control
    toolbox, use::
-     >>> from control.matlab import *
+       >>> from control.matlab import *

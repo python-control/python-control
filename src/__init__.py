@@ -56,6 +56,7 @@ lqe     linear quadratic estimator
 """
 
 # Import functions from within the control system library
+#! Should probably only import the exact functions we use...
 from xferfcn import *
 from statesp import *
 from freqplot import *

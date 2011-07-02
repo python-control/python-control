@@ -1,3 +1,13 @@
+2011-07-01  Richard Murray  <murray@malabar.local>
+
+	* src/rlocus.py: modified scipy import to only import those
+	functions that we actually use.  This fixes a problem pointed out by
+	Carsten Knoll (TU Dresden) where control.place could be overwritten
+	by numpy.place (because of an "from scipy import *" in rlocus.py
+
+	* doc/intro.rst: Added link to scipy web page talking about the
+	differences between numpy and MATLAB (contributed by Shuo Han).
+
 2011-06-25  Richard Murray  <murray@malabar.local>
 
 	* src/xferfcn.py (TransferFunction._common_den): changed tolerance
