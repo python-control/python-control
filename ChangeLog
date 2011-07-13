@@ -1,3 +1,18 @@
+2011-07-11  Richard Murray  <murray@malabar.local>
+
+	* src/rlocus.py: added real() and imag() to list of functions
+	imported from numpy
+
+	* src/freqplot.py: renamed plotting functions to BodePlot,
+	NyquistPlot, GangOf4Plot and MarginPlot.  Set up aliases to the more
+	common names (bode, nyquest, gangof4, margin).  Mainly playing
+	around with idea for the eventual interface to use.
+
+	* tests/matlab_test.py: updated timeresp outputs to match MATLAB
+
+	* src/matlab.py (impulse, initial, lsim, step): switched outputs
+	from step, impulse, initial, lsim to match MATLAB standard
+
 2011-07-01  Richard Murray  <murray@malabar.local>
 
 	* src/rlocus.py: modified scipy import to only import those

@@ -55,7 +55,7 @@ from bdalg import feedback
 #
    
 # Bode plot
-def bode(syslist, omega=None, dB=False, Hz=False, deg=True, 
+def BodePlot(syslist, omega=None, dB=False, Hz=False, deg=True, 
         color=None, Plot=True):
     """Bode plot for a system
 
@@ -178,7 +178,7 @@ def bode(syslist, omega=None, dB=False, Hz=False, deg=True,
         return mags, phases, omegas
 
 # Nyquist plot
-def nyquist(syslist, omega=None, Plot=True):
+def NyquistPlot(syslist, omega=None, Plot=True):
     """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
@@ -245,7 +245,7 @@ def nyquist(syslist, omega=None, Plot=True):
 
 # Gang of Four
 #! TODO: think about how (and whether) to handle lists of systems
-def gangof4(P, C, omega=None):
+def GangOf4Plot(P, C, omega=None):
     """Plot the "Gang of 4" transfer functions for a system
 
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
@@ -302,7 +302,7 @@ def gangof4(P, C, omega=None):
 
 # gain and phase margins
 # contributed by Sawyer B. Fuller <minster@caltech.edu>
-def margin(sysdata, deg=True):
+def MarginPlot(sysdata, deg=True):
     """Calculate gain and phase margins and associated crossover frequencies
 
     Usage:
@@ -457,3 +457,8 @@ def default_frequency_range(syslist):
                         
     return omega
 
+# Function aliases
+bode = BodePlot
+nyquist = NyquistPlot
+gangof4 = GangOf4Plot
+margin = MarginPlot

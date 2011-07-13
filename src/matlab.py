@@ -1165,12 +1165,12 @@ def step(sys, T=None, X0=0., input=0, output=0, **keywords):
 
     Returns
     -------
-    T: array
-        Time values of the output
-
     yout: array
         Response of the system
     
+    T: array
+        Time values of the output
+
     See Also
     --------
     lsim, initial, impulse
@@ -1181,7 +1181,7 @@ def step(sys, T=None, X0=0., input=0, output=0, **keywords):
     '''
     T, yout = timeresp.StepResponse(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
-    return T, yout
+    return yout, T
 
 def impulse(sys, T=None, input=0, output=0, **keywords):
     '''
@@ -1216,10 +1216,10 @@ def impulse(sys, T=None, input=0, output=0, **keywords):
 
     Returns
     -------
-    T: array
-        Time values of the output
     yout: array
         Response of the system
+    T: array
+        Time values of the output
     
     See Also
     --------
@@ -1231,7 +1231,7 @@ def impulse(sys, T=None, input=0, output=0, **keywords):
     '''
     T, yout = timeresp.ImpulseResponse(sys, T, 0, input, output, 
                                    transpose = True, **keywords)
-    return T, yout
+    return yout, T
 
 def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
     '''
@@ -1272,10 +1272,10 @@ def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
 
     Returns
     -------
-    T: array
-        Time values of the output
     yout: array
         Response of the system
+    T: array
+        Time values of the output
     
     See Also
     --------
@@ -1287,7 +1287,7 @@ def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
     '''
     T, yout = timeresp.InitialResponse(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
-    return T, yout
+    return yout, T
 
 def lsim(sys, U=0., T=None, X0=0., **keywords):
     '''
@@ -1324,10 +1324,10 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
 
     Returns
     -------
-    T: array
-        Time values of the output. 
     yout: array
         Response of the system. 
+    T: array
+        Time values of the output. 
     xout: array
         Time evolution of the state vector. 
     
@@ -1341,4 +1341,4 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
     '''
     T, yout, xout = timeresp.ForcedResponse(sys, T, U, X0,
                                              transpose = True, **keywords)
-    return T, yout, xout
+    return yout, T, xout

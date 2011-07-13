@@ -46,7 +46,7 @@
 # $Id$
 
 # Packages used by this module
-from scipy import array, poly1d, row_stack, zeros_like
+from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
 import xferfcn                  # transfer function manipulation
