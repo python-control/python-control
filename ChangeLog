@@ -1,3 +1,24 @@
+2011-07-15  Richard Murray  <murray@malabar.local>
+
+	* tests/matlab_test.py (TestMatlab): added unittest for margin()
+	commands (calling format only)
+
+	* src/statesp.py (StateSpace): updated comments
+
+	* tests/margin_test.py: set up unit tests for StabilityMargins() and
+	PhaseCrossoverFrequencies()
+
+	* src/__init__.py: added margins.py to __init__
+
+2011-07-14  Richard Murray  <murray@malabar.local>
+
+	* src/margins.py (GainPhaseMargin): moved freqplot.MarginPlot to
+	margin.StabilityMargins (MarginPlot didn't actually plot anything)
+
+	* src/margins.py (PhaseCrossoverFrequencies): added new function to
+	compute frequencies that we cross real axis.  Contributed by Steffen
+	Waldherr <waldherr@ist.uni-stuttgart.de>
+
 2011-07-11  Richard Murray  <murray@malabar.local>
 
 	* src/rlocus.py: added real() and imag() to list of functions

@@ -57,15 +57,16 @@ lqe     linear quadratic estimator
 
 # Import functions from within the control system library
 #! Should probably only import the exact functions we use...
-from xferfcn import *
-from statesp import *
-from freqplot import *
-from nichols import *
 from bdalg import *
-from statefbk import *
 from delay import *
-from modelsimp import *
-from rlocus import *
+from freqplot import *
+from margins import *
 from mateqn import *
+from modelsimp import *
+from nichols import *
+from rlocus import *
+from statefbk import *
+from statesp import *
 from timeresp import ForcedResponse, InitialResponse, StepResponse, \
     ImpulseResponse
+from xferfcn import *

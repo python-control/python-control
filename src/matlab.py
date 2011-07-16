@@ -72,6 +72,7 @@ from numpy import linspace, logspace
 import ctrlutil
 import freqplot
 import timeresp
+import margins
 from statesp import StateSpace, _rss_generate, _convertToStateSpace
 from xferfcn import TransferFunction, _convertToTransferFunction
 from lti import Lti #base class of StateSpace, TransferFunction
@@ -1025,7 +1026,6 @@ def rlocus(sys, klist = None, **keywords):
     rlist = RootLocus(sys, klist, **keywords)
     return rlist, klist
     
-
 def margin(*args):
     """Calculate gain and phase margins and associated crossover frequencies
     
@@ -1060,15 +1060,14 @@ def margin(*args):
     """
     if len(args) == 1:
         sys = args[0]
-        margins = freqplot.margin(sys)
+        margin = margins.StabilityMargins(sys)
     elif len(args) == 3:
-        margins = freqplot.margin(args)
+        margin = margins.StabilityMargins(args)
     else: 
         raise ValueError("Margin needs 1 or 3 arguments; received %i." 
             % len(args))
             
-    return margins[0], margins[1], margins[3], margins[4]
-
+    return margin[0], margin[1], margin[3], margin[4]
 
 def dcgain(*args):
     '''

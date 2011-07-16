@@ -208,7 +208,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         
         return StateSpace(self.A, self.B, -self.C, -self.D)
 
-    # Addition of two transfer functions (parallel interconnection)
+    # Addition of two state space systems (parallel interconnection)
     def __add__(self, other):
         """Add two LTI systems (parallel connection)."""
         
@@ -244,7 +244,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         
         return self + other
 
-    # Subtraction of two transfer functions (parallel interconnection)
+    # Subtraction of two state space systems (parallel interconnection)
     def __sub__(self, other):
         """Subtract two LTI systems."""
         
@@ -255,7 +255,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
 
         return other + (-self)
 
-    # Multiplication of two transfer functions (series interconnection)
+    # Multiplication of two state space systems (series interconnection)
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
         
@@ -284,7 +284,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         return StateSpace(A, B, C, D)
 
-    # Right multiplication of two transfer functions (series interconnection)
+    # Right multiplication of two state space systems (series interconnection)
     # Just need to convert LH argument to a state space object
     def __rmul__(self, other):
         """Right multiply two LTI objects (serial connection)."""

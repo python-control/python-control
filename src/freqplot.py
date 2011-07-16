@@ -299,101 +299,6 @@ def GangOf4Plot(P, C, omega=None):
         phase = np.squeeze(phase_tmp)
         plt.subplot(224); plt.loglog(omega, mag);
 
-
-# gain and phase margins
-# contributed by Sawyer B. Fuller <minster@caltech.edu>
-def MarginPlot(sysdata, deg=True):
-    """Calculate gain and phase margins and associated crossover frequencies
-
-    Usage:
-    
-    gm, pm, sm, wg, wp, ws = margin(sysdata, deg=True)
-    
-    Parameters
-    ----------
-    sysdata: linsys or (mag, phase, omega) sequence 
-        sys : linsys
-            Linear SISO system
-        mag, phase, omega : sequence of array_like
-            Input magnitude, phase, and frequencies (rad/sec) sequence from 
-            bode frequency response data 
-    deg=True: boolean  
-        If true, all input and output phases in degrees, else in radians
-        
-    Returns
-    -------
-    gm, pm, sm, wg, wp, ws: float
-        Gain margin gm, phase margin pm, stability margin sm, and 
-        associated crossover
-        frequencies wg, wp, and ws of SISO open-loop. If more than
-        one crossover frequency is detected, returns the lowest corresponding
-        margin. 
-    """
-    #TODO do this precisely without the effects of discretization of frequencies?
-    #TODO assumes SISO
-    #TODO unit tests, margin plot
-
-    if (not getattr(sysdata, '__iter__', False)):
-        sys = sysdata
-        mag, phase, omega = bode(sys, deg=deg, Plot=False)
-    elif len(sysdata) == 3:
-        mag, phase, omega = sysdata
-    else: 
-        raise ValueError("Margin sysdata must be either a linear system or a 3-sequence of mag, phase, omega.")
-        
-    if deg:
-        cycle = 360. 
-        crossover = 180. 
-    else:
-        cycle = 2 * np.pi
-        crossover = np.pi
-        
-    wrapped_phase = -np.mod(phase, cycle)
-    
-    # phase margin from minimum phase among all gain crossovers
-    neg_mag_crossings_i = np.nonzero(np.diff(mag < 1) > 0)[0]
-    mag_crossings_p = wrapped_phase[neg_mag_crossings_i]
-    if len(neg_mag_crossings_i) == 0:
-        if mag[0] < 1: # gain always less than one
-            wp = np.nan
-            pm = np.inf
-        else: # gain always greater than one
-            print "margin: no magnitude crossings found"
-            wp = np.nan
-            pm = np.nan
-    else:
-        min_mag_crossing_i = neg_mag_crossings_i[np.argmin(mag_crossings_p)]
-        wp = omega[min_mag_crossing_i]
-        pm = crossover + phase[min_mag_crossing_i] 
-        if pm < 0:
-            print "warning: system unstable: negative phase margin"
-    
-    # gain margin from minimum gain margin among all phase crossovers
-    neg_phase_crossings_i = np.nonzero(np.diff(wrapped_phase < -crossover) > 0)[0]
-    neg_phase_crossings_g = mag[neg_phase_crossings_i]
-    if len(neg_phase_crossings_i) == 0:
-        wg = np.nan
-        gm = np.inf
-    else:
-        min_phase_crossing_i = neg_phase_crossings_i[
-            np.argmax(neg_phase_crossings_g)]
-        wg = omega[min_phase_crossing_i]
-        gm = abs(1/mag[min_phase_crossing_i])
-        if gm < 1: 
-            print "warning: system unstable: gain margin < 1"    
-
-    # stability margin from minimum abs distance from -1 point
-    if deg:
-        phase_rad = phase * np.pi / 180.
-    else:
-        phase_rad = phase
-    L = mag * np.exp(1j * phase_rad) # complex loop response to -1 pt
-    min_Lplus1_i = np.argmin(np.abs(L + 1))
-    sm = np.abs(L[min_Lplus1_i] + 1)
-    ws = phase[min_Lplus1_i]
-
-    return gm, pm, sm, wg, wp, ws 
-
 #
 # Utility functions
 #
@@ -461,4 +366,3 @@ def default_frequency_range(syslist):
 bode = BodePlot
 nyquist = NyquistPlot
 gangof4 = GangOf4Plot
-margin = MarginPlot

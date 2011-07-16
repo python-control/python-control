@@ -186,6 +186,13 @@ class TestMatlab(unittest.TestCase):
                              [-0.1391, 48.9776]])
         yout, _t, _xout = lsim(self.mimo_ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+
+    def testMargin(self):
+        #! TODO: check results to make sure they are OK
+        gm, pm, wg, wp = margin(self.siso_tf1);
+        gm, pm, wg, wp = margin(self.siso_tf2);
+        gm, pm, wg, wp = margin(self.siso_ss1);
+        gm, pm, wg, wp = margin(self.siso_ss2);
         
     def testDcgain(self):
         #Create different forms of a SISO system
