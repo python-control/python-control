@@ -1,3 +1,17 @@
+2011-07-24  Richard Murray  <murray@malabar.local>
+
+	* tests/margin_test.py: added simple unit tests for margin functions
+	(initial versions just call functions; some comparisons missing)
+
+	* examples/README: added missing README file
+
+	* examples/phaseplots.py: FBS examples for phaseplot
+
+	* tests/phaseplot_test.py: unit tests for phaseplot
+
+	* src/phaseplot.py: initial cut at phase portrait function, built
+	from amphaseplot (Feeback Systems [FBS], Astrom and Murray, 2008)
+
 2011-07-15  Richard Murray  <murray@malabar.local>
 
 	* tests/matlab_test.py (TestMatlab): added unittest for margin()

@@ -1,0 +1,4 @@
+This directory contains worked examples using the python-control
+library.  Each example should work by running 'ipython -pylab' and
+then running the given file (make sure to have the python-control
+module in your path).
