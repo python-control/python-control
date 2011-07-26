@@ -27,16 +27,16 @@ mpl.title('Inverted pendlum')
 
 # Outer trajectories
 PhasePlot(invpend_ode,
-   'logtime', (3, 0.7), None, 
-   [ [-2*pi, 1.6], [-2*pi, 0.5], [-1.8, 2.1],
-     [-1, 2.1], [4.2, 2.1], [5, 2.1],
-     [2*pi, -1.6], [2*pi, -0.5], [1.8, -2.1],
-     [1, -2.1], [-4.2, -2.1], [-5, -2.1] ], 
-   np.linspace(0, 40, 200))
+    X0 = [ [-2*pi, 1.6], [-2*pi, 0.5], [-1.8, 2.1],
+           [-1, 2.1], [4.2, 2.1], [5, 2.1],
+           [2*pi, -1.6], [2*pi, -0.5], [1.8, -2.1],
+           [1, -2.1], [-4.2, -2.1], [-5, -2.1] ], 
+    T = np.linspace(0, 40, 200),
+    logtime = (3, 0.7) )
 
 # Separatrices
 mpl.hold(True);
-PhasePlot(invpend_ode, 'auto', 0, None, [[-2.3056, 2.1], [2.3056, -2.1]], 6)
+PhasePlot(invpend_ode, X0 = [[-2.3056, 2.1], [2.3056, -2.1]], T=6, lingrid=0)
 mpl.show();
 
 #
@@ -57,10 +57,10 @@ mpl.xlabel('x1'); mpl.ylabel('x2');
 mpl.figure(); mpl.clf(); 
 mpl.axis([-1, 1, -1, 1]); # set(gca, 'DataAspectRatio', [1, 1, 1]);
 PhasePlot(oscillator_ode, 
-  'timepts', [0.25, 0.8, 2, 3], None, [ 
-  [-1, 1], [-0.3, 1], [0, 1], [0.25, 1], [0.5, 1], [0.75, 1], [1, 1],
-  [1, -1], [0.3, -1], [0, -1], [-0.25, -1], [-0.5, -1], [-0.75, -1], [-1, -1]
-  ], np.linspace(0, 8, 80))
+  X0 = [ 
+    [-1, 1], [-0.3, 1], [0, 1], [0.25, 1], [0.5, 1], [0.75, 1], [1, 1],
+    [1, -1], [0.3, -1], [0, -1], [-0.25, -1], [-0.5, -1], [-0.75, -1], [-1, -1]
+  ], T = np.linspace(0, 8, 80), timepts = [0.25, 0.8, 2, 3])
 mpl.hold(True); mpl.plot([0], [0], 'k.'); # 'MarkerSize', AM_data_markersize*3);
 # set(gca,'DataAspectRatio',[1,1,1]);
 mpl.xlabel('x1'); mpl.ylabel('x2');
@@ -81,11 +81,13 @@ def saddle_ode(x, t):
 m = 1; b = 1; k = 1;			# default values
 mpl.figure(); mpl.clf(); 
 mpl.axis([-1, 1, -1, 1]); # set(gca, 'DataAspectRatio', [1 1 1]);
-PhasePlot(oscillator_ode, 'timepts', [0.3, 1, 2, 3], None,
-  [[-1,1], [-0.3,1], [0,1], [0.25,1], [0.5,1], [0.7,1], [1,1], [1.3,1],
-   [1,-1], [0.3,-1], [0,-1], [-0.25,-1], [-0.5,-1], [-0.7,-1], [-1,-1],
-   [-1.3,-1]],
-  np.linspace(0, 10, 100), parms = (m, b, k));
+PhasePlot(oscillator_ode, 
+  X0 = [
+    [-1,1], [-0.3,1], [0,1], [0.25,1], [0.5,1], [0.7,1], [1,1], [1.3,1],
+    [1,-1], [0.3,-1], [0,-1], [-0.25,-1], [-0.5,-1], [-0.7,-1], [-1,-1],
+    [-1.3,-1]
+  ], T = np.linspace(0, 10, 100), 
+  timepts = [0.3, 1, 2, 3], parms = (m, b, k));
 mpl.hold(True); mpl.plot([0], [0], 'k.'); # 'MarkerSize', AM_data_markersize*3);
 # set(gca,'FontSize', 16); 
 mpl.xlabel('{\itx}_1'); mpl.ylabel('{\itx}_2');
@@ -93,14 +95,14 @@ mpl.xlabel('{\itx}_1'); mpl.ylabel('{\itx}_2');
 # Saddle
 mpl.figure(); mpl.clf();
 mpl.axis([-1, 1, -1, 1]); # set(gca, 'DataAspectRatio', [1 1 1]);
-PhasePlot(saddle_ode, 'timepts', [0.2, 0.5, 0.8], None, 
+PhasePlot(saddle_ode, scale = 2, timepts = [0.2, 0.5, 0.8], X0 = 
   [ [-1, -1], [1, 1], 
     [-1, -0.95], [-1, -0.9], [-1, -0.8], [-1, -0.6], [-1, -0.4], [-1, -0.2],
     [-0.95, -1], [-0.9, -1], [-0.8, -1], [-0.6, -1], [-0.4, -1], [-0.2, -1],
     [1, 0.95], [1, 0.9], [1, 0.8], [1, 0.6], [1, 0.4], [1, 0.2],
     [0.95, 1], [0.9, 1], [0.8, 1], [0.6, 1], [0.4, 1], [0.2, 1],
     [-0.5, -0.45], [-0.45, -0.5], [0.5, 0.45], [0.45, 0.5],
-    [-0.04, 0.04], [0.04, -0.04] ], np.linspace(0, 2, 20));
+    [-0.04, 0.04], [0.04, -0.04] ], T = np.linspace(0, 2, 20));
 mpl.hold(True); mpl.plot([0], [0], 'k.'); # 'MarkerSize', AM_data_markersize*3);
 # set(gca,'FontSize', 16); 
 mpl.xlabel('{\itx}_1'); mpl.ylabel('{\itx}_2');
@@ -109,10 +111,10 @@ mpl.xlabel('{\itx}_1'); mpl.ylabel('{\itx}_2');
 m = 1; b = 0; k = 1;			# zero damping
 mpl.figure(); mpl.clf();
 mpl.axis([-1, 1, -1, 1]); # set(gca, 'DataAspectRatio', [1 1 1]);
-PhasePlot(oscillator_ode, 'timepts', 
-  [pi/6, pi/3, pi/2, 2*pi/3, 5*pi/6, pi, 7*pi/6, 4*pi/3, 9*pi/6, 5*pi/3, 11*pi/6, 2*pi], None,
-  [ [0.2,0], [0.4,0], [0.6,0], [0.8,0], [1,0], [1.2,0], [1.4,0] ],
-  np.linspace(0, 20, 200), parms = (m, b, k));
+PhasePlot(oscillator_ode, timepts = 
+  [pi/6, pi/3, pi/2, 2*pi/3, 5*pi/6, pi, 7*pi/6, 4*pi/3, 9*pi/6, 5*pi/3, 11*pi/6, 2*pi], 
+  X0 = [ [0.2,0], [0.4,0], [0.6,0], [0.8,0], [1,0], [1.2,0], [1.4,0] ],
+  T = np.linspace(0, 20, 200), parms = (m, b, k));
 mpl.hold(True); mpl.plot([0], [0], 'k.') # 'MarkerSize', AM_data_markersize*3);
 # set(gca,'FontSize', 16); 
 mpl.xlabel('{\itx}_1'); mpl.ylabel('{\itx}_2');

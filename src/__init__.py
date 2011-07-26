@@ -64,6 +64,7 @@ from margins import *
 from mateqn import *
 from modelsimp import *
 from nichols import *
+from phaseplot import PhasePlot, boxgrid
 from rlocus import *
 from statefbk import *
 from statesp import *

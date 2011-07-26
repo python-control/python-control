@@ -1,7 +1,8 @@
 # phaseplot.py - generate 2D phase portraits
 #
 # Author: Richard M. Murray
-# Date: Fall 2002 (MATLAB version), based on a version by Kristi Morgansen
+# Date: 24 July 2011, converted from MATLAB version (2002); based on
+# a version by Kristi Morgansen
 #
 # Copyright (c) 2011 by California Institute of Technology
 # All rights reserved.
@@ -38,99 +39,107 @@ from matplotlib.mlab import frange, find
 from exception import ControlNotImplemented
 from scipy.integrate import odeint
 
-def PhasePlot(odefun, xlimv, ylimv, scale=1, xinit=None, T=None, parms=(),
-              verbose=True):
+def PhasePlot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
+              lingrid=None, lintime=None, logtime=None, timepts=None,
+              parms=(), verbose=True):
     """
-    PhasePlot   Phase plot for 2D dynamical systems
+    Phase plot for 2D dynamical systems
 
-    PhasePlot(F, X1range, X2range, scale) produces a quiver plot for
-    the function F.  X1range and X2range have the form [min, max, num]
-    and specify the axis limits for the plot, along with the number of
-    subdivisions in each axis, used to produce an quiver plot for the
-    vector field.  The vector field is scaled by a factor 'scale'
-    (default = 1).
+    Produces a vector field or stream line plot for a planar system.
 
-    The function F should be the same for as used for scipy.integrate.
-    Namely, it should be a function of the form dxdt = F(x, t) that
-    accepts a state x of dimension 2 and returns a derivative dxdt of
-    dimension 2.
+    Call signatures:
+      PhasePlot(func, X, Y, ...) - display vector field on meshgrid
+      PhasePlot(func, X, Y, scale, ...) - scale arrows
+      PhasePlot(func. X0=(...), T=Tmax, ...) - display stream lines
+      PhasePlot(func, X, Y, X0=[...], T=Tmax, ...) - plot both
+      PhasePlot(func, X0=[...], T=Tmax, lingrid=N, ...) - plot both
+      PhasePlot(func, X0=[...], lintime=N, ...) - stream lines with arrows
 
-    PhasePlot(F, X1range, X2range, scale, Xinit) produces a phase
-    plot for the function F, consisting of the quiver plot plus stream
-    lines.  The streamlines start at the initial conditions listed in
-    Xinit, which should be a matrix whose rows give the desired inital
-    conditions for x1 and x2.  X1range or X2range is 'auto', the arrows
-    are produced based on the stream lines.  If 'scale' is negative,
-    dots are placed at the base of the arrows.  If 'scale' is zero, no
-    dots are produced.
- 					
-    PhasePlot(F, X1range, X2range, scale, boxgrid(X1range2, X2range2))
-    produces a phase plot with stream lines generated at the edges of
-    the rectangle defined by X1range2, X2range2.  These ranges are in
-    the same form as X1range, X2range.
+    Parameters
+    ----------
+    func : callable(x, t, ...)
+        Computes the time derivative of y (compatible with odeint).
+        The function should be the same for as used for
+        scipy.integrate.  Namely, it should be a function of the form
+        dxdt = F(x, t) that accepts a state x of dimension 2 and
+        returns a derivative dx/dt of dimension 2.
 
-    PhasePlot(F, X1range, X2range, scale, Xinit, T) produces a phase
-    plot where the streamlines are simluted for time T (default = 50).
+    X, Y: ndarray, optional
+        Two 1-D arrays representing x and y coordinates of a grid.
+        These arguments are passed to meshgrid and generate the lists
+        of points at which the vector field is plotted.  If absent (or
+        None), the vector field is not plotted.
 
-    PhasePlot(F, X1range, X2range, scale, Xinit, T, P1, P2, ...)
-    passes additional parameters to the function F, in the same way as
-    ODE45.
+    scale: float, optional
+        Scale size of arrows; default = 1
 
-    Instead of drawing arrows on a grid, arrows can also be drawn on
-    streamlines by usinge the X1range and X2range arguments as follows:
+    X0: ndarray of initial conditions, optional
+        List of initial conditions from which streamlines are plotted.
+        Each initial condition should be a pair of numbers.
 
-    X1range	X2range
-    -------	-------
-    'auto'	N	  Draw N arrows using equally space time points
-    'logtime'   [N, lam]  Draw N arrows using exponential time constant lam
-    'timepts'	[t1, t2, ...]  Draw arrows at the list times
+    T: array-like or number, optional
+        Length of time to run simulations that generate streamlines.
+        If a single number, the same simulation time is used for all
+        initial conditions.  Otherwise, should be a list of length
+        len(X0) that gives the simulation time for each initial
+        condition.  Default value = 50.
+
+    lingrid = N or (N, M): integer or 2-tuple of integers, optional
+        If X0 is given and X, Y are missing, a grid of arrows is
+        produced using the limits of the initial conditions, with N
+        grid points in each dimension or N grid points in x and M grid
+        points in y.
+
+    lintime = N: integer, optional
+        Draw N arrows using equally space time points
+
+    logtime = (N, lambda): (integer, float), optional
+        Draw N arrows using exponential time constant lambda
+
+    timepts = [t1, t2, ...]: array-like, optional
+        Draw arrows at the given list times
+
+    parms: tuple, optional
+        List of parameters to pass to vector field: func(x, t, *parms)
+
+    See also
+    --------
+    boxgrid(X, Y): construct box-shaped grid of initial conditions
+
+    Examples
+    --------
     """
-
-    #
-    # Parameters defining the plot
-    #
-    # The constants below define the parameters that control how the
-    # plot looks.  These can be modified to customize the look of the
-    # phase plot.
-    #
-
-    #! TODO: convert to keywords
-    #! TODO: eliminate old parameters that aren't used
-    # PP color = ['m', 'c', 'r', 'g', 'b', 'k', 'y'];
-    PP_stream_color = ('b');		# color array for streamlines
-    PP_stream_linewidth = 1;		# line width for stream lines
-
-    PP_arrow_linewidth = 1;		# line width for arrows (quiver)
-    PP_arrow_markersize = 10;		# size of arrow base marker
 
     #
     # Figure out ranges for phase plot (argument processing)
     #
-    auto = 0; logtime = 0; timepts = 0; Narrows = 0;
-    if (isinstance(xlimv, str) and xlimv == 'auto'):
-        auto = 1;
-        Narrows = ylimv;
+    #! TODO: need to add error checking to arguments
+    autoFlag = False; logtimeFlag = False; timeptsFlag = False; Narrows = 0;
+    if (lingrid != None):
+        autoFlag = True;
+        Narrows = lingrid;
         if (verbose):
             print 'Using auto arrows\n';
 
-    elif (isinstance(xlimv, str) and xlimv == 'logtime'):
-        logtime = 1;
-        Narrows = ylimv[0];
-        timefactor = ylimv[1];
+    elif (logtime != None):
+        logtimeFlag = True;
+        Narrows = logtime[0];
+        timefactor = logtime[1];
         if (verbose):
             print 'Using logtime arrows\n';
 
-    elif (isinstance(xlimv, str) and xlimv == 'timepts'):
-        timepts = 1;
-        Narrows = len(ylimv);
+    elif (timepts != None):
+        timeptsFlag = True;
+        Narrows = len(timepts);
 
     else:
         # Figure out the set of points for the quiver plot
+        #! TODO: Add sanity checks
         (x1, x2) = np.meshgrid(
-            frange(xlimv[0], xlimv[1], float(xlimv[1]-xlimv[0])/xlimv[2]),
-            frange(ylimv[0], ylimv[1], float(ylimv[1]-ylimv[0])/ylimv[2]));
+            frange(X[0], X[1], float(X[1]-X[0])/X[2]),
+            frange(Y[0], Y[1], float(Y[1]-Y[0])/Y[2]));
 
-    if ((not auto) and (not logtime) and (not timepts)):
+    if ((not autoFlag) and (not logtimeFlag) and (not timeptsFlag)):
         # Now calculate the vector field at those points
         (nr,nc) = x1.shape;
         dx = np.empty((nr, nc, 2))
@@ -151,16 +160,16 @@ def PhasePlot(odefun, xlimv, ylimv, scale=1, xinit=None, T=None, parms=(),
 
         #! TODO: Tweak the shape of the plot 
         # a=gca; set(a,'DataAspectRatio',[1,1,1]);
-        # set(a,'XLim',xlimv(1:2)); set(a,'YLim',ylimv(1:2));
+        # set(a,'XLim',X(1:2)); set(a,'YLim',Y(1:2));
         mpl.xlabel('x1'); mpl.ylabel('x2');
 
     # See if we should also generate the streamlines
-    if (xinit == None or len(xinit) == 0):
+    if (X0 == None or len(X0) == 0):
         return
 
     # Convert initial conditions to a numpy array
-    xinit = np.array(xinit);
-    (nr, nc) = np.shape(xinit);
+    X0 = np.array(X0);
+    (nr, nc) = np.shape(X0);
 
     # Generate some empty matrices to keep arrow information
     x1 = np.empty((nr, Narrows)); x2 = np.empty((nr, Narrows));
@@ -183,12 +192,12 @@ def PhasePlot(odefun, xlimv, ylimv, scale=1, xinit=None, T=None, parms=(),
         ymin = alim[2]; ymax = alim[3];
     else:
         # Use the maximum extent of all trajectories
-        xmin = np.min(xinit[:,0]); xmax = np.max(xinit[:,0]);
-        ymin = np.min(xinit[:,1]); ymax = np.max(xinit[:,1]);
+        xmin = np.min(X0[:,0]); xmax = np.max(X0[:,0]);
+        ymin = np.min(X0[:,1]); ymax = np.max(X0[:,1]);
 
     # Generate the streamlines for each initial condition
     for i in range(nr):
-        state = odeint(odefun, xinit[i], TSPAN, args=parms);
+        state = odeint(odefun, X0[i], TSPAN, args=parms);
         time = TSPAN
         mpl.hold(True);
         mpl.plot(state[:,0], state[:,1])
@@ -197,7 +206,7 @@ def PhasePlot(odefun, xlimv, ylimv, scale=1, xinit=None, T=None, parms=(),
         # set(h[i], 'LineWidth', PP_stream_linewidth);
 
         # Plot arrows if quiver parameters were 'auto'
-        if (auto or logtime or timepts):
+        if (autoFlag or logtimeFlag or timeptsFlag):
             # Compute the locations of the arrows
             #! TODO: check this logic to make sure it works in python
             for j in range(Narrows):
@@ -206,18 +215,18 @@ def PhasePlot(odefun, xlimv, ylimv, scale=1, xinit=None, T=None, parms=(),
                 k = -1 if scale == None else 0;
       
                 # Figure out what time index to use for the next point
-                if (auto):
+                if (autoFlag):
                     # Use a linear scaling based on ODE time vector
                     tind = np.floor((len(time)/Narrows) * (j-k)) + k;
-                elif (logtime):
+                elif (logtimeFlag):
                     # Use an exponential time vector
                     # MATLAB: tind = find(time < (j-k) / lambda, 1, 'last');
                     tarr = find(time < (j-k) / timefactor);
                     tind = tarr[-1] if len(tarr) else 0;
-                elif (timepts):
+                elif (timeptsFlag):
                     # Use specified time points
-                    # MATLAB: tind = find(time < ylimv[j], 1, 'last');
-                    tarr = find(time < ylimv[j]);
+                    # MATLAB: tind = find(time < Y[j], 1, 'last');
+                    tarr = find(time < timepts[j]);
                     tind = tarr[-1] if len(tarr) else 0;
 
                 # For tailless arrows, skip the first point
@@ -263,3 +272,20 @@ def PhasePlot(odefun, xlimv, ylimv, scale=1, xinit=None, T=None, parms=(),
         # set(bp, 'MarkerSize', PP_arrow_markersize);
 
     return;
+
+# Utility function for generating initial conditions around a box
+def boxgrid(xlimp, ylimp):
+    """BOXGRID   generate list of points on edge of box
+    
+    list = BOXGRID([xmin xmax xnum], [ymin ymax ynum]) generates a
+    list of points that correspond to a uniform grid at the end of the
+    box defined by the corners [xmin ymin] and [xmax ymax].
+    """
+
+    sx10 = frange(xlimp[0], xlimp[1], float(xlimp[1]-xlimp[0])/xlimp[2])
+    sy10 = frange(ylimp[0], ylimp[1], float(ylimp[1]-ylimp[0])/ylimp[2])
+
+    sx1 = np.hstack((0, sx10, 0*sy10+sx10[0], sx10, 0*sy10+sx10[-1]))
+    sx2 = np.hstack((0, 0*sx10+sy10[0], sy10, 0*sx10+sy10[-1], sy10))
+
+    return np.transpose( np.vstack((sx1, sx2)) )
