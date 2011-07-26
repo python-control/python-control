@@ -1,5 +1,8 @@
 2011-07-25  Richard Murray  <murray@malabar.local>
 
+	* tests/phaseplot_test.py: updated unit tests to use new call
+	signatures 
+
 	* examples/phaseplots.py: updated calls to PhasePlot to use new
 	argument structure
 
