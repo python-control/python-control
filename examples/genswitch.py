@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as mpl
 from scipy.integrate import odeint
 from matplotlib.mlab import frange
-from control import PhasePlot, boxgrid
+from control import phase_plot, box_grid
 
 # Simple model of a genetic switch
 #
@@ -68,7 +68,7 @@ mpl.legend('z1 (A)', 'z2 (B)')  # 'Orientation', 'horizontal');
 # Phase portrait
 mpl.figure(2); mpl.clf(); # subplot(221);
 mpl.axis([0, 5, 0, 5]);         # set(gca, 'DataAspectRatio', [1, 1, 1]);
-PhasePlot(genswitch, X0 = boxgrid([0, 5, 6], [0, 5, 6]), T = 10, 
+phase_plot(genswitch, X0 = box_grid([0, 5, 6], [0, 5, 6]), T = 10, 
           timepts = [0.2, 0.6, 1.2])
 
 # Add the stable equilibrium points

@@ -39,7 +39,7 @@ from matplotlib.mlab import frange, find
 from exception import ControlNotImplemented
 from scipy.integrate import odeint
 
-def PhasePlot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
+def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
               lingrid=None, lintime=None, logtime=None, timepts=None,
               parms=(), verbose=True):
     """
@@ -48,12 +48,12 @@ def PhasePlot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     Produces a vector field or stream line plot for a planar system.
 
     Call signatures:
-      PhasePlot(func, X, Y, ...) - display vector field on meshgrid
-      PhasePlot(func, X, Y, scale, ...) - scale arrows
-      PhasePlot(func. X0=(...), T=Tmax, ...) - display stream lines
-      PhasePlot(func, X, Y, X0=[...], T=Tmax, ...) - plot both
-      PhasePlot(func, X0=[...], T=Tmax, lingrid=N, ...) - plot both
-      PhasePlot(func, X0=[...], lintime=N, ...) - stream lines with arrows
+      phase_plot(func, X, Y, ...) - display vector field on meshgrid
+      phase_plot(func, X, Y, scale, ...) - scale arrows
+      phase_plot(func. X0=(...), T=Tmax, ...) - display stream lines
+      phase_plot(func, X, Y, X0=[...], T=Tmax, ...) - plot both
+      phase_plot(func, X0=[...], T=Tmax, lingrid=N, ...) - plot both
+      phase_plot(func, X0=[...], lintime=N, ...) - stream lines with arrows
 
     Parameters
     ----------
@@ -104,7 +104,7 @@ def PhasePlot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
     See also
     --------
-    boxgrid(X, Y): construct box-shaped grid of initial conditions
+    box_grid(X, Y): construct box-shaped grid of initial conditions
 
     Examples
     --------
@@ -274,10 +274,10 @@ def PhasePlot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     return;
 
 # Utility function for generating initial conditions around a box
-def boxgrid(xlimp, ylimp):
-    """BOXGRID   generate list of points on edge of box
+def box_grid(xlimp, ylimp):
+    """box_grid   generate list of points on edge of box
     
-    list = BOXGRID([xmin xmax xnum], [ymin ymax ynum]) generates a
+    list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
     list of points that correspond to a uniform grid at the end of the
     box defined by the corners [xmin ymin] and [xmax ymax].
     """

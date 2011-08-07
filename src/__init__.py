@@ -57,17 +57,18 @@ lqe     linear quadratic estimator
 
 # Import functions from within the control system library
 #! Should probably only import the exact functions we use...
-from bdalg import *
-from delay import *
-from freqplot import *
-from margins import *
-from mateqn import *
-from modelsimp import *
-from nichols import *
-from phaseplot import PhasePlot, boxgrid
-from rlocus import *
-from statefbk import *
-from statesp import *
-from timeresp import ForcedResponse, InitialResponse, StepResponse, \
-    ImpulseResponse
-from xferfcn import *
+from bdalg import series, parallel, negate, feedback
+from delay import pade
+from freqplot import bode_plot, nyquist_plot, gangof4_plot
+from freqplot import bode, nyquist, gangof4
+from margins import stability_margins, phase_crossover_frequencies
+from mateqn import lyap, dlyap, care, dare
+from modelsimp import hsvd, modred, balred, era, markov
+from nichols import nichols_plot, nichols
+from phaseplot import phase_plot, box_grid
+from rlocus import root_locus
+from statefbk import place, lqr, ctrb, obsv, gram
+from statesp import StateSpace
+from timeresp import forced_response, initial_response, step_response, \
+    impulse_response
+from xferfcn import TransferFunction

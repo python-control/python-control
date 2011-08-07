@@ -4,8 +4,8 @@ Functions for computing stability margins and related functions.
 
 Routeins in this module:
 
-margin.StabilityMargins
-margin.PhaseCrossoverFrequencies
+margin.stability_margins
+margin.phase_crossover_frequencies
 """
 
 """Copyright (c) 2011 by California Institute of Technology
@@ -54,13 +54,13 @@ import numpy as np
 # gain and phase margins
 # contributed by Sawyer B. Fuller <minster@caltech.edu>
 #! TODO - need to add unit test functions
-def StabilityMargins(sysdata, deg=True):
+def stability_margins(sysdata, deg=True):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
 
     Usage:
     
-    gm, pm, sm, wg, wp, ws = StabilityMargins(sysdata, deg=True)
+    gm, pm, sm, wg, wp, ws = stability_margins(sysdata, deg=True)
     
     Parameters
     ----------
@@ -149,13 +149,13 @@ def StabilityMargins(sysdata, deg=True):
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
 #! TODO - need to add test functions
-def PhaseCrossoverFrequencies(sys):
+def phase_crossover_frequencies(sys):
     """
     Compute frequencies and gains at intersections with real axis
     in Nyquist plot.
 
     Call as:
-        omega, gain = PhaseCrossoverFrequencies()
+        omega, gain = phase_crossover_frequencies()
 
     Returns
     -------

@@ -55,7 +55,7 @@ from bdalg import feedback
 #
    
 # Bode plot
-def BodePlot(syslist, omega=None, dB=False, Hz=False, deg=True, 
+def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True, 
         color=None, Plot=True):
     """Bode plot for a system
 
@@ -178,7 +178,7 @@ def BodePlot(syslist, omega=None, dB=False, Hz=False, deg=True,
         return mags, phases, omegas
 
 # Nyquist plot
-def NyquistPlot(syslist, omega=None, Plot=True):
+def nyquist_plot(syslist, omega=None, Plot=True):
     """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
@@ -245,7 +245,7 @@ def NyquistPlot(syslist, omega=None, Plot=True):
 
 # Gang of Four
 #! TODO: think about how (and whether) to handle lists of systems
-def GangOf4Plot(P, C, omega=None):
+def gangof4_plot(P, C, omega=None):
     """Plot the "Gang of 4" transfer functions for a system
 
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
@@ -363,6 +363,6 @@ def default_frequency_range(syslist):
     return omega
 
 # Function aliases
-bode = BodePlot
-nyquist = NyquistPlot
-gangof4 = GangOf4Plot
+bode = bode_plot
+nyquist = nyquist_plot
+gangof4 = gangof4_plot

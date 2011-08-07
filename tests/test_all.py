@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# test_al.py - test suit for python-control
+# test_all.py - test suit for python-control
 # RMM, 30 Mar 2011
 
 import unittest                 # unit test module

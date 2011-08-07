@@ -53,8 +53,8 @@ Convention for Time Series
 This is a convention for function arguments and return values that
 represent time series: sequences of values that change over time. It
 is used throughout the library, for example in the functions
-:func:`ForcedResponse`, :func:`StepResponse`, :func:`ImpulseResponse`,
-and :func:`InitialResponse`.
+:func:`forced_response`, :func:`step_response`, :func:`impulse_response`,
+and :func:`initial_response`.
 
 .. note::
     This convention is different from the convention used in the library
@@ -235,7 +235,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
     return out_array
 
 # Forced response of a linear system
-def ForcedResponse(sys, T=None, U=0., X0=0., transpose=False, **keywords):
+def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     """Simulate the output of a linear system.
     
     As a convenience for parameters `U`, `X0`:
@@ -285,11 +285,11 @@ def ForcedResponse(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     
     See Also
     --------
-    StepResponse, InitialResponse, ImpulseResponse
+    step_response, initial_response, impulse_response
     
     Examples
     --------
-    >>> T, yout, xout = ForcedResponse(sys, T, u, X0)
+    >>> T, yout, xout = forced_response(sys, T, u, X0)
     """
     if not isinstance(sys, Lti):
         raise TypeError('Parameter ``sys``: must be a ``Lti`` object. '
@@ -365,7 +365,7 @@ def ForcedResponse(sys, T=None, U=0., X0=0., transpose=False, **keywords):
 
     return T, yout, xout
 
-def StepResponse(sys, T=None, X0=0., input=0, output=0, \
+def step_response(sys, T=None, X0=0., input=0, output=0, \
                      transpose = False, **keywords):
     #pylint: disable=W0622
     """Step response of a linear system
@@ -419,11 +419,11 @@ def StepResponse(sys, T=None, X0=0., input=0, output=0, \
     
     See Also
     --------
-    ForcedResponse, InitialResponse, ImpulseResponse
+    forced_response, initial_response, impulse_response
 
     Examples
     --------
-    >>> T, yout = StepResponse(sys, T, X0)
+    >>> T, yout = step_response(sys, T, X0)
     """
     sys = _convertToStateSpace(sys)
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
@@ -431,13 +431,13 @@ def StepResponse(sys, T=None, X0=0., input=0, output=0, \
         T = _default_response_times(sys.A, 100)
     U = np.ones_like(T)
 
-    T, yout, _xout = ForcedResponse(sys, T, U, X0, 
+    T, yout, _xout = forced_response(sys, T, U, X0, 
                                     transpose=transpose, **keywords)
 
     return T, yout
 
 
-def InitialResponse(sys, T=None, X0=0., input=0, output=0, transpose=False,
+def initial_response(sys, T=None, X0=0., input=0, output=0, transpose=False,
                     **keywords):
     #pylint: disable=W0622
     """Initial condition response of a linear system
@@ -491,26 +491,26 @@ def InitialResponse(sys, T=None, X0=0., input=0, output=0, transpose=False,
     
     See Also
     --------
-    ForcedResponse, ImpulseResponse, StepResponse
+    forced_response, impulse_response, step_response
 
     Examples
     --------
-    >>> T, yout = InitialResponse(sys, T, X0)
+    >>> T, yout = initial_response(sys, T, X0)
     """
     sys = _convertToStateSpace(sys) 
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
-    #Create time and input vectors; checking is done in ForcedResponse(...)
-    #The initial vector X0 is created in ForcedResponse(...) if necessary
+    #Create time and input vectors; checking is done in forced_response(...)
+    #The initial vector X0 is created in forced_response(...) if necessary
     if T is None:
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)
 
-    T, yout, _xout = ForcedResponse(sys, T, U, X0, transpose=transpose,
+    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
                                     **keywords)
     return T, yout
 
 
-def ImpulseResponse(sys, T=None, X0=0., input=0, output=0,
+def impulse_response(sys, T=None, X0=0., input=0, output=0,
                     transpose=False, **keywords):
     #pylint: disable=W0622
     """Impulse response of a linear system
@@ -564,11 +564,11 @@ def ImpulseResponse(sys, T=None, X0=0., input=0, output=0,
     
     See Also
     --------
-    ForcedReponse, InitialResponse, StepResponse
+    ForcedReponse, initial_response, step_response
 
     Examples
     --------
-    >>> T, yout = ImpulseResponse(sys, T, X0) 
+    >>> T, yout = impulse_response(sys, T, X0) 
     """
     sys = _convertToStateSpace(sys) 
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
@@ -597,7 +597,7 @@ def ImpulseResponse(sys, T=None, X0=0., input=0, output=0,
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)
 
-    T, yout, _xout  = ForcedResponse(sys, T, U, new_X0, \
+    T, yout, _xout  = forced_response(sys, T, U, new_X0, \
                           transpose=transpose, **keywords)
     return T, yout
 

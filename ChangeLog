@@ -1,3 +1,37 @@
+2011-08-07  Richard Murray  <murray@malabar.local>
+
+	* examples/secord-matlab.py, examples/pvtol-nested-ss.py,
+	examples/test-response.py, examples/pvtol-nested.py: fixed small bug
+	in order of output arguments for step command
+
+2011-08-06  Richard Murray  <murray@malabar.local>
+
+	* src/matlab.py (ngrid): copy documentation from nichols_grid
+
+	* src/__init__.py: changed import commands to import specific
+	functions rather than '*' (better modularity)
+
+	* src/freqplot.py: default function names are now bode_plot,
+	nyquist_plot and gangof4_plot (still with aliases to non-"_plot"
+	versions)
+
+	* src/nichols.py (nichols_plot): updated nichols to nichols_plot for
+	consistency with other python-control plotting functions.  Set up
+	alias for original name
+
+	* src/margins.py: StabilityMargins, PhaseCrossoverFrequencies ->
+	stability_margins, phase_crossover_frequencies
+
+	* src/phaseplot.py: changed PhasePlot and boxgrid to phase_plot,
+	box_grid 
+
+	* src/timeresp.py: changed ForcedReponse, InitialReponse,
+	ImpulseReponse and StepResponse to forced_response,
+	initial_response, impulse_response and step_response.
+
+	* src/rlocus.py: changed RootLocus to root_locus for better
+	compatability with PEP 8.  Also updated unit tests and examples.
+
 2011-07-25  Richard Murray  <murray@malabar.local>
 
 	* tests/phaseplot_test.py: updated unit tests to use new call

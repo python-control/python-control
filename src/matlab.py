@@ -62,6 +62,7 @@ $Id$
 # Libraries that we make use of 
 import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
+import re                       # regular expressions
 from copy import deepcopy
 
 # Import MATLAB-like functions that are defined in other packages
@@ -990,15 +991,10 @@ def bode(*args, **keywords):
     return freqplot.bode(syslist, omega, **keywords)
 
 # Nichols chart grid
+from nichols import nichols_grid
 def ngrid():
-    """Nichols chart grid.
-
-    Examples
-    --------
-    >>> ngrid()
-    """
-    from nichols import nichols_grid
     nichols_grid()
+ngrid.__doc__ = re.sub('nichols_grid', 'ngrid', nichols_grid.__doc__)
 
 # Root locus plot
 def rlocus(sys, klist = None, **keywords):
@@ -1018,12 +1014,12 @@ def rlocus(sys, klist = None, **keywords):
     klist: 
         list of gains used to compute roots
     """
-    from rlocus import RootLocus
+    from rlocus import root_locus
     if (klist == None):
         #! TODO: update with a smart cacluation of the gains
         klist = logspace(-3, 3)
 
-    rlist = RootLocus(sys, klist, **keywords)
+    rlist = root_locus(sys, klist, **keywords)
     return rlist, klist
     
 def margin(*args):
@@ -1060,9 +1056,9 @@ def margin(*args):
     """
     if len(args) == 1:
         sys = args[0]
-        margin = margins.StabilityMargins(sys)
+        margin = margins.stability_margins(sys)
     elif len(args) == 3:
-        margin = margins.StabilityMargins(args)
+        margin = margins.stability_margins(args)
     else: 
         raise ValueError("Margin needs 1 or 3 arguments; received %i." 
             % len(args))
@@ -1157,7 +1153,7 @@ def step(sys, T=None, X0=0., input=0, output=0, **keywords):
     **keywords:
         Additional keyword arguments control the solution algorithm for the 
         differential equations. These arguments are passed on to the function
-        :func:`control.ForcedResponse`, which in turn passes them on to
+        :func:`control.forced_response`, which in turn passes them on to
         :func:`scipy.integrate.odeint`. See the documentation for
         :func:`scipy.integrate.odeint` for information about these
         arguments.
@@ -1178,7 +1174,7 @@ def step(sys, T=None, X0=0., input=0, output=0, **keywords):
     --------
     >>> T, yout = step(sys, T, X0)
     '''
-    T, yout = timeresp.StepResponse(sys, T, X0, input, output, 
+    T, yout = timeresp.step_response(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
     return yout, T
 
@@ -1228,7 +1224,7 @@ def impulse(sys, T=None, input=0, output=0, **keywords):
     --------
     >>> T, yout = impulse(sys, T) 
     '''
-    T, yout = timeresp.ImpulseResponse(sys, T, 0, input, output, 
+    T, yout = timeresp.impulse_response(sys, T, 0, input, output, 
                                    transpose = True, **keywords)
     return yout, T
 
@@ -1284,7 +1280,7 @@ def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
     --------
     >>> T, yout = initial(sys, T, X0)
     '''
-    T, yout = timeresp.InitialResponse(sys, T, X0, input, output, 
+    T, yout = timeresp.initial_response(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
     return yout, T
 
@@ -1338,6 +1334,6 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
     --------
     >>> T, yout, xout = lsim(sys, U, T, X0)
     '''
-    T, yout, xout = timeresp.ForcedResponse(sys, T, U, X0,
+    T, yout, xout = timeresp.forced_response(sys, T, U, X0,
                                              transpose = True, **keywords)
     return yout, T, xout
