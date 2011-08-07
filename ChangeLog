@@ -1,3 +1,9 @@
+2011-08-07  Richard Murray  <murray@malabar.local>
+
+	* doc/conf.py: Updated version numbers to 0.5a, regenerated
+	documentation and reposted on web (note that 0.5a tag and source
+	distribution have this wrong)
+
 ---- control-0.5a released -----
 
 2011-08-07  Richard Murray  <murray@malabar.local>
