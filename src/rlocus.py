@@ -46,13 +46,13 @@
 # $Id$
 
 # Packages used by this module
-from scipy import *
+from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
 import xferfcn                  # transfer function manipulation
 
 # Main function: compute a root locus diagram
-def RootLocus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
+def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
     """Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
     of kvect.

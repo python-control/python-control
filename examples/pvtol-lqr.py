@@ -111,11 +111,11 @@ Qu1a = diag([1, 1]);
 
 # Step response for the first input
 H1ax = ss(Ax - Bx*K1a[0,lat], Bx*K1a[0,lat]*xd[lat,:], Cx, Dx);
-(Tx, Yx) = step(H1ax, T=linspace(0,10,100));
+(Yx, Tx) = step(H1ax, T=linspace(0,10,100));
 
 # Step response for the second input
 H1ay = ss(Ay - By*K1a[1,alt], By*K1a[1,alt]*yd[alt,:], Cy, Dy);
-(Ty, Yy) = step(H1ay, T=linspace(0,10,100));
+(Yy, Ty) = step(H1ay, T=linspace(0,10,100));
 
 subplot(221); title("Identity weights")
 # plot(T, Y[:,1, 1], '-', T, Y[:,2, 2], '--'); hold(True);
@@ -136,9 +136,9 @@ H1bx = ss(Ax - Bx*K1b[0,lat], Bx*K1b[0,lat]*xd[lat,:],Cx, Dx);
 Qu1c = (200**2)*diag([1, 1]); (K1c, X, E) = lqr(A, B, Qx1, Qu1c);
 H1cx = ss(Ax - Bx*K1c[0,lat], Bx*K1c[0,lat]*xd[lat,:],Cx, Dx);
 
-[T1, Y1] = step(H1ax, T=linspace(0,10,100));
-[T2, Y2] = step(H1bx, T=linspace(0,10,100));
-[T3, Y3] = step(H1cx, T=linspace(0,10,100));
+[Y1, T1] = step(H1ax, T=linspace(0,10,100));
+[Y2, T2] = step(H1bx, T=linspace(0,10,100));
+[Y3, T3] = step(H1cx, T=linspace(0,10,100));
 
 subplot(222); title("Effect of input weights")
 plot(T1.T, Y1.T, 'b-'); hold(True);
@@ -160,8 +160,8 @@ H2x = ss(Ax - Bx*K2[0,lat], Bx*K2[0,lat]*xd[lat,:], Cx, Dx);
 H2y = ss(Ay - By*K2[1,alt], By*K2[1,alt]*yd[alt,:], Cy, Dy);
 
 subplot(223); title("Output weighting")
-[T2x, Y2x] = step(H2x, T=linspace(0,10,100));
-[T2y, Y2y] = step(H2y, T=linspace(0,10,100));
+[Y2x, T2x] = step(H2x, T=linspace(0,10,100));
+[Y2y, T2y] = step(H2y, T=linspace(0,10,100));
 plot(T2x.T, Y2x.T, T2y.T, Y2y.T)
 ylabel('position');
 xlabel('time'); ylabel('position');
@@ -183,8 +183,8 @@ H3x = ss(Ax - Bx*K3[0,lat], Bx*K3[0,lat]*xd[lat,:], Cx, Dx);
 H3y = ss(Ay - By*K3[1,alt], By*K3[1,alt]*yd[alt,:], Cy, Dy);
 subplot(224)
 # step(H3x, H3y, 10);
-[T3x, Y3x] = step(H3x, T=linspace(0,10,100));
-[T3y, Y3y] = step(H3y, T=linspace(0,10,100));
+[Y3x, T3x] = step(H3x, T=linspace(0,10,100));
+[Y3y, T3y] = step(H3y, T=linspace(0,10,100));
 plot(T3x.T, Y3x.T, T3y.T, Y3y.T)
 title("Physically motivated weights")
 xlabel('time'); 

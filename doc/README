@@ -13,3 +13,8 @@ Note: Sphinx actually runs and imports python code, so broken code, or code not 
 
 4.  >> touch *.rst
     >> make html  [or make latex]
+
+Creating/updating manual on sourceforge:
+
+5.  >> rsync -rav _build/html/ user@shell.sourceforge.net:/home/project-web/python-control/htdocs/manual-N.mx/
+

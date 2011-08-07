@@ -3,15 +3,51 @@ Introduction
 ============
 
 Welcome to the Python-Control project.
-This is sample documentation and will include our Princeton University APC524 contribution.
 
-We can incorporate any existing documentation as well. For example from R.Murray's earlier tex document:
+The python-control package is a set of python classes and functions
+that implement common operations for the analysis and design of
+feedback control systems.  The initial goal is to implement all of the
+functionality required to work through the examples in the textbook
+Feedback Systems by Astrom and Murray. A MATLAB compatibility package
+(control.matlab) is available that provides many of the common
+functions corresponding to commands available in the MATLAB Control
+Systems Toolbox.
 
-Differences from MATLAB
------------------------
-*  You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
-*  Functions that return multiple arguments use tuples
-*  Can't use braces for collections; use tuples instead
-*  Transfer functions are only implemented for SISO systems (due to limitations in the underlying signals.lti class); use state space representations for MIMO systems.
+In addition to the documentation here, there is a project wiki that
+contains some additional information about how to use the package
+(including some detailed worked examples):
 
+  http://python-control.sourceforge.net
 
+Some Differences from MATLAB
+----------------------------
+The python-control package makes use of NumPy and SciPy.  A list of
+general differences between NumPy and MATLAB can be found here:
+
+  http://www.scipy.org/NumPy_for_Matlab_Users
+
+In terms of the python-control package more specifically, here are
+some thing to keep in mind:
+
+* You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
+* Functions that return multiple arguments use tuples
+* Can't use braces for collections; use tuples instead
+* Transfer functions are only implemented for SISO systems (due to
+  limitations in the underlying signals.lti class); use state space
+  representations for MIMO systems.
+
+Getting Started
+---------------
+1. Download latest release from http://sf.net/projects/python-control/files.
+2. Untar the source code in a temporary directory and run 'python setup.py
+   install' to build and install the code
+3. To see if things are working correctly, run ipython -pylab and run the 
+   script 'examples/secord-matlab.py'.  This should generate a set response,
+   Bode plot and Nyquist plot for a simple second order system.
+4. To see the commands that are available, run the following commands in
+   ipython::
+       >>> import control
+       >>> ?control.matlab
+5. If you want to have a MATLAB-like environment for running the control
+   toolbox, use::
+       >>> from control.matlab import *

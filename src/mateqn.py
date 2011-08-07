@@ -38,9 +38,9 @@ Author: Bjorn Olofsson
 """
 
 from numpy.linalg import inv
-from scipy import shape,size,asarray,copy,zeros,eye,dot
+from scipy import shape, size, asarray, copy, zeros, eye, dot
 
-from control.exception import ControlSlycot,ControlArgument
+from exception import ControlSlycot, ControlArgument
 
 #### Lyapunov equation solvers lyap and dlyap
 

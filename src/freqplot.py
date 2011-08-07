@@ -55,13 +55,9 @@ from bdalg import feedback
 #
    
 # Bode plot
-def bode(syslist, omega=None, dB=False, Hz=False, deg=True, 
+def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True, 
         color=None, Plot=True):
     """Bode plot for a system
-
-    Usage
-    =====
-    (mag, phase, omega) = bode(syslist, omega=None, dB=False, Hz=False, color=None, deg=True, Plot=True)
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -82,17 +78,26 @@ def bode(syslist, omega=None, dB=False, Hz=False, deg=True,
     Plot : boolean
         If True, plot magnitude and phase
 
-    Return values
-    -------------
-    mag : magnitude array (list if len(syslist) > 1)
-    phase : phase array (list if len(syslist) > 1)
-    omega : frequency array (list if len(syslist) > 1)
-
+    Returns
+    -------
+    mag : array (list if len(syslist) > 1)
+        magnitude
+    phase : array (list if len(syslist) > 1)
+        phase
+    omega : array (list if len(syslist) > 1)
+        frequency
+    
     Notes
     -----
     1. Alternatively, you may use the lower-level method 
     (mag, phase, freq) = sys.freqresp(freq) to generate the frequency 
     response for a system, but it returns a MIMO response.
+
+    Examples
+    --------
+    >>> from matlab import ss
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> mag, phase, omega = bode(sys)
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
@@ -173,29 +178,34 @@ def bode(syslist, omega=None, dB=False, Hz=False, deg=True,
         return mags, phases, omegas
 
 # Nyquist plot
-def nyquist(syslist, omega=None, Plot=True):
+def nyquist_plot(syslist, omega=None, Plot=True):
     """Nyquist plot for a system
-
-    Usage
-    =====
-    real, imag, freq = nyquist(sys, omega=None, Plot=True)
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
-    syslist : linsys
+    syslist : list of Lti
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
     Plot : boolean
         if True, plot magnitude
 
-    Return values
-    -------------
-    real : real part of the frequency response array
-    imag : imaginary part of the frequency response array
-    freq : frequencies
+    Returns
+    -------
+    real : array
+        real part of the frequency response array
+    imag : array
+        imaginary part of the frequency response array
+    freq : array
+        frequencies
+
+    Examples
+    --------
+    >>> from matlab import ss
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> real, imag, freq = nyquist(sys)
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
@@ -235,25 +245,21 @@ def nyquist(syslist, omega=None, Plot=True):
 
 # Gang of Four
 #! TODO: think about how (and whether) to handle lists of systems
-def gangof4(P, C, omega=None):
+def gangof4_plot(P, C, omega=None):
     """Plot the "Gang of 4" transfer functions for a system
-
-    Usage
-    =====
-    gangof4(P, C, omega=None)
 
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
     [T, PS; CS, S]
 
     Parameters
     ----------
-    P, C : linsys
+    P, C : Lti
         Linear input/output systems (process and control)
-    omega : freq_range
+    omega : array
         Range of frequencies (list or bounds) in rad/sec
 
-    Return values
-    -------------
+    Returns
+    -------
     None
     """
     if (P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs >1):
@@ -293,101 +299,6 @@ def gangof4(P, C, omega=None):
         phase = np.squeeze(phase_tmp)
         plt.subplot(224); plt.loglog(omega, mag);
 
-
-# gain and phase margins
-# contributed by Sawyer B. Fuller <minster@caltech.edu>
-def margin(sysdata, deg=True):
-    """Calculate gain and phase margins and associated crossover frequencies
-
-    Usage:
-    
-    gm, pm, sm, wg, wp, ws = margin(sysdata, deg=True)
-    
-    Parameters
-    ----------
-    sysdata: linsys or (mag, phase, omega) sequence 
-        sys : linsys
-            Linear SISO system
-        mag, phase, omega : sequence of array_like
-            Input magnitude, phase, and frequencies (rad/sec) sequence from 
-            bode frequency response data 
-    deg=True: boolean  
-        If true, all input and output phases in degrees, else in radians
-        
-    Returns
-    -------
-    gm, pm, sm, wg, wp, ws: float
-        Gain margin gm, phase margin pm, stability margin sm, and 
-        associated crossover
-        frequencies wg, wp, and ws of SISO open-loop. If more than
-        one crossover frequency is detected, returns the lowest corresponding
-        margin. 
-    """
-    #TODO do this precisely without the effects of discretization of frequencies?
-    #TODO assumes SISO
-    #TODO unit tests, margin plot
-
-    if (not getattr(sysdata, '__iter__', False)):
-        sys = sysdata
-        mag, phase, omega = bode(sys, deg=deg, Plot=False)
-    elif len(sysdata) == 3:
-        mag, phase, omega = sysdata
-    else: 
-        raise ValueError("Margin sysdata must be either a linear system or a 3-sequence of mag, phase, omega.")
-        
-    if deg:
-        cycle = 360. 
-        crossover = 180. 
-    else:
-        cycle = 2 * np.pi
-        crossover = np.pi
-        
-    wrapped_phase = -np.mod(phase, cycle)
-    
-    # phase margin from minimum phase among all gain crossovers
-    neg_mag_crossings_i = np.nonzero(np.diff(mag < 1) > 0)[0]
-    mag_crossings_p = wrapped_phase[neg_mag_crossings_i]
-    if len(neg_mag_crossings_i) == 0:
-        if mag[0] < 1: # gain always less than one
-            wp = np.nan
-            pm = np.inf
-        else: # gain always greater than one
-            print "margin: no magnitude crossings found"
-            wp = np.nan
-            pm = np.nan
-    else:
-        min_mag_crossing_i = neg_mag_crossings_i[np.argmin(mag_crossings_p)]
-        wp = omega[min_mag_crossing_i]
-        pm = crossover + phase[min_mag_crossing_i] 
-        if pm < 0:
-            print "warning: system unstable: negative phase margin"
-    
-    # gain margin from minimum gain margin among all phase crossovers
-    neg_phase_crossings_i = np.nonzero(np.diff(wrapped_phase < -crossover) > 0)[0]
-    neg_phase_crossings_g = mag[neg_phase_crossings_i]
-    if len(neg_phase_crossings_i) == 0:
-        wg = np.nan
-        gm = np.inf
-    else:
-        min_phase_crossing_i = neg_phase_crossings_i[
-            np.argmax(neg_phase_crossings_g)]
-        wg = omega[min_phase_crossing_i]
-        gm = abs(1/mag[min_phase_crossing_i])
-        if gm < 1: 
-            print "warning: system unstable: gain margin < 1"    
-
-    # stability margin from minimum abs distance from -1 point
-    if deg:
-        phase_rad = phase * np.pi / 180.
-    else:
-        phase_rad = phase
-    L = mag * np.exp(1j * phase_rad) # complex loop response to -1 pt
-    min_Lplus1_i = np.argmin(np.abs(L + 1))
-    sm = np.abs(L[min_Lplus1_i] + 1)
-    ws = phase[min_Lplus1_i]
-
-    return gm, pm, sm, wg, wp, ws 
-
 #
 # Utility functions
 #
@@ -400,22 +311,24 @@ def default_frequency_range(syslist):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
-    Usage
-    =====
-    omega = default_frequency_range(syslist)
-
     Finds a reasonable default frequency range by examining the features
     (poles and zeros) of the systems in syslist.
 
     Parameters
     ----------
-    syslist : linsys
+    syslist : list of Lti
         List of linear input/output systems (single system is OK)
 
-    Return values
-    -------------
-    omega : freq_range
+    Return
+    ------
+    omega : array
         Range of frequencies in rad/sec
+
+    Examples
+    --------
+    >>> from matlab import ss
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> omega = default_frequency_range(sys)
     """
     # This code looks at the poles and zeros of all of the systems that
     # we are plotting and sets the frequency range to be one decade above
@@ -449,3 +362,7 @@ def default_frequency_range(syslist):
                         
     return omega
 
+# Function aliases
+bode = bode_plot
+nyquist = nyquist_plot
+gangof4 = gangof4_plot

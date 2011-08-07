@@ -4,7 +4,7 @@
 from setuptools import setup
 
 setup(name = 'control',
-      version = '0.4d',
+      version = '0.5a',
       description = 'Python Control Systems Library',
       author = 'Richard Murray',
       author_email = 'murray@cds.caltech.edu',

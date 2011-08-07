@@ -1,3 +1,178 @@
+---- control-0.5a released -----
+
+2011-08-07  Richard Murray  <murray@malabar.local>
+
+	* setup.py: updated version number; next release will be 0.5a since
+	the changes in function names and argument/return value order (for
+	time reponses) require small updates in code
+
+	* examples/secord-matlab.py, examples/pvtol-nested-ss.py,
+	examples/test-response.py, examples/pvtol-nested.py: fixed small bug
+	in order of output arguments for step command
+
+2011-08-06  Richard Murray  <murray@malabar.local>
+
+	* src/matlab.py (ngrid): copy documentation from nichols_grid
+
+	* src/__init__.py: changed import commands to import specific
+	functions rather than '*' (better modularity)
+
+	* src/freqplot.py: default function names are now bode_plot,
+	nyquist_plot and gangof4_plot (still with aliases to non-"_plot"
+	versions)
+
+	* src/nichols.py (nichols_plot): updated nichols to nichols_plot for
+	consistency with other python-control plotting functions.  Set up
+	alias for original name
+
+	* src/margins.py: StabilityMargins, PhaseCrossoverFrequencies ->
+	stability_margins, phase_crossover_frequencies
+
+	* src/phaseplot.py: changed PhasePlot and boxgrid to phase_plot,
+	box_grid 
+
+	* src/timeresp.py: changed ForcedReponse, InitialReponse,
+	ImpulseReponse and StepResponse to forced_response,
+	initial_response, impulse_response and step_response.
+
+	* src/rlocus.py: changed RootLocus to root_locus for better
+	compatability with PEP 8.  Also updated unit tests and examples.
+
+2011-07-25  Richard Murray  <murray@malabar.local>
+
+	* tests/phaseplot_test.py: updated unit tests to use new call
+	signatures 
+
+	* examples/phaseplots.py: updated calls to PhasePlot to use new
+	argument structure
+
+	* src/phaseplot.py (PhasePlot): Updated call signature to be
+	more pythonic and fixed up documentation.
+
+	* examples/genswitch.py (genswitch): added new example showing
+	PhasePlot functionality
+
+	* src/phaseplot.py (boxgrid): added function to compute initial
+	conditions around the edges of a box
+
+2011-07-24  Richard Murray  <murray@malabar.local>
+
+	* tests/margin_test.py: added simple unit tests for margin functions
+	(initial versions just call functions; some comparisons missing)
+
+	* examples/README: added missing README file
+
+	* examples/phaseplots.py: FBS examples for phaseplot
+
+	* tests/phaseplot_test.py: unit tests for phaseplot
+
+	* src/phaseplot.py: initial cut at phase portrait function, built
+	from amphaseplot (Feeback Systems [FBS], Astrom and Murray, 2008)
+
+2011-07-15  Richard Murray  <murray@malabar.local>
+
+	* tests/matlab_test.py (TestMatlab): added unittest for margin()
+	commands (calling format only)
+
+	* src/statesp.py (StateSpace): updated comments
+
+	* tests/margin_test.py: set up unit tests for StabilityMargins() and
+	PhaseCrossoverFrequencies()
+
+	* src/__init__.py: added margins.py to __init__
+
+2011-07-14  Richard Murray  <murray@malabar.local>
+
+	* src/margins.py (GainPhaseMargin): moved freqplot.MarginPlot to
+	margin.StabilityMargins (MarginPlot didn't actually plot anything)
+
+	* src/margins.py (PhaseCrossoverFrequencies): added new function to
+	compute frequencies that we cross real axis.  Contributed by Steffen
+	Waldherr <waldherr@ist.uni-stuttgart.de>
+
+2011-07-11  Richard Murray  <murray@malabar.local>
+
+	* src/rlocus.py: added real() and imag() to list of functions
+	imported from numpy
+
+	* src/freqplot.py: renamed plotting functions to BodePlot,
+	NyquistPlot, GangOf4Plot and MarginPlot.  Set up aliases to the more
+	common names (bode, nyquest, gangof4, margin).  Mainly playing
+	around with idea for the eventual interface to use.
+
+	* tests/matlab_test.py: updated timeresp outputs to match MATLAB
+
+	* src/matlab.py (impulse, initial, lsim, step): switched outputs
+	from step, impulse, initial, lsim to match MATLAB standard
+
+2011-07-01  Richard Murray  <murray@malabar.local>
+
+	* src/rlocus.py: modified scipy import to only import those
+	functions that we actually use.  This fixes a problem pointed out by
+	Carsten Knoll (TU Dresden) where control.place could be overwritten
+	by numpy.place (because of an "from scipy import *" in rlocus.py
+
+	* doc/intro.rst: Added link to scipy web page talking about the
+	differences between numpy and MATLAB (contributed by Shuo Han).
+
+2011-06-25  Richard Murray  <murray@malabar.local>
+
+	* src/xferfcn.py (TransferFunction._common_den): changed tolerance
+	for detecting complex valued poles to a user-settable parameter,
+	with default value 1e-8.  This was an attempt to fix errors in the
+	convert_test.py unittest script (conversion routine was
+	misclassifying some poles as imaginary when they weren't).
+
+	* src/xferfcn.py (_convertToTransferFunction): converted arguments
+	to tb04ad to numpy arrays; fixes a unit test error in convert_test.py.
+
+	* src/statefbk.py (gram): convert system matrix passed to sb03md to
+	numpy array; this fixes a unit test error in modelsimp_test.py.
+
+	* src/matlab.py (impulse): got rid of X0 argument for impulse
+	response (not implemented in MATLAB).
+
+	* doc/intro.rst: added some quick start information
+
+	* src/matlab.py: added documentation for step, impulse, initial, lsim
+
+	* src/timeresp.py: fixed some MATLAB specific function names in
+	function doc strings
+
+2011-06-22  Richard Murray  <murray@malabar.local>
+
+	* doc/intro.rst: fixed some small types
+	
+	* doc/control.tex: removed (no longer needed)
+
+2011-06-22  Richard Murray  <murray@malabar.local>
+
+	* doc/intro.rst: Added a slightly more general introduction, with a
+	pointer to the python-control wiki (on sf.net)
+
+	* doc/Makefile: Changed path to sphinx-build to assume it is in the
+	users path (as opposed to an explicit path)
+
+	* doc/conf.py: Added release information into documentation file
+
+2011-06-21  Richard Murray  <murray@malabar.local>
+
+	* src/statesp.py (_mimo2siso): Moved function from matlab.py.
+
+	* src/timeresp.py: added file documentation + split out and updated
+	copyright info.  Small corrections to documentation.
+	(InitialResponse): Added missing transpose argument in call to
+	ForcedResponse 
+
+	* src/matlab.py: minor changes to documentation to avoid line wraps
+	on standard (80 col) terminal window
+
+	* src/matlab.py: removed time-series convention documentation from
+	matlab.py since current MATLAB version uses standard conventions.
+	This documentation is currently in timeresp.py.
+
+	* src/*, doc/*: added Eike Welk's documentation modifications
+
 2011-06-18  Richard Murray  <murray@malabar.local>
 
 	* src/timeresp.py, src/matlab.py: moved documentation about time

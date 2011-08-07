@@ -134,10 +134,10 @@ color = 'b';
 #  'EdgeColor', color, 'FaceColor', color);
 
 figure(9); 
-(Tvec, Yvec) = step(T, linspace(1, 20));
+(Yvec, Tvec) = step(T, linspace(0, 20));
 plot(Tvec.T, Yvec.T); hold(True);
 
-(Tvec, Yvec) = step(Co*S, linspace(1, 20));
+(Yvec, Tvec) = step(Co*S, linspace(0, 20));
 plot(Tvec.T, Yvec.T);
 
 figure(10); clf();

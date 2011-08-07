@@ -29,9 +29,9 @@ class TestConvert(unittest.TestCase):
         # Maximum number of states to test + 1
         self.maxStates = 20
         # Maximum number of inputs and outputs to test + 1
-        self.maxIO = 20
+        self.maxIO = 10
         # Set to True to print systems to the output.
-        self.debug = True
+        self.debug = False
 
     def printSys(self, sys, ind):
         """Print system to the standard output."""
@@ -40,9 +40,10 @@ class TestConvert(unittest.TestCase):
             print "sys%i:\n" % ind
             print sys
 
-    def testConvert(self, verbose=0):
+    def testConvert(self):
         """Test state space to transfer function conversion."""
         #Currently it only tests that a TF->SS->TF generates an unchanged TF
+        verbose = self.debug
         
         #print __doc__
 
@@ -70,12 +71,14 @@ class TestConvert(unittest.TestCase):
                     for inputNum in range(inputs):
                         for outputNum in range(outputs):
                             np.testing.assert_array_almost_equal(\
-                              tfOriginal.num[outputNum][inputNum],\
-                            tfTransformed.num[outputNum][inputNum])
+                                tfOriginal.num[outputNum][inputNum], \
+                                tfTransformed.num[outputNum][inputNum], \
+                                err_msg='numerator mismatch')
                             
                             np.testing.assert_array_almost_equal(\
-                              tfOriginal.den[outputNum][inputNum],\
-                                tfTransformed.den[outputNum][inputNum])
+                                tfOriginal.den[outputNum][inputNum], \
+                                tfTransformed.den[outputNum][inputNum], 
+                                err_msg='denominator mismatch')
                     
                     #To test the ss systems is harder because they aren't the same
                     #realization. This could be done with checking that they have the 

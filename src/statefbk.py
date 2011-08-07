@@ -49,25 +49,25 @@ import statesp
 def place(A, B, p):
     """Place closed loop eigenvalues
 
-    Usage
-    =====
-    K = place(A, B, p)
+    Parameters
+    ----------
+    A : 2-d array 
+        Dynamics matrix
+    B : 2-d array 
+        Input matrix
+    p : 1-d list 
+        Desired eigenvalue locations
 
-    Inputs
-    ------
-    A : 2-d array (dynamics matrix)
-    B : 2-d array (input matrix)
-    p : 1-d list of desired eigenvalue locations
-
-    Outputs
+    Returns
     -------
-    K : 2-d array with gains such that A - B K has given eigenvalues
+    K : 2-d array 
+        Gains such that A - B K has given eigenvalues
 
-    Example
-    =======
-    A = [[-1, -1], [0, 1]]
-    B = [[0], [1]]
-    K = place(A, B, [-2, -5])
+    Examples
+    --------
+    >>> A = [[-1, -1], [0, 1]]
+    >>> B = [[0], [1]]
+    >>> K = place(A, B, [-2, -5])
     """
 
     # Make sure that SLICOT is installed
@@ -102,28 +102,43 @@ def place(A, B, p):
 def lqr(*args, **keywords):
     """Linear quadratic regulator design
 
-    Usage
-    =====
-    [K, S, E] = lqr(A, B, Q, R, [N])
-    [K, S, E] = lqr(sys, Q, R, [N])
-
     The lqr() function computes the optimal state feedback controller
     that minimizes the quadratic cost
 
-        J = \int_0^\infty x' Q x + u' R u + 2 x' N u
+    .. math:: J = \int_0^\infty x' Q x + u' R u + 2 x' N u
 
-    Inputs
-    ------
-    A, B: 2-d arrays with dynamics and input matrices
-    sys: linear I/O system 
-    Q, R: 2-d array with state and input weight matrices
-    N: optional 2-d array with cross weight matrix
+    The function can be called with either 3, 4, or 5 arguments:
+    
+    * ``lqr(sys, Q, R)``
+    * ``lqr(sys, Q, R, N)``
+    * ``lqr(A, B, Q, R)``
+    * ``lqr(A, B, Q, R, N)``
+    
+    Parameters
+    ----------
+    A, B: 2-d array
+        Dynamics and input matrices
+    sys: Lti (StateSpace or TransferFunction)
+        Linear I/O system 
+    Q, R: 2-d array 
+        State and input weight matrices
+    N: 2-d array, optional  
+        Cross weight matrix
 
-    Outputs
+    Returns
     -------
-    K: 2-d array with state feedback gains
-    S: 2-d array with solution to Riccati equation
-    E: 1-d array with eigenvalues of the closed loop system
+    K: 2-d array 
+        State feedback gains
+    S: 2-d array
+        Solution to Riccati equation
+    E: 1-d array 
+        Eigenvalues of the closed loop system
+    
+    Examples
+    --------
+    >>> K, S, E = lqr(sys, Q, R, [N])
+    >>> K, S, E = lqr(A, B, Q, R, [N])
+
     """
 
     # Make sure that SLICOT is installed
@@ -191,11 +206,13 @@ def ctrb(A,B):
 
     Parameters
     ----------
-    A, B: Dynamics and input matrix of the system
+    A, B: array_like or string
+        Dynamics and input matrix of the system
 
     Returns
     -------
-    C: Controllability matrix
+    C: matrix
+        Controllability matrix
 
     Examples
     --------
@@ -218,11 +235,13 @@ def obsv(A, C):
 
     Parameters
     ----------
-    A, C: Dynamics and output matrix of the system
+    A, C: array_like or string
+        Dynamics and output matrix of the system
 
     Returns
     -------
-    O: Observability matrix
+    O: matrix
+        Observability matrix
 
     Examples
     --------
@@ -246,19 +265,24 @@ def gram(sys,type):
  
     Parameters
     ----------
-    sys: state-space system to compute Gramian for
-    type: type is either 'c' (controllability) or 'o' (observability)
+    sys: StateSpace
+        State-space system to compute Gramian for
+    type: String
+        Type of desired computation.
+        `type` is either 'c' (controllability) or 'o' (observability).
 
     Returns
     -------
-    gram: Gramian of system
+    gram: array
+        Gramian of system
 
     Raises
     ------   
     ValueError
-        if system is not instance of StateSpace class
-        if `type` is not 'c' or 'o'
-        if system is unstable (sys.A has eigenvalues not in left half plane)
+        * if system is not instance of StateSpace class
+        * if `type` is not 'c' or 'o'
+        * if system is unstable (sys.A has eigenvalues not in left half plane)
+        
     ImportError
         if slycot routin sb03md cannot be found
 
@@ -304,7 +328,7 @@ def gram(sys,type):
         raise ControlSlycot("can't find slycot module 'sb03md'")
     n = sys.states
     U = np.zeros((n,n))
-    A = sys.A    
+    A = np.array(sys.A)         # convert to NumPy array for slycot
     X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
     gram = X
     return gram

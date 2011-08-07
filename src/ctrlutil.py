@@ -52,8 +52,6 @@ from scipy import pi
 
 def unwrap(angle, period=2*pi):
     """Unwrap a phase angle to give a continuous curve
-
-    Usage: Y = unwrap(X, period=2``*``pi)
     
     Parameters
     ----------
@@ -66,6 +64,14 @@ def unwrap(angle, period=2*pi):
     -------
     Y : array_like
         Output array, with jumps of period/2 eliminated
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> X = [5.74, 5.97, 6.19, 0.13, 0.35, 0.57]
+    >>> unwrap(X, period=2 * np.pi)
+    [5.74, 5.97, 6.19, 6.413185307179586, 6.633185307179586, 6.8531853071795865]
+
     """
     wrap = 0;
     last = angle[0];

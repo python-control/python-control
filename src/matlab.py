@@ -21,6 +21,7 @@ All rights reserved.
 
 Copyright (c) 2011 by Eike Welk
 
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
 are met:
@@ -61,18 +62,18 @@ $Id$
 # Libraries that we make use of 
 import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
-from scipy.signal.ltisys import _default_response_times
+import re                       # regular expressions
 from copy import deepcopy
-import warnings
 
 # Import MATLAB-like functions that are defined in other packages
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
-from scipy import linspace, logspace
+from numpy import linspace, logspace
 
 # Control system library
 import ctrlutil
 import freqplot
 import timeresp
+import margins
 from statesp import StateSpace, _rss_generate, _convertToStateSpace
 from xferfcn import TransferFunction, _convertToTransferFunction
 from lti import Lti #base class of StateSpace, TransferFunction
@@ -89,39 +90,56 @@ from delay import pade
 from modelsimp import hsvd, balred, modred
 from mateqn import lyap, dlyap, dare, care
 
-__doc__ += """
-The control.matlab module defines functions that are roughly the
-equivalents of those in the MATLAB Control Toolbox.  Items marked by a 
-``*`` are currently implemented; those marked with a ``-`` are not planned
-for implementation.
+__doc__ += r"""
+The following tables give an overview of the module ``control.matlab``. 
+They also show the implementation progress and the planned features of the 
+module. 
 
-==  ==========================  ================================================
-**Creating linear models.**
---------------------------------------------------------------------------------
+The symbols in the first column show the current state of a feature:
+
+* ``*`` : The feature is currently implemented.
+* ``-`` : The feature is not planned for implementation.
+* ``s`` : A similar feature from an other library (Scipy) is imported into
+  the module, until the feature is implemented here.
+
+
+Creating linear models
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \*  :func:`tf`                  create transfer function (TF) models
 \   zpk                         create zero/pole/gain (ZPK) models.
 \*  :func:`ss`                  create state-space (SS) models
 \   dss                         create descriptor state-space models
 \   delayss                     create state-space models with delayed terms
 \   frd                         create frequency response data (FRD) models
-\   lti/exp                     create pure continuous-time delays (TF and ZPK 
-                                only)
+\   lti/exp                     create pure continuous-time delays (TF and
+                                ZPK only)
 \   filt                        specify digital filters
 \-  lti/set                     set/modify properties of LTI models
-\-  setdelaymodel               specify internal delay model (state space only)
-\
-**Data extraction**
---------------------------------------------------------------------------------
+\-  setdelaymodel               specify internal delay model (state space
+                                only)
+==  ==========================  ============================================
+
+
+Data extraction
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \   lti/tfdata                  extract numerators and denominators
 \   lti/zpkdata                 extract zero/pole/gain data
 \   lti/ssdata                  extract state-space matrices
 \   lti/dssdata                 descriptor version of SSDATA
 \   frd/frdata                  extract frequency response data
 \   lti/get                     access values of LTI model properties
-\   ss/getDelayModel            access internal delay model (state space only)
-\ 
-**Conversions**
---------------------------------------------------------------------------------
+\   ss/getDelayModel            access internal delay model (state space)
+==  ==========================  ============================================
+
+
+Conversions
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \*  :func:`tf`                  conversion to transfer function
 \   zpk                         conversion to zero/pole/gain
 \*  :func:`ss`                  conversion to state space
@@ -131,133 +149,176 @@ for implementation.
 \   d2d                         resample discrete-time model
 \   upsample                    upsample discrete-time LTI systems
 \*  :func:`ss2tf`               state space to transfer function
-\   ss2zpk                      transfer function to zero-pole-gain
+\s  ss2zpk                      transfer function to zero-pole-gain
 \*  :func:`tf2ss`               transfer function to state space
-\   tf2zpk                      transfer function to zero-pole-gain
-\   zpk2ss                      zero-pole-gain to state space
-\   zpk2tf                      zero-pole-gain to transfer function
-\
-**System interconnections**
---------------------------------------------------------------------------------
-\   append                      group LTI models by appending inputs and outputs
-\*  :func:`parallel`            connect LTI models in parallel 
-                                (see also overloaded +)
-\*  :func:`series`              connect LTI models in series 
-                                (see also overloaded \*)
-\*  :func:`feedback`            connect lti models with a feedback loop
+\s  tf2zpk                      transfer function to zero-pole-gain
+\s  zpk2ss                      zero-pole-gain to state space
+\s  zpk2tf                      zero-pole-gain to transfer function
+==  ==========================  ============================================
+
+
+System interconnections
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
+\   append                      group LTI models by appending inputs/outputs
+\*  :func:`~bdalg.parallel`     connect LTI models in parallel 
+                                (see also overloaded ``+``)
+\*  :func:`~bdalg.series`       connect LTI models in series 
+                                (see also overloaded ``*``)
+\*  :func:`~bdalg.feedback`     connect lti models with a feedback loop
 \   lti/lft                     generalized feedback interconnection
 \   lti/connect                 arbitrary interconnection of lti models
-\   sumblk                      specify summing junction (for use with connect)
+\   sumblk                      summing junction (for use with connect)
 \   strseq                      builds sequence of indexed strings 
                                 (for I/O naming)
-\
-**System gain and dynamics**
---------------------------------------------------------------------------------
+==  ==========================  ============================================
+
+
+System gain and dynamics
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \*  :func:`dcgain`              steady-state (D.C.) gain
 \   lti/bandwidth               system bandwidth
 \   lti/norm                    h2 and Hinfinity norms of LTI models
 \*  :func:`pole`                system poles
 \*  :func:`zero`                system (transmission) zeros
 \   lti/order                   model order (number of states)
-\*  :func:`pzmap`               pole-zero map (TF only)
+\*  :func:`~pzmap.pzmap`        pole-zero map (TF only)
 \   lti/iopzmap                 input/output pole-zero map
-\   damp                        natural frequency and damping of system poles
+\   damp                        natural frequency, damping of system poles
 \   esort                       sort continuous poles by real part
 \   dsort                       sort discrete poles by magnitude
 \   lti/stabsep                 stable/unstable decomposition
 \   lti/modsep                  region-based modal decomposition
-\
-**Time-domain analysis**
---------------------------------------------------------------------------------
+==  ==========================  ============================================
+
+
+Time-domain analysis
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \*  :func:`step`                step response
-\   stepinfo                    step response characteristics (rise time, ...)
+\   stepinfo                    step response characteristics
 \*  :func:`impulse`             impulse response
 \*  :func:`initial`             free response with initial conditions
 \*  :func:`lsim`                response to user-defined input signal
 \   lsiminfo                    linear response characteristics
 \   gensig                      generate input signal for LSIM
 \   covar                       covariance of response to white noise
-\
-**Frequency-domain analysis**
---------------------------------------------------------------------------------
+==  ==========================  ============================================
+
+
+Frequency-domain analysis
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \*  :func:`bode`                Bode plot of the frequency response
 \   lti/bodemag                 Bode magnitude diagram only
 \   sigma                       singular value frequency plot
-\*  :func:`nyquist`             Nyquist plot
-\*  :func:`nichols`             Nichols plot
+\*  :func:`~freqplot.nyquist`   Nyquist plot
+\*  :func:`~nichols.nichols`    Nichols plot
 \*  :func:`margin`              gain and phase margins
-\   lti/allmargin               all crossover frequencies and related gain/phase 
-                                margins
+\   lti/allmargin               all crossover frequencies and margins
 \*  :func:`freqresp`            frequency response over a frequency grid
-\*  :func:`evalfr`              evaluate frequency response at given frequency
-\
-**Model simplification**
---------------------------------------------------------------------------------
-\   minreal                     minimal realization and pole/zero cancellation
-\   ss/sminreal                 structurally minimal realization (state space)
-\*  :func:`lti/hsvd`            hankel singular values (state contributions)
-\*  :func:`lti/balred`          reduced-order approximations of LTI models
-\*  :func:`ss/modred`           model order reduction
-\
-**Compensator design**
---------------------------------------------------------------------------------
+\*  :func:`evalfr`              frequency response at single frequency
+==  ==========================  ============================================
+
+
+Model simplification
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
+\   minreal                     minimal realization; pole/zero cancellation
+\   ss/sminreal                 structurally minimal realization
+\*  :func:`~modelsimp.hsvd`     hankel singular values (state contributions)
+\*  :func:`~modelsimp.balred`   reduced-order approximations of LTI models
+\*  :func:`~modelsimp.modred`   model order reduction
+==  ==========================  ============================================
+
+
+Compensator design
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \*  :func:`rlocus`              evans root locus
-\*  :func:`place`               pole placement
+\*  :func:`~statefbk.place`     pole placement
 \   estim                       form estimator given estimator gain
 \   reg                         form regulator given state-feedback and 
                                 estimator gains
-\
-**LQR/LQG design**
---------------------------------------------------------------------------------
+==  ==========================  ============================================
+
+
+LQR/LQG design
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \   ss/lqg                      single-step LQG design
-\*  :func:`lqr`                 linear-Quadratic (LQ) state-feedback regulator
+\*  :func:`~statefbk.lqr`       linear quadratic (LQ) state-fbk regulator
 \   dlqr                        discrete-time LQ state-feedback regulator
-\   lqry                        lq regulator with output weighting
+\   lqry                        LQ regulator with output weighting
 \   lqrd                        discrete LQ regulator for continuous plant
-\   ss/lqi                      linear-Quadratic-Integral (LQI) controller
+\   ss/lqi                      Linear-Quadratic-Integral (LQI) controller
 \   ss/kalman                   Kalman state estimator
-\   ss/kalmd                    discrete Kalman estimator for continuous plant
+\   ss/kalmd                    discrete Kalman estimator for cts plant
 \   ss/lqgreg                   build LQG regulator from LQ gain and Kalman 
                                 estimator
 \   ss/lqgtrack                 build LQG servo-controller
 \   augstate                    augment output by appending states
-\
-**State-space (SS) models**
---------------------------------------------------------------------------------
-\*  :func:`rss`                 random stable continuous-time state-space models
-\*  :func:`drss`                random stable discrete-time state-space models
+==  ==========================  ============================================
+
+
+State-space (SS) models
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
+\*  :func:`rss`                 random stable cts-time state-space models
+\*  :func:`drss`                random stable disc-time state-space models
 \   ss2ss                       state coordinate transformation
 \   canon                       canonical forms of state-space models
-\*  :func:`ctrb`                controllability matrix
-\*  :func:`obsv`                observability matrix
-\*  :func:`gram`                controllability and observability gramians
+\*  :func:`~statefbk.ctrb`      controllability matrix
+\*  :func:`~statefbk.obsv`      observability matrix
+\*  :func:`~statefbk.gram`      controllability and observability gramians
 \   ss/prescale                 optimal scaling of state-space models.  
 \   balreal                     gramian-based input/output balancing
 \   ss/xperm                    reorder states.   
-\
-**Frequency response data (FRD) models**
---------------------------------------------------------------------------------
+==  ==========================  ============================================
+
+
+Frequency response data (FRD) models
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \   frd/chgunits                change frequency vector units
 \   frd/fcat                    merge frequency responses
 \   frd/fselect                 select frequency range or subgrid
 \   frd/fnorm                   peak gain as a function of frequency
-\   frd/abs                     entrywise magnitude of the frequency response
+\   frd/abs                     entrywise magnitude of frequency response
 \   frd/real                    real part of the frequency response
 \   frd/imag                    imaginary part of the frequency response
 \   frd/interp                  interpolate frequency response data
 \   mag2db                      convert magnitude to decibels (dB)
 \   db2mag                      convert decibels (dB) to magnitude
-\
-**Time delays**
---------------------------------------------------------------------------------
+==  ==========================  ============================================
+
+
+Time delays
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \   lti/hasdelay                true for models with time delays
 \   lti/totaldelay              total delay between each input/output pair
 \   lti/delay2z                 replace delays by poles at z=0 or FRD phase 
                                 shift
-\*  :func:`pade`                pade approximation of time delays
-\
-**Model dimensions and characteristics**
---------------------------------------------------------------------------------
+\*  :func:`~delay.pade`         pade approximation of time delays
+==  ==========================  ============================================
+
+
+Model dimensions and characteristics
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
 \   class                       model type ('tf', 'zpk', 'ss', or 'frd')
 \   isa                         test if model is of given type
 \   tf/size                     model sizes
@@ -269,57 +330,95 @@ for implementation.
 \   lti/issiso                  true for single-input/single-output models
 \   lti/isstable                true for models with stable dynamics
 \   lti/reshape                 reshape array of linear models
-\
-**Overloaded arithmetic operations**
---------------------------------------------------------------------------------
-\*  \+ and -                    add and subtract systems (parallel connection)
+==  ==========================  ============================================
+
+Overloaded arithmetic operations
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
+\*  \+ and -                    add, subtract systems (parallel connection)
 \*  \*                          multiply systems (series connection)
-\   /                           right divide -- sys1/sys2 means sys1\*inv(sys2)
-\-   \\                         left divide -- sys1\\sys2 means inv(sys1)\*sys2
+\   /                           right divide -- sys1\*inv(sys2)
+\-   \\                         left divide -- inv(sys1)\*sys2
 \   ^                           powers of a given system
 \   '                           pertransposition
 \   .'                          transposition of input/output map
 \   .\*                         element-by-element multiplication
 \   [..]                        concatenate models along inputs or outputs
-\   lti/stack                   stack models/arrays along some array dimension
+\   lti/stack                   stack models/arrays along some dimension
 \   lti/inv                     inverse of an LTI system
 \   lti/conj                    complex conjugation of model coefficients
-\
-**Matrix equation solvers and linear algebra**
---------------------------------------------------------------------------------
-\*  lyap, dlyap                 solve Lyapunov equations
+==  ==========================  ============================================
+
+Matrix equation solvers and linear algebra
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
+\*  :func:`~mateqn.lyap`        solve continuous-time Lyapunov equations
+\*  :func:`~mateqn.dlyap`       solve discrete-time Lyapunov equations
 \   lyapchol, dlyapchol         square-root Lyapunov solvers
-\*  care, dare                  solve algebraic Riccati equations
+\*  :func:`~mateqn.care`        solve continuous-time algebraic Riccati 
+                                equations
+\*  :func:`~mateqn.dare`        solve disc-time algebraic Riccati equations
 \   gcare, gdare                generalized Riccati solvers
 \   bdschur                     block diagonalization of a square matrix
-\
-**Additional functions**
---------------------------------------------------------------------------------
-\*  :func:`gangof4`             generate the Gang of 4 sensitivity plots
-\*  :func:`linspace`            generate a set of numbers that are linearly 
+==  ==========================  ============================================
+
+
+Additional functions
+----------------------------------------------------------------------------
+
+==  ==========================  ============================================
+\*  :func:`~freqplot.gangof4`   generate the Gang of 4 sensitivity plots
+\*  :func:`~numpy.linspace`     generate a set of numbers that are linearly 
                                 spaced
-\*  :func:`logspace`            generate a set of numbers that are 
+\*  :func:`~numpy.logspace`     generate a set of numbers that are 
                                 logarithmically spaced
-\*  :func:`unwrap`              unwrap a phase angle to give a continuous curve
-==  ==========================  ================================================
+\*  :func:`~ctrlutil.unwrap`    unwrap phase angle to give continuous curve
+==  ==========================  ============================================
+
 """
 
 def ss(*args):
     """
     Create a state space system.
-
+    
+    The function accepts either 1 or 4 parameters:
+    
+    ``ss(sys)``
+        Convert a linear system into space system form. Always creates a 
+        new system, even if sys is already a StateSpace object.
+        
+    ``ss(A, B, C, D)``
+        Create a state space system from the matrices of its state and
+        output equations:
+         
+        .. math:: 
+            \dot x = A \cdot x + B \cdot u 
+            
+            y = C \cdot x + D \cdot u
+            
+        The matrices can be given as *array like* data types or strings.
+        Everything that the constructor of :class:`numpy.matrix` accepts is 
+        permissible here too. 
+    
     Parameters
     ----------
-    A: numpy matrix or matrix-like object
-    B: numpy matrix or matrix-like object
-    C: numpy matrix or matrix-like object
-    D: numpy matrix or matrix-like object
-    sys: StateSpace or TransferFunction object
-    ss accepts a set of `A`, `B`, `C`, `D` matrices or `sys`.
+    sys: Lti (StateSpace or TransferFunction)
+        A linear system
+    A: array_like or string
+        System matrix
+    B: array_like or string
+        Control matrix
+    C: array_like or string
+        Output matrix
+    D: array_like or string
+        Feed forward matrix
 
     Returns
     -------
-    out: StateSpace object
+    out: StateSpace 
+        The new linear system
 
     Raises
     ------
@@ -334,11 +433,15 @@ def ss(*args):
 
     Examples
     --------
-    >>> sys = ss(A, B, C, D) # Create a StateSpace object from these matrices.
-    >>> sys = ss(sys1) # Convert a TransferFunction to a StateSpace object.
+    >>> # Create a StateSpace object from four "matrices".
+    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.") 
+    
+    >>> # Convert a TransferFunction to a StateSpace object.
+    >>> sys_tf = tf([2.], [1., 3])
+    >>> sys2 = ss(sys_tf) 
 
     """ 
-
+    
     if len(args) == 4:
         return StateSpace(args[0], args[1], args[2], args[3])
     elif len(args) == 1:
@@ -353,20 +456,41 @@ TransferFunction object.  It is %s." % type(sys))
     else:
         raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
+
 def tf(*args): 
     """
-    Create a transfer function system.
+    Create a transfer function system. Can create MIMO systems.
+    
+    The function accepts either 1 or 2 parameters:
+    
+    ``tf(sys)``
+        Convert a linear system into transfer function form. Always creates
+        a new system, even if sys is already a TransferFunction object.
+        
+    ``tf(num, den)``
+        Create a transfer function system from its numerator and denominator
+        polynomial coefficients.
+        
+        If `num` and `den` are 1D array_like objects, the function creates a 
+        SISO system.
+
+        To create a MIMO system, `num` and `den` need to be 2D nested lists
+        of array_like objects. (A 3 dimensional data structure in total.)
+        (For details see note below.)
 
     Parameters
     ----------
-    num: vector, or list of lists of vectors
-    den: vector, or list of lists of vectors
-    sys: StateSpace or TransferFunction object
-    tf accepts a `num` and `den`, or `sys``.
+    sys: Lti (StateSpace or TransferFunction)
+        A linear system
+    num: array_like, or list of list of array_like
+        Polynomial coefficients of the numerator
+    den: array_like, or list of list of array_like
+        Polynomial coefficients of the denominator
 
     Returns
     -------
-    out: TransferFunction object
+    out: TransferFunction 
+        The new linear system
 
     Raises
     ------
@@ -383,18 +507,33 @@ def tf(*args):
 
     Notes
     --------
-    `num`[`i`][`j`] is the vector of polynomial coefficients of the transfer
-    function  numerator from the (`j`+1)st output to the (`i`+1)st input.
-    `den`[`i`][`j`] works the same way.
+    
+    .. todo:: 
+    
+        The next paragraph contradicts the comment in the example!
+        Also "input" should come before "output" in the sentence:
+        
+        "from the (j+1)st output to the (i+1)st input"
+        
+    ``num[i][j]`` contains the polynomial coefficients of the numerator 
+    for the transfer function from the (j+1)st output to the (i+1)st input.
+    ``den[i][j]`` works the same way.
+    
+    The coefficients ``[2, 3, 4]`` denote the polynomial 
+    :math:`2 \cdot s^2 + 3 \cdot s + 4`.
 
     Examples
     --------
+    >>> # Create a MIMO transfer function object
+    >>> # The transfer function from the 2nd input to the 1st output is
+    >>> # (3s + 4) / (6s^2 + 5s + 4).
     >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys = tf(num, den)
-    The transfer function from the 2nd input to the 1st output is
-        (3s + 4) / (6s^2 + 5s + 4).
-    >>> sys = tf(sys1) # Convert a StateSpace to a TransferFunction object.
+    >>> sys1 = tf(num, den)
+
+    >>> # Convert a StateSpace to a TransferFunction object.
+    >>> sys_ss = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys2 = tf(sys1) 
 
     """
 
@@ -412,22 +551,40 @@ TransferFunction object.  It is %s." % type(sys))
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
+
 def ss2tf(*args):
     """
     Transform a state space system to a transfer function.
     
+    The function accepts either 1 or 4 parameters:
+    
+    ``ss2tf(sys)``
+        Convert a linear system into space system form. Always creates a 
+        new system, even if sys is already a StateSpace object.
+        
+    ``ss2tf(A, B, C, D)``
+        Create a state space system from the matrices of its state and
+        output equations.
+        
+        For details see: :func:`ss` 
+    
     Parameters
     ----------
-    A: numpy matrix or matrix-like object
-    B: numpy matrix or matrix-like object
-    C: numpy matrix or matrix-like object
-    D: numpy matrix or matrix-like object
-    sys: StateSpace object
-    ss accepts a set of `A`, `B`, `C`, `D` matrices, or `sys`.
+    sys: StateSpace
+        A linear system
+    A: array_like or string
+        System matrix
+    B: array_like or string
+        Control matrix
+    C: array_like or string
+        Output matrix
+    D: array_like or string
+        Feed forward matrix
 
     Returns
     -------
-    out: TransferFunction object
+    out: TransferFunction 
+        New linear system in transfer function form
 
     Raises
     ------
@@ -445,8 +602,14 @@ def ss2tf(*args):
 
     Examples
     --------
-    >>> sys = ss2tf(A, B, C, D)
-    >>> sys = ss2tf(sys1) # Convert a StateSpace to a TransferFunction object.
+    >>> A = [[1., -2], [3, -4]]
+    >>> B = [[5.], [7]]
+    >>> C = [[6., 8]]
+    >>> D = [[9.]]
+    >>> sys1 = ss2tf(A, B, C, D)
+    
+    >>> sys_ss = ss(A, B, C, D)
+    >>> sys2 = ss2tf(sys_ss) 
 
     """
 
@@ -468,22 +631,37 @@ def tf2ss(*args):
     """
     Transform a transfer function to a state space system.
 
+    The function accepts either 1 or 2 parameters:
+    
+    ``tf2ss(sys)``
+        Convert a linear system into transfer function form. Always creates
+        a new system, even if sys is already a TransferFunction object.
+        
+    ``tf2ss(num, den)``
+        Create a transfer function system from its numerator and denominator
+        polynomial coefficients. 
+        
+        For details see: :func:`tf` 
+
     Parameters
     ----------
-    num: vector, or list of lists of vectors
-    den: vector, or list of lists of vectors
-    sys: TransferFunction object
-    tf2ss accepts `num` and `den`, or `sys`.
+    sys: Lti (StateSpace or TransferFunction)
+        A linear system
+    num: array_like, or list of list of array_like
+        Polynomial coefficients of the numerator
+    den: array_like, or list of list of array_like
+        Polynomial coefficients of the denominator
 
     Returns
     -------
-    out: StateSpace object
+    out: StateSpace 
+        New linear system in state space form
 
     Raises
     ------
     ValueError
-        if `num` and `den` have invalid or unequal dimensions, or if an invalid
-        number of arguments is passed in
+        if `num` and `den` have invalid or unequal dimensions, or if an
+        invalid number of arguments is passed in
     TypeError
         if `num` or `den` are of incorrect type, or if sys is not a
         TransferFunction object
@@ -494,18 +672,14 @@ def tf2ss(*args):
     tf
     ss2tf
 
-    Notes
-    --------
-    `num`[`i`][`j`] is the vector of polynomial coefficients of the transfer
-    function numerator from the (`j`+1)st output to the (`i`+1)st input.
-    `den`[`i`][`j`] works the same way.
-
     Examples
     --------
     >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys = tf2ss(num, den)
-    >>> sys = tf2ss(sys1) # Convert a TransferFunction to a StateSpace object.
+    >>> sys1 = tf2ss(num, den)
+    
+    >>> sys_tf = tf(num, den)
+    >>> sys2 = tf2ss(sys_tf) 
 
     """
 
@@ -523,17 +697,21 @@ object.")
 
 def rss(states=1, inputs=1, outputs=1):
     """
-    Create a stable continuous random state space object.
+    Create a stable **continuous** random state space object.
     
     Parameters
     ----------
     states: integer
+        Number of state variables
     inputs: integer
+        Number of system inputs    
     outputs: integer
+        Number of system outputs  
 
     Returns
     -------
-    sys: StateSpace object
+    sys: StateSpace 
+        The randomly created linear system
 
     Raises
     ------
@@ -547,8 +725,8 @@ def rss(states=1, inputs=1, outputs=1):
     Notes
     -----
     If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system will
-    always have a negative real part.
+    missing numbers are assumed to be 1.  The poles of the returned system
+    will always have a negative real part.
      
     """
     
@@ -556,17 +734,21 @@ def rss(states=1, inputs=1, outputs=1):
     
 def drss(states=1, inputs=1, outputs=1):
     """
-    Create a stable discrete random state space object.
+    Create a stable **discrete** random state space object.
     
     Parameters
     ----------
     states: integer
+        Number of state variables
     inputs: integer
+        Number of system inputs    
     outputs: integer
+        Number of system outputs  
 
     Returns
     -------
-    sys: StateSpace object
+    sys: StateSpace 
+        The randomly created linear system
 
     Raises
     ------
@@ -580,8 +762,8 @@ def drss(states=1, inputs=1, outputs=1):
     Notes
     -----
     If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system will
-    always have a magnitude less than 1.
+    missing numbers are assumed to be 1.  The poles of the returned system
+    will always have a magnitude less than 1.
      
     """
     
@@ -589,15 +771,17 @@ def drss(states=1, inputs=1, outputs=1):
     
 def pole(sys):
     """
-    Return system poles.
+    Compute system poles.
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction object
+    sys: StateSpace or TransferFunction 
+        Linear system
 
     Returns
     -------
     poles: ndarray
+        Array that contains the system's poles.
 
     Raises
     ------
@@ -610,7 +794,8 @@ def pole(sys):
 
     Notes
     -----
-    This function is a wrapper for StateSpace.pole and TransferFunction.pole.
+    This function is a wrapper for StateSpace.pole and
+    TransferFunction.pole.
 
     """
 
@@ -618,15 +803,17 @@ def pole(sys):
     
 def zero(sys):
     """
-    Return system zeros.
+    Compute system zeros.
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction object
+    sys: StateSpace or TransferFunction 
+        Linear system
 
     Returns
     -------
     zeros: ndarray
+        Array that contains the system's zeros.
 
     Raises
     ------
@@ -639,7 +826,8 @@ def zero(sys):
 
     Notes
     -----
-    This function is a wrapper for StateSpace.zero and TransferFunction.zero.
+    This function is a wrapper for StateSpace.zero and
+    TransferFunction.zero.
 
     """
 
@@ -651,8 +839,10 @@ def evalfr(sys, omega):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction object
+    sys: StateSpace or TransferFunction
+        Linear system
     omega: scalar
+        Frequency 
 
     Returns
     -------
@@ -670,12 +860,12 @@ def evalfr(sys, omega):
 
     Examples
     --------
-    >>> sys = rss(3, 2, 2)
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> evalfr(sys, 1.)
-    array([[  4.09376126 -6.2171555j ,  23.71332080-35.24245284j],
-           [  0.83405186 -1.82896006j,   8.10962251-12.66640309j]])
-    This is the transfer function matrix evaluated at s = i.
+    array([[ 44.8-21.4j]])
+    >>> # This is the transfer function matrix evaluated at s = i.
 
+    .. todo:: Add example with MIMO system
     """
 
     return sys.evalfr(omega)
@@ -686,8 +876,10 @@ def freqresp(sys, omega):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction object
-    omega: list or ndarray
+    sys: StateSpace or TransferFunction 
+        Linear system
+    omega: array_like
+        List of frequencies
 
     Returns
     -------
@@ -708,16 +900,26 @@ def freqresp(sys, omega):
 
     Examples
     --------
-    >>> sys = rss(3, 2, 2)
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
-    >>> mag[0, 1, :]
-    array([ 55.43747231,  42.47766549,   1.97225895])
-    >>> phase[1, 0, :]
-    array([-0.12611087, -1.14294316,  2.5764547 ])
-    This is the magnitude of the frequency response from the 2nd input to the
-    1st output, and the phase (in radians) of the frequency response from the
-    1st input to the 2nd output, for s = 0.1i, i, 10i.
-
+    >>> mag
+    array([[[ 58.8576682 ,  49.64876635,  13.40825927]]])
+    >>> phase
+    array([[[-0.05408304, -0.44563154, -0.66837155]]])
+    
+    .. todo:: 
+        Add example with MIMO system
+        
+        #>>> sys = rss(3, 2, 2)
+        #>>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
+        #>>> mag[0, 1, :]
+        #array([ 55.43747231,  42.47766549,   1.97225895])
+        #>>> phase[1, 0, :]
+        #array([-0.12611087, -1.14294316,  2.5764547 ])
+        #>>> # This is the magnitude of the frequency response from the 2nd
+        #>>> # input to the 1st output, and the phase (in radians) of the
+        #>>> # frequency response from the 1st input to the 2nd output, for
+        #>>> # s = 0.1i, i, 10i.
     """
 
     return sys.freqresp(omega)
@@ -728,11 +930,17 @@ def bode(*args, **keywords):
 
     Examples
     --------
-    >>> bode(sys)
-    >>> bode(sys, w)
-    >>> bode(sys1, sys2, ..., sysN)
-    >>> bode(sys1, sys2, ..., sysN, w)
-    >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.") 
+    >>> mag, phase, omega = bode(sys)
+    
+    .. todo:: 
+    
+        Document these use cases
+    
+        * >>> bode(sys, w)
+        * >>> bode(sys1, sys2, ..., sysN)
+        * >>> bode(sys1, sys2, ..., sysN, w)
+        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')
     """
 
     # If the first argument is a list, then assume python-control calling format
@@ -783,15 +991,10 @@ def bode(*args, **keywords):
     return freqplot.bode(syslist, omega, **keywords)
 
 # Nichols chart grid
+from nichols import nichols_grid
 def ngrid():
-    """Nichols chart grid.
-
-    Examples
-    --------
-    >>> ngrid()
-    """
-    from nichols import nichols_grid
     nichols_grid()
+ngrid.__doc__ = re.sub('nichols_grid', 'ngrid', nichols_grid.__doc__)
 
 # Root locus plot
 def rlocus(sys, klist = None, **keywords):
@@ -799,57 +1002,68 @@ def rlocus(sys, klist = None, **keywords):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction object
-    klist: optional list of gains
+    sys: StateSpace or TransferFunction 
+        Linear system
+    klist: 
+        optional list of gains
 
     Returns
     -------
-    rlist: list of roots for each gain
-    klist: list of gains used to compute roots
+    rlist: 
+        list of roots for each gain
+    klist: 
+        list of gains used to compute roots
     """
-    from rlocus import RootLocus
+    from rlocus import root_locus
     if (klist == None):
         #! TODO: update with a smart cacluation of the gains
         klist = logspace(-3, 3)
 
-    rlist = RootLocus(sys, klist, **keywords)
+    rlist = root_locus(sys, klist, **keywords)
     return rlist, klist
     
-
 def margin(*args):
     """Calculate gain and phase margins and associated crossover frequencies
-
-    Usage:
-    gm, pm, wg, wp = margin(sys)
-    gm, pm, wg, wp = margin(mag,phase,w)
+    
+    Function ``margin`` takes either 1 or 3 parameters.
     
     Parameters
     ----------
-    sys : linsys
+    sys : StateSpace or TransferFunction 
         Linear SISO system
     mag, phase, w : array_like
-        Input magnitude, phase (in deg.), and frequencies (rad/sec) from bode
-        frequency response data
+        Input magnitude, phase (in deg.), and frequencies (rad/sec) from
+        bode frequency response data
 
     Returns
     -------
     gm, pm, wg, wp : float
         Gain margin gm, phase margin pm (in deg), and associated crossover
         frequencies wg and wp (in rad/sec) of SISO open-loop. If more than
-        one crossover frequency is detected, returns the lowest corresponding
-        margin. 
+        one crossover frequency is detected, returns the lowest
+        corresponding margin.
+
+    Examples
+    --------
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> gm, pm, wg, wp = margin(sys)
+    margin: no magnitude crossings found
+    
+    .. todo:: 
+        better ecample system!
+        
+        #>>> gm, pm, wg, wp = margin(mag, phase, w)
     """
     if len(args) == 1:
         sys = args[0]
-        margins = freqplot.margin(sys)
+        margin = margins.stability_margins(sys)
     elif len(args) == 3:
-        margins = freqplot.margin(args)
+        margin = margins.stability_margins(args)
     else: 
         raise ValueError("Margin needs 1 or 3 arguments; received %i." 
             % len(args))
             
-    return margins[0], margins[1], margins[3], margins[4]
-
+    return margin[0], margin[1], margin[3], margin[4]
 
 def dcgain(*args):
     '''
@@ -909,21 +1123,217 @@ def dcgain(*args):
 # Call corresponding functions in timeresp, with arguments transposed
 
 def step(sys, T=None, X0=0., input=0, output=0, **keywords):
-    T, yout = timeresp.StepResponse(sys, T, X0, input, output, 
-                                   transpose = True, **keywords)
-    return T, yout
+    '''
+    Step response of a linear system
+    
+    If the system has multiple inputs or outputs (MIMO), one input and one 
+    output have to be selected for the simulation. The parameters `input` 
+    and `output` do this. All other inputs are set to 0, all other outputs 
+    are ignored.
+    
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
 
-def impulse(sys, T=None, X0=0., input=0, output=0, **keywords):
-    T, yout = timeresp.ImpulseResponse(sys, T, X0, input, output, 
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    X0: array-like or number, optional
+        Initial condition (default = 0)
+
+        Numbers are converted to constant arrays with the correct shape.
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        Index of the output that will be used in this simulation.
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`control.forced_response`, which in turn passes them on to
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+    Returns
+    -------
+    yout: array
+        Response of the system
+    
+    T: array
+        Time values of the output
+
+    See Also
+    --------
+    lsim, initial, impulse
+
+    Examples
+    --------
+    >>> T, yout = step(sys, T, X0)
+    '''
+    T, yout = timeresp.step_response(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
-    return T, yout
+    return yout, T
+
+def impulse(sys, T=None, input=0, output=0, **keywords):
+    '''
+    Impulse response of a linear system
+    
+    If the system has multiple inputs or outputs (MIMO), one input and
+    one output must be selected for the simulation. The parameters
+    `input` and `output` do this. All other inputs are set to 0, all
+    other outputs are ignored.
+    
+    Parameters
+    ----------
+    sys: StateSpace, TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        Index of the output that will be used in this simulation.
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`lsim`, which in turn passes them on to
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+    Returns
+    -------
+    yout: array
+        Response of the system
+    T: array
+        Time values of the output
+    
+    See Also
+    --------
+    lsim, step, initial
+
+    Examples
+    --------
+    >>> T, yout = impulse(sys, T) 
+    '''
+    T, yout = timeresp.impulse_response(sys, T, 0, input, output, 
+                                   transpose = True, **keywords)
+    return yout, T
 
 def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
-    T, yout = timeresp.InitialResponse(sys, T, X0, input, output, 
+    '''
+    Initial condition response of a linear system
+    
+    If the system has multiple inputs or outputs (MIMO), one input and one 
+    output have to be selected for the simulation. The parameters `input` 
+    and `output` do this. All other inputs are set to 0, all other outputs 
+    are ignored.
+    
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    X0: array-like object or number, optional
+        Initial condition (default = 0)
+
+        Numbers are converted to constant arrays with the correct shape.
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        Index of the output that will be used in this simulation.
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`lsim`, which in turn passes them on to
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+
+    Returns
+    -------
+    yout: array
+        Response of the system
+    T: array
+        Time values of the output
+    
+    See Also
+    --------
+    lsim, step, impulse
+
+    Examples
+    --------
+    >>> T, yout = initial(sys, T, X0)
+    '''
+    T, yout = timeresp.initial_response(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
-    return T, yout
+    return yout, T
 
 def lsim(sys, U=0., T=None, X0=0., **keywords):
-    T, yout, xout = timeresp.ForcedResponse(sys, T, U, X0,
+    '''
+    Simulate the output of a linear system.
+    
+    As a convenience for parameters `U`, `X0`:
+    Numbers (scalars) are converted to constant arrays with the correct shape.
+    The correct shape is inferred from arguments `sys` and `T`. 
+    
+    Parameters
+    ----------
+    sys: Lti (StateSpace, or TransferFunction)
+        LTI system to simulate
+        
+    U: array-like or number, optional
+        Input array giving input at each time `T` (default = 0).
+        
+        If `U` is ``None`` or ``0``, a special algorithm is used. This special 
+        algorithm is faster than the general algorithm, which is used otherwise.
+        
+    T: array-like 
+        Time steps at which the input is defined, numbers must be (strictly 
+        monotonic) increasing. 
+        
+    X0: array-like or number, optional
+        Initial condition (default = 0). 
+
+    **keywords:
+        Additional keyword arguments control the solution algorithm for the 
+        differential equations. These arguments are passed on to the function
+        :func:`scipy.integrate.odeint`. See the documentation for
+        :func:`scipy.integrate.odeint` for information about these
+        arguments.
+
+    Returns
+    -------
+    yout: array
+        Response of the system. 
+    T: array
+        Time values of the output. 
+    xout: array
+        Time evolution of the state vector. 
+    
+    See Also
+    --------
+    step, initial, impulse
+    
+    Examples
+    --------
+    >>> T, yout, xout = lsim(sys, U, T, X0)
+    '''
+    T, yout, xout = timeresp.forced_response(sys, T, U, X0,
                                              transpose = True, **keywords)
-    return T, yout, xout
+    return yout, T, xout

@@ -46,26 +46,22 @@ from ctrlutil import unwrap
 from freqplot import default_frequency_range
 
 # Nichols plot
-def nichols(syslist, omega=None, grid=True):
+def nichols_plot(syslist, omega=None, grid=True):
     """Nichols plot for a system
-
-    Usage
-    =====
-    magh = nichols(sys, omega=None)
 
     Plots a Nichols plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
-    syslist : linsys
+    syslist : list of Lti, or Lti
         List of linear input/output systems (single system is OK)
-    omega : freq_range
+    omega : array_like
         Range of frequencies (list or bounds) in rad/sec
     grid : boolean, optional
         True if the plot should include a Nichols-chart grid. Default is True.
 
-    Return values
-    -------------
+    Returns
+    -------
     None
     """
 
@@ -298,3 +294,6 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     mags = sp.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
     Gcl_phases, Gcl_mags = sp.meshgrid(sp.radians(phases), mags)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
+
+# Function aliases
+nichols = nichols_plot
