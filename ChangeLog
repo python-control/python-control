@@ -1,4 +1,10 @@
+---- control-0.5a released -----
+
 2011-08-07  Richard Murray  <murray@malabar.local>
+
+	* setup.py: updated version number; next release will be 0.5a since
+	the changes in function names and argument/return value order (for
+	time reponses) require small updates in code
 
 	* examples/secord-matlab.py, examples/pvtol-nested-ss.py,
 	examples/test-response.py, examples/pvtol-nested.py: fixed small bug
