@@ -28,6 +28,7 @@ general differences between NumPy and MATLAB can be found here:
 
 In terms of the python-control package more specifically, here are
 some thing to keep in mind:
+
 * You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
 * Functions that return multiple arguments use tuples
 * Can't use braces for collections; use tuples instead
