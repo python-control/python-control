@@ -111,7 +111,7 @@ SUCH DAMAGE.
 
 Author: Eike Welk
 Date: 12 May 2011
-$Id: matlab.py 157 2011-06-17 23:51:46Z murrayrm $
+$Id$
 """
 
 # Libraries that we make use of 
