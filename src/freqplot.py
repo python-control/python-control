@@ -319,8 +319,8 @@ def default_frequency_range(syslist):
     syslist : list of Lti
         List of linear input/output systems (single system is OK)
 
-    Return
-    ------
+    Returns
+    -------
     omega : array
         Range of frequencies in rad/sec
 
