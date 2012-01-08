@@ -59,7 +59,7 @@ def series(sys1, sys2):
     """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.
 
     Parameters
-    ---------
+    ----------
     sys1: scalar, StateSpace, or TransferFunction
     sys2: scalar, StateSpace, or TransferFunction
 
@@ -96,7 +96,7 @@ def parallel(sys1, sys2):
     Return the parallel connection sys1 + sys2.
 
     Parameters
-    ---------
+    ----------
     sys1: scalar, StateSpace, or TransferFunction
     sys2: scalar, StateSpace, or TransferFunction
 
@@ -121,7 +121,7 @@ def parallel(sys1, sys2):
     `sys1` is a scalar, then the output type is the type of `sys2`.
 
     Examples
-    -------
+    --------
     >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2.
 
     """

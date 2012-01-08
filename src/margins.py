@@ -43,7 +43,7 @@ SUCH DAMAGE.
 Author: Richard M. Murray
 Date: 14 July 2011
 
-$Id: xferfcn.py 165 2011-06-26 02:44:09Z murrayrm $
+$Id$
 
 """
 
@@ -58,8 +58,8 @@ def stability_margins(sysdata, deg=True):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
 
-    Usage:
-    
+    Usage
+    -----
     gm, pm, sm, wg, wp, ws = stability_margins(sysdata, deg=True)
     
     Parameters
