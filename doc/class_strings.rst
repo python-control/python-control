@@ -1,12 +1,12 @@
 Python-Control Classes
 ********************** 
 
-The State Space Module
-======================
+State Space Class
+=================
 .. automodule:: statesp
    :members:
 
-The Transfer Function Module
-============================
+Transfer Function Class
+=======================
 .. automodule:: xferfcn
    :members:

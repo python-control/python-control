@@ -5,7 +5,6 @@
 
 import unittest
 import numpy as np
-from slycot import tb04ad, td04ad
 import control.matlab as matlab
 
 class TestSlycot(unittest.TestCase):
@@ -30,6 +29,7 @@ class TestSlycot(unittest.TestCase):
         """ Directly tests the functions tb04ad and td04ad through direct comparison of transfer function coefficients.
             Similar to convert_test, but tests at a lower level.
         """
+        from slycot import tb04ad, td04ad
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxI+1):
                 for outputs in range(1, self.maxO+1):

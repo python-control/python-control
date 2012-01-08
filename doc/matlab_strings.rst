@@ -1,8 +1,6 @@
-Matlab-like Routines
-********************
+MATLAB Compatibility Module
+***************************
 
-The Matlab Module
-=================
 .. automodule:: matlab
     :members:
     

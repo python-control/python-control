@@ -1,3 +1,57 @@
+2012-01-07  Richard Murray  <murray@malabar.local>
+
+	* doc/modules.rst: added new sections for analysis, synthesis,
+	frequency plots and time response.
+
+	* doc/index.rst (Contents): added modules and examples.
+
+	* src/xferfcn.py (_convertToTransferFunction): added check for
+	slycot import error.  If not present, use signal.lti to perform the
+	conversion.  Only works for SISO.
+
+	* src/statesp.py (_convertToStateSpace): added check for slycot
+	import error, to allow basic functionality without the presence of
+	slycot (contributed by Ryan Krauss).
+
+	* tests/slycot_convert_test.py (TestSlycot.testTF): moved slycot
+	import into test function, so that test script still works even if
+	time response is not present.
+
+2011-08-09  Richard Murray  <murray@malabar.local>
+
+	* src/timeresp.py: fixed doc reference to time-series-convention
+
+2011-08-08  Richard Murray  <murray@malabar.local>
+
+	* doc/index.rst, doc/modules.rst: Moved MATLAB section into
+	python-control modules file
+
+2011-08-07  Richard Murray  <murray@malabar.local>
+
+	* doc/conf.py: added autosummary extension
+
+	* doc/timeresp.rst: New file containing listing of functions for
+	time responses (step, initial, etc)
+
+	* doc/freqplot.rst: New file listing functions for frequency
+	plots (bode, nyquist, etc)
+
+	* doc/modules.rst: New file that contains a listing of the major
+	modules in the toolbox
+
+	* doc/index.rst (Contents): Rearranged contents to put modules
+	documentation in a separate section.  Also added examples section
+	(not quite ready yet).
+
+2011-08-07  Richard Murray  <murray@malabar.local>
+
+	* examples/rss-balred.py: reordered outputs from call to matlab.step
+	(missed this the first time around)
+
+	* doc/matlab_strings.rst: Matlab -> MATLAB (proper spelling)
+
+	* setup.py, doc/conf.py: updated version to 0.5b
+
 2011-08-07  Richard Murray  <murray@malabar.local>
 
 	* doc/conf.py: Updated version numbers to 0.5a, regenerated

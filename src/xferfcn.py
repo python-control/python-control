@@ -76,7 +76,7 @@ $Id$
 
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
-    polyadd, polymul, polyval, roots, sort, sqrt, zeros
+    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze
 from scipy.signal import lti
 from copy import deepcopy
 from lti import Lti
@@ -767,27 +767,39 @@ _convertToTransferFunction cannot take keywords.")
 
         return sys
     elif isinstance(sys, statesp.StateSpace):
-        from slycot import tb04ad
-        if len(kw):
-            raise TypeError("If sys is a StateSpace, _convertToTransferFunction \
-cannot take keywords.")
+        try:
+            from slycot import tb04ad
+            if len(kw):
+                raise TypeError("If sys is a StateSpace, \
+                        _convertToTransferFunction cannot take keywords.")
 
-        # Use Slycot to make the transformation
-        # Make sure to convert system matrices to numpy arrays
-        tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
-                       array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
+            # Use Slycot to make the transformation
+            # Make sure to convert system matrices to numpy arrays
+            tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
+                           array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
 
-        # Preallocate outputs.
-        num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
-        den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+            # Preallocate outputs.
+            num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+            den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
 
-        for i in range(sys.outputs):
-            for j in range(sys.inputs):
-                num[i][j] = list(tfout[6][i, j, :])
-                # Each transfer function matrix row has a common denominator.
-                den[i][j] = list(tfout[5][i, :])
-        # print num
-        # print den
+            for i in range(sys.outputs):
+                for j in range(sys.inputs):
+                    num[i][j] = list(tfout[6][i, j, :])
+                    # Each transfer function matrix row has a common denominator.
+                    den[i][j] = list(tfout[5][i, :])
+            # print num
+            # print den
+        except ImportError:
+            # If slycot is not available, use signal.lti (SISO only)
+            if (sys.inputs != 1 or sys.outputs != 1):
+                raise TypeError("No support for MIMO without slycot")
+
+            lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
+            num = squeeze(lti_sys.num)
+            den = squeeze(lti_sys.den)
+            print num
+            print den
+
         return TransferFunction(num, den)
     elif isinstance(sys, (int, long, float, complex)):
         if "inputs" in kw:

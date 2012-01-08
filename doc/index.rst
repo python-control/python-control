@@ -3,18 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Python-Control's documentation!
-==========================================
+Python Control User's Manual
+============================
+
+Welcome to the Python Control Systems Library (python-control) User's
+Manual.  This manual describes the python-control package, including
+all of the functions defined in the package and examples showing how
+to use the package.
 
 Contents:
 
 .. toctree::
+   :maxdepth: 2
    
    intro
    class_strings
-   modsimp_strings
-   matlab_strings
-   bdalg_strings
+   modules
+   examples
 
 Indices and tables
 ==================

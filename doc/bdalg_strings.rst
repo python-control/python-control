@@ -1,7 +1,7 @@
-Block Diagram Algebra Routines
-******************************
+Block Diagram Algebra
+*********************
 
-The Block Diagram Algebra Module
-================================
+.. toctree::
+
 .. automodule:: bdalg
    :members:

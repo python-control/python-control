@@ -26,8 +26,8 @@ rsys = msimp.balred(fsys,ord, method = 'truncate')
 
 # Comparison of the step responses of the full and reduced systems
 plt.figure(1)
-t, y = mt.step(fsys)
-tr, yr = mt.step(rsys)
+y, t = mt.step(fsys)
+yr, tr = mt.step(rsys)
 plt.plot(t.T, y.T)
 plt.hold(True)
 plt.plot(tr.T, yr.T)

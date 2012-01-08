@@ -75,7 +75,7 @@ $Id$
 
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
     dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
-    zeros
+    zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
@@ -459,28 +459,37 @@ cannot take keywords.")
         # Already a state space system; just return it
         return sys
     elif isinstance(sys, xferfcn.TransferFunction):
-        from slycot import td04ad
-        if len(kw):
-            raise TypeError("If sys is a TransferFunction, _convertToStateSpace \
-cannot take keywords.")
+        try:
+            from slycot import td04ad
+            if len(kw):
+                raise TypeError("If sys is a TransferFunction, _convertToStateSpace \
+    cannot take keywords.")
 
-        # Change the numerator and denominator arrays so that the transfer
-        # function matrix has a common denominator.
-        num, den = sys._common_den()
-        # Make a list of the orders of the denominator polynomials.
-        index = [len(den) - 1 for i in range(sys.outputs)]
-        # Repeat the common denominator along the rows.
-        den = array([den for i in range(sys.outputs)])
-        # TODO: transfer function to state space conversion is still buggy!
-        #print num
-        #print shape(num)
-        ssout = td04ad('R',sys.inputs, sys.outputs, index, den, num,tol=0.0)
-    
-        states = ssout[0]
-        return StateSpace(ssout[1][:states, :states],
-            ssout[2][:states, :sys.inputs], 
-            ssout[3][:sys.outputs, :states], 
-            ssout[4])
+            # Change the numerator and denominator arrays so that the transfer
+            # function matrix has a common denominator.
+            num, den = sys._common_den()
+            # Make a list of the orders of the denominator polynomials.
+            index = [len(den) - 1 for i in range(sys.outputs)]
+            # Repeat the common denominator along the rows.
+            den = array([den for i in range(sys.outputs)])
+            # TODO: transfer function to state space conversion is still buggy!
+            #print num
+            #print shape(num)
+            ssout = td04ad('R',sys.inputs, sys.outputs, index, den, num,tol=0.0)
+
+            states = ssout[0]
+            return StateSpace(ssout[1][:states, :states],
+                ssout[2][:states, :sys.inputs], 
+                ssout[3][:sys.outputs, :states], 
+                ssout[4])
+        except ImportError:
+            lti_sys = lti(squeeze(sys.num), squeeze(sys.den))#<-- do we want to squeeze first
+                                                               # and check dimenations?  I think
+                                                               # this will fail if num and den aren't 1-D
+                                                               # after the squeeze
+            return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D)
+            
+
     elif isinstance(sys, (int, long, float, complex)):
         if "inputs" in kw:
             inputs = kw["inputs"]
@@ -627,8 +636,8 @@ def _mimo2siso(sys, input, output, warn_conversion):
     
     If ``sys`` is already a SISO system, it will be returned unaltered. 
     
-    Parameters:
-    
+    Parameters
+    ----------
     sys: StateSpace
         Linear (MIMO) system that should be converted.
     input: int

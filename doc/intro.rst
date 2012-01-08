@@ -2,7 +2,13 @@
 Introduction
 ============
 
-Welcome to the Python-Control project.
+Welcome to the Python Control Systems Toolbox (python-control) User's
+Manual.  This manual contains information on using the python-control
+package, including documentation for all functions in the package and
+examples illustrating their use.
+
+Overview of the Toolbox
+-----------------------
 
 The python-control package is a set of python classes and functions
 that implement common operations for the analysis and design of
@@ -39,15 +45,22 @@ some thing to keep in mind:
 Getting Started
 ---------------
 1. Download latest release from http://sf.net/projects/python-control/files.
+
 2. Untar the source code in a temporary directory and run 'python setup.py
    install' to build and install the code
-3. To see if things are working correctly, run ipython -pylab and run the 
-   script 'examples/secord-matlab.py'.  This should generate a set response,
-   Bode plot and Nyquist plot for a simple second order system.
+
+3. To see if things are working correctly, run ipython -pylab and run
+   the script 'examples/secord-matlab.py'.  This should generate a
+   step response, Bode plot and Nyquist plot for a simple second order
+   system.
+
 4. To see the commands that are available, run the following commands in
    ipython::
+
        >>> import control
        >>> ?control.matlab
+
 5. If you want to have a MATLAB-like environment for running the control
    toolbox, use::
+
        >>> from control.matlab import *
