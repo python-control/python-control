@@ -56,7 +56,7 @@ from bdalg import feedback
    
 # Bode plot
 def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True, 
-        color=None, Plot=True):
+        Plot=True, *args, **kwargs):
     """Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
@@ -71,12 +71,12 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
         If True, plot result in dB
     Hz : boolean
         If True, plot frequency in Hz (omega must be provided in rad/sec)
-    color : matplotlib color
-        Color of line in bode plot
     deg : boolean
         If True, return phase in degrees (else radians)
     Plot : boolean
         If True, plot magnitude and phase
+    *args, **kwargs: 
+        Additional options to matplotlib (color, linestyle, etc)
 
     Returns
     -------
@@ -95,7 +95,6 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
 
     Examples
     --------
-    >>> from matlab import ss
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag, phase, omega = bode(sys)
     """
@@ -132,45 +131,28 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
                 # Magnitude plot
                 plt.subplot(211); 
                 if dB:
-                    if color==None:
-                        plt.semilogx(omega, mag)
-                    else:
-                        plt.semilogx(omega, mag, color=color)
-                    plt.ylabel("Magnitude (dB)")
+                    plt.semilogx(omega, mag, *args, **kwargs)
                 else:
-                    if color==None:
-                        plt.loglog(omega, mag)
-                    else: 
-                        plt.loglog(omega, mag, color=color) 
-                    plt.ylabel("Magnitude")
+                    plt.loglog(omega, mag, *args, **kwargs)
+                plt.hold(True);
 
-                # Add a grid to the plot
+                # Add a grid to the plot + labeling
                 plt.grid(True)
                 plt.grid(True, which='minor')
-                plt.hold(True);
+                plt.ylabel("Magnitude (dB)" if dB else "Magnitude")
 
                 # Phase plot
                 plt.subplot(212);
-                if deg: 
-                    phase_deg = phase
-                else:
-                    phase_deg = phase * 180 / sp.pi
-                if color==None:
-                    plt.semilogx(omega, phase_deg)
-                else:
-                    plt.semilogx(omega, phase_deg, color=color)
-                plt.hold(True)
+                plt.semilogx(omega, phase, *args, **kwargs)
+                plt.hold(True);
 
-                # Add a grid to the plot
+                # Add a grid to the plot + labeling
                 plt.grid(True)
                 plt.grid(True, which='minor')
-                plt.ylabel("Phase (deg)")
+                plt.ylabel("Phase (deg)" if deg else "Phase (rad)")
 
                 # Label the frequency axis
-                if Hz:
-                    plt.xlabel("Frequency (Hz)")
-                else:
-                    plt.xlabel("Frequency (rad/sec)")
+                plt.xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
 
     if len(syslist) == 1:
         return mags[0], phases[0], omegas[0]
@@ -178,7 +160,8 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
         return mags, phases, omegas
 
 # Nyquist plot
-def nyquist_plot(syslist, omega=None, Plot=True):
+def nyquist_plot(syslist, omega=None, Plot=True, color='b', 
+                 labelFreq=0, *args, **kwargs):
     """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
@@ -190,7 +173,11 @@ def nyquist_plot(syslist, omega=None, Plot=True):
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
     Plot : boolean
-        if True, plot magnitude
+        If True, plot magnitude
+    labelFreq : int
+        Label every nth frequency on the plot
+    *args, **kwargs: 
+        Additional options to matplotlib (color, linestyle, etc)
 
     Returns
     -------
@@ -203,7 +190,6 @@ def nyquist_plot(syslist, omega=None, Plot=True):
 
     Examples
     --------
-    >>> from matlab import ss
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> real, imag, freq = nyquist(sys)
     """
@@ -214,12 +200,14 @@ def nyquist_plot(syslist, omega=None, Plot=True):
     # Select a default range if none is provided
     if (omega == None):
         omega = default_frequency_range(syslist)
+
     # Interpolate between wmin and wmax if a tuple or list are provided
     elif (isinstance(omega,list) | isinstance(omega,tuple)):
         # Only accept tuple or list of length 2
         if (len(omega) != 2):
             raise ValueError("Supported frequency arguments are (wmin,wmax) tuple or list, or frequency vector. ")
-        omega = np.logspace(np.log10(omega[0]),np.log10(omega[1]),num=50,endpoint=True,base=10.0)
+        omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
+                            num=50, endpoint=True, base=10.0)
     for sys in syslist:
         if (sys.inputs > 1 or sys.outputs > 1):
             #TODO: Add MIMO nyquist plots. 
@@ -236,11 +224,33 @@ def nyquist_plot(syslist, omega=None, Plot=True):
 
             if (Plot):    
                 # Plot the primary curve and mirror image
-                plt.plot(x, y, '-');
-                plt.plot(x, -y, '--');
+                plt.plot(x, y, '-', color=color, *args, **kwargs);
+                plt.plot(x, -y, '--', color=color, *args, **kwargs);
                 # Mark the -1 point
                 plt.plot([-1], [0], 'r+')
 
+            # Label the frequencies of the points
+            if (labelFreq):
+                for xpt, ypt, omegapt in zip(x, y, omega)[::labelFreq]:
+                    # Convert to Hz
+                    f = omegapt/(2*sp.pi)       
+
+                    # Factor out multiples of 1000 and limit the
+                    # result to the range [-8, 8].
+                    pow1000 = max(min(get_pow1000(f),8),-8) 
+
+                     # Get the SI prefix.
+                    prefix = gen_prefix(pow1000)
+                    
+                    # Apply the text. (Use a space before the text to
+                    # prevent overlap with the data.)
+                    #
+                    # np.round() is used because 0.99... appears
+                    # instead of 1.0, and this would otherwise be
+                    # truncated to 0.
+                    plt.text(xpt, ypt, 
+                             ' ' + str(int(np.round(f/1000**pow1000, 0))) + 
+                             ' ' + prefix + 'Hz') 
         return x, y, omega
 
 # Gang of Four
@@ -361,6 +371,49 @@ def default_frequency_range(syslist):
                         np.ceil(np.max(features))+1)   
                         
     return omega
+
+#
+# KLD 5/23/11: Two functions to create nice looking labels
+#
+def get_pow1000(num):
+    '''Determine the exponent for which the significand of a number is within the
+    range [1, 1000).
+    '''
+    # Based on algorithm from http://www.mail-archive.com/matplotlib-users@lists.sourceforge.net/msg14433.html, accessed 2010/11/7
+    # by Jason Heeris 2009/11/18
+    from decimal import Decimal
+    from math import floor
+    dnum = Decimal(str(num))
+    if dnum == 0:
+        return 0
+    elif dnum < 0:
+        dnum = -dnum
+    return int(floor(dnum.log10()/3))
+
+def gen_prefix(pow1000):
+    '''Return the SI prefix for a power of 1000.
+    '''
+    # Prefixes according to Table 5 of [BIPM 2006] (excluding hecto,
+    # deca, deci, and centi).
+    if pow1000 < -8 or pow1000 > 8:
+        raise ValueError("Value is out of the range covered by the SI prefixes.")
+    return ['Y', # yotta (10^24)
+            'Z', # zetta (10^21)
+            'E', # exa (10^18)
+            'P', # peta (10^15)
+            'T', # tera (10^12)
+            'G', # giga (10^9)
+            'M', # mega (10^6)
+            'k', # kilo (10^3)
+            '', # (10^0)
+            'm', # milli (10^-3)
+            r'$\mu$', # micro (10^-6)
+            'n', # nano (10^-9)
+            'p', # pico (10^-12)
+            'f', # femto (10^-15)
+            'a', # atto (10^-18)
+            'z', # zepto (10^-21)
+            'y'][8 - pow1000] # yocto (10^-24)
 
 # Function aliases
 bode = bode_plot

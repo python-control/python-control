@@ -72,3 +72,11 @@ from statesp import StateSpace
 from timeresp import forced_response, initial_response, step_response, \
     impulse_response
 from xferfcn import TransferFunction
+
+# Import some of the more common (and benign) MATLAB shortcuts
+from matlab import ss, tf, ss2tf, tf2ss, drss
+from matlab import pole, zero, evalfr, freqresp, dcgain
+from matlab import nichols, rlocus, margin
+        # bode and nyquist come directly from freqplot.py
+from matlab import step, impulse, initial, lsim
+
