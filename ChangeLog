@@ -1,3 +1,27 @@
+2012-08-25  Richard Murray  <murray@altura.local>
+
+	* tests/rlocus_test.py (TestRootLocus.testRootLocus): added sort()
+	to test to get rid of problems in which ordering was generating an
+	error.
+
+	* src/freqplot.py (nyquist_plot): added code from Kevin Davies to
+	label frequency points in Nyquist plot
+
+	* src/__init__.py: import non-conflicting MATLAB functions by default
+
+	* src/freqplot.py (bode_plot, nyquist_plot): simplified code and
+	removed unneeded options.  To set color, linestyle, etc use keywords
+	and pass to matplotlib.
+
+2012-08-24  Richard Murray  <murray@altura.local>
+
+	* src/freqplot.py: added in plot enhancements from Kevin Davies
+	(bode_plot): pass optional arguments and keywords to matplotlib
+	(get_pow1000): new function for determinine engineering exponent
+	(gen_prefix): new function to get SI prefix for power of 1000
+
+	* src/freqplot.py (bode_plot): removed extraneous phase_deg calculation
+
 2012-01-07  Richard Murray  <murray@malabar.local>
 
 	* doc/modules.rst: added new sections for analysis, synthesis,
