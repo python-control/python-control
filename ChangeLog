@@ -1,4 +1,35 @@
+2012-08-29  Richard Murray  <murray@altura.local>
+
+	* src/xferfcn.py (TransferFunction._common_den): fixed up code for
+	case where poles have multiplicity > 1.  Set end limits of check to
+	avoid overruning the list + combine complex conjugate pole pairs
+	from the outside in to prevent small errors from growing.
+
+2012-08-26  Richard Murray  <murray@altura.local>
+
+	* tests/convert_test.py (TestConvert.testConvert): replaced previous
+	test of transfer function coefficients with a frequency response
+	test.  This is necessary because various degenerate conditions will
+	generate a situation where the transfer functions are of different
+	forms but still equal.  Eg 0/1 = 1e-17 s + 1e-16 / (s^2 + s + 1).
+	Still getting errors, but looks like actual problem in conversion.
+
+	* src/statesp.py (_mimo2siso): set default value for warn_conversion
+	to False
+
+	* tests/convert_test.py (TestConvert.testConvert): Added check to
+	make sure that we don't create problems with uncontrollable or
+	unobservable systems.
+
 2012-08-25  Richard Murray  <murray@altura.local>
+
+	* src/xferfcn.py (TransferFunction._common_den): identified bug in
+	the way that common denominators are computed; see comments in code
+	regarding complex conjugate pairs.
+
+	* src/statefbk.py (place): repalced nd.size(placed_eigs) with
+	len(placed_eigs) to fix intermittent problems pointed out by Roberto
+	Bucher in control-0.3c.
 
 	* tests/rlocus_test.py (TestRootLocus.testRootLocus): added sort()
 	to test to get rid of problems in which ordering was generating an

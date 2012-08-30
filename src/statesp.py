@@ -472,7 +472,7 @@ cannot take keywords.")
             index = [len(den) - 1 for i in range(sys.outputs)]
             # Repeat the common denominator along the rows.
             den = array([den for i in range(sys.outputs)])
-            # TODO: transfer function to state space conversion is still buggy!
+            #! TODO: transfer function to state space conversion is still buggy!
             #print num
             #print shape(num)
             ssout = td04ad('R',sys.inputs, sys.outputs, index, den, num,tol=0.0)
@@ -624,7 +624,7 @@ def _rss_generate(states, inputs, outputs, type):
     return StateSpace(A, B, C, D)
 
 # Convert a MIMO system to a SISO system
-def _mimo2siso(sys, input, output, warn_conversion):
+def _mimo2siso(sys, input, output, warn_conversion=False):
     #pylint: disable=W0622
     """
     Convert a MIMO system to a SISO system. (Convert a system with multiple

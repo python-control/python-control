@@ -984,6 +984,7 @@ def bode(*args, **keywords):
 
     # Warn about unimplemented plotstyles
     #! TODO: remove this when plot styles are implemented in bode()
+    #! TODO: uncomment unit test code that tests this out
     if (len(plotstyle) != 0):
         print("Warning (matabl.bode): plot styles not implemented");
 

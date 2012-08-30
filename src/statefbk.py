@@ -93,7 +93,7 @@ def place(A, B, p):
 
     # Call SLICOT routine to place the eigenvalues
     A_z,w,nfp,nap,nup,F,Z = \
-        sb01bd(B_mat.shape[0], B_mat.shape[1], np.size(placed_eigs), alpha,
+        sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
                A_mat, B_mat, placed_eigs, 'C');
 
     # Return the gain matrix, with MATLAB gain convention

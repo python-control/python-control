@@ -638,14 +638,34 @@ only implemented for SISO functions.")
             if abs(poles[n].imag) > 10 * eps:
                 # To prevent buildup of imaginary part error, handle complex
                 # pole pairs together.
-                quad = polymul([1., -poles[n]], [1., -poles[n+1]])
-                assert all(quad.imag < 10 * eps), \
-                    "The quadratic has a nontrivial imaginary part: %g" \
-                    % quad.imag.max()
-                quad = quad.real
+                #
+                # Because we might have repeated real parts of poles
+                # and the fact that we are using lexigraphical
+                # ordering, we can't just combine adjacent poles.
+                # Instead, we have to figure out the multiplicity
+                # first, then multiple the pairs from the outside in.
 
-                den = polymul(den, quad)
-                n += 2
+                # Figure out the multiplicity
+                m = 1;          # multiplicity count
+                while (n+m < len(poles) and
+                       poles[n].real == poles[n+m].real and
+                       poles[n].imag * poles[n+m].imag > 0):
+                    m += 1
+
+                if (m > 1):
+                    print "Found pole with multiplicity %d" % m
+                    # print "Poles = ", poles
+
+                # Multiple pairs from the outside in
+                for i in range(m):
+                    quad = polymul([1., -poles[n]], [1., -poles[n+2*(m-i)-1]])
+                    assert all(quad.imag < 10 * eps), \
+                        "Quadratic has a nontrivial imaginary part: %g" \
+                        % quad.imag.max()
+
+                    den = polymul(den, quad.real)
+                    n += 1      # move to next pair
+                n += m          # skip past conjugate pairs
             else:
                 den = polymul(den, [1., -poles[n].real])
                 n += 1
@@ -654,6 +674,7 @@ only implemented for SISO functions.")
         num = deepcopy(self.num)
         if isinstance(den,float):
             den = array([den])
+
         for i in range(self.outputs):
             for j in range(self.inputs):
                 # The common denominator has leading coefficient 1.  Scale out
@@ -661,9 +682,11 @@ only implemented for SISO functions.")
                 assert self.den[i][j][0], "The i = %i, j = %i denominator has \
 a zero leading coefficient." % (i, j)
                 num[i][j] = num[i][j] / self.den[i][j][0]
+
                 # Multiply in the missing poles.
                 for p in missingpoles[i][j]:
                     num[i][j] = polymul(num[i][j], [1., -p])
+
         # Pad all numerator polynomials with zeros so that the numerator arrays
         # are the same size as the denominator.
         for i in range(self.outputs):
@@ -672,11 +695,12 @@ a zero leading coefficient." % (i, j)
                 if(pad>0):
                     num[i][j] = insert(num[i][j], zeros(pad),
                         zeros(pad))
+
         # Finally, convert the numerator to a 3-D array.
         num = array(num)
         # Remove trivial imaginary parts.  Check for nontrivial imaginary parts.
         if any(abs(num.imag) > sqrt(eps)):
-            print ("Warning: The numerator has a nontrivial nontrivial part: %g"
+            print ("Warning: The numerator has a nontrivial imaginary part: %g"
                 % abs(num.imag).max())
         num = num.real
 
