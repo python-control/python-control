@@ -41,6 +41,7 @@
 
 # External packages and modules
 import numpy as np
+import scipy as sp
 import ctrlutil
 from exception import *
 import statesp
@@ -98,6 +99,44 @@ def place(A, B, p):
 
     # Return the gain matrix, with MATLAB gain convention
     return -F
+
+# Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
+def acker(A,B,poles):
+    """Pole placemenmt using Ackermann method
+
+    Call:
+    k=acker(A,B,poles)
+
+    Parameters
+    ----------
+    A, B : State and input matrix of the system
+    poles: desired poles
+
+    Returns
+    -------
+    k: matrix
+    State feedback gains
+
+    """
+    # Convert the inputs to matrices
+    a = np.mat(A)
+    b = np.mat(B)
+
+    # Make sure the system is controllable
+    p = np.real(np.poly(poles))
+    ct = ctrb(A,B)
+    if sp.linalg.det(ct) == 0:
+        raise ValueError, "System not reachable; pole placement invalid"
+
+    # Place the poles using Ackermann's method
+    n = np.size(p)
+    pmat = p[n-1]*a**0
+    for i in np.arange(1,n):
+        pmat = pmat+p[n-i-1]*a**i
+    k = sp.linalg.inv(ct)*pmat
+    k = k[-1][:]
+
+    return k
 
 def lqr(*args, **keywords):
     """Linear quadratic regulator design

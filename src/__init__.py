@@ -67,7 +67,7 @@ from modelsimp import hsvd, modred, balred, era, markov
 from nichols import nichols_plot, nichols
 from phaseplot import phase_plot, box_grid
 from rlocus import root_locus
-from statefbk import place, lqr, ctrb, obsv, gram
+from statefbk import place, lqr, ctrb, obsv, gram, acker
 from statesp import StateSpace
 from timeresp import forced_response, initial_response, step_response, \
     impulse_response

@@ -5,10 +5,20 @@
 
 import unittest
 import numpy as np
-from control.statefbk import ctrb, obsv, place, lqr, gram
+from control.statefbk import ctrb, obsv, place, lqr, gram, acker
 from control.matlab import *
 
 class TestStatefbk(unittest.TestCase):
+    """Test state feedback functions"""
+
+    def setUp(self):
+        # Maximum number of states to test + 1
+        self.maxStates = 5
+        # Maximum number of inputs and outputs to test + 1
+        self.maxTries = 4
+        # Set to True to print systems to the output.
+        self.debug = False
+
     def testCtrbSISO(self):
         A = np.matrix("1. 2.; 3. 4.")
         B = np.matrix("5.; 7.")
@@ -82,6 +92,34 @@ class TestStatefbk(unittest.TestCase):
         sys = tf(num,den)
         self.assertRaises(ValueError, gram, sys, 'o')
         self.assertRaises(ValueError, gram, sys, 'c')
+
+    def testAcker(self):
+        for states in range(1, self.maxStates):
+            for i in range(self.maxTries):
+                # start with a random SS system and transform to TF then
+                # back to SS, check that the matrices are the same.
+                sys = rss(states, 1, 1)
+                if (self.debug):
+                    print sys
+
+                # Make sure the system is not degenerate
+                Cmat = ctrb(sys.A, sys.B)
+                if (np.linalg.matrix_rank(Cmat) != states):
+                    if (self.debug):
+                        print "  skipping (not reachable)"
+                        continue
+
+                # Place the poles at random locations
+                des = rss(states, 1, 1);
+                poles = pole(des)
+
+                # Now place the poles using acker 
+                K = acker(sys.A, sys.B, poles)
+                new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
+                placed = pole(new)
+
+                np.testing.assert_array_almost_equal(np.sort(poles), 
+                                                     np.sort(placed))
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
