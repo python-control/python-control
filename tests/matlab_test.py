@@ -353,6 +353,32 @@ class TestMatlab(unittest.TestCase):
         wrapped = phase % (2 * np.pi)
         unwrapped = unwrap(wrapped)
 
+    def testSISOssdata(self):
+        ssdata_1 = ssdata(self.siso_ss2);
+        ssdata_2 = ssdata(self.siso_tf2);
+        for i in range(len(ssdata_1)):
+            np.testing.assert_array_almost_equal(ssdata_1[i], ssdata_2[i])
+
+    def testMIMOssdata(self):
+        m = (self.mimo_ss1.A, self.mimo_ss1.B, self.mimo_ss1.C, self.mimo_ss1.D)
+        ssdata_1 = ssdata(self.mimo_ss1);
+        for i in range(len(ssdata_1)):
+            np.testing.assert_array_almost_equal(ssdata_1[i], m[i])
+
+    def testSISOtfdata(self):
+        tfdata_1 = tfdata(self.siso_tf2);
+        tfdata_2 = tfdata(self.siso_tf2);
+        for i in range(len(tfdata_1)):
+            np.testing.assert_array_almost_equal(tfdata_1[i], tfdata_2[i])
+
+#! TODO: not yet implemented
+#    def testMIMOtfdata(self):
+#        sisotf = ss2tf(self.siso_ss1)
+#        tfdata_1 = tfdata(sisotf)
+#        tfdata_2 = tfdata(self.mimo_ss1, input=0, output=0)
+#        for i in range(len(tfdata)):
+#            np.testing.assert_array_almost_equal(tfdata_1[i], tfdata_2[i])
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestMatlab)
 

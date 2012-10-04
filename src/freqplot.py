@@ -114,8 +114,8 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
 
             # Get the magnitude and phase of the system
             mag_tmp, phase_tmp, omega = sys.freqresp(omega)
-            mag = np.squeeze(mag_tmp)
-            phase = np.squeeze(phase_tmp)
+            mag = np.atleast_1d(np.squeeze(mag_tmp))
+            phase = np.atleast_1d(np.squeeze(phase_tmp))
             phase = unwrap(phase)
             if Hz: omega = omega/(2*sp.pi)
             if dB: mag = 20*sp.log10(mag)

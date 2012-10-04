@@ -80,3 +80,4 @@ from matlab import pole, zero, evalfr, freqresp, dcgain
 from matlab import nichols, rlocus, margin
         # bode and nyquist come directly from freqplot.py
 from matlab import step, impulse, initial, lsim
+from matlab import ssdata, tfdata

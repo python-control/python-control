@@ -1338,3 +1338,45 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
     T, yout, xout = timeresp.forced_response(sys, T, U, X0,
                                              transpose = True, **keywords)
     return yout, T, xout
+
+# Return state space data as a tuple
+def ssdata(sys):
+    '''
+    Return state space data objects for a system
+    
+    Parameters
+    ----------
+    sys: Lti (StateSpace, or TransferFunction)
+        LTI system whose data will be returned
+
+    Returns
+    -------
+    (A, B, C, D): list of matrices
+        State space data for the system
+    '''
+    ss = _convertToStateSpace(sys)
+    return (ss.A, ss.B, ss.C, ss.D)
+
+# Return transfer function data as a tuple
+def tfdata(sys, **kw):
+    '''
+    Return transfer function data objects for a system
+    
+    Parameters
+    ----------
+    sys: Lti (StateSpace, or TransferFunction)
+        LTI system whose data will be returned
+
+    Keywords
+    --------
+    inputs = int; outputs = int
+        For MIMO transfer function, return num, den for given inputs, outputs
+
+    Returns
+    -------
+    (num, den): numerator and denominator arrays
+        Transfer function coefficients (SISO only)
+    '''
+    tf = _convertToTransferFunction(sys, **kw)
+    
+    return (tf.num, tf.den)

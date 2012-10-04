@@ -786,16 +786,16 @@ def _convertToTransferFunction(sys, **kw):
     
     if isinstance(sys, TransferFunction):
         if len(kw):
-            raise TypeError("If sys is a TransferFunction, \
-_convertToTransferFunction cannot take keywords.")
+            raise TypeError("If sys is a TransferFunction, " + 
+                    "_convertToTransferFunction cannot take keywords.")
 
         return sys
     elif isinstance(sys, statesp.StateSpace):
         try:
             from slycot import tb04ad
             if len(kw):
-                raise TypeError("If sys is a StateSpace, \
-                        _convertToTransferFunction cannot take keywords.")
+                raise TypeError("If sys is a StateSpace, " +
+                        "_convertToTransferFunction cannot take keywords.")
 
             # Use Slycot to make the transformation
             # Make sure to convert system matrices to numpy arrays
