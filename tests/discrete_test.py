@@ -242,6 +242,20 @@ class TestDiscrete(unittest.TestCase):
         sys = feedback(self.siso_tf1d, self.siso_ss1d)
         self.assertRaises(ValueError, feedback, self.siso_tf1c, self.siso_ss1d)
 
+    def testSimulation(self):
+        T = range(100)
+        U = np.sin(T)
+
+        # For now, just check calling syntax
+        # TODO: add checks on output of simulations
+        tout, yout = step_response(self.siso_ss1d)
+        tout, yout = step_response(self.siso_ss1d, T)
+        tout, yout = impulse_response(self.siso_ss1d, T)
+        tout, yout = impulse_response(self.siso_ss1d)
+        tout, yout, xout = forced_response(self.siso_ss1d, T, U, 0)
+        tout, yout, xout = forced_response(self.siso_ss2d, T, U, 0)
+        tout, yout, xout = forced_response(self.siso_ss3d, T, U, 0)
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)
 

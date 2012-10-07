@@ -109,7 +109,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 
-Author: Eike Welk
+Initial Author: Eike Welk
 Date: 12 May 2011
 $Id$
 """
@@ -122,11 +122,9 @@ from copy import deepcopy
 import warnings
 from statesp import StateSpace, _rss_generate, _convertToStateSpace, _mimo2siso
 from lti import Lti             # base class of StateSpace, TransferFunction
+from lti import isdtime, isctime
 
-#
-# Solve the systems's differential equations
-#
-
+# Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
     """
@@ -299,9 +297,24 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     n_states = A.shape[0]
     n_inputs = B.shape[1]
 
-    #Test if T has shape (n,) or (1, n); 
-    #T must be array-like and values must be increasing.
-    #The length of T determines the length of the input vector.
+    # Set and/or check time vector in discrete time case
+    if isdtime(sys, strict=True):
+        if T == None:
+            if U == None:
+                raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
+                                 'zero for discrete-time simulation')
+            # Set T to integers with same length as U
+            T = range(len(U))
+        else:
+            # Make sure the input vector and time vector have same length
+            # TODO: allow interpolation of the input vector
+            if len(U) != len(T):
+                ValueError('Pamameter ``T`` must have same length as'
+                           'input vector ``U``')
+
+    # Test if T has shape (n,) or (1, n); 
+    # T must be array-like and values must be increasing.
+    # The length of T determines the length of the input vector.
     if T is None:
         raise ValueError('Parameter ``T``: must be array-like, and contain '
                          '(strictly monotonic) increasing numbers.')
@@ -311,49 +324,59 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     if not all(T[1:] - T[:-1] > 0):
         raise ValueError('Parameter ``T``: time values must be '
                          '(strictly monotonic) increasing numbers.')
-    n_steps = len(T) #number of simulation steps
+    n_steps = len(T)            # number of simulation steps
     
     #create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states,1)], 
                               'Parameter ``X0``: ', squeeze=True)
-              
-    #Solve the differential equation, copied from scipy.signal.ltisys.
-    dot, squeeze, = np.dot, np.squeeze #Faster and shorter code
-    #Faster algorithm if U is zero 
-    if U is None or (isinstance(U, (int, float)) and U == 0):
-        #Function that computes the time derivative of the linear system
-        def f_dot(x, _t):
-            return dot(A,x)
-        
-        xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
-        yout = dot(C, xout.T)
-    #General algorithm that interpolates U in between output points
-    else:
-        #Test if U has correct shape and type
-        legal_shapes = [(n_steps,), (1,n_steps)] if n_inputs == 1 else \
-                       [(n_inputs, n_steps)]
-        U = _check_convert_array(U, legal_shapes, 
-                                 'Parameter ``U``: ', squeeze=False,
-                                 transpose=transpose)
-        #convert 1D array to D2 array with only one row
-        if len(U.shape) == 1: 
-            U = U.reshape(1,-1)                      #pylint: disable=E1103
 
-        #Create a callable that uses linear interpolation to
-        #calculate the input at any time.
-        compute_u = sp.interpolate.interp1d(T, U, kind='linear', copy=False,
+    # Separate out the discrete and continuous time cases
+    if isctime(sys):
+        # Solve the differential equation, copied from scipy.signal.ltisys.
+        dot, squeeze, = np.dot, np.squeeze #Faster and shorter code
+
+        # Faster algorithm if U is zero 
+        if U is None or (isinstance(U, (int, float)) and U == 0):
+            # Function that computes the time derivative of the linear system
+            def f_dot(x, _t):
+                return dot(A,x)
+        
+            xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
+            yout = dot(C, xout.T)
+
+        # General algorithm that interpolates U in between output points
+        else:
+            # Test if U has correct shape and type
+            legal_shapes = [(n_steps,), (1,n_steps)] if n_inputs == 1 else \
+                           [(n_inputs, n_steps)]
+            U = _check_convert_array(U, legal_shapes, 
+                                     'Parameter ``U``: ', squeeze=False,
+                                     transpose=transpose)
+            # convert 1D array to D2 array with only one row
+            if len(U.shape) == 1: 
+                U = U.reshape(1,-1)                      #pylint: disable=E1103
+
+                # Create a callable that uses linear interpolation to
+                # calculate the input at any time.
+                compute_u = sp.interpolate.interp1d(T, U, kind='linear',
+                                            copy=False,
                                             axis=-1, bounds_error=False, 
                                             fill_value=0)
         
-        #Function that computes the time derivative of the linear system
-        def f_dot(x, t):
-            return dot(A,x) + squeeze(dot(B,compute_u([t])))
+            # Function that computes the time derivative of the linear system
+                def f_dot(x, t):
+                    return dot(A,x) + squeeze(dot(B,compute_u([t])))
         
-        xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
-        yout = dot(C, xout.T) + dot(D, U)
-    
-    yout = squeeze(yout)
-    xout = xout.T
+                xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
+                yout = dot(C, xout.T) + dot(D, U)
+
+        yout = squeeze(yout)
+        xout = xout.T
+
+    else:
+        # Discrete time simulation using signal processing toolbox
+        dsys = (A, B, C, D, sys.dt)
+        tout, yout, xout = sp.signal.dlsim(dsys, U, T, X0)
 
     # See if we need to transpose the data back into MATLAB form
     if (transpose):
@@ -426,7 +449,13 @@ def step_response(sys, T=None, X0=0., input=0, output=0, \
     sys = _convertToStateSpace(sys)
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
     if T is None:
-        T = _default_response_times(sys.A, 100)
+        if isctime(sys):
+            T = _default_response_times(sys.A, 100)
+        else:
+            # For discrete time, use integers
+            tvec = _default_response_times(sys.A, 100)
+            T = range(int(np.ceil(max(tvec))))
+                         
     U = np.ones_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, 
@@ -497,8 +526,9 @@ def initial_response(sys, T=None, X0=0., input=0, output=0, transpose=False,
     """
     sys = _convertToStateSpace(sys) 
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
-    #Create time and input vectors; checking is done in forced_response(...)
-    #The initial vector X0 is created in forced_response(...) if necessary
+
+    # Create time and input vectors; checking is done in forced_response(...)
+    # The initial vector X0 is created in forced_response(...) if necessary
     if T is None:
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)
@@ -571,26 +601,26 @@ def impulse_response(sys, T=None, X0=0., input=0, output=0,
     sys = _convertToStateSpace(sys) 
     sys = _mimo2siso(sys, input, output, warn_conversion=True)
     
-    #System has direct feedthrough, can't simulate impulse response numerically.
-    if np.any(sys.D != 0):
+    # System has direct feedthrough, can't simulate impulse response numerically
+    if np.any(sys.D != 0) and isctime(sys):
         warnings.warn('System has direct feedthrough: ``D != 0``. The infinite '
                       'impulse at ``t=0`` does not appear in the output. \n'
                       'Results may be meaningless!')
     
-    #create X0 if not given, test if X0 has correct shape.
-    #Must be done here because it is used for computations here.
+    # create X0 if not given, test if X0 has correct shape.
+    # Must be done here because it is used for computations here.
     n_states = sys.A.shape[0]
     X0 = _check_convert_array(X0, [(n_states,), (n_states,1)],
                               'Parameter ``X0``: \n', squeeze=True)
 
-    #Compute new X0 that contains the impulse
-    #We can't put the impulse into U because there is no numerical 
-    #representation for it (infinitesimally short, infinitely high).
-    #See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
+    # Compute new X0 that contains the impulse
+    # We can't put the impulse into U because there is no numerical 
+    # representation for it (infinitesimally short, infinitely high).
+    # See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
     B = np.asarray(sys.B).squeeze()
     new_X0 = B + X0
 
-    #Compute T and U, no checks necessary, they will be checked in lsim
+    # Compute T and U, no checks necessary, they will be checked in lsim
     if T is None:
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)

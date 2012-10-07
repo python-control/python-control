@@ -176,7 +176,6 @@ a TransferFunction object.  Received %s." % type(args[0]))
 scalars or vectors (for\nSISO), or lists of lists of vectors (for SISO or \
 MIMO).")
         [num, den] = data
-        self.dt = dt
         
         inputs = len(num[0])
         outputs = len(num)
@@ -222,9 +221,9 @@ denominator." % (j + 1, i + 1))
                 if zeronum:
                     den[i][j] = ones(1)
 
+        Lti.__init__(self, inputs, outputs, dt)
         self.num = num
         self.den = den
-        Lti.__init__(self, inputs, outputs)
         
         self._truncatecoeff()
         

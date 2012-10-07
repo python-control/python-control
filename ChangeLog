@@ -1,3 +1,24 @@
+2012-10-07  Richard Murray  <murray@altura.local>
+
+	* src/timeresp.py (forced_response): added discrete time simulator,
+	using dlsim from scipy.signal
+
+2012-10-07  Richard Murray  <murray@altura.local>
+
+	* doc/conf.py: fixed release number (0.6a instead of 0.6c)
+
+	* src/__init__.py: moved timebase functions from dtime to lti
+
+	* src/lti.py: moved isdtime, isctime, timebase, and timebaseEqual
+	from dtime.py to lti.py.  Moved initialization of dt to
+	Lti.__init__().
+
+	* src/statesp.py (StateSpace.__init__): Moved dt
+	initialization to Lti object initialization
+	
+	* src/xferfcn.py (TransferFunction.__init__): Moved dt
+	initialization to Lti object initialization
+
 2012-10-06  Richard Murray  <murray@altura.local>
 
 	* tests/discrete_test.py: added additional tests for dt = True cases

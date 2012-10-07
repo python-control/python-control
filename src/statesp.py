@@ -144,14 +144,13 @@ a StateSpace object.  Recived %s." % type(args[0]))
             matrices[i] = matrix(matrices[i])     
         [A, B, C, D] = matrices
 
+        Lti.__init__(self, B.shape[1], C.shape[0], dt)
         self.A = A
         self.B = B
         self.C = C
         self.D = D
-        self.dt = dt
 
         self.states = A.shape[0]
-        Lti.__init__(self, B.shape[1], C.shape[0])
         
         # Check that the matrix sizes are consistent.
         if self.states != A.shape[1]:
