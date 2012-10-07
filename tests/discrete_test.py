@@ -256,6 +256,19 @@ class TestDiscrete(unittest.TestCase):
         tout, yout, xout = forced_response(self.siso_ss2d, T, U, 0)
         tout, yout, xout = forced_response(self.siso_ss3d, T, U, 0)
 
+    def test_sample_system(self):
+        # Make sure we can convert various types of systems
+        for sysc in (self.siso_ss1, self.siso_ss1c, self.siso_tf1c):
+            sysd = sample_system(sysc, 1, method='matched')
+            self.assertEqual(sysd.dt, 1)
+            # TODO: put in other generic checks
+
+        # TODO: check results of converstion
+
+        # Check errors
+        self.assertRaises(ValueError, sample_system, self.siso_ss1d, 1)
+        self.assertRaises(ValueError, sample_system, self.siso_ss1, 1, 'unknown')
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)
 

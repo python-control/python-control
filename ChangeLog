@@ -1,5 +1,17 @@
 2012-10-07  Richard Murray  <murray@altura.local>
 
+	* src/matlab.py (c2d): MATLAB compatible function (just calls
+	sample_system) 
+
+	* tests/discrete_test.py (TestDiscrete.test_sample_system): unit
+	test for sampling
+
+	* src/dtime.py (sample_system, _c2dmatched): new functions, based on
+	contributiosn from Benjamin White
+
+	* src/dtime.py: added back this file, this time with sampling routes
+	to convert from continuous to discrete time
+
 	* src/timeresp.py (forced_response): added discrete time simulator,
 	using dlsim from scipy.signal
 

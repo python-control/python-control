@@ -77,6 +77,7 @@ import margins
 from statesp import StateSpace, _rss_generate, _convertToStateSpace
 from xferfcn import TransferFunction, _convertToTransferFunction
 from lti import Lti #base class of StateSpace, TransferFunction
+from dtime import sample_system
 from exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
@@ -1386,3 +1387,9 @@ def tfdata(sys, **kw):
     tf = _convertToTransferFunction(sys, **kw)
     
     return (tf.num, tf.den)
+
+# Convert a continuous time system to a discrete time system
+def c2d(sysc, Ts, method):
+    # TODO: add docstring
+    #  Call the sample_system() function to do the work
+    return sample_system(sysc, Ts, method)

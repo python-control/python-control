@@ -356,19 +356,19 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
             if len(U.shape) == 1: 
                 U = U.reshape(1,-1)                      #pylint: disable=E1103
 
-                # Create a callable that uses linear interpolation to
-                # calculate the input at any time.
-                compute_u = sp.interpolate.interp1d(T, U, kind='linear',
-                                            copy=False,
-                                            axis=-1, bounds_error=False, 
-                                            fill_value=0)
+            # Create a callable that uses linear interpolation to
+            # calculate the input at any time.
+            compute_u = \
+                sp.interpolate.interp1d(T, U, kind='linear', copy=False,
+                                        axis=-1, bounds_error=False, 
+                                        fill_value=0)
         
             # Function that computes the time derivative of the linear system
-                def f_dot(x, t):
-                    return dot(A,x) + squeeze(dot(B,compute_u([t])))
+            def f_dot(x, t):
+                return dot(A,x) + squeeze(dot(B,compute_u([t])))
         
-                xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
-                yout = dot(C, xout.T) + dot(D, U)
+            xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
+            yout = dot(C, xout.T) + dot(D, U)
 
         yout = squeeze(yout)
         xout = xout.T
