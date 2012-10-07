@@ -47,3 +47,15 @@ class Lti:
         # Data members common to StateSpace and TransferFunction.
         self.inputs = inputs
         self.outputs = outputs
+
+# Check to see if two timebases are equal
+def timebaseEqual(dt1, dt2):
+    # TODO: add docstring
+    if (type(dt1) == bool or type(dt2) == bool):
+        # Make sure both are unspecified discrete timebases
+        return type(dt1) == type(dt2) and dt1 == dt2
+    elif (type(dt1) == None or type(dt2) == None):
+        # One or the other is unspecified => the other can be anything
+        return True
+    else:
+        return dt1 == dt2

@@ -62,6 +62,7 @@ from delay import pade
 from dtime import timebase, isdtime, isctime
 from freqplot import bode_plot, nyquist_plot, gangof4_plot
 from freqplot import bode, nyquist, gangof4
+from lti import timebaseEqual
 from margins import stability_margins, phase_crossover_frequencies
 from mateqn import lyap, dlyap, care, dare
 from modelsimp import hsvd, modred, balred, era, markov

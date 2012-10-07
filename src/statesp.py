@@ -81,7 +81,7 @@ from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
 import warnings
-from lti import Lti
+from lti import Lti, timebaseEqual
 import xferfcn
 
 class StateSpace(Lti):
@@ -99,7 +99,9 @@ class StateSpace(Lti):
     variable and setting it to the sampling period.  If 'dt' is not None,
     then it must match whenever two state space systems are combined.
     Setting dt = 0 specifies a continuous system, while leaving dt = None
-    means the system timebase is not specified.
+    means the system timebase is not specified.  If 'dt' is set to True, the
+    system will be treated as a discrete time system with unspecified
+    sampling time.
     """
 
     def __init__(self, *args): 
@@ -214,7 +216,9 @@ a StateSpace object.  Recived %s." % type(args[0]))
         str += "B = " + self.B.__str__() + "\n\n"
         str += "C = " + self.C.__str__() + "\n\n"
         str += "D = " + self.D.__str__() + "\n"
-        if (self.dt > 0):
+        if (type(self.dt) == bool and self.dt == True):
+            str += "\ndt unspecified\n"
+        elif (self.dt > 0):
             str += "\ndt = " + self.dt.__str__() + "\n"
         return str
 
@@ -246,7 +250,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
             if (self.dt == None and other.dt != None):
                 dt = other.dt       # use dt from second argument
             elif (other.dt == None and self.dt != None) or \
-                    (self.dt == other.dt):
+                    (timebaseEqual(self.dt, other.dt)):
                 dt = self.dt        # use dt from first argument
             else:
                 raise ValueError, "Systems have different sampling times"
@@ -304,7 +308,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             if (self.dt == None and other.dt != None):
                 dt = other.dt       # use dt from second argument
             elif (other.dt == None and self.dt != None) or \
-                    (self.dt == other.dt):
+                    (timebaseEqual(self.dt, other.dt)):
                 dt = self.dt        # use dt from first argument
             else:
                 raise ValueError, "Systems have different sampling times"
@@ -435,7 +439,8 @@ inputs/outputs for feedback."
         # Figure out the sampling time to use
         if (self.dt == None and other.dt != None):
             dt = other.dt       # use dt from second argument
-        elif (other.dt == None and self.dt != None) or (self.dt == other.dt):
+        elif (other.dt == None and self.dt != None) or \
+                timebaseEqual(self.dt, other.dt):
             dt = self.dt        # use dt from first argument
         else:
             raise ValueError, "Systems have different sampling times"

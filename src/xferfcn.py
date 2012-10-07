@@ -79,7 +79,7 @@ from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze
 from scipy.signal import lti
 from copy import deepcopy
-from lti import Lti
+from lti import Lti, timebaseEqual
 import statesp
 
 class TransferFunction(Lti):
@@ -98,10 +98,11 @@ class TransferFunction(Lti):
     means that the numerator of the transfer function from the 6th input to the
     3rd output is set to s^2 + 4s + 8.
 
-    Discrete time transfer functions are implemented by using the 'dt'
-    class variable and setting it to something other than 'None'.  If
-    'dt' has a non-zero value, then it must match whenever two transfer
-    functions are combined.
+    Discrete time transfer functions are implemented by using the 'dt' class
+    variable and setting it to something other than 'None'.  If 'dt' has a
+    non-zero value, then it must match whenever two transfer functions are
+    combined.  If 'dt' is set to True, the system will be treated as a
+    discrete time system with unspecified sampling time.
     """
     
     def __init__(self, *args):
@@ -288,7 +289,7 @@ denominator." % (j + 1, i + 1))
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
 
         # See if this is a discrete time system with specific sampling time
-        if (self.dt > 0):
+        if (type(self.dt) != bool and self.dt > 0):
             outstr += "\ndt = " + self.dt.__str__() + "\n"
 
         return outstr
@@ -324,7 +325,8 @@ second has %i." % (self.outputs, other.outputs))
         # Figure out the sampling time to use
         if (self.dt == None and other.dt != None):
             dt = other.dt       # use dt from second argument
-        elif (other.dt == None and self.dt != None) or (self.dt == other.dt):
+        elif (other.dt == None and self.dt != None) or \
+                (timebaseEqual(self.dt, other.dt)):
             dt = self.dt        # use dt from first argument
         else:
             raise ValueError, "Systems have different sampling times"

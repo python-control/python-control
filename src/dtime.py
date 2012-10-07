@@ -7,6 +7,7 @@ Routines in this module:
 isdtime()
 isctime()
 timebase()
+timebaseEqual()
 """
 
 """Copyright (c) 2012 by California Institute of Technology
@@ -60,7 +61,7 @@ def timebase(sys):
 
     # Check for a transfer fucntion or state space object
     if isinstance(sys, (StateSpace, TransferFunction)):
-        if sys.dt > 0:
+        if sys.dt > 0 or sys.dt == True:
             return 'dtime';
         elif sys.dt == 0:
             return 'ctime';
@@ -81,6 +82,7 @@ def isdtime(sys, strict=False):
     # Check for a transfer fucntion or state space object
     if isinstance(sys, (StateSpace, TransferFunction)):
         # Look for dt > 0 or dt == None (if not strict)
+        # Note that dt = True will be checked by dt > 0
         return sys.dt > 0 or (not strict and sys.dt == None)
 
     # Got possed something we don't recognize
@@ -101,6 +103,3 @@ def isctime(sys, strict=False):
 
     # Got possed something we don't recognize
     return False
-
-        
-        

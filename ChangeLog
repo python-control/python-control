@@ -1,5 +1,20 @@
 2012-10-06  Richard Murray  <murray@altura.local>
 
+	* tests/discrete_test.py: added additional tests for dt = True cases
+
+	* src/statesp.py (StateSpace.__str__): show sampling time as
+	'unspecified' if dt is a boolean and equal to True
+
+	* src/xferfcn.py (TransferFunction.__str__): don't print sampling
+	time (dt) if dt = True (discrete time with unspecified time base)
+
+	* src/dtime.py: added code to support dt = True for unspecified
+	sampling time for a discrete time system
+
+	* src/bdalg.py: much -> must in docstrings
+
+2012-10-06  Richard Murray  <murray@altura.local>
+
 	* src/dtime.py: new module with functions for operating on discrete
 	time systems
 

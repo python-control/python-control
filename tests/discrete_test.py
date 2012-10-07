@@ -19,6 +19,7 @@ class TestDiscrete(unittest.TestCase):
         self.siso_ss1c = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.0) 
         self.siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1) 
         self.siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.2) 
+        self.siso_ss3d = StateSpace(sys.A, sys.B, sys.C, sys.D, True) 
 
         # Two input, two output continuous time system
         A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
@@ -39,6 +40,19 @@ class TestDiscrete(unittest.TestCase):
         self.siso_tf1c = TransferFunction([1, 1], [1, 2, 1], 0)
         self.siso_tf1d = TransferFunction([1, 1], [1, 2, 1], 0.1)
         self.siso_tf2d = TransferFunction([1, 1], [1, 2, 1], 0.2)
+        self.siso_tf3d = TransferFunction([1, 1], [1, 2, 1], True)
+
+    def testTimebaseEqual(self):
+        self.assertEqual(timebaseEqual(None, None), True)
+        self.assertEqual(timebaseEqual(1, 1), True)
+        self.assertEqual(timebaseEqual(1, 1.0), True)
+        self.assertEqual(timebaseEqual(True, True), True)
+
+        self.assertEqual(timebaseEqual(1, 0.1), False)
+        self.assertEqual(timebaseEqual(None, 0.1), False)
+        self.assertEqual(timebaseEqual(None, True), False)
+        self.assertEqual(timebaseEqual(None, 0), False)
+        self.assertEqual(timebaseEqual(1, True), False)
 
     def testSystemInitialization(self):
         # Check to make sure systems are discrete time with proper variables
@@ -46,12 +60,15 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(self.siso_ss1c.dt, 0)
         self.assertEqual(self.siso_ss1d.dt, 0.1)
         self.assertEqual(self.siso_ss2d.dt, 0.2)
+        self.assertEqual(self.siso_ss3d.dt, True)
         self.assertEqual(self.mimo_ss1c.dt, 0)
         self.assertEqual(self.mimo_ss1d.dt, 0.1)
         self.assertEqual(self.mimo_ss2d.dt, 0.2)
         self.assertEqual(self.siso_tf1.dt, None)
         self.assertEqual(self.siso_tf1c.dt, 0)
         self.assertEqual(self.siso_tf1d.dt, 0.1)
+        self.assertEqual(self.siso_tf2d.dt, 0.2)
+        self.assertEqual(self.siso_tf3d.dt, True)
 
     def testCopyConstructor(self):
         for sys in (self.siso_ss1, self.siso_ss1c, self.siso_ss1d):
@@ -66,9 +83,11 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(timebase(self.siso_ss1), None);
         self.assertEqual(timebase(self.siso_ss1c), 'ctime');
         self.assertEqual(timebase(self.siso_ss1d), 'dtime');
+        self.assertEqual(timebase(self.siso_ss3d), 'dtime');
         self.assertEqual(timebase(self.siso_tf1), None);
         self.assertEqual(timebase(self.siso_tf1c), 'ctime');
         self.assertEqual(timebase(self.siso_tf1d), 'dtime');
+        self.assertEqual(timebase(self.siso_tf3d), 'dtime');
 
     def testisdtime(self):
         # Constant
@@ -82,6 +101,7 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(isdtime(self.siso_ss1c, strict=True), False);
         self.assertEqual(isdtime(self.siso_ss1d), True);
         self.assertEqual(isdtime(self.siso_ss1d, strict=True), True);
+        self.assertEqual(isdtime(self.siso_ss3d, strict=True), True);
 
         # Transfer function
         self.assertEqual(isdtime(self.siso_tf1), True);
@@ -90,6 +110,7 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(isdtime(self.siso_tf1c, strict=True), False);
         self.assertEqual(isdtime(self.siso_tf1d), True);
         self.assertEqual(isdtime(self.siso_tf1d, strict=True), True);
+        self.assertEqual(isdtime(self.siso_tf3d, strict=True), True);
 
     def testisctime(self):
         # Constant
@@ -103,14 +124,16 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(isctime(self.siso_ss1c, strict=True), True);
         self.assertEqual(isctime(self.siso_ss1d), False);
         self.assertEqual(isctime(self.siso_ss1d, strict=True), False);
+        self.assertEqual(isctime(self.siso_ss3d, strict=True), False);
 
         # Transfer Function
-        self.assertEqual(isctime(self.siso_ss1), True);
-        self.assertEqual(isctime(self.siso_ss1, strict=True), False);
-        self.assertEqual(isctime(self.siso_ss1c), True);
-        self.assertEqual(isctime(self.siso_ss1c, strict=True), True);
-        self.assertEqual(isctime(self.siso_ss1d), False);
-        self.assertEqual(isctime(self.siso_ss1d, strict=True), False);
+        self.assertEqual(isctime(self.siso_tf1), True);
+        self.assertEqual(isctime(self.siso_tf1, strict=True), False);
+        self.assertEqual(isctime(self.siso_tf1c), True);
+        self.assertEqual(isctime(self.siso_tf1c, strict=True), True);
+        self.assertEqual(isctime(self.siso_tf1d), False);
+        self.assertEqual(isctime(self.siso_tf1d, strict=True), False);
+        self.assertEqual(isctime(self.siso_tf3d, strict=True), False);
 
     def testAddition(self):
         # State space addition
@@ -120,10 +143,13 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_ss1d + self.siso_ss1
         sys = self.siso_ss1c + self.siso_ss1c
         sys = self.siso_ss1d + self.siso_ss1d
+        sys = self.siso_ss3d + self.siso_ss3d
         self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1c, 
                           self.mimo_ss1d)
         self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1d, 
                           self.mimo_ss2d)
+        self.assertRaises(ValueError, StateSpace.__add__, self.siso_ss1d, 
+                          self.siso_ss3d)
 
         # Transfer function addition
         sys = self.siso_tf1 + self.siso_tf1d
@@ -132,10 +158,13 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_tf1d + self.siso_tf1
         sys = self.siso_tf1c + self.siso_tf1c
         sys = self.siso_tf1d + self.siso_tf1d
+        sys = self.siso_tf2d + self.siso_tf2d
         self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1c, 
                           self.siso_tf1d)
         self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d, 
                           self.siso_tf2d)
+        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d, 
+                          self.siso_tf3d)
 
         # State space + transfer function
         sys = self.siso_ss1c + self.siso_tf1c
@@ -157,6 +186,8 @@ class TestDiscrete(unittest.TestCase):
                           self.mimo_ss1d)
         self.assertRaises(ValueError, StateSpace.__mul__, self.mimo_ss1d, 
                           self.mimo_ss2d)
+        self.assertRaises(ValueError, StateSpace.__mul__, self.siso_ss1d, 
+                          self.siso_ss3d)
 
         # Transfer function addition
         sys = self.siso_tf1 * self.siso_tf1d
@@ -169,6 +200,8 @@ class TestDiscrete(unittest.TestCase):
                           self.siso_tf1d)
         self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d, 
                           self.siso_tf2d)
+        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d, 
+                          self.siso_tf3d)
 
         # State space * transfer function
         sys = self.siso_ss1c * self.siso_tf1c
@@ -189,6 +222,7 @@ class TestDiscrete(unittest.TestCase):
         sys = feedback(self.siso_ss1d, self.siso_ss1d)
         self.assertRaises(ValueError, feedback, self.mimo_ss1c, self.mimo_ss1d)
         self.assertRaises(ValueError, feedback, self.mimo_ss1d, self.mimo_ss2d)
+        self.assertRaises(ValueError, feedback, self.siso_ss1d, self.siso_ss3d)
 
         # Transfer function addition
         sys = feedback(self.siso_tf1, self.siso_tf1d)
@@ -199,6 +233,7 @@ class TestDiscrete(unittest.TestCase):
         sys = feedback(self.siso_tf1d, self.siso_tf1d)
         self.assertRaises(ValueError, feedback, self.siso_tf1c, self.siso_tf1d)
         self.assertRaises(ValueError, feedback, self.siso_tf1d, self.siso_tf2d)
+        self.assertRaises(ValueError, feedback, self.siso_tf1d, self.siso_tf3d)
 
         # State space, transfer function
         sys = feedback(self.siso_ss1c, self.siso_tf1c)

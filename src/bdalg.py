@@ -85,7 +85,7 @@ def series(sys1, sys2):
     If `sys2` is a scalar, then the output type is the type of `sys1`.
 
     If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems much
+    dt > 0 for discrete time), then the timebase for both systems must
     match.  If only one of the system has a timebase, the return
     timebase will be set to match it.
 
@@ -128,7 +128,7 @@ def parallel(sys1, sys2):
     the type of `sys2`.
 
     If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems much
+    dt > 0 for discrete time), then the timebase for both systems must
     match.  If only one of the system has a timebase, the return
     timebase will be set to match it.
 
@@ -158,7 +158,7 @@ def negate(sys):
     TransferFunction classes.  The output type is the same as the input type.
 
     If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems much
+    dt > 0 for discrete time), then the timebase for both systems must
     match.  If only one of the system has a timebase, the return
     timebase will be set to match it.
 

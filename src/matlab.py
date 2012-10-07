@@ -478,6 +478,11 @@ def tf(*args):
         of array_like objects. (A 3 dimensional data structure in total.)
         (For details see note below.)
 
+    ``tf(num, den, dt)``
+        Create a discrete time transfer function system; dt can either be a
+        positive number indicating the sampling time or 'True' if no
+        specific timebase is given.
+
     Parameters
     ----------
     sys: Lti (StateSpace or TransferFunction)
@@ -537,8 +542,8 @@ def tf(*args):
 
     """
 
-    if len(args) == 2:
-       return TransferFunction(args[0], args[1])
+    if len(args) == 2 or len(args) == 3:
+       return TransferFunction(*args)
     elif len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
