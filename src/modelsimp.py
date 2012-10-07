@@ -45,6 +45,7 @@ import ctrlutil
 from exception import *
 from statefbk import *
 from statesp import StateSpace
+from dtime import isdtime, isctime
 
 # Hankel Singular Value Decomposition
 #   The following returns the Hankel singular values, which are singular values 
@@ -80,6 +81,10 @@ def hsvd(sys):
     >>> H = hsvd(sys)
 
     """
+    # TODO: implement for discrete time systems
+    if (isdtime(sys, strict=True)):
+        raise(NotImplementedError("Function not implemented in discrete time"))
+
     Wc = gram(sys,'c')
     Wo = gram(sys,'o')
     WoWc = np.dot(Wo, Wc)
@@ -132,7 +137,11 @@ def modred(sys, ELIM, method='matchdc'):
         # elif isDisc():
         #    dico = 'D'
         # else:
-    dico = 'C'
+    if (isctime(sys)):
+        dico = 'C'
+    else:
+        raise(NotImplementedError("Function not implemented in discrete time"))
+
 
     #Check system is stable
     D,V = np.linalg.eig(sys.A)

@@ -1,3 +1,48 @@
+2012-10-06  Richard Murray  <murray@altura.local>
+
+	* src/dtime.py: new module with functions for operating on discrete
+	time systems
+
+	* src/modelsimp.py: added NotImplementedError for discrete time
+	* src/freqplot.py: added NotImplementedError for discrete time
+
+	* src/bdalg.py: added documentation about timebases (discrete versus
+	continuous)
+
+	* src/statesp.py (_mimo2siso): include sampling time
+
+	* src/xferfcn.py (TransferFunction.__str__): added optional var
+	keyword to allow any symbol to be used
+
+	* src/matlab.py (tf2ss): added code required to keep track of dt
+
+	* src/xferfcn.py (TransferFunction.__str__): added additional string for
+	discrete time system, plus use 'z' for polynomial variable
+	(TransferFunction.__neg__): set sampling time for negation
+	(TransferFunction.__add__): added test for same sampling time
+	(TransferFunction.__mul__): added test for same sampling time
+	(TransferFunction.__div__): added test for same sampling time
+	(TransferFunction.feedback): added test for same sampling time
+
+	* src/statesp.py (StateSpace.__str__): added additional string for
+	discrete time system
+	(StateSpace.__add__): added test for same sampling time
+	(StateSpace.__mul__): added test for same sampling time
+	(StateSpace.__rmul__): set sampling time for product
+	(StateSpace.__neg__): set sampling time for negation
+	(StateSpace.feedback): added test for same sampling time
+
+	* tests/discrete_test.py (TestDiscrete): unit tests for discrete
+	time systems
+
+	* src/xferfcn.py (TransferFunction.__init__): added dt class
+	variable for discrete time systems
+
+	* src/statesp.py (StateSpace.__init__): added dt class variable for
+	discrete time systems
+
+---- control-0.5c released -----
+
 2012-10-03  Richard Murray  <murray@altura.local>
 
 	* tests/matlab_test.py (TestMatlab.testSsdata): unit test

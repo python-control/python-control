@@ -59,6 +59,7 @@ lqe     linear quadratic estimator
 #! Should probably only import the exact functions we use...
 from bdalg import series, parallel, negate, feedback
 from delay import pade
+from dtime import timebase, isdtime, isctime
 from freqplot import bode_plot, nyquist_plot, gangof4_plot
 from freqplot import bode, nyquist, gangof4
 from margins import stability_margins, phase_crossover_frequencies

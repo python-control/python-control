@@ -71,6 +71,7 @@ def series(sys1, sys2):
     ------
     ValueError
         if `sys2.inputs` does not equal `sys1.outputs`
+        if `sys1.dt` is not compatible with `sys2.dt`
 
     See Also
     --------
@@ -82,6 +83,11 @@ def series(sys1, sys2):
     This function is a wrapper for the __mul__ function in the StateSpace and
     TransferFunction classes.  The output type is usually the type of `sys2`.
     If `sys2` is a scalar, then the output type is the type of `sys1`.
+
+    If both systems have a defined timebase (dt = 0 for continuous time,
+    dt > 0 for discrete time), then the timebase for both systems much
+    match.  If only one of the system has a timebase, the return
+    timebase will be set to match it.
 
     Examples
     --------
@@ -116,9 +122,15 @@ def parallel(sys1, sys2):
     
     Notes
     -----
-    This function is a wrapper for the __add__ function in the StateSpace and
-    TransferFunction classes.  The output type is usually the type of `sys1`.  If
-    `sys1` is a scalar, then the output type is the type of `sys2`.
+    This function is a wrapper for the __add__ function in the
+    StateSpace and TransferFunction classes.  The output type is usually
+    the type of `sys1`.  If `sys1` is a scalar, then the output type is
+    the type of `sys2`.
+
+    If both systems have a defined timebase (dt = 0 for continuous time,
+    dt > 0 for discrete time), then the timebase for both systems much
+    match.  If only one of the system has a timebase, the return
+    timebase will be set to match it.
 
     Examples
     --------
@@ -144,6 +156,11 @@ def negate(sys):
     -----
     This function is a wrapper for the __neg__ function in the StateSpace and
     TransferFunction classes.  The output type is the same as the input type.
+
+    If both systems have a defined timebase (dt = 0 for continuous time,
+    dt > 0 for discrete time), then the timebase for both systems much
+    match.  If only one of the system has a timebase, the return
+    timebase will be set to match it.
 
     Examples
     --------

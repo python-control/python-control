@@ -613,10 +613,10 @@ def ss2tf(*args):
 
     """
 
-    if len(args) == 4:
-        # Assume we were given the A, B, C, D matrix
-        return _convertToTransferFunction(StateSpace(args[0], args[1], args[2],
-            args[3]))
+    if len(args) == 4 or len(args) == 5:
+        # Assume we were given the A, B, C, D matrix and (optional) dt
+        return _convertToTransferFunction(StateSpace(*args))
+
     elif len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
@@ -683,9 +683,10 @@ def tf2ss(*args):
 
     """
 
-    if len(args) == 2:
+    if len(args) == 2 or len(args) == 3:
         # Assume we were given the num, den
-        return _convertToStateSpace(TransferFunction(args[0], args[1]))
+        return _convertToStateSpace(TransferFunction(*args))
+
     elif len(args) == 1:
         sys = args[0]
         if not isinstance(sys, TransferFunction):

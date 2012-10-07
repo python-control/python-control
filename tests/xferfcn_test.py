@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
+from control.dtime import isdtime
 
 class TestXferFcn(unittest.TestCase):
     """These are tests for functionality and correct reporting of the transfer

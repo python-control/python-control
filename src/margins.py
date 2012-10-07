@@ -50,6 +50,7 @@ $Id$
 import xferfcn
 from freqplot import bode
 import numpy as np
+from dtime import isdtime
 
 # gain and phase margins
 # contributed by Sawyer B. Fuller <minster@caltech.edu>
@@ -88,8 +89,14 @@ def stability_margins(sysdata, deg=True):
 
     if (not getattr(sysdata, '__iter__', False)):
         sys = sysdata
+
+        # TODO: implement for discrete time systems
+        if (isdtime(sys, strict=True)):
+            raise(NotImplementedError("Function not implemented in discrete time"))
+
         mag, phase, omega = bode(sys, deg=deg, Plot=False)
     elif len(sysdata) == 3:
+        # TODO: replace with FRD object type?
         mag, phase, omega = sysdata
     else: 
         raise ValueError("Margin sysdata must be either a linear system or a 3-sequence of mag, phase, omega.")

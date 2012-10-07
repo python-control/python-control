@@ -46,6 +46,7 @@ import scipy as sp
 import numpy as np
 from ctrlutil import unwrap
 from bdalg import feedback
+from dtime import isdtime
 
 #
 # Main plotting functions
@@ -104,6 +105,10 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
 
     mags, phases, omegas = [], [], []
     for sys in syslist:
+        # TODO: implement for discrete time systems
+        if (isdtime(sys, strict=True)):
+            raise(NotImplementedError("Function not implemented in discrete time"))
+
         if (sys.inputs > 1 or sys.outputs > 1):
             #TODO: Add MIMO bode plots. 
             raise NotImplementedError("Bode is currently only implemented for SISO systems.")
@@ -209,6 +214,10 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
                             num=50, endpoint=True, base=10.0)
     for sys in syslist:
+        # TODO: implement for discrete time systems
+        if (isdtime(sys, strict=True)):
+            raise(NotImplementedError("Function not implemented in discrete time"))
+
         if (sys.inputs > 1 or sys.outputs > 1):
             #TODO: Add MIMO nyquist plots. 
             raise NotImplementedError("Nyquist is currently only implemented for SISO systems.")
@@ -272,6 +281,10 @@ def gangof4_plot(P, C, omega=None):
     -------
     None
     """
+    # TODO: implement for discrete time systems
+    if (isdtime(P, strict=True) or isdtime(C, strict=True)):
+        raise(NotImplementedError("Function not implemented in discrete time"))
+
     if (P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs >1):
         #TODO: Add MIMO go4 plots. 
         raise NotImplementedError("Gang of four is currently only implemented for SISO systems.")
@@ -353,6 +366,10 @@ def default_frequency_range(syslist):
     if (not getattr(syslist, '__iter__', False)):
         syslist = (syslist,)
     for sys in syslist:
+        # TODO: implement for discrete time systems
+        if (isdtime(sys, strict=True)):
+            raise(NotImplementedError("Function not implemented in discrete time"))
+
         # Add new features to the list
         features = np.concatenate((features, np.abs(sys.pole())))
         features = np.concatenate((features, np.abs(sys.zero())))
