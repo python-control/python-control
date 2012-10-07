@@ -46,7 +46,7 @@ import scipy as sp
 import numpy as np
 from ctrlutil import unwrap
 from bdalg import feedback
-from dtime import isdtime
+from lti import isdtime
 
 #
 # Main plotting functions

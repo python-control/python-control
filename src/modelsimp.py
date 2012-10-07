@@ -45,7 +45,7 @@ import ctrlutil
 from exception import *
 from statefbk import *
 from statesp import StateSpace
-from dtime import isdtime, isctime
+from lti import isdtime, isctime
 
 # Hankel Singular Value Decomposition
 #   The following returns the Hankel singular values, which are singular values 

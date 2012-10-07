@@ -50,7 +50,7 @@ $Id$
 import xferfcn
 from freqplot import bode
 import numpy as np
-from dtime import isdtime
+from lti import isdtime
 
 # gain and phase margins
 # contributed by Sawyer B. Fuller <minster@caltech.edu>
