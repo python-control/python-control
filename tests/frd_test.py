@@ -22,5 +22,39 @@ class TestFRD(unittest.TestCase):
 
         self.assertRaises(TypeError, FRD, [1, 1], [1, 2, 3])
 
+    def testSISOtf(self):
+
+        # get a SISO transfer function
+        h = TransferFunction([1], [1, 2, 2])
+        omega = np.logspace(-1, 2, 10)
+        frd = FRD(h, omega)
+        assert isinstance(frd, FRD)
+        
+        np.testing.assert_array_almost_equal(
+            frd.freqresp([1.0]), h.freqresp([1.0]))
+                                       
+    def testOperators(self):
+        # get two SISO transfer functions
+        h1 = TransferFunction([1], [1, 2, 2])
+        h2 = TransferFunction([1], [0.1, 1])
+        omega = np.logspace(-1, 2, 10)
+        f1 = FRD(h1, omega)
+        f2 = FRD(h2, omega)
+        
+        np.testing.assert_array_almost_equal(
+            (f1 + f2).freqresp([0.1, 1.0, 10])[0],
+            (h1 + h2).freqresp([0.1, 1.0, 10])[0])
+        np.testing.assert_array_almost_equal(
+            (f1 + f2).freqresp([0.1, 1.0, 10])[1],
+            (h1 + h2).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            (f1 - f2).freqresp([0.1, 1.0, 10])[0],
+            (h1 - h2).freqresp([0.1, 1.0, 10])[0])
+        np.testing.assert_array_almost_equal(
+            (f1 - f2).freqresp([0.1, 1.0, 10])[1],
+            (h1 - h2).freqresp([0.1, 1.0, 10])[1])
+        
+
+
 if __name__ == "__main__":
     unittest.main()

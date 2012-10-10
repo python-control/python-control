@@ -3,13 +3,12 @@
 Frequency response data representation and functions.
 
 This file contains the FRD class and also functions
-that operate on transfer functions.  This is the primary representation
+that operate on FRD data. This is the primary representation
 for the python-control library.
      
 Routines in this module:
 
 FRD.__init__
-FRD._truncatecoeff
 FRD.copy
 FRD.__str__
 FRD.__neg__
@@ -26,16 +25,13 @@ FRD.freqresp
 FRD.pole
 FRD.zero
 FRD.feedback
-FRD.returnScipySignalLti
 FRD._common_den
-_tfpolyToString
-_addSISO
 _convertToFRD
 
 """
 
 """Copyright (c) 2010 by California Institute of Technology
-   and 2012 Delft University of Technology
+   Copyright (c) 2012 by Delft University of Technology
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -49,7 +45,8 @@ are met:
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
 
-3. Neither the name of the California Institute of Technology nor
+3. Neither the names of the California Institute of Technology nor
+   the Delft University of Technology nor
    the names of its contributors may be used to endorse or promote
    products derived from this software without specific prior
    written permission.
@@ -67,7 +64,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGE.
 
-Author: M.M. (Rene) van Paassen
+Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
 Date: 02 Oct 12
 Revised: 
 
@@ -77,8 +74,8 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
-    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze
-from scipy.signal import lti
+    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner
+from scipy.interpolate import interp1d
 from copy import deepcopy
 from lti import Lti
 import statesp
@@ -87,7 +84,7 @@ class FRD(Lti):
 
     """The FRD class represents (measured?) frequency response 
     TF instances and functions.
-    
+    4
     The FRD class is derived from the Lti parent class.  It is used
     throughout the python-control library to represent systems in frequency
     response data form. 
@@ -99,11 +96,15 @@ class FRD(Lti):
 
     >>> frdata[2][5] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
     
-    means that the frequency response from the 6th input to the
-    3rd output at the frequencies defined in omega is set the array above.
+    means that the frequency response from the 6th input to the 3rd
+    output at the frequencies defined in omega is set to the array
+    above, i.e. the rows represent the outputs and the columns
+    represent the inputs.
     
     """
     
+    epsw = 1e-8
+
     def __init__(self, *args):
         """Construct a transfer function.
         
@@ -116,6 +117,9 @@ class FRD(Lti):
         To call the copy constructor, call FRD(sys), where sys is a
         FRD object.
 
+        To construct frequency response data for an existing Lti
+        object, other than an FRD, call FRD(sys, omega)
+
         """
 
         if len(args) == 2:
@@ -123,14 +127,16 @@ class FRD(Lti):
                 # not an FRD, but still a system, second argument should be
                 # the frequency range
                 otherlti = args[0]
-                
-                self.omega = array(args[1].sort(), dtype=float)
+                print args[1]
+                self.omega = array(args[1], dtype=float)
+                self.omega.sort()
+                numfreq = len(self.omega)
 
                 # calculate frequency response at my points
                 self.fresp = empty(
                     (otherlti.outputs, otherlti.inputs, numfreq), 
                     dtype=complex)
-                for k, w in enumerate(omega):
+                for k, w in enumerate(self.omega):
                     self.fresp[:, :, k] = otherlti.evalfr(w)
 
             else:
@@ -158,6 +164,13 @@ class FRD(Lti):
         else:
             raise ValueError("Needs 1 or 2 arguments; receivd %i." % len(args))
 
+        # create interpolation functions
+        self.ifunc = empty((self.fresp.shape[1], self.fresp.shape[0]), 
+                           dtype=interp1d)
+        for i in range(self.fresp.shape[1]):
+            for j in range(self.fresp.shape[0]):
+                self.ifunc[i,j] = interp1d(self.omega, self.fresp[i, j, :])
+
         Lti.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
         
     def __str__(self):
@@ -180,7 +193,7 @@ class FRD(Lti):
     def __neg__(self):
         """Negate a transfer function."""
         
-        return FRD(self.omega, -self.fresp)
+        return FRD(-self.fresp, self.omega)
     
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
@@ -203,7 +216,7 @@ second has %i." % (self.inputs, other.inputs))
             raise ValueError("The first summand has %i output(s), but the \
 second has %i." % (self.outputs, other.outputs))
 
-        return FRD(other.omega, self.frd + other.frd)
+        return FRD(self.fresp + other.fresp, other.omega)
  
     def __radd__(self, other): 
         """Right add two LTI objects (parallel connection)."""
@@ -226,9 +239,9 @@ second has %i." % (self.outputs, other.outputs))
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, long, complex)):
             other = _convertToFRD(other, inputs=self.inputs, 
-                outputs=self.inputs)
+                outputs=self.inputs, omega=self.omega)
         else:
-            other = _convertToFRD(other)
+            other = _convertToFRD(other, omega=self.omega)
             
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
@@ -268,9 +281,9 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         
         if isinstance(other, (int, float, long, complex)):
             other = _convertToFRD(other, inputs=self.inputs, 
-                outputs=self.inputs)
+                outputs=self.inputs, omega=self.omega)
         else:
-            other = _convertToFRD(other)
+            other = _convertToFRD(other, omega=self.omega)
 
 
         if (self.inputs > 1 or self.outputs > 1 or 
@@ -288,9 +301,9 @@ implemented only for SISO systems.")
         """Right divide two LTI objects."""
         if isinstance(other, (int, float, long, complex)):
             other = _convertToFRD(other, inputs=self.inputs, 
-                outputs=self.inputs)
+                outputs=self.inputs, omega=self.omega)
         else:
-            other = _convertToFRD(other)
+            other = _convertToFRD(other, omega=self.omega)
         
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
@@ -322,8 +335,7 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = (polyval(self.num[i][j], omega * 1.j) / 
-                    polyval(self.den[i][j], omega * 1.j))
+                out[i,j] = self.ifunc[i,j](omega)
 
         return out
 
@@ -348,71 +360,43 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                fresp = map(lambda w: (polyval(self.num[i][j], w * 1.j) / 
-                    polyval(self.den[i][j], w * 1.j)), omega)
-                fresp = array(fresp)
-
+                fresp = self.ifunc[i,j](omega)
                 mag[i, j, :] = abs(fresp)
                 phase[i, j, :] = angle(fresp)
 
         return mag, phase, omega
 
     def feedback(self, other, sign=-1): 
-        """Feedback interconnection between two LTI objects."""
+        """Feedback interconnection between two FRD objects."""
         
-        other = _convertToFRD(other)
+        other = _convertToFRD(other, omega=self.omega)
 
-        if (self.inputs > 1 or self.outputs > 1 or 
-            other.inputs > 1 or other.outputs > 1):
-            # TODO: MIMO feedback
-            raise NotImplementedError("FRD.feedback is currently \
-only implemented for SISO functions.")
+        if (self.outputs != other.inputs or 
+            self.inputs != other.outputs):
+            raise ValueError(
+                "FRD.feedback, inputs/outputs mismatch")
+        fresp = empty(self.outputs, self.inputs, len(other.omega))
+        # TODO: vectorize this
+        # TODO: handle omega re-mapping
+        for k, w in enumerate(other.omega):
+            for i in range(0, self.inputs):
+                for j in range(0, self.outputs):
+                    fresp[i, j, k] = \
+                        self.fresp[i, j, k] / \
+                        (1.0 + inner(self.fresp[i, :, k], other.fresp[:, i, k]))
 
-        num1 = self.num[0][0]
-        den1 = self.den[0][0]
-        num2 = other.num[0][0]
-        den2 = other.den[0][0]
-
-        num = polymul(num1, den2)
-        den = polyadd(polymul(den2, den1), -sign * polymul(num2, num1))
-
-        return FRD(num, den)
-
-        # For MIMO or SISO systems, the analytic expression is
-        #     self / (1 - sign * other * self)
-        # But this does not work correctly because the state size will be too
-        # large.
-
-    def returnScipySignalLti(self):
-        """Return a list of a list of scipy.signal.lti objects.
-        
-        For instance,
-        
-        >>> out = tfobject.returnScipySignalLti()
-        >>> out[3][5]
-            
-        is a signal.scipy.lti object corresponding to the transfer function from
-        the 6th input to the 4th output.
-        
-        """
-
-        # Preallocate the output.
-        out = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
-
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                out[i][j] = lti(self.num[i][j], self.den[i][j])
-            
-        return out 
+        return FRD(fresp, other.omega)
 
  
-def _convertToFRD(sys, omega):
-    """Convert a system to transfer function form (if needed).
+def _convertToFRD(sys, omega, inputs=1, outputs=1):
+    """Convert a system to frequency response data form (if needed).
     
-    If sys is already a transfer function, then it is returned.  If sys is a
-    state space object, then it is converted to a transfer function and
-    returned.  If sys is a scalar, then the number of inputs and outputs can be
-    specified manually, as in:
+    If sys is already an frd, and its frequency range matches or
+    overlaps the range given in omega then it is returned.  If sys is
+    another Lti object or a transfer function, then it is converted to
+    a frequency response data at the specified omega. If sys is a
+    scalar, then the number of inputs and outputs can be specified
+    manually, as in:
 
     >>> sys = _convertToFRD(3.) # Assumes inputs = outputs = 1
     >>> sys = _convertToFRD(1., inputs=3, outputs=2)
@@ -424,7 +408,8 @@ def _convertToFRD(sys, omega):
     
     if isinstance(sys, FRD):
         
-        if (abs(omega - sys.omega) < eps).all():
+        omega.sort()
+        if (abs(omega - sys.omega) < FRD.epsw).all():
             # frequencies match, and system was already frd; simply use
             return sys
         
@@ -433,56 +418,33 @@ def _convertToFRD(sys, omega):
         omega = omega[omega <= max(sys.omega)]
         if not omega:
             raise ValueError("Frequency ranges of FRD do not overlap")
-        return FRDsys
-
-    elif isinstance(sys, statesp.StateSpace):
-        try:
-            from slycot import tb04ad
-            if len(kw):
-                raise TypeError("If sys is a StateSpace, \
-                        _convertToFRD cannot take keywords.")
-
-            # Use Slycot to make the transformation
-            # Make sure to convert system matrices to numpy arrays
-            tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
-                           array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
-
-            # Preallocate outputs.
-            num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
-            den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
-
-            for i in range(sys.outputs):
-                for j in range(sys.inputs):
-                    num[i][j] = list(tfout[6][i, j, :])
-                    # Each transfer function matrix row has a common denominator.
-                    den[i][j] = list(tfout[5][i, :])
-            # print num
-            # print den
-        except ImportError:
-            # If slycot is not available, use signal.lti (SISO only)
-            if (sys.inputs != 1 or sys.outputs != 1):
-                raise TypeError("No support for MIMO without slycot")
-
-            lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
-            num = squeeze(lti_sys.num)
-            den = squeeze(lti_sys.den)
-            print num
-            print den
-
-        return FRD(num, den)
-    elif isinstance(sys, (int, long, float, complex)):
-        if "inputs" in kw:
-            inputs = kw["inputs"]
-        else:
-            inputs = 1
-        if "outputs" in kw:
-            outputs = kw["outputs"]
-        else:
-            outputs = 1
-
-        num = [[[sys] for j in range(inputs)] for i in range(outputs)]
-        den = [[[1] for j in range(inputs)] for i in range(outputs)]
         
-        return FRD(num, den)
+        # if there would be data beyond the extremes, add omega points at the
+        # edges
+        if omega[0] - sys.omega[0] > FRD.epsw:
+            omega.insert(sys.omega[0], 0)
+        if sys.omega[-1] - omega[-1] > FRD.epsw:
+            omega.append(sys.omega[-1])
+        print "Adjusting frequency range in FRD"
+
+        fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
+        for k, w in enumerate(omega):
+            fresp[:, :, k] = sys.evalfr(w)
+        
+        return FRD(fresp, omega)
+
+    elif isinstance(sys, Lti):
+        omega.sort()
+        fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
+        for k, w in enumerate(omega):
+            fresp[:, :, k] = sys.evalfr(w)
+        
+        return FRD(fresp, omega)
+
+    elif isinstance(sys, (int, long, float, complex)):
+        
+        fresp = ones((outputs, inputs, len(omega)), dtype=float)*sys
+        
+        return FRD(fresp, omega)
     else:
         raise TypeError("Can't convert given type to FRD system.")
