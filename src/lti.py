@@ -12,6 +12,8 @@ timebase()
 timebaseEqual()
 """
 
+from types import NoneType
+
 class Lti:
 
     """Lti is a parent class to linear time invariant control (LTI) objects.
@@ -65,36 +67,40 @@ class Lti:
         self.outputs = outputs
         self.dt = dt
 
-# Return the timebase of a system
-def timebase(sys):
-    # TODO: add docstring
-    # If we get passed a constant, timebase is None
+# Return the timebase (with conversion if unspecified)
+def timebase(sys, strict=True):
+    """Return the timebase for an Lti system
+
+    dt = timebase(sys)
+
+    returns the timebase for a system 'sys'.  If the strict option is
+    set to False, dt = True will be returned as 1.
+    """
+    # System needs to be either a constant or an Lti system
     if isinstance(sys, (int, float, long, complex)):
         return None
+    elif not isinstance(sys, Lti):
+        raise ValueError("Timebase not defined")
 
-    # Check for a transfer fucntion or state space object
-    if isinstance(sys, Lti):
-        if sys.dt > 0 or sys.dt == True:
-            return 'dtime';
-        elif sys.dt == 0:
-            return 'ctime';
-        elif sys.dt == None:
-            return None
+    # Return the dample time, with converstion to float if strict is false
+    if (sys.dt == None):
+        return None
+    elif (strict):
+        return float(sys.dt)
 
-    # Got pased something we don't recognize or bad timebase
-    return False;
+    return sys.dt
 
 # Check to see if two timebases are equal
-def timebaseEqual(dt1, dt2):
+def timebaseEqual(sys1, sys2):
     # TODO: add docstring
-    if (type(dt1) == bool or type(dt2) == bool):
+    if (type(sys1.dt) == bool or type(sys2.dt) == bool):
         # Make sure both are unspecified discrete timebases
-        return type(dt1) == type(dt2) and dt1 == dt2
-    elif (type(dt1) == None or type(dt2) == None):
+        return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
+    elif (type(sys1.dt) == NoneType or type(sys2.dt) == NoneType):
         # One or the other is unspecified => the other can be anything
         return True
     else:
-        return dt1 == dt2
+        return sys1.dt == sys2.dt
 
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):

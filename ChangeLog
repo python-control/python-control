@@ -1,3 +1,36 @@
+2012-10-18  Richard Murray  <murray@dn0a1594a2.sunet>
+
+	* src/freqplot.py (gangof4_plot, nyquist_plot): discrete time
+	systems supported (through fresp)
+
+	* src/statesp.py (StateSpace.evalfr): added warning if discrete time
+	evaluation is above Nyquist frequency
+
+	* src/xferfcn.py (TransferFunction.evalfr, freqresp): : added
+	warning if discrete time evaluation is above Nyquist frequency
+
+	* tests/discrete_test.py (TestDiscrete.test_discrete_bode):
+	rudimentary unit test for discrete bode plot
+
+	* src/freqplot.py (bode_plot): fixed bug where input frequency list
+	was being overwritten by default frequency range
+
+	* src/xferfcn.py (TransferFunction.evalfr, freqresp): handles dtime
+
+	* src/statesp.py (StateSpace.evalfr): handles dtime
+
+	* src/lti.py (timebaseEqual): converted function to take systems as
+	inputs instead of dt as input (also affected functions in statesp.py
+	and xferfcn.py)
+
+	* src/lti.py (timebase): timebase now returns dt instead of
+	'ctime'/'dtime'
+
+2012-10-13  Richard Murray  <murray@dn0a1594a2.sunet>
+
+	* src/lti.py (timebase): new function to return timebase.  Doesn't
+	yet handle the case where dt == None.
+
 2012-10-07  Richard Murray  <murray@altura.local>
 
 	* src/matlab.py (c2d): MATLAB compatible function (just calls

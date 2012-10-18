@@ -96,6 +96,7 @@ def unwrap(angle, period=2*pi):
 # Determine if an object is a system
 def issys(object):
     # Check for a member of one of the classes that we define here
+    #! TODO: this should probably look for an LTI object instead??
     if (isinstance(object, (statesp.StateSpace, xferfcn.TransferFunction))): 
         return True
     

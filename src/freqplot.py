@@ -44,9 +44,10 @@
 import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
+from warnings import warn
 from ctrlutil import unwrap
 from bdalg import feedback
-from lti import isdtime
+from lti import isdtime, timebaseEqual
 
 #
 # Main plotting functions
@@ -90,9 +91,14 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
     
     Notes
     -----
-    1. Alternatively, you may use the lower-level method 
-    (mag, phase, freq) = sys.freqresp(freq) to generate the frequency 
-    response for a system, but it returns a MIMO response.
+    1. Alternatively, you may use the lower-level method (mag, phase, freq)
+    = sys.freqresp(freq) to generate the frequency response for a system,
+    but it returns a MIMO response.
+
+    2. If a discrete time model is given, the frequency response is plotted
+    along the upper branch of the unit circle, using the mapping z = exp(j
+    \omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
+    time base.  If not timebase is specified (dt = True), dt is set to 1.
 
     Examples
     --------
@@ -105,16 +111,12 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
 
     mags, phases, omegas = [], [], []
     for sys in syslist:
-        # TODO: implement for discrete time systems
-        if (isdtime(sys, strict=True)):
-            raise(NotImplementedError("Function not implemented in discrete time"))
-
         if (sys.inputs > 1 or sys.outputs > 1):
             #TODO: Add MIMO bode plots. 
             raise NotImplementedError("Bode is currently only implemented for SISO systems.")
         else:
-            # Select a default range if none is provided
             if (omega == None):
+                # Select a default range if none is provided
                 omega = default_frequency_range(syslist)
 
             # Get the magnitude and phase of the system
@@ -204,6 +206,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         
     # Select a default range if none is provided
     if (omega == None):
+        #! TODO: think about doing something smarter for discrete
         omega = default_frequency_range(syslist)
 
     # Interpolate between wmin and wmax if a tuple or list are provided
@@ -214,10 +217,6 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
                             num=50, endpoint=True, base=10.0)
     for sys in syslist:
-        # TODO: implement for discrete time systems
-        if (isdtime(sys, strict=True)):
-            raise(NotImplementedError("Function not implemented in discrete time"))
-
         if (sys.inputs > 1 or sys.outputs > 1):
             #TODO: Add MIMO nyquist plots. 
             raise NotImplementedError("Nyquist is currently only implemented for SISO systems.")
@@ -281,10 +280,6 @@ def gangof4_plot(P, C, omega=None):
     -------
     None
     """
-    # TODO: implement for discrete time systems
-    if (isdtime(P, strict=True) or isdtime(C, strict=True)):
-        raise(NotImplementedError("Function not implemented in discrete time"))
-
     if (P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs >1):
         #TODO: Add MIMO go4 plots. 
         raise NotImplementedError("Gang of four is currently only implemented for SISO systems.")
@@ -365,11 +360,8 @@ def default_frequency_range(syslist):
     # detect if single sys passed by checking if it is sequence-like
     if (not getattr(syslist, '__iter__', False)):
         syslist = (syslist,)
-    for sys in syslist:
-        # TODO: implement for discrete time systems
-        if (isdtime(sys, strict=True)):
-            raise(NotImplementedError("Function not implemented in discrete time"))
 
+    for sys in syslist:
         # Add new features to the list
         features = np.concatenate((features, np.abs(sys.pole())))
         features = np.concatenate((features, np.abs(sys.zero())))
@@ -383,10 +375,12 @@ def default_frequency_range(syslist):
     # Take the log of the features
     features = np.log10(features)
 
+    #! TODO: Add a check in discrete case to make sure we don't get aliasing
+                        
     # Set the range to be an order of magnitude beyond any features
     omega = sp.logspace(np.floor(np.min(features))-1, 
                         np.ceil(np.max(features))+1)   
-                        
+
     return omega
 
 #

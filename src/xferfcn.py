@@ -76,10 +76,11 @@ $Id$
 
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
-    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze
+    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi
 from scipy.signal import lti
 from copy import deepcopy
-from lti import Lti, timebaseEqual
+from lti import Lti, timebaseEqual, timebase, isdtime
+from warnings import warn
 import statesp
 
 class TransferFunction(Lti):
@@ -325,7 +326,7 @@ second has %i." % (self.outputs, other.outputs))
         if (self.dt == None and other.dt != None):
             dt = other.dt       # use dt from second argument
         elif (other.dt == None and self.dt != None) or \
-                (timebaseEqual(self.dt, other.dt)):
+                (timebaseEqual(self, other)):
             dt = self.dt        # use dt from first argument
         else:
             raise ValueError, "Systems have different sampling times"
@@ -470,16 +471,22 @@ implemented only for SISO systems.")
         """
 
         # TODO: implement for discrete time systems
-        if (self.dt != 0 and self.dt != None):
-            raise(NotImplementedError("Function not implemented in discrete time"))
+        if isdtime(self, strict=True):
+            # Convert the frequency to discrete time
+            dt = timebase(self)
+            s = exp(1.j * omega * dt)
+            if (omega * dt > pi):
+                warn("evalfr: frequency evaluation above Nyquist frequency")
+        else:
+            s = 1.j * omega
 
         # Preallocate the output.
         out = empty((self.outputs, self.inputs), dtype=complex)
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = (polyval(self.num[i][j], omega * 1.j) / 
-                    polyval(self.den[i][j], omega * 1.j))
+                out[i][j] = (polyval(self.num[i][j], s) / 
+                    polyval(self.den[i][j], s))
 
         return out
 
@@ -495,21 +502,26 @@ implemented only for SISO systems.")
 
         """
         
-        # TODO: implement for discrete time systems
-        if (self.dt != 0 and self.dt != None):
-            raise(NotImplementedError("Function not implemented in discrete time"))
-
         # Preallocate outputs.
         numfreq = len(omega)
         mag = empty((self.outputs, self.inputs, numfreq))
         phase = empty((self.outputs, self.inputs, numfreq))
 
-        omega.sort()
+        # Figure out the frequencies
+        omega.sort(); 
+        if isdtime(self, strict=True):
+            dt = timebase(self)
+            slist = map(lambda w: exp(1.j * w * dt), omega)
+            if (max(omega) * dt > pi):
+                warn("evalfr: frequency evaluation above Nyquist frequency")
+        else:
+            slist = map(lambda w: 1.j * w, omega)
 
+        # Compute frequency response for each input/output pair
         for i in range(self.outputs):
             for j in range(self.inputs):
-                fresp = map(lambda w: (polyval(self.num[i][j], w * 1.j) / 
-                    polyval(self.den[i][j], w * 1.j)), omega)
+                fresp = map(lambda s: (polyval(self.num[i][j], s) / 
+                    polyval(self.den[i][j], s)), slist)
                 fresp = array(fresp)
 
                 mag[i, j, :] = abs(fresp)

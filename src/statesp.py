@@ -81,7 +81,7 @@ from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
 import warnings
-from lti import Lti, timebaseEqual
+from lti import Lti, timebaseEqual, isdtime
 import xferfcn
 
 class StateSpace(Lti):
@@ -249,7 +249,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
             if (self.dt == None and other.dt != None):
                 dt = other.dt       # use dt from second argument
             elif (other.dt == None and self.dt != None) or \
-                    (timebaseEqual(self.dt, other.dt)):
+                    (timebaseEqual(self, other)):
                 dt = self.dt        # use dt from first argument
             else:
                 raise ValueError, "Systems have different sampling times"
@@ -307,7 +307,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             if (self.dt == None and other.dt != None):
                 dt = other.dt       # use dt from second argument
             elif (other.dt == None and self.dt != None) or \
-                    (timebaseEqual(self.dt, other.dt)):
+                    (timebaseEqual(self, other)):
                 dt = self.dt        # use dt from first argument
             else:
                 raise ValueError, "Systems have different sampling times"
@@ -359,12 +359,16 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         input value s = i * omega.
 
         """
-        
-        # TODO: implement for discrete time systems
-        if (self.dt != 0 and self.dt != None):
-            raise(NotImplementedError("Function not implemented in discrete time"))
+        # Figure out the point to evaluate the transfer function
+        if isdtime(self, strict=True):
+            dt = timebase(self)
+            s = exp(1.j * omega * dt)
+            if (omega * dt > pi):
+                warn("evalfr: frequency evaluation above Nyquist frequency")
+        else:
+            s = omega * 1.j
 
-        fresp = self.C * solve(omega * 1.j * eye(self.states) - self.A,
+        fresp = self.C * solve(s * eye(self.states) - self.A,
             self.B) + self.D
 
         return array(fresp)
@@ -382,11 +386,6 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         input omega.
 
         """
-        
-        # TODO: implement for discrete time systems
-        if (self.dt != 0 and self.dt != None):
-            raise(NotImplementedError("Function not implemented in discrete time"))
-
         # Preallocate outputs.
         numfreq = len(omega)
         mag = empty((self.outputs, self.inputs, numfreq))
@@ -395,6 +394,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         omega.sort()
 
+        # Evaluate response at each frequency
         for k in range(numfreq):
             fresp[:, :, k] = self.evalfr(omega[k])
 
@@ -439,7 +439,7 @@ inputs/outputs for feedback."
         if (self.dt == None and other.dt != None):
             dt = other.dt       # use dt from second argument
         elif (other.dt == None and self.dt != None) or \
-                timebaseEqual(self.dt, other.dt):
+                timebaseEqual(self, other):
             dt = self.dt        # use dt from first argument
         else:
             raise ValueError, "Systems have different sampling times"

@@ -43,16 +43,12 @@ class TestDiscrete(unittest.TestCase):
         self.siso_tf3d = TransferFunction([1, 1], [1, 2, 1], True)
 
     def testTimebaseEqual(self):
-        self.assertEqual(timebaseEqual(None, None), True)
-        self.assertEqual(timebaseEqual(1, 1), True)
-        self.assertEqual(timebaseEqual(1, 1.0), True)
-        self.assertEqual(timebaseEqual(True, True), True)
-
-        self.assertEqual(timebaseEqual(1, 0.1), False)
-        self.assertEqual(timebaseEqual(None, 0.1), False)
-        self.assertEqual(timebaseEqual(None, True), False)
-        self.assertEqual(timebaseEqual(None, 0), False)
-        self.assertEqual(timebaseEqual(1, True), False)
+        self.assertEqual(timebaseEqual(self.siso_ss1, self.siso_tf1), True)
+        self.assertEqual(timebaseEqual(self.siso_ss1, self.siso_ss1c), True)
+        self.assertEqual(timebaseEqual(self.siso_ss1, self.siso_ss1d), True)
+        self.assertEqual(timebaseEqual(self.siso_ss1d, self.siso_ss1c), False)
+        self.assertEqual(timebaseEqual(self.siso_ss1d, self.siso_ss2d), False)
+        self.assertEqual(timebaseEqual(self.siso_ss1d, self.siso_ss3d), False)
 
     def testSystemInitialization(self):
         # Check to make sure systems are discrete time with proper variables
@@ -78,16 +74,23 @@ class TestDiscrete(unittest.TestCase):
             newsys = TransferFunction(sys);
             self.assertEqual(sys.dt, newsys.dt)
 
-    def testTimebase(self):
+    def test_timebase(self):
         self.assertEqual(timebase(1), None);
-        self.assertEqual(timebase(self.siso_ss1), None);
-        self.assertEqual(timebase(self.siso_ss1c), 'ctime');
-        self.assertEqual(timebase(self.siso_ss1d), 'dtime');
-        self.assertEqual(timebase(self.siso_ss3d), 'dtime');
-        self.assertEqual(timebase(self.siso_tf1), None);
-        self.assertEqual(timebase(self.siso_tf1c), 'ctime');
-        self.assertEqual(timebase(self.siso_tf1d), 'dtime');
-        self.assertEqual(timebase(self.siso_tf3d), 'dtime');
+        self.assertRaises(ValueError, timebase, [1, 2])
+        self.assertEqual(timebase(self.siso_ss1, strict=False), None);
+        self.assertEqual(timebase(self.siso_ss1, strict=True), None);
+        self.assertEqual(timebase(self.siso_ss1c), 0);
+        self.assertEqual(timebase(self.siso_ss1d), 0.1);
+        self.assertEqual(timebase(self.siso_ss2d), 0.2);
+        self.assertEqual(timebase(self.siso_ss3d), True);
+        self.assertEqual(timebase(self.siso_ss3d, strict=False), 1);
+        self.assertEqual(timebase(self.siso_tf1, strict=False), None);
+        self.assertEqual(timebase(self.siso_tf1, strict=True), None);
+        self.assertEqual(timebase(self.siso_tf1c), 0);
+        self.assertEqual(timebase(self.siso_tf1d), 0.1);
+        self.assertEqual(timebase(self.siso_tf2d), 0.2);
+        self.assertEqual(timebase(self.siso_tf3d), True);
+        self.assertEqual(timebase(self.siso_tf3d, strict=False), 1);
 
     def testisdtime(self):
         # Constant
@@ -268,6 +271,15 @@ class TestDiscrete(unittest.TestCase):
         # Check errors
         self.assertRaises(ValueError, sample_system, self.siso_ss1d, 1)
         self.assertRaises(ValueError, sample_system, self.siso_ss1, 1, 'unknown')
+    def test_discrete_bode(self):
+        # Create a simple discrete time system and check the calculation
+        sys = TransferFunction([1], [1, 0.5], 1)
+        omega = [1, 2, 3]
+        mag_out, phase_out, omega_out = bode(sys, omega)
+        H_z = map(lambda w: 1./(np.exp(1.j * w) + 0.5), omega)
+        np.testing.assert_array_almost_equal(omega, omega_out)
+        np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
+        np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)
