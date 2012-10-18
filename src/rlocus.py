@@ -61,7 +61,7 @@ def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
     ----------
     sys : linsys
         Linear input/output systems (SISO only, for now)
-    klist : gain_range (default = None)
+    kvect : gain_range (default = None)
         List of gains to use in computing diagram
     Plot : boolean (default = True)
         If True, plot magnitude and phase
@@ -69,7 +69,6 @@ def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
     Return values
     -------------
     rlist : list of computed root locations
-    klist : list of gains
     """
 
     # Convert numerator and denominator to polynomials if they aren't
