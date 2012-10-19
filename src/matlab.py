@@ -1005,7 +1005,7 @@ def ngrid():
 ngrid.__doc__ = re.sub('nichols_grid', 'ngrid', nichols_grid.__doc__)
 
 # Root locus plot
-def rlocus(sys, klist = logspace(-3, 3), **keywords):
+def rlocus(sys, klist = None, **keywords):
     """Root locus plot
 
     Parameters
@@ -1023,7 +1023,9 @@ def rlocus(sys, klist = logspace(-3, 3), **keywords):
         list of gains used to compute roots
     """
     from rlocus import root_locus
-    #! TODO: update with a smart calculation of the gains when using default value for klist.
+    #! TODO: update with a smart calculation of the gains using sys poles/zeros
+    if klist == None:
+        klist = logspace(-3, 3)
 
     rlist = root_locus(sys, klist, **keywords)
     return rlist, klist

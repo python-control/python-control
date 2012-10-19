@@ -1,3 +1,9 @@
+2012-10-19  Richard Murray  <murray@dn0a1594a2.sunet>
+
+	* src/matlab.py (rlocus): reverted change in default argument
+	processing for klist.  This has some negative consequences:
+	http://www.deadlybloodyserious.com/2008/05/default-argument-blunders/
+
 2012-10-18  Richard Murray  <murray@dn0a1594a2.sunet>
 
 	* src/freqplot.py (gangof4_plot, nyquist_plot): discrete time
