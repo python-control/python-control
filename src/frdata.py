@@ -74,8 +74,9 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
-    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner
-from scipy.interpolate import interp1d
+    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner, \
+    real, imag, matrix, absolute
+from scipy.interpolate import splprep, splev
 from copy import deepcopy
 from lti import Lti
 import statesp
@@ -84,7 +85,7 @@ class FRD(Lti):
 
     """The FRD class represents (measured?) frequency response 
     TF instances and functions.
-    4
+    
     The FRD class is derived from the Lti parent class.  It is used
     throughout the python-control library to represent systems in frequency
     response data form. 
@@ -127,7 +128,6 @@ class FRD(Lti):
                 # not an FRD, but still a system, second argument should be
                 # the frequency range
                 otherlti = args[0]
-                print args[1]
                 self.omega = array(args[1], dtype=float)
                 self.omega.sort()
                 numfreq = len(self.omega)
@@ -166,10 +166,13 @@ class FRD(Lti):
 
         # create interpolation functions
         self.ifunc = empty((self.fresp.shape[1], self.fresp.shape[0]), 
-                           dtype=interp1d)
+                           dtype=tuple)
         for i in range(self.fresp.shape[1]):
             for j in range(self.fresp.shape[0]):
-                self.ifunc[i,j] = interp1d(self.omega, self.fresp[i, j, :])
+                self.ifunc[i,j],u = splprep(
+                    u=self.omega, x=[real(self.fresp[i, j, :]), 
+                                     imag(self.fresp[i, j, :])], 
+                    w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.01)
 
         Lti.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
         
@@ -179,6 +182,7 @@ class FRD(Lti):
         mimo = self.inputs > 1 or self.outputs > 1  
         outstr = [ 'frequency response data ' ]
         
+        mt, pt, wt = self.freqresp(self.omega)
         for i in range(self.inputs):
             for j in range(self.outputs):
                 if mimo:
@@ -186,7 +190,7 @@ class FRD(Lti):
                 outstr.append('Freq [rad/s]  Magnitude   Phase')
                 outstr.extend(
                     [ '%f %f %f' % (w, m, p*180.0)
-                      for m, p, w in self.freqresp(self.omega) ])
+                      for m, p, w in zip(mt[i][j], pt[i][j], wt) ])
 
         return '\n'.join(outstr)
     
@@ -335,7 +339,8 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i,j] = self.ifunc[i,j](omega)
+                out[i,j] = inner(array([1, 1j]), 
+                                 splev(omega, self.ifunc[i,j], der=0))
 
         return out
 
@@ -360,7 +365,7 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                fresp = self.ifunc[i,j](omega)
+                fresp = matrix([[1,1j]])*splev(omega, self.ifunc[i,j]) 
                 mag[i, j, :] = abs(fresp)
                 phase[i, j, :] = angle(fresp)
 
@@ -375,18 +380,18 @@ implemented only for SISO systems.")
             self.inputs != other.outputs):
             raise ValueError(
                 "FRD.feedback, inputs/outputs mismatch")
-        fresp = empty(self.outputs, self.inputs, len(other.omega))
+        fresp = empty((self.outputs, self.inputs, len(other.omega)), 
+                      dtype=complex)
         # TODO: vectorize this
         # TODO: handle omega re-mapping
         for k, w in enumerate(other.omega):
-            for i in range(0, self.inputs):
-                for j in range(0, self.outputs):
+            for i in range(self.inputs):
+                for j in range(self.outputs):
                     fresp[i, j, k] = \
                         self.fresp[i, j, k] / \
-                        (1.0 + inner(self.fresp[i, :, k], other.fresp[:, i, k]))
+                        (1.0-sign*inner(self.fresp[:, j, k], other.fresp[i, :, k]))
 
         return FRD(fresp, other.omega)
-
  
 def _convertToFRD(sys, omega, inputs=1, outputs=1):
     """Convert a system to frequency response data form (if needed).
@@ -442,9 +447,20 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         return FRD(fresp, omega)
 
     elif isinstance(sys, (int, long, float, complex)):
-        
         fresp = ones((outputs, inputs, len(omega)), dtype=float)*sys
-        
         return FRD(fresp, omega)
-    else:
-        raise TypeError("Can't convert given type to FRD system.")
+
+    # try converting constant matrices
+    try:
+        sys = array(sys)
+        outputs,inputs = sys.shape
+        fresp = empty((outputs, inputs, len(omega)), dtype=float)
+        for i in range(outputs):
+            for j in range(inputs):
+                fresp[i,j,:] = sys[i,j]
+        return FRD(fresp, omega)
+    except:
+        pass
+
+    raise TypeError('''Can't convert given type "%s" to FRD system.''' %
+                    sys.__class__)
