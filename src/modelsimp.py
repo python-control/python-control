@@ -336,3 +336,16 @@ def markov(Y, U, M):
     H = np.dot(H, Y)
 
     return H
+
+def minreal(H, tol=-1):
+    
+    if isinstance(TransferFunction, H):
+        
+        try:
+            from slycot import td04ad
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine td04ad")
+        rowcol = 'R'
+        m = H.inputs
+        P = H.outputs
+        index = np.x
