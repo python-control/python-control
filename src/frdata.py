@@ -75,7 +75,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner, \
-    real, imag, matrix, absolute
+    real, imag, matrix, absolute, eye
 from scipy.interpolate import splprep, splev
 from copy import deepcopy
 from lti import Lti
@@ -339,6 +339,8 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
+                print array([1, 1j])
+                print splev(omega, self.ifunc[i,j], der=0)
                 out[i,j] = inner(array([1, 1j]), 
                                  splev(omega, self.ifunc[i,j], der=0))
 
@@ -363,11 +365,10 @@ implemented only for SISO systems.")
 
         omega.sort()
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                fresp = matrix([[1,1j]])*splev(omega, self.ifunc[i,j]) 
-                mag[i, j, :] = abs(fresp)
-                phase[i, j, :] = angle(fresp)
+        for k, w in enumerate(omega):
+            fresp = self.evalfr(omega)
+            mag[:, :, k] = abs(fresp)
+            phase[:, :, k] = angle(fresp)
 
         return mag, phase, omega
 
@@ -385,12 +386,17 @@ implemented only for SISO systems.")
         # TODO: vectorize this
         # TODO: handle omega re-mapping
         for k, w in enumerate(other.omega):
-            for i in range(self.inputs):
-                for j in range(self.outputs):
-                    fresp[i, j, k] = \
-                        self.fresp[i, j, k] / \
-                        (1.0-sign*inner(self.fresp[:, j, k], 
-                                        other.fresp[i, :, k]))
+            fresp[:, :, k] = (
+                eye(self.inputs) + other.fresp[:, :, k].view(type=matrix) * 
+                    self.fresp[:, :, k].view(type=matrix)).I * \
+            self.fresp[:, :, k].view(type=matrix)
+            
+        #    for i in range(self.inputs):
+        #        for j in range(self.outputs):
+        #            fresp[i, j, k] = \
+        #                self.fresp[i, j, k] / \
+        #                (1.0-sign*inner(self.fresp[:, j, k], 
+        #                                other.fresp[i, :, k]))
 
         return FRD(fresp, other.omega)
  
