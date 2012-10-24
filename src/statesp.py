@@ -80,6 +80,7 @@ from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
+from exceptions import Exception
 import warnings
 from lti import Lti
 import xferfcn
@@ -505,8 +506,18 @@ cannot take keywords.")
         #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), 
             sys * ones((outputs, inputs)))
-    else:
-        raise TypeError("Can't convert given type to StateSpace system.")
+
+    # If this is a matrix, try to create a constant feedthrough
+    try:
+        D = matrix(sys)
+        outputs, inputs = D.shape
+        
+        return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), D)
+    except Exception, e: 
+        print "Failure to assume argument is matrix-like in" \
+            " _convertToStateSpace, result %s" % e
+        
+    raise TypeError("Can't convert given type to StateSpace system.")
     
 def _rss_generate(states, inputs, outputs, type):
     """Generate a random state space.

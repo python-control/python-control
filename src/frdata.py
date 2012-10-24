@@ -389,7 +389,8 @@ implemented only for SISO systems.")
                 for j in range(self.outputs):
                     fresp[i, j, k] = \
                         self.fresp[i, j, k] / \
-                        (1.0-sign*inner(self.fresp[:, j, k], other.fresp[i, :, k]))
+                        (1.0-sign*inner(self.fresp[:, j, k], 
+                                        other.fresp[i, :, k]))
 
         return FRD(fresp, other.omega)
  
