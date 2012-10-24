@@ -172,7 +172,7 @@ class FRD(Lti):
                 self.ifunc[i,j],u = splprep(
                     u=self.omega, x=[real(self.fresp[i, j, :]), 
                                      imag(self.fresp[i, j, :])], 
-                    w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.01)
+                    w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.0)
 
         Lti.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
         

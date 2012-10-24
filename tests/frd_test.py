@@ -100,7 +100,7 @@ class TestFRD(unittest.TestCase):
 
     def testBode(self):
         h1 = TransferFunction([1], [1, 2, 2])
-        omega = np.logspace(-1, 2, 30)
+        omega = np.logspace(-1, 2, 40)
         f1 = FRD(h1, omega)
         control.freqplot.nyquist(f1, np.logspace(-1, 2, 100))
         plt.figure(2)
