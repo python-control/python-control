@@ -75,7 +75,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner, \
-    real, imag, matrix, absolute, eye
+    real, imag, matrix, absolute, eye, linalg
 from scipy.interpolate import splprep, splev
 from copy import deepcopy
 from lti import Lti
@@ -339,10 +339,8 @@ implemented only for SISO systems.")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                print array([1, 1j])
-                print splev(omega, self.ifunc[i,j], der=0)
-                out[i,j] = inner(array([1, 1j]), 
-                                 splev(omega, self.ifunc[i,j], der=0))
+                frraw = splev(omega, self.ifunc[i,j], der=0)
+                out[i,j] = frraw[0] + 1.0j*frraw[1]
 
         return out
 
@@ -366,7 +364,7 @@ implemented only for SISO systems.")
         omega.sort()
 
         for k, w in enumerate(omega):
-            fresp = self.evalfr(omega)
+            fresp = self.evalfr(w)
             mag[:, :, k] = abs(fresp)
             phase[:, :, k] = angle(fresp)
 
@@ -386,10 +384,10 @@ implemented only for SISO systems.")
         # TODO: vectorize this
         # TODO: handle omega re-mapping
         for k, w in enumerate(other.omega):
-            fresp[:, :, k] = (
+            fresp[:, :, k] = linalg.solve(
                 eye(self.inputs) + other.fresp[:, :, k].view(type=matrix) * 
-                    self.fresp[:, :, k].view(type=matrix)).I * \
-            self.fresp[:, :, k].view(type=matrix)
+                self.fresp[:, :, k].view(type=matrix), 
+                eye(self.inputs))*self.fresp[:, :, k].view(type=matrix)
             
         #    for i in range(self.inputs):
         #        for j in range(self.outputs):

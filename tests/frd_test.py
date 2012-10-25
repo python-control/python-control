@@ -130,15 +130,12 @@ class TestFRD(unittest.TestCase):
         omega = np.logspace(-1, 2, 10)
         f1 = FRD(sys, omega).feedback([[0.1, 0.3],[0.0, 1.0]])
         f2 = FRD(sys.feedback([[0.1, 0.3],[0.0, 1.0]]), omega)
-        print f1 - f2
-        print f1
-        print f2
-        #np.testing.assert_array_almost_equal(
-        #    sys.feedback([[0.1, 0.3],[0.0, 1.0]]).freqresp([0.1, 1.0, 10])[0],
-        #    f1.feedback([[0.1, 0.3],[0.0, 1.0]]).freqresp([0.1, 1.0, 10])[0])
-        #np.testing.assert_array_almost_equal(
-        #    sys.feedback([[0.1, 0.3],[0.0, 1.0]]).freqresp([0.1, 1.0, 10])[1],
-        #    f1.feedback([[0.1, 0.3],[0.0, 1.0]]).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            f1.freqresp([0.1, 1.0, 10])[0],
+            f2.freqresp([0.1, 1.0, 10])[0])
+        np.testing.assert_array_almost_equal(
+            f1.freqresp([0.1, 1.0, 10])[1],
+            f2.freqresp([0.1, 1.0, 10])[1])
 if __name__ == "__main__":
     unittest.main()
     sys.exit(0)
