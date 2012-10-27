@@ -1,3 +1,21 @@
+2012-10-27  Richard Murray  <murray@altura.local>
+
+	* src/statefbk.py (acker): small updates to docstring
+
+	* src/bdalg.py (feedback): fixed up docstring formatting (for sphinx)
+
+	* tests/statefbk_test.py (TestStatefbk.testAcker): skip
+	ill-conditioned systems and loosened tolerances on acker() testing
+
+	* src/lti.py (timebaseEqual): replaced "type(sys.dt) == NoneType"
+	with "sys.dt is None", based on feedback from Luke Peterson that
+	NoneType is deprecated in python 3.
+
+2012-10-22  Richard Murray  <murray@altura.local>
+
+	* examples/genswitch.py (genswitch): updated calls to legend, fixing
+	problem pointed out by Scott Livingston
+
 2012-10-19  Richard Murray  <murray@dn0a1594a2.sunet>
 
 	* src/matlab.py (rlocus): reverted change in default argument

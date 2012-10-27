@@ -101,21 +101,23 @@ def place(A, B, p):
     return -F
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
-def acker(A,B,poles):
-    """Pole placemenmt using Ackermann method
+def acker(A, B, poles):
+    """Pole placement using Ackermann method
 
     Call:
-    k=acker(A,B,poles)
+    K = acker(A, B, poles)
 
     Parameters
     ----------
-    A, B : State and input matrix of the system
-    poles: desired poles
+    A, B : 2-d arrays
+        State and input matrix of the system
+    poles: 1-d list
+        Desired eigenvalue locations
 
     Returns
     -------
-    k: matrix
-    State feedback gains
+    K: matrix
+        Gains such that A - B K has given eigenvalues
 
     """
     # Convert the inputs to matrices
@@ -123,20 +125,22 @@ def acker(A,B,poles):
     b = np.mat(B)
 
     # Make sure the system is controllable
-    p = np.real(np.poly(poles))
-    ct = ctrb(A,B)
+    ct = ctrb(A, B)
     if sp.linalg.det(ct) == 0:
         raise ValueError, "System not reachable; pole placement invalid"
+
+    # Compute the desired characteristic polynomial
+    p = np.real(np.poly(poles))
 
     # Place the poles using Ackermann's method
     n = np.size(p)
     pmat = p[n-1]*a**0
     for i in np.arange(1,n):
-        pmat = pmat+p[n-i-1]*a**i
-    k = sp.linalg.inv(ct)*pmat
-    k = k[-1][:]
+        pmat = pmat + p[n-i-1]*a**i
+    K = sp.linalg.inv(ct) * pmat
 
-    return k
+    K = K[-1][:]                # Extract the last row
+    return K
 
 def lqr(*args, **keywords):
     """Linear quadratic regulator design

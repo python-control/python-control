@@ -40,7 +40,7 @@ f = np.divide(mu, (1 + u**n))   # mu / (1 + u^n), elementwise
 mpl.figure(1); mpl.clf();
 mpl.axis([0, 5, 0, 5]);                 # box on;
 mpl.plot(u, f, '-', f, u, '--')         # 'LineWidth', AM_data_linewidth);
-mpl.legend('z1, f(z1)', 'z2, f(z2)')    # legend(lgh, 'boxoff');
+mpl.legend(('z1, f(z1)', 'z2, f(z2)'))    # legend(lgh, 'boxoff');
 mpl.plot([0, 3], [0, 3], 'k-')          # 'LineWidth', AM_ref_linewidth);
 mpl.plot(eqpt[0], eqpt[1], 'k.', eqpt[1], eqpt[0], 'k.', 
          eqpt[2], eqpt[2], 'k.')        # 'MarkerSize', AM_data_markersize*3);
@@ -62,7 +62,7 @@ mpl.axis([0, 25, 0, 5]);
 
 mpl.xlabel('Time {\itt} [scaled]');
 mpl.ylabel('Protein concentrations [scaled]');
-mpl.legend('z1 (A)', 'z2 (B)')  # 'Orientation', 'horizontal');
+mpl.legend(('z1 (A)', 'z2 (B)'))  # 'Orientation', 'horizontal');
 # legend(legh, 'boxoff');
 
 # Phase portrait

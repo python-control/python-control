@@ -177,13 +177,13 @@ def feedback(sys1, sys2, sign=-1):
     Parameters
     ----------
     sys1: scalar, StateSpace, or TransferFunction
-    The primary plant.
+        The primary plant.
     sys2: scalar, StateSpace, or TransferFunction
-    The feedback plant (often a feedback controller).
-    sign: scalar
-    The sign of feedback.  `sign` = -1 indicates negative feedback, and
-    `sign` = 1 indicates positive feedback.  `sign` is an optional argument; it
-    assumes a value of -1 if not specified.
+        The feedback plant (often a feedback controller).
+    sign: scalar 
+        The sign of feedback.  `sign` = -1 indicates negative feedback, and
+        `sign` = 1 indicates positive feedback.  `sign` is an optional
+        argument; it assumes a value of -1 if not specified.
 
     Returns
     -------

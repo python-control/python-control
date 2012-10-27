@@ -12,8 +12,6 @@ timebase()
 timebaseEqual()
 """
 
-from types import NoneType
-
 class Lti:
 
     """Lti is a parent class to linear time invariant control (LTI) objects.
@@ -96,7 +94,7 @@ def timebaseEqual(sys1, sys2):
     if (type(sys1.dt) == bool or type(sys2.dt) == bool):
         # Make sure both are unspecified discrete timebases
         return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
-    elif (type(sys1.dt) == NoneType or type(sys2.dt) == NoneType):
+    elif (sys1.dt is None or sys2.dt is None):
         # One or the other is unspecified => the other can be anything
         return True
     else:
