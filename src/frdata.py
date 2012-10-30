@@ -75,7 +75,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner, \
-    real, imag, matrix, absolute, eye, linalg
+    real, imag, matrix, absolute, eye, linalg, pi
 from scipy.interpolate import splprep, splev
 from copy import deepcopy
 from lti import Lti
@@ -187,10 +187,15 @@ class FRD(Lti):
             for j in range(self.outputs):
                 if mimo:
                     outstr.append("Input %i to output %i:" % (i + 1, j + 1))
-                outstr.append('Freq [rad/s]  Magnitude   Phase')
+                outstr.append('Freq [rad/s]  Magnitude    Phase')
+                outstr.append('------------  -----------  -----------')
+#                outstr.extend(
+#                    [ '%12.3f  %11.3e  %11.2f' % (w, m, p*180.0/pi)
+#                      for m, p, w in zip(mt[i][j], pt[i][j], wt) ])
                 outstr.extend(
-                    [ '%f %f %f' % (w, m, p*180.0)
-                      for m, p, w in zip(mt[i][j], pt[i][j], wt) ])
+                    [ '%12.3f  %10.4g + %10.4g' % (w, m, p)
+                      for m, p, w in zip(real(self.fresp[i,j,:]), imag(self.fresp[i,j,:]), wt) ])
+
 
         return '\n'.join(outstr)
     
@@ -385,8 +390,9 @@ implemented only for SISO systems.")
         # TODO: handle omega re-mapping
         for k, w in enumerate(other.omega):
             fresp[:, :, k] = linalg.solve(
-                eye(self.inputs) + other.fresp[:, :, k].view(type=matrix) * 
-                self.fresp[:, :, k].view(type=matrix), 
+                eye(self.inputs) +
+                self.fresp[:, :, k].view(type=matrix) * 
+                other.fresp[:, :, k].view(type=matrix), 
                 eye(self.inputs))*self.fresp[:, :, k].view(type=matrix)
             
         #    for i in range(self.inputs):
