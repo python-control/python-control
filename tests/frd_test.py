@@ -101,7 +101,7 @@ class TestFRD(unittest.TestCase):
     def testNyquist(self):
         h1 = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 40)
-        f1 = FRD(h1, omega)
+        f1 = FRD(h1, omega, smooth=True)
         control.freqplot.nyquist(f1, np.logspace(-1, 2, 100))
         plt.savefig('/dev/null', format='svg')
         plt.figure(2)
@@ -136,7 +136,39 @@ class TestFRD(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             f1.freqresp([0.1, 1.0, 10])[1],
             f2.freqresp([0.1, 1.0, 10])[1])
+
+    def testMIMOfb2(self):
+        sys = StateSpace(np.matrix('-2.0 0 0; 0 -1 1; 0 0 -3'), 
+                         np.matrix('1.0 0; 0 0; 0 1'), 
+                         np.eye(3), np.zeros((3,2)))
+        omega = np.logspace(-1, 2, 10)
+        K = np.matrix('1 0.3 0; 0.1 0 0')
+        f1 = FRD(sys, omega).feedback(K)
+        f2 = FRD(sys.feedback(K), omega)
+        np.testing.assert_array_almost_equal(
+            f1.freqresp([0.1, 1.0, 10])[0],
+            f2.freqresp([0.1, 1.0, 10])[0])
+        np.testing.assert_array_almost_equal(
+            f1.freqresp([0.1, 1.0, 10])[1],
+            f2.freqresp([0.1, 1.0, 10])[1])
+        
+    def testAgainstOctave(self):
+
+        # with data from octave:
+        #sys = ss([-2 0 0; 0 -1 1; 0 0 -3], [1 0; 0 0; 0 1], eye(3), zeros(3,2))
+        #bfr = frd(bsys, [1])
+        sys = StateSpace(np.matrix('-2.0 0 0; 0 -1 1; 0 0 -3'), 
+                         np.matrix('1.0 0; 0 0; 0 1'), 
+                         np.eye(3), np.zeros((3,2)))
+        omega = np.logspace(-1, 2, 10)
+        f1 = FRD(sys, omega)
+        np.testing.assert_array_almost_equal(
+            (f1.freqresp([1.0])[0] * 
+             np.exp(1j*f1.freqresp([1.0])[1])).reshape(3,2),
+            np.matrix('0.4-0.2j 0; 0 0.1-0.2j; 0 0.3-0.1j'))
+
 if __name__ == "__main__":
+
     unittest.main()
     sys.exit(0)
 

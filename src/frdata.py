@@ -75,7 +75,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner, \
-    real, imag, matrix, absolute, eye, linalg, pi
+    real, imag, matrix, absolute, eye, linalg, pi, where
 from scipy.interpolate import splprep, splev
 from copy import deepcopy
 from lti import Lti
@@ -106,7 +106,7 @@ class FRD(Lti):
     
     epsw = 1e-8
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         """Construct a transfer function.
         
         The default constructor is FRD(w, d), where w is an iterable of 
@@ -122,6 +122,7 @@ class FRD(Lti):
         object, other than an FRD, call FRD(sys, omega)
 
         """
+        smooth = kwargs.get('smooth', False)
 
         if len(args) == 2:
             if not isinstance(args[0], FRD) and isinstance(args[0], Lti):
@@ -165,15 +166,17 @@ class FRD(Lti):
             raise ValueError("Needs 1 or 2 arguments; receivd %i." % len(args))
 
         # create interpolation functions
-        self.ifunc = empty((self.fresp.shape[1], self.fresp.shape[0]), 
-                           dtype=tuple)
-        for i in range(self.fresp.shape[1]):
-            for j in range(self.fresp.shape[0]):
-                self.ifunc[i,j],u = splprep(
-                    u=self.omega, x=[real(self.fresp[i, j, :]), 
-                                     imag(self.fresp[i, j, :])], 
-                    w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.0)
-
+        if smooth:
+            self.ifunc = empty((self.fresp.shape[1], self.fresp.shape[0]), 
+                               dtype=tuple)
+            for i in range(self.fresp.shape[1]):
+                for j in range(self.fresp.shape[0]):
+                    self.ifunc[i,j],u = splprep(
+                        u=self.omega, x=[real(self.fresp[i, j, :]), 
+                                         imag(self.fresp[i, j, :])], 
+                        w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.0)
+        else:
+            self.ifunc = None
         Lti.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
         
     def __str__(self):
@@ -187,14 +190,11 @@ class FRD(Lti):
             for j in range(self.outputs):
                 if mimo:
                     outstr.append("Input %i to output %i:" % (i + 1, j + 1))
-                outstr.append('Freq [rad/s]  Magnitude    Phase')
-                outstr.append('------------  -----------  -----------')
-#                outstr.extend(
-#                    [ '%12.3f  %11.3e  %11.2f' % (w, m, p*180.0/pi)
-#                      for m, p, w in zip(mt[i][j], pt[i][j], wt) ])
+                outstr.append('Freq [rad/s]  Response   ')
+                outstr.append('------------  ------------------------')
                 outstr.extend(
                     [ '%12.3f  %10.4g + %10.4g' % (w, m, p)
-                      for m, p, w in zip(real(self.fresp[i,j,:]), imag(self.fresp[i,j,:]), wt) ])
+                      for m, p, w in zip(real(self.fresp[j,i,:]), imag(self.fresp[j,i,:]), wt) ])
 
 
         return '\n'.join(outstr)
@@ -316,10 +316,12 @@ implemented only for SISO systems.")
         
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
-            raise NotImplementedError("FRD.__rdiv__ is currently \
-implemented only for SISO systems.")
+            raise NotImplementedError(
+                "FRD.__rdiv__ is currently implemented only for SISO systems.")
 
         return other / self
+
+
     def __pow__(self,other):
         if not type(other) == int:
             raise ValueError("Exponent must be an integer")
@@ -342,10 +344,18 @@ implemented only for SISO systems.")
         # Preallocate the output.
         out = empty((self.outputs, self.inputs), dtype=complex)
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                frraw = splev(omega, self.ifunc[i,j], der=0)
-                out[i,j] = frraw[0] + 1.0j*frraw[1]
+        if self.ifunc is None:
+            try:
+                out = self.fresp[:, :, where(self.omega == omega)[0][0]]
+            except:
+                raise ValueError(
+                    "Frequency %f not in frequency list, try an interpolating"
+                    " FRD if you want additional points")
+        else:
+            for i in range(self.outputs):
+                for j in range(self.inputs):
+                    frraw = splev(omega, self.ifunc[i,j], der=0)
+                    out[i,j] = frraw[0] + 1.0j*frraw[1]
 
         return out
 
@@ -389,19 +399,13 @@ implemented only for SISO systems.")
         # TODO: vectorize this
         # TODO: handle omega re-mapping
         for k, w in enumerate(other.omega):
-            fresp[:, :, k] = linalg.solve(
+            fresp[:, :, k] = self.fresp[:, :, k].view(type=matrix)* \
+                linalg.solve(
                 eye(self.inputs) +
-                self.fresp[:, :, k].view(type=matrix) * 
-                other.fresp[:, :, k].view(type=matrix), 
-                eye(self.inputs))*self.fresp[:, :, k].view(type=matrix)
+                other.fresp[:, :, k].view(type=matrix) * 
+                self.fresp[:, :, k].view(type=matrix),
+                eye(self.inputs))
             
-        #    for i in range(self.inputs):
-        #        for j in range(self.outputs):
-        #            fresp[i, j, k] = \
-        #                self.fresp[i, j, k] / \
-        #                (1.0-sign*inner(self.fresp[:, j, k], 
-        #                                other.fresp[i, :, k]))
-
         return FRD(fresp, other.omega)
  
 def _convertToFRD(sys, omega, inputs=1, outputs=1):
@@ -429,26 +433,9 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
             # frequencies match, and system was already frd; simply use
             return sys
         
-        # omega becomes lowest common range
-        omega = omega[omega >= min(sys.omega)]
-        omega = omega[omega <= max(sys.omega)]
-        if not omega:
-            raise ValueError("Frequency ranges of FRD do not overlap")
-        
-        # if there would be data beyond the extremes, add omega points at the
-        # edges
-        if omega[0] - sys.omega[0] > FRD.epsw:
-            omega.insert(sys.omega[0], 0)
-        if sys.omega[-1] - omega[-1] > FRD.epsw:
-            omega.append(sys.omega[-1])
-        print "Adjusting frequency range in FRD"
-
-        fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
-        for k, w in enumerate(omega):
-            fresp[:, :, k] = sys.evalfr(w)
-        
-        return FRD(fresp, omega)
-
+        raise NotImplementedError(
+            "Frequency ranges of FRD do not match, conversion not implemented")
+                         
     elif isinstance(sys, Lti):
         omega.sort()
         fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
