@@ -433,6 +433,15 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_almost_equal(tfsys.num[i][j], num[i][j])
                 np.testing.assert_array_almost_equal(tfsys.den[i][j], den[i][j])
 
+    def testMinreal(self):
+        """Try the minreal function"""
+        s = TransferFunction([1, 0], [1])
+        h = (s+1)*(s+2.00000000001)/(s+2)/(s**2+s+1)
+        hm = h.minreal()
+        hr = (s+1)/(s**2+s+1)
+        np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
+        np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
+
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)
 
