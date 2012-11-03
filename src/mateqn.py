@@ -39,8 +39,7 @@ Author: Bjorn Olofsson
 
 from numpy.linalg import inv
 from scipy import shape, size, asarray, copy, zeros, eye, dot
-
-from exception import ControlSlycot, ControlArgument
+from control.exception import ControlSlycot, ControlArgument
 
 #### Lyapunov equation solvers lyap and dlyap
 
@@ -120,7 +119,7 @@ def lyap(A,Q,C=None,E=None):
         # Solve the Lyapunov equation by calling Slycot function sb03md
         try:
             X,scale,sep,ferr,w = sb03md(n,-Q,A,eye(n,n),'C',trana='T')
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -151,7 +150,7 @@ def lyap(A,Q,C=None,E=None):
         # Solve the Sylvester equation by calling the Slycot function sb04md
         try:
             X = sb04md(n,m,A,Q,-C)
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -194,7 +193,7 @@ def lyap(A,Q,C=None,E=None):
         try:
             A,E,Q,Z,X,scale,sep,ferr,alphar,alphai,beta = \
                 sg03ad('C','B','N','T','L',n,A,E,eye(n,n),eye(n,n),-Q)
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0 or ve.info > 4:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -307,7 +306,7 @@ def dlyap(A,Q,C=None,E=None):
         # Solve the Lyapunov equation by calling the Slycot function sb03md
         try:
             X,scale,sep,ferr,w = sb03md(n,-Q,A,eye(n,n),'D',trana='T')
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -334,7 +333,7 @@ def dlyap(A,Q,C=None,E=None):
         # Solve the Sylvester equation by calling Slycot function sb04qd
         try:
             X = sb04qd(n,m,-A,asarray(Q).T,C)
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -371,7 +370,7 @@ def dlyap(A,Q,C=None,E=None):
         try:
             A,E,Q,Z,X,scale,sep,ferr,alphar,alphai,beta = \
                 sg03ad('D','B','N','T','L',n,A,E,eye(n,n),eye(n,n),-Q)
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0 or ve.info > 4:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -506,7 +505,7 @@ def care(A,B,Q,R=None,S=None,E=None):
         # functions sb02mt and sb02md
         try:
             A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = sb02mt(n,m,B,R)
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -521,7 +520,7 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         try:
             X,rcond,w,S_o,U,A_inv = sb02md(n,A,G,Q,'C')
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -608,7 +607,7 @@ def care(A,B,Q,R=None,S=None,E=None):
         try:
             rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
                     sg02ad('C','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -765,7 +764,7 @@ def dare(A,B,Q,R,S=None,E=None):
         # functions sb02mt and sb02md
         try:
             A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = sb02mt(n,m,B,R)    
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -780,7 +779,7 @@ def dare(A,B,Q,R,S=None,E=None):
 
         try:
             X,rcond,w,S,U,A_inv = sb02md(n,A,G,Q,'D')
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -870,7 +869,7 @@ def dare(A,B,Q,R,S=None,E=None):
         try:
             rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
                     sg02ad('D','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
-        except ValueError, ve:
+        except ValueError(ve):
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
                 e.info = ve.info

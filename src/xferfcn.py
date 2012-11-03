@@ -1,3 +1,4 @@
+from __future__ import print_function
 """xferfcn.py
 
 Transfer function representation and functions.
@@ -79,9 +80,8 @@ from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi
 from scipy.signal import lti
 from copy import deepcopy
-from lti import Lti, timebaseEqual, timebase, isdtime
 from warnings import warn
-import statesp
+from control.lti import Lti, timebaseEqual, timebase, isdtime
 
 class TransferFunction(Lti):
 
@@ -306,9 +306,10 @@ denominator." % (j + 1, i + 1))
         
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
+        from control.statesp import StateSpace
         
         # Convert the second argument to a transfer function.
-        if (isinstance(other, statesp.StateSpace)):
+        if (isinstance(other, StateSpace)):
             other = _convertToTransferFunction(other)
         elif not isinstance(other, TransferFunction):
             other = _convertToTransferFunction(other, inputs=self.inputs, 
@@ -329,7 +330,7 @@ second has %i." % (self.outputs, other.outputs))
                 (timebaseEqual(self, other)):
             dt = self.dt        # use dt from first argument
         else:
-            raise ValueError, "Systems have different sampling times"
+            raise ValueError("Systems have different sampling times")
 
         # Preallocate the numerator and denominator of the sum.
         num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
@@ -381,7 +382,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         elif (other.dt == None and self.dt != None) or (self.dt == other.dt):
             dt = self.dt        # use dt from first argument
         else:
-            raise ValueError, "Systems have different sampling times"
+            raise ValueError("Systems have different sampling times")
 
         # Preallocate the numerator and denominator of the sum.
         num = [[[0] for j in range(inputs)] for i in range(outputs)]
@@ -429,7 +430,7 @@ implemented only for SISO systems.")
         elif (other.dt == None and self.dt != None) or (self.dt == other.dt):
             dt = self.dt        # use dt from first argument
         else:
-            raise ValueError, "Systems have different sampling times"
+            raise ValueError("Systems have different sampling times")
 
         num = polymul(self.num[0][0], other.den[0][0])
         den = polymul(self.den[0][0], other.num[0][0])
@@ -562,7 +563,7 @@ only implemented for SISO functions.")
         elif (other.dt == None and self.dt != None) or (self.dt == other.dt):
             dt = self.dt        # use dt from first argument
         else:
-            raise ValueError, "Systems have different sampling times"
+            raise ValueError("Systems have different sampling times")
 
         num1 = self.num[0][0]
         den1 = self.den[0][0]
@@ -594,7 +595,7 @@ only implemented for SISO functions.")
 
         # TODO: implement for discrete time systems
         if (self.dt != 0 and self.dt != None):
-            raise(NotImplementedError("Function not implemented in discrete time"))
+            raise NotImplementedError("Function not implemented in discrete time")
 
         # Preallocate the output.
         out = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
@@ -731,8 +732,8 @@ only implemented for SISO functions.")
                     m += 1
 
                 if (m > 1):
-                    print "Found pole with multiplicity %d" % m
-                    # print "Poles = ", poles
+                    print("Found pole with multiplicity %d" % m)
+                    # print("Poles = ", poles)
 
                 # Multiple pairs from the outside in
                 for i in range(m):
@@ -861,14 +862,15 @@ def _convertToTransferFunction(sys, **kw):
                                                               [1., 1., 1.]].
     
     """
-    
+    from control.statesp import StateSpace
+
     if isinstance(sys, TransferFunction):
         if len(kw):
             raise TypeError("If sys is a TransferFunction, " + 
                     "_convertToTransferFunction cannot take keywords.")
 
         return sys
-    elif isinstance(sys, statesp.StateSpace):
+    elif isinstance(sys, StateSpace):
         try:
             from slycot import tb04ad
             if len(kw):
@@ -889,8 +891,8 @@ def _convertToTransferFunction(sys, **kw):
                     num[i][j] = list(tfout[6][i, j, :])
                     # Each transfer function matrix row has a common denominator.
                     den[i][j] = list(tfout[5][i, :])
-            # print num
-            # print den
+            # print(num)
+            # print(den)
         except ImportError:
             # If slycot is not available, use signal.lti (SISO only)
             if (sys.inputs != 1 or sys.outputs != 1):
@@ -899,8 +901,8 @@ def _convertToTransferFunction(sys, **kw):
             lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
             num = squeeze(lti_sys.num)
             den = squeeze(lti_sys.den)
-            print num
-            print den
+            print(num)
+            print(den)
 
         return TransferFunction(num, den, sys.dt)
 

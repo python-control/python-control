@@ -33,11 +33,12 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as mpl
 from matplotlib.mlab import frange, find
-from exception import ControlNotImplemented
 from scipy.integrate import odeint
+from control.exception import ControlNotImplemented
 
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
               lingrid=None, lintime=None, logtime=None, timepts=None,
@@ -119,14 +120,14 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         autoFlag = True;
         Narrows = lingrid;
         if (verbose):
-            print 'Using auto arrows\n';
+            print('Using auto arrows\n')
 
     elif (logtime != None):
         logtimeFlag = True;
         Narrows = logtime[0];
         timefactor = logtime[1];
         if (verbose):
-            print 'Using logtime arrows\n';
+            print('Using logtime arrows\n')
 
     elif (timepts != None):
         timeptsFlag = True;

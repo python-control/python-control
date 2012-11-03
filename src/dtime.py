@@ -51,9 +51,9 @@ from scipy.signal import zpk2tf, tf2zpk, cont2discrete
 import numpy as np
 from cmath import exp
 from warnings import warn
-from lti import isctime
-from statesp import StateSpace, _convertToStateSpace
-from xferfcn import TransferFunction, _convertToTransferFunction
+from control.lti import isctime
+from control.statesp import StateSpace, _convertToStateSpace
+from control.xferfcn import TransferFunction, _convertToTransferFunction
 
 # Sample a continuous time system
 def sample_system(sysc, Ts, method='matched'):

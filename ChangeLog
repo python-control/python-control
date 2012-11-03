@@ -1,3 +1,52 @@
+2012-11-02  Richard Murray  <murray@altura.local>
+
+	* src/xferfcn.py, src/timeresp.py, src/statesp.py, src/statefbk.py,
+	src/robust.py, src/rlocus.py, src/pzmap.py, src/phaseplot.py,
+	src/nichols.py, src/modelsimp.py, src/matlab.py, src/margins.py,
+	src/freqplot.py, src/ctrlutil.py, src/bdalg.py: globally referenced
+	import commands for python 3.x
+
+	* src/__init__.py: changed import commands to be global instead of
+	local ('from control.bdalg ...' instead of 'from bdalg ...')
+
+2012-10-31  Richard Murray  <murray@altura.local>
+
+	* src/xferfcn.py (TransferFunction._common_den): converted print
+	statements to python 3 compatible form and included
+	__future__.print_function
+
+	* src/phaseplot.py: converted print statements to python 3
+	compatible form and included __future__.print_function
+
+	* src/mateqn.py (lyap, dlyap): converted except T, E to except T(E)
+
+	* src/margins.py: converted print statements to python 3
+	compatible form and included __future__.print_function
+
+	* src/xferfcn.py (TransferFunction.__add__, __mul__, __div__,
+	feedback): converted raise T, E to raise T(E) for python 3
+
+	* src/xferfcn.py (TransferFunction.returnScipySignalLti): fixed
+	raise(T(E)) bug
+
+	* src/statesp.py (_rss_generate): fixed raise(T(E)) bug
+
+	* src/statefbk.py (acker, gram): converted raise T, E to raise T(E) for
+	python 3
+
+	* src/modelsimp.py (hsvd, modred, balred): fixed raise(T(E)) bug and
+	converted raise T, E to raise T(E) for python 3
+
+	* src/margins.py (stability_margins): fixed raise(T(E)) bug
+
+	* src/statesp.py: converted raise T, E to raise T(E) for python 3
+
+	* tests/test_all.py: converted print statements to python 3
+	compatible form and included __future__.print_function
+
+	* tests/statefbk_test.py (TestStatefbk.setUp): turned off debugging
+	flag (accidently left on)
+
 2012-10-27  Richard Murray  <murray@altura.local>
 
 	* src/statefbk.py (acker): small updates to docstring

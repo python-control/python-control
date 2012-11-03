@@ -42,9 +42,9 @@
 # External packages and modules
 import numpy as np
 import scipy as sp
-import ctrlutil
-from exception import *
-import statesp
+import control.statesp as statesp
+import control.ctrlutil as ctrlutil
+from control.exception import *
 
 # Pole placement
 def place(A, B, p):
@@ -127,7 +127,7 @@ def acker(A, B, poles):
     # Make sure the system is controllable
     ct = ctrb(A, B)
     if sp.linalg.det(ct) == 0:
-        raise ValueError, "System not reachable; pole placement invalid"
+        raise ValueError("System not reachable; pole placement invalid")
 
     # Compute the desired characteristic polynomial
     p = np.real(np.poly(poles))
@@ -338,7 +338,7 @@ def gram(sys,type):
 
     #Check for ss system object
     if not isinstance(sys,statesp.StateSpace):
-        raise ValueError, "System must be StateSpace!"
+        raise ValueError("System must be StateSpace!")
     
     #TODO: Check for continous or discrete, only continuous supported right now
         # if isCont():
@@ -353,7 +353,7 @@ def gram(sys,type):
     D,V = np.linalg.eig(sys.A)
     for e in D:
         if e.real >= 0:
-            raise ValueError, "Oops, the system is unstable!"
+            raise ValueError("Oops, the system is unstable!")
     if type=='c':
         tra = 'T'
         C = -np.dot(sys.B,sys.B.transpose())
@@ -361,7 +361,7 @@ def gram(sys,type):
         tra = 'N'
         C = -np.dot(sys.C.transpose(),sys.C)
     else:
-        raise ValueError, "Oops, neither observable, nor controllable!"
+        raise ValueError("Oops, neither observable, nor controllable!")
 
     #Compute Gramian by the Slycot routine sb03md
         #make sure Slycot is installed

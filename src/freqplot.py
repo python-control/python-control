@@ -45,9 +45,9 @@ import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
 from warnings import warn
-from ctrlutil import unwrap
-from bdalg import feedback
-from lti import isdtime, timebaseEqual
+from control.ctrlutil import unwrap
+from control.bdalg import feedback
+from control.lti import isdtime, timebaseEqual
 
 #
 # Main plotting functions

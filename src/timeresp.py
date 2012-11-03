@@ -120,9 +120,9 @@ import numpy as np              # NumPy library
 from scipy.signal.ltisys import _default_response_times
 from copy import deepcopy
 import warnings
-from statesp import StateSpace, _rss_generate, _convertToStateSpace, _mimo2siso
-from lti import Lti             # base class of StateSpace, TransferFunction
-from lti import isdtime, isctime
+from control.lti import Lti     # base class of StateSpace, TransferFunction
+from control. statesp import StateSpace, _rss_generate, _convertToStateSpace, _mimo2siso
+from control.lti import isdtime, isctime
 
 # Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,

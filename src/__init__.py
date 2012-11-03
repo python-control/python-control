@@ -57,29 +57,30 @@ lqe     linear quadratic estimator
 
 # Import functions from within the control system library
 #! Should probably only import the exact functions we use...
-from bdalg import series, parallel, negate, feedback
-from delay import pade
-from dtime import sample_system
-from freqplot import bode_plot, nyquist_plot, gangof4_plot
-from freqplot import bode, nyquist, gangof4
-from lti import timebase, timebaseEqual, isdtime, isctime
-from margins import stability_margins, phase_crossover_frequencies
-from mateqn import lyap, dlyap, care, dare
-from modelsimp import hsvd, modred, balred, era, markov
-from nichols import nichols_plot, nichols
-from phaseplot import phase_plot, box_grid
-from rlocus import root_locus
-from statefbk import place, lqr, ctrb, obsv, gram, acker
-from statesp import StateSpace
-from timeresp import forced_response, initial_response, step_response, \
+from control.bdalg import series, parallel, negate, feedback
+from control.delay import pade
+from control.dtime import sample_system
+from control.freqplot import bode_plot, nyquist_plot, gangof4_plot
+from control.freqplot import bode, nyquist, gangof4
+from control.lti import timebase, timebaseEqual, isdtime, isctime
+from control.margins import stability_margins, phase_crossover_frequencies
+from control.mateqn import lyap, dlyap, care, dare
+from control.modelsimp import hsvd, modred, balred, era, markov
+from control.nichols import nichols_plot, nichols
+from control.phaseplot import phase_plot, box_grid
+from control.rlocus import root_locus
+from control.statefbk import place, lqr, ctrb, obsv, gram, acker
+from control.statesp import StateSpace
+from control.timeresp import forced_response, initial_response, step_response, \
     impulse_response
-from xferfcn import TransferFunction
+from control.xferfcn import TransferFunction
+from control.ctrlutil import unwrap, issys
 
 # Import some of the more common (and benign) MATLAB shortcuts
 # By default, don't import conflicting commands here
-from matlab import ss, tf, ss2tf, tf2ss, drss
-from matlab import pole, zero, evalfr, freqresp, dcgain
-from matlab import nichols, rlocus, margin
+from control.matlab import ss, tf, ss2tf, tf2ss, drss
+from control.matlab import pole, zero, evalfr, freqresp, dcgain
+from control.matlab import nichols, rlocus, margin
         # bode and nyquist come directly from freqplot.py
-from matlab import step, impulse, initial, lsim
-from matlab import ssdata, tfdata
+from control.matlab import step, impulse, initial, lsim
+from control.matlab import ssdata, tfdata

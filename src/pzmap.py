@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 #import scipy as sp
 #import numpy as np
 from numpy import real, imag
-from lti import Lti
+from control.lti import Lti
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html

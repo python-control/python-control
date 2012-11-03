@@ -41,11 +41,11 @@
 
 # External packages and modules
 import numpy as np
-import ctrlutil
-from exception import *
-from statefbk import *
-from statesp import StateSpace
-from lti import isdtime, isctime
+import control.ctrlutil as ctrlutil
+from control.exception import *
+from control.lti import isdtime, isctime
+from control.statesp import StateSpace
+from control.statefbk import *
 
 # Hankel Singular Value Decomposition
 #   The following returns the Hankel singular values, which are singular values 
@@ -83,7 +83,7 @@ def hsvd(sys):
     """
     # TODO: implement for discrete time systems
     if (isdtime(sys, strict=True)):
-        raise(NotImplementedError("Function not implemented in discrete time"))
+        raise NotImplementedError("Function not implemented in discrete time")
 
     Wc = gram(sys,'c')
     Wo = gram(sys,'o')
@@ -140,14 +140,14 @@ def modred(sys, ELIM, method='matchdc'):
     if (isctime(sys)):
         dico = 'C'
     else:
-        raise(NotImplementedError("Function not implemented in discrete time"))
+        raise NotImplementedError("Function not implemented in discrete time")
 
 
     #Check system is stable
     D,V = np.linalg.eig(sys.A)
     for e in D:
         if e.real >= 0:
-            raise ValueError, "Oops, the system is unstable!"
+            raise ValueError("Oops, the system is unstable!")
     ELIM = np.sort(ELIM)
     NELIM = []
     # Create list of elements not to eliminate (NELIM)
@@ -187,7 +187,7 @@ def modred(sys, ELIM, method='matchdc'):
         Cr = C1
         Dr = sys.D 
     else:
-        raise ValueError, "Oops, method is not supported!"
+        raise ValueError("Oops, method is not supported!")
 
     rsys = StateSpace(Ar,Br,Cr,Dr)
     return rsys
@@ -243,10 +243,10 @@ def balred(sys, orders, method='truncate'):
     # print D
     for e in D:
         if e.real >= 0:
-            raise ValueError, "Oops, the system is unstable!"
+            raise ValueError("Oops, the system is unstable!")
    
     if method=='matchdc':
-        raise ValueError, "MatchDC not yet supported!"
+        raise ValueError ("MatchDC not yet supported!")
     elif method=='truncate':
         try:
             from slycot import ab09ad
@@ -261,7 +261,7 @@ def balred(sys, orders, method='truncate'):
    
         rsys = StateSpace(Ar, Br, Cr, sys.D)
     else:
-        raise ValueError, "Oops, method is not supported!"
+        raise ValueError("Oops, method is not supported!")
 
     return rsys
 

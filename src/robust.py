@@ -41,10 +41,10 @@
 
 # External packages and modules
 import numpy as np
-import ctrlutil
+import control.ctrlutil as ctrlutil
 from control.exception import *
-from statefbk import *
-from statesp import StateSpace
+from control.statesp import StateSpace
+from control.statefbk import *
 
 def h2syn(P,nmeas,ncon):
     """H_2 control synthesis for plant P.

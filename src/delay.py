@@ -42,7 +42,6 @@
 
 from __future__ import division
 
-
 def pade(T, n=1):
     """ 
     Create a linear system that approximates a delay.

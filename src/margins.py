@@ -1,3 +1,4 @@
+from __future__ import print_function
 """margin.py
 
 Functions for computing stability margins and related functions.
@@ -47,10 +48,10 @@ $Id$
 
 """
 
-import xferfcn
-from freqplot import bode
 import numpy as np
-from lti import isdtime
+import control.xferfcn as xferfcn
+from control.freqplot import bode
+from control.lti import isdtime
 
 # gain and phase margins
 # contributed by Sawyer B. Fuller <minster@caltech.edu>
@@ -92,7 +93,7 @@ def stability_margins(sysdata, deg=True):
 
         # TODO: implement for discrete time systems
         if (isdtime(sys, strict=True)):
-            raise(NotImplementedError("Function not implemented in discrete time"))
+            raise NotImplementedError("Function not implemented in discrete time")
 
         mag, phase, omega = bode(sys, deg=deg, Plot=False)
     elif len(sysdata) == 3:
@@ -118,7 +119,7 @@ def stability_margins(sysdata, deg=True):
             wp = np.nan
             pm = np.inf
         else: # gain always greater than one
-            print "margin: no magnitude crossings found"
+            print("margin: no magnitude crossings found")
             wp = np.nan
             pm = np.nan
     else:
@@ -126,7 +127,7 @@ def stability_margins(sysdata, deg=True):
         wp = omega[min_mag_crossing_i]
         pm = crossover + phase[min_mag_crossing_i] 
         if pm < 0:
-            print "warning: system unstable: negative phase margin"
+            print("warning: system unstable: negative phase margin")
     
     # gain margin from minimum gain margin among all phase crossovers
     neg_phase_crossings_i = np.nonzero(np.diff(wrapped_phase < -crossover) > 0)[0]
@@ -140,7 +141,7 @@ def stability_margins(sysdata, deg=True):
         wg = omega[min_phase_crossing_i]
         gm = abs(1/mag[min_phase_crossing_i])
         if gm < 1: 
-            print "warning: system unstable: gain margin < 1"    
+            print("warning: system unstable: gain margin < 1")
 
     # stability margin from minimum abs distance from -1 point
     if deg:

@@ -49,7 +49,7 @@
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
-import xferfcn                  # transfer function manipulation
+import control.xferfcn as xferfcn
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):

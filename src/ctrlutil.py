@@ -42,8 +42,8 @@
 
 # Packages that we need access to
 import scipy as sp
-import statesp
-import xferfcn 
+import control.statesp as statesp
+import control.xferfcn as xferfcn
 
 # Specific functions that we use
 from scipy import pi

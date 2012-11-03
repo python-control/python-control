@@ -17,7 +17,7 @@ class TestStatefbk(unittest.TestCase):
         # Maximum number of inputs and outputs to test + 1
         self.maxTries = 4
         # Set to True to print systems to the output.
-        self.debug = True
+        self.debug = False
 
     def testCtrbSISO(self):
         A = np.matrix("1. 2.; 3. 4.")

@@ -3,6 +3,7 @@
 # test_all.py - test suit for python-control
 # RMM, 30 Mar 2011
 
+from __future__ import print_function
 import unittest                 # unit test module
 import re                       # regular expressions
 import os                       # operating system commands
@@ -19,18 +20,18 @@ def test_all(verbosity=0):
                                                 top_level_dir=top_level_dir)
 
         for mod in test_mods:
-            print 'Running tests in', mod
+            print('Running tests in', mod)
             tests = unittest.defaultTestLoader.loadTestFromModule(mod)
             t = unittest.TextTestRunner()
             t.run(tests)
-            print 'Completed tests in', mod
+            print('Completed tests in', mod)
 
     except: 
         testModules = findTests('./tests/')
 
         # Now go through each module and run all of its tests.
         for mod in testModules:
-            print 'Running tests in', mod
+            print('Running tests in', mod)
             suiteList=[]        # list of unittest.TestSuite objects
             exec('import '+mod+' as currentModule')
 
@@ -39,14 +40,14 @@ def test_all(verbosity=0):
                 if isinstance(currentSuite, unittest.TestSuite):
                     suiteList.append(currentModule.suite())
                 else:
-                    print mod + '.suite() doesn\'t return a TestSuite'
+                    print(mod + '.suite() doesn\'t return a TestSuite')
             except:
-                print 'The test module '+mod+' doesnt have ' + \
-                    'a proper suite() function'
+                print('The test module '+mod+' doesnt have ' + \
+                    'a proper suite() function')
 
             t=unittest.TextTestRunner(verbosity=verbosity)
             t.run(unittest.TestSuite(unittest.TestSuite(suiteList))) 
-            print 'Completed tests in', mod
+            print('Completed tests in', mod)
 
 def findTests(testdir = './', pattern = "[^.#]*_test.py$"):
     """Since python <2.7 doesn't have test discovery, this finds tests in the 

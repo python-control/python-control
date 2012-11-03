@@ -52,8 +52,8 @@ $Id$
 """
 
 import scipy as sp
-import xferfcn as tf
-import statesp as ss
+import control.xferfcn as tf
+import control.statesp as ss
 
 def series(sys1, sys2):
     """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.

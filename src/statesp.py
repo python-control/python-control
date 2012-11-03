@@ -81,8 +81,7 @@ from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
 import warnings
-from lti import Lti, timebaseEqual, isdtime
-import xferfcn
+from control.lti import Lti, timebaseEqual, isdtime
 
 class StateSpace(Lti):
 
@@ -243,7 +242,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
             # Check to make sure the dimensions are OK
             if ((self.inputs != other.inputs) or 
                     (self.outputs != other.outputs)):
-                raise ValueError, "Systems have different shapes."
+                raise ValueError("Systems have different shapes.")
 
             # Figure out the sampling time to use
             if (self.dt == None and other.dt != None):
@@ -252,7 +251,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
                     (timebaseEqual(self, other)):
                 dt = self.dt        # use dt from first argument
             else:
-                raise ValueError, "Systems have different sampling times"
+                raise ValueError("Systems have different sampling times")
 
             # Concatenate the various arrays
             A = concatenate((
@@ -310,7 +309,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                     (timebaseEqual(self, other)):
                 dt = self.dt        # use dt from first argument
             else:
-                raise ValueError, "Systems have different sampling times"
+                raise ValueError("Systems have different sampling times")
 
             # Concatenate the various arrays
             A = concatenate(
@@ -432,8 +431,8 @@ implemented only for SISO systems.")
 
         # Check to make sure the dimensions are OK
         if ((self.inputs != other.outputs) or (self.outputs != other.inputs)):
-                raise ValueError, "State space systems don't have compatible \
-inputs/outputs for feedback."
+                raise ValueError("State space systems don't have compatible \
+inputs/outputs for feedback.")
 
         # Figure out the sampling time to use
         if (self.dt == None and other.dt != None):
@@ -442,7 +441,7 @@ inputs/outputs for feedback."
                 timebaseEqual(self, other):
             dt = self.dt        # use dt from first argument
         else:
-            raise ValueError, "Systems have different sampling times"
+            raise ValueError("Systems have different sampling times")
 
         A1 = self.A
         B1 = self.B
@@ -512,6 +511,7 @@ def _convertToStateSpace(sys, **kw):
     
     """
     
+    from control.xferfcn import TransferFunction
     if isinstance(sys, StateSpace):
         if len(kw):
             raise TypeError("If sys is a StateSpace, _convertToStateSpace \
@@ -519,7 +519,7 @@ cannot take keywords.")
 
         # Already a state space system; just return it
         return sys
-    elif isinstance(sys, xferfcn.TransferFunction):
+    elif isinstance(sys, TransferFunction):
         try:
             from slycot import td04ad
             if len(kw):
@@ -593,14 +593,14 @@ def _rss_generate(states, inputs, outputs, type):
 
     # Check for valid input arguments.
     if states < 1 or states % 1:
-        raise ValueError(("states must be a positive integer.  states = %g." % 
-            states))
+        raise ValueError("states must be a positive integer.  states = %g." % 
+            states)
     if inputs < 1 or inputs % 1:
-        raise ValueError(("inputs must be a positive integer.  inputs = %g." %
-            inputs))
+        raise ValueError("inputs must be a positive integer.  inputs = %g." %
+            inputs)
     if outputs < 1 or outputs % 1:
-        raise ValueError(("outputs must be a positive integer.  outputs = %g." %
-            outputs))
+        raise ValueError("outputs must be a positive integer.  outputs = %g." %
+            outputs)
 
     # Make some poles for A.  Preallocate a complex array.
     poles = zeros(states) + zeros(states) * 0.j

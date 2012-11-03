@@ -39,11 +39,11 @@
 # 
 # $Id: freqplot.py 139 2011-03-30 16:19:59Z murrayrm $
 
-import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
-from ctrlutil import unwrap
-from freqplot import default_frequency_range
+import matplotlib.pyplot as plt
+from control.ctrlutil import unwrap
+from control.freqplot import default_frequency_range
 
 # Nichols plot
 def nichols_plot(syslist, omega=None, grid=True):
