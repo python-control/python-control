@@ -49,6 +49,7 @@ Common functions
 tf      create a transfer function from num, den coefficients
 ss      create a state space system from A, B, C, D matrices
 pzk     create a transfer function from pole, zero, gain
+frd     create a system description as frequency response
 bode    generate a Bode plot for a linear I/O system
 nyquist generate a Nyquist plot for a linear I/O system
 lqr     linear quadratic regulator
@@ -75,6 +76,7 @@ from control.timeresp import forced_response, initial_response, step_response, \
     impulse_response
 from control.xferfcn import TransferFunction
 from control.ctrlutil import unwrap, issys
+from frdata import FRD
 
 # Import some of the more common (and benign) MATLAB shortcuts
 # By default, don't import conflicting commands here

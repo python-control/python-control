@@ -1,3 +1,25 @@
+2012-11-02  Richard Murray  <murray@altura.local>
+
+	* tests/frd_test.py: unit tests for FRD data type
+	(suite): added suite() function to allow test_all.py to work
+
+	* tests/xferfcn_test.py (TestXferFcn.testMinreal): new unit test
+
+	* src/xferfcn.py (TransferFunction.minreal): new function for
+	removing cancelling pole/zero pairs, contributed by M.M. (Rene) van
+	Paassen
+
+	* src/statesp.py (_convertToStateSpace): new functionality for
+	converting a matrix to a constant system
+
+	* src/modelsimp.py (minreal): removed extraneous code (moved to
+	xferfcn.py) 
+
+	* src/frdata.py: new file implementing FRD data type, contributed by
+	M.M. (Rene) van Paassen
+
+	* src/xferfcn.py: resolved conflict between versions
+
 ---- control-0.6b released -----
 
 2012-11-02  Richard Murray  <murray@altura.local>

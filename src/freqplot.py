@@ -362,9 +362,12 @@ def default_frequency_range(syslist):
         syslist = (syslist,)
 
     for sys in syslist:
-        # Add new features to the list
-        features = np.concatenate((features, np.abs(sys.pole())))
-        features = np.concatenate((features, np.abs(sys.zero())))
+        try:
+            # Add new features to the list
+            features = np.concatenate((features, np.abs(sys.pole())))
+            features = np.concatenate((features, np.abs(sys.zero())))
+        except:
+            pass
 
     # Get rid of poles and zeros at the origin
     features = features[features != 0];

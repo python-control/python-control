@@ -26,6 +26,7 @@ TransferFunction.freqresp
 TransferFunction.pole
 TransferFunction.zero
 TransferFunction.feedback
+TransferFunction.minreal
 TransferFunction.returnScipySignalLti
 TransferFunction._common_den
 _tfpolyToString
@@ -79,7 +80,8 @@ $Id$
 
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
-    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi
+    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
+    where, delete, real, poly
 from scipy.signal import lti
 from copy import deepcopy
 from warnings import warn
@@ -581,6 +583,46 @@ only implemented for SISO functions.")
         #     self / (1 - sign * other * self)
         # But this does not work correctly because the state size will be too
         # large.
+
+    def minreal(self, tol=None):
+        """Remove cancelling pole/zero pairs from a transfer function"""
+        # based on octave minreal
+
+        # default accuracy
+        from sys import float_info
+        sqrt_eps = sqrt(float_info.epsilon)
+
+        # pre-allocate arrays
+        num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+        den = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+
+                # split up in zeros, poles and gain
+                newzeros = []
+                zeros = roots(self.num[i][j])
+                poles = roots(self.den[i][j])
+                gain = self.num[i][j][0] / self.den[i][j][0]
+                
+                # check all zeros
+                for z in zeros:
+                    t = tol or \
+                        1000 * max(float_info.epsilon, abs(z) * sqrt_eps)
+                    idx = where(abs(z - poles) < t)[0]
+                    if len(idx):
+                        # cancel this zero against one of the poles
+                        poles = delete(poles, idx[0])
+                    else:
+                        # keep this zero
+                        newzeros.append(z)
+                        
+                # keep result
+                num[i][j] = gain * real(poly(newzeros))
+                den[i][j] = real(poly(poles))
+
+        # end result
+        return TransferFunction(num, den)
 
     def returnScipySignalLti(self):
         """Return a list of a list of scipy.signal.lti objects.

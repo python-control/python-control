@@ -349,3 +349,4 @@ def markov(Y, U, M):
     H = np.dot(H, Y)
 
     return H
+
