@@ -7,8 +7,10 @@ import unittest
 import numpy as np
 from control.modelsimp import *
 from control.matlab import *
+from control.exception import slycot_check
 
 class TestModelsimp(unittest.TestCase):
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testHSVD(self):
         A = np.matrix("1. -2.; 3. -4.")
         B = np.matrix("5.; 7.")
@@ -69,6 +71,8 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(rsys.C, Crtrue)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue)
 
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testBalredTruncate(self):
         #controlable canonical realization computed in matlab for the transfer function:
         # num = [1 11 45 32], den = [1 15 60 200 60]

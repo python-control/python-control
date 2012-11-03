@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 from control.statefbk import ctrb, obsv, place, lqr, gram, acker
 from control.matlab import *
+from control.exception import slycot_check
 
 class TestStatefbk(unittest.TestCase):
     """Test state feedback functions"""
@@ -57,6 +58,7 @@ class TestStatefbk(unittest.TestCase):
         Wo = np.transpose(obsv(A,C));
         np.testing.assert_array_almost_equal(Wc,Wo)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGramWc(self):
         A = np.matrix("1. -2.; 3. -4.")
         B = np.matrix("5. 6.; 7. 8.")
@@ -67,6 +69,7 @@ class TestStatefbk(unittest.TestCase):
         Wc = gram(sys,'c')
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGramWo(self):
         A = np.matrix("1. -2.; 3. -4.")
         B = np.matrix("5. 6.; 7. 8.")
@@ -77,6 +80,7 @@ class TestStatefbk(unittest.TestCase):
         Wo = gram(sys,'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGramWo2(self):
         A = np.matrix("1. -2.; 3. -4.")
         B = np.matrix("5.; 7.")

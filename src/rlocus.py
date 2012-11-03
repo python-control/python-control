@@ -157,7 +157,7 @@ def _RLSortRoots(sys, mymat):
             # sort the current row by finding the element with the
             # smallest absolute distance to each root in the
             # previous row
-            available = range(len(prevrow))
+            available = list(range(len(prevrow)))
             for elem in row:
                 evect = elem-prevrow[available]
                 ind1 = abs(evect).argmin()

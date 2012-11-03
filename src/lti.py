@@ -110,9 +110,12 @@ def isdtime(sys, strict=False):
 
     # Check for a transfer fucntion or state space object
     if isinstance(sys, Lti):
-        # Look for dt > 0 or dt == None (if not strict)
-        # Note that dt = True will be checked by dt > 0
-        return sys.dt > 0 or (not strict and sys.dt == None)
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt == None:
+            return True if not strict else False
+
+        # Look for dt > 0 (also works if dt = True)
+        return sys.dt > 0
 
     # Got possed something we don't recognize
     return False
@@ -127,8 +130,12 @@ def isctime(sys, strict=False):
 
     # Check for a transfer fucntion or state space object
     if isinstance(sys, Lti):
-        # Look for dt == 0 or dt == None (if not strict)
-        return sys.dt == 0 or (not strict and sys.dt == None)
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt == None:
+            return True if not strict else False
+
+        # Look for dt == 0
+        return sys.dt == 0
 
     # Got possed something we don't recognize
     return False

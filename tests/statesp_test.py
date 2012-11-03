@@ -5,7 +5,7 @@
 
 import unittest
 import numpy as np
-import control.matlab
+import control.matlab as matlab
 from control.statesp import StateSpace
 
 class TestStateSpace(unittest.TestCase):

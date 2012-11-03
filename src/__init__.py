@@ -76,7 +76,7 @@ from control.timeresp import forced_response, initial_response, step_response, \
     impulse_response
 from control.xferfcn import TransferFunction
 from control.ctrlutil import unwrap, issys
-from frdata import FRD
+from control.frdata import FRD
 
 # Import some of the more common (and benign) MATLAB shortcuts
 # By default, don't import conflicting commands here

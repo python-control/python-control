@@ -1,5 +1,48 @@
 2012-11-03  Richard Murray  <murray@altura.local>
 
+	* src/rlocus.py (_RLSortRoots): convert output of range() to
+	explicit list for python 3 compatability
+
+	* tests/modelsimp_test.py, tests/slycot_convert_test.py,
+	tests/mateqn_test.py, tests/statefbk_test.py: updated test suites to
+	skip specific tests that require slycot if it is not installed
+
+	* src/exception.py (slycot_check): added a function to check if
+	slycot is installed
+
+	* README: updated readme to include information about running
+	nosetests, which works in python3 (unlike the test_all.py script)
+
+	* tests/test_control_matlab.py, tests/test_all.py: set to executable
+	so that nosetests does not run this file (it already runs all unit
+	tests in this directory).  Add comments at top talking about tests.
+
+	* tests/discrete_test.py (TestDiscrete.test_discrete_bode):
+	explicitly create a list from map() output for python 3
+
+	* src/frdata.py: removed long data type from comparisons for
+	constant systems (not supported in python3)
+
+	* src/xferfcn.py (TransferFunction.freqresp): force frequencies to
+	be a list (map returns iterator in python3)
+
+	* src/lti.py (isdtime, isctime): updated timebase checking since
+	python3 won't allow dt to be compared to integer
+
+	* src/__init__.py: updated frdata import to python3 compatible form
+
+	* src/statesp.py (_convertToStateSpace): fixed exception syntax to
+	be python3 compatible
+
+	* examples/pvtol-nested.py: converted print statements to be python3
+	compatible 
+
+	* doc/class_strings.rst: added FRD class to list of classes that
+	show up in the user documentation
+
+	* examples/rss-balred.py: fixed error in output argument order for
+	call to matlab.impulse
+
 	* ../README: updated readme file as a test of post-commit hook
 
 2012-11-02  Richard Murray  <murray@altura.local>

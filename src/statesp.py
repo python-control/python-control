@@ -83,7 +83,7 @@ from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
-from exceptions import Exception
+# from exceptions import Exception
 import warnings
 from control.lti import Lti, timebaseEqual, isdtime
 
@@ -577,7 +577,7 @@ cannot take keywords.")
         outputs, inputs = D.shape
         
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), D)
-    except Exception, e: 
+    except Exception(e): 
         print("Failure to assume argument is matrix-like in" \
             " _convertToStateSpace, result %s" % e)
         

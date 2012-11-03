@@ -293,7 +293,7 @@ denominator." % (j + 1, i + 1))
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
 
         # See if this is a discrete time system with specific sampling time
-        if (type(self.dt) != bool and self.dt > 0):
+        if (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
             outstr += "\ndt = " + self.dt.__str__() + "\n"
 
         return outstr
@@ -527,7 +527,7 @@ implemented only for SISO systems.")
             for j in range(self.inputs):
                 fresp = map(lambda s: (polyval(self.num[i][j], s) / 
                     polyval(self.den[i][j], s)), slist)
-                fresp = array(fresp)
+                fresp = array(list(fresp))
 
                 mag[i, j, :] = abs(fresp)
                 phase[i, j, :] = angle(fresp)

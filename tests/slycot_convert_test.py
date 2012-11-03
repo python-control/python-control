@@ -7,7 +7,9 @@ from __future__ import print_function
 import unittest
 import numpy as np
 import control.matlab as matlab
+from control.exception import slycot_check
 
+@unittest.skipIf(not slycot_check(), "slycot not installed")
 class TestSlycot(unittest.TestCase):
     """TestSlycot compares transfer function and state space conversions for
         various numbers of inputs,outputs and states. 

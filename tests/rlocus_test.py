@@ -23,7 +23,7 @@ class TestRootLocus(unittest.TestCase):
 
     def testRootLocus(self):
         """Basic root locus plot"""
-        klist = [-1, 0, 1];
+        klist = [-1, 0, 1]
         rlist = root_locus(self.sys1, [-1, 0, 1], Plot=False)
 
         for k in klist:
