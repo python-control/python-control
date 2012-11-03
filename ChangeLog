@@ -61,6 +61,8 @@
 	* tests/statefbk_test.py (TestStatefbk.setUp): turned off debugging
 	flag (accidently left on)
 
+---- control-0.6a released -----
+
 2012-10-27  Richard Murray  <murray@altura.local>
 
 	* src/statefbk.py (acker): small updates to docstring
