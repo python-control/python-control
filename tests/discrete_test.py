@@ -276,7 +276,7 @@ class TestDiscrete(unittest.TestCase):
         sys = TransferFunction([1], [1, 0.5], 1)
         omega = [1, 2, 3]
         mag_out, phase_out, omega_out = bode(sys, omega)
-        H_z = map(lambda w: 1./(np.exp(1.j * w) + 0.5), omega)
+        H_z = list(map(lambda w: 1./(np.exp(1.j * w) + 0.5), omega))
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))

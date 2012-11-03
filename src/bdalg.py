@@ -204,7 +204,7 @@ def feedback(sys1, sys2, sign=-1):
     parallel
 
     Notes
-    ----
+    -----
     This function is a wrapper for the feedback function in the StateSpace and
     TransferFunction classes.  It calls TransferFunction.feedback if `sys1` is a
     TransferFunction object, and StateSpace.feedback if `sys1` is a StateSpace

@@ -2,9 +2,8 @@
 
 Frequency response data representation and functions.
 
-This file contains the FRD class and also functions
-that operate on FRD data. This is the primary representation
-for the python-control library.
+This file contains the FRD class and also functions that operate on
+FRD data.
      
 Routines in this module:
 
@@ -78,11 +77,10 @@ from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     real, imag, matrix, absolute, eye, linalg, pi, where
 from scipy.interpolate import splprep, splev
 from copy import deepcopy
-from lti import Lti
-import statesp
+from control.lti import Lti
+import control.statesp as statesp
 
 class FRD(Lti):
-
     """The FRD class represents (measured?) frequency response 
     TF instances and functions.
     
@@ -246,7 +244,7 @@ second has %i." % (self.outputs, other.outputs))
         """Multiply two LTI objects (serial connection)."""
         
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, long, complex)):
+        if isinstance(other, (int, float, complex)):
             other = _convertToFRD(other, inputs=self.inputs, 
                 outputs=self.inputs, omega=self.omega)
         else:
@@ -288,7 +286,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __div__(self, other):
         """Divide two LTI objects."""
         
-        if isinstance(other, (int, float, long, complex)):
+        if isinstance(other, (int, float, complex)):
             other = _convertToFRD(other, inputs=self.inputs, 
                 outputs=self.inputs, omega=self.omega)
         else:
@@ -308,7 +306,7 @@ implemented only for SISO systems.")
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rdiv__(self, other):
         """Right divide two LTI objects."""
-        if isinstance(other, (int, float, long, complex)):
+        if isinstance(other, (int, float, complex)):
             other = _convertToFRD(other, inputs=self.inputs, 
                 outputs=self.inputs, omega=self.omega)
         else:
@@ -444,7 +442,7 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         
         return FRD(fresp, omega)
 
-    elif isinstance(sys, (int, long, float, complex)):
+    elif isinstance(sys, (int, float, complex)):
         fresp = ones((outputs, inputs, len(omega)), dtype=float)*sys
         return FRD(fresp, omega)
 

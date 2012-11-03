@@ -1,7 +1,7 @@
 """lti.py
 
-The lti module contains the Lti parent class to the child classes StateSpace and
-TransferFunction.  It is designed for use in the python-control library.
+The Lti module contains the Lti parent class to the child classes StateSpace
+and TransferFunction.  It is designed for use in the python-control library.
 
 Routines in this module:
 
@@ -13,7 +13,6 @@ timebaseEqual()
 """
 
 class Lti:
-
     """Lti is a parent class to linear time invariant control (LTI) objects.
     
     Lti is the parent to the StateSpace and TransferFunction child
@@ -90,7 +89,16 @@ def timebase(sys, strict=True):
 
 # Check to see if two timebases are equal
 def timebaseEqual(sys1, sys2):
-    # TODO: add docstring
+    """Check to see if two systems have the same timebase
+
+    timebaseEqual(sys1, sys2)
+
+    returns True if the timebases for the two systems are compatible.  By
+    default, systems with timebase 'None' are compatible with either
+    discrete or continuous timebase systems.  If two systems have a discrete
+    timebase (dt > 0) then their timebases must be equal.
+    """
+
     if (type(sys1.dt) == bool or type(sys2.dt) == bool):
         # Make sure both are unspecified discrete timebases
         return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
@@ -102,7 +110,17 @@ def timebaseEqual(sys1, sys2):
 
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):
-    # TODO: add docstring
+    """
+    Check to see if a system is a discrete time system
+
+    Parameters
+    ----------
+    sys : LTI system
+        System to be checked
+    strict: bool (default = False)
+        If strict is True, make sure that timebase is not None
+    """
+
     # Check to see if this is a constant
     if isinstance(sys, (int, float, complex)):
         # OK as long as strict checking is off
@@ -110,16 +128,29 @@ def isdtime(sys, strict=False):
 
     # Check for a transfer fucntion or state space object
     if isinstance(sys, Lti):
-        # Look for dt > 0 or dt == None (if not strict)
-        # Note that dt = True will be checked by dt > 0
-        return sys.dt > 0 or (not strict and sys.dt == None)
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt == None:
+            return True if not strict else False
+
+        # Look for dt > 0 (also works if dt = True)
+        return sys.dt > 0
 
     # Got possed something we don't recognize
     return False
 
 # Check to see if a system is a continuous time system
 def isctime(sys, strict=False):
-    # TODO: add docstring
+    """
+    Check to see if a system is a continuous time system
+
+    Parameters
+    ----------
+    sys : LTI system
+        System to be checked
+    strict: bool (default = False)
+        If strict is True, make sure that timebase is not None
+    """
+
     # Check to see if this is a constant
     if isinstance(sys, (int, float, complex)):
         # OK as long as strict checking is off
@@ -127,8 +158,12 @@ def isctime(sys, strict=False):
 
     # Check for a transfer fucntion or state space object
     if isinstance(sys, Lti):
-        # Look for dt == 0 or dt == None (if not strict)
-        return sys.dt == 0 or (not strict and sys.dt == None)
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt == None:
+            return True if not strict else False
+
+        # Look for dt == 0
+        return sys.dt == 0
 
     # Got possed something we don't recognize
     return False

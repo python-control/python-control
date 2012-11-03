@@ -1,7 +1,10 @@
 '''
 Copyright (C) 2011 by Eike Welk.
 
-Test the control.matlab toolbox
+Test the control.matlab toolbox.
+
+NOTE: this script is not part of the standard python-control unit
+tests.  Needs to be integrated into unit test files.
 '''
 
 import pytest 
@@ -13,7 +16,7 @@ from numpy import array, asarray, matrix, asmatrix, zeros, ones, linspace,\
                   all, hstack, vstack, c_, r_
 from matplotlib.pylab import show, figure, plot, legend, subplot2grid
 from control.matlab import ss, step, impulse, initial, lsim, dcgain, \
-                           ss2tf, _check_convert_array, _mimo2siso
+                           ss2tf
                                                     
 
 def plot_matrix():
@@ -213,7 +216,7 @@ def test_initial():
     
     #show()
 
-
+#! Old test; no longer functional?? (RMM, 3 Nov 2012)
 def test_check_convert_shape():  
     #TODO: check if shape is correct everywhere. 
     #Correct input ---------------------------------------------
@@ -286,7 +289,6 @@ def test_check_convert_shape():
         _arr = _check_convert_array(array([1., 2, 3, 4]), [(3,), (1,3)], 
                                     'Test: ')    
     print exc
-    
     
 def test_lsim():
     A, B, C, D = make_SISO_mats()
@@ -386,7 +388,7 @@ def assert_systems_behave_equal(sys1, sys2):
     _t, y2 = step(sys2, t)
     assert_array_almost_equal(y1, y2)
 
-    
+#! Old test; no longer functional?? (RMM, 3 Nov 2012)
 def test_convert_MIMO_to_SISO():
     '''Convert mimo to siso systems'''
     #Test with our usual systems --------------------------------------------
@@ -456,7 +458,6 @@ def test_convert_MIMO_to_SISO():
     #gain of converted system and equivalent SISO system must be the same
     assert_systems_behave_equal(sys_siso, sys_siso_01)
     assert_systems_behave_equal(sys_siso, sys_siso_10)
-
     
 def debug_nasty_import_problem():
     '''
@@ -477,17 +478,16 @@ def debug_nasty_import_problem():
 
 
 if __name__ == '__main__':
-#    plot_matrix()
-#    test_step()
-#    test_impulse()
-#    test_initial()
-#    test_lsim()
-#    test_dcgain_2()
-#    test_dcgain()
-#    test_check_convert_shape()
-#    test_convert_MIMO_to_SISO()
-    
-#    debug_nasty_import_problem()
+    plot_matrix()
+    test_step()
+    test_impulse()
+    test_initial()
+    test_lsim()
+    test_dcgain_2()
+    test_dcgain()
+    test_check_convert_shape()
+    test_convert_MIMO_to_SISO()
+    debug_nasty_import_problem()
     
     print
     print "Test finished correctly!"

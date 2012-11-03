@@ -8,6 +8,7 @@
 # package.
 #
 
+from __future__ import print_function
 from matplotlib.pyplot import * # Grab MATLAB plotting functions
 from control.matlab import *    # MATLAB-like functions
 import numpy as np
@@ -142,7 +143,7 @@ plot(Tvec.T, Yvec.T);
 
 figure(10); clf();
 (P, Z) = pzmap(T, Plot=True)
-print "Closed loop poles and zeros: ", P, Z
+print("Closed loop poles and zeros: ", P, Z)
 
 # Gang of Four
 figure(11); clf();

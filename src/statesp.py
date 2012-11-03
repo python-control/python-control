@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-"""stateSpace.py
+"""statesp.py
 
 State space representation and functions.
 
-This file contains the StateSpace class, which is used to represent
-linear systems in state space.  This is the primary representation
-for the python-control library.
+This file contains the StateSpace class, which is used to represent linear
+systems in state space.  This is the primary representation for the
+python-control library.
 
 Routines in this module:
 
@@ -73,7 +72,6 @@ Date: 24 May 09
 Revised: Kevin K. Chen, Dec 10
 
 $Id$
-
 """
 
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
@@ -83,12 +81,11 @@ from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
-from exceptions import Exception
+# from exceptions import Exception
 import warnings
 from control.lti import Lti, timebaseEqual, isdtime
 
 class StateSpace(Lti):
-
     """The StateSpace class represents state space instances and functions.
     
     The StateSpace class is used throughout the python-control library to
@@ -577,7 +574,7 @@ cannot take keywords.")
         outputs, inputs = D.shape
         
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), D)
-    except Exception, e: 
+    except Exception(e): 
         print("Failure to assume argument is matrix-like in" \
             " _convertToStateSpace, result %s" % e)
         

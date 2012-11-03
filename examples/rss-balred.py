@@ -38,7 +38,7 @@ rsysrand = msimp.balred(sysrand,10,method ='truncate')
 
 # Comparison of the impulse responses of the full and reduced random systems
 plt.figure(2)
-trand, yrand = mt.impulse(sysrand)
-trandr, yrandr = mt.impulse(rsysrand)
-plt.plot(trand.T, yrand.T,trandr.T, yrandr.T) 
+yrand, trand = mt.impulse(sysrand)
+yrandr, trandr = mt.impulse(rsysrand)
+plt.plot(trand.T, yrand.T, trandr.T, yrandr.T) 
 

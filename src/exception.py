@@ -59,3 +59,12 @@ class ControlMIMONotImplemented(Exception):
 class ControlNotImplemented(Exception):
     """Functionality is not yet implemented"""
     pass
+
+# Utility function to see if slycot is installed
+def slycot_check():
+    try:
+        import slycot
+    except:
+        return False
+    else:
+        return True

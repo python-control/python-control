@@ -47,16 +47,11 @@ from numpy.testing import assert_array_almost_equal
 from numpy.linalg import inv
 from scipy import zeros,dot
 from control.mateqn import lyap,dlyap,care,dare
+from control.exception import slycot_check
 
-# Test cases (lyap and dlyap)
-
+@unittest.skipIf(not slycot_check(), "slycot not installed")
 class TestMatrixEquations(unittest.TestCase):
     """These are tests for the matrix equation solvers in mateqn.py"""
-
-    def setUp(self):
-        # Make sure that the slycot functions that we require exist
-        from slycot import sb02md, sb02mt, sb03md, sb04md, sg02ad, \
-            sg03ad, sb04qd
 
     def test_lyap(self):
         A = array([[-1, 1],[-1, 0]])
