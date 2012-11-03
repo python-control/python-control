@@ -2,9 +2,8 @@
 
 Frequency response data representation and functions.
 
-This file contains the FRD class and also functions
-that operate on FRD data. This is the primary representation
-for the python-control library.
+This file contains the FRD class and also functions that operate on
+FRD data.
      
 Routines in this module:
 
