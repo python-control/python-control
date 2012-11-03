@@ -1,5 +1,6 @@
 Model Simplification Tools
 **************************
 
-.. automodule:: modelsimp
-    :members:
+.. autofunction:: control.balred
+.. autofunction:: control.hsvd
+.. autofunction:: control.modred

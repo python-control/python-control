@@ -5,10 +5,10 @@ Frequency Domain Plotting
 
 Plotting routines
 =================
-.. autofunction:: freqplot.bode_plot
-.. autofunction:: freqplot.nyquist_plot
-.. autofunction:: freqplot.gangof4_plot
-.. autofunction:: nichols.nichols_plot
+.. autofunction:: control.bode_plot
+.. autofunction:: control.nyquist_plot
+.. autofunction:: control.gangof4_plot
+.. autofunction:: control.nichols_plot
 
 Utility functions
 =================

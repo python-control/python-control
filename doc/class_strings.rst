@@ -1,6 +1,11 @@
 Python-Control Classes
 ********************** 
 
+LTI System Class
+================
+.. automodule:: lti
+   :members:
+
 State Space Class
 =================
 .. automodule:: statesp

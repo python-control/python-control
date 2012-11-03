@@ -3,5 +3,7 @@ Block Diagram Algebra
 
 .. toctree::
 
-.. automodule:: bdalg
-   :members:
+.. autofunction:: control.feedback
+.. autofunction:: control.negate
+.. autofunction:: control.parallel
+.. autofunction:: control.series
