@@ -1,3 +1,5 @@
+---- control-0.6b released -----
+
 2012-11-02  Richard Murray  <murray@altura.local>
 
 	* src/xferfcn.py, src/statesp.py, src/lti.py, src/bdalg.py:
