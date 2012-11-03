@@ -1,3 +1,7 @@
+2012-11-03  Richard Murray  <murray@altura.local>
+
+	* ../README: updated readme file as a test of post-commit hook
+
 2012-11-02  Richard Murray  <murray@altura.local>
 
 	* doc/conf.py, setup.py: updated version number to 0.6c
