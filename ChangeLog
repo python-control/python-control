@@ -1,5 +1,7 @@
 2012-11-02  Richard Murray  <murray@altura.local>
 
+	* doc/conf.py, setup.py: updated version number to 0.6c
+
 	* tests/frd_test.py: unit tests for FRD data type
 	(suite): added suite() function to allow test_all.py to work
 
