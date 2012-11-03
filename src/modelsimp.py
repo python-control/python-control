@@ -1,3 +1,4 @@
+#! TODO: add module docstring
 # modelsimp.py - tools for model simplification
 #
 # Author: Steve Brunton, Kevin Chen, Lauren Padilla
@@ -38,6 +39,9 @@
 # SUCH DAMAGE.
 # 
 # $Id$
+
+# Python 3 compatability
+from __future__ import print_function
 
 # External packages and modules
 import numpy as np

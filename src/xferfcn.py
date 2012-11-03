@@ -1,4 +1,3 @@
-from __future__ import print_function
 """xferfcn.py
 
 Transfer function representation and functions.
@@ -34,6 +33,9 @@ _addSISO
 _convertToTransferFunction
 
 """
+
+# Python 3 compatability (needs to go here)
+from __future__ import print_function
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -142,7 +144,7 @@ a TransferFunction object.  Received %s." % type(args[0]))
         # this is a shallow copy!  This should be okay, but be careful.
         data = [num, den]
         for i in range(len(data)):
-            if isinstance(data[i], (int, float, long, complex)):
+            if isinstance(data[i], (int, float, complex)):
                 # Convert scalar to list of list of array.
                 if (isinstance(data[i], int)):
                     # Convert integers to floats at this point
@@ -150,7 +152,7 @@ a TransferFunction object.  Received %s." % type(args[0]))
                 else:
                     data[i] = [[array([data[i]])]]
             elif (isinstance(data[i], (list, tuple, ndarray)) and 
-                isinstance(data[i][0], (int, float, long, complex))):
+                isinstance(data[i][0], (int, float, complex))):
                 # Convert array to list of list of array.
                 if (isinstance(data[i][0], int)):
                     # Convert integers to floats at this point
@@ -161,7 +163,7 @@ a TransferFunction object.  Received %s." % type(args[0]))
             elif (isinstance(data[i], list) and 
                 isinstance(data[i][0], list) and 
                 isinstance(data[i][0][0], (list, tuple, ndarray)) and 
-                isinstance(data[i][0][0][0], (int, float, long, complex))):
+                isinstance(data[i][0][0][0], (int, float, complex))):
                 # We might already have the right format.  Convert the
                 # coefficient vectors to arrays, if necessary.
                 for j in range(len(data[i])):
@@ -362,7 +364,7 @@ second has %i." % (self.outputs, other.outputs))
         """Multiply two LTI objects (serial connection)."""
         
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, long, complex)):
+        if isinstance(other, (int, float, complex)):
             other = _convertToTransferFunction(other, inputs=self.inputs, 
                 outputs=self.inputs)
         else:
@@ -412,7 +414,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __div__(self, other):
         """Divide two LTI objects."""
         
-        if isinstance(other, (int, float, long, complex)):
+        if isinstance(other, (int, float, complex)):
             other = _convertToTransferFunction(other, inputs=self.inputs, 
                 outputs=self.inputs)
         else:
@@ -440,7 +442,7 @@ implemented only for SISO systems.")
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rdiv__(self, other):
         """Right divide two LTI objects."""
-        if isinstance(other, (int, float, long, complex)):
+        if isinstance(other, (int, float, complex)):
             other = _convertToTransferFunction(other, inputs=self.inputs, 
                 outputs=self.inputs)
         else:
@@ -906,7 +908,7 @@ def _convertToTransferFunction(sys, **kw):
 
         return TransferFunction(num, den, sys.dt)
 
-    elif isinstance(sys, (int, long, float, complex)):
+    elif isinstance(sys, (int, float, complex)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:

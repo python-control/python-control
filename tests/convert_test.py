@@ -14,6 +14,7 @@ of this is unknown.
 
 """
 
+from __future__ import print_function
 import unittest
 import numpy as np
 import control
@@ -38,8 +39,8 @@ class TestConvert(unittest.TestCase):
         """Print system to the standard output."""
 
         if self.debug:
-            print "sys%i:\n" % ind
-            print sys
+            print("sys%i:\n" % ind)
+            print(sys)
 
     def testConvert(self):
         """Test state space to transfer function conversion."""
@@ -64,12 +65,12 @@ class TestConvert(unittest.TestCase):
                     Cmat = control.ctrb(ssOriginal.A, ssOriginal.B)
                     if (np.linalg.matrix_rank(Cmat) != states):
                         if (verbose):
-                            print "  skipping (not reachable)"
+                            print("  skipping (not reachable)")
                         continue
                     Omat = control.obsv(ssOriginal.A, ssOriginal.C)
                     if (np.linalg.matrix_rank(Omat) != states):
                         if (verbose):
-                            print "  skipping (not observable)"
+                            print("  skipping (not observable)")
                         continue
 
                     tfOriginal = matlab.tf(ssOriginal)
@@ -86,9 +87,9 @@ class TestConvert(unittest.TestCase):
 
                     # Check to see if the state space systems have same dim
                     if (ssOriginal.states != ssTransformed.states):
-                        print "WARNING: state space dimension mismatch: " + \
+                        print("WARNING: state space dimension mismatch: " + \
                             "%d versus %d" % \
-                            (ssOriginal.states, ssTransformed.states)
+                            (ssOriginal.states, ssTransformed.states))
 
                     # Now make sure the frequency responses match
                     # Since bode() only handles SISO, go through each I/O pair
@@ -96,8 +97,8 @@ class TestConvert(unittest.TestCase):
                     for inputNum in range(inputs):
                         for outputNum in range(outputs):
                             if (verbose):
-                                print "Checking input %d, output %d" \
-                                    % (inputNum, outputNum)
+                                print("Checking input %d, output %d" \
+                                    % (inputNum, outputNum))
                             ssorig_mag, ssorig_phase, ssorig_omega = \
                                 control.bode(_mimo2siso(ssOriginal, \
                                                         inputNum, outputNum), \

@@ -1,5 +1,19 @@
 2012-11-02  Richard Murray  <murray@altura.local>
 
+	* src/xferfcn.py, src/statesp.py, src/lti.py, src/bdalg.py:
+	constants must now be of type 'int' rather than 'long' (for python 3
+	compatibility)
+	
+	* tests/statefbk_test.py, tests/slycot_convert_test.py,
+	tests/convert_test.py: added import __future__ calls for python 3
+	compatibility; updated print calls
+
+	* src/modelsimp.py, src/xferfcn.py, src/delay.py, src/phaseplot.py,
+	src/margins.py, src/statesp.py, src/mateqn.py: added import
+	__future__ calls for python 3 compatibility
+
+2012-11-02  Richard Murray  <murray@altura.local>
+
 	* src/xferfcn.py, src/timeresp.py, src/statesp.py, src/statefbk.py,
 	src/robust.py, src/rlocus.py, src/pzmap.py, src/phaseplot.py,
 	src/nichols.py, src/modelsimp.py, src/matlab.py, src/margins.py,

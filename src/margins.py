@@ -1,4 +1,3 @@
-from __future__ import print_function
 """margin.py
 
 Functions for computing stability margins and related functions.
@@ -8,6 +7,9 @@ Routeins in this module:
 margin.stability_margins
 margin.phase_crossover_frequencies
 """
+
+# Python 3 compatability (needs to go here)
+from __future__ import print_function
 
 """Copyright (c) 2011 by California Institute of Technology
 All rights reserved.

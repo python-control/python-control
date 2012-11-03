@@ -8,6 +8,7 @@
 # nothing crashes.  It doesn't test actual functionality; the module
 # specific unit tests will do that.
 
+from __future__ import print_function
 import unittest
 import numpy as np
 import scipy as sp
@@ -208,14 +209,14 @@ class TestMatlab(unittest.TestCase):
         gain_numden = dcgain(np.squeeze(num), den)
         gain_sys_ss = dcgain(sys_ss)
         print
-        print 'gain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk
-        print 'gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss
+        print('gain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk)
+        print('gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss)
         
         #Compute the gain with a long simulation
         t = linspace(0, 1000, 1000)
         y, _t = step(sys_ss, t)
         gain_sim = y[-1]
-        print 'gain_sim:', gain_sim
+        print('gain_sim:', gain_sim)
         
         #All gain values must be approximately equal to the known gain
         np.testing.assert_array_almost_equal(
@@ -225,7 +226,7 @@ class TestMatlab(unittest.TestCase):
         
         #Test with MIMO system, which contains ``siso_ss1`` twice
         gain_mimo = dcgain(self.mimo_ss1)
-        print 'gain_mimo: \n', gain_mimo
+        print('gain_mimo: \n', gain_mimo)
         np.testing.assert_array_almost_equal(gain_mimo, [[59., 0 ], 
                                                          [0,  59.]])
 

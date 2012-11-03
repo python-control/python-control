@@ -75,7 +75,7 @@ def timebase(sys, strict=True):
     set to False, dt = True will be returned as 1.
     """
     # System needs to be either a constant or an Lti system
-    if isinstance(sys, (int, float, long, complex)):
+    if isinstance(sys, (int, float, complex)):
         return None
     elif not isinstance(sys, Lti):
         raise ValueError("Timebase not defined")
@@ -104,7 +104,7 @@ def timebaseEqual(sys1, sys2):
 def isdtime(sys, strict=False):
     # TODO: add docstring
     # Check to see if this is a constant
-    if isinstance(sys, (int, float, long, complex)):
+    if isinstance(sys, (int, float, complex)):
         # OK as long as strict checking is off
         return True if not strict else False
 
@@ -121,7 +121,7 @@ def isdtime(sys, strict=False):
 def isctime(sys, strict=False):
     # TODO: add docstring
     # Check to see if this is a constant
-    if isinstance(sys, (int, float, long, complex)):
+    if isinstance(sys, (int, float, complex)):
         # OK as long as strict checking is off
         return True if not strict else False
 

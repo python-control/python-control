@@ -3,6 +3,7 @@
 # statefbk_test.py - test state feedback functions
 # RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 
+from __future__ import print_function
 import unittest
 import numpy as np
 from control.statefbk import ctrb, obsv, place, lqr, gram, acker
@@ -100,14 +101,14 @@ class TestStatefbk(unittest.TestCase):
                 # back to SS, check that the matrices are the same.
                 sys = rss(states, 1, 1)
                 if (self.debug):
-                    print sys
+                    print(sys)
 
                 # Make sure the system is not degenerate
                 Cmat = ctrb(sys.A, sys.B)
                 if (np.linalg.matrix_rank(Cmat) != states or
                     abs(np.linalg.det(Cmat)) < 1e-5):
                     if (self.debug):
-                        print "  skipping (not reachable or ill conditioned)"
+                        print("  skipping (not reachable or ill conditioned)")
                         continue
 
                 # Place the poles at random locations
@@ -131,7 +132,6 @@ class TestStatefbk(unittest.TestCase):
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
-
 
 if __name__ == '__main__':
     unittest.main()

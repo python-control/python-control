@@ -3,6 +3,7 @@
 # slycot_convert_test.py - test SLICOT-based conversions
 # RMM, 30 Mar 2011 (based on TestSlycot from v0.4a)
 
+from __future__ import print_function
 import unittest
 import numpy as np
 import control.matlab as matlab
@@ -36,11 +37,11 @@ class TestSlycot(unittest.TestCase):
                     for testNum in range(self.numTests):
                         ssOriginal = matlab.rss(states, inputs, outputs)
                         if (verbose):
-                            print '====== Original SS =========='
-                            print ssOriginal
-                            print 'states=',states
-                            print 'inputs=',inputs
-                            print 'outputs=',outputs
+                            print('====== Original SS ==========')
+                            print(ssOriginal)
+                            print('states=', states)
+                            print('inputs=', inputs)
+                            print('outputs=', outputs)
                         
                         
                         tfOriginal_Actrb, tfOriginal_Bctrb, tfOriginal_Cctrb, tfOrigingal_nctrb, tfOriginal_index,\
@@ -55,8 +56,8 @@ class TestSlycot(unittest.TestCase):
                             inputs,outputs,ssTransformed_A, ssTransformed_B, ssTransformed_C,ssTransformed_D,tol1=0.0)
                         #print 'size(Trans_A)=',ssTransformed_A.shape
                         if (verbose):
-                            print '===== Transformed SS =========='
-                            print matlab.ss(ssTransformed_A, ssTransformed_B, ssTransformed_C, ssTransformed_D)
+                            print('===== Transformed SS ==========')
+                            print(matlab.ss(ssTransformed_A, ssTransformed_B, ssTransformed_C, ssTransformed_D))
                             # print 'Trans_nr=',ssTransformed_nr                      
                             # print 'tfOrig_index=',tfOriginal_index
                             # print 'tfOrig_ucoeff=',tfOriginal_ucoeff

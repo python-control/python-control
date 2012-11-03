@@ -33,6 +33,9 @@ _rss_generate
 
 """
 
+# Python 3 compatability (needs to go here)
+from __future__ import print_function
+
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
 
@@ -231,7 +234,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         """Add two LTI systems (parallel connection)."""
         
         # Check for a couple of special cases
-        if (isinstance(other, (int, long, float, complex))):
+        if (isinstance(other, (int, float, complex))):
             # Just adding a scalar; put it in the D matrix
             A, B, C = self.A, self.B, self.C;
             D = self.D + other;
@@ -288,7 +291,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         """Multiply two LTI objects (serial connection)."""
         
         # Check for a couple of special cases
-        if isinstance(other, (int, long, float, complex)):
+        if isinstance(other, (int, float, complex)):
             # Just multiplying by a scalar; change the output
             A, B = self.A, self.B
             C = self.C * other
@@ -329,7 +332,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Right multiply two LTI objects (serial connection)."""
         
         # Check for a couple of special cases
-        if isinstance(other, (int, long, float, complex)):
+        if isinstance(other, (int, float, complex)):
             # Just multiplying by a scalar; change the input
             A, C = self.A, self.C;
             B = self.B * other;
@@ -551,7 +554,7 @@ cannot take keywords.")
             return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D, 
                               sys.dt)
 
-    elif isinstance(sys, (int, long, float, complex)):
+    elif isinstance(sys, (int, float, complex)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:

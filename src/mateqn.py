@@ -1,8 +1,12 @@
-# mateqn.py - matrix equation solvers (Lyapunov, Riccati)
-from __future__ import division
+""" mateqn.py 
 
-""" Implementation of the functions lyap, dlyap, care and dare
+Matrix equation solvers (Lyapunov, Riccati)
+
+Implementation of the functions lyap, dlyap, care and dare
 for solution of Lyapunov and Riccati equations. """
+
+# Python 3 compatability (needs to go here)
+from __future__ import print_function
 
 """Copyright (c) 2011, All rights reserved.
 
