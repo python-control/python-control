@@ -2,7 +2,7 @@ Python Control System Library
 RMM, 23 May 09
 
 This directory contains the source code for the Python Control Systems
-Library (python-control).  This package is intended to provide a
+Library (python-control).  This package provides a
 library of standard control system algorithms in the python
 programming environment.
 
