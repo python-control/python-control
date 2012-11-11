@@ -64,6 +64,16 @@ class Lti:
         self.outputs = outputs
         self.dt = dt
 
+# Test to see if a system is SISO
+def issiso(sys, strict=False):
+    if isinstance(sys, (int, float, complex)) and not strict:
+        return True
+    elif not isinstance(sys, Lti):
+        raise ValueError("Object is not an Lti system")
+
+    # Done with the tricky stuff...
+    return sys.inputs == 1 and sys.outputs == 1
+
 # Return the timebase (with conversion if unspecified)
 def timebase(sys, strict=True):
     """Return the timebase for an Lti system
