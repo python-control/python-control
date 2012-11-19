@@ -63,7 +63,7 @@ from control.delay import pade
 from control.dtime import sample_system
 from control.freqplot import bode_plot, nyquist_plot, gangof4_plot
 from control.freqplot import bode, nyquist, gangof4
-from control.lti import timebase, timebaseEqual, isdtime, isctime
+from control.lti import issiso, timebase, timebaseEqual, isdtime, isctime
 from control.margins import stability_margins, phase_crossover_frequencies
 from control.mateqn import lyap, dlyap, care, dare
 from control.modelsimp import hsvd, modred, balred, era, markov
@@ -77,9 +77,20 @@ from control.timeresp import forced_response, initial_response, step_response, \
 from control.xferfcn import TransferFunction
 from control.ctrlutil import unwrap, issys
 from control.frdata import FRD
+from control.canonical import canonical_form, reachable_form
+
+# Exceptions
+from exception import *
 
 # Import some of the more common (and benign) MATLAB shortcuts
 # By default, don't import conflicting commands here
+#! TODO (RMM, 4 Nov 2012): remove MATLAB dependencies from __init__.py
+#!
+#! Eventually, all functionality should be in modules *other* than matlab.
+#! This will allow inclusion of the matlab module to set up a different set
+#! of defaults from the main package.  At that point, the matlab module will
+#! allow provide compatibility with MATLAB but no package functionality.
+#!
 from control.matlab import ss, tf, ss2tf, tf2ss, drss
 from control.matlab import pole, zero, evalfr, freqresp, dcgain
 from control.matlab import nichols, rlocus, margin

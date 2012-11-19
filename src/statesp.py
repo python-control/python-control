@@ -138,6 +138,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
 
         # Here we're going to convert inputs to matrices, if the user gave a
         # non-matrix type.
+        #! TODO: [A, B, C, D] = map(matrix, [A, B, C, D])?
         matrices = [A, B, C, D] 
         for i in range(len(matrices)):
             # Convert to matrix first, if necessary.
@@ -215,9 +216,10 @@ a StateSpace object.  Recived %s." % type(args[0]))
         str += "B = " + self.B.__str__() + "\n\n"
         str += "C = " + self.C.__str__() + "\n\n"
         str += "D = " + self.D.__str__() + "\n"
+        #! TODO: replace with standard calls to lti functions
         if (type(self.dt) == bool and self.dt == True):
             str += "\ndt unspecified\n"
-        elif (self.dt > 0):
+        elif (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
             str += "\ndt = " + self.dt.__str__() + "\n"
         return str
 

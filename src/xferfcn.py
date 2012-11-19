@@ -266,6 +266,7 @@ denominator." % (j + 1, i + 1))
         
         mimo = self.inputs > 1 or self.outputs > 1  
         if (var == None):
+            #! TODO: replace with standard calls to lti functions
             var = 's' if self.dt == None or self.dt == 0 else 'z'
         outstr = ""
         
@@ -294,6 +295,7 @@ denominator." % (j + 1, i + 1))
 
         # See if this is a discrete time system with specific sampling time
         if (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
+            #! TODO: replace with standard calls to lti functions
             outstr += "\ndt = " + self.dt.__str__() + "\n"
 
         return outstr
@@ -945,8 +947,8 @@ def _convertToTransferFunction(sys, **kw):
             lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
             num = squeeze(lti_sys.num)
             den = squeeze(lti_sys.den)
-            print(num)
-            print(den)
+            # print(num)
+            # print(den)
 
         return TransferFunction(num, den, sys.dt)
 

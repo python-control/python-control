@@ -57,7 +57,7 @@ from control.lti import isdtime, timebaseEqual
 #
    
 # Bode plot
-def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True, 
+def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None, 
         Plot=True, *args, **kwargs):
     """Bode plot for a system
 
@@ -105,6 +105,12 @@ def bode_plot(syslist, omega=None, dB=False, Hz=False, deg=True,
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag, phase, omega = bode(sys)
     """
+    # Set default values for options
+    import control.config
+    if (dB is None): dB = control.config.bode_dB
+    if (deg is None): deg = control.config.bode_deg
+    if (Hz is None): Hz = control.config.bode_Hz
+
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
         syslist = (syslist,)

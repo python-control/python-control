@@ -1,3 +1,31 @@
+2012-11-10  Richard Murray  <murray@altura.local>
+
+	* src/canonical.py: new module implementing conversions to selected
+	canonical forms: canonical_form(), reachable_form() implemented
+
+	* src/lti.py (issiso): new function to quickly check if a system is
+	single input, single output or not
+
+2012-11-04  Richard Murray  <murray@altura.local>
+
+	* src/__init__.py: added action item to separate out matlab module
+	functionality (eventually)
+
+	* src/matlab.py: added code for setting up MATLAB defaults if matlab
+	submodule is imported instead of main (control) module.  See
+	comments in __init.py__ for what needs to be done to implement.
+
+	* src/freqplot.py (bode_plot): moved default values of plotting
+	options to config module to allow easier use override
+
+	* src/config.py: new module to help set package defaults
+
+	* src/xferfcn.py (_convertToTransferFunction): removed extraneous
+	print statements if slycot is not installed
+
+	* src/statesp.py (StateSpace.__str__): fixed error in printing
+	timebase when dt is None (python 3)
+
 ---- control-0.6c released -----
 
 2012-11-03  Richard Murray  <murray@altura.local>
