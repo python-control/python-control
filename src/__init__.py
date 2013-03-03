@@ -80,7 +80,7 @@ from control.frdata import FRD
 from control.canonical import canonical_form, reachable_form
 
 # Exceptions
-from exception import *
+from control.exception import *
 
 # Import some of the more common (and benign) MATLAB shortcuts
 # By default, don't import conflicting commands here
