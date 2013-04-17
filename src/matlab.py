@@ -714,7 +714,7 @@ object.")
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
-def rss(states=1, inputs=1, outputs=1):
+def rss(states=1, outputs=1, inputs=1):
     """
     Create a stable **continuous** random state space object.
     
@@ -751,7 +751,7 @@ def rss(states=1, inputs=1, outputs=1):
     
     return _rss_generate(states, inputs, outputs, 'c')
     
-def drss(states=1, inputs=1, outputs=1):
+def drss(states=1, outputs=1, inputs=1):
     """
     Create a stable **discrete** random state space object.
     
