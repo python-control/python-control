@@ -479,9 +479,12 @@ class TestXferFcn(unittest.TestCase):
         h = (b0 + b1*s + b2*s**2)/(a0 + a1*s + a2*s**2 + a3*s**3)
         H = TransferFunction([[h.num[0][0]], [(h*s).num[0][0]]], 
                              [[h.den[0][0]], [h.den[0][0]]])
-        H1 = np.matrix([[1.0, 0]])*H
-        H2 = np.matrix([[0, 1.0]])*H
-
+        H1 = (np.matrix([[1.0, 0]])*H).minreal()
+        H2 = (np.matrix([[0, 1.0]])*H).minreal()
+        np.testing.assert_array_almost_equal(H.num[0][0], H1.num[0][0])
+        np.testing.assert_array_almost_equal(H.den[0][0], H1.den[0][0])
+        np.testing.assert_array_almost_equal(H.num[1][0], H2.num[0][0])
+        np.testing.assert_array_almost_equal(H.den[1][0], H2.den[0][0])
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)
