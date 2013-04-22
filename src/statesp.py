@@ -475,6 +475,17 @@ inputs/outputs for feedback.")
 
         return StateSpace(A, B, C, D, dt)
 
+    def minreal(self, tol=None):
+        """Calculate a minimal realization, removes unobservable and
+        uncontrollable states"""
+        try:
+            from slycot import tb01pd
+            A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs, 
+                                    self.A, self.B, self.C, tol=tol)
+            return StateSpace(A[:nr,:nr], B[:nr,:], C[:,:nr], self.D)
+        except ImportError:
+            raise TypeError("minreal requires slycot tb01pd")
+       
     # TODO: add discrete time check
     def returnScipySignalLti(self):
         """Return a list of a list of scipy.signal.lti objects.
