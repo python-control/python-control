@@ -27,6 +27,7 @@ StateSpace.pole
 StateSpace.zero
 StateSpace.feedback
 StateSpace.returnScipySignalLti
+StateSpace.append
 _convertToStateSpace
 _rss_generate
 
@@ -507,6 +508,33 @@ inputs/outputs for feedback.")
                                 asarray(self.C[i, :]), asarray(self.D[i, j]))
 
         return out
+
+    def append(self, other):
+        """Append a second model to the present model. The second
+        model is converted to state-space if necessary, inputs and
+        outputs are appended and their order is preserved"""
+        if not isinstance(other, StateSpace):
+            other = _convertToStateSpace(other)
+        
+        if self.dt != other.dt:
+            raise ValueError("Systems must have the same time step")
+
+        n = self.states + other.states
+        m = self.inputs + other.inputs
+        p = self.outputs + other.outputs
+        A = zeros( (n, n) )
+        B = zeros( (n, m) )
+        C = zeros( (p, n) )
+        D = zeros( (p, m) )
+        A[:self.states,:self.states] = self.A
+        A[self.states:,self.states:] = other.A
+        B[:self.states,:self.inputs] = self.B
+        B[self.states:,self.inputs:] = other.B
+        C[:self.outputs,:self.states] = self.C
+        C[self.outputs:,self.states:] = other.C
+        D[:self.outputs,:self.inputs] = self.D
+        D[self.outputs:,self.inputs:] = other.D
+        return StateSpace(A, B, C, D, self.dt)
 
 # TODO: add discrete time check
 def _convertToStateSpace(sys, **kw):
