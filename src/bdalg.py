@@ -4,6 +4,7 @@ This file contains some standard block diagram algebra.
 
 Routines in this module:
 
+append
 series
 parallel
 negate
@@ -236,3 +237,37 @@ or a scalar.")
             sys2 = tf._convertToTransferFunction(sys2)
 
     return sys1.feedback(sys2, sign)
+
+def append(*sys):
+    '''
+    Group models by appending their inputs and outputs
+
+    Forms an augmented system model, and appends the inputs and
+    outputs together. The system type will be the type of the first system
+    given.
+
+    Parameters.
+    -----------
+    sys1, sys2, ... sysn: StateSpace or Transferfunction
+        LTI systems to combine
+
+        
+    Returns
+    -------
+    sys: LTI system
+        Combined LTI system, with input/output vectors consisting of all 
+        input/output vectors appended
+        
+    Examples
+    --------
+    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys2 = ss("-1.", "1.", "1.", "0.")
+    >>> sys = append(sys1, sys2)
+    
+    .. todo::
+        also implement for transfer function, zpk, etc.
+    '''
+    s1 = sys[0]
+    for s in sys[1:]:
+        s1 = s1.append(s)
+    return s1

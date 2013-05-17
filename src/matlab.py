@@ -174,7 +174,7 @@ System interconnections
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\   append                      group LTI models by appending inputs/outputs
+\*  :func:`~bdalg.append`       group LTI models by appending inputs/outputs
 \*  :func:`~bdalg.parallel`     connect LTI models in parallel 
                                 (see also overloaded ``+``)
 \*  :func:`~bdalg.series`       connect LTI models in series 
@@ -1405,3 +1405,4 @@ def c2d(sysc, Ts, method):
     # TODO: add docstring
     #  Call the sample_system() function to do the work
     return sample_system(sysc, Ts, method)
+
