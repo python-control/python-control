@@ -96,7 +96,7 @@ from control.exception import ControlArgument
 from control.ctrlutil import unwrap
 from control.freqplot import nyquist, gangof4
 from control.nichols import nichols
-from control.bdalg import series, parallel, negate, feedback
+from control.bdalg import series, parallel, negate, feedback, append
 from control.pzmap import pzmap
 from control.statefbk import ctrb, obsv, gram, place, lqr
 from control.delay import pade

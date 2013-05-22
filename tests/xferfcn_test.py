@@ -444,6 +444,19 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
 
+    def testMinreal2(self):
+        """This one gave a problem, due to poly([]) giving simply 1 
+        instead of numpy.array([1])"""
+        s = TransferFunction([1, 0], [1])
+        G = 6205/(s*(s**2 + 13*s + 1281))
+        Heq = G.feedback(1)
+        H1 = 1/(s+5)
+        H2a = Heq/H1
+        H2b = H2a.minreal()
+        hr = 6205/(s**2+8*s+1241)
+        np.testing.assert_array_almost_equal(H2b.num[0][0], hr.num[0][0])
+        np.testing.assert_array_almost_equal(H2b.den[0][0], hr.den[0][0])
+
     def testMIMO(self):
         """Test conversion of a single input, two-output state-space
         system against the same TF"""

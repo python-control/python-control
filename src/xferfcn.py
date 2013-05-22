@@ -661,8 +661,12 @@ only implemented for SISO functions.")
                         newzeros.append(z)
                         
                 # keep result
-                num[i][j] = gain * real(poly(newzeros))
+                if len(newzeros):
+                    num[i][j] = gain * real(poly(newzeros))
+                else:
+                    num[i][j] = array([gain])
                 den[i][j] = real(poly(poles))
+                    
 
         # end result
         return TransferFunction(num, den)
