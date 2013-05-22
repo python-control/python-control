@@ -1192,7 +1192,7 @@ def step(sys, T=None, X0=0., input=0, output=0, **keywords):
 
     Examples
     --------
-    >>> T, yout = step(sys, T, X0)
+    >>> yout, T = step(sys, T, X0)
     '''
     T, yout = timeresp.step_response(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
