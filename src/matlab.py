@@ -96,7 +96,7 @@ from control.exception import ControlArgument
 from control.ctrlutil import unwrap
 from control.freqplot import nyquist, gangof4
 from control.nichols import nichols
-from control.bdalg import series, parallel, negate, feedback, append
+from control.bdalg import series, parallel, negate, feedback, append, connect
 from control.pzmap import pzmap
 from control.statefbk import ctrb, obsv, gram, place, lqr
 from control.delay import pade
@@ -200,7 +200,7 @@ System gain and dynamics
 \   lti/order                   model order (number of states)
 \*  :func:`~pzmap.pzmap`        pole-zero map (TF only)
 \   lti/iopzmap                 input/output pole-zero map
-\   damp                        natural frequency, damping of system poles
+\*  :func:`damp`                natural frequency, damping of system poles
 \   esort                       sort continuous poles by real part
 \   dsort                       sort discrete poles by magnitude
 \   lti/stabsep                 stable/unstable decomposition
@@ -1138,6 +1138,44 @@ def dcgain(*args):
     #gain = - C * A**-1 * B + D
     gain = sys.D - sys.C * sys.A.I * sys.B
     return gain
+
+def damp(sys, doprint=True):
+    '''
+    Compute natural frequency, damping and poles of a system
+    
+    The function takes 1 or 2 parameters
+
+    Parameters
+    ----------
+    sys: Lti (StateSpace or TransferFunction)
+        A linear system object
+    doprint: 
+        if true, print table with values
+
+    Returns
+    -------
+    wn: array
+        Natural frequencies of the poles
+    damping: array
+        Damping values
+    poles: array
+        Pole locations
+
+    See Also
+    --------
+    pole        
+    '''
+    wn, damping, poles = sys.damp()
+    if doprint:
+        print('______Eigenvalue______ Damping___ Frequency_')
+        for p, d, w in zip(poles, damping, wn) :
+            if abs(p.imag) < 1e-12:
+                print("%10.4g             %10.4g %10.4g" % 
+                      (p.real, 1.0, -p.real)) 
+            else:
+                print("%10.4g %10.4gi %10.4g %10.4g" % 
+                      (p.real, p.imag, d, w)) 
+    return wn, damping, poles
 
 # Simulation routines 
 # Call corresponding functions in timeresp, with arguments transposed

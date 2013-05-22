@@ -271,3 +271,55 @@ def append(*sys):
     for s in sys[1:]:
         s1 = s1.append(s)
     return s1
+
+def connect(sys, Q, inputv, outputv):
+    '''
+    Index-base interconnection of system
+
+    The system sys is a system typically constructed with append, with
+    multiple inputs and outputs. The inputs and outputs are connected
+    according to the interconnection matrix Q, and then the final
+    inputs and outputs are trimmed according to the inputs and outputs
+    listed in inputv and outputv.
+
+    Note: to have this work, inputs start counting at 1!!!!
+
+    Parameters.
+    -----------
+    sys: StateSpace Transferfunction
+        System to be connected
+    Q: 2d array
+        Interconnection matrix. First column gives the input to be connected
+        second column gives the output to be fed into this input. Negative
+        values for the second column mean the feedback is negative, 0 means
+        no connection is made
+    inputv: 1d array
+        list of final external inputs
+    outputv: 1d array
+        list of final external outputs
+
+    Returns
+    -------
+    sys: LTI system
+        Connected and trimmed LTI system
+    '''
+    # first connect
+    K = sp.zeros( (sys.inputs, sys.outputs) )
+    for r in sp.array(Q).astype(int):
+        inp = r[0]-1
+        for outp in r[1:]:
+            if outp > 0 and outp <= sys.outputs:
+                K[inp,outp-1] = 1.
+            elif outp < 0 and -outp <= sys.outputs:
+                K[inp,outp-1] = -1.
+    print K
+    sys = sys.feedback(K)
+    
+    # now trim
+    Ytrim = sp.zeros( (len(outputv), sys.outputs) )
+    Utrim = sp.zeros( (sys.inputs, len(inputv)) )
+    for i,u in enumerate(inputv):
+        Utrim[u-1,i] = 1.
+    for i,y in enumerate(outputv):
+        Ytrim[i,y-1] = 1.
+    return Ytrim*sys*Utrim  

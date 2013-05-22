@@ -372,6 +372,28 @@ class TestMatlab(unittest.TestCase):
         for i in range(len(tfdata_1)):
             np.testing.assert_array_almost_equal(tfdata_1[i], tfdata_2[i])
 
+    def testDamp(self):
+        A = np.mat('''-0.2  0.06 0    -1;
+               0    0    1     0;
+             -17    0   -3.8   1;
+               9.4  0   -0.4  -0.6''')
+        B = np.mat('''-0.01  0.06;
+               0     0;
+             -32     5.4;
+               2.6  -7''')
+        C = np.eye(4)
+        D = np.zeros((4,2))
+        sys = ss(A, B, C, D)
+        wn, Z, p = damp(sys, False)
+        print (wn)
+        np.testing.assert_array_almost_equal(
+            wn, np.array('0.0011, 3.2887, 3.2887, 4.0738'))
+        np.testing.assert_array_almost_equal(
+            Z, np.array('1.0, 0.0798, 0.0798, 1.0'))
+        
+                                             
+
+
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):
 #        sisotf = ss2tf(self.siso_ss1)
