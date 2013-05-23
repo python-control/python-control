@@ -107,7 +107,7 @@ class FRD(Lti):
     def __init__(self, *args, **kwargs):
         """Construct a transfer function.
         
-        The default constructor is FRD(w, d), where w is an iterable of 
+        The default constructor is FRD(d, w), where w is an iterable of 
         frequency points, and d is the matching frequency data. 
         
         If d is a single list, 1d array, or tuple, a SISO system description 
@@ -142,8 +142,8 @@ class FRD(Lti):
                 # The user provided a response and a freq vector
                 self.fresp = array(args[0], dtype=complex)
                 if len(self.fresp.shape) == 1:
-                    self.fresp.reshape(1, 1, len(args[0]))
-                self.omega = array(args[1])
+                    self.fresp = self.fresp.reshape(1, 1, len(args[0]))
+                self.omega = array(args[1], dtype=float)
                 if len(self.fresp.shape) != 3 or \
                         self.fresp.shape[-1] != self.omega.shape[-1] or \
                         len(self.omega.shape) != 1:
@@ -189,9 +189,9 @@ class FRD(Lti):
                 if mimo:
                     outstr.append("Input %i to output %i:" % (i + 1, j + 1))
                 outstr.append('Freq [rad/s]  Response   ')
-                outstr.append('------------  ------------------------')
+                outstr.append('------------  ---------------------')
                 outstr.extend(
-                    [ '%12.3f  %10.4g + %10.4g' % (w, m, p)
+                    [ '%12.3f  %10.4g%+10.4gj' % (w, m, p)
                       for m, p, w in zip(real(self.fresp[j,i,:]), imag(self.fresp[j,i,:]), wt) ])
 
 

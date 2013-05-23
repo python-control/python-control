@@ -89,6 +89,7 @@ import control.margins as margins
 from control.statesp import StateSpace, _rss_generate, _convertToStateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
 from control.lti import Lti #base class of StateSpace, TransferFunction
+from control.frdata import FRD
 from control.dtime import sample_system
 from control.exception import ControlArgument
 
@@ -125,7 +126,7 @@ Creating linear models
 \*  :func:`ss`                  create state-space (SS) models
 \   dss                         create descriptor state-space models
 \   delayss                     create state-space models with delayed terms
-\   frd                         create frequency response data (FRD) models
+\*  :func:`frd`                 create frequency response data (FRD) models
 \   lti/exp                     create pure continuous-time delays (TF and
                                 ZPK only)
 \   filt                        specify digital filters
@@ -156,7 +157,7 @@ Conversions
 \*  :func:`tf`                  conversion to transfer function
 \   zpk                         conversion to zero/pole/gain
 \*  :func:`ss`                  conversion to state space
-\   frd                         conversion to frequency data
+\*  :func:`frd`                 conversion to frequency data
 \   c2d                         continuous to discrete conversion
 \   d2c                         discrete to continuous conversion
 \   d2d                         resample discrete-time model
@@ -568,6 +569,42 @@ def tf(*args):
 TransferFunction object.  It is %s." % type(sys)) 
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
+
+def frd(*args):
+    '''
+    Construct a Frequency Response Data model, or convert a system
+
+    frd models store the (measured) frequency response of a system.
+
+    This function can be called in different ways:
+
+    ``frd(response, freqs)``
+        Create an frd model with the given response data, in the form of
+        complex response vector, at matching frequency freqs [in rad/s]
+
+    ``frd(sys, freqs)``
+        Convert an Lti system into an frd model with data at frequencies
+        freqs. 
+
+    Parameters
+    ----------
+    response: array_like, or list
+        complex vector with the system response
+    freq: array_lik or lis
+        vector with frequencies
+    sys: Lti (StateSpace or TransferFunction)
+        A linear system
+
+    Returns
+    -------
+    sys: FRD
+        New frequency response system
+
+    See Also
+    --------
+    ss, tf
+    '''
+    return FRD(*args)
 
 
 def ss2tf(*args):
