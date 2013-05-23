@@ -339,9 +339,22 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             B = self.B * other;
             D = self.D * other;
             return StateSpace(A, B, C, D, self.dt)
+        
+        # is lti, and convertible?
+        if isinstance(other, Lti):
+            return _convertToStateSpace(other) * self
 
-        else:
-            raise TypeError("can't interconnect systems")
+        # try to treat this as a matrix
+        try:
+            X = matrix(other)
+            C = X * self.C
+            D = X * self.D
+            return StateSpace(self.A, self.B, C, D, self.dt)
+
+        except Exception, e:
+            print(e)
+            pass
+        raise TypeError("can't interconnect systems")
 
     # TODO: __div__ and __rdiv__ are not written yet.
     def __div__(self, other):

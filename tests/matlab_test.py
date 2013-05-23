@@ -387,11 +387,27 @@ class TestMatlab(unittest.TestCase):
         wn, Z, p = damp(sys, False)
         print (wn)
         np.testing.assert_array_almost_equal(
-            wn, np.array('0.0011, 3.2887, 3.2887, 4.0738'))
+            wn, np.array([4.07381994,   3.28874827,   3.28874827,
+                          1.08937685e-03]))
         np.testing.assert_array_almost_equal(
-            Z, np.array('1.0, 0.0798, 0.0798, 1.0'))
+            Z, np.array([1.0, 0.07983139,  0.07983139, 1.0]))
         
-                                             
+    def testConnect(self):
+        sys1 = ss("1. -2; 3. -4", "5.; 7", "6, 8", "9.")
+        sys2 = ss("-1.", "1.", "1.", "0.")
+        sys = append(sys1, sys2)
+        Q= np.mat([ [ 1, 2], [2, -1] ]) # basically feedback, output 2 in 1
+        sysc = connect(sys, Q, [2], [1, 2])
+        print(sysc)
+        np.testing.assert_array_almost_equal(
+            sysc.A, np.mat('1 -2 5; 3 -4 7; -6 -8 -10'))
+        np.testing.assert_array_almost_equal(
+            sysc.B, np.mat('0; 0; 1'))
+        np.testing.assert_array_almost_equal(
+            sysc.C, np.mat('6 8 9; 0 0 1'))
+        np.testing.assert_array_almost_equal(
+            sysc.D, np.mat('0; 0'))
+                                 
 
 
 #! TODO: not yet implemented

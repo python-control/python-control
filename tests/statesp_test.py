@@ -203,6 +203,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys3c.A[:3,3:], np.zeros( (3, 2)) )
         np.testing.assert_array_almost_equal(sys3c.A[3:,:3], np.zeros( (2, 3)) )
 
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
     

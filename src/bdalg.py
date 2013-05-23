@@ -282,7 +282,7 @@ def connect(sys, Q, inputv, outputv):
     inputs and outputs are trimmed according to the inputs and outputs
     listed in inputv and outputv.
 
-    Note: to have this work, inputs start counting at 1!!!!
+    Note: to have this work, inputs and outputs start counting at 1!!!!
 
     Parameters.
     -----------
@@ -302,6 +302,14 @@ def connect(sys, Q, inputv, outputv):
     -------
     sys: LTI system
         Connected and trimmed LTI system
+
+    Examples
+    --------
+    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6, 8", "9.")
+    >>> sys2 = ss("-1.", "1.", "1.", "0.")
+    >>> sys = append(sys1, sys2)
+    >>> Q = sp.mat([ [ 1, 2], [2, -1] ]) # basically feedback, output 2 in 1
+    >>> sysc = connect(sys, Q, [2], [1, 2])
     '''
     # first connect
     K = sp.zeros( (sys.inputs, sys.outputs) )
@@ -312,8 +320,7 @@ def connect(sys, Q, inputv, outputv):
                 K[inp,outp-1] = 1.
             elif outp < 0 and -outp <= sys.outputs:
                 K[inp,outp-1] = -1.
-    print K
-    sys = sys.feedback(K)
+    sys = sys.feedback(sp.matrix(K), sign=1)
     
     # now trim
     Ytrim = sp.zeros( (len(outputv), sys.outputs) )
@@ -322,4 +329,4 @@ def connect(sys, Q, inputv, outputv):
         Utrim[u-1,i] = 1.
     for i,y in enumerate(outputv):
         Ytrim[i,y-1] = 1.
-    return Ytrim*sys*Utrim  
+    return sp.matrix(Ytrim)*sys*sp.matrix(Utrim)  
