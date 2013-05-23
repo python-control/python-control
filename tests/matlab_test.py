@@ -408,6 +408,30 @@ class TestMatlab(unittest.TestCase):
             sysc.C, np.mat('6 8 9; 0 0 1'))
         np.testing.assert_array_almost_equal(
             sysc.D, np.mat('0; 0'))
+
+    def testConnect2(self):
+        sys = append(ss([[-5, -2.25], [4, 0]], [[2], [0]], 
+                          [[0, 1.125]], [[0]]), 
+                       ss([[-1.6667, 0], [1, 0]], [[2], [0]],
+                          [[0, 3.3333]], [[0]]),
+                       1)
+        Q = [ [ 1, 3], [2, 1], [3, -2]]
+        sysc = connect(sys, Q, [3], [3, 1, 2])
+        np.testing.assert_array_almost_equal(
+            sysc.A, np.mat([[-5, -2.25, 0, -6.6666], 
+                            [4, 0, 0, 0],
+                            [0, 2.25, -1.6667, 0], 
+                            [0, 0, 1, 0]]))
+        np.testing.assert_array_almost_equal(
+            sysc.B, np.mat([[2], [0], [0], [0]]))
+        np.testing.assert_array_almost_equal(
+            sysc.C, np.mat([[0, 0, 0, -3.3333], 
+                            [0, 1.125, 0, 0],
+                            [0, 0, 0, 3.3333]]))
+        np.testing.assert_array_almost_equal(
+            sysc.D, np.mat([[1], [0], [0]]))
+            
+                          
                                  
     def testFRD(self):
         h = tf([1], [1, 2, 2])

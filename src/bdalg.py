@@ -319,8 +319,8 @@ def connect(sys, Q, inputv, outputv):
         for outp in r[1:]:
             if outp > 0 and outp <= sys.outputs:
                 K[inp,outp-1] = 1.
-            elif outp < 0 and -outp <= sys.outputs:
-                K[inp,outp-1] = -1.
+            elif outp < 0 and -outp >= -sys.outputs:
+                K[inp,-outp-1] = -1.
     sys = sys.feedback(sp.matrix(K), sign=1)
     
     # now trim
