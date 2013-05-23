@@ -9,6 +9,7 @@ series
 parallel
 negate
 feedback
+connect
 
 """
 
