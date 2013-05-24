@@ -1217,7 +1217,7 @@ def damp(sys, doprint=True):
 # Simulation routines 
 # Call corresponding functions in timeresp, with arguments transposed
 
-def step(sys, T=None, X0=0., input=0, output=0, **keywords):
+def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     '''
     Step response of a linear system
     

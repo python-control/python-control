@@ -815,3 +815,50 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
         
     return sys
 
+def _mimo2simo(sys, input, warn_conversion=False):
+    #pylint: disable=W0622
+    """
+    Convert a MIMO system to a SISO system. (Convert a system with multiple
+    inputs and/or outputs, to a system with a single input and output.)
+    
+    The input and output that are used in the SISO system can be selected 
+    with the parameters ``input`` and ``output``. All other inputs are set 
+    to 0, all other outputs are ignored.
+    
+    If ``sys`` is already a SIMO system, it will be returned unaltered. 
+    
+    Parameters
+    ----------
+    sys: StateSpace
+        Linear (MIMO) system that should be converted.
+    input: int
+        Index of the input that will become the SISO system's only input.
+    warn_conversion: bool
+        If True: print a warning message when sys is a MIMO system. 
+        Warn that a conversion will take place.
+        
+    Returns:
+    
+    sys: StateSpace
+        The converted (SIMO) system.
+    """
+    if not (isinstance(input, int)):
+        raise TypeError("Parameter ``input`` be an integer number.")
+    if not (0 <= input < sys.inputs):
+        raise ValueError("Selected input does not exist. "
+                         "Selected input: {sel}, "
+                         "number of system inputs: {ext}."
+                         .format(sel=input, ext=sys.inputs))
+    #Convert sys to SISO if necessary
+    if sys.inputs > 1:
+        if warn_conversion:
+            warnings.warn("Converting MIMO system to SISO system. "
+                          "Only input {i} and output {o} are used."
+                          .format(i=input, o=output))
+        # $X = A*X + B*U
+        #  Y = C*X + D*U
+        new_B = sys.B[:, input]
+        new_D = sys.D[:, input]
+        sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt)
+        
+    return sys
