@@ -527,6 +527,14 @@ implemented only for SISO systems.")
                 warn("evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = 1.j * omega
+            
+        return self.horner(s)
+
+    def horner(self, s):
+        '''Evaluate the systems's transfer function for a complex variable
+        
+        Returns a matrix of values evaluated at complex variable s.
+        '''
 
         # Preallocate the output.
         out = empty((self.outputs, self.inputs), dtype=complex)

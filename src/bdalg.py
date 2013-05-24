@@ -244,8 +244,9 @@ def append(*sys):
     Group models by appending their inputs and outputs
 
     Forms an augmented system model, and appends the inputs and
-    outputs together. The system type will be the type of the first system
-    given.
+    outputs together. The system type will be the type of the first
+    system given; if you mix state-space systems and gain matrices,
+    make sure the gain matrices are not first.
 
     Parameters.
     -----------

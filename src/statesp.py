@@ -384,10 +384,16 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         else:
             s = omega * 1.j
 
-        fresp = self.C * solve(s * eye(self.states) - self.A,
-            self.B) + self.D
+        return self.horner(s)
 
-        return array(fresp)
+    def horner(self, s):
+        '''Evaluate the systems's transfer function for a complex variable
+        
+        Returns a matrix of values evaluated at complex variable s.
+        '''
+        resp = self.C * solve(s * eye(self.states) - self.A,
+                              self.B) + self.D
+        return array(resp)
 
     # Method for generating the frequency response of the system
     # TODO: add discrete time check
