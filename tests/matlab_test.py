@@ -11,6 +11,7 @@
 from __future__ import print_function
 import unittest
 import numpy as np
+from scipy.linalg import eigvals
 import scipy as sp
 from control.matlab import *
 from control.frdata import FRD
@@ -440,7 +441,34 @@ class TestMatlab(unittest.TestCase):
         assert isinstance(frd1, FRD)
         frd2 = frd(frd1.fresp[0,0,:], omega)
         assert isinstance(frd2, FRD)
-       
+
+    def testMinreal(self, verbose=False):
+        """Test a minreal model reduction"""
+        #A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]
+        A = [[-2, 0.5, 0], [0.5, -0.3, 0], [0, 0, -0.1]]
+        #B = [0.3, -1.3; 0.1, 0; 1, 0]
+        B = [[0.3, -1.3], [0.1, 0.], [1.0, 0.0]]
+        #C = [0, 0.1, 0; -0.3, -0.2, 0]
+        C = [[0., 0.1, 0.0], [-0.3, -0.2, 0.0]]
+        #D = [0 -0.8; -0.3 0]
+        D = [[0., -0.8], [-0.3, 0.]]
+        # sys = ss(A, B, C, D)
+        
+        sys = ss(A, B, C, D)
+        sysr = minreal(sys)
+        self.assertEqual(sysr.states, 2)
+        self.assertEqual(sysr.inputs, sys.inputs)
+        self.assertEqual(sysr.outputs, sys.outputs)
+        np.testing.assert_array_almost_equal(
+            eigvals(sysr.A), [-2.136154, -0.1638459])
+
+        s = tf([1, 0], [1])
+        h = (s+1)*(s+2.00000000001)/(s+2)/(s**2+s+1)
+        hm = minreal(h)
+        hr = (s+1)/(s**2+s+1)
+        np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
+        np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
+
 
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):

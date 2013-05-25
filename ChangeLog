@@ -1,3 +1,20 @@
+2013-05-23  Rene van Paassen <rene.vanpaassen@gmail.com>
+
+	* src/margin.py: re-vamped stability_margins function. Now
+          uses analytical method for TF and state-space, works on FRD
+          objects too, and can optionally return all margins found for
+          the analytical method.
+
+	* src/xferfcn.py and src/frdata.py: Now return array result
+          for fresp when called with an iterable frequency vector
+
+	* src/xferfcn.py and src/statesp.py: added minreal functions
+
+	* src/bdalg.py: implemented append and connect functions (old
+          version, with indexes, not with names)
+	  
+	* src/matlab.py: added connect, append, minreal
+
 2012-11-10  Richard Murray  <murray@altura.local>
 
 	* src/canonical.py: new module implementing conversions to selected

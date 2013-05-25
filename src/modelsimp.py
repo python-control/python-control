@@ -269,6 +269,33 @@ def balred(sys, orders, method='truncate'):
 
     return rsys
 
+def minreal(sys, tol=None, verbose=True):
+    '''
+    Eliminates uncontrollable or unobservable states in state-space
+    models or cancelling pole-zero pairs in transfer functions. The
+    output sysr has minimal order and the same response
+    characteristics as the original model sys.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction
+        Original system
+    tol: real
+        Tolerance
+    verbose: bool
+        Print results if True
+
+    Returns
+    -------
+    rsys: StateSpace or TransferFunction
+        Cleaned model
+    '''
+    sysr = sys.minreal(tol)
+    if verbose:
+        print("{nstates} states have been removed from the model".format(
+                nstates=len(sys.pole()) - len(sysr.pole())))
+    return sysr
+
 def era(YY, m, n, nin, nout, r):
     """
     Calculate an ERA model of order `r` based on the impulse-response data `YY`.

@@ -101,7 +101,7 @@ from control.bdalg import series, parallel, negate, feedback, append, connect
 from control.pzmap import pzmap
 from control.statefbk import ctrb, obsv, gram, place, lqr
 from control.delay import pade
-from control.modelsimp import hsvd, balred, modred
+from control.modelsimp import hsvd, balred, modred, minreal
 from control.mateqn import lyap, dlyap, dare, care
 
 __doc__ += r"""
@@ -244,7 +244,7 @@ Model simplification
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\   minreal                     minimal realization; pole/zero cancellation
+\*  :func:`~modelsimp.minreal`  minimal realization; pole/zero cancellation
 \   ss/sminreal                 structurally minimal realization
 \*  :func:`~modelsimp.hsvd`     hankel singular values (state contributions)
 \*  :func:`~modelsimp.balred`   reduced-order approximations of LTI models
