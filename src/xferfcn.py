@@ -537,7 +537,10 @@ implemented only for SISO systems.")
         '''
 
         # Preallocate the output.
-        out = empty((self.outputs, self.inputs), dtype=complex)
+        if getattr(s, '__iter__', False):
+            out = empty((self.outputs, self.inputs, len(s)), dtype=complex)
+        else:
+            out = empty((self.outputs, self.inputs), dtype=complex)
 
         for i in range(self.outputs):
             for j in range(self.inputs):

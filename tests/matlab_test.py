@@ -310,12 +310,12 @@ class TestMatlab(unittest.TestCase):
     def testRss(self):
         rss(1)
         rss(2)
-        rss(2, 3, 1)
+        rss(2, 1, 3)
 
     def testDrss(self):
         drss(1)
         drss(2)
-        drss(2, 3, 1)
+        drss(2, 1, 3)
 
     def testCtrb(self):
         ctrb(self.siso_ss1.A, self.siso_ss1.B)

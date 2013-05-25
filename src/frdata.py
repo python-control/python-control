@@ -340,7 +340,10 @@ implemented only for SISO systems.")
         """
 
         # Preallocate the output.
-        out = empty((self.outputs, self.inputs), dtype=complex)
+        if getattr(omega, '__iter__', False):
+            out = empty((self.outputs, self.inputs, len(omega)), dtype=complex)
+        else:
+            out = empty((self.outputs, self.inputs), dtype=complex)
 
         if self.ifunc is None:
             try:
@@ -350,11 +353,18 @@ implemented only for SISO systems.")
                     "Frequency %f not in frequency list, try an interpolating"
                     " FRD if you want additional points")
         else:
-            for i in range(self.outputs):
-                for j in range(self.inputs):
-                    frraw = splev(omega, self.ifunc[i,j], der=0)
-                    out[i,j] = frraw[0] + 1.0j*frraw[1]
-
+            if getattr(omega, '__iter__', False):
+                for i in range(self.outputs):
+                    for j in range(self.inputs):
+                        for k,w in enumerate(omega): 
+                            frraw = splev(w, self.ifunc[i,j], der=0)
+                            out[i,j,k] = frraw[0] + 1.0j*frraw[1]
+            else:
+                for i in range(self.outputs):
+                    for j in range(self.inputs):
+                        frraw = splev(omega, self.ifunc[i,j], der=0)
+                        out[i,j] = frraw[0] + 1.0j*frraw[1]
+                
         return out
 
     # Method for generating the frequency response of the system
