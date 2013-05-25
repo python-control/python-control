@@ -15,6 +15,10 @@
 	  
 	* src/matlab.py: added connect, append, minreal
 
+	* src/xferfcn.py and src/statesp.py: added/corrected
+          __rmul__. In most cases a gain matrix (np.matrix) may now be
+          used in combination with ss or tf systems.
+
 2012-11-10  Richard Murray  <murray@altura.local>
 
 	* src/canonical.py: new module implementing conversions to selected
