@@ -143,14 +143,14 @@ def stability_margins(sysdata, deg=True, returnall=False):
         # test imaginary part of tf == 0, for phase crossover/gain margins
         test_w_180 = np.polyadd(np.polymul(inum, rden), np.polymul(rnum, -iden))
         w_180 = np.roots(test_w_180)
-        w_180 = w_180[(np.imag(w_180) == 0) * (w_180 > 0.)]
+        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 > 0.)])
         w_180.sort()
 
         # test magnitude is 1 for gain crossover/phase margins
         test_wc = np.polysub(np.polyadd(_polysqr(rnum), _polysqr(inum)), 
                              np.polyadd(_polysqr(rden), _polysqr(iden)))
         wc = np.roots(test_wc)
-        wc = wc[(np.imag(wc) == 0) * (wc > 0.)]
+        wc = np.real(wc[(np.imag(wc) == 0) * (wc > 0.)])
         wc.sort()
 
         # stability margin was a bitch to elaborate, relies on magnitude to
