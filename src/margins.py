@@ -196,7 +196,7 @@ def stability_margins(sysdata, deg=True, returnall=False):
     # vector for this
     PM = np.angle(sys.evalfr(wc)[0][0], deg=True) + 180
     GM = 1/(np.abs(sys.evalfr(w_180)[0][0]))
-    SM = np.abs(sys.evalfr(wstab)[0][0])+1)
+    SM = np.abs(sys.evalfr(wstab)[0][0]+1)
 
     if returnall:
         return GM, PM, SM, wc, w_180, wstab
