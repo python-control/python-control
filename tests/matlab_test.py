@@ -16,6 +16,43 @@ import scipy as sp
 from control.matlab import *
 from control.frdata import FRD
 
+# for running these through Matlab or Octave
+'''
+siso_ss1 = ss([1. -2.; 3. -4.], [5.; 7.], [6. 8.], [0])
+
+siso_tf1 = tf([1], [1, 2, 1])
+siso_tf2 = tf([1, 1], [1, 2, 3, 1])
+
+siso_tf3 = tf(siso_ss1)
+siso_ss2 = ss(siso_tf2)
+siso_ss3 = ss(siso_tf3)
+siso_tf4 = tf(siso_ss2)
+
+A =[ 1. -2. 0.  0.;
+     3. -4. 0.  0.;
+     0.  0. 1. -2.;
+     0.  0. 3. -4. ]
+B = [ 5. 0.;
+      7. 0.;
+      0. 5.;
+      0. 7. ]
+C = [ 6. 8. 0. 0.;
+      0. 0. 6. 8. ]
+D = [ 9. 0.;
+      0. 9. ]
+mimo_ss1 = ss(A, B, C, D)
+
+% all boring, since no cross-over
+margin(siso_tf1)
+margin(siso_tf2)
+margin(siso_ss1)
+margin(siso_ss2)
+
+% make a bit better
+[gm, pm, gmc, pmc] = margin(siso_ss2*siso_ss2*2)
+
+'''
+
 class TestMatlab(unittest.TestCase):
     def setUp(self):
         """Set up some systems for testing out MATLAB functions"""
@@ -196,6 +233,9 @@ class TestMatlab(unittest.TestCase):
         gm, pm, wg, wp = margin(self.siso_tf2);
         gm, pm, wg, wp = margin(self.siso_ss1);
         gm, pm, wg, wp = margin(self.siso_ss2);
+        gm, pm, wg, wp = margin(self.siso_ss2*self.siso_ss2*2);
+        np.testing.assert_array_almost_equal(
+            [gm, pm, wg, wp], [1.5451, 75.9933, 1.2720, 0.6559], decimal=3)
         
     def testDcgain(self):
         #Create different forms of a SISO system

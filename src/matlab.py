@@ -1094,10 +1094,11 @@ def margin(*args):
 
     Returns
     -------
-    gm, pm, wg, wp : float
-        Gain margin gm, phase margin pm (in deg), and associated crossover
-        frequencies wg and wp (in rad/sec) of SISO open-loop. If more than
-        one crossover frequency is detected, returns the lowest
+    gm, pm, Wcg, Wcp : float
+        Gain margin gm, phase margin pm (in deg), gain crossover frequency 
+        (corresponding to phase margin) and phase crossover frequency
+        (corresponding to gain margin), in rad/sec of SISO open-loop.
+        If more than one crossover frequency is detected, returns the lowest
         corresponding margin.
 
     Examples
@@ -1120,7 +1121,7 @@ def margin(*args):
         raise ValueError("Margin needs 1 or 3 arguments; received %i." 
             % len(args))
             
-    return margin[0], margin[1], margin[3], margin[4]
+    return margin[0], margin[1], margin[4], margin[3]
 
 def dcgain(*args):
     '''
