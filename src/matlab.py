@@ -889,16 +889,20 @@ def zero(sys):
 
     return sys.zero()
 
-def evalfr(sys, omega):
+def evalfr(sys, x):
     """
-    Evaluate the transfer function of an LTI system at an angular frequency.
+    Evaluate the transfer function of an LTI system for a single complex 
+    number x.
+    
+    To evaluate at a frequency, enter x = omega*j, where omega is the 
+    frequency in radians
 
     Parameters
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    omega: scalar
-        Frequency 
+    x: scalar
+        Complex number 
 
     Returns
     -------
@@ -917,14 +921,16 @@ def evalfr(sys, omega):
     Examples
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> evalfr(sys, 1.)
+    >>> evalfr(sys, 1j)
     array([[ 44.8-21.4j]])
     >>> # This is the transfer function matrix evaluated at s = i.
 
     .. todo:: Add example with MIMO system
     """
-
-    return sys.evalfr(omega)
+    if issiso(sys):
+        return sys.horner(x)[0][0]
+    return sys.horner(x)
+        
 
 def freqresp(sys, omega): 
     """

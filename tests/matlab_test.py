@@ -316,13 +316,16 @@ class TestMatlab(unittest.TestCase):
         freqresp(self.siso_tf3, w)
 
     def testEvalfr(self):
-        w = 1
-        evalfr(self.siso_ss1, w)
+        w = 1j
+        self.assertEqual(evalfr(self.siso_ss1, w), 44.8-21.4j)
         evalfr(self.siso_ss2, w)
         evalfr(self.siso_ss3, w)
         evalfr(self.siso_tf1, w)
         evalfr(self.siso_tf2, w)
         evalfr(self.siso_tf3, w)
+        np.testing.assert_array_almost_equal(
+            evalfr(self.mimo_ss1, w), 
+            np.array( [[44.8-21.4j, 0.], [0., 44.8-21.4j]]))
 
     def testHsvd(self):
         hsvd(self.siso_ss1)
