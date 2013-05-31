@@ -818,12 +818,13 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
 def _mimo2simo(sys, input, warn_conversion=False):
     #pylint: disable=W0622
     """
-    Convert a MIMO system to a SISO system. (Convert a system with multiple
-    inputs and/or outputs, to a system with a single input and output.)
+    Convert a MIMO system to a SIMO system. (Convert a system with multiple
+    inputs and/or outputs, to a system with a single input but possibly
+    multiple outputs.)
     
-    The input and output that are used in the SISO system can be selected 
-    with the parameters ``input`` and ``output``. All other inputs are set 
-    to 0, all other outputs are ignored.
+    The input that is used in the SIMO system can be selected with the
+    parameter ``input``. All other inputs are set to 0, all other
+    outputs are ignored.
     
     If ``sys`` is already a SIMO system, it will be returned unaltered. 
     
@@ -832,13 +833,13 @@ def _mimo2simo(sys, input, warn_conversion=False):
     sys: StateSpace
         Linear (MIMO) system that should be converted.
     input: int
-        Index of the input that will become the SISO system's only input.
+        Index of the input that will become the SIMO system's only input.
     warn_conversion: bool
         If True: print a warning message when sys is a MIMO system. 
         Warn that a conversion will take place.
         
     Returns:
-    
+    --------
     sys: StateSpace
         The converted (SIMO) system.
     """
@@ -852,9 +853,9 @@ def _mimo2simo(sys, input, warn_conversion=False):
     #Convert sys to SISO if necessary
     if sys.inputs > 1:
         if warn_conversion:
-            warnings.warn("Converting MIMO system to SISO system. "
-                          "Only input {i} and output {o} are used."
-                          .format(i=input, o=output))
+            warnings.warn("Converting MIMO system to SIMO system. "
+                          "Only input {i} is used."
+                          .format(i=input))
         # $X = A*X + B*U
         #  Y = C*X + D*U
         new_B = sys.B[:, input]
