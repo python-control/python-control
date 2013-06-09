@@ -50,6 +50,14 @@ class TestFeedback(unittest.TestCase):
         np.testing.assert_array_almost_equal(ans2.C, [[2.5, 0.]])
         np.testing.assert_array_almost_equal(ans2.D, [[2.5]])
 
+        # Make sure default arugments work as well
+        ans3 = feedback(self.sys2, 1)
+        ans4 = feedback(self.sys2)
+        np.testing.assert_array_almost_equal(ans3.A, ans4.A)
+        np.testing.assert_array_almost_equal(ans3.B, ans4.B)
+        np.testing.assert_array_almost_equal(ans3.C, ans4.C)
+        np.testing.assert_array_almost_equal(ans3.D, ans4.D)
+
     def testScalarTF(self):
         """Scalar system with transfer function feedback block."""
 
@@ -60,6 +68,12 @@ class TestFeedback(unittest.TestCase):
         np.testing.assert_array_almost_equal(ans1.den, [[[1., 4.5, 8.]]])
         np.testing.assert_array_almost_equal(ans2.num, [[[2.5, 5., 7.5]]])
         np.testing.assert_array_almost_equal(ans2.den, [[[1., -0.5, -2.]]])
+
+        # Make sure default arugments work as well
+        ans3 = feedback(self.sys1, 1)
+        ans4 = feedback(self.sys1)
+        np.testing.assert_array_almost_equal(ans3.num, ans4.num)
+        np.testing.assert_array_almost_equal(ans3.den, ans4.den)
 
     def testSSScalar(self):
         """State space system with scalar feedback block."""

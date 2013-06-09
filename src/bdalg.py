@@ -172,7 +172,8 @@ def negate(sys):
     
     return -sys;
 
-def feedback(sys1, sys2, sign=-1):
+#! TODO: expand to allow sys2 default to work in MIMO case?
+def feedback(sys1, sys2=1, sign=-1):
     """
     Feedback interconnection between two I/O systems.
 

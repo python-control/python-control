@@ -1,3 +1,28 @@
+2013-06-09  Richard Murray  <murray@altura-2.local>
+
+	* tests/bdalg_test.py (TestFeedback.testScalarSS)
+	(TestFeedback.testScalarTF): added simple test of default argument
+	to feedback() for state space and transfer function systems
+
+	* tests/frd_test.py (TestFRD.testFeedback): added test of default
+	argument to feedback() for FRD type
+
+	* src/bdalg.py (feedback): 
+	* src/frdata.py (FRD.feedback):
+	* src/statesp.py (StateSpace.feedback):
+	patched in default value of 1 for other system in feedback().
+	Contributed by Ryan Krauss <rkrauss@siue.edu>
+	
+	* tests/xferfcn_test.py (TestXferFcn.testEvalFrMIMO)
+	(TestXferFcn.testEvalFrSISO): added tests of __call__ version of
+	evalfr. 
+
+	* src/xferfcn.py (TransferFunction.__call__): patched in new
+	__call__ functionality from Ryan Krauss <rkrauss@siue.edu>, but
+	modified to use evalfr (works with MIMO).  SISO transfer functions
+	return a single complex number, MIMO transfer functions return a
+	matrix of complex numbers.
+
 2013-05-23  Rene van Paassen <rene.vanpaassen@gmail.com>
 
 	* src/margin.py: re-vamped stability_margins function. Now

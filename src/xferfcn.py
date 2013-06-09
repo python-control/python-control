@@ -81,7 +81,7 @@ $Id$
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
-    where, delete, real, poly
+    where, delete, real, poly, poly1d
 from scipy.signal import lti
 from copy import deepcopy
 from warnings import warn
@@ -231,7 +231,21 @@ denominator." % (j + 1, i + 1))
         self.den = den
         
         self._truncatecoeff()
-        
+
+    def __call__(self, s):
+        """Evaluate the system's transfer function for a complex vairable
+
+        For a SISO transfer function, returns the value of the
+        transfer function.  For a MIMO transfer fuction, returns a
+        matrix of values evaluated at complex variable s."""
+
+        if (self.inputs > 1 or self.outputs > 1):
+            # MIMO transfer function, return a matrix
+            return self.horner(s)
+        else:
+            # SISO transfer function, return a scalar
+            return self.horner(s)[0][0]
+
     def _truncatecoeff(self):
         """Remove extraneous zero coefficients from num and den.
 
@@ -604,7 +618,7 @@ only implemented for SISO systems.")
             #for now, just give zeros of a SISO tf 
             return roots(self.num[0][0])
 
-    def feedback(self, other, sign=-1): 
+    def feedback(self, other=1, sign=-1): 
         """Feedback interconnection between two LTI objects."""
         
         other = _convertToTransferFunction(other)

@@ -324,6 +324,11 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys.evalfr(32.),
             np.array([[0.00281959302585077 - 0.030628473607392j]]))
 
+        # Test call version as well
+        np.testing.assert_almost_equal(sys(1.j), -0.5 - 0.5j)
+        np.testing.assert_almost_equal(sys(32.j), 
+            0.00281959302585077 - 0.030628473607392j)
+
     def testEvalFrMIMO(self):
         """Evaluate the frequency response of a MIMO system at one frequency."""
 
@@ -337,6 +342,9 @@ class TestXferFcn(unittest.TestCase):
                  -1. - 8.j]]
         
         np.testing.assert_array_almost_equal(sys.evalfr(2.), resp)
+
+        # Test call version as well
+        np.testing.assert_array_almost_equal(sys(2.j), resp)
 
     # Tests for TransferFunction.freqresp.
 

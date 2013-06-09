@@ -393,7 +393,7 @@ implemented only for SISO systems.")
 
         return mag, phase, omega
 
-    def feedback(self, other, sign=-1): 
+    def feedback(self, other=1, sign=-1): 
         """Feedback interconnection between two FRD objects."""
         
         other = _convertToFRD(other, omega=self.omega)

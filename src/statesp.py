@@ -447,7 +447,7 @@ implemented only for SISO systems.")
         return roots(num)
 
     # Feedback around a state space system
-    def feedback(self, other, sign=-1):
+    def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two LTI systems."""
  
         other = _convertToStateSpace(other)

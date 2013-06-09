@@ -84,6 +84,11 @@ class TestFRD(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             f1.feedback(1).freqresp([0.1, 1.0, 10])[0],
             h1.feedback(1).freqresp([0.1, 1.0, 10])[0])
+
+        # Make sure default argument also works
+        np.testing.assert_array_almost_equal(
+            f1.feedback().freqresp([0.1, 1.0, 10])[0],
+            h1.feedback().freqresp([0.1, 1.0, 10])[0])
         
     def testFeedback2(self):
         h2 = StateSpace([[-1.0, 0], [0, -2.0]], [[0.4], [0.1]],
