@@ -404,7 +404,8 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                 for k in range(self.inputs): # Multiply & add.
                     num_summand[k] = polymul(self.num[i][k], other.num[k][j])
                     den_summand[k] = polymul(self.den[i][k], other.den[k][j])
-                    num[i][j], den[i][j] = _addSISO(num[i][j], den[i][j],
+                    num[i][j], den[i][j] = _addSISO(
+                        num[i][j], den[i][j],
                         num_summand[k], den_summand[k])
         
         return TransferFunction(num, den, dt)
@@ -412,7 +413,47 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __rmul__(self, other): 
         """Right multiply two LTI objects (serial connection)."""
         
-        return self * other
+        # Convert the second argument to a transfer function.
+        if isinstance(other, (int, float, complex)):
+            other = _convertToTransferFunction(other, inputs=self.inputs, 
+                outputs=self.inputs)
+        else:
+            other = _convertToTransferFunction(other)
+            
+        # Check that the input-output sizes are consistent.
+        if other.inputs != self.outputs:
+            raise ValueError("C = A * B: A has %i column(s) (input(s)), but B \
+has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
+
+        inputs = self.inputs
+        outputs = other.outputs
+        
+        # Figure out the sampling time to use
+        if (self.dt == None and other.dt != None):
+            dt = other.dt       # use dt from second argument
+        elif (other.dt == None and self.dt != None) or (self.dt == other.dt):
+            dt = self.dt        # use dt from first argument
+        else:
+            raise ValueError("Systems have different sampling times")
+
+        # Preallocate the numerator and denominator of the sum.
+        num = [[[0] for j in range(inputs)] for i in range(outputs)]
+        den = [[[1] for j in range(inputs)] for i in range(outputs)]
+        
+        # Temporary storage for the summands needed to find the (i, j)th element
+        # of the product.
+        num_summand = [[] for k in range(other.inputs)]
+        den_summand = [[] for k in range(other.inputs)]
+        
+        for i in range(outputs): # Iterate through rows of product.
+            for j in range(inputs): # Iterate through columns of product.
+                for k in range(other.inputs): # Multiply & add.
+                    num_summand[k] = polymul(other.num[i][k], self.num[k][j])
+                    den_summand[k] = polymul(other.den[i][k], self.den[k][j])
+                    num[i][j], den[i][j] = _addSISO(num[i][j], den[i][j],
+                        num_summand[k], den_summand[k])
+       
+        return TransferFunction(num, den, dt)
 
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __div__(self, other):
@@ -486,9 +527,20 @@ implemented only for SISO systems.")
                 warn("evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = 1.j * omega
+            
+        return self.horner(s)
+
+    def horner(self, s):
+        '''Evaluate the systems's transfer function for a complex variable
+        
+        Returns a matrix of values evaluated at complex variable s.
+        '''
 
         # Preallocate the output.
-        out = empty((self.outputs, self.inputs), dtype=complex)
+        if getattr(s, '__iter__', False):
+            out = empty((self.outputs, self.inputs, len(s)), dtype=complex)
+        else:
+            out = empty((self.outputs, self.inputs), dtype=complex)
 
         for i in range(self.outputs):
             for j in range(self.inputs):
@@ -620,8 +672,12 @@ only implemented for SISO functions.")
                         newzeros.append(z)
                         
                 # keep result
-                num[i][j] = gain * real(poly(newzeros))
+                if len(newzeros):
+                    num[i][j] = gain * real(poly(newzeros))
+                else:
+                    num[i][j] = array([gain])
                 den[i][j] = real(poly(poles))
+                    
 
         # end result
         return TransferFunction(num, den)
@@ -906,6 +962,15 @@ def _convertToTransferFunction(sys, **kw):
 
     In the latter example, sys's matrix transfer function is [[1., 1., 1.]
                                                               [1., 1., 1.]].
+
+    If sys is an array-like type, then it is converted to a constant-gain
+    transfer function.
+
+    >>> sys = _convertToTransferFunction([[1. 0.], [2. 3.]])
+
+    In this example, the numerator matrix will be 
+       [[[1.0], [0.0]], [[2.0], [3.0]]]
+    and the denominator matrix [[[1.0], [1.0]], [[1.0], [1.0]]]
     
     """
     from control.statesp import StateSpace
@@ -966,5 +1031,16 @@ def _convertToTransferFunction(sys, **kw):
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
         
         return TransferFunction(num, den)
-    else:
-        raise TypeError("Can't convert given type to TransferFunction system.")
+
+    # If this is array-like, try to create a constant feedthrough
+    try:
+        D = array(sys)
+        outputs, inputs = D.shape
+        num = [[[D[i,j]] for j in range(inputs)] for i in range(outputs)]
+        den = [[[1] for j in range(inputs)] for i in range(outputs)]
+        return TransferFunction(num, den)
+    except Exception, e: 
+        print("Failure to assume argument is matrix-like in" 
+              " _convertToTransferFunction, result %s" % e)
+        
+    raise TypeError("Can't convert given type to TransferFunction system.")

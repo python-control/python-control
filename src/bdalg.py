@@ -4,10 +4,12 @@ This file contains some standard block diagram algebra.
 
 Routines in this module:
 
+append
 series
 parallel
 negate
 feedback
+connect
 
 """
 
@@ -236,3 +238,97 @@ or a scalar.")
             sys2 = tf._convertToTransferFunction(sys2)
 
     return sys1.feedback(sys2, sign)
+
+def append(*sys):
+    '''
+    Group models by appending their inputs and outputs
+
+    Forms an augmented system model, and appends the inputs and
+    outputs together. The system type will be the type of the first
+    system given; if you mix state-space systems and gain matrices,
+    make sure the gain matrices are not first.
+
+    Parameters.
+    -----------
+    sys1, sys2, ... sysn: StateSpace or Transferfunction
+        LTI systems to combine
+
+        
+    Returns
+    -------
+    sys: LTI system
+        Combined LTI system, with input/output vectors consisting of all 
+        input/output vectors appended
+        
+    Examples
+    --------
+    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys2 = ss("-1.", "1.", "1.", "0.")
+    >>> sys = append(sys1, sys2)
+    
+    .. todo::
+        also implement for transfer function, zpk, etc.
+    '''
+    s1 = sys[0]
+    for s in sys[1:]:
+        s1 = s1.append(s)
+    return s1
+
+def connect(sys, Q, inputv, outputv):
+    '''
+    Index-base interconnection of system
+
+    The system sys is a system typically constructed with append, with
+    multiple inputs and outputs. The inputs and outputs are connected
+    according to the interconnection matrix Q, and then the final
+    inputs and outputs are trimmed according to the inputs and outputs
+    listed in inputv and outputv.
+
+    Note: to have this work, inputs and outputs start counting at 1!!!!
+
+    Parameters.
+    -----------
+    sys: StateSpace Transferfunction
+        System to be connected
+    Q: 2d array
+        Interconnection matrix. First column gives the input to be connected
+        second column gives the output to be fed into this input. Negative
+        values for the second column mean the feedback is negative, 0 means
+        no connection is made
+    inputv: 1d array
+        list of final external inputs
+    outputv: 1d array
+        list of final external outputs
+
+    Returns
+    -------
+    sys: LTI system
+        Connected and trimmed LTI system
+
+    Examples
+    --------
+    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6, 8", "9.")
+    >>> sys2 = ss("-1.", "1.", "1.", "0.")
+    >>> sys = append(sys1, sys2)
+    >>> Q = sp.mat([ [ 1, 2], [2, -1] ]) # basically feedback, output 2 in 1
+    >>> sysc = connect(sys, Q, [2], [1, 2])
+    '''
+    # first connect
+    K = sp.zeros( (sys.inputs, sys.outputs) )
+    for r in sp.array(Q).astype(int):
+        inp = r[0]-1
+        for outp in r[1:]:
+            if outp > 0 and outp <= sys.outputs:
+                K[inp,outp-1] = 1.
+            elif outp < 0 and -outp >= -sys.outputs:
+                K[inp,-outp-1] = -1.
+    sys = sys.feedback(sp.matrix(K), sign=1)
+    
+    # now trim
+    Ytrim = sp.zeros( (len(outputv), sys.outputs) )
+    Utrim = sp.zeros( (sys.inputs, len(inputv)) )
+    for i,u in enumerate(inputv):
+        Utrim[u-1,i] = 1.
+    for i,y in enumerate(outputv):
+        Ytrim[i,y-1] = 1.
+    return sp.matrix(Ytrim)*sys*sp.matrix(Utrim)  

@@ -5,8 +5,10 @@
 
 import unittest
 import numpy as np
+from scipy.linalg import eigvals
 import control.matlab as matlab
-from control.statesp import StateSpace
+from control.statesp import StateSpace, _convertToStateSpace
+from control.xferfcn import TransferFunction
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
@@ -134,6 +136,73 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_almost_equal(mag, truemag)
         np.testing.assert_almost_equal(phase, truephase)
         np.testing.assert_equal(omega, trueomega)
+                
+    def testMinreal(self):
+        """Test a minreal model reduction"""
+        #A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]
+        A = [[-2, 0.5, 0], [0.5, -0.3, 0], [0, 0, -0.1]]
+        #B = [0.3, -1.3; 0.1, 0; 1, 0]
+        B = [[0.3, -1.3], [0.1, 0.], [1.0, 0.0]]
+        #C = [0, 0.1, 0; -0.3, -0.2, 0]
+        C = [[0., 0.1, 0.0], [-0.3, -0.2, 0.0]]
+        #D = [0 -0.8; -0.3 0]
+        D = [[0., -0.8], [-0.3, 0.]]
+        # sys = ss(A, B, C, D)
+        
+        sys = StateSpace(A, B, C, D)
+        sysr = sys.minreal()
+        self.assertEqual(sysr.states, 2)
+        self.assertEqual(sysr.inputs, sys.inputs)
+        self.assertEqual(sysr.outputs, sys.outputs)
+        np.testing.assert_array_almost_equal(
+            eigvals(sysr.A), [-2.136154, -0.1638459])
+                                    
+    def testAppendSS(self):
+        """Test appending two state-space systems"""
+        A1 = [[-2, 0.5, 0], [0.5, -0.3, 0], [0, 0, -0.1]]
+        B1 = [[0.3, -1.3], [0.1, 0.], [1.0, 0.0]]
+        C1 = [[0., 0.1, 0.0], [-0.3, -0.2, 0.0]]
+        D1 = [[0., -0.8], [-0.3, 0.]]
+        A2 = [[-1.]]
+        B2 = [[1.2]]
+        C2 = [[0.5]]
+        D2 = [[0.4]]
+        A3 = [[-2, 0.5, 0, 0], [0.5, -0.3, 0, 0], [0, 0, -0.1, 0], 
+              [0, 0, 0., -1.]]
+        B3 = [[0.3, -1.3, 0], [0.1, 0., 0], [1.0, 0.0, 0], [0., 0, 1.2]]
+        C3 = [[0., 0.1, 0.0, 0.0], [-0.3, -0.2, 0.0, 0.0], [0., 0., 0., 0.5]]
+        D3 = [[0., -0.8, 0.], [-0.3, 0., 0.], [0., 0., 0.4]]
+        sys1 = StateSpace(A1, B1, C1, D1)
+        sys2 = StateSpace(A2, B2, C2, D2)
+        sys3 = StateSpace(A3, B3, C3, D3)
+        sys3c = sys1.append(sys2)
+        np.testing.assert_array_almost_equal(sys3.A, sys3c.A)
+        np.testing.assert_array_almost_equal(sys3.B, sys3c.B)
+        np.testing.assert_array_almost_equal(sys3.C, sys3c.C)
+        np.testing.assert_array_almost_equal(sys3.D, sys3c.D)
+  
+    def testAppendTF(self):
+        """Test appending a state-space system with a tf"""
+        A1 = [[-2, 0.5, 0], [0.5, -0.3, 0], [0, 0, -0.1]]
+        B1 = [[0.3, -1.3], [0.1, 0.], [1.0, 0.0]]
+        C1 = [[0., 0.1, 0.0], [-0.3, -0.2, 0.0]]
+        D1 = [[0., -0.8], [-0.3, 0.]]
+        s = TransferFunction([1, 0], [1])
+        h = 1/(s+1)/(s+2)
+        sys1 = StateSpace(A1, B1, C1, D1)
+        sys2 = _convertToStateSpace(h)
+        sys3c = sys1.append(sys2)
+        np.testing.assert_array_almost_equal(sys1.A, sys3c.A[:3,:3])
+        np.testing.assert_array_almost_equal(sys1.B, sys3c.B[:3,:2])
+        np.testing.assert_array_almost_equal(sys1.C, sys3c.C[:2,:3])
+        np.testing.assert_array_almost_equal(sys1.D, sys3c.D[:2,:2])
+        np.testing.assert_array_almost_equal(sys2.A, sys3c.A[3:,3:])
+        np.testing.assert_array_almost_equal(sys2.B, sys3c.B[3:,2:])
+        np.testing.assert_array_almost_equal(sys2.C, sys3c.C[2:,3:])
+        np.testing.assert_array_almost_equal(sys2.D, sys3c.D[2:,2:])
+        np.testing.assert_array_almost_equal(sys3c.A[:3,3:], np.zeros( (3, 2)) )
+        np.testing.assert_array_almost_equal(sys3c.A[3:,:3], np.zeros( (2, 3)) )
+
 
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
@@ -153,7 +222,7 @@ class TestRss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = matlab.rss(states, inputs, outputs)
+                    sys = matlab.rss(states, outputs, inputs)
                     self.assertEqual(sys.states, states)
                     self.assertEqual(sys.inputs, inputs)
                     self.assertEqual(sys.outputs, outputs)
@@ -164,7 +233,7 @@ class TestRss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = matlab.rss(states, inputs, outputs)
+                    sys = matlab.rss(states, outputs, inputs)
                     p = sys.pole()
                     for z in p:
                         self.assertTrue(z.real < 0)
@@ -187,7 +256,7 @@ class TestDrss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = matlab.drss(states, inputs, outputs)
+                    sys = matlab.drss(states, outputs, inputs)
                     self.assertEqual(sys.states, states)
                     self.assertEqual(sys.inputs, inputs)
                     self.assertEqual(sys.outputs, outputs)
@@ -198,11 +267,11 @@ class TestDrss(unittest.TestCase):
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
                 for outputs in range(1, self.maxIO):
-                    sys = matlab.drss(states, inputs, outputs)
+                    sys = matlab.drss(states, outputs, inputs)
                     p = sys.pole()
                     for z in p:
                         self.assertTrue(abs(z) < 1)
-                
+         
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)

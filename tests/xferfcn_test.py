@@ -5,7 +5,7 @@
 
 import unittest
 import numpy as np
-from control.statesp import StateSpace
+from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
 from control.lti import isdtime
 
@@ -435,13 +435,69 @@ class TestXferFcn(unittest.TestCase):
                 np.testing.assert_array_almost_equal(tfsys.den[i][j], den[i][j])
 
     def testMinreal(self):
-        """Try the minreal function"""
+        """Try the minreal function, and also test easy entry by creation
+        of a Laplace variable s"""
         s = TransferFunction([1, 0], [1])
         h = (s+1)*(s+2.00000000001)/(s+2)/(s**2+s+1)
         hm = h.minreal()
         hr = (s+1)/(s**2+s+1)
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
+
+    def testMinreal2(self):
+        """This one gave a problem, due to poly([]) giving simply 1 
+        instead of numpy.array([1])"""
+        s = TransferFunction([1, 0], [1])
+        G = 6205/(s*(s**2 + 13*s + 1281))
+        Heq = G.feedback(1)
+        H1 = 1/(s+5)
+        H2a = Heq/H1
+        H2b = H2a.minreal()
+        hr = 6205/(s**2+8*s+1241)
+        np.testing.assert_array_almost_equal(H2b.num[0][0], hr.num[0][0])
+        np.testing.assert_array_almost_equal(H2b.den[0][0], hr.den[0][0])
+
+    def testMIMO(self):
+        """Test conversion of a single input, two-output state-space
+        system against the same TF"""
+        s = TransferFunction([1, 0], [1])
+        b0 = 0.2
+        b1 = 0.1
+        b2 = 0.5
+        a0 = 2.3
+        a1 = 6.3
+        a2 = 3.6
+        a3 = 1.0
+        h = (b0 + b1*s + b2*s**2)/(a0 + a1*s + a2*s**2 + a3*s**3)
+        H = TransferFunction([[h.num[0][0]], [(h*s).num[0][0]]], 
+                             [[h.den[0][0]], [h.den[0][0]]])
+        sys = _convertToStateSpace(H)
+        H2 = _convertToTransferFunction(sys)
+        np.testing.assert_array_almost_equal(H.num[0][0], H2.num[0][0])
+        np.testing.assert_array_almost_equal(H.den[0][0], H2.den[0][0])
+        np.testing.assert_array_almost_equal(H.num[1][0], H2.num[1][0])
+        np.testing.assert_array_almost_equal(H.den[1][0], H2.den[1][0])
+
+    def testMatrixMult(self):
+        """MIMO transfer functions should be multiplyable by constant 
+        matrices"""
+        s = TransferFunction([1, 0], [1])
+        b0 = 0.2
+        b1 = 0.1
+        b2 = 0.5
+        a0 = 2.3
+        a1 = 6.3
+        a2 = 3.6
+        a3 = 1.0
+        h = (b0 + b1*s + b2*s**2)/(a0 + a1*s + a2*s**2 + a3*s**3)
+        H = TransferFunction([[h.num[0][0]], [(h*s).num[0][0]]], 
+                             [[h.den[0][0]], [h.den[0][0]]])
+        H1 = (np.matrix([[1.0, 0]])*H).minreal()
+        H2 = (np.matrix([[0, 1.0]])*H).minreal()
+        np.testing.assert_array_almost_equal(H.num[0][0], H1.num[0][0])
+        np.testing.assert_array_almost_equal(H.den[0][0], H1.den[0][0])
+        np.testing.assert_array_almost_equal(H.num[1][0], H2.num[0][0])
+        np.testing.assert_array_almost_equal(H.den[1][0], H2.den[0][0])
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)

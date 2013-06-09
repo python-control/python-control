@@ -12,6 +12,8 @@ timebase()
 timebaseEqual()
 """
 
+from numpy import absolute, real
+
 class Lti:
     """Lti is a parent class to linear time invariant control (LTI) objects.
     
@@ -63,6 +65,12 @@ class Lti:
         self.inputs = inputs
         self.outputs = outputs
         self.dt = dt
+
+    def damp(self):
+        poles = self.pole()
+        wn = absolute(poles)
+        Z = -real(poles)/wn
+        return wn, Z, poles
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):

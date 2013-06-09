@@ -11,8 +11,47 @@
 from __future__ import print_function
 import unittest
 import numpy as np
+from scipy.linalg import eigvals
 import scipy as sp
 from control.matlab import *
+from control.frdata import FRD
+
+# for running these through Matlab or Octave
+'''
+siso_ss1 = ss([1. -2.; 3. -4.], [5.; 7.], [6. 8.], [0])
+
+siso_tf1 = tf([1], [1, 2, 1])
+siso_tf2 = tf([1, 1], [1, 2, 3, 1])
+
+siso_tf3 = tf(siso_ss1)
+siso_ss2 = ss(siso_tf2)
+siso_ss3 = ss(siso_tf3)
+siso_tf4 = tf(siso_ss2)
+
+A =[ 1. -2. 0.  0.;
+     3. -4. 0.  0.;
+     0.  0. 1. -2.;
+     0.  0. 3. -4. ]
+B = [ 5. 0.;
+      7. 0.;
+      0. 5.;
+      0. 7. ]
+C = [ 6. 8. 0. 0.;
+      0. 0. 6. 8. ]
+D = [ 9. 0.;
+      0. 9. ]
+mimo_ss1 = ss(A, B, C, D)
+
+% all boring, since no cross-over
+margin(siso_tf1)
+margin(siso_tf2)
+margin(siso_ss1)
+margin(siso_ss2)
+
+% make a bit better
+[gm, pm, gmc, pmc] = margin(siso_ss2*siso_ss2*2)
+
+'''
 
 class TestMatlab(unittest.TestCase):
     def setUp(self):
@@ -194,6 +233,9 @@ class TestMatlab(unittest.TestCase):
         gm, pm, wg, wp = margin(self.siso_tf2);
         gm, pm, wg, wp = margin(self.siso_ss1);
         gm, pm, wg, wp = margin(self.siso_ss2);
+        gm, pm, wg, wp = margin(self.siso_ss2*self.siso_ss2*2);
+        np.testing.assert_array_almost_equal(
+            [gm, pm, wg, wp], [1.5451, 75.9933, 1.2720, 0.6559], decimal=3)
         
     def testDcgain(self):
         #Create different forms of a SISO system
@@ -274,13 +316,16 @@ class TestMatlab(unittest.TestCase):
         freqresp(self.siso_tf3, w)
 
     def testEvalfr(self):
-        w = 1
-        evalfr(self.siso_ss1, w)
+        w = 1j
+        self.assertEqual(evalfr(self.siso_ss1, w), 44.8-21.4j)
         evalfr(self.siso_ss2, w)
         evalfr(self.siso_ss3, w)
         evalfr(self.siso_tf1, w)
         evalfr(self.siso_tf2, w)
         evalfr(self.siso_tf3, w)
+        np.testing.assert_array_almost_equal(
+            evalfr(self.mimo_ss1, w), 
+            np.array( [[44.8-21.4j, 0.], [0., 44.8-21.4j]]))
 
     def testHsvd(self):
         hsvd(self.siso_ss1)
@@ -309,12 +354,12 @@ class TestMatlab(unittest.TestCase):
     def testRss(self):
         rss(1)
         rss(2)
-        rss(2, 3, 1)
+        rss(2, 1, 3)
 
     def testDrss(self):
         drss(1)
         drss(2)
-        drss(2, 3, 1)
+        drss(2, 1, 3)
 
     def testCtrb(self):
         ctrb(self.siso_ss1.A, self.siso_ss1.B)
@@ -371,6 +416,102 @@ class TestMatlab(unittest.TestCase):
         tfdata_2 = tfdata(self.siso_tf2);
         for i in range(len(tfdata_1)):
             np.testing.assert_array_almost_equal(tfdata_1[i], tfdata_2[i])
+
+    def testDamp(self):
+        A = np.mat('''-0.2  0.06 0    -1;
+               0    0    1     0;
+             -17    0   -3.8   1;
+               9.4  0   -0.4  -0.6''')
+        B = np.mat('''-0.01  0.06;
+               0     0;
+             -32     5.4;
+               2.6  -7''')
+        C = np.eye(4)
+        D = np.zeros((4,2))
+        sys = ss(A, B, C, D)
+        wn, Z, p = damp(sys, False)
+        print (wn)
+        np.testing.assert_array_almost_equal(
+            wn, np.array([4.07381994,   3.28874827,   3.28874827,
+                          1.08937685e-03]))
+        np.testing.assert_array_almost_equal(
+            Z, np.array([1.0, 0.07983139,  0.07983139, 1.0]))
+        
+    def testConnect(self):
+        sys1 = ss("1. -2; 3. -4", "5.; 7", "6, 8", "9.")
+        sys2 = ss("-1.", "1.", "1.", "0.")
+        sys = append(sys1, sys2)
+        Q= np.mat([ [ 1, 2], [2, -1] ]) # basically feedback, output 2 in 1
+        sysc = connect(sys, Q, [2], [1, 2])
+        print(sysc)
+        np.testing.assert_array_almost_equal(
+            sysc.A, np.mat('1 -2 5; 3 -4 7; -6 -8 -10'))
+        np.testing.assert_array_almost_equal(
+            sysc.B, np.mat('0; 0; 1'))
+        np.testing.assert_array_almost_equal(
+            sysc.C, np.mat('6 8 9; 0 0 1'))
+        np.testing.assert_array_almost_equal(
+            sysc.D, np.mat('0; 0'))
+
+    def testConnect2(self):
+        sys = append(ss([[-5, -2.25], [4, 0]], [[2], [0]], 
+                          [[0, 1.125]], [[0]]), 
+                       ss([[-1.6667, 0], [1, 0]], [[2], [0]],
+                          [[0, 3.3333]], [[0]]),
+                       1)
+        Q = [ [ 1, 3], [2, 1], [3, -2]]
+        sysc = connect(sys, Q, [3], [3, 1, 2])
+        np.testing.assert_array_almost_equal(
+            sysc.A, np.mat([[-5, -2.25, 0, -6.6666], 
+                            [4, 0, 0, 0],
+                            [0, 2.25, -1.6667, 0], 
+                            [0, 0, 1, 0]]))
+        np.testing.assert_array_almost_equal(
+            sysc.B, np.mat([[2], [0], [0], [0]]))
+        np.testing.assert_array_almost_equal(
+            sysc.C, np.mat([[0, 0, 0, -3.3333], 
+                            [0, 1.125, 0, 0],
+                            [0, 0, 0, 3.3333]]))
+        np.testing.assert_array_almost_equal(
+            sysc.D, np.mat([[1], [0], [0]]))
+            
+                          
+                                 
+    def testFRD(self):
+        h = tf([1], [1, 2, 2])
+        omega = np.logspace(-1, 2, 10)
+        frd1 = frd(h, omega)
+        assert isinstance(frd1, FRD)
+        frd2 = frd(frd1.fresp[0,0,:], omega)
+        assert isinstance(frd2, FRD)
+
+    def testMinreal(self, verbose=False):
+        """Test a minreal model reduction"""
+        #A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]
+        A = [[-2, 0.5, 0], [0.5, -0.3, 0], [0, 0, -0.1]]
+        #B = [0.3, -1.3; 0.1, 0; 1, 0]
+        B = [[0.3, -1.3], [0.1, 0.], [1.0, 0.0]]
+        #C = [0, 0.1, 0; -0.3, -0.2, 0]
+        C = [[0., 0.1, 0.0], [-0.3, -0.2, 0.0]]
+        #D = [0 -0.8; -0.3 0]
+        D = [[0., -0.8], [-0.3, 0.]]
+        # sys = ss(A, B, C, D)
+        
+        sys = ss(A, B, C, D)
+        sysr = minreal(sys)
+        self.assertEqual(sysr.states, 2)
+        self.assertEqual(sysr.inputs, sys.inputs)
+        self.assertEqual(sysr.outputs, sys.outputs)
+        np.testing.assert_array_almost_equal(
+            eigvals(sysr.A), [-2.136154, -0.1638459])
+
+        s = tf([1, 0], [1])
+        h = (s+1)*(s+2.00000000001)/(s+2)/(s**2+s+1)
+        hm = minreal(h)
+        hr = (s+1)/(s**2+s+1)
+        np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
+        np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
+
 
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):

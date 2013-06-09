@@ -121,7 +121,7 @@ from scipy.signal.ltisys import _default_response_times
 from copy import deepcopy
 import warnings
 from control.lti import Lti     # base class of StateSpace, TransferFunction
-from control. statesp import StateSpace, _rss_generate, _convertToStateSpace, _mimo2siso
+from control. statesp import StateSpace, _rss_generate, _convertToStateSpace, _mimo2simo, _mimo2siso
 from control.lti import isdtime, isctime
 
 # Helper function for checking array-like parameters
@@ -386,15 +386,15 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
 
     return T, yout, xout
 
-def step_response(sys, T=None, X0=0., input=0, output=0, \
-                     transpose = False, **keywords):
+def step_response(sys, T=None, X0=0., input=0, output=None,
+                  transpose = False, **keywords):
     #pylint: disable=W0622
     """Step response of a linear system
     
-    If the system has multiple inputs or outputs (MIMO), one input and one 
-    output have to be selected for the simulation. The parameters `input` 
-    and `output` do this. All other inputs are set to 0, all other outputs 
-    are ignored.
+    If the system has multiple inputs or outputs (MIMO), one input has
+    to be selected for the simulation. Optionally, one output may be
+    selected. The parameters `input` and `output` do this. All other
+    inputs are set to 0, all other outputs are ignored.
     
     For information on the **shape** of parameters `T`, `X0` and 
     return values `T`, `yout` see: :ref:`time-series-convention`
@@ -416,7 +416,8 @@ def step_response(sys, T=None, X0=0., input=0, output=0, \
         Index of the input that will be used in this simulation.
 
     output: int
-        Index of the output that will be used in this simulation.
+        Index of the output that will be used in this simulation. Set to None
+        to not trim outputs
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -447,7 +448,10 @@ def step_response(sys, T=None, X0=0., input=0, output=0, \
     >>> T, yout = step_response(sys, T, X0)
     """
     sys = _convertToStateSpace(sys)
-    sys = _mimo2siso(sys, input, output, warn_conversion=True)
+    if output == None:
+        sys = _mimo2simo(sys, input, warn_conversion=True)
+    else:
+        sys = _mimo2siso(sys, input, output, warn_conversion=True)
     if T is None:
         if isctime(sys):
             T = _default_response_times(sys.A, 100)
@@ -459,13 +463,13 @@ def step_response(sys, T=None, X0=0., input=0, output=0, \
     U = np.ones_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, 
-                                    transpose=transpose, **keywords)
+                                     transpose=transpose, **keywords)
 
     return T, yout
 
 
-def initial_response(sys, T=None, X0=0., input=0, output=0, transpose=False,
-                    **keywords):
+def initial_response(sys, T=None, X0=0., input=0, output=None, transpose=False,
+                     **keywords):
     #pylint: disable=W0622
     """Initial condition response of a linear system
     
@@ -494,7 +498,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=0, transpose=False,
         Index of the input that will be used in this simulation.
 
     output: int
-        Index of the output that will be used in this simulation.
+        Index of the output that will be used in this simulation. Set to None
+        to not trim outputs
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -525,7 +530,10 @@ def initial_response(sys, T=None, X0=0., input=0, output=0, transpose=False,
     >>> T, yout = initial_response(sys, T, X0)
     """
     sys = _convertToStateSpace(sys) 
-    sys = _mimo2siso(sys, input, output, warn_conversion=True)
+    if output == None:
+        sys = _mimo2simo(sys, input, warn_conversion=False)
+    else:
+        sys = _mimo2siso(sys, input, output, warn_conversion=False)
 
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
@@ -534,11 +542,11 @@ def initial_response(sys, T=None, X0=0., input=0, output=0, transpose=False,
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
-                                    **keywords)
+                                     **keywords)
     return T, yout
 
 
-def impulse_response(sys, T=None, X0=0., input=0, output=0,
+def impulse_response(sys, T=None, X0=0., input=0, output=None,
                     transpose=False, **keywords):
     #pylint: disable=W0622
     """Impulse response of a linear system
@@ -568,7 +576,8 @@ def impulse_response(sys, T=None, X0=0., input=0, output=0,
         Index of the input that will be used in this simulation.
 
     output: int
-        Index of the output that will be used in this simulation.
+        Index of the output that will be used in this simulation. Set to None
+        to not trim outputs
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -599,7 +608,10 @@ def impulse_response(sys, T=None, X0=0., input=0, output=0,
     >>> T, yout = impulse_response(sys, T, X0) 
     """
     sys = _convertToStateSpace(sys) 
-    sys = _mimo2siso(sys, input, output, warn_conversion=True)
+    if output == None:
+        sys = _mimo2simo(sys, input, warn_conversion=True)
+    else:
+        sys = _mimo2siso(sys, input, output, warn_conversion=True)
     
     # System has direct feedthrough, can't simulate impulse response numerically
     if np.any(sys.D != 0) and isctime(sys):

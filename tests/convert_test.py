@@ -57,7 +57,7 @@ class TestConvert(unittest.TestCase):
                 for outputs in range(1, self.maxIO):
                     # start with a random SS system and transform to TF then
                     # back to SS, check that the matrices are the same.
-                    ssOriginal = matlab.rss(states, inputs, outputs)
+                    ssOriginal = matlab.rss(states, outputs, inputs)
                     if (verbose):
                         self.printSys(ssOriginal, 1)
 

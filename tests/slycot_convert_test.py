@@ -37,7 +37,7 @@ class TestSlycot(unittest.TestCase):
             for inputs in range(1, self.maxI+1):
                 for outputs in range(1, self.maxO+1):
                     for testNum in range(self.numTests):
-                        ssOriginal = matlab.rss(states, inputs, outputs)
+                        ssOriginal = matlab.rss(states, outputs, inputs)
                         if (verbose):
                             print('====== Original SS ==========')
                             print(ssOriginal)
@@ -82,7 +82,7 @@ class TestSlycot(unittest.TestCase):
             for testNum in range(self.numTests):                       
                 for inputs in range(1,1):
                     for outputs in range(1,1):       
-                        ssOriginal = matlab.rss(states, inputs, outputs)
+                        ssOriginal = matlab.rss(states, outputs, inputs)
                         
                         tfOriginal_Actrb, tfOriginal_Bctrb, tfOriginal_Cctrb, tfOrigingal_nctrb, tfOriginal_index,\
                             tfOriginal_dcoeff, tfOriginal_ucoeff = tb04ad(states,inputs,outputs,\

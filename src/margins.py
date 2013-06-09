@@ -53,15 +53,37 @@ $Id$
 import numpy as np
 import control.xferfcn as xferfcn
 from control.freqplot import bode
-from control.lti import isdtime
+from control.lti import isdtime, issiso
+import control.frdata as frdata
+import scipy as sp
 
-# gain and phase margins
-# contributed by Sawyer B. Fuller <minster@caltech.edu>
-#! TODO - need to add unit test functions
-def stability_margins(sysdata, deg=True):
+# helper functions for stability_margins
+def _polyimsplit(pol):
+    """split a polynomial with (iw) applied into a real and an
+       imaginary part with w applied"""
+    rpencil = np.zeros_like(pol)
+    ipencil = np.zeros_like(pol)
+    rpencil[-1::-4] = 1.
+    rpencil[-3::-4] = -1.
+    ipencil[-2::-4] = 1.
+    ipencil[-4::-4] = -1.
+    return pol * rpencil, pol*ipencil
+
+def _polysqr(pol):
+    """return a polynomial squared"""
+    return np.polymul(pol, pol)
+
+# Took the framework for the old function by 
+# Sawyer B. Fuller <minster@caltech.edu>, removed a lot of the innards
+# and replaced with analytical polynomial functions for Lti systems.
+#
+# idea for the frequency data solution copied/adapted from
+# https://github.com/alchemyst/Skogestad-Python/blob/master/BODE.py
+# Rene van Paassen <rene.vanpaassen@gmail.com>
+def stability_margins(sysdata, deg=True, returnall=False):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
-
+    
     Usage
     -----
     gm, pm, sm, wg, wp, ws = stability_margins(sysdata, deg=True)
@@ -76,86 +98,117 @@ def stability_margins(sysdata, deg=True):
             bode frequency response data 
     deg=True: boolean  
         If true, all input and output phases in degrees, else in radians
-        
+    returnall=False: boolean
+        If true, return all margins found. Note that for frequency data or
+        FRD systems, only one margin is found and returned. 
+       
     Returns
     -------
-    gm, pm, sm, wg, wp, ws: float
+    gm, pm, sm, wg, wp, ws: float or array_like
         Gain margin gm, phase margin pm, stability margin sm, and 
         associated crossover
         frequencies wg, wp, and ws of SISO open-loop. If more than
         one crossover frequency is detected, returns the lowest corresponding
         margin. 
-    """
-    #TODO do this precisely without the effects of discretization of frequencies?
-    #TODO assumes SISO
-    #TODO unit tests, margin plot
-
-    if (not getattr(sysdata, '__iter__', False)):
-        sys = sysdata
-
-        # TODO: implement for discrete time systems
-        if (isdtime(sys, strict=True)):
-            raise NotImplementedError("Function not implemented in discrete time")
-
-        mag, phase, omega = bode(sys, deg=deg, Plot=False)
-    elif len(sysdata) == 3:
-        # TODO: replace with FRD object type?
-        mag, phase, omega = sysdata
-    else: 
-        raise ValueError("Margin sysdata must be either a linear system or a 3-sequence of mag, phase, omega.")
-        
-    if deg:
-        cycle = 360. 
-        crossover = 180. 
-    else:
-        cycle = 2 * np.pi
-        crossover = np.pi
-        
-    wrapped_phase = -np.mod(phase, cycle)
+        When requesting all margins, the return values are array_like, 
+        and all margins are returns for linear systems not equal to FRD
+        """
     
-    # phase margin from minimum phase among all gain crossovers
-    neg_mag_crossings_i = np.nonzero(np.diff(mag < 1) > 0)[0]
-    mag_crossings_p = wrapped_phase[neg_mag_crossings_i]
-    if len(neg_mag_crossings_i) == 0:
-        if mag[0] < 1: # gain always less than one
-            wp = np.nan
-            pm = np.inf
-        else: # gain always greater than one
-            print("margin: no magnitude crossings found")
-            wp = np.nan
-            pm = np.nan
-    else:
-        min_mag_crossing_i = neg_mag_crossings_i[np.argmin(mag_crossings_p)]
-        wp = omega[min_mag_crossing_i]
-        pm = crossover + phase[min_mag_crossing_i] 
-        if pm < 0:
-            print("warning: system unstable: negative phase margin")
-    
-    # gain margin from minimum gain margin among all phase crossovers
-    neg_phase_crossings_i = np.nonzero(np.diff(wrapped_phase < -crossover) > 0)[0]
-    neg_phase_crossings_g = mag[neg_phase_crossings_i]
-    if len(neg_phase_crossings_i) == 0:
-        wg = np.nan
-        gm = np.inf
-    else:
-        min_phase_crossing_i = neg_phase_crossings_i[
-            np.argmax(neg_phase_crossings_g)]
-        wg = omega[min_phase_crossing_i]
-        gm = abs(1/mag[min_phase_crossing_i])
-        if gm < 1: 
-            print("warning: system unstable: gain margin < 1")
+    try:
+        if isinstance(sysdata, frdata.FRD):
+            sys = frdata.FRD(sysdata, smooth=True) 
+        elif isinstance(sysdata, xferfcn.TransferFunction):
+            sys = sysdata
+        elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
+            mag, phase, omega = sysdata
+            sys = frdata.FRD(mag*np.exp((1j/360.)*phase), omega, smooth=True)
+        else:
+            sys = xferfcn._convertToTransferFunction(sysdata)
+    except Exception, e:
+        print (e)
+        raise ValueError("Margin sysdata must be either a linear system or "
+                         "a 3-sequence of mag, phase, omega.")
 
-    # stability margin from minimum abs distance from -1 point
-    if deg:
-        phase_rad = phase * np.pi / 180.
-    else:
-        phase_rad = phase
-    L = mag * np.exp(1j * phase_rad) # complex loop response to -1 pt
-    min_Lplus1_i = np.argmin(np.abs(L + 1))
-    sm = np.abs(L[min_Lplus1_i] + 1)
-    ws = phase[min_Lplus1_i]
+    # calculate gain of system
+    if isinstance(sys, xferfcn.TransferFunction):
+        
+        # check for siso
+        if not issiso(sys):
+            raise ValueError("Can only do margins for SISO system")
+        
+        # real and imaginary part polynomials in omega:
+        rnum, inum = _polyimsplit(sys.num[0][0])
+        rden, iden = _polyimsplit(sys.den[0][0])
 
-    return gm, pm, sm, wg, wp, ws 
+        # test imaginary part of tf == 0, for phase crossover/gain margins
+        test_w_180 = np.polyadd(np.polymul(inum, rden), np.polymul(rnum, -iden))
+        w_180 = np.roots(test_w_180)
+        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 > 0.)])
+        w_180.sort()
+
+        # test magnitude is 1 for gain crossover/phase margins
+        test_wc = np.polysub(np.polyadd(_polysqr(rnum), _polysqr(inum)), 
+                             np.polyadd(_polysqr(rden), _polysqr(iden)))
+        wc = np.roots(test_wc)
+        wc = np.real(wc[(np.imag(wc) == 0) * (wc > 0.)])
+        wc.sort()
+
+        # stability margin was a bitch to elaborate, relies on magnitude to
+        # point -1, then take the derivative. Second derivative needs to be >0
+        # to have a minimum
+        test_wstabn = np.polyadd(_polysqr(rnum), _polysqr(inum))
+        test_wstabd = np.polyadd(_polysqr(np.polyadd(rnum,rden)), 
+                                 _polysqr(np.polyadd(inum,iden)))
+        test_wstab = np.polysub(
+            np.polymul(np.polyder(test_wstabn),test_wstabd), 
+            np.polymul(np.polyder(test_wstabd),test_wstabn))
+
+        # find the solutions
+        wstab = np.roots(test_wstab)
+
+        # and find the value of the 2nd derivative there, needs to be positive
+        wstabplus = np.polyval(np.polyder(test_wstab), wstab)
+        wstab = np.real(wstab[(np.imag(wstab) == 0) * (wstab > 0.) *
+                              (np.abs(wstabplus) > 0.)])
+        wstab.sort()
+
+    else:
+        # a bit coarse, have the interpolated frd evaluated again
+        def mod(w):
+            """to give the function to calculate |G(jw)| = 1"""
+            return [np.abs(sys.evalfr(w[0])[0][0]) - 1]
+
+        def arg(w):
+            """function to calculate the phase angle at -180 deg"""
+            return [np.angle(sys.evalfr(w[0])[0][0]) + np.pi]
+
+        def dstab(w):
+            """function to calculate the distance from -1 point"""
+            return np.abs(sys.evalfr(w[0])[0][0] + 1.)
+
+        # how to calculate the frequency at which |G(jw)| = 1
+        wc = np.array([sp.optimize.fsolve(mod, sys.omega[0])])[0]
+        w_180 = np.array([sp.optimize.fsolve(arg, sys.omega[0])])[0]
+        wstab = np.real(
+            np.array([sp.optimize.fmin(dstab, sys.omega[0], disp=0)])[0])
+
+    # margins, as iterables, converted frdata and xferfcn calculations to
+    # vector for this
+    PM = np.angle(sys.evalfr(wc)[0][0], deg=True) + 180
+    GM = 1/(np.abs(sys.evalfr(w_180)[0][0]))
+    SM = np.abs(sys.evalfr(wstab)[0][0]+1)
+
+    if returnall:
+        return GM, PM, SM, wc, w_180, wstab
+    else:
+        return (
+            (GM.shape[0] or None) and GM[0], 
+            (PM.shape[0] or None) and PM[0], 
+            (SM.shape[0] or None) and SM[0], 
+            (wc.shape[0] or None) and wc[0],
+            (w_180.shape[0] or None) and w_180[0],
+            (wstab.shape[0] or None) and wstab[0])
+
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
 #! TODO - need to add test functions

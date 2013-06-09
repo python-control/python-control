@@ -89,6 +89,7 @@ import control.margins as margins
 from control.statesp import StateSpace, _rss_generate, _convertToStateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
 from control.lti import Lti #base class of StateSpace, TransferFunction
+from control.frdata import FRD
 from control.dtime import sample_system
 from control.exception import ControlArgument
 
@@ -96,11 +97,11 @@ from control.exception import ControlArgument
 from control.ctrlutil import unwrap
 from control.freqplot import nyquist, gangof4
 from control.nichols import nichols
-from control.bdalg import series, parallel, negate, feedback
+from control.bdalg import series, parallel, negate, feedback, append, connect
 from control.pzmap import pzmap
 from control.statefbk import ctrb, obsv, gram, place, lqr
 from control.delay import pade
-from control.modelsimp import hsvd, balred, modred
+from control.modelsimp import hsvd, balred, modred, minreal
 from control.mateqn import lyap, dlyap, dare, care
 
 __doc__ += r"""
@@ -125,7 +126,7 @@ Creating linear models
 \*  :func:`ss`                  create state-space (SS) models
 \   dss                         create descriptor state-space models
 \   delayss                     create state-space models with delayed terms
-\   frd                         create frequency response data (FRD) models
+\*  :func:`frd`                 create frequency response data (FRD) models
 \   lti/exp                     create pure continuous-time delays (TF and
                                 ZPK only)
 \   filt                        specify digital filters
@@ -156,7 +157,7 @@ Conversions
 \*  :func:`tf`                  conversion to transfer function
 \   zpk                         conversion to zero/pole/gain
 \*  :func:`ss`                  conversion to state space
-\   frd                         conversion to frequency data
+\*  :func:`frd`                 conversion to frequency data
 \   c2d                         continuous to discrete conversion
 \   d2c                         discrete to continuous conversion
 \   d2d                         resample discrete-time model
@@ -174,7 +175,7 @@ System interconnections
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\   append                      group LTI models by appending inputs/outputs
+\*  :func:`~bdalg.append`       group LTI models by appending inputs/outputs
 \*  :func:`~bdalg.parallel`     connect LTI models in parallel 
                                 (see also overloaded ``+``)
 \*  :func:`~bdalg.series`       connect LTI models in series 
@@ -200,7 +201,7 @@ System gain and dynamics
 \   lti/order                   model order (number of states)
 \*  :func:`~pzmap.pzmap`        pole-zero map (TF only)
 \   lti/iopzmap                 input/output pole-zero map
-\   damp                        natural frequency, damping of system poles
+\*  :func:`damp`                natural frequency, damping of system poles
 \   esort                       sort continuous poles by real part
 \   dsort                       sort discrete poles by magnitude
 \   lti/stabsep                 stable/unstable decomposition
@@ -243,7 +244,7 @@ Model simplification
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\   minreal                     minimal realization; pole/zero cancellation
+\*  :func:`~modelsimp.minreal`  minimal realization; pole/zero cancellation
 \   ss/sminreal                 structurally minimal realization
 \*  :func:`~modelsimp.hsvd`     hankel singular values (state contributions)
 \*  :func:`~modelsimp.balred`   reduced-order approximations of LTI models
@@ -569,6 +570,42 @@ TransferFunction object.  It is %s." % type(sys))
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
+def frd(*args):
+    '''
+    Construct a Frequency Response Data model, or convert a system
+
+    frd models store the (measured) frequency response of a system.
+
+    This function can be called in different ways:
+
+    ``frd(response, freqs)``
+        Create an frd model with the given response data, in the form of
+        complex response vector, at matching frequency freqs [in rad/s]
+
+    ``frd(sys, freqs)``
+        Convert an Lti system into an frd model with data at frequencies
+        freqs. 
+
+    Parameters
+    ----------
+    response: array_like, or list
+        complex vector with the system response
+    freq: array_lik or lis
+        vector with frequencies
+    sys: Lti (StateSpace or TransferFunction)
+        A linear system
+
+    Returns
+    -------
+    sys: FRD
+        New frequency response system
+
+    See Also
+    --------
+    ss, tf
+    '''
+    return FRD(*args)
+
 
 def ss2tf(*args):
     """
@@ -714,7 +751,7 @@ object.")
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
-def rss(states=1, inputs=1, outputs=1):
+def rss(states=1, outputs=1, inputs=1):
     """
     Create a stable **continuous** random state space object.
     
@@ -751,7 +788,7 @@ def rss(states=1, inputs=1, outputs=1):
     
     return _rss_generate(states, inputs, outputs, 'c')
     
-def drss(states=1, inputs=1, outputs=1):
+def drss(states=1, outputs=1, inputs=1):
     """
     Create a stable **discrete** random state space object.
     
@@ -852,16 +889,20 @@ def zero(sys):
 
     return sys.zero()
 
-def evalfr(sys, omega):
+def evalfr(sys, x):
     """
-    Evaluate the transfer function of an LTI system at an angular frequency.
+    Evaluate the transfer function of an LTI system for a single complex 
+    number x.
+    
+    To evaluate at a frequency, enter x = omega*j, where omega is the 
+    frequency in radians
 
     Parameters
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    omega: scalar
-        Frequency 
+    x: scalar
+        Complex number 
 
     Returns
     -------
@@ -880,14 +921,16 @@ def evalfr(sys, omega):
     Examples
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> evalfr(sys, 1.)
+    >>> evalfr(sys, 1j)
     array([[ 44.8-21.4j]])
     >>> # This is the transfer function matrix evaluated at s = i.
 
     .. todo:: Add example with MIMO system
     """
-
-    return sys.evalfr(omega)
+    if issiso(sys):
+        return sys.horner(x)[0][0]
+    return sys.horner(x)
+        
 
 def freqresp(sys, omega): 
     """
@@ -1057,10 +1100,11 @@ def margin(*args):
 
     Returns
     -------
-    gm, pm, wg, wp : float
-        Gain margin gm, phase margin pm (in deg), and associated crossover
-        frequencies wg and wp (in rad/sec) of SISO open-loop. If more than
-        one crossover frequency is detected, returns the lowest
+    gm, pm, Wcg, Wcp : float
+        Gain margin gm, phase margin pm (in deg), gain crossover frequency 
+        (corresponding to phase margin) and phase crossover frequency
+        (corresponding to gain margin), in rad/sec of SISO open-loop.
+        If more than one crossover frequency is detected, returns the lowest
         corresponding margin.
 
     Examples
@@ -1083,7 +1127,7 @@ def margin(*args):
         raise ValueError("Margin needs 1 or 3 arguments; received %i." 
             % len(args))
             
-    return margin[0], margin[1], margin[3], margin[4]
+    return margin[0], margin[1], margin[4], margin[3]
 
 def dcgain(*args):
     '''
@@ -1139,10 +1183,48 @@ def dcgain(*args):
     gain = sys.D - sys.C * sys.A.I * sys.B
     return gain
 
+def damp(sys, doprint=True):
+    '''
+    Compute natural frequency, damping and poles of a system
+    
+    The function takes 1 or 2 parameters
+
+    Parameters
+    ----------
+    sys: Lti (StateSpace or TransferFunction)
+        A linear system object
+    doprint: 
+        if true, print table with values
+
+    Returns
+    -------
+    wn: array
+        Natural frequencies of the poles
+    damping: array
+        Damping values
+    poles: array
+        Pole locations
+
+    See Also
+    --------
+    pole        
+    '''
+    wn, damping, poles = sys.damp()
+    if doprint:
+        print('_____Eigenvalue______ Damping___ Frequency_')
+        for p, d, w in zip(poles, damping, wn) :
+            if abs(p.imag) < 1e-12:
+                print("%10.4g            %10.4g %10.4g" % 
+                      (p.real, 1.0, -p.real)) 
+            else:
+                print("%10.4g%+10.4gj %10.4g %10.4g" % 
+                      (p.real, p.imag, d, w)) 
+    return wn, damping, poles
+
 # Simulation routines 
 # Call corresponding functions in timeresp, with arguments transposed
 
-def step(sys, T=None, X0=0., input=0, output=0, **keywords):
+def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     '''
     Step response of a linear system
     
@@ -1192,7 +1274,7 @@ def step(sys, T=None, X0=0., input=0, output=0, **keywords):
 
     Examples
     --------
-    >>> T, yout = step(sys, T, X0)
+    >>> yout, T = step(sys, T, X0)
     '''
     T, yout = timeresp.step_response(sys, T, X0, input, output, 
                                    transpose = True, **keywords)
@@ -1405,3 +1487,4 @@ def c2d(sysc, Ts, method):
     # TODO: add docstring
     #  Call the sample_system() function to do the work
     return sample_system(sysc, Ts, method)
+

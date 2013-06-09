@@ -89,6 +89,12 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
+        #Test MIMO system, as mimo, and don't trim outputs
+        sys = self.mimo_ss1
+        _t, yy = impulse_response(sys, T=t, input=0)
+        np.testing.assert_array_almost_equal(
+            yy, np.vstack((youttrue, np.zeros_like(youttrue))), decimal=4)
+
     def test_initial_response(self):
         #Test SISO system
         sys = self.siso_ss1
@@ -107,6 +113,11 @@ class TestTimeresp(unittest.TestCase):
         _t, y_11 = initial_response(sys, T=t, X0=x0, input=1, output=1)
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
+        
+        # test MIMO system without trimming
+        _t, yy = initial_response(sys, T=t, X0=x0)
+        np.testing.assert_array_almost_equal(yy, np.vstack((y_00, y_11)), 
+                                             decimal=4)
 
     def test_forced_response(self):
         t = np.linspace(0, 1, 10)

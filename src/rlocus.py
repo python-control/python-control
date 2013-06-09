@@ -50,9 +50,11 @@ from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
 import control.xferfcn as xferfcn
+from functools import partial
 
 # Main function: compute a root locus diagram
-def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
+def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True, 
+               PrintGain=True):
     """Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
     of kvect.
@@ -65,7 +67,9 @@ def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
         List of gains to use in computing diagram
     Plot : boolean (default = True)
         If True, plot magnitude and phase
-
+    PrintGain: boolean (default = True)
+        If True, report mouse clicks when close to the root-locus branches,
+        calculate gain, damping and print
     Return values
     -------------
     rlist : list of computed root locations
@@ -80,6 +84,10 @@ def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True):
 
     # Create the plot
     if (Plot):
+        f = pylab.figure()
+        if PrintGain:
+            cid = f.canvas.mpl_connect(
+                'button_release_event', partial(_RLFeedbackClicks, sys=sys))
         ax = pylab.axes();
 
         # plot open loop poles
@@ -165,3 +173,12 @@ def _RLSortRoots(sys, mymat):
                 sorted[n,ind] = elem
         prevrow = sorted[n,:]
     return sorted
+
+def _RLFeedbackClicks(event, sys):
+    """Print root-locus gain feedback for clicks on the root-locus plot
+    """
+    s = complex(event.xdata, event.ydata)
+    K = -1./sys.horner(s)
+    if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
+        print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
+              (s.real, s.imag, K.real, -1*s.real/abs(s)))

@@ -27,6 +27,7 @@ StateSpace.pole
 StateSpace.zero
 StateSpace.feedback
 StateSpace.returnScipySignalLti
+StateSpace.append
 _convertToStateSpace
 _rss_generate
 
@@ -338,9 +339,22 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             B = self.B * other;
             D = self.D * other;
             return StateSpace(A, B, C, D, self.dt)
+        
+        # is lti, and convertible?
+        if isinstance(other, Lti):
+            return _convertToStateSpace(other) * self
 
-        else:
-            raise TypeError("can't interconnect systems")
+        # try to treat this as a matrix
+        try:
+            X = matrix(other)
+            C = X * self.C
+            D = X * self.D
+            return StateSpace(self.A, self.B, C, D, self.dt)
+
+        except Exception, e:
+            print(e)
+            pass
+        raise TypeError("can't interconnect systems")
 
     # TODO: __div__ and __rdiv__ are not written yet.
     def __div__(self, other):
@@ -370,10 +384,16 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         else:
             s = omega * 1.j
 
-        fresp = self.C * solve(s * eye(self.states) - self.A,
-            self.B) + self.D
+        return self.horner(s)
 
-        return array(fresp)
+    def horner(self, s):
+        '''Evaluate the systems's transfer function for a complex variable
+        
+        Returns a matrix of values evaluated at complex variable s.
+        '''
+        resp = self.C * solve(s * eye(self.states) - self.A,
+                              self.B) + self.D
+        return array(resp)
 
     # Method for generating the frequency response of the system
     # TODO: add discrete time check
@@ -475,6 +495,17 @@ inputs/outputs for feedback.")
 
         return StateSpace(A, B, C, D, dt)
 
+    def minreal(self, tol=None):
+        """Calculate a minimal realization, removes unobservable and
+        uncontrollable states"""
+        try:
+            from slycot import tb01pd
+            A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs, 
+                                    self.A, self.B, self.C, tol=tol)
+            return StateSpace(A[:nr,:nr], B[:nr,:], C[:,:nr], self.D)
+        except ImportError:
+            raise TypeError("minreal requires slycot tb01pd")
+       
     # TODO: add discrete time check
     def returnScipySignalLti(self):
         """Return a list of a list of scipy.signal.lti objects.
@@ -496,6 +527,33 @@ inputs/outputs for feedback.")
                                 asarray(self.C[i, :]), asarray(self.D[i, j]))
 
         return out
+
+    def append(self, other):
+        """Append a second model to the present model. The second
+        model is converted to state-space if necessary, inputs and
+        outputs are appended and their order is preserved"""
+        if not isinstance(other, StateSpace):
+            other = _convertToStateSpace(other)
+        
+        if self.dt != other.dt:
+            raise ValueError("Systems must have the same time step")
+
+        n = self.states + other.states
+        m = self.inputs + other.inputs
+        p = self.outputs + other.outputs
+        A = zeros( (n, n) )
+        B = zeros( (n, m) )
+        C = zeros( (p, n) )
+        D = zeros( (p, m) )
+        A[:self.states,:self.states] = self.A
+        A[self.states:,self.states:] = other.A
+        B[:self.states,:self.inputs] = self.B
+        B[self.states:,self.inputs:] = other.B
+        C[:self.outputs,:self.states] = self.C
+        C[self.outputs:,self.states:] = other.C
+        D[:self.outputs,:self.inputs] = self.D
+        D[self.outputs:,self.inputs:] = other.D
+        return StateSpace(A, B, C, D, self.dt)
 
 # TODO: add discrete time check
 def _convertToStateSpace(sys, **kw):
@@ -757,3 +815,51 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
         
     return sys
 
+def _mimo2simo(sys, input, warn_conversion=False):
+    #pylint: disable=W0622
+    """
+    Convert a MIMO system to a SIMO system. (Convert a system with multiple
+    inputs and/or outputs, to a system with a single input but possibly
+    multiple outputs.)
+    
+    The input that is used in the SIMO system can be selected with the
+    parameter ``input``. All other inputs are set to 0, all other
+    outputs are ignored.
+    
+    If ``sys`` is already a SIMO system, it will be returned unaltered. 
+    
+    Parameters
+    ----------
+    sys: StateSpace
+        Linear (MIMO) system that should be converted.
+    input: int
+        Index of the input that will become the SIMO system's only input.
+    warn_conversion: bool
+        If True: print a warning message when sys is a MIMO system. 
+        Warn that a conversion will take place.
+        
+    Returns:
+    --------
+    sys: StateSpace
+        The converted (SIMO) system.
+    """
+    if not (isinstance(input, int)):
+        raise TypeError("Parameter ``input`` be an integer number.")
+    if not (0 <= input < sys.inputs):
+        raise ValueError("Selected input does not exist. "
+                         "Selected input: {sel}, "
+                         "number of system inputs: {ext}."
+                         .format(sel=input, ext=sys.inputs))
+    #Convert sys to SISO if necessary
+    if sys.inputs > 1:
+        if warn_conversion:
+            warnings.warn("Converting MIMO system to SIMO system. "
+                          "Only input {i} is used."
+                          .format(i=input))
+        # $X = A*X + B*U
+        #  Y = C*X + D*U
+        new_B = sys.B[:, input]
+        new_D = sys.D[:, input]
+        sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt)
+        
+    return sys
