@@ -33,7 +33,10 @@ Slycot
 
 Routines from the Slycot wrapper are used for providing the
 functionality of several routines for state-space, transfer functions
-and robust control. The Slycot wrapper can be found at:
+and robust control. Many parts of python-control will still work
+without slycot, but some functionality is limited or absent, and
+installation of Slycot is definitely recommended.  The Slycot wrapper
+can be found at:
 
 https://github.com/repagh/Slycot
 
