@@ -27,3 +27,15 @@ from the source distribution directory (note: doesn't yet work in python
   nosetests
 
 which gives a somewhat cleaner output (and works in python 3.x)
+
+Slycot
+------
+
+Routines from the Slycot wrapper are used for providing the
+functionality of several routines for state-space, transfer functions
+and robust control. The Slycot wrapper can be found at:
+
+https://github.com/repagh/Slycot
+
+(was forked from https://github.com/avventi/Slycot, but
+development/merging appear to have stopped there for now)
