@@ -1,3 +1,9 @@
+2013-06-10  Richard Murray  <murray@altura-2.local>
+
+	* src/xferfcn.py (TransferFunction.horner): small fix to docstring
+
+	* src/freqplot.py (nyquist_plot): small fix to docstring
+
 2013-06-09  Richard Murray  <murray@altura-2.local>
 
 	* tests/bdalg_test.py (TestFeedback.testScalarSS)

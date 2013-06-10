@@ -204,7 +204,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
     Examples
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> real, imag, freq = nyquist(sys)
+    >>> real, imag, freq = nyquist_plot(sys)
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):

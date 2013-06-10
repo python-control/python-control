@@ -545,10 +545,10 @@ implemented only for SISO systems.")
         return self.horner(s)
 
     def horner(self, s):
-        '''Evaluate the systems's transfer function for a complex variable
+        """Evaluate the systems's transfer function for a complex variable
         
         Returns a matrix of values evaluated at complex variable s.
-        '''
+        """
 
         # Preallocate the output.
         if getattr(s, '__iter__', False):
