@@ -89,6 +89,7 @@ import control.margins as margins
 from control.statesp import StateSpace, _rss_generate, _convertToStateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
 from control.lti import Lti #base class of StateSpace, TransferFunction
+from control.lti import issiso
 from control.frdata import FRD
 from control.dtime import sample_system
 from control.exception import ControlArgument
