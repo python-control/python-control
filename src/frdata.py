@@ -72,13 +72,10 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 """
 
 # External function declarations
-from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
-    polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, inner, \
-    real, imag, matrix, absolute, eye, linalg, pi, where
+from numpy import angle, array, empty, ones, \
+    real, imag, matrix, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
-from copy import deepcopy
 from control.lti import Lti
-import control.statesp as statesp
 
 class FRD(Lti):
     """The FRD class represents (measured?) frequency response 
@@ -88,12 +85,14 @@ class FRD(Lti):
     throughout the python-control library to represent systems in frequency
     response data form. 
     
-    The main data members are 'omega' and 'frdata'. omega is a single 
-    array with the frequency points of the response. frdata is a list of arrays
-    containing frequency points (in rad/s) and gain data as a complex number. 
+    The main data members are 'omega' and 'fresp'. omega is a 1D 
+    array with the frequency points of the response. fresp is a 3D array,
+    with the first dimension corresponding to the outputs of the FRD, 
+    the second dimension corresponding to the inputs, and the 3rd dimension 
+    corresponding to the frequency points in omega.
     For example,
 
-    >>> frdata[2][5] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
+    >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
     
     means that the frequency response from the 6th input to the 3rd
     output at the frequencies defined in omega is set to the array
@@ -118,6 +117,8 @@ class FRD(Lti):
 
         To construct frequency response data for an existing Lti
         object, other than an FRD, call FRD(sys, omega)
+
+        
 
         """
         smooth = kwargs.get('smooth', False)
@@ -165,10 +166,10 @@ class FRD(Lti):
 
         # create interpolation functions
         if smooth:
-            self.ifunc = empty((self.fresp.shape[1], self.fresp.shape[0]), 
+            self.ifunc = empty((self.fresp.shape[0], self.fresp.shape[1]), 
                                dtype=tuple)
-            for i in range(self.fresp.shape[1]):
-                for j in range(self.fresp.shape[0]):
+            for i in range(self.fresp.shape[0]):
+                for j in range(self.fresp.shape[1]):
                     self.ifunc[i,j],u = splprep(
                         u=self.omega, x=[real(self.fresp[i, j, :]), 
                                          imag(self.fresp[i, j, :])], 
@@ -245,70 +246,70 @@ second has %i." % (self.outputs, other.outputs))
         
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex)):
-            other = _convertToFRD(other, inputs=self.inputs, 
-                outputs=self.inputs, omega=self.omega)
+            return FRD(self.fresp * other, self.omega)
         else:
             other = _convertToFRD(other, omega=self.omega)
             
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
-            raise ValueError("C = A * B: A has %i column(s) (input(s)), but B \
-has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
+            raise ValueError("H = G1*G2: input-output size mismatch"
+                " G1 has %i input(s), G2 has %i output(s)." %
+                (self.inputs, other.outputs))
 
         inputs = other.inputs
         outputs = self.outputs
-        
-        # Preallocate the numerator and denominator of the sum.
-        num = [[[0] for j in range(inputs)] for i in range(outputs)]
-        den = [[[1] for j in range(inputs)] for i in range(outputs)]
-        
-        # Temporary storage for the summands needed to find the (i, j)th element
-        # of the product.
-        num_summand = [[] for k in range(self.inputs)]
-        den_summand = [[] for k in range(self.inputs)]
-        
-        for i in range(outputs): # Iterate through rows of product.
-            for j in range(inputs): # Iterate through columns of product.
-                for k in range(self.inputs): # Multiply & add.
-                    num_summand[k] = polymul(self.num[i][k], other.num[k][j])
-                    den_summand[k] = polymul(self.den[i][k], other.den[k][j])
-                    num[i][j], den[i][j] = _addSISO(num[i][j], den[i][j],
-                        num_summand[k], den_summand[k])
-        
-        return FRD(num, den)
+        fresp = empty((outputs, inputs, len(self.omega)), 
+                      dtype=self.fresp.dtype)
+        for i in range(len(self.omega)):        
+            fresp[:,:,i] = dot(self.fresp[:,:,i], other.fresp[:,:,i])
+        return FRD(fresp, self.omega)
 
     def __rmul__(self, other): 
-        """Right multiply two LTI objects (serial connection)."""
+        """Right Multiply two LTI objects (serial connection)."""
         
-        return self * other
+        # Convert the second argument to an frd function.
+        if isinstance(other, (int, float, complex)):
+            return FRD(self.fresp * other, self.omega)
+        else:
+            other = _convertToFRD(other, omega=self.omega)
+            
+        # Check that the input-output sizes are consistent.
+        if self.outputs != other.inputs:
+            raise ValueError("H = G1*G2: input-output size mismatch"
+                " G1 has %i input(s), G2 has %i output(s)." %
+                (other.inputs, self.outputs))
+
+        inputs = self.inputs
+        outputs = other.outputs
+        
+        fresp = empty((outputs, inputs, len(self.omega)), 
+                      dtype=self.fresp.dtype)
+        for i in range(len(self.omega)):        
+            fresp[:,:,i] = dot(other.fresp[:,:,i], self.fresp[:,:,i])
+        return FRD(fresp, self.omega)
 
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __div__(self, other):
         """Divide two LTI objects."""
         
         if isinstance(other, (int, float, complex)):
-            other = _convertToFRD(other, inputs=self.inputs, 
-                outputs=self.inputs, omega=self.omega)
+            return FRD(self.fresp * (1/other), self.omega)
         else:
             other = _convertToFRD(other, omega=self.omega)
 
 
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
-            raise NotImplementedError("FRD.__div__ is currently \
-implemented only for SISO systems.")
-
-        num = polymul(self.num[0][0], other.den[0][0])
-        den = polymul(self.den[0][0], other.num[0][0])
+            raise NotImplementedError(
+                "FRD.__div__ is currently implemented only for SISO systems.")
         
-        return FRD(num, den)
+        return FRD(self.fresp/other.fresp, self.omega)
        
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rdiv__(self, other):
         """Right divide two LTI objects."""
         if isinstance(other, (int, float, complex)):
-            other = _convertToFRD(other, inputs=self.inputs, 
-                outputs=self.inputs, omega=self.omega)
+            return FRD(other / self.fresp, self.omega)
         else:
             other = _convertToFRD(other, omega=self.omega)
         
@@ -324,18 +325,23 @@ implemented only for SISO systems.")
         if not type(other) == int:
             raise ValueError("Exponent must be an integer")
         if other == 0:
-            return FRD([1],[1]) #unity
+            return FRD(ones(self.fresp.shape),self.omega) #unity
         if other > 0:
             return self * (self**(other-1))
         if other < 0:
-            return (FRD([1],[1]) / self) * (self**(other+1))
+            return (FRD(ones(self.fresp.shape), self.omega) / self) * \
+                (self**(other+1))
             
         
     def evalfr(self, omega):
         """Evaluate a transfer function at a single angular frequency.
         
-        self.evalfr(omega) returns the value of the transfer function matrix with
-        input value s = i * omega.
+        self.evalfr(omega) returns the value of the frequency response
+        at frequency omega.
+
+        Note that a "normal" FRD only returns values for which there is an
+        entry in the omega vector. An interpolating FRD can return 
+        intermediate values.
 
         """
 

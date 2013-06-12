@@ -54,7 +54,30 @@ class TestFRD(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             (f1 - f2).freqresp([0.1, 1.0, 10])[1],
             (h1 - h2).freqresp([0.1, 1.0, 10])[1])
-        
+
+        # multiplication and division
+        np.testing.assert_array_almost_equal(
+            (f1 * f2).freqresp([0.1, 1.0, 10])[1],
+            (h1 * h2).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            (f1 / f2).freqresp([0.1, 1.0, 10])[1],
+            (h1 / h2).freqresp([0.1, 1.0, 10])[1])
+
+        # with default conversion from scalar
+        np.testing.assert_array_almost_equal(
+            (f1 * 1.5).freqresp([0.1, 1.0, 10])[1],
+            (h1 * 1.5).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            (f1 / 1.7).freqresp([0.1, 1.0, 10])[1],
+            (h1 / 1.7).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            (2.2 * f2).freqresp([0.1, 1.0, 10])[1],
+            (2.2 * h2).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            (1.3 / f2).freqresp([0.1, 1.0, 10])[1],
+            (1.3 / h2).freqresp([0.1, 1.0, 10])[1])
+
+     
     def testOperatorsTf(self):
         # get two SISO transfer functions
         h1 = TransferFunction([1], [1, 2, 2])
@@ -75,6 +98,13 @@ class TestFRD(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             (f1 - h2).freqresp([0.1, 1.0, 10])[1],
             (h1 - h2).freqresp([0.1, 1.0, 10])[1])
+        # multiplication and division
+        np.testing.assert_array_almost_equal(
+            (f1 * h2).freqresp([0.1, 1.0, 10])[1],
+            (h1 * h2).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            (f1 / h2).freqresp([0.1, 1.0, 10])[1],
+            (h1 / h2).freqresp([0.1, 1.0, 10])[1])
         # the reverse does not work
         
     def testFeedback(self):
@@ -154,6 +184,40 @@ class TestFRD(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             f1.freqresp([0.1, 1.0, 10])[1],
             f2.freqresp([0.1, 1.0, 10])[1])
+            
+    def testMIMOMult(self):
+        sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]], 
+                         [[1.0, 0.0], [0.0, 1.0]], 
+                         [[1.0, 0.0], [0.0, 1.0]], 
+                         [[0.0, 0.0], [0.0, 0.0]])
+        omega = np.logspace(-1, 2, 10)
+        f1 = FRD(sys, omega)
+        f2 = FRD(sys, omega)
+        np.testing.assert_array_almost_equal(
+            (f1*f2).freqresp([0.1, 1.0, 10])[0],       
+            (sys*sys).freqresp([0.1, 1.0, 10])[0])
+        np.testing.assert_array_almost_equal(
+            (f1*f2).freqresp([0.1, 1.0, 10])[1],       
+            (sys*sys).freqresp([0.1, 1.0, 10])[1])
+
+    def testMIMOSmooth(self):
+        sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]], 
+                         [[1.0, 0.0], [0.0, 1.0]], 
+                         [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], 
+                         [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]])
+        sys2 = np.matrix([[1, 0, 0], [0, 1, 0]]) * sys
+        omega = np.logspace(-1, 2, 10)
+        f1 = FRD(sys, omega, smooth=True)
+        f2 = FRD(sys2, omega, smooth=True)
+        np.testing.assert_array_almost_equal(
+            (f1*f2).freqresp([0.1, 1.0, 10])[0],       
+            (sys*sys2).freqresp([0.1, 1.0, 10])[0])
+        np.testing.assert_array_almost_equal(
+            (f1*f2).freqresp([0.1, 1.0, 10])[1],       
+            (sys*sys2).freqresp([0.1, 1.0, 10])[1])
+        np.testing.assert_array_almost_equal(
+            (f1*f2).freqresp([0.1, 1.0, 10])[2],       
+            (sys*sys2).freqresp([0.1, 1.0, 10])[2])
         
     def testAgainstOctave(self):
         # with data from octave:
