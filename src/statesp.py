@@ -495,14 +495,19 @@ inputs/outputs for feedback.")
 
         return StateSpace(A, B, C, D, dt)
 
-    def minreal(self, tol=None):
+    def minreal(self, tol=0.0):
         """Calculate a minimal realization, removes unobservable and
         uncontrollable states"""
         try:
             from slycot import tb01pd
+            B = empty((self.states, max(self.inputs, self.outputs)))
+            B[:,:self.inputs] = self.B
+            C = empty((max(self.outputs, self.inputs), self.states))
+            C[:self.outputs,:] = self.C
             A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs, 
-                                    self.A, self.B, self.C, tol=tol)
-            return StateSpace(A[:nr,:nr], B[:nr,:], C[:,:nr], self.D)
+                                    self.A, B, C, tol=tol)
+            return StateSpace(A[:nr,:nr], B[:nr,:self.inputs], 
+                              C[:self.outputs,:nr], self.D)
         except ImportError:
             raise TypeError("minreal requires slycot tb01pd")
        
