@@ -80,7 +80,7 @@ def _polysqr(pol):
 # idea for the frequency data solution copied/adapted from
 # https://github.com/alchemyst/Skogestad-Python/blob/master/BODE.py
 # Rene van Paassen <rene.vanpaassen@gmail.com>
-def stability_margins(sysdata, deg=True, returnall=False):
+def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-12):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
     
@@ -101,6 +101,9 @@ def stability_margins(sysdata, deg=True, returnall=False):
     returnall=False: boolean
         If true, return all margins found. Note that for frequency data or
         FRD systems, only one margin is found and returned. 
+    epsw=1e-12: float
+        frequencies below this value are considered static gain, and not
+        returned as margin.
        
     Returns
     -------
@@ -113,7 +116,7 @@ def stability_margins(sysdata, deg=True, returnall=False):
         When requesting all margins, the return values are array_like, 
         and all margins are returns for linear systems not equal to FRD
         """
-    
+
     try:
         if isinstance(sysdata, frdata.FRD):
             sys = frdata.FRD(sysdata, smooth=True) 
@@ -143,14 +146,14 @@ def stability_margins(sysdata, deg=True, returnall=False):
         # test imaginary part of tf == 0, for phase crossover/gain margins
         test_w_180 = np.polyadd(np.polymul(inum, rden), np.polymul(rnum, -iden))
         w_180 = np.roots(test_w_180)
-        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 > 0.)])
+        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 > epsw)])
         w_180.sort()
 
         # test magnitude is 1 for gain crossover/phase margins
         test_wc = np.polysub(np.polyadd(_polysqr(rnum), _polysqr(inum)), 
                              np.polyadd(_polysqr(rden), _polysqr(iden)))
         wc = np.roots(test_wc)
-        wc = np.real(wc[(np.imag(wc) == 0) * (wc > 0.)])
+        wc = np.real(wc[(np.imag(wc) == 0) * (wc > epsw)])
         wc.sort()
 
         # stability margin was a bitch to elaborate, relies on magnitude to
@@ -168,7 +171,7 @@ def stability_margins(sysdata, deg=True, returnall=False):
 
         # and find the value of the 2nd derivative there, needs to be positive
         wstabplus = np.polyval(np.polyder(test_wstab), wstab)
-        wstab = np.real(wstab[(np.imag(wstab) == 0) * (wstab > 0.) *
+        wstab = np.real(wstab[(np.imag(wstab) == 0) * (wstab > epsw) *
                               (np.abs(wstabplus) > 0.)])
         wstab.sort()
 

@@ -58,22 +58,8 @@ class TestMinreal(unittest.TestCase):
                             # the original rss, but not the balanced one
                             if n < 6:
                                 raise e
-                            #if n > 6:
-                            #    continue
-                            #print n, m, p
-                            #print s
-                            #print sr
-                            #print ht1
-                            #print ht2
-                            #print ht1.pole(), ht1.zero()
-                            #print ht2.pole(), ht2.zero()
-                            
-                        #np.testing.assert_array_almost_equal(
-                        #    ht1.num[0][0], ht2.num[0][0])
-                        #np.testing.assert_array_almost_equal(
-                        #    ht1.den[0][0], ht2.den[0][0])
                         
-        self.assertEqual(self.nreductions, 7)
+        self.assertEqual(self.nreductions, 2)
 
     def testMinrealSS(self):
         """Test a minreal model reduction"""
@@ -106,7 +92,7 @@ class TestMinreal(unittest.TestCase):
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
 
 def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
+   return unittest.TestLoader().loadTestsFromTestCase(TestMinreal)
       
 
 if __name__ == "__main__":

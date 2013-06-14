@@ -991,6 +991,31 @@ def freqresp(sys, omega):
 def bode(*args, **keywords):
     """Bode plot of the frequency response
 
+    Plots a bode gain and phase diagram
+
+    Parameters
+    ----------
+    sys : Lti, or list of Lti
+        System for which the Bode response is plotted and give. Optionally
+        a list of systems can be entered, or several systems can be 
+        specified (i.e. several parameters). The sys arguments may also be
+        interspersed with format strings. A frequency argument (array_like) 
+        may also be added, some examples:
+        * >>> bode(sys, w)                    # one system, freq vector
+        * >>> bode(sys1, sys2, ..., sysN)     # several systems
+        * >>> bode(sys1, sys2, ..., sysN, w)
+        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # + plot formats
+    omega: freq_range
+        Range of frequencies in rad/s
+    dB : boolean
+        If True, plot result in dB
+    Hz : boolean
+        If True, plot frequency in Hz (omega must be provided in rad/sec)
+    deg : boolean
+        If True, return phase in degrees (else radians)
+    Plot : boolean
+        If True, plot magnitude and phase
+
     Examples
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.") 
@@ -1063,6 +1088,10 @@ ngrid.__doc__ = re.sub('nichols_grid', 'ngrid', nichols_grid.__doc__)
 # Root locus plot
 def rlocus(sys, klist = None, **keywords):
     """Root locus plot
+
+    The root-locus plot has a callback function that prints pole location, 
+    gain and damping to the Python consol on mouseclicks on the root-locus 
+    graph.
 
     Parameters
     ----------
