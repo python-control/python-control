@@ -351,7 +351,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             D = X * self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
 
-        except Exception, e:
+        except Exception as e:
             print(e)
             pass
         raise TypeError("can't interconnect systems")

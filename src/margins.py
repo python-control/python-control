@@ -127,7 +127,7 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-12):
             sys = frdata.FRD(mag*np.exp((1j/360.)*phase), omega, smooth=True)
         else:
             sys = xferfcn._convertToTransferFunction(sysdata)
-    except Exception, e:
+    except Exception as e:
         print (e)
         raise ValueError("Margin sysdata must be either a linear system or "
                          "a 3-sequence of mag, phase, omega.")

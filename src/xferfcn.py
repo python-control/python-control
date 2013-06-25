@@ -1053,7 +1053,7 @@ def _convertToTransferFunction(sys, **kw):
         num = [[[D[i,j]] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
         return TransferFunction(num, den)
-    except Exception, e: 
+    except Exception as e: 
         print("Failure to assume argument is matrix-like in" 
               " _convertToTransferFunction, result %s" % e)
         

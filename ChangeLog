@@ -1,3 +1,10 @@
+2013-06-24  Richard Murray  <murray@altura-2.local>
+
+	* tests/minreal_test.py (TestMinreal.testMinrealBrute),
+	src/xferfcn.py (_convertToTransferFunction), src/statesp.py
+	(StateSpace.__rmul__), src/margins.py (stability_margins): changed
+	exception syntax to be python3 compatibile (works for python2.6+)
+	
 2013-06-10  Richard Murray  <murray@altura-2.local>
 
 	* src/xferfcn.py (TransferFunction.horner): small fix to docstring

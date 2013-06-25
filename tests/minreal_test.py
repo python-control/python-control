@@ -53,7 +53,7 @@ class TestMinreal(unittest.TestCase):
                             self.assert_numden_almost_equal(
                                 ht1.num[0][0], ht2.num[0][0], 
                                 ht1.den[0][0], ht2.den[0][0])
-                        except Exception, e:
+                        except Exception as e:
                             # for larger systems, the tf minreal's 
                             # the original rss, but not the balanced one
                             if n < 6:
