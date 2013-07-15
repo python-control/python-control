@@ -1,3 +1,9 @@
+2013-07-14  Richard Murray  <murray@altura-2.local>
+
+	* src/dtime.py (sample_system): added check to make sure
+	cont2discrete is available in scipy.signal
+	(sample_system): added docstring
+
 2013-06-24  Richard Murray  <murray@altura-2.local>
 
 	* tests/minreal_test.py (TestMinreal.testMinrealBrute),

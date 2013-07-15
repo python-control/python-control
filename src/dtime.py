@@ -47,7 +47,7 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 
 """
 
-from scipy.signal import zpk2tf, tf2zpk, cont2discrete
+from scipy.signal import zpk2tf, tf2zpk
 import numpy as np
 from cmath import exp
 from warnings import warn
@@ -57,7 +57,38 @@ from control.xferfcn import TransferFunction, _convertToTransferFunction
 
 # Sample a continuous time system
 def sample_system(sysc, Ts, method='matched'):
-    # TODO: add docstring
+    """Convert a continuous time system to discrete time
+
+    Creates a discrete time system from a continuous time system by
+    sampling.  Multiple methods of conversion are supported.
+
+    Parameters
+    ----------
+    sysc : linsys
+        Continuous time system to be converted
+    Ts : real
+        Sampling period
+    method : string
+        Method to use for conversion: 'matched' (default), 'tustin', 'zoh'
+
+    Returns
+    -------
+    sysd : linsys
+        Discrete time system, with sampling rate Ts
+
+    Notes
+    -----
+    1. The conversion methods 'tustin' and 'zoh' require the
+       cont2discrete() function, including in SciPy 0.10.0 and above.
+
+    2. Additional methods 'foh' and 'impulse' are planned for future
+       implementation.
+
+    Examples
+    --------
+    >>> sysc = TransferFunction([1], [1, 2, 1])
+    >>> sysd = sample_system(sysc, 1, method='matched')
+    """
 
     # Make sure we have a continuous time system
     if not isctime(sysc):
@@ -77,14 +108,22 @@ def sample_system(sysc, Ts, method='matched'):
         sysd = _c2dmatched(sysc, Ts)
 
     elif method == 'tustin':
-        sys = [sysc.num[0][0], sysc.den[0][0]]
-        scipySysD = cont2discrete(sys, Ts, method='bilinear')
-        sysd = TransferFunction(scipySysD[0][0], scipySysD[1], dt)
-
+        try:
+            from scipy.signal import cont2discrete
+            sys = [sysc.num[0][0], sysc.den[0][0]]
+            scipySysD = cont2discrete(sys, Ts, method='bilinear')
+            sysd = TransferFunction(scipySysD[0][0], scipySysD[1], dt)
+        except ImportError:
+            raise TypeError("cont2discrete not found in scipy.signal; upgrade to v0.10.0+")
+        
     elif method == 'zoh':
-        sys = [sysc.num[0][0], sysc.den[0][0]]
-        scipySysD = cont2discrete(sys, Ts, method='zoh')
-        sysd = TransferFunction(scipySysD[0][0],scipySysD[1], dt)
+        try:
+            from scipy.signal import cont2discrete
+            sys = [sysc.num[0][0], sysc.den[0][0]]
+            scipySysD = cont2discrete(sys, Ts, method='zoh')
+            sysd = TransferFunction(scipySysD[0][0],scipySysD[1], dt)
+        except ImportError:
+            raise TypeError("cont2discrete not found in scipy.signal; upgrade to v0.10.0+")
 
     elif method == 'foh' or method == 'impulse':
         raise ValueError("Method not developed yet")
