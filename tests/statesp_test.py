@@ -3,7 +3,6 @@
 # statesp_test.py - test state space class
 # RMM, 30 Mar 2011 (based on TestStateSp from v0.4a)
 
-from __future__ import division
 import unittest
 import numpy as np
 from scipy.linalg import eigvals

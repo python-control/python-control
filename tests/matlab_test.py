@@ -8,7 +8,7 @@
 # nothing crashes.  It doesn't test actual functionality; the module
 # specific unit tests will do that.
 
-from __future__ import print_function, division
+from __future__ import print_function
 import unittest
 import numpy as np
 from scipy.linalg import eigvals

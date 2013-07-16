@@ -21,6 +21,8 @@ TransferFunction.__mul__
 TransferFunction.__rmul__
 TransferFunction.__div__
 TransferFunction.__rdiv__
+TransferFunction.__truediv__
+TransferFunction.__rtruediv__
 TransferFunction.evalfr
 TransferFunction.freqresp
 TransferFunction.pole
@@ -498,6 +500,10 @@ implemented only for SISO systems.")
         den = polymul(self.den[0][0], other.num[0][0])
         
         return TransferFunction(num, den, dt)
+
+    # TODO: Remove when transition to python3 complete
+    def __div__(self, other):
+        return TransferFunction.__truediv__(self, other)
        
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
@@ -514,6 +520,10 @@ implemented only for SISO systems.")
 implemented only for SISO systems.")
 
         return other / self
+
+    # TODO: Remove when transition to python3 complete
+    def __rdiv__(self, other):
+        return TransferFunction.__rtruediv__(self, other)
 
     def __pow__(self,other):
         if not type(other) == int:

@@ -18,6 +18,8 @@ FRD.__sub__
 FRD.__rsub__
 FRD.__mul__
 FRD.__rmul__
+FRD.__div__
+FRD.__rdiv__
 FRD.__truediv__
 FRD.__rtruediv__
 FRD.evalfr
@@ -305,6 +307,10 @@ second has %i." % (self.outputs, other.outputs))
                 "FRD.__truediv__ is currently implemented only for SISO systems.")
         
         return FRD(self.fresp/other.fresp, self.omega)
+
+    # TODO: Remove when transition to python3 complete
+    def __div__(self, other):
+        return self.__truediv__(other)
        
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
@@ -321,6 +327,9 @@ second has %i." % (self.outputs, other.outputs))
 
         return other / self
 
+    # TODO: Remove when transition to python3 complete
+    def __rdiv__(self, other):
+        return self.__rtruediv__(other)
 
     def __pow__(self,other):
         if not type(other) == int:
