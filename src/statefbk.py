@@ -43,7 +43,6 @@
 import numpy as np
 import scipy as sp
 import control.statesp as statesp
-import control.ctrlutil as ctrlutil
 from control.exception import *
 
 # Pole placement
@@ -199,13 +198,13 @@ def lqr(*args, **keywords):
     if (len(args) < 4):
         raise ControlArgument("not enough input arguments")
 
-    elif (ctrlutil.issys(args[0])):
-        # We were passed a system as the first argument; extract A and B
-        #! TODO: really just need to check for A and B attributes
+    try:
+        # If this works, we were (probably) passed a system as the 
+        # first argument; extract A and B
         A = np.array(args[0].A, ndmin=2, dtype=float);
         B = np.array(args[0].B, ndmin=2, dtype=float);
         index = 1;
-    else:
+    except AttributeError:
         # Arguments should be A and B matrices
         A = np.array(args[0], ndmin=2, dtype=float);
         B = np.array(args[1], ndmin=2, dtype=float);

@@ -42,8 +42,7 @@
 
 # Packages that we need access to
 import scipy as sp
-import control.statesp as statesp
-import control.xferfcn as xferfcn
+import control.lti as lti
 
 # Specific functions that we use
 from scipy import pi
@@ -97,7 +96,7 @@ def unwrap(angle, period=2*pi):
 def issys(object):
     # Check for a member of one of the classes that we define here
     #! TODO: this should probably look for an LTI object instead??
-    if (isinstance(object, (statesp.StateSpace, xferfcn.TransferFunction))): 
+    if (isinstance(object, lti.Lti)): 
         return True
     
     # Didn't find anything that matched
