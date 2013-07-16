@@ -4,6 +4,7 @@
 # RvP, 4 Oct 2012
 
 
+from __future__ import division
 import unittest
 import numpy as np
 from control.statesp import StateSpace

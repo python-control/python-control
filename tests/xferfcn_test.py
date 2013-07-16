@@ -3,6 +3,7 @@
 # xferfcn_test.py - test TransferFunction class
 # RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
 
+from __future__ import division
 import unittest
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace

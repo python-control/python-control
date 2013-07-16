@@ -8,7 +8,7 @@
 # nothing crashes.  It doesn't test actual functionality; the module
 # specific unit tests will do that.
 
-from __future__ import print_function
+from __future__ import print_function, division
 import unittest
 import numpy as np
 from scipy.linalg import eigvals
@@ -86,6 +86,9 @@ class TestMatlab(unittest.TestCase):
         D = np.matrix("9. 0.;"
                       "0. 9. ")
         self.mimo_ss1 = ss(A, B, C, D)
+
+        # get consistent test results
+        np.random.seed(0)
         
     def testParallel(self):
         sys1 = parallel(self.siso_ss1, self.siso_ss2)

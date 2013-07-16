@@ -34,6 +34,8 @@ class TestConvert(unittest.TestCase):
         self.maxIO = 5
         # Set to True to print systems to the output.
         self.debug = False
+        # get consistent results
+        np.random.seed(9)
 
     def printSys(self, sys, ind):
         """Print system to the standard output."""

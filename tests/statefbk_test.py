@@ -20,6 +20,8 @@ class TestStatefbk(unittest.TestCase):
         self.maxTries = 4
         # Set to True to print systems to the output.
         self.debug = False
+        # get consistent test results
+        np.random.seed(0)
 
     def testCtrbSISO(self):
         A = np.matrix("1. 2.; 3. 4.")

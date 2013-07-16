@@ -3,6 +3,7 @@
 # minreal_test.py - test state space class
 # Rvp, 13 Jun 2013
 
+from __future__ import division
 import unittest
 import numpy as np
 from scipy.linalg import eigvals
