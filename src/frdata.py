@@ -1,3 +1,4 @@
+from __future__ import division
 """frdata.py
 
 Frequency response data representation and functions.
@@ -17,8 +18,8 @@ FRD.__sub__
 FRD.__rsub__
 FRD.__mul__
 FRD.__rmul__
-FRD.__div__
-FRD.__rdiv__
+FRD.__truediv__
+FRD.__rtruediv__
 FRD.evalfr
 FRD.freqresp
 FRD.pole
@@ -289,7 +290,7 @@ second has %i." % (self.outputs, other.outputs))
         return FRD(fresp, self.omega)
 
     # TODO: Division of MIMO transfer function objects is not written yet.
-    def __div__(self, other):
+    def __truediv__(self, other):
         """Divide two LTI objects."""
         
         if isinstance(other, (int, float, complex)):
@@ -301,12 +302,12 @@ second has %i." % (self.outputs, other.outputs))
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError(
-                "FRD.__div__ is currently implemented only for SISO systems.")
+                "FRD.__truediv__ is currently implemented only for SISO systems.")
         
         return FRD(self.fresp/other.fresp, self.omega)
        
     # TODO: Division of MIMO transfer function objects is not written yet.
-    def __rdiv__(self, other):
+    def __rtruediv__(self, other):
         """Right divide two LTI objects."""
         if isinstance(other, (int, float, complex)):
             return FRD(other / self.fresp, self.omega)
@@ -316,7 +317,7 @@ second has %i." % (self.outputs, other.outputs))
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError(
-                "FRD.__rdiv__ is currently implemented only for SISO systems.")
+                "FRD.__rtruediv__ is currently implemented only for SISO systems.")
 
         return other / self
 

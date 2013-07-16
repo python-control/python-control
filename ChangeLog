@@ -1,3 +1,8 @@
+2013-07-15  Richard Murray  <murray@altura-2.local>
+
+	* src/frdata.py, src/xferfcn.py: updated to use __truediv__ and
+	__rtruediv__ for compatibility with python3
+
 2013-07-14  Richard Murray  <murray@altura-2.local>
 
 	* src/dtime.py (sample_system): added check to make sure

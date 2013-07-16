@@ -37,6 +37,7 @@ _convertToTransferFunction
 
 # Python 3 compatability (needs to go here)
 from __future__ import print_function
+from __future__ import division
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -470,7 +471,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
         return TransferFunction(num, den, dt)
 
     # TODO: Division of MIMO transfer function objects is not written yet.
-    def __div__(self, other):
+    def __truediv__(self, other):
         """Divide two LTI objects."""
         
         if isinstance(other, (int, float, complex)):
@@ -482,7 +483,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
 
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
-            raise NotImplementedError("TransferFunction.__div__ is currently \
+            raise NotImplementedError("TransferFunction.__truediv__ is currently \
 implemented only for SISO systems.")
 
         # Figure out the sampling time to use
@@ -499,7 +500,7 @@ implemented only for SISO systems.")
         return TransferFunction(num, den, dt)
        
     # TODO: Division of MIMO transfer function objects is not written yet.
-    def __rdiv__(self, other):
+    def __rtruediv__(self, other):
         """Right divide two LTI objects."""
         if isinstance(other, (int, float, complex)):
             other = _convertToTransferFunction(other, inputs=self.inputs, 
@@ -509,7 +510,7 @@ implemented only for SISO systems.")
         
         if (self.inputs > 1 or self.outputs > 1 or 
             other.inputs > 1 or other.outputs > 1):
-            raise NotImplementedError("TransferFunction.__rdiv__ is currently \
+            raise NotImplementedError("TransferFunction.__rtruediv__ is currently \
 implemented only for SISO systems.")
 
         return other / self
