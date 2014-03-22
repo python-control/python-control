@@ -112,7 +112,7 @@ def sample_system(sysc, Ts, method='matched'):
             from scipy.signal import cont2discrete
             sys = [sysc.num[0][0], sysc.den[0][0]]
             scipySysD = cont2discrete(sys, Ts, method='bilinear')
-            sysd = TransferFunction(scipySysD[0][0], scipySysD[1], dt)
+            sysd = TransferFunction(scipySysD[0][0], scipySysD[1], Ts)
         except ImportError:
             raise TypeError("cont2discrete not found in scipy.signal; upgrade to v0.10.0+")
         
@@ -121,7 +121,7 @@ def sample_system(sysc, Ts, method='matched'):
             from scipy.signal import cont2discrete
             sys = [sysc.num[0][0], sysc.den[0][0]]
             scipySysD = cont2discrete(sys, Ts, method='zoh')
-            sysd = TransferFunction(scipySysD[0][0],scipySysD[1], dt)
+            sysd = TransferFunction(scipySysD[0][0],scipySysD[1], Ts)
         except ImportError:
             raise TypeError("cont2discrete not found in scipy.signal; upgrade to v0.10.0+")
 

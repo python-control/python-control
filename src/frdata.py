@@ -451,7 +451,6 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
     """
     
     if isinstance(sys, FRD):
-        
         omega.sort()
         if (abs(omega - sys.omega) < FRD.epsw).all():
             # frequencies match, and system was already frd; simply use
