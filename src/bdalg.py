@@ -220,13 +220,13 @@ def feedback(sys1, sys2=1, sign=-1):
 
     # Check for correct input types.
     if not isinstance(sys1, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace)):
-        raise TypeError("sys1 must be a TransferFunction or StateSpace " +
-                        "object, or a scalar.")
+                             ss.StateSpace, frd.FRD)):
+        raise TypeError("sys1 must be a TransferFunction, StateSpace " +
+                        "or FRD object, or a scalar.")
     if not isinstance(sys2, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace)):
-        raise TypeError("sys2 must be a TransferFunction or StateSpace " + 
-                        "object, or a scalar.")
+                             ss.StateSpace, frd.FRD)):
+        raise TypeError("sys2 must be a TransferFunction, StateSpace " + 
+                        "or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.

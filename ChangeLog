@@ -1,5 +1,9 @@
 2014-03-22  Richard Murray  <murray@sidamo.local>
 
+	* src/bdalg.py (feedback): allow FRD for feedback()
+
+2014-03-22  Richard Murray  <murray@sidamo.local>
+
 	* tests/discrete_test.py (TestDiscrete.test_sample_system): added
 	conversions using tustin and zoh to catch 'dt' bug #5
 
