@@ -1,5 +1,10 @@
 2014-03-22  Richard Murray  <murray@sidamo.local>
 
+	* src/matlab.py (ss): allow five arguments to create a discrete time
+	system.  From Roberto Bucher, 12 Jan 2014
+
+2014-03-22  Richard Murray  <murray@sidamo.local>
+
 	* src/bdalg.py (feedback): allow FRD for feedback()
 
 2014-03-22  Richard Murray  <murray@sidamo.local>
