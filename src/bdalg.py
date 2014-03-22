@@ -56,14 +56,15 @@ $Id$
 import scipy as sp
 import control.xferfcn as tf
 import control.statesp as ss
+import control.frdata as frd
 
 def series(sys1, sys2):
     """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.
 
     Parameters
     ----------
-    sys1: scalar, StateSpace, or TransferFunction
-    sys2: scalar, StateSpace, or TransferFunction
+    sys1: scalar, StateSpace, TransferFunction, or FRD
+    sys2: scalar, StateSpace, TransferFunction, or FRD
 
     Returns
     -------
@@ -105,8 +106,8 @@ def parallel(sys1, sys2):
 
     Parameters
     ----------
-    sys1: scalar, StateSpace, or TransferFunction
-    sys2: scalar, StateSpace, or TransferFunction
+    sys1: scalar, StateSpace, TransferFunction, or FRD
+    sys2: scalar, StateSpace, TransferFunction, or FRD
 
     Returns
     -------
@@ -148,7 +149,7 @@ def negate(sys):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
+    sys: StateSpace, TransferFunction or FRD
 
     Returns
     -------
@@ -179,9 +180,9 @@ def feedback(sys1, sys2=1, sign=-1):
 
     Parameters
     ----------
-    sys1: scalar, StateSpace, or TransferFunction
+    sys1: scalar, StateSpace, TransferFunction, FRD
         The primary plant.
-    sys2: scalar, StateSpace, or TransferFunction
+    sys2: scalar, StateSpace, TransferFunction, FRD
         The feedback plant (often a feedback controller).
     sign: scalar 
         The sign of feedback.  `sign` = -1 indicates negative feedback, and
@@ -219,13 +220,13 @@ def feedback(sys1, sys2=1, sign=-1):
 
     # Check for correct input types.
     if not isinstance(sys1, (int, float, complex, tf.TransferFunction,
-        ss.StateSpace)):
-        raise TypeError("sys1 must be a TransferFunction or StateSpace object, \
-or a scalar.")
+                             ss.StateSpace, frd.FRD)):
+        raise TypeError("sys1 must be a TransferFunction, StateSpace " +
+                        "or FRD object, or a scalar.")
     if not isinstance(sys2, (int, float, complex, tf.TransferFunction,
-        ss.StateSpace)):
-        raise TypeError("sys2 must be a TransferFunction or StateSpace object, \
-or a scalar.")
+                             ss.StateSpace, frd.FRD)):
+        raise TypeError("sys2 must be a TransferFunction, StateSpace " + 
+                        "or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.
@@ -234,6 +235,8 @@ or a scalar.")
             sys1 = tf._convertToTransferFunction(sys1)
         elif isinstance(sys2, ss.StateSpace):
             sys1 = ss._convertToStateSpace(sys1)
+        elif isinstance(sys2, frd.FRD):
+            sys1 = ss._convertToFRD(sys1)
         else: # sys2 is a scalar.
             sys1 = tf._convertToTransferFunction(sys1)
             sys2 = tf._convertToTransferFunction(sys2)

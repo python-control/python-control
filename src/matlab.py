@@ -398,7 +398,7 @@ def ss(*args):
     """
     Create a state space system.
     
-    The function accepts either 1 or 4 parameters:
+    The function accepts either 1, 4 or 5 parameters:
     
     ``ss(sys)``
         Convert a linear system into space system form. Always creates a 
@@ -412,6 +412,15 @@ def ss(*args):
             \dot x = A \cdot x + B \cdot u 
             
             y = C \cdot x + D \cdot u
+
+    ``ss(A, B, C, D, dt)``
+        Create a discrete-time state space system from the matrices of 
+        its state and output equations:
+         
+        .. math:: 
+            x[k+1] = A \cdot x[k] + B \cdot u[k] 
+            
+            y[k] = C \cdot x[k] + D \cdot u[ki]
             
         The matrices can be given as *array like* data types or strings.
         Everything that the constructor of :class:`numpy.matrix` accepts is 
@@ -429,6 +438,8 @@ def ss(*args):
         Output matrix
     D: array_like or string
         Feed forward matrix
+    dt: If present, specifies the sampling period and a discrete time 
+        system is created
 
     Returns
     -------
@@ -457,8 +468,8 @@ def ss(*args):
 
     """ 
     
-    if len(args) == 4:
-        return StateSpace(args[0], args[1], args[2], args[3])
+    if len(args) == 4 or len(args) == 5:
+        return StateSpace(*args)
     elif len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
@@ -635,7 +646,7 @@ def ss2tf(*args):
     C: array_like or string
         Output matrix
     D: array_like or string
-        Feed forward matrix
+        Feedthrough matrix
 
     Returns
     -------

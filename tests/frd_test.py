@@ -10,6 +10,7 @@ from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.frdata import FRD, _convertToFRD
 from control.matlab import bode
+import control.bdalg as bdalg
 import control.freqplot
 import matplotlib.pyplot as plt
 
@@ -106,7 +107,43 @@ class TestFRD(unittest.TestCase):
             (f1 / h2).freqresp([0.1, 1.0, 10])[1],
             (h1 / h2).freqresp([0.1, 1.0, 10])[1])
         # the reverse does not work
-        
+
+    def testbdalg(self):
+        # get two SISO transfer functions
+        h1 = TransferFunction([1], [1, 2, 2])
+        h2 = TransferFunction([1], [0.1, 1])
+        omega = np.logspace(-1, 2, 10)
+        f1 = FRD(h1, omega)
+        f2 = FRD(h2, omega)
+
+        np.testing.assert_array_almost_equal(
+            (bdalg.series(f1, f2)).freqresp([0.1, 1.0, 10])[0],
+            (bdalg.series(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+
+        np.testing.assert_array_almost_equal(
+            (bdalg.parallel(f1, f2)).freqresp([0.1, 1.0, 10])[0],
+            (bdalg.parallel(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+
+        np.testing.assert_array_almost_equal(
+            (bdalg.feedback(f1, f2)).freqresp([0.1, 1.0, 10])[0],
+            (bdalg.feedback(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+
+        np.testing.assert_array_almost_equal(
+            (bdalg.negate(f1)).freqresp([0.1, 1.0, 10])[0],
+            (bdalg.negate(h1)).freqresp([0.1, 1.0, 10])[0])
+
+#       append() and connect() not implemented for FRD objects
+#        np.testing.assert_array_almost_equal(
+#            (bdalg.append(f1, f2)).freqresp([0.1, 1.0, 10])[0],
+#            (bdalg.append(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+#
+#        f3 = bdalg.append(f1, f2, f2)
+#        h3 = bdalg.append(h1, h2, h2)
+#        Q = np.mat([ [1, 2], [2, -1] ])
+#        np.testing.assert_array_almost_equal(
+#           (bdalg.connect(f3, Q, [2], [1])).freqresp([0.1, 1.0, 10])[0],
+#            (bdalg.connect(h3, Q, [2], [1])).freqresp([0.1, 1.0, 10])[0])
+
     def testFeedback(self):
         h1 = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)

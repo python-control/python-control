@@ -1,3 +1,26 @@
+2014-03-22  Richard Murray  <murray@sidamo.local>
+
+	* src/matlab.py (ss): allow five arguments to create a discrete time
+	system.  From Roberto Bucher, 12 Jan 2014
+
+2014-03-22  Richard Murray  <murray@sidamo.local>
+
+	* src/bdalg.py (feedback): allow FRD for feedback()
+
+2014-03-22  Richard Murray  <murray@sidamo.local>
+
+	* tests/discrete_test.py (TestDiscrete.test_sample_system): added
+	conversions using tustin and zoh to catch 'dt' bug #5
+
+	* src/dtime.py (sample_system): Changed 'dt' to 'Ts' to fix bug #4
+
+	* tests/frd_test.py (TestFRD.testbdalg): added unit tests for bdalg
+	functions operating on FRD data
+
+	* src/bdalg.py (series, parallel, negate, feedback): updated
+	documentation to note that FRD ovjects work.
+	(feedback): updated conversions to allow for FRD
+
 2013-07-15  Richard Murray  <murray@altura-2.local>
 
 	* src/frdata.py, src/xferfcn.py: updated to use __truediv__ and
