@@ -1,3 +1,5 @@
+---- control-0.6d released -----
+
 2014-03-22  Richard Murray  <murray@sidamo.local>
 
 	* src/matlab.py (ss): allow five arguments to create a discrete time
