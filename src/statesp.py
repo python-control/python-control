@@ -84,7 +84,7 @@ from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti
 # from exceptions import Exception
 import warnings
-from control.lti import Lti, timebaseEqual, isdtime
+from control.lti import Lti, timebase, timebaseEqual, isdtime
 
 class StateSpace(Lti):
     """The StateSpace class represents state space instances and functions.
