@@ -380,7 +380,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             dt = timebase(self)
             s = exp(1.j * omega * dt)
             if (omega * dt > pi):
-                warn("evalfr: frequency evaluation above Nyquist frequency")
+                warnings.warn("evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = omega * 1.j
 
