@@ -11,7 +11,6 @@ setup(name = 'control',
       url = 'http://python-control.sourceforge.net',
       install_requires = ['scipy', 'matplotlib'],
       tests_require = ['scipy', 'matplotlib', 'nose'],
-      package_dir = {'control' : 'src'},
       packages = ['control'],
       test_suite='nose.collector'
      )
