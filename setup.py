@@ -9,7 +9,9 @@ setup(name = 'control',
       author = 'Richard Murray',
       author_email = 'murray@cds.caltech.edu',
       url = 'http://python-control.sourceforge.net',
-      requires = ['scipy', 'matplotlib'],
+      install_requires = ['scipy', 'matplotlib'],
+      tests_require = ['scipy', 'matplotlib', 'nose'],
       package_dir = {'control' : 'src'},
       packages = ['control'],
+      test_suite='nose.collector'
      )
