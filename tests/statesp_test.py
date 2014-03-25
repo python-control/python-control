@@ -204,6 +204,25 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys3c.A[3:,:3], np.zeros( (2, 3)) )
 
 
+    def testArrayAccessSS(self):
+
+        sys1 = StateSpace([[1., 2.], [3., 4.]],
+                [[5., 6.], [6., 8.]],
+                [[9., 10.], [11., 12.]],
+                [[13., 14.], [15., 16.]], 1)
+
+        sys1_11 = sys1[0,1]
+        np.testing.assert_array_almost_equal(sys1_11.A,
+                sys1.A)
+        np.testing.assert_array_almost_equal(sys1_11.B,
+                sys1.B[:,1])
+        np.testing.assert_array_almost_equal(sys1_11.C,
+                sys1.C[0,:])
+        np.testing.assert_array_almost_equal(sys1_11.D,
+                sys1.D[0,1])
+
+        assert sys1.dt == sys1_11.dt
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
     

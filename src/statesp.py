@@ -28,6 +28,7 @@ StateSpace.zero
 StateSpace.feedback
 StateSpace.returnScipySignalLti
 StateSpace.append
+StateSpace.__getitem__
 _convertToStateSpace
 _rss_generate
 
@@ -559,6 +560,17 @@ inputs/outputs for feedback.")
         D[:self.outputs,:self.inputs] = self.D
         D[self.outputs:,self.inputs:] = other.D
         return StateSpace(A, B, C, D, self.dt)
+
+    def __getitem__(self, indices):
+        """Array style acces"""
+        if len(indices) != 2:
+            raise IOError('must provide indices of length 2 for state space')
+        i = indices[0]
+        j = indices[1]
+        return StateSpace(self.A,
+                self.B[:,j],
+                self.C[i,:],
+                self.D[i,j], self.dt)
 
 # TODO: add discrete time check
 def _convertToStateSpace(sys, **kw):
