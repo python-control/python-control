@@ -1524,8 +1524,29 @@ def tfdata(sys, **kw):
     return (tf.num, tf.den)
 
 # Convert a continuous time system to a discrete time system
-def c2d(sysc, Ts, method):
-    # TODO: add docstring
+def c2d(sysc, Ts, method='zoh'):
+    '''
+    Return a discrete-time system
+
+    Parameters
+    ----------
+    sysc: Lti (StateSpace or TransferFunction), continuous
+        System to be converted
+
+    Ts: number
+        Sample time for the conversion
+
+    method: string, optional
+        Method to be applied, 
+        'zoh'        Zero-order hold on the inputs (default)
+        'foh'        First-order hold, currently not implemented
+        'impulse'    Impulse-invariant discretization, currently not implemented
+        'tustin'     Bilinear (Tustin) approximation, only SISO
+        'matched'    Matched pole-zero method, only SISO
+    '''
     #  Call the sample_system() function to do the work
-    return sample_system(sysc, Ts, method)
+    sysd = sample_system(sysc, Ts, method)
+    if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):
+        return _convertToStateSpace(sysd)
+    return sysd
 

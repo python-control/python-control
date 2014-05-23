@@ -515,6 +515,25 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
 
+    def testSS2cont(self):
+        sys = ss(
+            np.mat("-3 4 2; -1 -3 0; 2 5 3"),
+            np.mat("1 4 ; -3 -3; -2 1"),
+            np.mat("4 2 -3; 1 4 3"),
+            np.mat("-2 4; 0 1"))
+        sysd = c2d(sys, 0.1)
+        np.testing.assert_array_almost_equal(
+            np.mat(
+                """0.742840837331905  0.342242024293711  0.203124211149560;
+                  -0.074130792143890  0.724553295044645 -0.009143771143630;
+                   0.180264783290485  0.544385612448419  1.370501013067845"""),
+            sysd.A)
+        np.testing.assert_array_almost_equal(
+            np.mat(""" 0.012362066084719   0.301932197918268;
+                      -0.260952977031384  -0.274201791021713;
+                      -0.304617775734327   0.075182622718853"""), sysd.B)
+        
+
 
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):

@@ -610,7 +610,7 @@ cannot take keywords.")
                 ssout[3][:sys.outputs, :states], 
                 ssout[4], sys.dt)
         except ImportError:
-            # TODO: do we want to squeeze first and check dimenations?
+            # TODO: do we want to squeeze first and check dimensions?
             # I think this will fail if num and den aren't 1-D after
             # the squeeze
             lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
