@@ -534,6 +534,61 @@ class TestMatlab(unittest.TestCase):
                       -0.304617775734327   0.075182622718853"""), sysd.B)
         
 
+    def testCombi01(self):
+        # test from a "real" case, combines tf, ss, connect and margin
+        # this is a type 2 system, with phase starting at -180. The
+        # margin command should remove the solution for w = nearly zero
+
+        # Example is a concocted two-body satellite with flexible link
+        Jb = 400;
+        Jp = 1000;
+        k = 10;
+        b = 5;
+
+        # can now define an "s" variable, to make TF's 
+        s = tf([1, 0], [1]);
+        hb1 = 1/(Jb*s);
+        hb2 = 1/s;
+        hp1 = 1/(Jp*s);
+        hp2 = 1/s;
+
+        # convert to ss and append
+        sat0 = append(ss(hb1), ss(hb2), k, b, ss(hp1), ss(hp2));
+
+        # connection of the elements with connect call
+        Q = [[1, -3, -4],  # link moment (spring, damper), feedback to body
+             [2,  1,  0],  # link integrator to body velocity
+             [3,  2, -6],  # spring input, th_b - th_p
+             [4,  1, -5],  # damper input
+             [5,  3,  4],  # link moment, acting on payload
+             [6,  5,  0]]
+        inputs = [1];
+        outputs = [1, 2, 5, 6];
+        sat1 = connect(sat0, Q, inputs, outputs);
+        
+        # matched notch filter
+        wno = 0.19
+        z1 = 0.05
+        z2 = 0.7
+        Hno = (1+2*z1/wno*s+s**2/wno**2)/(1+2*z2/wno*s+s**2/wno**2)
+        
+        # the controller, Kp = 1 for now
+        Kp = 1.64
+        tau_PD = 50.
+        Hc = (1 + tau_PD*s)*Kp
+
+        # start with the basic satellite model sat1, and get the 
+        # payload attitude response
+        Hp = tf(sp.matrix([0, 0, 0, 1])*sat1)
+        
+        # total open loop
+        Hol = Hc*Hno*Hp
+        
+        gm, pm, wg, wp = margin(Hol)
+        self.assertAlmostEqual(gm, 3.32065569155)
+        self.assertAlmostEqual(pm, 46.9740430224)
+        self.assertAlmostEqual(wp, 0.0616288455466)
+        self.assertAlmostEqual(wg, 0.176469728448)
 
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):
