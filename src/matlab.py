@@ -134,6 +134,8 @@ Creating linear models
 \-  lti/set                     set/modify properties of LTI models
 \-  setdelaymodel               specify internal delay model (state space
                                 only)
+\*  :func:`rss`                 create a random continuous state space model
+\*  :func:`drss`                create a random discrete state space model
 ==  ==========================  ============================================
 
 
@@ -141,7 +143,7 @@ Data extraction
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\   lti/tfdata                  extract numerators and denominators
+\*  :func:`tfdata`              extract numerators and denominators
 \   lti/zpkdata                 extract zero/pole/gain data
 \   lti/ssdata                  extract state-space matrices
 \   lti/dssdata                 descriptor version of SSDATA
@@ -159,7 +161,7 @@ Conversions
 \   zpk                         conversion to zero/pole/gain
 \*  :func:`ss`                  conversion to state space
 \*  :func:`frd`                 conversion to frequency data
-\   c2d                         continuous to discrete conversion
+\*  :func:`c2d`                 continuous to discrete conversion
 \   d2c                         discrete to continuous conversion
 \   d2d                         resample discrete-time model
 \   upsample                    upsample discrete-time LTI systems
@@ -183,7 +185,7 @@ System interconnections
                                 (see also overloaded ``*``)
 \*  :func:`~bdalg.feedback`     connect lti models with a feedback loop
 \   lti/lft                     generalized feedback interconnection
-\   lti/connect                 arbitrary interconnection of lti models
+\*  :func:'~bdalg.connect'      arbitrary interconnection of lti models
 \   sumblk                      summing junction (for use with connect)
 \   strseq                      builds sequence of indexed strings 
                                 (for I/O naming)
