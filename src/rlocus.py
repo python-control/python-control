@@ -65,6 +65,9 @@ def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True,
         Linear input/output systems (SISO only, for now)
     kvect : gain_range (default = None)
         List of gains to use in computing diagram
+    xlim : control of x-axis range, normally with tuple, for
+        other options, see matplotlib.axes
+    ylim : control of y-axis range
     Plot : boolean (default = True)
         If True, plot magnitude and phase
     PrintGain: boolean (default = True)

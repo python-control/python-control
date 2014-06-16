@@ -1112,6 +1112,14 @@ def rlocus(sys, klist = None, **keywords):
         Linear system
     klist: 
         optional list of gains
+    xlim : control of x-axis range, normally with tuple, for
+        other options, see matplotlib.axes
+    ylim : control of y-axis range
+    Plot : boolean (default = True)
+        If True, plot magnitude and phase
+    PrintGain: boolean (default = True)
+        If True, report mouse clicks when close to the root-locus branches,
+        calculate gain, damping and print
 
     Returns
     -------
