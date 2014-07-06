@@ -80,13 +80,14 @@ def _polysqr(pol):
 # idea for the frequency data solution copied/adapted from
 # https://github.com/alchemyst/Skogestad-Python/blob/master/BODE.py
 # Rene van Paassen <rene.vanpaassen@gmail.com>
-def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-12):
+def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
     
     Usage
     -----
-    gm, pm, sm, wg, wp, ws = stability_margins(sysdata, deg=True)
+    gm, pm, sm, wg, wp, ws = stability_margins(sysdata, deg=True,
+                                               returnall=False, epsw=1e-10)
     
     Parameters
     ----------
@@ -101,7 +102,7 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-12):
     returnall=False: boolean
         If true, return all margins found. Note that for frequency data or
         FRD systems, only one margin is found and returned. 
-    epsw=1e-12: float
+    epsw=1e-10: float
         frequencies below this value are considered static gain, and not
         returned as margin.
        
@@ -114,7 +115,7 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-12):
         one crossover frequency is detected, returns the lowest corresponding
         margin. 
         When requesting all margins, the return values are array_like, 
-        and all margins are returns for linear systems not equal to FRD
+        and all margins are returned for linear systems not equal to FRD
         """
 
     try:
