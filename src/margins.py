@@ -80,6 +80,9 @@ def _polysqr(pol):
 # idea for the frequency data solution copied/adapted from
 # https://github.com/alchemyst/Skogestad-Python/blob/master/BODE.py
 # Rene van Paassen <rene.vanpaassen@gmail.com>
+#
+# RvP, July 8, 2014, corrected to exclude phase=0 crossing for the gain
+#                    margin polynomial
 def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
@@ -147,7 +150,19 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
         # test imaginary part of tf == 0, for phase crossover/gain margins
         test_w_180 = np.polyadd(np.polymul(inum, rden), np.polymul(rnum, -iden))
         w_180 = np.roots(test_w_180)
-        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 > epsw)])
+
+        # first remove imaginary and negative frequencies, epsw removes the
+        # "0" frequency for type-2 systems
+        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 >= epsw)])
+
+        # evaluate response at remaining frequencies, to test for phase 180 vs 0
+        resp_w_180 = np.real(np.polyval(sys.num[0][0], 1.j*w_180) /
+                             np.polyval(sys.den[0][0], 1.j*w_180))
+
+        # only keep frequencies where the negative real axis is crossed
+        w_180 = w_180[(resp_w_180 < 0.0)]
+
+        # and sort
         w_180.sort()
 
         # test magnitude is 1 for gain crossover/phase margins
@@ -203,14 +218,14 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
     SM = np.abs(sys.evalfr(wstab)[0][0]+1)
 
     if returnall:
-        return GM, PM, SM, wc, w_180, wstab
+        return GM, PM, SM, w_180, wc, wstab
     else:
         return (
             (GM.shape[0] or None) and GM[0], 
             (PM.shape[0] or None) and PM[0], 
             (SM.shape[0] or None) and SM[0], 
-            (wc.shape[0] or None) and wc[0],
             (w_180.shape[0] or None) and w_180[0],
+            (wc.shape[0] or None) and wc[0],
             (wstab.shape[0] or None) and wstab[0])
 
 
