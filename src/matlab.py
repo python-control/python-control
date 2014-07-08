@@ -1103,8 +1103,8 @@ def rlocus(sys, klist = None, **keywords):
     """Root locus plot
 
     The root-locus plot has a callback function that prints pole location, 
-    gain and damping to the Python consol on mouseclicks on the root-locus 
-    graph.
+    gain and damping to the Python console on mouseclicks on the root-locus 
+    graph. 
 
     Parameters
     ----------
@@ -1112,6 +1112,9 @@ def rlocus(sys, klist = None, **keywords):
         Linear system
     klist: 
         optional list of gains
+
+    Keyword parameters
+    ------------------
     xlim : control of x-axis range, normally with tuple, for
         other options, see matplotlib.axes
     ylim : control of y-axis range
@@ -1165,7 +1168,7 @@ def margin(*args):
     margin: no magnitude crossings found
     
     .. todo:: 
-        better ecample system!
+        better example system!
         
         #>>> gm, pm, wg, wp = margin(mag, phase, w)
     """
@@ -1178,7 +1181,7 @@ def margin(*args):
         raise ValueError("Margin needs 1 or 3 arguments; received %i." 
             % len(args))
             
-    return margin[0], margin[1], margin[4], margin[3]
+    return margin[0], margin[1], margin[3], margin[4]
 
 def dcgain(*args):
     '''
@@ -1279,10 +1282,11 @@ def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     '''
     Step response of a linear system
     
-    If the system has multiple inputs or outputs (MIMO), one input and one 
-    output have to be selected for the simulation. The parameters `input` 
-    and `output` do this. All other inputs are set to 0, all other outputs 
-    are ignored.
+    If the system has multiple inputs or outputs (MIMO), one input has
+    to be selected for the simulation.  Optionally, one output may be
+    selected. If no selection is made for the output, all outputs are
+    given. The parameters `input` and `output` do this. All other
+    inputs are set to 0, all other outputs are ignored.
     
     Parameters
     ----------
@@ -1301,7 +1305,7 @@ def step(sys, T=None, X0=0., input=0, output=None, **keywords):
         Index of the input that will be used in this simulation.
 
     output: int
-        Index of the output that will be used in this simulation.
+        If given, index of the output that is returned by this simulation.
 
     **keywords:
         Additional keyword arguments control the solution algorithm for the 
@@ -1326,19 +1330,21 @@ def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     Examples
     --------
     >>> yout, T = step(sys, T, X0)
+
     '''
     T, yout = timeresp.step_response(sys, T, X0, input, output, 
-                                   transpose = True, **keywords)
+                                     transpose=True, **keywords)
     return yout, T
 
-def impulse(sys, T=None, input=0, output=0, **keywords):
+def impulse(sys, T=None, input=0, output=None, **keywords):
     '''
     Impulse response of a linear system
     
-    If the system has multiple inputs or outputs (MIMO), one input and
-    one output must be selected for the simulation. The parameters
-    `input` and `output` do this. All other inputs are set to 0, all
-    other outputs are ignored.
+    If the system has multiple inputs or outputs (MIMO), one input has
+    to be selected for the simulation.  Optionally, one output may be
+    selected. If no selection is made for the output, all outputs are
+    given. The parameters `input` and `output` do this. All other
+    inputs are set to 0, all other outputs are ignored.
     
     Parameters
     ----------
@@ -1381,14 +1387,13 @@ def impulse(sys, T=None, input=0, output=0, **keywords):
                                    transpose = True, **keywords)
     return yout, T
 
-def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
+def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
     '''
     Initial condition response of a linear system
     
-    If the system has multiple inputs or outputs (MIMO), one input and one 
-    output have to be selected for the simulation. The parameters `input` 
-    and `output` do this. All other inputs are set to 0, all other outputs 
-    are ignored.
+    If the system has multiple outputs (?IMO), optionally, one output
+    may be selected. If no selection is made for the output, all
+    outputs are given.
     
     Parameters
     ----------
@@ -1404,10 +1409,11 @@ def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
         Numbers are converted to constant arrays with the correct shape.
 
     input: int
-        Index of the input that will be used in this simulation.
+        This input is ignored, but present for compatibility with step
+        and impulse.
 
     output: int
-        Index of the output that will be used in this simulation.
+        If given, index of the output that is returned by this simulation.
 
     **keywords:
         Additional keyword arguments control the solution algorithm for the 
@@ -1432,9 +1438,10 @@ def initial(sys, T=None, X0=0., input=0, output=0, **keywords):
     Examples
     --------
     >>> T, yout = initial(sys, T, X0)
+
     '''
-    T, yout = timeresp.initial_response(sys, T, X0, input, output, 
-                                   transpose = True, **keywords)
+    T, yout = timeresp.initial_response(sys, T, X0, output=output, 
+                                        transpose=True, **keywords)
     return yout, T
 
 def lsim(sys, U=0., T=None, X0=0., **keywords):

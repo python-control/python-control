@@ -190,8 +190,8 @@ class TestMatlab(unittest.TestCase):
         #Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
         x0 = np.matrix(".5; 1.; .5; 1.")
-        y_00, _t = initial(sys, T=t, X0=x0, input=0, output=0)
-        y_11, _t = initial(sys, T=t, X0=x0, input=1, output=1)
+        y_00, _t = initial(sys, T=t, X0=x0, output=0)
+        y_11, _t = initial(sys, T=t, X0=x0, output=1)
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
