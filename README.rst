@@ -1,4 +1,9 @@
 Python Control System Library
+=============================
+
+.. image:: https://travis-ci.org/python-control/python-control.svg?branch=master
+    :target: https://travis-ci.org/python-control/python-control
+
 RMM, 23 May 09
 
 This directory contains the source code for the Python Control Systems
