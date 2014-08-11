@@ -190,8 +190,8 @@ class TestMatlab(unittest.TestCase):
         #Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
         x0 = np.matrix(".5; 1.; .5; 1.")
-        y_00, _t = initial(sys, T=t, X0=x0, input=0, output=0)
-        y_11, _t = initial(sys, T=t, X0=x0, input=1, output=1)
+        y_00, _t = initial(sys, T=t, X0=x0, output=0)
+        y_11, _t = initial(sys, T=t, X0=x0, output=1)
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
@@ -515,6 +515,80 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
 
+    def testSS2cont(self):
+        sys = ss(
+            np.mat("-3 4 2; -1 -3 0; 2 5 3"),
+            np.mat("1 4 ; -3 -3; -2 1"),
+            np.mat("4 2 -3; 1 4 3"),
+            np.mat("-2 4; 0 1"))
+        sysd = c2d(sys, 0.1)
+        np.testing.assert_array_almost_equal(
+            np.mat(
+                """0.742840837331905  0.342242024293711  0.203124211149560;
+                  -0.074130792143890  0.724553295044645 -0.009143771143630;
+                   0.180264783290485  0.544385612448419  1.370501013067845"""),
+            sysd.A)
+        np.testing.assert_array_almost_equal(
+            np.mat(""" 0.012362066084719   0.301932197918268;
+                      -0.260952977031384  -0.274201791021713;
+                      -0.304617775734327   0.075182622718853"""), sysd.B)
+        
+
+    def testCombi01(self):
+        # test from a "real" case, combines tf, ss, connect and margin
+        # this is a type 2 system, with phase starting at -180. The
+        # margin command should remove the solution for w = nearly zero
+
+        # Example is a concocted two-body satellite with flexible link
+        Jb = 400;
+        Jp = 1000;
+        k = 10;
+        b = 5;
+
+        # can now define an "s" variable, to make TF's 
+        s = tf([1, 0], [1]);
+        hb1 = 1/(Jb*s);
+        hb2 = 1/s;
+        hp1 = 1/(Jp*s);
+        hp2 = 1/s;
+
+        # convert to ss and append
+        sat0 = append(ss(hb1), ss(hb2), k, b, ss(hp1), ss(hp2));
+
+        # connection of the elements with connect call
+        Q = [[1, -3, -4],  # link moment (spring, damper), feedback to body
+             [2,  1,  0],  # link integrator to body velocity
+             [3,  2, -6],  # spring input, th_b - th_p
+             [4,  1, -5],  # damper input
+             [5,  3,  4],  # link moment, acting on payload
+             [6,  5,  0]]
+        inputs = [1];
+        outputs = [1, 2, 5, 6];
+        sat1 = connect(sat0, Q, inputs, outputs);
+        
+        # matched notch filter
+        wno = 0.19
+        z1 = 0.05
+        z2 = 0.7
+        Hno = (1+2*z1/wno*s+s**2/wno**2)/(1+2*z2/wno*s+s**2/wno**2)
+        
+        # the controller, Kp = 1 for now
+        Kp = 1.64
+        tau_PD = 50.
+        Hc = (1 + tau_PD*s)*Kp
+
+        # start with the basic satellite model sat1, and get the 
+        # payload attitude response
+        Hp = tf(sp.matrix([0, 0, 0, 1])*sat1)
+        
+        # total open loop
+        Hol = Hc*Hno*Hp
+        
+        gm, pm, wg, wp = margin(Hol)
+        self.assertAlmostEqual(gm, 3.32065569155)
+        self.assertAlmostEqual(pm, 46.9740430224)
+        self.assertAlmostEqual(wp, 0.0616288455466)
+        self.assertAlmostEqual(wg, 0.176469728448)
 
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):

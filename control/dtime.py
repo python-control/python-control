@@ -94,11 +94,25 @@ def sample_system(sysc, Ts, method='matched'):
     if not isctime(sysc):
         raise ValueError("First argument must be continuous time system")
 
-    # TODO: impelement MIMO version
+    # If we are passed a state space system, convert to transfer function first
+    if isinstance(sysc, StateSpace) and method == 'zoh':
+        
+        try:
+            # try with slycot routine
+            from slycot import mb05nd
+            F, H = mb05nd(sysc.A, Ts)
+            return StateSpace(F, H*sysc.B, sysc.C, sysc.D, Ts)
+        except ImportError: 
+            if sysc.inputs != 1 or sysc.outputs != 1:
+                raise TypeError(
+                    "mb05nd not found in slycot, or slycot not installed")
+            
+    # TODO: implement MIMO version for other than ZOH state-space
     if (sysc.inputs != 1 or sysc.outputs != 1):
         raise NotImplementedError("MIMO implementation not available")
 
-    # If we are passed a state space system, convert to transfer function first
+    # SISO state-space, with other than ZOH, or failing slycot import, 
+    # is handled by conversion to TF
     if isinstance(sysc, StateSpace):
         warn("sample_system: converting to transfer function")
         sysc = _convertToTransferFunction(sysc)

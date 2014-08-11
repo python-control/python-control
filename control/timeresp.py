@@ -389,7 +389,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
 def step_response(sys, T=None, X0=0., input=0, output=None,
                   transpose = False, **keywords):
     #pylint: disable=W0622
-    """Step response of a linear system
+    """
+    Step response of a linear system
     
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation. Optionally, one output may be
@@ -468,15 +469,14 @@ def step_response(sys, T=None, X0=0., input=0, output=None,
     return T, yout
 
 
-def initial_response(sys, T=None, X0=0., input=0, output=None, transpose=False,
-                     **keywords):
+def initial_response(sys, T=None, X0=0., input=None, output=None, 
+                     transpose=False, **keywords):
     #pylint: disable=W0622
     """Initial condition response of a linear system
     
-    If the system has multiple inputs or outputs (MIMO), one input and one 
-    output have to be selected for the simulation. The parameters `input` 
-    and `output` do this. All other inputs are set to 0, all other outputs 
-    are ignored.
+    If the system has multiple outputs (?IMO), optionally, one output
+    may be selected. If no selection is made for the output, all
+    outputs are given.
     
     For information on the **shape** of parameters `T`, `X0` and 
     return values `T`, `yout` see: :ref:`time-series-convention`
@@ -495,7 +495,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, transpose=False,
         Numbers are converted to constant arrays with the correct shape.
 
     input: int
-        Index of the input that will be used in this simulation.
+        Ignored, has no meaning in initial condition calculation. Parameter
+        ensures compatibility with step_response and impulse_response
 
     output: int
         Index of the output that will be used in this simulation. Set to None
@@ -531,9 +532,9 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, transpose=False,
     """
     sys = _convertToStateSpace(sys) 
     if output == None:
-        sys = _mimo2simo(sys, input, warn_conversion=False)
+        sys = _mimo2simo(sys, 0, warn_conversion=False)
     else:
-        sys = _mimo2siso(sys, input, output, warn_conversion=False)
+        sys = _mimo2siso(sys, 0, output, warn_conversion=False)
 
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
@@ -549,12 +550,13 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, transpose=False,
 def impulse_response(sys, T=None, X0=0., input=0, output=None,
                     transpose=False, **keywords):
     #pylint: disable=W0622
-    """Impulse response of a linear system
+    """
+    Impulse response of a linear system
     
-    If the system has multiple inputs or outputs (MIMO), one input and one 
-    output have to be selected for the simulation. The parameters `input` 
-    and `output` do this. All other inputs are set to 0, all other outputs 
-    are ignored.
+    If the system has multiple inputs or outputs (MIMO), one input has
+    to be selected for the simulation. Optionally, one output may be
+    selected. The parameters `input` and `output` do this. All other
+    inputs are set to 0, all other outputs are ignored.
     
     For information on the **shape** of parameters `T`, `X0` and 
     return values `T`, `yout` see: :ref:`time-series-convention`

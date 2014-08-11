@@ -272,6 +272,10 @@ class TestDiscrete(unittest.TestCase):
             self.assertEqual(sysd.dt, 1)
             # TODO: put in other generic checks
 
+        for sysc in (self.mimo_ss1, self.mimo_ss1c):
+            sysd = sample_system(sysc, 1, method='zoh')
+            self.assertEqual(sysd.dt, 1)
+
         # TODO: check results of converstion
 
         # Check errors
