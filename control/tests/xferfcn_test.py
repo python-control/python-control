@@ -97,7 +97,7 @@ class TestXferFcn(unittest.TestCase):
     def testNegScalar(self):
         """Negate a direct feedthrough system."""
         
-        sys1 = TransferFunction(2., np.array([-3]))
+        sys1 = TransferFunction(2., np.array([-3.]))
         sys2 = - sys1
         
         np.testing.assert_array_equal(sys2.num, [[[-2.]]])

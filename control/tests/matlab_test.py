@@ -320,7 +320,7 @@ class TestMatlab(unittest.TestCase):
 
     def testEvalfr(self):
         w = 1j
-        self.assertEqual(evalfr(self.siso_ss1, w), 44.8-21.4j)
+        np.testing..assert_almost_equal(evalfr(self.siso_ss1, w), 44.8-21.4j)
         evalfr(self.siso_ss2, w)
         evalfr(self.siso_ss3, w)
         evalfr(self.siso_tf1, w)
