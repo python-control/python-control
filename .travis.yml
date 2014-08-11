@@ -1,0 +1,14 @@
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.2"
+  - "3.3"
+# install required system libraries
+before_install:
+  - sudo apt-get update --fix-missing
+  - sudo apt-get build-dep python-scipy
+# command to install dependencies from source
+install: "pip install -r requirements.txt"
+# command to run tests
+script: python runtests.py
