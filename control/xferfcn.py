@@ -12,6 +12,7 @@ TransferFunction.__init__
 TransferFunction._truncatecoeff
 TransferFunction.copy
 TransferFunction.__str__
+TransferFunction.__repr__
 TransferFunction.__neg__
 TransferFunction.__add__
 TransferFunction.__radd__
@@ -320,6 +321,9 @@ denominator." % (j + 1, i + 1))
             outstr += "\ndt = " + self.dt.__str__() + "\n"
 
         return outstr
+
+    # represent as string, makes display work for IPython
+    __repr__ = __str__
 
     def __neg__(self):
         """Negate a transfer function."""

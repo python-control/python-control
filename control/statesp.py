@@ -12,6 +12,7 @@ StateSpace.__init__
 StateSpace._remove_useless_states
 StateSpace.copy
 StateSpace.__str__
+StateSpace.__repr__
 StateSpace.__neg__
 StateSpace.__add__
 StateSpace.__radd__
@@ -224,6 +225,9 @@ a StateSpace object.  Recived %s." % type(args[0]))
         elif (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
             str += "\ndt = " + self.dt.__str__() + "\n"
         return str
+
+    # represent as string, makes display work for IPython
+    __repr__ = __str__
 
     # Negation of a system
     def __neg__(self):
