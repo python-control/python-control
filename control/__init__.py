@@ -14,16 +14,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -36,7 +36,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id$
 
 """Control System Library
@@ -56,50 +56,61 @@ lqr     linear quadratic regulator
 lqe     linear quadratic estimator
 """
 
-# Import functions from within the control system library
-#! Should probably only import the exact functions we use...
-from control.bdalg import series, parallel, negate, feedback
-from control.delay import pade
-from control.dtime import sample_system
-from control.freqplot import bode_plot, nyquist_plot, gangof4_plot
-from control.freqplot import bode, nyquist, gangof4
-from control.lti import issiso, timebase, timebaseEqual, isdtime, isctime
-from control.margins import stability_margins, phase_crossover_frequencies
-from control.mateqn import lyap, dlyap, care, dare
-from control.modelsimp import hsvd, modred, balred, era, markov
-from control.nichols import nichols_plot, nichols
-from control.phaseplot import phase_plot, box_grid
-from control.rlocus import root_locus
-from control.statefbk import place, lqr, ctrb, obsv, gram, acker
-from control.statesp import StateSpace
-from control.timeresp import forced_response, initial_response, step_response, \
-    impulse_response
-from control.xferfcn import TransferFunction
-from control.ctrlutil import unwrap, issys
-from control.frdata import FRD
-from control.canonical import canonical_form, reachable_form
+try:
+    __CONTROL_SETUP__
+except NameError:
+    __CONTROL_SETUP__ = False
 
-# Exceptions
-from control.exception import *
+if __CONTROL_SETUP__:
+    import sys as _sys
+    _sys.stderr.write('Running from control source directory.\n')
+    del _sys
+else:
 
-# Import some of the more common (and benign) MATLAB shortcuts
-# By default, don't import conflicting commands here
-#! TODO (RMM, 4 Nov 2012): remove MATLAB dependencies from __init__.py
-#!
-#! Eventually, all functionality should be in modules *other* than matlab.
-#! This will allow inclusion of the matlab module to set up a different set
-#! of defaults from the main package.  At that point, the matlab module will
-#! allow provide compatibility with MATLAB but no package functionality.
-#!
-from control.matlab import ss, tf, ss2tf, tf2ss, drss
-from control.matlab import pole, zero, evalfr, freqresp, dcgain
-from control.matlab import nichols, rlocus, margin
-        # bode and nyquist come directly from freqplot.py
-from control.matlab import step, impulse, initial, lsim
-from control.matlab import ssdata, tfdata
+    # Import functions from within the control system library
+    # Should probably only import the exact functions we use...
+    from .bdalg import series, parallel, negate, feedback
+    from .delay import pade
+    from .dtime import sample_system
+    from .freqplot import bode_plot, nyquist_plot, gangof4_plot
+    from .freqplot import bode, nyquist, gangof4
+    from .lti import issiso, timebase, timebaseEqual, isdtime, isctime
+    from .margins import stability_margins, phase_crossover_frequencies
+    from .mateqn import lyap, dlyap, care, dare
+    from .modelsimp import hsvd, modred, balred, era, markov
+    from .nichols import nichols_plot, nichols
+    from .phaseplot import phase_plot, box_grid
+    from .rlocus import root_locus
+    from .statefbk import place, lqr, ctrb, obsv, gram, acker
+    from .statesp import StateSpace
+    from .timeresp import forced_response, initial_response, step_response, \
+        impulse_response
+    from .xferfcn import TransferFunction
+    from .ctrlutil import unwrap, issys
+    from .frdata import FRD
+    from .canonical import canonical_form, reachable_form
+
+    # Exceptions
+    from .exception import *
+
+    # Import some of the more common (and benign) MATLAB shortcuts
+    # By default, don't import conflicting commands here
+    #! TODO (RMM, 4 Nov 2012): remove MATLAB dependencies from __init__.py
+    #!
+    #! Eventually, all functionality should be in modules *other* than matlab.
+    #! This will allow inclusion of the matlab module to set up a different set
+    #! of defaults from the main package.  At that point, the matlab module will
+    #! allow provide compatibility with MATLAB but no package functionality.
+    #!
+    from .matlab import ss, tf, ss2tf, tf2ss, drss
+    from .matlab import pole, zero, evalfr, freqresp, dcgain
+    from .matlab import nichols, rlocus, margin
+            # bode and nyquist come directly from freqplot.py
+    from .matlab import step, impulse, initial, lsim
+    from .matlab import ssdata, tfdata
 
 # The following is to use Numpy's testing framework
 # Tests go under directory tests/, benchmarks under directory benchmarks/
-from numpy.testing import Tester
-test = Tester().test
-bench = Tester().bench
+    from numpy.testing import Tester
+    test = Tester().test
+    bench = Tester().bench

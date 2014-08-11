@@ -15,20 +15,20 @@ class TestDiscrete(unittest.TestCase):
 
         # Single input, single output continuous and discrete time systems
         sys = matlab.rss(3, 1, 1)
-        self.siso_ss1 = StateSpace(sys.A, sys.B, sys.C, sys.D) 
-        self.siso_ss1c = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.0) 
-        self.siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1) 
-        self.siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.2) 
-        self.siso_ss3d = StateSpace(sys.A, sys.B, sys.C, sys.D, True) 
+        self.siso_ss1 = StateSpace(sys.A, sys.B, sys.C, sys.D)
+        self.siso_ss1c = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.0)
+        self.siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1)
+        self.siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.2)
+        self.siso_ss3d = StateSpace(sys.A, sys.B, sys.C, sys.D, True)
 
         # Two input, two output continuous time system
         A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
         B = [[1., 4.], [-3., -3.], [-2., 1.]]
         C = [[4., 2., -3.], [1., 4., 3.]]
         D = [[-2., 4.], [0., 1.]]
-        self.mimo_ss1 = StateSpace(A, B, C, D) 
-        self.mimo_ss1c = StateSpace(A, B, C, D, 0) 
-        
+        self.mimo_ss1 = StateSpace(A, B, C, D)
+        self.mimo_ss1c = StateSpace(A, B, C, D, 0)
+
         # Two input, two output discrete time system
         self.mimo_ss1d = StateSpace(A, B, C, D, 0.1)
 
@@ -147,11 +147,11 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_ss1c + self.siso_ss1c
         sys = self.siso_ss1d + self.siso_ss1d
         sys = self.siso_ss3d + self.siso_ss3d
-        self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1c, 
+        self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1c,
                           self.mimo_ss1d)
-        self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1d, 
+        self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1d,
                           self.mimo_ss2d)
-        self.assertRaises(ValueError, StateSpace.__add__, self.siso_ss1d, 
+        self.assertRaises(ValueError, StateSpace.__add__, self.siso_ss1d,
                           self.siso_ss3d)
 
         # Transfer function addition
@@ -162,11 +162,11 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_tf1c + self.siso_tf1c
         sys = self.siso_tf1d + self.siso_tf1d
         sys = self.siso_tf2d + self.siso_tf2d
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1c, 
+        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1c,
                           self.siso_tf1d)
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d, 
+        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d,
                           self.siso_tf2d)
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d, 
+        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d,
                           self.siso_tf3d)
 
         # State space + transfer function
@@ -174,7 +174,7 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_tf1c + self.siso_ss1c
         sys = self.siso_ss1d + self.siso_tf1d
         sys = self.siso_tf1d + self.siso_ss1d
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1c, 
+        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1c,
                           self.siso_ss1d)
 
     def testMultiplication(self):
@@ -185,11 +185,11 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_ss1d * self.siso_ss1
         sys = self.siso_ss1c * self.siso_ss1c
         sys = self.siso_ss1d * self.siso_ss1d
-        self.assertRaises(ValueError, StateSpace.__mul__, self.mimo_ss1c, 
+        self.assertRaises(ValueError, StateSpace.__mul__, self.mimo_ss1c,
                           self.mimo_ss1d)
-        self.assertRaises(ValueError, StateSpace.__mul__, self.mimo_ss1d, 
+        self.assertRaises(ValueError, StateSpace.__mul__, self.mimo_ss1d,
                           self.mimo_ss2d)
-        self.assertRaises(ValueError, StateSpace.__mul__, self.siso_ss1d, 
+        self.assertRaises(ValueError, StateSpace.__mul__, self.siso_ss1d,
                           self.siso_ss3d)
 
         # Transfer function addition
@@ -199,11 +199,11 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_tf1d * self.siso_tf1
         sys = self.siso_tf1c * self.siso_tf1c
         sys = self.siso_tf1d * self.siso_tf1d
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1c, 
+        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1c,
                           self.siso_tf1d)
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d, 
+        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d,
                           self.siso_tf2d)
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d, 
+        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d,
                           self.siso_tf3d)
 
         # State space * transfer function
@@ -211,7 +211,7 @@ class TestDiscrete(unittest.TestCase):
         sys = self.siso_tf1c * self.siso_ss1c
         sys = self.siso_ss1d * self.siso_tf1d
         sys = self.siso_tf1d * self.siso_ss1d
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1c, 
+        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1c,
                           self.siso_ss1d)
 
 
@@ -259,6 +259,7 @@ class TestDiscrete(unittest.TestCase):
         tout, yout, xout = forced_response(self.siso_ss2d, T, U, 0)
         tout, yout, xout = forced_response(self.siso_ss3d, T, U, 0)
 
+    @unittest.skip("skipping test_sample_system: not implemented for MIMO")
     def test_sample_system(self):
         # Make sure we can convert various types of systems
         for sysc in (self.siso_ss1, self.siso_ss1c, self.siso_tf1c):
@@ -294,6 +295,6 @@ class TestDiscrete(unittest.TestCase):
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)
 
-        
+
 if __name__ == "__main__":
     unittest.main()

@@ -3,7 +3,7 @@
 #
 # Author: Steve Brunton, Kevin Chen, Lauren Padilla
 # Date: 30 Nov 2010
-# 
+#
 # This file contains routines for obtaining reduced order models
 #
 # Copyright (c) 2010 by California Institute of Technology
@@ -15,16 +15,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -37,7 +37,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id$
 
 # Python 3 compatability
@@ -45,15 +45,14 @@ from __future__ import print_function
 
 # External packages and modules
 import numpy as np
-import control.ctrlutil as ctrlutil
-from control.exception import *
-from control.lti import isdtime, isctime
-from control.statesp import StateSpace
-from control.statefbk import *
+from .exception import ControlSlycot
+from .lti import isdtime, isctime
+from .statesp import StateSpace
+from .statefbk import gram
 
 # Hankel Singular Value Decomposition
-#   The following returns the Hankel singular values, which are singular values 
-#of the matrix formed by multiplying the controllability and observability 
+#   The following returns the Hankel singular values, which are singular values
+#of the matrix formed by multiplying the controllability and observability
 #grammians
 def hsvd(sys):
     """Calculate the Hankel singular values.
@@ -61,12 +60,12 @@ def hsvd(sys):
     Parameters
     ----------
     sys : StateSpace
-        A state space system 
+        A state space system
 
     Returns
     -------
     H : Matrix
-        A list of Hankel singular values 
+        A list of Hankel singular values
 
     See Also
     --------
@@ -74,11 +73,11 @@ def hsvd(sys):
 
     Notes
     -----
-    The Hankel singular values are the singular values of the Hankel operator.  
-    In practice, we compute the square root of the eigenvalues of the matrix 
-    formed by taking the product of the observability and controllability 
-    gramians.  There are other (more efficient) methods based on solving the 
-    Lyapunov equation in a particular way (more details soon).  
+    The Hankel singular values are the singular values of the Hankel operator.
+    In practice, we compute the square root of the eigenvalues of the matrix
+    formed by taking the product of the observability and controllability
+    gramians.  There are other (more efficient) methods based on solving the
+    Lyapunov equation in a particular way (more details soon).
 
     Examples
     --------
@@ -103,7 +102,7 @@ def hsvd(sys):
 
 def modred(sys, ELIM, method='matchdc'):
     """
-    Model reduction of `sys` by eliminating the states in `ELIM` using a given 
+    Model reduction of `sys` by eliminating the states in `ELIM` using a given
     method.
 
     Parameters
@@ -113,20 +112,20 @@ def modred(sys, ELIM, method='matchdc'):
     ELIM: array
         Vector of states to eliminate
     method: string
-        Method of removing states in `ELIM`: either ``'truncate'`` or 
+        Method of removing states in `ELIM`: either ``'truncate'`` or
         ``'matchdc'``.
 
     Returns
     -------
     rsys: StateSpace
-        A reduced order model 
+        A reduced order model
 
     Raises
     ------
     ValueError
         * if `method` is not either ``'matchdc'`` or ``'truncate'``
-        * if eigenvalues of `sys.A` are not all in left half plane 
-          (`sys` must be stable) 
+        * if eigenvalues of `sys.A` are not all in left half plane
+          (`sys` must be stable)
 
     Examples
     --------
@@ -162,8 +161,8 @@ def modred(sys, ELIM, method='matchdc'):
     A1 = sys.A[:,NELIM[0]]
     for i in NELIM[1:]:
         A1 = np.hstack((A1, sys.A[:,i]))
-    A11 = A1[NELIM,:]  
-    A21 = A1[ELIM,:]  
+    A11 = A1[NELIM,:]
+    A21 = A1[ELIM,:]
     # A2 is a matrix of all columns of sys.A to eliminate
     A2 = sys.A[:,ELIM[0]]
     for i in ELIM[1:]:
@@ -186,10 +185,10 @@ def modred(sys, ELIM, method='matchdc'):
         Dr = sys.D - C2*A22.I*B2
     elif method=='truncate':
         # if truncate, simply discard state x2
-        Ar = A11 
+        Ar = A11
         Br = B1
         Cr = C1
-        Dr = sys.D 
+        Dr = sys.D
     else:
         raise ValueError("Oops, method is not supported!")
 
@@ -198,7 +197,7 @@ def modred(sys, ELIM, method='matchdc'):
 
 def balred(sys, orders, method='truncate'):
     """
-    Balanced reduced order model of sys of a given order.  
+    Balanced reduced order model of sys of a given order.
     States are eliminated based on Hankel singular value.
 
     Parameters
@@ -206,7 +205,7 @@ def balred(sys, orders, method='truncate'):
     sys: StateSpace
         Original system to reduce
     orders: integer or array of integer
-        Desired order of reduced order model (if a vector, returns a vector 
+        Desired order of reduced order model (if a vector, returns a vector
         of systems)
     method: string
         Method of removing states, either ``'truncate'`` or ``'matchdc'``.
@@ -214,20 +213,20 @@ def balred(sys, orders, method='truncate'):
     Returns
     -------
     rsys: StateSpace
-        A reduced order model 
+        A reduced order model
 
     Raises
     ------
     ValueError
         * if `method` is not ``'truncate'``
-        * if eigenvalues of `sys.A` are not all in left half plane 
-          (`sys` must be stable) 
+        * if eigenvalues of `sys.A` are not all in left half plane
+          (`sys` must be stable)
     ImportError
-        if slycot routine ab09ad is not found 
+        if slycot routine ab09ad is not found
 
     Examples
     --------
-    >>> rsys = balred(sys, order, method='truncate') 
+    >>> rsys = balred(sys, order, method='truncate')
 
     """
 
@@ -248,7 +247,7 @@ def balred(sys, orders, method='truncate'):
     for e in D:
         if e.real >= 0:
             raise ValueError("Oops, the system is unstable!")
-   
+
     if method=='matchdc':
         raise ValueError ("MatchDC not yet supported!")
     elif method=='truncate':
@@ -257,12 +256,12 @@ def balred(sys, orders, method='truncate'):
         except ImportError:
             raise ControlSlycot("can't find slycot subroutine ab09ad")
         job = 'B' # balanced (B) or not (N)
-        equil = 'N'  # scale (S) or not (N) 
+        equil = 'N'  # scale (S) or not (N)
         n = np.size(sys.A,0)
         m = np.size(sys.B,1)
         p = np.size(sys.C,0)
-        Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=orders,tol=0.0) 
-   
+        Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=orders,tol=0.0)
+
         rsys = StateSpace(Ar, Br, Cr, sys.D)
     else:
         raise ValueError("Oops, method is not supported!")
@@ -299,9 +298,9 @@ def minreal(sys, tol=None, verbose=True):
 def era(YY, m, n, nin, nout, r):
     """
     Calculate an ERA model of order `r` based on the impulse-response data `YY`.
-    
+
     .. note:: This function is not implemented yet.
-    
+
     Parameters
     ----------
     YY: array
@@ -320,7 +319,7 @@ def era(YY, m, n, nin, nout, r):
     Returns
     -------
     sys: StateSpace
-        A reduced order model sys=ss(Ar,Br,Cr,Dr) 
+        A reduced order model sys=ss(Ar,Br,Cr,Dr)
 
     Examples
     --------
@@ -330,13 +329,13 @@ def era(YY, m, n, nin, nout, r):
 
 def markov(Y, U, M):
     """
-    Calculate the first `M` Markov parameters [D CB CAB ...] 
+    Calculate the first `M` Markov parameters [D CB CAB ...]
     from input `U`, output `Y`.
 
     Parameters
     ----------
     Y: array_like
-        Output data 
+        Output data
     U: array_like
         Input data
     M: integer

@@ -71,7 +71,7 @@ class TestMatlab(unittest.TestCase):
         self.siso_ss2 = ss(self.siso_tf2);
         self.siso_ss3 = tf2ss(self.siso_tf3);
         self.siso_tf4 = ss2tf(self.siso_ss2);
-        
+
         #Create MIMO system, contains ``siso_ss1`` twice
         A = np.matrix("1. -2. 0.  0.;"
                       "3. -4. 0.  0.;"
@@ -89,7 +89,7 @@ class TestMatlab(unittest.TestCase):
 
         # get consistent test results
         np.random.seed(0)
-        
+
     def testParallel(self):
         sys1 = parallel(self.siso_ss1, self.siso_ss2)
         sys1 = parallel(self.siso_ss1, self.siso_tf2)
@@ -136,8 +136,8 @@ class TestMatlab(unittest.TestCase):
         #Test SISO system
         sys = self.siso_ss1
         t = np.linspace(0, 1, 10)
-        youttrue = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165, 
-                             42.3227, 44.9694, 47.1599, 48.9776]) 
+        youttrue = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165,
+                             42.3227, 44.9694, 47.1599, 48.9776])
         yout, tout = step(sys, T=t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
@@ -163,8 +163,8 @@ class TestMatlab(unittest.TestCase):
         #Test SISO system
         sys = self.siso_ss1
         t = np.linspace(0, 1, 10)
-        youttrue = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766, 31.7344, 
-                             26.1668, 21.6292, 17.9245, 14.8945]) 
+        youttrue = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766, 31.7344,
+                             26.1668, 21.6292, 17.9245, 14.8945])
         yout, tout = impulse(sys, T=t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
@@ -181,8 +181,8 @@ class TestMatlab(unittest.TestCase):
         sys = self.siso_ss1
         t = np.linspace(0, 1, 10)
         x0 = np.matrix(".5; 1.")
-        youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092, 
-                             1.1508, 0.5833, 0.1645, -0.1391]) 
+        youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
+                             1.1508, 0.5833, 0.1645, -0.1391])
         yout, tout = initial(sys, T=t, X0=x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
@@ -190,33 +190,33 @@ class TestMatlab(unittest.TestCase):
         #Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
         x0 = np.matrix(".5; 1.; .5; 1.")
-        y_00, _t = initial(sys, T=t, X0=x0, output=0)
-        y_11, _t = initial(sys, T=t, X0=x0, output=1)
+        y_00, _t = initial(sys, T=t, X0=x0, input=0, output=0)
+        y_11, _t = initial(sys, T=t, X0=x0, input=1, output=1)
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testLsim(self):
         t = np.linspace(0, 1, 10)
-        
+
         #compute step response - test with state space, and transfer function
         #objects
         u = np.array([1., 1, 1, 1, 1, 1, 1, 1, 1, 1])
-        youttrue = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165, 
-                             42.3227, 44.9694, 47.1599, 48.9776]) 
-        yout, tout, _xout = lsim(self.siso_ss1, u, t)   
+        youttrue = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165,
+                             42.3227, 44.9694, 47.1599, 48.9776])
+        yout, tout, _xout = lsim(self.siso_ss1, u, t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
         yout, _t, _xout = lsim(self.siso_tf3, u, t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
-        
+
         #test with initial value and special algorithm for ``U=0``
         u=0
         x0 = np.matrix(".5; 1.")
-        youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092, 
-                             1.1508, 0.5833, 0.1645, -0.1391]) 
+        youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
+                             1.1508, 0.5833, 0.1645, -0.1391])
         yout, _t, _xout = lsim(self.siso_ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
-        
+
         #Test MIMO system, which contains ``siso_ss1`` twice
         #first system: initial value, second system: step response
         u = np.array([[0., 1.], [0, 1], [0, 1], [0, 1], [0, 1],
@@ -224,8 +224,8 @@ class TestMatlab(unittest.TestCase):
         x0 = np.matrix(".5; 1; 0; 0")
         youttrue = np.array([[11., 9.], [8.1494, 17.6457], [5.9361, 24.7072],
                              [4.2258, 30.4855], [2.9118, 35.2234],
-                             [1.9092, 39.1165], [1.1508, 42.3227], 
-                             [0.5833, 44.9694], [0.1645, 47.1599], 
+                             [1.9092, 39.1165], [1.1508, 42.3227],
+                             [0.5833, 44.9694], [0.1645, 47.1599],
                              [-0.1391, 48.9776]])
         yout, _t, _xout = lsim(self.mimo_ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
@@ -238,8 +238,8 @@ class TestMatlab(unittest.TestCase):
         gm, pm, wg, wp = margin(self.siso_ss2);
         gm, pm, wg, wp = margin(self.siso_ss2*self.siso_ss2*2);
         np.testing.assert_array_almost_equal(
-            [gm, pm, wg, wp], [1.5451, 75.9933, 1.2720, 0.6559], decimal=3)
-        
+            [gm, pm, wg, wp], [1.5451, 75.9933, 0.6559, 1.2720], decimal=3)
+
     def testDcgain(self):
         #Create different forms of a SISO system
         A, B, C, D = self.siso_ss1.A, self.siso_ss1.B, self.siso_ss1.C, \
@@ -247,32 +247,31 @@ class TestMatlab(unittest.TestCase):
         Z, P, k = sp.signal.ss2zpk(A, B, C, D)
         num, den = sp.signal.ss2tf(A, B, C, D)
         sys_ss = self.siso_ss1
-        
+
         #Compute the gain with ``dcgain``
         gain_abcd = dcgain(A, B, C, D)
         gain_zpk = dcgain(Z, P, k)
         gain_numden = dcgain(np.squeeze(num), den)
         gain_sys_ss = dcgain(sys_ss)
-        print
-        print('gain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk)
+        print('\ngain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk)
         print('gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss)
-        
+
         #Compute the gain with a long simulation
         t = linspace(0, 1000, 1000)
         y, _t = step(sys_ss, t)
         gain_sim = y[-1]
         print('gain_sim:', gain_sim)
-        
+
         #All gain values must be approximately equal to the known gain
         np.testing.assert_array_almost_equal(
-            [gain_abcd[0,0], gain_zpk[0,0], gain_numden[0,0], gain_sys_ss[0,0], 
+            [gain_abcd[0,0], gain_zpk[0,0], gain_numden[0,0], gain_sys_ss[0,0],
              gain_sim],
             [59, 59, 59, 59, 59])
-        
-        #Test with MIMO system, which contains ``siso_ss1`` twice
+
+        # Test with MIMO system, which contains ``siso_ss1`` twice
         gain_mimo = dcgain(self.mimo_ss1)
         print('gain_mimo: \n', gain_mimo)
-        np.testing.assert_array_almost_equal(gain_mimo, [[59., 0 ], 
+        np.testing.assert_array_almost_equal(gain_mimo, [[59., 0 ],
                                                          [0,  59.]])
 
     def testBode(self):
@@ -327,7 +326,7 @@ class TestMatlab(unittest.TestCase):
         evalfr(self.siso_tf2, w)
         evalfr(self.siso_tf3, w)
         np.testing.assert_array_almost_equal(
-            evalfr(self.mimo_ss1, w), 
+            evalfr(self.mimo_ss1, w),
             np.array( [[44.8-21.4j, 0.], [0., 44.8-21.4j]]))
 
     def testHsvd(self):
@@ -439,7 +438,7 @@ class TestMatlab(unittest.TestCase):
                           1.08937685e-03]))
         np.testing.assert_array_almost_equal(
             Z, np.array([1.0, 0.07983139,  0.07983139, 1.0]))
-        
+
     def testConnect(self):
         sys1 = ss("1. -2; 3. -4", "5.; 7", "6, 8", "9.")
         sys2 = ss("-1.", "1.", "1.", "0.")
@@ -457,29 +456,29 @@ class TestMatlab(unittest.TestCase):
             sysc.D, np.mat('0; 0'))
 
     def testConnect2(self):
-        sys = append(ss([[-5, -2.25], [4, 0]], [[2], [0]], 
-                          [[0, 1.125]], [[0]]), 
+        sys = append(ss([[-5, -2.25], [4, 0]], [[2], [0]],
+                          [[0, 1.125]], [[0]]),
                        ss([[-1.6667, 0], [1, 0]], [[2], [0]],
                           [[0, 3.3333]], [[0]]),
                        1)
         Q = [ [ 1, 3], [2, 1], [3, -2]]
         sysc = connect(sys, Q, [3], [3, 1, 2])
         np.testing.assert_array_almost_equal(
-            sysc.A, np.mat([[-5, -2.25, 0, -6.6666], 
+            sysc.A, np.mat([[-5, -2.25, 0, -6.6666],
                             [4, 0, 0, 0],
-                            [0, 2.25, -1.6667, 0], 
+                            [0, 2.25, -1.6667, 0],
                             [0, 0, 1, 0]]))
         np.testing.assert_array_almost_equal(
             sysc.B, np.mat([[2], [0], [0], [0]]))
         np.testing.assert_array_almost_equal(
-            sysc.C, np.mat([[0, 0, 0, -3.3333], 
+            sysc.C, np.mat([[0, 0, 0, -3.3333],
                             [0, 1.125, 0, 0],
                             [0, 0, 0, 3.3333]]))
         np.testing.assert_array_almost_equal(
             sysc.D, np.mat([[1], [0], [0]]))
-            
-                          
-                                 
+
+
+
     def testFRD(self):
         h = tf([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
@@ -499,7 +498,7 @@ class TestMatlab(unittest.TestCase):
         #D = [0 -0.8; -0.3 0]
         D = [[0., -0.8], [-0.3, 0.]]
         # sys = ss(A, B, C, D)
-        
+
         sys = ss(A, B, C, D)
         sysr = minreal(sys)
         self.assertEqual(sysr.states, 2)
@@ -515,6 +514,7 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
 
+    @unittest.skip("skipping testSS2cont: not implemented for MIMO")
     def testSS2cont(self):
         sys = ss(
             np.mat("-3 4 2; -1 -3 0; 2 5 3"),
@@ -532,7 +532,7 @@ class TestMatlab(unittest.TestCase):
             np.mat(""" 0.012362066084719   0.301932197918268;
                       -0.260952977031384  -0.274201791021713;
                       -0.304617775734327   0.075182622718853"""), sysd.B)
-        
+
 
     @unittest.skip("skipping testCombi01: need to check/update margins")
     def testCombi01(self):
@@ -546,7 +546,7 @@ class TestMatlab(unittest.TestCase):
         k = 10;
         b = 5;
 
-        # can now define an "s" variable, to make TF's 
+        # can now define an "s" variable, to make TF's
         s = tf([1, 0], [1]);
         hb1 = 1/(Jb*s);
         hb2 = 1/s;
@@ -566,25 +566,25 @@ class TestMatlab(unittest.TestCase):
         inputs = [1];
         outputs = [1, 2, 5, 6];
         sat1 = connect(sat0, Q, inputs, outputs);
-        
+
         # matched notch filter
         wno = 0.19
         z1 = 0.05
         z2 = 0.7
         Hno = (1+2*z1/wno*s+s**2/wno**2)/(1+2*z2/wno*s+s**2/wno**2)
-        
+
         # the controller, Kp = 1 for now
         Kp = 1.64
         tau_PD = 50.
         Hc = (1 + tau_PD*s)*Kp
 
-        # start with the basic satellite model sat1, and get the 
+        # start with the basic satellite model sat1, and get the
         # payload attitude response
         Hp = tf(sp.matrix([0, 0, 0, 1])*sat1)
-        
+
         # total open loop
         Hol = Hc*Hno*Hp
-        
+
         gm, pm, wg, wp = margin(Hol)
         self.assertAlmostEqual(gm, 3.32065569155)
         self.assertAlmostEqual(pm, 46.9740430224)

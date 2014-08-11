@@ -1,4 +1,4 @@
-""" mateqn.py 
+""" mateqn.py
 
 Matrix equation solvers (Lyapunov, Riccati)
 
@@ -21,7 +21,7 @@ are met:
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
 
-3. Neither the name of the project author nor the names of its 
+3. Neither the name of the project author nor the names of its
    contributors may be used to endorse or promote products derived
    from this software without specific prior written permission.
 
@@ -43,16 +43,16 @@ Author: Bjorn Olofsson
 
 from numpy.linalg import inv
 from scipy import shape, size, asarray, copy, zeros, eye, dot
-from control.exception import ControlSlycot, ControlArgument
+from .exception import ControlSlycot, ControlArgument
 
 #### Lyapunov equation solvers lyap and dlyap
 
 def lyap(A,Q,C=None,E=None):
     """ X = lyap(A,Q) solves the continuous-time Lyapunov equation
-    
+
         A X + X A^T + Q = 0
 
-    where A and Q are square matrices of the same dimension. 
+    where A and Q are square matrices of the same dimension.
     Further, Q must be symmetric.
 
     X = lyap(A,Q,C) solves the Sylvester equation
@@ -123,7 +123,7 @@ def lyap(A,Q,C=None,E=None):
         # Solve the Lyapunov equation by calling Slycot function sb03md
         try:
             X,scale,sep,ferr,w = sb03md(n,-Q,A,eye(n,n),'C',trana='T')
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -154,7 +154,7 @@ def lyap(A,Q,C=None,E=None):
         # Solve the Sylvester equation by calling the Slycot function sb04md
         try:
             X = sb04md(n,m,A,Q,-C)
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -192,12 +192,12 @@ def lyap(A,Q,C=None,E=None):
         except ImportError:
             raise ControlSlycot("can't find slycot module 'sg03ad'")
 
-        # Solve the generalized Lyapunov equation by calling Slycot 
+        # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
         try:
             A,E,Q,Z,X,scale,sep,ferr,alphar,alphai,beta = \
                 sg03ad('C','B','N','T','L',n,A,E,eye(n,n),eye(n,n),-Q)
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0 or ve.info > 4:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -221,11 +221,11 @@ def lyap(A,Q,C=None,E=None):
                                 used to solve the equation (but the matrices \
                                 A and E are unchanged)")
                 e.info = ve.info
-            raise e    
-    # Invalid set of input parameters    
+            raise e
+    # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters")
-            
+
     return X
 
 
@@ -310,7 +310,7 @@ def dlyap(A,Q,C=None,E=None):
         # Solve the Lyapunov equation by calling the Slycot function sb03md
         try:
             X,scale,sep,ferr,w = sb03md(n,-Q,A,eye(n,n),'D',trana='T')
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -337,7 +337,7 @@ def dlyap(A,Q,C=None,E=None):
         # Solve the Sylvester equation by calling Slycot function sb04qd
         try:
             X = sb04qd(n,m,-A,asarray(Q).T,C)
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -369,12 +369,12 @@ def dlyap(A,Q,C=None,E=None):
         if not (asarray(Q) == asarray(Q).T).all():
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        # Solve the generalized Lyapunov equation by calling Slycot 
+        # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
         try:
             A,E,Q,Z,X,scale,sep,ferr,alphar,alphai,beta = \
                 sg03ad('D','B','N','T','L',n,A,E,eye(n,n),eye(n,n),-Q)
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0 or ve.info > 4:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -399,7 +399,7 @@ def dlyap(A,Q,C=None,E=None):
                                 matrices A and E are unchanged)")
                 e.info = ve.info
             raise e
-    # Invalid set of input parameters    
+    # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters")
 
@@ -415,7 +415,7 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         A^T X + X A - X B B^T X + Q = 0
 
-    where A and Q are square matrices of the same dimension. Further, Q 
+    where A and Q are square matrices of the same dimension. Further, Q
     is a symmetric matrix. The function returns the solution X, the gain
     matrix G = B^T X and the closed loop eigenvalues L, i.e., the eigenvalues
     of A - B G.
@@ -425,9 +425,9 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         A^T X E + E^T X A - (E^T X B + S) R^-1 (B^T X E + S^T) + Q = 0
 
-    where A, Q and E are square matrices of the same dimension. Further, Q and 
+    where A, Q and E are square matrices of the same dimension. Further, Q and
     R are symmetric matrices. The function returns the solution X, the gain
-    matrix G = R^-1 (B^T X E + S^T) and the closed loop eigenvalues L, i.e., 
+    matrix G = R^-1 (B^T X E + S^T) and the closed loop eigenvalues L, i.e.,
     the eigenvalues of A - B G , E. """
 
     # Make sure we can import required slycot routine
@@ -477,7 +477,7 @@ def care(A,B,Q,R=None,S=None,E=None):
     else:
         m = size(B,1)
     if R==None:
-        R = eye(m,m)    
+        R = eye(m,m)
 
     # Solve the standard algebraic Riccati equation
     if S==None and E==None:
@@ -505,11 +505,11 @@ def care(A,B,Q,R=None,S=None,E=None):
         R_ba = copy(R)
         B_ba = copy(B)
 
-        # Solve the standard algebraic Riccati equation by calling Slycot 
+        # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
         try:
             A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = sb02mt(n,m,B,R)
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -524,7 +524,7 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         try:
             X,rcond,w,S_o,U,A_inv = sb02md(n,A,G,Q,'C')
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -606,12 +606,12 @@ def care(A,B,Q,R=None,S=None,E=None):
         E_b = copy(E)
         S_b = copy(S)
 
-        # Solve the generalized algebraic Riccati equation by calling the 
+        # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
         try:
             rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
                     sg02ad('C','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -662,19 +662,19 @@ def care(A,B,Q,R=None,S=None,E=None):
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
         return (X , L , G)
-    
+
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters.")
 
 
 def dare(A,B,Q,R,S=None,E=None):
-    """ (X,L,G) = dare(A,B,Q,R) solves the discrete-time algebraic Riccati  
+    """ (X,L,G) = dare(A,B,Q,R) solves the discrete-time algebraic Riccati
     equation
 
         A^T X A - X - A^T X B (B^T X B + R)^-1 B^T X A + Q = 0
 
-    where A and Q are square matrices of the same dimension. Further, Q 
+    where A and Q are square matrices of the same dimension. Further, Q
     is a symmetric matrix. The function returns the solution X, the gain
     matrix G = (B^T X B + R)^-1 B^T X A and the closed loop eigenvalues L,
     i.e., the eigenvalues of A - B G.
@@ -682,10 +682,10 @@ def dare(A,B,Q,R,S=None,E=None):
     (X,L,G) = dare(A,B,Q,R,S,E) solves the generalized discrete-time algebraic
     Riccati equation
 
-        A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^-1 (B^T X A + S^T) + 
+        A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^-1 (B^T X A + S^T) +
             + Q = 0
 
-    where A, Q and E are square matrices of the same dimension. Further, Q and 
+    where A, Q and E are square matrices of the same dimension. Further, Q and
     R are symmetric matrices. The function returns the solution X, the gain
     matrix G = (B^T X B + R)^-1 (B^T X A + S^T) and the closed loop
     eigenvalues L, i.e., the eigenvalues of A - B G , E. """
@@ -764,11 +764,11 @@ def dare(A,B,Q,R,S=None,E=None):
         R_ba = copy(R)
         B_ba = copy(B)
 
-        # Solve the standard algebraic Riccati equation by calling Slycot 
+        # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
         try:
-            A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = sb02mt(n,m,B,R)    
-        except ValueError(ve):
+            A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = sb02mt(n,m,B,R)
+        except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -783,7 +783,7 @@ def dare(A,B,Q,R,S=None,E=None):
 
         try:
             X,rcond,w,S,U,A_inv = sb02md(n,A,G,Q,'D')
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
                 e.info = ve.info
@@ -868,12 +868,12 @@ def dare(A,B,Q,R,S=None,E=None):
         E_b = copy(E)
         S_b = copy(S)
 
-        # Solve the generalized algebraic Riccati equation by calling the 
+        # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
         try:
             rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
                     sg02ad('D','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
-        except ValueError(ve):
+        except ValueError as ve:
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
                 e.info = ve.info

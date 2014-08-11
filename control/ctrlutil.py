@@ -2,7 +2,7 @@
 #
 # Author: Richard M. Murray
 # Date: 24 May 09
-# 
+#
 # These are some basic utility functions that are used in the control
 # systems library and that didn't naturally fit anyplace else.
 #
@@ -15,16 +15,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -37,12 +37,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id$
 
 # Packages that we need access to
 import scipy as sp
-import control.lti as lti
+from . import lti
 
 # Specific functions that we use
 from scipy import pi
@@ -51,7 +51,7 @@ from scipy import pi
 
 def unwrap(angle, period=2*pi):
     """Unwrap a phase angle to give a continuous curve
-    
+
     Parameters
     ----------
     X : array_like
@@ -63,7 +63,7 @@ def unwrap(angle, period=2*pi):
     -------
     Y : array_like
         Output array, with jumps of period/2 eliminated
-    
+
     Examples
     --------
     >>> import numpy as np
@@ -96,8 +96,8 @@ def unwrap(angle, period=2*pi):
 def issys(object):
     # Check for a member of one of the classes that we define here
     #! TODO: this should probably look for an LTI object instead??
-    if (isinstance(object, lti.Lti)): 
+    if (isinstance(object, lti.Lti)):
         return True
-    
+
     # Didn't find anything that matched
     return False

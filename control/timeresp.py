@@ -2,7 +2,8 @@
 """
 Time domain simulation.
 
-This file contains a collection of functions that calculate time responses for linear systems.
+This file contains a collection of functions that calculate
+time responses for linear systems.
 
 .. _time-series-convention:
 
@@ -17,21 +18,21 @@ and :func:`initial_response`.
 
 .. note::
     This convention is different from the convention used in the library
-    :mod:`scipy.signal`. In Scipy's convention the meaning of rows and columns 
+    :mod:`scipy.signal`. In Scipy's convention the meaning of rows and columns
     is interchanged.  Thus, all 2D values must be transposed when they are
     used with functions from :mod:`scipy.signal`.
 
 Types:
 
-    * **Arguments** can be **arrays**, **matrices**, or **nested lists**. 
+    * **Arguments** can be **arrays**, **matrices**, or **nested lists**.
     * **Return values** are **arrays** (not matrices).
 
 The time vector is either 1D, or 2D with shape (1, n)::
- 
-      T = [[t1,     t2,     t3,     ..., tn    ]]  
-      
-Input, state, and output all follow the same convention. Columns are different 
-points in time, rows are different components. When there is only one row, a 
+
+      T = [[t1,     t2,     t3,     ..., tn    ]]
+
+Input, state, and output all follow the same convention. Columns are different
+points in time, rows are different components. When there is only one row, a
 1D object is accepted or returned, which adds convenience for SISO systems::
 
       U = [[u1(t1), u1(t2), u1(t3), ..., u1(tn)]
@@ -39,11 +40,11 @@ points in time, rows are different components. When there is only one row, a
            ...
            ...
            [ui(t1), ui(t2), ui(t3), ..., ui(tn)]]
-      
+
       Same for X, Y
 
-So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:] 
-is the sequence of values for the system's second input. 
+So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:]
+is the sequence of values for the system's second input.
 
 The initial conditions are either 1D, or 2D with shape (j, 1)::
 
@@ -66,9 +67,9 @@ The output of a MIMO system can be plotted like this::
 
 The convention also works well with the state space form of linear systems. If
 ``D`` is the feedthrough *matrix* of a linear system, and ``U`` is its input
-(*matrix* or *array*), then the feedthrough part of the system's response, 
+(*matrix* or *array*), then the feedthrough part of the system's response,
 can be computed like this::
-    
+
     ft = D * U
 
 ----------------------------------------------------------------
@@ -114,30 +115,30 @@ Date: 12 May 2011
 $Id$
 """
 
-# Libraries that we make use of 
+# Libraries that we make use of
 import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
 from scipy.signal.ltisys import _default_response_times
-from copy import deepcopy
 import warnings
-from control.lti import Lti     # base class of StateSpace, TransferFunction
-from control. statesp import StateSpace, _rss_generate, _convertToStateSpace, _mimo2simo, _mimo2siso
-from control.lti import isdtime, isctime
+from .lti import Lti     # base class of StateSpace, TransferFunction
+from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso
+from .lti import isdtime, isctime
+
 
 # Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
     """
     Helper function for checking array-like parameters.
-    
-    * Check type and shape of ``in_obj``. 
-    * Convert ``in_obj`` to an array if necessary. 
+
+    * Check type and shape of ``in_obj``.
+    * Convert ``in_obj`` to an array if necessary.
     * Change shape of ``in_obj`` according to parameter ``squeeze``.
     * If ``in_obj`` is a scalar (number) it is converted to an array with
       a legal shape, that is filled with the scalar value.
-    
-    The function raises an exception when it detects an error. 
-    
+
+    The function raises an exception when it detects an error.
+
     Parameters
     ----------
     in_obj: array like object
@@ -153,10 +154,10 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
           columns
 
     err_msg_start: str
-        String that is prepended to the error messages, when this function 
-        raises an exception. It should be used to identify the argument which 
+        String that is prepended to the error messages, when this function
+        raises an exception. It should be used to identify the argument which
         is currently checked.
-         
+
     squeeze: bool
         If True, all dimensions with only one element are removed from the
         array. If False the array's shape is unmodified.
@@ -169,41 +170,41 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
         format.  Used to convert MATLAB-style inputs to our format.
 
     Returns:
-    
+
     out_array: array
         The checked and converted contents of ``in_obj``.
     """
-    #convert nearly everything to an array.
+    # convert nearly everything to an array.
     out_array = np.asarray(in_obj)
     if (transpose):
         out_array = np.transpose(out_array)
 
-    #Test element data type, elements must be numbers
-    legal_kinds = set(("i", "f", "c")) #integer, float, complex
+    # Test element data type, elements must be numbers
+    legal_kinds = set(("i", "f", "c"))  # integer, float, complex
     if out_array.dtype.kind not in legal_kinds:
         err_msg = "Wrong element data type: '{d}'. Array elements " \
                   "must be numbers.".format(d=str(out_array.dtype))
         raise TypeError(err_msg_start + err_msg)
 
-    #If array is zero dimensional (in_obj is scalar):
-    #create array with legal shape filled with the original value.
+    # If array is zero dimensional (in_obj is scalar):
+    # create array with legal shape filled with the original value.
     if out_array.ndim == 0:
         for s_legal in legal_shapes:
-            #search for shape that does not contain the special symbol any.
+            # search for shape that does not contain the special symbol any.
             if "any" in s_legal:
                 continue
             the_val = out_array[()]
             out_array = np.empty(s_legal, 'd')
             out_array.fill(the_val)
             break
-    
-    #Test shape
+
+    # Test shape
     def shape_matches(s_legal, s_actual):
         """Test if two shape tuples match"""
-        #Array must have required number of dimensions
+        # Array must have required number of dimensions
         if len(s_legal) != len(s_actual):
             return False
-        #All dimensions must contain required number of elements. Joker: "all"
+        # All dimensions must contain required number of elements. Joker: "all"
         for n_legal, n_actual in zip(s_legal, s_actual):
             if n_legal == "any":
                 continue
@@ -211,7 +212,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                 return False
         return True
 
-    #Iterate over legal shapes, and see if any matches out_array's shape.
+    # Iterate over legal shapes, and see if any matches out_array's shape.
     for s_legal in legal_shapes:
         if shape_matches(s_legal, out_array.shape):
             break
@@ -221,50 +222,51 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                   .format(e=legal_shape_str, a=str(out_array.shape))
         raise ValueError(err_msg_start + err_msg)
 
-    #Convert shape
+    # Convert shape
     if squeeze:
         out_array = np.squeeze(out_array)
-        #We don't want zero dimensional arrays
+        # We don't want zero dimensional arrays
         if out_array.shape == tuple():
             out_array = out_array.reshape((1,))
 
     return out_array
 
+
 # Forced response of a linear system
 def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     """Simulate the output of a linear system.
-    
+
     As a convenience for parameters `U`, `X0`:
     Numbers (scalars) are converted to constant arrays with the correct shape.
-    The correct shape is inferred from arguments `sys` and `T`. 
-    
-    For information on the **shape** of parameters `U`, `T`, `X0` and 
+    The correct shape is inferred from arguments `sys` and `T`.
+
+    For information on the **shape** of parameters `U`, `T`, `X0` and
     return values `T`, `yout`, `xout` see: :ref:`time-series-convention`
-    
+
     Parameters
     ----------
     sys: Lti (StateSpace, or TransferFunction)
         LTI system to simulate
-        
-    T: array-like 
-        Time steps at which the input is defined, numbers must be (strictly 
-        monotonic) increasing. 
-        
+
+    T: array-like
+        Time steps at which the input is defined, numbers must be (strictly
+        monotonic) increasing.
+
     U: array-like or number, optional
         Input array giving input at each time `T` (default = 0).
-        
-        If `U` is ``None`` or ``0``, a special algorithm is used. This special 
+
+        If `U` is ``None`` or ``0``, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used otherwise.
-        
+
     X0: array-like or number, optional
-        Initial condition (default = 0). 
+        Initial condition (default = 0).
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
-        
+
     **keywords:
-        Additional keyword arguments control the solution algorithm for the 
+        Additional keyword arguments control the solution algorithm for the
         differential equations. These arguments are passed on to the function
         :func:`scipy.integrate.odeint`. See the documentation for
         :func:`scipy.integrate.odeint` for information about these
@@ -273,16 +275,16 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     Returns
     -------
     T: array
-        Time values of the output. 
+        Time values of the output.
     yout: array
-        Response of the system. 
+        Response of the system.
     xout: array
-        Time evolution of the state vector. 
-    
+        Time evolution of the state vector.
+
     See Also
     --------
     step_response, initial_response, impulse_response
-    
+
     Examples
     --------
     >>> T, yout, xout = forced_response(sys, T, u, X0)
@@ -290,17 +292,17 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     if not isinstance(sys, Lti):
         raise TypeError('Parameter ``sys``: must be a ``Lti`` object. '
                         '(For example ``StateSpace`` or ``TransferFunction``)')
-    sys = _convertToStateSpace(sys) 
+    sys = _convertToStateSpace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
-                 np.asarray(sys.D)
+        np.asarray(sys.D)
 #    d_type = A.dtype
     n_states = A.shape[0]
     n_inputs = B.shape[1]
 
     # Set and/or check time vector in discrete time case
     if isdtime(sys, strict=True):
-        if T == None:
-            if U == None:
+        if T is None:
+            if U is None:
                 raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
                                  'zero for discrete-time simulation')
             # Set T to integers with same length as U
@@ -312,61 +314,61 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
                 ValueError('Pamameter ``T`` must have same length as'
                            'input vector ``U``')
 
-    # Test if T has shape (n,) or (1, n); 
+    # Test if T has shape (n,) or (1, n);
     # T must be array-like and values must be increasing.
     # The length of T determines the length of the input vector.
     if T is None:
         raise ValueError('Parameter ``T``: must be array-like, and contain '
                          '(strictly monotonic) increasing numbers.')
-    T = _check_convert_array(T, [('any',), (1,'any')], 
-                             'Parameter ``T``: ', squeeze=True, 
-                             transpose = transpose)
+    T = _check_convert_array(T, [('any',), (1, 'any')],
+                             'Parameter ``T``: ', squeeze=True,
+                             transpose=transpose)
     if not all(T[1:] - T[:-1] > 0):
         raise ValueError('Parameter ``T``: time values must be '
                          '(strictly monotonic) increasing numbers.')
     n_steps = len(T)            # number of simulation steps
-    
-    #create X0 if not given, test if X0 has correct shape
-    X0 = _check_convert_array(X0, [(n_states,), (n_states,1)], 
+
+    # create X0 if not given, test if X0 has correct shape
+    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: ', squeeze=True)
 
     # Separate out the discrete and continuous time cases
     if isctime(sys):
         # Solve the differential equation, copied from scipy.signal.ltisys.
-        dot, squeeze, = np.dot, np.squeeze #Faster and shorter code
+        dot, squeeze, = np.dot, np.squeeze  # Faster and shorter code
 
-        # Faster algorithm if U is zero 
+        # Faster algorithm if U is zero
         if U is None or (isinstance(U, (int, float)) and U == 0):
             # Function that computes the time derivative of the linear system
             def f_dot(x, _t):
-                return dot(A,x)
-        
+                return dot(A, x)
+
             xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
             yout = dot(C, xout.T)
 
         # General algorithm that interpolates U in between output points
         else:
             # Test if U has correct shape and type
-            legal_shapes = [(n_steps,), (1,n_steps)] if n_inputs == 1 else \
+            legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
                            [(n_inputs, n_steps)]
-            U = _check_convert_array(U, legal_shapes, 
+            U = _check_convert_array(U, legal_shapes,
                                      'Parameter ``U``: ', squeeze=False,
                                      transpose=transpose)
             # convert 1D array to D2 array with only one row
-            if len(U.shape) == 1: 
-                U = U.reshape(1,-1)                      #pylint: disable=E1103
+            if len(U.shape) == 1:
+                U = U.reshape(1, -1)  # pylint: disable=E1103
 
             # Create a callable that uses linear interpolation to
             # calculate the input at any time.
             compute_u = \
                 sp.interpolate.interp1d(T, U, kind='linear', copy=False,
-                                        axis=-1, bounds_error=False, 
+                                        axis=-1, bounds_error=False,
                                         fill_value=0)
-        
+
             # Function that computes the time derivative of the linear system
             def f_dot(x, t):
-                return dot(A,x) + squeeze(dot(B,compute_u([t])))
-        
+                return dot(A, x) + squeeze(dot(B, compute_u([t])))
+
             xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
             yout = dot(C, xout.T) + dot(D, U)
 
@@ -386,18 +388,18 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
 
     return T, yout, xout
 
+
 def step_response(sys, T=None, X0=0., input=0, output=None,
-                  transpose = False, **keywords):
-    #pylint: disable=W0622
-    """
-    Step response of a linear system
-    
+                  transpose=False, **keywords):
+    # pylint: disable=W0622
+    """Step response of a linear system
+
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation. Optionally, one output may be
     selected. The parameters `input` and `output` do this. All other
     inputs are set to 0, all other outputs are ignored.
-    
-    For information on the **shape** of parameters `T`, `X0` and 
+
+    For information on the **shape** of parameters `T`, `X0` and
     return values `T`, `yout` see: :ref:`time-series-convention`
 
     Parameters
@@ -423,9 +425,9 @@ def step_response(sys, T=None, X0=0., input=0, output=None,
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
-        
+
     **keywords:
-        Additional keyword arguments control the solution algorithm for the 
+        Additional keyword arguments control the solution algorithm for the
         differential equations. These arguments are passed on to the function
         :func:`lsim`, which in turn passes them on to
         :func:`scipy.integrate.odeint`. See the documentation for
@@ -439,7 +441,7 @@ def step_response(sys, T=None, X0=0., input=0, output=None,
 
     yout: array
         Response of the system
-    
+
     See Also
     --------
     forced_response, initial_response, impulse_response
@@ -449,7 +451,7 @@ def step_response(sys, T=None, X0=0., input=0, output=None,
     >>> T, yout = step_response(sys, T, X0)
     """
     sys = _convertToStateSpace(sys)
-    if output == None:
+    if output is None:
         sys = _mimo2simo(sys, input, warn_conversion=True)
     else:
         sys = _mimo2siso(sys, input, output, warn_conversion=True)
@@ -460,25 +462,25 @@ def step_response(sys, T=None, X0=0., input=0, output=None,
             # For discrete time, use integers
             tvec = _default_response_times(sys.A, 100)
             T = range(int(np.ceil(max(tvec))))
-                         
+
     U = np.ones_like(T)
 
-    T, yout, _xout = forced_response(sys, T, U, X0, 
+    T, yout, _xout = forced_response(sys, T, U, X0,
                                      transpose=transpose, **keywords)
 
     return T, yout
 
 
-def initial_response(sys, T=None, X0=0., input=None, output=None, 
+def initial_response(sys, T=None, X0=0., input=0, output=None,
                      transpose=False, **keywords):
-    #pylint: disable=W0622
+    # pylint: disable=W0622
     """Initial condition response of a linear system
-    
-    If the system has multiple outputs (?IMO), optionally, one output
+
+    If the system has multiple outputs (MIMO), optionally, one output
     may be selected. If no selection is made for the output, all
     outputs are given.
-    
-    For information on the **shape** of parameters `T`, `X0` and 
+
+    For information on the **shape** of parameters `T`, `X0` and
     return values `T`, `yout` see: :ref:`time-series-convention`
 
     Parameters
@@ -507,7 +509,7 @@ def initial_response(sys, T=None, X0=0., input=None, output=None,
         compatibility with MATLAB and scipy.signal.lsim)
 
     **keywords:
-        Additional keyword arguments control the solution algorithm for the 
+        Additional keyword arguments control the solution algorithm for the
         differential equations. These arguments are passed on to the function
         :func:`lsim`, which in turn passes them on to
         :func:`scipy.integrate.odeint`. See the documentation for
@@ -521,7 +523,7 @@ def initial_response(sys, T=None, X0=0., input=None, output=None,
         Time values of the output
     yout: array
         Response of the system
-    
+
     See Also
     --------
     forced_response, impulse_response, step_response
@@ -530,11 +532,11 @@ def initial_response(sys, T=None, X0=0., input=None, output=None,
     --------
     >>> T, yout = initial_response(sys, T, X0)
     """
-    sys = _convertToStateSpace(sys) 
-    if output == None:
-        sys = _mimo2simo(sys, 0, warn_conversion=False)
+    sys = _convertToStateSpace(sys)
+    if output is None:
+        sys = _mimo2simo(sys, input, warn_conversion=False)
     else:
-        sys = _mimo2siso(sys, 0, output, warn_conversion=False)
+        sys = _mimo2siso(sys, input, output, warn_conversion=False)
 
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
@@ -548,17 +550,16 @@ def initial_response(sys, T=None, X0=0., input=None, output=None,
 
 
 def impulse_response(sys, T=None, X0=0., input=0, output=None,
-                    transpose=False, **keywords):
-    #pylint: disable=W0622
-    """
-    Impulse response of a linear system
-    
+                     transpose=False, **keywords):
+    # pylint: disable=W0622
+    """Impulse response of a linear system
+
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation. Optionally, one output may be
     selected. The parameters `input` and `output` do this. All other
     inputs are set to 0, all other outputs are ignored.
-    
-    For information on the **shape** of parameters `T`, `X0` and 
+
+    For information on the **shape** of parameters `T`, `X0` and
     return values `T`, `yout` see: :ref:`time-series-convention`
 
     Parameters
@@ -586,7 +587,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
         compatibility with MATLAB and scipy.signal.lsim)
 
     **keywords:
-        Additional keyword arguments control the solution algorithm for the 
+        Additional keyword arguments control the solution algorithm for the
         differential equations. These arguments are passed on to the function
         :func:`lsim`, which in turn passes them on to
         :func:`scipy.integrate.odeint`. See the documentation for
@@ -600,35 +601,35 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
         Time values of the output
     yout: array
         Response of the system
-    
+
     See Also
     --------
     ForcedReponse, initial_response, step_response
 
     Examples
     --------
-    >>> T, yout = impulse_response(sys, T, X0) 
+    >>> T, yout = impulse_response(sys, T, X0)
     """
-    sys = _convertToStateSpace(sys) 
-    if output == None:
+    sys = _convertToStateSpace(sys)
+    if output is None:
         sys = _mimo2simo(sys, input, warn_conversion=True)
     else:
         sys = _mimo2siso(sys, input, output, warn_conversion=True)
-    
+
     # System has direct feedthrough, can't simulate impulse response numerically
     if np.any(sys.D != 0) and isctime(sys):
         warnings.warn('System has direct feedthrough: ``D != 0``. The infinite '
                       'impulse at ``t=0`` does not appear in the output. \n'
                       'Results may be meaningless!')
-    
+
     # create X0 if not given, test if X0 has correct shape.
     # Must be done here because it is used for computations here.
     n_states = sys.A.shape[0]
-    X0 = _check_convert_array(X0, [(n_states,), (n_states,1)],
+    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: \n', squeeze=True)
 
     # Compute new X0 that contains the impulse
-    # We can't put the impulse into U because there is no numerical 
+    # We can't put the impulse into U because there is no numerical
     # representation for it (infinitesimally short, infinitely high).
     # See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
     B = np.asarray(sys.B).squeeze()
@@ -639,7 +640,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)
 
-    T, yout, _xout  = forced_response(sys, T, U, new_X0, \
-                          transpose=transpose, **keywords)
+    T, yout, _xout = forced_response(
+        sys, T, U, new_X0,
+        transpose=transpose, **keywords)
     return T, yout
-

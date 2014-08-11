@@ -54,9 +54,9 @@ $Id$
 """
 
 import scipy as sp
-import control.xferfcn as tf
-import control.statesp as ss
-import control.frdata as frd
+from . import xferfcn as tf
+from . import statesp as ss
+from . import frdata as frd
 
 def series(sys1, sys2):
     """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.
@@ -97,7 +97,7 @@ def series(sys1, sys2):
     >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1.
 
     """
-    
+
     return sys2 * sys1
 
 def parallel(sys1, sys2):
@@ -117,12 +117,12 @@ def parallel(sys1, sys2):
     ------
     ValueError
         if `sys1` and `sys2` do not have the same numbers of inputs and outputs
-            
+
     See Also
     --------
     series
     feedback
-    
+
     Notes
     -----
     This function is a wrapper for the __add__ function in the
@@ -140,7 +140,7 @@ def parallel(sys1, sys2):
     >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2.
 
     """
-    
+
     return sys1 + sys2
 
 def negate(sys):
@@ -170,7 +170,7 @@ def negate(sys):
     >>> sys2 = negate(sys1) # Same as sys2 = -sys1.
 
     """
-    
+
     return -sys;
 
 #! TODO: expand to allow sys2 default to work in MIMO case?
@@ -184,7 +184,7 @@ def feedback(sys1, sys2=1, sign=-1):
         The primary plant.
     sys2: scalar, StateSpace, TransferFunction, FRD
         The feedback plant (often a feedback controller).
-    sign: scalar 
+    sign: scalar
         The sign of feedback.  `sign` = -1 indicates negative feedback, and
         `sign` = 1 indicates positive feedback.  `sign` is an optional
         argument; it assumes a value of -1 if not specified.
@@ -215,7 +215,7 @@ def feedback(sys1, sys2=1, sign=-1):
     object.  If `sys1` is a scalar, then it is converted to `sys2`'s type, and
     the corresponding feedback function is used.  If `sys1` and `sys2` are both
     scalars, then TransferFunction.feedback is used.
-  
+
     """
 
     # Check for correct input types.
@@ -225,7 +225,7 @@ def feedback(sys1, sys2=1, sign=-1):
                         "or FRD object, or a scalar.")
     if not isinstance(sys2, (int, float, complex, tf.TransferFunction,
                              ss.StateSpace, frd.FRD)):
-        raise TypeError("sys2 must be a TransferFunction, StateSpace " + 
+        raise TypeError("sys2 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
@@ -257,19 +257,19 @@ def append(*sys):
     sys1, sys2, ... sysn: StateSpace or Transferfunction
         LTI systems to combine
 
-        
+
     Returns
     -------
     sys: LTI system
-        Combined LTI system, with input/output vectors consisting of all 
+        Combined LTI system, with input/output vectors consisting of all
         input/output vectors appended
-        
+
     Examples
     --------
     >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> sys2 = ss("-1.", "1.", "1.", "0.")
     >>> sys = append(sys1, sys2)
-    
+
     .. todo::
         also implement for transfer function, zpk, etc.
     '''
@@ -327,7 +327,7 @@ def connect(sys, Q, inputv, outputv):
             elif outp < 0 and -outp >= -sys.outputs:
                 K[inp,-outp-1] = -1.
     sys = sys.feedback(sp.matrix(K), sign=1)
-    
+
     # now trim
     Ytrim = sp.zeros( (len(outputv), sys.outputs) )
     Utrim = sp.zeros( (sys.inputs, len(inputv)) )
@@ -335,4 +335,4 @@ def connect(sys, Q, inputv, outputv):
         Utrim[u-1,i] = 1.
     for i,y in enumerate(outputv):
         Ytrim[i,y-1] = 1.
-    return sp.matrix(Ytrim)*sys*sp.matrix(Utrim)  
+    return sp.matrix(Ytrim)*sys*sp.matrix(Utrim)

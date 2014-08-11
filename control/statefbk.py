@@ -2,7 +2,7 @@
 #
 # Author: Richard M. Murray, Roberto Bucher
 # Date: 31 May 2010
-# 
+#
 # This file contains routines for designing state space controllers
 #
 # Copyright (c) 2010 by California Institute of Technology
@@ -14,16 +14,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -36,14 +36,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id$
 
 # External packages and modules
 import numpy as np
 import scipy as sp
-import control.statesp as statesp
-from control.exception import *
+from . import statesp
+from .exception import ControlSlycot, ControlArgument, ControlDimension
 
 # Pole placement
 def place(A, B, p):
@@ -51,16 +51,16 @@ def place(A, B, p):
 
     Parameters
     ----------
-    A : 2-d array 
+    A : 2-d array
         Dynamics matrix
-    B : 2-d array 
+    B : 2-d array
         Input matrix
-    p : 1-d list 
+    p : 1-d list
         Desired eigenvalue locations
 
     Returns
     -------
-    K : 2-d array 
+    K : 2-d array
         Gains such that A - B K has given eigenvalues
 
     Examples
@@ -79,7 +79,7 @@ def place(A, B, p):
     # Convert the system inputs to NumPy arrays
     A_mat = np.array(A);
     B_mat = np.array(B);
-    if (A_mat.shape[0] != A_mat.shape[1] or 
+    if (A_mat.shape[0] != A_mat.shape[1] or
         A_mat.shape[0] != B_mat.shape[0]):
         raise ControlDimension("matrix dimensions are incorrect")
 
@@ -150,32 +150,32 @@ def lqr(*args, **keywords):
     .. math:: J = \int_0^\infty x' Q x + u' R u + 2 x' N u
 
     The function can be called with either 3, 4, or 5 arguments:
-    
+
     * ``lqr(sys, Q, R)``
     * ``lqr(sys, Q, R, N)``
     * ``lqr(A, B, Q, R)``
     * ``lqr(A, B, Q, R, N)``
-    
+
     Parameters
     ----------
     A, B: 2-d array
         Dynamics and input matrices
     sys: Lti (StateSpace or TransferFunction)
-        Linear I/O system 
-    Q, R: 2-d array 
+        Linear I/O system
+    Q, R: 2-d array
         State and input weight matrices
-    N: 2-d array, optional  
+    N: 2-d array, optional
         Cross weight matrix
 
     Returns
     -------
-    K: 2-d array 
+    K: 2-d array
         State feedback gains
     S: 2-d array
         Solution to Riccati equation
-    E: 1-d array 
+    E: 1-d array
         Eigenvalues of the closed loop system
-    
+
     Examples
     --------
     >>> K, S, E = lqr(sys, Q, R, [N])
@@ -190,16 +190,16 @@ def lqr(*args, **keywords):
     except ImportError:
         raise ControlSlycot("can't find slycot module 'sb02md' or 'sb02nt'")
 
-    # 
+    #
     # Process the arguments and figure out what inputs we received
     #
-    
+
     # Get the system description
     if (len(args) < 4):
         raise ControlArgument("not enough input arguments")
 
     try:
-        # If this works, we were (probably) passed a system as the 
+        # If this works, we were (probably) passed a system as the
         # first argument; extract A and B
         A = np.array(args[0].A, ndmin=2, dtype=float);
         B = np.array(args[0].B, ndmin=2, dtype=float);
@@ -213,7 +213,7 @@ def lqr(*args, **keywords):
     # Get the weighting matrices (converting to matrices, if needed)
     Q = np.array(args[index], ndmin=2, dtype=float);
     R = np.array(args[index+1], ndmin=2, dtype=float);
-    if (len(args) > index + 2): 
+    if (len(args) > index + 2):
         N = np.array(args[index+2], ndmin=2, dtype=float);
     else:
         N = np.zeros((Q.shape[0], R.shape[1]));
@@ -243,7 +243,7 @@ def lqr(*args, **keywords):
 
     return K, S, E
 
-def ctrb(A,B):       
+def ctrb(A,B):
     """Controllabilty matrix
 
     Parameters
@@ -272,7 +272,7 @@ def ctrb(A,B):
         ctrb = np.hstack((ctrb, amat**i*bmat))
     return ctrb
 
-def obsv(A, C):       
+def obsv(A, C):
     """Observability matrix
 
     Parameters
@@ -304,7 +304,7 @@ def obsv(A, C):
 
 def gram(sys,type):
     """Gramian (controllability or observability)
- 
+
     Parameters
     ----------
     sys: StateSpace
@@ -319,12 +319,12 @@ def gram(sys,type):
         Gramian of system
 
     Raises
-    ------   
+    ------
     ValueError
         * if system is not instance of StateSpace class
         * if `type` is not 'c' or 'o'
         * if system is unstable (sys.A has eigenvalues not in left half plane)
-        
+
     ImportError
         if slycot routin sb03md cannot be found
 
@@ -338,7 +338,7 @@ def gram(sys,type):
     #Check for ss system object
     if not isinstance(sys,statesp.StateSpace):
         raise ValueError("System must be StateSpace!")
-    
+
     #TODO: Check for continous or discrete, only continuous supported right now
         # if isCont():
         #    dico = 'C'

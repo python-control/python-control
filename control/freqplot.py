@@ -2,7 +2,7 @@
 #
 # Author: Richard M. Murray
 # Date: 24 May 09
-# 
+#
 # This file contains some standard control system plots: Bode plots,
 # Nyquist plots and pole-zero diagrams.  The code for Nichols charts
 # is in nichols.py.
@@ -16,16 +16,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -38,16 +38,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id$
 
 import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
 from warnings import warn
-from control.ctrlutil import unwrap
-from control.bdalg import feedback
-from control.lti import isdtime, timebaseEqual
+from .ctrlutil import unwrap
+from .bdalg import feedback
+from .lti import isdtime, timebaseEqual
 
 #
 # Main plotting functions
@@ -55,9 +55,9 @@ from control.lti import isdtime, timebaseEqual
 # This section of the code contains the functions for generating
 # frequency domain plots
 #
-   
+
 # Bode plot
-def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None, 
+def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         Plot=True, *args, **kwargs):
     """Bode plot for a system
 
@@ -77,7 +77,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         If True, return phase in degrees (else radians)
     Plot : boolean
         If True, plot magnitude and phase
-    *args, **kwargs: 
+    *args, **kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -88,7 +88,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         phase
     omega : array (list if len(syslist) > 1)
         frequency
-    
+
     Notes
     -----
     1. Alternatively, you may use the lower-level method (mag, phase, freq)
@@ -106,10 +106,10 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     >>> mag, phase, omega = bode(sys)
     """
     # Set default values for options
-    import control.config
-    if (dB is None): dB = control.config.bode_dB
-    if (deg is None): deg = control.config.bode_deg
-    if (Hz is None): Hz = control.config.bode_Hz
+    from . import config
+    if (dB is None): dB = config.bode_dB
+    if (deg is None): deg = config.bode_deg
+    if (Hz is None): Hz = config.bode_Hz
 
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
@@ -118,7 +118,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     mags, phases, omegas = [], [], []
     for sys in syslist:
         if (sys.inputs > 1 or sys.outputs > 1):
-            #TODO: Add MIMO bode plots. 
+            #TODO: Add MIMO bode plots.
             raise NotImplementedError("Bode is currently only implemented for SISO systems.")
         else:
             if (omega == None):
@@ -133,7 +133,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             if Hz: omega = omega/(2*sp.pi)
             if dB: mag = 20*sp.log10(mag)
             if deg: phase = phase * 180 / sp.pi
-            
+
             mags.append(mag)
             phases.append(phase)
             omegas.append(omega)
@@ -142,7 +142,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 
             if (Plot):
                 # Magnitude plot
-                plt.subplot(211); 
+                plt.subplot(211);
                 if dB:
                     plt.semilogx(omega, mag, *args, **kwargs)
                 else:
@@ -173,7 +173,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         return mags, phases, omegas
 
 # Nyquist plot
-def nyquist_plot(syslist, omega=None, Plot=True, color='b', 
+def nyquist_plot(syslist, omega=None, Plot=True, color='b',
                  labelFreq=0, *args, **kwargs):
     """Nyquist plot for a system
 
@@ -189,7 +189,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         If True, plot magnitude
     labelFreq : int
         Label every nth frequency on the plot
-    *args, **kwargs: 
+    *args, **kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -209,7 +209,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):
         syslist = (syslist,)
-        
+
     # Select a default range if none is provided
     if (omega == None):
         #! TODO: think about doing something smarter for discrete
@@ -224,19 +224,19 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
                             num=50, endpoint=True, base=10.0)
     for sys in syslist:
         if (sys.inputs > 1 or sys.outputs > 1):
-            #TODO: Add MIMO nyquist plots. 
+            #TODO: Add MIMO nyquist plots.
             raise NotImplementedError("Nyquist is currently only implemented for SISO systems.")
         else:
             # Get the magnitude and phase of the system
             mag_tmp, phase_tmp, omega = sys.freqresp(omega)
             mag = np.squeeze(mag_tmp)
             phase = np.squeeze(phase_tmp)
- 
+
             # Compute the primary curve
             x = sp.multiply(mag, sp.cos(phase));
             y = sp.multiply(mag, sp.sin(phase));
 
-            if (Plot):    
+            if (Plot):
                 # Plot the primary curve and mirror image
                 plt.plot(x, y, '-', color=color, *args, **kwargs);
                 plt.plot(x, -y, '--', color=color, *args, **kwargs);
@@ -245,26 +245,26 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
 
             # Label the frequencies of the points
             if (labelFreq):
-                for xpt, ypt, omegapt in zip(x, y, omega)[::labelFreq]:
+                for xpt, ypt, omegapt in list(zip(x, y, omega))[::labelFreq]:
                     # Convert to Hz
-                    f = omegapt/(2*sp.pi)       
+                    f = omegapt/(2*sp.pi)
 
                     # Factor out multiples of 1000 and limit the
                     # result to the range [-8, 8].
-                    pow1000 = max(min(get_pow1000(f),8),-8) 
+                    pow1000 = max(min(get_pow1000(f),8),-8)
 
                      # Get the SI prefix.
                     prefix = gen_prefix(pow1000)
-                    
+
                     # Apply the text. (Use a space before the text to
                     # prevent overlap with the data.)
                     #
                     # np.round() is used because 0.99... appears
                     # instead of 1.0, and this would otherwise be
                     # truncated to 0.
-                    plt.text(xpt, ypt, 
-                             ' ' + str(int(np.round(f/1000**pow1000, 0))) + 
-                             ' ' + prefix + 'Hz') 
+                    plt.text(xpt, ypt,
+                             ' ' + str(int(np.round(f/1000**pow1000, 0))) +
+                             ' ' + prefix + 'Hz')
         return x, y, omega
 
 # Gang of Four
@@ -287,10 +287,10 @@ def gangof4_plot(P, C, omega=None):
     None
     """
     if (P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs >1):
-        #TODO: Add MIMO go4 plots. 
+        #TODO: Add MIMO go4 plots.
         raise NotImplementedError("Gang of four is currently only implemented for SISO systems.")
     else:
- 
+
         # Select a default range if none is provided
         #! TODO: This needs to be made more intelligent
         if (omega == None):
@@ -329,7 +329,7 @@ def gangof4_plot(P, C, omega=None):
 # This section of the code contains some utility functions for
 # generating frequency domain plots
 #
-   
+
 # Compute reasonable defaults for axes
 def default_frequency_range(syslist):
     """Compute a reasonable default frequency range for frequency
@@ -359,10 +359,10 @@ def default_frequency_range(syslist):
     # and below the min and max feature frequencies, rounded to the nearest
     # integer.  It excludes poles and zeros at the origin.  If no features
     # are found, it turns logspace(-1, 1)
-    
+
     # Find the list of all poles and zeros in the systems
     features = np.array(())
-    
+
     # detect if single sys passed by checking if it is sequence-like
     if (not getattr(syslist, '__iter__', False)):
         syslist = (syslist,)
@@ -385,10 +385,10 @@ def default_frequency_range(syslist):
     features = np.log10(features)
 
     #! TODO: Add a check in discrete case to make sure we don't get aliasing
-                        
+
     # Set the range to be an order of magnitude beyond any features
-    omega = sp.logspace(np.floor(np.min(features))-1, 
-                        np.ceil(np.max(features))+1)   
+    omega = sp.logspace(np.floor(np.min(features))-1,
+                        np.ceil(np.max(features))+1)
 
     return omega
 

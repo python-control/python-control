@@ -88,7 +88,7 @@ from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
 from scipy.signal import lti
 from copy import deepcopy
 from warnings import warn
-from control.lti import Lti, timebaseEqual, timebase, isdtime
+from .lti import Lti, timebaseEqual, timebase, isdtime
 
 
 class TransferFunction(Lti):
@@ -320,7 +320,7 @@ denominator." % (j + 1, i + 1))
             outstr += "\ndt = " + self.dt.__str__() + "\n"
 
         return outstr
-    
+
     def __neg__(self):
         """Negate a transfer function."""
 
@@ -333,7 +333,7 @@ denominator." % (j + 1, i + 1))
 
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
-        from control.statesp import StateSpace
+        from .statesp import StateSpace
 
         # Convert the second argument to a transfer function.
         if (isinstance(other, StateSpace)):
@@ -910,7 +910,7 @@ a zero leading coefficient." % (i, j)
                 pad = len(den) - len(num[i][j])
                 if (pad > 0):
                     num[i][j] = insert(
-                        num[i][j], zeros(pad),
+                        num[i][j], zeros(pad, dtype=int),
                         zeros(pad))
 
         # Finally, convert the numerator to a 3-D array.
@@ -1013,7 +1013,7 @@ def _convertToTransferFunction(sys, **kw):
     and the denominator matrix [[[1.0], [1.0]], [[1.0], [1.0]]]
 
     """
-    from control.statesp import StateSpace
+    from .statesp import StateSpace
 
     if isinstance(sys, TransferFunction):
         if len(kw):

@@ -5,7 +5,7 @@ Frequency response data representation and functions.
 
 This file contains the FRD class and also functions that operate on
 FRD data.
-     
+
 Routines in this module:
 
 FRD.__init__
@@ -68,7 +68,7 @@ SUCH DAMAGE.
 
 Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
 Date: 02 Oct 12
-Revised: 
+Revised:
 
 $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 
@@ -78,42 +78,42 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 from numpy import angle, array, empty, ones, \
     real, imag, matrix, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
-from control.lti import Lti
+from .lti import Lti
 
 class FRD(Lti):
-    """The FRD class represents (measured?) frequency response 
+    """The FRD class represents (measured?) frequency response
     TF instances and functions.
-    
+
     The FRD class is derived from the Lti parent class.  It is used
     throughout the python-control library to represent systems in frequency
-    response data form. 
-    
-    The main data members are 'omega' and 'fresp'. omega is a 1D 
+    response data form.
+
+    The main data members are 'omega' and 'fresp'. omega is a 1D
     array with the frequency points of the response. fresp is a 3D array,
-    with the first dimension corresponding to the outputs of the FRD, 
-    the second dimension corresponding to the inputs, and the 3rd dimension 
+    with the first dimension corresponding to the outputs of the FRD,
+    the second dimension corresponding to the inputs, and the 3rd dimension
     corresponding to the frequency points in omega.
     For example,
 
     >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
-    
+
     means that the frequency response from the 6th input to the 3rd
     output at the frequencies defined in omega is set to the array
     above, i.e. the rows represent the outputs and the columns
     represent the inputs.
-    
+
     """
-    
+
     epsw = 1e-8
 
     def __init__(self, *args, **kwargs):
         """Construct a transfer function.
-        
-        The default constructor is FRD(d, w), where w is an iterable of 
-        frequency points, and d is the matching frequency data. 
-        
-        If d is a single list, 1d array, or tuple, a SISO system description 
-        is assumed. d can also be 
+
+        The default constructor is FRD(d, w), where w is an iterable of
+        frequency points, and d is the matching frequency data.
+
+        If d is a single list, 1d array, or tuple, a SISO system description
+        is assumed. d can also be
 
         To call the copy constructor, call FRD(sys), where sys is a
         FRD object.
@@ -121,7 +121,7 @@ class FRD(Lti):
         To construct frequency response data for an existing Lti
         object, other than an FRD, call FRD(sys, omega)
 
-        
+
 
         """
         smooth = kwargs.get('smooth', False)
@@ -137,7 +137,7 @@ class FRD(Lti):
 
                 # calculate frequency response at my points
                 self.fresp = empty(
-                    (otherlti.outputs, otherlti.inputs, numfreq), 
+                    (otherlti.outputs, otherlti.inputs, numfreq),
                     dtype=complex)
                 for k, w in enumerate(self.omega):
                     self.fresp[:, :, k] = otherlti.evalfr(w)
@@ -169,24 +169,24 @@ class FRD(Lti):
 
         # create interpolation functions
         if smooth:
-            self.ifunc = empty((self.fresp.shape[0], self.fresp.shape[1]), 
+            self.ifunc = empty((self.fresp.shape[0], self.fresp.shape[1]),
                                dtype=tuple)
             for i in range(self.fresp.shape[0]):
                 for j in range(self.fresp.shape[1]):
                     self.ifunc[i,j],u = splprep(
-                        u=self.omega, x=[real(self.fresp[i, j, :]), 
-                                         imag(self.fresp[i, j, :])], 
+                        u=self.omega, x=[real(self.fresp[i, j, :]),
+                                         imag(self.fresp[i, j, :])],
                         w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.0)
         else:
             self.ifunc = None
         Lti.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
-        
+
     def __str__(self):
         """String representation of the transfer function."""
-        
-        mimo = self.inputs > 1 or self.outputs > 1  
+
+        mimo = self.inputs > 1 or self.outputs > 1
         outstr = [ 'frequency response data ' ]
-        
+
         mt, pt, wt = self.freqresp(self.omega)
         for i in range(self.inputs):
             for j in range(self.outputs):
@@ -200,21 +200,21 @@ class FRD(Lti):
 
 
         return '\n'.join(outstr)
-    
+
     def __neg__(self):
         """Negate a transfer function."""
-        
+
         return FRD(-self.fresp, self.omega)
-    
+
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
-        
+
         if isinstance(other, FRD):
             # verify that the frequencies match
             if (other.omega != self.omega).any():
                 print("Warning: frequency points do not match; expect"
                       " truncation and interpolation")
-                
+
         # Convert the second argument to a frequency response function.
         # or re-base the frd to the current omega (if needed)
         other = _convertToFRD(other, omega=self.omega)
@@ -228,31 +228,31 @@ second has %i." % (self.inputs, other.inputs))
 second has %i." % (self.outputs, other.outputs))
 
         return FRD(self.fresp + other.fresp, other.omega)
- 
-    def __radd__(self, other): 
+
+    def __radd__(self, other):
         """Right add two LTI objects (parallel connection)."""
-        
+
         return self + other;
-        
-    def __sub__(self, other): 
+
+    def __sub__(self, other):
         """Subtract two LTI objects."""
-        
+
         return self + (-other)
-        
-    def __rsub__(self, other): 
+
+    def __rsub__(self, other):
         """Right subtract two LTI objects."""
-        
+
         return other + (-self)
 
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
-        
+
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex)):
             return FRD(self.fresp * other, self.omega)
         else:
             other = _convertToFRD(other, omega=self.omega)
-            
+
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
             raise ValueError("H = G1*G2: input-output size mismatch"
@@ -261,21 +261,21 @@ second has %i." % (self.outputs, other.outputs))
 
         inputs = other.inputs
         outputs = self.outputs
-        fresp = empty((outputs, inputs, len(self.omega)), 
+        fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
-        for i in range(len(self.omega)):        
+        for i in range(len(self.omega)):
             fresp[:,:,i] = dot(self.fresp[:,:,i], other.fresp[:,:,i])
         return FRD(fresp, self.omega)
 
-    def __rmul__(self, other): 
+    def __rmul__(self, other):
         """Right Multiply two LTI objects (serial connection)."""
-        
+
         # Convert the second argument to an frd function.
         if isinstance(other, (int, float, complex)):
             return FRD(self.fresp * other, self.omega)
         else:
             other = _convertToFRD(other, omega=self.omega)
-            
+
         # Check that the input-output sizes are consistent.
         if self.outputs != other.inputs:
             raise ValueError("H = G1*G2: input-output size mismatch"
@@ -284,34 +284,34 @@ second has %i." % (self.outputs, other.outputs))
 
         inputs = self.inputs
         outputs = other.outputs
-        
-        fresp = empty((outputs, inputs, len(self.omega)), 
+
+        fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
-        for i in range(len(self.omega)):        
+        for i in range(len(self.omega)):
             fresp[:,:,i] = dot(other.fresp[:,:,i], self.fresp[:,:,i])
         return FRD(fresp, self.omega)
 
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __truediv__(self, other):
         """Divide two LTI objects."""
-        
+
         if isinstance(other, (int, float, complex)):
             return FRD(self.fresp * (1/other), self.omega)
         else:
             other = _convertToFRD(other, omega=self.omega)
 
 
-        if (self.inputs > 1 or self.outputs > 1 or 
+        if (self.inputs > 1 or self.outputs > 1 or
             other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError(
                 "FRD.__truediv__ is currently implemented only for SISO systems.")
-        
+
         return FRD(self.fresp/other.fresp, self.omega)
 
     # TODO: Remove when transition to python3 complete
     def __div__(self, other):
         return self.__truediv__(other)
-       
+
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
@@ -319,8 +319,8 @@ second has %i." % (self.outputs, other.outputs))
             return FRD(other / self.fresp, self.omega)
         else:
             other = _convertToFRD(other, omega=self.omega)
-        
-        if (self.inputs > 1 or self.outputs > 1 or 
+
+        if (self.inputs > 1 or self.outputs > 1 or
             other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError(
                 "FRD.__rtruediv__ is currently implemented only for SISO systems.")
@@ -341,16 +341,16 @@ second has %i." % (self.outputs, other.outputs))
         if other < 0:
             return (FRD(ones(self.fresp.shape), self.omega) / self) * \
                 (self**(other+1))
-            
-        
+
+
     def evalfr(self, omega):
         """Evaluate a transfer function at a single angular frequency.
-        
+
         self.evalfr(omega) returns the value of the frequency response
         at frequency omega.
 
         Note that a "normal" FRD only returns values for which there is an
-        entry in the omega vector. An interpolating FRD can return 
+        entry in the omega vector. An interpolating FRD can return
         intermediate values.
 
         """
@@ -372,7 +372,7 @@ second has %i." % (self.outputs, other.outputs))
             if getattr(omega, '__iter__', False):
                 for i in range(self.outputs):
                     for j in range(self.inputs):
-                        for k,w in enumerate(omega): 
+                        for k,w in enumerate(omega):
                             frraw = splev(w, self.ifunc[i,j], der=0)
                             out[i,j,k] = frraw[0] + 1.0j*frraw[1]
             else:
@@ -380,7 +380,7 @@ second has %i." % (self.outputs, other.outputs))
                     for j in range(self.inputs):
                         frraw = splev(omega, self.ifunc[i,j], der=0)
                         out[i,j] = frraw[0] + 1.0j*frraw[1]
-                
+
         return out
 
     # Method for generating the frequency response of the system
@@ -389,12 +389,12 @@ second has %i." % (self.outputs, other.outputs))
 
         mag, phase, omega = self.freqresp(omega)
 
-        reports the value of the magnitude, phase, and angular frequency of the 
+        reports the value of the magnitude, phase, and angular frequency of the
         transfer function matrix evaluated at s = i * omega, where omega is a
         list of angular frequencies, and is a sorted version of the input omega.
 
         """
-        
+
         # Preallocate outputs.
         numfreq = len(omega)
         mag = empty((self.outputs, self.inputs, numfreq))
@@ -409,16 +409,16 @@ second has %i." % (self.outputs, other.outputs))
 
         return mag, phase, omega
 
-    def feedback(self, other=1, sign=-1): 
+    def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two FRD objects."""
-        
+
         other = _convertToFRD(other, omega=self.omega)
 
-        if (self.outputs != other.inputs or 
+        if (self.outputs != other.inputs or
             self.inputs != other.outputs):
             raise ValueError(
                 "FRD.feedback, inputs/outputs mismatch")
-        fresp = empty((self.outputs, self.inputs, len(other.omega)), 
+        fresp = empty((self.outputs, self.inputs, len(other.omega)),
                       dtype=complex)
         # TODO: vectorize this
         # TODO: handle omega re-mapping
@@ -426,15 +426,15 @@ second has %i." % (self.outputs, other.outputs))
             fresp[:, :, k] = self.fresp[:, :, k].view(type=matrix)* \
                 linalg.solve(
                 eye(self.inputs) +
-                other.fresp[:, :, k].view(type=matrix) * 
+                other.fresp[:, :, k].view(type=matrix) *
                 self.fresp[:, :, k].view(type=matrix),
                 eye(self.inputs))
-            
+
         return FRD(fresp, other.omega)
- 
+
 def _convertToFRD(sys, omega, inputs=1, outputs=1):
     """Convert a system to frequency response data form (if needed).
-    
+
     If sys is already an frd, and its frequency range matches or
     overlaps the range given in omega then it is returned.  If sys is
     another Lti object or a transfer function, then it is converted to
@@ -447,24 +447,24 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
 
     In the latter example, sys's matrix transfer function is [[1., 1., 1.]
                                                               [1., 1., 1.]].
-    
+
     """
-    
+
     if isinstance(sys, FRD):
         omega.sort()
         if (abs(omega - sys.omega) < FRD.epsw).all():
             # frequencies match, and system was already frd; simply use
             return sys
-        
+
         raise NotImplementedError(
             "Frequency ranges of FRD do not match, conversion not implemented")
-                         
+
     elif isinstance(sys, Lti):
         omega.sort()
         fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
         for k, w in enumerate(omega):
             fresp[:, :, k] = sys.evalfr(w)
-        
+
         return FRD(fresp, omega)
 
     elif isinstance(sys, (int, float, complex)):

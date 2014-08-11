@@ -17,8 +17,12 @@ of this is unknown.
 from __future__ import print_function
 import unittest
 import numpy as np
-import control
-import control.matlab as matlab
+from control import matlab
+from control.statesp import _mimo2siso
+from control.statefbk import ctrb, obsv
+from control.freqplot import bode
+from control.matlab import tf
+
 
 class TestConvert(unittest.TestCase):
     """Test state space and transfer function conversions."""
@@ -27,7 +31,7 @@ class TestConvert(unittest.TestCase):
         """Set up testing parameters."""
 
         # Number of times to run each of the randomized tests.
-        self.numTests = 1 #almost guarantees failure
+        self.numTests = 1  # almost guarantees failure
         # Maximum number of states to test + 1
         self.maxStates = 4
         # Maximum number of inputs and outputs to test + 1
@@ -47,12 +51,11 @@ class TestConvert(unittest.TestCase):
     def testConvert(self):
         """Test state space to transfer function conversion."""
         verbose = self.debug
-        from control.statesp import _mimo2siso
-        
-        #print __doc__
+
+        # print __doc__
 
         # Machine precision for floats.
-        eps = np.finfo(float).eps
+        # eps = np.finfo(float).eps
 
         for states in range(1, self.maxStates):
             for inputs in range(1, self.maxIO):
@@ -64,12 +67,12 @@ class TestConvert(unittest.TestCase):
                         self.printSys(ssOriginal, 1)
 
                     # Make sure the system is not degenerate
-                    Cmat = control.ctrb(ssOriginal.A, ssOriginal.B)
+                    Cmat = ctrb(ssOriginal.A, ssOriginal.B)
                     if (np.linalg.matrix_rank(Cmat) != states):
                         if (verbose):
                             print("  skipping (not reachable)")
                         continue
-                    Omat = control.obsv(ssOriginal.A, ssOriginal.C)
+                    Omat = obsv(ssOriginal.A, ssOriginal.C)
                     if (np.linalg.matrix_rank(Omat) != states):
                         if (verbose):
                             print("  skipping (not observable)")
@@ -78,7 +81,7 @@ class TestConvert(unittest.TestCase):
                     tfOriginal = matlab.tf(ssOriginal)
                     if (verbose):
                         self.printSys(tfOriginal, 2)
-                    
+
                     ssTransformed = matlab.ss(tfOriginal)
                     if (verbose):
                         self.printSys(ssTransformed, 3)
@@ -102,7 +105,7 @@ class TestConvert(unittest.TestCase):
                                 print("Checking input %d, output %d" \
                                     % (inputNum, outputNum))
                             ssorig_mag, ssorig_phase, ssorig_omega = \
-                                control.bode(_mimo2siso(ssOriginal, \
+                                bode(_mimo2siso(ssOriginal, \
                                                         inputNum, outputNum), \
                                                  deg=False, Plot=False)
                             ssorig_real = ssorig_mag * np.cos(ssorig_phase)
@@ -113,10 +116,10 @@ class TestConvert(unittest.TestCase):
                             #
                             num = tfOriginal.num[outputNum][inputNum]
                             den = tfOriginal.den[outputNum][inputNum]
-                            tforig = control.tf(num, den)
-                                                
+                            tforig = tf(num, den)
+
                             tforig_mag, tforig_phase, tforig_omega = \
-                                control.bode(tforig, ssorig_omega, \
+                                bode(tforig, ssorig_omega, \
                                                  deg=False, Plot=False)
 
                             tforig_real = tforig_mag * np.cos(tforig_phase)
@@ -130,7 +133,7 @@ class TestConvert(unittest.TestCase):
                             # Make sure xform'd SS has same frequency response
                             #
                             ssxfrm_mag, ssxfrm_phase, ssxfrm_omega = \
-                                control.bode(_mimo2siso(ssTransformed, \
+                                bode(_mimo2siso(ssTransformed, \
                                                         inputNum, outputNum), \
                                                  ssorig_omega, \
                                                  deg=False, Plot=False)
@@ -146,11 +149,11 @@ class TestConvert(unittest.TestCase):
                             #
                             num = tfTransformed.num[outputNum][inputNum]
                             den = tfTransformed.den[outputNum][inputNum]
-                            tfxfrm = control.tf(num, den)
+                            tfxfrm = tf(num, den)
                             tfxfrm_mag, tfxfrm_phase, tfxfrm_omega = \
-                                control.bode(tfxfrm, ssorig_omega, \
+                                bode(tfxfrm, ssorig_omega, \
                                                  deg=False, Plot=False)
-                            
+
                             tfxfrm_real = tfxfrm_mag * np.cos(tfxfrm_phase)
                             tfxfrm_imag = tfxfrm_mag * np.sin(tfxfrm_phase)
                             np.testing.assert_array_almost_equal( \
