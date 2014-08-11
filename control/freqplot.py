@@ -245,7 +245,8 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
 
             # Label the frequencies of the points
             if (labelFreq):
-                for xpt, ypt, omegapt in zip(x, y, omega)[::labelFreq]:
+                ind = slice(None, None, labelFreq)
+                for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
                     # Convert to Hz
                     f = omegapt/(2*sp.pi)       
 
