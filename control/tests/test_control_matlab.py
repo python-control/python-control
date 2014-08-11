@@ -109,14 +109,14 @@ class TestControlMatlab(unittest.TestCase):
         gain_zpk = dcgain(Z, P, k)
         gain_numden = dcgain(np.squeeze(num), den)
         gain_sys_ss = dcgain(sys_ss)
-        print 'gain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk
-        print 'gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss
+        print('gain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk)
+        print('gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss)
 
         #Compute the gain with a long simulation
         t = linspace(0, 1000, 1000)
         y, _t = step(sys_ss, t)
         gain_sim = y[-1]
-        print 'gain_sim:', gain_sim
+        print('gain_sim:', gain_sim)
 
         #All gain values must be approximately equal to the known gain
         assert_array_almost_equal([gain_abcd[0,0],   gain_zpk[0,0], 
@@ -128,7 +128,7 @@ class TestControlMatlab(unittest.TestCase):
         #Test with MIMO system
         A, B, C, D = self.make_MIMO_mats()
         gain_mimo = dcgain(A, B, C, D)
-        print 'gain_mimo: \n', gain_mimo
+        print('gain_mimo: \n', gain_mimo)
         assert_array_almost_equal(gain_mimo, [[0.026948, 0       ], 
                                               [0,        0.026948]], decimal=6)
 
@@ -445,10 +445,10 @@ class TestControlMatlab(unittest.TestCase):
                                          warn_conversion=False)
         sys_siso_10 = _mimo2siso(sys_mimo, input=1, output=0, 
                                          warn_conversion=False)
-        print "sys_siso_01 ---------------------------------------------"
-        print sys_siso_01
-        print "sys_siso_10 ---------------------------------------------"
-        print sys_siso_10
+        print("sys_siso_01 ---------------------------------------------")
+        print(sys_siso_01)
+        print("sys_siso_10 ---------------------------------------------")
+        print(sys_siso_10)
 
         #gain of converted system and equivalent SISO system must be the same
         self.assert_systems_behave_equal(sys_siso, sys_siso_01)
@@ -467,14 +467,14 @@ class TestControlMatlab(unittest.TestCase):
         '''
         #print the directories where python searches for modules and packages.
         import sys
-        print 'sys.path: -----------------------------------'
+        print('sys.path: -----------------------------------')
         for name in sys.path:
-            print name
+            print(name)
 
 
 if __name__ == '__main__':
     unittest.main()
     show()   
-    print "Test finished correctly!"
+    print("Test finished correctly!")
    
 # vi:ts=4:sw=4:expandtab
