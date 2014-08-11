@@ -16,6 +16,10 @@ Estimator design: linear quadratic estimator (Kalman filter)
 
 """
 
+MAJOR = 0
+MINOR = 6
+MICRO = 2
+ISRELEASED = True
 DISTNAME            = 'control'
 DESCRIPTION         = 'Python control systems library'
 LONG_DESCRIPTION    = descr
@@ -26,12 +30,20 @@ MAINTAINER_EMAIL    = AUTHOR_EMAIL
 URL                 = 'http://python-control.sourceforge.net'
 LICENSE             = 'BSD'
 DOWNLOAD_URL        = URL
-VERSION             = '0.6e'
 PACKAGE_NAME        = 'control'
 EXTRA_INFO          = dict(
     install_requires=['scipy', 'matplotlib'],
     tests_require=['scipy', 'matplotlib', 'nose']
 )
+
+VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+
+import os
+import sys
+import subprocess
+
+
+from setuptools import setup, find_packages
 
 CLASSIFIERS = """\
 Development Status :: 3 - Alpha
@@ -48,74 +60,122 @@ Operating System :: Unix
 Operating System :: MacOS
 """
 
-import os
-import sys
-import subprocess
 
-import setuptools
-from numpy.distutils.core import setup
+# Return the git revision as a string
+def git_version():
+    def _minimal_ext_cmd(cmd):
+        # construct minimal environment
+        env = {}
+        for k in ['SYSTEMROOT', 'PATH']:
+            v = os.environ.get(k)
+            if v is not None:
+                env[k] = v
+        # LANGUAGE is used on win32
+        env['LANGUAGE'] = 'C'
+        env['LANG'] = 'C'
+        env['LC_ALL'] = 'C'
+        out = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            env=env).communicate()[0]
+        return out
 
-def configuration(parent_package='', top_path=None, package_name=DISTNAME):
-    if os.path.exists('MANIFEST'): os.remove('MANIFEST')
+    try:
+        out = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
+        GIT_REVISION = out.strip().decode('ascii')
+    except OSError:
+        GIT_REVISION = "Unknown"
 
-    from numpy.distutils.misc_util import Configuration
-    config = Configuration(None, parent_package, top_path)
+    return GIT_REVISION
 
-    # Avoid non-useful msg: "Ignoring attempt to set 'name' (from ... "
-    config.set_options(ignore_setup_xxx_py=True,
-                       assume_default_configuration=True,
-                       delegate_options_to_subpackages=True,
-                       quiet=True)
 
-    config.add_subpackage(PACKAGE_NAME)
-    return config
+def get_version_info():
+    # Adding the git rev number needs to be done inside write_version_py(),
+    # otherwise the import of package.version messes up
+    # the build under Python 3.
+    FULLVERSION = VERSION
+    if os.path.exists('.git'):
+        GIT_REVISION = git_version()
+    elif os.path.exists('control/version.py'):
+        # must be a source distribution, use existing version file
+        try:
+            from control.version import git_revision as GIT_REVISION
+        except ImportError:
+            raise ImportError("Unable to import git_revision. Try removing "
+                              "control/version.py and the build directory "
+                              "before building.")
+    else:
+        GIT_REVISION = "Unknown"
 
-def get_version():
-    """Obtain the version number"""
-    import imp
-    mod = imp.load_source('version', os.path.join(PACKAGE_NAME, 'version.py'))
-    return mod.__version__
+    if not ISRELEASED:
+        FULLVERSION += '.dev-' + GIT_REVISION[:7]
 
-# Documentation building command
-try:
-    from sphinx.setup_command import BuildDoc as SphinxBuildDoc
-    class BuildDoc(SphinxBuildDoc):
-        """Run in-place build before Sphinx doc build"""
-        def run(self):
-            ret = subprocess.call([sys.executable, sys.argv[0], 'build_ext', '-i'])
-            if ret != 0:
-                raise RuntimeError("Building Scipy failed!")
-            SphinxBuildDoc.run(self)
-    cmdclass = {'build_sphinx': BuildDoc}
-except ImportError:
-    cmdclass = {}
+    return FULLVERSION, GIT_REVISION
+
 
 def write_version_py(filename='control/version.py'):
-    template = """# THIS FILE IS GENERATED FROM THE CONTROL SETUP.PY
-version='%s'
-"""
-    cwd = os.path.dirname(__file__)
-    with open(os.path.join(cwd, filename), 'w') as vfile:
-        vfile.write(template % VERSION)
+    cnt = """
+# THIS FILE IS GENERATED FROM SETUP.PY
+short_version = '%(version)s'
+version = '%(version)s'
+full_version = '%(full_version)s'
+git_revision = '%(git_revision)s'
+release = %(isrelease)s
 
-# Call the setup function
-if __name__ == "__main__":
+if not release:
+    version = full_version
+"""
+    FULLVERSION, GIT_REVISION = get_version_info()
+
+    a = open(filename, 'w')
+    try:
+        a.write(cnt % {'version': VERSION,
+                       'full_version': FULLVERSION,
+                       'git_revision': GIT_REVISION,
+                       'isrelease': str(ISRELEASED)})
+    finally:
+        a.close()
+
+
+def setup_package():
+    src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    old_path = os.getcwd()
+    os.chdir(src_path)
+    sys.path.insert(0, src_path)
+
+    # Rewrite the version file everytime
     write_version_py()
 
-    setup(configuration=configuration,
-          name=DISTNAME,
-          author=AUTHOR,
-          author_email=AUTHOR_EMAIL,
-          maintainer=MAINTAINER,
-          maintainer_email=MAINTAINER_EMAIL,
-          description=DESCRIPTION,
-          license=LICENSE,
-          url=URL,
-          download_url=DOWNLOAD_URL,
-          long_description=LONG_DESCRIPTION,
-          include_package_data=True,
-          test_suite="nose.collector",
-          cmdclass=cmdclass,
-          version=VERSION,
-          classifiers=[a for a in CLASSIFIERS.split('\n') if a],
-          **EXTRA_INFO)
+    metadata = dict(
+        name=DISTNAME,
+        author=AUTHOR,
+        author_email=AUTHOR_EMAIL,
+        maintainer=MAINTAINER,
+        maintainer_email=MAINTAINER_EMAIL,
+        description=DESCRIPTION,
+        license=LICENSE,
+        url=URL,
+        download_url=DOWNLOAD_URL,
+        long_description=LONG_DESCRIPTION,
+        classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
+        platforms=["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
+        install_requires=['numpy', 'scipy'],
+        tests_require=['nose'],
+        test_suite='nose.collector',
+        packages=find_packages(
+            exclude=['*.tests']
+        ),
+    )
+
+    FULLVERSION, GIT_REVISION = get_version_info()
+    metadata['version'] = FULLVERSION
+
+    try:
+        setup(**metadata)
+    finally:
+        del sys.path[0]
+        os.chdir(old_path)
+    return
+
+if __name__ == '__main__':
+    setup_package()
