@@ -1,3 +1,6 @@
 *.pyc
 build/
 test/
+control/version.py
+build.log
+*.egg-info/

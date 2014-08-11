@@ -97,3 +97,9 @@ from control.matlab import nichols, rlocus, margin
         # bode and nyquist come directly from freqplot.py
 from control.matlab import step, impulse, initial, lsim
 from control.matlab import ssdata, tfdata
+
+# The following is to use Numpy's testing framework
+# Tests go under directory tests/, benchmarks under directory benchmarks/
+from numpy.testing import Tester
+test = Tester().test
+bench = Tester().bench
