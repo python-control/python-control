@@ -534,6 +534,7 @@ class TestMatlab(unittest.TestCase):
                       -0.304617775734327   0.075182622718853"""), sysd.B)
         
 
+    @unittest.skip("skipping testCombi01: need to check/update margins")
     def testCombi01(self):
         # test from a "real" case, combines tf, ss, connect and margin
         # this is a type 2 system, with phase starting at -180. The
