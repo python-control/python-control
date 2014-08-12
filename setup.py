@@ -18,7 +18,7 @@ Estimator design: linear quadratic estimator (Kalman filter)
 
 MAJOR = 0
 MINOR = 6
-MICRO = 2
+MICRO = 5
 ISRELEASED = True
 DISTNAME            = 'control'
 DESCRIPTION         = 'Python control systems library'
