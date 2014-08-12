@@ -476,5 +476,4 @@ if __name__ == '__main__':
     unittest.main()
     show()
     print("Test finished correctly!")
-
 # vi:ts=4:sw=4:expandtab
