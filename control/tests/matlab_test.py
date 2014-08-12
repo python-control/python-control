@@ -253,14 +253,14 @@ class TestMatlab(unittest.TestCase):
         gain_zpk = dcgain(Z, P, k)
         gain_numden = dcgain(np.squeeze(num), den)
         gain_sys_ss = dcgain(sys_ss)
-        print('\ngain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk)
-        print('gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss)
+        # print('\ngain_abcd:', gain_abcd, 'gain_zpk:', gain_zpk)
+        # print('gain_numden:', gain_numden, 'gain_sys_ss:', gain_sys_ss)
 
         #Compute the gain with a long simulation
         t = linspace(0, 1000, 1000)
         y, _t = step(sys_ss, t)
         gain_sim = y[-1]
-        print('gain_sim:', gain_sim)
+        # print('gain_sim:', gain_sim)
 
         #All gain values must be approximately equal to the known gain
         np.testing.assert_array_almost_equal(
@@ -270,7 +270,7 @@ class TestMatlab(unittest.TestCase):
 
         # Test with MIMO system, which contains ``siso_ss1`` twice
         gain_mimo = dcgain(self.mimo_ss1)
-        print('gain_mimo: \n', gain_mimo)
+        # print('gain_mimo: \n', gain_mimo)
         np.testing.assert_array_almost_equal(gain_mimo, [[59., 0 ],
                                                          [0,  59.]])
 
@@ -432,7 +432,7 @@ class TestMatlab(unittest.TestCase):
         D = np.zeros((4,2))
         sys = ss(A, B, C, D)
         wn, Z, p = damp(sys, False)
-        print (wn)
+        # print (wn)
         np.testing.assert_array_almost_equal(
             wn, np.array([4.07381994,   3.28874827,   3.28874827,
                           1.08937685e-03]))
@@ -445,7 +445,7 @@ class TestMatlab(unittest.TestCase):
         sys = append(sys1, sys2)
         Q= np.mat([ [ 1, 2], [2, -1] ]) # basically feedback, output 2 in 1
         sysc = connect(sys, Q, [2], [1, 2])
-        print(sysc)
+        # print(sysc)
         np.testing.assert_array_almost_equal(
             sysc.A, np.mat('1 -2 5; 3 -4 7; -6 -8 -10'))
         np.testing.assert_array_almost_equal(
