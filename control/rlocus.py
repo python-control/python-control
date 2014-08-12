@@ -171,7 +171,6 @@ def _RLSortRoots(sys, mymat):
 
     sorted = zeros_like(mymat)
     for n, row in enumerate(mymat):
-        prevrow = row
         if n == 0:
             sorted[n, :] = row
         else:
