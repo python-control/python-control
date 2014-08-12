@@ -51,10 +51,9 @@ $Id$
 """
 
 import numpy as np
-import control.xferfcn as xferfcn
-from control.freqplot import bode
-from control.lti import isdtime, issiso
-import control.frdata as frdata
+from . import xferfcn
+from .lti import issiso
+from . import frdata
 import scipy as sp
 
 # helper functions for stability_margins
@@ -73,7 +72,7 @@ def _polysqr(pol):
     """return a polynomial squared"""
     return np.polymul(pol, pol)
 
-# Took the framework for the old function by 
+# Took the framework for the old function by
 # Sawyer B. Fuller <minster@caltech.edu>, removed a lot of the innards
 # and replaced with analytical polynomial functions for Lti systems.
 #
@@ -86,21 +85,21 @@ def _polysqr(pol):
 def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
-    
+
     Usage
     -----
     gm, pm, sm, wg, wp, ws = stability_margins(sysdata, deg=True,
                                                returnall=False, epsw=1e-10)
-    
+
     Parameters
     ----------
-    sysdata: linsys or (mag, phase, omega) sequence 
+    sysdata: linsys or (mag, phase, omega) sequence
         sys : linsys
             Linear SISO system
         mag, phase, omega : sequence of array_like
-            Input magnitude, phase, and frequencies (rad/sec) sequence from 
-            bode frequency response data 
-    deg=True: boolean  
+            Input magnitude, phase, and frequencies (rad/sec) sequence from
+            bode frequency response data
+    deg=True: boolean
         If true, all input and output phases in degrees, else in radians
     returnall=False: boolean
         If true, return all margins found. Note that for frequency data or
@@ -108,22 +107,22 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
     epsw=1e-10: float
         frequencies below this value are considered static gain, and not
         returned as margin.
-       
+
     Returns
     -------
     gm, pm, sm, wg, wp, ws: float or array_like
-        Gain margin gm, phase margin pm, stability margin sm, and 
+        Gain margin gm, phase margin pm, stability margin sm, and
         associated crossover
         frequencies wg, wp, and ws of SISO open-loop. If more than
         one crossover frequency is detected, returns the lowest corresponding
-        margin. 
-        When requesting all margins, the return values are array_like, 
-        and all margins are returned for linear systems not equal to FRD
+        margin.
+        When requesting all margins, the return values are array_like,
+        and all margins are returns for linear systems not equal to FRD
         """
 
     try:
         if isinstance(sysdata, frdata.FRD):
-            sys = frdata.FRD(sysdata, smooth=True) 
+            sys = frdata.FRD(sysdata, smooth=True)
         elif isinstance(sysdata, xferfcn.TransferFunction):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
@@ -138,11 +137,11 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
 
     # calculate gain of system
     if isinstance(sys, xferfcn.TransferFunction):
-        
+
         # check for siso
         if not issiso(sys):
             raise ValueError("Can only do margins for SISO system")
-        
+
         # real and imaginary part polynomials in omega:
         rnum, inum = _polyimsplit(sys.num[0][0])
         rden, iden = _polyimsplit(sys.den[0][0])
@@ -166,7 +165,7 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
         w_180.sort()
 
         # test magnitude is 1 for gain crossover/phase margins
-        test_wc = np.polysub(np.polyadd(_polysqr(rnum), _polysqr(inum)), 
+        test_wc = np.polysub(np.polyadd(_polysqr(rnum), _polysqr(inum)),
                              np.polyadd(_polysqr(rden), _polysqr(iden)))
         wc = np.roots(test_wc)
         wc = np.real(wc[(np.imag(wc) == 0) * (wc > epsw)])
@@ -176,10 +175,10 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
         # point -1, then take the derivative. Second derivative needs to be >0
         # to have a minimum
         test_wstabn = np.polyadd(_polysqr(rnum), _polysqr(inum))
-        test_wstabd = np.polyadd(_polysqr(np.polyadd(rnum,rden)), 
+        test_wstabd = np.polyadd(_polysqr(np.polyadd(rnum,rden)),
                                  _polysqr(np.polyadd(inum,iden)))
         test_wstab = np.polysub(
-            np.polymul(np.polyder(test_wstabn),test_wstabd), 
+            np.polymul(np.polyder(test_wstabn),test_wstabd),
             np.polymul(np.polyder(test_wstabd),test_wstabn))
 
         # find the solutions
@@ -221,9 +220,9 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
         return GM, PM, SM, w_180, wc, wstab
     else:
         return (
-            (GM.shape[0] or None) and GM[0], 
-            (PM.shape[0] or None) and PM[0], 
-            (SM.shape[0] or None) and SM[0], 
+            (GM.shape[0] or None) and GM[0],
+            (PM.shape[0] or None) and PM[0],
+            (SM.shape[0] or None) and SM[0],
             (w_180.shape[0] or None) and w_180[0],
             (wc.shape[0] or None) and wc[0],
             (wstab.shape[0] or None) and wstab[0])
@@ -245,7 +244,7 @@ def phase_crossover_frequencies(sys):
     intersects the real axis
 
     gain: 1d array of corresponding gains
-        
+
     Examples
     --------
     >>> tf = TransferFunction([1], [1, 2, 3, 4])

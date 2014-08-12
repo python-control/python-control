@@ -1,7 +1,7 @@
 # nichols.py - Nichols plot
 #
 # Contributed by Allan McInnes <Allan.McInnes@canterbury.ac.nz>
-# 
+#
 # This file contains some standard control system plots: Bode plots,
 # Nyquist plots, Nichols plots and pole-zero diagrams
 #
@@ -14,16 +14,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -36,14 +36,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id: freqplot.py 139 2011-03-30 16:19:59Z murrayrm $
 
 import scipy as sp
 import numpy as np
 import matplotlib.pyplot as plt
-from control.ctrlutil import unwrap
-from control.freqplot import default_frequency_range
+from .ctrlutil import unwrap
+from .freqplot import default_frequency_range
 
 # Nichols plot
 def nichols_plot(syslist, omega=None, grid=True):
@@ -78,15 +78,15 @@ def nichols_plot(syslist, omega=None, grid=True):
         mag_tmp, phase_tmp, omega = sys.freqresp(omega)
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-    
-        # Convert to Nichols-plot format (phase in degrees, 
+
+        # Convert to Nichols-plot format (phase in degrees,
         # and magnitude in dB)
         x = unwrap(sp.degrees(phase), 360)
         y = 20*sp.log10(mag)
-    
+
         # Generate the plot
         plt.plot(x, y)
-        
+
     plt.xlabel('Phase (deg)')
     plt.ylabel('Magnitude (dB)')
     plt.title('Nichols Plot')
@@ -97,12 +97,12 @@ def nichols_plot(syslist, omega=None, grid=True):
     # Add grid
     if grid:
         nichols_grid()
-    
+
 # Nichols grid
 #! TODO: Consider making linestyle configurable
 def nichols_grid(cl_mags=None, cl_phases=None):
     """Nichols chart grid
-    
+
     Usage
     =====
     nichols_grid()
@@ -121,15 +121,15 @@ def nichols_grid(cl_mags=None, cl_phases=None):
 
     Return values
     -------------
-    None    
+    None
     """
     # Default chart size
     ol_phase_min = -359.99
     ol_phase_max = 0.0
     ol_mag_min = -40.0
     ol_mag_max = default_ol_mag_max = 50.0
-    
-    # Find bounds of the current dataset, if there is one. 
+
+    # Find bounds of the current dataset, if there is one.
     if plt.gcf().gca().has_data():
         ol_phase_min, ol_phase_max, ol_mag_min, ol_mag_max = plt.axis()
 
@@ -148,7 +148,7 @@ def nichols_grid(cl_mags=None, cl_phases=None):
         extended_cl_mags = np.arange(np.min(key_cl_mags),
                                      ol_mag_min + cl_mag_step, cl_mag_step)
         cl_mags = np.concatenate((extended_cl_mags, key_cl_mags))
-                     
+
     # N-circle phases (should be in the range -360 to 0)
     if cl_phases is None:
         # Choose a reasonable set of default phases (denser if the open-loop
@@ -175,7 +175,7 @@ def nichols_grid(cl_mags=None, cl_phases=None):
     # Plot the contours behind other plot elements.
     # The "phase offset" is used to produce copies of the chart that cover
     # the entire range of the plotted data, starting from a base chart computed
-    # over the range -360 < phase < 0. Given the range 
+    # over the range -360 < phase < 0. Given the range
     # the base chart is computed over, the phase offset should be 0
     # for -360 < ol_phase_min < 0.
     phase_offset_min = 360.0*np.ceil(ol_phase_min/360.0)
@@ -204,7 +204,7 @@ def nichols_grid(cl_mags=None, cl_phases=None):
 # This section of the code contains some utility functions for
 # generating Nichols plots
 #
-   
+
 # Compute contours of a closed-loop transfer function
 def closed_loop_contours(Gcl_mags, Gcl_phases):
     """Contours of the function Gcl = Gol/(1+Gol), where
@@ -272,7 +272,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     closed-loop transfer function.
 
     Usage
-    ===== 
+    =====
     contours = n_circles(phases, mag_min, mag_max)
 
     Parameters
@@ -290,7 +290,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
         Array of complex numbers corresponding to the contours.
     """
     # Convert phases and magnitude range into a grid suitable for
-    # building contours    
+    # building contours
     mags = sp.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
     Gcl_phases, Gcl_mags = sp.meshgrid(sp.radians(phases), mags)
     return closed_loop_contours(Gcl_mags, Gcl_phases)

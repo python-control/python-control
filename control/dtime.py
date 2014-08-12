@@ -51,9 +51,9 @@ from scipy.signal import zpk2tf, tf2zpk
 import numpy as np
 from cmath import exp
 from warnings import warn
-from control.lti import isctime
-from control.statesp import StateSpace, _convertToStateSpace
-from control.xferfcn import TransferFunction, _convertToTransferFunction
+from .lti import isctime
+from .statesp import StateSpace, _convertToStateSpace
+from .xferfcn import TransferFunction, _convertToTransferFunction
 
 # Sample a continuous time system
 def sample_system(sysc, Ts, method='matched'):
@@ -96,22 +96,21 @@ def sample_system(sysc, Ts, method='matched'):
 
     # If we are passed a state space system, convert to transfer function first
     if isinstance(sysc, StateSpace) and method == 'zoh':
-        
         try:
             # try with slycot routine
             from slycot import mb05nd
             F, H = mb05nd(sysc.A, Ts)
             return StateSpace(F, H*sysc.B, sysc.C, sysc.D, Ts)
-        except ImportError: 
+        except ImportError:
             if sysc.inputs != 1 or sysc.outputs != 1:
                 raise TypeError(
                     "mb05nd not found in slycot, or slycot not installed")
-            
+
     # TODO: implement MIMO version for other than ZOH state-space
     if (sysc.inputs != 1 or sysc.outputs != 1):
         raise NotImplementedError("MIMO implementation not available")
 
-    # SISO state-space, with other than ZOH, or failing slycot import, 
+    # SISO state-space, with other than ZOH, or failing slycot import,
     # is handled by conversion to TF
     if isinstance(sysc, StateSpace):
         warn("sample_system: converting to transfer function")
@@ -129,7 +128,7 @@ def sample_system(sysc, Ts, method='matched'):
             sysd = TransferFunction(scipySysD[0][0], scipySysD[1], Ts)
         except ImportError:
             raise TypeError("cont2discrete not found in scipy.signal; upgrade to v0.10.0+")
-        
+
     elif method == 'zoh':
         try:
             from scipy.signal import cont2discrete

@@ -2,7 +2,7 @@
 #
 # Author: Richard M. Murray
 # Date: 7 Sep 09
-# 
+#
 # This file contains functions that compute poles, zeros and related
 # quantities for a linear system.
 #
@@ -15,16 +15,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -37,14 +37,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
 
 import matplotlib.pyplot as plt
 #import scipy as sp
 #import numpy as np
 from numpy import real, imag
-from control.lti import Lti
+from .lti import Lti
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
@@ -52,15 +52,15 @@ from control.lti import Lti
 def pzmap(sys, Plot=True, title='Pole Zero Map'):
     """
     Plot a pole/zero map for a linear system.
-    
+
     Parameters
     ----------
     sys: Lti (StateSpace or TransferFunction)
         Linear system for which poles and zeros are computed.
     Plot: bool
-        If ``True`` a graph is generated with Matplotlib, 
+        If ``True`` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
-    
+
     Returns
     -------
     pole: array
@@ -70,7 +70,7 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
     """
     if not isinstance(sys, Lti):
         raise TypeError('Argument ``sys``: must be a linear system.')
-    
+
     poles = sys.pole()
     zeros = sys.zero()
 
@@ -79,15 +79,15 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
         if len(poles) > 0:
             plt.scatter(real(poles), imag(poles), s=50, marker='x')
         if len(zeros) > 0:
-            plt.scatter(real(zeros), imag(zeros), s=50, marker='o', 
+            plt.scatter(real(zeros), imag(zeros), s=50, marker='o',
                         facecolors='none')
         # Add axes
-        #Somewhat silly workaround 
+        #Somewhat silly workaround
         plt.axhline(y=0, color='black')
         plt.axvline(x=0, color='black')
-        plt.xlabel('Re')  
-        plt.ylabel('Im')  
-        
+        plt.xlabel('Re')
+        plt.ylabel('Im')
+
         plt.title(title)
 
     # Return locations of poles and zeros as a tuple

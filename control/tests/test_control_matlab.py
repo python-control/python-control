@@ -77,11 +77,11 @@ class TestControlMatlab(unittest.TestCase):
         sys_tf = ss2tf(A, B, C, D)
         gain3 = dcgain(sys_tf)
         gain4 = dcgain(sys_tf.num, sys_tf.den)
-        #print "gain1:", gain1
+        #print("gain1:", gain1)
 
-        assert_array_almost_equal(gain1, 
+        assert_array_almost_equal(gain1,
                                   array([[0.0269, 0.    ],
-                                         [0.    , 0.0269]]), 
+                                         [0.    , 0.0269]]),
                                   decimal=4)
         assert_array_almost_equal(gain1, gain2)
         assert_array_almost_equal(gain3, gain4)
@@ -91,8 +91,8 @@ class TestControlMatlab(unittest.TestCase):
         A, B, C, D = self.make_SISO_mats()
 
         gain1 = dcgain(ss(A, B, C, D))
-        assert_array_almost_equal(gain1, 
-                                  array([[0.0269]]), 
+        assert_array_almost_equal(gain1,
+                                  array([[0.0269]]),
                                   decimal=4)
 
 
@@ -119,17 +119,17 @@ class TestControlMatlab(unittest.TestCase):
         print('gain_sim:', gain_sim)
 
         #All gain values must be approximately equal to the known gain
-        assert_array_almost_equal([gain_abcd[0,0],   gain_zpk[0,0], 
+        assert_array_almost_equal([gain_abcd[0,0],   gain_zpk[0,0],
                                    gain_numden[0,0], gain_sys_ss[0,0], gain_sim],
-                                  [0.026948, 0.026948, 0.026948, 0.026948, 
-                                   0.026948], 
+                                  [0.026948, 0.026948, 0.026948, 0.026948,
+                                   0.026948],
                                   decimal=6)
 
         #Test with MIMO system
         A, B, C, D = self.make_MIMO_mats()
         gain_mimo = dcgain(A, B, C, D)
         print('gain_mimo: \n', gain_mimo)
-        assert_array_almost_equal(gain_mimo, [[0.026948, 0       ], 
+        assert_array_almost_equal(gain_mimo, [[0.026948, 0       ],
                                               [0,        0.026948]], decimal=6)
 
     def test_step(self):
@@ -139,8 +139,8 @@ class TestControlMatlab(unittest.TestCase):
         #Test SISO system
         A, B, C, D = self.make_SISO_mats()
         sys = ss(A, B, C, D)
-        #print sys
-        #print "gain:", dcgain(sys)
+        #print(sys)
+        #print("gain:", dcgain(sys))
 
         subplot2grid(plot_shape, (0, 0))
         t, y = step(sys)
@@ -223,62 +223,62 @@ class TestControlMatlab(unittest.TestCase):
 
     #! Old test; no longer functional?? (RMM, 3 Nov 2012)
     @unittest.skip("skipping test_check_convert_shape, need to update test")
-    def test_check_convert_shape(self):  
-        #TODO: check if shape is correct everywhere. 
+    def test_check_convert_shape(self):
+        #TODO: check if shape is correct everywhere.
         #Correct input ---------------------------------------------
         #Recognize correct shape
         #Input is array, shape (3,), single legal shape
         arr = _check_convert_array(array([1., 2, 3]), [(3,)], 'Test: ')
         assert isinstance(arr, np.ndarray)
-        assert not isinstance(arr, matrix) 
+        assert not isinstance(arr, matrix)
 
-        #Input is array, shape (3,), two legal shapes 
+        #Input is array, shape (3,), two legal shapes
         arr = _check_convert_array(array([1., 2, 3]), [(3,), (1,3)], 'Test: ')
         assert isinstance(arr, np.ndarray)
-        assert not isinstance(arr, matrix) 
+        assert not isinstance(arr, matrix)
 
         #Input is array, 2D, shape (1,3)
         arr = _check_convert_array(array([[1., 2, 3]]), [(3,), (1,3)], 'Test: ')
-        assert isinstance(arr, np.ndarray) 
-        assert not isinstance(arr, matrix) 
+        assert isinstance(arr, np.ndarray)
+        assert not isinstance(arr, matrix)
 
         #Test special value any
         #Input is array, 2D, shape (1,3)
         arr = _check_convert_array(array([[1., 2, 3]]), [(4,), (1,"any")], 'Test: ')
-        assert isinstance(arr, np.ndarray) 
-        assert not isinstance(arr, matrix) 
+        assert isinstance(arr, np.ndarray)
+        assert not isinstance(arr, matrix)
 
         #Input is array, 2D, shape (3,1)
-        arr = _check_convert_array(array([[1.], [2], [3]]), [(4,), ("any", 1)], 
+        arr = _check_convert_array(array([[1.], [2], [3]]), [(4,), ("any", 1)],
                                    'Test: ')
-        assert isinstance(arr, np.ndarray) 
-        assert not isinstance(arr, matrix) 
+        assert isinstance(arr, np.ndarray)
+        assert not isinstance(arr, matrix)
 
         #Convert array-like objects to arrays
         #Input is matrix, shape (1,3), must convert to array
         arr = _check_convert_array(matrix("1. 2 3"), [(3,), (1,3)], 'Test: ')
-        assert isinstance(arr, np.ndarray) 
-        assert not isinstance(arr, matrix) 
+        assert isinstance(arr, np.ndarray)
+        assert not isinstance(arr, matrix)
 
         #Input is list, shape (1,3), must convert to array
         arr = _check_convert_array([[1., 2, 3]], [(3,), (1,3)], 'Test: ')
-        assert isinstance(arr, np.ndarray) 
-        assert not isinstance(arr, matrix) 
+        assert isinstance(arr, np.ndarray)
+        assert not isinstance(arr, matrix)
 
         #Special treatment of scalars and zero dimensional arrays:
-        #They are converted to an array of a legal shape, filled with the scalar 
+        #They are converted to an array of a legal shape, filled with the scalar
         #value
         arr = _check_convert_array(5, [(3,), (1,3)], 'Test: ')
-        assert isinstance(arr, np.ndarray) 
+        assert isinstance(arr, np.ndarray)
         assert arr.shape == (3,)
         assert_array_almost_equal(arr, [5, 5, 5])
 
         #Squeeze shape
         #Input is array, 2D, shape (1,3)
-        arr = _check_convert_array(array([[1., 2, 3]]), [(3,), (1,3)], 
+        arr = _check_convert_array(array([[1., 2, 3]]), [(3,), (1,3)],
                                         'Test: ', squeeze=True)
-        assert isinstance(arr, np.ndarray) 
-        assert not isinstance(arr, matrix) 
+        assert isinstance(arr, np.ndarray)
+        assert not isinstance(arr, matrix)
         assert arr.shape == (3,)  #Shape must be squeezed. (1,3) -> (3,)
 
         #Erroneous input -----------------------------------------------------
@@ -288,7 +288,7 @@ class TestControlMatlab(unittest.TestCase):
             [(3,), (1,3)], 'Test: ', squeeze=True))
 
         #Test wrong shapes
-        #Input has shape (4,) but (3,) or (1,3) are legal shapes 
+        #Input has shape (4,) but (3,) or (1,3) are legal shapes
         self.assertRaises(ValueError, _check_convert_array(array([1., 2, 3, 4]),
             [(3,), (1,3)], 'Test: '))
 
@@ -354,11 +354,11 @@ class TestControlMatlab(unittest.TestCase):
         #T is None; - special handling: Value error
         self.assertRaises(ValueError, lsim(sys, U=0, T=None, x0=0))
         #T="hello" : Wrong type
-        #TODO: better wording of error messages of ``lsim`` and 
+        #TODO: better wording of error messages of ``lsim`` and
         #      ``_check_convert_array``, when wrong type is given.
         #      Current error message is too cryptic.
         self.assertRaises(TypeError, lsim(sys, U=0, T="hello", x0=0))
-        #T=0; - T can not be zero dimensional, it determines the size of the 
+        #T=0; - T can not be zero dimensional, it determines the size of the
         #       input vector ``U``
         self.assertRaises(ValueError, lsim(sys, U=0, T=0, x0=0))
         #T is not monotonically increasing
@@ -396,21 +396,21 @@ class TestControlMatlab(unittest.TestCase):
         #    t, y = step(sys_siso)
         #    plot(t, y, label='sys_siso d=0')
 
-        sys_siso_00 = _mimo2siso(sys_mimo, input=0, output=0, 
+        sys_siso_00 = _mimo2siso(sys_mimo, input=0, output=0,
                                          warn_conversion=False)
-        sys_siso_11 = _mimo2siso(sys_mimo, input=1, output=1, 
+        sys_siso_11 = _mimo2siso(sys_mimo, input=1, output=1,
                                          warn_conversion=False)
-        #print "sys_siso_00 ---------------------------------------------"
-        #print sys_siso_00
-        #print "sys_siso_11 ---------------------------------------------"
-        #print sys_siso_11
+        #print("sys_siso_00 ---------------------------------------------")
+        #print(sys_siso_00)
+        #print("sys_siso_11 ---------------------------------------------")
+        #print(sys_siso_11)
 
         #gain of converted system and equivalent SISO system must be the same
         self.assert_systems_behave_equal(sys_siso, sys_siso_00)
         self.assert_systems_behave_equal(sys_siso, sys_siso_11)
 
         #Test with additional systems --------------------------------------------
-        #They have crossed inputs and direct feedthrough 
+        #They have crossed inputs and direct feedthrough
         #SISO system
         As = matrix([[-81.82, -45.45],
                      [ 10.,    -1.  ]])
@@ -441,9 +441,9 @@ class TestControlMatlab(unittest.TestCase):
         sys_mimo = ss(Am, Bm, Cm, Dm)
 
 
-        sys_siso_01 = _mimo2siso(sys_mimo, input=0, output=1, 
+        sys_siso_01 = _mimo2siso(sys_mimo, input=0, output=1,
                                          warn_conversion=False)
-        sys_siso_10 = _mimo2siso(sys_mimo, input=1, output=0, 
+        sys_siso_10 = _mimo2siso(sys_mimo, input=1, output=0,
                                          warn_conversion=False)
         print("sys_siso_01 ---------------------------------------------")
         print(sys_siso_01)
@@ -457,7 +457,7 @@ class TestControlMatlab(unittest.TestCase):
     def debug_nasty_import_problem():
         '''
         ``*.egg`` files have precedence over ``PYTHONPATH``. Therefore packages
-        that were installed with ``easy_install``, can not be easily developed with 
+        that were installed with ``easy_install``, can not be easily developed with
         Eclipse.
 
         See also:
@@ -474,7 +474,6 @@ class TestControlMatlab(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    show()   
+    show()
     print("Test finished correctly!")
-   
 # vi:ts=4:sw=4:expandtab

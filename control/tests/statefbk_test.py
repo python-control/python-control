@@ -50,7 +50,7 @@ class TestStatefbk(unittest.TestCase):
         Wotrue = np.matrix("5. 6.; 7. 8.; 23. 34.; 31. 46.")
         Wo = obsv(A,C)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
-    
+
     def testCtrbObsvDuality(self):
         A = np.matrix("1.2 -2.3; 3.4 -4.5")
         B = np.matrix("5.8 6.9; 8. 9.1")
@@ -121,7 +121,7 @@ class TestStatefbk(unittest.TestCase):
                 des = rss(states, 1, 1);
                 poles = pole(des)
 
-                # Now place the poles using acker 
+                # Now place the poles using acker
                 K = acker(sys.A, sys.B, poles)
                 new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
                 placed = pole(new)
@@ -129,11 +129,11 @@ class TestStatefbk(unittest.TestCase):
                 # Debugging code
                 # diff = np.sort(poles) - np.sort(placed)
                 # if not all(diff < 0.001):
-                #     print "Found a problem:"
-                #     print sys
-                #     print "desired = ", poles
+                #     print("Found a problem:")
+                #     print(sys)
+                #     print("desired = ", poles)
 
-                np.testing.assert_array_almost_equal(np.sort(poles), 
+                np.testing.assert_array_almost_equal(np.sort(poles),
                                                      np.sort(placed), decimal=4)
 
 def suite():

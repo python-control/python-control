@@ -15,11 +15,11 @@
 #   1. Redistributions of source code must retain the above copyright
 #      notice, this list of conditions and the following disclaimer.
 #
-#   2. Redistributions in binary form must reproduce the above copyright 
-#      notice, this list of conditions and the following disclaimer in the 
+#   2. Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#   3. The name of the author may not be used to endorse or promote products 
+#   3. The name of the author may not be used to endorse or promote products
 #      derived from this software without specific prior written permission.
 #
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
@@ -41,7 +41,7 @@ import numpy as np
 import matplotlib.pyplot as mpl
 from matplotlib.mlab import frange, find
 from scipy.integrate import odeint
-from control.exception import ControlNotImplemented
+from .exception import ControlNotImplemented
 
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
               lingrid=None, lintime=None, logtime=None, timepts=None,
@@ -158,11 +158,11 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         elif (scale != 0):
             #! TODO: optimize parameters for arrows
             #! TODO: figure out arguments to make arrows show up correctly
-            xy = mpl.quiver(x1, x2, dx[:,:,0]*np.abs(scale), 
+            xy = mpl.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
                             dx[:,:,1]*np.abs(scale), angles='xy')
             # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b');
 
-        #! TODO: Tweak the shape of the plot 
+        #! TODO: Tweak the shape of the plot
         # a=gca; set(a,'DataAspectRatio',[1,1,1]);
         # set(a,'XLim',X(1:2)); set(a,'YLim',Y(1:2));
         mpl.xlabel('x1'); mpl.ylabel('x2');
@@ -178,7 +178,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     # Generate some empty matrices to keep arrow information
     x1 = np.empty((nr, Narrows)); x2 = np.empty((nr, Narrows));
     dx = np.empty((nr, Narrows, 2))
-  
+
     # See if we were passed a simulation time
     if (T == None):
         T = 50
@@ -192,7 +192,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     if (scale == None):
         # Assume that the current axis are set as we want them
         alim = mpl.axis();
-        xmin = alim[0]; xmax = alim[1]; 
+        xmin = alim[0]; xmax = alim[1];
         ymin = alim[2]; ymax = alim[3];
     else:
         # Use the maximum extent of all trajectories
@@ -214,10 +214,10 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
             # Compute the locations of the arrows
             #! TODO: check this logic to make sure it works in python
             for j in range(Narrows):
-      
+
                 # Figure out starting index; headless arrows start at 0
                 k = -1 if scale == None else 0;
-      
+
                 # Figure out what time index to use for the next point
                 if (autoFlag):
                     # Use a linear scaling based on ODE time vector
@@ -236,13 +236,13 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
                 # For tailless arrows, skip the first point
                 if (tind == 0 and scale == None):
                     continue;
-      
+
                 # Figure out the arrow at this point on the curve
                 x1[i,j] = state[tind, 0];
                 x2[i,j] = state[tind, 1];
 
                 # Skip arrows outside of initial condition box
-                if (scale != None or 
+                if (scale != None or
                      (x1[i,j] <= xmax and x1[i,j] >= xmin and
                       x2[i,j] <= ymax and x2[i,j] >= ymin)):
                     v = odefun((x1[i,j], x2[i,j]), 0, *parms)
@@ -251,7 +251,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
                     dx[i, j, 0] = 0; dx[i, j, 1] = 0;
 
     # Set the plot shape before plotting arrows to avoid warping
-    # a=gca;  
+    # a=gca;
     # if (scale != None):
     #     set(a,'DataAspectRatio', [1,1,1]);
     # if (xmin != xmax and ymin != ymax):
@@ -280,7 +280,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 # Utility function for generating initial conditions around a box
 def box_grid(xlimp, ylimp):
     """box_grid   generate list of points on edge of box
-    
+
     list = box_grid([xmin xmax xnum], [ymin ymax ynum]) generates a
     list of points that correspond to a uniform grid at the end of the
     box defined by the corners [xmin ymin] and [xmax ymax].

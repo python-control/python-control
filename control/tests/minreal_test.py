@@ -6,10 +6,10 @@
 import unittest
 import numpy as np
 from scipy.linalg import eigvals
-import control.matlab as matlab
-from control.statesp import StateSpace, _convertToStateSpace
+from control import matlab
+from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from itertools import permutations 
+from itertools import permutations
 
 class TestMinreal(unittest.TestCase):
     """Tests for the StateSpace class."""
@@ -32,8 +32,8 @@ class TestMinreal(unittest.TestCase):
         d2 = np.trim_zeros(d2)
         np.testing.assert_array_almost_equal(n1, n2)
         np.testing.assert_array_almost_equal(d2, d2)
-            
-        
+
+
     def testMinrealBrute(self):
         for n, m, p in permutations(range(1,6), 3):
             s = matlab.rss(n, p, m)
@@ -46,19 +46,19 @@ class TestMinreal(unittest.TestCase):
                 for i in range(m):
                     for j in range(p):
                         ht1 = matlab.tf(
-                            matlab.ss(s.A, s.B[:,i], s.C[j,:], s.D[j,i])) 
+                            matlab.ss(s.A, s.B[:,i], s.C[j,:], s.D[j,i]))
                         ht2 = matlab.tf(
                             matlab.ss(sr.A, sr.B[:,i], sr.C[j,:], sr.D[j,i]))
                         try:
                             self.assert_numden_almost_equal(
-                                ht1.num[0][0], ht2.num[0][0], 
+                                ht1.num[0][0], ht2.num[0][0],
                                 ht1.den[0][0], ht2.den[0][0])
                         except Exception as e:
-                            # for larger systems, the tf minreal's 
+                            # for larger systems, the tf minreal's
                             # the original rss, but not the balanced one
                             if n < 6:
                                 raise e
-                        
+
         self.assertEqual(self.nreductions, 2)
 
     def testMinrealSS(self):
@@ -72,7 +72,7 @@ class TestMinreal(unittest.TestCase):
         #D = [0 -0.8; -0.3 0]
         D = [[0., -0.8], [-0.3, 0.]]
         # sys = ss(A, B, C, D)
-        
+
         sys = StateSpace(A, B, C, D)
         sysr = sys.minreal()
         self.assertEqual(sysr.states, 2)
@@ -93,7 +93,7 @@ class TestMinreal(unittest.TestCase):
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestMinreal)
-      
+
 
 if __name__ == "__main__":
     unittest.main()

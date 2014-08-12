@@ -1,6 +1,8 @@
 *.pyc
 build/
-test/
+dist/
+.ropeproject/
+MANIFEST
 control/version.py
 build.log
 *.egg-info/
