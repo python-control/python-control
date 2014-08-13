@@ -83,7 +83,7 @@ from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
 from numpy.random import rand, randn
 from numpy.linalg import inv, det, solve
 from numpy.linalg.linalg import LinAlgError
-from scipy.signal import lti
+from scipy.signal import lti, cont2discrete
 # from exceptions import Exception
 import warnings
 from .lti import Lti, timebase, timebaseEqual, isdtime
@@ -575,6 +575,52 @@ inputs/outputs for feedback.")
                 self.B[:,j],
                 self.C[i,:],
                 self.D[i,j], self.dt)
+
+    def sample(self, Ts, method='zoh', alpha=None):
+        """Convert a continuous time system to discrete time
+
+        Creates a discrete-time system from a continuous-time system by
+        sampling.  Multiple methods of conversion are supported.
+
+        Parameters
+        ----------
+        Ts : float
+            Sampling period
+        method :  {"gbt", "bilinear", "euler", "backward_diff", "zoh"}
+            Which method to use:
+
+               * gbt: generalized bilinear transformation
+               * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
+               * euler: Euler (or forward differencing) method ("gbt" with alpha=0)
+               * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
+               * zoh: zero-order hold (default)
+
+        alpha : float within [0, 1]
+            The generalized bilinear transformation weighting parameter, which
+            should only be specified with method="gbt", and is ignored otherwise
+
+        Returns
+        -------
+        sysd : StateSpace system
+            Discrete time system, with sampling rate Ts
+
+        Notes
+        -----
+        Uses the command 'cont2discrete' from scipy.signal
+
+        Examples
+        --------
+        >>> sys = StateSpace(0, 1, 1, 0)
+        >>> sysd = sys.sample(0.5, method='bilinear')
+
+        """
+        if not self.isctime():
+            raise ValueError("System must be continuous time system")
+
+        sys = (self.A, self.B, self.C, self.D)
+        Ad, Bd, C, D, dt = cont2discrete(sys, Ts, method, alpha)
+        return StateSpace(Ad, Bd, C, D, dt)
+
 
 # TODO: add discrete time check
 def _convertToStateSpace(sys, **kw):

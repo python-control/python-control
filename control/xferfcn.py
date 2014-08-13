@@ -76,7 +76,7 @@ SUCH DAMAGE.
 
 Author: Richard M. Murray
 Date: 24 May 09
-Revised: Kevin K. Chewn, Dec 10
+Revised: Kevin K. Chen, Dec 10
 
 $Id$
 
@@ -86,7 +86,8 @@ $Id$
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
     where, delete, real, poly, poly1d
-from scipy.signal import lti
+import numpy as np
+from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
 from .lti import Lti, timebaseEqual, timebase, isdtime
@@ -928,6 +929,78 @@ a zero leading coefficient." % (i, j)
 
         return num, den
 
+    def sample(self, Ts, method='zoh', alpha=None):
+        """Convert a continuous-time system to discrete time
+
+        Creates a discrete-time system from a continuous-time system by
+        sampling.  Multiple methods of conversion are supported.
+
+        Parameters
+        ----------
+        Ts : float
+            Sampling period
+        method :  {"gbt", "bilinear", "euler", "backward_diff", "zoh", "matched"}
+            Which method to use:
+
+               * gbt: generalized bilinear transformation
+               * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
+               * euler: Euler (or forward differencing) method ("gbt" with alpha=0)
+               * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
+               * zoh: zero-order hold (default)
+
+        alpha : float within [0, 1]
+            The generalized bilinear transformation weighting parameter, which
+            should only be specified with method="gbt", and is ignored otherwise
+
+        Returns
+        -------
+        sysd : StateSpace system
+            Discrete time system, with sampling rate Ts
+
+        Notes
+        -----
+        1. Available only for SISO systems
+
+        2. Uses the command `cont2discrete` from `scipy.signal`
+
+        Examples
+        --------
+        >>> sys = TransferFunction(1, [1,1])
+        >>> sysd = sys.sample(0.5, method='bilinear')
+
+        """
+        if not self.isctime():
+            raise ValueError("System must be continuous time system")
+        if not self.issiso():
+            raise NotImplementedError("MIMO implementation not available")
+        if method == "matched":
+            return _c2dmatched(self, Ts)
+        sys = (self.num[0][0], self.den[0][0])
+        numd, dend, dt = cont2discrete(sys, Ts, method, alpha)
+        return TransferFunction(numd[0,:], dend, dt)
+
+# c2d function contributed by Benjamin White, Oct 2012
+def _c2dmatched(sysC, Ts):
+    # Pole-zero match method of continuous to discrete time conversion
+    szeros, spoles, sgain = tf2zpk(sysC.num[0][0], sysC.den[0][0])
+    zzeros = [0] * len(szeros)
+    zpoles = [0] * len(spoles)
+    pregainnum = [0] * len(szeros)
+    pregainden = [0] * len(spoles)
+    for idx, s in enumerate(szeros):
+        sTs = s*Ts
+        z = exp(sTs)
+        zzeros[idx] = z
+        pregainnum[idx] = 1-z
+    for idx, s in enumerate(spoles):
+        sTs = s*Ts
+        z = exp(sTs)
+        zpoles[idx] = z
+        pregainden[idx] = 1-z
+    zgain = np.multiply.reduce(pregainnum)/np.multiply.reduce(pregainden)
+    gain = sgain/zgain
+    sysDnum, sysDden = zpk2tf(zzeros, zpoles, gain)
+    return TransferFunction(sysDnum, sysDden, Ts)
 
 # Utility function to convert a transfer function polynomial to a string
 # Borrowed from poly1d library

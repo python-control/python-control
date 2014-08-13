@@ -5,7 +5,6 @@ Functions for manipulating discrete time systems.
 Routines in this module:
 
 sample_system()
-_c2dmatched()
 """
 
 """Copyright (c) 2012 by California Institute of Technology
@@ -47,16 +46,10 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 
 """
 
-from scipy.signal import zpk2tf, tf2zpk
-import numpy as np
-from cmath import exp
-from warnings import warn
 from .lti import isctime
-from .statesp import StateSpace, _convertToStateSpace
-from .xferfcn import TransferFunction, _convertToTransferFunction
 
 # Sample a continuous time system
-def sample_system(sysc, Ts, method='matched'):
+def sample_system(sysc, Ts, method='zoh', alpha=None):
     """Convert a continuous time system to discrete time
 
     Creates a discrete time system from a continuous time system by
@@ -78,11 +71,8 @@ def sample_system(sysc, Ts, method='matched'):
 
     Notes
     -----
-    1. The conversion methods 'tustin' and 'zoh' require the
-       cont2discrete() function, including in SciPy 0.10.0 and above.
-
-    2. Additional methods 'foh' and 'impulse' are planned for future
-       implementation.
+    See `TransferFunction.sample` and `StateSpace.sample` for
+    further details.
 
     Examples
     --------
@@ -94,79 +84,4 @@ def sample_system(sysc, Ts, method='matched'):
     if not isctime(sysc):
         raise ValueError("First argument must be continuous time system")
 
-    # If we are passed a state space system, convert to transfer function first
-    if isinstance(sysc, StateSpace) and method == 'zoh':
-        try:
-            # try with slycot routine
-            from slycot import mb05nd
-            F, H = mb05nd(sysc.A, Ts)
-            return StateSpace(F, H*sysc.B, sysc.C, sysc.D, Ts)
-        except ImportError:
-            if sysc.inputs != 1 or sysc.outputs != 1:
-                raise TypeError(
-                    "mb05nd not found in slycot, or slycot not installed")
-
-    # TODO: implement MIMO version for other than ZOH state-space
-    if (sysc.inputs != 1 or sysc.outputs != 1):
-        raise NotImplementedError("MIMO implementation not available")
-
-    # SISO state-space, with other than ZOH, or failing slycot import,
-    # is handled by conversion to TF
-    if isinstance(sysc, StateSpace):
-        warn("sample_system: converting to transfer function")
-        sysc = _convertToTransferFunction(sysc)
-
-    # Decide what to do based on the methods available
-    if method == 'matched':
-        sysd = _c2dmatched(sysc, Ts)
-
-    elif method == 'tustin':
-        try:
-            from scipy.signal import cont2discrete
-            sys = [sysc.num[0][0], sysc.den[0][0]]
-            scipySysD = cont2discrete(sys, Ts, method='bilinear')
-            sysd = TransferFunction(scipySysD[0][0], scipySysD[1], Ts)
-        except ImportError:
-            raise TypeError("cont2discrete not found in scipy.signal; upgrade to v0.10.0+")
-
-    elif method == 'zoh':
-        try:
-            from scipy.signal import cont2discrete
-            sys = [sysc.num[0][0], sysc.den[0][0]]
-            scipySysD = cont2discrete(sys, Ts, method='zoh')
-            sysd = TransferFunction(scipySysD[0][0],scipySysD[1], Ts)
-        except ImportError:
-            raise TypeError("cont2discrete not found in scipy.signal; upgrade to v0.10.0+")
-
-    elif method == 'foh' or method == 'impulse':
-        raise ValueError("Method not developed yet")
-
-    else:
-        raise ValueError("Invalid discretization method: %s" % method)
-
-    # TODO: Convert back into the input form
-    # Set sampling time
-    return sysd
-
-# c2d function contributed by Benjamin White, Oct 2012
-def _c2dmatched(sysC, Ts):
-    # Pole-zero match method of continuous to discrete time conversion
-    szeros, spoles, sgain = tf2zpk(sysC.num[0][0], sysC.den[0][0])
-    zzeros = [0] * len(szeros)
-    zpoles = [0] * len(spoles)
-    pregainnum = [0] * len(szeros)
-    pregainden = [0] * len(spoles)
-    for idx, s in enumerate(szeros):
-        sTs = s*Ts
-        z = exp(sTs)
-        zzeros[idx] = z
-        pregainnum[idx] = 1-z
-    for idx, s in enumerate(spoles):
-        sTs = s*Ts
-        z = exp(sTs)
-        zpoles[idx] = z
-        pregainden[idx] = 1-z
-    zgain = np.multiply.reduce(pregainnum)/np.multiply.reduce(pregainden)
-    gain = sgain/zgain
-    sysDnum, sysDden = zpk2tf(zzeros, zpoles, gain)
-    return TransferFunction(sysDnum, sysDden, Ts)
+    return sysc.sample(Ts, method, alpha)

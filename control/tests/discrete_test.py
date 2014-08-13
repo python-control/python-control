@@ -259,29 +259,53 @@ class TestDiscrete(unittest.TestCase):
         tout, yout, xout = forced_response(self.siso_ss2d, T, U, 0)
         tout, yout, xout = forced_response(self.siso_ss3d, T, U, 0)
 
-    @unittest.skip("skipping test_sample_system: not implemented for MIMO")
     def test_sample_system(self):
         # Make sure we can convert various types of systems
-        for sysc in (self.siso_ss1, self.siso_ss1c, self.siso_tf1c):
-            sysd = sample_system(sysc, 1, method='matched')
-            self.assertEqual(sysd.dt, 1)
+        for sysc in (self.siso_tf1, self.siso_tf1c,
+                     self.siso_ss1, self.siso_ss1c,
+                     self.mimo_ss1, self.mimo_ss1c):
+            for method in ("zoh", "bilinear", "euler", "backward_diff"):
+                sysd = sample_system(sysc, 1, method=method)
+                self.assertEqual(sysd.dt, 1)
 
-            sysd = sample_system(sysc, 1, method='tustin')
+        # Check "matched", defined only for SISO transfer functions
+        for sysc in (self.siso_tf1, self.siso_tf1c):
+            sysd = sample_system(sysc, 1, method="matched")
             self.assertEqual(sysd.dt, 1)
-
-            sysd = sample_system(sysc, 1, method='zoh')
-            self.assertEqual(sysd.dt, 1)
-            # TODO: put in other generic checks
-
-        for sysc in (self.mimo_ss1, self.mimo_ss1c):
-            sysd = sample_system(sysc, 1, method='zoh')
-            self.assertEqual(sysd.dt, 1)
-
-        # TODO: check results of converstion
 
         # Check errors
         self.assertRaises(ValueError, sample_system, self.siso_ss1d, 1)
         self.assertRaises(ValueError, sample_system, self.siso_ss1, 1, 'unknown')
+
+    def test_sample_ss(self):
+        # double integrators, two different ways
+        sys1 = StateSpace([[0.,1.],[0.,0.]], [[0.],[1.]], [[1.,0.]], 0.)
+        sys2 = StateSpace([[0.,0.],[1.,0.]], [[1.],[0.]], [[0.,1.]], 0.)
+        I = np.eye(2)
+        for sys in (sys1, sys2):
+            for h in (0.1, 0.5, 1, 2):
+                Ad = I + h * sys.A
+                Bd = h * sys.B + 0.5 * h**2 * (sys.A * sys.B)
+                sysd = sample_system(sys, h, method='zoh')
+                np.testing.assert_array_almost_equal(sysd.A, Ad)
+                np.testing.assert_array_almost_equal(sysd.B, Bd)
+                np.testing.assert_array_almost_equal(sysd.C, sys.C)
+                np.testing.assert_array_almost_equal(sysd.D, sys.D)
+                self.assertEqual(sysd.dt, h)
+
+    def test_sample_tf(self):
+        # double integrator
+        sys = TransferFunction(1, [1,0,0])
+        for h in (0.1, 0.5, 1, 2):
+            numd_expected = 0.5 * h**2 * np.array([1.,1.])
+            dend_expected = np.array([1.,-2.,1.])
+            sysd = sample_system(sys, h, method='zoh')
+            self.assertEqual(sysd.dt, h)
+            numd = sysd.num[0][0]
+            dend = sysd.den[0][0]
+            np.testing.assert_array_almost_equal(numd, numd_expected)
+            np.testing.assert_array_almost_equal(dend, dend_expected)
+
     def test_discrete_bode(self):
         # Create a simple discrete time system and check the calculation
         sys = TransferFunction([1], [1, 0.5], 1)
