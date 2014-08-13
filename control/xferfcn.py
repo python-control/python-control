@@ -242,18 +242,18 @@ denominator." % (j + 1, i + 1))
         self._truncatecoeff()
 
     def __call__(self, s):
-        """Evaluate the system's transfer function for a complex vairable
+        """Evaluate the system's transfer function for a complex variable
 
         For a SISO transfer function, returns the value of the
         transfer function.  For a MIMO transfer fuction, returns a
         matrix of values evaluated at complex variable s."""
 
-        if (self.inputs > 1 or self.outputs > 1):
-            # MIMO transfer function, return a matrix
-            return self.horner(s)
-        else:
-            # SISO transfer function, return a scalar
+        if self.issiso():
+            # return a scalar
             return self.horner(s)[0][0]
+        else:
+            # return a matrix
+            return self.horner(s)
 
     def _truncatecoeff(self):
         """Remove extraneous zero coefficients from num and den.
@@ -615,15 +615,13 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
             if (max(omega) * dt > pi):
                 warn("evalfr: frequency evaluation above Nyquist frequency")
         else:
-            slist = map(lambda w: 1.j * w, omega)
+            slist = np.array([1j * w for w in omega])
 
         # Compute frequency response for each input/output pair
         for i in range(self.outputs):
             for j in range(self.inputs):
-                fresp = map(lambda s: (polyval(self.num[i][j], s) /
-                            polyval(self.den[i][j], s)), slist)
-                fresp = array(list(fresp))
-
+                fresp = (polyval(self.num[i][j], slist) /
+                         polyval(self.den[i][j], slist))
                 mag[i, j, :] = abs(fresp)
                 phase[i, j, :] = angle(fresp)
 
