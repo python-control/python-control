@@ -16,7 +16,7 @@ from numpy import absolute, real
 
 class Lti:
     """Lti is a parent class to linear time invariant control (LTI) objects.
-    
+
     Lti is the parent to the StateSpace and TransferFunction child
     classes. It contains the number of inputs and outputs, and the
     timebase (dt) for the system.
@@ -55,9 +55,9 @@ class Lti:
     zero
     feedback
     returnScipySignalLti
-    
+
     """
-    
+
     def __init__(self, inputs=1, outputs=1, dt=None):
         """Assign the LTI object's numbers of inputs and ouputs."""
 
@@ -65,6 +65,39 @@ class Lti:
         self.inputs = inputs
         self.outputs = outputs
         self.dt = dt
+
+    def isdtime(self, strict=False):
+        """
+        Check to see if a system is a discrete-time system
+
+        Parameters
+        ----------
+        strict: bool (default = False)
+            If strict is True, make sure that timebase is not None
+        """
+
+        # If no timebase is given, answer depends on strict flag
+        if self.dt == None:
+            return True if not strict else False
+
+        # Look for dt > 0 (also works if dt = True)
+        return self.dt > 0
+
+    def isctime(self, strict=False):
+        """
+        Check to see if a system is a continuous-time system
+
+        Parameters
+        ----------
+        sys : LTI system
+            System to be checked
+        strict: bool (default = False)
+            If strict is True, make sure that timebase is not None
+        """
+        # If no timebase is given, answer depends on strict flag
+        if self.dt is None:
+            return True if not strict else False
+        return self.dt == 0
 
     def damp(self):
         poles = self.pole()
@@ -97,7 +130,7 @@ def timebase(sys, strict=True):
     elif not isinstance(sys, Lti):
         raise ValueError("Timebase not defined")
 
-    # Return the dample time, with converstion to float if strict is false
+    # Return the sample time, with converstion to float if strict is false
     if (sys.dt == None):
         return None
     elif (strict):
@@ -144,22 +177,17 @@ def isdtime(sys, strict=False):
         # OK as long as strict checking is off
         return True if not strict else False
 
-    # Check for a transfer fucntion or state space object
+    # Check for a transfer function or state-space object
     if isinstance(sys, Lti):
-        # If no timebase is given, answer depends on strict flag
-        if sys.dt == None:
-            return True if not strict else False
+        return sys.isdtime(strict)
 
-        # Look for dt > 0 (also works if dt = True)
-        return sys.dt > 0
-
-    # Got possed something we don't recognize
+    # Got passed something we don't recognize
     return False
 
 # Check to see if a system is a continuous time system
 def isctime(sys, strict=False):
     """
-    Check to see if a system is a continuous time system
+    Check to see if a system is a continuous-time system
 
     Parameters
     ----------
@@ -174,14 +202,9 @@ def isctime(sys, strict=False):
         # OK as long as strict checking is off
         return True if not strict else False
 
-    # Check for a transfer fucntion or state space object
+    # Check for a transfer function or state space object
     if isinstance(sys, Lti):
-        # If no timebase is given, answer depends on strict flag
-        if sys.dt == None:
-            return True if not strict else False
+        return sys.isctime(strict)
 
-        # Look for dt == 0
-        return sys.dt == 0
-
-    # Got possed something we don't recognize
+    # Got passed something we don't recognize
     return False
