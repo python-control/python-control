@@ -15,6 +15,7 @@ from scipy.linalg import eigvals
 import scipy as sp
 from control.matlab import *
 from control.frdata import FRD
+import warnings
 
 # for running these through Matlab or Octave
 '''
@@ -133,11 +134,19 @@ class TestMatlab(unittest.TestCase):
         pzmap(self.siso_tf2, Plot=False);
 
     def testStep(self):
-        #Test SISO system
-        sys = self.siso_ss1
         t = np.linspace(0, 1, 10)
+        # Test transfer function
+        yout, tout = step(self.siso_tf1, T=t)
+        youttrue = np.array([0, 0.0057, 0.0213, 0.0446, 0.0739,
+                             0.1075, 0.1443, 0.1832, 0.2235, 0.2642])
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        # Test SISO system with direct feedthrough
+        sys = self.siso_ss1
         youttrue = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165,
                              42.3227, 44.9694, 47.1599, 48.9776])
+
         yout, tout = step(sys, T=t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
@@ -160,14 +169,25 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testImpulse(self):
-        #Test SISO system
-        sys = self.siso_ss1
         t = np.linspace(0, 1, 10)
-        youttrue = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766, 31.7344,
-                             26.1668, 21.6292, 17.9245, 14.8945])
-        yout, tout = impulse(sys, T=t)
+        # test transfer function
+        yout, tout = impulse(self.siso_tf1, T=t)
+        youttrue = np.array([0., 0.0994, 0.1779, 0.2388, 0.2850, 0.3188,
+                             0.3423, 0.3573, 0.3654, 0.3679])
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
+
+        # produce a warning for a system with direct feedthrough
+        with warnings.catch_warnings(record=True) as warn:
+            #Test SISO system
+            sys = self.siso_ss1
+            youttrue = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766, 31.7344,
+                                 26.1668, 21.6292, 17.9245, 14.8945])
+            yout, tout = impulse(sys, T=t)
+            self.assertEqual(len(warn), 1)
+            self.assertIn("direct feedthrough", str(warn[-1].message))
+            np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+            np.testing.assert_array_almost_equal(tout, t)
 
         #Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
@@ -500,7 +520,7 @@ class TestMatlab(unittest.TestCase):
         # sys = ss(A, B, C, D)
 
         sys = ss(A, B, C, D)
-        sysr = minreal(sys)
+        sysr = minreal(sys, verbose=verbose)
         self.assertEqual(sysr.states, 2)
         self.assertEqual(sysr.inputs, sys.inputs)
         self.assertEqual(sysr.outputs, sys.outputs)
@@ -509,12 +529,11 @@ class TestMatlab(unittest.TestCase):
 
         s = tf([1, 0], [1])
         h = (s+1)*(s+2.00000000001)/(s+2)/(s**2+s+1)
-        hm = minreal(h)
+        hm = minreal(h, verbose=verbose)
         hr = (s+1)/(s**2+s+1)
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
 
-    @unittest.skip("skipping testSS2cont: not implemented for MIMO")
     def testSS2cont(self):
         sys = ss(
             np.mat("-3 4 2; -1 -3 0; 2 5 3"),
@@ -534,7 +553,7 @@ class TestMatlab(unittest.TestCase):
                       -0.304617775734327   0.075182622718853"""), sysd.B)
 
 
-    @unittest.skip("skipping testCombi01: need to check/update margins")
+    @unittest.skip("need to update margin command")
     def testCombi01(self):
         # test from a "real" case, combines tf, ss, connect and margin
         # this is a type 2 system, with phase starting at -180. The
@@ -586,6 +605,7 @@ class TestMatlab(unittest.TestCase):
         Hol = Hc*Hno*Hp
 
         gm, pm, wg, wp = margin(Hol)
+        # print("%f %f %f %f" % (gm, pm, wg, wp))
         self.assertAlmostEqual(gm, 3.32065569155)
         self.assertAlmostEqual(pm, 46.9740430224)
         self.assertAlmostEqual(wp, 0.0616288455466)

@@ -388,8 +388,25 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
 
     return T, yout, xout
 
+def _get_ss_simo(sys, input=None, output=None):
+    """Return a SISO or SIMO state-space version of sys
 
-def step_response(sys, T=None, X0=0., input=0, output=None,
+    If input is not specified, select first input and issue warning
+    """
+    sys_ss = _convertToStateSpace(sys)
+    if sys_ss.issiso():
+        return sys_ss
+    warn = False
+    if input is None:
+        # issue warning if input is not given
+        warn = True
+        input = 0
+    if output is None:
+        return _mimo2simo(sys_ss, input, warn_conversion=warn)
+    else:
+        return _mimo2siso(sys_ss, input, output, warn_conversion=warn)
+
+def step_response(sys, T=None, X0=0., input=None, output=None,
                   transpose=False, **keywords):
     # pylint: disable=W0622
     """Step response of a linear system
@@ -450,11 +467,7 @@ def step_response(sys, T=None, X0=0., input=0, output=None,
     --------
     >>> T, yout = step_response(sys, T, X0)
     """
-    sys = _convertToStateSpace(sys)
-    if output is None:
-        sys = _mimo2simo(sys, input, warn_conversion=True)
-    else:
-        sys = _mimo2siso(sys, input, output, warn_conversion=True)
+    sys = _get_ss_simo(sys, input, output)
     if T is None:
         if isctime(sys):
             T = _default_response_times(sys.A, 100)
@@ -532,11 +545,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     --------
     >>> T, yout = initial_response(sys, T, X0)
     """
-    sys = _convertToStateSpace(sys)
-    if output is None:
-        sys = _mimo2simo(sys, input, warn_conversion=False)
-    else:
-        sys = _mimo2siso(sys, input, output, warn_conversion=False)
+    sys = _get_ss_simo(sys, input, output)
 
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
@@ -610,11 +619,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     --------
     >>> T, yout = impulse_response(sys, T, X0)
     """
-    sys = _convertToStateSpace(sys)
-    if output is None:
-        sys = _mimo2simo(sys, input, warn_conversion=True)
-    else:
-        sys = _mimo2siso(sys, input, output, warn_conversion=True)
+    sys = _get_ss_simo(sys, input, output)
 
     # System has direct feedthrough, can't simulate impulse response numerically
     if np.any(sys.D != 0) and isctime(sys):
