@@ -99,6 +99,9 @@ class Lti:
             return True if not strict else False
         return self.dt == 0
 
+    def issiso(self):
+        return self.inputs == 1 and self.outputs == 1
+
     def damp(self):
         poles = self.pole()
         wn = absolute(poles)
@@ -113,7 +116,7 @@ def issiso(sys, strict=False):
         raise ValueError("Object is not an Lti system")
 
     # Done with the tricky stuff...
-    return sys.inputs == 1 and sys.outputs == 1
+    return sys.issiso()
 
 # Return the timebase (with conversion if unspecified)
 def timebase(sys, strict=True):
