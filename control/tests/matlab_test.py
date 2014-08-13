@@ -178,23 +178,22 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(tout, t)
 
         # produce a warning for a system with direct feedthrough
-        with warnings.catch_warnings(record=True) as warn:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
             #Test SISO system
             sys = self.siso_ss1
             youttrue = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766, 31.7344,
                                  26.1668, 21.6292, 17.9245, 14.8945])
             yout, tout = impulse(sys, T=t)
-            self.assertEqual(len(warn), 1)
-            self.assertIn("direct feedthrough", str(warn[-1].message))
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
-        #Test MIMO system, which contains ``siso_ss1`` twice
-        sys = self.mimo_ss1
-        y_00, _t = impulse(sys, T=t, input=0, output=0)
-        y_11, _t = impulse(sys, T=t, input=1, output=1)
-        np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
-        np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
+            #Test MIMO system, which contains ``siso_ss1`` twice
+            sys = self.mimo_ss1
+            y_00, _t = impulse(sys, T=t, input=0, output=0)
+            y_11, _t = impulse(sys, T=t, input=1, output=1)
+            np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
+            np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testInitial(self):
         #Test SISO system

@@ -19,6 +19,7 @@ from control.matlab import ss, step, impulse, initial, lsim, dcgain, \
                            ss2tf
 from control.statesp import _mimo2siso
 from control.timeresp import _check_convert_array
+import warnings
 
 class TestControlMatlab(unittest.TestCase):
 
@@ -66,7 +67,6 @@ class TestControlMatlab(unittest.TestCase):
         D = zeros((2, 2))
         return A, B, C, D
 
-
     def test_dcgain(self):
         """Test function dcgain with different systems"""
         #Test MIMO systems
@@ -95,13 +95,13 @@ class TestControlMatlab(unittest.TestCase):
                                   array([[0.0269]]),
                                   decimal=4)
 
-
     def test_dcgain_2(self):
         """Test function dcgain with different systems"""
         #Create different forms of a SISO system
         A, B, C, D = self.make_SISO_mats()
-        Z, P, k = scipy.signal.ss2zpk(A, B, C, D)
         num, den = scipy.signal.ss2tf(A, B, C, D)
+        # numerator is only a constant here; pick it out to avoid numpy warning
+        Z, P, k = scipy.signal.tf2zpk(num[0][-1], den)
         sys_ss = ss(A, B, C, D)
 
         #Compute the gain with ``dcgain``
@@ -124,13 +124,6 @@ class TestControlMatlab(unittest.TestCase):
                                   [0.026948, 0.026948, 0.026948, 0.026948,
                                    0.026948],
                                   decimal=6)
-
-        #Test with MIMO system
-        A, B, C, D = self.make_MIMO_mats()
-        gain_mimo = dcgain(A, B, C, D)
-        # print('gain_mimo: \n', gain_mimo)
-        assert_array_almost_equal(gain_mimo, [[0.026948, 0       ],
-                                              [0,        0.026948]], decimal=6)
 
     def test_step(self):
         """Test function ``step``."""
@@ -160,9 +153,6 @@ class TestControlMatlab(unittest.TestCase):
         t, y = step(sys)
         plot(t, y)
 
-        #show()
-
-    @unittest.skip("skipping test_impulse, need to update test")
     def test_impulse(self):
         A, B, C, D = self.make_SISO_mats()
         sys = ss(A, B, C, D)
@@ -182,8 +172,10 @@ class TestControlMatlab(unittest.TestCase):
         #Test system with direct feed-though, the function should print a warning.
         D = [[0.5]]
         sys_ft = ss(A, B, C, D)
-        t, y = impulse(sys_ft)
-        plot(t, y, label='Direct feedthrough D=[[0.5]]')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            t, y = impulse(sys_ft)
+            plot(t, y, label='Direct feedthrough D=[[0.5]]')
 
         #Test MIMO system
         A, B, C, D = self.make_MIMO_mats()
@@ -378,12 +370,10 @@ class TestControlMatlab(unittest.TestCase):
         assert_array_almost_equal(dcgain(sys1), dcgain(sys2))
 
         #Results of ``step`` simulation must be the same too
-        t, y1 = step(sys1)
-        _t, y2 = step(sys2, t)
+        y1, t1 = step(sys1)
+        y2, t2 = step(sys2, t1)
         assert_array_almost_equal(y1, y2)
 
-    #! Old test; no longer functional?? (RMM, 3 Nov 2012)
-    @unittest.skip("skipping test_convert_MIMOto_SISO: need to update test")
     def test_convert_MIMO_to_SISO(self):
         '''Convert mimo to siso systems'''
         #Test with our usual systems --------------------------------------------
@@ -474,5 +464,4 @@ class TestControlMatlab(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-    show()
 # vi:ts=4:sw=4:expandtab
