@@ -87,6 +87,7 @@ from scipy.signal import lti, cont2discrete
 # from exceptions import Exception
 import warnings
 from .lti import Lti, timebase, timebaseEqual, isdtime
+from .xferfcn import _convertToTransferFunction
 
 class StateSpace(Lti):
     """The StateSpace class represents state space instances and functions.
@@ -401,7 +402,6 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return array(resp)
 
     # Method for generating the frequency response of the system
-    # TODO: add discrete time check
     def freqresp(self, omega):
         """Evaluate the system's transfer func. at a list of ang. frequencies.
 
@@ -413,22 +413,11 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         input omega.
 
         """
-        # Preallocate outputs.
-        numfreq = len(omega)
-        mag = empty((self.outputs, self.inputs, numfreq))
-        phase = empty((self.outputs, self.inputs, numfreq))
-        fresp = empty((self.outputs, self.inputs, numfreq), dtype=complex)
-
-        omega.sort()
-
-        # Evaluate response at each frequency
-        for k in range(numfreq):
-            fresp[:, :, k] = self.evalfr(omega[k])
-
-        mag = abs(fresp)
-        phase = angle(fresp)
-
-        return mag, phase, omega
+        # when evaluating at many frequencies, much faster to convert to
+        # transfer function first and then evaluate, than to solve an
+        # n-dimensional linear system at each frequency
+        tf = _convertToTransferFunction(self)
+        return tf.freqresp(omega)
 
     # Compute poles and zeros
     def pole(self):
