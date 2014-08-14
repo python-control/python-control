@@ -174,10 +174,10 @@ class TestFRD(unittest.TestCase):
         omega = np.logspace(-1, 2, 40)
         f1 = FRD(h1, omega, smooth=True)
         freqplot.nyquist(f1, np.logspace(-1, 2, 100))
-        plt.savefig('/dev/null', format='svg')
+        # plt.savefig('/dev/null', format='svg')
         plt.figure(2)
         freqplot.nyquist(f1, f1.omega)
-        plt.savefig('/dev/null', format='svg')
+        # plt.savefig('/dev/null', format='svg')
 
     def testMIMO(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],

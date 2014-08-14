@@ -871,10 +871,6 @@ only implemented for SISO functions.")
                        poles[n].imag * poles[n+m].imag > 0):
                     m += 1
 
-                if (m > 1):
-                    print("Found pole with multiplicity %d" % m)
-                    # print("Poles = ", poles)
-
                 # Multiple pairs from the outside in
                 for i in range(m):
                     quad = polymul([1., -poles[n]], [1., -poles[n+2*(m-i)-1]])
