@@ -611,7 +611,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
         omega.sort()
         if isdtime(self, strict=True):
             dt = timebase(self)
-            slist = map(lambda w: exp(1.j * w * dt), omega)
+            slist = np.array([exp(1.j * w * dt) for w in omega])
             if (max(omega) * dt > pi):
                 warn("evalfr: frequency evaluation above Nyquist frequency")
         else:
