@@ -1380,7 +1380,7 @@ def impulse(sys, T=None, input=0, output=None, **keywords):
 
     Examples
     --------
-    >>> T, yout = impulse(sys, T)
+    >>> yout, T = impulse(sys, T)
     '''
     T, yout = timeresp.impulse_response(sys, T, 0, input, output,
                                    transpose = True, **keywords)
@@ -1389,11 +1389,11 @@ def impulse(sys, T=None, input=0, output=None, **keywords):
 def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
     '''
     Initial condition response of a linear system
-    
+
     If the system has multiple outputs (?IMO), optionally, one output
     may be selected. If no selection is made for the output, all
     outputs are given.
-    
+
     Parameters
     ----------
     sys: StateSpace, or TransferFunction
@@ -1436,7 +1436,7 @@ def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
 
     Examples
     --------
-    >>> T, yout = initial(sys, T, X0)
+    >>> yout, T = initial(sys, T, X0)
 
     '''
     T, yout = timeresp.initial_response(sys, T, X0, output=output,
@@ -1491,7 +1491,7 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
 
     Examples
     --------
-    >>> T, yout, xout = lsim(sys, U, T, X0)
+    >>> yout, T, xout = lsim(sys, U, T, X0)
     '''
     T, yout, xout = timeresp.forced_response(sys, T, U, X0,
                                              transpose = True, **keywords)
@@ -1553,7 +1553,7 @@ def c2d(sysc, Ts, method='zoh'):
         Sample time for the conversion
 
     method: string, optional
-        Method to be applied, 
+        Method to be applied,
         'zoh'        Zero-order hold on the inputs (default)
         'foh'        First-order hold, currently not implemented
         'impulse'    Impulse-invariant discretization, currently not implemented
@@ -1565,4 +1565,3 @@ def c2d(sysc, Ts, method='zoh'):
     if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):
         return _convertToStateSpace(sysd)
     return sysd
-
