@@ -42,7 +42,8 @@ Author: Bjorn Olofsson
 """
 
 from numpy.linalg import inv
-from scipy import shape, size, asarray, copy, zeros, eye, dot
+from scipy import shape, size, asarray, asmatrix, copy, zeros, eye, dot
+from scipy.linalg import eigvals, solve_discrete_are
 from .exception import ControlSlycot, ControlArgument
 
 #### Lyapunov equation solvers lyap and dlyap
@@ -667,7 +668,6 @@ def care(A,B,Q,R=None,S=None,E=None):
     else:
         raise ControlArgument("Invalid set of input parameters.")
 
-
 def dare(A,B,Q,R,S=None,E=None):
     """ (X,L,G) = dare(A,B,Q,R) solves the discrete-time algebraic Riccati
     equation
@@ -688,8 +688,19 @@ def dare(A,B,Q,R,S=None,E=None):
     where A, Q and E are square matrices of the same dimension. Further, Q and
     R are symmetric matrices. The function returns the solution X, the gain
     matrix G = (B^T X B + R)^-1 (B^T X A + S^T) and the closed loop
-    eigenvalues L, i.e., the eigenvalues of A - B G , E. """
+    eigenvalues L, i.e., the eigenvalues of A - B G , E.
+    """
+    if S is not None or E is not None:
+        return dare_old(A, B, Q, R, S, E)
+    else:
+        Rmat = asmatrix(R)
+        Qmat = asmatrix(Q)
+        X = solve_discrete_are(A, B, Qmat, Rmat)
+        G = inv(B.T.dot(X).dot(B) + Rmat) * B.T.dot(X).dot(A)
+        L = eigvals(A - B.dot(G))
+        return X, L, G
 
+def dare_old(A,B,Q,R,S=None,E=None):
     # Make sure we can import required slycot routine
     try:
         from slycot import sb02md

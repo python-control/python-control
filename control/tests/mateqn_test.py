@@ -44,8 +44,9 @@ Author: Bjorn Olofsson
 
 import unittest
 from numpy import matrix
-from numpy.testing import assert_array_almost_equal
-from numpy.linalg import inv
+from numpy.testing import assert_array_almost_equal, assert_array_less
+# need scipy version of eigvals for generalized eigenvalue problem
+from scipy.linalg import inv, eigvals
 from scipy import zeros,dot
 from control.mateqn import lyap,dlyap,care,dare
 from control.exception import slycot_check
@@ -178,6 +179,9 @@ class TestMatrixEquations(unittest.TestCase):
             A.T * X * A - X -
             A.T * X * B * inv(B.T * X * B + R) * B.T * X * A + Q, zeros((2,2)))
         assert_array_almost_equal(inv(B.T * X * B + R) * B.T * X * A, G)
+        # check for stable closed loop
+        lam = eigvals(A - B * G)
+        assert_array_less(abs(lam), 1.0)
 
         A = matrix([[1, 0],[-1, 1]])
         Q = matrix([[0, 1],[1, 1]])
@@ -190,6 +194,9 @@ class TestMatrixEquations(unittest.TestCase):
             A.T * X * A - X -
             A.T * X * B * inv(B.T *  X * B + R) * B.T * X * A + Q, zeros((2,2)))
         assert_array_almost_equal(B.T * X * A / (B.T * X * B + R), G)
+        # check for stable closed loop
+        lam = eigvals(A - B * G)
+        assert_array_less(abs(lam), 1.0)
 
     def test_dare_g(self):
         A = matrix([[-0.6, 0],[-0.1, -0.4]])
@@ -206,6 +213,9 @@ class TestMatrixEquations(unittest.TestCase):
             (A.T * X * B + S) * inv(B.T * X * B + R) * (B.T * X * A + S.T) + Q,
             zeros((2,2)) )
         assert_array_almost_equal(inv(B.T * X * B + R) * (B.T * X * A + S.T), G)
+        # check for stable closed loop
+        lam = eigvals(A - B * G, E)
+        assert_array_less(abs(lam), 1.0)
 
         A = matrix([[-0.6, 0],[-0.1, -0.4]])
         Q = matrix([[2, 1],[1, 3]])
@@ -221,6 +231,9 @@ class TestMatrixEquations(unittest.TestCase):
             (A.T * X * B + S) * inv(B.T * X * B + R) * (B.T * X * A + S.T) + Q,
             zeros((2,2)) )
         assert_array_almost_equal((B.T * X * A + S.T) / (B.T * X * B + R), G)
+        # check for stable closed loop
+        lam = eigvals(A - B * G, E)
+        assert_array_less(abs(lam), 1.0)
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestMatrixEquations)
