@@ -6,8 +6,8 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-from .. import matlab
-from ..exception import slycot_check
+from control import matlab
+from control.exception import slycot_check
 
 
 @unittest.skipIf(not slycot_check(), "slycot not installed")
