@@ -115,8 +115,6 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
-
-    @unittest.skip("skipping test_initial_response_no_trim: known output dimension error")
     def test_initial_response_no_trim(self):
         # test MIMO system without trimming
         t = np.linspace(0, 1, 10)
@@ -126,7 +124,7 @@ class TestTimeresp(unittest.TestCase):
         sys = self.mimo_ss1
         _t, yy = initial_response(sys, T=t, X0=x0)
         np.testing.assert_array_almost_equal(
-            yy, np.hstack((youttrue, youttrue)),
+            yy, np.vstack((youttrue, youttrue)),
             decimal=4)
 
     def test_forced_response(self):
