@@ -51,21 +51,21 @@ from .exception import ControlSlycot, ControlArgument
 def lyap(A,Q,C=None,E=None):
     """ X = lyap(A,Q) solves the continuous-time Lyapunov equation
 
-        A X + X A^T + Q = 0
+        :math:`A X + X A^T + Q = 0`
 
     where A and Q are square matrices of the same dimension.
     Further, Q must be symmetric.
 
     X = lyap(A,Q,C) solves the Sylvester equation
 
-        A X + X Q + C = 0
+        :math:`A X + X Q + C = 0`
 
     where A and Q are square matrices.
 
     X = lyap(A,Q,None,E) solves the generalized continuous-time
     Lyapunov equation
 
-        A X E^T + E X A^T + Q = 0
+        :math:`A X E^T + E X A^T + Q = 0`
 
     where Q is a symmetric matrix and A, Q and E are square matrices
     of the same dimension. """
@@ -233,21 +233,21 @@ def lyap(A,Q,C=None,E=None):
 def dlyap(A,Q,C=None,E=None):
     """ dlyap(A,Q) solves the discrete-time Lyapunov equation
 
-        A X A^T - X + Q = 0
+        :math:`A X A^T - X + Q = 0`
 
     where A and Q are square matrices of the same dimension. Further
     Q must be symmetric.
 
     dlyap(A,Q,C) solves the Sylvester equation
 
-        A X Q^T - X + C = 0
+        :math:`A X Q^T - X + C = 0`
 
     where A and Q are square matrices.
 
     dlyap(A,Q,None,E) solves the generalized discrete-time Lyapunov
     equation
 
-        A X A^T - E X E^T + Q = 0
+        :math:`A X A^T - E X E^T + Q = 0`
 
     where Q is a symmetric matrix and A, Q and E are square matrices
     of the same dimension. """
@@ -414,7 +414,7 @@ def care(A,B,Q,R=None,S=None,E=None):
     """ (X,L,G) = care(A,B,Q) solves the continuous-time algebraic Riccati
     equation
 
-        A^T X + X A - X B B^T X + Q = 0
+        :math:`A^T X + X A - X B B^T X + Q = 0`
 
     where A and Q are square matrices of the same dimension. Further, Q
     is a symmetric matrix. The function returns the solution X, the gain
@@ -424,7 +424,7 @@ def care(A,B,Q,R=None,S=None,E=None):
     (X,L,G) = care(A,B,Q,R,S,E) solves the generalized continuous-time
     algebraic Riccati equation
 
-        A^T X E + E^T X A - (E^T X B + S) R^-1 (B^T X E + S^T) + Q = 0
+        :math:`A^T X E + E^T X A - (E^T X B + S) R^{-1} (B^T X E + S^T) + Q = 0`
 
     where A, Q and E are square matrices of the same dimension. Further, Q and
     R are symmetric matrices. The function returns the solution X, the gain
@@ -672,7 +672,7 @@ def dare(A,B,Q,R,S=None,E=None):
     """ (X,L,G) = dare(A,B,Q,R) solves the discrete-time algebraic Riccati
     equation
 
-        A^T X A - X - A^T X B (B^T X B + R)^-1 B^T X A + Q = 0
+        :math:`A^T X A - X - A^T X B (B^T X B + R)^{-1} B^T X A + Q = 0`
 
     where A and Q are square matrices of the same dimension. Further, Q
     is a symmetric matrix. The function returns the solution X, the gain
@@ -682,12 +682,11 @@ def dare(A,B,Q,R,S=None,E=None):
     (X,L,G) = dare(A,B,Q,R,S,E) solves the generalized discrete-time algebraic
     Riccati equation
 
-        A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^-1 (B^T X A + S^T) +
-            + Q = 0
+        :math:`A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^{-1} (B^T X A + S^T) + Q = 0`
 
     where A, Q and E are square matrices of the same dimension. Further, Q and
     R are symmetric matrices. The function returns the solution X, the gain
-    matrix G = (B^T X B + R)^-1 (B^T X A + S^T) and the closed loop
+    matrix :math:`G = (B^T X B + R)^{-1} (B^T X A + S^T)` and the closed loop
     eigenvalues L, i.e., the eigenvalues of A - B G , E.
     """
     if S is not None or E is not None:
