@@ -32,7 +32,7 @@ LICENSE             = 'BSD'
 DOWNLOAD_URL        = URL
 PACKAGE_NAME        = 'control'
 EXTRA_INFO          = dict(
-    install_requires=['scipy', 'matplotlib'],
+    install_requires=['numpy', 'scipy', 'matplotlib'],
     tests_require=['scipy', 'matplotlib', 'nose']
 )
 
