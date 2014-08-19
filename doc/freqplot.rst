@@ -12,4 +12,4 @@ Plotting routines
 
 Utility functions
 =================
-.. autofunction:: freqplot.default_frequency_range
+.. autofunction:: control.freqplot.default_frequency_range

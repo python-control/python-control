@@ -1,6 +1,8 @@
 Time Domain Simulation
 **********************
 
+.. automodule:: control.timeresp
+
 Time responses
 ==============
 .. autofunction:: control.forced_response
@@ -9,5 +11,5 @@ Time responses
 
 Phase portraits
 ===============
-.. autofunction:: phaseplot.phase_plot
-.. autofunction:: phaseplot.box_grid
+.. autofunction:: control.phaseplot.phase_plot
+.. autofunction:: control.phaseplot.box_grid

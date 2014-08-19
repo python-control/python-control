@@ -13,12 +13,45 @@
 
 import sys, os
 
+# from unittest.mock import MagicMock # python3
+from mock import Mock as MagicMock  # python2
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
+
+MOCK_MODULES = [
+    'matplotlib',
+    'matplotlib.mlab',
+    'matplotlib.pyplot',
+    'numpy',
+    'numpy.linalg',
+    'numpy.linalg.linalg',
+    'numpy.random',
+    'numpy.testing',
+    'pylab',
+    'scipy',
+    'scipy.integrate',
+    'scipy.interpolate',
+    'scipy.linalg',
+    'scipy.signal',
+    'scipy.signal.ltisys',
+]
+# sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = Mock()
+    if mod_name == 'numpy':
+        sys.modules['numpy'].pi = 3.14
+
+# disable autosummary code from numpy
+# (otherwise, will generate many errors, because autosummary runs twice)
+numpydoc_show_class_members = False
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.append(os.path.abspath('../src'))
-
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration -----------------------------------------------------
 
