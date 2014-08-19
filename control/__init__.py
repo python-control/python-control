@@ -93,6 +93,10 @@ else:
     # Exceptions
     from .exception import *
 
+    # Version information
+    from control.version import full_version as __version__
+    from control.version import git_revision as __git_revision__
+
     # Import some of the more common (and benign) MATLAB shortcuts
     # By default, don't import conflicting commands here
     #! TODO (RMM, 4 Nov 2012): remove MATLAB dependencies from __init__.py
