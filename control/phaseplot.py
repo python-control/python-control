@@ -104,7 +104,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         Draw arrows at the given list times
 
     parms: tuple, optional
-        List of parameters to pass to vector field: func(x, t, *parms)
+        List of parameters to pass to vector field: `func(x, t, *parms)`
 
     See also
     --------
