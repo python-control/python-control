@@ -5,7 +5,15 @@
 
 import unittest
 import numpy as np
-from control import *
+from control.statesp import StateSpace
+from control import matlab
+from control.xferfcn import TransferFunction
+from control.lti import isdtime, timebase, isctime, timebaseEqual
+from control.dtime import sample_system
+from control.bdalg import feedback
+from control.timeresp import step_response, impulse_response, forced_response
+from control.freqplot import bode
+
 
 class TestDiscrete(unittest.TestCase):
     """Tests for the DiscreteStateSpace class."""
