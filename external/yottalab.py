@@ -469,6 +469,11 @@ def set_aw(sys,poles):
 def placep(A,B,P):
     """Return the steady state value of the step response os sysmatrix K for
     pole placement
+    
+    This function require a wrapper with fortran source for solving the
+    pole placement problem (otherwise there are bad conditioned results
+    by MIMO systems!)
+    Please ask the author for complete sources roberto.bucher@supsi.ch
 
     Usage
     =====
