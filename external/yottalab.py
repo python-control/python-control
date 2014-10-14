@@ -6,7 +6,7 @@ roberto.bucher@supsi.ch
 The following commands are provided:
 
 Design and plot commands
-  dlqr     - Discrete linear quadratic regulator
+  dlqr        - Discrete linear quadratic regulator
   d2c         - discrete to continous time conversion
   full_obs    - full order observer
   red_obs     - reduced order observer
@@ -15,13 +15,14 @@ Design and plot commands
   set_aw      - introduce anti-windup into controller
   bb_dcgain   - return the steady state value of the step response
   placep      - Pole placement (replacement for place)
+  bb_c2d      - Continous to discrete conversion
 
   Old functions now corrected in python control
   bb_dare     - Solve Riccati equation for discrete time systems
   
 """
 from numpy import hstack, vstack, rank, imag, zeros, eye, mat, \
-    array, shape, real, sort
+    array, shape, real, sort, around
 from scipy import poly 
 from scipy.linalg import inv, expm, eig, eigvals, logm
 import scipy as sp
@@ -82,6 +83,21 @@ def d2c(sys,method='zoh'):
             B=s[0:n,n:n+nb]
             C=c
             D=d
+    elif method=='foh':
+        a=mat(a)
+        b=mat(b)
+        c=mat(c)
+        d=mat(d)
+        Id = mat(eye(n))
+        A = logm(a)/Ts
+        A = real(around(A,12))
+        Amat = mat(A)
+        B = (a-Id)**(-2)*Amat**2*b*Ts
+        B = real(around(B,12))
+        Bmat = mat(B)
+        C = c
+        D = d - C*(Amat**(-2)/Ts*(a-Id)-Amat**(-1))*Bmat
+        D = real(around(D,12))
     elif method=='bi':
         a=mat(a)
         b=mat(b)
@@ -469,11 +485,6 @@ def set_aw(sys,poles):
 def placep(A,B,P):
     """Return the steady state value of the step response os sysmatrix K for
     pole placement
-    
-    This function require a wrapper with fortran source for solving the
-    pole placement problem (otherwise there are bad conditioned results
-    by MIMO systems!)
-    Please ask the author for complete sources roberto.bucher@supsi.ch
 
     Usage
     =====
@@ -589,4 +600,90 @@ def bb_dcgain(sys):
     else:
         gm=-c*inv(a)*b+d
     return array(gm)
+
+def bb_c2d(sys,Ts,method='zoh'):
+    """Continous to discrete conversion with ZOH method
+
+    Call:
+    sysd=c2d(sys,Ts,method='zoh')
+
+    Parameters
+    ----------
+    sys :   System in statespace or Tf form 
+    Ts:     Sampling Time
+    method: 'zoh', 'bi' or 'matched'
+
+    Returns
+    -------
+    sysd: ss or Tf system
+    Discrete system
+
+    """
+    flag = 0
+    if isinstance(sys, TransferFunction):
+        sys=tf2ss(sys)
+        flag=1
+
+    a=sys.A
+    b=sys.B
+    c=sys.C
+    d=sys.D
+    n=shape(a)[0]
+    nb=shape(b)[1]
+    nc=shape(c)[0]
+
+    if method=='zoh':
+        ztmp=zeros((nb,n+nb))
+        tmp=hstack((a,b))
+        tmp=vstack((tmp,ztmp))
+        tmp=expm(tmp*Ts)
+        A=tmp[0:n,0:n]
+        B=tmp[0:n,n:n+nb]
+        C=c
+        D=d
+    elif method=='foh':
+        a=mat(a)
+        b=mat(b)
+        c=mat(c)
+        d=mat(d)
+        Id = mat(eye(n))
+        A = expm(a*Ts)
+        B = a**(-2)/Ts*(expm(a*Ts)-Id)**2*b
+        C = c
+        D = d + c*(a**(-2)/Ts*(expm(a*Ts)-Id)-a**(-1))*b        
+    elif method=='bi':
+        a=mat(a)
+        b=mat(b)
+        c=mat(c)
+        d=mat(d)
+        IT=mat(2/Ts*eye(n,n))
+        A=(IT+a)*inv(IT-a)
+        iab=inv(IT-a)*b
+        tk=2/sqrt(Ts)
+        B=tk*iab
+        C=tk*(c*inv(IT-a))
+        D=d+c*iab
+    elif method=='matched':
+        if nb!=1 and nc!=1:
+            print "System is not SISO"
+            return
+        p=exp(sys.poles*Ts)
+        z=exp(sys.zeros*Ts)
+        infinite_zeros = len(sys.poles) - len(sys.zeros) - 1
+        for i in range(0,infinite_zeros):
+            z=hstack((z,-1))
+        [A,B,C,D]=zpk2ss(z,p,1)
+        sysd=StateSpace(A,B,C,D,Ts)
+        cg = dcgain(sys)
+        dg = dcgain(sysd)
+        [A,B,C,D]=zpk2ss(z,p,cg/dg)
+    else:
+        print "Method not supported"
+        return
+    
+    sysd=StateSpace(A,B,C,D,Ts)
+    if flag==1:
+        sysd=ss2tf(sysd)
+    return sysd
+
 
