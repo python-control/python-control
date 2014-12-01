@@ -41,11 +41,10 @@
 # $Id$
 
 # Packages that we need access to
-import scipy as sp
 import control.lti as lti
 
 # Specific functions that we use
-from scipy import pi
+from numpy import pi
 
 # Utility function to unwrap an angle measurement
 
