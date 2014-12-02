@@ -180,7 +180,7 @@ def setup_package():
     # Run build
     if len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
             sys.argv[1] in ('--help-commands', 'egg_info', '--version',
-                            'clean')):
+                            'clean', 'test')):
         # Use setuptools for these commands (they don't work well or at all
         # with distutils).  For normal builds use distutils.
         try:
