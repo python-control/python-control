@@ -1,0 +1,9 @@
+*.pyc
+build/
+dist/
+.ropeproject/
+MANIFEST
+control/version.py
+build.log
+*.egg-info/
+.coverage

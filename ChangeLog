@@ -1,3 +1,14 @@
+2014-08-09  Richard Murray  <murray@sidamo.local>
+
+	* Cloned python-control/code from SourceForge, mapping SF user names
+	to git format (name, e-mail)
+	* Pushed to python-control/python-control on GitHub
+	* Converted subversion branches/tags to git branches/tags
+
+==== Repository moved from SourceForge to GitHub ====
+
+---- control-0.6d released -----
+
 2014-03-22  Richard Murray  <murray@sidamo.local>
 
 	* src/matlab.py (ss): allow five arguments to create a discrete time

@@ -1,0 +1,33 @@
+language: python
+python:
+  - "2.7"
+  - "3.2"
+  - "3.3"
+# install required system libraries
+before_install:
+  - export DISPLAY=:99.0
+  - sh -e /etc/init.d/xvfb start
+  - sudo apt-get update --fix-missing -qq
+  - sudo apt-get build-dep python-scipy -qq
+# command to install dependencies from source
+# note, separating requirements so that travis
+# will get output in less than 5 min and won't
+# terminate, using q to keep build info to a
+# minumum for dependencies
+install:
+  - while [[ 1 ]]; do echo "building deps"; sleep 300; done &
+  - msg_pid=$!
+  - pip install -q coverage
+  - pip install -q coveralls
+  - pip install -q nose
+  - pip install -q numpy
+  - pip install -q scipy
+  - pip install -q slycot
+  - pip install -q matplotlib
+  - kill $msg_pid
+
+# command to run tests
+script:
+  - coverage run --source=control setup.py test
+after_success:
+  - coveralls
