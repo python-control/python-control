@@ -43,8 +43,6 @@ import sys
 import subprocess
 
 
-from setuptools import setup, find_packages
-
 CLASSIFIERS = """\
 Development Status :: 3 - Alpha
 Intended Audience :: Science/Research
@@ -136,6 +134,20 @@ if not release:
     finally:
         a.close()
 
+def configuration(parent_package='',top_path=None):
+    from numpy.distutils.misc_util import Configuration
+
+    config = Configuration(None, parent_package, top_path)
+    config.set_options(ignore_setup_xxx_py=True,
+                       assume_default_configuration=True,
+                       delegate_options_to_subpackages=True,
+                       quiet=True)
+
+    config.add_subpackage(PACKAGE_NAME)
+
+    config.get_version(PACKAGE_NAME + '/version.py') # sets config.version
+
+    return config
 
 def setup_package():
     src_path = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -162,13 +174,29 @@ def setup_package():
         install_requires=['numpy', 'scipy'],
         tests_require=['nose'],
         test_suite='nose.collector',
-        packages=find_packages(
-            exclude=['*.tests']
-        ),
+        packages=[PACKAGE_NAME],
     )
 
-    FULLVERSION, GIT_REVISION = get_version_info()
-    metadata['version'] = FULLVERSION
+    # Run build
+    if len(sys.argv) >= 2 and ('--help' in sys.argv[1:] or
+            sys.argv[1] in ('--help-commands', 'egg_info', '--version',
+                            'clean')):
+        # Use setuptools for these commands (they don't work well or at all
+        # with distutils).  For normal builds use distutils.
+        try:
+            from setuptools import setup
+        except ImportError:
+            from distutils.core import setup
+
+        FULLVERSION, GIT_REVISION = get_version_info()
+        metadata['version'] = FULLVERSION
+    else:
+        if len(sys.argv) >= 2 and sys.argv[1] == 'bdist_wheel':
+            # bdist_wheel needs setuptools
+            import setuptools
+        from numpy.distutils.core import setup
+        cwd = os.path.abspath(os.path.dirname(__file__))
+        metadata['configuration'] = configuration
 
     try:
         setup(**metadata)
