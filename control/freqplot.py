@@ -121,7 +121,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             #TODO: Add MIMO bode plots.
             raise NotImplementedError("Bode is currently only implemented for SISO systems.")
         else:
-            if (omega == None):
+            if omega is None:
                 # Select a default range if none is provided
                 omega = default_frequency_range(syslist)
 
@@ -211,7 +211,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         syslist = (syslist,)
 
     # Select a default range if none is provided
-    if (omega == None):
+    if omega is None:
         #! TODO: think about doing something smarter for discrete
         omega = default_frequency_range(syslist)
 
@@ -294,7 +294,7 @@ def gangof4_plot(P, C, omega=None):
 
         # Select a default range if none is provided
         #! TODO: This needs to be made more intelligent
-        if (omega == None):
+        if omega is None:
             omega = default_frequency_range((P,C))
 
         # Compute the senstivity functions
