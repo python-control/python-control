@@ -28,6 +28,6 @@ install:
 
 # command to run tests
 script:
-  - coverage run --source=control setup.py test
+  - coverage run setup.py test
 after_success:
   - coveralls
