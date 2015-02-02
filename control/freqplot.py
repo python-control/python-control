@@ -126,17 +126,20 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 omega = default_frequency_range(syslist)
 
             # Get the magnitude and phase of the system
-            mag_tmp, phase_tmp, omega = sys.freqresp(omega)
+            mag_tmp, phase_tmp, omega_sys = sys.freqresp(omega)
             mag = np.atleast_1d(np.squeeze(mag_tmp))
             phase = np.atleast_1d(np.squeeze(phase_tmp))
             phase = unwrap(phase)
-            if Hz: omega = omega/(2*sp.pi)
+            if Hz:
+                omega_plot = omega_sys/(2*sp.pi)
+            else:
+                omega_plot = omega_sys
             if dB: mag = 20*sp.log10(mag)
             if deg: phase = phase * 180 / sp.pi
 
             mags.append(mag)
             phases.append(phase)
-            omegas.append(omega)
+            omegas.append(omega_sys)
             # Get the dimensions of the current axis, which we will divide up
             #! TODO: Not current implemented; just use subplot for now
 
@@ -144,9 +147,9 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # Magnitude plot
                 plt.subplot(211);
                 if dB:
-                    plt.semilogx(omega, mag, *args, **kwargs)
+                    plt.semilogx(omega_plot, mag, *args, **kwargs)
                 else:
-                    plt.loglog(omega, mag, *args, **kwargs)
+                    plt.loglog(omega_plot, mag, *args, **kwargs)
                 plt.hold(True);
 
                 # Add a grid to the plot + labeling
@@ -156,7 +159,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 
                 # Phase plot
                 plt.subplot(212);
-                plt.semilogx(omega, phase, *args, **kwargs)
+                plt.semilogx(omega_plot, phase, *args, **kwargs)
                 plt.hold(True);
 
                 # Add a grid to the plot + labeling
