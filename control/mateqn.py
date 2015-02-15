@@ -533,7 +533,7 @@ def care(A,B,Q,R=None,S=None,E=None):
                 e.info = ve.info
             elif ve.info == 1:
                 e = ValueError("The matrix A is (numerically) singular in \
-                    discrete-time case.")
+                    continuous-time case.")
                 e.info = ve.info
             elif ve.info == 2:
                 e = ValueError("The Hamiltonian or symplectic matrix H cannot \
