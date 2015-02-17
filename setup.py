@@ -18,7 +18,7 @@ Estimator design: linear quadratic estimator (Kalman filter)
 
 MAJOR = 0
 MINOR = 6
-MICRO = 5
+MICRO = 6
 ISRELEASED = True
 DISTNAME            = 'control'
 DESCRIPTION         = 'Python control systems library'
@@ -36,15 +36,6 @@ EXTRA_INFO          = dict(
     tests_require=['scipy', 'matplotlib', 'nose']
 )
 
-VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
-
-import os
-import sys
-import subprocess
-
-
-from setuptools import setup, find_packages
-
 CLASSIFIERS = """\
 Development Status :: 3 - Alpha
 Intended Audience :: Science/Research
@@ -59,6 +50,23 @@ Operating System :: POSIX
 Operating System :: Unix
 Operating System :: MacOS
 """
+
+VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+
+import os
+import sys
+import subprocess
+from setuptools import setup, find_packages
+
+# check for python version
+if sys.version_info[:2] < (2, 6) or (3, 0) <= sys.version_info[0:2] < (3, 2):
+    raise RuntimeError("Python version 2.6, 2.7 or >= 3.2 required.")
+
+# use builtins to store if we are running setup
+if sys.version_info[0] >= 3:
+        import builtins
+else:
+        import __builtin__ as builtins
 
 
 # Return the git revision as a string
@@ -88,6 +96,12 @@ def git_version():
 
     return GIT_REVISION
 
+# This is a bit hackish: we are setting a global variable so that the main
+# numpy __init__ can detect if it is being loaded by the setup routine, to
+# avoid attempting to load components that aren't built yet.  While ugly, it's
+# a lot more robust than what was previously being used.
+builtins.__CONTROL_SETUP__ = True
+
 
 def get_version_info():
     # Adding the git rev number needs to be done inside write_version_py(),
@@ -100,10 +114,12 @@ def get_version_info():
         # must be a source distribution, use existing version file
         try:
             from control.version import git_revision as GIT_REVISION
-        except ImportError:
-            raise ImportError("Unable to import git_revision. Try removing "
-                              "control/version.py and the build directory "
-                              "before building.")
+        except ImportError as e:
+            raise ImportError(
+                str(e) +
+                ", Unable to import git_revision. Try removing "
+                "control/version.py and the build directory "
+                "before building.")
     else:
         GIT_REVISION = "Unknown"
 
