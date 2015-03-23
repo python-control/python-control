@@ -161,6 +161,40 @@ class TestTimeresp(unittest.TestCase):
         _t, yout, _xout = forced_response(self.mimo_ss1, t, u, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
+    def test_lsim_double_integrator(self):
+        # Note: scipy.signal.lsim fails if A is not invertible
+        A = np.mat("0. 1.;0. 0.")
+        B = np.mat("0.; 1.")
+        C = np.mat("1. 0.")
+        D = 0.
+        sys = StateSpace(A, B, C, D)
+
+        def check(u, x0, xtrue):
+            _t, yout, xout = forced_response(sys, t, u, x0)
+            np.testing.assert_array_almost_equal(xout, xtrue, decimal=6)
+            ytrue = np.squeeze(np.asarray(C.dot(xtrue)))
+            np.testing.assert_array_almost_equal(yout, ytrue, decimal=6)
+
+        # test with zero input
+        npts = 10
+        t = np.linspace(0, 1, npts)
+        u = np.zeros_like(t)
+        x0 = np.array([2., 3.])
+        xtrue = np.zeros((2, npts))
+        xtrue[0, :] = x0[0] + t * x0[1]
+        xtrue[1, :] = x0[1]
+        check(u, x0, xtrue)
+
+        # test with step input
+        u = np.ones_like(t)
+        xtrue = np.array([0.5 * t**2, t])
+        x0 = np.array([0., 0.])
+        check(u, x0, xtrue)
+
+        # test with linear input
+        u = t
+        xtrue = np.array([1./6. * t**3, 0.5 * t**2])
+        check(u, x0, xtrue)
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
