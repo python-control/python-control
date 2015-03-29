@@ -249,8 +249,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
         LTI system to simulate
 
     T: array-like
-        Time steps at which the input is defined, numbers must be (strictly
-        monotonic) increasing.
+        Time steps at which the input is defined; values must be evenly spaced.
 
     U: array-like or number, optional
         Input array giving input at each time `T` (default = 0).
@@ -298,6 +297,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
 #    d_type = A.dtype
     n_states = A.shape[0]
     n_inputs = B.shape[1]
+    n_outputs = C.shape[0]
 
     # Set and/or check time vector in discrete time case
     if isdtime(sys, strict=True):
@@ -323,14 +323,18 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     T = _check_convert_array(T, [('any',), (1, 'any')],
                              'Parameter ``T``: ', squeeze=True,
                              transpose=transpose)
-    if not all(T[1:] - T[:-1] > 0):
-        raise ValueError('Parameter ``T``: time values must be '
-                         '(strictly monotonic) increasing numbers.')
+    dt = T[1] - T[0]
+    if not np.allclose(T[1:] - T[:-1], dt):
+        raise ValueError('Parameter ``T``: time values must be equally spaced.')
     n_steps = len(T)            # number of simulation steps
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: ', squeeze=True)
+
+    xout = np.zeros((n_states, n_steps))
+    xout[:, 0] = X0
+    yout = np.zeros((n_outputs, n_steps))
 
     # Separate out the discrete and continuous time cases
     if isctime(sys):
@@ -339,12 +343,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
 
         # Faster algorithm if U is zero
         if U is None or (isinstance(U, (int, float)) and U == 0):
-            # Function that computes the time derivative of the linear system
-            def f_dot(x, _t):
-                return dot(A, x)
-
-            xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
-            yout = dot(C, xout.T)
+            # Solve using matrix exponential
+            expAdt = sp.linalg.expm(A * dt)
+            for i in range(1, n_steps):
+                xout[:, i] = dot(expAdt, xout[:, i-1])
+            yout = dot(C, xout)
 
         # General algorithm that interpolates U in between output points
         else:
@@ -354,26 +357,36 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
             U = _check_convert_array(U, legal_shapes,
                                      'Parameter ``U``: ', squeeze=False,
                                      transpose=transpose)
-            # convert 1D array to D2 array with only one row
+            # convert 1D array to 2D array with only one row
             if len(U.shape) == 1:
                 U = U.reshape(1, -1)  # pylint: disable=E1103
 
-            # Create a callable that uses linear interpolation to
-            # calculate the input at any time.
-            compute_u = \
-                sp.interpolate.interp1d(T, U, kind='linear', copy=False,
-                                        axis=-1, bounds_error=False,
-                                        fill_value=0)
+            # Algorithm: to integrate from time 0 to time dt, with linear
+            # interpolation between inputs u(0) = u0 and u(dt) = u1, we solve
+            #   xdot = A x + B u,        x(0) = x0
+            #   udot = (u1 - u0) / dt,   u(0) = u0.
+            #
+            # Solution is
+            #   [ x(dt) ]       [ A*dt  B*dt  0 ] [  x0   ]
+            #   [ u(dt) ] = exp [  0     0    I ] [  u0   ]
+            #   [u1 - u0]       [  0     0    0 ] [u1 - u0]
 
-            # Function that computes the time derivative of the linear system
-            def f_dot(x, t):
-                return dot(A, x) + squeeze(dot(B, compute_u([t])))
+            M = np.bmat([[A * dt, B * dt, np.zeros((n_states, n_inputs))],
+                         [np.zeros((n_inputs, n_states + n_inputs)),
+                          np.identity(n_inputs)],
+                         [np.zeros((n_inputs, n_states + 2 * n_inputs))]])
+            expM = sp.linalg.expm(M)
+            Ad = expM[:n_states, :n_states]
+            Bd1 = expM[:n_states, n_states+n_inputs:]
+            Bd0 = expM[:n_states, n_states:n_states + n_inputs] - Bd1
 
-            xout = sp.integrate.odeint(f_dot, X0, T, **keywords)
-            yout = dot(C, xout.T) + dot(D, U)
+            for i in range(1, n_steps):
+                xout[:, i] = (dot(Ad, xout[:, i-1]) + dot(Bd0, U[:, i-1]) +
+                              dot(Bd1, U[:, i]))
+            yout = dot(C, xout) + dot(D, U)
 
         yout = squeeze(yout)
-        xout = xout.T
+        xout = squeeze(xout)
 
     else:
         # Discrete time simulation using signal processing toolbox

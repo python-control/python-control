@@ -7,3 +7,4 @@ control/version.py
 build.log
 *.egg-info/
 .coverage
+doc/_build
