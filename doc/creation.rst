@@ -5,6 +5,7 @@ Python-control provides a number of methods for creating LTI control
 systems.
 
 .. module:: control
+
 ==========================  ============================================
 :func:`ss`                  create state-space (SS) models
 :func:`tf`                  create transfer function (TF) models
@@ -12,9 +13,9 @@ systems.
 
 System creation
 ================
-.. autofunction:: control.StateSpace
+.. autoclass:: control.StateSpace
 .. autofunction:: control.ss
-.. autofunction:: control.TransferFunction
+.. autoclass:: control.TransferFunction
 .. autofunction:: control.tf
 
 Utility functions and converstions

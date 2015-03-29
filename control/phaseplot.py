@@ -104,7 +104,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         Draw arrows at the given list times
 
     parms: tuple, optional
-        List of parameters to pass to vector field: func(x, t, *parms)
+        List of parameters to pass to vector field: `func(x, t, *parms)`
 
     See also
     --------
@@ -119,20 +119,20 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     #
     #! TODO: need to add error checking to arguments
     autoFlag = False; logtimeFlag = False; timeptsFlag = False; Narrows = 0;
-    if (lingrid != None):
+    if lingrid is not None:
         autoFlag = True;
         Narrows = lingrid;
         if (verbose):
             print('Using auto arrows\n')
 
-    elif (logtime != None):
+    elif logtime is not None:
         logtimeFlag = True;
         Narrows = logtime[0];
         timefactor = logtime[1];
         if (verbose):
             print('Using logtime arrows\n')
 
-    elif (timepts != None):
+    elif timepts is not None:
         timeptsFlag = True;
         Narrows = len(timepts);
 
@@ -153,7 +153,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
         # Plot the quiver plot
         #! TODO: figure out arguments to make arrows show up correctly
-        if (scale == None):
+        if scale is None:
             mpl.quiver(x1, x2, dx[:,:,1], dx[:,:,2], angles='xy')
         elif (scale != 0):
             #! TODO: optimize parameters for arrows
@@ -168,7 +168,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         mpl.xlabel('x1'); mpl.ylabel('x2');
 
     # See if we should also generate the streamlines
-    if (X0 == None or len(X0) == 0):
+    if X0 is None or len(X0) == 0:
         return
 
     # Convert initial conditions to a numpy array
@@ -180,7 +180,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     dx = np.empty((nr, Narrows, 2))
 
     # See if we were passed a simulation time
-    if (T == None):
+    if T is None:
         T = 50
 
     # Parse the time we were passed
@@ -189,7 +189,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         TSPAN = np.linspace(0, T, 100);
 
     # Figure out the limits for the plot
-    if (scale == None):
+    if scale is None:
         # Assume that the current axis are set as we want them
         alim = mpl.axis();
         xmin = alim[0]; xmax = alim[1];
@@ -216,7 +216,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
             for j in range(Narrows):
 
                 # Figure out starting index; headless arrows start at 0
-                k = -1 if scale == None else 0;
+                k = -1 if scale is None else 0;
 
                 # Figure out what time index to use for the next point
                 if (autoFlag):
@@ -234,7 +234,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
                     tind = tarr[-1] if len(tarr) else 0;
 
                 # For tailless arrows, skip the first point
-                if (tind == 0 and scale == None):
+                if tind == 0 and scale is None:
                     continue;
 
                 # Figure out the arrow at this point on the curve
@@ -242,7 +242,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
                 x2[i,j] = state[tind, 1];
 
                 # Skip arrows outside of initial condition box
-                if (scale != None or
+                if (scale is not None or
                      (x1[i,j] <= xmax and x1[i,j] >= xmin and
                       x2[i,j] <= ymax and x2[i,j] >= ymin)):
                     v = odefun((x1[i,j], x2[i,j]), 0, *parms)
@@ -259,7 +259,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     # set(a, 'Box', 'on');
 
     # Plot arrows on the streamlines
-    if (scale == None and Narrows > 0):
+    if scale is None and Narrows > 0:
         # Use a tailless arrow
         #! TODO: figure out arguments to make arrows show up correctly
         mpl.quiver(x1, x2, dx[:,:,0], dx[:,:,1], angles='xy')

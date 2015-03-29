@@ -3,20 +3,20 @@ Python-Control Classes
 
 LTI System Class
 ================
-.. automodule:: lti
+.. automodule:: control.lti
    :members:
 
 State Space Class
 =================
-.. automodule:: statesp
+.. automodule:: control.statesp
    :members:
 
 Transfer Function Class
 =======================
-.. automodule:: xferfcn
+.. automodule:: control.xferfcn
    :members:
 
 FRD Class
 =========
-.. automodule:: frdata
+.. automodule:: control.frdata
    :members:

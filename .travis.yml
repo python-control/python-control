@@ -1,33 +1,36 @@
 language: python
 python:
   - "2.7"
-  - "3.2"
   - "3.3"
+  - "3.4"
+
 # install required system libraries
 before_install:
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
   - sudo apt-get update --fix-missing -qq
-  - sudo apt-get build-dep python-scipy -qq
-# command to install dependencies from source
-# note, separating requirements so that travis
-# will get output in less than 5 min and won't
-# terminate, using q to keep build info to a
-# minumum for dependencies
+  - sudo apt-get install gfortran liblapack-dev
+  # use miniconda to install numpy/scipy, to avoid lengthy build from source
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget http://repo.continuum.io/miniconda/Miniconda-3.4.2-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget http://repo.continuum.io/miniconda/Miniconda3-3.4.2-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+
+# Install packages
 install:
-  - while [[ 1 ]]; do echo "building deps"; sleep 300; done &
-  - msg_pid=$!
-  - pip install -q coverage
-  - pip install -q coveralls
-  - pip install -q nose
-  - pip install -q numpy
-  - pip install -q scipy
-  - pip install -q slycot
-  - pip install -q matplotlib
-  - kill $msg_pid
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION coverage nose numpy scipy matplotlib pip
+  - pip install coveralls
+  - pip install slycot
 
 # command to run tests
 script:
-  - coverage run --source=control setup.py test
+  - coverage run setup.py test
 after_success:
   - coveralls

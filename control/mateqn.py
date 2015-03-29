@@ -51,21 +51,21 @@ from .exception import ControlSlycot, ControlArgument
 def lyap(A,Q,C=None,E=None):
     """ X = lyap(A,Q) solves the continuous-time Lyapunov equation
 
-        A X + X A^T + Q = 0
+        :math:`A X + X A^T + Q = 0`
 
     where A and Q are square matrices of the same dimension.
     Further, Q must be symmetric.
 
     X = lyap(A,Q,C) solves the Sylvester equation
 
-        A X + X Q + C = 0
+        :math:`A X + X Q + C = 0`
 
     where A and Q are square matrices.
 
     X = lyap(A,Q,None,E) solves the generalized continuous-time
     Lyapunov equation
 
-        A X E^T + E X A^T + Q = 0
+        :math:`A X E^T + E X A^T + Q = 0`
 
     where Q is a symmetric matrix and A, Q and E are square matrices
     of the same dimension. """
@@ -88,10 +88,10 @@ def lyap(A,Q,C=None,E=None):
     if len(shape(Q)) == 1:
         Q = Q.reshape(1,Q.size)
 
-    if C != None and len(shape(C)) == 1:
+    if C is not None and len(shape(C)) == 1:
         C = C.reshape(1,C.size)
 
-    if E != None and len(shape(E)) == 1:
+    if E is not None and len(shape(E)) == 1:
         E = E.reshape(1,E.size)
 
     # Determine main dimensions
@@ -106,7 +106,7 @@ def lyap(A,Q,C=None,E=None):
         m = size(Q,0)
 
     # Solve standard Lyapunov equation
-    if C==None and E==None:
+    if C is None and E is None:
         # Check input data for consistency
         if shape(A) != shape(Q):
             raise ControlArgument("A and Q must be matrices of identical \
@@ -139,7 +139,7 @@ def lyap(A,Q,C=None,E=None):
             raise e
 
     # Solve the Sylvester equation
-    elif C != None and E==None:
+    elif C is not None and E is None:
         # Check input data for consistency
         if size(A) > 1 and shape(A)[0] != shape(A)[1]:
             raise ControlArgument("A must be a quadratic matrix.")
@@ -170,7 +170,7 @@ def lyap(A,Q,C=None,E=None):
             raise e
 
     # Solve the generalized Lyapunov equation
-    elif C == None and E != None:
+    elif C is None and E is not None:
         # Check input data for consistency
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
@@ -233,21 +233,21 @@ def lyap(A,Q,C=None,E=None):
 def dlyap(A,Q,C=None,E=None):
     """ dlyap(A,Q) solves the discrete-time Lyapunov equation
 
-        A X A^T - X + Q = 0
+        :math:`A X A^T - X + Q = 0`
 
     where A and Q are square matrices of the same dimension. Further
     Q must be symmetric.
 
     dlyap(A,Q,C) solves the Sylvester equation
 
-        A X Q^T - X + C = 0
+        :math:`A X Q^T - X + C = 0`
 
     where A and Q are square matrices.
 
     dlyap(A,Q,None,E) solves the generalized discrete-time Lyapunov
     equation
 
-        A X A^T - E X E^T + Q = 0
+        :math:`A X A^T - E X E^T + Q = 0`
 
     where Q is a symmetric matrix and A, Q and E are square matrices
     of the same dimension. """
@@ -275,10 +275,10 @@ def dlyap(A,Q,C=None,E=None):
     if len(shape(Q)) == 1:
         Q = Q.reshape(1,Q.size)
 
-    if C != None and len(shape(C)) == 1:
+    if C is not None and len(shape(C)) == 1:
         C = C.reshape(1,C.size)
 
-    if E != None and len(shape(E)) == 1:
+    if E is not None and len(shape(E)) == 1:
         E = E.reshape(1,E.size)
 
     # Determine main dimensions
@@ -293,7 +293,7 @@ def dlyap(A,Q,C=None,E=None):
         m = size(Q,0)
 
     # Solve standard Lyapunov equation
-    if C==None and E==None:
+    if C is None and E is None:
         # Check input data for consistency
         if shape(A) != shape(Q):
             raise ControlArgument("A and Q must be matrices of identical \
@@ -322,7 +322,7 @@ def dlyap(A,Q,C=None,E=None):
             raise e
 
     # Solve the Sylvester equation
-    elif C != None and E==None:
+    elif C is not None and E is None:
         # Check input data for consistency
         if size(A) > 1 and shape(A)[0] != shape(A)[1]:
             raise ControlArgument("A must be a quadratic matrix")
@@ -353,7 +353,7 @@ def dlyap(A,Q,C=None,E=None):
             raise e
 
     # Solve the generalized Lyapunov equation
-    elif C == None and E != None:
+    elif C is None and E is not None:
         # Check input data for consistency
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
@@ -414,7 +414,7 @@ def care(A,B,Q,R=None,S=None,E=None):
     """ (X,L,G) = care(A,B,Q,R=None) solves the continuous-time algebraic Riccati
     equation
 
-        A^T X + X A - X B R^-1 B^T X + Q = 0
+        :math:`A^T X + X A - X B R^{-1} B^T X + Q = 0`
 
     where A and Q are square matrices of the same dimension. Further,
     Q and R are a symmetric matrices. If R is None, it is set to the
@@ -425,7 +425,7 @@ def care(A,B,Q,R=None,S=None,E=None):
     (X,L,G) = care(A,B,Q,R,S,E) solves the generalized continuous-time
     algebraic Riccati equation
 
-        A^T X E + E^T X A - (E^T X B + S) R^-1 (B^T X E + S^T) + Q = 0
+        :math:`A^T X E + E^T X A - (E^T X B + S) R^{-1} (B^T X E + S^T) + Q = 0`
 
     where A, Q and E are square matrices of the same
     dimension. Further, Q and R are symmetric matrices. If R is None,
@@ -460,13 +460,13 @@ def care(A,B,Q,R=None,S=None,E=None):
     if len(shape(Q)) == 1:
         Q = Q.reshape(1,Q.size)
 
-    if R != None and len(shape(R)) == 1:
+    if R is not None and len(shape(R)) == 1:
         R = R.reshape(1,R.size)
 
-    if S != None and len(shape(S)) == 1:
+    if S is not None and len(shape(S)) == 1:
         S = S.reshape(1,S.size)
 
-    if E != None and len(shape(E)) == 1:
+    if E is not None and len(shape(E)) == 1:
         E = E.reshape(1,E.size)
 
     # Determine main dimensions
@@ -479,11 +479,11 @@ def care(A,B,Q,R=None,S=None,E=None):
         m = 1
     else:
         m = size(B,1)
-    if R==None:
+    if R is None:
         R = eye(m,m)
 
     # Solve the standard algebraic Riccati equation
-    if S==None and E==None:
+    if S is None and E is None:
         # Check input data for consistency
         if size(A) > 1 and shape(A)[0] != shape(A)[1]:
             raise ControlArgument("A must be a quadratic matrix.")
@@ -564,7 +564,7 @@ def care(A,B,Q,R=None,S=None,E=None):
         return (X , w[:n] , G )
 
     # Solve the generalized algebraic Riccati equation
-    elif S != None and E != None:
+    elif S is not None and E is not None:
         # Check input data for consistency
         if size(A) > 1 and shape(A)[0] != shape(A)[1]:
             raise ControlArgument("A must be a quadratic matrix.")
@@ -674,7 +674,7 @@ def dare(A,B,Q,R,S=None,E=None):
     """ (X,L,G) = dare(A,B,Q,R) solves the discrete-time algebraic Riccati
     equation
 
-        A^T X A - X - A^T X B (B^T X B + R)^-1 B^T X A + Q = 0
+        :math:`A^T X A - X - A^T X B (B^T X B + R)^{-1} B^T X A + Q = 0`
 
     where A and Q are square matrices of the same dimension. Further, Q
     is a symmetric matrix. The function returns the solution X, the gain
@@ -684,12 +684,11 @@ def dare(A,B,Q,R,S=None,E=None):
     (X,L,G) = dare(A,B,Q,R,S,E) solves the generalized discrete-time algebraic
     Riccati equation
 
-        A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^-1 (B^T X A + S^T) +
-            + Q = 0
+        :math:`A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^{-1} (B^T X A + S^T) + Q = 0`
 
     where A, Q and E are square matrices of the same dimension. Further, Q and
     R are symmetric matrices. The function returns the solution X, the gain
-    matrix G = (B^T X B + R)^-1 (B^T X A + S^T) and the closed loop
+    matrix :math:`G = (B^T X B + R)^{-1} (B^T X A + S^T)` and the closed loop
     eigenvalues L, i.e., the eigenvalues of A - B G , E.
     """
     if S is not None or E is not None:
@@ -730,13 +729,13 @@ def dare_old(A,B,Q,R,S=None,E=None):
     if len(shape(Q)) == 1:
         Q = Q.reshape(1,Q.size)
 
-    if R != None and len(shape(R)) == 1:
+    if R is not None and len(shape(R)) == 1:
         R = R.reshape(1,R.size)
 
-    if S != None and len(shape(S)) == 1:
+    if S is not None and len(shape(S)) == 1:
         S = S.reshape(1,S.size)
 
-    if E != None and len(shape(E)) == 1:
+    if E is not None and len(shape(E)) == 1:
         E = E.reshape(1,E.size)
 
     # Determine main dimensions
@@ -751,7 +750,7 @@ def dare_old(A,B,Q,R,S=None,E=None):
         m = size(B,1)
 
     # Solve the standard algebraic Riccati equation
-    if S==None and E==None:
+    if S is None and E is None:
         # Check input data for consistency
         if size(A) > 1 and shape(A)[0] != shape(A)[1]:
             raise ControlArgument("A must be a quadratic matrix.")
@@ -835,7 +834,7 @@ def dare_old(A,B,Q,R,S=None,E=None):
         return (X , w[:n] , G)
 
     # Solve the generalized algebraic Riccati equation
-    elif S != None and E != None:
+    elif S is not None and E is not None:
         # Check input data for consistency
         if size(A) > 1 and shape(A)[0] != shape(A)[1]:
             raise ControlArgument("A must be a quadratic matrix.")
