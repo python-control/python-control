@@ -4,6 +4,8 @@ dist/
 .ropeproject/
 MANIFEST
 control/_version.py
+__conda_*.txt
+record.txt
 build.log
 *.egg-info/
 .coverage

@@ -1,0 +1,34 @@
+package:
+  name: control
+
+build:
+  script:
+    - cd $RECIPE_DIR/..
+    - $PYTHON make_version.py
+    - $PYTHON setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+
+  run:
+    - python
+    - numpy
+    - scipy
+    - matplotlib
+
+test:
+  requires:
+    - nose
+
+  imports:
+    - control
+
+about:
+  home: http://python-control.sourceforge.net
+  license:  BSD License
+  summary: 'Python control systems library'
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml
