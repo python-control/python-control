@@ -10,6 +10,7 @@ build:
 requirements:
   build:
     - python
+    - nose
 
   run:
     - python
@@ -18,9 +19,6 @@ requirements:
     - matplotlib
 
 test:
-  requires:
-    - nose
-
   imports:
     - control
 
