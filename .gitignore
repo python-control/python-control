@@ -3,7 +3,7 @@ build/
 dist/
 .ropeproject/
 MANIFEST
-control/version.py
+control/_version.py
 build.log
 *.egg-info/
 .coverage
