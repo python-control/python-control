@@ -8,8 +8,6 @@ python:
 before_install:
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
-  - sudo apt-get update --fix-missing -qq
-  - sudo apt-get install gfortran liblapack-dev
   # use miniconda to install numpy/scipy, to avoid lengthy build from source
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget http://repo.continuum.io/miniconda/Miniconda-3.4.2-Linux-x86_64.sh -O miniconda.sh;
@@ -22,14 +20,15 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda install --yes python=$TRAVIS_PYTHON_VERSION conda-build pip coverage
+  - conda config --add channels http://conda.binstar.org/cwrowley
   - conda info -a
 
 # Install packages
 install:
   - conda build conda-recipe
   - conda install control --use-local
+  - conda install slycot
   - pip install coveralls
-  - pip install slycot
 
 # command to run tests
 script:
