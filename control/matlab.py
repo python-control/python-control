@@ -1509,7 +1509,7 @@ def ssdata(sys):
     return (ss.A, ss.B, ss.C, ss.D)
 
 # Return transfer function data as a tuple
-def tfdata(sys, **kw):
+def tfdata(sys):
     '''
     Return transfer function data objects for a system
 
@@ -1518,17 +1518,12 @@ def tfdata(sys, **kw):
     sys: Lti (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
-    Keywords
-    --------
-    inputs = int; outputs = int
-        For MIMO transfer function, return num, den for given inputs, outputs
-
     Returns
     -------
     (num, den): numerator and denominator arrays
         Transfer function coefficients (SISO only)
     '''
-    tf = _convertToTransferFunction(sys, **kw)
+    tf = _convertToTransferFunction(sys)
 
     return (tf.num, tf.den)
 

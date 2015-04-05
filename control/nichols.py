@@ -103,10 +103,6 @@ def nichols_plot(syslist, omega=None, grid=True):
 def nichols_grid(cl_mags=None, cl_phases=None):
     """Nichols chart grid
 
-    Usage
-    =====
-    nichols_grid()
-
     Plots a Nichols chart grid on the current axis, or creates a new chart
     if no plot already exists.
 
@@ -119,8 +115,8 @@ def nichols_grid(cl_mags=None, cl_phases=None):
         Array of closed-loop phases defining the iso-phase lines on a custom
         Nichols chart. Must be in the range -360 < cl_phases < 0
 
-    Return values
-    -------------
+    Returns
+    -------
     None
     """
     # Default chart size
@@ -211,10 +207,6 @@ def closed_loop_contours(Gcl_mags, Gcl_phases):
     Gol is an open-loop transfer function, and Gcl is a corresponding
     closed-loop transfer function.
 
-    Usage
-    =====
-    contours = closed_loop_contours(Gcl_mags, Gcl_phases)
-
     Parameters
     ----------
     Gcl_mags : array-like
@@ -222,8 +214,8 @@ def closed_loop_contours(Gcl_mags, Gcl_phases):
     Gcl_phases : array-like
         Array of phases in radians of the contours
 
-    Return values
-    -------------
+    Returns
+    -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
     """
@@ -241,10 +233,6 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     Gol is an open-loop transfer function, and Gcl is a corresponding
     closed-loop transfer function.
 
-    Usage
-    =====
-    contours = m_circles(mags, phase_min, phase_max)
-
     Parameters
     ----------
     mags : array-like
@@ -254,8 +242,8 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     phase_max : degrees
         Maximum phase in degrees of the N-circles
 
-    Return values
-    -------------
+    Returns
+    -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
     """
@@ -271,10 +259,6 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     Gol is an open-loop transfer function, and Gcl is a corresponding
     closed-loop transfer function.
 
-    Usage
-    =====
-    contours = n_circles(phases, mag_min, mag_max)
-
     Parameters
     ----------
     phases : array-like
@@ -284,8 +268,8 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     mag_max : dB
         Maximum magnitude in dB of the N-circles
 
-    Return values
-    -------------
+    Returns
+    -------
     contours : complex array
         Array of complex numbers corresponding to the contours.
     """
