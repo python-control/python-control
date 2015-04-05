@@ -1110,11 +1110,8 @@ def rlocus(sys, klist = None, **keywords):
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    klist:
+    klist: iterable, optional
         optional list of gains
-
-    Keyword parameters
-    ------------------
     xlim : control of x-axis range, normally with tuple, for
         other options, see matplotlib.axes
     ylim : control of y-axis range
@@ -1132,12 +1129,8 @@ def rlocus(sys, klist = None, **keywords):
         list of gains used to compute roots
     """
     from .rlocus import root_locus
-    #! TODO: update with a smart calculation of the gains using sys poles/zeros
-    if klist == None:
-        klist = logspace(-3, 3)
 
-    rlist = root_locus(sys, klist, **keywords)
-    return rlist, klist
+    return root_locus(sys, klist, **keywords)
 
 def margin(*args):
     """Calculate gain and phase margins and associated crossover frequencies
