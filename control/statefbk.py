@@ -195,7 +195,7 @@ def lqr(*args, **keywords):
     #
 
     # Get the system description
-    if (len(args) < 4):
+    if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
 
     try:
