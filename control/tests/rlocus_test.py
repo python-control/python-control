@@ -17,21 +17,32 @@ class TestRootLocus(unittest.TestCase):
         """This contains some random LTI systems and scalars for testing."""
 
         # Two random SISO systems.
-        self.sys1 = TransferFunction([1, 2], [1, 2, 3])
-        self.sys2 = StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
+        sys1 = TransferFunction([1, 2], [1, 2, 3])
+        sys2 = StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
             [[1., 0.]], [[0.]])
+        self.systems = (sys1, sys2)
+
+    def check_cl_poles(self, sys, pole_list, k_list):
+        for k, poles in zip(k_list, pole_list):
+            poles_expected = np.sort(feedback(sys, k).pole())
+            poles = np.sort(poles)
+            np.testing.assert_array_almost_equal(poles, poles_expected)
 
     def testRootLocus(self):
         """Basic root locus plot"""
         klist = [-1, 0, 1]
-        rlist = root_locus(self.sys1, [-1, 0, 1], Plot=False)
+        for sys in self.systems:
+            roots, k_out = root_locus(sys, klist, Plot=False)
+            np.testing.assert_equal(len(roots), len(klist))
+            np.testing.assert_array_equal(klist, k_out)
+            self.check_cl_poles(sys, roots, klist)
 
-        for k in klist:
-            np.testing.assert_array_almost_equal(
-                np.sort(rlist[k]), 
-                np.sort(feedback(self.sys1, klist[k]).pole()))
+    def test_without_gains(self):
+        for sys in self.systems:
+            roots, kvect = root_locus(sys, Plot=False)
+            self.check_cl_poles(sys, roots, kvect)
 
-def suite():
+def test_suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestRootLocus)
 
 if __name__ == "__main__":

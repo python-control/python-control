@@ -1110,11 +1110,8 @@ def rlocus(sys, klist = None, **keywords):
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    klist:
+    klist: iterable, optional
         optional list of gains
-
-    Keyword parameters
-    ------------------
     xlim : control of x-axis range, normally with tuple, for
         other options, see matplotlib.axes
     ylim : control of y-axis range
@@ -1132,12 +1129,8 @@ def rlocus(sys, klist = None, **keywords):
         list of gains used to compute roots
     """
     from .rlocus import root_locus
-    #! TODO: update with a smart calculation of the gains using sys poles/zeros
-    if klist == None:
-        klist = logspace(-3, 3)
 
-    rlist = root_locus(sys, klist, **keywords)
-    return rlist, klist
+    return root_locus(sys, klist, **keywords)
 
 def margin(*args):
     """Calculate gain and phase margins and associated crossover frequencies
@@ -1516,7 +1509,7 @@ def ssdata(sys):
     return (ss.A, ss.B, ss.C, ss.D)
 
 # Return transfer function data as a tuple
-def tfdata(sys, **kw):
+def tfdata(sys):
     '''
     Return transfer function data objects for a system
 
@@ -1525,17 +1518,12 @@ def tfdata(sys, **kw):
     sys: Lti (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
-    Keywords
-    --------
-    inputs = int; outputs = int
-        For MIMO transfer function, return num, den for given inputs, outputs
-
     Returns
     -------
     (num, den): numerator and denominator arrays
         Transfer function coefficients (SISO only)
     '''
-    tf = _convertToTransferFunction(sys, **kw)
+    tf = _convertToTransferFunction(sys)
 
     return (tf.num, tf.den)
 

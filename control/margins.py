@@ -86,11 +86,6 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
     """Calculate gain, phase and stability margins and associated
     crossover frequencies.
 
-    Usage
-    -----
-    gm, pm, sm, wg, wp, ws = stability_margins(sysdata, deg=True,
-                                               returnall=False, epsw=1e-10)
-
     Parameters
     ----------
     sysdata: linsys or (mag, phase, omega) sequence

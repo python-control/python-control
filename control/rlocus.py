@@ -46,6 +46,7 @@
 # $Id$
 
 # Packages used by this module
+import numpy as np
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
@@ -53,9 +54,8 @@ from . import xferfcn
 from .exception import ControlMIMONotImplemented
 from functools import partial
 
-
 # Main function: compute a root locus diagram
-def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True,
+def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
                PrintGain=True):
     """Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
@@ -63,25 +63,33 @@ def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True,
 
     Parameters
     ----------
-    sys : linsys
+    sys : LTI object
         Linear input/output systems (SISO only, for now)
-    kvect : gain_range (default = None)
+    kvect : list or ndarray, optional
         List of gains to use in computing diagram
-    xlim : control of x-axis range, normally with tuple, for
-        other options, see matplotlib.axes
-    ylim : control of y-axis range
-    Plot : boolean (default = True)
+    xlim : tuple or list, optional
+        control of x-axis range, normally with tuple (see matplotlib.axes)
+    ylim : tuple or list, optional
+        control of y-axis range
+    Plot : boolean, optional (default = True)
         If True, plot magnitude and phase
     PrintGain: boolean (default = True)
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
-    Return values
-    -------------
-    rlist : list of computed root locations
+
+    Returns
+    -------
+    rlist : ndarray
+        Computed root locations, given as a 2d array
+    klist : ndarray or list
+        Gains used.  Same as klist keyword argument if provided.
     """
 
     # Convert numerator and denominator to polynomials if they aren't
     (nump, denp) = _systopoly1d(sys)
+
+    if kvect is None:
+        kvect = _default_gains(sys)
 
     # Compute out the loci
     mymat = _RLFindRoots(sys, kvect)
@@ -116,8 +124,11 @@ def root_locus(sys, kvect, xlim=None, ylim=None, plotstr='-', Plot=True,
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
 
-    return mymat
+    return mymat, kvect
 
+def _default_gains(sys):
+    # TODO: update with a smart calculation of the gains using sys poles/zeros
+    return np.logspace(-3, 3)
 
 # Utility function to extract numerator and denominator polynomials
 def _systopoly1d(sys):

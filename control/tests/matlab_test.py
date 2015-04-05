@@ -309,7 +309,10 @@ class TestMatlab(unittest.TestCase):
         rlocus(self.siso_ss1)
         rlocus(self.siso_tf1)
         rlocus(self.siso_tf2)
-        rlist, klist = rlocus(self.siso_tf2, klist=[1, 10, 100], Plot=False)
+        klist = [1, 10, 100]
+        rlist, klist_out = rlocus(self.siso_tf2, klist=klist, Plot=False)
+        np.testing.assert_equal(len(rlist), len(klist))
+        np.testing.assert_array_equal(klist, klist_out)
 
     def testNyquist(self):
         nyquist(self.siso_ss1)
@@ -618,7 +621,7 @@ class TestMatlab(unittest.TestCase):
 #        for i in range(len(tfdata)):
 #            np.testing.assert_array_almost_equal(tfdata_1[i], tfdata_2[i])
 
-def suite():
+def test_suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestMatlab)
 
 if __name__ == '__main__':
