@@ -3,7 +3,9 @@ build/
 dist/
 .ropeproject/
 MANIFEST
-control/version.py
+control/_version.py
+__conda_*.txt
+record.txt
 build.log
 *.egg-info/
 .coverage

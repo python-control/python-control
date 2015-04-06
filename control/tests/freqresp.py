@@ -40,7 +40,7 @@ bode(sys)
 systf = tf(sys)
 tfMIMO = tf(sysMIMO)
 
-print systf.pole()
+print(systf.pole())
 #print tfMIMO.pole() # - should throw not implemented exception
 #print tfMIMO.zero() # - should throw not implemented exception
 
