@@ -45,6 +45,8 @@ from . import lti
 import numpy as np
 from numpy import pi
 
+__all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
+
 # Utility function to unwrap an angle measurement
 def unwrap(angle, period=2*pi):
     """Unwrap a phase angle to give a continuous curve
@@ -78,3 +80,43 @@ def unwrap(angle, period=2*pi):
 def issys(obj):
     """Return True if an object is a system, otherwise False"""
     return isinstance(obj, lti.Lti)
+
+def db2mag(db):
+    """Convert a gain in decibels (dB) to a magnitude
+
+    If A is magnitude,
+
+        db = 20 * log10(A)
+
+    Parameters
+    ----------
+    db : float or ndarray
+        input value or array of values, given in decibels
+
+    Returns
+    -------
+    mag : float or ndarray
+        corresponding magnitudes
+
+    """
+    return 10. ** (db / 20.)
+
+def mag2db(mag):
+    """Convert a magnitude to decibels (dB)
+
+    If A is magnitude,
+
+        db = 20 * log10(A)
+
+    Parameters
+    ----------
+    mag : float or ndarray
+        input magnitude or array of magnitudes
+
+    Returns
+    -------
+    db : float or ndarray
+        corresponding values in decibels
+
+    """
+    return 20. * np.log10(mag)

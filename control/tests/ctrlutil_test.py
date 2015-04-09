@@ -41,6 +41,22 @@ class TestUtils(unittest.TestCase):
         angle_unwrapped = [0, 0.2, 0.4, 0.6]
         np.testing.assert_array_almost_equal(unwrap(angle, 1.0), angle_unwrapped)
 
+    def test_db2mag(self):
+        for mag, db in zip(self.mag, self.db):
+            np.testing.assert_almost_equal(mag, db2mag(db))
+
+    def test_db2mag_array(self):
+        mag_array = db2mag(self.db)
+        np.testing.assert_array_almost_equal(mag_array, self.mag)
+
+    def test_mag2db(self):
+        for db, mag in zip(self.db, self.mag):
+            np.testing.assert_almost_equal(db, mag2db(mag))
+
+    def test_mag2db_array(self):
+        db_array = mag2db(self.mag)
+        np.testing.assert_array_almost_equal(db_array, self.db)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestUtils)
