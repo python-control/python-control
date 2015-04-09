@@ -42,61 +42,39 @@
 
 # Packages that we need access to
 from . import lti
-
-# Specific functions that we use
+import numpy as np
 from numpy import pi
 
 # Utility function to unwrap an angle measurement
-
 def unwrap(angle, period=2*pi):
     """Unwrap a phase angle to give a continuous curve
 
     Parameters
     ----------
-    X : array_like
-        Input array
-    period : number
-        Input period (usually either 2``*``pi or 360)
+    angle : array_like
+        Array of angles to be unwrapped
+    period : float, optional
+        Period (defaults to `2*pi`)
 
     Returns
     -------
-    Y : array_like
+    angle_out : array_like
         Output array, with jumps of period/2 eliminated
 
     Examples
     --------
     >>> import numpy as np
-    >>> X = [5.74, 5.97, 6.19, 0.13, 0.35, 0.57]
-    >>> unwrap(X, period=2 * np.pi)
+    >>> theta = [5.74, 5.97, 6.19, 0.13, 0.35, 0.57]
+    >>> unwrap(theta, period=2 * np.pi)
     [5.74, 5.97, 6.19, 6.413185307179586, 6.633185307179586, 6.8531853071795865]
 
     """
-    wrap = 0;
-    last = angle[0];
-
-    for k in range(len(angle)):
-        # See if we need to account for angle wrapping
-        if (angle[k] - last > period/2):
-            wrap -= period
-        elif (last - angle[k] > period/2):
-            wrap += period
-
-        # Update the last value we have sene
-        last = angle[k]
-
-        # Add in the wrap angle if nonzer
-        if (wrap != 0):
-            angle[k] += wrap;
-
-    # return the updated list
+    dangle = np.diff(angle)
+    dangle_desired = (dangle + period/2.) % period - period/2.
+    correction = np.cumsum(dangle_desired - dangle)
+    angle[1:] += correction
     return angle
 
-# Determine if an object is a system
-def issys(object):
-    # Check for a member of one of the classes that we define here
-    #! TODO: this should probably look for an LTI object instead??
-    if (isinstance(object, lti.Lti)):
-        return True
-
-    # Didn't find anything that matched
-    return False
+def issys(obj):
+    """Return True if an object is a system, otherwise False"""
+    return isinstance(obj, lti.Lti)
