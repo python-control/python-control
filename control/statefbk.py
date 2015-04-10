@@ -147,7 +147,7 @@ def lqr(*args, **keywords):
     The lqr() function computes the optimal state feedback controller
     that minimizes the quadratic cost
 
-    .. math:: J = \int_0^\infty x' Q x + u' R u + 2 x' N u
+    .. math:: J = \int_0^\infty (x' Q x + u' R u + 2 x' N u) dt
 
     The function can be called with either 3, 4, or 5 arguments:
 
@@ -155,6 +155,9 @@ def lqr(*args, **keywords):
     * ``lqr(sys, Q, R, N)``
     * ``lqr(A, B, Q, R)``
     * ``lqr(A, B, Q, R, N)``
+
+    where `sys` is an `Lti` object, and `A`, `B`, `Q`, `R`, and `N` are
+    2d arrays or matrices of appropriate dimension.
 
     Parameters
     ----------
