@@ -233,7 +233,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
+def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     """Simulate the output of a linear system.
 
     As a convenience for parameters `U`, `X0`:
@@ -263,13 +263,6 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
-
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
 
     Returns
     -------
@@ -420,7 +413,7 @@ def _get_ss_simo(sys, input=None, output=None):
         return _mimo2siso(sys_ss, input, output, warn_conversion=warn)
 
 def step_response(sys, T=None, X0=0., input=None, output=None,
-                  transpose=False, **keywords):
+                  transpose=False):
     # pylint: disable=W0622
     """Step response of a linear system
 
@@ -456,14 +449,6 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
     Returns
     -------
     T: array
@@ -492,13 +477,13 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     U = np.ones_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0,
-                                     transpose=transpose, **keywords)
+                                     transpose=transpose)
 
     return T, yout
 
 
 def initial_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, **keywords):
+                     transpose=False):
     # pylint: disable=W0622
     """Initial condition response of a linear system
 
@@ -534,15 +519,6 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
-
     Returns
     -------
     T: array
@@ -566,13 +542,12 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)
 
-    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
-                                     **keywords)
+    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose)
     return T, yout
 
 
 def impulse_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, **keywords):
+                     transpose=False):
     # pylint: disable=W0622
     """Impulse response of a linear system
 
@@ -607,15 +582,6 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
-
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
 
     Returns
     -------
@@ -660,5 +626,5 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     T, yout, _xout = forced_response(
         sys, T, U, new_X0,
-        transpose=transpose, **keywords)
+        transpose=transpose)
     return T, yout

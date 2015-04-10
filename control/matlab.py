@@ -1271,7 +1271,7 @@ def damp(sys, doprint=True):
 # Simulation routines
 # Call corresponding functions in timeresp, with arguments transposed
 
-def step(sys, T=None, X0=0., input=0, output=None, **keywords):
+def step(sys, T=None, X0=0., input=0, output=None):
     '''
     Step response of a linear system
 
@@ -1300,14 +1300,6 @@ def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     output: int
         If given, index of the output that is returned by this simulation.
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`control.forced_response`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
     Returns
     -------
     yout: array
@@ -1325,10 +1317,10 @@ def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     >>> yout, T = step(sys, T, X0)
     '''
     T, yout = timeresp.step_response(sys, T, X0, input, output,
-                                   transpose = True, **keywords)
+                                     transpose = True)
     return yout, T
 
-def impulse(sys, T=None, input=0, output=None, **keywords):
+def impulse(sys, T=None, input=0, output=None):
     '''
     Impulse response of a linear system
 
@@ -1352,14 +1344,6 @@ def impulse(sys, T=None, input=0, output=None, **keywords):
     output: int
         Index of the output that will be used in this simulation.
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
     Returns
     -------
     yout: array
@@ -1376,10 +1360,10 @@ def impulse(sys, T=None, input=0, output=None, **keywords):
     >>> yout, T = impulse(sys, T)
     '''
     T, yout = timeresp.impulse_response(sys, T, 0, input, output,
-                                   transpose = True, **keywords)
+                                        transpose = True)
     return yout, T
 
-def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
+def initial(sys, T=None, X0=0., input=None, output=None):
     '''
     Initial condition response of a linear system
 
@@ -1407,15 +1391,6 @@ def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
     output: int
         If given, index of the output that is returned by this simulation.
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
-
     Returns
     -------
     yout: array
@@ -1433,10 +1408,10 @@ def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
 
     '''
     T, yout = timeresp.initial_response(sys, T, X0, output=output,
-                                        transpose=True, **keywords)
+                                        transpose=True)
     return yout, T
 
-def lsim(sys, U=0., T=None, X0=0., **keywords):
+def lsim(sys, U=0., T=None, X0=0.):
     '''
     Simulate the output of a linear system.
 
@@ -1462,13 +1437,6 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
     X0: array-like or number, optional
         Initial condition (default = 0).
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
     Returns
     -------
     yout: array
@@ -1486,8 +1454,7 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
     --------
     >>> yout, T, xout = lsim(sys, U, T, X0)
     '''
-    T, yout, xout = timeresp.forced_response(sys, T, U, X0,
-                                             transpose = True, **keywords)
+    T, yout, xout = timeresp.forced_response(sys, T, U, X0, transpose = True)
     return yout, T, xout
 
 # Return state space data as a tuple
