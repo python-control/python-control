@@ -47,7 +47,20 @@ class TestMargin(unittest.TestCase):
         np.testing.assert_array_almost_equal(omega, [1.73205081,  0.])
         np.testing.assert_array_almost_equal(gain, [-0.5,  0.25])
 
-def suite():
+    def test_mag_phase_omega(self):
+        # test for bug reported in gh-58
+        sys = TransferFunction(15, [1, 6, 11, 6])
+        out = stability_margins(sys)
+        omega = np.logspace(-1,1,100)
+        mag, phase, omega = sys.freqresp(omega)
+        out2 = stability_margins((mag, phase*180/np.pi, omega))
+        ind = [0,1,3,4]   # indices of gm, pm, wg, wp -- ignore sm
+        marg1 = np.array(out)[ind]
+        marg2 = np.array(out2)[ind]
+        np.testing.assert_array_almost_equal(marg1, marg2, 4)
+
+
+def test_suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestMargin)
 
 if __name__ == "__main__":

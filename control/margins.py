@@ -82,38 +82,41 @@ def _polysqr(pol):
 #
 # RvP, July 8, 2014, corrected to exclude phase=0 crossing for the gain
 #                    margin polynomial
-def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
-    """Calculate gain, phase and stability margins and associated
-    crossover frequencies.
+def stability_margins(sysdata, returnall=False, epsw=1e-10):
+    """Calculate stability margins and associated crossover frequencies.
 
     Parameters
     ----------
-    sysdata: linsys or (mag, phase, omega) sequence
-        sys : linsys
+    sysdata: LTI system or (mag, phase, omega) sequence
+        sys : LTI system
             Linear SISO system
         mag, phase, omega : sequence of array_like
-            Input magnitude, phase, and frequencies (rad/sec) sequence from
-            bode frequency response data
-    deg=True: boolean
-        If true, all input and output phases in degrees, else in radians
-    returnall=False: boolean
-        If true, return all margins found. Note that for frequency data or
-        FRD systems, only one margin is found and returned. 
-    epsw=1e-10: float
-        frequencies below this value are considered static gain, and not
-        returned as margin.
+            Arrays of magnitudes (absolute values, not dB), phases (degrees),
+            and corresponding frequencies.  Crossover frequencies returned are
+            in the same units as those in `omega` (e.g., rad/sec or Hz).
+    returnall: bool, optional
+        If true, return all margins found. If false (default), return only the
+        minimum stability margins.  For frequency data or FRD systems, only one
+        margin is found and returned.
+    epsw: float, optional
+        Frequencies below this value (default 1e-10) are considered static gain,
+        and not returned as margin.
 
     Returns
     -------
-    gm, pm, sm, wg, wp, ws: float or array_like
-        Gain margin gm, phase margin pm, stability margin sm, and
-        associated crossover
-        frequencies wg, wp, and ws of SISO open-loop. If more than
-        one crossover frequency is detected, returns the lowest corresponding
-        margin.
-        When requesting all margins, the return values are array_like,
-        and all margins are returns for linear systems not equal to FRD
-        """
+    gm: float or array_like
+        Gain margin
+    pm: float or array_loke
+        Phase margin
+    sm: float or array_like
+        Stability margin, the minimum distance from the Nyquist plot to -1
+    wg: float or array_like
+        Gain margin crossover frequency (where phase crosses -180 degrees)
+    wp: float or array_like
+        Phase margin crossover frequency (where gain crosses 0 dB)
+    ws: float or array_like
+        Stability margin frequency (where Nyquist plot is closest to -1)
+    """
 
     try:
         if isinstance(sysdata, frdata.FRD):
@@ -122,7 +125,8 @@ def stability_margins(sysdata, deg=True, returnall=False, epsw=1e-10):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
             mag, phase, omega = sysdata
-            sys = frdata.FRD(mag*np.exp((1j/360.)*phase), omega, smooth=True)
+            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180), omega,
+                             smooth=True)
         else:
             sys = xferfcn._convertToTransferFunction(sysdata)
     except Exception as e:
