@@ -75,7 +75,7 @@ from .statesp import StateSpace
 from .timeresp import forced_response, initial_response, step_response, \
     impulse_response
 from .xferfcn import TransferFunction
-from .ctrlutil import unwrap, issys
+from .ctrlutil import *
 from .frdata import FRD
 from .canonical import canonical_form, reachable_form
 
