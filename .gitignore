@@ -1,6 +1,7 @@
 *.pyc
 build/
 dist/
+htmlcov/
 .ropeproject/
 MANIFEST
 control/_version.py
