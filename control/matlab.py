@@ -1148,14 +1148,9 @@ def margin(*args):
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> gm, pm, wg, wp = margin(sys)
-    margin: no magnitude crossings found
+    >>> sys = tf(1, [1, 2, 1, 0])
+    >>> gm, pm, Wcg, Wcp = margin(sys)
 
-    .. todo::
-        better ecample system!
-
-        #>>> gm, pm, wg, wp = margin(mag, phase, w)
     """
     if len(args) == 1:
         sys = args[0]
