@@ -54,7 +54,6 @@ $Id$
 import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
 import re                       # regular expressions
-from copy import deepcopy
 
 # Import MATLAB-like functions that are defined in other packages
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
@@ -81,7 +80,7 @@ from ..dtime import sample_system
 from ..exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
-from ..ctrlutil import unwrap
+from ..ctrlutil import *
 from ..freqplot import nyquist, gangof4
 from ..nichols import nichols, nichols_grid
 from ..bdalg import series, parallel, negate, feedback, append, connect
@@ -90,6 +89,9 @@ from ..statefbk import ctrb, obsv, gram, place, lqr
 from ..delay import pade
 from ..modelsimp import hsvd, balred, modred, minreal
 from ..mateqn import lyap, dlyap, dare, care
+from ..margins import margin
+from ..rlocus import rlocus
+from ..dtime import c2d
 
 # Import functions specific to Matlab compatibility package
 from .timeresp import *
@@ -386,47 +388,6 @@ Additional functions
 
 """
 
-from ..margins import stability_margins
-
-def margin(*args):
-    """Calculate gain and phase margins and associated crossover frequencies
-
-    Function ``margin`` takes either 1 or 3 parameters.
-
-    Parameters
-    ----------
-    sys : StateSpace or TransferFunction
-        Linear SISO system
-    mag, phase, w : array_like
-        Input magnitude, phase (in deg.), and frequencies (rad/sec) from
-        bode frequency response data
-
-    Returns
-    -------
-    gm, pm, Wcg, Wcp : float
-        Gain margin gm, phase margin pm (in deg), gain crossover frequency
-        (corresponding to phase margin) and phase crossover frequency
-        (corresponding to gain margin), in rad/sec of SISO open-loop.
-        If more than one crossover frequency is detected, returns the lowest
-        corresponding margin.
-
-    Examples
-    --------
-    >>> sys = tf(1, [1, 2, 1, 0])
-    >>> gm, pm, Wcg, Wcp = margin(sys)
-
-    """
-    if len(args) == 1:
-        sys = args[0]
-        margin = stability_margins(sys)
-    elif len(args) == 3:
-        margin = stability_margins(args)
-    else:
-        raise ValueError("Margin needs 1 or 3 arguments; received %i."
-            % len(args))
-
-    return margin[0], margin[1], margin[4], margin[3]
-
 def dcgain(*args):
     '''
     Compute the gain of the system in steady state.
@@ -480,68 +441,3 @@ def dcgain(*args):
     #gain = - C * A**-1 * B + D
     gain = sys.D - sys.C * sys.A.I * sys.B
     return gain
-
-def damp(sys, doprint=True):
-    '''
-    Compute natural frequency, damping and poles of a system
-
-    The function takes 1 or 2 parameters
-
-    Parameters
-    ----------
-    sys: LTI (StateSpace or TransferFunction)
-        A linear system object
-    doprint:
-        if true, print table with values
-
-    Returns
-    -------
-    wn: array
-        Natural frequencies of the poles
-    damping: array
-        Damping values
-    poles: array
-        Pole locations
-
-    See Also
-    --------
-    pole
-    '''
-    wn, damping, poles = sys.damp()
-    if doprint:
-        print('_____Eigenvalue______ Damping___ Frequency_')
-        for p, d, w in zip(poles, damping, wn) :
-            if abs(p.imag) < 1e-12:
-                print("%10.4g            %10.4g %10.4g" %
-                      (p.real, 1.0, -p.real))
-            else:
-                print("%10.4g%+10.4gj %10.4g %10.4g" %
-                      (p.real, p.imag, d, w))
-    return wn, damping, poles
-
-# Convert a continuous time system to a discrete time system
-def c2d(sysc, Ts, method='zoh'):
-    '''
-    Return a discrete-time system
-
-    Parameters
-    ----------
-    sysc: LTI (StateSpace or TransferFunction), continuous
-        System to be converted
-
-    Ts: number
-        Sample time for the conversion
-
-    method: string, optional
-        Method to be applied,
-        'zoh'        Zero-order hold on the inputs (default)
-        'foh'        First-order hold, currently not implemented
-        'impulse'    Impulse-invariant discretization, currently not implemented
-        'tustin'     Bilinear (Tustin) approximation, only SISO
-        'matched'    Matched pole-zero method, only SISO
-    '''
-    #  Call the sample_system() function to do the work
-    sysd = sample_system(sysc, Ts, method)
-    if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):
-        return _convertToStateSpace(sysd)
-    return sysd

@@ -15,7 +15,7 @@ timebaseEqual()
 from numpy import absolute, real
 
 __all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
-           'pole', 'zero', 'evalfr', 'freqresp']
+           'pole', 'zero', 'damp', 'evalfr', 'freqresp']
 
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
@@ -257,6 +257,44 @@ def zero(sys):
     """
 
     return sys.zero()
+
+def damp(sys, doprint=True):
+    '''
+    Compute natural frequency, damping ratio, and poles of a system
+
+    The function takes 1 or 2 parameters
+
+    Parameters
+    ----------
+    sys: LTI (StateSpace or TransferFunction)
+        A linear system object
+    doprint:
+        if true, print table with values
+
+    Returns
+    -------
+    wn: array
+        Natural frequencies of the poles
+    damping: array
+        Damping values
+    poles: array
+        Pole locations
+
+    See Also
+    --------
+    pole
+    '''
+    wn, damping, poles = sys.damp()
+    if doprint:
+        print('_____Eigenvalue______ Damping___ Frequency_')
+        for p, d, w in zip(poles, damping, wn) :
+            if abs(p.imag) < 1e-12:
+                print("%10.4g            %10.4g %10.4g" %
+                      (p.real, 1.0, -p.real))
+            else:
+                print("%10.4g%+10.4gj %10.4g %10.4g" %
+                      (p.real, p.imag, d, w))
+    return wn, damping, poles
 
 def evalfr(sys, x):
     """

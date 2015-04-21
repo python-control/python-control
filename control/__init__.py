@@ -48,17 +48,17 @@ for analyzing and designing feedback control systems.
 # Should probably only import the exact functions we use...
 from .bdalg import series, parallel, negate, feedback
 from .delay import pade
-from .dtime import sample_system
+from .dtime import *
 from .freqplot import bode_plot, nyquist_plot, gangof4_plot
 from .freqplot import bode, nyquist, gangof4
-from .lti import issiso, timebase, timebaseEqual, isdtime, isctime
-from .margins import stability_margins, phase_crossover_frequencies
+from .lti import *
+from .margins import *
 from .mateqn import lyap, dlyap, care, dare
 from .modelsimp import hsvd, modred, balred, era, markov, minreal
 from .nichols import *
 from .phaseplot import phase_plot, box_grid
 from .pzmap import pzmap
-from .rlocus import root_locus
+from .rlocus import *
 from .statefbk import place, lqr, ctrb, obsv, gram, acker
 from .statesp import *
 from .timeresp import forced_response, initial_response, step_response, \
@@ -86,10 +86,6 @@ except ImportError:
 #! of defaults from the main package.  At that point, the matlab module will
 #! allow provide compatibility with MATLAB but no package functionality.
 #!
-from .matlab import dcgain
-from .matlab import nichols, rlocus, margin
-        # bode and nyquist come directly from freqplot.py
-from .matlab import step, impulse, initial, lsim
 
 # The following is to use Numpy's testing framework
 # Tests go under directory tests/, benchmarks under directory benchmarks/

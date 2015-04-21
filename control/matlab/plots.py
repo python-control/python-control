@@ -4,7 +4,7 @@ Plotting routines for the Matlab compatibility module
 
 import numpy as np
 
-__all__ = ['bode', 'rlocus', 'ngrid']
+__all__ = ['bode', 'ngrid']
 
 def bode(*args, **keywords):
     """Bode plot of the frequency response
@@ -103,8 +103,3 @@ from ..nichols import nichols_grid
 def ngrid():
     return nichols_grid()
 ngrid.__doc__ = nichols_grid.__doc__
-
-from ..rlocus import root_locus
-def rlocus(*args, **kwargs):
-    return root_locus(*args, **kwargs)
-rlocus.__doc__ = root_locus.__doc__
