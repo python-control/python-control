@@ -11,8 +11,6 @@ these directly.
 .. autosummary::
    :toctree: generated/
 
-   ~lti.LTI
-   FRD
-   StateSpace
    TransferFunction
-
+   StateSpace
+   FRD

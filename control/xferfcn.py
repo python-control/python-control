@@ -95,11 +95,10 @@ from .lti import LTI, timebaseEqual, timebase, isdtime
 
 class TransferFunction(LTI):
 
-    """The TransferFunction class represents TF instances and functions.
+    """A class for representing transfer functions
 
-    The TransferFunction class is derived from the LTI parent class.  It
-    is used throught the python-control library to represent systems in
-    transfer function form.
+    The TransferFunction class is used to represent systems in transfer function
+    form.
 
     The main data members are 'num' and 'den', which are 2-D lists of arrays
     containing MIMO numerator and denominator coefficients.  For example,
@@ -109,11 +108,12 @@ class TransferFunction(LTI):
     means that the numerator of the transfer function from the 6th input to the
     3rd output is set to s^2 + 4s + 8.
 
-    Discrete time transfer functions are implemented by using the 'dt' class
+    Discrete-time transfer functions are implemented by using the 'dt' instance
     variable and setting it to something other than 'None'.  If 'dt' has a
     non-zero value, then it must match whenever two transfer functions are
     combined.  If 'dt' is set to True, the system will be treated as a
     discrete time system with unspecified sampling time.
+
     """
 
     def __init__(self, *args):

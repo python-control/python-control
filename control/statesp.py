@@ -90,22 +90,27 @@ from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convertToTransferFunction
 
 class StateSpace(LTI):
-    """The StateSpace class represents state space instances and functions.
+    """A class for representing state-space models
 
-    The StateSpace class is used throughout the python-control library to
-    represent systems in state space form.  This class is derived from the LTI
-    base class.
+    The StateSpace class is used to represent state-space realizations of linear
+    time-invariant (LTI) systems:
+
+        dx/dt = A x + B u
+            y = C x + D u
+
+    where u is the input, y is the output, and x is the state.
 
     The main data members are the A, B, C, and D matrices.  The class also
     keeps track of the number of states (i.e., the size of A).
 
-    Discrete time state space system are implemented by using the 'dt' class
+    Discrete-time state space system are implemented by using the 'dt' instance
     variable and setting it to the sampling period.  If 'dt' is not None,
     then it must match whenever two state space systems are combined.
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified
     sampling time.
+
     """
 
     def __init__(self, *args):

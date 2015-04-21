@@ -81,17 +81,14 @@ from scipy.interpolate import splprep, splev
 from .lti import LTI
 
 class FRD(LTI):
-    """The FRD class represents (measured?) frequency response
-    TF instances and functions.
+    """A class for models defined by Frequency Response Data (FRD)
 
-    The FRD class is derived from the LTI parent class.  It is used
-    throughout the python-control library to represent systems in frequency
-    response data form.
+    The FRD class is used to represent systems in frequency response data form.
 
-    The main data members are 'omega' and 'fresp'. omega is a 1D
-    array with the frequency points of the response. fresp is a 3D array,
-    with the first dimension corresponding to the outputs of the FRD,
-    the second dimension corresponding to the inputs, and the 3rd dimension
+    The main data members are 'omega' and 'fresp', where `omega` is a 1D
+    array with the frequency points of the response, and `fresp` is a 3D array,
+    with the first dimension corresponding to the output index of the FRD,
+    the second dimension corresponding to the input index, and the 3rd dimension
     corresponding to the frequency points in omega.
     For example,
 
@@ -107,7 +104,7 @@ class FRD(LTI):
     epsw = 1e-8
 
     def __init__(self, *args, **kwargs):
-        """Construct a transfer function.
+        """Construct an FRD object
 
         The default constructor is FRD(d, w), where w is an iterable of
         frequency points, and d is the matching frequency data.
@@ -120,8 +117,6 @@ class FRD(LTI):
 
         To construct frequency response data for an existing LTI
         object, other than an FRD, call FRD(sys, omega)
-
-
 
         """
         smooth = kwargs.get('smooth', False)

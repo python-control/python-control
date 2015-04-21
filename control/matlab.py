@@ -522,7 +522,7 @@ def tf(*args):
 
     Returns
     -------
-    out: TransferFunction
+    out: :class:`TransferFunction`
         The new linear system
 
     Raises
@@ -541,19 +541,11 @@ def tf(*args):
     Notes
     --------
 
-    .. todo::
-
-        The next paragraph contradicts the comment in the example!
-        Also "input" should come before "output" in the sentence:
-
-        "from the (j+1)st output to the (i+1)st input"
-
     ``num[i][j]`` contains the polynomial coefficients of the numerator
-    for the transfer function from the (j+1)st output to the (i+1)st input.
+    for the transfer function from the (j+1)st input to the (i+1)st output.
     ``den[i][j]`` works the same way.
 
-    The coefficients ``[2, 3, 4]`` denote the polynomial
-    :math:`2 \cdot s^2 + 3 \cdot s + 4`.
+    The list ``[2, 3, 4]`` denotes the polynomial :math:`2s^2 + 3s + 4`.
 
     Examples
     --------
