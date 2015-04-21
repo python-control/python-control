@@ -63,7 +63,7 @@ from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convertToTransferFunction
 from copy import deepcopy
 
-__all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss']
+__all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 class StateSpace(LTI):
     """A class for representing state-space models
@@ -1133,3 +1133,20 @@ def drss(states=1, outputs=1, inputs=1):
     """
 
     return _rss_generate(states, inputs, outputs, 'd')
+
+def ssdata(sys):
+    '''
+    Return state space data objects for a system
+
+    Parameters
+    ----------
+    sys: LTI (StateSpace, or TransferFunction)
+        LTI system whose data will be returned
+
+    Returns
+    -------
+    (A, B, C, D): list of matrices
+        State space data for the system
+    '''
+    ss = _convertToStateSpace(sys)
+    return (ss.A, ss.B, ss.C, ss.D)

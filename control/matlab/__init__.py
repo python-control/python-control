@@ -1204,26 +1204,6 @@ def lsim(sys, U=0., T=None, X0=0.):
     T, yout, xout = timeresp.forced_response(sys, T, U, X0, transpose = True)
     return yout, T, xout
 
-# Return state space data as a tuple
-def ssdata(sys):
-    '''
-    Return state space data objects for a system
-
-    Parameters
-    ----------
-    sys: LTI (StateSpace, or TransferFunction)
-        LTI system whose data will be returned
-
-    Returns
-    -------
-    (A, B, C, D): list of matrices
-        State space data for the system
-    '''
-    from ..statesp import _convertToStateSpace
-    ss = _convertToStateSpace(sys)
-    return (ss.A, ss.B, ss.C, ss.D)
-
-# Return transfer function data as a tuple
 def tfdata(sys):
     '''
     Return transfer function data objects for a system
