@@ -73,28 +73,28 @@ from numpy import linspace, logspace
 #    config.use_matlab()
 
 # Control system library
-from . import ctrlutil
-from . import freqplot
-from . import timeresp
-from . import margins
-from .statesp import StateSpace, _rss_generate, _convertToStateSpace
-from .xferfcn import TransferFunction, _convertToTransferFunction
-from .lti import LTI  # base class of StateSpace, TransferFunction
-from .lti import issiso
-from .frdata import FRD
-from .dtime import sample_system
-from .exception import ControlArgument
+from .. import ctrlutil
+from .. import freqplot
+from .. import timeresp
+from .. import margins
+from ..statesp import StateSpace, _rss_generate, _convertToStateSpace
+from ..xferfcn import TransferFunction, _convertToTransferFunction
+from ..lti import LTI  # base class of StateSpace, TransferFunction
+from ..lti import issiso
+from ..frdata import FRD
+from ..dtime import sample_system
+from ..exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
-from .ctrlutil import unwrap
-from .freqplot import nyquist, gangof4
-from .nichols import nichols
-from .bdalg import series, parallel, negate, feedback, append, connect
-from .pzmap import pzmap
-from .statefbk import ctrb, obsv, gram, place, lqr
-from .delay import pade
-from .modelsimp import hsvd, balred, modred, minreal
-from .mateqn import lyap, dlyap, dare, care
+from ..ctrlutil import unwrap
+from ..freqplot import nyquist, gangof4
+from ..nichols import nichols, nichols_grid
+from ..bdalg import series, parallel, negate, feedback, append, connect
+from ..pzmap import pzmap
+from ..statefbk import ctrb, obsv, gram, place, lqr
+from ..delay import pade
+from ..modelsimp import hsvd, balred, modred, minreal
+from ..mateqn import lyap, dlyap, dare, care
 
 __doc__ += r"""
 The following tables give an overview of the module ``control.matlab``.
@@ -1076,7 +1076,6 @@ def bode(*args, **keywords):
     return freqplot.bode(syslist, omega, **keywords)
 
 # Nichols chart grid
-from .nichols import nichols_grid
 def ngrid():
     nichols_grid()
 ngrid.__doc__ = re.sub('nichols_grid', 'ngrid', nichols_grid.__doc__)
@@ -1111,7 +1110,7 @@ def rlocus(sys, klist = None, **keywords):
     klist:
         list of gains used to compute roots
     """
-    from .rlocus import root_locus
+    from ..rlocus import root_locus
 
     return root_locus(sys, klist, **keywords)
 
