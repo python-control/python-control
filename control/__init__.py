@@ -86,11 +86,10 @@ except ImportError:
 #! of defaults from the main package.  At that point, the matlab module will
 #! allow provide compatibility with MATLAB but no package functionality.
 #!
-from .matlab import pole, zero, evalfr, freqresp, dcgain
+from .matlab import dcgain
 from .matlab import nichols, rlocus, margin
         # bode and nyquist come directly from freqplot.py
 from .matlab import step, impulse, initial, lsim
-from .matlab import ssdata, tfdata
 
 # The following is to use Numpy's testing framework
 # Tests go under directory tests/, benchmarks under directory benchmarks/
