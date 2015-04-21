@@ -124,6 +124,8 @@ from .lti import LTI     # base class of StateSpace, TransferFunction
 from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso
 from .lti import isdtime, isctime
 
+__all__ = ['forced_response', 'step_response', 'initial_response',
+           'impulse_response']
 
 # Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
