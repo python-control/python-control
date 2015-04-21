@@ -73,17 +73,12 @@ from numpy import linspace, logspace
 #    config.use_matlab()
 
 # Control system library
-from .. import ctrlutil
-from .. import freqplot
-from .. import timeresp
-from .. import margins
 from ..statesp import *
 from ..xferfcn import *
 from ..lti import *
 from ..frdata import *
 from ..dtime import sample_system
 from ..exception import ControlArgument
-from .timeresp import *
 
 # Import MATLAB-like functions that can be used as-is
 from ..ctrlutil import unwrap
@@ -95,6 +90,10 @@ from ..statefbk import ctrb, obsv, gram, place, lqr
 from ..delay import pade
 from ..modelsimp import hsvd, balred, modred, minreal
 from ..mateqn import lyap, dlyap, dare, care
+
+# Import functions specific to Matlab compatibility package
+from .timeresp import *
+from .plots import *
 
 __doc__ += r"""
 The following tables give an overview of the module ``control.matlab``.
@@ -387,136 +386,7 @@ Additional functions
 
 """
 
-# Bode plots
-def bode(*args, **keywords):
-    """Bode plot of the frequency response
-
-    Plots a bode gain and phase diagram
-
-    Parameters
-    ----------
-    sys : LTI, or list of LTI
-        System for which the Bode response is plotted and give. Optionally
-        a list of systems can be entered, or several systems can be
-        specified (i.e. several parameters). The sys arguments may also be
-        interspersed with format strings. A frequency argument (array_like)
-        may also be added, some examples:
-        * >>> bode(sys, w)                    # one system, freq vector
-        * >>> bode(sys1, sys2, ..., sysN)     # several systems
-        * >>> bode(sys1, sys2, ..., sysN, w)
-        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # + plot formats
-    omega: freq_range
-        Range of frequencies in rad/s
-    dB : boolean
-        If True, plot result in dB
-    Hz : boolean
-        If True, plot frequency in Hz (omega must be provided in rad/sec)
-    deg : boolean
-        If True, return phase in degrees (else radians)
-    Plot : boolean
-        If True, plot magnitude and phase
-
-    Examples
-    --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> mag, phase, omega = bode(sys)
-
-    .. todo::
-
-        Document these use cases
-
-        * >>> bode(sys, w)
-        * >>> bode(sys1, sys2, ..., sysN)
-        * >>> bode(sys1, sys2, ..., sysN, w)
-        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')
-    """
-
-    # If the first argument is a list, then assume python-control calling format
-    if (getattr(args[0], '__iter__', False)):
-        return freqplot.bode(*args, **keywords)
-
-    # Otherwise, run through the arguments and collect up arguments
-    syslist = []; plotstyle=[]; omega=None;
-    i = 0;
-    while i < len(args):
-        # Check to see if this is a system of some sort
-        if (ctrlutil.issys(args[i])):
-            # Append the system to our list of systems
-            syslist.append(args[i])
-            i += 1
-
-            # See if the next object is a plotsytle (string)
-            if (i < len(args) and isinstance(args[i], str)):
-                plotstyle.append(args[i])
-                i += 1
-
-            # Go on to the next argument
-            continue
-
-        # See if this is a frequency list
-        elif (isinstance(args[i], (list, np.ndarray))):
-            omega = args[i]
-            i += 1
-            break
-
-        else:
-            raise ControlArgument("unrecognized argument type")
-
-    # Check to make sure that we processed all arguments
-    if (i < len(args)):
-        raise ControlArgument("not all arguments processed")
-
-    # Check to make sure we got the same number of plotstyles as systems
-    if (len(plotstyle) != 0 and len(syslist) != len(plotstyle)):
-        raise ControlArgument("number of systems and plotstyles should be equal")
-
-    # Warn about unimplemented plotstyles
-    #! TODO: remove this when plot styles are implemented in bode()
-    #! TODO: uncomment unit test code that tests this out
-    if (len(plotstyle) != 0):
-        print("Warning (matabl.bode): plot styles not implemented");
-
-    # Call the bode command
-    return freqplot.bode(syslist, omega, **keywords)
-
-# Nichols chart grid
-def ngrid():
-    nichols_grid()
-ngrid.__doc__ = re.sub('nichols_grid', 'ngrid', nichols_grid.__doc__)
-
-# Root locus plot
-def rlocus(sys, klist = None, **keywords):
-    """Root locus plot
-
-    The root-locus plot has a callback function that prints pole location,
-    gain and damping to the Python consol on mouseclicks on the root-locus
-    graph.
-
-    Parameters
-    ----------
-    sys: StateSpace or TransferFunction
-        Linear system
-    klist: iterable, optional
-        optional list of gains
-    xlim : control of x-axis range, normally with tuple, for
-        other options, see matplotlib.axes
-    ylim : control of y-axis range
-    Plot : boolean (default = True)
-        If True, plot magnitude and phase
-    PrintGain: boolean (default = True)
-        If True, report mouse clicks when close to the root-locus branches,
-        calculate gain, damping and print
-
-    Returns
-    -------
-    rlist:
-        list of roots for each gain
-    klist:
-        list of gains used to compute roots
-    """
-    from ..rlocus import root_locus
-
-    return root_locus(sys, klist, **keywords)
+from ..margins import stability_margins
 
 def margin(*args):
     """Calculate gain and phase margins and associated crossover frequencies
@@ -548,9 +418,9 @@ def margin(*args):
     """
     if len(args) == 1:
         sys = args[0]
-        margin = margins.stability_margins(sys)
+        margin = stability_margins(sys)
     elif len(args) == 3:
-        margin = margins.stability_margins(args)
+        margin = stability_margins(args)
     else:
         raise ValueError("Margin needs 1 or 3 arguments; received %i."
             % len(args))
@@ -648,9 +518,6 @@ def damp(sys, doprint=True):
                 print("%10.4g%+10.4gj %10.4g %10.4g" %
                       (p.real, p.imag, d, w))
     return wn, damping, poles
-
-# Simulation routines
-# Call corresponding functions in timeresp, with arguments transposed
 
 # Convert a continuous time system to a discrete time system
 def c2d(sysc, Ts, method='zoh'):

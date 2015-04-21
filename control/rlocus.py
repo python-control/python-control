@@ -57,7 +57,9 @@ from functools import partial
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
                PrintGain=True):
-    """Calculate the root locus by finding the roots of 1+k*TF(s)
+    """Root locus plot
+
+    Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
     of kvect.
 

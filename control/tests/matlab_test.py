@@ -310,7 +310,7 @@ class TestMatlab(unittest.TestCase):
         rlocus(self.siso_tf1)
         rlocus(self.siso_tf2)
         klist = [1, 10, 100]
-        rlist, klist_out = rlocus(self.siso_tf2, klist=klist, Plot=False)
+        rlist, klist_out = rlocus(self.siso_tf2, klist, Plot=False)
         np.testing.assert_equal(len(rlist), len(klist))
         np.testing.assert_array_equal(klist, klist_out)
 

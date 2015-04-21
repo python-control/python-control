@@ -55,7 +55,7 @@ from .lti import issiso, timebase, timebaseEqual, isdtime, isctime
 from .margins import stability_margins, phase_crossover_frequencies
 from .mateqn import lyap, dlyap, care, dare
 from .modelsimp import hsvd, modred, balred, era, markov, minreal
-from .nichols import nichols_plot, nichols
+from .nichols import *
 from .phaseplot import phase_plot, box_grid
 from .pzmap import pzmap
 from .rlocus import root_locus
