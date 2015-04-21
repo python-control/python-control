@@ -1,19 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-===========================
-MATLAB compatibility module
-===========================
-
-This module contains a number of functions that emulate some of the
-functionality of MATLAB.  The intent of these functions is to
+The :mod:`control.matlab` module contains a number of functions that emulate
+some of the functionality of MATLAB.  The intent of these functions is to
 provide a simple interface to the python control systems library
-(python-control) for people who are familiar with the MATLAB Control
-Systems Toolbox (tm).  Most of the functions are just calls to
-python-control functions defined elsewhere.  To include all of the functions
-described here, use::
-
-    from control.matlab import *
-
+(python-control) for people who are familiar with the MATLAB Control Systems
+Toolbox (tm).
 """
 
 """Copyright (c) 2009 by California Institute of Technology
