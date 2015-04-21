@@ -77,7 +77,7 @@ from .. import ctrlutil
 from .. import freqplot
 from .. import timeresp
 from .. import margins
-from ..statesp import StateSpace, _rss_generate, _convertToStateSpace
+from ..statesp import *
 from ..xferfcn import TransferFunction, _convertToTransferFunction
 from ..lti import LTI  # base class of StateSpace, TransferFunction
 from ..lti import issiso
@@ -387,94 +387,6 @@ Additional functions
 
 """
 
-def ss(*args):
-    """
-    Create a state space system.
-
-    The function accepts either 1, 4 or 5 parameters:
-
-    ``ss(sys)``
-        Convert a linear system into space system form. Always creates a
-        new system, even if sys is already a StateSpace object.
-
-    ``ss(A, B, C, D)``
-        Create a state space system from the matrices of its state and
-        output equations:
-
-        .. math::
-            \dot x = A \cdot x + B \cdot u
-
-            y = C \cdot x + D \cdot u
-
-    ``ss(A, B, C, D, dt)``
-        Create a discrete-time state space system from the matrices of
-        its state and output equations:
-
-        .. math::
-            x[k+1] = A \cdot x[k] + B \cdot u[k]
-
-            y[k] = C \cdot x[k] + D \cdot u[ki]
-
-        The matrices can be given as *array like* data types or strings.
-        Everything that the constructor of :class:`numpy.matrix` accepts is
-        permissible here too.
-
-    Parameters
-    ----------
-    sys: StateSpace or TransferFunction
-        A linear system
-    A: array_like or string
-        System matrix
-    B: array_like or string
-        Control matrix
-    C: array_like or string
-        Output matrix
-    D: array_like or string
-        Feed forward matrix
-    dt: If present, specifies the sampling period and a discrete time
-        system is created
-
-    Returns
-    -------
-    out: :class:`StateSpace`
-        The new linear system
-
-    Raises
-    ------
-    ValueError
-        if matrix sizes are not self-consistent
-
-    See Also
-    --------
-    tf
-    ss2tf
-    tf2ss
-
-    Examples
-    --------
-    >>> # Create a StateSpace object from four "matrices".
-    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-
-    >>> # Convert a TransferFunction to a StateSpace object.
-    >>> sys_tf = tf([2.], [1., 3])
-    >>> sys2 = ss(sys_tf)
-
-    """
-
-    if len(args) == 4 or len(args) == 5:
-        return StateSpace(*args)
-    elif len(args) == 1:
-        sys = args[0]
-        if isinstance(sys, StateSpace):
-            return deepcopy(sys)
-        elif isinstance(sys, TransferFunction):
-            return tf2ss(sys)
-        else:
-            raise TypeError("ss(sys): sys must be a StateSpace or \
-TransferFunction object.  It is %s." % type(sys))
-    else:
-        raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
-
 
 def tf(*args):
     """
@@ -679,148 +591,6 @@ is %s." % type(sys))
     else:
         raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-def tf2ss(*args):
-    """
-    Transform a transfer function to a state space system.
-
-    The function accepts either 1 or 2 parameters:
-
-    ``tf2ss(sys)``
-        Convert a linear system into transfer function form. Always creates
-        a new system, even if sys is already a TransferFunction object.
-
-    ``tf2ss(num, den)``
-        Create a transfer function system from its numerator and denominator
-        polynomial coefficients.
-
-        For details see: :func:`tf`
-
-    Parameters
-    ----------
-    sys: LTI (StateSpace or TransferFunction)
-        A linear system
-    num: array_like, or list of list of array_like
-        Polynomial coefficients of the numerator
-    den: array_like, or list of list of array_like
-        Polynomial coefficients of the denominator
-
-    Returns
-    -------
-    out: StateSpace
-        New linear system in state space form
-
-    Raises
-    ------
-    ValueError
-        if `num` and `den` have invalid or unequal dimensions, or if an
-        invalid number of arguments is passed in
-    TypeError
-        if `num` or `den` are of incorrect type, or if sys is not a
-        TransferFunction object
-
-    See Also
-    --------
-    ss
-    tf
-    ss2tf
-
-    Examples
-    --------
-    >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
-    >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys1 = tf2ss(num, den)
-
-    >>> sys_tf = tf(num, den)
-    >>> sys2 = tf2ss(sys_tf)
-
-    """
-
-    if len(args) == 2 or len(args) == 3:
-        # Assume we were given the num, den
-        return _convertToStateSpace(TransferFunction(*args))
-
-    elif len(args) == 1:
-        sys = args[0]
-        if not isinstance(sys, TransferFunction):
-            raise TypeError("tf2ss(sys): sys must be a TransferFunction \
-object.")
-        return _convertToStateSpace(sys)
-    else:
-        raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
-
-def rss(states=1, outputs=1, inputs=1):
-    """
-    Create a stable **continuous** random state space object.
-
-    Parameters
-    ----------
-    states: integer
-        Number of state variables
-    inputs: integer
-        Number of system inputs
-    outputs: integer
-        Number of system outputs
-
-    Returns
-    -------
-    sys: StateSpace
-        The randomly created linear system
-
-    Raises
-    ------
-    ValueError
-        if any input is not a positive integer
-
-    See Also
-    --------
-    drss
-
-    Notes
-    -----
-    If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system
-    will always have a negative real part.
-
-    """
-
-    return _rss_generate(states, inputs, outputs, 'c')
-
-def drss(states=1, outputs=1, inputs=1):
-    """
-    Create a stable **discrete** random state space object.
-
-    Parameters
-    ----------
-    states: integer
-        Number of state variables
-    inputs: integer
-        Number of system inputs
-    outputs: integer
-        Number of system outputs
-
-    Returns
-    -------
-    sys: StateSpace
-        The randomly created linear system
-
-    Raises
-    ------
-    ValueError
-        if any input is not a positive integer
-
-    See Also
-    --------
-    rss
-
-    Notes
-    -----
-    If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system
-    will always have a magnitude less than 1.
-
-    """
-
-    return _rss_generate(states, inputs, outputs, 'd')
 
 def pole(sys):
     """
@@ -1449,6 +1219,7 @@ def ssdata(sys):
     (A, B, C, D): list of matrices
         State space data for the system
     '''
+    from ..statesp import _convertToStateSpace
     ss = _convertToStateSpace(sys)
     return (ss.A, ss.B, ss.C, ss.D)
 
