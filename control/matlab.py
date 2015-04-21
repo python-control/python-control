@@ -88,7 +88,7 @@ from . import timeresp
 from . import margins
 from .statesp import StateSpace, _rss_generate, _convertToStateSpace
 from .xferfcn import TransferFunction, _convertToTransferFunction
-from .lti import Lti  # base class of StateSpace, TransferFunction
+from .lti import LTI  # base class of StateSpace, TransferFunction
 from .lti import issiso
 from .frdata import FRD
 from .dtime import sample_system
@@ -513,7 +513,7 @@ def tf(*args):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system
     num: array_like, or list of list of array_like
         Polynomial coefficients of the numerator
@@ -597,7 +597,7 @@ def frd(*args):
         complex response vector, at matching frequency freqs [in rad/s]
 
     ``frd(sys, freqs)``
-        Convert an Lti system into an frd model with data at frequencies
+        Convert an LTI system into an frd model with data at frequencies
         freqs.
 
     Parameters
@@ -606,7 +606,7 @@ def frd(*args):
         complex vector with the system response
     freq: array_lik or lis
         vector with frequencies
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system
 
     Returns
@@ -714,7 +714,7 @@ def tf2ss(*args):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system
     num: array_like, or list of list of array_like
         Polynomial coefficients of the numerator
@@ -1008,7 +1008,7 @@ def bode(*args, **keywords):
 
     Parameters
     ----------
-    sys : Lti, or list of Lti
+    sys : LTI, or list of LTI
         System for which the Bode response is plotted and give. Optionally
         a list of systems can be entered, or several systems can be
         specified (i.e. several parameters). The sys arguments may also be
@@ -1190,7 +1190,7 @@ def dcgain(*args):
         A linear system in zero, pole, gain form.
     num, den: array-like
         A linear system in transfer function form.
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system object.
 
     Returns
@@ -1238,7 +1238,7 @@ def damp(sys, doprint=True):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system object
     doprint:
         if true, print table with values
@@ -1421,7 +1421,7 @@ def lsim(sys, U=0., T=None, X0=0.):
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system to simulate
 
     U: array-like or number, optional
@@ -1464,7 +1464,7 @@ def ssdata(sys):
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
     Returns
@@ -1482,7 +1482,7 @@ def tfdata(sys):
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
     Returns
@@ -1501,7 +1501,7 @@ def c2d(sysc, Ts, method='zoh'):
 
     Parameters
     ----------
-    sysc: Lti (StateSpace or TransferFunction), continuous
+    sysc: LTI (StateSpace or TransferFunction), continuous
         System to be converted
 
     Ts: number

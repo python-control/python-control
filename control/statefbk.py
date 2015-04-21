@@ -156,14 +156,14 @@ def lqr(*args, **keywords):
     * ``lqr(A, B, Q, R)``
     * ``lqr(A, B, Q, R, N)``
 
-    where `sys` is an `Lti` object, and `A`, `B`, `Q`, `R`, and `N` are
+    where `sys` is an `LTI` object, and `A`, `B`, `Q`, `R`, and `N` are
     2d arrays or matrices of appropriate dimension.
 
     Parameters
     ----------
     A, B: 2-d array
         Dynamics and input matrices
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         Linear I/O system
     Q, R: 2-d array
         State and input weight matrices

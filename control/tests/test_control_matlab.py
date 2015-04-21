@@ -359,7 +359,7 @@ class TestControlMatlab(unittest.TestCase):
 
     def assert_systems_behave_equal(self, sys1, sys2):
         '''
-        Test if the behavior of two Lti systems is equal. Raises ``AssertionError``
+        Test if the behavior of two LTI systems is equal. Raises ``AssertionError``
         if the systems are not equal.
 
         Works only for SISO systems.

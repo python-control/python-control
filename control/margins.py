@@ -74,7 +74,7 @@ def _polysqr(pol):
 
 # Took the framework for the old function by
 # Sawyer B. Fuller <minster@caltech.edu>, removed a lot of the innards
-# and replaced with analytical polynomial functions for Lti systems.
+# and replaced with analytical polynomial functions for LTI systems.
 #
 # idea for the frequency data solution copied/adapted from
 # https://github.com/alchemyst/Skogestad-Python/blob/master/BODE.py

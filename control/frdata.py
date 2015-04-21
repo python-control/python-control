@@ -78,13 +78,13 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 from numpy import angle, array, empty, ones, \
     real, imag, matrix, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
-from .lti import Lti
+from .lti import LTI
 
-class FRD(Lti):
+class FRD(LTI):
     """The FRD class represents (measured?) frequency response
     TF instances and functions.
 
-    The FRD class is derived from the Lti parent class.  It is used
+    The FRD class is derived from the LTI parent class.  It is used
     throughout the python-control library to represent systems in frequency
     response data form.
 
@@ -118,7 +118,7 @@ class FRD(Lti):
         To call the copy constructor, call FRD(sys), where sys is a
         FRD object.
 
-        To construct frequency response data for an existing Lti
+        To construct frequency response data for an existing LTI
         object, other than an FRD, call FRD(sys, omega)
 
 
@@ -127,7 +127,7 @@ class FRD(Lti):
         smooth = kwargs.get('smooth', False)
 
         if len(args) == 2:
-            if not isinstance(args[0], FRD) and isinstance(args[0], Lti):
+            if not isinstance(args[0], FRD) and isinstance(args[0], LTI):
                 # not an FRD, but still a system, second argument should be
                 # the frequency range
                 otherlti = args[0]
@@ -179,7 +179,7 @@ class FRD(Lti):
                         w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.0)
         else:
             self.ifunc = None
-        Lti.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
+        LTI.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
 
     def __str__(self):
         """String representation of the transfer function."""
@@ -437,7 +437,7 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
 
     If sys is already an frd, and its frequency range matches or
     overlaps the range given in omega then it is returned.  If sys is
-    another Lti object or a transfer function, then it is converted to
+    another LTI object or a transfer function, then it is converted to
     a frequency response data at the specified omega. If sys is a
     scalar, then the number of inputs and outputs can be specified
     manually, as in:
@@ -459,7 +459,7 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         raise NotImplementedError(
             "Frequency ranges of FRD do not match, conversion not implemented")
 
-    elif isinstance(sys, Lti):
+    elif isinstance(sys, LTI):
         omega.sort()
         fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
         for k, w in enumerate(omega):

@@ -120,7 +120,7 @@ import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
 from scipy.signal.ltisys import _default_response_times
 import warnings
-from .lti import Lti     # base class of StateSpace, TransferFunction
+from .lti import LTI     # base class of StateSpace, TransferFunction
 from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso
 from .lti import isdtime, isctime
 
@@ -245,7 +245,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system to simulate
 
     T: array-like
@@ -283,8 +283,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
 
     See :ref:`time-series-convention`.
     """
-    if not isinstance(sys, Lti):
-        raise TypeError('Parameter ``sys``: must be a ``Lti`` object. '
+    if not isinstance(sys, LTI):
+        raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
                         '(For example ``StateSpace`` or ``TransferFunction``)')
     sys = _convertToStateSpace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \

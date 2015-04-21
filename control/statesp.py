@@ -27,7 +27,7 @@ StateSpace.freqresp
 StateSpace.pole
 StateSpace.zero
 StateSpace.feedback
-StateSpace.returnScipySignalLti
+StateSpace.returnScipySignalLTI
 StateSpace.append
 StateSpace.__getitem__
 _convertToStateSpace
@@ -86,14 +86,14 @@ from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti, cont2discrete
 # from exceptions import Exception
 import warnings
-from .lti import Lti, timebase, timebaseEqual, isdtime
+from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convertToTransferFunction
 
-class StateSpace(Lti):
+class StateSpace(LTI):
     """The StateSpace class represents state space instances and functions.
 
     The StateSpace class is used throughout the python-control library to
-    represent systems in state space form.  This class is derived from the Lti
+    represent systems in state space form.  This class is derived from the LTI
     base class.
 
     The main data members are the A, B, C, and D matrices.  The class also
@@ -149,7 +149,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
             matrices[i] = matrix(matrices[i])
         [A, B, C, D] = matrices
 
-        Lti.__init__(self, B.shape[1], C.shape[0], dt)
+        LTI.__init__(self, B.shape[1], C.shape[0], dt)
         self.A = A
         self.B = B
         self.C = C
@@ -347,7 +347,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             return StateSpace(A, B, C, D, self.dt)
 
         # is lti, and convertible?
-        if isinstance(other, Lti):
+        if isinstance(other, LTI):
             return _convertToStateSpace(other) * self
 
         # try to treat this as a matrix
@@ -506,12 +506,12 @@ inputs/outputs for feedback.")
             raise TypeError("minreal requires slycot tb01pd")
 
     # TODO: add discrete time check
-    def returnScipySignalLti(self):
+    def returnScipySignalLTI(self):
         """Return a list of a list of scipy.signal.lti objects.
 
         For instance,
 
-        >>> out = ssobject.returnScipySignalLti()
+        >>> out = ssobject.returnScipySignalLTI()
         >>> out[3][5]
 
         is a signal.scipy.lti object corresponding to the transfer function from

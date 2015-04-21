@@ -30,7 +30,7 @@ TransferFunction.pole
 TransferFunction.zero
 TransferFunction.feedback
 TransferFunction.minreal
-TransferFunction.returnScipySignalLti
+TransferFunction.returnScipySignalLTI
 TransferFunction._common_den
 _tfpolyToString
 _addSISO
@@ -90,14 +90,14 @@ import numpy as np
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
-from .lti import Lti, timebaseEqual, timebase, isdtime
+from .lti import LTI, timebaseEqual, timebase, isdtime
 
 
-class TransferFunction(Lti):
+class TransferFunction(LTI):
 
     """The TransferFunction class represents TF instances and functions.
 
-    The TransferFunction class is derived from the Lti parent class.  It
+    The TransferFunction class is derived from the LTI parent class.  It
     is used throught the python-control library to represent systems in
     transfer function form.
 
@@ -235,7 +235,7 @@ denominator." % (j + 1, i + 1))
                 if zeronum:
                     den[i][j] = ones(1)
 
-        Lti.__init__(self, inputs, outputs, dt)
+        LTI.__init__(self, inputs, outputs, dt)
         self.num = num
         self.den = den
 
@@ -718,12 +718,12 @@ only implemented for SISO functions.")
         # end result
         return TransferFunction(num, den)
 
-    def returnScipySignalLti(self):
+    def returnScipySignalLTI(self):
         """Return a list of a list of scipy.signal.lti objects.
 
         For instance,
 
-        >>> out = tfobject.returnScipySignalLti()
+        >>> out = tfobject.returnScipySignalLTI()
         >>> out[3][5]
 
         is a signal.scipy.lti object corresponding to the
