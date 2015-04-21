@@ -65,7 +65,7 @@ from .timeresp import forced_response, initial_response, step_response, \
     impulse_response
 from .xferfcn import *
 from .ctrlutil import *
-from .frdata import FRD
+from .frdata import *
 from .canonical import canonical_form, reachable_form
 
 # Exceptions

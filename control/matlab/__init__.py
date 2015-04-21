@@ -80,7 +80,7 @@ from .. import margins
 from ..statesp import *
 from ..xferfcn import *
 from ..lti import issiso
-from ..frdata import FRD
+from ..frdata import *
 from ..dtime import sample_system
 from ..exception import ControlArgument
 from .timeresp import *
@@ -386,44 +386,6 @@ Additional functions
 ==  ==========================  ============================================
 
 """
-
-
-def frd(*args):
-    '''
-    Construct a Frequency Response Data model, or convert a system
-
-    frd models store the (measured) frequency response of a system.
-
-    This function can be called in different ways:
-
-    ``frd(response, freqs)``
-        Create an frd model with the given response data, in the form of
-        complex response vector, at matching frequency freqs [in rad/s]
-
-    ``frd(sys, freqs)``
-        Convert an LTI system into an frd model with data at frequencies
-        freqs.
-
-    Parameters
-    ----------
-    response: array_like, or list
-        complex vector with the system response
-    freq: array_lik or lis
-        vector with frequencies
-    sys: LTI (StateSpace or TransferFunction)
-        A linear system
-
-    Returns
-    -------
-    sys: FRD
-        New frequency response system
-
-    See Also
-    --------
-    ss, tf
-    '''
-    return FRD(*args)
-
 
 
 def pole(sys):
