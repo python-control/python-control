@@ -241,7 +241,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     The correct shape is inferred from arguments `sys` and `T`.
 
     For information on the **shape** of parameters `U`, `T`, `X0` and
-    return values `T`, `yout`, `xout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, `xout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------
@@ -280,6 +280,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     Examples
     --------
     >>> T, yout, xout = forced_response(sys, T, u, X0)
+
+    See :ref:`time-series-convention`.
     """
     if not isinstance(sys, Lti):
         raise TypeError('Parameter ``sys``: must be a ``Lti`` object. '
@@ -423,7 +425,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     inputs are set to 0, all other outputs are ignored.
 
     For information on the **shape** of parameters `T`, `X0` and
-    return values `T`, `yout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------
@@ -492,7 +494,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     outputs are given.
 
     For information on the **shape** of parameters `T`, `X0` and
-    return values `T`, `yout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------
@@ -557,7 +559,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     inputs are set to 0, all other outputs are ignored.
 
     For information on the **shape** of parameters `T`, `X0` and
-    return values `T`, `yout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------

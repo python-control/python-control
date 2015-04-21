@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-"""matlab.py
+"""
+===========================
+MATLAB compatibility module
+===========================
 
-MATLAB emulation functions.
-
-This file contains a number of functions that emulate some of the
+This module contains a number of functions that emulate some of the
 functionality of MATLAB.  The intent of these functions is to
 provide a simple interface to the python control systems library
 (python-control) for people who are familiar with the MATLAB Control
 Systems Toolbox (tm).  Most of the functions are just calls to
-python-control functions defined elsewhere.  Use 'from
-control.matlab import \*' in python to include all of the functions
-defined here.  Functions that are defined in other libraries that
-have the same names as their MATLAB equivalents are automatically
-imported here.
+python-control functions defined elsewhere.  To include all of the functions
+described here, use::
+
+    from control.matlab import *
 
 """
 
@@ -114,7 +114,7 @@ The symbols in the first column show the current state of a feature:
 
 * ``*`` : The feature is currently implemented.
 * ``-`` : The feature is not planned for implementation.
-* ``s`` : A similar feature from an other library (Scipy) is imported into
+* ``s`` : A similar feature from another library (Scipy) is imported into
   the module, until the feature is implemented here.
 
 
@@ -156,36 +156,36 @@ Data extraction
 Conversions
 ----------------------------------------------------------------------------
 
-==  ==========================  ============================================
-\*  :func:`tf`                  conversion to transfer function
-\   zpk                         conversion to zero/pole/gain
-\*  :func:`ss`                  conversion to state space
-\*  :func:`frd`                 conversion to frequency data
-\*  :func:`c2d`                 continuous to discrete conversion
-\   d2c                         discrete to continuous conversion
-\   d2d                         resample discrete-time model
-\   upsample                    upsample discrete-time LTI systems
-\*  :func:`ss2tf`               state space to transfer function
-\s  ss2zpk                      transfer function to zero-pole-gain
-\*  :func:`tf2ss`               transfer function to state space
-\s  tf2zpk                      transfer function to zero-pole-gain
-\s  zpk2ss                      zero-pole-gain to state space
-\s  zpk2tf                      zero-pole-gain to transfer function
-==  ==========================  ============================================
+==  ============================   ============================================
+\*  :func:`tf`                     conversion to transfer function
+\   zpk                            conversion to zero/pole/gain
+\*  :func:`ss`                     conversion to state space
+\*  :func:`frd`                    conversion to frequency data
+\*  :func:`c2d`                    continuous to discrete conversion
+\   d2c                            discrete to continuous conversion
+\   d2d                            resample discrete-time model
+\   upsample                       upsample discrete-time LTI systems
+\*  :func:`ss2tf`                  state space to transfer function
+\s  :func:`~scipy.signal.ss2zpk`   transfer function to zero-pole-gain
+\*  :func:`tf2ss`                  transfer function to state space
+\s  :func:`~scipy.signal.tf2zpk`   transfer function to zero-pole-gain
+\s  :func:`~scipy.signal.zpk2ss`   zero-pole-gain to state space
+\s  :func:`~scipy.signal.zpk2tf`   zero-pole-gain to transfer function
+==  ============================   ============================================
 
 
 System interconnections
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~bdalg.append`       group LTI models by appending inputs/outputs
-\*  :func:`~bdalg.parallel`     connect LTI models in parallel
+\*  :func:`~control.append`     group LTI models by appending inputs/outputs
+\*  :func:`~control.parallel`   connect LTI models in parallel
                                 (see also overloaded ``+``)
-\*  :func:`~bdalg.series`       connect LTI models in series
+\*  :func:`~control.series`     connect LTI models in series
                                 (see also overloaded ``*``)
-\*  :func:`~bdalg.feedback`     connect lti models with a feedback loop
+\*  :func:`~control.feedback`   connect lti models with a feedback loop
 \   lti/lft                     generalized feedback interconnection
-\*  :func:'~bdalg.connect'      arbitrary interconnection of lti models
+\*  :func:`~control.connect`    arbitrary interconnection of lti models
 \   sumblk                      summing junction (for use with connect)
 \   strseq                      builds sequence of indexed strings
                                 (for I/O naming)
@@ -202,7 +202,7 @@ System gain and dynamics
 \*  :func:`pole`                system poles
 \*  :func:`zero`                system (transmission) zeros
 \   lti/order                   model order (number of states)
-\*  :func:`~pzmap.pzmap`        pole-zero map (TF only)
+\*  :func:`~control.pzmap`      pole-zero map (TF only)
 \   lti/iopzmap                 input/output pole-zero map
 \*  :func:`damp`                natural frequency, damping of system poles
 \   esort                       sort continuous poles by real part
@@ -234,8 +234,8 @@ Frequency-domain analysis
 \*  :func:`bode`                Bode plot of the frequency response
 \   lti/bodemag                 Bode magnitude diagram only
 \   sigma                       singular value frequency plot
-\*  :func:`~freqplot.nyquist`   Nyquist plot
-\*  :func:`~nichols.nichols`    Nichols plot
+\*  :func:`~control.nyquist`    Nyquist plot
+\*  :func:`~control.nichols`    Nichols plot
 \*  :func:`margin`              gain and phase margins
 \   lti/allmargin               all crossover frequencies and margins
 \*  :func:`freqresp`            frequency response over a frequency grid
@@ -247,11 +247,11 @@ Model simplification
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~modelsimp.minreal`  minimal realization; pole/zero cancellation
+\*  :func:`~control.minreal`    minimal realization; pole/zero cancellation
 \   ss/sminreal                 structurally minimal realization
-\*  :func:`~modelsimp.hsvd`     hankel singular values (state contributions)
-\*  :func:`~modelsimp.balred`   reduced-order approximations of LTI models
-\*  :func:`~modelsimp.modred`   model order reduction
+\*  :func:`~control.hsvd`       hankel singular values (state contributions)
+\*  :func:`~control.balred`     reduced-order approximations of LTI models
+\*  :func:`~control.modred`     model order reduction
 ==  ==========================  ============================================
 
 
@@ -260,7 +260,7 @@ Compensator design
 
 ==  ==========================  ============================================
 \*  :func:`rlocus`              evans root locus
-\*  :func:`~statefbk.place`     pole placement
+\*  :func:`~control.place`      pole placement
 \   estim                       form estimator given estimator gain
 \   reg                         form regulator given state-feedback and
                                 estimator gains
@@ -272,7 +272,7 @@ LQR/LQG design
 
 ==  ==========================  ============================================
 \   ss/lqg                      single-step LQG design
-\*  :func:`~statefbk.lqr`       linear quadratic (LQ) state-fbk regulator
+\*  :func:`~control.lqr`        linear quadratic (LQ) state-fbk regulator
 \   dlqr                        discrete-time LQ state-feedback regulator
 \   lqry                        LQ regulator with output weighting
 \   lqrd                        discrete LQ regulator for continuous plant
@@ -294,9 +294,9 @@ State-space (SS) models
 \*  :func:`drss`                random stable disc-time state-space models
 \   ss2ss                       state coordinate transformation
 \   canon                       canonical forms of state-space models
-\*  :func:`~statefbk.ctrb`      controllability matrix
-\*  :func:`~statefbk.obsv`      observability matrix
-\*  :func:`~statefbk.gram`      controllability and observability gramians
+\*  :func:`~control.ctrb`       controllability matrix
+\*  :func:`~control.obsv`       observability matrix
+\*  :func:`~control.gram`       controllability and observability gramians
 \   ss/prescale                 optimal scaling of state-space models.
 \   balreal                     gramian-based input/output balancing
 \   ss/xperm                    reorder states.
@@ -315,8 +315,8 @@ Frequency response data (FRD) models
 \   frd/real                    real part of the frequency response
 \   frd/imag                    imaginary part of the frequency response
 \   frd/interp                  interpolate frequency response data
-\   mag2db                      convert magnitude to decibels (dB)
-\   db2mag                      convert decibels (dB) to magnitude
+\*  :func:`~control.mag2db`     convert magnitude to decibels (dB)
+\*  :func:`~control.db2mag`     convert decibels (dB) to magnitude
 ==  ==========================  ============================================
 
 
@@ -328,7 +328,7 @@ Time delays
 \   lti/totaldelay              total delay between each input/output pair
 \   lti/delay2z                 replace delays by poles at z=0 or FRD phase
                                 shift
-\*  :func:`~delay.pade`         pade approximation of time delays
+\*  :func:`~control.pade`       pade approximation of time delays
 ==  ==========================  ============================================
 
 
@@ -371,12 +371,12 @@ Matrix equation solvers and linear algebra
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~mateqn.lyap`        solve continuous-time Lyapunov equations
-\*  :func:`~mateqn.dlyap`       solve discrete-time Lyapunov equations
+\*  :func:`~control.lyap`       solve continuous-time Lyapunov equations
+\*  :func:`~control.dlyap`      solve discrete-time Lyapunov equations
 \   lyapchol, dlyapchol         square-root Lyapunov solvers
-\*  :func:`~mateqn.care`        solve continuous-time algebraic Riccati
+\*  :func:`~control.care`       solve continuous-time algebraic Riccati
                                 equations
-\*  :func:`~mateqn.dare`        solve disc-time algebraic Riccati equations
+\*  :func:`~control.dare`       solve disc-time algebraic Riccati equations
 \   gcare, gdare                generalized Riccati solvers
 \   bdschur                     block diagonalization of a square matrix
 ==  ==========================  ============================================
@@ -386,12 +386,12 @@ Additional functions
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~freqplot.gangof4`   generate the Gang of 4 sensitivity plots
+\*  :func:`~control.gangof4`    generate the Gang of 4 sensitivity plots
 \*  :func:`~numpy.linspace`     generate a set of numbers that are linearly
                                 spaced
 \*  :func:`~numpy.logspace`     generate a set of numbers that are
                                 logarithmically spaced
-\*  :func:`~ctrlutil.unwrap`    unwrap phase angle to give continuous curve
+\*  :func:`~control.unwrap`     unwrap phase angle to give continuous curve
 ==  ==========================  ============================================
 
 """
@@ -430,7 +430,7 @@ def ss(*args):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: StateSpace or TransferFunction
         A linear system
     A: array_like or string
         System matrix
@@ -445,7 +445,7 @@ def ss(*args):
 
     Returns
     -------
-    out: StateSpace
+    out: :class:`StateSpace`
         The new linear system
 
     Raises
