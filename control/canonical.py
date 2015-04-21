@@ -10,7 +10,7 @@ from numpy import zeros, shape, poly
 from numpy.linalg import inv
 
 
-def canonical_form(xsys, form):
+def canonical_form(xsys, form='reachable'):
     """Convert a system into canonical form
 
     Parameters
@@ -20,15 +20,15 @@ def canonical_form(xsys, form):
     form : String
         Canonical form for transformation.  Chosen from:
           * 'reachable' - reachable canonical form
-          * 'observable' - observable canonical form
+          * 'observable' - observable canonical form [not implemented]
           * 'modal' - modal canonical form [not implemented]
 
-    Outputs
+    Returns
     -------
     zsys : StateSpace object
         System in desired canonical form, with state 'z'
     T : matrix
-        Coordinate transformation matrix, z = T*x
+        Coordinate transformation matrix, z = T * x
     """
 
     # Call the appropriate tranformation function
@@ -41,6 +41,20 @@ def canonical_form(xsys, form):
 
 # Reachable canonical form
 def reachable_form(xsys):
+    """Convert a system into reachable canonical form
+
+    Parameters
+    ----------
+    xsys : StateSpace object
+        System to be transformed, with state `x`
+
+    Returns
+    -------
+    zsys : StateSpace object
+        System in reachable canonical form, with state `z`
+    T : matrix
+        Coordinate transformation: z = T * x
+    """
     # Check to make sure we have a SISO system
     if not issiso(xsys):
         raise ControlNotImplemented(
