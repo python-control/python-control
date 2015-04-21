@@ -63,7 +63,7 @@ from .statefbk import place, lqr, ctrb, obsv, gram, acker
 from .statesp import *
 from .timeresp import forced_response, initial_response, step_response, \
     impulse_response
-from .xferfcn import TransferFunction
+from .xferfcn import *
 from .ctrlutil import *
 from .frdata import FRD
 from .canonical import canonical_form, reachable_form
@@ -86,7 +86,6 @@ except ImportError:
 #! of defaults from the main package.  At that point, the matlab module will
 #! allow provide compatibility with MATLAB but no package functionality.
 #!
-from .matlab import tf, ss2tf
 from .matlab import pole, zero, evalfr, freqresp, dcgain
 from .matlab import nichols, rlocus, margin
         # bode and nyquist come directly from freqplot.py
