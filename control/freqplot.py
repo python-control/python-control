@@ -49,6 +49,9 @@ from .ctrlutil import unwrap
 from .bdalg import feedback
 from .lti import isdtime, timebaseEqual
 
+__all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
+           'bode', 'nyquist', 'gangof4']
+
 #
 # Main plotting functions
 #

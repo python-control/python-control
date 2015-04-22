@@ -58,6 +58,8 @@ from . import xferfcn as tf
 from . import statesp as ss
 from . import frdata as frd
 
+__all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
+
 def series(sys1, sys2):
     """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.
 

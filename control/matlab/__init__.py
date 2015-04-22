@@ -50,11 +50,6 @@ $Id$
 
 """
 
-# Libraries that we make use of
-import scipy as sp              # SciPy library (used all over)
-import numpy as np              # NumPy library
-import re                       # regular expressions
-
 # Import MATLAB-like functions that are defined in other packages
 from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
 from numpy import linspace, logspace
@@ -76,19 +71,19 @@ from ..statesp import *
 from ..xferfcn import *
 from ..lti import *
 from ..frdata import *
-from ..dtime import sample_system
+from ..dtime import *
 from ..exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
 from ..ctrlutil import *
 from ..freqplot import nyquist, gangof4
-from ..nichols import nichols, nichols_grid
-from ..bdalg import series, parallel, negate, feedback, append, connect
-from ..pzmap import pzmap
-from ..statefbk import ctrb, obsv, gram, place, lqr
-from ..delay import pade
-from ..modelsimp import hsvd, balred, modred, minreal
-from ..mateqn import lyap, dlyap, dare, care
+from ..nichols import nichols
+from ..bdalg import *
+from ..pzmap import *
+from ..statefbk import *
+from ..delay import *
+from ..modelsimp import *
+from ..mateqn import *
 from ..margins import margin
 from ..rlocus import rlocus
 from ..dtime import c2d

@@ -9,6 +9,7 @@ from .statefbk import ctrb
 from numpy import zeros, shape, poly
 from numpy.linalg import inv
 
+__all__ = ['canonical_form', 'reachable_form']
 
 def canonical_form(xsys, form='reachable'):
     """Convert a system into canonical form

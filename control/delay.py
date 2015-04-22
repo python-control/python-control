@@ -44,6 +44,8 @@
 # Python 3 compatability (needs to go here)
 from __future__ import print_function
 
+__all__ = ['pade']
+
 def pade(T, n=1):
     """
     Create a linear system that approximates a delay.

@@ -45,28 +45,26 @@ for analyzing and designing feedback control systems.
 """
 
 # Import functions from within the control system library
-# Should probably only import the exact functions we use...
-from .bdalg import series, parallel, negate, feedback
-from .delay import pade
+# Note: the functions we use are specified as __all__ variables in the modules
+from .bdalg import *
+from .delay import *
 from .dtime import *
-from .freqplot import bode_plot, nyquist_plot, gangof4_plot
-from .freqplot import bode, nyquist, gangof4
+from .freqplot import *
 from .lti import *
 from .margins import *
-from .mateqn import lyap, dlyap, care, dare
-from .modelsimp import hsvd, modred, balred, era, markov, minreal
+from .mateqn import *
+from .modelsimp import *
 from .nichols import *
-from .phaseplot import phase_plot, box_grid
-from .pzmap import pzmap
+from .phaseplot import *
+from .pzmap import *
 from .rlocus import *
-from .statefbk import place, lqr, ctrb, obsv, gram, acker
+from .statefbk import *
 from .statesp import *
-from .timeresp import forced_response, initial_response, step_response, \
-    impulse_response
+from .timeresp import *
 from .xferfcn import *
 from .ctrlutil import *
 from .frdata import *
-from .canonical import canonical_form, reachable_form
+from .canonical import *
 
 # Exceptions
 from .exception import *
@@ -76,16 +74,6 @@ try:
     from ._version import __version__, __commit__
 except ImportError:
     __version__ = "dev"
-
-# Import some of the more common (and benign) MATLAB shortcuts
-# By default, don't import conflicting commands here
-#! TODO (RMM, 4 Nov 2012): remove MATLAB dependencies from __init__.py
-#!
-#! Eventually, all functionality should be in modules *other* than matlab.
-#! This will allow inclusion of the matlab module to set up a different set
-#! of defaults from the main package.  At that point, the matlab module will
-#! allow provide compatibility with MATLAB but no package functionality.
-#!
 
 # The following is to use Numpy's testing framework
 # Tests go under directory tests/, benchmarks under directory benchmarks/
