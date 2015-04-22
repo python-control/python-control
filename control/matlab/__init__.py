@@ -92,7 +92,7 @@ from ..dtime import c2d
 from .timeresp import *
 from .wrappers import *
 
-__doc__ += r"""
+r"""
 The following tables give an overview of the module ``control.matlab``.
 They also show the implementation progress and the planned features of the
 module.

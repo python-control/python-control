@@ -17,6 +17,8 @@ System creation
 
     ss
     tf
+    rss
+    drss
 
 Frequency domain plotting
 =========================
@@ -181,7 +183,6 @@ Utility functions and conversions
     unwrap
     db2mag
     mag2db
-    drss
     isctime
     isdtime
     issys
