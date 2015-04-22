@@ -55,16 +55,10 @@ from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
 from numpy import linspace, logspace
 
 # If configuration is not yet set, import and use MATLAB defaults
-#! NOTE (RMM, 4 Nov 2012): MATLAB default initialization commented out for now
-#!
-#! This code will eventually be used so that import control.matlab will
-#! automatically use MATLAB defaults, while import control will use package
-#! defaults.  In order for that to work, we need to make sure that
-#! __init__.py does not include anything in the MATLAB module.
-# import sys
-# if not ('.config' in sys.modules):
-#     from . import config
-#    config.use_matlab()
+import sys
+if not ('.config' in sys.modules):
+    from .. import config
+    config.use_matlab_defaults()
 
 # Control system library
 from ..statesp import *
