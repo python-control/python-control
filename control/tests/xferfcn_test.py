@@ -510,6 +510,22 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[0][0])
         np.testing.assert_array_almost_equal(H.den[1][0], H2.den[0][0])
 
+    def test_dcgain(self):
+        sys = TransferFunction(6, 3)
+        np.testing.assert_equal(sys.dcgain(), 2)
+
+        sys2 = TransferFunction(6, [1, 3])
+        np.testing.assert_equal(sys2.dcgain(), 2)
+
+        sys3 = TransferFunction(6, [1, 0])
+        np.testing.assert_equal(sys3.dcgain(), np.inf)
+
+        num = [[[15], [21], [33]], [[10], [14], [22]]]
+        den = [[[1, 3], [2, 3], [3, 3]], [[1, 5], [2, 7], [3, 11]]]
+        sys4 = TransferFunction(num, den)
+        expected = [[5, 7, 11], [2, 2, 2]]
+        np.testing.assert_array_equal(sys4.dcgain(), expected)
+
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)
 

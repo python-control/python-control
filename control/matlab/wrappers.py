@@ -1,10 +1,13 @@
 """
-Plotting routines for the Matlab compatibility module
+Wrappers for the Matlab compatibility module
 """
 
 import numpy as np
+from ..statesp import ss
+from ..xferfcn import tf
+from scipy.signal import zpk2tf
 
-__all__ = ['bode', 'ngrid']
+__all__ = ['bode', 'ngrid', 'dcgain']
 
 def bode(*args, **keywords):
     """Bode plot of the frequency response
@@ -103,3 +106,54 @@ from ..nichols import nichols_grid
 def ngrid():
     return nichols_grid()
 ngrid.__doc__ = nichols_grid.__doc__
+
+def dcgain(*args):
+    '''
+    Compute the gain of the system in steady state.
+
+    The function takes either 1, 2, 3, or 4 parameters:
+
+    Parameters
+    ----------
+    A, B, C, D: array-like
+        A linear system in state space form.
+    Z, P, k: array-like, array-like, number
+        A linear system in zero, pole, gain form.
+    num, den: array-like
+        A linear system in transfer function form.
+    sys: LTI (StateSpace or TransferFunction)
+        A linear system object.
+
+    Returns
+    -------
+    gain: ndarray
+        The gain of each output versus each input:
+        :math:`y = gain \cdot u`
+
+    Notes
+    -----
+    This function is only useful for systems with invertible system
+    matrix ``A``.
+
+    All systems are first converted to state space form. The function then
+    computes:
+
+    .. math:: gain = - C \cdot A^{-1} \cdot B + D
+    '''
+    #Convert the parameters to state space form
+    if len(args) == 4:
+        A, B, C, D = args
+        return ss(A, B, C, D).dcgain()
+    elif len(args) == 3:
+        Z, P, k = args
+        num, den = zpk2tf(Z, P, k)
+        return tf(num, den).dcgain()
+    elif len(args) == 2:
+        num, den = args
+        return tf(num, den).dcgain()
+    elif len(args) == 1:
+        sys, = args
+        return sys.dcgain()
+    else:
+        raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
+                         "arguments.")

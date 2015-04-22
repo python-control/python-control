@@ -50,6 +50,7 @@ Revised: Kevin K. Chen, Dec 10
 $Id$
 """
 
+import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
     dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
@@ -590,6 +591,27 @@ inputs/outputs for feedback.")
         sys = (self.A, self.B, self.C, self.D)
         Ad, Bd, C, D, dt = cont2discrete(sys, Ts, method, alpha)
         return StateSpace(Ad, Bd, C, D, dt)
+
+    def dcgain(self):
+        """Return the zero-frequency gain
+
+        The zero-frequency gain of a state-space system is given by:
+
+        .. math: G(0) = - C A^{-1} B + D
+
+        Returns
+        -------
+        gain : ndarray
+            The zero-frequency gain, or np.nan if the system has a pole
+            at the origin
+        """
+        try:
+            gain = np.asarray(self.D -
+                              self.C.dot(np.linalg.solve(self.A, self.B)))
+        except LinAlgError:
+            # zero eigenvalue: singular matrix
+            return np.nan
+        return np.squeeze(gain)
 
 
 # TODO: add discrete time check

@@ -943,6 +943,32 @@ a zero leading coefficient." % (i, j)
         numd, dend, dt = cont2discrete(sys, Ts, method, alpha)
         return TransferFunction(numd[0,:], dend, dt)
 
+    def dcgain(self):
+        """Return the zero-frequency (or DC) gain
+
+        For a transfer function G(s), the DC gain is G(0)
+
+        Returns
+        -------
+        gain : ndarray
+            The zero-frequency gain
+        """
+        gain = np.empty((self.outputs, self.inputs), dtype=float)
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                num = self.num[i][j][-1]
+                den = self.den[i][j][-1]
+                if den:
+                    gain[i][j] = num / den
+                else:
+                    if num:
+                        # numerator nonzero: infinite gain
+                        gain[i][j] = np.inf
+                    else:
+                        # numerator is zero too: give up
+                        gain[i][j] = np.nan
+        return np.squeeze(gain)
+
 # c2d function contributed by Benjamin White, Oct 2012
 def _c2dmatched(sysC, Ts):
     # Pole-zero match method of continuous to discrete time conversion

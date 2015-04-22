@@ -15,7 +15,7 @@ timebaseEqual()
 from numpy import absolute, real
 
 __all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
-           'pole', 'zero', 'damp', 'evalfr', 'freqresp']
+           'pole', 'zero', 'damp', 'evalfr', 'freqresp', 'dcgain']
 
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
@@ -88,6 +88,11 @@ class LTI:
         wn = absolute(poles)
         Z = -real(poles)/wn
         return wn, Z, poles
+
+    def dcgain(self):
+        """Return the zero-frequency gain"""
+        raise NotImplementedError("dcgain not implemented for %s objects" %
+                                  str(self.__class__))
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
@@ -215,11 +220,8 @@ def pole(sys):
     See Also
     --------
     zero
-
-    Notes
-    -----
-    This function is a wrapper for StateSpace.pole and
-    TransferFunction.pole.
+    TransferFunction.pole
+    StateSpace.pole
 
     """
 
@@ -243,16 +245,13 @@ def zero(sys):
     Raises
     ------
     NotImplementedError
-        when called on a TransferFunction object or a MIMO StateSpace object
+        when called on a MIMO system
 
     See Also
     --------
     pole
-
-    Notes
-    -----
-    This function is a wrapper for StateSpace.zero and
-    TransferFunction.zero.
+    StateSpace.zero
+    TransferFunction.zero
 
     """
 
@@ -391,3 +390,14 @@ def freqresp(sys, omega):
     """
 
     return sys.freqresp(omega)
+
+def dcgain(sys):
+    """Return the zero-frequency (or DC) gain of the given system
+
+    Returns
+    -------
+    gain : ndarray
+        The zero-frequency gain, or np.nan if the system has a pole
+        at the origin
+    """
+    return sys.dcgain()
