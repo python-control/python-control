@@ -1,19 +1,10 @@
 # -*- coding: utf-8 -*-
-"""matlab.py
-
-MATLAB emulation functions.
-
-This file contains a number of functions that emulate some of the
-functionality of MATLAB.  The intent of these functions is to
+"""
+The :mod:`control.matlab` module contains a number of functions that emulate
+some of the functionality of MATLAB.  The intent of these functions is to
 provide a simple interface to the python control systems library
-(python-control) for people who are familiar with the MATLAB Control
-Systems Toolbox (tm).  Most of the functions are just calls to
-python-control functions defined elsewhere.  Use 'from
-control.matlab import \*' in python to include all of the functions
-defined here.  Functions that are defined in other libraries that
-have the same names as their MATLAB equivalents are automatically
-imported here.
-
+(python-control) for people who are familiar with the MATLAB Control Systems
+Toolbox (tm).
 """
 
 """Copyright (c) 2009 by California Institute of Technology
@@ -88,7 +79,7 @@ from . import timeresp
 from . import margins
 from .statesp import StateSpace, _rss_generate, _convertToStateSpace
 from .xferfcn import TransferFunction, _convertToTransferFunction
-from .lti import Lti  # base class of StateSpace, TransferFunction
+from .lti import LTI  # base class of StateSpace, TransferFunction
 from .lti import issiso
 from .frdata import FRD
 from .dtime import sample_system
@@ -114,7 +105,7 @@ The symbols in the first column show the current state of a feature:
 
 * ``*`` : The feature is currently implemented.
 * ``-`` : The feature is not planned for implementation.
-* ``s`` : A similar feature from an other library (Scipy) is imported into
+* ``s`` : A similar feature from another library (Scipy) is imported into
   the module, until the feature is implemented here.
 
 
@@ -156,36 +147,36 @@ Data extraction
 Conversions
 ----------------------------------------------------------------------------
 
-==  ==========================  ============================================
-\*  :func:`tf`                  conversion to transfer function
-\   zpk                         conversion to zero/pole/gain
-\*  :func:`ss`                  conversion to state space
-\*  :func:`frd`                 conversion to frequency data
-\*  :func:`c2d`                 continuous to discrete conversion
-\   d2c                         discrete to continuous conversion
-\   d2d                         resample discrete-time model
-\   upsample                    upsample discrete-time LTI systems
-\*  :func:`ss2tf`               state space to transfer function
-\s  ss2zpk                      transfer function to zero-pole-gain
-\*  :func:`tf2ss`               transfer function to state space
-\s  tf2zpk                      transfer function to zero-pole-gain
-\s  zpk2ss                      zero-pole-gain to state space
-\s  zpk2tf                      zero-pole-gain to transfer function
-==  ==========================  ============================================
+==  ============================   ============================================
+\*  :func:`tf`                     conversion to transfer function
+\   zpk                            conversion to zero/pole/gain
+\*  :func:`ss`                     conversion to state space
+\*  :func:`frd`                    conversion to frequency data
+\*  :func:`c2d`                    continuous to discrete conversion
+\   d2c                            discrete to continuous conversion
+\   d2d                            resample discrete-time model
+\   upsample                       upsample discrete-time LTI systems
+\*  :func:`ss2tf`                  state space to transfer function
+\s  :func:`~scipy.signal.ss2zpk`   transfer function to zero-pole-gain
+\*  :func:`tf2ss`                  transfer function to state space
+\s  :func:`~scipy.signal.tf2zpk`   transfer function to zero-pole-gain
+\s  :func:`~scipy.signal.zpk2ss`   zero-pole-gain to state space
+\s  :func:`~scipy.signal.zpk2tf`   zero-pole-gain to transfer function
+==  ============================   ============================================
 
 
 System interconnections
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~bdalg.append`       group LTI models by appending inputs/outputs
-\*  :func:`~bdalg.parallel`     connect LTI models in parallel
+\*  :func:`~control.append`     group LTI models by appending inputs/outputs
+\*  :func:`~control.parallel`   connect LTI models in parallel
                                 (see also overloaded ``+``)
-\*  :func:`~bdalg.series`       connect LTI models in series
+\*  :func:`~control.series`     connect LTI models in series
                                 (see also overloaded ``*``)
-\*  :func:`~bdalg.feedback`     connect lti models with a feedback loop
+\*  :func:`~control.feedback`   connect lti models with a feedback loop
 \   lti/lft                     generalized feedback interconnection
-\*  :func:'~bdalg.connect'      arbitrary interconnection of lti models
+\*  :func:`~control.connect`    arbitrary interconnection of lti models
 \   sumblk                      summing junction (for use with connect)
 \   strseq                      builds sequence of indexed strings
                                 (for I/O naming)
@@ -202,7 +193,7 @@ System gain and dynamics
 \*  :func:`pole`                system poles
 \*  :func:`zero`                system (transmission) zeros
 \   lti/order                   model order (number of states)
-\*  :func:`~pzmap.pzmap`        pole-zero map (TF only)
+\*  :func:`~control.pzmap`      pole-zero map (TF only)
 \   lti/iopzmap                 input/output pole-zero map
 \*  :func:`damp`                natural frequency, damping of system poles
 \   esort                       sort continuous poles by real part
@@ -234,8 +225,8 @@ Frequency-domain analysis
 \*  :func:`bode`                Bode plot of the frequency response
 \   lti/bodemag                 Bode magnitude diagram only
 \   sigma                       singular value frequency plot
-\*  :func:`~freqplot.nyquist`   Nyquist plot
-\*  :func:`~nichols.nichols`    Nichols plot
+\*  :func:`~control.nyquist`    Nyquist plot
+\*  :func:`~control.nichols`    Nichols plot
 \*  :func:`margin`              gain and phase margins
 \   lti/allmargin               all crossover frequencies and margins
 \*  :func:`freqresp`            frequency response over a frequency grid
@@ -247,11 +238,11 @@ Model simplification
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~modelsimp.minreal`  minimal realization; pole/zero cancellation
+\*  :func:`~control.minreal`    minimal realization; pole/zero cancellation
 \   ss/sminreal                 structurally minimal realization
-\*  :func:`~modelsimp.hsvd`     hankel singular values (state contributions)
-\*  :func:`~modelsimp.balred`   reduced-order approximations of LTI models
-\*  :func:`~modelsimp.modred`   model order reduction
+\*  :func:`~control.hsvd`       hankel singular values (state contributions)
+\*  :func:`~control.balred`     reduced-order approximations of LTI models
+\*  :func:`~control.modred`     model order reduction
 ==  ==========================  ============================================
 
 
@@ -260,7 +251,7 @@ Compensator design
 
 ==  ==========================  ============================================
 \*  :func:`rlocus`              evans root locus
-\*  :func:`~statefbk.place`     pole placement
+\*  :func:`~control.place`      pole placement
 \   estim                       form estimator given estimator gain
 \   reg                         form regulator given state-feedback and
                                 estimator gains
@@ -272,7 +263,7 @@ LQR/LQG design
 
 ==  ==========================  ============================================
 \   ss/lqg                      single-step LQG design
-\*  :func:`~statefbk.lqr`       linear quadratic (LQ) state-fbk regulator
+\*  :func:`~control.lqr`        linear quadratic (LQ) state-fbk regulator
 \   dlqr                        discrete-time LQ state-feedback regulator
 \   lqry                        LQ regulator with output weighting
 \   lqrd                        discrete LQ regulator for continuous plant
@@ -294,9 +285,9 @@ State-space (SS) models
 \*  :func:`drss`                random stable disc-time state-space models
 \   ss2ss                       state coordinate transformation
 \   canon                       canonical forms of state-space models
-\*  :func:`~statefbk.ctrb`      controllability matrix
-\*  :func:`~statefbk.obsv`      observability matrix
-\*  :func:`~statefbk.gram`      controllability and observability gramians
+\*  :func:`~control.ctrb`       controllability matrix
+\*  :func:`~control.obsv`       observability matrix
+\*  :func:`~control.gram`       controllability and observability gramians
 \   ss/prescale                 optimal scaling of state-space models.
 \   balreal                     gramian-based input/output balancing
 \   ss/xperm                    reorder states.
@@ -315,8 +306,8 @@ Frequency response data (FRD) models
 \   frd/real                    real part of the frequency response
 \   frd/imag                    imaginary part of the frequency response
 \   frd/interp                  interpolate frequency response data
-\   mag2db                      convert magnitude to decibels (dB)
-\   db2mag                      convert decibels (dB) to magnitude
+\*  :func:`~control.mag2db`     convert magnitude to decibels (dB)
+\*  :func:`~control.db2mag`     convert decibels (dB) to magnitude
 ==  ==========================  ============================================
 
 
@@ -328,7 +319,7 @@ Time delays
 \   lti/totaldelay              total delay between each input/output pair
 \   lti/delay2z                 replace delays by poles at z=0 or FRD phase
                                 shift
-\*  :func:`~delay.pade`         pade approximation of time delays
+\*  :func:`~control.pade`       pade approximation of time delays
 ==  ==========================  ============================================
 
 
@@ -371,12 +362,12 @@ Matrix equation solvers and linear algebra
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~mateqn.lyap`        solve continuous-time Lyapunov equations
-\*  :func:`~mateqn.dlyap`       solve discrete-time Lyapunov equations
+\*  :func:`~control.lyap`       solve continuous-time Lyapunov equations
+\*  :func:`~control.dlyap`      solve discrete-time Lyapunov equations
 \   lyapchol, dlyapchol         square-root Lyapunov solvers
-\*  :func:`~mateqn.care`        solve continuous-time algebraic Riccati
+\*  :func:`~control.care`       solve continuous-time algebraic Riccati
                                 equations
-\*  :func:`~mateqn.dare`        solve disc-time algebraic Riccati equations
+\*  :func:`~control.dare`       solve disc-time algebraic Riccati equations
 \   gcare, gdare                generalized Riccati solvers
 \   bdschur                     block diagonalization of a square matrix
 ==  ==========================  ============================================
@@ -386,12 +377,12 @@ Additional functions
 ----------------------------------------------------------------------------
 
 ==  ==========================  ============================================
-\*  :func:`~freqplot.gangof4`   generate the Gang of 4 sensitivity plots
+\*  :func:`~control.gangof4`    generate the Gang of 4 sensitivity plots
 \*  :func:`~numpy.linspace`     generate a set of numbers that are linearly
                                 spaced
 \*  :func:`~numpy.logspace`     generate a set of numbers that are
                                 logarithmically spaced
-\*  :func:`~ctrlutil.unwrap`    unwrap phase angle to give continuous curve
+\*  :func:`~control.unwrap`     unwrap phase angle to give continuous curve
 ==  ==========================  ============================================
 
 """
@@ -430,7 +421,7 @@ def ss(*args):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: StateSpace or TransferFunction
         A linear system
     A: array_like or string
         System matrix
@@ -445,7 +436,7 @@ def ss(*args):
 
     Returns
     -------
-    out: StateSpace
+    out: :class:`StateSpace`
         The new linear system
 
     Raises
@@ -513,7 +504,7 @@ def tf(*args):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system
     num: array_like, or list of list of array_like
         Polynomial coefficients of the numerator
@@ -522,7 +513,7 @@ def tf(*args):
 
     Returns
     -------
-    out: TransferFunction
+    out: :class:`TransferFunction`
         The new linear system
 
     Raises
@@ -541,19 +532,11 @@ def tf(*args):
     Notes
     --------
 
-    .. todo::
-
-        The next paragraph contradicts the comment in the example!
-        Also "input" should come before "output" in the sentence:
-
-        "from the (j+1)st output to the (i+1)st input"
-
     ``num[i][j]`` contains the polynomial coefficients of the numerator
-    for the transfer function from the (j+1)st output to the (i+1)st input.
+    for the transfer function from the (j+1)st input to the (i+1)st output.
     ``den[i][j]`` works the same way.
 
-    The coefficients ``[2, 3, 4]`` denote the polynomial
-    :math:`2 \cdot s^2 + 3 \cdot s + 4`.
+    The list ``[2, 3, 4]`` denotes the polynomial :math:`2s^2 + 3s + 4`.
 
     Examples
     --------
@@ -597,7 +580,7 @@ def frd(*args):
         complex response vector, at matching frequency freqs [in rad/s]
 
     ``frd(sys, freqs)``
-        Convert an Lti system into an frd model with data at frequencies
+        Convert an LTI system into an frd model with data at frequencies
         freqs.
 
     Parameters
@@ -606,7 +589,7 @@ def frd(*args):
         complex vector with the system response
     freq: array_lik or lis
         vector with frequencies
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system
 
     Returns
@@ -714,7 +697,7 @@ def tf2ss(*args):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system
     num: array_like, or list of list of array_like
         Polynomial coefficients of the numerator
@@ -1008,7 +991,7 @@ def bode(*args, **keywords):
 
     Parameters
     ----------
-    sys : Lti, or list of Lti
+    sys : LTI, or list of LTI
         System for which the Bode response is plotted and give. Optionally
         a list of systems can be entered, or several systems can be
         specified (i.e. several parameters). The sys arguments may also be
@@ -1156,14 +1139,9 @@ def margin(*args):
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> gm, pm, wg, wp = margin(sys)
-    margin: no magnitude crossings found
+    >>> sys = tf(1, [1, 2, 1, 0])
+    >>> gm, pm, Wcg, Wcp = margin(sys)
 
-    .. todo::
-        better ecample system!
-
-        #>>> gm, pm, wg, wp = margin(mag, phase, w)
     """
     if len(args) == 1:
         sys = args[0]
@@ -1190,7 +1168,7 @@ def dcgain(*args):
         A linear system in zero, pole, gain form.
     num, den: array-like
         A linear system in transfer function form.
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system object.
 
     Returns
@@ -1238,7 +1216,7 @@ def damp(sys, doprint=True):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         A linear system object
     doprint:
         if true, print table with values
@@ -1271,7 +1249,7 @@ def damp(sys, doprint=True):
 # Simulation routines
 # Call corresponding functions in timeresp, with arguments transposed
 
-def step(sys, T=None, X0=0., input=0, output=None, **keywords):
+def step(sys, T=None, X0=0., input=0, output=None):
     '''
     Step response of a linear system
 
@@ -1300,14 +1278,6 @@ def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     output: int
         If given, index of the output that is returned by this simulation.
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`control.forced_response`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
     Returns
     -------
     yout: array
@@ -1325,10 +1295,10 @@ def step(sys, T=None, X0=0., input=0, output=None, **keywords):
     >>> yout, T = step(sys, T, X0)
     '''
     T, yout = timeresp.step_response(sys, T, X0, input, output,
-                                   transpose = True, **keywords)
+                                     transpose = True)
     return yout, T
 
-def impulse(sys, T=None, input=0, output=None, **keywords):
+def impulse(sys, T=None, input=0, output=None):
     '''
     Impulse response of a linear system
 
@@ -1352,14 +1322,6 @@ def impulse(sys, T=None, input=0, output=None, **keywords):
     output: int
         Index of the output that will be used in this simulation.
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
     Returns
     -------
     yout: array
@@ -1376,10 +1338,10 @@ def impulse(sys, T=None, input=0, output=None, **keywords):
     >>> yout, T = impulse(sys, T)
     '''
     T, yout = timeresp.impulse_response(sys, T, 0, input, output,
-                                   transpose = True, **keywords)
+                                        transpose = True)
     return yout, T
 
-def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
+def initial(sys, T=None, X0=0., input=None, output=None):
     '''
     Initial condition response of a linear system
 
@@ -1407,15 +1369,6 @@ def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
     output: int
         If given, index of the output that is returned by this simulation.
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
-
     Returns
     -------
     yout: array
@@ -1433,10 +1386,10 @@ def initial(sys, T=None, X0=0., input=None, output=None, **keywords):
 
     '''
     T, yout = timeresp.initial_response(sys, T, X0, output=output,
-                                        transpose=True, **keywords)
+                                        transpose=True)
     return yout, T
 
-def lsim(sys, U=0., T=None, X0=0., **keywords):
+def lsim(sys, U=0., T=None, X0=0.):
     '''
     Simulate the output of a linear system.
 
@@ -1446,7 +1399,7 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system to simulate
 
     U: array-like or number, optional
@@ -1461,13 +1414,6 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
 
     X0: array-like or number, optional
         Initial condition (default = 0).
-
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
 
     Returns
     -------
@@ -1486,8 +1432,7 @@ def lsim(sys, U=0., T=None, X0=0., **keywords):
     --------
     >>> yout, T, xout = lsim(sys, U, T, X0)
     '''
-    T, yout, xout = timeresp.forced_response(sys, T, U, X0,
-                                             transpose = True, **keywords)
+    T, yout, xout = timeresp.forced_response(sys, T, U, X0, transpose = True)
     return yout, T, xout
 
 # Return state space data as a tuple
@@ -1497,7 +1442,7 @@ def ssdata(sys):
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
     Returns
@@ -1515,7 +1460,7 @@ def tfdata(sys):
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
     Returns
@@ -1534,7 +1479,7 @@ def c2d(sysc, Ts, method='zoh'):
 
     Parameters
     ----------
-    sysc: Lti (StateSpace or TransferFunction), continuous
+    sysc: LTI (StateSpace or TransferFunction), continuous
         System to be converted
 
     Ts: number

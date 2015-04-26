@@ -11,3 +11,4 @@ build.log
 *.egg-info/
 .coverage
 doc/_build
+doc/generated

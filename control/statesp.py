@@ -27,7 +27,7 @@ StateSpace.freqresp
 StateSpace.pole
 StateSpace.zero
 StateSpace.feedback
-StateSpace.returnScipySignalLti
+StateSpace.returnScipySignalLTI
 StateSpace.append
 StateSpace.__getitem__
 _convertToStateSpace
@@ -86,26 +86,31 @@ from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti, cont2discrete
 # from exceptions import Exception
 import warnings
-from .lti import Lti, timebase, timebaseEqual, isdtime
+from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convertToTransferFunction
 
-class StateSpace(Lti):
-    """The StateSpace class represents state space instances and functions.
+class StateSpace(LTI):
+    """A class for representing state-space models
 
-    The StateSpace class is used throughout the python-control library to
-    represent systems in state space form.  This class is derived from the Lti
-    base class.
+    The StateSpace class is used to represent state-space realizations of linear
+    time-invariant (LTI) systems:
+
+        dx/dt = A x + B u
+            y = C x + D u
+
+    where u is the input, y is the output, and x is the state.
 
     The main data members are the A, B, C, and D matrices.  The class also
     keeps track of the number of states (i.e., the size of A).
 
-    Discrete time state space system are implemented by using the 'dt' class
+    Discrete-time state space system are implemented by using the 'dt' instance
     variable and setting it to the sampling period.  If 'dt' is not None,
     then it must match whenever two state space systems are combined.
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified
     sampling time.
+
     """
 
     def __init__(self, *args):
@@ -149,7 +154,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
             matrices[i] = matrix(matrices[i])
         [A, B, C, D] = matrices
 
-        Lti.__init__(self, B.shape[1], C.shape[0], dt)
+        LTI.__init__(self, B.shape[1], C.shape[0], dt)
         self.A = A
         self.B = B
         self.C = C
@@ -347,7 +352,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             return StateSpace(A, B, C, D, self.dt)
 
         # is lti, and convertible?
-        if isinstance(other, Lti):
+        if isinstance(other, LTI):
             return _convertToStateSpace(other) * self
 
         # try to treat this as a matrix
@@ -506,12 +511,12 @@ inputs/outputs for feedback.")
             raise TypeError("minreal requires slycot tb01pd")
 
     # TODO: add discrete time check
-    def returnScipySignalLti(self):
+    def returnScipySignalLTI(self):
         """Return a list of a list of scipy.signal.lti objects.
 
         For instance,
 
-        >>> out = ssobject.returnScipySignalLti()
+        >>> out = ssobject.returnScipySignalLTI()
         >>> out[3][5]
 
         is a signal.scipy.lti object corresponding to the transfer function from

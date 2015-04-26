@@ -120,7 +120,7 @@ import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
 from scipy.signal.ltisys import _default_response_times
 import warnings
-from .lti import Lti     # base class of StateSpace, TransferFunction
+from .lti import LTI     # base class of StateSpace, TransferFunction
 from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso
 from .lti import isdtime, isctime
 
@@ -233,7 +233,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
+def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     """Simulate the output of a linear system.
 
     As a convenience for parameters `U`, `X0`:
@@ -241,11 +241,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     The correct shape is inferred from arguments `sys` and `T`.
 
     For information on the **shape** of parameters `U`, `T`, `X0` and
-    return values `T`, `yout`, `xout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, `xout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------
-    sys: Lti (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace, or TransferFunction)
         LTI system to simulate
 
     T: array-like
@@ -264,13 +264,6 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
     Returns
     -------
     T: array
@@ -287,9 +280,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False, **keywords):
     Examples
     --------
     >>> T, yout, xout = forced_response(sys, T, u, X0)
+
+    See :ref:`time-series-convention`.
     """
-    if not isinstance(sys, Lti):
-        raise TypeError('Parameter ``sys``: must be a ``Lti`` object. '
+    if not isinstance(sys, LTI):
+        raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
                         '(For example ``StateSpace`` or ``TransferFunction``)')
     sys = _convertToStateSpace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
@@ -420,7 +415,7 @@ def _get_ss_simo(sys, input=None, output=None):
         return _mimo2siso(sys_ss, input, output, warn_conversion=warn)
 
 def step_response(sys, T=None, X0=0., input=None, output=None,
-                  transpose=False, **keywords):
+                  transpose=False):
     # pylint: disable=W0622
     """Step response of a linear system
 
@@ -430,7 +425,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     inputs are set to 0, all other outputs are ignored.
 
     For information on the **shape** of parameters `T`, `X0` and
-    return values `T`, `yout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------
@@ -455,14 +450,6 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
-
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
 
     Returns
     -------
@@ -492,13 +479,13 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     U = np.ones_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0,
-                                     transpose=transpose, **keywords)
+                                     transpose=transpose)
 
     return T, yout
 
 
 def initial_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, **keywords):
+                     transpose=False):
     # pylint: disable=W0622
     """Initial condition response of a linear system
 
@@ -507,7 +494,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     outputs are given.
 
     For information on the **shape** of parameters `T`, `X0` and
-    return values `T`, `yout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------
@@ -534,15 +521,6 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
-
     Returns
     -------
     T: array
@@ -566,13 +544,12 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
         T = _default_response_times(sys.A, 100)
     U = np.zeros_like(T)
 
-    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
-                                     **keywords)
+    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose)
     return T, yout
 
 
 def impulse_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, **keywords):
+                     transpose=False):
     # pylint: disable=W0622
     """Impulse response of a linear system
 
@@ -582,7 +559,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     inputs are set to 0, all other outputs are ignored.
 
     For information on the **shape** of parameters `T`, `X0` and
-    return values `T`, `yout` see: :ref:`time-series-convention`
+    return values `T`, `yout`, see :ref:`time-series-convention`.
 
     Parameters
     ----------
@@ -607,15 +584,6 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
-
-    **keywords:
-        Additional keyword arguments control the solution algorithm for the
-        differential equations. These arguments are passed on to the function
-        :func:`lsim`, which in turn passes them on to
-        :func:`scipy.integrate.odeint`. See the documentation for
-        :func:`scipy.integrate.odeint` for information about these
-        arguments.
-
 
     Returns
     -------
@@ -660,5 +628,5 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     T, yout, _xout = forced_response(
         sys, T, U, new_X0,
-        transpose=transpose, **keywords)
+        transpose=transpose)
     return T, yout

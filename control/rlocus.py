@@ -40,7 +40,7 @@
 #     or a control.TransferFunction object.
 #   * Added some comments to make sure I understand the code
 #
-# RMM, 2 April 2011: modified to work with new Lti structure (see ChangeLog)
+# RMM, 2 April 2011: modified to work with new LTI structure (see ChangeLog)
 #   * Not tested: should still work on signal.ltisys objects
 #
 # $Id$

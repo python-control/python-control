@@ -252,8 +252,8 @@ def append(*sys):
     system given; if you mix state-space systems and gain matrices,
     make sure the gain matrices are not first.
 
-    Parameters.
-    -----------
+    Parameters
+    ----------
     sys1, sys2, ... sysn: StateSpace or Transferfunction
         LTI systems to combine
 
@@ -290,8 +290,8 @@ def connect(sys, Q, inputv, outputv):
 
     Note: to have this work, inputs and outputs start counting at 1!!!!
 
-    Parameters.
-    -----------
+    Parameters
+    ----------
     sys: StateSpace Transferfunction
         System to be connected
     Q: 2d array

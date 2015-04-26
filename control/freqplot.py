@@ -184,7 +184,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
 
     Parameters
     ----------
-    syslist : list of Lti
+    syslist : list of LTI
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
@@ -281,7 +281,7 @@ def gangof4_plot(P, C, omega=None):
 
     Parameters
     ----------
-    P, C : Lti
+    P, C : LTI
         Linear input/output systems (process and control)
     omega : array
         Range of frequencies (list or bounds) in rad/sec
@@ -344,7 +344,7 @@ def default_frequency_range(syslist):
 
     Parameters
     ----------
-    syslist : list of Lti
+    syslist : list of LTI
         List of linear input/output systems (single system is OK)
 
     Returns

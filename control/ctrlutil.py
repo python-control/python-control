@@ -79,7 +79,7 @@ def unwrap(angle, period=2*pi):
 
 def issys(obj):
     """Return True if an object is a system, otherwise False"""
-    return isinstance(obj, lti.Lti)
+    return isinstance(obj, lti.LTI)
 
 def db2mag(db):
     """Convert a gain in decibels (dB) to a magnitude

@@ -30,7 +30,7 @@ TransferFunction.pole
 TransferFunction.zero
 TransferFunction.feedback
 TransferFunction.minreal
-TransferFunction.returnScipySignalLti
+TransferFunction.returnScipySignalLTI
 TransferFunction._common_den
 _tfpolyToString
 _addSISO
@@ -90,16 +90,15 @@ import numpy as np
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
-from .lti import Lti, timebaseEqual, timebase, isdtime
+from .lti import LTI, timebaseEqual, timebase, isdtime
 
 
-class TransferFunction(Lti):
+class TransferFunction(LTI):
 
-    """The TransferFunction class represents TF instances and functions.
+    """A class for representing transfer functions
 
-    The TransferFunction class is derived from the Lti parent class.  It
-    is used throught the python-control library to represent systems in
-    transfer function form.
+    The TransferFunction class is used to represent systems in transfer function
+    form.
 
     The main data members are 'num' and 'den', which are 2-D lists of arrays
     containing MIMO numerator and denominator coefficients.  For example,
@@ -109,11 +108,12 @@ class TransferFunction(Lti):
     means that the numerator of the transfer function from the 6th input to the
     3rd output is set to s^2 + 4s + 8.
 
-    Discrete time transfer functions are implemented by using the 'dt' class
+    Discrete-time transfer functions are implemented by using the 'dt' instance
     variable and setting it to something other than 'None'.  If 'dt' has a
     non-zero value, then it must match whenever two transfer functions are
     combined.  If 'dt' is set to True, the system will be treated as a
     discrete time system with unspecified sampling time.
+
     """
 
     def __init__(self, *args):
@@ -235,7 +235,7 @@ denominator." % (j + 1, i + 1))
                 if zeronum:
                     den[i][j] = ones(1)
 
-        Lti.__init__(self, inputs, outputs, dt)
+        LTI.__init__(self, inputs, outputs, dt)
         self.num = num
         self.den = den
 
@@ -718,12 +718,12 @@ only implemented for SISO functions.")
         # end result
         return TransferFunction(num, den)
 
-    def returnScipySignalLti(self):
+    def returnScipySignalLTI(self):
         """Return a list of a list of scipy.signal.lti objects.
 
         For instance,
 
-        >>> out = tfobject.returnScipySignalLti()
+        >>> out = tfobject.returnScipySignalLTI()
         >>> out[3][5]
 
         is a signal.scipy.lti object corresponding to the

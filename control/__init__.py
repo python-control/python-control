@@ -39,21 +39,9 @@
 #
 # $Id$
 
-"""Control System Library
-
-The Python Control System Library (control) provides common functions
+"""
+The Python Control Systems Library :mod:`control` provides common functions
 for analyzing and designing feedback control systems.
-
-Common functions
-----------------
-tf      create a transfer function from num, den coefficients
-ss      create a state space system from A, B, C, D matrices
-pzk     create a transfer function from pole, zero, gain
-frd     create a system description as frequency response
-bode    generate a Bode plot for a linear I/O system
-nyquist generate a Nyquist plot for a linear I/O system
-lqr     linear quadratic regulator
-lqe     linear quadratic estimator
 """
 
 # Import functions from within the control system library
@@ -66,9 +54,10 @@ from .freqplot import bode, nyquist, gangof4
 from .lti import issiso, timebase, timebaseEqual, isdtime, isctime
 from .margins import stability_margins, phase_crossover_frequencies
 from .mateqn import lyap, dlyap, care, dare
-from .modelsimp import hsvd, modred, balred, era, markov
+from .modelsimp import hsvd, modred, balred, era, markov, minreal
 from .nichols import nichols_plot, nichols
 from .phaseplot import phase_plot, box_grid
+from .pzmap import pzmap
 from .rlocus import root_locus
 from .statefbk import place, lqr, ctrb, obsv, gram, acker
 from .statesp import StateSpace

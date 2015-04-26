@@ -1,11 +1,11 @@
 """lti.py
 
-The Lti module contains the Lti parent class to the child classes StateSpace
+The lti module contains the LTI parent class to the child classes StateSpace
 and TransferFunction.  It is designed for use in the python-control library.
 
 Routines in this module:
 
-Lti.__init__
+LTI.__init__
 isdtime()
 isctime()
 timebase()
@@ -14,10 +14,10 @@ timebaseEqual()
 
 from numpy import absolute, real
 
-class Lti:
-    """Lti is a parent class to linear time invariant control (LTI) objects.
+class LTI:
+    """LTI is a parent class to linear time-invariant (LTI) system objects.
 
-    Lti is the parent to the StateSpace and TransferFunction child
+    LTI is the parent to the StateSpace and TransferFunction child
     classes. It contains the number of inputs and outputs, and the
     timebase (dt) for the system.
 
@@ -30,31 +30,9 @@ class Lti:
       * dt > 0          Discrete time system with sampling time dt
       * dt = True       Discrete time system with unspecified sampling time
 
-    When to Lti systems are combined, there timebases much match.  A system
+    When two LTI systems are combined, their timebases much match.  A system
     with timebase None can be combined with a system having a specified
     timebase, and the result will have the timebase of the latter system.
-
-    The StateSpace and TransferFunction child classes contain several common
-    "virtual" functions.  These are:
-
-    __init__
-    copy
-    __str__
-    __neg__
-    __add__
-    __radd__
-    __sub__
-    __rsub__
-    __mul__
-    __rmul__
-    __div__
-    __rdiv__
-    evalfr
-    freqresp
-    pole
-    zero
-    feedback
-    returnScipySignalLti
 
     """
 
@@ -112,25 +90,25 @@ class Lti:
 def issiso(sys, strict=False):
     if isinstance(sys, (int, float, complex)) and not strict:
         return True
-    elif not isinstance(sys, Lti):
-        raise ValueError("Object is not an Lti system")
+    elif not isinstance(sys, LTI):
+        raise ValueError("Object is not an LTI system")
 
     # Done with the tricky stuff...
     return sys.issiso()
 
 # Return the timebase (with conversion if unspecified)
 def timebase(sys, strict=True):
-    """Return the timebase for an Lti system
+    """Return the timebase for an LTI system
 
     dt = timebase(sys)
 
     returns the timebase for a system 'sys'.  If the strict option is
     set to False, dt = True will be returned as 1.
     """
-    # System needs to be either a constant or an Lti system
+    # System needs to be either a constant or an LTI system
     if isinstance(sys, (int, float, complex)):
         return None
-    elif not isinstance(sys, Lti):
+    elif not isinstance(sys, LTI):
         raise ValueError("Timebase not defined")
 
     # Return the sample time, with converstion to float if strict is false
@@ -181,7 +159,7 @@ def isdtime(sys, strict=False):
         return True if not strict else False
 
     # Check for a transfer function or state-space object
-    if isinstance(sys, Lti):
+    if isinstance(sys, LTI):
         return sys.isdtime(strict)
 
     # Got passed something we don't recognize
@@ -206,7 +184,7 @@ def isctime(sys, strict=False):
         return True if not strict else False
 
     # Check for a transfer function or state space object
-    if isinstance(sys, Lti):
+    if isinstance(sys, LTI):
         return sys.isctime(strict)
 
     # Got passed something we don't recognize

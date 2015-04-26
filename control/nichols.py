@@ -53,7 +53,7 @@ def nichols_plot(syslist, omega=None, grid=True):
 
     Parameters
     ----------
-    syslist : list of Lti, or Lti
+    syslist : list of LTI, or LTI
         List of linear input/output systems (single system is OK)
     omega : array_like
         Range of frequencies (list or bounds) in rad/sec

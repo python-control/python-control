@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 #import scipy as sp
 #import numpy as np
 from numpy import real, imag
-from .lti import Lti
+from .lti import LTI
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
@@ -55,7 +55,7 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
 
     Parameters
     ----------
-    sys: Lti (StateSpace or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         Linear system for which poles and zeros are computed.
     Plot: bool
         If ``True`` a graph is generated with Matplotlib,
@@ -68,7 +68,7 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
     zeros: array
         The system's zeros.
     """
-    if not isinstance(sys, Lti):
+    if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')
 
     poles = sys.pole()
