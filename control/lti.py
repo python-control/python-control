@@ -14,6 +14,9 @@ timebaseEqual()
 
 from numpy import absolute, real
 
+__all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
+           'pole', 'zero', 'damp', 'evalfr', 'freqresp', 'dcgain']
+
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
@@ -85,6 +88,11 @@ class LTI:
         wn = absolute(poles)
         Z = -real(poles)/wn
         return wn, Z, poles
+
+    def dcgain(self):
+        """Return the zero-frequency gain"""
+        raise NotImplementedError("dcgain not implemented for %s objects" %
+                                  str(self.__class__))
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
@@ -189,3 +197,207 @@ def isctime(sys, strict=False):
 
     # Got passed something we don't recognize
     return False
+
+def pole(sys):
+    """
+    Compute system poles.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction
+        Linear system
+
+    Returns
+    -------
+    poles: ndarray
+        Array that contains the system's poles.
+
+    Raises
+    ------
+    NotImplementedError
+        when called on a TransferFunction object
+
+    See Also
+    --------
+    zero
+    TransferFunction.pole
+    StateSpace.pole
+
+    """
+
+    return sys.pole()
+
+
+def zero(sys):
+    """
+    Compute system zeros.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction
+        Linear system
+
+    Returns
+    -------
+    zeros: ndarray
+        Array that contains the system's zeros.
+
+    Raises
+    ------
+    NotImplementedError
+        when called on a MIMO system
+
+    See Also
+    --------
+    pole
+    StateSpace.zero
+    TransferFunction.zero
+
+    """
+
+    return sys.zero()
+
+def damp(sys, doprint=True):
+    '''
+    Compute natural frequency, damping ratio, and poles of a system
+
+    The function takes 1 or 2 parameters
+
+    Parameters
+    ----------
+    sys: LTI (StateSpace or TransferFunction)
+        A linear system object
+    doprint:
+        if true, print table with values
+
+    Returns
+    -------
+    wn: array
+        Natural frequencies of the poles
+    damping: array
+        Damping values
+    poles: array
+        Pole locations
+
+    See Also
+    --------
+    pole
+    '''
+    wn, damping, poles = sys.damp()
+    if doprint:
+        print('_____Eigenvalue______ Damping___ Frequency_')
+        for p, d, w in zip(poles, damping, wn) :
+            if abs(p.imag) < 1e-12:
+                print("%10.4g            %10.4g %10.4g" %
+                      (p.real, 1.0, -p.real))
+            else:
+                print("%10.4g%+10.4gj %10.4g %10.4g" %
+                      (p.real, p.imag, d, w))
+    return wn, damping, poles
+
+def evalfr(sys, x):
+    """
+    Evaluate the transfer function of an LTI system for a single complex
+    number x.
+
+    To evaluate at a frequency, enter x = omega*j, where omega is the
+    frequency in radians
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction
+        Linear system
+    x: scalar
+        Complex number
+
+    Returns
+    -------
+    fresp: ndarray
+
+    See Also
+    --------
+    freqresp
+    bode
+
+    Notes
+    -----
+    This function is a wrapper for StateSpace.evalfr and
+    TransferFunction.evalfr.
+
+    Examples
+    --------
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> evalfr(sys, 1j)
+    array([[ 44.8-21.4j]])
+    >>> # This is the transfer function matrix evaluated at s = i.
+
+    .. todo:: Add example with MIMO system
+    """
+    if issiso(sys):
+        return sys.horner(x)[0][0]
+    return sys.horner(x)
+
+def freqresp(sys, omega):
+    """
+    Frequency response of an LTI system at multiple angular frequencies.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction
+        Linear system
+    omega: array_like
+        List of frequencies
+
+    Returns
+    -------
+    mag: ndarray
+    phase: ndarray
+    omega: list, tuple, or ndarray
+
+    See Also
+    --------
+    evalfr
+    bode
+
+    Notes
+    -----
+    This function is a wrapper for StateSpace.freqresp and
+    TransferFunction.freqresp.  The output omega is a sorted version of the
+    input omega.
+
+    Examples
+    --------
+    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
+    >>> mag
+    array([[[ 58.8576682 ,  49.64876635,  13.40825927]]])
+    >>> phase
+    array([[[-0.05408304, -0.44563154, -0.66837155]]])
+
+    .. todo::
+        Add example with MIMO system
+
+        #>>> sys = rss(3, 2, 2)
+        #>>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
+        #>>> mag[0, 1, :]
+        #array([ 55.43747231,  42.47766549,   1.97225895])
+        #>>> phase[1, 0, :]
+        #array([-0.12611087, -1.14294316,  2.5764547 ])
+        #>>> # This is the magnitude of the frequency response from the 2nd
+        #>>> # input to the 1st output, and the phase (in radians) of the
+        #>>> # frequency response from the 1st input to the 2nd output, for
+        #>>> # s = 0.1i, i, 10i.
+    """
+
+    return sys.freqresp(omega)
+
+def dcgain(sys):
+    """Return the zero-frequency (or DC) gain of the given system
+
+    Returns
+    -------
+    gain : ndarray
+        The zero-frequency gain, or np.nan if the system has a pole
+        at the origin
+    """
+    return sys.dcgain()

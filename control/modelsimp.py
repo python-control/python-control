@@ -50,6 +50,8 @@ from .lti import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
 
+__all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
+
 # Hankel Singular Value Decomposition
 #   The following returns the Hankel singular values, which are singular values
 #of the matrix formed by multiplying the controllability and observability

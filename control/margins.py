@@ -56,6 +56,8 @@ from .lti import issiso
 from . import frdata
 import scipy as sp
 
+__all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
+
 # helper functions for stability_margins
 def _polyimsplit(pol):
     """split a polynomial with (iw) applied into a real and an
@@ -271,3 +273,43 @@ def phase_crossover_frequencies(sys):
     gain = np.real(np.asarray([tf.evalfr(f)[0][0] for f in realposfreq]))
 
     return realposfreq, gain
+
+
+def margin(*args):
+    """Calculate gain and phase margins and associated crossover frequencies
+
+    Function ``margin`` takes either 1 or 3 parameters.
+
+    Parameters
+    ----------
+    sys : StateSpace or TransferFunction
+        Linear SISO system
+    mag, phase, w : array_like
+        Input magnitude, phase (in deg.), and frequencies (rad/sec) from
+        bode frequency response data
+
+    Returns
+    -------
+    gm, pm, Wcg, Wcp : float
+        Gain margin gm, phase margin pm (in deg), gain crossover frequency
+        (corresponding to phase margin) and phase crossover frequency
+        (corresponding to gain margin), in rad/sec of SISO open-loop.
+        If more than one crossover frequency is detected, returns the lowest
+        corresponding margin.
+
+    Examples
+    --------
+    >>> sys = tf(1, [1, 2, 1, 0])
+    >>> gm, pm, Wcg, Wcp = margin(sys)
+
+    """
+    if len(args) == 1:
+        sys = args[0]
+        margin = stability_margins(sys)
+    elif len(args) == 3:
+        margin = stability_margins(args)
+    else:
+        raise ValueError("Margin needs 1 or 3 arguments; received %i."
+            % len(args))
+
+    return margin[0], margin[1], margin[4], margin[3]

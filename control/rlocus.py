@@ -54,10 +54,14 @@ from . import xferfcn
 from .exception import ControlMIMONotImplemented
 from functools import partial
 
+__all__ = ['root_locus', 'rlocus']
+
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
                PrintGain=True):
-    """Calculate the root locus by finding the roots of 1+k*TF(s)
+    """Root locus plot
+
+    Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
     of kvect.
 
@@ -206,3 +210,5 @@ def _RLFeedbackClicks(event, sys):
     if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1*s.real/abs(s)))
+
+rlocus = root_locus

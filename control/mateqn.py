@@ -46,6 +46,8 @@ from scipy import shape, size, asarray, asmatrix, copy, zeros, eye, dot
 from scipy.linalg import eigvals, solve_discrete_are
 from .exception import ControlSlycot, ControlArgument
 
+__all__ = ['lyap', 'dlyap', 'dare', 'care']
+
 #### Lyapunov equation solvers lyap and dlyap
 
 def lyap(A,Q,C=None,E=None):

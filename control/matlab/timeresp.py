@@ -1,0 +1,197 @@
+"""
+Time response routines in the Matlab compatibility package
+
+Note that the return arguments are different than in the standard control package.
+"""
+
+__all__ = ['step', 'impulse', 'initial', 'lsim']
+
+def step(sys, T=None, X0=0., input=0, output=None):
+    '''
+    Step response of a linear system
+
+    If the system has multiple inputs or outputs (MIMO), one input has
+    to be selected for the simulation.  Optionally, one output may be
+    selected. If no selection is made for the output, all outputs are
+    given. The parameters `input` and `output` do this. All other
+    inputs are set to 0, all other outputs are ignored.
+
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    X0: array-like or number, optional
+        Initial condition (default = 0)
+
+        Numbers are converted to constant arrays with the correct shape.
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        If given, index of the output that is returned by this simulation.
+
+    Returns
+    -------
+    yout: array
+        Response of the system
+
+    T: array
+        Time values of the output
+
+    See Also
+    --------
+    lsim, initial, impulse
+
+    Examples
+    --------
+    >>> yout, T = step(sys, T, X0)
+    '''
+    from ..timeresp import step_response
+    T, yout = step_response(sys, T, X0, input, output,
+                            transpose = True)
+    return yout, T
+
+def impulse(sys, T=None, input=0, output=None):
+    '''
+    Impulse response of a linear system
+
+    If the system has multiple inputs or outputs (MIMO), one input has
+    to be selected for the simulation.  Optionally, one output may be
+    selected. If no selection is made for the output, all outputs are
+    given. The parameters `input` and `output` do this. All other
+    inputs are set to 0, all other outputs are ignored.
+
+    Parameters
+    ----------
+    sys: StateSpace, TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    input: int
+        Index of the input that will be used in this simulation.
+
+    output: int
+        Index of the output that will be used in this simulation.
+
+    Returns
+    -------
+    yout: array
+        Response of the system
+    T: array
+        Time values of the output
+
+    See Also
+    --------
+    lsim, step, initial
+
+    Examples
+    --------
+    >>> yout, T = impulse(sys, T)
+    '''
+    from ..timeresp import impulse_response
+    T, yout = impulse_response(sys, T, 0, input, output,
+                                        transpose = True)
+    return yout, T
+
+def initial(sys, T=None, X0=0., input=None, output=None):
+    '''
+    Initial condition response of a linear system
+
+    If the system has multiple outputs (?IMO), optionally, one output
+    may be selected. If no selection is made for the output, all
+    outputs are given.
+
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    X0: array-like object or number, optional
+        Initial condition (default = 0)
+
+        Numbers are converted to constant arrays with the correct shape.
+
+    input: int
+        This input is ignored, but present for compatibility with step
+        and impulse.
+
+    output: int
+        If given, index of the output that is returned by this simulation.
+
+    Returns
+    -------
+    yout: array
+        Response of the system
+    T: array
+        Time values of the output
+
+    See Also
+    --------
+    lsim, step, impulse
+
+    Examples
+    --------
+    >>> yout, T = initial(sys, T, X0)
+
+    '''
+    from ..timeresp import initial_response
+    T, yout = initial_response(sys, T, X0, output=output,
+                               transpose=True)
+    return yout, T
+
+def lsim(sys, U=0., T=None, X0=0.):
+    '''
+    Simulate the output of a linear system.
+
+    As a convenience for parameters `U`, `X0`:
+    Numbers (scalars) are converted to constant arrays with the correct shape.
+    The correct shape is inferred from arguments `sys` and `T`.
+
+    Parameters
+    ----------
+    sys: LTI (StateSpace, or TransferFunction)
+        LTI system to simulate
+
+    U: array-like or number, optional
+        Input array giving input at each time `T` (default = 0).
+
+        If `U` is ``None`` or ``0``, a special algorithm is used. This special
+        algorithm is faster than the general algorithm, which is used otherwise.
+
+    T: array-like
+        Time steps at which the input is defined, numbers must be (strictly
+        monotonic) increasing.
+
+    X0: array-like or number, optional
+        Initial condition (default = 0).
+
+    Returns
+    -------
+    yout: array
+        Response of the system.
+    T: array
+        Time values of the output.
+    xout: array
+        Time evolution of the state vector.
+
+    See Also
+    --------
+    step, initial, impulse
+
+    Examples
+    --------
+    >>> yout, T, xout = lsim(sys, U, T, X0)
+    '''
+    from ..timeresp import forced_response
+    T, yout, xout = forced_response(sys, T, U, X0, transpose = True)
+    return yout, T, xout

@@ -45,6 +45,8 @@ import matplotlib.pyplot as plt
 from .ctrlutil import unwrap
 from .freqplot import default_frequency_range
 
+__all__ = ['nichols_plot', 'nichols']
+
 # Nichols plot
 def nichols_plot(syslist, omega=None, grid=True):
     """Nichols plot for a system

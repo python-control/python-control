@@ -1,35 +1,9 @@
 from __future__ import division
-"""frdata.py
-
+"""
 Frequency response data representation and functions.
 
-This file contains the FRD class and also functions that operate on
+This module contains the FRD class and also functions that operate on
 FRD data.
-
-Routines in this module:
-
-FRD.__init__
-FRD.copy
-FRD.__str__
-FRD.__neg__
-FRD.__add__
-FRD.__radd__
-FRD.__sub__
-FRD.__rsub__
-FRD.__mul__
-FRD.__rmul__
-FRD.__div__
-FRD.__rdiv__
-FRD.__truediv__
-FRD.__rtruediv__
-FRD.evalfr
-FRD.freqresp
-FRD.pole
-FRD.zero
-FRD.feedback
-FRD._common_den
-_convertToFRD
-
 """
 
 """Copyright (c) 2010 by California Institute of Technology
@@ -79,6 +53,8 @@ from numpy import angle, array, empty, ones, \
     real, imag, matrix, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
 from .lti import LTI
+
+__all__ = ['FRD', 'frd']
 
 class FRD(LTI):
     """A class for models defined by Frequency Response Data (FRD)
@@ -480,3 +456,39 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
 
     raise TypeError('''Can't convert given type "%s" to FRD system.''' %
                     sys.__class__)
+
+def frd(*args):
+    '''
+    Construct a Frequency Response Data model, or convert a system
+
+    frd models store the (measured) frequency response of a system.
+
+    This function can be called in different ways:
+
+    ``frd(response, freqs)``
+        Create an frd model with the given response data, in the form of
+        complex response vector, at matching frequency freqs [in rad/s]
+
+    ``frd(sys, freqs)``
+        Convert an LTI system into an frd model with data at frequencies
+        freqs.
+
+    Parameters
+    ----------
+    response: array_like, or list
+        complex vector with the system response
+    freq: array_lik or lis
+        vector with frequencies
+    sys: LTI (StateSpace or TransferFunction)
+        A linear system
+
+    Returns
+    -------
+    sys: FRD
+        New frequency response system
+
+    See Also
+    --------
+    ss, tf
+    '''
+    return FRD(*args)

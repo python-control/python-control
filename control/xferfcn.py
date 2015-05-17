@@ -5,37 +5,6 @@ Transfer function representation and functions.
 This file contains the TransferFunction class and also functions
 that operate on transfer functions.  This is the primary representation
 for the python-control library.
-
-Routines in this module:
-
-TransferFunction.__init__
-TransferFunction._truncatecoeff
-TransferFunction.copy
-TransferFunction.__str__
-TransferFunction.__repr__
-TransferFunction.__neg__
-TransferFunction.__add__
-TransferFunction.__radd__
-TransferFunction.__sub__
-TransferFunction.__rsub__
-TransferFunction.__mul__
-TransferFunction.__rmul__
-TransferFunction.__div__
-TransferFunction.__rdiv__
-TransferFunction.__truediv__
-TransferFunction.__rtruediv__
-TransferFunction.evalfr
-TransferFunction.freqresp
-TransferFunction.pole
-TransferFunction.zero
-TransferFunction.feedback
-TransferFunction.minreal
-TransferFunction.returnScipySignalLTI
-TransferFunction._common_den
-_tfpolyToString
-_addSISO
-_convertToTransferFunction
-
 """
 
 # Python 3 compatability (needs to go here)
@@ -92,6 +61,7 @@ from copy import deepcopy
 from warnings import warn
 from .lti import LTI, timebaseEqual, timebase, isdtime
 
+__all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
 class TransferFunction(LTI):
 
@@ -973,6 +943,32 @@ a zero leading coefficient." % (i, j)
         numd, dend, dt = cont2discrete(sys, Ts, method, alpha)
         return TransferFunction(numd[0,:], dend, dt)
 
+    def dcgain(self):
+        """Return the zero-frequency (or DC) gain
+
+        For a transfer function G(s), the DC gain is G(0)
+
+        Returns
+        -------
+        gain : ndarray
+            The zero-frequency gain
+        """
+        gain = np.empty((self.outputs, self.inputs), dtype=float)
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                num = self.num[i][j][-1]
+                den = self.den[i][j][-1]
+                if den:
+                    gain[i][j] = num / den
+                else:
+                    if num:
+                        # numerator nonzero: infinite gain
+                        gain[i][j] = np.inf
+                    else:
+                        # numerator is zero too: give up
+                        gain[i][j] = np.nan
+        return np.squeeze(gain)
+
 # c2d function contributed by Benjamin White, Oct 2012
 def _c2dmatched(sysC, Ts):
     # Pole-zero match method of continuous to discrete time conversion
@@ -1157,3 +1153,190 @@ def _convertToTransferFunction(sys, **kw):
               " _convertToTransferFunction, result %s" % e)
 
     raise TypeError("Can't convert given type to TransferFunction system.")
+
+
+def tf(*args):
+    """
+    Create a transfer function system. Can create MIMO systems.
+
+    The function accepts either 1 or 2 parameters:
+
+    ``tf(sys)``
+        Convert a linear system into transfer function form. Always creates
+        a new system, even if sys is already a TransferFunction object.
+
+    ``tf(num, den)``
+        Create a transfer function system from its numerator and denominator
+        polynomial coefficients.
+
+        If `num` and `den` are 1D array_like objects, the function creates a
+        SISO system.
+
+        To create a MIMO system, `num` and `den` need to be 2D nested lists
+        of array_like objects. (A 3 dimensional data structure in total.)
+        (For details see note below.)
+
+    ``tf(num, den, dt)``
+        Create a discrete time transfer function system; dt can either be a
+        positive number indicating the sampling time or 'True' if no
+        specific timebase is given.
+
+    Parameters
+    ----------
+    sys: LTI (StateSpace or TransferFunction)
+        A linear system
+    num: array_like, or list of list of array_like
+        Polynomial coefficients of the numerator
+    den: array_like, or list of list of array_like
+        Polynomial coefficients of the denominator
+
+    Returns
+    -------
+    out: :class:`TransferFunction`
+        The new linear system
+
+    Raises
+    ------
+    ValueError
+        if `num` and `den` have invalid or unequal dimensions
+    TypeError
+        if `num` or `den` are of incorrect type
+
+    See Also
+    --------
+    ss
+    ss2tf
+    tf2ss
+
+    Notes
+    --------
+
+    ``num[i][j]`` contains the polynomial coefficients of the numerator
+    for the transfer function from the (j+1)st input to the (i+1)st output.
+    ``den[i][j]`` works the same way.
+
+    The list ``[2, 3, 4]`` denotes the polynomial :math:`2s^2 + 3s + 4`.
+
+    Examples
+    --------
+    >>> # Create a MIMO transfer function object
+    >>> # The transfer function from the 2nd input to the 1st output is
+    >>> # (3s + 4) / (6s^2 + 5s + 4).
+    >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
+    >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
+    >>> sys1 = tf(num, den)
+
+    >>> # Convert a StateSpace to a TransferFunction object.
+    >>> sys_ss = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys2 = tf(sys1)
+
+    """
+
+    if len(args) == 2 or len(args) == 3:
+       return TransferFunction(*args)
+    elif len(args) == 1:
+        from .statesp import StateSpace
+        sys = args[0]
+        if isinstance(sys, StateSpace):
+            return ss2tf(sys)
+        elif isinstance(sys, TransferFunction):
+            return deepcopy(sys)
+        else:
+            raise TypeError("tf(sys): sys must be a StateSpace or \
+TransferFunction object.  It is %s." % type(sys))
+    else:
+        raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
+
+def ss2tf(*args):
+    """
+    Transform a state space system to a transfer function.
+
+    The function accepts either 1 or 4 parameters:
+
+    ``ss2tf(sys)``
+        Convert a linear system into space system form. Always creates a
+        new system, even if sys is already a StateSpace object.
+
+    ``ss2tf(A, B, C, D)``
+        Create a state space system from the matrices of its state and
+        output equations.
+
+        For details see: :func:`ss`
+
+    Parameters
+    ----------
+    sys: StateSpace
+        A linear system
+    A: array_like or string
+        System matrix
+    B: array_like or string
+        Control matrix
+    C: array_like or string
+        Output matrix
+    D: array_like or string
+        Feedthrough matrix
+
+    Returns
+    -------
+    out: TransferFunction
+        New linear system in transfer function form
+
+    Raises
+    ------
+    ValueError
+        if matrix sizes are not self-consistent, or if an invalid number of
+        arguments is passed in
+    TypeError
+        if `sys` is not a StateSpace object
+
+    See Also
+    --------
+    tf
+    ss
+    tf2ss
+
+    Examples
+    --------
+    >>> A = [[1., -2], [3, -4]]
+    >>> B = [[5.], [7]]
+    >>> C = [[6., 8]]
+    >>> D = [[9.]]
+    >>> sys1 = ss2tf(A, B, C, D)
+
+    >>> sys_ss = ss(A, B, C, D)
+    >>> sys2 = ss2tf(sys_ss)
+
+    """
+
+    from .statesp import StateSpace
+    if len(args) == 4 or len(args) == 5:
+        # Assume we were given the A, B, C, D matrix and (optional) dt
+        return _convertToTransferFunction(StateSpace(*args))
+
+    elif len(args) == 1:
+        sys = args[0]
+        if isinstance(sys, StateSpace):
+            return _convertToTransferFunction(sys)
+        else:
+            raise TypeError("ss2tf(sys): sys must be a StateSpace object.  It \
+is %s." % type(sys))
+    else:
+        raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
+
+def tfdata(sys):
+    '''
+    Return transfer function data objects for a system
+
+    Parameters
+    ----------
+    sys: LTI (StateSpace, or TransferFunction)
+        LTI system whose data will be returned
+
+    Returns
+    -------
+    (num, den): numerator and denominator arrays
+        Transfer function coefficients (SISO only)
+    '''
+    tf = _convertToTransferFunction(sys)
+
+    return (tf.num, tf.den)

@@ -283,7 +283,7 @@ class TestMatlab(unittest.TestCase):
 
         #All gain values must be approximately equal to the known gain
         np.testing.assert_array_almost_equal(
-            [gain_abcd[0,0], gain_zpk[0,0], gain_numden[0,0], gain_sys_ss[0,0],
+            [gain_abcd, gain_zpk, gain_numden, gain_sys_ss,
              gain_sim],
             [59, 59, 59, 59, 59])
 
@@ -310,7 +310,7 @@ class TestMatlab(unittest.TestCase):
         rlocus(self.siso_tf1)
         rlocus(self.siso_tf2)
         klist = [1, 10, 100]
-        rlist, klist_out = rlocus(self.siso_tf2, klist=klist, Plot=False)
+        rlist, klist_out = rlocus(self.siso_tf2, klist, Plot=False)
         np.testing.assert_equal(len(rlist), len(klist))
         np.testing.assert_array_equal(klist, klist_out)
 

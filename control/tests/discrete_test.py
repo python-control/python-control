@@ -314,7 +314,7 @@ class TestDiscrete(unittest.TestCase):
         H_z = list(map(lambda w: 1./(np.exp(1.j * w) + 0.5), omega))
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
-        np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
+        np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)

@@ -43,6 +43,8 @@ from matplotlib.mlab import frange, find
 from scipy.integrate import odeint
 from .exception import ControlNotImplemented
 
+__all__ = ['phase_plot', 'box_grid']
+
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
               lingrid=None, lintime=None, logtime=None, timepts=None,
               parms=(), verbose=True):

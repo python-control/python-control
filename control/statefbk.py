@@ -45,6 +45,8 @@ import scipy as sp
 from . import statesp
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr', 'acker']
+
 # Pole placement
 def place(A, B, p):
     """Place closed loop eigenvalues
