@@ -77,7 +77,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     Hz : boolean
         If True, plot frequency in Hz (omega must be provided in rad/sec)
     deg : boolean
-        If True, return phase in degrees (else radians)
+        If True, plot phase in degrees (else radians)
     Plot : boolean
         If True, plot magnitude and phase
     *args, **kwargs:
@@ -88,9 +88,9 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     mag : array (list if len(syslist) > 1)
         magnitude
     phase : array (list if len(syslist) > 1)
-        phase
+        phase in radians
     omega : array (list if len(syslist) > 1)
-        frequency
+        frequency in rad/sec
 
     Notes
     -----
@@ -129,16 +129,15 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 omega = default_frequency_range(syslist)
 
             # Get the magnitude and phase of the system
+            omega = np.array(omega)
             mag_tmp, phase_tmp, omega_sys = sys.freqresp(omega)
             mag = np.atleast_1d(np.squeeze(mag_tmp))
             phase = np.atleast_1d(np.squeeze(phase_tmp))
             phase = unwrap(phase)
             if Hz:
-                omega_plot = omega_sys/(2*sp.pi)
+                omega_plot = omega_sys / (2 * np.pi)
             else:
                 omega_plot = omega_sys
-            if dB: mag = 20*sp.log10(mag)
-            if deg: phase = phase * 180 / sp.pi
 
             mags.append(mag)
             phases.append(phase)
@@ -150,7 +149,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # Magnitude plot
                 plt.subplot(211);
                 if dB:
-                    plt.semilogx(omega_plot, mag, *args, **kwargs)
+                    plt.semilogx(omega_plot, 20 * np.log10(mag), *args, **kwargs)
                 else:
                     plt.loglog(omega_plot, mag, *args, **kwargs)
                 plt.hold(True);
@@ -162,7 +161,11 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 
                 # Phase plot
                 plt.subplot(212);
-                plt.semilogx(omega_plot, phase, *args, **kwargs)
+                if deg:
+                    phase_plot = phase * 180 / np.pi
+                else:
+                    phase_plot = phase
+                plt.semilogx(omega_plot, phase_plot, *args, **kwargs)
                 plt.hold(True);
 
                 # Add a grid to the plot + labeling
