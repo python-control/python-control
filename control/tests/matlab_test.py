@@ -554,8 +554,6 @@ class TestMatlab(unittest.TestCase):
                       -0.260952977031384  -0.274201791021713;
                       -0.304617775734327   0.075182622718853"""), sysd.B)
 
-
-    @unittest.skip("need to update margin command")
     def testCombi01(self):
         # test from a "real" case, combines tf, ss, connect and margin
         # this is a type 2 system, with phase starting at -180. The
@@ -610,8 +608,8 @@ class TestMatlab(unittest.TestCase):
         # print("%f %f %f %f" % (gm, pm, wg, wp))
         self.assertAlmostEqual(gm, 3.32065569155)
         self.assertAlmostEqual(pm, 46.9740430224)
-        self.assertAlmostEqual(wp, 0.0616288455466)
-        self.assertAlmostEqual(wg, 0.176469728448)
+        self.assertAlmostEqual(wg, 0.0616288455466)
+        self.assertAlmostEqual(wp, 0.176469728448)
 
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):
