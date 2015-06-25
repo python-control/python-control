@@ -257,7 +257,7 @@ class TestMatlab(unittest.TestCase):
         gm, pm, wg, wp = margin(self.siso_ss2);
         gm, pm, wg, wp = margin(self.siso_ss2*self.siso_ss2*2);
         np.testing.assert_array_almost_equal(
-            [gm, pm, wg, wp], [1.5451, 75.9933, 0.6559, 1.2720], decimal=3)
+            [gm, pm, wg, wp], [1.5451, 75.9933, 1.2720, 0.6559], decimal=3)
 
     def testDcgain(self):
         #Create different forms of a SISO system
@@ -608,8 +608,8 @@ class TestMatlab(unittest.TestCase):
         # print("%f %f %f %f" % (gm, pm, wg, wp))
         self.assertAlmostEqual(gm, 3.32065569155)
         self.assertAlmostEqual(pm, 46.9740430224)
-        self.assertAlmostEqual(wg, 0.0616288455466)
-        self.assertAlmostEqual(wp, 0.176469728448)
+        self.assertAlmostEqual(wg, 0.176469728448)
+        self.assertAlmostEqual(wp, 0.0616288455466)
 
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):
