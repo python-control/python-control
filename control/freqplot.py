@@ -127,6 +127,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             if omega is None:
                 # Select a default range if none is provided
                 omega = default_frequency_range(syslist)
+            elif (isinstance(omega, tuple) or isinstance(omega, list)) and len(omega) == 2:
+                omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]))                
 
             # Get the magnitude and phase of the system
             omega = np.array(omega)
@@ -135,7 +137,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             phase = np.atleast_1d(np.squeeze(phase_tmp))
             phase = unwrap(phase)
             if Hz:
-                omega_plot = omega_sys / (2 * np.pi)
+                omega_plot = omega_sys / (2. * np.pi)
             else:
                 omega_plot = omega_sys
 
@@ -162,7 +164,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # Phase plot
                 plt.subplot(212);
                 if deg:
-                    phase_plot = phase * 180 / np.pi
+                    phase_plot = phase * 180. / np.pi
                 else:
                     phase_plot = phase
                 plt.semilogx(omega_plot, phase_plot, *args, **kwargs)
