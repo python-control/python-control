@@ -60,7 +60,7 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 #
 
 # Bode plot
-def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
+def bode_plot(syslist, omega=None, omega_num=None, dB=None, Hz=None, deg=None,
         Plot=True, *args, **kwargs):
     """Bode plot for a system
 
@@ -72,6 +72,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
+    omega_num: int
+        number of sample
     dB : boolean
         If True, plot result in dB
     Hz : boolean
@@ -128,7 +130,10 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # Select a default range if none is provided
                 omega = default_frequency_range(syslist)
             elif (isinstance(omega, tuple) or isinstance(omega, list)) and len(omega) == 2:
-                omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]))                
+                if omega_num:
+                    omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), num=omega_num, endpoint=False)
+                else:
+                    omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), endpoint=False)
 
             # Get the magnitude and phase of the system
             omega = np.array(omega)
@@ -149,7 +154,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 
             if (Plot):
                 # Magnitude plot
-                plt.subplot(211);
+                ax_mag = plt.subplot(211);
                 if dB:
                     plt.semilogx(omega_plot, 20 * np.log10(mag), *args, **kwargs)
                 else:
@@ -162,7 +167,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 plt.ylabel("Magnitude (dB)" if dB else "Magnitude")
 
                 # Phase plot
-                plt.subplot(212);
+                plt.subplot(212, sharex=ax_mag);
                 if deg:
                     phase_plot = phase * 180. / np.pi
                 else:
@@ -343,7 +348,7 @@ def gangof4_plot(P, C, omega=None):
 #
 
 # Compute reasonable defaults for axes
-def default_frequency_range(syslist):
+def default_frequency_range(syslist, number_of_samples=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
@@ -359,6 +364,8 @@ def default_frequency_range(syslist):
     -------
     omega : array
         Range of frequencies in rad/sec
+    number_of_samples: int
+        Number of samples to generate
 
     Examples
     --------
@@ -399,8 +406,14 @@ def default_frequency_range(syslist):
     #! TODO: Add a check in discrete case to make sure we don't get aliasing
 
     # Set the range to be an order of magnitude beyond any features
-    omega = sp.logspace(np.floor(np.min(features))-1,
+    if number_of_samples:
+        omega = sp.logspace(np.floor(np.min(features))-1,
+                        np.ceil(np.max(features))+1, num=number_of_samples)
+    else:
+        omega = sp.logspace(np.floor(np.min(features))-1,
                         np.ceil(np.max(features))+1)
+
+        
 
     return omega
 
