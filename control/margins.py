@@ -84,6 +84,9 @@ def _polysqr(pol):
 #
 # RvP, July 8, 2014, corrected to exclude phase=0 crossing for the gain
 #                    margin polynomial
+# RvP, July 8, 2015, augmented to calculate all phase/gain crossings with
+#                    frd data. Correct to return smallest phase
+#                    margin, smallest gain margin and their frequencies
 def stability_margins(sysdata, returnall=False, epsw=1e-10):
     """Calculate stability margins and associated crossover frequencies.
 
@@ -175,6 +178,8 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         # stability margin was a bitch to elaborate, relies on magnitude to
         # point -1, then take the derivative. Second derivative needs to be >0
         # to have a minimum
+        # from comparison to numerical one below, this seems to be wrong!
+        # no one complained so far
         test_wstabn = np.polyadd(_polysqr(rnum), _polysqr(inum))
         test_wstabd = np.polyadd(_polysqr(np.polyadd(rnum,rden)),
                                  _polysqr(np.polyadd(inum,iden)))
@@ -195,37 +200,50 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         # a bit coarse, have the interpolated frd evaluated again
         def mod(w):
             """to give the function to calculate |G(jw)| = 1"""
-            return [np.abs(sys.evalfr(w[0])[0][0]) - 1]
+            return np.abs(sys.evalfr(w)[0][0]) - 1
 
         def arg(w):
             """function to calculate the phase angle at -180 deg"""
-            return [np.angle(sys.evalfr(w[0])[0][0]) + np.pi]
+            return np.angle(-sys.evalfr(w)[0][0])
 
         def dstab(w):
             """function to calculate the distance from -1 point"""
-            return np.abs(sys.evalfr(w[0])[0][0] + 1.)
+            return np.abs(sys.evalfr(w)[0][0] + 1.)
 
-        # how to calculate the frequency at which |G(jw)| = 1
-        wc = np.array([sp.optimize.fsolve(mod, sys.omega[0])])[0]
-        w_180 = np.array([sp.optimize.fsolve(arg, sys.omega[0])])[0]
-        wstab = np.real(
-            np.array([sp.optimize.fmin(dstab, sys.omega[0], disp=0)])[0])
+        # Find all crossings, note that this depends on omega having
+        # a correct range
+        widx = np.where(np.diff(np.sign(mod(sys.omega))))[0]
+        wc = np.array(
+            [ sp.optimize.brentq(mod, sys.omega[i], sys.omega[i+1])
+              for i in widx if i+1 < len(sys.omega)])
+        
+        # find the phase crossings ang(H(jw) == -180
+        widx = np.where(np.diff(np.sign(arg(sys.omega))))[0]
+        w_180 = np.array(
+            [ sp.optimize.brentq(arg, sys.omega[i], sys.omega[i+1])
+              for i in widx if i+1 < len(sys.omega) ])
+
+        # there is really only one stab margin; the closest
+        res = sp.optimize.minimize_scalar(
+            dstab, bracket=(sys.omega[0], sys.omega[-1]))
+        wstab = np.array([res.x])
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
-    PM = np.angle(sys.evalfr(wc)[0][0], deg=True) + 180
     GM = 1/(np.abs(sys.evalfr(w_180)[0][0]))
-    SM = np.abs(sys.evalfr(wstab)[0][0]+1)
-
+    print(wstab)
+    SM = 1/np.abs(sys.evalfr(wstab)[0][0]+1)
+    PM = np.angle(sys.evalfr(wc)[0][0], deg=True) + 180
+    
     if returnall:
         return GM, PM, SM, w_180, wc, wstab
     else:
         return (
-            (GM.shape[0] or None) and GM[0],
-            (PM.shape[0] or None) and PM[0],
+            (GM.shape[0] or None) and GM[GM==np.min(GM)][0],
+            (PM.shape[0] or None) and PM[PM==np.min(PM)][0],
             (SM.shape[0] or None) and SM[0],
-            (w_180.shape[0] or None) and w_180[0],
-            (wc.shape[0] or None) and wc[0],
+            (w_180.shape[0] or None) and w_180[GM==np.min(GM)][0],
+            (wc.shape[0] or None) and wc[PM==np.min(PM)][0],
             (wstab.shape[0] or None) and wstab[0])
 
 
