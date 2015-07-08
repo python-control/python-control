@@ -223,10 +223,18 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
             [ sp.optimize.brentq(arg, sys.omega[i], sys.omega[i+1])
               for i in widx if i+1 < len(sys.omega) ])
 
+        # find all stab margins?
+        widx = np.where(np.diff(np.sign(np.diff(dstab(sys.omega)))))[0]
+        wstab = np.array(
+            [ sp.optimize.minimize_scalar(
+                  dstab, bracket=(sys.omega[i], sys.omega[i+1]))
+              for i in widx if i+1 < len(sys.omega) and
+              np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] < 0 ])
+        
         # there is really only one stab margin; the closest
-        res = sp.optimize.minimize_scalar(
-            dstab, bracket=(sys.omega[0], sys.omega[-1]))
-        wstab = np.array([res.x])
+        #res = sp.optimize.minimize_scalar(
+        #    dstab, bracket=(sys.omega[0], sys.omega[-1]))
+        #wstab = np.array([res.x])
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
