@@ -150,7 +150,7 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         rnum, inum = _polyimsplit(sys.num[0][0])
         rden, iden = _polyimsplit(sys.den[0][0])
 
-        # test imaginary part of tf == 0, for phase crossover/gain margins
+        # test (imaginary part of tf) == 0, for phase crossover/gain margins
         test_w_180 = np.polyadd(np.polymul(inum, rden), np.polymul(rnum, -iden))
         w_180 = np.roots(test_w_180)
 
@@ -180,8 +180,8 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         # to have a minimum
         # from comparison to numerical one below, this seems to be wrong!
         # no one complained so far
-        test_wstabn = np.polyadd(_polysqr(rnum), _polysqr(inum))
-        test_wstabd = np.polyadd(_polysqr(np.polyadd(rnum,rden)),
+        test_wstabd = np.polyadd(_polysqr(rden), _polysqr(iden))
+        test_wstabn = np.polyadd(_polysqr(np.polyadd(rnum,rden)),
                                  _polysqr(np.polyadd(inum,iden)))
         test_wstab = np.polysub(
             np.polymul(np.polyder(test_wstabn),test_wstabd),
@@ -230,21 +230,20 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
-    GM = 1/(np.abs(sys.evalfr(w_180)[0][0]))
-    print(wstab)
-    SM = 1/np.abs(sys.evalfr(wstab)[0][0]+1)
+    GM = 1/np.abs(sys.evalfr(w_180)[0][0])
+    SM = np.abs(sys.evalfr(wstab)[0][0]+1)
     PM = np.angle(sys.evalfr(wc)[0][0], deg=True) + 180
     
     if returnall:
         return GM, PM, SM, w_180, wc, wstab
     else:
         return (
-            (GM.shape[0] or None) and GM[GM==np.min(GM)][0],
-            (PM.shape[0] or None) and PM[PM==np.min(PM)][0],
-            (SM.shape[0] or None) and SM[0],
-            (w_180.shape[0] or None) and w_180[GM==np.min(GM)][0],
-            (wc.shape[0] or None) and wc[PM==np.min(PM)][0],
-            (wstab.shape[0] or None) and wstab[0])
+            (GM.shape[0] or None) and np.amin(GM),
+            (PM.shape[0] or None) and np.amin(PM),
+            (SM.shape[0] or None) and np.amin(SM),
+            (w_180.shape[0] or None) and w_180[GM==np.amin(GM)][0],
+            (wc.shape[0] or None) and wc[PM==np.amin(PM)][0],
+            (wstab.shape[0] or None) and wstab[SM==np.amin(SM)])
 
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>

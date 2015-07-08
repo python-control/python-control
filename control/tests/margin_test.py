@@ -3,6 +3,7 @@
 # margin_test.py - test suit for stability margin commands
 # RMM, 15 Jul 2011
 
+from __future__ import print_function
 import unittest
 import numpy as np
 from control.xferfcn import TransferFunction
@@ -23,14 +24,18 @@ class TestMargin(unittest.TestCase):
                                       1./(s**2/(10.**2)+2*0.04*s/10.+1)
 
     def test_stability_margins(self):
-        gm, pm, sm, wg, wp, ws = stability_margins(self.sys1);
-        gm, pm, sm, wg, wp, ws = stability_margins(self.sys2);
-        gm, pm, sm, wg, wp, ws = stability_margins(self.sys3);
-        gm, pm, sm, wg, wp, ws = stability_margins(self.sys4);
+        omega = np.logspace(-2, 2, 200)
+        for sys in (self.sys1, self.sys2, self.sys3, self.sys4):
+            out = stability_margins(sys)
+            gm, pm, sm, wg, wp, ws = out
+            outf = stability_margins(FRD(sys, omega))
+        print(sys, out, outf)
+        np.testing.assert_array_almost_equal(out, outf, 3)
+        # final one with fixed values
         np.testing.assert_array_almost_equal(
             [gm, pm, sm, wg, wp, ws],
-            [2.2716, 97.5941, 0.9565, 10.0053, 0.0850, 0.4973], 3) 
-
+            [2.2716, 97.5941, 0.9633, 10.0053, 0.0850, 0.4064], 3) 
+        
     def test_phase_crossover_frequencies(self):
         omega, gain = phase_crossover_frequencies(self.sys2)
         np.testing.assert_array_almost_equal(omega, [1.73205,  0.])
@@ -95,7 +100,6 @@ class TestMargin(unittest.TestCase):
         C=K*(1+1.9*s)
         TFopen=fresp*C*G
         gm, pm, sm, wg, wp, ws = stability_margins(TFopen)
-        print gm
         np.testing.assert_array_almost_equal(
             [pm], [44.55], 2)
 
@@ -105,7 +109,7 @@ class TestMargin(unittest.TestCase):
         h1 = 1/(1+s)
         h2 = 3*(10+s)/(2+s)
         h3 = 0.01*(10-s)/(2+s)/(1+s)
-        gm, pm, sm, wg, wp, ws = stability_margins(h1)
+        gm, pm, wm, wg, wp, ws = stability_margins(h1)
         self.assertEqual(gm, None)
         self.assertEqual(wg, None)
         gm, pm, wm, wg, wp, ws = stability_margins(h2)
@@ -117,7 +121,6 @@ class TestMargin(unittest.TestCase):
         out2b = stability_margins(FRD(h2, omega))
         out3b = stability_margins(FRD(h3, omega))
         
-
         
 def test_suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestMargin)
