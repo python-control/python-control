@@ -130,8 +130,8 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
             mag, phase, omega = sysdata
-            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180), omega,
-                             smooth=True)
+            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180), 
+                             omega, smooth=True)
         else:
             sys = xferfcn._convertToTransferFunction(sysdata)
     except Exception as e:
@@ -227,9 +227,10 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         widx = np.where(np.diff(np.sign(np.diff(dstab(sys.omega)))))[0]
         wstab = np.array(
             [ sp.optimize.minimize_scalar(
-                  dstab, bracket=(sys.omega[i], sys.omega[i+1]))
+                  dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
               for i in widx if i+1 < len(sys.omega) and
               np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] < 0 ])
+        print (wstab)
         
         # there is really only one stab margin; the closest
         #res = sp.optimize.minimize_scalar(
