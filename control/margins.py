@@ -87,7 +87,7 @@ def _polysqr(pol):
 # RvP, July 8, 2015, augmented to calculate all phase/gain crossings with
 #                    frd data. Correct to return smallest phase
 #                    margin, smallest gain margin and their frequencies
-def stability_margins(sysdata, returnall=False, epsw=1e-10):
+def stability_margins(sysdata, returnall=False, epsw=1e-8):
     """Calculate stability margins and associated crossover frequencies.
 
     Parameters
@@ -331,11 +331,12 @@ def margin(*args):
     Returns
     -------
     gm, pm, Wcg, Wcp : float
-        Gain margin gm, phase margin pm (in deg), gain crossover frequency
-        (corresponding to phase margin) and phase crossover frequency
-        (corresponding to gain margin), in rad/sec of SISO open-loop.
-        If more than one crossover frequency is detected, returns the lowest
-        corresponding margin.
+        Gain margin gm, phase margin pm (in deg), phase crossover frequency
+        (corresponding to gain margin, where phase=-180) and gain crossover
+        frequency (corresponding to phase margin, where gain is 0dB),
+        in rad/sec of SISO open-loop.
+        If more than one crossover frequency is detected for gain or phase,
+        this returns one with the lowest corresponding margin.
 
     Examples
     --------
@@ -352,4 +353,4 @@ def margin(*args):
         raise ValueError("Margin needs 1 or 3 arguments; received %i."
             % len(args))
 
-    return margin[0], margin[1], margin[4], margin[3]
+    return margin[0], margin[1], margin[3], margin[4]

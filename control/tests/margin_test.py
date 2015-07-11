@@ -40,6 +40,8 @@ class TestMargin(unittest.TestCase):
         s = TransferFunction([1, 0], [1])
         self.sys4 = (8.75*(4*s**2+0.4*s+1))/((100*s+1)*(s**2+0.22*s+1)) * \
                                       1./(s**2/(10.**2)+2*0.04*s/10.+1)
+        self.stability_margins4 = \
+          [2.2716, 97.5941, 0.5591, 10.0053, 0.0850, 9.9918]
 
     def test_stability_margins(self):
         omega = np.logspace(-2, 2, 2000)
@@ -57,7 +59,13 @@ class TestMargin(unittest.TestCase):
         # final one with fixed values
         np.testing.assert_array_almost_equal(
             [gm, pm, sm, wg, wp, ws],
-            [2.2716, 97.5941, 0.5591, 10.0053, 0.0850, 9.9918], 3) 
+            self.stability_margins4, 3)
+
+    def test_margin(self):
+        gm, pm, wg, wp = margin(self.sys4)
+        np.testing.assert_array_almost_equal(
+            [gm, pm, wg, wp],
+            self.stability_margins4[:2] + self.stability_margins4[3:5], 3)
 
     def test_stability_margins_all(self):
         for sys,rgm,rwgm,rpm,rwpm in self.tsys:
