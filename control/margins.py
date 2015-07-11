@@ -153,20 +153,24 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         # test (imaginary part of tf) == 0, for phase crossover/gain margins
         test_w_180 = np.polyadd(np.polymul(inum, rden), np.polymul(rnum, -iden))
         w_180 = np.roots(test_w_180)
+        #print ('1:w_180', w_180)
 
         # first remove imaginary and negative frequencies, epsw removes the
         # "0" frequency for type-2 systems
         w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 >= epsw)])
+        #print ('2:w_180', w_180)
 
         # evaluate response at remaining frequencies, to test for phase 180 vs 0
         resp_w_180 = np.real(np.polyval(sys.num[0][0], 1.j*w_180) /
                              np.polyval(sys.den[0][0], 1.j*w_180))
+        #print ('resp_w_180', resp_w_180)                     
 
         # only keep frequencies where the negative real axis is crossed
-        w_180 = w_180[(resp_w_180 < 0.0)]
+        w_180 = w_180[np.real(resp_w_180) < 0.0]
 
         # and sort
         w_180.sort()
+        #print ('3:w_180', w_180)
 
         # test magnitude is 1 for gain crossover/phase margins
         test_wc = np.polysub(np.polyadd(_polysqr(rnum), _polysqr(inum)),
@@ -178,8 +182,6 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         # stability margin was a bitch to elaborate, relies on magnitude to
         # point -1, then take the derivative. Second derivative needs to be >0
         # to have a minimum
-        # from comparison to numerical one below, this seems to be wrong!
-        # no one complained so far
         test_wstabd = np.polyadd(_polysqr(rden), _polysqr(iden))
         test_wstabn = np.polyadd(_polysqr(np.polyadd(rnum,rden)),
                                  _polysqr(np.polyadd(inum,iden)))
@@ -187,13 +189,19 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
             np.polymul(np.polyder(test_wstabn),test_wstabd),
             np.polymul(np.polyder(test_wstabd),test_wstabn))
 
-        # find the solutions
+        # find the solutions, for positive omega, and only real ones
         wstab = np.roots(test_wstab)
+        #print('wstabr', wstab)
+        wstab = np.real(wstab[(np.imag(wstab) == 0) * 
+                        (np.real(wstab) >= 0)])
+        #print('wstab', wstab)
 
         # and find the value of the 2nd derivative there, needs to be positive
         wstabplus = np.polyval(np.polyder(test_wstab), wstab)
+        #print('wstabplus', wstabplus)
         wstab = np.real(wstab[(np.imag(wstab) == 0) * (wstab > epsw) *
-                              (np.abs(wstabplus) > 0.)])
+                              (wstabplus > 0.)])
+        #print('wstab', wstab)
         wstab.sort()
 
     else:
@@ -219,23 +227,29 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
         
         # find the phase crossings ang(H(jw) == -180
         widx = np.where(np.diff(np.sign(arg(sys.omega))))[0]
+        #print('widx (180)', widx, sys.omega[widx])
+        #print('x', sys.evalfr(sys.omega[widx])[0][0])
+        widx = widx[np.real(sys.evalfr(sys.omega[widx])[0][0]) <= 0]
+        #print('widx (180,2)', widx)
         w_180 = np.array(
             [ sp.optimize.brentq(arg, sys.omega[i], sys.omega[i+1])
               for i in widx if i+1 < len(sys.omega) ])
+        #print('x', sys.evalfr(w_180)[0][0])
+        #print('w_180', w_180)
 
         # find all stab margins?
         widx = np.where(np.diff(np.sign(np.diff(dstab(sys.omega)))))[0]
-        wstab = np.array(
-            [ sp.optimize.minimize_scalar(
+        #print('widx', widx)
+        #print('wstabx', sys.omega[widx])
+        wstab = np.array([ sp.optimize.minimize_scalar(
                   dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
               for i in widx if i+1 < len(sys.omega) and
-              np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] < 0 ])
-        print (wstab)
+              np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] > 0 ])
+        #print('wstabf0', wstab)
+        wstab = wstab[(wstab >= sys.omega[0]) * 
+                      (wstab <= sys.omega[-1])]
+        #print ('wstabf', wstab)
         
-        # there is really only one stab margin; the closest
-        #res = sp.optimize.minimize_scalar(
-        #    dstab, bracket=(sys.omega[0], sys.omega[-1]))
-        #wstab = np.array([res.x])
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
@@ -252,7 +266,7 @@ def stability_margins(sysdata, returnall=False, epsw=1e-10):
             (SM.shape[0] or None) and np.amin(SM),
             (w_180.shape[0] or None) and w_180[GM==np.amin(GM)][0],
             (wc.shape[0] or None) and wc[PM==np.amin(PM)][0],
-            (wstab.shape[0] or None) and wstab[SM==np.amin(SM)])
+            (wstab.shape[0] or None) and wstab[SM==np.amin(SM)][0])
 
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
