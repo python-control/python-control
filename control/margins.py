@@ -104,7 +104,7 @@ def stability_margins(sysdata, returnall=False, epsw=1e-8):
         minimum stability margins.  For frequency data or FRD systems, only one
         margin is found and returned.
     epsw: float, optional
-        Frequencies below this value (default 1e-10) are considered static gain,
+        Frequencies below this value (default 1e-8) are considered static gain,
         and not returned as margin.
 
     Returns
