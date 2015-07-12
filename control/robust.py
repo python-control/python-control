@@ -90,8 +90,8 @@ def h2syn(P,nmeas,ncon):
 
     n = np.size(P.A,0)
     m = np.size(P.B,1)
-    np = np.size(P.C,0)
-    out = sb10hd(n,m,np,ncon,nmeas,P.A,P.B,P.C,P.D)
+    np_ = np.size(P.C,0)
+    out = sb10hd(n,m,np_,ncon,nmeas,P.A,P.B,P.C,P.D)
     Ak = out[0]
     Bk = out[1]
     Ck = out[2]
