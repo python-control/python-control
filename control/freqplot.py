@@ -44,10 +44,10 @@
 import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
-from warnings import warn
+#from warnings import warn
 from .ctrlutil import unwrap
 from .bdalg import feedback
-from .lti import isdtime, timebaseEqual
+#from .lti import isdtime, timebaseEqual
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
            'bode', 'nyquist', 'gangof4']
@@ -122,12 +122,12 @@ def bode_plot(syslist, omega=None, omega_num=None, dB=None, Hz=None, deg=None,
     
     if omega is None:
         # Select a default range if none is provided
-        omega = default_frequency_range(syslist)
+        omega = default_frequency_range(syslist, Hz=Hz)
     elif (isinstance(omega, tuple) or isinstance(omega, list)) and len(omega) == 2:
         if omega_num:
-            omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), num=omega_num, endpoint=False)
+            omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), num=omega_num, endpoint=True)
         else:
-            omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), endpoint=False)
+            omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), endpoint=True)
                     
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
@@ -138,7 +138,8 @@ def bode_plot(syslist, omega=None, omega_num=None, dB=None, Hz=None, deg=None,
             omega_sys = np.array(omega)
             if sys.isdtime(True):
                 nyquistfrq = 2. * np.pi * 1./sys.dt / 2. 
-                omega_sys = omega_sys[omega_sys < nyquistfrq] 
+                nyquistfrq_limit = nyquistfrq - (omega_sys[-1] - omega_sys[-2]) /2. # floating point!
+                omega_sys = omega_sys[omega_sys < nyquistfrq_limit] 
             else:
                 nyquistfrq = None
             # Get the magnitude and phase of the system
@@ -153,6 +154,8 @@ def bode_plot(syslist, omega=None, omega_num=None, dB=None, Hz=None, deg=None,
                     nyquistfrq_plot = nyquistfrq / (2. * np.pi)
             else:
                 omega_plot = omega_sys
+                if nyquistfrq:
+                    nyquistfrq_plot = nyquistfrq
 
             mags.append(mag)
             phases.append(phase)
@@ -359,7 +362,7 @@ def gangof4_plot(P, C, omega=None):
 #
 
 # Compute reasonable defaults for axes
-def default_frequency_range(syslist, number_of_samples=None):
+def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_periphery_decade=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
@@ -390,6 +393,13 @@ def default_frequency_range(syslist, number_of_samples=None):
     # integer.  It excludes poles and zeros at the origin.  If no features
     # are found, it turns logspace(-1, 1)
 
+    # Set default values for options
+    from . import config
+    if (number_of_samples is None): 
+        number_of_samples = config.bode_number_of_samples
+    if (feature_periphery_decade is None): 
+        feature_periphery_decade = config.bode_feature_periphery_decade     
+
     # Find the list of all poles and zeros in the systems
     features = np.array(())
     freq_interesting = [] 
@@ -402,42 +412,54 @@ def default_frequency_range(syslist, number_of_samples=None):
         try:
             # Add new features to the list
             if sys.isctime():
-                features = np.concatenate((features, np.abs(sys.pole())))
-                features = np.concatenate((features, np.abs(sys.zero())))                
+                features_ = np.abs(sys.pole())
+                features_ = np.concatenate((features_, np.abs(sys.zero())))                
+                # Get rid of poles and zeros at the origin
+                features_ = features_[features_ != 0.0];
+                features = np.concatenate((features, features_))
             elif sys.isdtime(strict=True):
                 freq_interesting.append(np.pi*1./sys.dt)
-                # TODO: how to determine lowest interesting frequency?
+                p = sys.pole()
+                p = p[p != -1.]
+                features = np.concatenate((features, np.abs(np.log(p)/sys.dt)))
+                z = sys.zero()
+                z = z[(z.imag != 0.0)]
+                #z = z[(z.imag != 0.0) | (z.real > 0.0)]
+                features = np.concatenate((features, np.abs(np.log(z)/sys.dt)))                
             else:
                 pass
                 # TODO:
         except:
             pass
 
-    # Get rid of poles and zeros at the origin
-    features = features[features != 0];
 
     # Make sure there is at least one point in the range
-    if (features.shape[0] == 0): features = [1];
+    if (features.shape[0] == 0): 
+        features = [1];
 
+    if Hz:
+        features /= 2.*np.pi
+        features = np.log10(features)
+        lsp_min = np.floor(np.min(features)) - feature_periphery_decade
+        lsp_max = np.ceil(np.max(features)) + feature_periphery_decade
+        lsp_min += np.log10(2.*np.pi)
+        lsp_max += np.log10(2.*np.pi)
+    else:
     # Take the log of the features
-    # TODO: in case of Hz==True: wouldn't it make more sense to to set the limits to decades in Hz instead of rad/s?   
-    features = np.log10(features)
-    lsp_min = np.floor(np.min(features))-1
-    lsp_max = np.ceil(np.max(features))+1
+        features = np.log10(features)
+        lsp_min = np.floor(np.min(features)) - feature_periphery_decade
+        lsp_max = np.ceil(np.max(features)) + feature_periphery_decade
     if freq_interesting:
         lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
         lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
 
-    #! TODO: Add a check in discrete case to make sure we don't get aliasing
+    #! TODO: Add a check in discrete case to make sure we don't get aliasing (Attention: there is a list of system but only one omega vector)
 
     # Set the range to be an order of magnitude beyond any features
     if number_of_samples:
-        omega = sp.logspace(lsp_min, lsp_max, num=number_of_samples, endpoint=False)
+        omega = sp.logspace(lsp_min, lsp_max, num=number_of_samples, endpoint=True)
     else:
-        omega = sp.logspace(lsp_min, lsp_max, endpoint=False)
-
-        
-
+        omega = sp.logspace(lsp_min, lsp_max, endpoint=True)
     return omega
 
 #

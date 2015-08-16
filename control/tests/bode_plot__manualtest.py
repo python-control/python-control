@@ -1,7 +1,5 @@
-'''
-Created on 3 juli 2015
-
-@author: marho40
+#!/usr/bin/env python
+'''bode_plot__manualtest.py
 '''
 
 from __future__ import print_function
