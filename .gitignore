@@ -12,3 +12,8 @@ build.log
 .coverage
 doc/_build
 doc/generated
+
+examples/.ipynb_checkpoints/bode-plot-checkpoint.ipynb
+.settings/org.eclipse.core.resources.prefs
+.pydevproject
+.project
