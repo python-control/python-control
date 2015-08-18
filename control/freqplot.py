@@ -161,7 +161,7 @@ def bode_plot(syslist, omega=None, omega_num=None, dB=None, Hz=None, deg=None,
             omegas.append(omega_sys)
             nyquistfrqs.append(nyquistfrq)
             # Get the dimensions of the current axis, which we will divide up
-            # ! TODO: Not current implemented; just use subplot for now
+            #! TODO: Not current implemented; just use subplot for now
 
             if (Plot):
                 # Magnitude plot
@@ -257,7 +257,6 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
 
     # Select a default range if none is provided
     if omega is None:
-        # ! TODO: think about doing something smarter for discrete
         omega = default_frequency_range(syslist)
 
     # Interpolate between wmin and wmax if a tuple or list are provided
@@ -314,7 +313,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         return x, y, omega
 
 # Gang of Four
-# ! TODO: think about how (and whether) to handle lists of systems
+#! TODO: think about how (and whether) to handle lists of systems
 def gangof4_plot(P, C, omega=None):
     """Plot the "Gang of 4" transfer functions for a system
 
@@ -338,7 +337,7 @@ def gangof4_plot(P, C, omega=None):
     else:
 
         # Select a default range if none is provided
-        # ! TODO: This needs to be made more intelligent
+        #! TODO: This needs to be made more intelligent
         if omega is None:
             omega = default_frequency_range((P, C))
 
@@ -348,7 +347,7 @@ def gangof4_plot(P, C, omega=None):
         T = L * S;
 
         # Plot the four sensitivity functions
-        # ! TODO: Need to add in the mag = 1 lines
+        #! TODO: Need to add in the mag = 1 lines
         mag_tmp, phase_tmp, omega = T.freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
@@ -466,7 +465,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
         lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
         lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
 
-    # ! TODO: Add a check in discrete case to make sure we don't get aliasing (Attention: there is a list of system but only one omega vector)
+    #! TODO: Add a check in discrete case to make sure we don't get aliasing (Attention: there is a list of system but only one omega vector)
 
     # Set the range to be an order of magnitude beyond any features
     if number_of_samples:
