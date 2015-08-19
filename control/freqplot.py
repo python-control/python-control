@@ -137,8 +137,7 @@ def bode_plot(syslist, omega=None, omega_num=None, dB=None, Hz=None, deg=None,
             if sys.isdtime(True):
                 nyquistfrq = 2. * np.pi * 1. / sys.dt / 2. 
                 omega_sys = omega_sys[omega_sys < nyquistfrq] 
-                nyquistfrq_limit = nyquistfrq - (omega_sys[-1] - omega_sys[-2]) / 2.  # floating point!
-                omega_sys = omega_sys[omega_sys < nyquistfrq_limit] # in two steps to get the right increment
+                # TODO: What distance to the Nyquist frequency is appropriate?
             else:
                 nyquistfrq = None
             # Get the magnitude and phase of the system
@@ -432,7 +431,9 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
                 features_ = features_[features_ != 0.0];
                 features = np.concatenate((features, features_))
             elif sys.isdtime(strict=True):
-                freq_interesting.append(np.pi * 1. / sys.dt)
+                fn = np.pi * 1. / sys.dt
+                #TODO: What distance to the Nyquist frequency is appropriate?                
+                freq_interesting.append(fn*0.9)
                 p = sys.pole()
                 p = p[p != -1.]
                 features = np.concatenate((features, np.abs(np.log(p) / sys.dt)))
