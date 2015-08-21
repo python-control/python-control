@@ -312,4 +312,4 @@ def margin(*args):
         raise ValueError("Margin needs 1 or 3 arguments; received %i."
             % len(args))
 
-    return margin[0], margin[1], margin[4], margin[3]
+    return margin[0], margin[1], margin[3], margin[4]
