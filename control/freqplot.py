@@ -70,8 +70,6 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         List of linear input/output systems (single system is OK)
     omega : freq_range
         Range of frequencies (list or bounds) in rad/sec
-    omega_num: int
-        number of sample
     dB : boolean
         If True, plot result in dB
     Hz : boolean
@@ -80,6 +78,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         If True, plot phase in degrees (else radians)
     Plot : boolean
         If True, plot magnitude and phase
+    omega_num: int
+        number of samples        
     *args, **kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
