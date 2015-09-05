@@ -59,7 +59,7 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 
 # Bode plot
 def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
-        Plot=True, omega_num=None, *args, **kwargs):
+        Plot=True, omega_limits=None, omega_num=None, *args, **kwargs):
     """Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
@@ -69,7 +69,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     syslist : linsys
         List of linear input/output systems (single system is OK)
     omega : freq_range
-        Range of frequencies (list or bounds) in rad/sec
+        Range of frequencies in rad/sec
     dB : boolean
         If True, plot result in dB
     Hz : boolean
@@ -78,6 +78,9 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         If True, plot phase in degrees (else radians)
     Plot : boolean
         If True, plot magnitude and phase
+    omega_limits: tuple, list, ... of two values 
+        Limits of the to generate frequency vector.
+        If Hz=True the limits are in Hz otherwise in rad/s.
     omega_num: int
         number of samples        
     *args, **kwargs:
@@ -119,13 +122,17 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         syslist = (syslist,)
     
     if omega is None:
-        # Select a default range if none is provided
-        omega = default_frequency_range(syslist, Hz=Hz)
-    elif (isinstance(omega, tuple) or isinstance(omega, list)) and len(omega) == 2:
-        if omega_num:
-            omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), num=omega_num, endpoint=True)
+        if omega_limits is None:
+            # Select a default range if none is provided
+            omega = default_frequency_range(syslist, Hz=Hz, number_of_samples=omega_num)
         else:
-            omega = sp.logspace(np.log10(omega[0]), np.log10(omega[1]), endpoint=True)
+            omega_limits = np.array(omega_limits)
+            if Hz:
+                omega_limits *= 2.*np.pi
+            if omega_num:
+                omega = sp.logspace(np.log10(omega_limits[0]), np.log10(omega_limits[1]), num=omega_num, endpoint=True)
+            else:
+                omega = sp.logspace(np.log10(omega_limits[0]), np.log10(omega_limits[1]), endpoint=True)
                     
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
