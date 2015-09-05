@@ -386,13 +386,23 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
-
+    Hz: boolean
+        If True, the limits (first and last value) of the frequencies 
+        are set to full decades in Hz so it fits plotting with logarithmic 
+        scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
+    number_of_samples: int
+        Number of samples to generate
+    feature_periphery_decade: float
+        Defines how many decades shall be included in the frequency range on 
+        both sides of features (poles, zeros). 
+        Example: If there is a feature, e.g. a pole, at 1Hz and feature_periphery_decade=1.
+        then the range of frequencies shall span 0.1 .. 10 Hz.        
+        The default value is read from config.bode_feature_periphery_decade.
+    
     Returns
     -------
     omega : array
         Range of frequencies in rad/sec
-    number_of_samples: int
-        Number of samples to generate
 
     Examples
     --------
