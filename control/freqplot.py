@@ -58,8 +58,8 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 #
 
 # Bode plot
-def bode_plot(syslist, omega=None, omega_num=None, dB=None, Hz=None, deg=None,
-        Plot=True, *args, **kwargs):
+def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
+        Plot=True, omega_num=None, *args, **kwargs):
     """Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
