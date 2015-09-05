@@ -458,8 +458,8 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
                 z = z[(z.imag != 0.0)]  # Get rid of poles and zeros at the origin and real <= 0 & imag==0
                 features = np.concatenate((features, np.abs(np.log(z) / sys.dt)))                
             else:
-                pass
-                # TODO:
+                # TODO
+                raise NotImplementedError('type of system in not implemented now') 
         except:
             pass
 
