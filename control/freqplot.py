@@ -442,21 +442,26 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
         try:
             # Add new features to the list
             if sys.isctime():
-                features_ = np.abs(sys.pole())
-                features_ = np.concatenate((features_, np.abs(sys.zero())))                
+                features_ = np.concatenate((np.abs(sys.pole()),
+                                           np.abs(sys.zero())))                
                 # Get rid of poles and zeros at the origin
                 features_ = features_[features_ != 0.0];
                 features = np.concatenate((features, features_))
             elif sys.isdtime(strict=True):
                 fn = np.pi * 1. / sys.dt
-                #TODO: What distance to the Nyquist frequency is appropriate?                
-                freq_interesting.append(fn*0.9)
-                p = sys.pole()
-                p = p[p != -1.]
-                features = np.concatenate((features, np.abs(np.log(p) / sys.dt)))
-                z = sys.zero()
-                z = z[(z.imag != 0.0)]  # Get rid of poles and zeros at the origin and real <= 0 & imag==0
-                features = np.concatenate((features, np.abs(np.log(z) / sys.dt)))                
+                # TODO: What distance to the Nyquist frequency is appropriate?                
+                freq_interesting.append(fn * 0.9)
+
+                features_ = np.concatenate((sys.pole(),
+                                           sys.zero())) 
+                # Get rid of poles and zeros 
+                # * at the origin and real <= 0 & imag==0: log!
+                # * at 1.: would result in omega=0. (logaritmic plot!)
+                features_ = features_[(features_.imag != 0.0) | (features_.real > 0.)]
+                features_ = features_[np.bitwise_not((features_.imag == 0.0) & (np.abs(features_.real - 1.0) < 1.e-10))]
+                # TODO: improve
+                features__ = np.abs(np.log(features_) / (1.j * sys.dt))
+                features = np.concatenate((features, features__))                
             else:
                 # TODO
                 raise NotImplementedError('type of system in not implemented now') 
@@ -466,7 +471,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
 
     # Make sure there is at least one point in the range
     if (features.shape[0] == 0): 
-        features = [1];
+        features = np.array([1]);
 
     if Hz:
         features /= 2.*np.pi
