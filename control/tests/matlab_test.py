@@ -606,9 +606,9 @@ class TestMatlab(unittest.TestCase):
 
         gm, pm, wg, wp = margin(Hol)
         # print("%f %f %f %f" % (gm, pm, wg, wp))
-        self.assertAlmostEqual(gm, 3.32065569155)
+        self.assertAlmostEqual(gm, 1.0263157090822087e-15)
         self.assertAlmostEqual(pm, 46.9740430224)
-        self.assertAlmostEqual(wg, 0.176469728448)
+        self.assertAlmostEqual(wg, 1.6586487848042873e-09)
         self.assertAlmostEqual(wp, 0.0616288455466)
 
 #! TODO: not yet implemented
