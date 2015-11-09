@@ -1,4 +1,13 @@
+sudo: false
 language: python
+
+cache:
+  apt: true
+  pip: true
+  directories:
+    - $HOME/.cache/pip
+    - $HOME/.local
+
 python:
   - "2.7"
   - "3.3"
@@ -25,9 +34,9 @@ before_install:
 
 # Install packages
 install:
+  - conda install slycot
   - conda build conda-recipe
   - conda install control --use-local
-  - conda install slycot
   - pip install coveralls
 
 # command to run tests
