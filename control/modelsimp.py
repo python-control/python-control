@@ -270,6 +270,95 @@ def balred(sys, orders, method='truncate'):
 
     return rsys
 
+def balred2(*args, **kwargs):
+    """
+    Creates a truncated balanced realization of a LTI state space system. If the system is
+    unstable, a stable/unstable decomposition is done via the Schur decomposition, then
+    the stable states are eliminated via Hankel Singular Values.
+
+    Parameters
+    ----------
+    RSYS = balred2(SYS, ORDER) does balanced truncation of SYS and retains ORDER number
+    of states
+    RSYS = balred2(A, B, C, D, ORDER) does balanced truncation if LTI system define by
+    A, B, C, D and retains ORDER number of states.
+
+    Returns
+    -------
+    RSYS: State Space, a reduced order model of SYS
+
+    Raises
+    -------
+    ValueError
+        * if there are more unstable states than ORDER (i.e. make ORDER > no. of unstable states)
+    ImportError
+        * if slycot routine ab09ad is not found
+
+    Author: M. Clement (mdclemen@eng.ucsd.edu) 2016
+    Reference: Hsu,C.S., and Hou,D., 1991, Reducing unstable linear control systems via real Schur transformation. Electronics Letters, 27, 984-986.
+    """
+    from scipy.linalg import schur
+
+    #assumes individual matrices are given as (A, B, C, D)
+    if len(args) == 5:
+        #convert individual matrices to ss model 
+        sys = StateSpace(args[0], args[1], args[2], args[3])
+        order = args[4]
+        
+    #assume ss sys and order are given
+    elif len(args) == 2:
+        sys = args[0]
+        order = args[1]
+    else:
+        raise ValueError("Needs 2 or 5 arguments; received %i." % len(args))
+
+    #first get system order
+    n = sys.A.shape[0] #no. of states
+    m = sys.B.shape[1] #no. of inputs
+    r = sys.C.shape[0] #no. of outputs
+    #first do the schur decomposition
+    T, V, l = schur(sys.A, sort = 'lhp') #l will contain the number of eigenvalues in the open left half plane, i.e. no. of stable eigenvalues
+
+    rorder = order - (n - l)
+    if rorder <= 0:
+        raise ValueError("System has %i unstable states which is more than ORDER(%i)" % (n-l, order))
+
+    As = np.asmatrix(T)
+    Bs = V.T*sys.B
+    Cs = sys.C*V
+    #from ref 1 eq(1) As = [A_ Ac], Bs = [B_], and Cs = [C_ C+]; _ denotes stable subsystem
+    #                      [0  A+]       [B+]
+    A_ = As[0:l,0:l]
+    Ac = As[0:l,l::]
+    Ap = As[l::,l::]
+
+    B_ = Bs[0:l,:]
+    Bp = Bs[l::,:]
+
+    C_ = Cs[:,0:l]
+    Cp = Cs[:,l::]
+    #do some more tricky math IAW ref 1 eq(3)
+    B_tilde = np.bmat([[B_, Ac]])
+    D_tilde = np.bmat([[np.zeros((r, m)), Cp]])
+
+    subSys = StateSpace(A_, B_tilde, C_, D_tilde)
+    #now do control.balred() on stable subsystem
+
+    rsubSys = balred(subSys, rorder)
+
+    A_r = rsubSys.A
+    #IAW ref 1 eq(4) B^{tilde}_r = [B_r, Acr]
+    B_r = rsubSys.B[:,0:m]
+    Acr = rsubSys.B[:,m:m+(n-l)]
+    C_r = rsubSys.C
+
+    #now put the unstable subsystem back in
+    Ar = np.bmat([[A_r, Acr], [np.zeros((n-l,rorder)), Ap]])
+    Br = np.bmat([[B_r], [Bp]])
+    Cr = np.bmat([[C_r, Cp]])
+
+    return StateSpace(Ar, Br, Cr, sys.D)
+
 def minreal(sys, tol=None, verbose=True):
     '''
     Eliminates uncontrollable or unobservable states in state-space
