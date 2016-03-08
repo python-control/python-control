@@ -233,7 +233,7 @@ def balred(sys, orders, method='truncate'):
 
     Examples
     --------
-    >>> rsys = balred(sys, order, method='truncate')
+    >>> rsys = balred(sys, orders, method='truncate')
 
     """
     if method=='matchdc':
@@ -257,6 +257,14 @@ def balred(sys, orders, method='truncate'):
         # else:
     dico = 'C'
 
+    rsys = [] #empty list for reduced systems
+
+    #check if orders is a list or a scalar
+    try:
+        order = iter(orders)
+    except TypeError: #if orders is a scalar
+        orders = [orders]
+    
     #first get original system order
     nn = sys.A.shape[0] #no. of states
     mm = sys.B.shape[1] #no. of inputs
@@ -264,66 +272,74 @@ def balred(sys, orders, method='truncate'):
     #first do the schur decomposition
     T, V, l = schur(sys.A, sort = 'lhp') #l will contain the number of eigenvalues in the open left half plane, i.e. no. of stable eigenvalues
 
-    rorder = orders - (nn - l)
-    if rorder <= 0:
-        raise ValueError("System has %i unstable states which is more than ORDER(%i)" % (nn-l, orders))
+    for i in orders:
+        rorder = i - (nn - l)
+        if rorder <= 0:
+            raise ValueError("System has %i unstable states which is more than ORDER(%i)" % (nn-l, i))
 
-    if l > 0: #handles the stable/unstable decomposition if unstable eigenvalues are found
-        #Author: M. Clement (mdclemen@eng.ucsd.edu) 2016
-        print("Unstable eigenvalues found, performing stable/unstable decomposition")
-        As = np.asmatrix(T)
-        Bs = V.T*sys.B
-        Cs = sys.C*V
-        #from ref 1 eq(1) As = [A_ Ac], Bs = [B_], and Cs = [C_ C+]; _ denotes stable subsystem
-        #                      [0  A+]       [B+]
-        A_ = As[0:l,0:l]
-        Ac = As[0:l,l::]
-        Ap = As[l::,l::]
+    for i in orders:
+        if l > 0: #handles the stable/unstable decomposition if unstable eigenvalues are found
+            #Author: M. Clement (mdclemen@eng.ucsd.edu) 2016
+            print("Unstable eigenvalues found, performing stable/unstable decomposition")
+            rorder = i - (nn - l)
+            As = np.asmatrix(T)
+            Bs = V.T*sys.B
+            Cs = sys.C*V
+            #from ref 1 eq(1) As = [A_ Ac], Bs = [B_], and Cs = [C_ C+]; _ denotes stable subsystem
+            #                      [0  A+]       [B+]
+            A_ = As[0:l,0:l]
+            Ac = As[0:l,l::]
+            Ap = As[l::,l::]
 
-        B_ = Bs[0:l,:]
-        Bp = Bs[l::,:]
-        
-        C_ = Cs[:,0:l]
-        Cp = Cs[:,l::]
-        #do some more tricky math IAW ref 1 eq(3)
-        B_tilde = np.bmat([[B_, Ac]])
-        D_tilde = np.bmat([[np.zeros((rr, mm)), Cp]])
+            B_ = Bs[0:l,:]
+            Bp = Bs[l::,:]
 
-        subSys = StateSpace(A_, B_tilde, C_, D_tilde)
+            C_ = Cs[:,0:l]
+            Cp = Cs[:,l::]
+            #do some more tricky math IAW ref 1 eq(3)
+            B_tilde = np.bmat([[B_, Ac]])
+            D_tilde = np.bmat([[np.zeros((rr, mm)), Cp]])
 
-        job = 'B' # balanced (B) or not (N)
-        equil = 'N'  # scale (S) or not (N)
-        n = np.size(subSys.A,0)
-        m = np.size(subSys.B,1)
-        p = np.size(subSys.C,0)
-        Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,subSys.A,subSys.B,subSys.C,nr=rorder,tol=0.0)
+            subSys = StateSpace(A_, B_tilde, C_, D_tilde)
 
-        rsubSys = StateSpace(Ar, Br, Cr, np.zeros((p,m)))
+            job = 'B' # balanced (B) or not (N)
+            equil = 'N'  # scale (S) or not (N)
+            n = np.size(subSys.A,0)
+            m = np.size(subSys.B,1)
+            p = np.size(subSys.C,0)
+            Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,subSys.A,subSys.B,subSys.C,nr=rorder,tol=0.0)
 
-        A_r = rsubSys.A
-        #IAW ref 1 eq(4) B^{tilde}_r = [B_r, Acr]
-        B_r = rsubSys.B[:,0:mm]
-        Acr = rsubSys.B[:,mm:mm+(nn-l)]
-        C_r = rsubSys.C
+            rsubSys = StateSpace(Ar, Br, Cr, np.zeros((p,m)))
 
-        #now put the unstable subsystem back in
-        Ar = np.bmat([[A_r, Acr], [np.zeros((nn-l,rorder)), Ap]])
-        Br = np.bmat([[B_r], [Bp]])
-        Cr = np.bmat([[C_r, Cp]])
+            A_r = rsubSys.A
+            #IAW ref 1 eq(4) B^{tilde}_r = [B_r, Acr]
+            B_r = rsubSys.B[:,0:mm]
+            Acr = rsubSys.B[:,mm:mm+(nn-l)]
+            C_r = rsubSys.C
 
-        rsys = StateSpace(Ar, Br, Cr, sys.D)
+            #now put the unstable subsystem back in
+            Ar = np.bmat([[A_r, Acr], [np.zeros((nn-l,rorder)), Ap]])
+            Br = np.bmat([[B_r], [Bp]])
+            Cr = np.bmat([[C_r, Cp]])
 
+            rsys.append(StateSpace(Ar, Br, Cr, sys.D))
+
+        else:
+            job = 'B' # balanced (B) or not (N)
+            equil = 'N'  # scale (S) or not (N)
+            n = np.size(sys.A,0)
+            m = np.size(sys.B,1)
+            p = np.size(sys.C,0)
+            Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=i,tol=0.0)
+
+            rsys.append(StateSpace(Ar, Br, Cr, sys.D))
+
+    #if orders was a scalar, just return the single reduced model, not a list
+    if len(orders) == 1:
+        return rsys[0]
+    #if orders was a list/vector, return a list/vector of systems
     else:
-        job = 'B' # balanced (B) or not (N)
-        equil = 'N'  # scale (S) or not (N)
-        n = np.size(sys.A,0)
-        m = np.size(sys.B,1)
-        p = np.size(sys.C,0)
-        Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=orders,tol=0.0)
-
-        rsys = StateSpace(Ar, Br, Cr, sys.D)
-
-    return rsys
+        return rsys
 
 def minreal(sys, tol=None, verbose=True):
     '''
