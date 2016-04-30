@@ -278,24 +278,28 @@ def phase_crossover_frequencies(sys):
 def margin(*args):
     """Calculate gain and phase margins and associated crossover frequencies
 
-    Function ``margin`` takes either 1 or 3 parameters.
-
     Parameters
     ----------
-    sys : StateSpace or TransferFunction
-        Linear SISO system
-    mag, phase, w : array_like
-        Input magnitude, phase (in deg.), and frequencies (rad/sec) from
-        bode frequency response data
+    sysdata: LTI system or (mag, phase, omega) sequence
+        sys : StateSpace or TransferFunction
+            Linear SISO system
+        mag, phase, omega : sequence of array_like
+            Input magnitude, phase (in deg.), and frequencies (rad/sec) from
+            bode frequency response data
 
     Returns
     -------
-    gm, pm, Wcg, Wcp : float
-        Gain margin gm, phase margin pm (in deg), gain crossover frequency
-        (corresponding to phase margin) and phase crossover frequency
-        (corresponding to gain margin), in rad/sec of SISO open-loop.
-        If more than one crossover frequency is detected, returns the lowest
-        corresponding margin.
+    gm : float
+        Gain margin
+    pm : float
+        Phase margin (in degrees)
+    Wcg : float
+        Gain crossover frequency (corresponding to phase margin)
+    Wcp : float
+        Phase crossover frequency (corresponding to gain margin) (in rad/sec)
+        
+   Margins are of SISO open-loop. If more than one crossover frequency is
+   detected, returns the lowest corresponding margin.
 
     Examples
     --------
