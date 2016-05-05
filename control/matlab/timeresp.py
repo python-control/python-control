@@ -6,7 +6,7 @@ Note that the return arguments are different than in the standard control packag
 
 __all__ = ['step', 'impulse', 'initial', 'lsim']
 
-def step(sys, T=None, X0=0., input=0, output=None):
+def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     '''
     Step response of a linear system
 
@@ -40,8 +40,13 @@ def step(sys, T=None, X0=0., input=0, output=None):
     yout: array
         Response of the system
 
+    xout: array (if selected)
+        Individual response of each x variable
+
     T: array
         Time values of the output
+
+
 
     See Also
     --------
@@ -52,8 +57,14 @@ def step(sys, T=None, X0=0., input=0, output=None):
     >>> yout, T = step(sys, T, X0)
     '''
     from ..timeresp import step_response
-    T, yout = step_response(sys, T, X0, input, output,
-                            transpose = True)
+
+
+    T, yout, xout = step_response(sys, T, X0, input, output,
+                            transpose = True, return_x=return_x)
+
+    if return_x:
+        return yout, xout, T
+
     return yout, T
 
 def impulse(sys, T=None, input=0, output=None):
