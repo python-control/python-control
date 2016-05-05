@@ -12,3 +12,4 @@ build.log
 .coverage
 doc/_build
 doc/generated
+*.idea/
