@@ -1,3 +1,4 @@
+# -*-coding: utf-8-*-
 #! TODO: add module docstring
 # delay.py - functions involving time delays
 #
@@ -41,12 +42,11 @@
 #
 # $Id$
 
-# Python 3 compatability (needs to go here)
-from __future__ import print_function
+from __future__ import division
 
 __all__ = ['pade']
 
-def pade(T, n=1):
+def pade(T, n=1, numdeg=None):
     """
     Create a linear system that approximates a delay.
 
@@ -56,8 +56,12 @@ def pade(T, n=1):
     ----------
     T : number
         time delay
-    n : integer
-        order of approximation
+    n : positive integer
+        degree of denominator of approximation
+    numdeg: integer, or None (the default)
+            If None, numerator degree equals denominator degree
+            If >= 0, specifies degree of numerator
+            If < 0, numerator degree is n+numdeg
 
     Returns
     -------
@@ -66,22 +70,45 @@ def pade(T, n=1):
 
     Notes
     -----
-    Based on an algorithm in Golub and van Loan, "Matrix Computation" 3rd.
-    Ed. pp. 572-574.
+    Based on:
+      1. Algorithm 11.3.1 in Golub and van Loan, "Matrix Computation" 3rd.
+         Ed. pp. 572-574
+      2. M. Vajta, "Some remarks on Padé-approximations",
+         3rd TEMPUS-INTCOM Symposium
     """
+    if numdeg is None:
+        numdeg = n
+    elif numdeg < 0:
+        numdeg += n
+
+    if not T >= 0:
+        raise ValueError("require T >= 0")
+    if not n >= 0:
+        raise ValueError("require n >= 0")
+    if not (0 <= numdeg <= n):
+        raise ValueError("require 0 <= numdeg <= n")
+
     if T == 0:
         num = [1,]
         den = [1,]
     else:
-        num = [0. for i in range(n+1)]
+        num = [0. for i in range(numdeg+1)]
         num[-1] = 1.
+        cn = 1.
+        for k in range(1, numdeg+1):
+            # derived from Gloub and van Loan eq. for Dpq(z) on p. 572
+            # this accumulative style follows Alg 11.3.1
+            cn *= -T * (numdeg - k + 1)/(numdeg + n - k + 1)/k
+            num[numdeg-k] = cn
+
         den = [0. for i in range(n+1)]
         den[-1] = 1.
-        c = 1.
+        cd = 1.
         for k in range(1, n+1):
-            c = T * c * (n - k + 1)/(2 * n - k + 1)/k
-            num[n - k] = c * (-1)**k
-            den[n - k] = c
+            # see cn above
+            cd *= T * (n - k + 1)/(numdeg + n - k + 1)/k
+            den[n-k] = cd
+
         num = [coeff/den[0] for coeff in num]
         den = [coeff/den[0] for coeff in den]
     return num, den
