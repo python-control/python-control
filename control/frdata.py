@@ -220,7 +220,8 @@ second has %i." % (self.outputs, other.outputs))
 
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex)):
-            return FRD(self.fresp * other, self.omega)
+            return FRD(self.fresp * other, self.omega,
+                       smooth=(self.ifunc is not None))
         else:
             other = _convertToFRD(other, omega=self.omega)
 
@@ -236,14 +237,17 @@ second has %i." % (self.outputs, other.outputs))
                       dtype=self.fresp.dtype)
         for i in range(len(self.omega)):
             fresp[:,:,i] = dot(self.fresp[:,:,i], other.fresp[:,:,i])
-        return FRD(fresp, self.omega)
+        return FRD(fresp, self.omega,
+                   smooth=(self.ifunc is not None) and
+                          (other.ifunc is not None))
 
     def __rmul__(self, other):
         """Right Multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to an frd function.
         if isinstance(other, (int, float, complex)):
-            return FRD(self.fresp * other, self.omega)
+            return FRD(self.fresp * other, self.omega,
+                       smooth=(self.ifunc is not None))
         else:
             other = _convertToFRD(other, omega=self.omega)
 
@@ -260,14 +264,17 @@ second has %i." % (self.outputs, other.outputs))
                       dtype=self.fresp.dtype)
         for i in range(len(self.omega)):
             fresp[:,:,i] = dot(other.fresp[:,:,i], self.fresp[:,:,i])
-        return FRD(fresp, self.omega)
+        return FRD(fresp, self.omega,
+                   smooth=(self.ifunc is not None) and
+                          (other.ifunc is not None))
 
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __truediv__(self, other):
         """Divide two LTI objects."""
 
         if isinstance(other, (int, float, complex)):
-            return FRD(self.fresp * (1/other), self.omega)
+            return FRD(self.fresp * (1/other), self.omega,
+                       smooth=(self.ifunc is not None))
         else:
             other = _convertToFRD(other, omega=self.omega)
 
@@ -277,7 +284,9 @@ second has %i." % (self.outputs, other.outputs))
             raise NotImplementedError(
                 "FRD.__truediv__ is currently implemented only for SISO systems.")
 
-        return FRD(self.fresp/other.fresp, self.omega)
+        return FRD(self.fresp/other.fresp, self.omega,
+                   smooth=(self.ifunc is not None) and
+                          (other.ifunc is not None))
 
     # TODO: Remove when transition to python3 complete
     def __div__(self, other):
@@ -287,7 +296,8 @@ second has %i." % (self.outputs, other.outputs))
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
         if isinstance(other, (int, float, complex)):
-            return FRD(other / self.fresp, self.omega)
+            return FRD(other / self.fresp, self.omega,
+                       smooth=(self.ifunc is not None))
         else:
             other = _convertToFRD(other, omega=self.omega)
 
@@ -306,7 +316,8 @@ second has %i." % (self.outputs, other.outputs))
         if not type(other) == int:
             raise ValueError("Exponent must be an integer")
         if other == 0:
-            return FRD(ones(self.fresp.shape),self.omega) #unity
+            return FRD(ones(self.fresp.shape),self.omega,
+                       smooth=(self.ifunc is not None)) #unity
         if other > 0:
             return self * (self**(other-1))
         if other < 0:
@@ -338,7 +349,7 @@ second has %i." % (self.outputs, other.outputs))
             except:
                 raise ValueError(
                     "Frequency %f not in frequency list, try an interpolating"
-                    " FRD if you want additional points")
+                    " FRD if you want additional points" % omega)
         else:
             if getattr(omega, '__iter__', False):
                 for i in range(self.outputs):
@@ -401,7 +412,7 @@ second has %i." % (self.outputs, other.outputs))
                 self.fresp[:, :, k].view(type=matrix),
                 eye(self.inputs))
 
-        return FRD(fresp, other.omega)
+        return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 
 def _convertToFRD(sys, omega, inputs=1, outputs=1):
     """Convert a system to frequency response data form (if needed).
@@ -436,11 +447,11 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         for k, w in enumerate(omega):
             fresp[:, :, k] = sys.evalfr(w)
 
-        return FRD(fresp, omega)
+        return FRD(fresp, omega, smooth=True)
 
     elif isinstance(sys, (int, float, complex)):
         fresp = ones((outputs, inputs, len(omega)), dtype=float)*sys
-        return FRD(fresp, omega)
+        return FRD(fresp, omega, smooth=True)
 
     # try converting constant matrices
     try:
@@ -450,7 +461,7 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         for i in range(outputs):
             for j in range(inputs):
                 fresp[i,j,:] = sys[i,j]
-        return FRD(fresp, omega)
+        return FRD(fresp, omega, smooth=True)
     except:
         pass
 
