@@ -66,6 +66,10 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
+        tout, yout, xout = step_response(sys, T=t, X0=0, return_x=True)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
         # Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
         _t, y_00 = step_response(sys, T=t, input=0, output=0)

@@ -145,6 +145,9 @@ class TestControlMatlab(unittest.TestCase):
         t, y = step(sys, T, X0)
         plot(t, y)
 
+        # Test output of state vector
+        t, y, x = step(sys, return_x=True)
+
         #Test MIMO system
         A, B, C, D = self.make_MIMO_mats()
         sys = ss(A, B, C, D)
