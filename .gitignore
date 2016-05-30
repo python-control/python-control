@@ -12,3 +12,9 @@ build.log
 .coverage
 doc/_build
 doc/generated
+
+examples/.ipynb_checkpoints/
+.settings/org.eclipse.core.resources.prefs
+.pydevproject
+.project
+Untitled*.ipynb
