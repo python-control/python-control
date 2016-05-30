@@ -471,7 +471,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
 
     # Make sure there is at least one point in the range
     if (features.shape[0] == 0): 
-        features = np.array([1]);
+        features = np.array([1.]);
 
     if Hz:
         features /= 2.*np.pi
