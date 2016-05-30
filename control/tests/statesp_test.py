@@ -32,11 +32,12 @@ class TestStateSpace(unittest.TestCase):
     def testPole(self):
         """Evaluate the poles of a MIMO system."""
 
-        p = self.sys1.pole()
-
-        np.testing.assert_array_almost_equal(p, [3.34747678408874,
+        p = np.sort(self.sys1.pole())
+        true_p = np.sort([3.34747678408874,
             -3.17373839204437 + 1.47492908003839j,
             -3.17373839204437 - 1.47492908003839j])
+
+        np.testing.assert_array_almost_equal(p, true_p)
 
     def testZero(self):
         """Evaluate the zeros of a SISO system."""

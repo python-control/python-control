@@ -55,7 +55,7 @@ from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
     dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
 from numpy.random import rand, randn
-from numpy.linalg import inv, det, solve
+from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
 from scipy.signal import lti, cont2discrete
 # from exceptions import Exception
@@ -405,7 +405,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def pole(self):
         """Compute the poles of a state space system."""
 
-        return roots(poly(self.A))
+        return eigvals(self.A)
 
     def zero(self):
         """Compute the zeros of a state space system."""
@@ -452,21 +452,24 @@ inputs/outputs for feedback.")
         D2 = other.D
 
         F = eye(self.inputs) - sign * D2 * D1
-        if abs(det(F)) < 1.e-6:
+        if matrix_rank(F) != self.inputs:
             raise ValueError("I - sign * D2 * D1 is singular.")
 
-        E = inv(F)
-        T1 = eye(self.outputs) + sign * D1 * E * D2
-        T2 = eye(self.inputs) + sign * E * D2 * D1
+        # Precompute F\D2 and F\C2 (E = inv(F))
+        E_D2 = solve(F, D2)
+        E_C2 = solve(F, C2)
+
+        T1 = eye(self.outputs) + sign * D1 * E_D2
+        T2 = eye(self.inputs) + sign * E_D2 * D1
 
         A = concatenate(
             (concatenate(
-                (A1 + sign * B1 * E * D2 * C1, sign * B1 * E * C2), axis=1),
+                (A1 + sign * B1 * E_D2 * C1, sign * B1 * E_C2), axis=1),
             concatenate(
-                (B2 * T1 * C1, A2 + sign * B2 * D1 * E * C2), axis=1)),
+                (B2 * T1 * C1, A2 + sign * B2 * D1 * E_C2), axis=1)),
             axis=0)
         B = concatenate((B1 * T2, B2 * D1 * T2), axis=0)
-        C = concatenate((T1 * C1, sign * D1 * E * C2), axis=1)
+        C = concatenate((T1 * C1, sign * D1 * E_C2), axis=1)
         D = D1 * T2
 
         return StateSpace(A, B, C, D, dt)
