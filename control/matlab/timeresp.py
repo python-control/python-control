@@ -58,9 +58,8 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     '''
     from ..timeresp import step_response
 
-
     T, yout, xout = step_response(sys, T, X0, input, output,
-                            transpose = True, return_x=return_x)
+                                  transpose = True, return_x=True)
 
     if return_x:
         return yout, xout, T
