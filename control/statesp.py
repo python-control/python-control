@@ -124,12 +124,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
 
         # Here we're going to convert inputs to matrices, if the user gave a
         # non-matrix type.
-        #! TODO: [A, B, C, D] = map(matrix, [A, B, C, D])?
-        matrices = [A, B, C, D]
-        for i in range(len(matrices)):
-            # Convert to matrix first, if necessary.
-            matrices[i] = matrix(matrices[i])
-        [A, B, C, D] = matrices
+        A, B, C, D = map(matrix, [A, B, C, D])
 
         LTI.__init__(self, B.shape[1], C.shape[0], dt)
         self.A = A
