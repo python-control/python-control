@@ -448,11 +448,16 @@ inputs/outputs for feedback.")
 
         F = eye(self.inputs) - sign * D2 * D1
         if matrix_rank(F) != self.inputs:
-            raise ValueError("I - sign * D2 * D1 is singular.")
+            raise ValueError("I - sign * D2 * D1 is singular to working precision.")
 
         # Precompute F\D2 and F\C2 (E = inv(F))
-        E_D2 = solve(F, D2)
-        E_C2 = solve(F, C2)
+        # We can solve two linear systems in one pass, since the
+        # coefficients matrix F is the same. Thus, we perform the LU
+        # decomposition (cubic runtime complexity) of F only once!
+        # The remaining back substitutions are only quadratic in runtime.
+        E_D2_C2 = solve(F, concatenate((D2, C2), axis=1))
+        E_D2 = E_D2_C2[:, :other.inputs]
+        E_C2 = E_D2_C2[:, other.inputs:]
 
         T1 = eye(self.outputs) + sign * D1 * E_D2
         T2 = eye(self.inputs) + sign * E_D2 * D1
