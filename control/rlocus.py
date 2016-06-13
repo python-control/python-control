@@ -50,7 +50,7 @@ import numpy as np
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
-from . import xferfcn
+from .xferfcn import _convertToTransferFunction
 from .exception import ControlMIMONotImplemented
 from functools import partial
 
@@ -144,7 +144,7 @@ def _systopoly1d(sys):
 
     else:
         # Convert to a transfer function, if needed
-        sys = xferfcn._convertToTransferFunction(sys)
+        sys = _convertToTransferFunction(sys)
 
         # Make sure we have a SISO system
         if (sys.inputs > 1 or sys.outputs > 1):
