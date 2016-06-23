@@ -90,8 +90,8 @@ def h2syn(P,nmeas,ncon):
 
     n = np.size(P.A,0)
     m = np.size(P.B,1)
-    np = np.size(P.C,0)
-    out = sb10hd(n,m,np,ncon,nmeas,P.A,P.B,P.C,P.D)
+    mp = np.size(P.C,0)
+    out = sb10hd(n,m,mp,ncon,nmeas,P.A,P.B,P.C,P.D)
     Ak = out[0]
     Bk = out[1]
     Ck = out[2]
@@ -150,9 +150,9 @@ def hinfsyn(P,nmeas,ncon):
     job = 3
     n = np.size(P.A,0)
     m = np.size(P.B,1)
-    np = np.size(P.C,0)
+    mp = np.size(P.C,0)
     gamma = 1.e100
-    out = sb10ad(job,n,m,np,ncon,nmeas,gamma,P.A,P.B,P.C,P.D)
+    out = sb10ad(job,n,m,mp,ncon,nmeas,gamma,P.A,P.B,P.C,P.D)
     gam = out[0]
     Ak = out[1]
     Bk = out[2]
