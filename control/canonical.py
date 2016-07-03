@@ -7,7 +7,7 @@ from .statesp import StateSpace
 from .statefbk import ctrb, obsv
 
 from numpy import zeros, shape, poly
-from numpy.linalg import solve
+from numpy.linalg import solve, matrix_rank
 
 __all__ = ['canonical_form', 'reachable_form', 'observable_form']
 
@@ -80,8 +80,14 @@ def reachable_form(xsys):
     Wrx = ctrb(xsys.A, xsys.B)
     Wrz = ctrb(zsys.A, zsys.B)
 
+    if matrix_rank(Wrx) != xsys.states:
+        raise ValueError("System not controllable to working precision.")
+
     # Transformation from one form to another
     Tzx = solve(Wrx.T, Wrz.T).T  # matrix right division, Tzx = Wrz * inv(Wrx)
+
+    if matrix_rank(Tzx) != xsys.states:
+        raise ValueError("Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
     zsys.C = solve(Tzx.T, xsys.C.T).T  # matrix right division, zsys.C = xsys.C * inv(Tzx)

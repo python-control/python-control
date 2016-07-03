@@ -39,3 +39,16 @@ class TestCanonical(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys_check.C, C_true)
         np.testing.assert_array_almost_equal(sys_check.D, D_true)
         np.testing.assert_array_almost_equal(T_check, T_true)
+
+    def test_unreachable_system(self):
+        """Test reachable canonical form with an unreachable system"""
+
+        # Create an unreachable system
+        A = np.matrix("1.0 2.0 2.0; 4.0 5.0 5.0; 7.0 8.0 8.0")
+        B = np.matrix("1.0 1.0 1.0").T
+        C = np.matrix("1.0 1.0 1.0")
+        D = 42.0
+        sys = ss(A, B, C, D)
+
+        # Check if an exception is raised
+        np.testing.assert_raises(ValueError, canonical_form, sys, "reachable")
