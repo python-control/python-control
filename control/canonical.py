@@ -7,7 +7,7 @@ from .statesp import StateSpace
 from .statefbk import ctrb, obsv
 
 from numpy import zeros, shape, poly
-from numpy.linalg import inv
+from numpy.linalg import solve
 
 __all__ = ['canonical_form', 'reachable_form', 'observable_form']
 
@@ -68,23 +68,23 @@ def reachable_form(xsys):
 
     # Generate the system matrices for the desired canonical form
     zsys.B = zeros(shape(xsys.B))
-    zsys.B[0, 0] = 1
+    zsys.B[0, 0] = 1.0
     zsys.A = zeros(shape(xsys.A))
     Apoly = poly(xsys.A)                # characteristic polynomial
     for i in range(0, xsys.states):
         zsys.A[0, i] = -Apoly[i+1] / Apoly[0]
         if (i+1 < xsys.states):
-            zsys.A[i+1, i] = 1
+            zsys.A[i+1, i] = 1.0
 
     # Compute the reachability matrices for each set of states
     Wrx = ctrb(xsys.A, xsys.B)
     Wrz = ctrb(zsys.A, zsys.B)
 
     # Transformation from one form to another
-    Tzx = Wrz * inv(Wrx)
+    Tzx = solve(Wrx.T, Wrz.T).T  # matrix right division, Tzx = Wrz * inv(Wrx)
 
     # Finally, compute the output matrix
-    zsys.C = xsys.C * inv(Tzx)
+    zsys.C = solve(Tzx.T, xsys.C.T).T  # matrix right division, zsys.C = xsys.C * inv(Tzx)
 
     return zsys, Tzx
 
