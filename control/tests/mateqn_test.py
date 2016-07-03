@@ -46,7 +46,7 @@ import unittest
 from numpy import matrix
 from numpy.testing import assert_array_almost_equal, assert_array_less
 # need scipy version of eigvals for generalized eigenvalue problem
-from scipy.linalg import inv, eigvals
+from scipy.linalg import eigvals, solve
 from scipy import zeros,dot
 from control.mateqn import lyap,dlyap,care,dare
 from control.exception import slycot_check
@@ -150,8 +150,8 @@ class TestMatrixEquations(unittest.TestCase):
         # print("The solution obtained is", X)
         assert_array_almost_equal(
             A.T * X * E + E.T * X * A -
-            (E.T * X * B + S) * inv(R) * (B.T * X * E + S.T)  + Q, zeros((2,2)))
-        assert_array_almost_equal(inv(R) * (B.T * X * E + S.T), G)
+            (E.T * X * B + S) * solve(R, B.T * X * E + S.T)  + Q, zeros((2,2)))
+        assert_array_almost_equal(solve(R, B.T * X * E + S.T), G)
 
         A = matrix([[-2, -1],[-1, -1]])
         Q = matrix([[0, 0],[0, 1]])
@@ -177,8 +177,8 @@ class TestMatrixEquations(unittest.TestCase):
         # print("The solution obtained is", X)
         assert_array_almost_equal(
             A.T * X * A - X -
-            A.T * X * B * inv(B.T * X * B + R) * B.T * X * A + Q, zeros((2,2)))
-        assert_array_almost_equal(inv(B.T * X * B + R) * B.T * X * A, G)
+            A.T * X * B * solve(B.T * X * B + R, B.T * X * A) + Q, zeros((2,2)))
+        assert_array_almost_equal(solve(B.T * X * B + R, B.T * X * A), G)
         # check for stable closed loop
         lam = eigvals(A - B * G)
         assert_array_less(abs(lam), 1.0)
@@ -192,7 +192,7 @@ class TestMatrixEquations(unittest.TestCase):
         # print("The solution obtained is", X)
         assert_array_almost_equal(
             A.T * X * A - X -
-            A.T * X * B * inv(B.T *  X * B + R) * B.T * X * A + Q, zeros((2,2)))
+            A.T * X * B * solve(B.T *  X * B + R, B.T * X * A) + Q, zeros((2,2)))
         assert_array_almost_equal(B.T * X * A / (B.T * X * B + R), G)
         # check for stable closed loop
         lam = eigvals(A - B * G)
@@ -210,9 +210,9 @@ class TestMatrixEquations(unittest.TestCase):
         # print("The solution obtained is", X)
         assert_array_almost_equal(
             A.T * X * A - E.T * X * E -
-            (A.T * X * B + S) * inv(B.T * X * B + R) * (B.T * X * A + S.T) + Q,
+            (A.T * X * B + S) * solve(B.T * X * B + R, B.T * X * A + S.T) + Q,
             zeros((2,2)) )
-        assert_array_almost_equal(inv(B.T * X * B + R) * (B.T * X * A + S.T), G)
+        assert_array_almost_equal(solve(B.T * X * B + R, B.T * X * A + S.T), G)
         # check for stable closed loop
         lam = eigvals(A - B * G, E)
         assert_array_less(abs(lam), 1.0)
@@ -228,7 +228,7 @@ class TestMatrixEquations(unittest.TestCase):
         # print("The solution obtained is", X)
         assert_array_almost_equal(
             A.T * X * A - E.T * X * E -
-            (A.T * X * B + S) * inv(B.T * X * B + R) * (B.T * X * A + S.T) + Q,
+            (A.T * X * B + S) * solve(B.T * X * B + R, B.T * X * A + S.T) + Q,
             zeros((2,2)) )
         assert_array_almost_equal((B.T * X * A + S.T) / (B.T * X * B + R), G)
         # check for stable closed loop
