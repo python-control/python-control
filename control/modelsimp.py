@@ -177,14 +177,26 @@ def modred(sys, ELIM, method='matchdc'):
     B1 = sys.B[NELIM,:]
     B2 = sys.B[ELIM,:]
 
-    A22I = np.linalg.inv(A22)
-
     if method=='matchdc':
         # if matchdc, residualize
-        Ar = A11 - A12*A22.I*A21
-        Br = B1 - A12*A22.I*B2
-        Cr = C1 - C2*A22.I*A21
-        Dr = sys.D - C2*A22.I*B2
+
+        # Check if the matrix A22 is invertible
+        # if np.linalg.matrix_rank(A22) != len(ELIM):
+        #     raise ValueError("Matrix A22 is singular to working precision.")
+
+        # Now precompute A22\A21 and A22\B2 (A22I = inv(A22))
+        # We can solve two linear systems in one pass, since the
+        # coefficients matrix A22 is the same. Thus, we perform the LU
+        # decomposition (cubic runtime complexity) of A22 only once!
+        # The remaining back substitutions are only quadratic in runtime.
+        A22I_A21_B2 = np.linalg.solve(A22, np.concatenate((A21, B2), axis=1))
+        A22I_A21 = A22I_A21_B2[:, :A21.shape[1]]
+        A22I_B2 = A22I_A21_B2[:, A21.shape[1]:]
+
+        Ar = A11 - A12*A22I_A21
+        Br = B1 - A12*A22I_B2
+        Cr = C1 - C2*A22I_A21
+        Dr = sys.D - C2*A22I_B2
     elif method=='truncate':
         # if truncate, simply discard state x2
         Ar = A11
@@ -373,8 +385,6 @@ def markov(Y, U, M):
     UU = np.hstack((UU, Ulast))
 
     # Invert and solve for Markov parameters
-    H = UU.I
-    H = np.dot(H, Y)
+    H = np.linalg.lstsq(UU, Y)[0]
 
     return H
-
