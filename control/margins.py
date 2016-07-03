@@ -8,7 +8,7 @@ margin.stability_margins
 margin.phase_crossover_frequencies
 """
 
-# Python 3 compatability (needs to go here)
+# Python 3 compatibility (needs to go here)
 from __future__ import print_function
 
 """Copyright (c) 2011 by California Institute of Technology

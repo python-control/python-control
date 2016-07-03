@@ -5,7 +5,7 @@ Matrix equation solvers (Lyapunov, Riccati)
 Implementation of the functions lyap, dlyap, care and dare
 for solution of Lyapunov and Riccati equations. """
 
-# Python 3 compatability (needs to go here)
+# Python 3 compatibility (needs to go here)
 from __future__ import print_function
 
 """Copyright (c) 2011, All rights reserved.
