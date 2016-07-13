@@ -50,6 +50,18 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=3)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=2)
 
+    def testModredUnstable(self):
+        # Check if an error is thrown when an unstable system is given
+        A = np.matrix('4.5418, 3.3999, 5.0342, 4.3808; \
+        0.3890, 0.3599, 0.4195, 0.1760; \
+        -4.2117, -3.2395, -4.6760, -4.2180; \
+        0.0052, 0.0429, 0.0155, 0.2743')
+        B = np.matrix('1.0, 1.0; 2.0, 2.0; 3.0, 3.0; 4.0, 4.0')
+        C = np.matrix('1.0, 2.0, 3.0, 4.0; 1.0, 2.0, 3.0, 4.0')
+        D = np.matrix('0.0, 0.0; 0.0, 0.0')
+        sys = ss(A,B,C,D)
+        np.testing.assert_raises(ValueError, modred, sys, [2, 3])
+
     def testModredTruncate(self):
         #balanced realization computed in matlab for the transfer function:
         # num = [1 11 45 32], den = [1 15 60 200 60]
