@@ -355,10 +355,9 @@ def gram(sys,type):
 
     #TODO: Check system is stable, perhaps a utility in ctrlutil.py
         # or a method of the StateSpace class?
-    D,V = np.linalg.eig(sys.A)
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    if any(e.real >= 0.0 for e in np.linalg.eigvals(sys.A)):
+        raise ValueError("Oops, the system is unstable!")
+
     if type=='c':
         tra = 'T'
         C = -np.dot(sys.B,sys.B.transpose())
@@ -380,4 +379,3 @@ def gram(sys,type):
     X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
     gram = X
     return gram
-

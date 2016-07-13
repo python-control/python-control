@@ -149,16 +149,12 @@ def modred(sys, ELIM, method='matchdc'):
 
 
     #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    if any(e.real >= 0.0 for e in np.linalg.eigvals(sys.A)):
+        raise ValueError("Oops, the system is unstable!")
+
     ELIM = np.sort(ELIM)
-    NELIM = []
     # Create list of elements not to eliminate (NELIM)
-    for i in range(0,len(sys.A)):
-        if i not in ELIM:
-            NELIM.append(i)
+    NELIM = [i for i in range(len(sys.A)) if i not in ELIM]
     # A1 is a matrix of all columns of sys.A not to eliminate
     A1 = sys.A[:,NELIM[0]]
     for i in NELIM[1:]:
@@ -255,12 +251,8 @@ def balred(sys, orders, method='truncate'):
     dico = 'C'
 
     #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    # print D.shape
-    # print D
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    if any(e.real >= 0.0 for e in np.linalg.eigvals(sys.A)):
+        raise ValueError("Oops, the system is unstable!")
 
     if method=='matchdc':
         raise ValueError ("MatchDC not yet supported!")
