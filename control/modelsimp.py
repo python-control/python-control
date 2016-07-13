@@ -181,8 +181,8 @@ def modred(sys, ELIM, method='matchdc'):
         # if matchdc, residualize
 
         # Check if the matrix A22 is invertible
-        # if np.linalg.matrix_rank(A22) != len(ELIM):
-        #     raise ValueError("Matrix A22 is singular to working precision.")
+        if np.linalg.matrix_rank(A22) != len(ELIM):
+            raise ValueError("Matrix A22 is singular to working precision.")
 
         # Now precompute A22\A21 and A22\B2 (A22I = inv(A22))
         # We can solve two linear systems in one pass, since the
