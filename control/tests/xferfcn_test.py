@@ -468,6 +468,12 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H2b.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(H2b.den[0][0], hr.den[0][0])
 
+    def testMinreal3(self):
+        """Regression test for minreal of tf([1,1],[1,1])"""
+        g = TransferFunction([1,1],[1,1]).minreal()
+        np.testing.assert_array_almost_equal(1.0, g.num[0][0])
+        np.testing.assert_array_almost_equal(1.0, g.den[0][0])
+
     def testMIMO(self):
         """Test conversion of a single input, two-output state-space
         system against the same TF"""

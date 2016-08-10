@@ -678,12 +678,9 @@ only implemented for SISO functions.")
                         # keep this zero
                         newzeros.append(z)
 
-                # keep result
-                if len(newzeros):
-                    num[i][j] = gain * real(poly(newzeros))
-                else:
-                    num[i][j] = array([gain])
-                den[i][j] = real(poly(poles))
+                # poly([]) returns a scalar, but we always want a 1d array
+                num[i][j] = np.atleast_1d(gain * real(poly(newzeros)))
+                den[i][j] = np.atleast_1d(real(poly(poles)))
 
         # end result
         return TransferFunction(num, den)
