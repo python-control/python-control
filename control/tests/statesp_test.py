@@ -254,10 +254,14 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_equal(np.diag([2,3]),g6.D)
 
     def test_matrixStaticGain(self):
-        """Regression: can we create a scalar static gain?"""
+        """Regression: can we create matrix static gains?"""
         d1 = np.matrix([[1,2,3],[4,5,6]])
         d2 = np.matrix([[7,8],[9,10],[11,12]])
         g1=StateSpace([],[],[],d1)
+
+        # _remove_useless_states was making A = [[0]]
+        self.assertEqual((0,0), g1.A.shape)
+
         g2=StateSpace([],[],[],d2)
         g3=StateSpace([],[],[],d2.T)
 
@@ -269,6 +273,19 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(solve(np.eye(2)+d1*d2,d1), h3.D)
         h4 = g1.append(g2)
         np.testing.assert_array_equal(block_diag(d1,d2),h4.D)
+
+
+    def test_remove_useless_states(self):
+        """Regression: _remove_useless_states gives correct ABC sizes"""
+        g1 = StateSpace(np.zeros((3,3)),
+                        np.zeros((3,4)),
+                        np.zeros((5,3)),
+                        np.zeros((5,4)))
+        self.assertEqual((0,0), g1.A.shape)
+        self.assertEqual((0,4), g1.B.shape)
+        self.assertEqual((5,0), g1.C.shape)
+        self.assertEqual((5,4), g1.D.shape)
+        self.assertEqual(0, g1.states)
 
 
     def test_BadEmptyMatrices(self):

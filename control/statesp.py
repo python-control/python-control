@@ -146,7 +146,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         if self.states != B.shape[0]:
             raise ValueError("A and B must have the same number of rows.")
         if self.states != C.shape[1]:
-            raise ValueError("A and C C must have the same number of columns.")
+            raise ValueError("A and C must have the same number of columns.")
         if self.inputs != B.shape[1]:
             raise ValueError("B and D must have the same number of columns.")
         if self.outputs != C.shape[0]:
@@ -180,17 +180,10 @@ a StateSpace object.  Recived %s." % type(args[0]))
                 useless.append(i)
 
         # Remove the useless states.
-        if all(useless == range(self.states)):
-            # All the states were useless.
-            self.A = zeros((1, 1))
-            self.B = zeros((1, self.inputs))
-            self.C = zeros((self.outputs, 1))
-        else:
-            # A more typical scenario.
-            self.A = delete(self.A, useless, 0)
-            self.A = delete(self.A, useless, 1)
-            self.B = delete(self.B, useless, 0)
-            self.C = delete(self.C, useless, 1)
+        self.A = delete(self.A, useless, 0)
+        self.A = delete(self.A, useless, 1)
+        self.B = delete(self.B, useless, 0)
+        self.C = delete(self.C, useless, 1)
 
         self.states = self.A.shape[0]
         self.inputs = self.B.shape[1]
