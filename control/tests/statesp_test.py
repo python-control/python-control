@@ -5,9 +5,10 @@
 
 import unittest
 import numpy as np
-from scipy.linalg import eigvals
+from numpy.linalg import solve
+from scipy.linalg import eigvals, block_diag
 from control import matlab
-from control.statesp import StateSpace, _convertToStateSpace
+from control.statesp import StateSpace, _convertToStateSpace,tf2ss
 from control.xferfcn import TransferFunction
 
 class TestStateSpace(unittest.TestCase):
@@ -234,6 +235,51 @@ class TestStateSpace(unittest.TestCase):
 
         sys3 = StateSpace(0., 1., 1., 0.)
         np.testing.assert_equal(sys3.dcgain(), np.nan)
+
+
+    def test_scalarStaticGain(self):
+        """Regression: can we create a scalar static gain?"""
+        g1=StateSpace([],[],[],[2])
+        g2=StateSpace([],[],[],[3])
+
+        # make sure StateSpace internals, specifically ABC matrix
+        # sizes, are OK for LTI operations
+        g3 = g1*g2
+        self.assertEqual(6, g3.D[0,0])
+        g4 = g1+g2
+        self.assertEqual(5, g4.D[0,0])
+        g5 = g1.feedback(g2)
+        self.assertAlmostEqual(2./7, g5.D[0,0])
+        g6 = g1.append(g2)
+        np.testing.assert_array_equal(np.diag([2,3]),g6.D)
+
+    def test_matrixStaticGain(self):
+        """Regression: can we create a scalar static gain?"""
+        d1 = np.matrix([[1,2,3],[4,5,6]])
+        d2 = np.matrix([[7,8],[9,10],[11,12]])
+        g1=StateSpace([],[],[],d1)
+        g2=StateSpace([],[],[],d2)
+        g3=StateSpace([],[],[],d2.T)
+
+        h1 = g1*g2
+        np.testing.assert_array_equal(d1*d2, h1.D)
+        h2 = g1+g3
+        np.testing.assert_array_equal(d1+d2.T, h2.D)
+        h3 = g1.feedback(g2)
+        np.testing.assert_array_almost_equal(solve(np.eye(2)+d1*d2,d1), h3.D)
+        h4 = g1.append(g2)
+        np.testing.assert_array_equal(block_diag(d1,d2),h4.D)
+
+
+    def test_BadEmptyMatrices(self):
+        """Mismatched ABCD matrices when some are empty"""
+        self.assertRaises(ValueError,StateSpace, [1], [],  [],  [1])
+        self.assertRaises(ValueError,StateSpace, [1], [1], [],  [1])
+        self.assertRaises(ValueError,StateSpace, [1], [],  [1], [1])
+        self.assertRaises(ValueError,StateSpace, [],  [1], [],  [1])
+        self.assertRaises(ValueError,StateSpace, [],  [1], [1], [1])
+        self.assertRaises(ValueError,StateSpace, [],  [],  [1], [1])
+        self.assertRaises(ValueError,StateSpace, [1], [1], [1], [])
 
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
