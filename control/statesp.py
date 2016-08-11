@@ -180,17 +180,10 @@ a StateSpace object.  Recived %s." % type(args[0]))
                 useless.append(i)
 
         # Remove the useless states.
-        if all(useless == range(self.states)):
-            # All the states were useless.
-            self.A = zeros((1, 1))
-            self.B = zeros((1, self.inputs))
-            self.C = zeros((self.outputs, 1))
-        else:
-            # A more typical scenario.
-            self.A = delete(self.A, useless, 0)
-            self.A = delete(self.A, useless, 1)
-            self.B = delete(self.B, useless, 0)
-            self.C = delete(self.C, useless, 1)
+        self.A = delete(self.A, useless, 0)
+        self.A = delete(self.A, useless, 1)
+        self.B = delete(self.B, useless, 0)
+        self.C = delete(self.C, useless, 1)
 
         self.states = self.A.shape[0]
         self.inputs = self.B.shape[1]
