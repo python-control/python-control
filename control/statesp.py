@@ -122,34 +122,35 @@ a StateSpace object.  Recived %s." % type(args[0]))
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-        # Here we're going to convert inputs to matrices, if the user gave a
-        # non-matrix type.
-        #! TODO: [A, B, C, D] = map(matrix, [A, B, C, D])?
-        matrices = [A, B, C, D]
-        for i in range(len(matrices)):
-            # Convert to matrix first, if necessary.
-            matrices[i] = matrix(matrices[i])
-        [A, B, C, D] = matrices
+        A, B, C, D = [matrix(M) for M in (A, B, C, D)]
 
-        LTI.__init__(self, B.shape[1], C.shape[0], dt)
+        # TODO: use super here?
+        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
         self.A = A
         self.B = B
         self.C = C
         self.D = D
 
-        self.states = A.shape[0]
+        self.states = A.shape[1]
+
+        if 0 == self.states:
+            # static gain
+            # matrix's default "empty" shape is 1x0
+            A.shape = (0,0)
+            B.shape = (0,self.inputs)
+            C.shape = (self.outputs,0)
 
         # Check that the matrix sizes are consistent.
-        if self.states != A.shape[1]:
+        if self.states != A.shape[0]:
             raise ValueError("A must be square.")
         if self.states != B.shape[0]:
-            raise ValueError("B must have the same row size as A.")
+            raise ValueError("A and B must have the same number of rows.")
         if self.states != C.shape[1]:
-            raise ValueError("C must have the same column size as A.")
-        if self.inputs != D.shape[1]:
-            raise ValueError("D must have the same column size as B.")
-        if self.outputs != D.shape[0]:
-            raise ValueError("D must have the same row size as C.")
+            raise ValueError("A and C C must have the same number of columns.")
+        if self.inputs != B.shape[1]:
+            raise ValueError("B and D must have the same number of columns.")
+        if self.outputs != C.shape[0]:
+            raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
         self._remove_useless_states()
