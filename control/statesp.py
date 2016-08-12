@@ -146,7 +146,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         if self.states != B.shape[0]:
             raise ValueError("A and B must have the same number of rows.")
         if self.states != C.shape[1]:
-            raise ValueError("A and C C must have the same number of columns.")
+            raise ValueError("A and C must have the same number of columns.")
         if self.inputs != B.shape[1]:
             raise ValueError("B and D must have the same number of columns.")
         if self.outputs != C.shape[0]:
