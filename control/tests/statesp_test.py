@@ -298,6 +298,17 @@ class TestStateSpace(unittest.TestCase):
         self.assertRaises(ValueError,StateSpace, [],  [],  [1], [1])
         self.assertRaises(ValueError,StateSpace, [1], [1], [1], [])
 
+
+    def test_minrealStaticGain(self):
+        """Regression: minreal on static gain was failing"""
+        g1 = StateSpace([],[],[],[1])
+        g2 = g1.minreal()
+        np.testing.assert_array_equal(g1.A, g2.A)
+        np.testing.assert_array_equal(g1.B, g2.B)
+        np.testing.assert_array_equal(g1.C, g2.C)
+        np.testing.assert_array_equal(g1.D, g2.D)
+
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
 
