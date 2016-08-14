@@ -95,7 +95,6 @@ class TestXferFcn(unittest.TestCase):
 
     # Tests for TransferFunction.__neg__
 
-    @unittest.skip("skipping, known issue with Python 3")
     def testNegScalar(self):
         """Negate a direct feedthrough system."""
 
@@ -367,7 +366,6 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_almost_equal(omega, trueomega)
 
-    @unittest.skip("skipping, known issue with Python 3")
     def testFreqRespMIMO(self):
         """Evaluate the magnitude and phase of a MIMO system at multiple
         frequencies."""
