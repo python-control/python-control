@@ -31,8 +31,7 @@ before_install:
   - conda update -q conda
   # conda-build must be installed in the conda root environment
   - conda install conda-build
-  # TODO: point at conda.anaconda.org?
-  - conda config --add channels http://conda.binstar.org/cwrowley
+  - conda config --add channels python-control
   - conda info -a
   - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage slycot
   - source activate test-environment
