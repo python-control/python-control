@@ -355,7 +355,7 @@ def gram(sys,type):
 
     #TODO: Check system is stable, perhaps a utility in ctrlutil.py
         # or a method of the StateSpace class?
-    if any(e.real >= 0.0 for e in np.linalg.eigvals(sys.A)):
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
         raise ValueError("Oops, the system is unstable!")
 
     if type=='c':

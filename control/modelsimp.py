@@ -149,7 +149,7 @@ def modred(sys, ELIM, method='matchdc'):
 
 
     #Check system is stable
-    if any(e.real >= 0.0 for e in np.linalg.eigvals(sys.A)):
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
         raise ValueError("Oops, the system is unstable!")
 
     ELIM = np.sort(ELIM)
@@ -251,7 +251,7 @@ def balred(sys, orders, method='truncate'):
     dico = 'C'
 
     #Check system is stable
-    if any(e.real >= 0.0 for e in np.linalg.eigvals(sys.A)):
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
         raise ValueError("Oops, the system is unstable!")
 
     if method=='matchdc':
