@@ -399,7 +399,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def pole(self):
         """Compute the poles of a state space system."""
 
-        return eigvals(self.A)
+        return eigvals(self.A) if self.states else np.array([])
 
     def zero(self):
         """Compute the zeros of a state space system."""

@@ -378,6 +378,12 @@ class TestDrss(unittest.TestCase):
                         self.assertTrue(abs(z) < 1)
 
 
+    def testPoleStatic(self):
+        """Regression: pole() of static gain is empty array"""
+        np.testing.assert_array_equal(np.array([]),
+                                      StateSpace([],[],[],[[1]]).pole())
+
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
 
