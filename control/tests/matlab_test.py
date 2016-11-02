@@ -161,6 +161,10 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
+        yout, tout, xout = step(sys, T=t, X0=0, return_x=True)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
         #Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
         y_00, _t = step(sys, T=t, input=0, output=0)
@@ -188,6 +192,20 @@ class TestMatlab(unittest.TestCase):
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
+            # Play with arguments
+            yout, tout = impulse(sys, T=t, X0=0)
+            np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+            np.testing.assert_array_almost_equal(tout, t)
+
+            X0 = np.array([0, 0]);
+            yout, tout = impulse(sys, T=t, X0=X0)
+            np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+            np.testing.assert_array_almost_equal(tout, t)
+
+            yout, tout, xout = impulse(sys, T=t, X0=0, return_x=True)
+            np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+            np.testing.assert_array_almost_equal(tout, t)
+
             #Test MIMO system, which contains ``siso_ss1`` twice
             sys = self.mimo_ss1
             y_00, _t = impulse(sys, T=t, input=0, output=0)
@@ -203,6 +221,11 @@ class TestMatlab(unittest.TestCase):
         youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                              1.1508, 0.5833, 0.1645, -0.1391])
         yout, tout = initial(sys, T=t, X0=x0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        # Play with arguments
+        yout, tout, xout = initial(sys, T=t, X0=x0, return_x=True)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 

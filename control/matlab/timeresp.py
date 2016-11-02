@@ -118,7 +118,7 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
 
     return yout, T
 
-def initial(sys, T=None, X0=0., input=None, output=None):
+def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
     '''
     Initial condition response of a linear system
 

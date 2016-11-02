@@ -87,6 +87,20 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
+        # Play with arguments
+        tout, yout = impulse_response(sys, T=t, X0=0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        X0 = np.array([0, 0])
+        tout, yout = impulse_response(sys, T=t, X0=X0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        tout, yout, xout = impulse_response(sys, T=t, X0=0, return_x=True)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
         # Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
         _t, y_00 = impulse_response(sys, T=t, input=0, output=0)
@@ -108,6 +122,11 @@ class TestTimeresp(unittest.TestCase):
         youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                              1.1508, 0.5833, 0.1645, -0.1391])
         tout, yout = initial_response(sys, T=t, X0=x0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        # Play with arguments
+        tout, yout, xout = initial_response(sys, T=t, X0=x0, return_x=True)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
