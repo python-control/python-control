@@ -40,11 +40,11 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     yout: array
         Response of the system
 
-    xout: array (if selected)
-        Individual response of each x variable
-
     T: array
         Time values of the output
+
+    xout: array (if selected)
+        Individual response of each x variable
 
 
 
@@ -62,11 +62,11 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
                                   transpose = True, return_x=True)
 
     if return_x:
-        return yout, xout, T
+        return yout, T, xout
 
     return yout, T
 
-def impulse(sys, T=None, input=0, output=None):
+def impulse(sys, T=None, input=0, output=None, return_x=False):
     '''
     Impulse response of a linear system
 
@@ -94,8 +94,12 @@ def impulse(sys, T=None, input=0, output=None):
     -------
     yout: array
         Response of the system
+
     T: array
         Time values of the output
+
+    xout: array (if selected)
+        Individual response of each x variable
 
     See Also
     --------
@@ -106,8 +110,12 @@ def impulse(sys, T=None, input=0, output=None):
     >>> yout, T = impulse(sys, T)
     '''
     from ..timeresp import impulse_response
-    T, yout = impulse_response(sys, T, 0, input, output,
-                                        transpose = True)
+    T, yout, xout = impulse_response(sys, T, 0, input, output,
+                                     transpose = True, return_x=True)
+
+    if return_x:
+        return yout, T, xout
+
     return yout, T
 
 def initial(sys, T=None, X0=0., input=None, output=None):
@@ -142,8 +150,12 @@ def initial(sys, T=None, X0=0., input=None, output=None):
     -------
     yout: array
         Response of the system
+
     T: array
         Time values of the output
+
+    xout: array (if selected)
+        Individual response of each x variable
 
     See Also
     --------
@@ -155,8 +167,12 @@ def initial(sys, T=None, X0=0., input=None, output=None):
 
     '''
     from ..timeresp import initial_response
-    T, yout = initial_response(sys, T, X0, output=output,
-                               transpose=True)
+    T, yout, xout = initial_response(sys, T, X0, output=output,
+                                     transpose=True, return_x=True)
+
+    if return_x:
+        return yout, T, xout
+
     return yout, T
 
 def lsim(sys, U=0., T=None, X0=0.):
