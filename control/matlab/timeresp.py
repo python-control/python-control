@@ -66,7 +66,7 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
 
     return yout, T
 
-def impulse(sys, T=None, input=0, output=None, return_x=False):
+def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     '''
     Impulse response of a linear system
 
@@ -83,6 +83,11 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
 
     T: array-like object, optional
         Time vector (argument is autocomputed if not given)
+
+    X0: array-like or number, optional
+        Initial condition (default = 0)
+
+        Numbers are converted to constant arrays with the correct shape.
 
     input: int
         Index of the input that will be used in this simulation.
@@ -110,7 +115,7 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
     >>> yout, T = impulse(sys, T)
     '''
     from ..timeresp import impulse_response
-    T, yout, xout = impulse_response(sys, T, 0, input, output,
+    T, yout, xout = impulse_response(sys, T, X0, input, output,
                                      transpose = True, return_x=True)
 
     if return_x:
