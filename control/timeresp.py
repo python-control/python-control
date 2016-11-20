@@ -493,7 +493,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
 
 
 def initial_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False):
+                     transpose=False, return_x=False):
     # pylint: disable=W0622
     """Initial condition response of a linear system
 
@@ -535,6 +535,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
         Time values of the output
     yout: array
         Response of the system
+    xout: array
+        Individual response of each x variable
 
     See Also
     --------
@@ -553,11 +555,15 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose)
+
+    if return_x:
+        return T, yout, _xout
+
     return T, yout
 
 
 def impulse_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False):
+                     transpose=False, return_x=False):
     # pylint: disable=W0622
     """Impulse response of a linear system
 
@@ -599,6 +605,8 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
         Time values of the output
     yout: array
         Response of the system
+    xout: array
+        Individual response of each x variable
 
     See Also
     --------
@@ -637,4 +645,8 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     T, yout, _xout = forced_response(
         sys, T, U, new_X0,
         transpose=transpose)
+
+    if return_x:
+        return T, yout, _xout
+
     return T, yout
