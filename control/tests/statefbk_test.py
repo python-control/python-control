@@ -145,11 +145,13 @@ class TestStatefbk(unittest.TestCase):
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_LQR_integrator(self):
         A, B, Q, R = 0., 1., 10., 2.
         K, S, poles = lqr(A, B, Q, R)
         self.check_LQR(K, S, poles, Q, R)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_LQR_3args(self):
         sys = ss(0., 1., 1., 0.)
         Q, R = 10., 2.

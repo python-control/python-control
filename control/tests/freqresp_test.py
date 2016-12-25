@@ -10,6 +10,7 @@ import unittest
 import numpy as np
 from control.statesp import StateSpace
 from control.matlab import ss, tf, bode
+from control.exception import slycot_check
 import matplotlib.pyplot as plt
 
 class TestFreqresp(unittest.TestCase):
@@ -42,6 +43,7 @@ class TestFreqresp(unittest.TestCase):
       sys = ss(A, B, C, D);
       bode(sys);
 
+   @unittest.skipIf(not slycot_check(), "slycot not installed")
    def test_mimo(self):
       # MIMO
       B = np.matrix('1,0;0,1')

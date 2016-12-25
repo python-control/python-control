@@ -15,6 +15,7 @@ from scipy.linalg import eigvals
 import scipy as sp
 from control.matlab import *
 from control.frdata import FRD
+from control.exception import slycot_check
 import warnings
 
 # for running these through Matlab or Octave
@@ -165,12 +166,13 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
-        #Test MIMO system, which contains ``siso_ss1`` twice
-        sys = self.mimo_ss1
-        y_00, _t = step(sys, T=t, input=0, output=0)
-        y_11, _t = step(sys, T=t, input=1, output=1)
-        np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
-        np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
+        if slycot_check():
+            # Test MIMO system, which contains ``siso_ss1`` twice
+            sys = self.mimo_ss1
+            y_00, _t = step(sys, T=t, input=0, output=0)
+            y_11, _t = step(sys, T=t, input=1, output=1)
+            np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
+            np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testImpulse(self):
         t = np.linspace(0, 1, 10)
@@ -206,12 +208,13 @@ class TestMatlab(unittest.TestCase):
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
-            #Test MIMO system, which contains ``siso_ss1`` twice
-            sys = self.mimo_ss1
-            y_00, _t = impulse(sys, T=t, input=0, output=0)
-            y_11, _t = impulse(sys, T=t, input=1, output=1)
-            np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
-            np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
+            if slycot_check():
+                #Test MIMO system, which contains ``siso_ss1`` twice
+                sys = self.mimo_ss1
+                y_00, _t = impulse(sys, T=t, input=0, output=0)
+                y_11, _t = impulse(sys, T=t, input=1, output=1)
+                np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
+                np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testInitial(self):
         #Test SISO system
@@ -229,13 +232,14 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
-        #Test MIMO system, which contains ``siso_ss1`` twice
-        sys = self.mimo_ss1
-        x0 = np.matrix(".5; 1.; .5; 1.")
-        y_00, _t = initial(sys, T=t, X0=x0, input=0, output=0)
-        y_11, _t = initial(sys, T=t, X0=x0, input=1, output=1)
-        np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
-        np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
+        if slycot_check():
+            #Test MIMO system, which contains ``siso_ss1`` twice
+            sys = self.mimo_ss1
+            x0 = np.matrix(".5; 1.; .5; 1.")
+            y_00, _t = initial(sys, T=t, X0=x0, input=0, output=0)
+            y_11, _t = initial(sys, T=t, X0=x0, input=1, output=1)
+            np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
+            np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
     def testLsim(self):
         t = np.linspace(0, 1, 10)
@@ -259,18 +263,19 @@ class TestMatlab(unittest.TestCase):
         yout, _t, _xout = lsim(self.siso_ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
-        #Test MIMO system, which contains ``siso_ss1`` twice
-        #first system: initial value, second system: step response
-        u = np.array([[0., 1.], [0, 1], [0, 1], [0, 1], [0, 1],
-                      [0, 1], [0, 1], [0, 1], [0, 1], [0, 1]])
-        x0 = np.matrix(".5; 1; 0; 0")
-        youttrue = np.array([[11., 9.], [8.1494, 17.6457], [5.9361, 24.7072],
-                             [4.2258, 30.4855], [2.9118, 35.2234],
-                             [1.9092, 39.1165], [1.1508, 42.3227],
-                             [0.5833, 44.9694], [0.1645, 47.1599],
-                             [-0.1391, 48.9776]])
-        yout, _t, _xout = lsim(self.mimo_ss1, u, t, x0)
-        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        if slycot_check():
+            #Test MIMO system, which contains ``siso_ss1`` twice
+            #first system: initial value, second system: step response
+            u = np.array([[0., 1.], [0, 1], [0, 1], [0, 1], [0, 1],
+                          [0, 1], [0, 1], [0, 1], [0, 1], [0, 1]])
+            x0 = np.matrix(".5; 1; 0; 0")
+            youttrue = np.array([[11., 9.], [8.1494, 17.6457],
+                                 [5.9361, 24.7072], [4.2258, 30.4855],
+                                 [2.9118, 35.2234], [1.9092, 39.1165],
+                                 [1.1508, 42.3227], [0.5833, 44.9694],
+                                 [0.1645, 47.1599], [-0.1391, 48.9776]])
+            yout, _t, _xout = lsim(self.mimo_ss1, u, t, x0)
+            np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
     def testMargin(self):
         #! TODO: check results to make sure they are OK
@@ -310,11 +315,12 @@ class TestMatlab(unittest.TestCase):
              gain_sim],
             [59, 59, 59, 59, 59])
 
-        # Test with MIMO system, which contains ``siso_ss1`` twice
-        gain_mimo = dcgain(self.mimo_ss1)
-        # print('gain_mimo: \n', gain_mimo)
-        np.testing.assert_array_almost_equal(gain_mimo, [[59., 0 ],
-                                                         [0,  59.]])
+        if slycot_check():
+            # Test with MIMO system, which contains ``siso_ss1`` twice
+            gain_mimo = dcgain(self.mimo_ss1)
+            # print('gain_mimo: \n', gain_mimo)
+            np.testing.assert_array_almost_equal(gain_mimo, [[59., 0 ],
+                                                             [0,  59.]])
 
     def testBode(self):
         bode(self.siso_ss1)
@@ -370,29 +376,35 @@ class TestMatlab(unittest.TestCase):
         evalfr(self.siso_tf1, w)
         evalfr(self.siso_tf2, w)
         evalfr(self.siso_tf3, w)
-        np.testing.assert_array_almost_equal(
-            evalfr(self.mimo_ss1, w),
-            np.array( [[44.8-21.4j, 0.], [0., 44.8-21.4j]]))
+        if slycot_check():
+            np.testing.assert_array_almost_equal(
+                evalfr(self.mimo_ss1, w),
+                np.array( [[44.8-21.4j, 0.], [0., 44.8-21.4j]]))
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testHsvd(self):
         hsvd(self.siso_ss1)
         hsvd(self.siso_ss2)
         hsvd(self.siso_ss3)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testBalred(self):
         balred(self.siso_ss1, 1)
         balred(self.siso_ss2, 2)
         balred(self.siso_ss3, [2, 2])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testModred(self):
         modred(self.siso_ss1, [1])
         modred(self.siso_ss2 * self.siso_ss3, [1, 2])
         modred(self.siso_ss3, [1], 'matchdc')
         modred(self.siso_ss3, [1], 'truncate')
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace(self):
         place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testLQR(self):
         (K, S, E) = lqr(self.siso_ss1.A, self.siso_ss1.B, np.eye(2), np.eye(1))
         (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, np.eye(3), \
@@ -416,6 +428,7 @@ class TestMatlab(unittest.TestCase):
         obsv(self.siso_ss1.A, self.siso_ss1.C)
         obsv(self.siso_ss2.A, self.siso_ss2.C)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGram(self):
         gram(self.siso_ss1, 'c')
         gram(self.siso_ss2, 'c')
@@ -452,6 +465,7 @@ class TestMatlab(unittest.TestCase):
         for i in range(len(ssdata_1)):
             np.testing.assert_array_almost_equal(ssdata_1[i], ssdata_2[i])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMOssdata(self):
         m = (self.mimo_ss1.A, self.mimo_ss1.B, self.mimo_ss1.C, self.mimo_ss1.D)
         ssdata_1 = ssdata(self.mimo_ss1);
@@ -532,6 +546,7 @@ class TestMatlab(unittest.TestCase):
         frd2 = frd(frd1.fresp[0,0,:], omega)
         assert isinstance(frd2, FRD)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMinreal(self, verbose=False):
         """Test a minreal model reduction"""
         #A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]

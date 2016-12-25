@@ -22,7 +22,7 @@ from control.statesp import _mimo2siso
 from control.statefbk import ctrb, obsv
 from control.freqplot import bode
 from control.matlab import tf
-
+from control.exception import slycot_check
 
 class TestConvert(unittest.TestCase):
     """Test state space and transfer function conversions."""
@@ -35,7 +35,8 @@ class TestConvert(unittest.TestCase):
         # Maximum number of states to test + 1
         self.maxStates = 4
         # Maximum number of inputs and outputs to test + 1
-        self.maxIO = 5
+        # If slycot is not installed, just check SISO 
+        self.maxIO = 5 if slycot_check() else 2
         # Set to True to print systems to the output.
         self.debug = False
         # get consistent results
