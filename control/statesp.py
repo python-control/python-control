@@ -52,7 +52,7 @@ $Id$
 
 import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
+    dot, empty, exp, eye, ones, pi, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
@@ -65,6 +65,19 @@ from .xferfcn import _convertToTransferFunction
 from copy import deepcopy
 
 __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
+
+
+def _matrix(a):
+    """_matrix(a) -> numpy.matrix
+    a - passed to numpy.matrix
+    Wrapper around numpy.matrix; unlike that function,  _matrix([]) will be 0x0
+    """
+    from numpy import matrix
+    am = matrix(a)
+    if (1,0) == am.shape:
+        am.shape = (0,0)
+    return am
+
 
 class StateSpace(LTI):
     """A class for representing state-space models
@@ -122,34 +135,35 @@ a StateSpace object.  Recived %s." % type(args[0]))
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-        # Here we're going to convert inputs to matrices, if the user gave a
-        # non-matrix type.
-        #! TODO: [A, B, C, D] = map(matrix, [A, B, C, D])?
-        matrices = [A, B, C, D]
-        for i in range(len(matrices)):
-            # Convert to matrix first, if necessary.
-            matrices[i] = matrix(matrices[i])
-        [A, B, C, D] = matrices
+        A, B, C, D = [_matrix(M) for M in (A, B, C, D)]
 
-        LTI.__init__(self, B.shape[1], C.shape[0], dt)
+        # TODO: use super here?
+        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
         self.A = A
         self.B = B
         self.C = C
         self.D = D
 
-        self.states = A.shape[0]
+        self.states = A.shape[1]
+
+        if 0 == self.states:
+            # static gain
+            # matrix's default "empty" shape is 1x0
+            A.shape = (0,0)
+            B.shape = (0,self.inputs)
+            C.shape = (self.outputs,0)
 
         # Check that the matrix sizes are consistent.
-        if self.states != A.shape[1]:
+        if self.states != A.shape[0]:
             raise ValueError("A must be square.")
         if self.states != B.shape[0]:
-            raise ValueError("B must have the same row size as A.")
+            raise ValueError("A and B must have the same number of rows.")
         if self.states != C.shape[1]:
-            raise ValueError("C must have the same column size as A.")
-        if self.inputs != D.shape[1]:
-            raise ValueError("D must have the same column size as B.")
-        if self.outputs != D.shape[0]:
-            raise ValueError("D must have the same row size as C.")
+            raise ValueError("A and C must have the same number of columns.")
+        if self.inputs != B.shape[1]:
+            raise ValueError("B and D must have the same number of columns.")
+        if self.outputs != C.shape[0]:
+            raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
         self._remove_useless_states()
@@ -179,17 +193,10 @@ a StateSpace object.  Recived %s." % type(args[0]))
                 useless.append(i)
 
         # Remove the useless states.
-        if all(useless == range(self.states)):
-            # All the states were useless.
-            self.A = zeros((1, 1))
-            self.B = zeros((1, self.inputs))
-            self.C = zeros((self.outputs, 1))
-        else:
-            # A more typical scenario.
-            self.A = delete(self.A, useless, 0)
-            self.A = delete(self.A, useless, 1)
-            self.B = delete(self.B, useless, 0)
-            self.C = delete(self.C, useless, 1)
+        self.A = delete(self.A, useless, 0)
+        self.A = delete(self.A, useless, 1)
+        self.B = delete(self.B, useless, 0)
+        self.C = delete(self.C, useless, 1)
 
         self.states = self.A.shape[0]
         self.inputs = self.B.shape[1]
@@ -333,8 +340,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             return _convertToStateSpace(other) * self
 
         # try to treat this as a matrix
+        # TODO: doesn't _convertToStateSpace do this anyway?
         try:
-            X = matrix(other)
+            X = _matrix(other)
             C = X * self.C
             D = X * self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
@@ -692,11 +700,9 @@ cannot take keywords.")
 
     # If this is a matrix, try to create a constant feedthrough
     try:
-        D = matrix(sys)
-        outputs, inputs = D.shape
-
-        return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), D)
-    except Exception(e):
+        D = _matrix(sys)
+        return StateSpace([], [], [], D)
+    except Exception as e:
         print("Failure to assume argument is matrix-like in" \
             " _convertToStateSpace, result %s" % e)
 
