@@ -56,6 +56,8 @@ class TestPhasePlot(unittest.TestCase):
     def testNoArrows(self):
         # Test case from aramakrl that was generating a type error
         # System does not have arrows
+        # cf. issue #96,
+        # https://github.com/python-control/python-control/issues/96
         def d1(x1x2,t):
             x1,x2 = x1x2
             return np.array([x2, x2 - 2*x1])
