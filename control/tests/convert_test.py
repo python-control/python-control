@@ -162,6 +162,29 @@ class TestConvert(unittest.TestCase):
                             np.testing.assert_array_almost_equal( \
                                 ssorig_imag, tfxfrm_imag)
 
+    def testConvertMIMO(self):
+        """Test state space to transfer function conversion."""
+        verbose = self.debug
+
+        # Do a MIMO conversation and make sure that it is processed
+        # correctly both with and without slycot
+        #
+        # Example from issue #120, jgoppert
+        import control
+
+        # Set up a transfer function (should always work)
+        tfcn = control.tf([[[-235, 1.146e4],
+                          [-235, 1.146E4],
+                          [-235, 1.146E4, 0]]],
+                        [[[1, 48.78, 0],
+                          [1, 48.78, 0, 0],
+                          [0.008, 1.39, 48.78]]])
+
+        # Convert to state space and look for an error
+        if (not slycot_check()):
+            self.assertRaises(TypeError, control.tf2ss, tfcn)
+
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
 
