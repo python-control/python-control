@@ -66,6 +66,7 @@ from .ctrlutil import *
 from .frdata import *
 from .canonical import *
 from .robust import *
+from .config import *
 
 # Exceptions
 from .exception import *

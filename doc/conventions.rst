@@ -1,5 +1,7 @@
 .. _conventions-ref:
 
+.. currentmodule:: control
+
 ###################
 Library conventions
 ###################
@@ -74,3 +76,28 @@ can be computed like this::
 
     ft = D * U
 
+Package configuration
+=====================
+
+The python-control library can be customized to allow for different plotting
+conventions.  The currently configurable options allow the units for Bode
+plots to be set as dB for gain, degrees for phase and Hertz for frequency
+(MATLAB conventions) or the gain can be given in magnitude units (powers of
+10), corresponding to the conventions used in `Feedback Systems
+<http://www.cds.caltech.edu/~murray/FBSwiki>`_.
+
+Variables that can be configured, along with their default values:
+  * bode_dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
+  * bode_deg (True): Bode plot phase plotted in degrees (otherwise radians)
+  * bode_Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
+  * bode_number_of_samples (None): Number of frequency points in Bode plots
+  * bode_feature_periphery_decade (1.0): How many decades to include in the
+    frequency range on both sides of features (poles, zeros). 
+
+Functions that can be used to set standard configurations:
+
+.. autosummary::
+    :toctree: generated/
+
+    use_fbs_defaults
+    use_matlab_defaults
