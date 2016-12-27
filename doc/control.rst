@@ -26,13 +26,9 @@ Frequency domain plotting
 .. autosummary::
     :toctree: generated/
 
-    bode
     bode_plot
-    nyquist
     nyquist_plot
-    gangof4
     gangof4_plot
-    nichols
     nichols_plot
 
 Time domain simulation
