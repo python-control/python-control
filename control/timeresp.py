@@ -387,6 +387,9 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
+    return_x: bool
+        If True, return the state vector (default = False).
+
     Returns
     -------
     T: array
@@ -463,6 +466,9 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
+    return_x: bool
+        If True, return the state vector (default = False).
+
     Returns
     -------
     T: array
@@ -532,6 +538,9 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
+
+    return_x: bool
+        If True, return the state vector (default = False).
 
     Returns
     -------
