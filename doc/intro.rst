@@ -58,7 +58,7 @@ The package requires `numpy` and `scipy`, and the plotting routines require
 a Python wrapper around some FORTRAN routines.  Many parts of `python-control`
 will work without `slycot`, but some functionality is limited or absent, and
 installation of `slycot` is recommended.  For more information, see the GitHub
-repository for `slycot <https://github.com/jgoppert/Slycot>`_.
+repository for `slycot <https://github.com/python-control/Slycot>`_.
 
 Getting Started
 ---------------
