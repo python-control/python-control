@@ -17,8 +17,21 @@ System creation
 
     ss
     tf
+    frd
     rss
     drss
+
+System interconnections
+=======================
+.. autosummary::
+   :toctree: generated/
+
+   append
+   connect
+   feedback
+   negate
+   parallel
+   series
 
 Frequency domain plotting
 =========================
@@ -88,6 +101,8 @@ Control system synthesis
     :toctree: generated/
 
     acker
+    h2syn
+    hinfsyn
     lqr
     place
 
@@ -111,12 +126,15 @@ Utility functions and conversions
     unwrap
     db2mag
     mag2db
+    damp
     isctime
     isdtime
+    issiso
     issys
     pade
     sample_system
     canonical_form
+    observable_form
     reachable_form
     ss2tf
     ssdata
