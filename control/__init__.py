@@ -65,6 +65,7 @@ from .xferfcn import *
 from .ctrlutil import *
 from .frdata import *
 from .canonical import *
+from .robust import *
 
 # Exceptions
 from .exception import *
