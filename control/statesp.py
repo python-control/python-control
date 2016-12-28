@@ -485,7 +485,7 @@ inputs/outputs for feedback.")
             except ImportError:
                 raise TypeError("minreal requires slycot tb01pd")
         else:
-                return StateSpace(self)
+            return StateSpace(self)
 
 
     # TODO: add discrete time check
