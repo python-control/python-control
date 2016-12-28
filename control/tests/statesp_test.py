@@ -5,7 +5,8 @@
 
 import unittest
 import numpy as np
-from scipy.linalg import eigvals
+from numpy.linalg import solve
+from scipy.linalg import eigvals, block_diag
 from control import matlab
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction
@@ -235,6 +236,79 @@ class TestStateSpace(unittest.TestCase):
         sys3 = StateSpace(0., 1., 1., 0.)
         np.testing.assert_equal(sys3.dcgain(), np.nan)
 
+
+    def test_scalarStaticGain(self):
+        """Regression: can we create a scalar static gain?"""
+        g1=StateSpace([],[],[],[2])
+        g2=StateSpace([],[],[],[3])
+
+        # make sure StateSpace internals, specifically ABC matrix
+        # sizes, are OK for LTI operations
+        g3 = g1*g2
+        self.assertEqual(6, g3.D[0,0])
+        g4 = g1+g2
+        self.assertEqual(5, g4.D[0,0])
+        g5 = g1.feedback(g2)
+        self.assertAlmostEqual(2./7, g5.D[0,0])
+        g6 = g1.append(g2)
+        np.testing.assert_array_equal(np.diag([2,3]),g6.D)
+
+    def test_matrixStaticGain(self):
+        """Regression: can we create matrix static gains?"""
+        d1 = np.matrix([[1,2,3],[4,5,6]])
+        d2 = np.matrix([[7,8],[9,10],[11,12]])
+        g1=StateSpace([],[],[],d1)
+
+        # _remove_useless_states was making A = [[0]]
+        self.assertEqual((0,0), g1.A.shape)
+
+        g2=StateSpace([],[],[],d2)
+        g3=StateSpace([],[],[],d2.T)
+
+        h1 = g1*g2
+        np.testing.assert_array_equal(d1*d2, h1.D)
+        h2 = g1+g3
+        np.testing.assert_array_equal(d1+d2.T, h2.D)
+        h3 = g1.feedback(g2)
+        np.testing.assert_array_almost_equal(solve(np.eye(2)+d1*d2,d1), h3.D)
+        h4 = g1.append(g2)
+        np.testing.assert_array_equal(block_diag(d1,d2),h4.D)
+
+
+    def test_remove_useless_states(self):
+        """Regression: _remove_useless_states gives correct ABC sizes"""
+        g1 = StateSpace(np.zeros((3,3)),
+                        np.zeros((3,4)),
+                        np.zeros((5,3)),
+                        np.zeros((5,4)))
+        self.assertEqual((0,0), g1.A.shape)
+        self.assertEqual((0,4), g1.B.shape)
+        self.assertEqual((5,0), g1.C.shape)
+        self.assertEqual((5,4), g1.D.shape)
+        self.assertEqual(0, g1.states)
+
+
+    def test_BadEmptyMatrices(self):
+        """Mismatched ABCD matrices when some are empty"""
+        self.assertRaises(ValueError,StateSpace, [1], [],  [],  [1])
+        self.assertRaises(ValueError,StateSpace, [1], [1], [],  [1])
+        self.assertRaises(ValueError,StateSpace, [1], [],  [1], [1])
+        self.assertRaises(ValueError,StateSpace, [],  [1], [],  [1])
+        self.assertRaises(ValueError,StateSpace, [],  [1], [1], [1])
+        self.assertRaises(ValueError,StateSpace, [],  [],  [1], [1])
+        self.assertRaises(ValueError,StateSpace, [1], [1], [1], [])
+
+
+    def test_minrealStaticGain(self):
+        """Regression: minreal on static gain was failing"""
+        g1 = StateSpace([],[],[],[1])
+        g2 = g1.minreal()
+        np.testing.assert_array_equal(g1.A, g2.A)
+        np.testing.assert_array_equal(g1.B, g2.B)
+        np.testing.assert_array_equal(g1.C, g2.C)
+        np.testing.assert_array_equal(g1.D, g2.D)
+
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
 
@@ -302,6 +376,12 @@ class TestDrss(unittest.TestCase):
                     p = sys.pole()
                     for z in p:
                         self.assertTrue(abs(z) < 1)
+
+
+    def testPoleStatic(self):
+        """Regression: pole() of static gain is empty array"""
+        np.testing.assert_array_equal(np.array([]),
+                                      StateSpace([],[],[],[[1]]).pole())
 
 
 def suite():

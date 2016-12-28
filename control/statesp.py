@@ -122,34 +122,35 @@ a StateSpace object.  Recived %s." % type(args[0]))
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-        # Here we're going to convert inputs to matrices, if the user gave a
-        # non-matrix type.
-        #! TODO: [A, B, C, D] = map(matrix, [A, B, C, D])?
-        matrices = [A, B, C, D]
-        for i in range(len(matrices)):
-            # Convert to matrix first, if necessary.
-            matrices[i] = matrix(matrices[i])
-        [A, B, C, D] = matrices
+        A, B, C, D = [matrix(M) for M in (A, B, C, D)]
 
-        LTI.__init__(self, B.shape[1], C.shape[0], dt)
+        # TODO: use super here?
+        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
         self.A = A
         self.B = B
         self.C = C
         self.D = D
 
-        self.states = A.shape[0]
+        self.states = A.shape[1]
+
+        if 0 == self.states:
+            # static gain
+            # matrix's default "empty" shape is 1x0
+            A.shape = (0,0)
+            B.shape = (0,self.inputs)
+            C.shape = (self.outputs,0)
 
         # Check that the matrix sizes are consistent.
-        if self.states != A.shape[1]:
+        if self.states != A.shape[0]:
             raise ValueError("A must be square.")
         if self.states != B.shape[0]:
-            raise ValueError("B must have the same row size as A.")
+            raise ValueError("A and B must have the same number of rows.")
         if self.states != C.shape[1]:
-            raise ValueError("C must have the same column size as A.")
-        if self.inputs != D.shape[1]:
-            raise ValueError("D must have the same column size as B.")
-        if self.outputs != D.shape[0]:
-            raise ValueError("D must have the same row size as C.")
+            raise ValueError("A and C must have the same number of columns.")
+        if self.inputs != B.shape[1]:
+            raise ValueError("B and D must have the same number of columns.")
+        if self.outputs != C.shape[0]:
+            raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
         self._remove_useless_states()
@@ -179,17 +180,10 @@ a StateSpace object.  Recived %s." % type(args[0]))
                 useless.append(i)
 
         # Remove the useless states.
-        if all(useless == range(self.states)):
-            # All the states were useless.
-            self.A = zeros((1, 1))
-            self.B = zeros((1, self.inputs))
-            self.C = zeros((self.outputs, 1))
-        else:
-            # A more typical scenario.
-            self.A = delete(self.A, useless, 0)
-            self.A = delete(self.A, useless, 1)
-            self.B = delete(self.B, useless, 0)
-            self.C = delete(self.C, useless, 1)
+        self.A = delete(self.A, useless, 0)
+        self.A = delete(self.A, useless, 1)
+        self.B = delete(self.B, useless, 0)
+        self.C = delete(self.C, useless, 1)
 
         self.states = self.A.shape[0]
         self.inputs = self.B.shape[1]
@@ -405,7 +399,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def pole(self):
         """Compute the poles of a state space system."""
 
-        return eigvals(self.A)
+        return eigvals(self.A) if self.states else np.array([])
 
     def zero(self):
         """Compute the zeros of a state space system."""
@@ -477,18 +471,22 @@ inputs/outputs for feedback.")
     def minreal(self, tol=0.0):
         """Calculate a minimal realization, removes unobservable and
         uncontrollable states"""
-        try:
-            from slycot import tb01pd
-            B = empty((self.states, max(self.inputs, self.outputs)))
-            B[:,:self.inputs] = self.B
-            C = empty((max(self.outputs, self.inputs), self.states))
-            C[:self.outputs,:] = self.C
-            A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs,
-                                    self.A, B, C, tol=tol)
-            return StateSpace(A[:nr,:nr], B[:nr,:self.inputs],
-                              C[:self.outputs,:nr], self.D)
-        except ImportError:
-            raise TypeError("minreal requires slycot tb01pd")
+        if self.states:
+            try:
+                from slycot import tb01pd
+                B = empty((self.states, max(self.inputs, self.outputs)))
+                B[:,:self.inputs] = self.B
+                C = empty((max(self.outputs, self.inputs), self.states))
+                C[:self.outputs,:] = self.C
+                A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs,
+                                     self.A, B, C, tol=tol)
+                return StateSpace(A[:nr,:nr], B[:nr,:self.inputs],
+                                  C[:self.outputs,:nr], self.D)
+            except ImportError:
+                raise TypeError("minreal requires slycot tb01pd")
+        else:
+                return StateSpace(self)
+
 
     # TODO: add discrete time check
     def returnScipySignalLTI(self):
