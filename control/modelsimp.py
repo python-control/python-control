@@ -197,10 +197,48 @@ def modred(sys, ELIM, method='matchdc'):
     rsys = StateSpace(Ar,Br,Cr,Dr)
     return rsys
 
+def stabsep(T_schur, Z_schur, sys, ldim, no_in, no_out):
+    """
+    Performs stable/unstabe decomposition of sys after Schur forms have been computed for system matrix.
+
+    Reference: Hsu,C.S., and Hou,D., 1991,
+    Reducing unstable linear control systems via real Schur transformation.
+    Electronics Letters, 27, 984-986.
+
+    """
+    #Author: M. Clement (mdclemen@eng.ucsd.edu) 2016
+    As = np.asmatrix(T_schur)
+    Bs = Z_schur.T*sys.B
+    Cs = sys.C*Z_schur
+    #from ref 1 eq(1) As = [A_ Ac], Bs = [B_], and Cs = [C_ C+]; _ denotes stable subsystem
+    #                      [0  A+]       [B+]
+    A_ = As[0:ldim,0:ldim]
+    Ac = As[0:ldim,ldim::]
+    Ap = As[ldim::,ldim::]
+    
+    B_ = Bs[0:ldim,:]
+    Bp = Bs[ldim::,:]
+    
+    C_ = Cs[:,0:ldim]
+    Cp = Cs[:,ldim::]
+    #do some more tricky math IAW ref 1 eq(3)
+    B_tilde = np.bmat([[B_, Ac]])
+    D_tilde = np.bmat([[np.zeros((no_out, no_in)), Cp]])
+
+    return A_, B_tilde, C_, D_tilde, Ap, Bp, Cp
+
+
 def balred(sys, orders, method='truncate'):
     """
     Balanced reduced order model of sys of a given order.
     States are eliminated based on Hankel singular value.
+    If sys has unstable modes, they are removed, the
+    balanced realization is done on the stable part, then
+    reinserted IAW reference below.
+
+    Reference: Hsu,C.S., and Hou,D., 1991,
+    Reducing unstable linear control systems via real Schur transformation.
+    Electronics Letters, 27, 984-986.
 
     Parameters
     ----------
@@ -215,23 +253,39 @@ def balred(sys, orders, method='truncate'):
     Returns
     -------
     rsys: StateSpace
-        A reduced order model
+        A reduced order model or a list of reduced order models if orders is a list
 
     Raises
     ------
     ValueError
-        * if `method` is not ``'truncate'``
-        * if eigenvalues of `sys.A` are not all in left half plane
-          (`sys` must be stable)
+        * if `method` is not ``'truncate'`` or ``'matchdc'``
     ImportError
-        if slycot routine ab09ad is not found
+        if slycot routine ab09ad or ab09bd is not found
+
+    ValueError
+        if there are more unstable modes than any value in orders
 
     Examples
     --------
-    >>> rsys = balred(sys, order, method='truncate')
+    >>> rsys = balred(sys, orders, method='truncate')
 
     """
+    if method!='truncate' and method!='matchdc':
+        raise ValueError("supported methods are 'truncate' or 'matchdc'")
+    elif method=='truncate':
+        try:
+            from slycot import ab09ad
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine ab09ad") 
+    elif method=='matchdc':
+        try:
+            from slycot import ab09bd
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine ab09bd") 
 
+
+    from scipy.linalg import schur#, cholesky, svd
+    from numpy.linalg import cholesky, svd
     #Check for ss system object, need a utility for this?
 
     #TODO: Check for continous or discrete, only continuous supported right now
@@ -241,34 +295,81 @@ def balred(sys, orders, method='truncate'):
         #    dico = 'D'
         # else:
     dico = 'C'
+    job = 'B' # balanced (B) or not (N)
+    equil = 'N'  # scale (S) or not (N)
 
-    #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    # print D.shape
-    # print D
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    rsys = [] #empty list for reduced systems
 
-    if method=='matchdc':
-        raise ValueError ("MatchDC not yet supported!")
-    elif method=='truncate':
-        try:
-            from slycot import ab09ad
-        except ImportError:
-            raise ControlSlycot("can't find slycot subroutine ab09ad")
-        job = 'B' # balanced (B) or not (N)
-        equil = 'N'  # scale (S) or not (N)
-        n = np.size(sys.A,0)
-        m = np.size(sys.B,1)
-        p = np.size(sys.C,0)
-        Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=orders,tol=0.0)
+    #check if orders is a list or a scalar
+    try:
+        order = iter(orders)
+    except TypeError: #if orders is a scalar
+        orders = [orders]
+    
+    #first get original system order
+    nn = sys.A.shape[0] #no. of states
+    mm = sys.B.shape[1] #no. of inputs
+    rr = sys.C.shape[0] #no. of outputs
+    #first do the schur decomposition
+    T, V, l = schur(sys.A, sort = 'lhp') #l will contain the number of eigenvalues in the open left half plane, i.e. no. of stable eigenvalues
 
-        rsys = StateSpace(Ar, Br, Cr, sys.D)
+    for i in orders:
+        rorder = i - (nn - l)
+        if rorder <= 0:
+            raise ValueError("System has %i unstable states which is more than ORDER(%i)" % (nn-l, i))
+
+    for i in orders:
+        if (nn - l) > 0: #handles the stable/unstable decomposition if unstable eigenvalues are found, nn - l is the number of ustable eigenvalues
+            #Author: M. Clement (mdclemen@eng.ucsd.edu) 2016
+            print("Unstable eigenvalues found, performing stable/unstable decomposition")
+
+            rorder = i - (nn - l)
+            A_, B_tilde, C_, D_tilde, Ap, Bp, Cp = stabsep(T, V, sys, l, mm, rr)
+
+            subSys = StateSpace(A_, B_tilde, C_, D_tilde)
+            n = np.size(subSys.A,0)
+            m = np.size(subSys.B,1)
+            p = np.size(subSys.C,0)
+
+            if method == 'truncate':
+                Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,subSys.A,subSys.B,subSys.C,nr=rorder,tol=0.0)
+                rsubSys = StateSpace(Ar, Br, Cr, np.zeros((p,m)))
+
+            elif method == 'matchdc':
+                Nr, Ar, Br, Cr, Dr, hsv = ab09bd(dico,job,equil,n,m,p,subSys.A,subSys.B,subSys.C,subSys.D,nr=rorder,tol1=0.0,tol2=0.0)
+                rsubSys = StateSpace(Ar, Br, Cr, Dr)
+                
+            A_r = rsubSys.A
+            #IAW ref 1 eq(4) B^{tilde}_r = [B_r, Acr]
+            B_r = rsubSys.B[:,0:mm]
+            Acr = rsubSys.B[:,mm:mm+(nn-l)]
+            C_r = rsubSys.C
+
+            #now put the unstable subsystem back in
+            Ar = np.bmat([[A_r, Acr], [np.zeros((nn-l,rorder)), Ap]])
+            Br = np.bmat([[B_r], [Bp]])
+            Cr = np.bmat([[C_r, Cp]])
+
+            rsys.append(StateSpace(Ar, Br, Cr, sys.D))
+
+        else: #stable system branch
+            n = np.size(sys.A,0)
+            m = np.size(sys.B,1)
+            p = np.size(sys.C,0)
+            if method == 'truncate':
+                Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=i,tol=0.0)
+                rsys.append(StateSpace(Ar, Br, Cr, sys.D))
+
+            elif method == 'matchdc':
+                Nr, Ar, Br, Cr, Dr, hsv = ab09bd(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,sys.D,nr=rorder,tol1=0.0,tol2=0.0)
+                rsys.append(StateSpace(Ar, Br, Cr, Dr))
+
+    #if orders was a scalar, just return the single reduced model, not a list
+    if len(orders) == 1:
+        return rsys[0]
+    #if orders was a list/vector, return a list/vector of systems
     else:
-        raise ValueError("Oops, method is not supported!")
-
-    return rsys
+        return rsys
 
 def minreal(sys, tol=None, verbose=True):
     '''

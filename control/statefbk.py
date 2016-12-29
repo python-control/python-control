@@ -316,7 +316,8 @@ def gram(sys,type):
         State-space system to compute Gramian for
     type: String
         Type of desired computation.
-        `type` is either 'c' (controllability) or 'o' (observability).
+        `type` is either 'c' (controllability) or 'o' (observability). To compute the
+        Cholesky factors of gramians use 'cf' (controllability) or 'of' (observability)
 
     Returns
     -------
@@ -327,16 +328,19 @@ def gram(sys,type):
     ------
     ValueError
         * if system is not instance of StateSpace class
-        * if `type` is not 'c' or 'o'
+        * if `type` is not 'c', 'o', 'cf' or 'of'
         * if system is unstable (sys.A has eigenvalues not in left half plane)
 
     ImportError
-        if slycot routin sb03md cannot be found
+        if slycot routine sb03md cannot be found
+        if slycot routine sb03od cannot be found
 
     Examples
     --------
     >>> Wc = gram(sys,'c')
     >>> Wo = gram(sys,'o')
+    >>> Rc = gram(sys,'cf'), where Wc=Rc'*Rc
+    >>> Ro = gram(sys,'of'), where Wo=Ro'*Ro
 
     """
 
@@ -358,25 +362,42 @@ def gram(sys,type):
     for e in D:
         if e.real >= 0:
             raise ValueError("Oops, the system is unstable!")
-    if type=='c':
+    if type=='c' or type=='cf':
         tra = 'T'
-        C = -np.dot(sys.B,sys.B.transpose())
-    elif type=='o':
+        if type=='c':
+            C = -np.dot(sys.B,sys.B.transpose())
+    elif type=='o' or type=='of':
         tra = 'N'
-        C = -np.dot(sys.C.transpose(),sys.C)
+        if type=='o':
+            C = -np.dot(sys.C.transpose(),sys.C)
     else:
         raise ValueError("Oops, neither observable, nor controllable!")
 
     #Compute Gramian by the Slycot routine sb03md
         #make sure Slycot is installed
-    try:
-        from slycot import sb03md
-    except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb03md'")
-    n = sys.states
-    U = np.zeros((n,n))
-    A = np.array(sys.A)         # convert to NumPy array for slycot
-    X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
-    gram = X
-    return gram
+    if type=='c' or type=='o':
+        try:
+            from slycot import sb03md
+        except ImportError:
+            raise ControlSlycot("can't find slycot module 'sb03md'")
+        n = sys.states
+        U = np.zeros((n,n))
+        A = np.array(sys.A)         # convert to NumPy array for slycot
+        X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
+        gram = X
+        return gram
+    elif type=='cf' or type=='of':
+        try:
+            from slycot import sb03od
+        except ImportError:
+            raise ControlSlycot("can't find slycot module 'sb03od'")
+        n = sys.states
+        Q = np.zeros((n,n))
+        A = np.array(sys.A)         # convert to NumPy array for slycot
+        B = np.zeros_like(A)
+        B[0:sys.B.shape[0],0:sys.B.shape[1]] = sys.B
+        m = sys.B.shape[0]
+        X,scale,w = sb03od(n, m, A, Q, B, dico, fact='N', trans=tra)
+        gram = X
+        return gram
 
