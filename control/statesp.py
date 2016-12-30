@@ -54,7 +54,7 @@ $Id$
 import math
 import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, matrix, ones, poly, poly1d, roots, shape, sin, \
+    dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
@@ -68,6 +68,19 @@ from .xferfcn import _convertToTransferFunction
 from copy import deepcopy
 
 __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
+
+
+def _matrix(a):
+    """_matrix(a) -> numpy.matrix
+    a - passed to numpy.matrix
+    Wrapper around numpy.matrix; unlike that function,  _matrix([]) will be 0x0
+    """
+    from numpy import matrix
+    am = matrix(a)
+    if (1,0) == am.shape:
+        am.shape = (0,0)
+    return am
+
 
 class StateSpace(LTI):
     """StateSpace(A, B, C, D[, dt])
@@ -130,7 +143,7 @@ class StateSpace(LTI):
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-        A, B, C, D = map(matrix, [A, B, C, D])
+        A, B, C, D = [_matrix(M) for M in (A, B, C, D)]
 
         # TODO: use super here?
         LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
@@ -336,7 +349,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         # try to treat this as a matrix
         try:
-            X = matrix(other)
+            X = _matrix(other)
             C = X * self.C
             D = X * self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
@@ -727,11 +740,9 @@ cannot take keywords.")
 
     # If this is a matrix, try to create a constant feedthrough
     try:
-        D = matrix(sys)
-        outputs, inputs = D.shape
-
-        return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), D)
-    except Exception(e):
+        D = _matrix(sys)
+        return StateSpace([], [], [], D)
+    except Exception as e:
         print("Failure to assume argument is matrix-like in" \
             " _convertToStateSpace, result %s" % e)
 
