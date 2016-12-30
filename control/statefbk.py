@@ -127,7 +127,7 @@ def acker(A, B, poles):
 
     # Make sure the system is controllable
     ct = ctrb(A, B)
-    if sp.linalg.det(ct) == 0:
+    if np.linalg.matrix_rank(ct) != a.shape[0]:
         raise ValueError("System not reachable; pole placement invalid")
 
     # Compute the desired characteristic polynomial
@@ -138,7 +138,7 @@ def acker(A, B, poles):
     pmat = p[n-1]*a**0
     for i in np.arange(1,n):
         pmat = pmat + p[n-i-1]*a**i
-    K = sp.linalg.inv(ct) * pmat
+    K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
     return K
@@ -242,7 +242,8 @@ def lqr(*args, **keywords):
     X,rcond,w,S,U,A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
 
     # Now compute the return value
-    K = np.dot(np.linalg.inv(R), (np.dot(B.T, X) + N.T));
+    # We assume that R is positive definite and, hence, invertible
+    K = np.linalg.solve(R, np.dot(B.T, X) + N.T);
     S = X;
     E = w[0:nstates];
 
@@ -354,10 +355,9 @@ def gram(sys,type):
 
     #TODO: Check system is stable, perhaps a utility in ctrlutil.py
         # or a method of the StateSpace class?
-    D,V = np.linalg.eig(sys.A)
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
+        raise ValueError("Oops, the system is unstable!")
+
     if type=='c':
         tra = 'T'
         C = -np.dot(sys.B,sys.B.transpose())
@@ -379,4 +379,3 @@ def gram(sys,type):
     X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
     gram = X
     return gram
-

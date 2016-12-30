@@ -8,7 +8,7 @@ python-control library.
 
 """
 
-# Python 3 compatability (needs to go here)
+# Python 3 compatibility (needs to go here)
 from __future__ import print_function
 
 """Copyright (c) 2010 by California Institute of Technology
@@ -122,7 +122,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-        A, B, C, D = [matrix(M) for M in (A, B, C, D)]
+        A, B, C, D = map(matrix, [A, B, C, D])
 
         # TODO: use super here?
         LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
@@ -447,11 +447,16 @@ inputs/outputs for feedback.")
 
         F = eye(self.inputs) - sign * D2 * D1
         if matrix_rank(F) != self.inputs:
-            raise ValueError("I - sign * D2 * D1 is singular.")
+            raise ValueError("I - sign * D2 * D1 is singular to working precision.")
 
         # Precompute F\D2 and F\C2 (E = inv(F))
-        E_D2 = solve(F, D2)
-        E_C2 = solve(F, C2)
+        # We can solve two linear systems in one pass, since the
+        # coefficients matrix F is the same. Thus, we perform the LU
+        # decomposition (cubic runtime complexity) of F only once!
+        # The remaining back substitutions are only quadratic in runtime.
+        E_D2_C2 = solve(F, concatenate((D2, C2), axis=1))
+        E_D2 = E_D2_C2[:, :other.inputs]
+        E_C2 = E_D2_C2[:, other.inputs:]
 
         T1 = eye(self.outputs) + sign * D1 * E_D2
         T2 = eye(self.inputs) + sign * E_D2 * D1

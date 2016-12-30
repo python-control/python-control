@@ -386,7 +386,7 @@ class TestMatlab(unittest.TestCase):
 
     def testModred(self):
         modred(self.siso_ss1, [1])
-        modred(self.siso_ss2 * self.siso_ss3, [1, 2])
+        modred(self.siso_ss2 * self.siso_ss3, [0, 1])
         modred(self.siso_ss3, [1], 'matchdc')
         modred(self.siso_ss3, [1], 'truncate')
 

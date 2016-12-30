@@ -7,7 +7,7 @@ that operate on transfer functions.  This is the primary representation
 for the python-control library.
 """
 
-# Python 3 compatability (needs to go here)
+# Python 3 compatibility (needs to go here)
 from __future__ import print_function
 from __future__ import division
 

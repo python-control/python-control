@@ -111,8 +111,7 @@ class TestStatefbk(unittest.TestCase):
 
                 # Make sure the system is not degenerate
                 Cmat = ctrb(sys.A, sys.B)
-                if (np.linalg.matrix_rank(Cmat) != states or
-                    abs(np.linalg.det(Cmat)) < 1e-5):
+                if np.linalg.matrix_rank(Cmat) != states:
                     if (self.debug):
                         print("  skipping (not reachable or ill conditioned)")
                         continue

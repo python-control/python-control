@@ -40,7 +40,7 @@
 #
 # $Id$
 
-# Python 3 compatability
+# Python 3 compatibility
 from __future__ import print_function
 
 # External packages and modules
@@ -149,16 +149,12 @@ def modred(sys, ELIM, method='matchdc'):
 
 
     #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
+        raise ValueError("Oops, the system is unstable!")
+
     ELIM = np.sort(ELIM)
-    NELIM = []
     # Create list of elements not to eliminate (NELIM)
-    for i in range(0,len(sys.A)):
-        if i not in ELIM:
-            NELIM.append(i)
+    NELIM = [i for i in range(len(sys.A)) if i not in ELIM]
     # A1 is a matrix of all columns of sys.A not to eliminate
     A1 = sys.A[:,NELIM[0]]
     for i in NELIM[1:]:
@@ -177,14 +173,26 @@ def modred(sys, ELIM, method='matchdc'):
     B1 = sys.B[NELIM,:]
     B2 = sys.B[ELIM,:]
 
-    A22I = np.linalg.inv(A22)
-
     if method=='matchdc':
         # if matchdc, residualize
-        Ar = A11 - A12*A22.I*A21
-        Br = B1 - A12*A22.I*B2
-        Cr = C1 - C2*A22.I*A21
-        Dr = sys.D - C2*A22.I*B2
+
+        # Check if the matrix A22 is invertible
+        if np.linalg.matrix_rank(A22) != len(ELIM):
+            raise ValueError("Matrix A22 is singular to working precision.")
+
+        # Now precompute A22\A21 and A22\B2 (A22I = inv(A22))
+        # We can solve two linear systems in one pass, since the
+        # coefficients matrix A22 is the same. Thus, we perform the LU
+        # decomposition (cubic runtime complexity) of A22 only once!
+        # The remaining back substitutions are only quadratic in runtime.
+        A22I_A21_B2 = np.linalg.solve(A22, np.concatenate((A21, B2), axis=1))
+        A22I_A21 = A22I_A21_B2[:, :A21.shape[1]]
+        A22I_B2 = A22I_A21_B2[:, A21.shape[1]:]
+
+        Ar = A11 - A12*A22I_A21
+        Br = B1 - A12*A22I_B2
+        Cr = C1 - C2*A22I_A21
+        Dr = sys.D - C2*A22I_B2
     elif method=='truncate':
         # if truncate, simply discard state x2
         Ar = A11
@@ -243,12 +251,8 @@ def balred(sys, orders, method='truncate'):
     dico = 'C'
 
     #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    # print D.shape
-    # print D
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
+        raise ValueError("Oops, the system is unstable!")
 
     if method=='matchdc':
         raise ValueError ("MatchDC not yet supported!")
@@ -373,8 +377,6 @@ def markov(Y, U, M):
     UU = np.hstack((UU, Ulast))
 
     # Invert and solve for Markov parameters
-    H = UU.I
-    H = np.dot(H, Y)
+    H = np.linalg.lstsq(UU, Y)[0]
 
     return H
-
