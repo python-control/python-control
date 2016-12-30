@@ -612,11 +612,14 @@ inputs/outputs for feedback.")
             at the origin
         """
         try:
-            gain = np.asarray(self.D -
-                              self.C.dot(np.linalg.solve(self.A, self.B)))
+            if self.isctime():
+                gain = np.asarray(self.D -
+                                    self.C.dot(np.linalg.solve(self.A, self.B)))
+            else:
+                gain = self.horner(1)
         except LinAlgError:
-            # zero eigenvalue: singular matrix
-            return np.nan
+            # eigenvalue at DC
+            gain = np.tile(np.nan,(self.outputs,self.inputs))
         return np.squeeze(gain)
 
 

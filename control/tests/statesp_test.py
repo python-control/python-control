@@ -228,7 +228,8 @@ class TestStateSpace(unittest.TestCase):
 
         assert sys1.dt == sys1_11.dt
 
-    def test_dcgain(self):
+    def test_dcgain_cont(self):
+        """Test DC gain for continuous-time state-space systems"""
         sys = StateSpace(-2.,6.,5.,0)
         np.testing.assert_equal(sys.dcgain(), 15.)
 
@@ -238,6 +239,43 @@ class TestStateSpace(unittest.TestCase):
 
         sys3 = StateSpace(0., 1., 1., 0.)
         np.testing.assert_equal(sys3.dcgain(), np.nan)
+
+    def test_dcgain_discr(self):
+        """Test DC gain for discrete-time state-space systems"""
+        # static gain
+        sys = StateSpace([], [], [], 2, True)
+        np.testing.assert_equal(sys.dcgain(), 2)
+
+        # averaging filter
+        sys = StateSpace(0.5, 0.5, 1, 0, True)
+        np.testing.assert_almost_equal(sys.dcgain(), 1)
+
+        # differencer
+        sys = StateSpace(0, 1, -1, 1, True)
+        np.testing.assert_equal(sys.dcgain(), 0)
+
+        # summer
+        sys = StateSpace(1, 1, 1, 0, True)
+        np.testing.assert_equal(sys.dcgain(), np.nan)
+
+    def test_dcgain_integrator(self):
+        """DC gain when eigenvalue at DC returns appropriately sized array of nan"""
+        # the SISO case is also tested in test_dc_gain_{cont,discr}
+        import itertools
+        # iterate over input and output sizes, and continuous (dt=None) and discrete (dt=True) time
+        for inputs,outputs,dt in itertools.product(range(1,6),range(1,6),[None,True]):
+            states = max(inputs,outputs)
+
+            # a matrix that is singular at DC, and has no "useless" states as in _remove_useless_states
+            a = np.triu(np.tile(2,(states,states)))
+            # eigenvalues all +2, except for ...
+            a[0,0] = 0 if dt is None else 1
+            b = np.eye(max(inputs,states))[:states,:inputs]
+            c = np.eye(max(outputs,states))[:outputs,:states]
+            d = np.zeros((outputs,inputs))
+            sys = StateSpace(a,b,c,d,dt)
+            dc = np.squeeze(np.tile(np.nan,(outputs,inputs)))
+            np.testing.assert_array_equal(dc, sys.dcgain())
 
 
     def test_scalarStaticGain(self):

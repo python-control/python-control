@@ -524,7 +524,8 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[0][0])
         np.testing.assert_array_almost_equal(H.den[1][0], H2.den[0][0])
 
-    def test_dcgain(self):
+    def test_dcgain_cont(self):
+        """Test DC gain for continuous-time transfer functions"""
         sys = TransferFunction(6, 3)
         np.testing.assert_equal(sys.dcgain(), 2)
 
@@ -539,6 +540,26 @@ class TestXferFcn(unittest.TestCase):
         sys4 = TransferFunction(num, den)
         expected = [[5, 7, 11], [2, 2, 2]]
         np.testing.assert_array_equal(sys4.dcgain(), expected)
+
+    def test_dcgain_discr(self):
+        """Test DC gain for discrete-time transfer functions"""
+        # static gain
+        sys = TransferFunction(6, 3, True)
+        np.testing.assert_equal(sys.dcgain(), 2)
+
+        # averaging filter
+        sys = TransferFunction(0.5, [1, -0.5], True)
+        np.testing.assert_almost_equal(sys.dcgain(), 1)
+
+        # differencer
+        sys = TransferFunction(1, [1, -1], True)
+        np.testing.assert_equal(sys.dcgain(), np.inf)
+
+        # summer
+        # causes a RuntimeWarning due to the divide by zero
+        sys = TransferFunction([1,-1], [1], True)
+        np.testing.assert_equal(sys.dcgain(), 0)
+
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)
