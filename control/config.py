@@ -16,6 +16,10 @@ bode_feature_periphery_decade = 1.0  # Bode plot feature periphery in decades
 
 # Set defaults to match MATLAB
 def use_matlab_defaults():
+    """
+    Use MATLAB compatible configuration settings
+        * Bode plots plot gain in dB, phase in degrees, frequency in Hertz
+    """
     # Bode plot defaults
     global bode_dB; bode_dB = True
     global bode_deg; bode_deg = True
@@ -23,6 +27,11 @@ def use_matlab_defaults():
 
 # Set defaults to match FBS (Astrom and Murray)
 def use_fbs_defaults():
+    """
+    Use `Astrom and Murray <http://fbsbook.org>`_ compatible settings
+        * Bode plots plot gain in powers of ten, phase in degrees, 
+          frequency in Hertz
+    """
     # Bode plot defaults
     global bode_dB; bode_dB = False
     global bode_deg; bode_deg = True
