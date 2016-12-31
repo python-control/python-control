@@ -35,7 +35,7 @@ class TestConvert(unittest.TestCase):
         # Maximum number of states to test + 1
         self.maxStates = 4
         # Maximum number of inputs and outputs to test + 1
-        # If slycot is not installed, just check SISO 
+        # If slycot is not installed, just check SISO
         self.maxIO = 5 if slycot_check() else 2
         # Set to True to print systems to the output.
         self.debug = False
@@ -174,11 +174,11 @@ class TestConvert(unittest.TestCase):
 
         # Set up a transfer function (should always work)
         tfcn = control.tf([[[-235, 1.146e4],
-                          [-235, 1.146E4],
-                          [-235, 1.146E4, 0]]],
-                        [[[1, 48.78, 0],
-                          [1, 48.78, 0, 0],
-                          [0.008, 1.39, 48.78]]])
+                            [-235, 1.146E4],
+                            [-235, 1.146E4, 0]]],
+                          [[[1, 48.78, 0],
+                            [1, 48.78, 0, 0],
+                            [0.008, 1.39, 48.78]]])
 
         # Convert to state space and look for an error
         if (not slycot_check()):
