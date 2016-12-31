@@ -25,12 +25,12 @@ class TestMargin(unittest.TestCase):
         (StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
             [[1., 0.]], [[0.]]),
         [], [], [147.0743], [2.5483]),
-        ((8.75*(4*s**2+0.4*s+1))/((100*s+1)*(s**2+0.22*s+1)) * 
-         1./(s**2/(10.**2)+2*0.04*s/10.+1), 
+        ((8.75*(4*s**2+0.4*s+1))/((100*s+1)*(s**2+0.22*s+1)) *
+         1./(s**2/(10.**2)+2*0.04*s/10.+1),
         [2.2716], [10.0053], [97.5941, 360-157.7904, 134.7359],
         [0.0850, 0.9373, 1.0919]))
-        
-        
+
+
         self.sys1 = TransferFunction([1, 2], [1, 2, 3])
         # alternative
         # sys1 = tf([1, 2], [1, 2, 3])
@@ -55,7 +55,7 @@ class TestMargin(unittest.TestCase):
             np.testing.assert_array_almost_equal(
                 out[out != np.array(None)],
                 outf[outf != np.array(None)], 2)
-            
+
         # final one with fixed values
         np.testing.assert_array_almost_equal(
             [gm, pm, sm, wg, wp, ws],
@@ -77,7 +77,7 @@ class TestMargin(unittest.TestCase):
                     print(res, '\n', comp)
                     np.testing.assert_array_almost_equal(
                         res, comp, 2)
-        
+
     def test_phase_crossover_frequencies(self):
         omega, gain = phase_crossover_frequencies(self.sys2)
         np.testing.assert_array_almost_equal(omega, [1.73205,  0.])
@@ -163,8 +163,8 @@ class TestMargin(unittest.TestCase):
         out1b = stability_margins(FRD(h1, omega))
         out2b = stability_margins(FRD(h2, omega))
         out3b = stability_margins(FRD(h3, omega))
-        
-        
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestMargin)
 
