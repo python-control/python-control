@@ -10,7 +10,9 @@ from control import matlab
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from itertools import permutations
+from control.exception import slycot_check
 
+@unittest.skipIf(not slycot_check(), "slycot not installed")
 class TestMinreal(unittest.TestCase):
     """Tests for the StateSpace class."""
 

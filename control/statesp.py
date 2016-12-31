@@ -670,6 +670,10 @@ cannot take keywords.")
                 ssout[3][:sys.outputs, :states],
                 ssout[4], sys.dt)
         except ImportError:
+            # If slycot is not available, use signal.lti (SISO only)
+            if (sys.inputs != 1 or sys.outputs != 1):
+                raise TypeError("No support for MIMO without slycot")
+
             # TODO: do we want to squeeze first and check dimenations?
             # I think this will fail if num and den aren't 1-D after
             # the squeeze

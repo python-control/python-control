@@ -7,8 +7,8 @@ import unittest
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
+from control.exception import slycot_check
 # from control.lti import isdtime
-
 
 class TestXferFcn(unittest.TestCase):
     """These are tests for functionality and correct reporting of the transfer
@@ -113,6 +113,8 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys2.num, [[[-1., -3., -5.]]])
         np.testing.assert_array_equal(sys2.den, [[[1., 6., 2., -1.]]])
 
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testNegMIMO(self):
         """Negate a MIMO system."""
 
@@ -155,6 +157,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys3.num, [[[20., 4., -8]]])
         np.testing.assert_array_equal(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testAddMIMO(self):
         """Add two MIMO systems."""
 
@@ -205,6 +208,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, [[[-2., -6., 12., 10., 2.]]])
         np.testing.assert_array_equal(sys4.den, [[[1., 6., 1., -7., -2., 1.]]])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testSubMIMO(self):
         """Add two MIMO systems."""
 
@@ -258,6 +262,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys3.num, sys4.num)
         np.testing.assert_array_equal(sys3.den, sys4.den)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMulMIMO(self):
         """Multiply two MIMO systems."""
 
@@ -330,6 +335,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_almost_equal(sys(32.j),
             0.00281959302585077 - 0.030628473607392j)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testEvalFrMIMO(self):
         """Evaluate the frequency response of a MIMO system at one frequency."""
 
@@ -366,6 +372,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_almost_equal(omega, trueomega)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testFreqRespMIMO(self):
         """Evaluate the magnitude and phase of a MIMO system at multiple
         frequencies."""
@@ -395,7 +402,8 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(omega, trueomega)
 
     # Tests for TransferFunction.pole and TransferFunction.zero.
-
+    
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPoleMIMO(self):
         """Test for correct MIMO poles."""
 
@@ -421,6 +429,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, [[[-1., 7., -16., 16., 0.]]])
         np.testing.assert_array_equal(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testConvertToTransferFunction(self):
         """Test for correct state space to transfer function conversion."""
 
@@ -472,6 +481,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(1.0, g.num[0][0])
         np.testing.assert_array_almost_equal(1.0, g.den[0][0])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMO(self):
         """Test conversion of a single input, two-output state-space
         system against the same TF"""

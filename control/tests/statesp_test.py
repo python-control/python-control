@@ -10,6 +10,7 @@ from scipy.linalg import eigvals, block_diag
 from control import matlab
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction
+from control.exception import slycot_check
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
@@ -114,6 +115,7 @@ class TestStateSpace(unittest.TestCase):
 
         np.testing.assert_almost_equal(sys.evalfr(1.), resp)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testFreqResp(self):
         """Evaluate the frequency response at multiple frequencies."""
 
@@ -139,6 +141,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_almost_equal(phase, truephase)
         np.testing.assert_equal(omega, trueomega)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMinreal(self):
         """Test a minreal model reduction"""
         #A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]

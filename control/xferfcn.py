@@ -125,7 +125,9 @@ class TransferFunction(LTI):
         # but be careful.
         data = [num, den]
         for i in range(len(data)):
-            if isinstance(data[i], (int, float, complex)):
+            # Check for a scalar (including 0d ndarray)
+            if (isinstance(data[i], (int, float, complex)) or
+                (isinstance(data[i], ndarray) and data[i].ndim == 0)):
                 # Convert scalar to list of list of array.
                 if (isinstance(data[i], int)):
                     # Convert integers to floats at this point

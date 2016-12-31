@@ -11,6 +11,7 @@ from control.xferfcn import TransferFunction
 from control.frdata import FRD, _convertToFRD
 from control import bdalg
 from control import freqplot
+from control.exception import slycot_check
 import matplotlib.pyplot as plt
 
 
@@ -179,6 +180,7 @@ class TestFRD(unittest.TestCase):
         freqplot.nyquist(f1, f1.omega)
         # plt.savefig('/dev/null', format='svg')
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMO(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
@@ -193,6 +195,7 @@ class TestFRD(unittest.TestCase):
             sys.freqresp([0.1, 1.0, 10])[1],
             f1.freqresp([0.1, 1.0, 10])[1])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMOfb(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
@@ -208,6 +211,7 @@ class TestFRD(unittest.TestCase):
             f1.freqresp([0.1, 1.0, 10])[1],
             f2.freqresp([0.1, 1.0, 10])[1])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMOfb2(self):
         sys = StateSpace(np.matrix('-2.0 0 0; 0 -1 1; 0 0 -3'),
                          np.matrix('1.0 0; 0 0; 0 1'),
@@ -223,6 +227,7 @@ class TestFRD(unittest.TestCase):
             f1.freqresp([0.1, 1.0, 10])[1],
             f2.freqresp([0.1, 1.0, 10])[1])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMOMult(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
@@ -238,6 +243,7 @@ class TestFRD(unittest.TestCase):
             (f1*f2).freqresp([0.1, 1.0, 10])[1],
             (sys*sys).freqresp([0.1, 1.0, 10])[1])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMOSmooth(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],

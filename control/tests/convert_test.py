@@ -22,7 +22,7 @@ from control.statesp import _mimo2siso
 from control.statefbk import ctrb, obsv
 from control.freqplot import bode
 from control.matlab import tf
-
+from control.exception import slycot_check
 
 class TestConvert(unittest.TestCase):
     """Test state space and transfer function conversions."""
@@ -35,7 +35,8 @@ class TestConvert(unittest.TestCase):
         # Maximum number of states to test + 1
         self.maxStates = 4
         # Maximum number of inputs and outputs to test + 1
-        self.maxIO = 5
+        # If slycot is not installed, just check SISO
+        self.maxIO = 5 if slycot_check() else 2
         # Set to True to print systems to the output.
         self.debug = False
         # get consistent results
@@ -160,6 +161,29 @@ class TestConvert(unittest.TestCase):
                                 ssorig_real, tfxfrm_real)
                             np.testing.assert_array_almost_equal( \
                                 ssorig_imag, tfxfrm_imag)
+
+    def testConvertMIMO(self):
+        """Test state space to transfer function conversion."""
+        verbose = self.debug
+
+        # Do a MIMO conversation and make sure that it is processed
+        # correctly both with and without slycot
+        #
+        # Example from issue #120, jgoppert
+        import control
+
+        # Set up a transfer function (should always work)
+        tfcn = control.tf([[[-235, 1.146e4],
+                            [-235, 1.146E4],
+                            [-235, 1.146E4, 0]]],
+                          [[[1, 48.78, 0],
+                            [1, 48.78, 0, 0],
+                            [0.008, 1.39, 48.78]]])
+
+        # Convert to state space and look for an error
+        if (not slycot_check()):
+            self.assertRaises(TypeError, control.tf2ss, tfcn)
+
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
