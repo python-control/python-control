@@ -40,7 +40,7 @@ class TestFeedback(unittest.TestCase):
 
         ans1 = feedback(self.x1, self.sys2)
         ans2 = feedback(self.x1, self.sys2, 1.)
-        
+
         np.testing.assert_array_almost_equal(ans1.A, [[-1.5, 4.], [13., 2.]])
         np.testing.assert_array_almost_equal(ans1.B, [[2.5], [-10.]])
         np.testing.assert_array_almost_equal(ans1.C, [[-2.5, 0.]])
@@ -77,7 +77,7 @@ class TestFeedback(unittest.TestCase):
 
     def testSSScalar(self):
         """State space system with scalar feedback block."""
-        
+
         ans1 = feedback(self.sys2, self.x1)
         ans2 = feedback(self.sys2, self.x1, 1.)
 
@@ -98,7 +98,7 @@ class TestFeedback(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(ans1.A, [[1., 4., -1., 0.],
             [3., 2., 4., 0.], [1., 0., 1., 4.], [-4., 0., 3., 2]])
-        np.testing.assert_array_almost_equal(ans1.B, [[1.], [-4.], [0.], [0.]]) 
+        np.testing.assert_array_almost_equal(ans1.B, [[1.], [-4.], [0.], [0.]])
         np.testing.assert_array_almost_equal(ans1.C, [[1., 0., 0., 0.]])
         np.testing.assert_array_almost_equal(ans1.D, [[0.]])
         np.testing.assert_array_almost_equal(ans2.A, [[1., 4., 1., 0.],
@@ -115,7 +115,7 @@ class TestFeedback(unittest.TestCase):
             [[-2.]])
         sys4 = StateSpace([[-3., -2.], [1., 4.]], [[-2.], [-6.]], [[2., -3.]],
             [[3.]])
-        
+
         ans1 = feedback(sys3, sys4)
         ans2 = feedback(sys3, sys4, 1.)
 
@@ -144,7 +144,7 @@ class TestFeedback(unittest.TestCase):
 
     def testSSTF(self):
         """State space system with transfer function feedback block."""
-        
+
         # This functionality is not implemented yet.
         pass
 

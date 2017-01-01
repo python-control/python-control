@@ -17,8 +17,8 @@ class TestStateSpace(unittest.TestCase):
         B = [[1.], [-3.], [-2.]]
         C = [[4., 2., -3.]]
         D = [[0.]]
-        
-        self.sys = StateSpace(A, B, C, D) 
+
+        self.sys = StateSpace(A, B, C, D)
 
     def testNicholsPlain(self):
         """Generate a Nichols plot."""
@@ -32,6 +32,6 @@ class TestStateSpace(unittest.TestCase):
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
 
-        
+
 if __name__ == "__main__":
     unittest.main()

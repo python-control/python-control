@@ -24,19 +24,19 @@ class TestPhasePlot(unittest.TestCase):
         phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10));
 
     def testInvPendSims(self):
-        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10), 
+        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10),
                   X0 = ([1,1], [-1,1]));
 
     def testInvPendTimePoints(self):
-        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10), 
+        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10),
                   X0 = ([1,1], [-1,1]), T=np.linspace(0,5,100));
 
     def testInvPendLogtime(self):
-        phase_plot(self.invpend_ode, X0 = 
+        phase_plot(self.invpend_ode, X0 =
                   [ [-2*pi, 1.6], [-2*pi, 0.5], [-1.8, 2.1],
                     [-1, 2.1], [4.2, 2.1], [5, 2.1],
                     [2*pi, -1.6], [2*pi, -0.5], [1.8, -2.1],
-                    [1, -2.1], [-4.2, -2.1], [-5, -2.1] ], 
+                    [1, -2.1], [-4.2, -2.1], [-5, -2.1] ],
                   T = np.linspace(0, 40, 200),
                   logtime=(3, 0.7),
                   verbose=False)
@@ -47,7 +47,7 @@ class TestPhasePlot(unittest.TestCase):
 
     def testOscillatorParams(self):
         m = 1; b = 1; k = 1;			# default values
-        phase_plot(self.oscillator_ode, timepts = [0.3, 1, 2, 3], X0 = 
+        phase_plot(self.oscillator_ode, timepts = [0.3, 1, 2, 3], X0 =
                   [[-1,1], [-0.3,1], [0,1], [0.25,1], [0.5,1], [0.7,1],
                    [1,1], [1.3,1], [1,-1], [0.3,-1], [0,-1], [-0.25,-1],
                    [-0.5,-1], [-0.7,-1], [-1,-1], [-1.3,-1]],

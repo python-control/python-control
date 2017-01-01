@@ -11,7 +11,7 @@
 bode_dB = False                 # Bode plot magnitude units
 bode_deg = True                 # Bode Plot phase units
 bode_Hz = False                 # Bode plot frequency units
-bode_number_of_samples = None   # Bode plot number of samples 
+bode_number_of_samples = None   # Bode plot number of samples
 bode_feature_periphery_decade = 1.0  # Bode plot feature periphery in decades
 
 # Set defaults to match MATLAB
@@ -29,7 +29,7 @@ def use_matlab_defaults():
 def use_fbs_defaults():
     """
     Use `Astrom and Murray <http://fbsbook.org>`_ compatible settings
-        * Bode plots plot gain in powers of ten, phase in degrees, 
+        * Bode plots plot gain in powers of ten, phase in degrees,
           frequency in Hertz
     """
     # Bode plot defaults

@@ -58,10 +58,11 @@ and verifying that no error message appears.  It may be necessary to install
 `lapack` library.  More information on the slycot package can be obtained
 from the `slycot project page <https://github.com/python-control/Slycot>`_.
 
-For users with a working the Anaconda distribution of Python, the following
-command can be used::
+For users with the Anaconda distribution of Python, the following
+commands can be used::
 
-  conda install -c python-control -c cyclus slycot python-control
+  conda install numpy scipy matplotlib    # if not yet installed
+  conda install -c python-control -c cyclus slycot control
 
 This installs `slycot` and `python-control` from the `python-control`
 channel and uses the `cyclus` channel to obtain the required `lapack`

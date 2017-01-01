@@ -3,8 +3,8 @@
 # freqresp_test.py - test frequency response functions
 # RMM, 30 May 2016 (based on timeresp_test.py)
 #
-# This is a rudimentary set of tests for frequency response functions, 
-# including bode plots. 
+# This is a rudimentary set of tests for frequency response functions,
+# including bode plots.
 
 import unittest
 import numpy as np
@@ -55,7 +55,7 @@ class TestFreqresp(unittest.TestCase):
 
       #bode(sysMIMO) # - should throw not implemented exception
       #bode(tfMIMO) # - should throw not implemented exception
-      
+
       #plt.figure(3)
       #plt.semilogx(self.omega,20*np.log10(np.squeeze(frq[0])))
 

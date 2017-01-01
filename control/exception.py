@@ -2,7 +2,7 @@
 #
 # Author: Richard M. Murray
 # Date: 31 May 2010
-# 
+#
 # This file contains definitions of standard exceptions for the control package
 #
 # Copyright (c) 2010 by California Institute of Technology
@@ -14,16 +14,16 @@
 #
 # 1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 # 2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # 3. Neither the name of the California Institute of Technology nor
 #    the names of its contributors may be used to endorse or promote
 #    products derived from this software without specific prior
 #    written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 # "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 # LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -36,19 +36,19 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-# 
+#
 # $Id$
 
-class ControlSlycot(Exception): 
+class ControlSlycot(Exception):
     """Exception for Slycot import.  Used when we can't import a function
     from the slycot package"""
     pass
 
-class ControlDimension(Exception): 
+class ControlDimension(Exception):
     """Raised when dimensions of system objects are not correct"""
     pass
 
-class ControlArgument(Exception): 
+class ControlArgument(Exception):
     """Raised when arguments to a function are not correct"""
     pass
 

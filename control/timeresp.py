@@ -2,7 +2,7 @@
 """Time domain simulation.
 
 This file contains a collection of functions that calculate time
-responses for linear systems.  
+responses for linear systems.
 
 See doc/conventions.rst#time-series-conventions_ for more information
 on how time series data are represented.
