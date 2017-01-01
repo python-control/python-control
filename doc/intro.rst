@@ -58,7 +58,7 @@ and verifying that no error message appears.  It may be necessary to install
 `lapack` library.  More information on the slycot package can be obtained
 from the `slycot project page <https://github.com/python-control/Slycot>`_.
 
-For users with a working the Anaconda distribution of Python, the following
+For users with the Anaconda distribution of Python, the following
 commands can be used::
 
   conda install numpy scipy matplotlib    # if not yet installed
