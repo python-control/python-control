@@ -10,6 +10,7 @@ python-control library.
 
 # Python 3 compatibility (needs to go here)
 from __future__ import print_function
+from __future__ import division # for _convertToStateSpace
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -647,6 +648,7 @@ def _convertToStateSpace(sys, **kw):
     """
 
     from .xferfcn import TransferFunction
+    import itertools
     if isinstance(sys, StateSpace):
         if len(kw):
             raise TypeError("If sys is a StateSpace, _convertToStateSpace \
@@ -679,16 +681,27 @@ cannot take keywords.")
                 ssout[3][:sys.outputs, :states],
                 ssout[4], sys.dt)
         except ImportError:
-            # If slycot is not available, use signal.lti (SISO only)
-            if (sys.inputs != 1 or sys.outputs != 1):
-                raise TypeError("No support for MIMO without slycot")
+            # No Slycot.  Scipy tf->ss can't handle MIMO, but static
+            # MIMO is an easy special case we can check for here
+            maxn = max(max(len(n) for n in nrow)
+                       for nrow in sys.num)
+            maxd = max(max(len(d) for d in drow)
+                       for drow in sys.den)
+            if 1==maxn and 1==maxd:
+                D = empty((sys.outputs,sys.inputs),dtype=float)
+                for i,j in itertools.product(range(sys.outputs),range(sys.inputs)):
+                    D[i,j] = sys.num[i][j][0] / sys.den[i][j][0]
+                return StateSpace([], [], [], D, sys.dt)
+            else:
+                if (sys.inputs != 1 or sys.outputs != 1):
+                    raise TypeError("No support for MIMO without slycot")
 
-            # TODO: do we want to squeeze first and check dimenations?
-            # I think this will fail if num and den aren't 1-D after
-            # the squeeze
-            lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
-            return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D,
-                              sys.dt)
+                # TODO: do we want to squeeze first and check dimenations?
+                # I think this will fail if num and den aren't 1-D after
+                # the squeeze
+                lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
+                return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D,
+                                  sys.dt)
 
     elif isinstance(sys, (int, float, complex)):
         if "inputs" in kw:
