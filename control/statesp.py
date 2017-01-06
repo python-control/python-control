@@ -608,8 +608,8 @@ inputs/outputs for feedback.")
         Returns
         -------
         gain : ndarray
-            The zero-frequency gain, or np.nan if the system has a pole
-            at the origin
+            The zero-frequency gain, or if the system has a pole at
+            the origin, an array of the same size filled with np.nan.
         """
         try:
             if self.isctime():
