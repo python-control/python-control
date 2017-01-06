@@ -197,10 +197,17 @@ def modred(sys, ELIM, method='matchdc'):
     rsys = StateSpace(Ar,Br,Cr,Dr)
     return rsys
 
-def balred(sys, orders, method='truncate'):
+def balred(sys, orders, method='truncate', alpha=None):
     """
     Balanced reduced order model of sys of a given order.
     States are eliminated based on Hankel singular value.
+    If sys has unstable modes, they are removed, the
+    balanced realization is done on the stable part, then
+    reinserted IAW reference below.
+
+    Reference: Hsu,C.S., and Hou,D., 1991,
+    Reducing unstable linear control systems via real Schur transformation.
+    Electronics Letters, 27, 984-986.
 
     Parameters
     ----------
@@ -211,26 +218,46 @@ def balred(sys, orders, method='truncate'):
         of systems)
     method: string
         Method of removing states, either ``'truncate'`` or ``'matchdc'``.
+    alpha: float
+        Specifies the alpha-stability boundary for the eigenvalues
+        of the state dynamics matrix A. For a continuous-time
+        system, alpha <= 0 is the boundary value for the real parts
+        of eigenvalues, while for a discrete-time system, 0 <= alpha <= 1
+        represents the boundary value for the moduli of eigenvalues.
+        The alpha-stability domain does not include the boundary.
 
     Returns
     -------
     rsys: StateSpace
-        A reduced order model
+        A reduced order model or a list of reduced order models if orders is a list
 
     Raises
     ------
     ValueError
-        * if `method` is not ``'truncate'``
-        * if eigenvalues of `sys.A` are not all in left half plane
-          (`sys` must be stable)
+        * if `method` is not ``'truncate'`` or ``'matchdc'``
     ImportError
-        if slycot routine ab09ad is not found
+        if slycot routine ab09md or ab09nd is not found
+
+    ValueError
+        if there are more unstable modes than any value in orders
 
     Examples
     --------
-    >>> rsys = balred(sys, order, method='truncate')
+    >>> rsys = balred(sys, orders, method='truncate')
 
     """
+    if method!='truncate' and method!='matchdc':
+        raise ValueError("supported methods are 'truncate' or 'matchdc'")
+    elif method=='truncate':
+        try:
+            from slycot import ab09md
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine ab09md") 
+    elif method=='matchdc':
+        try:
+            from slycot import ab09nd
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine ab09nd") 
 
     #Check for ss system object, need a utility for this?
 
@@ -241,34 +268,40 @@ def balred(sys, orders, method='truncate'):
         #    dico = 'D'
         # else:
     dico = 'C'
+    job = 'B' # balanced (B) or not (N)
+    equil = 'N'  # scale (S) or not (N)
+    if alpha is None:
+        if dico == 'C':
+            alpha = 0.
+        elif dico == 'D':
+            alpha = 1.
 
-    #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    # print D.shape
-    # print D
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    rsys = [] #empty list for reduced systems
 
-    if method=='matchdc':
-        raise ValueError ("MatchDC not yet supported!")
-    elif method=='truncate':
-        try:
-            from slycot import ab09ad
-        except ImportError:
-            raise ControlSlycot("can't find slycot subroutine ab09ad")
-        job = 'B' # balanced (B) or not (N)
-        equil = 'N'  # scale (S) or not (N)
+    #check if orders is a list or a scalar
+    try:
+        order = iter(orders)
+    except TypeError: #if orders is a scalar
+        orders = [orders]
+
+    for i in orders:
         n = np.size(sys.A,0)
         m = np.size(sys.B,1)
         p = np.size(sys.C,0)
-        Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=orders,tol=0.0)
+        if method == 'truncate':
+            Nr, Ar, Br, Cr, Ns, hsv = ab09md(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,alpha=alpha,nr=i,tol=0.0)
+            rsys.append(StateSpace(Ar, Br, Cr, sys.D))
 
-        rsys = StateSpace(Ar, Br, Cr, sys.D)
+        elif method == 'matchdc':
+            Nr, Ar, Br, Cr, Dr, Ns, hsv = ab09nd(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,sys.D,alpha=alpha,nr=i,tol1=0.0,tol2=0.0)
+            rsys.append(StateSpace(Ar, Br, Cr, Dr))
+
+    #if orders was a scalar, just return the single reduced model, not a list
+    if len(orders) == 1:
+        return rsys[0]
+    #if orders was a list/vector, return a list/vector of systems
     else:
-        raise ValueError("Oops, method is not supported!")
-
-    return rsys
+        return rsys
 
 def minreal(sys, tol=None, verbose=True):
     '''
