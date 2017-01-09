@@ -601,15 +601,21 @@ inputs/outputs for feedback.")
     def dcgain(self):
         """Return the zero-frequency gain
 
-        The zero-frequency gain of a state-space system is given by:
+        The zero-frequency gain of a continuous-time state-space
+        system is given by:
 
         .. math: G(0) = - C A^{-1} B + D
+
+        and of a discrete-time state-space system by:
+
+        .. math: G(1) = C (I - A)^{-1} B + D
 
         Returns
         -------
         gain : ndarray
-            The zero-frequency gain, or if the system has a pole at
-            the origin, an array of the same size filled with np.nan.
+            An array of shape (outputs,inputs); the array will either
+            be the zero-frequency (or DC) gain, or, if the frequency
+            response is singular, the array will be filled with np.nan.
         """
         try:
             if self.isctime():
