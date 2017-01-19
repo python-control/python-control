@@ -203,7 +203,7 @@ def balred(sys, orders, method='truncate', alpha=None):
     States are eliminated based on Hankel singular value.
     If sys has unstable modes, they are removed, the
     balanced realization is done on the stable part, then
-    reinserted IAW reference below.
+    reinserted in accordance with the reference below.
 
     Reference: Hsu,C.S., and Hou,D., 1991,
     Reducing unstable linear control systems via real Schur transformation.
@@ -219,12 +219,12 @@ def balred(sys, orders, method='truncate', alpha=None):
     method: string
         Method of removing states, either ``'truncate'`` or ``'matchdc'``.
     alpha: float
-        Specifies the alpha-stability boundary for the eigenvalues
-        of the state dynamics matrix A. For a continuous-time
-        system, alpha <= 0 is the boundary value for the real parts
-        of eigenvalues, while for a discrete-time system, 0 <= alpha <= 1
-        represents the boundary value for the moduli of eigenvalues.
-        The alpha-stability domain does not include the boundary.
+        Redefines the stability boundary for eigenvalues of the system matrix A.
+        By default for continuous-time systems, alpha <= 0 defines the stability
+        boundary for the real part of A's eigenvalues and for discrete-time
+        systems, 0 <= alpha <= 1 defines the stability boundary for the modulus
+        of A's eigenvalues.See SLICOT routines AB09MD and AB09ND for more
+        information.
 
     Returns
     -------
@@ -250,14 +250,14 @@ def balred(sys, orders, method='truncate', alpha=None):
         raise ValueError("supported methods are 'truncate' or 'matchdc'")
     elif method=='truncate':
         try:
-            from slycot import ab09md
+            from slycot import ab09md, ab09ad
         except ImportError:
-            raise ControlSlycot("can't find slycot subroutine ab09md") 
+            raise ControlSlycot("can't find slycot subroutine ab09md or ab09ad")
     elif method=='matchdc':
         try:
             from slycot import ab09nd
         except ImportError:
-            raise ControlSlycot("can't find slycot subroutine ab09nd") 
+            raise ControlSlycot("can't find slycot subroutine ab09nd")
 
     #Check for ss system object, need a utility for this?
 
@@ -289,7 +289,13 @@ def balred(sys, orders, method='truncate', alpha=None):
         m = np.size(sys.B,1)
         p = np.size(sys.C,0)
         if method == 'truncate':
-            Nr, Ar, Br, Cr, Ns, hsv = ab09md(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,alpha=alpha,nr=i,tol=0.0)
+            #check system stability
+            if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
+                #unstable branch
+                Nr, Ar, Br, Cr, Ns, hsv = ab09md(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,alpha=alpha,nr=i,tol=0.0)
+            else:
+                #stable branch
+                Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=i,tol=0.0)
             rsys.append(StateSpace(Ar, Br, Cr, sys.D))
 
         elif method == 'matchdc':
