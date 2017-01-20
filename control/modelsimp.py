@@ -244,7 +244,7 @@ def balred(sys, orders, method='truncate', alpha=None):
     ValueError
         * if `method` is not ``'truncate'`` or ``'matchdc'``
     ImportError
-        if slycot routine ab09md or ab09nd is not found
+        if slycot routine ab09ad, ab09md, or ab09nd is not found
 
     ValueError
         if there are more unstable modes than any value in orders
