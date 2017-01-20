@@ -107,6 +107,28 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=4)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=4)
 
+    def testBalredMatchDC(self):
+        #controlable canonical realization computed in matlab for the transfer function:
+        # num = [1 11 45 32], den = [1 15 60 200 60]
+        A = np.matrix('-15., -7.5, -6.25, -1.875; \
+        8., 0., 0., 0.; \
+        0., 4., 0., 0.; \
+        0., 0., 1., 0.')
+        B = np.matrix('2.; 0.; 0.; 0.')
+        C = np.matrix('0.5, 0.6875, 0.7031, 0.5')
+        D = np.matrix('0.')
+        sys = ss(A,B,C,D)
+        orders = 2
+        rsys = balred(sys,orders,method='matchdc')
+        Artrue = np.matrix('-4.43094773, -4.55232904; -4.55232904, -5.36195206')
+        Brtrue = np.matrix('1.36235673; 1.03114388')
+        Crtrue = np.matrix('1.36235673, 1.03114388')
+        Drtrue = np.matrix('-0.08383902')
+        np.testing.assert_array_almost_equal(rsys.A, Artrue,decimal=2)
+        np.testing.assert_array_almost_equal(rsys.B, Brtrue,decimal=4)
+        np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=4)
+        np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=4)
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestModelsimp)
 

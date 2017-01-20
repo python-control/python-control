@@ -71,6 +71,16 @@ class TestStatefbk(unittest.TestCase):
         Wc = gram(sys,'c')
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
+    def testGramRc(self):
+        A = np.matrix("1. -2.; 3. -4.")
+        B = np.matrix("5. 6.; 7. 8.")
+        C = np.matrix("4. 5.; 6. 7.")
+        D = np.matrix("13. 14.; 15. 16.")
+        sys = ss(A, B, C, D)
+        Rctrue = np.matrix("4.30116263 5.6961343; 0. 0.23249528")
+        Rc = gram(sys,'cf')
+        np.testing.assert_array_almost_equal(Rc, Rctrue)
+
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGramWo(self):
         A = np.matrix("1. -2.; 3. -4.")
@@ -92,6 +102,16 @@ class TestStatefbk(unittest.TestCase):
         Wotrue = np.matrix("198. -72.; -72. 44.")
         Wo = gram(sys,'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
+
+    def testGramRo(self):
+        A = np.matrix("1. -2.; 3. -4.")
+        B = np.matrix("5. 6.; 7. 8.")
+        C = np.matrix("4. 5.; 6. 7.")
+        D = np.matrix("13. 14.; 15. 16.")
+        sys = ss(A, B, C, D)
+        Rotrue = np.matrix("16.04680654 -5.8890222; 0. 4.67112593")
+        Ro = gram(sys,'of')
+        np.testing.assert_array_almost_equal(Ro, Rotrue)
 
     def testGramsys(self):
         num =[1.]
