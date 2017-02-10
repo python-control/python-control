@@ -212,7 +212,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     for i in range(nr):
         state = odeint(odefun, X0[i], TSPAN, args=parms);
         time = TSPAN
-        mpl.hold(True);
+
         mpl.plot(state[:,0], state[:,1])
         #! TODO: add back in colors for stream lines
         # PP_stream_color(np.mod(i-1, len(PP_stream_color))+1));
