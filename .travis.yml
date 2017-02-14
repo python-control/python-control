@@ -33,7 +33,7 @@ before_install:
   - conda install conda-build
   - conda config --add channels python-control
   - conda info -a
-  - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage slycot
+  - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage
   - source activate test-environment
   # coveralls not in conda repos
   - pip install coveralls
@@ -45,6 +45,11 @@ install:
 
 # command to run tests
 script:
+  # Before installing Slycot
+  - python setup.py test
+
+  # Now, get and use Slycot
+  - conda install slycot
   - coverage run setup.py test
 
 after_success:
