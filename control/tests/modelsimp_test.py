@@ -107,6 +107,7 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=4)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=4)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testBalredMatchDC(self):
         #controlable canonical realization computed in matlab for the transfer function:
         # num = [1 11 45 32], den = [1 15 60 200 60]
