@@ -43,31 +43,39 @@
 # RMM, 2 April 2011: modified to work with new LTI structure (see ChangeLog)
 #   * Not tested: should still work on signal.ltisys objects
 #
+# GDM, 16 February 2017: add smart selection of gains based on axis.
+#   * Add gains up to a tolerance is achieved
+#   * Change some variables and functions names ir order to improve "code style"
+#
+#
 # $Id$
 
 # Packages used by this module
-import numpy as np
-from scipy import array, poly1d, row_stack, zeros_like, real, imag
-import scipy.signal             # signal processing toolbox
-import pylab                    # plotting routines
-from .xferfcn import _convertToTransferFunction
-from .exception import ControlMIMONotImplemented
 from functools import partial
+
+import numpy as np
+import pylab  # plotting routines
+import scipy.signal  # signal processing toolbox
+from scipy import array, poly1d, row_stack, zeros_like, real, imag
+
+from . import xferfcn
+from .exception import ControlMIMONotImplemented
 
 __all__ = ['root_locus', 'rlocus']
 
+
 # Main function: compute a root locus diagram
-def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
-               PrintGain=True):
+def root_locus(dinsys, kvect=None, xlim=None, ylim=None, plotstr='-', plot=True,
+               print_gain=True):
     """Root locus plot
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
-    of kvect.
+    of gvect.
 
     Parameters
     ----------
-    sys : LTI object
+    dinsys : LTI object
         Linear input/output systems (SISO only, for now)
     kvect : list or ndarray, optional
         List of gains to use in computing diagram
@@ -75,11 +83,12 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         control of x-axis range, normally with tuple (see matplotlib.axes)
     ylim : tuple or list, optional
         control of y-axis range
-    Plot : boolean, optional (default = True)
+    plot : boolean, optional (default = True)
         If True, plot magnitude and phase
-    PrintGain: boolean (default = True)
+    print_gain: boolean (default = True)
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
+    plotstr: string that declare of the rlocus (see matplotlib)
 
     Returns
     -------
@@ -90,21 +99,74 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
     """
 
     # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(sys)
+    (nump, denp) = _systopoly1d(dinsys)
 
     if kvect is None:
-        kvect = _default_gains(sys)
+        gvect = _default_gains(nump, denp)
+    else:
+        gvect = np.asarray(kvect)
 
     # Compute out the loci
-    mymat = _RLFindRoots(sys, kvect)
-    mymat = _RLSortRoots(sys, mymat)
+    mymat = _find_roots(dinsys, gvect)
+    mymat = _sort_roots(mymat)
+
+    # set smoothing tolerance
+    smtolx = 0.01 * (np.max(np.max(np.real(mymat))) - np.min(np.min(np.real(mymat))))
+    smtoly = 0.01 * (np.max(np.max(np.imag(mymat))) - np.min(np.min(np.imag(mymat))))
+    smtol = np.max(smtolx, smtoly)
+
+    if ~(xlim is None):
+        xmin = np.min(np.min(np.real(mymat)))
+        xmax = np.max(np.max(np.real(mymat)))
+        deltax = (xmax - xmin) * 0.02
+        xlim = [xmin - deltax, xmax + deltax]
+
+    if ~(ylim is None):
+        ymin = np.min(np.min(np.imag(mymat)))
+        ymax = np.max(np.max(np.imag(mymat)))
+        deltay = (ymax - ymin) * 0.02
+        ylim = [ymin - deltay, ymax + deltay]
+
+    done = False
+    ngain = gvect.size
+
+    while ~done & (ngain < 2000) & (kvect is None):
+        done = True
+        dp = np.abs(np.diff(mymat, axis=0))
+        dp = np.max(dp, axis=1)
+        idx = np.where(dp > smtol)
+
+        for ii in np.arange(0, idx[0].size):
+            i1 = idx[0][ii]
+            g1 = gvect[i1]
+            p1 = mymat[i1]
+
+            i2 = idx[0][ii] + 1
+            g2 = gvect[i2]
+            p2 = mymat[i2]
+            # isolate poles in p1, p2
+            if np.max(np.abs(p2 - p1)) > smtol:
+                newg = np.linspace(g1, g2, 5)
+                newmymat = _find_roots(dinsys, newg)
+                gvect = np.insert(gvect, i1 + 1, newg[1:4])
+                mymat = np.insert(mymat, i1 + 1, newmymat[1:4], axis=0)
+                mymat = _sort_roots(mymat)
+                done = False  # need to process new gains
+                ngain = gvect.size
+    if kvect is None:
+        newg = np.linspace(gvect[-1], gvect[-1] * 200, 5)
+        newmymat = _find_roots(dinsys, newg)
+        gvect = np.append(gvect, newg[1:5])
+        mymat = np.concatenate((mymat, newmymat[1:5]), axis=0)
+        mymat = _sort_roots(mymat)
+        kvect = gvect
 
     # Create the plot
-    if (Plot):
+    if plot:
         f = pylab.figure()
-        if PrintGain:
+        if print_gain:
             f.canvas.mpl_connect(
-                'button_release_event', partial(_RLFeedbackClicks, sys=sys))
+                'button_release_event', partial(_feedback_clicks, sys=dinsys))
         ax = pylab.axes()
 
         # plot open loop poles
@@ -121,33 +183,82 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.plot(real(col), imag(col), plotstr)
 
         # Set up plot axes and labels
-        if xlim:
-            ax.set_xlim(xlim)
-        if ylim:
-            ax.set_ylim(ylim)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
 
     return mymat, kvect
 
-def _default_gains(sys):
-    # TODO: update with a smart calculation of the gains using sys poles/zeros
-    return np.logspace(-3, 3)
+
+def _default_gains(num, den):
+    """Insert gains up to a tolerance is achieved. This tolerance is a function of figure axis """
+    nas = den.order - num.order  # number of asymptotes
+    maxk = 0
+    olpol = den.roots
+    olzer = num.roots
+    if nas > 0:
+        cas = (sum(den.roots) - sum(num.roots)) / nas
+        angles = (2 * np.arange(1, nas + 1) - 1) * np.pi / nas
+        # print("rlocus: there are %d asymptotes centered at %f\n", nas, cas)
+    else:
+        cas = []
+        angles = []
+        maxk = 100 * den(1) / num(1)
+    k_break, real_ax_pts = _break_points(num, den)
+    if nas == 0:
+        maxk = np.max([1, 2 * maxk])  # get at least some root locus
+    else:
+        # get distance from breakpoints, poles, and zeros to center of asymptotes
+        dmax = 3 * np.max(np.abs(np.concatenate((np.concatenate((olzer, olpol), axis=0),
+                                                 real_ax_pts), axis=0) - cas))
+        if dmax == 0:
+            dmax = 1
+        # get gain for dmax along each asymptote, adjust maxk if necessary
+        svals = cas + dmax * np.exp(angles * 1j)
+        kvals = -den(svals) / num(svals)
+
+        if k_break.size > 0:
+            maxk = np.max(np.max(k_break), maxk)
+        maxk = np.max([maxk, np.max(np.real(kvals))])
+    mink = 0
+    ngain = 30
+    gvec = np.linspace(mink, maxk, ngain)
+    gvec = np.concatenate((gvec, k_break), axis=0)
+    gvec.sort()
+    return gvec
+
+
+def _break_points(num, den):
+    """Extract the break points over real axis and the gains that give these location"""
+    # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
+    dnum = num.deriv(m=1)
+    dden = den.deriv(m=1)
+    brkp = np.poly1d(np.convolve(den, dnum) - np.convolve(num, dden))
+    real_ax_pts = brkp.r
+    real_ax_pts = real_ax_pts[np.imag(real_ax_pts) == 0]
+    real_ax_pts = real_ax_pts[num(real_ax_pts) != 0]  # avoid dividing by zero
+    k_break = -den(real_ax_pts) / num(real_ax_pts)
+    idx = k_break >= 0
+    k_break = k_break[idx]
+    real_ax_pts = real_ax_pts[idx]
+    return k_break, real_ax_pts
+
 
 # Utility function to extract numerator and denominator polynomials
 def _systopoly1d(sys):
     """Extract numerator and denominator polynomails for a system"""
     # Allow inputs from the signal processing toolbox
-    if (isinstance(sys, scipy.signal.lti)):
+    if isinstance(sys, scipy.signal.lti):
         nump = sys.num
         denp = sys.den
 
     else:
         # Convert to a transfer function, if needed
-        sys = _convertToTransferFunction(sys)
+        sys = xferfcn.convertToTransferFunction(sys)
 
         # Make sure we have a SISO system
-        if (sys.inputs > 1 or sys.outputs > 1):
+        if sys.inputs > 1. or sys.outputs > 1.:
             raise ControlMIMONotImplemented()
 
         # Start by extracting the numerator and denominator from system object
@@ -155,15 +266,15 @@ def _systopoly1d(sys):
         denp = sys.den[0][0]
 
     # Check to see if num, den are already polynomials; otherwise convert
-    if (not isinstance(nump, poly1d)):
+    if not isinstance(nump, poly1d):
         nump = poly1d(nump)
-    if (not isinstance(denp, poly1d)):
+    if not isinstance(denp, poly1d):
         denp = poly1d(denp)
 
-    return (nump, denp)
+    return nump, denp
 
 
-def _RLFindRoots(sys, kvect):
+def _find_roots(sys, kvect):
     """Find the roots for the root locus."""
 
     # Convert numerator and denominator to polynomials if they aren't
@@ -179,36 +290,37 @@ def _RLFindRoots(sys, kvect):
     return mymat
 
 
-def _RLSortRoots(sys, mymat):
-    """Sort the roots from sys._RLFindRoots, so that the root
+def _sort_roots(mymat):
+    """Sort the roots from sys._sort_roots, so that the root
     locus doesn't show weird pseudo-branches as roots jump from
     one branch to another."""
 
-    sorted = zeros_like(mymat)
+    sorted_roots = zeros_like(mymat)
     for n, row in enumerate(mymat):
         if n == 0:
-            sorted[n, :] = row
+            sorted_roots[n, :] = row
         else:
             # sort the current row by finding the element with the
             # smallest absolute distance to each root in the
             # previous row
             available = list(range(len(prevrow)))
             for elem in row:
-                evect = elem-prevrow[available]
+                evect = elem - prevrow[available]
                 ind1 = abs(evect).argmin()
                 ind = available.pop(ind1)
-                sorted[n, ind] = elem
-        prevrow = sorted[n, :]
-    return sorted
+                sorted_roots[n, ind] = elem
+        prevrow = sorted_roots[n, :]
+    return sorted_roots
 
 
-def _RLFeedbackClicks(event, sys):
+def _feedback_clicks(event, sys):
     """Print root-locus gain feedback for clicks on the root-locus plot
     """
     s = complex(event.xdata, event.ydata)
-    K = -1./sys.horner(s)
-    if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
+    k = -1. / sys.horner(s)
+    if abs(k.real) > 1e-8 and abs(k.imag / k.real) < 0.04:
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
-              (s.real, s.imag, K.real, -1*s.real/abs(s)))
+              (s.real, s.imag, k.real, -1 * s.real / abs(s)))
+
 
 rlocus = root_locus
