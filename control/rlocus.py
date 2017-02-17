@@ -57,25 +57,24 @@ import numpy as np
 import pylab  # plotting routines
 import scipy.signal  # signal processing toolbox
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
-
-from . import xferfcn
+from .xferfcn import _convertToTransferFunction
 from .exception import ControlMIMONotImplemented
 
 __all__ = ['root_locus', 'rlocus']
 
 
 # Main function: compute a root locus diagram
-def root_locus(dinsys, kvect=None, xlim=None, ylim=None, plotstr='-', plot=True,
-               print_gain=True):
+def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
+               PrintGain=True):
     """Root locus plot
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element
-    of gvect.
+    of kvect.
 
     Parameters
     ----------
-    dinsys : LTI object
+    sys : LTI object
         Linear input/output systems (SISO only, for now)
     kvect : list or ndarray, optional
         List of gains to use in computing diagram
@@ -83,9 +82,9 @@ def root_locus(dinsys, kvect=None, xlim=None, ylim=None, plotstr='-', plot=True,
         control of x-axis range, normally with tuple (see matplotlib.axes)
     ylim : tuple or list, optional
         control of y-axis range
-    plot : boolean, optional (default = True)
+    Plot : boolean, optional (default = True)
         If True, plot magnitude and phase
-    print_gain: boolean (default = True)
+    PrintGain: boolean (default = True)
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
     plotstr: string that declare of the rlocus (see matplotlib)
@@ -99,7 +98,7 @@ def root_locus(dinsys, kvect=None, xlim=None, ylim=None, plotstr='-', plot=True,
     """
 
     # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(dinsys)
+    (nump, denp) = _systopoly1d(sys)
 
     if kvect is None:
         gvect = _default_gains(nump, denp)
@@ -107,7 +106,7 @@ def root_locus(dinsys, kvect=None, xlim=None, ylim=None, plotstr='-', plot=True,
         gvect = np.asarray(kvect)
 
     # Compute out the loci
-    mymat = _find_roots(dinsys, gvect)
+    mymat = _find_roots(sys, gvect)
     mymat = _sort_roots(mymat)
 
     # set smoothing tolerance
@@ -147,7 +146,7 @@ def root_locus(dinsys, kvect=None, xlim=None, ylim=None, plotstr='-', plot=True,
             # isolate poles in p1, p2
             if np.max(np.abs(p2 - p1)) > smtol:
                 newg = np.linspace(g1, g2, 5)
-                newmymat = _find_roots(dinsys, newg)
+                newmymat = _find_roots(sys, newg)
                 gvect = np.insert(gvect, i1 + 1, newg[1:4])
                 mymat = np.insert(mymat, i1 + 1, newmymat[1:4], axis=0)
                 mymat = _sort_roots(mymat)
@@ -155,34 +154,34 @@ def root_locus(dinsys, kvect=None, xlim=None, ylim=None, plotstr='-', plot=True,
                 ngain = gvect.size
     if kvect is None:
         newg = np.linspace(gvect[-1], gvect[-1] * 200, 5)
-        newmymat = _find_roots(dinsys, newg)
+        newmymat = _find_roots(sys, newg)
         gvect = np.append(gvect, newg[1:5])
         mymat = np.concatenate((mymat, newmymat[1:5]), axis=0)
         mymat = _sort_roots(mymat)
         kvect = gvect
 
-    # Create the plot
-    if plot:
+    # Create the Plot
+    if Plot:
         f = pylab.figure()
-        if print_gain:
+        if PrintGain:
             f.canvas.mpl_connect(
-                'button_release_event', partial(_feedback_clicks, sys=dinsys))
+                'button_release_event', partial(_feedback_clicks, sys=sys))
         ax = pylab.axes()
 
-        # plot open loop poles
+        # Plot open loop poles
         poles = array(denp.r)
         ax.plot(real(poles), imag(poles), 'x')
 
-        # plot open loop zeros
+        # Plot open loop zeros
         zeros = array(nump.r)
         if zeros.any():
             ax.plot(real(zeros), imag(zeros), 'o')
 
-        # Now plot the loci
+        # Now Plot the loci
         for col in mymat.T:
             ax.plot(real(col), imag(col), plotstr)
 
-        # Set up plot axes and labels
+        # Set up Plot axes and labels
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         ax.set_xlabel('Real')
@@ -230,7 +229,7 @@ def _default_gains(num, den):
 
 
 def _break_points(num, den):
-    """Extract the break points over real axis and the gains that give these location"""
+    """Extract break points over real axis and the gains give these location"""
     # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
     dnum = num.deriv(m=1)
     dden = den.deriv(m=1)
@@ -255,10 +254,10 @@ def _systopoly1d(sys):
 
     else:
         # Convert to a transfer function, if needed
-        sys = xferfcn.convertToTransferFunction(sys)
+        sys = _convertToTransferFunction(sys)
 
         # Make sure we have a SISO system
-        if sys.inputs > 1. or sys.outputs > 1.:
+        if sys.inputs > 1 or sys.outputs > 1:
             raise ControlMIMONotImplemented()
 
         # Start by extracting the numerator and denominator from system object
