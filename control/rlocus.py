@@ -319,7 +319,7 @@ def _ax_lim(mymat):
     if xmax != xmin:
         deltax = (xmax - xmin) * 0.02
     else:
-        deltax = np.max(1., xmax / 2)
+        deltax = np.max([1., xmax / 2])
     xlim = [xmin - deltax, xmax + deltax]
     return xlim
 
