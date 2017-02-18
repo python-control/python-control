@@ -57,8 +57,9 @@ import numpy as np
 import pylab  # plotting routines
 import scipy.signal  # signal processing toolbox
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
-from .xferfcn import _convertToTransferFunction
+
 from .exception import ControlMIMONotImplemented
+from .xferfcn import _convertToTransferFunction
 
 __all__ = ['root_locus', 'rlocus']
 
@@ -101,64 +102,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
     (nump, denp) = _systopoly1d(sys)
 
     if kvect is None:
-        gvect = _default_gains(nump, denp)
+        gvect, mymat, xl, yl = _default_gains(nump, denp, xlim, ylim)
     else:
         gvect = np.asarray(kvect)
-
-    # Compute out the loci
-    mymat = _find_roots(sys, gvect)
-    mymat = _sort_roots(mymat)
-
-    # set smoothing tolerance
-    smtolx = 0.01 * (np.max(np.max(np.real(mymat))) - np.min(np.min(np.real(mymat))))
-    smtoly = 0.01 * (np.max(np.max(np.imag(mymat))) - np.min(np.min(np.imag(mymat))))
-    smtol = np.max(smtolx, smtoly)
-
-    if ~(xlim is None):
-        xmin = np.min(np.min(np.real(mymat)))
-        xmax = np.max(np.max(np.real(mymat)))
-        deltax = (xmax - xmin) * 0.02
-        xlim = [xmin - deltax, xmax + deltax]
-
-    if ~(ylim is None):
-        ymin = np.min(np.min(np.imag(mymat)))
-        ymax = np.max(np.max(np.imag(mymat)))
-        deltay = (ymax - ymin) * 0.02
-        ylim = [ymin - deltay, ymax + deltay]
-
-    done = False
-    ngain = gvect.size
-
-    while ~done & (ngain < 2000) & (kvect is None):
-        done = True
-        dp = np.abs(np.diff(mymat, axis=0))
-        dp = np.max(dp, axis=1)
-        idx = np.where(dp > smtol)
-
-        for ii in np.arange(0, idx[0].size):
-            i1 = idx[0][ii]
-            g1 = gvect[i1]
-            p1 = mymat[i1]
-
-            i2 = idx[0][ii] + 1
-            g2 = gvect[i2]
-            p2 = mymat[i2]
-            # isolate poles in p1, p2
-            if np.max(np.abs(p2 - p1)) > smtol:
-                newg = np.linspace(g1, g2, 5)
-                newmymat = _find_roots(sys, newg)
-                gvect = np.insert(gvect, i1 + 1, newg[1:4])
-                mymat = np.insert(mymat, i1 + 1, newmymat[1:4], axis=0)
-                mymat = _sort_roots(mymat)
-                done = False  # need to process new gains
-                ngain = gvect.size
-    if kvect is None:
-        newg = np.linspace(gvect[-1], gvect[-1] * 200, 5)
-        newmymat = _find_roots(sys, newg)
-        gvect = np.append(gvect, newg[1:5])
-        mymat = np.concatenate((mymat, newmymat[1:5]), axis=0)
+        mymat = _find_roots(nump, denp, gvect)
         mymat = _sort_roots(mymat)
-        kvect = gvect
+        xl = _ax_lim(mymat)
+        yl = _ax_lim(mymat * 1j)
 
     # Create the Plot
     if Plot:
@@ -182,15 +132,20 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.plot(real(col), imag(col), plotstr)
 
         # Set up Plot axes and labels
+        if xlim is None:
+            xlim = xl
+        if ylim is None:
+            ylim = yl
+
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
 
-    return mymat, kvect
+    return mymat, gvect
 
 
-def _default_gains(num, den):
+def _default_gains(num, den, xlim, ylim):
     """Insert gains up to a tolerance is achieved. This tolerance is a function of figure axis """
     nas = den.order - num.order  # number of asymptotes
     maxk = 0
@@ -199,17 +154,17 @@ def _default_gains(num, den):
     if nas > 0:
         cas = (sum(den.roots) - sum(num.roots)) / nas
         angles = (2 * np.arange(1, nas + 1) - 1) * np.pi / nas
-        # print("rlocus: there are %d asymptotes centered at %f\n", nas, cas)
     else:
         cas = []
         angles = []
         maxk = 100 * den(1) / num(1)
+
     k_break, real_ax_pts = _break_points(num, den)
     if nas == 0:
         maxk = np.max([1, 2 * maxk])  # get at least some root locus
     else:
         # get distance from breakpoints, poles, and zeros to center of asymptotes
-        dmax = 3 * np.max(np.abs(np.concatenate((np.concatenate((olzer, olpol), axis=0),
+        dmax = 2 * np.max(np.abs(np.concatenate((np.concatenate((olzer, olpol), axis=0),
                                                  real_ax_pts), axis=0) - cas))
         if dmax == 0:
             dmax = 1
@@ -219,13 +174,63 @@ def _default_gains(num, den):
 
         if k_break.size > 0:
             maxk = np.max(np.max(k_break), maxk)
+
         maxk = np.max([maxk, np.max(np.real(kvals))])
+
     mink = 0
     ngain = 30
     gvec = np.linspace(mink, maxk, ngain)
     gvec = np.concatenate((gvec, k_break), axis=0)
     gvec.sort()
-    return gvec
+    done = False
+
+    # Compute out the loci
+    mymat = _find_roots(num, den, gvec)
+    mymat = _sort_roots(mymat)
+    # set smoothing tolerance
+    if xlim is None:
+        smtolx = 0.01 * (np.max(np.max(np.real(mymat))) - np.min(np.min(np.real(mymat))))
+    else:
+        smtolx = 0.01 * (xlim[1] - xlim[0])
+    if ylim is None:
+        smtoly = 0.01 * (np.max(np.max(np.imag(mymat))) - np.min(np.min(np.imag(mymat))))
+    else:
+        smtoly = 0.01 * (ylim[1] - ylim[0])
+
+    smtol = np.max(np.real([smtolx, smtoly]))
+    xl = _ax_lim(mymat)
+    yl = _ax_lim(mymat * 1j)
+
+    while ~done & (ngain < 1000):
+        done = True
+        dp = np.abs(np.diff(mymat, axis=0))
+        dp = np.max(dp, axis=1)
+        idx = np.where(dp > smtol)
+
+        for ii in np.arange(0, idx[0].size):
+            i1 = idx[0][ii]
+            g1 = gvec[i1]
+            p1 = mymat[i1]
+
+            i2 = idx[0][ii] + 1
+            g2 = gvec[i2]
+            p2 = mymat[i2]
+            # isolate poles in p1, p2
+            if np.max(np.abs(p2 - p1)) > smtol:
+                newg = np.linspace(g1, g2, 5)
+                newmymat = _find_roots(num, den, newg)
+                gvec = np.insert(gvec, i1 + 1, newg[1:4])
+                mymat = np.insert(mymat, i1 + 1, newmymat[1:4], axis=0)
+                mymat = _sort_roots(mymat)
+                done = False  # need to process new gains
+                ngain = gvec.size
+
+    newg = np.linspace(gvec[-1], gvec[-1] * 200, 5)
+    newmymat = _find_roots(num, den, newg)
+    gvec = np.append(gvec, newg[1:5])
+    mymat = np.concatenate((mymat, newmymat[1:5]), axis=0)
+    mymat = _sort_roots(mymat)
+    return gvec, mymat, xl, yl
 
 
 def _break_points(num, den):
@@ -269,15 +274,11 @@ def _systopoly1d(sys):
         nump = poly1d(nump)
     if not isinstance(denp, poly1d):
         denp = poly1d(denp)
-
     return nump, denp
 
 
-def _find_roots(sys, kvect):
+def _find_roots(nump, denp, kvect):
     """Find the roots for the root locus."""
-
-    # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(sys)
 
     roots = []
     for k in kvect:
@@ -310,6 +311,17 @@ def _sort_roots(mymat):
                 sorted_roots[n, ind] = elem
         prevrow = sorted_roots[n, :]
     return sorted_roots
+
+
+def _ax_lim(mymat):
+    xmin = np.min(np.min(np.real(mymat)))
+    xmax = np.max(np.max(np.real(mymat)))
+    if xmax != xmin:
+        deltax = (xmax - xmin) * 0.02
+    else:
+        deltax = np.max(1., xmax / 2)
+    xlim = [xmin - deltax, xmax + deltax]
+    return xlim
 
 
 def _feedback_clicks(event, sys):
