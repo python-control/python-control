@@ -128,8 +128,8 @@ class TransferFunction(LTI):
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))
 
-        num = cleanPart(num)
-        den = cleanPart(den)
+        num = _cleanPart(num)
+        den = _cleanPart(den)
 
         inputs = len(num[0])
         outputs = len(num)
@@ -1318,7 +1318,7 @@ def tfdata(sys):
 
     return (tf.num, tf.den)
 
-def cleanPart(data):
+def _cleanPart(data):
     '''
     Return a valid, cleaned up numerator or denominator 
     for the TransferFunction class.
