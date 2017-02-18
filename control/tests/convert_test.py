@@ -184,6 +184,28 @@ class TestConvert(unittest.TestCase):
         if (not slycot_check()):
             self.assertRaises(TypeError, control.tf2ss, tfcn)
 
+    def testTf2ssStaticSiso(self):
+        """Regression: tf2ss for SISO static gain"""
+        import control
+        gsiso = control.tf2ss(control.tf(23, 46))
+        self.assertEqual(0, gsiso.states)
+        self.assertEqual(1, gsiso.inputs)
+        self.assertEqual(1, gsiso.outputs)
+        # in all cases ratios are exactly representable, so assert_array_equal is fine
+        np.testing.assert_array_equal([[0.5]], gsiso.D)
+
+    def testTf2ssStaticMimo(self):
+        """Regression: tf2ss for MIMO static gain"""
+        import control
+        # 2x3 TFM
+        gmimo = control.tf2ss(control.tf([[ [23],   [3],  [5] ], [ [-1],  [0.125],  [101.3] ]],
+                                         [[ [46], [0.1], [80] ], [  [2],   [-0.1],      [1] ]]))
+        self.assertEqual(0, gmimo.states)
+        self.assertEqual(3, gmimo.inputs)
+        self.assertEqual(2, gmimo.outputs)
+        d = np.matrix([[0.5, 30, 0.0625], [-0.5, -1.25, 101.3]])
+        np.testing.assert_array_equal(d, gmimo.D)
+
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
