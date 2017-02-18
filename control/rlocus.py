@@ -238,7 +238,7 @@ def _break_points(num, den):
     # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
     dnum = num.deriv(m=1)
     dden = den.deriv(m=1)
-    brkp = np.poly1d(np.convolve(den, dnum) - np.convolve(num, dden))
+    brkp = den * dnum - num * dden
     real_ax_pts = brkp.r
     real_ax_pts = real_ax_pts[np.imag(real_ax_pts) == 0]
     real_ax_pts = real_ax_pts[num(real_ax_pts) != 0]  # avoid dividing by zero
