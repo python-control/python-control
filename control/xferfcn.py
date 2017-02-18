@@ -128,8 +128,8 @@ class TransferFunction(LTI):
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))
 
-        num = tf_clean_parts(num)
-        den = tf_clean_parts(den)
+        num = cleanPart(num)
+        den = cleanPart(den)
 
         inputs = len(num[0])
         outputs = len(num)
@@ -1318,7 +1318,7 @@ def tfdata(sys):
 
     return (tf.num, tf.den)
 
-def tf_clean_parts(data):
+def cleanPart(data):
     '''
     Return a valid, cleaned up numerator or denominator 
     for the TransferFunction class.
@@ -1328,11 +1328,10 @@ def tf_clean_parts(data):
     
     Returns:
     data: correctly formatted transfer function part.
-    
+    ;
     '''
     valid_types = (int, int8, int16, int32, int64,
-               float, float16, float32, float64, float128,
-               complex, complex64, complex128, complex256)
+                   float, float16, float32, float64, float128)
     valid_collection = (list, tuple, ndarray)
 
     if (isinstance(data, valid_types) or
@@ -1341,11 +1340,13 @@ def tf_clean_parts(data):
     elif (isinstance(data, valid_collection) and
             all([isinstance(d, valid_types) for d in data])):
         return [[array(data, dtype=float)]]
-    elif (isinstance(data, list) and
-          isinstance(data[0], list) and
+    elif (isinstance(data, (list, tuple)) and
+          isinstance(data[0], (list, tuple)) and
               (isinstance(data[0][0], valid_collection) and 
-              isinstance(data[0][0][0], valid_types))):
+               all([isinstance(d, valid_types) for d in data[0][0]]))):
+        data = list(data)
         for j in range(len(data)):
+            data[j] = list(data[j])
             for k in range(len(data[j])):
                 data[j][k] = array(data[j][k], dtype=float)
         return data
