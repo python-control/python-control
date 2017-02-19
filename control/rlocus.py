@@ -188,18 +188,24 @@ def _default_gains(num, den, xlim, ylim):
     mymat = _find_roots(num, den, gvec)
     mymat = _sort_roots(mymat)
     # set smoothing tolerance
+    if (olzer.size != 0) and (olzer.size < olpol.size):
+        olzer_xl = np.append(olzer, np.ones(olpol.size - olzer.size) * olzer[-1])
+        mymat_xl = np.append(mymat, olzer_xl)
+    else:
+        mymat_xl = mymat
+
     if xlim is None:
-        smtolx = 0.01 * (np.max(np.max(np.real(mymat))) - np.min(np.min(np.real(mymat))))
+        smtolx = 0.01 * (np.max(np.max(np.real(mymat_xl))) - np.min(np.min(np.real(mymat_xl))))
     else:
         smtolx = 0.01 * (xlim[1] - xlim[0])
     if ylim is None:
-        smtoly = 0.01 * (np.max(np.max(np.imag(mymat))) - np.min(np.min(np.imag(mymat))))
+        smtoly = 0.01 * (np.max(np.max(np.imag(mymat_xl))) - np.min(np.min(np.imag(mymat_xl))))
     else:
         smtoly = 0.01 * (ylim[1] - ylim[0])
 
     smtol = np.max(np.real([smtolx, smtoly]))
-    xl = _ax_lim(mymat)
-    yl = _ax_lim(mymat * 1j)
+    xl = _ax_lim(mymat_xl)
+    yl = _ax_lim(mymat_xl * 1j)
 
     while ~done & (ngain < 1000):
         done = True
