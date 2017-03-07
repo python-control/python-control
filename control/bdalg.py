@@ -60,14 +60,16 @@ from . import frdata as frd
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
-def series(sys1, sys2):
-    """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.
+def series(sys1, sys2,*sysn):
+    """Return the series connection (... * sys3 *) sys2 * sys1 
+    for (... sys3 -->) sys1 --> sys2 -->.
 
     Parameters
     ----------
     sys1: scalar, StateSpace, TransferFunction, or FRD
     sys2: scalar, StateSpace, TransferFunction, or FRD
-
+    sysn: scalar, StateSpace, TransferFunction, or FRD
+    
     Returns
     -------
     out: scalar, StateSpace, or TransferFunction
@@ -97,20 +99,28 @@ def series(sys1, sys2):
     Examples
     --------
     >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1.
+    >>> sys_final = series(sys1, sys2, sys3, sys4)
 
     """
+      
+    if len(sysn) == 0:
+      return sys2 * sys1
+    else:
+      sys_final = sys2 * sys1
+      for sys in sysn:
+         sys_final = sys * sys_final
+      return sys_final
 
-    return sys2 * sys1
-
-def parallel(sys1, sys2):
+def parallel(sys1, sys2, *sysn):
     """
-    Return the parallel connection sys1 + sys2.
+    Return the parallel connection sys1 + sys2 (+ sys3 +... ).
 
     Parameters
     ----------
     sys1: scalar, StateSpace, TransferFunction, or FRD
     sys2: scalar, StateSpace, TransferFunction, or FRD
-
+    sysn: scalar, StateSpace, TransferFunction, or FRD
+    
     Returns
     -------
     out: scalar, StateSpace, or TransferFunction
@@ -140,10 +150,16 @@ def parallel(sys1, sys2):
     Examples
     --------
     >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2.
-
+    >>> sys_final = parallel(sys1, sys2, sys3, sys4)
+    
     """
-
-    return sys1 + sys2
+    if len(sysn) == 0:
+      return sys1 + sys2
+    else:
+      sys_final = sys1 + sys2
+      for sys in sysn:
+         sys_final = sys_final + sys
+      return sys_final
 
 def negate(sys):
     """
