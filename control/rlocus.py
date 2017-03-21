@@ -172,7 +172,7 @@ def _default_gains(num, den, xlim, ylim):
         mymat = _RLSortRoots(mymat)
         distance_points = np.abs(np.diff(mymat, axis=0))
         indexes_too_far = np.where(distance_points > tolerance)
-    new_gains = np.hstack((np.logspace(np.log10(kvect[-1]), np.log10(kvect[-1]*200), 10)))
+    new_gains = np.hstack((np.linspace(kvect[-1], kvect[-1]*200, 10)))
     new_points = _RLFindRoots(num, den, new_gains[1:10])
     kvect = np.append(kvect, new_gains[1:10])
     mymat = np.concatenate((mymat, new_points), axis=0)
@@ -192,6 +192,9 @@ def _break_points(num, den):
     idx = k_break >= 0   # only positives gains
     k_break = k_break[idx]
     real_break_pts = real_break_pts[idx]
+    if len(k_break) == 0:
+        k_break = [0]
+        real_break_pts = den.roots
     return k_break, real_break_pts
 
 
@@ -219,6 +222,8 @@ def _k_max(num, den, real_break_points, k_break_points):
         asymp_angles = (2 * np.arange(0, asymp_number)-1) * np.pi / asymp_number
         farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
         kmax_asymp = -den(farthest_points) / num(farthest_points)
+        if kmax_asymp == 0:
+            kmax_asymp = [den.coeffs[0]/num.coeffs[0]*3]
     else:
         farthest_points = 2 * np.max(np.abs(important_points))
         kmax_asymp = -den(farthest_points) / num(farthest_points)
