@@ -113,7 +113,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
 
         # plot open loop zeros
         zeros = array(nump.r)
-        if zeros.size > 0:
+        if zeros.any():
             ax.plot(real(zeros), imag(zeros), 'o')
 
         # Now plot the loci
@@ -148,9 +148,6 @@ def _default_gains(num, den, xlim, ylim):
         mymat_xl = np.append(mymat, open_loop_zeros_xl)
     else:
         mymat_xl = mymat
-    singular_points = np.concatenate((num.roots, den.roots), axis=0)
-    important_points = np.concatenate((singular_points, real_break), axis=0)
-    mymat_xl = np.append(mymat_xl, important_points)
 
     if xlim is None:
         x_tolerance = 0.05 * (np.max(np.max(np.real(mymat_xl))) - np.min(np.min(np.real(mymat_xl))))
@@ -226,8 +223,10 @@ def _k_max(num, den, real_break_points, k_break_points):
         farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
         kmax_asymp = -den(farthest_points) / num(farthest_points)
     else:
+        farthest_points = 2 * np.max(np.abs(important_points))
+        kmax_asymp = [-den(farthest_points) / num(farthest_points)]
+    if np.max(kmax_asymp) == 0:
         kmax_asymp = [den.coeffs[0] / num.coeffs[0] * 3]
-
     kmax = np.max(np.concatenate((np.real(kmax_asymp), k_break_points), axis=0))
     return kmax
 
