@@ -56,6 +56,7 @@ from functools import partial
 
 __all__ = ['root_locus', 'rlocus']
 
+
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
                PrintGain=True):
@@ -93,11 +94,10 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
     (nump, denp) = _systopoly1d(sys)
 
     if kvect is None:
-        kvect = _default_gains(sys)
-
-    # Compute out the loci
-    mymat = _RLFindRoots(sys, kvect)
-    mymat = _RLSortRoots(sys, mymat)
+        kvect, mymat, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
+    else:
+        mymat = _RLFindRoots(nump, denp, kvect)
+        mymat = _RLSortRoots(mymat)
 
     # Create the plot
     if (Plot):
@@ -130,11 +130,104 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
 
     return mymat, kvect
 
-def _default_gains(sys):
-    # TODO: update with a smart calculation of the gains using sys poles/zeros
-    return np.logspace(-3, 3)
 
-# Utility function to extract numerator and denominator polynomials
+def _default_gains(num, den, xlim, ylim):
+    """Unsupervised gains calculation for root locus plot"""
+    k_break, real_break = _break_points(num, den)
+    kmax = _k_max(num, den, real_break, k_break)
+    kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
+    kvect.sort()
+    mymat = _RLFindRoots(num, den, kvect)
+    mymat = _RLSortRoots(mymat)
+    open_loop_poles = den.roots
+    open_loop_zeros = num.roots
+
+    if (open_loop_zeros.size != 0) & (open_loop_zeros.size < open_loop_poles.size):
+        open_loop_zeros_xl = np.append(open_loop_zeros,
+                                       np.ones(open_loop_poles.size - open_loop_zeros.size) * open_loop_zeros[-1])
+        mymat_xl = np.append(mymat, open_loop_zeros_xl)
+    else:
+        mymat_xl = mymat
+
+    if xlim is None:
+        x_tolerance = 0.05 * (np.max(np.max(np.real(mymat_xl))) - np.min(np.min(np.real(mymat_xl))))
+        xlim = _ax_lim(mymat_xl)
+    else:
+        x_tolerance = 0.05 * (xlim[1] - xlim[0])
+    if ylim is None:
+        y_tolerance = 0.05 * (np.max(np.max(np.imag(mymat_xl))) - np.min(np.min(np.imag(mymat_xl))))
+        ylim = _ax_lim(mymat_xl * 1j)
+    else:
+        y_tolerance = 0.05 * (ylim[1] - ylim[0])
+
+    tolerance = np.max([x_tolerance, y_tolerance])
+    distance_points = np.abs(np.diff(mymat, axis=0))
+    indexes_too_far = np.where(distance_points > tolerance)
+    while (indexes_too_far[0].size > 0) & (kvect.size < 5000):
+        for index in indexes_too_far[0]:
+            new_gains = np.linspace(kvect[index], kvect[index+1], 5)
+            new_points = _RLFindRoots(num, den, new_gains[1:4])
+            kvect = np.insert(kvect, index+1, new_gains[1:4])
+            mymat = np.insert(mymat, index+1, new_points, axis=0)
+        mymat = _RLSortRoots(mymat)
+        distance_points = np.abs(np.diff(mymat, axis=0))
+        indexes_too_far = np.where(distance_points > tolerance)
+    new_gains = np.hstack((np.logspace(np.log10(kvect[-1]), np.log10(kvect[-1]*200), 10)))
+    new_points = _RLFindRoots(num, den, new_gains[1:10])
+    kvect = np.append(kvect, new_gains[1:10])
+    mymat = np.concatenate((mymat, new_points), axis=0)
+    mymat = _RLSortRoots(mymat)
+    return kvect, mymat, xlim, ylim
+
+
+def _break_points(num, den):
+    """Extract break points over real axis and the gains give these location"""
+    # type: (np.poly1d, np.poly1d) -> (np.array, np.array)
+    dnum = num.deriv(m=1)
+    dden = den.deriv(m=1)
+    polynom = den * dnum - num * dden
+    real_break_pts = polynom.r
+    real_break_pts = real_break_pts[num(real_break_pts) != 0]  # don't care about infinite break points
+    k_break = -den(real_break_pts) / num(real_break_pts)
+    idx = k_break >= 0   # only positives gains
+    k_break = k_break[idx]
+    real_break_pts = real_break_pts[idx]
+    return k_break, real_break_pts
+
+
+def _ax_lim(mymat):
+    """Utility to get the axis limits"""
+    axmin = np.min(np.min(np.real(mymat)))
+    axmax = np.max(np.max(np.real(mymat)))
+    if axmax != axmin:
+        deltax = (axmax - axmin) * 0.02
+    else:
+        deltax = np.max([1., axmax / 2])
+    axlim = [axmin - deltax, axmax + deltax]
+    return axlim
+
+
+def _k_max(num, den, real_break_points, k_break_points):
+    """" Calculation the maximum gain for the root locus shown in tne figure"""
+    asymp_number = den.order - num.order
+    singular_points = np.concatenate((num.roots, den.roots), axis=0)
+    important_points = np.concatenate((singular_points, real_break_points), axis=0)
+
+    if asymp_number > 0:
+        asymp_center = (np.sum(den.roots) - np.sum(num.roots))/asymp_number
+        distance_max = 2 * np.max(np.abs(important_points - asymp_center))
+        asymp_angles = (2 * np.arange(0, asymp_number)-1) * np.pi / asymp_number
+        farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
+        kmax_asymp = -den(farthest_points) / num(farthest_points)
+    else:
+        farthest_points = 2 * np.max(np.abs(important_points))
+        kmax_asymp = -den(farthest_points) / num(farthest_points)
+        if kmax_asymp == 0:
+            kmax_asymp = -den(1) / num(1)
+    kmax = np.max(np.concatenate((np.real(kmax_asymp), k_break_points), axis=0))
+    return kmax
+
+
 def _systopoly1d(sys):
     """Extract numerator and denominator polynomails for a system"""
     # Allow inputs from the signal processing toolbox
@@ -163,11 +256,10 @@ def _systopoly1d(sys):
     return (nump, denp)
 
 
-def _RLFindRoots(sys, kvect):
+def _RLFindRoots(nump, denp, kvect):
     """Find the roots for the root locus."""
 
     # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(sys)
 
     roots = []
     for k in kvect:
@@ -179,7 +271,7 @@ def _RLFindRoots(sys, kvect):
     return mymat
 
 
-def _RLSortRoots(sys, mymat):
+def _RLSortRoots(mymat):
     """Sort the roots from sys._RLFindRoots, so that the root
     locus doesn't show weird pseudo-branches as roots jump from
     one branch to another."""
