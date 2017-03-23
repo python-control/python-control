@@ -227,10 +227,8 @@ def _k_max(num, den, real_break_points, k_break_points):
         kmax_asymp = -den(farthest_points) / num(farthest_points)
     else:
         kmax_asymp = [den.coeffs[0] / num.coeffs[0] * 3]
-    if np.max(kmax_asymp) == 0:
-        kmax = np.max(np.concatenate((np.real(kmax_asymp), k_break_points), axis=0))
-    else:
-        kmax = kmax_asymp
+
+    kmax = np.max(np.concatenate((np.real(kmax_asymp), k_break_points), axis=0))
     return kmax
 
 
