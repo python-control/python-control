@@ -59,7 +59,7 @@ __all__ = ['root_locus', 'rlocus']
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
-               PrintGain=True, grid = False):
+               PrintGain=True, grid=False):
     """Root locus plot
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
@@ -77,10 +77,12 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
     ylim : tuple or list, optional
         control of y-axis range
     Plot : boolean, optional (default = True)
-        If True, plot magnitude and phase
+        If True, plot root locus diagram.
     PrintGain: boolean (default = True)
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
+    grid: boolean (default = False)
+        If True plot s-plane grid. 
 
     Returns
     -------
