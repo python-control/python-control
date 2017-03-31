@@ -160,6 +160,7 @@ def _default_gains(num, den, xlim, ylim):
         mymat_xl = mymat
     singular_points = np.concatenate((num.roots, den.roots), axis=0)
     important_points = np.concatenate((singular_points, real_break), axis=0)
+    important_points = np.concatenate((singular_points, np.zeros(2)), axis=0)
     mymat_xl = np.append(mymat_xl, important_points)
 
     if xlim is None:
@@ -323,20 +324,14 @@ def sgrid_func(fig):
     ylocator = ax.get_yaxis().get_major_locator()
     xlocator = ax.get_yaxis().get_major_locator()
 
-    long_xaxis = xlocator()[-1] - xlocator()[0]
-    long_yaxis = ylocator()[-1] - ylocator()[0]
-
     angules = np.arange(-90, 80, 15)*np.pi/180
 
-    # radial lines
+    # zeta-constant lines
     y_over_x = np.tan(angules[1::])*ylocator()[-1]/xlocator()[-1]
-
     ylim = ax.get_ylim()
     ytext_pos_lim = ylim[1]-(ylim[1]-ylim[0])*0.03
-
     xlim = ax.get_xlim()
     xtext_pos_lim = xlim[0]+(xlim[1]-xlim[0])*0.0
-
     index = 0
     zeta = np.sin(np.pi/2-angules[1::])
 
@@ -363,6 +358,7 @@ def sgrid_func(fig):
                 xtext_pos = -xtext_pos
             ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos], fontsize=8)
         index += 1
+    ax.plot([0, 0], [ylim[0], ylim[1]], color='gray', linestyle='dashed', linewidth=0.5)
 
     angules = np.linspace(-90, 90, 20)*np.pi/180
     for xt in xlocator():
