@@ -59,7 +59,7 @@ __all__ = ['root_locus', 'rlocus']
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
-               PrintGain=True):
+               PrintGain=True, grid = False):
     """Root locus plot
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
@@ -99,9 +99,17 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         mymat = _RLFindRoots(nump, denp, kvect)
         mymat = _RLSortRoots(mymat)
 
-    # Create the plot
-    if (Plot):
-        f = pylab.figure()
+    # Create the Plot
+    if Plot:
+        figure_number = pylab.get_fignums()
+        figure_title = [pylab.figure(numb).canvas.get_window_title() for numb in figure_number]
+        new_figure_name = "Root Locus"
+        rloc_num = 1
+        while new_figure_name in figure_title:
+            new_figure_name = "Root Locus " + str(rloc_num)
+            rloc_num += 1
+        f = pylab.figure(new_figure_name)
+
         if PrintGain:
             f.canvas.mpl_connect(
                 'button_release_event', partial(_RLFeedbackClicks, sys=sys))
@@ -127,6 +135,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.set_ylim(ylim)
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
+        if grid:
+            sgrid_func(f)
 
     return mymat, kvect
 
@@ -305,6 +315,63 @@ def _RLFeedbackClicks(event, sys):
     K = -1./sys.horner(s)
     if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
-              (s.real, s.imag, K.real, -1*s.real/abs(s)))
+              (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+
+
+def sgrid_func(fig):
+    ax = fig.gca()
+    ylocator = ax.get_yaxis().get_major_locator()
+    xlocator = ax.get_yaxis().get_major_locator()
+
+    long_xaxis = xlocator()[-1] - xlocator()[0]
+    long_yaxis = ylocator()[-1] - ylocator()[0]
+
+    angules = np.arange(-90, 80, 15)*np.pi/180
+
+    # radial lines
+    y_over_x = np.tan(angules[1::])*ylocator()[-1]/xlocator()[-1]
+
+    ylim = ax.get_ylim()
+    ytext_pos_lim = ylim[1]-(ylim[1]-ylim[0])*0.03
+
+    xlim = ax.get_xlim()
+    xtext_pos_lim = xlim[0]+(xlim[1]-xlim[0])*0.0
+
+    index = 0
+    zeta = np.sin(np.pi/2-angules[1::])
+
+    for yp in y_over_x:
+        ax.plot([0, xlocator()[0]], [0, yp*xlocator()[0]], color='gray',
+                linestyle='dashed', linewidth=0.5)
+        an = "%.2f" % zeta[index]
+        if yp > 0:
+            xtext_pos = -1/yp * ylim[1]
+            ytext_pos = -yp * xtext_pos_lim
+            if np.abs(xtext_pos) > np.abs(xtext_pos_lim):
+                xtext_pos = xtext_pos_lim
+            else:
+                ytext_pos = ytext_pos_lim
+            ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos], fontsize=8)
+        elif yp < 0:
+            xtext_pos = -1/yp * ylim[1]
+            ytext_pos = yp * xtext_pos_lim
+            if np.abs(xtext_pos) > np.abs(xtext_pos_lim):
+                xtext_pos = xtext_pos_lim
+                ytext_pos = - ytext_pos
+            else:
+                ytext_pos = ylim[0]
+                xtext_pos = -xtext_pos
+            ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos], fontsize=8)
+        index += 1
+
+    angules = np.linspace(-90, 90, 20)*np.pi/180
+    for xt in xlocator():
+        if xt < 0:
+            yp = np.sin(angules)*np.abs(xt)
+            xp = -np.cos(angules)*np.abs(xt)
+            ax.plot(xp, yp, color='gray',
+                    linestyle='dashed', linewidth=0.5)
+            an = "%.2f" % -xt
+            ax.annotate(an, textcoords='data', xy=[xt, 0], fontsize=8)
 
 rlocus = root_locus
