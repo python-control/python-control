@@ -139,7 +139,6 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         ax.set_ylabel('Imaginary')
         if grid:
             sgrid_func(f)
-
     return mymat, kvect
 
 
@@ -162,7 +161,7 @@ def _default_gains(num, den, xlim, ylim):
         mymat_xl = mymat
     singular_points = np.concatenate((num.roots, den.roots), axis=0)
     important_points = np.concatenate((singular_points, real_break), axis=0)
-    important_points = np.concatenate((singular_points, np.zeros(2)), axis=0)
+    important_points = np.concatenate((important_points, np.zeros(2)), axis=0)
     mymat_xl = np.append(mymat_xl, important_points)
 
     if xlim is None:
@@ -267,6 +266,7 @@ def _systopoly1d(sys):
     # Check to see if num, den are already polynomials; otherwise convert
     if (not isinstance(nump, poly1d)):
         nump = poly1d(nump)
+
     if (not isinstance(denp, poly1d)):
         denp = poly1d(denp)
 
@@ -321,55 +321,72 @@ def _RLFeedbackClicks(event, sys):
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
 
 
-def sgrid_func(fig):
+def sgrid_func(fig, zeta=None, wn=None):
     ax = fig.gca()
     ylocator = ax.get_yaxis().get_major_locator()
-    xlocator = ax.get_yaxis().get_major_locator()
+    xlocator = ax.get_xaxis().get_major_locator()
 
-    angules = np.arange(-90, 80, 15)*np.pi/180
+    if zeta is None:
+        zeta = _default_zetas(xlocator(), ylocator())
+
+    angules = []
+    for z in zeta:
+        if (z >= 1e-4) & (z < 1):
+            angules.append(np.pi/2 + np.arcsin(z))
+        else:
+            zeta.remove(z)
+    y_over_x = np.tan(angules)
 
     # zeta-constant lines
-    y_over_x = np.tan(angules[1::])*ylocator()[-1]/xlocator()[-1]
     ylim = ax.get_ylim()
     ytext_pos_lim = ylim[1]-(ylim[1]-ylim[0])*0.03
     xlim = ax.get_xlim()
     xtext_pos_lim = xlim[0]+(xlim[1]-xlim[0])*0.0
     index = 0
-    zeta = np.sin(np.pi/2-angules[1::])
 
     for yp in y_over_x:
         ax.plot([0, xlocator()[0]], [0, yp*xlocator()[0]], color='gray',
                 linestyle='dashed', linewidth=0.5)
+        ax.plot([0, xlocator()[0]], [0, -yp * xlocator()[0]], color='gray',
+                linestyle='dashed', linewidth=0.5)
         an = "%.2f" % zeta[index]
-        if yp > 0:
-            xtext_pos = -1/yp * ylim[1]
-            ytext_pos = -yp * xtext_pos_lim
+        if yp < 0:
+            xtext_pos = 1/yp * ylim[1]
+            ytext_pos = yp * xtext_pos_lim
             if np.abs(xtext_pos) > np.abs(xtext_pos_lim):
                 xtext_pos = xtext_pos_lim
             else:
                 ytext_pos = ytext_pos_lim
             ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos], fontsize=8)
-        elif yp < 0:
-            xtext_pos = -1/yp * ylim[1]
-            ytext_pos = yp * xtext_pos_lim
-            if np.abs(xtext_pos) > np.abs(xtext_pos_lim):
-                xtext_pos = xtext_pos_lim
-                ytext_pos = - ytext_pos
-            else:
-                ytext_pos = ylim[0]
-                xtext_pos = -xtext_pos
-            ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos], fontsize=8)
         index += 1
     ax.plot([0, 0], [ylim[0], ylim[1]], color='gray', linestyle='dashed', linewidth=0.5)
 
     angules = np.linspace(-90, 90, 20)*np.pi/180
-    for xt in xlocator():
-        if xt < 0:
-            yp = np.sin(angules)*np.abs(xt)
-            xp = -np.cos(angules)*np.abs(xt)
+    if wn is None:
+        wn = _default_wn(xlocator(), ylocator())
+
+    for om in wn:
+        if om < 0:
+            yp = np.sin(angules)*np.abs(om)
+            xp = -np.cos(angules)*np.abs(om)
             ax.plot(xp, yp, color='gray',
                     linestyle='dashed', linewidth=0.5)
-            an = "%.2f" % -xt
-            ax.annotate(an, textcoords='data', xy=[xt, 0], fontsize=8)
+            an = "%.2f" % -om
+            ax.annotate(an, textcoords='data', xy=[om, 0], fontsize=8)
+
+
+def _default_zetas(xloc, yloc):
+    """Return default list of dumps coefficients"""
+    # TODO: smart selection on zetas to draw in root locus plot
+    angules = np.arange(0, 80, 15) * np.pi / 180
+    zeta = np.sin(np.pi/2 - angules[1::])
+    return zeta.tolist()
+
+
+def _default_wn(xloc, yloc):
+    """Return default wn for root locus plot"""
+    # TODO: better selection of wn (up to maximum ylim with same separation in xloc)
+    wn = xloc
+    return wn
 
 rlocus = root_locus
