@@ -138,7 +138,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
         if grid:
-            sgrid_func(f)
+            _sgrid_func()
     return mymat, kvect
 
 
@@ -321,7 +321,9 @@ def _RLFeedbackClicks(event, sys):
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
 
 
-def sgrid_func(fig, zeta=None, wn=None):
+def _sgrid_func(fig=None, zeta=None, wn=None):
+    if fig is None:
+        fig = pylab.gcf()
     ax = fig.gca()
     ylocator = ax.get_yaxis().get_major_locator()
     xlocator = ax.get_xaxis().get_major_locator()
