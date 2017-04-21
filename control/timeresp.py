@@ -324,6 +324,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
         dsys = (A, B, C, D, sys.dt)
         tout, yout, xout = sp.signal.dlsim(dsys, U, T, X0)
 
+        # Transpose the output and state vectors to match local convention
+        xout = sp.transpose(xout)
+        yout = sp.transpose(yout)
+
     # See if we need to transpose the data back into MATLAB form
     if (transpose):
         T = np.transpose(T)
