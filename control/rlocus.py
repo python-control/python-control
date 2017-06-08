@@ -127,6 +127,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.plot(real(zeros), imag(zeros), 'o')
 
         # Now plot the loci
+        infinity_roots=np.where(mymat.T == np.inf)
+        print(infinity_roots)
         for col in mymat.T:
             ax.plot(real(col), imag(col), plotstr)
 
@@ -163,12 +165,17 @@ def _default_gains(num, den, xlim, ylim):
     important_points = np.concatenate((singular_points, real_break), axis=0)
     important_points = np.concatenate((important_points, np.zeros(2)), axis=0)
     mymat_xl = np.append(mymat_xl, important_points)
+    false_gain = den.coeffs[0] / num.coeffs[0]
 
-    if xlim is None:
+    if xlim is None and false_gain > 0:
         x_tolerance = 0.05 * (np.max(np.max(np.real(mymat_xl))) - np.min(np.min(np.real(mymat_xl))))
         xlim = _ax_lim(mymat_xl)
+    elif xlim is None and false_gain < 0:
+        xlim = _ax_lim(important_points)
+        x_tolerance = 0.05 * (np.max(np.max(np.real(mymat_xl))) - np.min(np.min(np.real(mymat_xl))))
     else:
         x_tolerance = 0.05 * (xlim[1] - xlim[0])
+
     if ylim is None:
         y_tolerance = 0.05 * (np.max(np.max(np.imag(mymat_xl))) - np.min(np.min(np.imag(mymat_xl))))
         ylim = _ax_lim(mymat_xl * 1j)
@@ -178,6 +185,7 @@ def _default_gains(num, den, xlim, ylim):
     tolerance = np.max([x_tolerance, y_tolerance])
     distance_points = np.abs(np.diff(mymat, axis=0))
     indexes_too_far = np.where(distance_points > tolerance)
+
     while (indexes_too_far[0].size > 0) & (kvect.size < 5000):
         for index in indexes_too_far[0]:
             new_gains = np.linspace(kvect[index], kvect[index+1], 5)
@@ -185,8 +193,10 @@ def _default_gains(num, den, xlim, ylim):
             kvect = np.insert(kvect, index+1, new_gains[1:4])
             mymat = np.insert(mymat, index+1, new_points, axis=0)
         mymat = _RLSortRoots(mymat)
-        distance_points = np.abs(np.diff(mymat, axis=0))
-        indexes_too_far = np.where(distance_points > tolerance)
+        distance_points = np.abs(np.diff(mymat, axis=0))>tolerance
+        points_in_figure = np.logical_and(mymat[1:]>xlim[0], mymat[1:]<xlim[1])
+        indexes_too_far = np.where(np.logical_and(distance_points, points_in_figure))
+
     new_gains = np.hstack((np.linspace(kvect[-1], kvect[-1]*200, 10)))
     new_points = _RLFindRoots(num, den, new_gains[1:10])
     kvect = np.append(kvect, new_gains[1:10])
@@ -230,15 +240,20 @@ def _k_max(num, den, real_break_points, k_break_points):
     asymp_number = den.order - num.order
     singular_points = np.concatenate((num.roots, den.roots), axis=0)
     important_points = np.concatenate((singular_points, real_break_points), axis=0)
+    false_gain = den.coeffs[0] / num.coeffs[0]
 
     if asymp_number > 0:
         asymp_center = (np.sum(den.roots) - np.sum(num.roots))/asymp_number
         distance_max = 2 * np.max(np.abs(important_points - asymp_center))
         asymp_angles = (2 * np.arange(0, asymp_number)-1) * np.pi / asymp_number
-        farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
+        if false_gain > 0:
+            farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
+        else:
+            asymp_angles = asymp_angles + np.pi
+            farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
         kmax_asymp = -den(farthest_points) / num(farthest_points)
     else:
-        kmax_asymp = [den.coeffs[0] / num.coeffs[0] * 3]
+        kmax_asymp = np.abs([den.coeffs[0] / num.coeffs[0] * 3])
 
     kmax = np.max(np.concatenate((np.real(kmax_asymp), k_break_points), axis=0))
     return kmax
@@ -277,13 +292,16 @@ def _RLFindRoots(nump, denp, kvect):
     """Find the roots for the root locus."""
 
     # Convert numerator and denominator to polynomials if they aren't
-
     roots = []
     for k in kvect:
         curpoly = denp + k * nump
         curroots = curpoly.r
+        if len(curroots) < denp.order:
+            curroots = np.insert(curroots, len(curroots), np.inf) # if i have less poles than open loop is becuase i have one in infinity
+
         curroots.sort()
         roots.append(curroots)
+
     mymat = row_stack(roots)
     return mymat
 
