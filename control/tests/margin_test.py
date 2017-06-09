@@ -43,6 +43,48 @@ class TestMargin(unittest.TestCase):
         self.stability_margins4 = \
           [2.2716, 97.5941, 0.5591, 10.0053, 0.0850, 9.9918]
 
+        # from "A note on the Gain and Phase Margin Concepts
+        # Journal of Control and Systems Engineering, Yazdan Bavafi-Toosi,
+        # Dec 205, vol 3 iss 1, pp 51-59
+        #
+        # A cornucopia of tricky systems for phase / gain margin
+        # Still have to convert this to tests + fix margin to handle
+        # also these torture cases
+        self.yazdan = {
+            'example21' :
+            0.002*(s+0.02)*(s+0.05)*(s+5)*(s+10)/(
+                (s-0.0005)*(s+0.0001)*(s+0.01)*(s+0.2)*(s+1)*(s+100)**2 ),
+            
+            'example23' :
+            ((s+0.1)**2 + 1)*(s-0.1)/(
+                ((s+0.1)**2+4)*(s+1) ),
+            
+            'example25a' :
+            s/(s**2+2*s+2)**4,
+            
+            'example26a' :
+            ((s-0.1)**2 + 1)/(
+                (s + 0.1)*((s-0.2)**2 + 4) ),
+            
+            'example26b': ((s-0.1)**2 + 1)/(
+                (s - 0.3)*((s-0.2)**2 + 4) )
+        }
+        self.yazdan['example24'] = self.yazdan['example21']*20000
+        self.yazdan['example25b'] = self.yazdan['example25a']*100
+        self.yazdan['example22'] = self.yazdan['example21']*(s**2 - 2*s + 401)
+        self.ymargin = (
+            dict(sys='example21', K=1.0, result=(
+                0.01, 345.43, 0., 0, 0, 0.01)))
+
+        self.yallmargin = (
+            dict(sys='example21', K=1.0, result=(
+                [0.01, 179.2931, 2.2798e+4, 1.5946e+07, 7.2477e+08],
+                [0, 0.0243, 0.4385, 6.8640, 84.9323],
+                [-14.5640],
+                [0.0022]))
+        )
+            
+            
     def test_stability_margins(self):
         omega = np.logspace(-2, 2, 2000)
         for sys,rgm,rwgm,rpm,rwpm in self.tsys:
