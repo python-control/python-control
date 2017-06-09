@@ -11,6 +11,22 @@ from control.frdata import FRD
 from control.statesp import StateSpace
 from control.margins import *
 
+def assert_array_almost_equal(x, y, ndigit=4):
+
+    x = np.array(x)
+    y = np.array(y)
+    try:
+        if np.isfinite(x).any() and (np.isfinite(x) == np.isfinite(y)).all() and \
+            (x[np.logical_not(np.isfinite(x))] ==
+            y[np.logical_not(np.isfinite(y))]).all():
+            np.testing.assert_array_almost_equal(
+                x[np.isfinite(x)], y[np.isfinite(y)], ndigit)
+            return
+    except TypeError as e:
+        print("Error", e, "with", x, "and", y)
+        #raise e
+    np.testing.assert_array_almost_equal(x, y, ndigit)
+
 class TestMargin(unittest.TestCase):
     """These are tests for the margin commands in margin.py."""
 
@@ -27,10 +43,19 @@ class TestMargin(unittest.TestCase):
         [], [], [147.0743], [2.5483]),
         ((8.75*(4*s**2+0.4*s+1))/((100*s+1)*(s**2+0.22*s+1)) * 
          1./(s**2/(10.**2)+2*0.04*s/10.+1), 
-        [2.2716], [10.0053], [97.5941, 360-157.7904, 134.7359],
+        [2.2716], [10.0053], [97.5941, -157.7904, 134.7359],
         [0.0850, 0.9373, 1.0919]))
         
-        
+
+        """
+        sys1 = tf([1, 2], [1, 2, 3]);
+        sys2 = tf([1], [1, 2, 3, 4]);
+        sys3 = ss([1, 4; 3, 2], [1; -4], ...
+            [1, 0], [0])
+        s = tf('s')
+        sys4 = (8.75*(4*s^2+0.4*s+1))/((100*s+1)*(s^2+0.22*s+1)) * ...
+                                      1.0/(s^2/(10.0^2)+2*0.04*s/10.0+1);
+        """
         self.sys1 = TransferFunction([1, 2], [1, 2, 3])
         # alternative
         # sys1 = tf([1, 2], [1, 2, 3])
@@ -43,6 +68,24 @@ class TestMargin(unittest.TestCase):
         self.stability_margins4 = \
           [2.2716, 97.5941, 0.5591, 10.0053, 0.0850, 9.9918]
 
+        """
+        h1 = (s + 0.1)/s/(s+1);
+        h2 = (s + 0.1)/s^2/(s+1);
+        h3 = (s + 0.1)*(s+0.1)/s^3/(s+1);
+        """
+        self.types = {
+            'type1': (s + 0.1)/s/(s+1),
+            'type2': (s + 0.1)/s**2/(s+1),
+            'type3': (s + 0.1)*(s+0.1)/s**3/(s+1) }
+        self.tmargin = ( self.types, 
+            dict(sys='type1', K=1.0, digits=4, result=(
+                float('Inf'), 144.9032, float('NaN'), 0.3162)),
+            dict(sys='type2', K=1.0, digits=4, result=(
+                float('Inf'), 44.4594, float('NaN'), 0.7907)),
+            dict(sys='type3', K=1.0, digits=3, result=(
+                0.0626, 37.1748, 0.1119, 0.7951)),
+            )
+          
         # from "A note on the Gain and Phase Margin Concepts
         # Journal of Control and Systems Engineering, Yazdan Bavafi-Toosi,
         # Dec 205, vol 3 iss 1, pp 51-59
@@ -50,6 +93,19 @@ class TestMargin(unittest.TestCase):
         # A cornucopia of tricky systems for phase / gain margin
         # Still have to convert this to tests + fix margin to handle
         # also these torture cases
+        """
+        % matlab compatible
+        s = tf('s');
+        h21 = 0.002*(s+0.02)*(s+0.05)*(s+5)*(s+10)/( ...
+                (s-0.0005)*(s+0.0001)*(s+0.01)*(s+0.2)*(s+1)*(s+100)^2 );
+        h23 = ((s+0.1)^2 + 1)*(s-0.1)/( ...
+                ((s+0.1)^2+4)*(s+1) );
+        h25a = s/(s^2+2*s+2)^4; h25b = h25a*100;
+        h26a = ((s-0.1)^2 + 1)/( ...
+                (s + 0.1)*((s-0.2)^2 + 4) ) ;
+        h26b = ((s-0.1)^2 + 1)/( ...
+                (s - 0.3)*((s-0.2)^2 + 4) );
+        """
         self.yazdan = {
             'example21' :
             0.002*(s+0.02)*(s+0.05)*(s+5)*(s+10)/(
@@ -93,22 +149,22 @@ class TestMargin(unittest.TestCase):
             gm, pm, sm, wg, wp, ws = out
             outf = np.array(stability_margins(FRD(sys, omega)))
             print(out,'\n', outf)
-            print(out != np.array(None))
-            np.testing.assert_array_almost_equal(
-                out[out != np.array(None)],
-                outf[outf != np.array(None)], 2)
+            #print(out != np.array(None))
+            assert_array_almost_equal(
+                out, outf, 2)
             
         # final one with fixed values
-        np.testing.assert_array_almost_equal(
+        assert_array_almost_equal(
             [gm, pm, sm, wg, wp, ws],
             self.stability_margins4, 3)
 
     def test_margin(self):
         gm, pm, wg, wp = margin(self.sys4)
-        np.testing.assert_array_almost_equal(
+        assert_array_almost_equal(
             [gm, pm, wg, wp],
             self.stability_margins4[:2] + self.stability_margins4[3:5], 3)
 
+        
     def test_stability_margins_all(self):
         for sys,rgm,rwgm,rpm,rwpm in self.tsys:
             out = stability_margins(sys, returnall=True)
@@ -117,25 +173,25 @@ class TestMargin(unittest.TestCase):
             for res,comp in zip(out, (rgm,rpm,[],rwgm,rwpm,[])):
                 if comp:
                     print(res, '\n', comp)
-                    np.testing.assert_array_almost_equal(
+                    assert_array_almost_equal(
                         res, comp, 2)
         
     def test_phase_crossover_frequencies(self):
         omega, gain = phase_crossover_frequencies(self.sys2)
-        np.testing.assert_array_almost_equal(omega, [1.73205,  0.])
-        np.testing.assert_array_almost_equal(gain, [-0.5,  0.25])
+        assert_array_almost_equal(omega, [1.73205,  0.])
+        assert_array_almost_equal(gain, [-0.5,  0.25])
 
         tf = TransferFunction([1],[1,1])
         omega, gain = phase_crossover_frequencies(tf)
-        np.testing.assert_array_almost_equal(omega, [0.])
-        np.testing.assert_array_almost_equal(gain, [1.])
+        assert_array_almost_equal(omega, [0.])
+        assert_array_almost_equal(gain, [1.])
 
         # testing MIMO, only (0,0) element is considered
         tf = TransferFunction([[[1],[2]],[[3],[4]]],
                               [[[1, 2, 3, 4],[1,1]],[[1,1],[1,1]]])
         omega, gain = phase_crossover_frequencies(tf)
-        np.testing.assert_array_almost_equal(omega, [1.73205081,  0.])
-        np.testing.assert_array_almost_equal(gain, [-0.5,  0.25])
+        assert_array_almost_equal(omega, [1.73205081,  0.])
+        assert_array_almost_equal(gain, [-0.5,  0.25])
 
     def test_mag_phase_omega(self):
         # test for bug reported in gh-58
@@ -148,7 +204,7 @@ class TestMargin(unittest.TestCase):
         ind = [0,1,3,4]   # indices of gm, pm, wg, wp -- ignore sm
         marg1 = np.array(out)[ind]
         marg2 = np.array(out2)[ind]
-        np.testing.assert_array_almost_equal(marg1, marg2, 4)
+        assert_array_almost_equal(marg1, marg2, 4)
 
     def test_frd(self):
         f = np.array([0.005, 0.010, 0.020, 0.030, 0.040,
@@ -185,7 +241,7 @@ class TestMargin(unittest.TestCase):
         C=K*(1+1.9*s)
         TFopen=fresp*C*G
         gm, pm, sm, wg, wp, ws = stability_margins(TFopen)
-        np.testing.assert_array_almost_equal(
+        assert_array_almost_equal(
             [pm], [44.55], 2)
 
     def test_nocross(self):
@@ -195,16 +251,27 @@ class TestMargin(unittest.TestCase):
         h2 = 3*(10+s)/(2+s)
         h3 = 0.01*(10-s)/(2+s)/(1+s)
         gm, pm, wm, wg, wp, ws = stability_margins(h1)
-        self.assertEqual(gm, None)
-        self.assertEqual(wg, None)
+        assert_array_almost_equal(
+            [gm, pm, wg, wp],
+            [float('Inf'), float('Inf'), float('NaN'), float('NaN')]) 
         gm, pm, wm, wg, wp, ws = stability_margins(h2)
-        self.assertEqual(pm, None)
+        self.assertEqual(pm, float('Inf'))
         gm, pm, wm, wg, wp, ws = stability_margins(h3)
-        self.assertEqual(pm, None)
+        self.assertTrue(np.isnan(wp))
         omega = np.logspace(-2,2, 100)
         out1b = stability_margins(FRD(h1, omega))
         out2b = stability_margins(FRD(h2, omega))
         out3b = stability_margins(FRD(h3, omega))
+
+    def test_zmore_margin(self):
+        sdict = self.tmargin[0]
+        for test in self.tmargin[1:]:
+            res = margin(sdict[test['sys']]*test['K'])
+            print("more margin {}\n".format(sdict[test['sys']]),
+                  res, '\n', test['result'])
+            assert_array_almost_equal(
+                res, test['result'], test['digits'])
+            
         
         
 def test_suite():
