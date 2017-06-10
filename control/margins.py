@@ -2,10 +2,11 @@
 
 Functions for computing stability margins and related functions.
 
-Routeins in this module:
+Routines in this module:
 
 margin.stability_margins
 margin.phase_crossover_frequencies
+margin.margin
 """
 
 # Python 3 compatability (needs to go here)
@@ -94,7 +95,9 @@ def _polysqr(pol):
 #                    return on basis of "A note on the Gain and Phase
 #                    Margin Concepts" Journal of Control and Systems
 #                    Engineering, Yazdan Bavafi-Toosi, Dec 2015, vol 3
-#                    issue 1, pp 51-59, closer to Matlab behavior??
+#                    issue 1, pp 51-59, closer to Matlab behavior, but
+#                    not completely identical in edge cases, which don't
+#                    cross but touch gain=1
 def stability_margins(sysdata, returnall=False, epsw=0.0):
     """Calculate stability margins and associated crossover frequencies.
 
