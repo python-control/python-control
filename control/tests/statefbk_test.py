@@ -72,6 +72,17 @@ class TestStatefbk(unittest.TestCase):
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testGramRc(self):
+        A = np.matrix("1. -2.; 3. -4.")
+        B = np.matrix("5. 6.; 7. 8.")
+        C = np.matrix("4. 5.; 6. 7.")
+        D = np.matrix("13. 14.; 15. 16.")
+        sys = ss(A, B, C, D)
+        Rctrue = np.matrix("4.30116263 5.6961343; 0. 0.23249528")
+        Rc = gram(sys,'cf')
+        np.testing.assert_array_almost_equal(Rc, Rctrue)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGramWo(self):
         A = np.matrix("1. -2.; 3. -4.")
         B = np.matrix("5. 6.; 7. 8.")
@@ -93,6 +104,17 @@ class TestStatefbk(unittest.TestCase):
         Wo = gram(sys,'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testGramRo(self):
+        A = np.matrix("1. -2.; 3. -4.")
+        B = np.matrix("5. 6.; 7. 8.")
+        C = np.matrix("4. 5.; 6. 7.")
+        D = np.matrix("13. 14.; 15. 16.")
+        sys = ss(A, B, C, D)
+        Rotrue = np.matrix("16.04680654 -5.8890222; 0. 4.67112593")
+        Ro = gram(sys,'of')
+        np.testing.assert_array_almost_equal(Ro, Rotrue)
+
     def testGramsys(self):
         num =[1.]
         den = [1., 1., 1.]
@@ -111,8 +133,7 @@ class TestStatefbk(unittest.TestCase):
 
                 # Make sure the system is not degenerate
                 Cmat = ctrb(sys.A, sys.B)
-                if (np.linalg.matrix_rank(Cmat) != states or
-                    abs(np.linalg.det(Cmat)) < 1e-5):
+                if np.linalg.matrix_rank(Cmat) != states:
                     if (self.debug):
                         print("  skipping (not reachable or ill conditioned)")
                         continue
@@ -145,11 +166,13 @@ class TestStatefbk(unittest.TestCase):
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_LQR_integrator(self):
         A, B, Q, R = 0., 1., 10., 2.
         K, S, poles = lqr(A, B, Q, R)
         self.check_LQR(K, S, poles, Q, R)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_LQR_3args(self):
         sys = ss(0., 1., 1., 0.)
         Q, R = 10., 2.

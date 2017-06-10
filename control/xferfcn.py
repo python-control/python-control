@@ -7,7 +7,7 @@ that operate on transfer functions.  This is the primary representation
 for the python-control library.
 """
 
-# Python 3 compatability (needs to go here)
+# Python 3 compatibility (needs to go here)
 from __future__ import print_function
 from __future__ import division
 
@@ -125,7 +125,9 @@ class TransferFunction(LTI):
         # but be careful.
         data = [num, den]
         for i in range(len(data)):
-            if isinstance(data[i], (int, float, complex)):
+            # Check for a scalar (including 0d ndarray)
+            if (isinstance(data[i], (int, float, complex)) or
+                (isinstance(data[i], ndarray) and data[i].ndim == 0)):
                 # Convert scalar to list of list of array.
                 if (isinstance(data[i], int)):
                     # Convert integers to floats at this point
@@ -678,12 +680,9 @@ only implemented for SISO functions.")
                         # keep this zero
                         newzeros.append(z)
 
-                # keep result
-                if len(newzeros):
-                    num[i][j] = gain * real(poly(newzeros))
-                else:
-                    num[i][j] = array([gain])
-                den[i][j] = real(poly(poles))
+                # poly([]) returns a scalar, but we always want a 1d array
+                num[i][j] = np.atleast_1d(gain * real(poly(newzeros)))
+                den[i][j] = np.atleast_1d(real(poly(poles)))
 
         # end result
         return TransferFunction(num, den)
@@ -946,13 +945,23 @@ a zero leading coefficient." % (i, j)
     def dcgain(self):
         """Return the zero-frequency (or DC) gain
 
-        For a transfer function G(s), the DC gain is G(0)
+        For a continous-time transfer function G(s), the DC gain is G(0)
+        For a discrete-time transfer function G(z), the DC gain is G(1)
 
         Returns
         -------
         gain : ndarray
             The zero-frequency gain
         """
+        if self.isctime():
+            return self._dcgain_cont()
+        else:
+            return self(1)
+
+    def _dcgain_cont(self):
+        """_dcgain_cont() -> DC gain as matrix or scalar
+
+        Special cased evaluation at 0 for continuous-time systems"""
         gain = np.empty((self.outputs, self.inputs), dtype=float)
         for i in range(self.outputs):
             for j in range(self.inputs):

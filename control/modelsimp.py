@@ -40,7 +40,7 @@
 #
 # $Id$
 
-# Python 3 compatability
+# Python 3 compatibility
 from __future__ import print_function
 
 # External packages and modules
@@ -149,16 +149,12 @@ def modred(sys, ELIM, method='matchdc'):
 
 
     #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
+        raise ValueError("Oops, the system is unstable!")
+
     ELIM = np.sort(ELIM)
-    NELIM = []
     # Create list of elements not to eliminate (NELIM)
-    for i in range(0,len(sys.A)):
-        if i not in ELIM:
-            NELIM.append(i)
+    NELIM = [i for i in range(len(sys.A)) if i not in ELIM]
     # A1 is a matrix of all columns of sys.A not to eliminate
     A1 = sys.A[:,NELIM[0]]
     for i in NELIM[1:]:
@@ -177,14 +173,26 @@ def modred(sys, ELIM, method='matchdc'):
     B1 = sys.B[NELIM,:]
     B2 = sys.B[ELIM,:]
 
-    A22I = np.linalg.inv(A22)
-
     if method=='matchdc':
         # if matchdc, residualize
-        Ar = A11 - A12*A22.I*A21
-        Br = B1 - A12*A22.I*B2
-        Cr = C1 - C2*A22.I*A21
-        Dr = sys.D - C2*A22.I*B2
+
+        # Check if the matrix A22 is invertible
+        if np.linalg.matrix_rank(A22) != len(ELIM):
+            raise ValueError("Matrix A22 is singular to working precision.")
+
+        # Now precompute A22\A21 and A22\B2 (A22I = inv(A22))
+        # We can solve two linear systems in one pass, since the
+        # coefficients matrix A22 is the same. Thus, we perform the LU
+        # decomposition (cubic runtime complexity) of A22 only once!
+        # The remaining back substitutions are only quadratic in runtime.
+        A22I_A21_B2 = np.linalg.solve(A22, np.concatenate((A21, B2), axis=1))
+        A22I_A21 = A22I_A21_B2[:, :A21.shape[1]]
+        A22I_B2 = A22I_A21_B2[:, A21.shape[1]:]
+
+        Ar = A11 - A12*A22I_A21
+        Br = B1 - A12*A22I_B2
+        Cr = C1 - C2*A22I_A21
+        Dr = sys.D - C2*A22I_B2
     elif method=='truncate':
         # if truncate, simply discard state x2
         Ar = A11
@@ -197,10 +205,17 @@ def modred(sys, ELIM, method='matchdc'):
     rsys = StateSpace(Ar,Br,Cr,Dr)
     return rsys
 
-def balred(sys, orders, method='truncate'):
+def balred(sys, orders, method='truncate', alpha=None):
     """
     Balanced reduced order model of sys of a given order.
     States are eliminated based on Hankel singular value.
+    If sys has unstable modes, they are removed, the
+    balanced realization is done on the stable part, then
+    reinserted in accordance with the reference below.
+
+    Reference: Hsu,C.S., and Hou,D., 1991,
+    Reducing unstable linear control systems via real Schur transformation.
+    Electronics Letters, 27, 984-986.
 
     Parameters
     ----------
@@ -211,26 +226,46 @@ def balred(sys, orders, method='truncate'):
         of systems)
     method: string
         Method of removing states, either ``'truncate'`` or ``'matchdc'``.
+    alpha: float
+        Redefines the stability boundary for eigenvalues of the system matrix A.
+        By default for continuous-time systems, alpha <= 0 defines the stability
+        boundary for the real part of A's eigenvalues and for discrete-time
+        systems, 0 <= alpha <= 1 defines the stability boundary for the modulus
+        of A's eigenvalues. See SLICOT routines AB09MD and AB09ND for more
+        information.
 
     Returns
     -------
     rsys: StateSpace
-        A reduced order model
+        A reduced order model or a list of reduced order models if orders is a list
 
     Raises
     ------
     ValueError
-        * if `method` is not ``'truncate'``
-        * if eigenvalues of `sys.A` are not all in left half plane
-          (`sys` must be stable)
+        * if `method` is not ``'truncate'`` or ``'matchdc'``
     ImportError
-        if slycot routine ab09ad is not found
+        if slycot routine ab09ad, ab09md, or ab09nd is not found
+
+    ValueError
+        if there are more unstable modes than any value in orders
 
     Examples
     --------
-    >>> rsys = balred(sys, order, method='truncate')
+    >>> rsys = balred(sys, orders, method='truncate')
 
     """
+    if method!='truncate' and method!='matchdc':
+        raise ValueError("supported methods are 'truncate' or 'matchdc'")
+    elif method=='truncate':
+        try:
+            from slycot import ab09md, ab09ad
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine ab09md or ab09ad")
+    elif method=='matchdc':
+        try:
+            from slycot import ab09nd
+        except ImportError:
+            raise ControlSlycot("can't find slycot subroutine ab09nd")
 
     #Check for ss system object, need a utility for this?
 
@@ -242,33 +277,46 @@ def balred(sys, orders, method='truncate'):
         # else:
     dico = 'C'
 
-    #Check system is stable
-    D,V = np.linalg.eig(sys.A)
-    # print D.shape
-    # print D
-    for e in D:
-        if e.real >= 0:
-            raise ValueError("Oops, the system is unstable!")
+    job = 'B' # balanced (B) or not (N)
+    equil = 'N'  # scale (S) or not (N)
+    if alpha is None:
+        if dico == 'C':
+            alpha = 0.
+        elif dico == 'D':
+            alpha = 1.
 
-    if method=='matchdc':
-        raise ValueError ("MatchDC not yet supported!")
-    elif method=='truncate':
-        try:
-            from slycot import ab09ad
-        except ImportError:
-            raise ControlSlycot("can't find slycot subroutine ab09ad")
-        job = 'B' # balanced (B) or not (N)
-        equil = 'N'  # scale (S) or not (N)
+    rsys = [] #empty list for reduced systems
+
+    #check if orders is a list or a scalar
+    try:
+        order = iter(orders)
+    except TypeError: #if orders is a scalar
+        orders = [orders]
+
+    for i in orders:
         n = np.size(sys.A,0)
         m = np.size(sys.B,1)
         p = np.size(sys.C,0)
-        Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=orders,tol=0.0)
+        if method == 'truncate':
+            #check system stability
+            if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
+                #unstable branch
+                Nr, Ar, Br, Cr, Ns, hsv = ab09md(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,alpha=alpha,nr=i,tol=0.0)
+            else:
+                #stable branch
+                Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=i,tol=0.0)
+            rsys.append(StateSpace(Ar, Br, Cr, sys.D))
 
-        rsys = StateSpace(Ar, Br, Cr, sys.D)
+        elif method == 'matchdc':
+            Nr, Ar, Br, Cr, Dr, Ns, hsv = ab09nd(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,sys.D,alpha=alpha,nr=i,tol1=0.0,tol2=0.0)
+            rsys.append(StateSpace(Ar, Br, Cr, Dr))
+
+    #if orders was a scalar, just return the single reduced model, not a list
+    if len(orders) == 1:
+        return rsys[0]
+    #if orders was a list/vector, return a list/vector of systems
     else:
-        raise ValueError("Oops, method is not supported!")
-
-    return rsys
+        return rsys
 
 def minreal(sys, tol=None, verbose=True):
     '''
@@ -373,8 +421,6 @@ def markov(Y, U, M):
     UU = np.hstack((UU, Ulast))
 
     # Invert and solve for Markov parameters
-    H = UU.I
-    H = np.dot(H, Y)
+    H = np.linalg.lstsq(UU, Y)[0]
 
     return H
-

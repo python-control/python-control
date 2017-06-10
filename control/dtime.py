@@ -65,7 +65,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
     Ts : real
         Sampling period
     method : string
-        Method to use for conversion: 'matched' (default), 'tustin', 'zoh'
+        Method to use for conversion: 'matched', 'tustin', 'zoh' (default)
 
     Returns
     -------

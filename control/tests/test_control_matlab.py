@@ -2,9 +2,6 @@
 Copyright (C) 2011 by Eike Welk.
 
 Test the control.matlab toolbox.
-
-NOTE: this script is not part of the standard python-control unit
-tests.  Needs to be integrated into unit test files.
 '''
 
 import unittest
@@ -19,6 +16,7 @@ from control.matlab import ss, step, impulse, initial, lsim, dcgain, \
                            ss2tf
 from control.statesp import _mimo2siso
 from control.timeresp import _check_convert_array
+from control.exception import slycot_check
 import warnings
 
 class TestControlMatlab(unittest.TestCase):
@@ -69,23 +67,24 @@ class TestControlMatlab(unittest.TestCase):
 
     def test_dcgain(self):
         """Test function dcgain with different systems"""
-        #Test MIMO systems
-        A, B, C, D = self.make_MIMO_mats()
+        if slycot_check():
+            #Test MIMO systems
+            A, B, C, D = self.make_MIMO_mats()
 
-        gain1 = dcgain(ss(A, B, C, D))
-        gain2 = dcgain(A, B, C, D)
-        sys_tf = ss2tf(A, B, C, D)
-        gain3 = dcgain(sys_tf)
-        gain4 = dcgain(sys_tf.num, sys_tf.den)
-        #print("gain1:", gain1)
+            gain1 = dcgain(ss(A, B, C, D))
+            gain2 = dcgain(A, B, C, D)
+            sys_tf = ss2tf(A, B, C, D)
+            gain3 = dcgain(sys_tf)
+            gain4 = dcgain(sys_tf.num, sys_tf.den)
+            #print("gain1:", gain1)
 
-        assert_array_almost_equal(gain1,
-                                  array([[0.0269, 0.    ],
-                                         [0.    , 0.0269]]),
-                                  decimal=4)
-        assert_array_almost_equal(gain1, gain2)
-        assert_array_almost_equal(gain3, gain4)
-        assert_array_almost_equal(gain1, gain4)
+            assert_array_almost_equal(gain1,
+                                      array([[0.0269, 0.    ],
+                                             [0.    , 0.0269]]),
+                                      decimal=4)
+            assert_array_almost_equal(gain1, gain2)
+            assert_array_almost_equal(gain3, gain4)
+            assert_array_almost_equal(gain1, gain4)
 
         #Test SISO systems
         A, B, C, D = self.make_SISO_mats()

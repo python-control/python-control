@@ -34,7 +34,7 @@
 # IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# Python 3 compatability
+# Python 3 compatibility
 from __future__ import print_function
 
 import numpy as np
@@ -120,7 +120,10 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     # Figure out ranges for phase plot (argument processing)
     #
     #! TODO: need to add error checking to arguments
+    #! TODO: think through proper action if multiple options are given
+    #
     autoFlag = False; logtimeFlag = False; timeptsFlag = False; Narrows = 0;
+
     if lingrid is not None:
         autoFlag = True;
         Narrows = lingrid;
@@ -138,14 +141,18 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         timeptsFlag = True;
         Narrows = len(timepts);
 
-    else:
-        # Figure out the set of points for the quiver plot
-        #! TODO: Add sanity checks
+    # Figure out the set of points for the quiver plot
+    #! TODO: Add sanity checks
+    elif (X is not None and Y is not None):
         (x1, x2) = np.meshgrid(
             frange(X[0], X[1], float(X[1]-X[0])/X[2]),
             frange(Y[0], Y[1], float(Y[1]-Y[0])/Y[2]));
+    else:
+        # If we weren't given any grid points, don't plot arrows
+        Narrows = 0;
 
-    if ((not autoFlag) and (not logtimeFlag) and (not timeptsFlag)):
+    if ((not autoFlag) and (not logtimeFlag) and (not timeptsFlag)
+        and (Narrows > 0)):
         # Now calculate the vector field at those points
         (nr,nc) = x1.shape;
         dx = np.empty((nr, nc, 2))
@@ -205,7 +212,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     for i in range(nr):
         state = odeint(odefun, X0[i], TSPAN, args=parms);
         time = TSPAN
-        mpl.hold(True);
+
         mpl.plot(state[:,0], state[:,1])
         #! TODO: add back in colors for stream lines
         # PP_stream_color(np.mod(i-1, len(PP_stream_color))+1));

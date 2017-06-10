@@ -35,13 +35,38 @@ some thing to keep in mind:
 Installation
 ------------
 
-The `python-control` package may be installed using pip or the standard
-distutils/setuptools mechanisms.
+The `python-control` package may be installed using pip, conda or the
+standard distutils/setuptools mechanisms.
 
 To install using pip::
 
   pip install slycot   # optional
   pip install control
+
+Many parts of `python-control` will work without `slycot`, but some
+functionality is limited or absent, and installation of `slycot` is
+recommended.  
+
+*Note*: the `slycot` library only works on some platforms, mostly
+linux-based.  Users should check to insure that slycot is installed
+correctly by running the command::
+
+  python -c "import slycot"
+
+and verifying that no error message appears.  It may be necessary to install
+`slycot` from source, which requires a working FORTRAN compiler and the
+`lapack` library.  More information on the slycot package can be obtained
+from the `slycot project page <https://github.com/python-control/Slycot>`_.
+
+For users with the Anaconda distribution of Python, the following
+commands can be used::
+
+  conda install numpy scipy matplotlib    # if not yet installed
+  conda install -c python-control -c cyclus slycot control
+
+This installs `slycot` and `python-control` from the `python-control`
+channel and uses the `cyclus` channel to obtain the required `lapack`
+package. 
 
 Alternatively, to use setuptools, first `download the source <https://github.com/python-control/python-control/releases>`_ and unpack
 it.  To install in your home directory, use::
@@ -54,11 +79,8 @@ or to install for all users (on Linux or Mac OS)::
   sudo python setup.py install
 
 The package requires `numpy` and `scipy`, and the plotting routines require
-`matplotlib`.  In addition, some routines use a module called `slycot`, which is
-a Python wrapper around some FORTRAN routines.  Many parts of `python-control`
-will work without `slycot`, but some functionality is limited or absent, and
-installation of `slycot` is recommended.  For more information, see the GitHub
-repository for `slycot <https://github.com/jgoppert/Slycot>`_.
+`matplotlib`.  In addition, some routines require the `slycot` module,
+described above.
 
 Getting Started
 ---------------

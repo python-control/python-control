@@ -12,6 +12,7 @@ python:
   - "2.7"
   - "3.3"
   - "3.4"
+  - "3.5"
 
 # install required system libraries
 before_install:
@@ -19,28 +20,37 @@ before_install:
   - sh -e /etc/init.d/xvfb start
   # use miniconda to install numpy/scipy, to avoid lengthy build from source
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+      wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
     else
-      wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION conda-build pip coverage
-  - conda config --add channels http://conda.binstar.org/cwrowley
+  # conda-build must be installed in the conda root environment
+  - conda install conda-build
+  - conda config --add channels python-control
   - conda info -a
+  - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage
+  - source activate test-environment
+  # coveralls not in conda repos
+  - pip install coveralls
 
 # Install packages
 install:
-  - conda install slycot
-  - conda build conda-recipe
+  - conda build --python "$TRAVIS_PYTHON_VERSION" conda-recipe
   - conda install control --use-local
-  - pip install coveralls
 
 # command to run tests
 script:
+  # Before installing Slycot
+  - python setup.py test
+
+  # Now, get and use Slycot
+  - conda install slycot
   - coverage run setup.py test
+
 after_success:
   - coveralls

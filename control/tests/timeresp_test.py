@@ -14,7 +14,7 @@ import numpy as np
 from control.timeresp import *
 from control.statesp import *
 from control.xferfcn import TransferFunction, _convertToTransferFunction
-
+from control.dtime import c2d
 
 class TestTimeresp(unittest.TestCase):
     def setUp(self):
@@ -77,6 +77,15 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
 
+        # Make sure continuous and discrete time use same return conventions
+        sysc = self.mimo_ss1
+        sysd = c2d(sysc, 1)           # discrete time system
+        Tvec = np.linspace(0, 10, 11) # make sure to use integer times 0..10
+        Tc, youtc = step_response(sysc, Tvec, input=0)
+        Td, youtd = step_response(sysd, Tvec, input=0)
+        np.testing.assert_array_equal(Tc.shape, Td.shape)
+        np.testing.assert_array_equal(youtc.shape, youtd.shape)
+
     def test_impulse_response(self):
         # Test SISO system
         sys = self.siso_ss1
@@ -84,6 +93,20 @@ class TestTimeresp(unittest.TestCase):
         youttrue = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766, 31.7344,
                              26.1668, 21.6292, 17.9245, 14.8945])
         tout, yout = impulse_response(sys, T=t)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        # Play with arguments
+        tout, yout = impulse_response(sys, T=t, X0=0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        X0 = np.array([0, 0])
+        tout, yout = impulse_response(sys, T=t, X0=X0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        tout, yout, xout = impulse_response(sys, T=t, X0=0, return_x=True)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
@@ -108,6 +131,11 @@ class TestTimeresp(unittest.TestCase):
         youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                              1.1508, 0.5833, 0.1645, -0.1391])
         tout, yout = initial_response(sys, T=t, X0=x0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+        np.testing.assert_array_almost_equal(tout, t)
+
+        # Play with arguments
+        tout, yout, xout = initial_response(sys, T=t, X0=x0, return_x=True)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 

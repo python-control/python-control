@@ -56,6 +56,7 @@ class TestMargin(unittest.TestCase):
         sys4 = (8.75*(4*s^2+0.4*s+1))/((100*s+1)*(s^2+0.22*s+1)) * ...
                                       1.0/(s^2/(10.0^2)+2*0.04*s/10.0+1);
         """
+
         self.sys1 = TransferFunction([1, 2], [1, 2, 3])
         # alternative
         # sys1 = tf([1, 2], [1, 2, 3])
@@ -168,7 +169,6 @@ class TestMargin(unittest.TestCase):
             #print(out != np.array(None))
             assert_array_almost_equal(
                 out, outf, 2)
-            
         # final one with fixed values
         assert_array_almost_equal(
             [gm, pm, sm, wg, wp, ws],
@@ -191,7 +191,7 @@ class TestMargin(unittest.TestCase):
                     print(res, '\n', comp)
                     assert_array_almost_equal(
                         res, comp, 2)
-        
+
     def test_phase_crossover_frequencies(self):
         omega, gain = phase_crossover_frequencies(self.sys2)
         assert_array_almost_equal(omega, [1.73205,  0.])
@@ -309,7 +309,7 @@ class TestMargin(unittest.TestCase):
                   res, '\n', test['result'])
             assert_array_almost_equal(
                 res, test['result'], test['digits'])
-        
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestMargin)
 

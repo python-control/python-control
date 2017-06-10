@@ -90,8 +90,8 @@ def h2syn(P,nmeas,ncon):
 
     n = np.size(P.A,0)
     m = np.size(P.B,1)
-    np = np.size(P.C,0)
-    out = sb10hd(n,m,np,ncon,nmeas,P.A,P.B,P.C,P.D)
+    np_ = np.size(P.C,0)
+    out = sb10hd(n,m,np_,ncon,nmeas,P.A,P.B,P.C,P.D)
     Ak = out[0]
     Bk = out[1]
     Ck = out[2]
@@ -115,7 +115,12 @@ def hinfsyn(P,nmeas,ncon):
     K: controller to stabilize P (State-space sys)
     CL: closed loop system (State-space sys)
     gam: infinity norm of closed loop system
-    info: info returned from siycot routine
+    rcond: 4-vector, reciprocal condition estimates of:
+           1: control transformation matrix
+           2: measurement transformation matrix
+           3: X-Ricatti equation
+           4: Y-Ricatti equation
+      TODO: document significance of rcond
 
     Raises
     ------
@@ -128,7 +133,7 @@ def hinfsyn(P,nmeas,ncon):
 
     Examples
     --------
-    >>> K, CL, gam, info = hinfsyn(P,nmeas,ncon)
+    >>> K, CL, gam, rcond = hinfsyn(P,nmeas,ncon)
 
     """
 
@@ -147,12 +152,11 @@ def hinfsyn(P,nmeas,ncon):
     except ImportError:
         raise ControlSlycot("can't find slycot subroutine sb10ad")
 
-    job = 3
     n = np.size(P.A,0)
     m = np.size(P.B,1)
-    np = np.size(P.C,0)
+    np_ = np.size(P.C,0)
     gamma = 1.e100
-    out = sb10ad(job,n,m,np,ncon,nmeas,gamma,P.A,P.B,P.C,P.D)
+    out = sb10ad(n,m,np_,ncon,nmeas,gamma,P.A,P.B,P.C,P.D)
     gam = out[0]
     Ak = out[1]
     Bk = out[2]
@@ -163,10 +167,8 @@ def hinfsyn(P,nmeas,ncon):
     Cc = out[7]
     Dc = out[8]
     rcond = out[9]
-    info = out[10]
 
     K = StateSpace(Ak, Bk, Ck, Dk)
     CL = StateSpace(Ac, Bc, Cc, Dc)
 
-    return K, CL, gam, info
-
+    return K, CL, gam, rcond

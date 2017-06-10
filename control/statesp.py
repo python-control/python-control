@@ -8,8 +8,9 @@ python-control library.
 
 """
 
-# Python 3 compatability (needs to go here)
+# Python 3 compatibility (needs to go here)
 from __future__ import print_function
+from __future__ import division # for _convertToStateSpace
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -122,34 +123,35 @@ a StateSpace object.  Recived %s." % type(args[0]))
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-        # Here we're going to convert inputs to matrices, if the user gave a
-        # non-matrix type.
-        #! TODO: [A, B, C, D] = map(matrix, [A, B, C, D])?
-        matrices = [A, B, C, D]
-        for i in range(len(matrices)):
-            # Convert to matrix first, if necessary.
-            matrices[i] = matrix(matrices[i])
-        [A, B, C, D] = matrices
+        A, B, C, D = map(matrix, [A, B, C, D])
 
-        LTI.__init__(self, B.shape[1], C.shape[0], dt)
+        # TODO: use super here?
+        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
         self.A = A
         self.B = B
         self.C = C
         self.D = D
 
-        self.states = A.shape[0]
+        self.states = A.shape[1]
+
+        if 0 == self.states:
+            # static gain
+            # matrix's default "empty" shape is 1x0
+            A.shape = (0,0)
+            B.shape = (0,self.inputs)
+            C.shape = (self.outputs,0)
 
         # Check that the matrix sizes are consistent.
-        if self.states != A.shape[1]:
+        if self.states != A.shape[0]:
             raise ValueError("A must be square.")
         if self.states != B.shape[0]:
-            raise ValueError("B must have the same row size as A.")
+            raise ValueError("A and B must have the same number of rows.")
         if self.states != C.shape[1]:
-            raise ValueError("C must have the same column size as A.")
-        if self.inputs != D.shape[1]:
-            raise ValueError("D must have the same column size as B.")
-        if self.outputs != D.shape[0]:
-            raise ValueError("D must have the same row size as C.")
+            raise ValueError("A and C must have the same number of columns.")
+        if self.inputs != B.shape[1]:
+            raise ValueError("B and D must have the same number of columns.")
+        if self.outputs != C.shape[0]:
+            raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
         self._remove_useless_states()
@@ -179,17 +181,10 @@ a StateSpace object.  Recived %s." % type(args[0]))
                 useless.append(i)
 
         # Remove the useless states.
-        if all(useless == range(self.states)):
-            # All the states were useless.
-            self.A = zeros((1, 1))
-            self.B = zeros((1, self.inputs))
-            self.C = zeros((self.outputs, 1))
-        else:
-            # A more typical scenario.
-            self.A = delete(self.A, useless, 0)
-            self.A = delete(self.A, useless, 1)
-            self.B = delete(self.B, useless, 0)
-            self.C = delete(self.C, useless, 1)
+        self.A = delete(self.A, useless, 0)
+        self.A = delete(self.A, useless, 1)
+        self.B = delete(self.B, useless, 0)
+        self.C = delete(self.C, useless, 1)
 
         self.states = self.A.shape[0]
         self.inputs = self.B.shape[1]
@@ -405,7 +400,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def pole(self):
         """Compute the poles of a state space system."""
 
-        return eigvals(self.A)
+        return eigvals(self.A) if self.states else np.array([])
 
     def zero(self):
         """Compute the zeros of a state space system."""
@@ -453,11 +448,16 @@ inputs/outputs for feedback.")
 
         F = eye(self.inputs) - sign * D2 * D1
         if matrix_rank(F) != self.inputs:
-            raise ValueError("I - sign * D2 * D1 is singular.")
+            raise ValueError("I - sign * D2 * D1 is singular to working precision.")
 
         # Precompute F\D2 and F\C2 (E = inv(F))
-        E_D2 = solve(F, D2)
-        E_C2 = solve(F, C2)
+        # We can solve two linear systems in one pass, since the
+        # coefficients matrix F is the same. Thus, we perform the LU
+        # decomposition (cubic runtime complexity) of F only once!
+        # The remaining back substitutions are only quadratic in runtime.
+        E_D2_C2 = solve(F, concatenate((D2, C2), axis=1))
+        E_D2 = E_D2_C2[:, :other.inputs]
+        E_C2 = E_D2_C2[:, other.inputs:]
 
         T1 = eye(self.outputs) + sign * D1 * E_D2
         T2 = eye(self.inputs) + sign * E_D2 * D1
@@ -477,18 +477,22 @@ inputs/outputs for feedback.")
     def minreal(self, tol=0.0):
         """Calculate a minimal realization, removes unobservable and
         uncontrollable states"""
-        try:
-            from slycot import tb01pd
-            B = empty((self.states, max(self.inputs, self.outputs)))
-            B[:,:self.inputs] = self.B
-            C = empty((max(self.outputs, self.inputs), self.states))
-            C[:self.outputs,:] = self.C
-            A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs,
-                                    self.A, B, C, tol=tol)
-            return StateSpace(A[:nr,:nr], B[:nr,:self.inputs],
-                              C[:self.outputs,:nr], self.D)
-        except ImportError:
-            raise TypeError("minreal requires slycot tb01pd")
+        if self.states:
+            try:
+                from slycot import tb01pd
+                B = empty((self.states, max(self.inputs, self.outputs)))
+                B[:,:self.inputs] = self.B
+                C = empty((max(self.outputs, self.inputs), self.states))
+                C[:self.outputs,:] = self.C
+                A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs,
+                                     self.A, B, C, tol=tol)
+                return StateSpace(A[:nr,:nr], B[:nr,:self.inputs],
+                                  C[:self.outputs,:nr], self.D)
+            except ImportError:
+                raise TypeError("minreal requires slycot tb01pd")
+        else:
+            return StateSpace(self)
+
 
     # TODO: add discrete time check
     def returnScipySignalLTI(self):
@@ -598,22 +602,31 @@ inputs/outputs for feedback.")
     def dcgain(self):
         """Return the zero-frequency gain
 
-        The zero-frequency gain of a state-space system is given by:
+        The zero-frequency gain of a continuous-time state-space
+        system is given by:
 
         .. math: G(0) = - C A^{-1} B + D
+
+        and of a discrete-time state-space system by:
+
+        .. math: G(1) = C (I - A)^{-1} B + D
 
         Returns
         -------
         gain : ndarray
-            The zero-frequency gain, or np.nan if the system has a pole
-            at the origin
+            An array of shape (outputs,inputs); the array will either
+            be the zero-frequency (or DC) gain, or, if the frequency
+            response is singular, the array will be filled with np.nan.
         """
         try:
-            gain = np.asarray(self.D -
-                              self.C.dot(np.linalg.solve(self.A, self.B)))
+            if self.isctime():
+                gain = np.asarray(self.D -
+                                    self.C.dot(np.linalg.solve(self.A, self.B)))
+            else:
+                gain = self.horner(1)
         except LinAlgError:
-            # zero eigenvalue: singular matrix
-            return np.nan
+            # eigenvalue at DC
+            gain = np.tile(np.nan,(self.outputs,self.inputs))
         return np.squeeze(gain)
 
 
@@ -635,6 +648,7 @@ def _convertToStateSpace(sys, **kw):
     """
 
     from .xferfcn import TransferFunction
+    import itertools
     if isinstance(sys, StateSpace):
         if len(kw):
             raise TypeError("If sys is a StateSpace, _convertToStateSpace \
@@ -667,12 +681,27 @@ cannot take keywords.")
                 ssout[3][:sys.outputs, :states],
                 ssout[4], sys.dt)
         except ImportError:
-            # TODO: do we want to squeeze first and check dimenations?
-            # I think this will fail if num and den aren't 1-D after
-            # the squeeze
-            lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
-            return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D,
-                              sys.dt)
+            # No Slycot.  Scipy tf->ss can't handle MIMO, but static
+            # MIMO is an easy special case we can check for here
+            maxn = max(max(len(n) for n in nrow)
+                       for nrow in sys.num)
+            maxd = max(max(len(d) for d in drow)
+                       for drow in sys.den)
+            if 1==maxn and 1==maxd:
+                D = empty((sys.outputs,sys.inputs),dtype=float)
+                for i,j in itertools.product(range(sys.outputs),range(sys.inputs)):
+                    D[i,j] = sys.num[i][j][0] / sys.den[i][j][0]
+                return StateSpace([], [], [], D, sys.dt)
+            else:
+                if (sys.inputs != 1 or sys.outputs != 1):
+                    raise TypeError("No support for MIMO without slycot")
+
+                # TODO: do we want to squeeze first and check dimenations?
+                # I think this will fail if num and den aren't 1-D after
+                # the squeeze
+                lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
+                return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D,
+                                  sys.dt)
 
     elif isinstance(sys, (int, float, complex)):
         if "inputs" in kw:

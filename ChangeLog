@@ -148,7 +148,7 @@
 2012-11-03  Richard Murray  <murray@altura.local>
 
 	* src/rlocus.py (_RLSortRoots): convert output of range() to
-	explicit list for python 3 compatability
+	explicit list for python 3 compatibility
 
 	* tests/modelsimp_test.py, tests/slycot_convert_test.py,
 	tests/mateqn_test.py, tests/statefbk_test.py: updated test suites to
@@ -604,7 +604,7 @@
 	initial_response, impulse_response and step_response.
 
 	* src/rlocus.py: changed RootLocus to root_locus for better
-	compatability with PEP 8.  Also updated unit tests and examples.
+	compatibility with PEP 8.  Also updated unit tests and examples.
 
 2011-07-25  Richard Murray  <murray@malabar.local>
 
@@ -994,7 +994,7 @@
 2010-09-02  Richard Murray  <murray@sumatra.local>
 
 	* src/statefbk.py (place): Use np.size() instead of len() for
-	finding length of placed_eigs for better compatability with
+	finding length of placed_eigs for better compatibility with
 	different python versions [courtesy of Roberto Bucher]
 
 	* src/delay.py (pade): New file for delay-based computations +

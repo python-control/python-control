@@ -1,78 +1,12 @@
 # timeresp.py - time-domain simulation routes
-"""
-Time domain simulation.
+"""Time domain simulation.
 
-This file contains a collection of functions that calculate
-time responses for linear systems.
+This file contains a collection of functions that calculate time
+responses for linear systems.
 
-.. _time-series-convention:
+See doc/conventions.rst#time-series-conventions_ for more information
+on how time series data are represented.
 
-Convention for Time Series
---------------------------
-
-This is a convention for function arguments and return values that
-represent time series: sequences of values that change over time. It
-is used throughout the library, for example in the functions
-:func:`forced_response`, :func:`step_response`, :func:`impulse_response`,
-and :func:`initial_response`.
-
-.. note::
-    This convention is different from the convention used in the library
-    :mod:`scipy.signal`. In Scipy's convention the meaning of rows and columns
-    is interchanged.  Thus, all 2D values must be transposed when they are
-    used with functions from :mod:`scipy.signal`.
-
-Types:
-
-    * **Arguments** can be **arrays**, **matrices**, or **nested lists**.
-    * **Return values** are **arrays** (not matrices).
-
-The time vector is either 1D, or 2D with shape (1, n)::
-
-      T = [[t1,     t2,     t3,     ..., tn    ]]
-
-Input, state, and output all follow the same convention. Columns are different
-points in time, rows are different components. When there is only one row, a
-1D object is accepted or returned, which adds convenience for SISO systems::
-
-      U = [[u1(t1), u1(t2), u1(t3), ..., u1(tn)]
-           [u2(t1), u2(t2), u2(t3), ..., u2(tn)]
-           ...
-           ...
-           [ui(t1), ui(t2), ui(t3), ..., ui(tn)]]
-
-      Same for X, Y
-
-So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:]
-is the sequence of values for the system's second input.
-
-The initial conditions are either 1D, or 2D with shape (j, 1)::
-
-     X0 = [[x1]
-           [x2]
-           ...
-           ...
-           [xj]]
-
-As all simulation functions return *arrays*, plotting is convenient::
-
-    t, y = step(sys)
-    plot(t, y)
-
-The output of a MIMO system can be plotted like this::
-
-    t, y, x = lsim(sys, u, t)
-    plot(t, y[0], label='y_0')
-    plot(t, y[1], label='y_1')
-
-The convention also works well with the state space form of linear systems. If
-``D`` is the feedthrough *matrix* of a linear system, and ``U`` is its input
-(*matrix* or *array*), then the feedthrough part of the system's response,
-can be computed like this::
-
-    ft = D * U
-
-----------------------------------------------------------------
 """
 
 """Copyright (c) 2011 by California Institute of Technology
@@ -390,6 +324,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
         dsys = (A, B, C, D, sys.dt)
         tout, yout, xout = sp.signal.dlsim(dsys, U, T, X0)
 
+        # Transpose the output and state vectors to match local convention
+        xout = sp.transpose(xout)
+        yout = sp.transpose(yout)
+
     # See if we need to transpose the data back into MATLAB form
     if (transpose):
         T = np.transpose(T)
@@ -453,6 +391,9 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
+    return_x: bool
+        If True, return the state vector (default = False).
+
     Returns
     -------
     T: array
@@ -493,7 +434,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
 
 
 def initial_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False):
+                     transpose=False, return_x=False):
     # pylint: disable=W0622
     """Initial condition response of a linear system
 
@@ -529,12 +470,17 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
+    return_x: bool
+        If True, return the state vector (default = False).
+
     Returns
     -------
     T: array
         Time values of the output
     yout: array
         Response of the system
+    xout: array
+        Individual response of each x variable
 
     See Also
     --------
@@ -553,11 +499,15 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose)
+
+    if return_x:
+        return T, yout, _xout
+
     return T, yout
 
 
 def impulse_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False):
+                     transpose=False, return_x=False):
     # pylint: disable=W0622
     """Impulse response of a linear system
 
@@ -593,12 +543,17 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
+    return_x: bool
+        If True, return the state vector (default = False).
+
     Returns
     -------
     T: array
         Time values of the output
     yout: array
         Response of the system
+    xout: array
+        Individual response of each x variable
 
     See Also
     --------
@@ -637,4 +592,8 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     T, yout, _xout = forced_response(
         sys, T, U, new_X0,
         transpose=transpose)
+
+    if return_x:
+        return T, yout, _xout
+
     return T, yout

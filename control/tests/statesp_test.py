@@ -5,10 +5,12 @@
 
 import unittest
 import numpy as np
-from scipy.linalg import eigvals
+from numpy.linalg import solve
+from scipy.linalg import eigvals, block_diag
 from control import matlab
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction
+from control.exception import slycot_check
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
@@ -113,6 +115,7 @@ class TestStateSpace(unittest.TestCase):
 
         np.testing.assert_almost_equal(sys.evalfr(1.), resp)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testFreqResp(self):
         """Evaluate the frequency response at multiple frequencies."""
 
@@ -138,6 +141,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_almost_equal(phase, truephase)
         np.testing.assert_equal(omega, trueomega)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMinreal(self):
         """Test a minreal model reduction"""
         #A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]
@@ -224,7 +228,8 @@ class TestStateSpace(unittest.TestCase):
 
         assert sys1.dt == sys1_11.dt
 
-    def test_dcgain(self):
+    def test_dcgain_cont(self):
+        """Test DC gain for continuous-time state-space systems"""
         sys = StateSpace(-2.,6.,5.,0)
         np.testing.assert_equal(sys.dcgain(), 15.)
 
@@ -234,6 +239,116 @@ class TestStateSpace(unittest.TestCase):
 
         sys3 = StateSpace(0., 1., 1., 0.)
         np.testing.assert_equal(sys3.dcgain(), np.nan)
+
+    def test_dcgain_discr(self):
+        """Test DC gain for discrete-time state-space systems"""
+        # static gain
+        sys = StateSpace([], [], [], 2, True)
+        np.testing.assert_equal(sys.dcgain(), 2)
+
+        # averaging filter
+        sys = StateSpace(0.5, 0.5, 1, 0, True)
+        np.testing.assert_almost_equal(sys.dcgain(), 1)
+
+        # differencer
+        sys = StateSpace(0, 1, -1, 1, True)
+        np.testing.assert_equal(sys.dcgain(), 0)
+
+        # summer
+        sys = StateSpace(1, 1, 1, 0, True)
+        np.testing.assert_equal(sys.dcgain(), np.nan)
+
+    def test_dcgain_integrator(self):
+        """DC gain when eigenvalue at DC returns appropriately sized array of nan"""
+        # the SISO case is also tested in test_dc_gain_{cont,discr}
+        import itertools
+        # iterate over input and output sizes, and continuous (dt=None) and discrete (dt=True) time
+        for inputs,outputs,dt in itertools.product(range(1,6),range(1,6),[None,True]):
+            states = max(inputs,outputs)
+
+            # a matrix that is singular at DC, and has no "useless" states as in _remove_useless_states
+            a = np.triu(np.tile(2,(states,states)))
+            # eigenvalues all +2, except for ...
+            a[0,0] = 0 if dt is None else 1
+            b = np.eye(max(inputs,states))[:states,:inputs]
+            c = np.eye(max(outputs,states))[:outputs,:states]
+            d = np.zeros((outputs,inputs))
+            sys = StateSpace(a,b,c,d,dt)
+            dc = np.squeeze(np.tile(np.nan,(outputs,inputs)))
+            np.testing.assert_array_equal(dc, sys.dcgain())
+
+
+    def test_scalarStaticGain(self):
+        """Regression: can we create a scalar static gain?"""
+        g1=StateSpace([],[],[],[2])
+        g2=StateSpace([],[],[],[3])
+
+        # make sure StateSpace internals, specifically ABC matrix
+        # sizes, are OK for LTI operations
+        g3 = g1*g2
+        self.assertEqual(6, g3.D[0,0])
+        g4 = g1+g2
+        self.assertEqual(5, g4.D[0,0])
+        g5 = g1.feedback(g2)
+        self.assertAlmostEqual(2./7, g5.D[0,0])
+        g6 = g1.append(g2)
+        np.testing.assert_array_equal(np.diag([2,3]),g6.D)
+
+    def test_matrixStaticGain(self):
+        """Regression: can we create matrix static gains?"""
+        d1 = np.matrix([[1,2,3],[4,5,6]])
+        d2 = np.matrix([[7,8],[9,10],[11,12]])
+        g1=StateSpace([],[],[],d1)
+
+        # _remove_useless_states was making A = [[0]]
+        self.assertEqual((0,0), g1.A.shape)
+
+        g2=StateSpace([],[],[],d2)
+        g3=StateSpace([],[],[],d2.T)
+
+        h1 = g1*g2
+        np.testing.assert_array_equal(d1*d2, h1.D)
+        h2 = g1+g3
+        np.testing.assert_array_equal(d1+d2.T, h2.D)
+        h3 = g1.feedback(g2)
+        np.testing.assert_array_almost_equal(solve(np.eye(2)+d1*d2,d1), h3.D)
+        h4 = g1.append(g2)
+        np.testing.assert_array_equal(block_diag(d1,d2),h4.D)
+
+
+    def test_remove_useless_states(self):
+        """Regression: _remove_useless_states gives correct ABC sizes"""
+        g1 = StateSpace(np.zeros((3,3)),
+                        np.zeros((3,4)),
+                        np.zeros((5,3)),
+                        np.zeros((5,4)))
+        self.assertEqual((0,0), g1.A.shape)
+        self.assertEqual((0,4), g1.B.shape)
+        self.assertEqual((5,0), g1.C.shape)
+        self.assertEqual((5,4), g1.D.shape)
+        self.assertEqual(0, g1.states)
+
+
+    def test_BadEmptyMatrices(self):
+        """Mismatched ABCD matrices when some are empty"""
+        self.assertRaises(ValueError,StateSpace, [1], [],  [],  [1])
+        self.assertRaises(ValueError,StateSpace, [1], [1], [],  [1])
+        self.assertRaises(ValueError,StateSpace, [1], [],  [1], [1])
+        self.assertRaises(ValueError,StateSpace, [],  [1], [],  [1])
+        self.assertRaises(ValueError,StateSpace, [],  [1], [1], [1])
+        self.assertRaises(ValueError,StateSpace, [],  [],  [1], [1])
+        self.assertRaises(ValueError,StateSpace, [1], [1], [1], [])
+
+
+    def test_minrealStaticGain(self):
+        """Regression: minreal on static gain was failing"""
+        g1 = StateSpace([],[],[],[1])
+        g2 = g1.minreal()
+        np.testing.assert_array_equal(g1.A, g2.A)
+        np.testing.assert_array_equal(g1.B, g2.B)
+        np.testing.assert_array_equal(g1.C, g2.C)
+        np.testing.assert_array_equal(g1.D, g2.D)
+
 
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
@@ -302,6 +417,12 @@ class TestDrss(unittest.TestCase):
                     p = sys.pole()
                     for z in p:
                         self.assertTrue(abs(z) < 1)
+
+
+    def testPoleStatic(self):
+        """Regression: pole() of static gain is empty array"""
+        np.testing.assert_array_equal(np.array([]),
+                                      StateSpace([],[],[],[[1]]).pole())
 
 
 def suite():

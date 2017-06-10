@@ -9,7 +9,7 @@ margin.phase_crossover_frequencies
 margin.margin
 """
 
-# Python 3 compatability (needs to go here)
+# Python 3 compatibility (needs to go here)
 from __future__ import print_function
 
 """Copyright (c) 2011 by California Institute of Technology
@@ -141,7 +141,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
             mag, phase, omega = sysdata
-            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180), 
+            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180),
                              omega, smooth=True)
         else:
             sys = xferfcn._convertToTransferFunction(sysdata)
@@ -204,7 +204,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         # find the solutions, for positive omega, and only real ones
         wstab = np.roots(test_wstab)
         #print('wstabr', wstab)
-        wstab = np.real(wstab[(np.imag(wstab) == 0) * 
+        wstab = np.real(wstab[(np.imag(wstab) == 0) *
                         (np.real(wstab) >= 0)])
         #print('wstab', wstab)
 
@@ -236,7 +236,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         wc = np.array(
             [ sp.optimize.brentq(mod, sys.omega[i], sys.omega[i+1])
               for i in widx if i+1 < len(sys.omega)])
-        
+
         # find the phase crossings ang(H(jw) == -180
         widx = np.where(np.diff(np.sign(arg(sys.omega))))[0]
         #print('widx (180)', widx, sys.omega[widx])
@@ -258,10 +258,10 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
               for i in widx if i+1 < len(sys.omega) and
               np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] > 0 ])
         #print('wstabf0', wstab)
-        wstab = wstab[(wstab >= sys.omega[0]) * 
+        wstab = wstab[(wstab >= sys.omega[0]) *
                       (wstab <= sys.omega[-1])]
         #print ('wstabf', wstab)
-        
+
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
@@ -359,7 +359,7 @@ def margin(*args):
         Gain crossover frequency (corresponding to phase margin)
     Wcp : float
         Phase crossover frequency (corresponding to gain margin) (in rad/sec)
-        
+
    Margins are of SISO open-loop. If more than one crossover frequency is
    detected, returns the lowest corresponding margin.
 

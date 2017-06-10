@@ -41,7 +41,7 @@ functionality is limited or absent, and installation of slycot is recommended
 (see below).  Note that in order to install slycot, you will need a FORTRAN
 compiler on your machine.  The Slycot wrapper can be found at:
 
-https://github.com/jgoppert/Slycot
+https://github.com/python-control/Slycot
 
 Installation
 ============

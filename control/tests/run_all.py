@@ -26,7 +26,7 @@ def test_all(verbosity=0):
             t.run(tests)
             print('Completed tests in', mod)
 
-    except: 
+    except:
         testModules = findTests('./tests/')
 
         # Now go through each module and run all of its tests.
@@ -46,13 +46,13 @@ def test_all(verbosity=0):
                     'a proper suite() function')
 
             t=unittest.TextTestRunner(verbosity=verbosity)
-            t.run(unittest.TestSuite(unittest.TestSuite(suiteList))) 
+            t.run(unittest.TestSuite(unittest.TestSuite(suiteList)))
             print('Completed tests in', mod)
 
 def findTests(testdir = './', pattern = "[^.#]*_test.py$"):
-    """Since python <2.7 doesn't have test discovery, this finds tests in the 
+    """Since python <2.7 doesn't have test discovery, this finds tests in the
     provided directory. The default is to check the current directory. Any files
-    that match test* or Test* are considered unittest modules and checked for 
+    that match test* or Test* are considered unittest modules and checked for
     a module.suite() function (in tests())."""
 
     # Get list of files in test directory

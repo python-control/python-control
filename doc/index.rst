@@ -26,6 +26,7 @@ implements basic operations for analysis and design of feedback control systems.
    :maxdepth: 2
 
    intro
+   conventions
    control
    classes
    matlab

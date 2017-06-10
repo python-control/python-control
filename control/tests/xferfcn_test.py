@@ -7,8 +7,8 @@ import unittest
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
+from control.exception import slycot_check
 # from control.lti import isdtime
-
 
 class TestXferFcn(unittest.TestCase):
     """These are tests for functionality and correct reporting of the transfer
@@ -95,7 +95,6 @@ class TestXferFcn(unittest.TestCase):
 
     # Tests for TransferFunction.__neg__
 
-    @unittest.skip("skipping, known issue with Python 3")
     def testNegScalar(self):
         """Negate a direct feedthrough system."""
 
@@ -114,6 +113,8 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys2.num, [[[-1., -3., -5.]]])
         np.testing.assert_array_equal(sys2.den, [[[1., 6., 2., -1.]]])
 
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testNegMIMO(self):
         """Negate a MIMO system."""
 
@@ -156,6 +157,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys3.num, [[[20., 4., -8]]])
         np.testing.assert_array_equal(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testAddMIMO(self):
         """Add two MIMO systems."""
 
@@ -206,6 +208,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, [[[-2., -6., 12., 10., 2.]]])
         np.testing.assert_array_equal(sys4.den, [[[1., 6., 1., -7., -2., 1.]]])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testSubMIMO(self):
         """Add two MIMO systems."""
 
@@ -259,6 +262,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys3.num, sys4.num)
         np.testing.assert_array_equal(sys3.den, sys4.den)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMulMIMO(self):
         """Multiply two MIMO systems."""
 
@@ -331,6 +335,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_almost_equal(sys(32.j),
             0.00281959302585077 - 0.030628473607392j)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testEvalFrMIMO(self):
         """Evaluate the frequency response of a MIMO system at one frequency."""
 
@@ -367,7 +372,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_almost_equal(omega, trueomega)
 
-    @unittest.skip("skipping, known issue with Python 3")
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testFreqRespMIMO(self):
         """Evaluate the magnitude and phase of a MIMO system at multiple
         frequencies."""
@@ -397,7 +402,8 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(omega, trueomega)
 
     # Tests for TransferFunction.pole and TransferFunction.zero.
-
+    
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPoleMIMO(self):
         """Test for correct MIMO poles."""
 
@@ -423,6 +429,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, [[[-1., 7., -16., 16., 0.]]])
         np.testing.assert_array_equal(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testConvertToTransferFunction(self):
         """Test for correct state space to transfer function conversion."""
 
@@ -468,6 +475,13 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H2b.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(H2b.den[0][0], hr.den[0][0])
 
+    def testMinreal3(self):
+        """Regression test for minreal of tf([1,1],[1,1])"""
+        g = TransferFunction([1,1],[1,1]).minreal()
+        np.testing.assert_array_almost_equal(1.0, g.num[0][0])
+        np.testing.assert_array_almost_equal(1.0, g.den[0][0])
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMO(self):
         """Test conversion of a single input, two-output state-space
         system against the same TF"""
@@ -510,7 +524,8 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[0][0])
         np.testing.assert_array_almost_equal(H.den[1][0], H2.den[0][0])
 
-    def test_dcgain(self):
+    def test_dcgain_cont(self):
+        """Test DC gain for continuous-time transfer functions"""
         sys = TransferFunction(6, 3)
         np.testing.assert_equal(sys.dcgain(), 2)
 
@@ -525,6 +540,26 @@ class TestXferFcn(unittest.TestCase):
         sys4 = TransferFunction(num, den)
         expected = [[5, 7, 11], [2, 2, 2]]
         np.testing.assert_array_equal(sys4.dcgain(), expected)
+
+    def test_dcgain_discr(self):
+        """Test DC gain for discrete-time transfer functions"""
+        # static gain
+        sys = TransferFunction(6, 3, True)
+        np.testing.assert_equal(sys.dcgain(), 2)
+
+        # averaging filter
+        sys = TransferFunction(0.5, [1, -0.5], True)
+        np.testing.assert_almost_equal(sys.dcgain(), 1)
+
+        # differencer
+        sys = TransferFunction(1, [1, -1], True)
+        np.testing.assert_equal(sys.dcgain(), np.inf)
+
+        # summer
+        # causes a RuntimeWarning due to the divide by zero
+        sys = TransferFunction([1,-1], [1], True)
+        np.testing.assert_equal(sys.dcgain(), 0)
+
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)

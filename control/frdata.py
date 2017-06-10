@@ -469,7 +469,7 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
                     sys.__class__)
 
 def frd(*args):
-    '''
+    """
     Construct a Frequency Response Data model, or convert a system
 
     frd models store the (measured) frequency response of a system.
@@ -501,5 +501,5 @@ def frd(*args):
     See Also
     --------
     ss, tf
-    '''
+    """
     return FRD(*args)
