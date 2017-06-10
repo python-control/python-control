@@ -16,9 +16,9 @@ def assert_array_almost_equal(x, y, ndigit=4):
     x = np.array(x)
     y = np.array(y)
     try:
-        if np.isfinite(x).any() and (np.isfinite(x) == np.isfinite(y)).all() and \
-            (x[np.logical_not(np.isfinite(x))] ==
-            y[np.logical_not(np.isfinite(y))]).all():
+        if np.isfinite(x).any() and \
+           np.equal(np.isfinite(x), np.isfinite(y)).all() and \
+           np.equal(np.isnan(x), np.isnan(y)).all():
             np.testing.assert_array_almost_equal(
                 x[np.isfinite(x)], y[np.isfinite(y)], ndigit)
             return
@@ -69,15 +69,25 @@ class TestMargin(unittest.TestCase):
           [2.2716, 97.5941, 0.5591, 10.0053, 0.0850, 9.9918]
 
         """
+        hm1 = s/(s+1);
+        h0 = 1/(s+1)^3;
         h1 = (s + 0.1)/s/(s+1);
         h2 = (s + 0.1)/s^2/(s+1);
         h3 = (s + 0.1)*(s+0.1)/s^3/(s+1);
         """
         self.types = {
+            'typem1': s/(s+1),
+            'type0': 1/(s+1)**3,
             'type1': (s + 0.1)/s/(s+1),
             'type2': (s + 0.1)/s**2/(s+1),
             'type3': (s + 0.1)*(s+0.1)/s**3/(s+1) }
-        self.tmargin = ( self.types, 
+        self.tmargin = ( self.types,
+            dict(sys='typem1', K=2.0, digits=3, result=(
+                float('Inf'), -120.0007, float('NaN'), 0.5774)),
+            dict(sys='type0', K = 0.8, digits=3, result=(
+                10.0014, float('inf'), 1.7322, float('nan'))),
+            dict(sys='type0', K = 2.0, digits=2, result=(
+                4.000,  67.6058,  1.7322,   0.7663)),
             dict(sys='type1', K=1.0, digits=4, result=(
                 float('Inf'), 144.9032, float('NaN'), 0.3162)),
             dict(sys='type2', K=1.0, digits=4, result=(
@@ -89,10 +99,10 @@ class TestMargin(unittest.TestCase):
         
         # from "A note on the Gain and Phase Margin Concepts
         # Journal of Control and Systems Engineering, Yazdan Bavafi-Toosi,
-        # Dec 205, vol 3 iss 1, pp 51-59
+        # Dec 2015, vol 3 iss 1, pp 51-59
         #
         # A cornucopia of tricky systems for phase / gain margin
-        # Still have to convert this to tests + fix margin to handle
+        # Still have to convert more to tests + fix margin to handle
         # also these torture cases
         """
         % matlab compatible
@@ -273,11 +283,17 @@ class TestMargin(unittest.TestCase):
         print("""
         warning, Matlab gives different values (0 and 0) for gain
         margin of the following system:
-        {:s}
+        {type2!s}
         python-control gives inf
         difficult to argue which is right? Special case or different
         approach?
-        """.format(str(self.types['type2'])))
+
+        edge cases, like
+        {type0!s}
+        which approaches a gain of 1 for w -> 0, are also not identically
+        indicated, Matlab gives phase margin -180, at w = 0. for higher or
+        lower gains, results match
+        """.format(**self.types))
                 
         sdict = self.tmargin[0]
         for test in self.tmargin[1:]:
