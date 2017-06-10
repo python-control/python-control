@@ -1,10 +1,5 @@
 package:
   name: control
-  version: 0.7.0+
-
-source:
-  git_url: https://github.com/python-control/python-control.git
-  git_tag: master	
 
 build:
   script:
