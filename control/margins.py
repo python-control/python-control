@@ -157,13 +157,15 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
         # first remove imaginary and negative frequencies, epsw removes the
         # "0" frequency for type-2 systems
-        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 > epsw)])
+        w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 >= epsw)])
         #print ('2:w_180', w_180)
 
         # evaluate response at remaining frequencies, to test for phase 180 vs 0
-        resp_w_180 = np.real(np.polyval(sys.num[0][0], 1.j*w_180) /
-                             np.polyval(sys.den[0][0], 1.j*w_180))
-        
+        with np.errstate(all='ignore'):
+            resp_w_180 = np.real(
+                    np.polyval(sys.num[0][0], 1.j*w_180) /
+                    np.polyval(sys.den[0][0], 1.j*w_180))
+
         # only keep frequencies where the negative real axis is crossed
         w_180 = w_180[np.real(resp_w_180) <= 0.0]
 
@@ -252,20 +254,27 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
-    gain_w_180 = np.abs(sys.evalfr(w_180)[0][0])
-    GM = np.where(gain_w_180 == 0.0, float('inf'), 1.0/gain_w_180)
+    with np.errstate(all='ignore'):
+        gain_w_180 = np.abs(sys.evalfr(w_180)[0][0])
+        GM = 1.0/gain_w_180
     SM = np.abs(sys.evalfr(wstab)[0][0]+1)
     PM = np.remainder(np.angle(sys.evalfr(wc)[0][0], deg=True), 360.0) - 180.0
     
     if returnall:
         return GM, PM, SM, w_180, wc, wstab
     else:
+        if GM.shape[0]:
+            with np.errstate(all='ignore'):
+                gmidx = np.where(np.abs(np.log(GM)) == 
+                                 np.min(np.abs(np.log(GM))))
+        if PM.shape[0]:
+            pmidx = np.where(np.abs(PM) == np.amin(np.abs(PM)))[0]
         return (
-            (not GM.shape[0] and float('inf')) or np.amin(GM),
-            (not PM.shape[0] and float('inf')) or np.amin(PM),
+            (not GM.shape[0] and float('inf')) or GM[gmidx][0],
+            (not PM.shape[0] and float('inf')) or PM[pmidx][0],
             (not SM.shape[0] and float('inf')) or np.amin(SM),
-            (not w_180.shape[0] and float('nan')) or w_180[GM==np.amin(GM)][0],
-            (not wc.shape[0] and float('nan')) or wc[PM==np.amin(PM)][0],
+            (not w_180.shape[0] and float('nan')) or w_180[gmidx][0],
+            (not wc.shape[0] and float('nan')) or wc[pmidx][0],
             (not wstab.shape[0] and float('nan')) or wstab[SM==np.amin(SM)][0])
 
 

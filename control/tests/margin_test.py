@@ -85,7 +85,8 @@ class TestMargin(unittest.TestCase):
             dict(sys='type3', K=1.0, digits=3, result=(
                 0.0626, 37.1748, 0.1119, 0.7951)),
             )
-          
+        
+        
         # from "A note on the Gain and Phase Margin Concepts
         # Journal of Control and Systems Engineering, Yazdan Bavafi-Toosi,
         # Dec 205, vol 3 iss 1, pp 51-59
@@ -129,8 +130,13 @@ class TestMargin(unittest.TestCase):
         self.yazdan['example25b'] = self.yazdan['example25a']*100
         self.yazdan['example22'] = self.yazdan['example21']*(s**2 - 2*s + 401)
         self.ymargin = (
-            dict(sys='example21', K=1.0, result=(
-                0.01, 345.43, 0., 0, 0, 0.01)))
+            dict(sys='example21', K=1.0, digits=2, result=(
+                0.0100,  -14.5640,         0,    0.0022)),
+            dict(sys='example21', K=1000.0, digits=2, result=(
+                0.1793, 22.5215, 0.0243, 0.0630)),
+            dict(sys='example21', K=5000.0, digits=4, result=(
+                4.5596, 21.2101, 0.4385, 0.1868)),
+                    )
 
         self.yallmargin = (
             dict(sys='example21', K=1.0, result=(
@@ -264,6 +270,15 @@ class TestMargin(unittest.TestCase):
         out3b = stability_margins(FRD(h3, omega))
 
     def test_zmore_margin(self):
+        print("""
+        warning, Matlab gives different values (0 and 0) for gain
+        margin of the following system:
+        {:s}
+        python-control gives inf
+        difficult to argue which is right? Special case or different
+        approach?
+        """.format(str(self.types['type2'])))
+                
         sdict = self.tmargin[0]
         for test in self.tmargin[1:]:
             res = margin(sdict[test['sys']]*test['K'])
@@ -271,8 +286,13 @@ class TestMargin(unittest.TestCase):
                   res, '\n', test['result'])
             assert_array_almost_equal(
                 res, test['result'], test['digits'])
-            
-        
+        sdict = self.yazdan
+        for test in self.ymargin:
+            res = margin(sdict[test['sys']]*test['K'])
+            print("more margin {}\n".format(sdict[test['sys']]),
+                  res, '\n', test['result'])
+            assert_array_almost_equal(
+                res, test['result'], test['digits'])
         
 def test_suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestMargin)
