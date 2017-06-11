@@ -228,6 +228,11 @@ class TestTimeresp(unittest.TestCase):
         xtrue = np.array([1./6. * t**3, 0.5 * t**2])
         check(u, x0, xtrue)
 
+    def test_discrete_initial(self):
+        h1 = TransferFunction([1.], [1., 0.], 1.)
+        t, yout = impulse_response(h1, np.arange(4))
+        np.testing.assert_array_equal(yout[0], [0., 1., 0., 0.])
+
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
 

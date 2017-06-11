@@ -576,18 +576,23 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     n_states = sys.A.shape[0]
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: \n', squeeze=True)
+        
+    # Compute T and U, no checks necessary, they will be checked in lsim
+    if T is None:
+        T = _default_response_times(sys.A, 100)
+    U = np.zeros_like(T)
 
     # Compute new X0 that contains the impulse
     # We can't put the impulse into U because there is no numerical
     # representation for it (infinitesimally short, infinitely high).
     # See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
-    B = np.asarray(sys.B).squeeze()
-    new_X0 = B + X0
-
-    # Compute T and U, no checks necessary, they will be checked in lsim
-    if T is None:
-        T = _default_response_times(sys.A, 100)
-    U = np.zeros_like(T)
+    if isctime(sys):
+        B = np.asarray(sys.B).squeeze()
+        new_X0 = B + X0
+    else:
+        new_X0 = X0
+        U[0] = 1.
+        print("discrete", U)
 
     T, yout, _xout = forced_response(
         sys, T, U, new_X0,
