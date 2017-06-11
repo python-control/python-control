@@ -2,10 +2,11 @@
 
 Functions for computing stability margins and related functions.
 
-Routeins in this module:
+Routines in this module:
 
 margin.stability_margins
 margin.phase_crossover_frequencies
+margin.margin
 """
 
 # Python 3 compatibility (needs to go here)
@@ -87,7 +88,17 @@ def _polysqr(pol):
 # RvP, July 8, 2015, augmented to calculate all phase/gain crossings with
 #                    frd data. Correct to return smallest phase
 #                    margin, smallest gain margin and their frequencies
-def stability_margins(sysdata, returnall=False, epsw=1e-8):
+# RvP, Jun 10, 2017, modified the inclusion of roots found for phase
+#                    crossing to include all >= 0, made subsequent calc
+#                    insensitive to div by 0
+#                    also changed the selection of which crossings to
+#                    return on basis of "A note on the Gain and Phase
+#                    Margin Concepts" Journal of Control and Systems
+#                    Engineering, Yazdan Bavafi-Toosi, Dec 2015, vol 3
+#                    issue 1, pp 51-59, closer to Matlab behavior, but
+#                    not completely identical in edge cases, which don't
+#                    cross but touch gain=1
+def stability_margins(sysdata, returnall=False, epsw=0.0):
     """Calculate stability margins and associated crossover frequencies.
 
     Parameters
@@ -104,7 +115,7 @@ def stability_margins(sysdata, returnall=False, epsw=1e-8):
         minimum stability margins.  For frequency data or FRD systems, only one
         margin is found and returned.
     epsw: float, optional
-        Frequencies below this value (default 1e-8) are considered static gain,
+        Frequencies below this value (default 0.0) are considered static gain,
         and not returned as margin.
 
     Returns
@@ -161,12 +172,13 @@ def stability_margins(sysdata, returnall=False, epsw=1e-8):
         #print ('2:w_180', w_180)
 
         # evaluate response at remaining frequencies, to test for phase 180 vs 0
-        resp_w_180 = np.real(np.polyval(sys.num[0][0], 1.j*w_180) /
-                             np.polyval(sys.den[0][0], 1.j*w_180))
-        #print ('resp_w_180', resp_w_180)
+        with np.errstate(all='ignore'):
+            resp_w_180 = np.real(
+                    np.polyval(sys.num[0][0], 1.j*w_180) /
+                    np.polyval(sys.den[0][0], 1.j*w_180))
 
         # only keep frequencies where the negative real axis is crossed
-        w_180 = w_180[np.real(resp_w_180) < 0.0]
+        w_180 = w_180[np.real(resp_w_180) <= 0.0]
 
         # and sort
         w_180.sort()
@@ -253,20 +265,30 @@ def stability_margins(sysdata, returnall=False, epsw=1e-8):
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
-    GM = 1/np.abs(sys.evalfr(w_180)[0][0])
+    with np.errstate(all='ignore'):
+        gain_w_180 = np.abs(sys.evalfr(w_180)[0][0])
+        GM = 1.0/gain_w_180
     SM = np.abs(sys.evalfr(wstab)[0][0]+1)
-    PM = np.angle(sys.evalfr(wc)[0][0], deg=True) + 180
-
+    PM = np.remainder(np.angle(sys.evalfr(wc)[0][0], deg=True), 360.0) - 180.0
+    
     if returnall:
         return GM, PM, SM, w_180, wc, wstab
     else:
+        if GM.shape[0] and not np.isinf(GM).all():
+            with np.errstate(all='ignore'):
+                gmidx = np.where(np.abs(np.log(GM)) == 
+                                 np.min(np.abs(np.log(GM))))
+        else:
+            gmidx = -1
+        if PM.shape[0]:
+            pmidx = np.where(np.abs(PM) == np.amin(np.abs(PM)))[0]
         return (
-            (GM.shape[0] or None) and np.amin(GM),
-            (PM.shape[0] or None) and np.amin(PM),
-            (SM.shape[0] or None) and np.amin(SM),
-            (w_180.shape[0] or None) and w_180[GM==np.amin(GM)][0],
-            (wc.shape[0] or None) and wc[PM==np.amin(PM)][0],
-            (wstab.shape[0] or None) and wstab[SM==np.amin(SM)][0])
+            (not gmidx != -1 and float('inf')) or GM[gmidx][0],
+            (not PM.shape[0] and float('inf')) or PM[pmidx][0],
+            (not SM.shape[0] and float('inf')) or np.amin(SM),
+            (not gmidx != -1 and float('nan')) or w_180[gmidx][0],
+            (not wc.shape[0] and float('nan')) or wc[pmidx][0],
+            (not wstab.shape[0] and float('nan')) or wstab[SM==np.amin(SM)][0])
 
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
