@@ -127,8 +127,6 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.plot(real(zeros), imag(zeros), 'o')
 
         # Now plot the loci
-        infinity_roots=np.where(mymat.T == np.inf)
-        print(infinity_roots)
         for col in mymat.T:
             ax.plot(real(col), imag(col), plotstr)
 
@@ -166,18 +164,25 @@ def _default_gains(num, den, xlim, ylim):
     important_points = np.concatenate((important_points, np.zeros(2)), axis=0)
     mymat_xl = np.append(mymat_xl, important_points)
     false_gain = den.coeffs[0] / num.coeffs[0]
+    if false_gain < 0 and not den.order > num.order:
+        raise ValueError("Not implemented support for 0 degrees root "
+                         "locus with equal order of numerator and denominator.")
 
     if xlim is None and false_gain > 0:
-        x_tolerance = 0.05 * (np.max(np.max(np.real(mymat_xl))) - np.min(np.min(np.real(mymat_xl))))
+        x_tolerance = 0.03 * (np.max(np.real(mymat_xl)) - np.min(np.real(mymat_xl)))
         xlim = _ax_lim(mymat_xl)
     elif xlim is None and false_gain < 0:
-        xlim = _ax_lim(important_points)
-        x_tolerance = 0.05 * (np.max(np.max(np.real(mymat_xl))) - np.min(np.min(np.real(mymat_xl))))
+        axmin = np.min(np.real(important_points))-(np.max(np.real(important_points))-np.min(np.real(important_points)))
+        axmin = np.min(np.array([axmin, np.min(np.real(mymat_xl))]))
+        axmax = np.max(np.real(important_points))+np.max(np.real(important_points))-np.min(np.real(important_points))
+        axmax = np.max(np.array([axmax, np.max(np.real(mymat_xl))]))
+        xlim = [axmin, axmax]
+        x_tolerance = 0.05 * (axmax - axmin)
     else:
         x_tolerance = 0.05 * (xlim[1] - xlim[0])
 
     if ylim is None:
-        y_tolerance = 0.05 * (np.max(np.max(np.imag(mymat_xl))) - np.min(np.min(np.imag(mymat_xl))))
+        y_tolerance = 0.05 * (np.max(np.imag(mymat_xl)) - np.min(np.imag(mymat_xl)))
         ylim = _ax_lim(mymat_xl * 1j)
     else:
         y_tolerance = 0.05 * (ylim[1] - ylim[0])
@@ -192,10 +197,10 @@ def _default_gains(num, den, xlim, ylim):
             new_points = _RLFindRoots(num, den, new_gains[1:4])
             kvect = np.insert(kvect, index+1, new_gains[1:4])
             mymat = np.insert(mymat, index+1, new_points, axis=0)
+
         mymat = _RLSortRoots(mymat)
-        distance_points = np.abs(np.diff(mymat, axis=0))>tolerance
-        points_in_figure = np.logical_and(mymat[1:]>xlim[0], mymat[1:]<xlim[1])
-        indexes_too_far = np.where(np.logical_and(distance_points, points_in_figure))
+        distance_points = np.abs(np.diff(mymat, axis=0)) > tolerance  # distance between points
+        indexes_too_far = np.where(distance_points)
 
     new_gains = np.hstack((np.linspace(kvect[-1], kvect[-1]*200, 10)))
     new_points = _RLFindRoots(num, den, new_gains[1:10])
@@ -225,8 +230,8 @@ def _break_points(num, den):
 
 def _ax_lim(mymat):
     """Utility to get the axis limits"""
-    axmin = np.min(np.min(np.real(mymat)))
-    axmax = np.max(np.max(np.real(mymat)))
+    axmin = np.min(np.real(mymat))
+    axmax = np.max(np.real(mymat))
     if axmax != axmin:
         deltax = (axmax - axmin) * 0.02
     else:
@@ -244,18 +249,18 @@ def _k_max(num, den, real_break_points, k_break_points):
 
     if asymp_number > 0:
         asymp_center = (np.sum(den.roots) - np.sum(num.roots))/asymp_number
-        distance_max = 2 * np.max(np.abs(important_points - asymp_center))
+        distance_max = 4 * np.max(np.abs(important_points - asymp_center))
         asymp_angles = (2 * np.arange(0, asymp_number)-1) * np.pi / asymp_number
         if false_gain > 0:
             farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
         else:
             asymp_angles = asymp_angles + np.pi
             farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
-        kmax_asymp = -den(farthest_points) / num(farthest_points)
+        kmax_asymp = np.real(np.abs(den(farthest_points) / num(farthest_points)))
     else:
-        kmax_asymp = np.abs([den.coeffs[0] / num.coeffs[0] * 3])
+        kmax_asymp = np.abs([np.abs(den.coeffs[0]) / np.abs(num.coeffs[0]) * 3])
 
-    kmax = np.max(np.concatenate((np.real(kmax_asymp), k_break_points), axis=0))
+    kmax = np.max(np.concatenate((np.real(kmax_asymp), np.real(k_break_points)), axis=0))
     return kmax
 
 
@@ -297,7 +302,8 @@ def _RLFindRoots(nump, denp, kvect):
         curpoly = denp + k * nump
         curroots = curpoly.r
         if len(curroots) < denp.order:
-            curroots = np.insert(curroots, len(curroots), np.inf) # if i have less poles than open loop is becuase i have one in infinity
+            curroots = np.insert(curroots, len(curroots), np.inf)  # if i have less poles than open loop is because  i
+            #  have one in infinity
 
         curroots.sort()
         roots.append(curroots)
@@ -346,22 +352,24 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
     ylocator = ax.get_yaxis().get_major_locator()
     xlocator = ax.get_xaxis().get_major_locator()
 
+    ylim = ax.get_ylim()
+    ytext_pos_lim = ylim[1] - (ylim[1] - ylim[0]) * 0.03
+    xlim = ax.get_xlim()
+    xtext_pos_lim = xlim[0] + (xlim[1] - xlim[0]) * 0.0
+
     if zeta is None:
-        zeta = _default_zetas(xlocator(), ylocator())
+        zeta = _default_zetas(xlim, ylim)
 
     angules = []
     for z in zeta:
-        if (z >= 1e-4) & (z < 1):
+        if (z >= 1e-4) & (z <= 1):
             angules.append(np.pi/2 + np.arcsin(z))
         else:
             zeta.remove(z)
     y_over_x = np.tan(angules)
 
     # zeta-constant lines
-    ylim = ax.get_ylim()
-    ytext_pos_lim = ylim[1]-(ylim[1]-ylim[0])*0.03
-    xlim = ax.get_xlim()
-    xtext_pos_lim = xlim[0]+(xlim[1]-xlim[0])*0.0
+
     index = 0
 
     for yp in y_over_x:
@@ -383,7 +391,7 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
 
     angules = np.linspace(-90, 90, 20)*np.pi/180
     if wn is None:
-        wn = _default_wn(xlocator(), ylocator())
+        wn = _default_wn(xlocator(), ylim)
 
     for om in wn:
         if om < 0:
@@ -395,18 +403,30 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
             ax.annotate(an, textcoords='data', xy=[om, 0], fontsize=8)
 
 
-def _default_zetas(xloc, yloc):
+def _default_zetas(xlim, ylim):
     """Return default list of dumps coefficients"""
-    # TODO: smart selection on zetas to draw in root locus plot
-    angules = np.arange(0, 80, 15) * np.pi / 180
-    zeta = np.sin(np.pi/2 - angules[1::])
+    sep1 = -xlim[0]/4
+    ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1,4,1)]
+    sep2 = ylim[1] / 3
+    ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1,3,1)]
+
+    angules = np.concatenate((ang1, ang2))
+    angules = np.insert(angules, len(angules), np.pi/2)
+    zeta = np.sin(angules)
     return zeta.tolist()
 
 
-def _default_wn(xloc, yloc):
+def _default_wn(xloc, ylim):
     """Return default wn for root locus plot"""
-    # TODO: better selection of wn (up to maximum ylim with same separation in xloc)
+
     wn = xloc
+    sep = xloc[1]-xloc[0]
+    while np.abs(wn[0]) < ylim[1]:
+        wn = np.insert(wn, 0, wn[0]-sep)
+
+    while len(wn)>7:
+        wn = wn[0:-1:2]
+
     return wn
 
 rlocus = root_locus
