@@ -143,7 +143,11 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
 
 
 def _default_gains(num, den, xlim, ylim):
-    """Unsupervised gains calculation for root locus plot"""
+    """Unsupervised gains calculation for root locus plot. 
+    
+    References:
+     Ogata, K. (2002). Modern control engineering (4th ed.). Upper Saddle River, NJ : New Delhi: Prentice Hall.."""
+
     k_break, real_break = _break_points(num, den)
     kmax = _k_max(num, den, real_break, k_break)
     kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
@@ -169,7 +173,7 @@ def _default_gains(num, den, xlim, ylim):
                          "locus with equal order of numerator and denominator.")
 
     if xlim is None and false_gain > 0:
-        x_tolerance = 0.03 * (np.max(np.real(mymat_xl)) - np.min(np.real(mymat_xl)))
+        x_tolerance = 0.05 * (np.max(np.real(mymat_xl)) - np.min(np.real(mymat_xl)))
         xlim = _ax_lim(mymat_xl)
     elif xlim is None and false_gain < 0:
         axmin = np.min(np.real(important_points))-(np.max(np.real(important_points))-np.min(np.real(important_points)))
