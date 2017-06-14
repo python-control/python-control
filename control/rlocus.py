@@ -265,6 +265,7 @@ def _k_max(num, den, real_break_points, k_break_points):
         kmax_asymp = np.abs([np.abs(den.coeffs[0]) / np.abs(num.coeffs[0]) * 3])
 
     kmax = np.max(np.concatenate((np.real(kmax_asymp), np.real(k_break_points)), axis=0))
+    kmax = np.max([kmax, np.abs(false_gain)])
     return kmax
 
 
