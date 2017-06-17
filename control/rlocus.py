@@ -191,6 +191,7 @@ def _default_gains(num, den, xlim, ylim):
     else:
         y_tolerance = 0.05 * (ylim[1] - ylim[0])
 
+
     tolerance = np.max([x_tolerance, y_tolerance])
     distance_points = np.abs(np.diff(mymat, axis=0))
     indexes_too_far = np.where(distance_points > tolerance)
@@ -206,7 +207,7 @@ def _default_gains(num, den, xlim, ylim):
         distance_points = np.abs(np.diff(mymat, axis=0)) > tolerance  # distance between points
         indexes_too_far = np.where(distance_points)
 
-    new_gains = np.hstack((np.linspace(kvect[-1], kvect[-1]*200, 10)))
+    new_gains = np.hstack((np.linspace(kvect[-1], kvect[-1]*1e10, 10)))
     new_points = _RLFindRoots(num, den, new_gains[1:10])
     kvect = np.append(kvect, new_gains[1:10])
     mymat = np.concatenate((mymat, new_points), axis=0)
