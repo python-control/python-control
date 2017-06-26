@@ -3,11 +3,22 @@ import os
 
 def main():
     cmd = 'git describe --always --long'
-    output = check_output(cmd.split()).decode('utf-8').strip().split('-')
+    # describe --long usually outputs "tag-numberofcommits-commitname"
+    output = check_output(cmd.split()).decode('utf-8').strip().rsplit('-',2)
     if len(output) == 3:
         version, build, commit = output
     else:
-        raise Exception("Could not git describe, (got %s)" % output)
+        # If the clone is shallow, describe's output won't have tag and
+        # number of commits.  This is a particular issue on Travis-CI,
+        # which by default clones with a depth of 50.
+        # This behaviour isn't well documented in git-describe docs,
+        # but see, e.g., https://stackoverflow.com/a/36389573/1008142
+        # and https://github.com/travis-ci/travis-ci/issues/3412
+        version = 'unknown'
+        build = 'unknown'
+        # we don't ever expect just one dash from describe --long, but
+        # just in case:
+        commit = '-'.join(output)
 
     print("Version: %s" % version)
     print("Build: %s" % build)
