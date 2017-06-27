@@ -3,3 +3,4 @@ include tests/*.py
 include README.rst
 include ChangeLog
 include Pending
+include LICENSE
