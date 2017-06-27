@@ -1098,40 +1098,48 @@ def _convertToTransferFunction(sys, **kw):
 
         return sys
     elif isinstance(sys, StateSpace):
-        try:
-            from slycot import tb04ad
-            if len(kw):
-                raise TypeError(
-                    "If sys is a StateSpace, " +
-                    "_convertToTransferFunction cannot take keywords.")
+        
+        if 0==sys.states:
+            # Slycot doesn't like static SS->TF conversion, so handle
+            # it first.  Can't join this with the no-Slycot branch,
+            # since that doesn't handle general MIMO systems
+            num = [[[sys.D[i,j]] for j in range(sys.inputs)] for i in range(sys.outputs)]
+            den = [[[1.] for j in range(sys.inputs)] for i in range(sys.outputs)]
+        else:
+            try:
+                from slycot import tb04ad
+                if len(kw):
+                    raise TypeError(
+                        "If sys is a StateSpace, " +
+                        "_convertToTransferFunction cannot take keywords.")
 
-            # Use Slycot to make the transformation
-            # Make sure to convert system matrices to numpy arrays
-            tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
-                           array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
+                # Use Slycot to make the transformation
+                # Make sure to convert system matrices to numpy arrays
+                tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
+                               array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
 
-            # Preallocate outputs.
-            num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
-            den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+                # Preallocate outputs.
+                num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+                den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
 
-            for i in range(sys.outputs):
-                for j in range(sys.inputs):
-                    num[i][j] = list(tfout[6][i, j, :])
-                    # Each transfer function matrix row
-                    # has a common denominator.
-                    den[i][j] = list(tfout[5][i, :])
-            # print(num)
-            # print(den)
-        except ImportError:
-            # If slycot is not available, use signal.lti (SISO only)
-            if (sys.inputs != 1 or sys.outputs != 1):
-                raise TypeError("No support for MIMO without slycot")
+                for i in range(sys.outputs):
+                    for j in range(sys.inputs):
+                        num[i][j] = list(tfout[6][i, j, :])
+                        # Each transfer function matrix row
+                        # has a common denominator.
+                        den[i][j] = list(tfout[5][i, :])
+                # print(num)
+                # print(den)
+            except ImportError:
+                # If slycot is not available, use signal.lti (SISO only)
+                if (sys.inputs != 1 or sys.outputs != 1):
+                    raise TypeError("No support for MIMO without slycot")
 
-            lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
-            num = squeeze(lti_sys.num)
-            den = squeeze(lti_sys.den)
-            # print(num)
-            # print(den)
+                lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
+                num = squeeze(lti_sys.num)
+                den = squeeze(lti_sys.den)
+                # print(num)
+                # print(den)
 
         return TransferFunction(num, den, sys.dt)
 
