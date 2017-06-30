@@ -157,7 +157,7 @@ def _default_gains(num, den, xlim, ylim):
     open_loop_poles = den.roots
     open_loop_zeros = num.roots
 
-    if (open_loop_zeros.size != 0) & (open_loop_zeros.size < open_loop_poles.size):
+    if (open_loop_zeros.size != 0) and (open_loop_zeros.size < open_loop_poles.size):
         open_loop_zeros_xl = np.append(open_loop_zeros,
                                        np.ones(open_loop_poles.size - open_loop_zeros.size) * open_loop_zeros[-1])
         mymat_xl = np.append(mymat, open_loop_zeros_xl)
@@ -191,12 +191,11 @@ def _default_gains(num, den, xlim, ylim):
     else:
         y_tolerance = 0.05 * (ylim[1] - ylim[0])
 
-
     tolerance = np.max([x_tolerance, y_tolerance])
     distance_points = np.abs(np.diff(mymat, axis=0))
     indexes_too_far = np.where(distance_points > tolerance)
 
-    while (indexes_too_far[0].size > 0) & (kvect.size < 5000):
+    while (indexes_too_far[0].size > 0) and (kvect.size < 5000):
         for index in indexes_too_far[0]:
             new_gains = np.linspace(kvect[index], kvect[index+1], 5)
             new_points = _RLFindRoots(num, den, new_gains[1:4])
@@ -246,7 +245,7 @@ def _ax_lim(mymat):
 
 
 def _k_max(num, den, real_break_points, k_break_points):
-    """" Calculation the maximum gain for the root locus shown in tne figure"""
+    """" Calculate the maximum gain for the root locus shown in the figure"""
     asymp_number = den.order - num.order
     singular_points = np.concatenate((num.roots, den.roots), axis=0)
     important_points = np.concatenate((singular_points, real_break_points), axis=0)
@@ -308,8 +307,8 @@ def _RLFindRoots(nump, denp, kvect):
         curpoly = denp + k * nump
         curroots = curpoly.r
         if len(curroots) < denp.order:
-            curroots = np.insert(curroots, len(curroots), np.inf)  # if i have less poles than open loop is because  i
-            #  have one in infinity
+            # if I have fewer poles than open loop, it is because i have one at infinity
+            curroots = np.insert(curroots, len(curroots), np.inf)
 
         curroots.sort()
         roots.append(curroots)
@@ -355,7 +354,6 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
     if fig is None:
         fig = pylab.gcf()
     ax = fig.gca()
-    ylocator = ax.get_yaxis().get_major_locator()
     xlocator = ax.get_xaxis().get_major_locator()
 
     ylim = ax.get_ylim()
@@ -368,7 +366,7 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
 
     angules = []
     for z in zeta:
-        if (z >= 1e-4) & (z <= 1):
+        if (z >= 1e-4) and (z <= 1):
             angules.append(np.pi/2 + np.arcsin(z))
         else:
             zeta.remove(z)
@@ -430,7 +428,7 @@ def _default_wn(xloc, ylim):
     while np.abs(wn[0]) < ylim[1]:
         wn = np.insert(wn, 0, wn[0]-sep)
 
-    while len(wn)>7:
+    while len(wn) > 7:
         wn = wn[0:-1:2]
 
     return wn
