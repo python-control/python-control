@@ -206,9 +206,9 @@ def _default_gains(num, den, xlim, ylim):
         distance_points = np.abs(np.diff(mymat, axis=0)) > tolerance  # distance between points
         indexes_too_far = np.where(distance_points)
 
-    new_gains = np.hstack((np.linspace(kvect[-1], kvect[-1]*1e10, 10)))
-    new_points = _RLFindRoots(num, den, new_gains[1:10])
-    kvect = np.append(kvect, new_gains[1:10])
+    new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
+    new_points = _RLFindRoots(num, den, new_gains[1:4])
+    kvect = np.append(kvect, new_gains[1:4])
     mymat = np.concatenate((mymat, new_points), axis=0)
     mymat = _RLSortRoots(mymat)
     return kvect, mymat, xlim, ylim
@@ -265,7 +265,8 @@ def _k_max(num, den, real_break_points, k_break_points):
         kmax_asymp = np.abs([np.abs(den.coeffs[0]) / np.abs(num.coeffs[0]) * 3])
 
     kmax = np.max(np.concatenate((np.real(kmax_asymp), np.real(k_break_points)), axis=0))
-    kmax = np.max([kmax, np.abs(false_gain)])
+    if np.abs(false_gain) > kmax:
+        kmax = np.abs(false_gain)
     return kmax
 
 
@@ -410,9 +411,9 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
 def _default_zetas(xlim, ylim):
     """Return default list of dumps coefficients"""
     sep1 = -xlim[0]/4
-    ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1,4,1)]
+    ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1, 4, 1)]
     sep2 = ylim[1] / 3
-    ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1,3,1)]
+    ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1, 3, 1)]
 
     angules = np.concatenate((ang1, ang2))
     angules = np.insert(angules, len(angules), np.pi/2)
