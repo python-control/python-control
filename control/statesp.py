@@ -91,38 +91,21 @@ class StateSpace(LTI):
 
     """
 
-    def __init__(self, *args):
+    def __init__(self,A,B,C,D,dt=None):
         """Construct a state space object.
 
         The default constructor is StateSpace(A, B, C, D), where A, B, C, D are
         matrices or equivalent objects.  To call the copy constructor, call
         StateSpace(sys), where sys is a StateSpace object.
+        
+        Matrix sizes need to be consistent:
+        A must be square.
+        A and B must have the same number of rows.
+        A and C must have the same number of columns.
+        B and D must have the same number of columns.
+        C and D must have the same number of rows.
 
         """
-
-        if len(args) == 4:
-            # The user provided A, B, C, and D matrices.
-            (A, B, C, D) = args
-            dt = None;
-        elif len(args) == 5:
-            # Discrete time system
-            (A, B, C, D, dt) = args
-        elif len(args) == 1:
-            # Use the copy constructor.
-            if not isinstance(args[0], StateSpace):
-                raise TypeError("The one-argument constructor can only take in \
-a StateSpace object.  Recived %s." % type(args[0]))
-            A = args[0].A
-            B = args[0].B
-            C = args[0].C
-            D = args[0].D
-            try:
-                dt = args[0].dt
-            except NameError:
-                dt = None;
-        else:
-            raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
-
         A, B, C, D = map(matrix, [A, B, C, D])
 
         # TODO: use super here?
@@ -131,6 +114,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         self.B = B
         self.C = C
         self.D = D
+        self.dt=dt
 
         self.states = A.shape[1]
 
@@ -491,7 +475,7 @@ inputs/outputs for feedback.")
             except ImportError:
                 raise TypeError("minreal requires slycot tb01pd")
         else:
-            return StateSpace(self)
+            return StateSpace(self.A,self.B,self.C,self.D,self.dt)
 
 
     # TODO: add discrete time check
@@ -545,6 +529,7 @@ inputs/outputs for feedback.")
 
     def __getitem__(self, indices):
         """Array style acces"""
+        
         if len(indices) != 2:
             raise IOError('must provide indices of length 2 for state space')
         i = indices[0]

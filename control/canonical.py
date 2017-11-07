@@ -64,7 +64,10 @@ def reachable_form(xsys):
             "Canonical forms for MIMO systems not yet supported")
 
     # Create a new system, starting with a copy of the old one
-    zsys = StateSpace(xsys)
+    print(xsys)
+    #print(*xsys)
+    l=[xsys.A,xsys.B,xsys.C,xsys.D,xsys.dt]
+    zsys = StateSpace(*l)
 
     # Generate the system matrices for the desired canonical form
     zsys.B = zeros(shape(xsys.B))

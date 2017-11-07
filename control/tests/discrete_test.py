@@ -68,8 +68,12 @@ class TestDiscrete(unittest.TestCase):
 
     def testCopyConstructor(self):
         for sys in (self.siso_ss1, self.siso_ss1c, self.siso_ss1d):
-            newsys = StateSpace(sys);
+            
+            args=[sys.A,sys.B,sys.C,sys.D,sys.dt]
+            newsys = StateSpace(*args);
+            
             self.assertEqual(sys.dt, newsys.dt)
+            
         for sys in (self.siso_tf1, self.siso_tf1c, self.siso_tf1d):
             newsys = TransferFunction(sys);
             self.assertEqual(sys.dt, newsys.dt)
