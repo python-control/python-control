@@ -52,10 +52,11 @@ $Id$
 """
 
 # External function declarations
+import numpy as np
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
     where, delete, real, poly, poly1d
-import numpy as np
+import scipy as sp
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
@@ -126,7 +127,7 @@ class TransferFunction(LTI):
         data = [num, den]
         for i in range(len(data)):
             # Check for a scalar (including 0d ndarray)
-            if (isinstance(data[i], (int, float, complex)) or
+            if (isinstance(data[i], (int, float, complex, np.number)) or
                 (isinstance(data[i], ndarray) and data[i].ndim == 0)):
                 # Convert scalar to list of list of array.
                 if (isinstance(data[i], int)):
@@ -135,7 +136,7 @@ class TransferFunction(LTI):
                 else:
                     data[i] = [[array([data[i]])]]
             elif (isinstance(data[i], (list, tuple, ndarray)) and
-                    isinstance(data[i][0], (int, float, complex))):
+                    isinstance(data[i][0], (int, float, complex, np.number))):
                 # Convert array to list of list of array.
                 if (isinstance(data[i][0], int)):
                     # Convert integers to floats at this point
@@ -146,7 +147,8 @@ class TransferFunction(LTI):
             elif (isinstance(data[i], list) and
                     isinstance(data[i][0], list) and
                     isinstance(data[i][0][0], (list, tuple, ndarray)) and
-                    isinstance(data[i][0][0][0], (int, float, complex))):
+                    isinstance(data[i][0][0][0], (int, float, complex, 
+                                                  np.number))):
                 # We might already have the right format.  Convert the
                 # coefficient vectors to arrays, if necessary.
                 for j in range(len(data[i])):
@@ -363,7 +365,7 @@ second has %i." % (self.outputs, other.outputs))
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(other, inputs=self.inputs,
                                                outputs=self.inputs)
         else:
@@ -410,7 +412,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Right multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(other, inputs=self.inputs,
                                                outputs=self.inputs)
         else:
@@ -458,7 +460,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
     def __truediv__(self, other):
         """Divide two LTI objects."""
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(
                 other, inputs=self.inputs,
                 outputs=self.inputs)
@@ -492,7 +494,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(
                 other, inputs=self.inputs,
                 outputs=self.inputs)
@@ -1128,22 +1130,21 @@ def _convertToTransferFunction(sys, **kw):
                         # Each transfer function matrix row
                         # has a common denominator.
                         den[i][j] = list(tfout[5][i, :])
-                # print(num)
-                # print(den)
+
             except ImportError:
                 # If slycot is not available, use signal.lti (SISO only)
                 if (sys.inputs != 1 or sys.outputs != 1):
                     raise TypeError("No support for MIMO without slycot")
 
-                lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
-                num = squeeze(lti_sys.num)
-                den = squeeze(lti_sys.den)
-                # print(num)
-                # print(den)
+                # Do the conversion using sp.signal.ss2tf
+                # Note that this returns a 2D array for the numerator
+                num, den = sp.signal.ss2tf(sys.A, sys.B, sys.C, sys.D)
+                num = squeeze(num) # Convert to 1D array
+                den = squeeze(den) # Probably not needed
 
         return TransferFunction(num, den, sys.dt)
 
-    elif isinstance(sys, (int, float, complex)):
+    elif isinstance(sys, (int, float, complex, np.number)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:
