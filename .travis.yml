@@ -10,9 +10,19 @@ cache:
 
 python:
   - "2.7"
-  - "3.3"
-  - "3.4"
   - "3.5"
+  - "3.6"
+
+# Test against multiple version of SciPy, with and without slycot
+#
+# Because there were significant changes in SciPy between v0 and v1, we 
+# test against both of these using the Travis CI environment capability
+#
+# We also want to test with and without slycot
+env:
+  - SCIPY=0.19.1 SLYCOT=
+  - SCIPY=0.19.1 SLYCOT=slycot
+  - SCIPY=1.0.0 SLYCOT=
 
 # install required system libraries
 before_install:
@@ -40,16 +50,15 @@ before_install:
 
 # Install packages
 install:
-  - conda build --python "$TRAVIS_PYTHON_VERSION" conda-recipe
-  - conda install control --use-local
+  # Install the desired version of SciPy first, w/ or w/out slycot
+  - conda install scipy==$SCIPY $SLYCOT
+  - conda install matplotlib
+  # Don't use conda for installation of control library [preserves scipy]
+  - python setup.py install
 
 # command to run tests
 script:
-  # Before installing Slycot
-  - python setup.py test
-
-  # Now, get and use Slycot
-  - conda install slycot
+  - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
 
 after_success:
