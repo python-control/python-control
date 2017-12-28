@@ -135,7 +135,7 @@ class TransferFunction(LTI):
                 else:
                     data[i] = [[array([data[i]])]]
             elif (isinstance(data[i], (list, tuple, ndarray)) and
-                    isinstance(data[i][0], (int, float, complex))):
+                    isinstance(data[i][0], (int, float, complex, np.int64))):
                 # Convert array to list of list of array.
                 if (isinstance(data[i][0], int)):
                     # Convert integers to floats at this point
