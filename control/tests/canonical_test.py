@@ -52,3 +52,10 @@ class TestCanonical(unittest.TestCase):
 
         # Check if an exception is raised
         np.testing.assert_raises(ValueError, canonical_form, sys, "reachable")
+
+if __name__=="__main__":
+    t=TestCanonical()
+    t.test_reachable_form()
+    t.test_unreachable_system()
+    a=1
+    #unittest.main()
