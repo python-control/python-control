@@ -10,7 +10,6 @@ for the python-control library.
 # Python 3 compatibility (needs to go here)
 from __future__ import print_function
 from __future__ import division
-from __future__ import absolute_import
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -169,13 +168,6 @@ denominator." % (j + 1, i + 1))
                         break
                 if zeronum:
                     den[i][j] = ones(1)
-
-                # Check for coefficients that are ints and convert to floats
-                # TODO
-                for k in range(den[i][j]):
-                    if (isinstance(data[i], (int, np.int))):
-                        den[i][j][k] = float(den[i][j][k])
-
 
         LTI.__init__(self, inputs, outputs, dt)
         self.num = num
@@ -1338,7 +1330,7 @@ def _cleanPart(data):
     
     Returns
     -------
-    data: correctly formatted transfer function part.
+    data: list of lists of ndarrays, with int converted to float
     '''
     valid_types = (int, float, complex, np.number)
     valid_collection = (list, tuple, ndarray)
@@ -1346,10 +1338,10 @@ def _cleanPart(data):
     if (isinstance(data, valid_types) or
         (isinstance(data, ndarray) and data.ndim == 0)):
         # Data is a scalar (including 0d ndarray)
-        return [[array([data])]]
+        data = [[array([data])]]
     elif (isinstance(data, valid_collection) and
             all([isinstance(d, valid_types) for d in data])):
-        return [[array(data]]
+        data = [[array(data)]]
     elif (isinstance(data, (list, tuple)) and
           isinstance(data[0], (list, tuple)) and
               (isinstance(data[0][0], valid_collection) and 
@@ -1359,10 +1351,19 @@ def _cleanPart(data):
             data[j] = list(data[j])
             for k in range(len(data[j])):
                 data[j][k] = array(data[j][k])
-        return data
     else:
         # If the user passed in anything else, then it's unclear what
         # the meaning is.
         raise TypeError("The numerator and denominator inputs must be \
 scalars or vectors (for\nSISO), or lists of lists of vectors (for SISO or \
 MIMO).")
+
+    # Check for coefficients that are ints and convert to floats
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            for k in range(len(data[i][j])):
+                if (isinstance(data[i][j][k], (int, np.int))):
+                    data[i][j][k] = float(data[i][j][k])
+                
+    return data
+    
