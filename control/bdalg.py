@@ -246,7 +246,8 @@ def feedback(sys1, sys2=1, sign=-1):
     return sys1.feedback(sys2, sign)
 
 def append(*sys):
-    '''
+    '''append(sys1, sys2, ... sysn)
+
     Group models by appending their inputs and outputs
 
     Forms an augmented system model, and appends the inputs and

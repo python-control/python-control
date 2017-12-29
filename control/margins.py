@@ -336,7 +336,9 @@ def phase_crossover_frequencies(sys):
 
 
 def margin(*args):
-    """Calculate gain and phase margins and associated crossover frequencies
+    """margin(sys)
+
+    Calculate gain and phase margins and associated crossover frequencies
 
     Parameters
     ----------

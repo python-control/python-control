@@ -1273,7 +1273,8 @@ TransferFunction object.  It is %s." % type(sys))
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 def ss2tf(*args):
-    """
+    """ss2tf(sys)
+
     Transform a state space system to a transfer function.
 
     The function accepts either 1 or 4 parameters:
