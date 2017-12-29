@@ -18,3 +18,4 @@ examples/.ipynb_checkpoints/
 .project
 Untitled*.ipynb
 *.idea/
+.eggs
