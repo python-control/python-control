@@ -116,7 +116,7 @@ class StateSpace(LTI):
         elif len(args) == 1:
             # Use the copy constructor.
             if not isinstance(args[0], StateSpace):
-               raise TypeError("The one-argument constructor can only take in a StateSpace object.  Received %s." % type(args[0]))
+                raise TypeError("The one-argument constructor can only take in a StateSpace object.  Received %s." % type(args[0]))
             A = args[0].A
             B = args[0].B
             C = args[0].C
@@ -961,8 +961,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
     return sys
 
 def ss(*args):
-    """ss(A, B, C, D[, dt])
-
+    """
     Create a state space system.
 
     The function accepts either 1, 4 or 5 parameters:
@@ -1020,7 +1019,6 @@ def ss(*args):
 
     See Also
     --------
-    StateSpace
     tf
     ss2tf
     tf2ss

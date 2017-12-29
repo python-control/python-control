@@ -48,7 +48,6 @@ Author: Richard M. Murray
 Date: 14 July 2011
 
 $Id$
-
 """
 
 import numpy as np
@@ -62,7 +61,7 @@ __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
 # helper functions for stability_margins
 def _polyimsplit(pol):
     """split a polynomial with (iw) applied into a real and an
-       imaginary part with w applied"""
+    imaginary part with w applied"""
     rpencil = np.zeros_like(pol)
     ipencil = np.zeros_like(pol)
     rpencil[-1::-4] = 1.
@@ -294,8 +293,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
 #! TODO - need to add test functions
 def phase_crossover_frequencies(sys):
-    """
-    Compute frequencies and gains at intersections with real axis
+    """Compute frequencies and gains at intersections with real axis
     in Nyquist plot.
 
     Call as:
@@ -360,8 +358,8 @@ def margin(*args):
     Wcp : float
         Phase crossover frequency (corresponding to gain margin) (in rad/sec)
 
-   Margins are of SISO open-loop. If more than one crossover frequency is
-   detected, returns the lowest corresponding margin.
+    Margins are of SISO open-loop. If more than one crossover frequency is
+    detected, returns the lowest corresponding margin.
 
     Examples
     --------

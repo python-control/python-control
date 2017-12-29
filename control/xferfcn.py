@@ -65,7 +65,9 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
 class TransferFunction(LTI):
 
-    """A class for representing transfer functions
+    """TransferFunction(num, den[, dt])
+    
+    A class for representing transfer functions
 
     The TransferFunction class is used to represent systems in transfer function
     form.
@@ -87,13 +89,17 @@ class TransferFunction(LTI):
     """
 
     def __init__(self, *args):
-        """Construct a transfer function.
+        """TransferFunction(num, den[, dt])
+
+        Construct a transfer function.
 
         The default constructor is TransferFunction(num, den), where num and
         den are lists of lists of arrays containing polynomial coefficients.
-        To crete a discrete time transfer funtion, use TransferFunction(num,
-        den, dt).  To call the copy constructor, call TransferFunction(sys),
-        where sys is a TransferFunction object (continuous or discrete).
+        To create a discrete time transfer funtion, use TransferFunction(num,
+        den, dt) where 'dt' is the sampling time (or True for unspecified
+        sampling time).  To call the copy constructor, call
+        TransferFunction(sys), where sys is a TransferFunction object
+        (continuous or discrete).
 
         """
 
@@ -1173,10 +1179,11 @@ def _convertToTransferFunction(sys, **kw):
 
 
 def tf(*args):
-    """
+    """tf(num, den[, dt])
+
     Create a transfer function system. Can create MIMO systems.
 
-    The function accepts either 1 or 2 parameters:
+    The function accepts either 1, 2, or 3 parameters:
 
     ``tf(sys)``
         Convert a linear system into transfer function form. Always creates
@@ -1221,6 +1228,7 @@ def tf(*args):
 
     See Also
     --------
+    TransferFunction
     ss
     ss2tf
     tf2ss

@@ -45,6 +45,11 @@ from . import lti
 import numpy as np
 from numpy import pi
 
+# Hack for sphinx.ext.autodoc: if numpy is a mock import, then numpy.pi 
+# will be assigned to _Mock() and this generates a type error
+if not isinstance(pi, float):
+    pi = 3.14
+
 __all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
 
 # Utility function to unwrap an angle measurement
