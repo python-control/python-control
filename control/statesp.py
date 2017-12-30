@@ -51,9 +51,10 @@ Revised: Kevin K. Chen, Dec 10
 $Id$
 """
 
+import math
 import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
+    dot, empty, exp, eye, matrix, ones, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
@@ -367,7 +368,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if isdtime(self, strict=True):
             dt = timebase(self)
             s = exp(1.j * omega * dt)
-            if (omega * dt > pi):
+            if (omega * dt > math.pi):
                 warnings.warn("evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = omega * 1.j
@@ -798,7 +799,7 @@ def _rss_generate(states, inputs, outputs, type):
                 poles[i] = complex(-exp(randn()), 3. * exp(randn()))
             elif type == 'd':
                 mag = rand()
-                phase = 2. * pi * rand()
+                phase = 2. * math.pi * rand()
                 poles[i] = complex(mag * cos(phase),
                     mag * sin(phase))
             poles[i+1] = complex(poles[i].real, -poles[i].imag)

@@ -50,11 +50,12 @@ Date: 14 July 2011
 $Id$
 """
 
+import math
 import numpy as np
+import scipy as sp
 from . import xferfcn
 from .lti import issiso
 from . import frdata
-import scipy as sp
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
 
@@ -140,7 +141,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
             mag, phase, omega = sysdata
-            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180),
+            sys = frdata.FRD(mag * np.exp(1j * phase * math.pi/180),
                              omega, smooth=True)
         else:
             sys = xferfcn._convertToTransferFunction(sysdata)
@@ -336,13 +337,13 @@ def phase_crossover_frequencies(sys):
 
 
 def margin(*args):
-    """margin(sys)
+    """margin(sysdata)
 
     Calculate gain and phase margins and associated crossover frequencies
 
     Parameters
     ----------
-    sysdata: LTI system or (mag, phase, omega) sequence
+    sysdata : LTI system or (mag, phase, omega) sequence
         sys : StateSpace or TransferFunction
             Linear SISO system
         mag, phase, omega : sequence of array_like

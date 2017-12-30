@@ -43,17 +43,12 @@
 # Packages that we need access to
 from . import lti
 import numpy as np
-from numpy import pi
-
-# Hack for sphinx.ext.autodoc: if numpy is a mock import, then numpy.pi 
-# will be assigned to _Mock() and this generates a type error
-if not isinstance(pi, float):
-    pi = 3.14
+import math
 
 __all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
 
 # Utility function to unwrap an angle measurement
-def unwrap(angle, period=2*pi):
+def unwrap(angle, period=2*math.pi):
     """Unwrap a phase angle to give a continuous curve
 
     Parameters
