@@ -15,7 +15,7 @@ LTI system representation
 Linear time invariant (LTI) systems are represented in python-control in
 state space, transfer function, or frequency response data (FRD) form.  Most
 functions in the toolbox will operate on any of these data types and
-functions for convering between between compatible types is provided.
+functions for converting between between compatible types is provided.
 
 State space systems
 -------------------
@@ -44,11 +44,12 @@ transfer functions
 
 .. math::
 
-  G(s) = \frac{\text{num}(s)}{\text{den(s)}}
+  G(s) = \frac{\text{num}(s)}{\text{den}(s)}
        = \frac{a_0 s^n + a_1 s^{n-1} + \cdots + a_n}
               {b_0 s^m + b_1 s^{m-1} + \cdots + b_m},
 
-where n is generally greater than m (for a proper transfer function).
+where n is generally greater than or equal to m (for a proper transfer
+function).
 
 To create a transfer function, use the :class:`TransferFunction`
 constructor:
@@ -97,7 +98,7 @@ Conversion between representations
 ----------------------------------
 LTI systems can be converted between representations either by calling the
 constructor for the desired data type using the original system as the sole
-argument or using the explict conversion functions :func:`ss2tf` and
+argument or using the explicit conversion functions :func:`ss2tf` and
 :func:`tf2ss`.
 
 .. _time-series-convention:
