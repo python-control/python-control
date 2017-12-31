@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# xferfcn_test.py - test TransferFunction class
-# RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
+# xferfcn_input_test.py - test inputs to TransferFunction class
+# jed-frey, 18 Feb 2017 (based on xferfcn_test.py)
 
 import unittest
 import numpy as np

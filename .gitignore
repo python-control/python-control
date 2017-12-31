@@ -9,6 +9,7 @@ __conda_*.txt
 record.txt
 build.log
 *.egg-info/
+.eggs/
 .coverage
 doc/_build
 doc/generated
@@ -18,4 +19,7 @@ examples/.ipynb_checkpoints/
 .project
 Untitled*.ipynb
 *.idea/
-.eggs
+
+# Files created by or for emacs (RMM, 29 Dec 2017)
+*~
+TAGS

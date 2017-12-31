@@ -49,6 +49,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 """
 
 # External function declarations
+import numpy as np
 from numpy import angle, array, empty, ones, \
     real, imag, matrix, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
@@ -219,7 +220,7 @@ second has %i." % (self.outputs, other.outputs))
         """Multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * other, self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -245,7 +246,7 @@ second has %i." % (self.outputs, other.outputs))
         """Right Multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to an frd function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * other, self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -272,7 +273,7 @@ second has %i." % (self.outputs, other.outputs))
     def __truediv__(self, other):
         """Divide two LTI objects."""
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * (1/other), self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -295,7 +296,7 @@ second has %i." % (self.outputs, other.outputs))
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(other / self.fresp, self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -449,7 +450,7 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
 
         return FRD(fresp, omega, smooth=True)
 
-    elif isinstance(sys, (int, float, complex)):
+    elif isinstance(sys, (int, float, complex, np.number)):
         fresp = ones((outputs, inputs, len(omega)), dtype=float)*sys
         return FRD(fresp, omega, smooth=True)
 

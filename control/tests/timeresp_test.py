@@ -14,7 +14,7 @@ import numpy as np
 from control.timeresp import *
 from control.statesp import *
 from control.xferfcn import TransferFunction, _convertToTransferFunction
-
+from control.dtime import c2d
 
 class TestTimeresp(unittest.TestCase):
     def setUp(self):
@@ -76,6 +76,15 @@ class TestTimeresp(unittest.TestCase):
         _t, y_11 = step_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(y_11, youttrue, decimal=4)
+
+        # Make sure continuous and discrete time use same return conventions
+        sysc = self.mimo_ss1
+        sysd = c2d(sysc, 1)           # discrete time system
+        Tvec = np.linspace(0, 10, 11) # make sure to use integer times 0..10
+        Tc, youtc = step_response(sysc, Tvec, input=0)
+        Td, youtd = step_response(sysd, Tvec, input=0)
+        np.testing.assert_array_equal(Tc.shape, Td.shape)
+        np.testing.assert_array_equal(youtc.shape, youtd.shape)
 
     def test_impulse_response(self):
         # Test SISO system
@@ -218,6 +227,11 @@ class TestTimeresp(unittest.TestCase):
         u = t
         xtrue = np.array([1./6. * t**3, 0.5 * t**2])
         check(u, x0, xtrue)
+
+    def test_discrete_initial(self):
+        h1 = TransferFunction([1.], [1., 0.], 1.)
+        t, yout = impulse_response(h1, np.arange(4))
+        np.testing.assert_array_equal(yout[0], [0., 1., 0., 0.])
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)

@@ -10,7 +10,6 @@ for the python-control library.
 # Python 3 compatibility (needs to go here)
 from __future__ import print_function
 from __future__ import division
-from __future__ import absolute_import
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -53,17 +52,11 @@ $Id$
 """
 
 # External function declarations
+import numpy as np
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
     where, delete, real, poly, poly1d
-
-from numpy import int, int8, int16, int32, int64
-from numpy import float, float16, float32, float64, float128
-from numpy import complex, complex64, complex128, complex256
-
-from copy import deepcopy
-
-import numpy as np
+import scipy as sp
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
@@ -99,7 +92,7 @@ class TransferFunction(LTI):
 
         The default constructor is TransferFunction(num, den), where num and
         den are lists of lists of arrays containing polynomial coefficients.
-        To crete a discrete time transfer funtion, use TransferFunction(num,
+        To create a discrete time transfer funtion, use TransferFunction(num,
         den, dt).  To call the copy constructor, call TransferFunction(sys),
         where sys is a TransferFunction object (continuous or discrete).
 
@@ -134,8 +127,7 @@ class TransferFunction(LTI):
         inputs = len(num[0])
         outputs = len(num)
 
-        # Make sure the numerator and denominator matrices have consistent
-        # sizes.
+        # Make sure numerator and denominator matrices have consistent sizes
         if inputs != len(den[0]):
             raise ValueError("The numerator has %i input(s), but the \
 denominator has %i\ninput(s)." % (inputs, len(den[0])))
@@ -143,8 +135,9 @@ denominator has %i\ninput(s)." % (inputs, len(den[0])))
             raise ValueError("The numerator has %i output(s), but the \
 denominator has %i\noutput(s)." % (outputs, len(den)))
 
+        # Additional checks/updates on structure of the transfer function 
         for i in range(outputs):
-            # Make sure that each row has the same number of columns.
+            # Make sure that each row has the same number of columns
             if len(num[i]) != inputs:
                 raise ValueError("Row 0 of the numerator matrix has %i \
 elements, but row %i\nhas %i." % (inputs, i, len(num[i])))
@@ -152,6 +145,7 @@ elements, but row %i\nhas %i." % (inputs, i, len(num[i])))
                 raise ValueError("Row 0 of the denominator matrix has %i \
 elements, but row %i\nhas %i." % (inputs, i, len(den[i])))
 
+            # Check for zeros in numerator or denominator
             # TODO: Right now these checks are only done during construction.
             # It might be worthwhile to think of a way to perform checks if the
             # user modifies the transfer function after construction.
@@ -331,7 +325,7 @@ second has %i." % (self.outputs, other.outputs))
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(other, inputs=self.inputs,
                                                outputs=self.inputs)
         else:
@@ -378,7 +372,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Right multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(other, inputs=self.inputs,
                                                outputs=self.inputs)
         else:
@@ -426,7 +420,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
     def __truediv__(self, other):
         """Divide two LTI objects."""
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(
                 other, inputs=self.inputs,
                 outputs=self.inputs)
@@ -460,7 +454,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(
                 other, inputs=self.inputs,
                 outputs=self.inputs)
@@ -1066,44 +1060,51 @@ def _convertToTransferFunction(sys, **kw):
 
         return sys
     elif isinstance(sys, StateSpace):
-        try:
-            from slycot import tb04ad
-            if len(kw):
-                raise TypeError(
-                    "If sys is a StateSpace, " +
-                    "_convertToTransferFunction cannot take keywords.")
+        
+        if 0==sys.states:
+            # Slycot doesn't like static SS->TF conversion, so handle
+            # it first.  Can't join this with the no-Slycot branch,
+            # since that doesn't handle general MIMO systems
+            num = [[[sys.D[i,j]] for j in range(sys.inputs)] for i in range(sys.outputs)]
+            den = [[[1.] for j in range(sys.inputs)] for i in range(sys.outputs)]
+        else:
+            try:
+                from slycot import tb04ad
+                if len(kw):
+                    raise TypeError(
+                        "If sys is a StateSpace, " +
+                        "_convertToTransferFunction cannot take keywords.")
 
-            # Use Slycot to make the transformation
-            # Make sure to convert system matrices to numpy arrays
-            tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
-                           array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
+                # Use Slycot to make the transformation
+                # Make sure to convert system matrices to numpy arrays
+                tfout = tb04ad(sys.states, sys.inputs, sys.outputs, array(sys.A),
+                               array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
 
-            # Preallocate outputs.
-            num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
-            den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+                # Preallocate outputs.
+                num = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
+                den = [[[] for j in range(sys.inputs)] for i in range(sys.outputs)]
 
-            for i in range(sys.outputs):
-                for j in range(sys.inputs):
-                    num[i][j] = list(tfout[6][i, j, :])
-                    # Each transfer function matrix row
-                    # has a common denominator.
-                    den[i][j] = list(tfout[5][i, :])
-            # print(num)
-            # print(den)
-        except ImportError:
-            # If slycot is not available, use signal.lti (SISO only)
-            if (sys.inputs != 1 or sys.outputs != 1):
-                raise TypeError("No support for MIMO without slycot")
+                for i in range(sys.outputs):
+                    for j in range(sys.inputs):
+                        num[i][j] = list(tfout[6][i, j, :])
+                        # Each transfer function matrix row
+                        # has a common denominator.
+                        den[i][j] = list(tfout[5][i, :])
 
-            lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
-            num = squeeze(lti_sys.num)
-            den = squeeze(lti_sys.den)
-            # print(num)
-            # print(den)
+            except ImportError:
+                # If slycot is not available, use signal.lti (SISO only)
+                if (sys.inputs != 1 or sys.outputs != 1):
+                    raise TypeError("No support for MIMO without slycot")
+
+                # Do the conversion using sp.signal.ss2tf
+                # Note that this returns a 2D array for the numerator
+                num, den = sp.signal.ss2tf(sys.A, sys.B, sys.C, sys.D)
+                num = squeeze(num) # Convert to 1D array
+                den = squeeze(den) # Probably not needed
 
         return TransferFunction(num, den, sys.dt)
 
-    elif isinstance(sys, (int, float, complex)):
+    elif isinstance(sys, (int, float, complex, np.number)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:
@@ -1323,23 +1324,24 @@ def _cleanPart(data):
     Return a valid, cleaned up numerator or denominator 
     for the TransferFunction class.
     
-    Parameters:
+    Parameters
+    ----------
     data: numerator or denominator of a transfer function.
     
-    Returns:
-    data: correctly formatted transfer function part.
-    ;
+    Returns
+    -------
+    data: list of lists of ndarrays, with int converted to float
     '''
-    valid_types = (int, int8, int16, int32, int64,
-                   float, float16, float32, float64, float128)
+    valid_types = (int, float, complex, np.number)
     valid_collection = (list, tuple, ndarray)
 
     if (isinstance(data, valid_types) or
         (isinstance(data, ndarray) and data.ndim == 0)):
-        return [[array([data], dtype=float)]]
+        # Data is a scalar (including 0d ndarray)
+        data = [[array([data])]]
     elif (isinstance(data, valid_collection) and
             all([isinstance(d, valid_types) for d in data])):
-        return [[array(data, dtype=float)]]
+        data = [[array(data)]]
     elif (isinstance(data, (list, tuple)) and
           isinstance(data[0], (list, tuple)) and
               (isinstance(data[0][0], valid_collection) and 
@@ -1348,11 +1350,20 @@ def _cleanPart(data):
         for j in range(len(data)):
             data[j] = list(data[j])
             for k in range(len(data[j])):
-                data[j][k] = array(data[j][k], dtype=float)
-        return data
+                data[j][k] = array(data[j][k])
     else:
         # If the user passed in anything else, then it's unclear what
         # the meaning is.
         raise TypeError("The numerator and denominator inputs must be \
 scalars or vectors (for\nSISO), or lists of lists of vectors (for SISO or \
 MIMO).")
+
+    # Check for coefficients that are ints and convert to floats
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            for k in range(len(data[i][j])):
+                if (isinstance(data[i][j][k], (int, np.int))):
+                    data[i][j][k] = float(data[i][j][k])
+                
+    return data
+    
