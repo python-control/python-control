@@ -54,6 +54,7 @@ $Id$
 """
 
 import scipy as sp
+import numpy as np
 from . import xferfcn as tf
 from . import statesp as ss
 from . import frdata as frd
@@ -221,18 +222,18 @@ def feedback(sys1, sys2=1, sign=-1):
     """
 
     # Check for correct input types.
-    if not isinstance(sys1, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace, frd.FRD)):
+    if not isinstance(sys1, (int, float, complex, np.number,
+                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
         raise TypeError("sys1 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
-    if not isinstance(sys2, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace, frd.FRD)):
+    if not isinstance(sys2, (int, float, complex, np.number,
+                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
         raise TypeError("sys2 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.
-    if isinstance(sys1, (int, float, complex)):
+    if isinstance(sys1, (int, float, complex, np.number)):
         if isinstance(sys2, tf.TransferFunction):
             sys1 = tf._convertToTransferFunction(sys1)
         elif isinstance(sys2, ss.StateSpace):
