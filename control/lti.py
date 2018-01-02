@@ -86,8 +86,13 @@ class LTI:
 
     def damp(self):
         poles = self.pole()
-        wn = absolute(poles)
-        Z = -real(poles)/wn
+
+        if isdtime(self, strict=True):
+            splane_poles = np.log(poles)/self.dt
+        else:
+            splane_poles = poles
+        wn = absolute(splane_poles)
+        Z = -real(splane_poles)/wn
         return wn, Z, poles
 
     def dcgain(self):
@@ -279,6 +284,20 @@ def damp(sys, doprint=True):
         Damping values
     poles: array
         Pole locations
+
+
+    Algorithm
+    --------
+        If the system is continuous,
+           wn = abs(poles)
+           Z  = -real(poles)/poles.
+
+        If the system is discrete, the discrete poles are mapped to their
+        equivalent location in the s-plane via
+           s = log10(poles)/dt
+        and
+          wn = abs(s)
+          Z = -real(s)/wn.
 
     See Also
     --------
