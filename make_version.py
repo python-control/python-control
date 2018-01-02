@@ -1,3 +1,24 @@
+# make_version.py - generate version information
+#
+# Author: Clancy Rowley
+# Date: 2 Apr 2015
+# Modified: Richard M. Murray, 28 Dec 2017
+#
+# This script is used to create the version information for the python-
+# control package.  The version information is now generated directly from
+# tags in the git repository.  Now, *before* running setup.py, one runs
+#
+#   python make_version.py
+#
+# and this generates a file with the version information.  This is copied
+# from binstar (https://github.com/Binstar/binstar) and seems to work well.
+#
+# The original version of this script also created version information for
+# conda, but this stopped working when conda v3 was released.  Instead, we
+# now use jinja templates in conda-recipe to create the conda information.
+# The current version information is used in setup.py, control/__init__.py,
+# and doc/conf.py (for sphinx).
+
 from subprocess import check_output
 import os
 
@@ -32,20 +53,6 @@ def main():
         else:
             fd.write('__version__ = "%s.post%s"\n' % (version, build))
         fd.write('__commit__ = "%s"\n' % (commit))
-
-    # Write files for conda version number
-    SRC_DIR = os.environ.get('SRC_DIR', '.')
-    conda_version_path = os.path.join(SRC_DIR, '__conda_version__.txt')
-    print("Writing %s" % conda_version_path)
-    with open(conda_version_path, 'w') as conda_version:
-        conda_version.write(version)
-
-    conda_buildnum_path = os.path.join(SRC_DIR, '__conda_buildnum__.txt')
-    print("Writing %s" % conda_buildnum_path)
-
-    with open(conda_buildnum_path, 'w') as conda_buildnum:
-        conda_buildnum.write(build)
-
 
 if __name__ == '__main__':
     main()

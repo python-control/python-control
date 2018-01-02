@@ -9,13 +9,31 @@ cache:
     - $HOME/.local
 
 python:
-  - "2.7"
-  - "3.3"
-  - "3.4"
+  - "3.6"
   - "3.5"
+  - "2.7"
+
+# Test against multiple version of SciPy, with and without slycot
+#
+# Because there were significant changes in SciPy between v0 and v1, we 
+# test against both of these using the Travis CI environment capability
+#
+# We also want to test with and without slycot
+env:
+  - SCIPY=scipy SLYCOT=slycot		# default, with slycot
+  - SCIPY=scipy SLYCOT=			# default, w/out slycot
+  - SCIPY="scipy==0.19.1" SLYCOT=	# legacy support, w/out slycot
 
 # install required system libraries
 before_install:
+  # Install gfortran for testing slycot; use apt-get instead of conda in
+  # order to include the proper CXXABI dependency (updated in GCC 4.9)
+  # Also need to include liblapack here, to make sure paths are right
+  - if [[ "$SLYCOT" != "" ]]; then
+      sudo apt-get update -qq;
+      sudo apt-get install gfortran liblapack-dev;
+    fi
+  # Install display manager to allow testing of plotting functions
   - export DISPLAY=:99.0
   - sh -e /etc/init.d/xvfb start
   # use miniconda to install numpy/scipy, to avoid lengthy build from source
@@ -29,27 +47,30 @@ before_install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  # conda-build must be installed in the conda root environment
-  - conda install conda-build
   - conda config --add channels python-control
   - conda info -a
   - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage
   - source activate test-environment
-  # coveralls not in conda repos
+  # Make sure to look in the right place for python libraries (for slycot)
+  - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
+  # coveralls not in conda repos => install via pip instead
   - pip install coveralls
 
 # Install packages
 install:
-  - conda build --python "$TRAVIS_PYTHON_VERSION" conda-recipe
-  - conda install control --use-local
+  # Install packages needed by python-control
+  - conda install $SCIPY matplotlib
+  # Build slycot from source
+  # For python 3, need to provide pointer to python library
+  #! git clone https://github.com/repagh/Slycot.git slycot;
+  - if [[ "$SLYCOT" != "" ]]; then
+      git clone https://github.com/python-control/Slycot.git slycot;
+      cd slycot; python setup.py install; cd ..;
+    fi
 
 # command to run tests
 script:
-  # Before installing Slycot
-  - python setup.py test
-
-  # Now, get and use Slycot
-  - conda install slycot
+  - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
 
 after_success:
