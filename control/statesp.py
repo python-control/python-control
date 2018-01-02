@@ -378,23 +378,100 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                               self.B) + self.D
         return array(resp)
 
+
     # Method for generating the frequency response of the system
-    def freqresp(self, omega):
-        """Evaluate the system's transfer func. at a list of ang. frequencies.
+    def freqresp(self, omega_s):
+        """Evaluate the system's transfer func. at a list of freqs, omega.
 
         mag, phase, omega = self.freqresp(omega)
 
-        reports the value of the magnitude, phase, and angular frequency of the
-        system's transfer function matrix evaluated at s = i * omega, where
-        omega is a list of angular frequencies, and is a sorted version of the
-        input omega.
+        Reports the frequency response of the system,
+
+             G(j*omega) = mag*exp(j*phase)
+
+        for continuous time. For discrete time systems, the response is
+        evaluated around the unit circle such that
+
+             G(exp(j*omega*dt)) = mag*exp(j*phase).
+
+        Inputs:
+        ------
+           omega_s: A list of frequencies in radians/sec at which the system
+                    should be evaluated. The list can be either a python list
+                    or a numpy array and will be sorted before evaluation.
+
+        Returns:
+        -------
+           mag: The magnitude (absolute value, not dB or log10) of the system
+                frequency response.
+
+           phase: The wrapped phase in radians of the system frequency
+                  response.
+
+           omega_s: The list of sorted frequencies at which the response
+                    was evaluated.
 
         """
-        # when evaluating at many frequencies, much faster to convert to
-        # transfer function first and then evaluate, than to solve an
-        # n-dimensional linear system at each frequency
-        tf = _convertToTransferFunction(self)
-        return tf.freqresp(omega)
+
+        # In case omega is passed in as a list, rather than a proper array.
+        omega_s = np.asarray(omega_s)
+
+        numFreqs = len(omega_s)
+        Gfrf = np.empty((self.outputs, self.inputs, numFreqs),
+                        dtype=np.complex128)
+
+        # Sort frequency and calculate complex frequencies on either imaginary
+        # axis (continuous time) or unit circle (discrete time).
+        omega_s.sort()
+        if isdtime(self, strict=True):
+            dt = timebase(self)
+            cmplx_freqs = exp(1.j * omega_s * dt)
+            if ((omega_s * dt).any() > pi):
+                warn_message = ("evalfr: frequency evaluation"
+                                " above Nyquist frequency")
+                warnings.warn(warn_message)
+        else:
+            cmplx_freqs = omega_s * 1.j
+
+        # Do the frequency response evaluation. Use TB05AD from Slycot
+        # if it's available, otherwise use the built-in horners function.
+        try:
+            from slycot import tb05ad
+
+            n = np.shape(self.A)[0]
+            m = self.inputs
+            p = self.outputs
+            # The first call both evalates C(sI-A)^-1 B and also returns
+            # hessenberg transformed matrices at, bt, ct.
+            result = tb05ad(n, m, p, cmplx_freqs[0], self.A,
+                            self.B, self.C, job='NG')
+            # When job='NG', result = (at, bt, ct, g_i, hinvb, info)
+            at = result[0]
+            bt = result[1]
+            ct = result[2]
+
+            # TB05AD freqency evaluation does not include direct feedthrough.
+            Gfrf[:, :, 0] = result[3] + self.D
+
+            # Now, iterate through the remaining frequencies using the
+            # transformed state matrices, at, bt, ct.
+
+            # Start at the second frequency, already have the first.
+            for kk, cmplx_freqs_kk in enumerate(cmplx_freqs[1:numFreqs]):
+                result = tb05ad(n, m, p, cmplx_freqs_kk, at,
+                                bt, ct, job='NH')
+                # When job='NH', result = (g_i, hinvb, info)
+
+                # kk+1 because enumerate starts at kk = 0.
+                # but zero-th spot is already filled.
+                Gfrf[:, :, kk+1] = result[0] + self.D
+
+        except ImportError:  # Slycot unavailable. Fall back to horner.
+            for kk, cmplx_freqs_kk in enumerate(cmplx_freqs):
+                Gfrf[:, :, kk] = self.horner(cmplx_freqs_kk)
+
+        #      mag           phase           omega_s
+        return np.abs(Gfrf), np.angle(Gfrf), omega_s
 
     # Compute poles and zeros
     def pole(self):
