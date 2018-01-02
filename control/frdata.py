@@ -58,7 +58,9 @@ from .lti import LTI
 __all__ = ['FRD', 'frd']
 
 class FRD(LTI):
-    """A class for models defined by Frequency Response Data (FRD)
+    """FRD(d, w)
+
+    A class for models defined by frequency response data (FRD)
 
     The FRD class is used to represent systems in frequency response data form.
 
@@ -81,7 +83,9 @@ class FRD(LTI):
     epsw = 1e-8
 
     def __init__(self, *args, **kwargs):
-        """Construct an FRD object
+        """FRD(d, w)
+
+        Construct an FRD object
 
         The default constructor is FRD(d, w), where w is an iterable of
         frequency points, and d is the matching frequency data.
@@ -470,8 +474,9 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
                     sys.__class__)
 
 def frd(*args):
-    """
-    Construct a Frequency Response Data model, or convert a system
+    """frd(d, w)
+
+    Construct a frequency response data model
 
     frd models store the (measured) frequency response of a system.
 
@@ -501,6 +506,6 @@ def frd(*args):
 
     See Also
     --------
-    ss, tf
+    FRD, ss, tf
     """
     return FRD(*args)

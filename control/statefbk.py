@@ -144,7 +144,9 @@ def acker(A, B, poles):
     return K
 
 def lqr(*args, **keywords):
-    """Linear quadratic regulator design
+    """lqr(A, B, Q, R[, N])
+
+    Linear quadratic regulator design
 
     The lqr() function computes the optimal state feedback controller
     that minimizes the quadratic cost

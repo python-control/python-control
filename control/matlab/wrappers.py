@@ -10,7 +10,9 @@ from scipy.signal import zpk2tf
 __all__ = ['bode', 'ngrid', 'dcgain']
 
 def bode(*args, **keywords):
-    """Bode plot of the frequency response
+    """bode(syslist[, omega, dB, Hz, deg, ...])
+
+    Bode plot of the frequency response
 
     Plots a bode gain and phase diagram
 

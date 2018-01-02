@@ -44,6 +44,7 @@
 import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
+import math
 from .ctrlutil import unwrap
 from .bdalg import feedback
 
@@ -128,7 +129,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         else:
             omega_limits = np.array(omega_limits)
             if Hz:
-                omega_limits *= 2.*np.pi
+                omega_limits *= 2.*math.pi
             if omega_num:
                 omega = sp.logspace(np.log10(omega_limits[0]), np.log10(omega_limits[1]), num=omega_num, endpoint=True)
             else:
@@ -142,7 +143,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         else:
             omega_sys = np.array(omega)
             if sys.isdtime(True):
-                nyquistfrq = 2. * np.pi * 1. / sys.dt / 2.
+                nyquistfrq = 2. * math.pi * 1. / sys.dt / 2.
                 omega_sys = omega_sys[omega_sys < nyquistfrq]
                 # TODO: What distance to the Nyquist frequency is appropriate?
             else:
@@ -154,9 +155,9 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             phase = unwrap(phase)
             nyquistfrq_plot = None
             if Hz:
-                omega_plot = omega_sys / (2. * np.pi)
+                omega_plot = omega_sys / (2. * math.pi)
                 if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq / (2. * np.pi)
+                    nyquistfrq_plot = nyquistfrq / (2. * math.pi)
             else:
                 omega_plot = omega_sys
                 if nyquistfrq:
@@ -187,7 +188,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # Phase plot
                 ax_phase = plt.subplot(212, sharex=ax_mag);
                 if deg:
-                    phase_plot = phase * 180. / np.pi
+                    phase_plot = phase * 180. / math.pi
                 else:
                     phase_plot = phase
                 ax_phase.semilogx(omega_plot, phase_plot, *args, **kwargs)
@@ -208,8 +209,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], 15.), minor=True)
                 else:
                     ylim = ax_phase.get_ylim()
-                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], np.pi / 4.))
-                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], np.pi / 12.), minor=True)
+                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], math.pi / 4.))
+                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], math.pi / 12.), minor=True)
                 ax_phase.grid(True, which='both')
                 # ax_mag.grid(which='minor', alpha=0.3)
                 # ax_mag.grid(which='major', alpha=0.9)
@@ -449,7 +450,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
                 features_ = features_[features_ != 0.0];
                 features = np.concatenate((features, features_))
             elif sys.isdtime(strict=True):
-                fn = np.pi * 1. / sys.dt
+                fn = math.pi * 1. / sys.dt
                 # TODO: What distance to the Nyquist frequency is appropriate?
                 freq_interesting.append(fn * 0.9)
 
@@ -475,12 +476,12 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
         features = np.array([1.]);
 
     if Hz:
-        features /= 2.*np.pi
+        features /= 2.*math.pi
         features = np.log10(features)
         lsp_min = np.floor(np.min(features) - feature_periphery_decade)
         lsp_max = np.ceil(np.max(features) + feature_periphery_decade)
-        lsp_min += np.log10(2.*np.pi)
-        lsp_max += np.log10(2.*np.pi)
+        lsp_min += np.log10(2.*math.pi)
+        lsp_max += np.log10(2.*math.pi)
     else:
         features = np.log10(features)
         lsp_min = np.floor(np.min(features) - feature_periphery_decade)

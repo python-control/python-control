@@ -72,7 +72,6 @@ def h2syn(P,nmeas,ncon):
     >>> K = h2syn(P,nmeas,ncon)
 
     """
-
     #Check for ss system object, need a utility for this?
 
     #TODO: Check for continous or discrete, only continuous supported right now
@@ -116,11 +115,11 @@ def hinfsyn(P,nmeas,ncon):
     CL: closed loop system (State-space sys)
     gam: infinity norm of closed loop system
     rcond: 4-vector, reciprocal condition estimates of:
-           1: control transformation matrix
-           2: measurement transformation matrix
-           3: X-Ricatti equation
-           4: Y-Ricatti equation
-      TODO: document significance of rcond
+        1: control transformation matrix
+        2: measurement transformation matrix
+        3: X-Ricatti equation
+        4: Y-Ricatti equation
+    TODO: document significance of rcond
 
     Raises
     ------

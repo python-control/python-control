@@ -66,7 +66,9 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
 class TransferFunction(LTI):
 
-    """A class for representing transfer functions
+    """TransferFunction(num, den[, dt])
+    
+    A class for representing transfer functions
 
     The TransferFunction class is used to represent systems in transfer function
     form.
@@ -84,17 +86,20 @@ class TransferFunction(LTI):
     non-zero value, then it must match whenever two transfer functions are
     combined.  If 'dt' is set to True, the system will be treated as a
     discrete time system with unspecified sampling time.
-
     """
 
     def __init__(self, *args):
-        """Construct a transfer function.
+        """TransferFunction(num, den[, dt])
+
+        Construct a transfer function.
 
         The default constructor is TransferFunction(num, den), where num and
         den are lists of lists of arrays containing polynomial coefficients.
         To create a discrete time transfer funtion, use TransferFunction(num,
-        den, dt).  To call the copy constructor, call TransferFunction(sys),
-        where sys is a TransferFunction object (continuous or discrete).
+        den, dt) where 'dt' is the sampling time (or True for unspecified
+        sampling time).  To call the copy constructor, call
+        TransferFunction(sys), where sys is a TransferFunction object
+        (continuous or discrete).
 
         """
         args = deepcopy(args)
@@ -1134,10 +1139,11 @@ def _convertToTransferFunction(sys, **kw):
 
 
 def tf(*args):
-    """
+    """tf(num, den[, dt])
+
     Create a transfer function system. Can create MIMO systems.
 
-    The function accepts either 1 or 2 parameters:
+    The function accepts either 1, 2, or 3 parameters:
 
     ``tf(sys)``
         Convert a linear system into transfer function form. Always creates
@@ -1182,6 +1188,7 @@ def tf(*args):
 
     See Also
     --------
+    TransferFunction
     ss
     ss2tf
     tf2ss
@@ -1226,7 +1233,8 @@ TransferFunction object.  It is %s." % type(sys))
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 def ss2tf(*args):
-    """
+    """ss2tf(sys)
+
     Transform a state space system to a transfer function.
 
     The function accepts either 1 or 4 parameters:
