@@ -652,7 +652,7 @@ only implemented for SISO functions.")
                 den[i][j] = np.atleast_1d(real(poly(poles)))
 
         # end result
-        return TransferFunction(num, den)
+        return TransferFunction(num, den, self.dt)
 
     def returnScipySignalLTI(self):
         """Return a list of a list of scipy.signal.lti objects.
