@@ -48,21 +48,21 @@ Author: Richard M. Murray
 Date: 14 July 2011
 
 $Id$
-
 """
 
+import math
 import numpy as np
+import scipy as sp
 from . import xferfcn
 from .lti import issiso
 from . import frdata
-import scipy as sp
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
 
 # helper functions for stability_margins
 def _polyimsplit(pol):
     """split a polynomial with (iw) applied into a real and an
-       imaginary part with w applied"""
+    imaginary part with w applied"""
     rpencil = np.zeros_like(pol)
     ipencil = np.zeros_like(pol)
     rpencil[-1::-4] = 1.
@@ -141,7 +141,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
             mag, phase, omega = sysdata
-            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180),
+            sys = frdata.FRD(mag * np.exp(1j * phase * math.pi/180),
                              omega, smooth=True)
         else:
             sys = xferfcn._convertToTransferFunction(sysdata)
@@ -294,8 +294,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
 #! TODO - need to add test functions
 def phase_crossover_frequencies(sys):
-    """
-    Compute frequencies and gains at intersections with real axis
+    """Compute frequencies and gains at intersections with real axis
     in Nyquist plot.
 
     Call as:
@@ -338,11 +337,13 @@ def phase_crossover_frequencies(sys):
 
 
 def margin(*args):
-    """Calculate gain and phase margins and associated crossover frequencies
+    """margin(sysdata)
+
+    Calculate gain and phase margins and associated crossover frequencies
 
     Parameters
     ----------
-    sysdata: LTI system or (mag, phase, omega) sequence
+    sysdata : LTI system or (mag, phase, omega) sequence
         sys : StateSpace or TransferFunction
             Linear SISO system
         mag, phase, omega : sequence of array_like
@@ -360,8 +361,8 @@ def margin(*args):
     Wcp : float
         Phase crossover frequency (corresponding to gain margin) (in rad/sec)
 
-   Margins are of SISO open-loop. If more than one crossover frequency is
-   detected, returns the lowest corresponding margin.
+    Margins are of SISO open-loop. If more than one crossover frequency is
+    detected, returns the lowest corresponding margin.
 
     Examples
     --------

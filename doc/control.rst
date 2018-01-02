@@ -24,14 +24,14 @@ System creation
 System interconnections
 =======================
 .. autosummary::
-   :toctree: generated/
+    :toctree: generated/
 
-   append
-   connect
-   feedback
-   negate
-   parallel
-   series
+    append
+    connect
+    feedback
+    negate
+    parallel
+    series
 
 Frequency domain plotting
 =========================
@@ -117,6 +117,8 @@ Model simplification tools
     modred
     era
     markov
+
+.. _utility-and-conversions:
 
 Utility functions and conversions
 =================================

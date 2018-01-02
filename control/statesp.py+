@@ -51,15 +51,13 @@ Revised: Kevin K. Chen, Dec 10
 $Id$
 """
 
-import math
 import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, matrix, ones, poly, poly1d, roots, shape, sin, \
+    dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
-import scipy as sp
 from scipy.signal import lti, cont2discrete
 # from exceptions import Exception
 import warnings
@@ -118,7 +116,7 @@ class StateSpace(LTI):
         elif len(args) == 1:
             # Use the copy constructor.
             if not isinstance(args[0], StateSpace):
-               raise TypeError("The one-argument constructor can only take in a StateSpace object.  Received %s." % type(args[0]))
+                raise TypeError("The one-argument constructor can only take in a StateSpace object.  Received %s." % type(args[0]))
             A = args[0].A
             B = args[0].B
             C = args[0].C
@@ -225,7 +223,7 @@ class StateSpace(LTI):
         """Add two LTI systems (parallel connection)."""
 
         # Check for a couple of special cases
-        if (isinstance(other, (int, float, complex, np.number))):
+        if (isinstance(other, (int, float, complex))):
             # Just adding a scalar; put it in the D matrix
             A, B, C = self.A, self.B, self.C;
             D = self.D + other;
@@ -282,7 +280,7 @@ class StateSpace(LTI):
         """Multiply two LTI objects (serial connection)."""
 
         # Check for a couple of special cases
-        if isinstance(other, (int, float, complex, np.number)):
+        if isinstance(other, (int, float, complex)):
             # Just multiplying by a scalar; change the output
             A, B = self.A, self.B
             C = self.C * other
@@ -323,7 +321,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Right multiply two LTI objects (serial connection)."""
 
         # Check for a couple of special cases
-        if isinstance(other, (int, float, complex, np.number)):
+        if isinstance(other, (int, float, complex)):
             # Just multiplying by a scalar; change the input
             A, C = self.A, self.C;
             B = self.B * other;
@@ -369,7 +367,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if isdtime(self, strict=True):
             dt = timebase(self)
             s = exp(1.j * omega * dt)
-            if (omega * dt > math.pi):
+            if (omega * dt > pi):
                 warnings.warn("evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = omega * 1.j
@@ -706,10 +704,11 @@ cannot take keywords.")
                 # TODO: do we want to squeeze first and check dimenations?
                 # I think this will fail if num and den aren't 1-D after
                 # the squeeze
-                A, B, C, D = sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
-                return StateSpace(A, B, C, D, sys.dt)
+                lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
+                return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D,
+                                  sys.dt)
 
-    elif isinstance(sys, (int, float, complex, np.number)):
+    elif isinstance(sys, (int, float, complex)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:
@@ -799,7 +798,7 @@ def _rss_generate(states, inputs, outputs, type):
                 poles[i] = complex(-exp(randn()), 3. * exp(randn()))
             elif type == 'd':
                 mag = rand()
-                phase = 2. * math.pi * rand()
+                phase = 2. * pi * rand()
                 poles[i] = complex(mag * cos(phase),
                     mag * sin(phase))
             poles[i+1] = complex(poles[i].real, -poles[i].imag)
@@ -962,8 +961,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
     return sys
 
 def ss(*args):
-    """ss(A, B, C, D[, dt])
-
+    """
     Create a state space system.
 
     The function accepts either 1, 4 or 5 parameters:
@@ -1021,7 +1019,6 @@ def ss(*args):
 
     See Also
     --------
-    StateSpace
     tf
     ss2tf
     tf2ss
@@ -1053,8 +1050,7 @@ TransferFunction object.  It is %s." % type(sys))
         raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
 def tf2ss(*args):
-    """tf2ss(sys)
-
+    """
     Transform a transfer function to a state space system.
 
     The function accepts either 1 or 2 parameters:

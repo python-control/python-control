@@ -52,10 +52,11 @@ $Id$
 """
 
 # External function declarations
+import numpy as np
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
     where, delete, real, poly, poly1d
-import numpy as np
+import scipy as sp
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
@@ -65,7 +66,9 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
 class TransferFunction(LTI):
 
-    """A class for representing transfer functions
+    """TransferFunction(num, den[, dt])
+    
+    A class for representing transfer functions
 
     The TransferFunction class is used to represent systems in transfer function
     form.
@@ -83,20 +86,23 @@ class TransferFunction(LTI):
     non-zero value, then it must match whenever two transfer functions are
     combined.  If 'dt' is set to True, the system will be treated as a
     discrete time system with unspecified sampling time.
-
     """
 
     def __init__(self, *args):
-        """Construct a transfer function.
+        """TransferFunction(num, den[, dt])
+
+        Construct a transfer function.
 
         The default constructor is TransferFunction(num, den), where num and
         den are lists of lists of arrays containing polynomial coefficients.
-        To crete a discrete time transfer funtion, use TransferFunction(num,
-        den, dt).  To call the copy constructor, call TransferFunction(sys),
-        where sys is a TransferFunction object (continuous or discrete).
+        To create a discrete time transfer funtion, use TransferFunction(num,
+        den, dt) where 'dt' is the sampling time (or True for unspecified
+        sampling time).  To call the copy constructor, call
+        TransferFunction(sys), where sys is a TransferFunction object
+        (continuous or discrete).
 
         """
-
+        args = deepcopy(args)
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             (num, den) = args
@@ -120,54 +126,13 @@ class TransferFunction(LTI):
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))
 
-        # Make num and den into lists of lists of arrays, if necessary.
-        # Beware: this is a shallow copy! This should be okay,
-        # but be careful.
-        data = [num, den]
-        for i in range(len(data)):
-            # Check for a scalar (including 0d ndarray)
-            if (isinstance(data[i], (int, float, complex)) or
-                (isinstance(data[i], ndarray) and data[i].ndim == 0)):
-                # Convert scalar to list of list of array.
-                if (isinstance(data[i], int)):
-                    # Convert integers to floats at this point
-                    data[i] = [[array([data[i]], dtype=float)]]
-                else:
-                    data[i] = [[array([data[i]])]]
-            elif (isinstance(data[i], (list, tuple, ndarray)) and
-                    isinstance(data[i][0], (int, float, complex))):
-                # Convert array to list of list of array.
-                if (isinstance(data[i][0], int)):
-                    # Convert integers to floats at this point
-                    #! Not sure this covers all cases correctly
-                    data[i] = [[array(data[i], dtype=float)]]
-                else:
-                    data[i] = [[array(data[i])]]
-            elif (isinstance(data[i], list) and
-                    isinstance(data[i][0], list) and
-                    isinstance(data[i][0][0], (list, tuple, ndarray)) and
-                    isinstance(data[i][0][0][0], (int, float, complex))):
-                # We might already have the right format.  Convert the
-                # coefficient vectors to arrays, if necessary.
-                for j in range(len(data[i])):
-                    for k in range(len(data[i][j])):
-                        if (isinstance(data[i][j][k], int)):
-                            data[i][j][k] = array(data[i][j][k], dtype=float)
-                        else:
-                            data[i][j][k] = array(data[i][j][k])
-            else:
-                # If the user passed in anything else, then it's unclear what
-                # the meaning is.
-                raise TypeError("The numerator and denominator inputs must be \
-scalars or vectors (for\nSISO), or lists of lists of vectors (for SISO or \
-MIMO).")
-        [num, den] = data
+        num = _cleanPart(num)
+        den = _cleanPart(den)
 
         inputs = len(num[0])
         outputs = len(num)
 
-        # Make sure the numerator and denominator matrices have consistent
-        # sizes.
+        # Make sure numerator and denominator matrices have consistent sizes
         if inputs != len(den[0]):
             raise ValueError("The numerator has %i input(s), but the \
 denominator has %i\ninput(s)." % (inputs, len(den[0])))
@@ -175,8 +140,9 @@ denominator has %i\ninput(s)." % (inputs, len(den[0])))
             raise ValueError("The numerator has %i output(s), but the \
 denominator has %i\noutput(s)." % (outputs, len(den)))
 
+        # Additional checks/updates on structure of the transfer function 
         for i in range(outputs):
-            # Make sure that each row has the same number of columns.
+            # Make sure that each row has the same number of columns
             if len(num[i]) != inputs:
                 raise ValueError("Row 0 of the numerator matrix has %i \
 elements, but row %i\nhas %i." % (inputs, i, len(num[i])))
@@ -184,6 +150,7 @@ elements, but row %i\nhas %i." % (inputs, i, len(num[i])))
                 raise ValueError("Row 0 of the denominator matrix has %i \
 elements, but row %i\nhas %i." % (inputs, i, len(den[i])))
 
+            # Check for zeros in numerator or denominator
             # TODO: Right now these checks are only done during construction.
             # It might be worthwhile to think of a way to perform checks if the
             # user modifies the transfer function after construction.
@@ -363,7 +330,7 @@ second has %i." % (self.outputs, other.outputs))
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(other, inputs=self.inputs,
                                                outputs=self.inputs)
         else:
@@ -410,7 +377,7 @@ has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Right multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(other, inputs=self.inputs,
                                                outputs=self.inputs)
         else:
@@ -458,7 +425,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
     def __truediv__(self, other):
         """Divide two LTI objects."""
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(
                 other, inputs=self.inputs,
                 outputs=self.inputs)
@@ -492,7 +459,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             other = _convertToTransferFunction(
                 other, inputs=self.inputs,
                 outputs=self.inputs)
@@ -685,7 +652,7 @@ only implemented for SISO functions.")
                 den[i][j] = np.atleast_1d(real(poly(poles)))
 
         # end result
-        return TransferFunction(num, den)
+        return TransferFunction(num, den, self.dt)
 
     def returnScipySignalLTI(self):
         """Return a list of a list of scipy.signal.lti objects.
@@ -1128,22 +1095,21 @@ def _convertToTransferFunction(sys, **kw):
                         # Each transfer function matrix row
                         # has a common denominator.
                         den[i][j] = list(tfout[5][i, :])
-                # print(num)
-                # print(den)
+
             except ImportError:
                 # If slycot is not available, use signal.lti (SISO only)
                 if (sys.inputs != 1 or sys.outputs != 1):
                     raise TypeError("No support for MIMO without slycot")
 
-                lti_sys = lti(sys.A, sys.B, sys.C, sys.D)
-                num = squeeze(lti_sys.num)
-                den = squeeze(lti_sys.den)
-                # print(num)
-                # print(den)
+                # Do the conversion using sp.signal.ss2tf
+                # Note that this returns a 2D array for the numerator
+                num, den = sp.signal.ss2tf(sys.A, sys.B, sys.C, sys.D)
+                num = squeeze(num) # Convert to 1D array
+                den = squeeze(den) # Probably not needed
 
         return TransferFunction(num, den, sys.dt)
 
-    elif isinstance(sys, (int, float, complex)):
+    elif isinstance(sys, (int, float, complex, np.number)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:
@@ -1173,10 +1139,11 @@ def _convertToTransferFunction(sys, **kw):
 
 
 def tf(*args):
-    """
+    """tf(num, den[, dt])
+
     Create a transfer function system. Can create MIMO systems.
 
-    The function accepts either 1 or 2 parameters:
+    The function accepts either 1, 2, or 3 parameters:
 
     ``tf(sys)``
         Convert a linear system into transfer function form. Always creates
@@ -1221,6 +1188,7 @@ def tf(*args):
 
     See Also
     --------
+    TransferFunction
     ss
     ss2tf
     tf2ss
@@ -1265,7 +1233,8 @@ TransferFunction object.  It is %s." % type(sys))
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 def ss2tf(*args):
-    """
+    """ss2tf(sys)
+
     Transform a state space system to a transfer function.
 
     The function accepts either 1 or 4 parameters:
@@ -1357,3 +1326,52 @@ def tfdata(sys):
     tf = _convertToTransferFunction(sys)
 
     return (tf.num, tf.den)
+
+def _cleanPart(data):
+    '''
+    Return a valid, cleaned up numerator or denominator 
+    for the TransferFunction class.
+    
+    Parameters
+    ----------
+    data: numerator or denominator of a transfer function.
+    
+    Returns
+    -------
+    data: list of lists of ndarrays, with int converted to float
+    '''
+    valid_types = (int, float, complex, np.number)
+    valid_collection = (list, tuple, ndarray)
+
+    if (isinstance(data, valid_types) or
+        (isinstance(data, ndarray) and data.ndim == 0)):
+        # Data is a scalar (including 0d ndarray)
+        data = [[array([data])]]
+    elif (isinstance(data, valid_collection) and
+            all([isinstance(d, valid_types) for d in data])):
+        data = [[array(data)]]
+    elif (isinstance(data, (list, tuple)) and
+          isinstance(data[0], (list, tuple)) and
+              (isinstance(data[0][0], valid_collection) and 
+               all([isinstance(d, valid_types) for d in data[0][0]]))):
+        data = list(data)
+        for j in range(len(data)):
+            data[j] = list(data[j])
+            for k in range(len(data[j])):
+                data[j][k] = array(data[j][k])
+    else:
+        # If the user passed in anything else, then it's unclear what
+        # the meaning is.
+        raise TypeError("The numerator and denominator inputs must be \
+scalars or vectors (for\nSISO), or lists of lists of vectors (for SISO or \
+MIMO).")
+
+    # Check for coefficients that are ints and convert to floats
+    for i in range(len(data)):
+        for j in range(len(data[i])):
+            for k in range(len(data[i][j])):
+                if (isinstance(data[i][j][k], (int, np.int))):
+                    data[i][j][k] = float(data[i][j][k])
+                
+    return data
+    

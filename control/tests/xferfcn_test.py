@@ -461,6 +461,7 @@ class TestXferFcn(unittest.TestCase):
         hr = (s+1)/(s**2+s+1)
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
+        np.testing.assert_equal(hm.dt, hr.dt)
 
     def testMinreal2(self):
         """This one gave a problem, due to poly([]) giving simply 1
@@ -474,12 +475,24 @@ class TestXferFcn(unittest.TestCase):
         hr = 6205/(s**2+8*s+1241)
         np.testing.assert_array_almost_equal(H2b.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(H2b.den[0][0], hr.den[0][0])
+        np.testing.assert_equal(H2b.dt, hr.dt)
 
     def testMinreal3(self):
         """Regression test for minreal of tf([1,1],[1,1])"""
         g = TransferFunction([1,1],[1,1]).minreal()
         np.testing.assert_array_almost_equal(1.0, g.num[0][0])
         np.testing.assert_array_almost_equal(1.0, g.den[0][0])
+        np.testing.assert_equal(None, g.dt)
+
+    def testMinreal4(self):
+        """Check minreal on discrete TFs."""
+        T = 0.01
+        z = TransferFunction([1, 0], [1], T)
+        h = (z-1.00000000001)*(z+1.0000000001)/((z**2-1))
+        hm = h.minreal()
+        hr = TransferFunction([1], [1], T)
+        np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
+        np.testing.assert_equal(hr.dt, hm.dt)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMO(self):
