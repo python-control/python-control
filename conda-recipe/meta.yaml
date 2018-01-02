@@ -1,7 +1,12 @@
 package:
   name: control
+  version: {{ GIT_DESCRIBE_TAG }}
+
+source:
+  git_url: ../
 
 build:
+  number: {{ GIT_DESCRIBE_NUMBER }}
   script:
     - cd $RECIPE_DIR/..
     - $PYTHON make_version.py

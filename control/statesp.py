@@ -59,6 +59,7 @@ from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
+import scipy as sp
 from scipy.signal import lti, cont2discrete
 # from exceptions import Exception
 import warnings
@@ -224,7 +225,7 @@ class StateSpace(LTI):
         """Add two LTI systems (parallel connection)."""
 
         # Check for a couple of special cases
-        if (isinstance(other, (int, float, complex))):
+        if (isinstance(other, (int, float, complex, np.number))):
             # Just adding a scalar; put it in the D matrix
             A, B, C = self.A, self.B, self.C;
             D = self.D + other;
@@ -281,7 +282,7 @@ class StateSpace(LTI):
         """Multiply two LTI objects (serial connection)."""
 
         # Check for a couple of special cases
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             # Just multiplying by a scalar; change the output
             A, B = self.A, self.B
             C = self.C * other
@@ -322,7 +323,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Right multiply two LTI objects (serial connection)."""
 
         # Check for a couple of special cases
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             # Just multiplying by a scalar; change the input
             A, C = self.A, self.C;
             B = self.B * other;
@@ -705,11 +706,10 @@ cannot take keywords.")
                 # TODO: do we want to squeeze first and check dimenations?
                 # I think this will fail if num and den aren't 1-D after
                 # the squeeze
-                lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
-                return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D,
-                                  sys.dt)
+                A, B, C, D = sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
+                return StateSpace(A, B, C, D, sys.dt)
 
-    elif isinstance(sys, (int, float, complex)):
+    elif isinstance(sys, (int, float, complex, np.number)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:
