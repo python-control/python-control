@@ -87,6 +87,10 @@ def place(A, B, p):
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
     >>> K = place(A, B, [-2, -5])
+
+    See Also
+    --------
+    place_varga, acker
     """
     from scipy.signal import place_poles
 
@@ -142,6 +146,10 @@ def place_varga(A, B, p):
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
     >>> K = place(A, B, [-2, -5])
+
+    See Also:
+    --------
+    place, acker
     """
 
     # Make sure that SLICOT is installed
