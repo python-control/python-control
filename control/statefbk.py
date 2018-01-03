@@ -45,13 +45,13 @@ import scipy as sp
 from . import statesp
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr', 'acker']
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'acker']
 
 
 # Pole placement
 def place(A, B, p):
     """Place closed loop eigenvalues
-
+    K = place(A, B, p)
     Parameters
     ----------
     A : 2-d array
@@ -64,7 +64,7 @@ def place(A, B, p):
     Returns
     -------
     K : 2-d array
-        Gains such that A - B K has eigenvalues given in p
+        Gain such that A - B K has eigenvalues given in p
 
     Algorithm
     ---------
@@ -106,6 +106,72 @@ def place(A, B, p):
     result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
     K = result.gain_matrix
     return K
+
+
+def place_varga(A, B, p):
+    """Place closed loop eigenvalues
+    K = place_varga(A, B, p)
+
+    Parameters
+    ----------
+    A : 2-d array
+        Dynamics matrix
+    B : 2-d array
+        Input matrix
+    p : 1-d list
+        Desired eigenvalue locations
+    Returns
+    -------
+    K : 2-d array
+        Gain such that A - B K has eigenvalues given in p.
+
+
+    Algorithm
+    ---------
+        This function is a wrapper for the slycot function sb01bd, which
+        implements the pole placement algorithm of Varga [1]. In contrast to
+        the algorithm used by place(), the Varga algorithm can place
+        multiple poles at the same location. The placement, however, may not
+        be as robust.
+
+        [1] Varga A. "A Schur method for pole assignment."
+            IEEE Trans. Automatic Control, Vol. AC-26, pp. 517-519, 1981.
+
+    Examples
+    --------
+    >>> A = [[-1, -1], [0, 1]]
+    >>> B = [[0], [1]]
+    >>> K = place(A, B, [-2, -5])
+    """
+
+    # Make sure that SLICOT is installed
+    try:
+        from slycot import sb01bd
+    except ImportError:
+        raise ControlSlycot("can't find slycot module 'sb01bd'")
+
+    # Convert the system inputs to NumPy arrays
+    A_mat = np.array(A);
+    B_mat = np.array(B);
+    if (A_mat.shape[0] != A_mat.shape[1] or
+        A_mat.shape[0] != B_mat.shape[0]):
+        raise ControlDimension("matrix dimensions are incorrect")
+
+    # Compute the system eigenvalues and convert poles to numpy array
+    system_eigs = np.linalg.eig(A_mat)[0]
+    placed_eigs = np.array(p);
+
+    # SB01BD sets eigenvalues with real part less than alpha
+    # We want to place all poles of the system => set alpha to minimum
+    alpha = min(system_eigs.real);
+
+    # Call SLICOT routine to place the eigenvalues
+    A_z,w,nfp,nap,nup,F,Z = \
+        sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
+               A_mat, B_mat, placed_eigs, 'C');
+
+    # Return the gain matrix, with MATLAB gain convention
+    return -F
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
