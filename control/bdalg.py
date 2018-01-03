@@ -61,9 +61,8 @@ from . import frdata as frd
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
-def series(sys1, sys2,*sysn):
-    """Return the series connection (... * sys3 *) sys2 * sys1 
-    for (... sys3 -->) sys1 --> sys2 -->.
+def series(sys1, sys2, *sysn):
+    """Return the series connection (... * sys3 *) sys2 * sys1
 
     Parameters
     ----------
@@ -114,7 +113,7 @@ def series(sys1, sys2,*sysn):
 
 def parallel(sys1, sys2, *sysn):
     """
-    Return the parallel connection sys1 + sys2 (+ sys3 +... ).
+    Return the parallel connection sys1 + sys2 (+ sys3 + ...)
 
     Parameters
     ----------
@@ -263,7 +262,7 @@ def feedback(sys1, sys2=1, sign=-1):
     return sys1.feedback(sys2, sign)
 
 def append(*sys):
-    '''append(sys1, sys2, ... sysn)
+    '''append(sys1, sys2, ..., sysn)
 
     Group models by appending their inputs and outputs
 
