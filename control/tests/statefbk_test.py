@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 from control.statefbk import ctrb, obsv, place, lqr, gram, acker
 from control.matlab import *
-from control.exception import slycot_check
+from control.exception import slycot_check, ControlDimension
 
 class TestStatefbk(unittest.TestCase):
     """Test state feedback functions"""
@@ -168,13 +168,17 @@ class TestStatefbk(unittest.TestCase):
                       [1.136,  1.136],
                       [0,      0,],
                       [-3.146,  0]])
-        P = np.array([-0.2, -0.5, -5.0566, -8.6659])
+        P = np.array([-0.5+1j, -0.5-1j, -5.0566, -8.6659])
         K = place(A, B, P)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         # No guarantee of the ordering, so sort them
         P.sort()
         P_placed.sort()
         np.testing.assert_array_almost_equal(P, P_placed)
+
+        # Test that the dimension checks work.
+        np.testing.assert_raises(ControlDimension, place, A[1:, :], B, P)
+        np.testing.assert_raises(ControlDimension, place, A, B[1:, :], P)
 
     def check_LQR(self, K, S, poles, Q, R):
         S_expected = np.array(np.sqrt(Q * R))

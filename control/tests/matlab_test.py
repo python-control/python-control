@@ -400,9 +400,8 @@ class TestMatlab(unittest.TestCase):
         modred(self.siso_ss3, [1], 'matchdc')
         modred(self.siso_ss3, [1], 'truncate')
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace(self):
-        place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2])
+        place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2.5])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testLQR(self):
