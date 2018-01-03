@@ -157,6 +157,25 @@ class TestStatefbk(unittest.TestCase):
                 np.testing.assert_array_almost_equal(np.sort(poles),
                                                      np.sort(placed), decimal=4)
 
+    def testPlace(self):
+        # Matrices shamelessly stolen from scipy example code.
+        A = np.array([[1.380,  -0.2077,  6.715, -5.676],
+                      [-0.5814, -4.290,   0,      0.6750],
+                      [1.067,   4.273,  -6.654,  5.893],
+                      [0.0480,  4.273,   1.343, -2.104]])
+
+        B = np.array([[0,      5.679],
+                      [1.136,  1.136],
+                      [0,      0,],
+                      [-3.146,  0]])
+        P = np.array([-0.2, -0.5, -5.0566, -8.6659])
+        K = place(A, B, P)
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+        # No guarantee of the ordering, so sort them
+        P.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P, P_placed)
+
     def check_LQR(self, K, S, poles, Q, R):
         S_expected = np.array(np.sqrt(Q * R))
         K_expected = S_expected / R

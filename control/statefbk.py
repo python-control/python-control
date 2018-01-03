@@ -47,6 +47,7 @@ from .exception import ControlSlycot, ControlArgument, ControlDimension
 
 __all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr', 'acker']
 
+
 # Pole placement
 def place(A, B, p):
     """Place closed loop eigenvalues
@@ -63,7 +64,23 @@ def place(A, B, p):
     Returns
     -------
     K : 2-d array
-        Gains such that A - B K has given eigenvalues
+        Gains such that A - B K has eigenvalues given in p
+
+    Algorithm
+    ---------
+    This is a wrapper function for scipy.signal.place_poles, which
+    implements the Tits and Yang algorithm [1]. It will handle SISO,
+    MISO, and MIMO systems. If you want more control over the algorithm,
+    use scipy.signal.place_poles directly.
+
+    [1] A.L. Tits and Y. Yang, "Globally convergent algorithms for robust
+    pole assignment by state feedback, IEEE Transactions on Automatic
+    Control, Vol. 41, pp. 1432-1452, 1996.
+
+    Limitations
+    -----------
+    The algorithm will not place poles at the same location more
+    than rank(B) times.
 
     Examples
     --------
@@ -71,35 +88,24 @@ def place(A, B, p):
     >>> B = [[0], [1]]
     >>> K = place(A, B, [-2, -5])
     """
-
-    # Make sure that SLICOT is installed
-    try:
-        from slycot import sb01bd
-    except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb01bd'")
+    from scipy.signal import place_poles
 
     # Convert the system inputs to NumPy arrays
-    A_mat = np.array(A);
-    B_mat = np.array(B);
-    if (A_mat.shape[0] != A_mat.shape[1] or
-        A_mat.shape[0] != B_mat.shape[0]):
-        raise ControlDimension("matrix dimensions are incorrect")
+    A_mat = np.array(A)
+    B_mat = np.array(B)
+    if (A_mat.shape[0] != A_mat.shape[1]):
+        raise ControlDimension("A must be a square matrix")
 
-    # Compute the system eigenvalues and convert poles to numpy array
-    system_eigs = np.linalg.eig(A_mat)[0]
-    placed_eigs = np.array(p);
+    if (A_mat.shape[0] != B_mat.shape[0]):
+        err_str = "The number of rows of A must equal the number of rows in B"
+        raise ControlDimension(err_str)
 
-    # SB01BD sets eigenvalues with real part less than alpha
-    # We want to place all poles of the system => set alpha to minimum
-    alpha = min(system_eigs.real);
+    # Convert desired poles to numpy array
+    placed_eigs = np.array(p)
 
-    # Call SLICOT routine to place the eigenvalues
-    A_z,w,nfp,nap,nup,F,Z = \
-        sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
-               A_mat, B_mat, placed_eigs, 'C');
-
-    # Return the gain matrix, with MATLAB gain convention
-    return -F
+    result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
+    K = result.gain_matrix
+    return K
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
