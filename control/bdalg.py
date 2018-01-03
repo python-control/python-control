@@ -104,12 +104,12 @@ def series(sys1, sys2, *sysn):
     """
       
     if len(sysn) == 0:
-      return sys2 * sys1
+        return sys2 * sys1
     else:
-      sys_final = sys2 * sys1
-      for sys in sysn:
-         sys_final = sys * sys_final
-      return sys_final
+        sys_final = sys2 * sys1
+        for sys in sysn:
+            sys_final = sys * sys_final
+        return sys_final
 
 def parallel(sys1, sys2, *sysn):
     """
@@ -154,12 +154,12 @@ def parallel(sys1, sys2, *sysn):
     
     """
     if len(sysn) == 0:
-      return sys1 + sys2
+        return sys1 + sys2
     else:
-      sys_final = sys1 + sys2
-      for sys in sysn:
-         sys_final = sys_final + sys
-      return sys_final
+        sys_final = sys1 + sys2
+        for sys in sysn:
+            sys_final = sys_final + sys
+        return sys_final
 
 def negate(sys):
     """
