@@ -386,7 +386,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return array(resp)
 
     # Method for generating the frequency response of the system
-    def freqresp(self, omega_s):
+    def freqresp(self, omega):
         """Evaluate the system's transfer func. at a list of freqs, omega.
 
         mag, phase, omega = self.freqresp(omega)
@@ -402,7 +402,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Inputs:
         ------
-           omega_s: A list of frequencies in radians/sec at which the system
+           omega: A list of frequencies in radians/sec at which the system
                     should be evaluated. The list can be either a python list
                     or a numpy array and will be sorted before evaluation.
 
@@ -414,30 +414,30 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
            phase: The wrapped phase in radians of the system frequency
                   response.
 
-           omega_s: The list of sorted frequencies at which the response
+           omega: The list of sorted frequencies at which the response
                     was evaluated.
 
         """
 
         # In case omega is passed in as a list, rather than a proper array.
-        omega_s = np.asarray(omega_s)
+        omega = np.asarray(omega)
 
-        numFreqs = len(omega_s)
+        numFreqs = len(omega)
         Gfrf = np.empty((self.outputs, self.inputs, numFreqs),
                         dtype=np.complex128)
 
         # Sort frequency and calculate complex frequencies on either imaginary
         # axis (continuous time) or unit circle (discrete time).
-        omega_s.sort()
+        omega.sort()
         if isdtime(self, strict=True):
             dt = timebase(self)
-            cmplx_freqs = exp(1.j * omega_s * dt)
-            if ((omega_s * dt).any() > pi):
+            cmplx_freqs = exp(1.j * omega * dt)
+            if ((omega * dt).any() > pi):
                 warn_message = ("evalfr: frequency evaluation"
                                 " above Nyquist frequency")
                 warnings.warn(warn_message)
         else:
-            cmplx_freqs = omega_s * 1.j
+            cmplx_freqs = omega * 1.j
 
         # Do the frequency response evaluation. Use TB05AD from Slycot
         # if it's available, otherwise use the built-in horners function.
@@ -476,8 +476,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             for kk, cmplx_freqs_kk in enumerate(cmplx_freqs):
                 Gfrf[:, :, kk] = self.horner(cmplx_freqs_kk)
 
-        #      mag           phase           omega_s
-        return np.abs(Gfrf), np.angle(Gfrf), omega_s
+        #      mag           phase           omega
+        return np.abs(Gfrf), np.angle(Gfrf), omega
 
     # Compute poles and zeros
     def pole(self):
