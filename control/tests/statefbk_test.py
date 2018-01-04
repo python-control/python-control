@@ -180,6 +180,27 @@ class TestStatefbk(unittest.TestCase):
         np.testing.assert_raises(ControlDimension, place, A[1:, :], B, P)
         np.testing.assert_raises(ControlDimension, place, A, B[1:, :], P)
 
+        # Check that we get an error if we ask for too many poles in the same
+        # location. Here, rank(B) = 2, so lets place three at the same spot.
+        P_repeated = np.array([-0.5, -0.5, -0.5, -8.6659])
+        np.testing.assert_raises(ValueError, place, A, B, P_repeated)
+
+    def testPlace_varga(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
+
+        P = np.array([-2., -2.])
+        K = place_varga(A, B, P)
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+        # No guarantee of the ordering, so sort them
+        P.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P, P_placed)
+
+        # Test that the dimension checks work.
+        np.testing.assert_raises(ControlDimension, place, A[1:, :], B, P)
+        np.testing.assert_raises(ControlDimension, place, A, B[1:, :], P)
+
     def check_LQR(self, K, S, poles, Q, R):
         S_expected = np.array(np.sqrt(Q * R))
         K_expected = S_expected / R
