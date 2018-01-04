@@ -185,6 +185,7 @@ class TestStatefbk(unittest.TestCase):
         P_repeated = np.array([-0.5, -0.5, -0.5, -8.6659])
         np.testing.assert_raises(ValueError, place, A, B, P_repeated)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga(self):
         A = np.array([[1., -2.], [3., -4.]])
         B = np.array([[5.], [7.]])
