@@ -363,9 +363,9 @@ class TestMixsyn(unittest.TestCase):
         np.testing.assert_allclose(cltest.C, clref.C)
         np.testing.assert_allclose(cltest.D, clref.D)
 
-        np.testing.assert_allclose(gam, info.gamma)
+        np.testing.assert_allclose(gam, info[0])
 
-        np.testing.assert_allclose(rcond, info.rcond)
+        np.testing.assert_allclose(rcond, info[1])
 
 
 if __name__ == "__main__":

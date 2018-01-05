@@ -54,7 +54,7 @@ $Id$
 import math
 import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
+    dot, empty, exp, eye, matrix, ones, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
@@ -71,9 +71,19 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 
 def _matrix(a):
-    """_matrix(a) -> numpy.matrix
-    a - passed to numpy.matrix
-    Wrapper around numpy.matrix; unlike that function,  _matrix([]) will be 0x0
+    """Wrapper around numpy.matrix that reshapes empty matrices to be 0x0
+
+    Parameters
+    ----------
+    a: sequence passed to numpy.matrix
+
+    Returns
+    -------
+    am: result of numpy.matrix(a), except if a is empty, am will be 0x0.
+
+    numpy.matrix([]) has size 1x0; for empty StateSpace objects, we
+    need 0x0 matrices, so use this instead of numpy.matrix in this
+    module.
     """
     from numpy import matrix
     am = matrix(a)

@@ -173,10 +173,32 @@ def hinfsyn(P,nmeas,ncon):
     return K, CL, gam, rcond
 
 
-def _size_as_needed(w,wname,n):
-    """_size_as_needed(w,wname,n) -> w2
-    If w is scalar, reshape to nxn; otherwise check size is OK.  Return w as StateSpace object.
-    If w is None, return empty StateSpace object.
+def _size_as_needed(w, wname, n):
+    """Convert LTI object to appropriately sized StateSpace object.
+
+    Intended for use in .robust only
+
+    Parameters
+    ----------
+    w: None, 1x1 LTI object, or mxn LTI object
+    wname: name of w, for error message
+    n: number of inputs to w
+
+    Returns
+    -------
+    w_: processed weighting function, a StateSpace object:
+        - if w is None, empty StateSpace object
+        - if w is scalar, w_ will be w * eye(n)
+        - otherwise, w as StateSpace object
+
+    Raises
+    ------
+    ValueError
+        - if w is not None or scalar, and doesn't have n inputs
+
+    See Also
+    --------
+    augw
     """
     from . import append, ss
     if w is not None:
@@ -195,20 +217,36 @@ def _size_as_needed(w,wname,n):
 
 
 def augw(g,w1=None,w2=None,w3=None):
-    """augw(g,w1=None,w2=None,w3=None) -> p
-    Augment plant for mixed sensitivity problem
-     g - LTI object, ny-by-nu
-     w1 - weighting on S; None, scalar, or k1-by-ny LTI object
-     w2 - weighting on KS; None, scalar, or k2-by-nu LTI object
-     w3 - weighting on T; None, scalar, or k3-by-ny LTI object
-     p - augmented plant; StateSpace object
+    """Augment plant for mixed sensitivity problem.
+
+    Parameters
+    ----------
+    g: LTI object, ny-by-nu
+    w1: weighting on S; None, scalar, or k1-by-ny LTI object
+    w2: weighting on KS; None, scalar, or k2-by-nu LTI object
+    w3: weighting on T; None, scalar, or k3-by-ny LTI object
+    p: augmented plant; StateSpace object
+
     If a weighting is None, no augmentation is done for it.  At least
     one weighting must not be None.
+
     If a weighting w is scalar, it will be replaced by I*w, where I is
     ny-by-ny for w1 and w3, and nu-by-nu for w2.
 
-    See also hinfsyn, mixsyn
+    Returns
+    -------
+    p: plant augmented with weightings, suitable for submission to hinfsyn or h2syn.
+
+    Raises
+    ------
+    ValueError
+        - if all weightings are None
+
+    See Also
+    --------
+    h2syn, hinfsyn, mixsyn
     """
+
     from . import append, ss, connect
 
     if w1 is None and w2 is None and w3 is None:
@@ -282,22 +320,27 @@ def augw(g,w1=None,w2=None,w3=None):
 
     return p
 
-from collections import namedtuple as _namedtuple
-_mixsyn_info = _namedtuple('mixsyn_info',('gamma','rcond'))
-
 def mixsyn(g,w1=None,w2=None,w3=None):
-    """mixsyn(g,w1,w2,w3) -> k,cl,info
-    Mixed-sensitivity H-infinity synthesis
+    """Mixed-sensitivity H-infinity synthesis.
+
+    mixsyn(g,w1,w2,w3) -> k,cl,info
+
+    Parameters
+    ----------
     g: LTI; the plant for which controller must be synthesized
     w1: weighting on s = (1+g*k)**-1; None, or scalar or k1-by-ny LTI
     w2: weighting on k*s; None, or scalar or k2-by-nu LTI
     w3: weighting on t = g*k*(1+g*k)**-1; None, or scalar or k3-by-ny LTI
     At least one of w1, w2, and w3 must not be None.
+
+    Returns
+    -------
     k: synthesized controller; StateSpace object
     cl: closed system mapping evaluation inputs to evaluation outputs; if p is the augmented plant, with
         [z] = [p11 p12] [w], then cl is the system from w->z with u=-k*y.  StateSpace object.
         [y]   [p21   g] [u]
-    info: namedtuple with fields, in order,
+
+    info: tuple with entries, in order,
       gamma: scalar; H-infinity norm of cl
       rcond: array; estimates of reciprocal condition numbers
               computed during synthesis.  See hinfsyn for details
@@ -312,5 +355,5 @@ def mixsyn(g,w1=None,w2=None,w3=None):
     p = augw(g,w1,w2,w3)
 
     k,cl,gamma,rcond=hinfsyn(p,nmeas,ncon)
-    info = _mixsyn_info(gamma=gamma,rcond=rcond)
+    info = gamma,rcond
     return k,cl,info
