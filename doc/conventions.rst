@@ -81,8 +81,9 @@ By default, all systems are considered to be continuous time systems.  A
 discrete time system is created by specifying the 'time base' dt.  The time
 base argument can be given when a system is constructed:
 
-* dt = None: continuous time
-* dt = number: discrete time system with sampling period 'dt'
+* dt = None: no timebase specified
+* dt = 0: continuous time system
+* dt > 0: discrete time system with sampling period 'dt'
 * dt = True: discrete time with unspecified sampling period
 
 Only the :class:`StateSpace` and :class:`TransferFunction` classes allow
