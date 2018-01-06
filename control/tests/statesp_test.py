@@ -10,6 +10,7 @@ from scipy.linalg import eigvals, block_diag
 from control import matlab
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction
+from control.lti import evalfr
 from control.exception import slycot_check
 
 class TestStateSpace(unittest.TestCase):
@@ -113,7 +114,17 @@ class TestStateSpace(unittest.TestCase):
                 [-0.331544857768052 + 0.0576105032822757j,
                  0.128919037199125 - 0.143824945295405j]]
 
-        np.testing.assert_almost_equal(sys.evalfr(1.), resp)
+        # Correct versions of the call
+        np.testing.assert_almost_equal(evalfr(sys, 1j), resp)
+        np.testing.assert_almost_equal(sys._evalfr(1.), resp)
+
+        # Deprecated version of the call (should generate warning)
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            sys.evalfr(1.)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, PendingDeprecationWarning)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testFreqResp(self):

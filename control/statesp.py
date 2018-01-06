@@ -61,8 +61,7 @@ from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
 import scipy as sp
 from scipy.signal import lti, cont2discrete
-# from exceptions import Exception
-import warnings
+from warnings import warn
 from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convertToTransferFunction
 from copy import deepcopy
@@ -357,20 +356,26 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         raise NotImplementedError("StateSpace.__rdiv__ is not implemented yet.")
 
-    # TODO: add discrete time check
     def evalfr(self, omega):
         """Evaluate a SS system's transfer function at a single frequency.
 
-        self.evalfr(omega) returns the value of the transfer function matrix with
-        input value s = i * omega.
+        self._evalfr(omega) returns the value of the transfer function matrix
+        with input value s = i * omega.
 
         """
+        warn("StateSpace.evalfr(omega) will be depracted in a future "
+             "release of python-control; use evalfr(sys, omega*1j) instead",
+             PendingDeprecationWarning)
+        return self._evalfr(omega)
+
+    def _evalfr(self, omega):
+        """Evaluate a SS system's transfer function at a single frequency"""
         # Figure out the point to evaluate the transfer function
         if isdtime(self, strict=True):
             dt = timebase(self)
             s = exp(1.j * omega * dt)
             if (omega * dt > math.pi):
-                warnings.warn("evalfr: frequency evaluation above Nyquist frequency")
+                warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = omega * 1.j
 
@@ -900,9 +905,9 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
     #Convert sys to SISO if necessary
     if sys.inputs > 1 or sys.outputs > 1:
         if warn_conversion:
-            warnings.warn("Converting MIMO system to SISO system. "
-                          "Only input {i} and output {o} are used."
-                          .format(i=input, o=output))
+            warn("Converting MIMO system to SISO system. "
+                 "Only input {i} and output {o} are used."
+                 .format(i=input, o=output))
         # $X = A*X + B*U
         #  Y = C*X + D*U
         new_B = sys.B[:, input]
@@ -950,9 +955,8 @@ def _mimo2simo(sys, input, warn_conversion=False):
     #Convert sys to SISO if necessary
     if sys.inputs > 1:
         if warn_conversion:
-            warnings.warn("Converting MIMO system to SIMO system. "
-                          "Only input {i} is used."
-                          .format(i=input))
+            warn("Converting MIMO system to SIMO system. "
+                 "Only input {i} is used." .format(i=input))
         # $X = A*X + B*U
         #  Y = C*X + D*U
         new_B = sys.B[:, input]
