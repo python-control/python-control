@@ -97,9 +97,9 @@ def series(sys1, *sysn):
 
     Examples
     --------
-    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1.
-    >>> sys_final = series(sys1, sys2, sys3, sys4)
-    >>> sys5 = series(sys1, sys2, sys3, sys4) # More syss
+    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1
+
+    >>> sys5 = series(sys1, sys2, sys3, sys4) # More systems
 
     """
     from functools import reduce
@@ -142,8 +142,9 @@ def parallel(sys1, *sysn):
 
     Examples
     --------
-    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2.
-    >>> sys5 = parallel(sys1, sys2, sys3, sys4) # More syss
+    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2
+
+    >>> sys5 = parallel(sys1, sys2, sys3, sys4) # More systems
 
     """
     from functools import reduce
