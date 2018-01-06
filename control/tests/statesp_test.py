@@ -350,6 +350,28 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_equal(g1.D, g2.D)
 
 
+    def test_Empty(self):
+        """Regression: can we create an empty StateSpace object?"""
+        g1=StateSpace([],[],[],[])
+        self.assertEqual(0,g1.states)
+        self.assertEqual(0,g1.inputs)
+        self.assertEqual(0,g1.outputs)
+
+
+    def test_MatrixToStateSpace(self):
+        """_convertToStateSpace(matrix) gives ss([],[],[],D)"""
+        D = np.matrix([[1,2,3],[4,5,6]])
+        g = _convertToStateSpace(D)
+        def empty(shape):
+            m = np.matrix([])
+            m.shape = shape
+            return m
+        np.testing.assert_array_equal(empty((0,0)), g.A)
+        np.testing.assert_array_equal(empty((0,D.shape[1])), g.B)
+        np.testing.assert_array_equal(empty((D.shape[0],0)), g.C)
+        np.testing.assert_array_equal(D,g.D)
+
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
 
