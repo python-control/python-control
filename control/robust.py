@@ -348,7 +348,9 @@ def mixsyn(g,w1=None,w2=None,w3=None):
     If a weighting w is scalar, it will be replaced by I*w, where I is
     ny-by-ny for w1 and w3, and nu-by-nu for w2.
 
-    See also hinfsyn, augw
+    See Also
+    --------
+    hinfsyn, augw
     """
     nmeas = g.outputs
     ncon = g.inputs
