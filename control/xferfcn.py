@@ -59,6 +59,7 @@ from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
 import scipy as sp
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
+import warnings
 from warnings import warn
 from .lti import LTI, timebaseEqual, timebase, isdtime
 
@@ -491,19 +492,24 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
     def evalfr(self, omega):
         """Evaluate a transfer function at a single angular frequency.
 
-        self.evalfr(omega) returns the value of the
-        transfer function matrix with
-        input value s = i * omega.
+        self._evalfr(omega) returns the value of the transfer function
+        matrix with input value s = i * omega.
 
         """
+        warn("TransferFunction.evalfr(omega) will be deprecated in a "
+             "future release of python-control; use evalfr(sys, omega*1j) "
+             "instead", PendingDeprecationWarning)
+        return self._evalfr(omega)
 
+    def _evalfr(self, omega):
+        """Evaluate a transfer function at a single angular frequency."""
         # TODO: implement for discrete time systems
         if isdtime(self, strict=True):
             # Convert the frequency to discrete time
             dt = timebase(self)
             s = exp(1.j * omega * dt)
             if (omega * dt > pi):
-                warn("evalfr: frequency evaluation above Nyquist frequency")
+                warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = 1.j * omega
 
@@ -552,7 +558,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
             dt = timebase(self)
             slist = np.array([exp(1.j * w * dt) for w in omega])
             if (max(omega) * dt > pi):
-                warn("evalfr: frequency evaluation above Nyquist frequency")
+                warn("freqresp: frequency evaluation above Nyquist frequency")
         else:
             slist = np.array([1j * w for w in omega])
 

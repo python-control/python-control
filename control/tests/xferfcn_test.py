@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction, _convertToTransferFunction
+from control.lti import evalfr
 from control.exception import slycot_check
 # from control.lti import isdtime
 
@@ -319,21 +320,34 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.den, sys3.num)
 
     # Tests for TransferFunction.evalfr.
-
     def testEvalFrSISO(self):
         """Evaluate the frequency response of a SISO system at one frequency."""
 
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
 
-        np.testing.assert_array_almost_equal(sys.evalfr(1.),
+        np.testing.assert_array_almost_equal(evalfr(sys, 1j),
             np.array([[-0.5 - 0.5j]]))
-        np.testing.assert_array_almost_equal(sys.evalfr(32.),
+        np.testing.assert_array_almost_equal(evalfr(sys, 32j),
             np.array([[0.00281959302585077 - 0.030628473607392j]]))
 
         # Test call version as well
         np.testing.assert_almost_equal(sys(1.j), -0.5 - 0.5j)
         np.testing.assert_almost_equal(sys(32.j),
             0.00281959302585077 - 0.030628473607392j)
+
+        # Test internal version (with real argument)
+        np.testing.assert_array_almost_equal(sys._evalfr(1.),
+            np.array([[-0.5 - 0.5j]]))
+        np.testing.assert_array_almost_equal(sys._evalfr(32.),
+            np.array([[0.00281959302585077 - 0.030628473607392j]]))
+
+        # Deprecated version of the call (should generate warning)
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            sys.evalfr(1.)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, PendingDeprecationWarning)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testEvalFrMIMO(self):
@@ -348,7 +362,7 @@ class TestXferFcn(unittest.TestCase):
                 [-0.083333333333333, -0.188235294117647 - 0.847058823529412j,
                  -1. - 8.j]]
 
-        np.testing.assert_array_almost_equal(sys.evalfr(2.), resp)
+        np.testing.assert_array_almost_equal(sys._evalfr(2.), resp)
 
         # Test call version as well
         np.testing.assert_array_almost_equal(sys(2.j), resp)
