@@ -49,6 +49,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 """
 
 # External function declarations
+import numpy as np
 from numpy import angle, array, empty, ones, \
     real, imag, matrix, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
@@ -57,7 +58,9 @@ from .lti import LTI
 __all__ = ['FRD', 'frd']
 
 class FRD(LTI):
-    """A class for models defined by Frequency Response Data (FRD)
+    """FRD(d, w)
+
+    A class for models defined by frequency response data (FRD)
 
     The FRD class is used to represent systems in frequency response data form.
 
@@ -80,7 +83,9 @@ class FRD(LTI):
     epsw = 1e-8
 
     def __init__(self, *args, **kwargs):
-        """Construct an FRD object
+        """FRD(d, w)
+
+        Construct an FRD object
 
         The default constructor is FRD(d, w), where w is an iterable of
         frequency points, and d is the matching frequency data.
@@ -111,7 +116,7 @@ class FRD(LTI):
                     (otherlti.outputs, otherlti.inputs, numfreq),
                     dtype=complex)
                 for k, w in enumerate(self.omega):
-                    self.fresp[:, :, k] = otherlti.evalfr(w)
+                    self.fresp[:, :, k] = otherlti._evalfr(w)
 
             else:
                 # The user provided a response and a freq vector
@@ -219,7 +224,7 @@ second has %i." % (self.outputs, other.outputs))
         """Multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * other, self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -245,7 +250,7 @@ second has %i." % (self.outputs, other.outputs))
         """Right Multiply two LTI objects (serial connection)."""
 
         # Convert the second argument to an frd function.
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * other, self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -272,7 +277,7 @@ second has %i." % (self.outputs, other.outputs))
     def __truediv__(self, other):
         """Divide two LTI objects."""
 
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(self.fresp * (1/other), self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -295,7 +300,7 @@ second has %i." % (self.outputs, other.outputs))
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             return FRD(other / self.fresp, self.omega,
                        smooth=(self.ifunc is not None))
         else:
@@ -324,11 +329,10 @@ second has %i." % (self.outputs, other.outputs))
             return (FRD(ones(self.fresp.shape), self.omega) / self) * \
                 (self**(other+1))
 
-
     def evalfr(self, omega):
         """Evaluate a transfer function at a single angular frequency.
 
-        self.evalfr(omega) returns the value of the frequency response
+        self._evalfr(omega) returns the value of the frequency response
         at frequency omega.
 
         Note that a "normal" FRD only returns values for which there is an
@@ -336,7 +340,31 @@ second has %i." % (self.outputs, other.outputs))
         intermediate values.
 
         """
+        warn("FRD.evalfr(omega) will be deprecated in a future release of python-control; use sys.eval(omega) instead", 
+             PendingDeprecationWarning)
+        return self._evalfr(omega)
 
+    # Define the `eval` function to evaluate an FRD at a given (real)
+    # frequency.  Note that we choose to use `eval` instead of `evalfr` to
+    # avoid confusion with :func:`evalfr`, which takes a complex number as its
+    # argument.  Similarly, we don't use `__call__` to avoid confusion between
+    # G(s) for a transfer function and G(omega) for an FRD object.
+    def eval(self, omega):
+        """Evaluate a transfer function at a single angular frequency.
+
+        self._evalfr(omega) returns the value of the frequency response
+        at frequency omega.
+
+        Note that a "normal" FRD only returns values for which there is an
+        entry in the omega vector. An interpolating FRD can return
+        intermediate values.
+
+        """
+        return self._evalfr(omega)
+
+    # Internal function to evaluate the frequency responses
+    def _evalfr(self, omega):
+        """Evaluate a transfer function at a single angular frequency."""
         # Preallocate the output.
         if getattr(omega, '__iter__', False):
             out = empty((self.outputs, self.inputs, len(omega)), dtype=complex)
@@ -385,7 +413,7 @@ second has %i." % (self.outputs, other.outputs))
         omega.sort()
 
         for k, w in enumerate(omega):
-            fresp = self.evalfr(w)
+            fresp = self._evalfr(w)
             mag[:, :, k] = abs(fresp)
             phase[:, :, k] = angle(fresp)
 
@@ -445,11 +473,11 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         omega.sort()
         fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
         for k, w in enumerate(omega):
-            fresp[:, :, k] = sys.evalfr(w)
+            fresp[:, :, k] = sys._evalfr(w)
 
         return FRD(fresp, omega, smooth=True)
 
-    elif isinstance(sys, (int, float, complex)):
+    elif isinstance(sys, (int, float, complex, np.number)):
         fresp = ones((outputs, inputs, len(omega)), dtype=float)*sys
         return FRD(fresp, omega, smooth=True)
 
@@ -469,8 +497,9 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
                     sys.__class__)
 
 def frd(*args):
-    """
-    Construct a Frequency Response Data model, or convert a system
+    """frd(d, w)
+
+    Construct a frequency response data model
 
     frd models store the (measured) frequency response of a system.
 
@@ -500,6 +529,6 @@ def frd(*args):
 
     See Also
     --------
-    ss, tf
+    FRD, ss, tf
     """
     return FRD(*args)

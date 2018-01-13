@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 from control.statefbk import ctrb, obsv, place, lqr, gram, acker
 from control.matlab import *
-from control.exception import slycot_check
+from control.exception import slycot_check, ControlDimension
 
 class TestStatefbk(unittest.TestCase):
     """Test state feedback functions"""
@@ -156,6 +156,51 @@ class TestStatefbk(unittest.TestCase):
 
                 np.testing.assert_array_almost_equal(np.sort(poles),
                                                      np.sort(placed), decimal=4)
+
+    def testPlace(self):
+        # Matrices shamelessly stolen from scipy example code.
+        A = np.array([[1.380,  -0.2077,  6.715, -5.676],
+                      [-0.5814, -4.290,   0,      0.6750],
+                      [1.067,   4.273,  -6.654,  5.893],
+                      [0.0480,  4.273,   1.343, -2.104]])
+
+        B = np.array([[0,      5.679],
+                      [1.136,  1.136],
+                      [0,      0,],
+                      [-3.146,  0]])
+        P = np.array([-0.5+1j, -0.5-1j, -5.0566, -8.6659])
+        K = place(A, B, P)
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+        # No guarantee of the ordering, so sort them
+        P.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P, P_placed)
+
+        # Test that the dimension checks work.
+        np.testing.assert_raises(ControlDimension, place, A[1:, :], B, P)
+        np.testing.assert_raises(ControlDimension, place, A, B[1:, :], P)
+
+        # Check that we get an error if we ask for too many poles in the same
+        # location. Here, rank(B) = 2, so lets place three at the same spot.
+        P_repeated = np.array([-0.5, -0.5, -0.5, -8.6659])
+        np.testing.assert_raises(ValueError, place, A, B, P_repeated)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testPlace_varga(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
+
+        P = np.array([-2., -2.])
+        K = place_varga(A, B, P)
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+        # No guarantee of the ordering, so sort them
+        P.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P, P_placed)
+
+        # Test that the dimension checks work.
+        np.testing.assert_raises(ControlDimension, place, A[1:, :], B, P)
+        np.testing.assert_raises(ControlDimension, place, A, B[1:, :], P)
 
     def check_LQR(self, K, S, poles, Q, R):
         S_expected = np.array(np.sqrt(Q * R))

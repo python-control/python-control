@@ -24,14 +24,14 @@ System creation
 System interconnections
 =======================
 .. autosummary::
-   :toctree: generated/
+    :toctree: generated/
 
-   append
-   connect
-   feedback
-   negate
-   parallel
-   series
+    append
+    connect
+    feedback
+    negate
+    parallel
+    series
 
 Frequency domain plotting
 =========================
@@ -104,6 +104,7 @@ Control system synthesis
     h2syn
     hinfsyn
     lqr
+    mixsyn
     place
 
 Model simplification tools
@@ -118,27 +119,30 @@ Model simplification tools
     era
     markov
 
+.. _utility-and-conversions:
+
 Utility functions and conversions
 =================================
 .. autosummary::
     :toctree: generated/
 
-    unwrap
-    db2mag
-    mag2db
+    augw
+    canonical_form
     damp
+    db2mag
     isctime
     isdtime
     issiso
     issys
-    pade
-    sample_system
-    canonical_form
+    mag2db
     observable_form
+    pade
     reachable_form
+    sample_system
     ss2tf
     ssdata
     tf2ss
     tfdata
     timebase
     timebaseEqual
+    unwrap
