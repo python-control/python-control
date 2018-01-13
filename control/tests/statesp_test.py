@@ -10,6 +10,7 @@ from scipy.linalg import eigvals, block_diag
 from control import matlab
 from control.statesp import StateSpace, _convertToStateSpace
 from control.xferfcn import TransferFunction
+from control.lti import evalfr
 from control.exception import slycot_check
 
 class TestStateSpace(unittest.TestCase):
@@ -113,7 +114,17 @@ class TestStateSpace(unittest.TestCase):
                 [-0.331544857768052 + 0.0576105032822757j,
                  0.128919037199125 - 0.143824945295405j]]
 
-        np.testing.assert_almost_equal(sys.evalfr(1.), resp)
+        # Correct versions of the call
+        np.testing.assert_almost_equal(evalfr(sys, 1j), resp)
+        np.testing.assert_almost_equal(sys._evalfr(1.), resp)
+
+        # Deprecated version of the call (should generate warning)
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            sys.evalfr(1.)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, PendingDeprecationWarning)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testFreqResp(self):
@@ -348,6 +359,28 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_equal(g1.B, g2.B)
         np.testing.assert_array_equal(g1.C, g2.C)
         np.testing.assert_array_equal(g1.D, g2.D)
+
+
+    def test_Empty(self):
+        """Regression: can we create an empty StateSpace object?"""
+        g1=StateSpace([],[],[],[])
+        self.assertEqual(0,g1.states)
+        self.assertEqual(0,g1.inputs)
+        self.assertEqual(0,g1.outputs)
+
+
+    def test_MatrixToStateSpace(self):
+        """_convertToStateSpace(matrix) gives ss([],[],[],D)"""
+        D = np.matrix([[1,2,3],[4,5,6]])
+        g = _convertToStateSpace(D)
+        def empty(shape):
+            m = np.matrix([])
+            m.shape = shape
+            return m
+        np.testing.assert_array_equal(empty((0,0)), g.A)
+        np.testing.assert_array_equal(empty((0,D.shape[1])), g.B)
+        np.testing.assert_array_equal(empty((D.shape[0],0)), g.C)
+        np.testing.assert_array_equal(D,g.D)
 
 
 class TestRss(unittest.TestCase):

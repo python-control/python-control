@@ -116,7 +116,7 @@ class FRD(LTI):
                     (otherlti.outputs, otherlti.inputs, numfreq),
                     dtype=complex)
                 for k, w in enumerate(self.omega):
-                    self.fresp[:, :, k] = otherlti.evalfr(w)
+                    self.fresp[:, :, k] = otherlti._evalfr(w)
 
             else:
                 # The user provided a response and a freq vector
@@ -329,11 +329,10 @@ second has %i." % (self.outputs, other.outputs))
             return (FRD(ones(self.fresp.shape), self.omega) / self) * \
                 (self**(other+1))
 
-
     def evalfr(self, omega):
         """Evaluate a transfer function at a single angular frequency.
 
-        self.evalfr(omega) returns the value of the frequency response
+        self._evalfr(omega) returns the value of the frequency response
         at frequency omega.
 
         Note that a "normal" FRD only returns values for which there is an
@@ -341,7 +340,31 @@ second has %i." % (self.outputs, other.outputs))
         intermediate values.
 
         """
+        warn("FRD.evalfr(omega) will be deprecated in a future release of python-control; use sys.eval(omega) instead", 
+             PendingDeprecationWarning)
+        return self._evalfr(omega)
 
+    # Define the `eval` function to evaluate an FRD at a given (real)
+    # frequency.  Note that we choose to use `eval` instead of `evalfr` to
+    # avoid confusion with :func:`evalfr`, which takes a complex number as its
+    # argument.  Similarly, we don't use `__call__` to avoid confusion between
+    # G(s) for a transfer function and G(omega) for an FRD object.
+    def eval(self, omega):
+        """Evaluate a transfer function at a single angular frequency.
+
+        self._evalfr(omega) returns the value of the frequency response
+        at frequency omega.
+
+        Note that a "normal" FRD only returns values for which there is an
+        entry in the omega vector. An interpolating FRD can return
+        intermediate values.
+
+        """
+        return self._evalfr(omega)
+
+    # Internal function to evaluate the frequency responses
+    def _evalfr(self, omega):
+        """Evaluate a transfer function at a single angular frequency."""
         # Preallocate the output.
         if getattr(omega, '__iter__', False):
             out = empty((self.outputs, self.inputs, len(omega)), dtype=complex)
@@ -390,7 +413,7 @@ second has %i." % (self.outputs, other.outputs))
         omega.sort()
 
         for k, w in enumerate(omega):
-            fresp = self.evalfr(w)
+            fresp = self._evalfr(w)
             mag[:, :, k] = abs(fresp)
             phase[:, :, k] = angle(fresp)
 
@@ -450,7 +473,7 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         omega.sort()
         fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
         for k, w in enumerate(omega):
-            fresp[:, :, k] = sys.evalfr(w)
+            fresp[:, :, k] = sys._evalfr(w)
 
         return FRD(fresp, omega, smooth=True)
 

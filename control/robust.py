@@ -171,3 +171,191 @@ def hinfsyn(P,nmeas,ncon):
     CL = StateSpace(Ac, Bc, Cc, Dc)
 
     return K, CL, gam, rcond
+
+
+def _size_as_needed(w, wname, n):
+    """Convert LTI object to appropriately sized StateSpace object.
+
+    Intended for use in .robust only
+
+    Parameters
+    ----------
+    w: None, 1x1 LTI object, or mxn LTI object
+    wname: name of w, for error message
+    n: number of inputs to w
+
+    Returns
+    -------
+    w_: processed weighting function, a StateSpace object:
+        - if w is None, empty StateSpace object
+        - if w is scalar, w_ will be w * eye(n)
+        - otherwise, w as StateSpace object
+
+    Raises
+    ------
+    ValueError
+        - if w is not None or scalar, and doesn't have n inputs
+
+    See Also
+    --------
+    augw
+    """
+    from . import append, ss
+    if w is not None:
+        if not isinstance(w,StateSpace):
+            w = ss(w)
+        if 1==w.inputs and 1==w.outputs:
+            w = append(*(w,)*n)
+        else:
+            if w.inputs != n:
+                msg=("{}: weighting function has {} inputs, expected {}".
+                      format(wname,w.inputs,n))
+                raise ValueError(msg)
+    else:
+        w = ss([],[],[],[])
+    return w
+
+
+def augw(g,w1=None,w2=None,w3=None):
+    """Augment plant for mixed sensitivity problem.
+
+    Parameters
+    ----------
+    g: LTI object, ny-by-nu
+    w1: weighting on S; None, scalar, or k1-by-ny LTI object
+    w2: weighting on KS; None, scalar, or k2-by-nu LTI object
+    w3: weighting on T; None, scalar, or k3-by-ny LTI object
+    p: augmented plant; StateSpace object
+
+    If a weighting is None, no augmentation is done for it.  At least
+    one weighting must not be None.
+
+    If a weighting w is scalar, it will be replaced by I*w, where I is
+    ny-by-ny for w1 and w3, and nu-by-nu for w2.
+
+    Returns
+    -------
+    p: plant augmented with weightings, suitable for submission to hinfsyn or h2syn.
+
+    Raises
+    ------
+    ValueError
+        - if all weightings are None
+
+    See Also
+    --------
+    h2syn, hinfsyn, mixsyn
+    """
+
+    from . import append, ss, connect
+
+    if w1 is None and w2 is None and w3 is None:
+        raise ValueError("At least one weighting must not be None")
+    ny = g.outputs
+    nu = g.inputs
+
+    w1,w2,w3 = [_size_as_needed(w,wname,n)
+                for w,wname,n in zip((w1,w2,w3),
+                                     ('w1','w2','w3'),
+                                     (ny,nu,ny))]
+
+    if not isinstance(g,StateSpace):
+        g = ss(g)
+
+    #       w         u
+    #  z1 [ w1   |   -w1*g  ]
+    #  z2 [ 0    |    w2    ]
+    #  z3 [ 0    |    w3*g  ]
+    #     [------+--------- ]
+    #  v  [ I    |    -g    ]
+
+    # error summer: inputs are -y and r=w
+    Ie = ss([],[],[],np.eye(ny))
+    # control: needed to "distribute" control input
+    Iu = ss([],[],[],np.eye(nu))
+
+    sysall = append(w1,w2,w3,Ie,g,Iu)
+
+    niw1 = w1.inputs
+    niw2 = w2.inputs
+    niw3 = w3.inputs
+
+    now1 = w1.outputs
+    now2 = w2.outputs
+    now3 = w3.outputs
+
+    q = np.zeros((niw1+niw2+niw3+ny+nu,2))
+    q[:,0] = np.arange(1,q.shape[0]+1)
+
+    # Ie -> w1
+    q[:niw1,1] = np.arange(1+now1+now2+now3,
+                           1+now1+now2+now3+niw1)
+
+    # Iu -> w2
+    q[niw1:niw1+niw2,1] = np.arange(1+now1+now2+now3+2*ny,
+                                    1+now1+now2+now3+2*ny+niw2)
+
+    # y -> w3
+    q[niw1+niw2:niw1+niw2+niw3,1] = np.arange(1+now1+now2+now3+ny,
+                                              1+now1+now2+now3+ny+niw3)
+
+    # -y -> Iy; note the leading -
+    q[niw1+niw2+niw3:niw1+niw2+niw3+ny,1] = -np.arange(1+now1+now2+now3+ny,
+                                                       1+now1+now2+now3+2*ny)
+
+    # Iu -> G
+    q[niw1+niw2+niw3+ny:niw1+niw2+niw3+ny+nu,1] = np.arange(1+now1+now2+now3+2*ny,
+                                                            1+now1+now2+now3+2*ny+nu)
+
+    # input indices: to Ie and Iu
+    ii = np.hstack((np.arange(1+now1+now2+now3,
+                              1+now1+now2+now3+ny),
+                    np.arange(1+now1+now2+now3+ny+nu,
+                              1+now1+now2+now3+ny+nu+nu)))
+
+    # output indices
+    oi = np.arange(1,1+now1+now2+now3+ny)
+
+    p = connect(sysall,q,ii,oi)
+
+    return p
+
+def mixsyn(g,w1=None,w2=None,w3=None):
+    """Mixed-sensitivity H-infinity synthesis.
+
+    mixsyn(g,w1,w2,w3) -> k,cl,info
+
+    Parameters
+    ----------
+    g: LTI; the plant for which controller must be synthesized
+    w1: weighting on s = (1+g*k)**-1; None, or scalar or k1-by-ny LTI
+    w2: weighting on k*s; None, or scalar or k2-by-nu LTI
+    w3: weighting on t = g*k*(1+g*k)**-1; None, or scalar or k3-by-ny LTI
+    At least one of w1, w2, and w3 must not be None.
+
+    Returns
+    -------
+    k: synthesized controller; StateSpace object
+    cl: closed system mapping evaluation inputs to evaluation outputs; if p is the augmented plant, with
+        [z] = [p11 p12] [w], then cl is the system from w->z with u=-k*y.  StateSpace object.
+        [y]   [p21   g] [u]
+
+    info: tuple with entries, in order,
+      gamma: scalar; H-infinity norm of cl
+      rcond: array; estimates of reciprocal condition numbers
+              computed during synthesis.  See hinfsyn for details
+
+    If a weighting w is scalar, it will be replaced by I*w, where I is
+    ny-by-ny for w1 and w3, and nu-by-nu for w2.
+
+    See Also
+    --------
+    hinfsyn, augw
+    """
+    nmeas = g.outputs
+    ncon = g.inputs
+    p = augw(g,w1,w2,w3)
+
+    k,cl,gamma,rcond=hinfsyn(p,nmeas,ncon)
+    info = gamma,rcond
+    return k,cl,info
