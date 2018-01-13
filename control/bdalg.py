@@ -67,7 +67,7 @@ def series(sys1, *sysn):
     Parameters
     ----------
     sys1: scalar, StateSpace, TransferFunction, or FRD
-    *sysn: other scalers, StateSpaces, TransferFunctions, or FRDs
+    *sysn: other scalars, StateSpaces, TransferFunctions, or FRDs
 
     Returns
     -------
@@ -103,7 +103,7 @@ def series(sys1, *sysn):
 
     """
     from functools import reduce
-    return reduce(lambda x, y:x*y, sysn, sys1)
+    return reduce(lambda x, y:y*x, sysn, sys1)
 
 def parallel(sys1, *sysn):
     """
@@ -112,7 +112,7 @@ def parallel(sys1, *sysn):
     Parameters
     ----------
     sys1: scalar, StateSpace, TransferFunction, or FRD
-    *sysn: other scalers, StateSpaces, TransferFunctions, or FRDs
+    *sysn: other scalars, StateSpaces, TransferFunctions, or FRDs
 
     Returns
     -------
