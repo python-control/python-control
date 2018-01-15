@@ -237,6 +237,23 @@ class TestFeedback(unittest.TestCase):
         np.testing.assert_array_almost_equal(sort(zero(sys1_5)), 
                                              sort(zero(sys1 + sys2 + 
                                                        sys3 + sys4 + sys5)))
+    def testMimoSeries(self):
+        """regression: bdalg.series reverses order of arguments"""
+        g1 = ctrl.ss([],[],[],[[1,2],[0,3]])
+        g2 = ctrl.ss([],[],[],[[1,0],[2,3]])
+        ref = g2*g1
+        tst = ctrl.series(g1,g2)
+        # assert_array_equal on mismatched matrices gives
+        # "repr failed for <matrix>: ..."
+        def assert_equal(x,y):
+            np.testing.assert_array_equal(np.asarray(x),
+                                          np.asarray(y))
+        assert_equal(ref.A, tst.A)
+        assert_equal(ref.B, tst.B)
+        assert_equal(ref.C, tst.C)
+        assert_equal(ref.D, tst.D)
+
+
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
 
