@@ -171,15 +171,23 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             #! TODO: Not current implemented; just use subplot for now
 
             if (Plot):
+                # Create a unique label to fix bug in matplotlib<=2.1
+                # See https://github.com/matplotlib/matplotlib/issues/9024
+                import random
+                figlabel = str(random.randint(1, 1e6))
+
                 # Magnitude plot
-                ax_mag = plt.subplot(211);
+                ax_mag = plt.subplot(211, label=figlabel);
+
                 if dB:
-                    pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag), *args, **kwargs)
+                    pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag),
+                                              *args, **kwargs)
                 else:
                     pltline = ax_mag.loglog(omega_plot, mag, *args, **kwargs)
 
                 if nyquistfrq_plot:
-                    ax_mag.axvline(nyquistfrq_plot, color=pltline[0].get_color())
+                    ax_mag.axvline(nyquistfrq_plot,
+                                   color=pltline[0].get_color())
 
                 # Add a grid to the plot + labeling
                 ax_mag.grid(True, which='both')
@@ -354,27 +362,32 @@ def gangof4_plot(P, C, omega=None):
         S = feedback(1, L);
         T = L * S;
 
-        # Plot the four sensitivity functions
+        # Create a unique label to fix bug in matplotlib<=2.1
+        # See https://github.com/matplotlib/matplotlib/issues/9024
+        import random
+        figlabel = str(random.randint(1, 1e6))
+
+                # Plot the four sensitivity functions
         #! TODO: Need to add in the mag = 1 lines
         mag_tmp, phase_tmp, omega = T.freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(221); plt.loglog(omega, mag);
+        plt.subplot(221, label=figlabel); plt.loglog(omega, mag);
 
         mag_tmp, phase_tmp, omega = (P * S).freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(222); plt.loglog(omega, mag);
+        plt.subplot(222, label=figlabel); plt.loglog(omega, mag);
 
         mag_tmp, phase_tmp, omega = (C * S).freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(223); plt.loglog(omega, mag);
+        plt.subplot(223, label=figlabel); plt.loglog(omega, mag);
 
         mag_tmp, phase_tmp, omega = S.freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(224); plt.loglog(omega, mag);
+        plt.subplot(224, label=figlabel); plt.loglog(omega, mag);
 
 #
 # Utility functions
