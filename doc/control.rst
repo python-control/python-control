@@ -44,6 +44,15 @@ Frequency domain plotting
     gangof4_plot
     nichols_plot
 
+Note: For plotting commands that create multiple axes on the same plot, the
+individual axes can be retrieved using the axes label (retrieved using the
+`get_label` method for the matplotliib axes object).  The following labels
+are currently defined:
+
+* Bode plots: `control-bode-magnitude`, `control-bode-phase`
+* Gang of 4 plots: `control-gangof4-s`, `control-gangof4-cs`,
+  `control-gangof4-ps`, `control-gangof4-t`
+
 Time domain simulation
 ======================
 
