@@ -1078,18 +1078,18 @@ def ss(*args):
         output equations:
 
         .. math::
-            \dot x = A \cdot x + B \cdot u
+            \\dot x = A \\cdot x + B \\cdot u
 
-            y = C \cdot x + D \cdot u
+            y = C \\cdot x + D \\cdot u
 
     ``ss(A, B, C, D, dt)``
         Create a discrete-time state space system from the matrices of
         its state and output equations:
 
         .. math::
-            x[k+1] = A \cdot x[k] + B \cdot u[k]
+            x[k+1] = A \\cdot x[k] + B \\cdot u[k]
 
-            y[k] = C \cdot x[k] + D \cdot u[ki]
+            y[k] = C \\cdot x[k] + D \\cdot u[ki]
 
         The matrices can be given as *array like* data types or strings.
         Everything that the constructor of :class:`numpy.matrix` accepts is

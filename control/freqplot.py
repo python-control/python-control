@@ -171,22 +171,47 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             #! TODO: Not current implemented; just use subplot for now
 
             if (Plot):
+                # Set up the axes with labels so that multiple calls to
+                # bode_plot will superimpose the data.  This was implicit
+                # before matplotlib 2.1, but changed after that (See
+                # https://github.com/matplotlib/matplotlib/issues/9024). 
+                # The code below should work on all cases.
+
+                # Get the current figure 
+                fig = plt.gcf()
+                ax_mag = None
+                ax_phase = None
+
+                # Get the current axes if they already exist
+                for ax in fig.axes:
+                    if ax.get_label() == 'control-bode-magnitude':
+                        ax_mag = ax
+                    elif ax.get_label() == 'control-bode-phase':
+                        ax_phase = ax
+
+                # If no axes present, create them from scratch
+                if ax_mag is None or ax_phase is None:
+                    plt.clf()
+                    ax_mag = plt.subplot(211, label = 'control-bode-magnitude')
+                    ax_phase = plt.subplot(212, label = 'control-bode-phase',
+                                           sharex=ax_mag)
+
                 # Magnitude plot
-                ax_mag = plt.subplot(211);
                 if dB:
-                    pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag), *args, **kwargs)
+                    pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag),
+                                              *args, **kwargs)
                 else:
                     pltline = ax_mag.loglog(omega_plot, mag, *args, **kwargs)
 
                 if nyquistfrq_plot:
-                    ax_mag.axvline(nyquistfrq_plot, color=pltline[0].get_color())
+                    ax_mag.axvline(nyquistfrq_plot,
+                                   color=pltline[0].get_color())
 
                 # Add a grid to the plot + labeling
                 ax_mag.grid(True, which='both')
                 ax_mag.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
 
                 # Phase plot
-                ax_phase = plt.subplot(212, sharex=ax_mag);
                 if deg:
                     phase_plot = phase * 180. / math.pi
                 else:
@@ -353,28 +378,50 @@ def gangof4_plot(P, C, omega=None):
         L = P * C;
         S = feedback(1, L);
         T = L * S;
+        
+        # Set up the axes with labels so that multiple calls to
+        # gangof4_plot will superimpose the data.  See details in bode_plot.
+        plot_axes = {'t' : None, 's' : None, 'ps' : None, 'cs' : None}
+        for ax in plt.gcf().axes:
+            label = ax.get_label()
+            if label.startswith('control-gangof4-'):
+                key = label[len('control-gangof4-'):]
+                if key not in plot_axes:
+                    raise RuntimeError("unknown gangof4 axis type '{}'".format(label))
+                plot_axes[key] = ax
 
+        # if any of the axes are missing, start from scratch
+        if any((ax is None for ax in plot_axes.values())):
+            plt.clf()
+            plot_axes = {'t' : plt.subplot(221,label='control-gangof4-t'),
+                         'ps' : plt.subplot(222,label='control-gangof4-ps'),
+                         'cs' : plt.subplot(223,label='control-gangof4-cs'),
+                         's' : plt.subplot(224,label='control-gangof4-s')}
+
+        #
         # Plot the four sensitivity functions
+        #
+
         #! TODO: Need to add in the mag = 1 lines
         mag_tmp, phase_tmp, omega = T.freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(221); plt.loglog(omega, mag);
+        plot_axes['t'].loglog(omega, mag);
 
         mag_tmp, phase_tmp, omega = (P * S).freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(222); plt.loglog(omega, mag);
+        plot_axes['ps'].loglog(omega, mag);
 
         mag_tmp, phase_tmp, omega = (C * S).freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(223); plt.loglog(omega, mag);
+        plot_axes['cs'].loglog(omega, mag);
 
         mag_tmp, phase_tmp, omega = S.freqresp(omega);
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
-        plt.subplot(224); plt.loglog(omega, mag);
+        plot_axes['s'].loglog(omega, mag);
 
 #
 # Utility functions
