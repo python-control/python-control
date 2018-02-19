@@ -112,14 +112,14 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
-            plt.scatter(real(poles), imag(poles), s=50, marker='x')
+            plt.scatter(real(poles), imag(poles), s=50, marker='x', facecolors='k')
         if len(zeros) > 0:
             plt.scatter(real(zeros), imag(zeros), s=50, marker='o',
-                        facecolors='none')
+                        facecolors='none', edgecolors='k')
         # Add axes
         #Somewhat silly workaround
-        plt.axhline(y=0, color='black')
-        plt.axvline(x=0, color='black')
+        plt.axhline(y=0, color='black', lw=1)
+        plt.axvline(x=0, color='black', lw=1)
         plt.xlabel('Re')
         plt.ylabel('Im')
 
