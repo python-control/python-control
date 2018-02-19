@@ -40,10 +40,41 @@
 #
 # $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
 
-from numpy import real, imag
-from .lti import LTI
+from numpy import real, imag, linspace, pi, exp, cos, sin, sqrt
+from .lti import LTI, isdtime, isctime
 
 __all__ = ['pzmap']
+
+def zgrid(plt):
+    for zeta in linspace(0, 0.9,10):
+        factor = zeta/sqrt(1-zeta**2)
+        x = linspace(0, sqrt(1-zeta**2),200)
+        ang = pi*x
+        mag = exp(-pi*factor*x)
+        xret = mag*cos(ang)
+        yret = mag*sin(ang)
+        plt.plot(xret,yret, 'k:', lw=1)
+        xret = mag*cos(-ang)
+        yret = mag*sin(-ang)
+        plt.plot(xret,yret,'k:', lw=1)
+        an_i = int(len(xret)/2.5)
+        an_x = xret[an_i]
+        an_y = yret[an_i]
+        plt.annotate(str(zeta), xy=(an_x, an_y), xytext=(an_x, an_y), size=7)
+
+    for a in linspace(0,1,10):
+        x = linspace(-pi/2,pi/2,200)
+        ang = pi*a*sin(x)
+        mag = exp(-pi*a*cos(x))
+        xret = mag*cos(ang)
+        yret = mag*sin(ang)
+        plt.plot(xret,yret,'k:', lw=1)
+        an_i = -1 #int(len(xret)/2.5)
+        an_x = xret[an_i]
+        an_y = yret[an_i]
+        num = '{:1.1f}'.format(a)
+        plt.annotate("$\\frac{"+num+"\pi}{T}$", xy=(an_x, an_y), xytext=(an_x, an_y), size=8)
+
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
@@ -75,6 +106,10 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
 
     if (Plot):
         import matplotlib.pyplot as plt
+
+        if isdtime(sys):
+            zgrid(plt)
+
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
             plt.scatter(real(poles), imag(poles), s=50, marker='x')
