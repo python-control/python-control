@@ -10,7 +10,8 @@ import unittest
 import numpy as np
 import control as ctrl
 from control.statesp import StateSpace
-from control.matlab import ss, tf, bode
+from control.xferfcn import TransferFunction
+from control.matlab import ss, tf, bode, rss
 from control.exception import slycot_check
 import matplotlib.pyplot as plt
 
@@ -106,6 +107,66 @@ class TestFreqresp(unittest.TestCase):
 
       #plt.figure(4)
       #bode(sysMIMO,self.omega)
+
+   def test_discrete(self):
+      # Test discrete time frequency response
+
+      # SISO state space systems with either fixed or unspecified sampling times
+      sys = rss(3, 1, 1)
+      siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1)
+      siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, True)
+
+      # MIMO state space systems with either fixed or unspecified sampling times
+      A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
+      B = [[1., 4.], [-3., -3.], [-2., 1.]]
+      C = [[4., 2., -3.], [1., 4., 3.]]
+      D = [[-2., 4.], [0., 1.]]
+      mimo_ss1d = StateSpace(A, B, C, D, 0.1)
+      mimo_ss2d = StateSpace(A, B, C, D, True)
+
+      # SISO transfer functions
+      siso_tf1d = TransferFunction([1, 1], [1, 2, 1], 0.1)
+      siso_tf2d = TransferFunction([1, 1], [1, 2, 1], True)
+
+      # Go through each system and call the code, checking return types
+      for sys in (siso_ss1d, siso_ss2d, mimo_ss1d, mimo_ss2d,
+                siso_tf1d, siso_tf2d):
+         # Set frequency range to just below Nyquist freq (for Bode)
+         omega_ok = np.linspace(10e-4,0.99,100) * np.pi/sys.dt
+
+         # Test frequency response
+         ret = sys.freqresp(omega_ok)
+
+         # Check for warning if frequency is out of range
+         import warnings
+         with warnings.catch_warnings(record=True) as w:
+            omega_bad = np.linspace(10e-4,1.1,10) * np.pi/sys.dt
+            ret = sys.freqresp(omega_bad)
+            print("len(w) =", len(w))
+            assert len(w) == 1
+            assert "above" in str(w[-1].message)
+            assert "Nyquist" in str(w[-1].message)
+
+         # Test bode plots (currently only implemented for SISO)
+         if (sys.inputs == 1 and sys.outputs == 1):
+            # Generic call (frequency range calculated automatically)
+            ret_ss = bode(sys)
+
+            # Convert to transfer function and test bode again
+            systf = tf(sys);
+            ret_tf = bode(systf)
+
+            # Make sure we can pass a frequency range
+            bode(sys, omega_ok)
+
+         else:
+            # Calling bode should generate a not implemented error
+            try:
+               ret_ss = bode(sys)
+               raise RuntimeError("MIMO bode seems to be implemented?")
+            except NotImplementedError:
+               # This is where we should end up (so do nothing)
+               continue
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
