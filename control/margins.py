@@ -340,10 +340,10 @@ def margin(*args):
         Gain margin
     pm : float
         Phase margin (in degrees)
-    Wcg : float
-        Gain crossover frequency (corresponding to phase margin)
-    Wcp : float
-        Phase crossover frequency (corresponding to gain margin) (in rad/sec)
+    wg: float or array_like
+        Gain margin crossover frequency (where phase crosses -180 degrees)
+    wp: float or array_like
+        Phase margin crossover frequency (where gain crosses 0 dB)
 
     Margins are of SISO open-loop. If more than one crossover frequency is
     detected, returns the lowest corresponding margin.
@@ -351,7 +351,7 @@ def margin(*args):
     Examples
     --------
     >>> sys = tf(1, [1, 2, 1, 0])
-    >>> gm, pm, Wcg, Wcp = margin(sys)
+    >>> gm, pm, wg, wp = margin(sys)
 
     """
     if len(args) == 1:
