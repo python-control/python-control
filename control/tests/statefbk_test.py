@@ -218,6 +218,7 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P, P_placed)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_continuous_partial_eigs(self):
         """
         Check that we are able to use the alpha parameter to only place
@@ -239,6 +240,7 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P_expected, P_placed)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_discrete(self):
         """
         Check that we can place poles using DICO='D' (discrete time)
@@ -254,6 +256,7 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P, P_placed)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_discrete_partial_eigs(self):
         """"
         Check that we can only assign a single eigenvalue in the discrete
