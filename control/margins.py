@@ -340,9 +340,9 @@ def margin(*args):
         Gain margin
     pm : float
         Phase margin (in degrees)
-    wg: float or array_like
+    wg: float
         Gain margin crossover frequency (where phase crosses -180 degrees)
-    wp: float or array_like
+    wp: float
         Phase margin crossover frequency (where gain crosses 0 dB)
 
     Margins are of SISO open-loop. If more than one crossover frequency is
