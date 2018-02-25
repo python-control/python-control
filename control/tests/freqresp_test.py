@@ -139,6 +139,7 @@ class TestFreqresp(unittest.TestCase):
 
          # Check for warning if frequency is out of range
          import warnings
+         warnings.simplefilter('always', UserWarning)   # don't supress
          with warnings.catch_warnings(record=True) as w:
             omega_bad = np.linspace(10e-4,1.1,10) * np.pi/sys.dt
             ret = sys.freqresp(omega_bad)
