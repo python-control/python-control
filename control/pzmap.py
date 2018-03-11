@@ -40,46 +40,17 @@
 #
 # $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
 
-from numpy import real, imag, linspace, pi, exp, cos, sin, sqrt
+from numpy import real, imag, linspace, exp, cos, sin, sqrt
+from math import pi
 from .lti import LTI, isdtime, isctime
+from .grid import sgrid, zgrid, nogrid
 
 __all__ = ['pzmap']
-
-def zgrid(plt):
-    for zeta in linspace(0, 0.9,10):
-        factor = zeta/sqrt(1-zeta**2)
-        x = linspace(0, sqrt(1-zeta**2),200)
-        ang = pi*x
-        mag = exp(-pi*factor*x)
-        xret = mag*cos(ang)
-        yret = mag*sin(ang)
-        plt.plot(xret,yret, 'k:', lw=1)
-        xret = mag*cos(-ang)
-        yret = mag*sin(-ang)
-        plt.plot(xret,yret,'k:', lw=1)
-        an_i = int(len(xret)/2.5)
-        an_x = xret[an_i]
-        an_y = yret[an_i]
-        plt.annotate(str(zeta), xy=(an_x, an_y), xytext=(an_x, an_y), size=7)
-
-    for a in linspace(0,1,10):
-        x = linspace(-pi/2,pi/2,200)
-        ang = pi*a*sin(x)
-        mag = exp(-pi*a*cos(x))
-        xret = mag*cos(ang)
-        yret = mag*sin(ang)
-        plt.plot(xret,yret,'k:', lw=1)
-        an_i = -1 #int(len(xret)/2.5)
-        an_x = xret[an_i]
-        an_y = yret[an_i]
-        num = '{:1.1f}'.format(a)
-        plt.annotate("$\\frac{"+num+"\pi}{T}$", xy=(an_x, an_y), xytext=(an_x, an_y), size=8)
-
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, Plot=True, title='Pole Zero Map'):
+def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
     """
     Plot a pole/zero map for a linear system.
 
@@ -90,6 +61,8 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
     Plot: bool
         If ``True`` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
+    grid: boolean (default = False)
+        If True plot omega-damping grid.
 
     Returns
     -------
@@ -107,21 +80,21 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
     if (Plot):
         import matplotlib.pyplot as plt
 
-        if isdtime(sys):
-            zgrid(plt)
+        if grid:
+            if isdtime(sys, strict=True):
+                ax, fig = zgrid()
+            else:
+                ax, fig = sgrid()
+        else:
+            ax, fig = nogrid()
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
-            plt.scatter(real(poles), imag(poles), s=50, marker='x', facecolors='k')
+            ax.scatter(real(poles), imag(poles), s=50, marker='x', facecolors='k')
         if len(zeros) > 0:
-            plt.scatter(real(zeros), imag(zeros), s=50, marker='o',
+            ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
                         facecolors='none', edgecolors='k')
-        # Add axes
-        #Somewhat silly workaround
-        plt.axhline(y=0, color='black', lw=1)
-        plt.axvline(x=0, color='black', lw=1)
-        plt.xlabel('Re')
-        plt.ylabel('Im')
+
 
         plt.title(title)
 
