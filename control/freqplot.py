@@ -261,7 +261,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 
                     ax_mag.set_ylim(mag_ylim)
                     ax_phase.set_ylim(phase_ylim)
-                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)'%(20*np.log10(gm) if dB else gm,'dB' if dB else '\b',Wcg,pm if deg else math.degrees(pm),'deg' if deg else 'rad',Wcp))
+                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b',Wcg,pm if deg else math.degrees(pm),'deg' if deg else 'rad',Wcp))
 
                 if nyquistfrq_plot:
                     ax_phase.axvline(nyquistfrq_plot, color=pltline[0].get_color())
