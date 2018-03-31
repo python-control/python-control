@@ -47,6 +47,7 @@ import numpy as np
 import math
 from .ctrlutil import unwrap
 from .bdalg import feedback
+from .margins import stability_margins
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
            'bode', 'nyquist', 'gangof4']
@@ -60,7 +61,7 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 
 # Bode plot
 def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
-        Plot=True, omega_limits=None, omega_num=None, *args, **kwargs):
+        Plot=True, omega_limits=None, omega_num=None,margins=None, *args, **kwargs):
     """Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
@@ -208,7 +209,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                                    color=pltline[0].get_color())
 
                 # Add a grid to the plot + labeling
-                ax_mag.grid(True, which='both')
+                ax_mag.grid(False if margins else True, which='both')
                 ax_mag.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
 
                 # Phase plot
@@ -217,6 +218,50 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 else:
                     phase_plot = phase
                 ax_phase.semilogx(omega_plot, phase_plot, *args, **kwargs)
+
+                #show the phase and gain margins in the plot
+                if margins:
+                    margin = stability_margins(sys)
+                    gm, pm, Wcg, Wcp = margin[0], margin[1], margin[3], margin[4]
+                    if pm >= 0.:
+                        phase_limit = -180.
+                    else:
+                        phase_limit = 180.
+
+                    ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':')
+                    ax_phase.axhline(y=phase_limit if deg else math.radians(phase_limit), color='k', linestyle=':')
+                    mag_ylim = ax_mag.get_ylim()
+                    phase_ylim = ax_phase.get_ylim()
+
+                    if pm != float('inf') and Wcp != float('nan'):
+                        if dB:
+                            ax_mag.semilogx([Wcp, Wcp], [0, -(10**5.)], color='k', linestyle=':')
+                        else:
+                            ax_mag.loglog([Wcp,Wcp], [1,10.**-20.],color='k',linestyle=':')
+
+                        if deg:
+                            ax_phase.semilogx([Wcp, Wcp], [(10**5.) if phase_limit > 0. else 10.**-20., phase_limit+pm], color='k', linestyle=':')
+                            ax_phase.semilogx([Wcp, Wcp], [phase_limit + pm, phase_limit], color='k', linestyle='-')
+                        else:
+                            ax_phase.semilogx([Wcp, Wcp], [10.**-20., -math.pi+math.radians(pm)], color='k', linestyle=':')
+                            ax_phase.semilogx([Wcp, Wcp], [-math.pi +math.radians(pm), -math.pi], color='k', linestyle='-')
+
+                    if gm != float('inf') and Wcg != float('nan'):
+                        if dB:
+                            ax_mag.semilogx([Wcg, Wcg], [-20.*np.log10(gm), -(10**5.)], color='k', linestyle=':')
+                            ax_mag.semilogx([Wcg, Wcg], [0,- 20 * np.log10(gm)], color='k', linestyle='-')
+                        else:
+                            ax_mag.semilogx([Wcg, Wcg], [1./gm, 10. ** -20.], color='k', linestyle=':')
+                            ax_mag.semilogx([Wcg, Wcg], [1., 1./gm], color='k', linestyle='-')
+
+                        if deg:
+                            ax_phase.semilogx([Wcg, Wcg], [10.**-20., phase_limit], color='k', linestyle=':')
+                        else:
+                            ax_phase.semilogx([Wcg, Wcg], [10. ** -20., -math.pi], color='k', linestyle=':')
+
+                    ax_mag.set_ylim(mag_ylim)
+                    ax_phase.set_ylim(phase_ylim)
+                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)'%(20*np.log10(gm) if dB else gm,'dB' if dB else '\b',Wcg,pm if deg else math.degrees(pm),'deg' if deg else 'rad',Wcp))
 
                 if nyquistfrq_plot:
                     ax_phase.axvline(nyquistfrq_plot, color=pltline[0].get_color())
@@ -236,7 +281,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     ylim = ax_phase.get_ylim()
                     ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], math.pi / 4.))
                     ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], math.pi / 12.), minor=True)
-                ax_phase.grid(True, which='both')
+                ax_phase.grid(False if margins else True, which='both')
                 # ax_mag.grid(which='minor', alpha=0.3)
                 # ax_mag.grid(which='major', alpha=0.9)
                 # ax_phase.grid(which='minor', alpha=0.3)
