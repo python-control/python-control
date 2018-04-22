@@ -45,6 +45,7 @@ import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
 import math
+import sys as system
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
@@ -85,6 +86,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         If Hz=True the limits are in Hz otherwise in rad/s.
     omega_num: int
         number of samples
+    margins : boolean
+        if True, plot gain and phase margin
     *args, **kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
@@ -219,7 +222,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     phase_plot = phase
                 ax_phase.semilogx(omega_plot, phase_plot, *args, **kwargs)
 
-                #show the phase and gain margins in the plot
+                # Show the phase and gain margins in the plot
                 if margins:
                     margin = stability_margins(sys)
                     gm, pm, Wcg, Wcp = margin[0], margin[1], margin[3], margin[4]
@@ -235,33 +238,33 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 
                     if pm != float('inf') and Wcp != float('nan'):
                         if dB:
-                            ax_mag.semilogx([Wcp, Wcp], [0, -(10**5.)], color='k', linestyle=':')
+                            ax_mag.semilogx([Wcp, Wcp], [0.,-1e5],color='k', linestyle=':')
                         else:
-                            ax_mag.loglog([Wcp,Wcp], [1,10.**-20.],color='k',linestyle=':')
+                            ax_mag.loglog([Wcp,Wcp], [1.,1e-8],color='k',linestyle=':')
 
                         if deg:
-                            ax_phase.semilogx([Wcp, Wcp], [(10**5.) if phase_limit > 0. else 10.**-20., phase_limit+pm], color='k', linestyle=':')
-                            ax_phase.semilogx([Wcp, Wcp], [phase_limit + pm, phase_limit], color='k', linestyle='-')
+                            ax_phase.semilogx([Wcp, Wcp], [1e5, phase_limit+pm],color='k', linestyle=':')
+                            ax_phase.semilogx([Wcp, Wcp], [phase_limit + pm, phase_limit],color='k')
                         else:
-                            ax_phase.semilogx([Wcp, Wcp], [10.**-20., -math.pi+math.radians(pm)], color='k', linestyle=':')
-                            ax_phase.semilogx([Wcp, Wcp], [-math.pi +math.radians(pm), -math.pi], color='k', linestyle='-')
+                            ax_phase.semilogx([Wcp, Wcp], [1e5, math.radians(phase_limit)+math.radians(pm)],color='k', linestyle=':')
+                            ax_phase.semilogx([Wcp, Wcp], [math.radians(phase_limit) +math.radians(pm), math.radians(phase_limit)],color='k')
 
                     if gm != float('inf') and Wcg != float('nan'):
                         if dB:
-                            ax_mag.semilogx([Wcg, Wcg], [-20.*np.log10(gm), -(10**5.)], color='k', linestyle=':')
-                            ax_mag.semilogx([Wcg, Wcg], [0,- 20 * np.log10(gm)], color='k', linestyle='-')
+                            ax_mag.semilogx([Wcg, Wcg], [-20.*np.log10(gm), -1e5],color='k', linestyle=':')
+                            ax_mag.semilogx([Wcg, Wcg], [0,-20*np.log10(gm)],color='k')
                         else:
-                            ax_mag.semilogx([Wcg, Wcg], [1./gm, 10. ** -20.], color='k', linestyle=':')
-                            ax_mag.semilogx([Wcg, Wcg], [1., 1./gm], color='k', linestyle='-')
+                            ax_mag.loglog([Wcg, Wcg], [1./gm,1e-8],color='k', linestyle=':')
+                            ax_mag.loglog([Wcg, Wcg], [1.,1./gm],color='k')
 
                         if deg:
-                            ax_phase.semilogx([Wcg, Wcg], [10.**-20., phase_limit], color='k', linestyle=':')
+                            ax_phase.semilogx([Wcg, Wcg], [1e-8, phase_limit],color='k', linestyle=':')
                         else:
-                            ax_phase.semilogx([Wcg, Wcg], [10. ** -20., -math.pi], color='k', linestyle=':')
+                            ax_phase.semilogx([Wcg, Wcg], [1e-8, math.radians(phase_limit)],color='k', linestyle=':')
 
                     ax_mag.set_ylim(mag_ylim)
                     ax_phase.set_ylim(phase_ylim)
-                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b',Wcg,pm if deg else math.degrees(pm),'deg' if deg else 'rad',Wcp))
+                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b',Wcg,pm if deg else math.radians(pm),'deg' if deg else 'rad',Wcp))
 
                 if nyquistfrq_plot:
                     ax_phase.axvline(nyquistfrq_plot, color=pltline[0].get_color())
