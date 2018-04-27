@@ -6,8 +6,8 @@ from .lti import issiso
 from .statesp import StateSpace
 from .statefbk import ctrb, obsv
 
-from numpy import zeros, shape, poly
-from numpy.linalg import solve, matrix_rank
+from numpy import zeros, shape, poly, iscomplex, hstack
+from numpy.linalg import solve, matrix_rank, eig
 
 __all__ = ['canonical_form', 'reachable_form', 'observable_form']
 
@@ -22,7 +22,7 @@ def canonical_form(xsys, form='reachable'):
         Canonical form for transformation.  Chosen from:
           * 'reachable' - reachable canonical form
           * 'observable' - observable canonical form
-          * 'modal' - modal canonical form [not implemented]
+          * 'modal' - modal canonical form
 
     Returns
     -------
@@ -37,6 +37,8 @@ def canonical_form(xsys, form='reachable'):
         return reachable_form(xsys)
     elif form == 'observable':
         return observable_form(xsys)
+    elif form == 'modal':
+        return modal_form(xsys)
     else:
         raise ControlNotImplemented(
             "Canonical form '%s' not yet implemented" % form)
@@ -137,5 +139,71 @@ def observable_form(xsys):
 
     # Finally, compute the output matrix
     zsys.B = Tzx * xsys.B
+
+    return zsys, Tzx
+
+def modal_form(xsys):
+    """Convert a system into modal canonical form
+
+    Parameters
+    ----------
+    xsys : StateSpace object
+        System to be transformed, with state `x`
+
+    Returns
+    -------
+    zsys : StateSpace object
+        System in modal canonical form, with state `z`
+    T : matrix
+        Coordinate transformation: z = T * x
+    """
+    # Check to make sure we have a SISO system
+    if not issiso(xsys):
+        raise ControlNotImplemented(
+            "Canonical forms for MIMO systems not yet supported")
+
+    # Create a new system, starting with a copy of the old one
+    zsys = StateSpace(xsys)
+
+    # Calculate eigenvalues and matrix of eigenvectors Tzx,
+    eigval, eigvec = eig(xsys.A)
+
+    # Eigenvalues and according eigenvectors are not sorted,
+    # thus modal transformation is ambiguous
+    # Sorting eigenvalues and respective vectors by largest to smallest eigenvalue
+    idx = eigval.argsort()[::-1]
+    eigval = eigval[idx]
+    eigvec = eigvec[:,idx]
+
+    # If all eigenvalues are real, the matrix of eigenvectors is Tzx directly
+    if not iscomplex(eigval).any():
+        Tzx = eigvec
+    else:
+        # A is an arbitrary semisimple matrix
+
+        # Keep track of complex conjugates (need only one)
+        lst_conjugates = []
+        Tzx = None
+        for val, vec in zip(eigval, eigvec.T):
+            if iscomplex(val):
+                if val not in lst_conjugates:
+                    lst_conjugates.append(val.conjugate())
+                    if Tzx is not None:
+                        Tzx = hstack((Tzx, hstack((vec.real.T, vec.imag.T))))
+                    else:
+                        Tzx = hstack((vec.real.T, vec.imag.T))
+                else:
+                    # if conjugate has already been seen, skip this eigenvalue
+                    lst_conjugates.remove(val)
+            else:
+                if Tzx is not None:
+                    Tzx = hstack((Tzx, vec.real.T))
+                else:
+                    Tzx = vec.real.T
+
+    # Generate the system matrices for the desired canonical form
+    zsys.A = solve(Tzx, xsys.A).dot(Tzx)
+    zsys.B = solve(Tzx, xsys.B)
+    zsys.C = xsys.C.dot(Tzx)
 
     return zsys, Tzx
