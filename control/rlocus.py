@@ -152,7 +152,7 @@ def _default_gains(num, den, xlim, ylim):
 
     k_break, real_break = _break_points(num, den)
     kmax = _k_max(num, den, real_break, k_break)
-    kvect = np.hstack((np.linspace(0, kmax, 10000), np.real(k_break)))
+    kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
     kvect.sort()
 
     mymat = _RLFindRoots(num, den, kvect)
