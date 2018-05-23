@@ -59,7 +59,7 @@ __all__ = ['root_locus', 'rlocus']
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
-               PrintGain=True, grid=False):
+               PrintGain=True, grid=False, sisotool = False, f=None, ax =None):
     """Root locus plot
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
@@ -103,21 +103,21 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
 
     # Create the Plot
     if Plot:
-        figure_number = pylab.get_fignums()
-        figure_title = [pylab.figure(numb).canvas.get_window_title() for numb in figure_number]
-        new_figure_name = "Root Locus"
-        rloc_num = 1
-        while new_figure_name in figure_title:
-            new_figure_name = "Root Locus " + str(rloc_num)
-            rloc_num += 1
-        f = pylab.figure(new_figure_name)
+        if sisotool == False:
+            figure_number = pylab.get_fignums()
+            figure_title = [pylab.figure(numb).canvas.get_window_title() for numb in figure_number]
+            new_figure_name = "Root Locus"
+            rloc_num = 1
+            while new_figure_name in figure_title:
+                new_figure_name = "Root Locus " + str(rloc_num)
+                rloc_num += 1
+            f = pylab.figure(new_figure_name)
+            ax = pylab.axes()
 
-        ax = pylab.axes()
 
         if PrintGain:
-            click_point, = ax.plot([0], [0],color='k',markersize = 0,marker='s',zorder=20)
             f.canvas.mpl_connect(
-                'button_release_event', partial(_RLFeedbackClicks, sys=sys,fig=f,point=click_point))
+                'button_release_event', partial(_RLFeedbackClicks,sys=sys,fig=f,sisotool=sisotool))
 
         # plot open loop poles
         poles = array(denp.r)
@@ -344,21 +344,33 @@ def _RLSortRoots(mymat):
     return sorted
 
 
-def _RLFeedbackClicks(event, sys,fig,point):
+def _RLFeedbackClicks(event,sys,fig,sisotool):
     """Print root-locus gain feedback for clicks on the root-locus plot
     """
+    (nump, denp) = _systopoly1d(sys)
     s = complex(event.xdata, event.ydata)
     K = -1./sys.horner(s)
     if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
-        point.set_ydata(s.imag)
-        point.set_xdata(s.real)
-        point.set_markersize(8)
         fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-              (s.real, s.imag, K.real, -1 * s.real / abs(s)))
-        fig.canvas.draw()
+                     (s.real, s.imag, K.real, -1 * s.real / abs(s)))
 
+        ax = fig.axes[0]
+        for line in reversed(ax.lines):
+            if len(line.get_xdata()) == 1:
+                line.remove()
+                del line
+            else:
+                break
+
+        if sisotool:
+            mymat = _RLFindRoots(nump, denp, K.real)
+            ax.plot([root.real for root in mymat],[root.imag for root in mymat],'m.',marker='s',markersize=8, zorder=20)
+        else:
+            ax.plot(s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20)
+
+        fig.canvas.draw()
 
 def _sgrid_func(fig=None, zeta=None, wn=None):
     if fig is None:
