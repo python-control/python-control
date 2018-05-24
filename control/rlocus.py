@@ -52,6 +52,7 @@ import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
 from .xferfcn import _convertToTransferFunction
 from .exception import ControlMIMONotImplemented
+from .sisotool import _SisotoolUpdate
 from functools import partial
 
 __all__ = ['root_locus', 'rlocus']
@@ -59,7 +60,8 @@ __all__ = ['root_locus', 'rlocus']
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
-               PrintGain=True, grid=False, sisotool = False, f=None, ax =None):
+               PrintGain=True, grid=False, **kwargs):
+
     """Root locus plot
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
@@ -96,14 +98,16 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
     (nump, denp) = _systopoly1d(sys)
 
     if kvect is None:
+        start_mat = _RLFindRoots(nump, denp, [1])
         kvect, mymat, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
     else:
+        start_mat = _RLFindRoots(nump, denp, kvect[0])
         mymat = _RLFindRoots(nump, denp, kvect)
         mymat = _RLSortRoots(mymat)
 
     # Create the Plot
     if Plot:
-        if sisotool == False:
+        if 'sisotool' not in kwargs:
             figure_number = pylab.get_fignums()
             figure_title = [pylab.figure(numb).canvas.get_window_title() for numb in figure_number]
             new_figure_name = "Root Locus"
@@ -113,11 +117,19 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
                 rloc_num += 1
             f = pylab.figure(new_figure_name)
             ax = pylab.axes()
-
+        else:
+            sisotool = kwargs['sisotool']
+            f = kwargs['fig']
+            ax = f.axes[1]
+            bode_plot_params = kwargs['bode_plot_params']
+            tvect = kwargs['tvect']
+            event = type('event', (object,), {'xdata': start_mat[0][0].real,'ydata':start_mat[0][0].imag})()
+            _RLFeedbackClicks(event, sys, f, sisotool,bode_plot_params,tvect)
 
         if PrintGain:
+
             f.canvas.mpl_connect(
-                'button_release_event', partial(_RLFeedbackClicks,sys=sys,fig=f,sisotool=sisotool))
+                'button_release_event', partial(_RLFeedbackClicks,sys=sys,fig=f,sisotool=sisotool,bode_plot_params=bode_plot_params,tvect=tvect))
 
         # plot open loop poles
         poles = array(denp.r)
@@ -139,7 +151,9 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.set_ylim(ylim)
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
-        if grid:
+        if grid and sisotool:
+            _sgrid_func(f)
+        elif grid:
             _sgrid_func()
     return mymat, kvect
 
@@ -344,7 +358,7 @@ def _RLSortRoots(mymat):
     return sorted
 
 
-def _RLFeedbackClicks(event,sys,fig,sisotool):
+def _RLFeedbackClicks(event,sys,fig,sisotool,bode_plot_params,tvect):
     """Print root-locus gain feedback for clicks on the root-locus plot
     """
     (nump, denp) = _systopoly1d(sys)
@@ -356,26 +370,33 @@ def _RLFeedbackClicks(event,sys,fig,sisotool):
         fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
                      (s.real, s.imag, K.real, -1 * s.real / abs(s)))
 
-        ax = fig.axes[0]
-        for line in reversed(ax.lines):
+        if sisotool:
+            ax_rlocus = fig.axes[1]
+        else:
+            ax_rlocus = fig.axes[0]
+
+        for line in reversed(ax_rlocus.lines):
             if len(line.get_xdata()) == 1:
                 line.remove()
                 del line
-            else:
-                break
+            #else:
+            #    break
 
         if sisotool:
             mymat = _RLFindRoots(nump, denp, K.real)
-            ax.plot([root.real for root in mymat],[root.imag for root in mymat],'m.',marker='s',markersize=8, zorder=20)
+            ax_rlocus.plot([root.real for root in mymat],[root.imag for root in mymat],'m.',marker='s',markersize=8, zorder=20)
+            _SisotoolUpdate(sys,fig,K.real[0][0],bode_plot_params,tvect)
         else:
-            ax.plot(s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20)
+            ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20)
 
         fig.canvas.draw()
 
 def _sgrid_func(fig=None, zeta=None, wn=None):
     if fig is None:
         fig = pylab.gcf()
-    ax = fig.gca()
+        ax = fig.gca()
+    else:
+        ax = fig.axes[1]
     xlocator = ax.get_xaxis().get_major_locator()
 
     ylim = ax.get_ylim()

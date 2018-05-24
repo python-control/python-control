@@ -177,24 +177,32 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # https://github.com/matplotlib/matplotlib/issues/9024). 
                 # The code below should work on all cases.
 
-                # Get the current figure 
-                fig = plt.gcf()
-                ax_mag = None
-                ax_phase = None
+                # Get the current figure
+                if 'sisotool' in kwargs:
+                    fig = kwargs['fig']
+                    ax_mag = fig.axes[0]
+                    ax_phase = fig.axes[2]
+                    sisotool = kwargs['sisotool']
+                    del kwargs['fig']
+                    del kwargs['sisotool']
+                else:
+                    fig = plt.gcf()
+                    ax_mag = None
+                    ax_phase = None
 
-                # Get the current axes if they already exist
-                for ax in fig.axes:
-                    if ax.get_label() == 'control-bode-magnitude':
-                        ax_mag = ax
-                    elif ax.get_label() == 'control-bode-phase':
-                        ax_phase = ax
+                    # Get the current axes if they already exist
+                    for ax in fig.axes:
+                        if ax.get_label() == 'control-bode-magnitude':
+                            ax_mag = ax
+                        elif ax.get_label() == 'control-bode-phase':
+                            ax_phase = ax
 
-                # If no axes present, create them from scratch
-                if ax_mag is None or ax_phase is None:
-                    plt.clf()
-                    ax_mag = plt.subplot(211, label = 'control-bode-magnitude')
-                    ax_phase = plt.subplot(212, label = 'control-bode-phase',
-                                           sharex=ax_mag)
+                    # If no axes present, create them from scratch
+                    if ax_mag is None or ax_phase is None:
+                        plt.clf()
+                        ax_mag = plt.subplot(211, label = 'control-bode-magnitude')
+                        ax_phase = plt.subplot(212, label = 'control-bode-phase',
+                                               sharex=ax_mag)
 
                 # Magnitude plot
                 if dB:
