@@ -62,4 +62,5 @@ def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
     else:
         tvect, yout = step_response(sys_closed,tvect)
     ax_step.plot(tvect, yout)
+    ax_step.axhline(1.,linestyle=':',color='k')
 

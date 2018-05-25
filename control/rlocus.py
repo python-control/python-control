@@ -105,9 +105,16 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         mymat = _RLFindRoots(nump, denp, kvect)
         mymat = _RLSortRoots(mymat)
 
+    # Check for sisotool mode
+    sisotool = False if 'sisotool' not in kwargs else True
+
     # Create the Plot
     if Plot:
-        if 'sisotool' not in kwargs:
+        if sisotool:
+            f = kwargs['fig']
+            ax = f.axes[1]
+
+        else:
             figure_number = pylab.get_fignums()
             figure_title = [pylab.figure(numb).canvas.get_window_title() for numb in figure_number]
             new_figure_name = "Root Locus"
@@ -117,22 +124,16 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
                 rloc_num += 1
             f = pylab.figure(new_figure_name)
             ax = pylab.axes()
-        else:
-            sisotool = kwargs['sisotool']
-            f = kwargs['fig']
-            ax = f.axes[1]
-            bode_plot_params = kwargs['bode_plot_params']
-            tvect = kwargs['tvect']
-            event = type('event', (object,), {'xdata': start_mat[0][0].real,'ydata':start_mat[0][0].imag})()
-            _RLFeedbackClicksSisotool(event, sys, f,bode_plot_params,tvect)
 
         if PrintGain and sisotool == False:
             f.canvas.mpl_connect(
                 'button_release_event', partial(_RLFeedbackClicksPoint,sys=sys,fig=f))
+
         elif sisotool == True:
-            print('this is run')
+            f.axes[1].plot([root.real for root in start_mat], [root.imag for root in start_mat], 'm.', marker='s', markersize=8,zorder=20)
+            f.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" % (start_mat[0][0].real, start_mat[0][0].imag, 1, -1 * start_mat[0][0].real / abs(start_mat[0][0])))
             f.canvas.mpl_connect(
-                'button_release_event',partial(_RLFeedbackClicksSisotool,sys=sys, fig=f, bode_plot_params=bode_plot_params,tvect=tvect))
+                'button_release_event',partial(_RLFeedbackClicksSisotool,sys=sys, fig=f, bode_plot_params=kwargs['bode_plot_params'],tvect=kwargs['tvect']))
 
         # plot open loop poles
         poles = array(denp.r)
@@ -158,6 +159,9 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             _sgrid_func(f)
         elif grid:
             _sgrid_func()
+        else:
+            ax.axhline(0., linestyle=':', color='k')
+            ax.axvline(0., linestyle=':', color='k')
     return mymat, kvect
 
 
@@ -366,23 +370,22 @@ def _RLFeedbackClicksSisotool(event,sys,fig,bode_plot_params,tvect):
     s = complex(event.xdata, event.ydata)
     K = -1./sys.horner(s)
     ax_rlocus = fig.axes[1]
-    if _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus):
+    if _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=True):
         _SisotoolUpdate(sys,fig,K.real[0][0],bode_plot_params,tvect)
 
-
-def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None):
+def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
     """Display root-locus gain feedback point for clicks on the root-locus plot
     """
-    if ax_rlocus is None:
+    if sisotool == False:
         ax_rlocus = fig.axes[0]
-        sisotool = False
-    else:
-        sisotool = True
 
     (nump, denp) = _systopoly1d(sys)
     s = complex(event.xdata, event.ydata)
     K = -1. / sys.horner(s)
-    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < 0.04:
+    print(K)
+    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < 0.04 and event.inaxes == ax_rlocus.axes:
+
+        # Display the parameters in the output window and figure
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
         fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
@@ -393,8 +396,6 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None):
             if len(line.get_xdata()) == 1:
                 line.remove()
                 del line
-            #else:
-            #    break
 
         # Visualise clicked point, display all roots for sisotool mode
         if sisotool:
@@ -404,6 +405,7 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None):
         else:
             ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20)
 
+        # Update the canvas
         fig.canvas.draw()
 
         return True
