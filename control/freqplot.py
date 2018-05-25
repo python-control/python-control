@@ -45,7 +45,6 @@ import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
 import math
-import sys as system
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
