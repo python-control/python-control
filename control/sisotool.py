@@ -31,13 +31,13 @@ def sisotool(sys, kvect = None, xlim = None, ylim = None, plotstr_rlocus = '-',r
         'fig': fig,
     }
 
-    #To-do find out clever way to pass correct settings to other plots
-    _SisotoolUpdate(sys, fig, 1,bode_plot_params,tvect)
+    # First time call to setup the bode and step response plots
+    _SisotoolUpdate(sys, fig,1 if kvect is None else kvect[0],bode_plot_params)
 
     # Setup the root-locus plot window
     root_locus(sys,kvect=kvect,xlim=xlim,ylim = ylim,plotstr=plotstr_rlocus,grid = rlocus_grid,fig=fig,bode_plot_params=bode_plot_params,tvect=tvect,sisotool=True)
 
-def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect):
+def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
 
     # Get the subaxes and clear them
     ax_mag,ax_rlocus,ax_phase,ax_step = fig.axes[0],fig.axes[1],fig.axes[2],fig.axes[3]
@@ -55,7 +55,7 @@ def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect):
     bode_plot_params['syslist'] = sys*K.real
     bode_plot(**bode_plot_params)
 
-    # Generate the step response
+    # Generate the step response and plot it
     sys_closed = (K*sys).feedback(1)
     if tvect is None:
         tvect, yout = step_response(sys_closed)
