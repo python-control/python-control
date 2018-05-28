@@ -382,7 +382,6 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
     (nump, denp) = _systopoly1d(sys)
     s = complex(event.xdata, event.ydata)
     K = -1. / sys.horner(s)
-    print(K)
     if abs(K.real) > 1e-8 and abs(K.imag / K.real) < 0.04 and event.inaxes == ax_rlocus.axes:
 
         # Display the parameters in the output window and figure

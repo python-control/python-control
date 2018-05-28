@@ -86,7 +86,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     omega_num: int
         number of samples
     margins : boolean
-        if True, plot gain and phase margin
+        If True, plot gain and phase margin
     *args, **kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
@@ -233,10 +233,14 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 if margins:
                     margin = stability_margins(sys)
                     gm, pm, Wcg, Wcp = margin[0], margin[1], margin[3], margin[4]
-                    if pm >= 0.:
-                        phase_limit = -180.
-                    else:
+                    phase_at_cp = phases[0][(np.abs(omegas[0] - Wcp)).argmin()]
+                    if phase_at_cp >= 0.:
                         phase_limit = 180.
+                    else:
+                        phase_limit = -180.
+
+                    if Hz:
+                        Wcg, Wcp = Wcg/(2*math.pi),Wcp/(2*math.pi)
 
                     ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':')
                     ax_phase.axhline(y=phase_limit if deg else math.radians(phase_limit), color='k', linestyle=':')
@@ -271,7 +275,14 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 
                     ax_mag.set_ylim(mag_ylim)
                     ax_phase.set_ylim(phase_ylim)
-                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b',Wcg,pm if deg else math.radians(pm),'deg' if deg else 'rad',Wcp))
+
+                    if sisotool:
+                        ax_mag.text(0.04, 0.06, 'G.M.: %.2f %s\nFreq: %.2f %s'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b',Wcg,'Hz' if Hz else 'rad/s'), horizontalalignment='left', verticalalignment='bottom',
+                                    transform=ax_mag.transAxes,fontsize=10)
+                        ax_phase.text(0.04, 0.06, 'P.M.: %.2f %s\nFreq: %.2f %s'%(pm if deg else math.radians(pm),'deg' if deg else 'rad',Wcp,'Hz' if Hz else 'rad/s'), horizontalalignment='left', verticalalignment='bottom',
+                                    transform=ax_phase.transAxes,fontsize=10)
+                    else:
+                        plt.suptitle('Gm = %.2f %s(at %.2f %s), Pm = %.2f %s (at %.2f %s)'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b','Hz' if Hz else 'rad/s',Wcg,pm if deg else math.radians(pm),'deg' if deg else 'rad',Wcp,'Hz' if Hz else 'rad/s'))
 
                 if nyquistfrq_plot:
                     ax_phase.axvline(nyquistfrq_plot, color=pltline[0].get_color())
@@ -643,6 +654,11 @@ def gen_prefix(pow1000):
             'a',  # atto (10^-18)
             'z',  # zepto (10^-21)
             'y'][8 - pow1000]  # yocto (10^-24)
+
+def find_nearest_omega(omega_list, omega):
+    omega_list = np.asarray(omega_list)
+    idx = (np.abs(omega_list - omega)).argmin()
+    return omega_list[(np.abs(omega_list - omega)).argmin()]
 
 # Function aliases
 bode = bode_plot

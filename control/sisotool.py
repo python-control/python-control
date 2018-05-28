@@ -5,7 +5,7 @@ from .timeresp import step_response
 from .lti import issiso
 import matplotlib.pyplot as plt
 
-def sisotool(sys, kvect = None, xlim = None, ylim = None, plotstr_rlocus = '-',rlocus_grid = False, omega = None, dB = None, Hz = None, deg = None, omega_limits = None, omega_num = None, tvect=None):
+def sisotool(sys, kvect = None, xlim = None, ylim = None, plotstr_rlocus = '-',rlocus_grid = False, omega = None, dB = None, Hz = None, deg = None, omega_limits = None, omega_num = None,margins = True, tvect=None):
 
     from .rlocus import root_locus
 
@@ -29,6 +29,7 @@ def sisotool(sys, kvect = None, xlim = None, ylim = None, plotstr_rlocus = '-',r
         'omega_num' : omega_num,
         'sisotool': True,
         'fig': fig,
+        'margins': margins,
     }
 
     # First time call to setup the bode and step response plots
