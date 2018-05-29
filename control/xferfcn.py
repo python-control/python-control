@@ -54,11 +54,13 @@ $Id$
 # External function declarations
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
-    where, delete, real, poly, poly1d
+    where, delete, real, poly, poly1d, nonzero
 import numpy as np
+from numpy.polynomial.polynomial import polyfromroots
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
+from itertools import chain
 from .lti import LTI, timebaseEqual, timebase, isdtime
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -754,144 +756,67 @@ only implemented for SISO functions.")
         if (imag_tol is None):
             imag_tol = 1e-8     # TODO: figure out the right number to use
 
-        # A sorted list to keep track of cumulative poles found as we scan
-        # self.den.
-        poles = []
+        # A list to keep track of cumulative poles found as we scan
+        # self.den[..][..]
+        poles = [ ]
 
-        # A 3-D list to keep track of common denominator poles not present in
-        # the self.den[i][j].
-        missingpoles = [[[] for j in range(self.inputs)]
-                        for i in range(self.outputs)]
+        # RvP, new implementation 180526, issue #194
 
+        # pre-calculate the poles for all den, leave room for index
+        # of unknown poles and size of current pole list 
+        poleset = [
+            [ [ roots(self.den[i][j]), [], None] for j in range(self.inputs) ]
+            for i in range(self.outputs) ]
+
+        # collect all individual poles
+        epsnm = eps * self.inputs * self.outputs
         for i in range(self.outputs):
             for j in range(self.inputs):
-                # A sorted array of the poles of this SISO denominator.
-                currentpoles = sort(roots(self.den[i][j]))
-
-                cp_ind = 0  # Index in currentpoles.
-                p_ind = 0  # Index in poles.
-
-                # Crawl along the list of current poles and the list of
-                # cumulative poles, until one of them reaches the end.  Keep in
-                # mind that both lists are always sorted.
-                while cp_ind < len(currentpoles) and p_ind < len(poles):
-                    if abs(currentpoles[cp_ind] - poles[p_ind]) < (10 * eps):
-                        # If the current element of both
-                        # lists match, then we're
-                        # good.  Move to the next pair of elements.
-                        cp_ind += 1
-                    elif currentpoles[cp_ind] < poles[p_ind]:
-                        # We found a pole in this transfer function that's not
-                        # in the list of cumulative poles.  Add it to the list.
-                        poles.insert(p_ind, currentpoles[cp_ind])
-                        # Now mark this pole as "missing" in all previous
-                        # denominators.
-                        for k in range(i):
-                            for m in range(self.inputs):
-                                # All previous rows.
-                                missingpoles[k][m].append(currentpoles[cp_ind])
-                        for m in range(j):
-                            # This row only.
-                            missingpoles[i][m].append(currentpoles[cp_ind])
-                        cp_ind += 1
+                currentpoles = poleset[i][j][0]
+                nothave = ones(currentpoles.shape, dtype=bool)
+                for ip, p in enumerate(poles):
+                    idx, = nonzero(
+                        (abs(currentpoles - p) < epsnm) * nothave)
+                    if len(idx):
+                        nothave[idx[0]] = False
                     else:
-                        # There is a pole in the cumulative list of poles that
-                        # is not in our transfer function denominator.  Mark
-                        # this pole as "missing", and do not increment cp_ind.
-                        missingpoles[i][j].append(poles[p_ind])
-                    p_ind += 1
-
-                if cp_ind == len(currentpoles) and p_ind < len(poles):
-                    # If we finished scanning currentpoles first, then all the
-                    # remaining cumulative poles are missing poles.
-                    missingpoles[i][j].extend(poles[p_ind:])
-                elif cp_ind < len(currentpoles) and p_ind == len(poles):
-                    # If we finished scanning the cumulative poles first, then
-                    # all the reamining currentpoles need to be added to poles.
-                    poles.extend(currentpoles[cp_ind:])
-                    # Now mark these poles as "missing" in previous
-                    # denominators.
-                    for k in range(i):
-                        for m in range(self.inputs):
-                            # All previous rows.
-                            missingpoles[k][m].extend(currentpoles[cp_ind:])
-                    for m in range(j):
-                        # This row only.
-                        missingpoles[i][m].extend(currentpoles[cp_ind:])
-
-        # Construct the common denominator.
-        den = 1.
-        n = 0
-        while n < len(poles):
-            if abs(poles[n].imag) > 10 * eps:
-                # To prevent buildup of imaginary part error, handle complex
-                # pole pairs together.
-                #
-                # Because we might have repeated real parts of poles
-                # and the fact that we are using lexigraphical
-                # ordering, we can't just combine adjacent poles.
-                # Instead, we have to figure out the multiplicity
-                # first, then multiple the pairs from the outside in.
-
-                # Figure out the multiplicity
-                m = 1          # multiplicity count
-                while (n+m < len(poles) and
-                       poles[n].real == poles[n+m].real and
-                       poles[n].imag * poles[n+m].imag > 0):
-                    m += 1
-
-                # Multiple pairs from the outside in
-                for i in range(m):
-                    quad = polymul([1., -poles[n]], [1., -poles[n+2*(m-i)-1]])
-                    assert all(quad.imag < 10 * eps), \
-                        "Quadratic has a nontrivial imaginary part: %g" \
-                        % quad.imag.max()
-
-                    den = polymul(den, quad.real)
-                    n += 1      # move to next pair
-                n += m          # skip past conjugate pairs
-            else:
-                den = polymul(den, [1., -poles[n].real])
-                n += 1
-
-        # Modify the numerators so that they each take the common denominator.
-        num = deepcopy(self.num)
-        if isinstance(den, float):
-            den = array([den])
-
+                        # remember id of pole not in tf
+                        poleset[i][j][1].append(ip)
+                for h, c in zip(nothave, currentpoles):
+                    if h:
+                        poles.append(c)
+                # remember how many poles now
+                poleset[i][j][2] = len(poles)
+                
+        # calculate the denominator
+        den = polyfromroots(poles)[::-1]
+        if (abs(den.imag) > epsnm).any():
+            print("Warning: The denominator has a nontrivial imaginary part: %"
+                      % abs(den.imag).max())
+        den = den.real
+        np = len(poles)
+        
+        # now supplement numerators with all new poles
+        num = zeros((self.outputs, self.inputs, len(poles)+1))
         for i in range(self.outputs):
             for j in range(self.inputs):
-                # The common denominator has leading coefficient 1.  Scale out
-                # the existing denominator's leading coefficient.
-                assert self.den[i][j][0], "The i = %i, j = %i denominator has \
-a zero leading coefficient." % (i, j)
-                num[i][j] = num[i][j] / self.den[i][j][0]
-
-                # Multiply in the missing poles.
-                for p in missingpoles[i][j]:
-                    num[i][j] = polymul(num[i][j], [1., -p])
-
-        # Pad all numerator polynomials with zeros so that the numerator arrays
-        # are the same size as the denominator.
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                pad = len(den) - len(num[i][j])
-                if (pad > 0):
-                    num[i][j] = insert(
-                        num[i][j], zeros(pad, dtype=int),
-                        zeros(pad))
-
-        # Finally, convert the numerator to a 3-D array.
-        num = array(num)
-        # Remove trivial imaginary parts.
-        # Check for nontrivial imaginary parts.
-        if any(abs(num.imag) > sqrt(eps)):
-            print ("Warning: The numerator has a nontrivial imaginary part: %g"
-                   % abs(num.imag).max())
-        num = num.real
+                # collect as set of zeros
+                nwzeros = list(roots(self.num[i][j]))
+                # add all poles not found in this denominator, and the
+                # ones later added from other denominators
+                for ip in chain(poleset[i][j][1],
+                                range(poleset[i][j][2],np)):
+                    nwzeros.append(poles[ip])
+                m = len(nwzeros) + 1
+                num[i,j,-m:] = polyfromroots(nwzeros).real[::-1]
+                
+                # determine tf gain correction
+                num[i,j] *= _tfgaincorrect(
+                    self.num[i][j], self.den[i][j], num[i,j], den, 5*eps)
 
         return num, den
 
+        
     def sample(self, Ts, method='zoh', alpha=None):
         """Convert a continuous-time system to discrete time
 
@@ -1064,6 +989,23 @@ def _addSISO(num1, den1, num2, den2):
 
     return num, den
 
+def _tfgaincorrect(n1, d1, n2, d2, eps):
+    """Calculate a gain correction to make n2, d2 gain match n1, d1
+       
+    n2, d2 may have additional cancelling poles, used by _common_den
+    """
+    # get the smallest of numerator/denom size
+    nn = min(n1.size, n2.size)
+    nd = min(d1.size, d2.size)
+    try:
+        idxn = where((abs(n1[-nn:]) > eps) * (abs(n2[-nn:]) > eps))[0][-1] - nn
+        idxd = where((abs(d1[-nd:]) > eps) * (abs(d2[-nd:]) > eps))[0][-1] - nd
+        return n1[idxn]/n2[idxn]*d2[idxd]/d1[idxd]
+    except IndexError as e:
+        if abs(n1).max() <= eps:
+            print("assuming zero gain")
+            return 0.0
+        raise e
 
 def _convertToTransferFunction(sys, **kw):
     """Convert a system to transfer function form (if needed).
