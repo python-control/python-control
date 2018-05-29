@@ -51,24 +51,50 @@ Revised: Kevin K. Chen, Dec 10
 $Id$
 """
 
+import math
 import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, matrix, ones, pi, poly, poly1d, roots, shape, sin, \
+    dot, empty, exp, eye, matrix, ones, poly, poly1d, roots, shape, sin, \
     zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
+import scipy as sp
 from scipy.signal import lti, cont2discrete
-# from exceptions import Exception
-import warnings
+from warnings import warn
 from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convertToTransferFunction
 from copy import deepcopy
 
 __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
+
+def _matrix(a):
+    """Wrapper around numpy.matrix that reshapes empty matrices to be 0x0
+
+    Parameters
+    ----------
+    a: sequence passed to numpy.matrix
+
+    Returns
+    -------
+    am: result of numpy.matrix(a), except if a is empty, am will be 0x0.
+
+    numpy.matrix([]) has size 1x0; for empty StateSpace objects, we
+    need 0x0 matrices, so use this instead of numpy.matrix in this
+    module.
+    """
+    from numpy import matrix
+    am = matrix(a)
+    if (1,0) == am.shape:
+        am.shape = (0,0)
+    return am
+
+
 class StateSpace(LTI):
-    """A class for representing state-space models
+    """StateSpace(A, B, C, D[, dt])
+
+    A class for representing state-space models
 
     The StateSpace class is used to represent state-space realizations of linear
     time-invariant (LTI) systems:
@@ -88,15 +114,19 @@ class StateSpace(LTI):
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified
     sampling time.
-
     """
 
     def __init__(self, *args):
-        """Construct a state space object.
+        """
+        StateSpace(A, B, C, D[, dt])
 
-        The default constructor is StateSpace(A, B, C, D), where A, B, C, D are
-        matrices or equivalent objects.  To call the copy constructor, call
-        StateSpace(sys), where sys is a StateSpace object.
+        Construct a state space object.
+
+        The default constructor is StateSpace(A, B, C, D), where A, B, C, D
+        are matrices or equivalent objects.  To create a discrete time system,
+        use StateSpace(A, B, C, D, dt) where 'dt' is the sampling time (or
+        True for unspecified sampling time).  To call the copy constructor,
+        call StateSpace(sys), where sys is a StateSpace object.
 
         """
 
@@ -110,8 +140,7 @@ class StateSpace(LTI):
         elif len(args) == 1:
             # Use the copy constructor.
             if not isinstance(args[0], StateSpace):
-                raise TypeError("The one-argument constructor can only take in \
-a StateSpace object.  Recived %s." % type(args[0]))
+               raise TypeError("The one-argument constructor can only take in a StateSpace object.  Received %s." % type(args[0]))
             A = args[0].A
             B = args[0].B
             C = args[0].C
@@ -123,7 +152,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
-        A, B, C, D = map(matrix, [A, B, C, D])
+        A, B, C, D = [_matrix(M) for M in (A, B, C, D)]
 
         # TODO: use super here?
         LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
@@ -218,7 +247,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         """Add two LTI systems (parallel connection)."""
 
         # Check for a couple of special cases
-        if (isinstance(other, (int, float, complex))):
+        if (isinstance(other, (int, float, complex, np.number))):
             # Just adding a scalar; put it in the D matrix
             A, B, C = self.A, self.B, self.C;
             D = self.D + other;
@@ -275,7 +304,7 @@ a StateSpace object.  Recived %s." % type(args[0]))
         """Multiply two LTI objects (serial connection)."""
 
         # Check for a couple of special cases
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             # Just multiplying by a scalar; change the output
             A, B = self.A, self.B
             C = self.C * other
@@ -316,7 +345,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Right multiply two LTI objects (serial connection)."""
 
         # Check for a couple of special cases
-        if isinstance(other, (int, float, complex)):
+        if isinstance(other, (int, float, complex, np.number)):
             # Just multiplying by a scalar; change the input
             A, C = self.A, self.C;
             B = self.B * other;
@@ -329,7 +358,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         # try to treat this as a matrix
         try:
-            X = matrix(other)
+            X = _matrix(other)
             C = X * self.C
             D = X * self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
@@ -350,20 +379,26 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         raise NotImplementedError("StateSpace.__rdiv__ is not implemented yet.")
 
-    # TODO: add discrete time check
     def evalfr(self, omega):
         """Evaluate a SS system's transfer function at a single frequency.
 
-        self.evalfr(omega) returns the value of the transfer function matrix with
-        input value s = i * omega.
+        self._evalfr(omega) returns the value of the transfer function matrix
+        with input value s = i * omega.
 
         """
+        warn("StateSpace.evalfr(omega) will be depracted in a future "
+             "release of python-control; use evalfr(sys, omega*1j) instead",
+             PendingDeprecationWarning)
+        return self._evalfr(omega)
+
+    def _evalfr(self, omega):
+        """Evaluate a SS system's transfer function at a single frequency"""
         # Figure out the point to evaluate the transfer function
         if isdtime(self, strict=True):
             dt = timebase(self)
             s = exp(1.j * omega * dt)
-            if (omega * dt > pi):
-                warnings.warn("evalfr: frequency evaluation above Nyquist frequency")
+            if (omega * dt > math.pi):
+                warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = omega * 1.j
 
@@ -380,21 +415,97 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
     # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """Evaluate the system's transfer func. at a list of ang. frequencies.
+        """Evaluate the system's transfer func. at a list of freqs, omega.
 
         mag, phase, omega = self.freqresp(omega)
 
-        reports the value of the magnitude, phase, and angular frequency of the
-        system's transfer function matrix evaluated at s = i * omega, where
-        omega is a list of angular frequencies, and is a sorted version of the
-        input omega.
+        Reports the frequency response of the system,
+
+             G(j*omega) = mag*exp(j*phase)
+
+        for continuous time. For discrete time systems, the response is
+        evaluated around the unit circle such that
+
+             G(exp(j*omega*dt)) = mag*exp(j*phase).
+
+        Inputs:
+        ------
+           omega: A list of frequencies in radians/sec at which the system
+                    should be evaluated. The list can be either a python list
+                    or a numpy array and will be sorted before evaluation.
+
+        Returns:
+        -------
+           mag: The magnitude (absolute value, not dB or log10) of the system
+                frequency response.
+
+           phase: The wrapped phase in radians of the system frequency
+                  response.
+
+           omega: The list of sorted frequencies at which the response
+                    was evaluated.
 
         """
-        # when evaluating at many frequencies, much faster to convert to
-        # transfer function first and then evaluate, than to solve an
-        # n-dimensional linear system at each frequency
-        tf = _convertToTransferFunction(self)
-        return tf.freqresp(omega)
+
+        # In case omega is passed in as a list, rather than a proper array.
+        omega = np.asarray(omega)
+
+        numFreqs = len(omega)
+        Gfrf = np.empty((self.outputs, self.inputs, numFreqs),
+                        dtype=np.complex128)
+
+        # Sort frequency and calculate complex frequencies on either imaginary
+        # axis (continuous time) or unit circle (discrete time).
+        omega.sort()
+        if isdtime(self, strict=True):
+            dt = timebase(self)
+            cmplx_freqs = exp(1.j * omega * dt)
+            if ((omega * dt).any() > pi):
+                warn_message = ("evalfr: frequency evaluation"
+                                " above Nyquist frequency")
+                warnings.warn(warn_message)
+        else:
+            cmplx_freqs = omega * 1.j
+
+        # Do the frequency response evaluation. Use TB05AD from Slycot
+        # if it's available, otherwise use the built-in horners function.
+        try:
+            from slycot import tb05ad
+
+            n = np.shape(self.A)[0]
+            m = self.inputs
+            p = self.outputs
+            # The first call both evalates C(sI-A)^-1 B and also returns
+            # hessenberg transformed matrices at, bt, ct.
+            result = tb05ad(n, m, p, cmplx_freqs[0], self.A,
+                            self.B, self.C, job='NG')
+            # When job='NG', result = (at, bt, ct, g_i, hinvb, info)
+            at = result[0]
+            bt = result[1]
+            ct = result[2]
+
+            # TB05AD freqency evaluation does not include direct feedthrough.
+            Gfrf[:, :, 0] = result[3] + self.D
+
+            # Now, iterate through the remaining frequencies using the
+            # transformed state matrices, at, bt, ct.
+
+            # Start at the second frequency, already have the first.
+            for kk, cmplx_freqs_kk in enumerate(cmplx_freqs[1:numFreqs]):
+                result = tb05ad(n, m, p, cmplx_freqs_kk, at,
+                                bt, ct, job='NH')
+                # When job='NH', result = (g_i, hinvb, info)
+
+                # kk+1 because enumerate starts at kk = 0.
+                # but zero-th spot is already filled.
+                Gfrf[:, :, kk+1] = result[0] + self.D
+
+        except ImportError:  # Slycot unavailable. Fall back to horner.
+            for kk, cmplx_freqs_kk in enumerate(cmplx_freqs):
+                Gfrf[:, :, kk] = self.horner(cmplx_freqs_kk)
+
+        #      mag           phase           omega
+        return np.abs(Gfrf), np.angle(Gfrf), omega
 
     # Compute poles and zeros
     def pole(self):
@@ -699,11 +810,10 @@ cannot take keywords.")
                 # TODO: do we want to squeeze first and check dimenations?
                 # I think this will fail if num and den aren't 1-D after
                 # the squeeze
-                lti_sys = lti(squeeze(sys.num), squeeze(sys.den))
-                return StateSpace(lti_sys.A, lti_sys.B, lti_sys.C, lti_sys.D,
-                                  sys.dt)
+                A, B, C, D = sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
+                return StateSpace(A, B, C, D, sys.dt)
 
-    elif isinstance(sys, (int, float, complex)):
+    elif isinstance(sys, (int, float, complex, np.number)):
         if "inputs" in kw:
             inputs = kw["inputs"]
         else:
@@ -721,11 +831,9 @@ cannot take keywords.")
 
     # If this is a matrix, try to create a constant feedthrough
     try:
-        D = matrix(sys)
-        outputs, inputs = D.shape
-
-        return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)), D)
-    except Exception(e):
+        D = _matrix(sys)
+        return StateSpace([], [], [], D)
+    except Exception as e:
         print("Failure to assume argument is matrix-like in" \
             " _convertToStateSpace, result %s" % e)
 
@@ -793,7 +901,7 @@ def _rss_generate(states, inputs, outputs, type):
                 poles[i] = complex(-exp(randn()), 3. * exp(randn()))
             elif type == 'd':
                 mag = rand()
-                phase = 2. * pi * rand()
+                phase = 2. * math.pi * rand()
                 poles[i] = complex(mag * cos(phase),
                     mag * sin(phase))
             poles[i+1] = complex(poles[i].real, -poles[i].imag)
@@ -894,9 +1002,9 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
     #Convert sys to SISO if necessary
     if sys.inputs > 1 or sys.outputs > 1:
         if warn_conversion:
-            warnings.warn("Converting MIMO system to SISO system. "
-                          "Only input {i} and output {o} are used."
-                          .format(i=input, o=output))
+            warn("Converting MIMO system to SISO system. "
+                 "Only input {i} and output {o} are used."
+                 .format(i=input, o=output))
         # $X = A*X + B*U
         #  Y = C*X + D*U
         new_B = sys.B[:, input]
@@ -944,9 +1052,8 @@ def _mimo2simo(sys, input, warn_conversion=False):
     #Convert sys to SISO if necessary
     if sys.inputs > 1:
         if warn_conversion:
-            warnings.warn("Converting MIMO system to SIMO system. "
-                          "Only input {i} is used."
-                          .format(i=input))
+            warn("Converting MIMO system to SIMO system. "
+                 "Only input {i} is used." .format(i=input))
         # $X = A*X + B*U
         #  Y = C*X + D*U
         new_B = sys.B[:, input]
@@ -956,7 +1063,8 @@ def _mimo2simo(sys, input, warn_conversion=False):
     return sys
 
 def ss(*args):
-    """
+    """ss(A, B, C, D[, dt])
+
     Create a state space system.
 
     The function accepts either 1, 4 or 5 parameters:
@@ -970,18 +1078,18 @@ def ss(*args):
         output equations:
 
         .. math::
-            \dot x = A \cdot x + B \cdot u
+            \\dot x = A \\cdot x + B \\cdot u
 
-            y = C \cdot x + D \cdot u
+            y = C \\cdot x + D \\cdot u
 
     ``ss(A, B, C, D, dt)``
         Create a discrete-time state space system from the matrices of
         its state and output equations:
 
         .. math::
-            x[k+1] = A \cdot x[k] + B \cdot u[k]
+            x[k+1] = A \\cdot x[k] + B \\cdot u[k]
 
-            y[k] = C \cdot x[k] + D \cdot u[ki]
+            y[k] = C \\cdot x[k] + D \\cdot u[ki]
 
         The matrices can be given as *array like* data types or strings.
         Everything that the constructor of :class:`numpy.matrix` accepts is
@@ -1014,6 +1122,7 @@ def ss(*args):
 
     See Also
     --------
+    StateSpace
     tf
     ss2tf
     tf2ss
@@ -1045,7 +1154,8 @@ TransferFunction object.  It is %s." % type(sys))
         raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
 def tf2ss(*args):
-    """
+    """tf2ss(sys)
+
     Transform a transfer function to a state space system.
 
     The function accepts either 1 or 2 parameters:

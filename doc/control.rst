@@ -24,14 +24,14 @@ System creation
 System interconnections
 =======================
 .. autosummary::
-   :toctree: generated/
+    :toctree: generated/
 
-   append
-   connect
-   feedback
-   negate
-   parallel
-   series
+    append
+    connect
+    feedback
+    negate
+    parallel
+    series
 
 Frequency domain plotting
 =========================
@@ -43,6 +43,15 @@ Frequency domain plotting
     nyquist_plot
     gangof4_plot
     nichols_plot
+
+Note: For plotting commands that create multiple axes on the same plot, the
+individual axes can be retrieved using the axes label (retrieved using the
+`get_label` method for the matplotliib axes object).  The following labels
+are currently defined:
+
+* Bode plots: `control-bode-magnitude`, `control-bode-phase`
+* Gang of 4 plots: `control-gangof4-s`, `control-gangof4-cs`,
+  `control-gangof4-ps`, `control-gangof4-t`
 
 Time domain simulation
 ======================
@@ -104,6 +113,7 @@ Control system synthesis
     h2syn
     hinfsyn
     lqr
+    mixsyn
     place
 
 Model simplification tools
@@ -118,27 +128,30 @@ Model simplification tools
     era
     markov
 
+.. _utility-and-conversions:
+
 Utility functions and conversions
 =================================
 .. autosummary::
     :toctree: generated/
 
-    unwrap
-    db2mag
-    mag2db
+    augw
+    canonical_form
     damp
+    db2mag
     isctime
     isdtime
     issiso
     issys
-    pade
-    sample_system
-    canonical_form
+    mag2db
     observable_form
+    pade
     reachable_form
+    sample_system
     ss2tf
     ssdata
     tf2ss
     tfdata
     timebase
     timebaseEqual
+    unwrap

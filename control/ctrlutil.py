@@ -43,12 +43,12 @@
 # Packages that we need access to
 from . import lti
 import numpy as np
-from numpy import pi
+import math
 
 __all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
 
 # Utility function to unwrap an angle measurement
-def unwrap(angle, period=2*pi):
+def unwrap(angle, period=2*math.pi):
     """Unwrap a phase angle to give a continuous curve
 
     Parameters

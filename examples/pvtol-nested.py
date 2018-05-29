@@ -81,26 +81,45 @@ S = feedback(1, L);
 T = feedback(L, 1);
 
 # Compute stability margins
-#! Not yet implemented
-# (gm, pm, wgc, wpc) = margin(L); 
+(gm, pm, wgc, wpc) = margin(L);
+print("Gain margin: %g at %g" % (gm, wgc))
+print("Phase margin: %g at %g" % (pm, wpc))
 
-#! TODO: this figure has something wrong; axis limits mismatch
 figure(6); clf; 
-bode(L);
-
-# Add crossover line
-subplot(211); hold(True);
-loglog([1e-4, 1e3], [1, 1], 'k-')
-
-# Replot phase starting at -90 degrees
 bode(L, logspace(-4, 3));
+
+# Add crossover line to the magnitude plot
+#
+# Note: in matplotlib before v2.1, the following code worked:
+#
+#   subplot(211); hold(True);
+#   loglog([1e-4, 1e3], [1, 1], 'k-')
+#
+# In later versions of matplotlib the call to subplot will clear the
+# axes and so we have to extract the axes that we want to use by hand.
+# In addition, hold() is deprecated so we no longer require it.
+#
+for ax in gcf().axes:
+    if ax.get_label() == 'control-bode-magnitude':
+        break
+ax.semilogx([1e-4, 1e3], 20 * np.log10([1, 1]), 'k-')
+
+#
+# Replot phase starting at -90 degrees
+#
+# Get the phase plot axes
+for ax in gcf().axes:
+    if ax.get_label() == 'control-bode-phase':
+        break
+
+# Recreate the frequency response and shift the phase
 (mag, phase, w) = freqresp(L, logspace(-4, 3));
 phase = phase - 360;
-subplot(212);
-semilogx([1e-4, 1e3], [-180, -180], 'k-')
-hold(True);
-semilogx(w, np.squeeze(phase), 'b-')
-axis([1e-4, 1e3, -360, 0]);
+
+# Replot the phase by hand
+ax.semilogx([1e-4, 1e3], [-180, -180], 'k-')
+ax.semilogx(w, np.squeeze(phase), 'b-')
+ax.axis([1e-4, 1e3, -360, 0]);
 xlabel('Frequency [deg]'); ylabel('Phase [deg]');
 # set(gca, 'YTick', [-360, -270, -180, -90, 0]);
 # set(gca, 'XTick', [10^-4, 10^-2, 1, 100]);
@@ -109,7 +128,6 @@ xlabel('Frequency [deg]'); ylabel('Phase [deg]');
 # Nyquist plot for complete design
 #
 figure(7); clf;
-axis([-700, 5300, -3000, 3000]); hold(True);
 nyquist(L, (0.0001, 1000));
 axis([-700, 5300, -3000, 3000]);
 
@@ -118,7 +136,6 @@ plot([-400, -400, 200, 200, -400], [-100, 100, 100, -100, -100], 'r-')
 
 # Expanded region  
 figure(8); clf; subplot(231); 
-axis([-10, 5, -20, 20]); hold(True);
 nyquist(L);
 axis([-10, 5, -20, 20]);
 
@@ -136,7 +153,7 @@ color = 'b';
 
 figure(9); 
 (Yvec, Tvec) = step(T, linspace(0, 20));
-plot(Tvec.T, Yvec.T); hold(True);
+plot(Tvec.T, Yvec.T); 
 
 (Yvec, Tvec) = step(Co*S, linspace(0, 20));
 plot(Tvec.T, Yvec.T);

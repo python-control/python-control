@@ -9,6 +9,99 @@ Library conventions
 The python-control library uses a set of standard conventions for the way
 that different types of standard information used by the library.
 
+LTI system representation
+=========================
+
+Linear time invariant (LTI) systems are represented in python-control in
+state space, transfer function, or frequency response data (FRD) form.  Most
+functions in the toolbox will operate on any of these data types and
+functions for converting between between compatible types is provided.
+
+State space systems
+-------------------
+The :class:`StateSpace` class is used to represent state-space realizations
+of linear time-invariant (LTI) systems:
+
+.. math::
+
+  \frac{dx}{dt} &= A x + B u \\
+  y &= C x + D u
+
+where u is the input, y is the output, and x is the state.
+
+To create a state space system, use the :class:`StateSpace` constructor:
+
+  sys = StateSpace(A, B, C, D)
+
+State space systems can be manipulated using standard arithmetic operations
+as well as the :func:`feedback`, :func:`parallel`, and :func:`series`
+function.  A full list of functions can be found in :ref:`function-ref`.
+
+Transfer functions
+------------------
+The :class:`TransferFunction` class is used to represent input/output
+transfer functions
+
+.. math::
+
+  G(s) = \frac{\text{num}(s)}{\text{den}(s)}
+       = \frac{a_0 s^n + a_1 s^{n-1} + \cdots + a_n}
+              {b_0 s^m + b_1 s^{m-1} + \cdots + b_m},
+
+where n is generally greater than or equal to m (for a proper transfer
+function).
+
+To create a transfer function, use the :class:`TransferFunction`
+constructor:
+
+  sys = TransferFunction(num, den)
+
+Transfer functions can be manipulated using standard arithmetic operations
+as well as the :func:`feedback`, :func:`parallel`, and :func:`series`
+function.  A full list of functions can be found in :ref:`function-ref`.
+
+FRD (frequency response data) systems
+-------------------------------------
+The :class:`FRD` class is used to represent systems in frequency response
+data form.
+
+The main data members are `omega` and `fresp`, where `omega` is a 1D array
+with the frequency points of the response, and `fresp` is a 3D array, with
+the first dimension corresponding to the output index of the FRD, the second
+dimension corresponding to the input index, and the 3rd dimension
+corresponding to the frequency points in omega.
+
+FRD systems have a somewhat more limited set of functions that are
+available, although all of the standard algebraic manipulations can be
+performed.
+
+Discrete time systems
+---------------------
+By default, all systems are considered to be continuous time systems.  A
+discrete time system is created by specifying the 'time base' dt.  The time
+base argument can be given when a system is constructed:
+
+* dt = None: no timebase specified
+* dt = 0: continuous time system
+* dt > 0: discrete time system with sampling period 'dt'
+* dt = True: discrete time with unspecified sampling period
+
+Only the :class:`StateSpace` and :class:`TransferFunction` classes allow
+explicit representation of discrete time systems.
+
+Systems must have the same time base in order to be combined.  For
+continuous time systems, the :func:`sample_system` function or the
+:meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods can be
+used to create a discrete time system from a continuous time system.  See
+:ref:`utility-and-conversions`.
+
+Conversion between representations
+----------------------------------
+LTI systems can be converted between representations either by calling the
+constructor for the desired data type using the original system as the sole
+argument or using the explicit conversion functions :func:`ss2tf` and
+:func:`tf2ss`.
+
 .. _time-series-convention:
 
 Time series data
