@@ -45,12 +45,13 @@ import scipy as sp
 from . import statesp
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr', 'acker']
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'acker']
+
 
 # Pole placement
 def place(A, B, p):
     """Place closed loop eigenvalues
-
+    K = place(A, B, p)
     Parameters
     ----------
     A : 2-d array
@@ -63,13 +64,92 @@ def place(A, B, p):
     Returns
     -------
     K : 2-d array
-        Gains such that A - B K has given eigenvalues
+        Gain such that A - B K has eigenvalues given in p
+
+    Algorithm
+    ---------
+    This is a wrapper function for scipy.signal.place_poles, which
+    implements the Tits and Yang algorithm [1]. It will handle SISO,
+    MISO, and MIMO systems. If you want more control over the algorithm,
+    use scipy.signal.place_poles directly.
+
+    [1] A.L. Tits and Y. Yang, "Globally convergent algorithms for robust
+    pole assignment by state feedback, IEEE Transactions on Automatic
+    Control, Vol. 41, pp. 1432-1452, 1996.
+
+    Limitations
+    -----------
+    The algorithm will not place poles at the same location more
+    than rank(B) times.
 
     Examples
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
     >>> K = place(A, B, [-2, -5])
+
+    See Also
+    --------
+    place_varga, acker
+    """
+    from scipy.signal import place_poles
+
+    # Convert the system inputs to NumPy arrays
+    A_mat = np.array(A)
+    B_mat = np.array(B)
+    if (A_mat.shape[0] != A_mat.shape[1]):
+        raise ControlDimension("A must be a square matrix")
+
+    if (A_mat.shape[0] != B_mat.shape[0]):
+        err_str = "The number of rows of A must equal the number of rows in B"
+        raise ControlDimension(err_str)
+
+    # Convert desired poles to numpy array
+    placed_eigs = np.array(p)
+
+    result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
+    K = result.gain_matrix
+    return K
+
+
+def place_varga(A, B, p):
+    """Place closed loop eigenvalues
+    K = place_varga(A, B, p)
+
+    Parameters
+    ----------
+    A : 2-d array
+        Dynamics matrix
+    B : 2-d array
+        Input matrix
+    p : 1-d list
+        Desired eigenvalue locations
+    Returns
+    -------
+    K : 2-d array
+        Gain such that A - B K has eigenvalues given in p.
+
+
+    Algorithm
+    ---------
+        This function is a wrapper for the slycot function sb01bd, which
+        implements the pole placement algorithm of Varga [1]. In contrast to
+        the algorithm used by place(), the Varga algorithm can place
+        multiple poles at the same location. The placement, however, may not
+        be as robust.
+
+        [1] Varga A. "A Schur method for pole assignment."
+            IEEE Trans. Automatic Control, Vol. AC-26, pp. 517-519, 1981.
+
+    Examples
+    --------
+    >>> A = [[-1, -1], [0, 1]]
+    >>> B = [[0], [1]]
+    >>> K = place(A, B, [-2, -5])
+
+    See Also:
+    --------
+    place, acker
     """
 
     # Make sure that SLICOT is installed
@@ -144,7 +224,9 @@ def acker(A, B, poles):
     return K
 
 def lqr(*args, **keywords):
-    """Linear quadratic regulator design
+    """lqr(A, B, Q, R[, N])
+
+    Linear quadratic regulator design
 
     The lqr() function computes the optimal state feedback controller
     that minimizes the quadratic cost

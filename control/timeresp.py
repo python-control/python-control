@@ -557,7 +557,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     See Also
     --------
-    ForcedReponse, initial_response, step_response
+    forced_response, initial_response, step_response
 
     Examples
     --------
@@ -576,7 +576,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     n_states = sys.A.shape[0]
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: \n', squeeze=True)
-        
+
     # Compute T and U, no checks necessary, they will be checked in lsim
     if T is None:
         T = _default_response_times(sys.A, 100)

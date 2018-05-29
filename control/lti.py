@@ -12,6 +12,7 @@ timebase()
 timebaseEqual()
 """
 
+import numpy as np
 from numpy import absolute, real
 
 __all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
@@ -85,8 +86,13 @@ class LTI:
 
     def damp(self):
         poles = self.pole()
-        wn = absolute(poles)
-        Z = -real(poles)/wn
+
+        if isdtime(self, strict=True):
+            splane_poles = np.log(poles)/self.dt
+        else:
+            splane_poles = poles
+        wn = absolute(splane_poles)
+        Z = -real(splane_poles)/wn
         return wn, Z, poles
 
     def dcgain(self):
@@ -96,7 +102,7 @@ class LTI:
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
-    if isinstance(sys, (int, float, complex)) and not strict:
+    if isinstance(sys, (int, float, complex, np.number)) and not strict:
         return True
     elif not isinstance(sys, LTI):
         raise ValueError("Object is not an LTI system")
@@ -114,7 +120,7 @@ def timebase(sys, strict=True):
     set to False, dt = True will be returned as 1.
     """
     # System needs to be either a constant or an LTI system
-    if isinstance(sys, (int, float, complex)):
+    if isinstance(sys, (int, float, complex, np.number)):
         return None
     elif not isinstance(sys, LTI):
         raise ValueError("Timebase not defined")
@@ -162,7 +168,7 @@ def isdtime(sys, strict=False):
     """
 
     # Check to see if this is a constant
-    if isinstance(sys, (int, float, complex)):
+    if isinstance(sys, (int, float, complex, np.number)):
         # OK as long as strict checking is off
         return True if not strict else False
 
@@ -187,7 +193,7 @@ def isctime(sys, strict=False):
     """
 
     # Check to see if this is a constant
-    if isinstance(sys, (int, float, complex)):
+    if isinstance(sys, (int, float, complex, np.number)):
         # OK as long as strict checking is off
         return True if not strict else False
 
@@ -278,6 +284,20 @@ def damp(sys, doprint=True):
         Damping values
     poles: array
         Pole locations
+
+
+    Algorithm
+    --------
+        If the system is continuous,
+           wn = abs(poles)
+           Z  = -real(poles)/poles.
+
+        If the system is discrete, the discrete poles are mapped to their
+        equivalent location in the s-plane via
+           s = log10(poles)/dt
+        and
+          wn = abs(s)
+          Z = -real(s)/wn.
 
     See Also
     --------

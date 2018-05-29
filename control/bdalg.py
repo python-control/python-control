@@ -54,19 +54,20 @@ $Id$
 """
 
 import scipy as sp
+import numpy as np
 from . import xferfcn as tf
 from . import statesp as ss
 from . import frdata as frd
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
-def series(sys1, sys2):
-    """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.
+def series(sys1, *sysn):
+    """Return the series connection (... * sys3 *) sys2 * sys1
 
     Parameters
     ----------
     sys1: scalar, StateSpace, TransferFunction, or FRD
-    sys2: scalar, StateSpace, TransferFunction, or FRD
+    *sysn: other scalars, StateSpaces, TransferFunctions, or FRDs
 
     Returns
     -------
@@ -96,20 +97,22 @@ def series(sys1, sys2):
 
     Examples
     --------
-    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1.
+    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1
+
+    >>> sys5 = series(sys1, sys2, sys3, sys4) # More systems
 
     """
+    from functools import reduce
+    return reduce(lambda x, y:y*x, sysn, sys1)
 
-    return sys2 * sys1
-
-def parallel(sys1, sys2):
+def parallel(sys1, *sysn):
     """
-    Return the parallel connection sys1 + sys2.
+    Return the parallel connection sys1 + sys2 (+ sys3 + ...)
 
     Parameters
     ----------
     sys1: scalar, StateSpace, TransferFunction, or FRD
-    sys2: scalar, StateSpace, TransferFunction, or FRD
+    *sysn: other scalars, StateSpaces, TransferFunctions, or FRDs
 
     Returns
     -------
@@ -139,11 +142,13 @@ def parallel(sys1, sys2):
 
     Examples
     --------
-    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2.
+    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2
+
+    >>> sys5 = parallel(sys1, sys2, sys3, sys4) # More systems
 
     """
-
-    return sys1 + sys2
+    from functools import reduce
+    return reduce(lambda x, y:x+y, sysn, sys1)
 
 def negate(sys):
     """
@@ -221,18 +226,18 @@ def feedback(sys1, sys2=1, sign=-1):
     """
 
     # Check for correct input types.
-    if not isinstance(sys1, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace, frd.FRD)):
+    if not isinstance(sys1, (int, float, complex, np.number,
+                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
         raise TypeError("sys1 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
-    if not isinstance(sys2, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace, frd.FRD)):
+    if not isinstance(sys2, (int, float, complex, np.number,
+                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
         raise TypeError("sys2 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.
-    if isinstance(sys1, (int, float, complex)):
+    if isinstance(sys1, (int, float, complex, np.number)):
         if isinstance(sys2, tf.TransferFunction):
             sys1 = tf._convertToTransferFunction(sys1)
         elif isinstance(sys2, ss.StateSpace):
@@ -246,7 +251,8 @@ def feedback(sys1, sys2=1, sign=-1):
     return sys1.feedback(sys2, sign)
 
 def append(*sys):
-    '''
+    '''append(sys1, sys2, ..., sysn)
+
     Group models by appending their inputs and outputs
 
     Forms an augmented system model, and appends the inputs and

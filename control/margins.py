@@ -48,21 +48,21 @@ Author: Richard M. Murray
 Date: 14 July 2011
 
 $Id$
-
 """
 
+import math
 import numpy as np
+import scipy as sp
 from . import xferfcn
 from .lti import issiso
 from . import frdata
-import scipy as sp
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
 
 # helper functions for stability_margins
 def _polyimsplit(pol):
     """split a polynomial with (iw) applied into a real and an
-       imaginary part with w applied"""
+    imaginary part with w applied"""
     rpencil = np.zeros_like(pol)
     ipencil = np.zeros_like(pol)
     rpencil[-1::-4] = 1.
@@ -141,7 +141,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
             mag, phase, omega = sysdata
-            sys = frdata.FRD(mag * np.exp(1j * phase * np.pi/180),
+            sys = frdata.FRD(mag * np.exp(1j * phase * math.pi/180),
                              omega, smooth=True)
         else:
             sys = xferfcn._convertToTransferFunction(sysdata)
@@ -164,12 +164,10 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         # test (imaginary part of tf) == 0, for phase crossover/gain margins
         test_w_180 = np.polyadd(np.polymul(inum, rden), np.polymul(rnum, -iden))
         w_180 = np.roots(test_w_180)
-        #print ('1:w_180', w_180)
 
         # first remove imaginary and negative frequencies, epsw removes the
         # "0" frequency for type-2 systems
         w_180 = np.real(w_180[(np.imag(w_180) == 0) * (w_180 >= epsw)])
-        #print ('2:w_180', w_180)
 
         # evaluate response at remaining frequencies, to test for phase 180 vs 0
         with np.errstate(all='ignore'):
@@ -182,7 +180,6 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
         # and sort
         w_180.sort()
-        #print ('3:w_180', w_180)
 
         # test magnitude is 1 for gain crossover/phase margins
         test_wc = np.polysub(np.polyadd(_polysqr(rnum), _polysqr(inum)),
@@ -203,32 +200,28 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
         # find the solutions, for positive omega, and only real ones
         wstab = np.roots(test_wstab)
-        #print('wstabr', wstab)
         wstab = np.real(wstab[(np.imag(wstab) == 0) *
                         (np.real(wstab) >= 0)])
-        #print('wstab', wstab)
 
         # and find the value of the 2nd derivative there, needs to be positive
         wstabplus = np.polyval(np.polyder(test_wstab), wstab)
-        #print('wstabplus', wstabplus)
         wstab = np.real(wstab[(np.imag(wstab) == 0) * (wstab > epsw) *
                               (wstabplus > 0.)])
-        #print('wstab', wstab)
         wstab.sort()
 
     else:
         # a bit coarse, have the interpolated frd evaluated again
         def mod(w):
             """to give the function to calculate |G(jw)| = 1"""
-            return np.abs(sys.evalfr(w)[0][0]) - 1
+            return np.abs(sys._evalfr(w)[0][0]) - 1
 
         def arg(w):
             """function to calculate the phase angle at -180 deg"""
-            return np.angle(-sys.evalfr(w)[0][0])
+            return np.angle(-sys._evalfr(w)[0][0])
 
         def dstab(w):
             """function to calculate the distance from -1 point"""
-            return np.abs(sys.evalfr(w)[0][0] + 1.)
+            return np.abs(sys._evalfr(w)[0][0] + 1.)
 
         # Find all crossings, note that this depends on omega having
         # a correct range
@@ -239,37 +232,28 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
         # find the phase crossings ang(H(jw) == -180
         widx = np.where(np.diff(np.sign(arg(sys.omega))))[0]
-        #print('widx (180)', widx, sys.omega[widx])
-        #print('x', sys.evalfr(sys.omega[widx])[0][0])
-        widx = widx[np.real(sys.evalfr(sys.omega[widx])[0][0]) <= 0]
-        #print('widx (180,2)', widx)
+        widx = widx[np.real(sys._evalfr(sys.omega[widx])[0][0]) <= 0]
         w_180 = np.array(
             [ sp.optimize.brentq(arg, sys.omega[i], sys.omega[i+1])
               for i in widx if i+1 < len(sys.omega) ])
-        #print('x', sys.evalfr(w_180)[0][0])
-        #print('w_180', w_180)
 
         # find all stab margins?
         widx = np.where(np.diff(np.sign(np.diff(dstab(sys.omega)))))[0]
-        #print('widx', widx)
-        #print('wstabx', sys.omega[widx])
         wstab = np.array([ sp.optimize.minimize_scalar(
                   dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
               for i in widx if i+1 < len(sys.omega) and
               np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] > 0 ])
-        #print('wstabf0', wstab)
         wstab = wstab[(wstab >= sys.omega[0]) *
                       (wstab <= sys.omega[-1])]
-        #print ('wstabf', wstab)
 
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
     with np.errstate(all='ignore'):
-        gain_w_180 = np.abs(sys.evalfr(w_180)[0][0])
+        gain_w_180 = np.abs(sys._evalfr(w_180)[0][0])
         GM = 1.0/gain_w_180
-    SM = np.abs(sys.evalfr(wstab)[0][0]+1)
-    PM = np.remainder(np.angle(sys.evalfr(wc)[0][0], deg=True), 360.0) - 180.0
+    SM = np.abs(sys._evalfr(wstab)[0][0]+1)
+    PM = np.remainder(np.angle(sys._evalfr(wc)[0][0], deg=True), 360.0) - 180.0
     
     if returnall:
         return GM, PM, SM, w_180, wc, wstab
@@ -294,8 +278,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
 #! TODO - need to add test functions
 def phase_crossover_frequencies(sys):
-    """
-    Compute frequencies and gains at intersections with real axis
+    """Compute frequencies and gains at intersections with real axis
     in Nyquist plot.
 
     Call as:
@@ -332,17 +315,19 @@ def phase_crossover_frequencies(sys):
 
     # using real() to avoid rounding errors and results like 1+0j
     # it would be nice to have a vectorized version of self.evalfr here
-    gain = np.real(np.asarray([tf.evalfr(f)[0][0] for f in realposfreq]))
+    gain = np.real(np.asarray([tf._evalfr(f)[0][0] for f in realposfreq]))
 
     return realposfreq, gain
 
 
 def margin(*args):
-    """Calculate gain and phase margins and associated crossover frequencies
+    """margin(sysdata)
+
+    Calculate gain and phase margins and associated crossover frequencies
 
     Parameters
     ----------
-    sysdata: LTI system or (mag, phase, omega) sequence
+    sysdata : LTI system or (mag, phase, omega) sequence
         sys : StateSpace or TransferFunction
             Linear SISO system
         mag, phase, omega : sequence of array_like
@@ -360,8 +345,8 @@ def margin(*args):
     Wcp : float
         Phase crossover frequency (corresponding to gain margin) (in rad/sec)
 
-   Margins are of SISO open-loop. If more than one crossover frequency is
-   detected, returns the lowest corresponding margin.
+    Margins are of SISO open-loop. If more than one crossover frequency is
+    detected, returns the lowest corresponding margin.
 
     Examples
     --------
