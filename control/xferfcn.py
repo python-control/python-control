@@ -762,17 +762,26 @@ only implemented for SISO functions.")
 
         # RvP, new implementation 180526, issue #194
 
-        # pre-calculate the poles for all den, leave room for index
-        # of unknown poles and size of current pole list 
-        poleset = [
-            [ [ roots(self.den[i][j]), [], None] for j in range(self.inputs) ]
-            for i in range(self.outputs) ]
-
+        # pre-calculate the poles for all num, den
+        # has zeros, poles, gain, list for pole indices not in den, 
+        # number of poles known at the time analyzed
+        self2 = self.minreal()
+        poleset = []
+        for i in range(self.outputs):
+            poleset.append([])
+            for j in range(self.inputs):
+                if abs(self2.num[i][j]).max() <= eps:
+                    poleset[-1].append( [array([], dtype=float),
+                               roots(self2.den[i][j]), 0.0, [], 0 ])
+                else:
+                    poleset[-1].append(
+                        [ *tf2zpk(self2.num[i][j], self2.den[i][j]), [], 0])
+        
         # collect all individual poles
         epsnm = eps * self.inputs * self.outputs
         for i in range(self.outputs):
             for j in range(self.inputs):
-                currentpoles = poleset[i][j][0]
+                currentpoles = poleset[i][j][1]
                 nothave = ones(currentpoles.shape, dtype=bool)
                 for ip, p in enumerate(poles):
                     idx, = nonzero(
@@ -781,38 +790,46 @@ only implemented for SISO functions.")
                         nothave[idx[0]] = False
                     else:
                         # remember id of pole not in tf
-                        poleset[i][j][1].append(ip)
+                        poleset[i][j][3].append(ip)
                 for h, c in zip(nothave, currentpoles):
                     if h:
                         poles.append(c)
-                # remember how many poles now
-                poleset[i][j][2] = len(poles)
+                # remember how many poles now known
+                poleset[i][j][4] = len(poles)
                 
-        # calculate the denominator
+        # for only gain systems
+        if len(poles) == 0:
+            den = ones((1,), dtype=float)
+            num = zeros((self.outputs, self.inputs, 1), dtype=float)
+            for i in range(self.outputs):
+                for j in range(self.inputs):
+                    num[i,j,0] = poleset[i][j][2]
+            return num, den
+
+        # recreate the denominator
         den = polyfromroots(poles)[::-1]
         if (abs(den.imag) > epsnm).any():
-            print("Warning: The denominator has a nontrivial imaginary part: %"
+            print("Warning: The denominator has a nontrivial imaginary part: %f"
                       % abs(den.imag).max())
         den = den.real
         np = len(poles)
-        
+
         # now supplement numerators with all new poles
-        num = zeros((self.outputs, self.inputs, len(poles)+1))
+        num = zeros((self.outputs, self.inputs, len(poles)+1), dtype=float)
         for i in range(self.outputs):
             for j in range(self.inputs):
                 # collect as set of zeros
-                nwzeros = list(roots(self.num[i][j]))
+                nwzeros = list(poleset[i][j][0])
                 # add all poles not found in this denominator, and the
                 # ones later added from other denominators
-                for ip in chain(poleset[i][j][1],
-                                range(poleset[i][j][2],np)):
+                for ip in chain(poleset[i][j][3],
+                                range(poleset[i][j][4],np)):
                     nwzeros.append(poles[ip])
                 m = len(nwzeros) + 1
                 num[i,j,-m:] = polyfromroots(nwzeros).real[::-1]
                 
                 # determine tf gain correction
-                num[i,j] *= _tfgaincorrect(
-                    self.num[i][j], self.den[i][j], num[i,j], den, 5*eps)
+                num[i,j] *= poleset[i][j][2]
 
         return num, den
 
@@ -989,23 +1006,6 @@ def _addSISO(num1, den1, num2, den2):
 
     return num, den
 
-def _tfgaincorrect(n1, d1, n2, d2, eps):
-    """Calculate a gain correction to make n2, d2 gain match n1, d1
-       
-    n2, d2 may have additional cancelling poles, used by _common_den
-    """
-    # get the smallest of numerator/denom size
-    nn = min(n1.size, n2.size)
-    nd = min(d1.size, d2.size)
-    try:
-        idxn = where((abs(n1[-nn:]) > eps) * (abs(n2[-nn:]) > eps))[0][-1] - nn
-        idxd = where((abs(d1[-nd:]) > eps) * (abs(d2[-nd:]) > eps))[0][-1] - nd
-        return n1[idxn]/n2[idxn]*d2[idxd]/d1[idxd]
-    except IndexError as e:
-        if abs(n1).max() <= eps:
-            print("assuming zero gain")
-            return 0.0
-        raise e
 
 def _convertToTransferFunction(sys, **kw):
     """Convert a system to transfer function form (if needed).
