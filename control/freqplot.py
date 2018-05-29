@@ -213,7 +213,9 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag),
                                               *args, **kwargs)
                 else:
+
                     pltline = ax_mag.loglog(omega_plot, mag, *args, **kwargs)
+
 
                 if nyquistfrq_plot:
                     ax_mag.axvline(nyquistfrq_plot,

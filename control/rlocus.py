@@ -380,6 +380,7 @@ def _RLFeedbackClicksSisotool(event,sys,fig,bode_plot_params,tvect):
 def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
     """Display root-locus gain feedback point for clicks on the root-locus plot
     """
+    print(event)
     if sisotool == False:
         ax_rlocus = fig.axes[0]
 
@@ -412,8 +413,6 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
         fig.canvas.draw()
 
         return True
-
-
 
 def _sgrid_func(fig=None, zeta=None, wn=None):
     if fig is None:

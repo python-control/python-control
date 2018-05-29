@@ -5,9 +5,56 @@ from .timeresp import step_response
 from .lti import issiso
 import matplotlib
 import matplotlib.pyplot as plt
+import warnings
 
-def sisotool(sys, kvect = None, xlim = None, ylim = None, plotstr_rlocus = 'b' if int(matplotlib.__version__[0]) == 1 else 'C0',rlocus_grid = False, omega = None, dB = None, Hz = None, deg = None, omega_limits = None, omega_num = None,margins = True, tvect=None):
+def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None, plotstr_rlocus = 'b' if int(matplotlib.__version__[0]) == 1 else 'C0',rlocus_grid = False, omega = None, dB = None, Hz = None, deg = None, omega_limits = None, omega_num = None,margins_bode = True, tvect=None):
 
+    """Sisotool
+
+    Sisotool style collection of plots inspired by the matlab sisotool.
+    The left two plots contain the bode magnitude and phase diagrams.
+    The top right plot is a clickable root locus plot, clicking on the
+    root locus will change the gain of the system. The bottom left plot
+    shows a closed loop time response.
+
+    Parameters
+    ----------
+    sys : LTI object
+        Linear input/output systems (SISO only)
+    kvect : list or ndarray, optional
+        List of gains to use for plotting root locus
+    xlim_rlocus : tuple or list, optional
+        control of x-axis range, normally with tuple (see matplotlib.axes)
+    ylim_rlocus : tuple or list, optional
+        control of y-axis range
+    plotstr_rlocus : Additional options to matplotlib
+        plotting style for the root locus plot(color, linestyle, etc)
+    rlocus_grid: boolean (default = False)
+        If True plot s-plane grid.
+    omega : freq_range
+        Range of frequencies in rad/sec for the bode plot
+    dB : boolean
+        If True, plot result in dB for the bode plot
+    Hz : boolean
+        If True, plot frequency in Hz for the bode plot (omega must be provided in rad/sec)
+    deg : boolean
+        If True, plot phase in degrees for the bode plot (else radians)
+    omega_limits: tuple, list, ... of two values
+        Limits of the to generate frequency vector.
+        If Hz=True the limits are in Hz otherwise in rad/s.
+    omega_num: int
+        number of samples
+    margins_bode : boolean
+        If True, plot gain and phase margin in the bode plot
+    tvect : list or ndarray, optional
+        List of timesteps to use for closed loop step response
+
+    Examples
+    --------
+    >>> sys = tf([1000], [1,25,100,0])
+    >>> sisotool(sys)
+
+    """
     from .rlocus import root_locus
 
     # Check if it is a single SISO system
@@ -30,14 +77,14 @@ def sisotool(sys, kvect = None, xlim = None, ylim = None, plotstr_rlocus = 'b' i
         'omega_num' : omega_num,
         'sisotool': True,
         'fig': fig,
-        'margins': margins
+        'margins': margins_bode
     }
 
     # First time call to setup the bode and step response plots
     _SisotoolUpdate(sys, fig,1 if kvect is None else kvect[0],bode_plot_params)
 
     # Setup the root-locus plot window
-    root_locus(sys,kvect=kvect,xlim=xlim,ylim = ylim,plotstr=plotstr_rlocus,grid = rlocus_grid,fig=fig,bode_plot_params=bode_plot_params,tvect=tvect,sisotool=True)
+    root_locus(sys,kvect=kvect,xlim=xlim_rlocus,ylim = ylim_rlocus,plotstr=plotstr_rlocus,grid = rlocus_grid,fig=fig,bode_plot_params=bode_plot_params,tvect=tvect,sisotool=True)
 
 def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
 
@@ -50,7 +97,11 @@ def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
 
     # Get the subaxes and clear them
     ax_mag,ax_rlocus,ax_phase,ax_step = fig.axes[0],fig.axes[1],fig.axes[2],fig.axes[3]
-    ax_mag.cla(),ax_phase.cla(),ax_step.cla()
+
+    # Catch matplotlib 2.1.x and higher userwarnings when clearing a log axis
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ax_step.clear(), ax_mag.clear(), ax_phase.clear()
 
     # Update the bodeplot
     bode_plot_params['syslist'] = sys*K.real
