@@ -47,6 +47,7 @@
 
 # Packages used by this module
 import numpy as np
+import matplotlib
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
@@ -131,7 +132,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
 
         elif sisotool == True:
             f.axes[1].plot([root.real for root in start_mat], [root.imag for root in start_mat], 'm.', marker='s', markersize=8,zorder=20)
-            f.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" % (start_mat[0][0].real, start_mat[0][0].imag, 1, -1 * start_mat[0][0].real / abs(start_mat[0][0])))
+            f.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" % (start_mat[0][0].real, start_mat[0][0].imag, 1, -1 * start_mat[0][0].real / abs(start_mat[0][0])),fontsize = 12 if int(matplotlib.__version__[0]) == 1 else 10)
             f.canvas.mpl_connect(
                 'button_release_event',partial(_RLFeedbackClicksSisotool,sys=sys, fig=f, bode_plot_params=kwargs['bode_plot_params'],tvect=kwargs['tvect']))
 
@@ -160,7 +161,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         elif grid:
             _sgrid_func()
         else:
-            ax.axhline(0., linestyle=':', color='k')
+            ax.axhline(0., linestyle=':', color='k',zorder=-20)
             ax.axvline(0., linestyle=':', color='k')
     return mymat, kvect
 
@@ -367,11 +368,14 @@ def _RLSortRoots(mymat):
 def _RLFeedbackClicksSisotool(event,sys,fig,bode_plot_params,tvect):
     """Update Sisotool plots if a new point on the root locus plot is clicked
     """
-    s = complex(event.xdata, event.ydata)
-    K = -1./sys.horner(s)
-    ax_rlocus = fig.axes[1]
-    if _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=True):
-        _SisotoolUpdate(sys,fig,K.real[0][0],bode_plot_params,tvect)
+    try:
+        s = complex(event.xdata, event.ydata)
+        K = -1. / sys.horner(s)
+        ax_rlocus = fig.axes[1]
+        if _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=True):
+            _SisotoolUpdate(sys, fig, K.real[0][0], bode_plot_params, tvect)
+    except TypeError:
+        pass
 
 def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
     """Display root-locus gain feedback point for clicks on the root-locus plot
@@ -388,7 +392,7 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
         fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-                     (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+                     (s.real, s.imag, K.real, -1 * s.real / abs(s)),fontsize = 12 if int(matplotlib.__version__[0]) == 1 else 10)
 
         # Remove the previous points
         for line in reversed(ax_rlocus.lines):
