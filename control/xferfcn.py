@@ -774,8 +774,8 @@ only implemented for SISO functions.")
                     poleset[-1].append( [array([], dtype=float),
                                roots(self2.den[i][j]), 0.0, [], 0 ])
                 else:
-                    poleset[-1].append(
-                        [ *tf2zpk(self2.num[i][j], self2.den[i][j]), [], 0])
+                    z, p, k = tf2zpk(self2.num[i][j], self2.den[i][j])
+                    poleset[-1].append([ z, p, k, [], 0])
         
         # collect all individual poles
         epsnm = eps * self.inputs * self.outputs
