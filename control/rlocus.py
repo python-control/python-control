@@ -131,7 +131,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
                 'button_release_event', partial(_RLFeedbackClicksPoint,sys=sys,fig=f))
 
         elif sisotool == True:
-            f.axes[1].plot([root.real for root in start_mat], [root.imag for root in start_mat], 'm.', marker='s', markersize=8,zorder=20)
+            f.axes[1].plot([root.real for root in start_mat], [root.imag for root in start_mat], 'm.', marker='s', markersize=8,zorder=20,label='gain_point')
             f.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" % (start_mat[0][0].real, start_mat[0][0].imag, 1, -1 * start_mat[0][0].real / abs(start_mat[0][0])),fontsize = 12 if int(matplotlib.__version__[0]) == 1 else 10)
             f.canvas.mpl_connect(
                 'button_release_event',partial(_RLFeedbackClicksSisotool,sys=sys, fig=f, bode_plot_params=kwargs['bode_plot_params'],tvect=kwargs['tvect']))
@@ -380,7 +380,6 @@ def _RLFeedbackClicksSisotool(event,sys,fig,bode_plot_params,tvect):
 def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
     """Display root-locus gain feedback point for clicks on the root-locus plot
     """
-    print(event)
     if sisotool == False:
         ax_rlocus = fig.axes[0]
 
@@ -397,7 +396,7 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
 
         # Remove the previous points
         for line in reversed(ax_rlocus.lines):
-            if len(line.get_xdata()) == 1:
+            if len(line.get_xdata()) == 1 and line.get_label()=='gain_point':
                 line.remove()
                 del line
 
@@ -405,9 +404,9 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus=None,sisotool=False):
         if sisotool:
             mymat = _RLFindRoots(nump, denp, K.real)
             ax_rlocus.plot([root.real for root in mymat], [root.imag for root in mymat], 'm.', marker='s', markersize=8,
-                           zorder=20)
+                           zorder=20,label='gain_point')
         else:
-            ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20)
+            ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20,label='gain_point')
 
         # Update the canvas
         fig.canvas.draw()

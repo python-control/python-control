@@ -10,15 +10,11 @@ class TestSisotool(unittest.TestCase):
     """These are tests for the sisotool in sisotool.py."""
 
     def setUp(self):
-        """This contains some random LTI systems and scalars for testing."""
-
-        # Two random SISO systems.
-        sys1 = TransferFunction([1000],[1,25,100,0])
-        sys2 = TransferFunction([1,1,1],[1,1])
-        self.systems = (sys1, sys2)
+        # One random SISO system.
+        self.system = TransferFunction([1000],[1,25,100,0])
 
     def test_sisotool(self):
-        sisotool(self.systems[0])
+        sisotool(self.system)
         fig = plt.gcf()
         ax_mag,ax_rlocus,ax_phase,ax_step = fig.axes[0],fig.axes[1],fig.axes[2],fig.axes[3]
 
@@ -53,7 +49,7 @@ class TestSisotool(unittest.TestCase):
 
         # Move the rootlocus to another point
         event = type('test', (object,), {'xdata': 2.31206868287,'ydata':15.5983051046, 'inaxes':ax_rlocus.axes})()
-        _RLFeedbackClicksSisotool(event=event, sys=self.systems[0], fig=fig, bode_plot_params=bode_plot_params, tvect=None)
+        _RLFeedbackClicksSisotool(event=event, sys=self.system, fig=fig, bode_plot_params=bode_plot_params, tvect=None)
 
         # Check the moved root locus plot points
         moved_point_0 = (np.array([-29.91742755]), np.array([0.]))
