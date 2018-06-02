@@ -165,9 +165,10 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             ax.axvline(0., linestyle=':', color='k')
     return mymat, kvect
 
-def _default_gains(num, den, xlim, ylim, point_tolerance=5e-2,zoom_xlim=None,zoom_ylim=None):
-    """Unsupervised gains calculation for root locus plot. 
-    
+
+def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
+    """Unsupervised gains calculation for root locus plot.
+
     References:
      Ogata, K. (2002). Modern control engineering (4th ed.). Upper Saddle River, NJ : New Delhi: Prentice Hall.."""
 
@@ -197,126 +198,92 @@ def _default_gains(num, den, xlim, ylim, point_tolerance=5e-2,zoom_xlim=None,zoo
                          "locus with equal order of numerator and denominator.")
 
     if xlim is None and false_gain > 0:
-        x_tolerance = point_tolerance * (np.max(np.real(mymat_xl)) - np.min(np.real(mymat_xl)))
+        x_tolerance = 0.05 * (np.max(np.real(mymat_xl)) - np.min(np.real(mymat_xl)))
         xlim = _ax_lim(mymat_xl)
     elif xlim is None and false_gain < 0:
-        axmin = np.min(np.real(important_points))-(np.max(np.real(important_points))-np.min(np.real(important_points)))
+        axmin = np.min(np.real(important_points)) - (
+                    np.max(np.real(important_points)) - np.min(np.real(important_points)))
         axmin = np.min(np.array([axmin, np.min(np.real(mymat_xl))]))
-        axmax = np.max(np.real(important_points))+np.max(np.real(important_points))-np.min(np.real(important_points))
+        axmax = np.max(np.real(important_points)) + np.max(np.real(important_points)) - np.min(
+            np.real(important_points))
         axmax = np.max(np.array([axmax, np.max(np.real(mymat_xl))]))
         xlim = [axmin, axmax]
-        x_tolerance = 5e-2 * (axmax - axmin)
+        x_tolerance = 0.05 * (axmax - axmin)
     else:
-        x_tolerance = 5e-2 * (xlim[1] - xlim[0])
+        x_tolerance = 0.05 * (xlim[1] - xlim[0])
 
     if ylim is None:
-        y_tolerance = 5e-2 * (np.max(np.imag(mymat_xl)) - np.min(np.imag(mymat_xl)))
+        y_tolerance = 0.05 * (np.max(np.imag(mymat_xl)) - np.min(np.imag(mymat_xl)))
         ylim = _ax_lim(mymat_xl * 1j)
     else:
-        y_tolerance = 5e-2 * (ylim[1] - ylim[0])
-    print(len(mymat))
-    tolerance = np.max([x_tolerance, y_tolerance])
-    # print('normal smoothing start')
-    # mymat,kvect =_smooth_rootlocus(num, den, tolerance,mymat,kvect, xlim=None, ylim=None)
-    # print('normal smoothing end')
-    mymat = _RLSortRoots(mymat)
-    print(len(mymat))
+        y_tolerance = 0.05 * (ylim[1] - ylim[0])
 
-    # If a zoom on the plot is used insert points on this interval and use a smaller tolerance
-    if zoom_xlim != None and zoom_ylim != None:
-        print('zoom smoothing start')
-        y_tolerance = 5e-2 * (zoom_ylim[1] - zoom_ylim[0])
-        x_tolerance = 5e-2 * (zoom_xlim[1] - zoom_xlim[0])
-        tolerance = np.max([x_tolerance, y_tolerance])
-        tolerance = np.max([x_tolerance, y_tolerance])
-        #print(mymat)
-        mymat,kvect = _smooth_rootlocus(num,den,tolerance,mymat,kvect,zoom_xlim,zoom_ylim)
+    tolerance = np.min([x_tolerance, y_tolerance])
+    indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
+
+    while (len(indexes_too_far) > 0) and (kvect.size < 5000):
+        for counter,index in enumerate(indexes_too_far):
+            index = index + counter*3
+            new_gains = np.linspace(kvect[index], kvect[index + 1], 5)
+            new_points = _RLFindRoots(num, den, new_gains[1:4])
+            kvect = np.insert(kvect, index + 1, new_gains[1:4])
+            mymat = np.insert(mymat, index + 1, new_points, axis=0)
+
         mymat = _RLSortRoots(mymat)
-        #print(mymat)
-        print('zoom smoothing end')
-    print(len(mymat))
-    kvect = np.sort(kvect)
+        indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
 
-    mymat = _RLFindRoots(num, den, kvect)
+    new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
+    new_points = _RLFindRoots(num, den, new_gains[1:4])
+    kvect = np.append(kvect, new_gains[1:4])
+    mymat = np.concatenate((mymat, new_points), axis=0)
+    mymat = _RLSortRoots(mymat)
     return kvect, mymat, xlim, ylim
 
-
-def _smooth_rootlocus(num,den,tolerance,mymat,kvect, xlim,ylim):
-    """Smooth the rootlocus plot by inserting points at locations where the distance between
-    two points exceeds a certain tolerance."""
+def _indexes_filt(mymat,tolerance,zoom_xlim=None,zoom_ylim=None):
+    """Calculate the distance between points and return the indexes.
+    Filter the indexes so only the resolution of points within the xlim and ylim is improved when zoom is used"""
 
     distance_points = np.abs(np.diff(mymat, axis=0))
-    indexes_too_far = np.where(distance_points > tolerance)
-    indexes_too_far_filtered = _indexes_filter(indexes_too_far,mymat,xlim,ylim)
+    indexes_too_far = list(np.unique(np.where(distance_points > tolerance)[0]))
 
-    print('length of indexes too_far_filtered')
-    print(len(indexes_too_far_filtered))
-    print(indexes_too_far_filtered)
-
-    if len(indexes_too_far_filtered) > 0:
-        print('points are added')
-        # if indexes_too_far_filtered[0] != 0:
-        #     point_before_start = indexes_too_far_filtered[0] -1
-        #     indexes_too_far_filtered.insert(0,point_before_start)
-        #
-        # if indexes_too_far_filtered[-1] != len(mymat):
-        #     point_at_end = indexes_too_far_filtered[-1]+1
-        #     indexes_too_far_filtered.append(point_at_end)
-
-        print('before while loop')
-        print(len(indexes_too_far_filtered))
-        print(indexes_too_far_filtered)
-        while (len(indexes_too_far_filtered) > 0) and (kvect.size < 5000):
-            counter = 0
-            for list_index, index in enumerate(indexes_too_far_filtered):
-                index+= counter*3
-                new_gains = np.linspace(kvect[index], kvect[index+1], 5)
-                new_points = _RLFindRoots(num, den, new_gains[1:4])
-
-                print('inside while loop')
-                print(index)
-                print(kvect[index],kvect[index+1])
-                print(new_gains[1:4])
-
-                kvect = np.insert(kvect, index+1, new_gains[1:4])
-
-                mymat = np.insert(mymat, index+1, new_points, axis=0)
-                counter +=1
-
-
-
-            mymat = _RLSortRoots(mymat)
-            distance_points = np.abs(np.diff(mymat, axis=0)) > tolerance
-            indexes_too_far = np.where(distance_points)
-            indexes_too_far_filtered = _indexes_filter(indexes_too_far, mymat, xlim, ylim)
-            print('new indexes too far')
-            print(indexes_too_far_filtered)
-            print('K SORTED?')
-            print(all(kvect[i] <= kvect[i+1] for i in range(len(kvect)-1)))
-
-        #print(kvect)
-
-        new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
-        new_points = _RLFindRoots(num, den, new_gains[1:4])
-        kvect = np.append(kvect, new_gains[1:4])
-        mymat = np.concatenate((mymat, new_points), axis=0)
-
-
-    return mymat,kvect
-
-def _indexes_filter(indexes_too_far,mymat,xlim,ylim):
-    """Filter the indexes so only the resolution of points within the xlim and ylim is improved"""
-    if xlim== None and ylim == None:
-        indexes_too_far_filtered = list(np.unique(indexes_too_far[0]))
-    else:
+    if zoom_xlim != None and zoom_ylim != None:
+        x_tolerance_zoom = 0.05 * (zoom_xlim[1] - zoom_xlim[0])
+        y_tolerance_zoom = 0.05 * (zoom_ylim[1] - zoom_ylim[0])
+        tolerance_zoom = np.min([x_tolerance_zoom, y_tolerance_zoom])
+        distance_points_zoom_ = np.abs(np.diff(mymat, axis=0))
+        indexes_too_far_zoom = list(np.unique(np.where(distance_points_zoom_ > tolerance_zoom)[0]))
         indexes_too_far_filtered = []
-        for index in np.unique(indexes_too_far[0]):
+
+        for index in indexes_too_far_zoom:
             for point in mymat[index]:
-                if (xlim[0] <= point.real <= xlim[1]) and  (ylim[0] <= point.imag <=ylim[1]):
+                if (zoom_xlim[0] <= point.real <= zoom_xlim[1]) and  (zoom_ylim[0] <= point.imag <= zoom_ylim[1]):
                     indexes_too_far_filtered.append(index)
                     break
 
-    return indexes_too_far_filtered
+        # Check if the zoom box is not overshot and insert points where neccessary
+        if len(indexes_too_far_filtered) == 0 and len(mymat) <300:
+            limits = [zoom_xlim[0],zoom_xlim[1],zoom_ylim[0],zoom_ylim[1]]
+            for index,limit in enumerate(limits):
+                if index <= 1:
+                    asign = np.sign(real(mymat)-limit)
+                else:
+                    asign = np.sign(imag(mymat) - limit)
+                signchange = ((np.roll(asign, 1, axis=0) - asign) != 0).astype(int)
+                signchange[0] = np.zeros((len(mymat[0])))
+                if len(np.where(signchange ==1)) > 0:
+                    indexes_too_far_filtered.append(np.where(signchange == 1)[0][0])
+
+        if len(indexes_too_far_filtered) > 0 :
+            if indexes_too_far_filtered[0] != 0:
+                indexes_too_far_filtered.insert(0,indexes_too_far_filtered[0]-1)
+            if not indexes_too_far_filtered[-1] +1 >= len(mymat)-2:
+                indexes_too_far_filtered.append(indexes_too_far_filtered[-1]+1)
+
+        indexes_too_far.extend(indexes_too_far_filtered)
+
+    indexes_too_far = list(np.unique(indexes_too_far))
+    indexes_too_far.sort()
+    return indexes_too_far
 
 def _break_points(num, den):
     """Extract break points over real axis and the gains give these location"""
@@ -405,7 +372,6 @@ def _systopoly1d(sys):
 
 def _RLFindRoots(nump, denp, kvect):
     """Find the roots for the root locus."""
-
     # Convert numerator and denominator to polynomials if they aren't
     roots = []
     for k in kvect:
@@ -420,7 +386,6 @@ def _RLFindRoots(nump, denp, kvect):
 
     mymat = row_stack(roots)
     return mymat
-
 
 def _RLSortRoots(mymat):
     """Sort the roots from sys._RLFindRoots, so that the root
@@ -446,20 +411,17 @@ def _RLSortRoots(mymat):
 
 def _RLClickDispatcher(event,sys,fig,ax_rlocus,plotstr,sisotool=False,bode_plot_params=None,tvect=None):
     """Rootlocus plot click dispatcher"""
-
     # If zoom is used on the rootlocus plot smooth and update it
     if plt.get_current_fig_manager().toolbar.mode == 'zoom rect' and event.inaxes == ax_rlocus.axes:
 
         (nump, denp) = _systopoly1d(sys)
-        xlim = ax_rlocus.get_xlim()
-        ylim = ax_rlocus.get_ylim()
+        xlim,ylim = ax_rlocus.get_xlim(),ax_rlocus.get_ylim()
+
         kvect,mymat, xlim,ylim = _default_gains(nump, denp,xlim=None,ylim=None, zoom_xlim=xlim,zoom_ylim=ylim)
         _removeLine('rootlocus', ax_rlocus)
 
-        for index,col in enumerate(mymat.T):
-            ax_rlocus.plot(real(col), imag(col), plotstr,label=index)
-
-        fig.canvas.draw()
+        for i,col in enumerate(mymat.T):
+            ax_rlocus.plot(real(col), imag(col), plotstr,label='rootlocus')
 
     # if a point is clicked on the rootlocus plot visually emphasize it
     else:
