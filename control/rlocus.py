@@ -174,6 +174,7 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
 
     k_break, real_break = _break_points(num, den)
     kmax = _k_max(num, den, real_break, k_break)
+    print(kmax)
     kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
     kvect.sort()
 
@@ -242,7 +243,6 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
 def _indexes_filt(mymat,tolerance,zoom_xlim=None,zoom_ylim=None):
     """Calculate the distance between points and return the indexes.
     Filter the indexes so only the resolution of points within the xlim and ylim is improved when zoom is used"""
-
     distance_points = np.abs(np.diff(mymat, axis=0))
     indexes_too_far = list(np.unique(np.where(distance_points > tolerance)[0]))
 
@@ -250,8 +250,7 @@ def _indexes_filt(mymat,tolerance,zoom_xlim=None,zoom_ylim=None):
         x_tolerance_zoom = 0.05 * (zoom_xlim[1] - zoom_xlim[0])
         y_tolerance_zoom = 0.05 * (zoom_ylim[1] - zoom_ylim[0])
         tolerance_zoom = np.min([x_tolerance_zoom, y_tolerance_zoom])
-        distance_points_zoom_ = np.abs(np.diff(mymat, axis=0))
-        indexes_too_far_zoom = list(np.unique(np.where(distance_points_zoom_ > tolerance_zoom)[0]))
+        indexes_too_far_zoom = list(np.unique(np.where(distance_points > tolerance_zoom)[0]))
         indexes_too_far_filtered = []
 
         for index in indexes_too_far_zoom:
@@ -270,8 +269,8 @@ def _indexes_filt(mymat,tolerance,zoom_xlim=None,zoom_ylim=None):
                     asign = np.sign(imag(mymat) - limit)
                 signchange = ((np.roll(asign, 1, axis=0) - asign) != 0).astype(int)
                 signchange[0] = np.zeros((len(mymat[0])))
-                if len(np.where(signchange ==1)) > 0:
-                    indexes_too_far_filtered.append(np.where(signchange == 1)[0][0])
+                if len(np.where(signchange ==1)[0]) > 0:
+                    indexes_too_far_filtered.append(np.where(signchange == 1)[0][0]-1)
 
         if len(indexes_too_far_filtered) > 0 :
             if indexes_too_far_filtered[0] != 0:
@@ -411,8 +410,9 @@ def _RLSortRoots(mymat):
 
 def _RLClickDispatcher(event,sys,fig,ax_rlocus,plotstr,sisotool=False,bode_plot_params=None,tvect=None):
     """Rootlocus plot click dispatcher"""
+
     # If zoom is used on the rootlocus plot smooth and update it
-    if plt.get_current_fig_manager().toolbar.mode == 'zoom rect' and event.inaxes == ax_rlocus.axes:
+    if plt.get_current_fig_manager().toolbar.mode in ['zoom rect','pan/zoom'] and event.inaxes == ax_rlocus.axes:
 
         (nump, denp) = _systopoly1d(sys)
         xlim,ylim = ax_rlocus.get_xlim(),ax_rlocus.get_ylim()
@@ -446,7 +446,13 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=False):
     except TypeError:
         K = float('inf')
 
-    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < 0.04 and event.inaxes == ax_rlocus.axes:
+    xlim = ax_rlocus.get_xlim()
+    ylim = ax_rlocus.get_ylim()
+    x_tolerance = 0.05 * (xlim[1] - xlim[0])
+    y_tolerance = 0.05 * (ylim[1] - ylim[0])
+    gain_tolerance = np.min([x_tolerance, y_tolerance])*1e-1
+
+    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes:
 
         # Display the parameters in the output window and figure
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
