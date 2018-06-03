@@ -413,7 +413,6 @@ def _RLClickDispatcher(event,sys,fig,ax_rlocus,plotstr,sisotool=False,bode_plot_
 
     # If zoom is used on the rootlocus plot smooth and update it
     if plt.get_current_fig_manager().toolbar.mode in ['zoom rect','pan/zoom'] and event.inaxes == ax_rlocus.axes:
-
         (nump, denp) = _systopoly1d(sys)
         xlim,ylim = ax_rlocus.get_xlim(),ax_rlocus.get_ylim()
 

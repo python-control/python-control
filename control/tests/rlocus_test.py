@@ -52,9 +52,9 @@ class TestRootLocus(unittest.TestCase):
         fig = plt.gcf()
         ax_rlocus = fig.axes[0]
 
-        event = type('test', (object,), {'xdata': 0.9957380594313321, 'ydata': 1.7825491928580846, 'inaxes': ax_rlocus.axes})()
-        ax_rlocus.set_xlim((-4.420022219849855, 0.9957380594313321))
-        ax_rlocus.set_ylim((1.7825491928580846, 10.695295157148486))
+        event = type('test', (object,), {'xdata': 14.7607954359, 'ydata': -35.6171379864, 'inaxes': ax_rlocus.axes})()
+        ax_rlocus.set_xlim((-10.813628105112421, 14.760795435937652))
+        ax_rlocus.set_ylim((-35.61713798641108, 33.879716621220311))
         plt.get_current_fig_manager().toolbar.mode = 'zoom rect'
         _RLClickDispatcher(event, system, fig, ax_rlocus, '-')
 
@@ -62,10 +62,10 @@ class TestRootLocus(unittest.TestCase):
         zoom_y = ax_rlocus.lines[-2].get_data()[1][65:75]
         zoom_y = [abs(y) for y in zoom_y]
 
-        zoom_x_valid = [-2.23659192, -2.23659121, -2.23659103, -2.23659086, -2.23659068, -2.23659063,
-         -2.23659059, -2.23659055, -2.2365905,  -2.23658766]
-        zoom_y_valid = [1.78253589, 1.78254318, 1.782545,   1.78254682, 1.78254864, 1.7825491,
-         1.78254955, 1.78255001, 1.78255046, 1.7825796]
+        zoom_x_valid = [4.35145783,  4.49519318,  4.63559911 , 4.7728639  , 5.2937363  , 5.77581159,
+         6.22564674 , 6.64818196 , 7.0472438 ,  7.4258642]
+        zoom_y_valid = [19.34886165,  19.63109635,  19.90593613 , 20.17384159 , 21.18390302,
+         22.11041787,  22.96863881,  23.76981422 , 24.52250243,  25.23338241]
 
         assert_array_almost_equal(zoom_x,zoom_x_valid)
         assert_array_almost_equal(zoom_y,zoom_y_valid)
