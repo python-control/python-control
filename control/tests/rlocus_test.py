@@ -58,14 +58,12 @@ class TestRootLocus(unittest.TestCase):
         plt.get_current_fig_manager().toolbar.mode = 'zoom rect'
         _RLClickDispatcher(event, system, fig, ax_rlocus, '-')
 
-        zoom_x = ax_rlocus.lines[-2].get_data()[0][65:75]
-        zoom_y = ax_rlocus.lines[-2].get_data()[1][65:75]
+        zoom_x = ax_rlocus.lines[-2].get_data()[0][0:5]
+        zoom_y = ax_rlocus.lines[-2].get_data()[1][0:5]
         zoom_y = [abs(y) for y in zoom_y]
 
-        zoom_x_valid = [4.35145783,  4.49519318,  4.63559911 , 4.7728639  , 5.2937363  , 5.77581159,
-         6.22564674 , 6.64818196 , 7.0472438 ,  7.4258642]
-        zoom_y_valid = [19.34886165,  19.63109635,  19.90593613 , 20.17384159 , 21.18390302,
-         22.11041787,  22.96863881,  23.76981422 , 24.52250243,  25.23338241]
+        zoom_x_valid = [-5. ,- 4.61281263, - 4.16689986, - 4.04122642, - 3.90736502]
+        zoom_y_valid = [0. ,0., 0., 0., 0.]
 
         assert_array_almost_equal(zoom_x,zoom_x_valid)
         assert_array_almost_equal(zoom_y,zoom_y_valid)
