@@ -192,7 +192,8 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
     important_points = np.concatenate((singular_points, real_break), axis=0)
     important_points = np.concatenate((important_points, np.zeros(2)), axis=0)
     mymat_xl = np.append(mymat_xl, important_points)
-    false_gain = den.coeffs[0] / num.coeffs[0]
+
+    false_gain = float(den.coeffs[0]) / float(num.coeffs[0])
     if false_gain < 0 and not den.order > num.order:
         raise ValueError("Not implemented support for 0 degrees root "
                          "locus with equal order of numerator and denominator.")
