@@ -26,10 +26,6 @@ class TestSisotool(unittest.TestCase):
         assert_array_almost_equal(ax_rlocus.lines[1].get_data(),initial_point_1)
         assert_array_almost_equal(ax_rlocus.lines[2].get_data(),initial_point_2)
 
-        # Check the bode plot magnitude line
-        bode_mag_original = np.array([ 15.12670407,  12.48358602,  10.28367521,   8.44961576,   6.91740918, 5.63436301,   4.55750665,   3.65237575,   2.89200358,   2.25587634])
-        assert_array_almost_equal(ax_mag.lines[0].get_data()[1][10:20],bode_mag_original)
-
         # Check the step response before moving the point
         step_response_original = np.array([ 0.,          0.02233651,  0.13118374,  0.33078542,  0.5907113,   0.87041549, 1.13038536,  1.33851053,  1.47374666,  1.52757114])
         assert_array_almost_equal(ax_step.lines[0].get_data()[1][:10],step_response_original)

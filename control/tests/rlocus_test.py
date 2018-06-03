@@ -45,7 +45,7 @@ class TestRootLocus(unittest.TestCase):
             roots, kvect = root_locus(sys, Plot=False)
             self.check_cl_poles(sys, roots, kvect)
 
-    def testRootLocusZoom(self):
+    def test_root_locus_zoom(self):
         """Check the zooming functionality of the Root locus plot"""
         system = TransferFunction([1000], [1, 25, 100, 0])
         root_locus(system)

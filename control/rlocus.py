@@ -102,7 +102,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
         start_mat = _RLFindRoots(nump, denp, [1])
         kvect, mymat, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
     else:
-        start_mat = _RLFindRoots(nump, denp, kvect[0])
+        start_mat = _RLFindRoots(nump, denp, [kvect[0]])
         mymat = _RLFindRoots(nump, denp, kvect)
         mymat = _RLSortRoots(mymat)
 
