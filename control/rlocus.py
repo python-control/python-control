@@ -174,7 +174,6 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
 
     k_break, real_break = _break_points(num, den)
     kmax = _k_max(num, den, real_break, k_break)
-    print(kmax)
     kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
     kvect.sort()
 
