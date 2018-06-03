@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from control.sisotool import sisotool
 from control.tests.margin_test import assert_array_almost_equal
-from control.rlocus import _RLFeedbackClicksSisotool
+from control.rlocus import _RLClickDispatcher
 from control.xferfcn import TransferFunction
 import matplotlib.pyplot as plt
 
@@ -49,12 +49,14 @@ class TestSisotool(unittest.TestCase):
 
         # Move the rootlocus to another point
         event = type('test', (object,), {'xdata': 2.31206868287,'ydata':15.5983051046, 'inaxes':ax_rlocus.axes})()
-        _RLFeedbackClicksSisotool(event=event, sys=self.system, fig=fig, bode_plot_params=bode_plot_params, tvect=None)
+        _RLClickDispatcher(event=event, sys=self.system, fig=fig,ax_rlocus=ax_rlocus,sisotool=True, plotstr='-' ,bode_plot_params=bode_plot_params, tvect=None)
 
         # Check the moved root locus plot points
         moved_point_0 = (np.array([-29.91742755]), np.array([0.]))
         moved_point_1 = (np.array([2.45871378]), np.array([-15.52647768]))
         moved_point_2 = (np.array([2.45871378]), np.array([15.52647768]))
+        for line in ax_rlocus.lines:
+            print(line.get_data())
         assert_array_almost_equal(ax_rlocus.lines[-3].get_data(),moved_point_0)
         assert_array_almost_equal(ax_rlocus.lines[-2].get_data(),moved_point_1)
         assert_array_almost_equal(ax_rlocus.lines[-1].get_data(),moved_point_2)
