@@ -229,6 +229,17 @@ class TestConvert(unittest.TestCase):
         numref = np.asarray(d)[...,np.newaxis]
         np.testing.assert_array_equal(numref, np.array(gtf.num) / np.array(gtf.den))
 
+    def testTf2SsDuplicatePoles(self):
+        """Tests for "too few poles for MIMO tf #111" """
+        import control
+        num = [ [ [1], [0] ],
+                [ [0], [1] ] ]
+
+        den = [ [ [1,0], [1] ],
+                [ [1],   [1,0] ] ]
+        g = control.tf(num, den)
+        s = control.ss(g)
+        np.testing.assert_array_equal(g.pole(), s.pole())
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)

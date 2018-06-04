@@ -752,8 +752,8 @@ only implemented for SISO functions.")
         
         # collect all individual poles
         epsnm = eps * self.inputs * self.outputs
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        for j in range(self.inputs):
+            for i in range(self.outputs):
                 currentpoles = poleset[i][j][1]
                 nothave = ones(currentpoles.shape, dtype=bool)
                 for ip, p in enumerate(poles):
@@ -769,7 +769,7 @@ only implemented for SISO functions.")
                         poles.append(c)
                 # remember how many poles now known
                 poleset[i][j][4] = len(poles)
-                
+        
         # for only gain systems
         if len(poles) == 0:
             den = ones((1,), dtype=float)
@@ -797,7 +797,134 @@ only implemented for SISO functions.")
                 # ones later added from other denominators
                 for ip in chain(poleset[i][j][3],
                                 range(poleset[i][j][4],np)):
-                    nwzeros.append(poles[ip])
+                    nwzeros.append(poles[j][ip])
+                for j2 in range(self.inputs):
+                    if j2 != j:
+                        for p in poles[j2]:
+                            nwzeros.append(p)
+                m = len(nwzeros) + 1
+                num[i,j,-m:] = polyfromroots(nwzeros).real[::-1]
+                
+                # determine tf gain correction
+                num[i,j] *= poleset[i][j][2]
+
+        return num, den
+
+    def _common_den2(self, imag_tol=None):
+        """
+        Compute MIMO common denominators; return them and adjusted numerators.
+
+        This function computes the denominators per input containing all
+        the poles of sys.den, and reports it as the array d.  The
+        output numerator array n is modified to use the common
+        denominator; the coefficient arrays are also padded with zeros
+        to be the same size as d.  n is an sys.outputs by sys.inputs
+        by len(d) array.
+
+        Parameters
+        ----------
+        imag_tol: float
+            Threshold for the imaginary part of a root to use in detecting
+            complex poles
+
+        Returns
+        -------
+        num: array
+            Multi-dimensional array of numerator coefficients. num[i][j]
+            gives the numerator coefficient array for the ith input and jth
+            output
+
+        den: array
+            Array of coefficients for common denominator polynomial
+
+        Examples
+        --------
+        >>> n, d = sys._common_den()
+
+        """
+
+        # Machine precision for floats.
+        eps = finfo(float).eps
+
+        # Decide on the tolerance to use in deciding of a pole is complex
+        if (imag_tol is None):
+            imag_tol = 1e-8     # TODO: figure out the right number to use
+
+        # A list to keep track of cumulative poles found as we scan
+        # self.den[..][..]
+        poles = [ [] for j in range(self.inputs) ]
+
+        # RvP, new implementation 180526, issue #194
+
+        # pre-calculate the poles for all num, den
+        # has zeros, poles, gain, list for pole indices not in den, 
+        # number of poles known at the time analyzed
+        self2 = self.minreal()
+        poleset = []
+        for i in range(self.outputs):
+            poleset.append([])
+            for j in range(self.inputs):
+                if abs(self2.num[i][j]).max() <= eps:
+                    poleset[-1].append( [array([], dtype=float),
+                               roots(self2.den[i][j]), 0.0, [], 0 ])
+                else:
+                    z, p, k = tf2zpk(self2.num[i][j], self2.den[i][j])
+                    poleset[-1].append([ z, p, k, [], 0])
+        
+        # collect all individual poles
+        epsnm = eps * self.inputs * self.outputs
+        for j in range(self.inputs):
+            for i in range(self.outputs):
+                currentpoles = poleset[i][j][1]
+                nothave = ones(currentpoles.shape, dtype=bool)
+                for ip, p in enumerate(poles):
+                    idx, = nonzero(
+                        (abs(currentpoles - p) < epsnm) * nothave)
+                    if len(idx):
+                        nothave[idx[0]] = False
+                    else:
+                        # remember id of pole not in tf
+                        poleset[i][j][3].append(ip)
+                for h, c in zip(nothave, currentpoles):
+                    if h:
+                        poles[j].append(c)
+                # remember how many poles now known
+                poleset[i][j][4] = len(poles)
+
+        # figure out maximum number of poles, for sizing the den
+        npmax = max([len(p) for p in poles])
+        den = zeros((self.inputs, npmax+1), dtype=float)
+        num = zeros((self.outputs, self.inputs, npmax+1))
+        
+        for j in range(self.inputs):
+            if not len(poles[j]):
+                den[j,npmax] = 1.0
+                num[j,npmax] = poleset[i][j][2]
+            else:
+                
+                # recreate the denominator
+                den[j] = polyfromroots(poles[j])[::-1]
+        if (abs(den.imag) > epsnm).any():
+            print("Warning: The denominator has a nontrivial imaginary part: %f"
+                      % abs(den.imag).max())
+        den = den.real
+        np = len(poles)
+
+        # now supplement numerators with all new poles
+        num = zeros((self.outputs, self.inputs, len(poles)+1), dtype=float)
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                # collect as set of zeros
+                nwzeros = list(poleset[i][j][0])
+                # add all poles not found in this denominator, and the
+                # ones later added from other denominators
+                for ip in chain(poleset[i][j][3],
+                                range(poleset[i][j][4],np)):
+                    nwzeros.append(poles[j][ip])
+                for j2 in range(self.inputs):
+                    if j2 != j:
+                        for p in poles[j2]:
+                            nwzeros.append(p)
                 m = len(nwzeros) + 1
                 num[i,j,-m:] = polyfromroots(nwzeros).real[::-1]
                 
