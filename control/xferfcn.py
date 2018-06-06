@@ -797,11 +797,7 @@ only implemented for SISO functions.")
                 # ones later added from other denominators
                 for ip in chain(poleset[i][j][3],
                                 range(poleset[i][j][4],np)):
-                    nwzeros.append(poles[j][ip])
-                for j2 in range(self.inputs):
-                    if j2 != j:
-                        for p in poles[j2]:
-                            nwzeros.append(p)
+                    nwzeros.append(poles[ip])
                 m = len(nwzeros) + 1
                 num[i,j,-m:] = polyfromroots(nwzeros).real[::-1]
                 
@@ -835,7 +831,12 @@ only implemented for SISO functions.")
             output
 
         den: array
-            Array of coefficients for common denominator polynomial
+            Multi-dimensional array of coefficients for common denominator 
+            polynomial, one row per input. The array is prepared for use in
+            slycot td04ad, the first element is the highest-order polynomial
+            coefficiend of s, matching the order in denorder
+            
+        denorder: array of int, orders of den, one per input
 
         Examples
         --------
@@ -877,7 +878,7 @@ only implemented for SISO functions.")
             for i in range(self.outputs):
                 currentpoles = poleset[i][j][1]
                 nothave = ones(currentpoles.shape, dtype=bool)
-                for ip, p in enumerate(poles):
+                for ip, p in enumerate(poles[j]):
                     idx, = nonzero(
                         (abs(currentpoles - p) < epsnm) * nothave)
                     if len(idx):
@@ -889,49 +890,43 @@ only implemented for SISO functions.")
                     if h:
                         poles[j].append(c)
                 # remember how many poles now known
-                poleset[i][j][4] = len(poles)
+                poleset[i][j][4] = len(poles[j])
 
         # figure out maximum number of poles, for sizing the den
         npmax = max([len(p) for p in poles])
         den = zeros((self.inputs, npmax+1), dtype=float)
-        num = zeros((self.outputs, self.inputs, npmax+1))
+        num = zeros((max(1,self.outputs,self.inputs), 
+                     max(1,self.outputs,self.inputs), npmax+1), dtype=float)
+        denorder = zeros((self.inputs,), dtype=int)
         
         for j in range(self.inputs):
             if not len(poles[j]):
+                # no poles matching this input; only one or more gains
                 den[j,npmax] = 1.0
-                num[j,npmax] = poleset[i][j][2]
+                num[i,j,npmax] = poleset[i][j][2]
             else:
-                
-                # recreate the denominator
-                den[j] = polyfromroots(poles[j])[::-1]
+                # create the denominator matching this input
+                np = len(poles[j])
+                den[j,np+1::-1] = polyfromroots(poles[j])
+                denorder[j] = np
+                for i in range(self.outputs):
+                    # start with the current set of zeros for this output
+                    nwzeros = list(poleset[i][j][0])
+                    # add all poles not found in the original denominator, 
+                    # and the ones later added from other denominators
+                    for ip in chain(poleset[i][j][3],
+                                    range(poleset[i][j][4],np)):
+                        nwzeros.append(poles[j][ip])
+                    m = len(nwzeros) + 1
+                    num[i,j,m::-1] = poleset[i][j][2] * \
+                        polyfromroots(nwzeros).real
+                                                
         if (abs(den.imag) > epsnm).any():
             print("Warning: The denominator has a nontrivial imaginary part: %f"
                       % abs(den.imag).max())
         den = den.real
-        np = len(poles)
 
-        # now supplement numerators with all new poles
-        num = zeros((self.outputs, self.inputs, len(poles)+1), dtype=float)
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                # collect as set of zeros
-                nwzeros = list(poleset[i][j][0])
-                # add all poles not found in this denominator, and the
-                # ones later added from other denominators
-                for ip in chain(poleset[i][j][3],
-                                range(poleset[i][j][4],np)):
-                    nwzeros.append(poles[j][ip])
-                for j2 in range(self.inputs):
-                    if j2 != j:
-                        for p in poles[j2]:
-                            nwzeros.append(p)
-                m = len(nwzeros) + 1
-                num[i,j,-m:] = polyfromroots(nwzeros).real[::-1]
-                
-                # determine tf gain correction
-                num[i,j] *= poleset[i][j][2]
-
-        return num, den
+        return num, den, denorder
 
         
     def sample(self, Ts, method='zoh', alpha=None):

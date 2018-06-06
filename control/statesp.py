@@ -776,15 +776,14 @@ cannot take keywords.")
 
             # Change the numerator and denominator arrays so that the transfer
             # function matrix has a common denominator.
-            num, den = sys._common_den()
-            # Make a list of the orders of the denominator polynomials.
-            index = [len(den) - 1 for i in range(sys.outputs)]
-            # Repeat the common denominator along the rows.
-            den = array([den for i in range(sys.outputs)])
+            num, den, denorder = sys._common_den2()
+
             #! TODO: transfer function to state space conversion is still buggy!
-            #print num
-            #print shape(num)
-            ssout = td04ad('R',sys.inputs, sys.outputs, index, den, num,tol=0.0)
+            print("num", num.shape, "=", num)
+            print("den",den.shape,"=",den)
+            print("denorder", denorder)
+            ssout = td04ad('C', sys.inputs, sys.outputs, 
+                           denorder, den, num, tol=0.0)
 
             states = ssout[0]
             return StateSpace(ssout[1][:states, :states],
