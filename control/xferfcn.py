@@ -902,12 +902,12 @@ only implemented for SISO functions.")
         for j in range(self.inputs):
             if not len(poles[j]):
                 # no poles matching this input; only one or more gains
-                den[j,npmax] = 1.0
+                den[j,0] = 1.0
                 num[i,j,npmax] = poleset[i][j][2]
             else:
                 # create the denominator matching this input
                 np = len(poles[j])
-                den[j,np+1::-1] = polyfromroots(poles[j])
+                den[j,np::-1] = polyfromroots(poles[j])
                 denorder[j] = np
                 for i in range(self.outputs):
                     # start with the current set of zeros for this output
@@ -917,10 +917,13 @@ only implemented for SISO functions.")
                     for ip in chain(poleset[i][j][3],
                                     range(poleset[i][j][4],np)):
                         nwzeros.append(poles[j][ip])
-                    m = len(nwzeros) + 1
-                    num[i,j,m::-1] = poleset[i][j][2] * \
-                        polyfromroots(nwzeros).real
-                                                
+                    
+                    numpoly = poleset[i][j][2] * polyfromroots(nwzeros).real 
+                    m = npmax - len(numpoly) - 1
+                    if m < 0:
+                        num[i,j,::-1] = numpoly
+                    else:
+                        num[i,j,:m:-1] = numpoly   
         if (abs(den.imag) > epsnm).any():
             print("Warning: The denominator has a nontrivial imaginary part: %f"
                       % abs(den.imag).max())

@@ -198,7 +198,7 @@ class TestConvert(unittest.TestCase):
         """Regression: tf2ss for MIMO static gain"""
         import control
         # 2x3 TFM
-        gmimo = control.tf2ss(control.tf([[ [23],   [3],  [5] ], [ [-1],  [0.125],  [101.3] ]],
+        gmimo = control.tf2ss(control.tf([[ [23],   [3],  [5] , [ [-1],  [0.125],  [101.3] ]],
                                          [[ [46], [0.1], [80] ], [  [2],   [-0.1],      [1] ]]))
         self.assertEqual(0, gmimo.states)
         self.assertEqual(3, gmimo.inputs)
