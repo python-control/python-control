@@ -576,8 +576,11 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
 
     def pole(self):
         """Compute the poles of a transfer function."""
-        num, den = self._common_den()
-        return roots(den)
+        num, den, denorder = self._common_den2()
+        rts = []
+        for d, o in zip(den,denorder):
+            rts.extend(roots(d[:o+1]))
+        return np.array(rts)
 
     def zero(self):
         """Compute the zeros of a transfer function."""
@@ -811,10 +814,11 @@ only implemented for SISO functions.")
         Compute MIMO common denominators; return them and adjusted numerators.
 
         This function computes the denominators per input containing all
-        the poles of sys.den, and reports it as the array d.  The
-        output numerator array n is modified to use the common
-        denominator; the coefficient arrays are also padded with zeros
-        to be the same size as d.  n is an sys.outputs by sys.inputs
+        the poles of sys.den, and reports it as the array den.  The
+        output numerator array num is modified to use the common
+        denominator for this input/column; the coefficient arrays are also 
+        padded with zeros to be the same size for all num/den.  
+        num is an sys.outputs by sys.inputs
         by len(d) array.
 
         Parameters
@@ -828,7 +832,8 @@ only implemented for SISO functions.")
         num: array
             Multi-dimensional array of numerator coefficients. num[i][j]
             gives the numerator coefficient array for the ith input and jth
-            output
+            output, also prepared for use in td04ad; matches the denorder
+            order; highest coefficient starts on the left.
 
         den: array
             Multi-dimensional array of coefficients for common denominator 
@@ -837,6 +842,8 @@ only implemented for SISO functions.")
             coefficiend of s, matching the order in denorder
             
         denorder: array of int, orders of den, one per input
+
+
 
         Examples
         --------
@@ -903,11 +910,12 @@ only implemented for SISO functions.")
             if not len(poles[j]):
                 # no poles matching this input; only one or more gains
                 den[j,0] = 1.0
-                num[i,j,npmax] = poleset[i][j][2]
+                for i in range(self.outputs):
+                    num[i,j,npmax] = poleset[i][j][2]
             else:
                 # create the denominator matching this input
                 np = len(poles[j])
-                den[j,np::-1] = polyfromroots(poles[j])
+                den[j,np::-1] = polyfromroots(poles[j]).real
                 denorder[j] = np
                 for i in range(self.outputs):
                     # start with the current set of zeros for this output
@@ -919,7 +927,8 @@ only implemented for SISO functions.")
                         nwzeros.append(poles[j][ip])
                     
                     numpoly = poleset[i][j][2] * polyfromroots(nwzeros).real 
-                    m = npmax - len(numpoly) - 1
+                    m = npmax - len(numpoly)
+                    #print(j,i,m,len(numpoly),len(poles[j]))
                     if m < 0:
                         num[i,j,::-1] = numpoly
                     else:
@@ -1420,6 +1429,11 @@ def _cleanPart(data):
         (isinstance(data, ndarray) and data.ndim == 0)):
         # Data is a scalar (including 0d ndarray)
         data = [[array([data])]]
+    elif (isinstance(data, ndarray) and data.ndim == 3 and
+          isinstance(data[0,0,0], valid_types)):
+        data = [ [ array(data[i,j]) 
+            for j in range(data.shape[1])]
+            for i in range(data.shape[0])]
     elif (isinstance(data, valid_collection) and
             all([isinstance(d, valid_types) for d in data])):
         data = [[array(data)]]

@@ -40,7 +40,7 @@ class TestConvert(unittest.TestCase):
         # Set to True to print systems to the output.
         self.debug = False
         # get consistent results
-        np.random.seed(9)
+        np.random.seed(5)
 
     def printSys(self, sys, ind):
         """Print system to the standard output."""
@@ -198,8 +198,9 @@ class TestConvert(unittest.TestCase):
         """Regression: tf2ss for MIMO static gain"""
         import control
         # 2x3 TFM
-        gmimo = control.tf2ss(control.tf([[ [23],   [3],  [5] , [ [-1],  [0.125],  [101.3] ]],
-                                         [[ [46], [0.1], [80] ], [  [2],   [-0.1],      [1] ]]))
+        gmimo = control.tf2ss(control.tf(
+                [[ [23],   [3],  [5] ], [ [-1],  [0.125],  [101.3] ]],
+                [[ [46], [0.1], [80] ], [  [2],   [-0.1],      [1] ]]))
         self.assertEqual(0, gmimo.states)
         self.assertEqual(3, gmimo.inputs)
         self.assertEqual(2, gmimo.outputs)
