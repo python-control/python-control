@@ -775,6 +775,7 @@ cannot take keywords.")
 
             # Change the numerator and denominator arrays so that the transfer
             # function matrix has a common denominator.
+            # matrices are also sized/padded to fit td04ad
             num, den, denorder = sys._common_den()
 
             # transfer function to state space conversion now should work!

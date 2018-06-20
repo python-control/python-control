@@ -232,14 +232,18 @@ class TestConvert(unittest.TestCase):
     def testTf2SsDuplicatePoles(self):
         """Tests for "too few poles for MIMO tf #111" """
         import control
-        num = [ [ [1], [0] ],
-                [ [0], [1] ] ]
+        try:
+            import slycot
+            num = [ [ [1], [0] ],
+                   [ [0], [1] ] ]
 
-        den = [ [ [1,0], [1] ],
+            den = [ [ [1,0], [1] ],
                 [ [1],   [1,0] ] ]
-        g = control.tf(num, den)
-        s = control.ss(g)
-        np.testing.assert_array_equal(g.pole(), s.pole())
+            g = control.tf(num, den)
+            s = control.ss(g)
+            np.testing.assert_array_equal(g.pole(), s.pole())
+        except ImportError:
+            print("Slycot not present, skipping")
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
