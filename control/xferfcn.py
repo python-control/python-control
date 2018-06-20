@@ -576,7 +576,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
 
     def pole(self):
         """Compute the poles of a transfer function."""
-        num, den, denorder = self._common_den2()
+        num, den, denorder = self._common_den()
         rts = []
         for d, o in zip(den,denorder):
             rts.extend(roots(d[:o+1]))
@@ -692,124 +692,8 @@ only implemented for SISO functions.")
 
         return out
 
+
     def _common_den(self, imag_tol=None):
-        """
-        Compute MIMO common denominator; return it and an adjusted numerator.
-
-        This function computes the single denominator containing all
-        the poles of sys.den, and reports it as the array d.  The
-        output numerator array n is modified to use the common
-        denominator; the coefficient arrays are also padded with zeros
-        to be the same size as d.  n is an sys.outputs by sys.inputs
-        by len(d) array.
-
-        Parameters
-        ----------
-        imag_tol: float
-            Threshold for the imaginary part of a root to use in detecting
-            complex poles
-
-        Returns
-        -------
-        num: array
-            Multi-dimensional array of numerator coefficients. num[i][j]
-            gives the numerator coefficient array for the ith input and jth
-            output
-
-        den: array
-            Array of coefficients for common denominator polynomial
-
-        Examples
-        --------
-        >>> n, d = sys._common_den()
-
-        """
-
-        # Machine precision for floats.
-        eps = finfo(float).eps
-
-        # Decide on the tolerance to use in deciding of a pole is complex
-        if (imag_tol is None):
-            imag_tol = 1e-8     # TODO: figure out the right number to use
-
-        # A list to keep track of cumulative poles found as we scan
-        # self.den[..][..]
-        poles = [ ]
-
-        # RvP, new implementation 180526, issue #194
-
-        # pre-calculate the poles for all num, den
-        # has zeros, poles, gain, list for pole indices not in den, 
-        # number of poles known at the time analyzed
-        self2 = self.minreal()
-        poleset = []
-        for i in range(self.outputs):
-            poleset.append([])
-            for j in range(self.inputs):
-                if abs(self2.num[i][j]).max() <= eps:
-                    poleset[-1].append( [array([], dtype=float),
-                               roots(self2.den[i][j]), 0.0, [], 0 ])
-                else:
-                    z, p, k = tf2zpk(self2.num[i][j], self2.den[i][j])
-                    poleset[-1].append([ z, p, k, [], 0])
-        
-        # collect all individual poles
-        epsnm = eps * self.inputs * self.outputs
-        for j in range(self.inputs):
-            for i in range(self.outputs):
-                currentpoles = poleset[i][j][1]
-                nothave = ones(currentpoles.shape, dtype=bool)
-                for ip, p in enumerate(poles):
-                    idx, = nonzero(
-                        (abs(currentpoles - p) < epsnm) * nothave)
-                    if len(idx):
-                        nothave[idx[0]] = False
-                    else:
-                        # remember id of pole not in tf
-                        poleset[i][j][3].append(ip)
-                for h, c in zip(nothave, currentpoles):
-                    if h:
-                        poles.append(c)
-                # remember how many poles now known
-                poleset[i][j][4] = len(poles)
-        
-        # for only gain systems
-        if len(poles) == 0:
-            den = ones((1,), dtype=float)
-            num = zeros((self.outputs, self.inputs, 1), dtype=float)
-            for i in range(self.outputs):
-                for j in range(self.inputs):
-                    num[i,j,0] = poleset[i][j][2]
-            return num, den
-
-        # recreate the denominator
-        den = polyfromroots(poles)[::-1]
-        if (abs(den.imag) > epsnm).any():
-            print("Warning: The denominator has a nontrivial imaginary part: %f"
-                      % abs(den.imag).max())
-        den = den.real
-        np = len(poles)
-
-        # now supplement numerators with all new poles
-        num = zeros((self.outputs, self.inputs, len(poles)+1), dtype=float)
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                # collect as set of zeros
-                nwzeros = list(poleset[i][j][0])
-                # add all poles not found in this denominator, and the
-                # ones later added from other denominators
-                for ip in chain(poleset[i][j][3],
-                                range(poleset[i][j][4],np)):
-                    nwzeros.append(poles[ip])
-                m = len(nwzeros) + 1
-                num[i,j,-m:] = polyfromroots(nwzeros).real[::-1]
-                
-                # determine tf gain correction
-                num[i,j] *= poleset[i][j][2]
-
-        return num, den
-
-    def _common_den2(self, imag_tol=None):
         """
         Compute MIMO common denominators; return them and adjusted numerators.
 
@@ -839,7 +723,8 @@ only implemented for SISO functions.")
             Multi-dimensional array of coefficients for common denominator 
             polynomial, one row per input. The array is prepared for use in
             slycot td04ad, the first element is the highest-order polynomial
-            coefficiend of s, matching the order in denorder
+            coefficiend of s, matching the order in denorder, if denorder <
+            number of columns in den, the den is padded with zeros
             
         denorder: array of int, orders of den, one per input
 
@@ -847,7 +732,7 @@ only implemented for SISO functions.")
 
         Examples
         --------
-        >>> n, d = sys._common_den()
+        >>> num, den, denorder = sys._common_den()
 
         """
 
@@ -911,7 +796,7 @@ only implemented for SISO functions.")
                 # no poles matching this input; only one or more gains
                 den[j,0] = 1.0
                 for i in range(self.outputs):
-                    num[i,j,npmax] = poleset[i][j][2]
+                    num[i,j,0] = poleset[i][j][2]
             else:
                 # create the denominator matching this input
                 np = len(poles[j])

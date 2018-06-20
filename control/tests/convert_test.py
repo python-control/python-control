@@ -40,7 +40,7 @@ class TestConvert(unittest.TestCase):
         # Set to True to print systems to the output.
         self.debug = False
         # get consistent results
-        np.random.seed(5)
+        np.random.seed(7)
 
     def printSys(self, sys, ind):
         """Print system to the standard output."""
@@ -141,10 +141,9 @@ class TestConvert(unittest.TestCase):
                             ssxfrm_real = ssxfrm_mag * np.cos(ssxfrm_phase)
                             ssxfrm_imag = ssxfrm_mag * np.sin(ssxfrm_phase)
                             np.testing.assert_array_almost_equal( \
-                                ssorig_real, ssxfrm_real)
+                            ssorig_real, ssxfrm_real)
                             np.testing.assert_array_almost_equal( \
-                                ssorig_imag, ssxfrm_imag)
-
+                            ssorig_imag, ssxfrm_imag)
                             #
                             # Make sure xform'd TF has same frequency response
                             #

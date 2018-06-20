@@ -775,11 +775,11 @@ cannot take keywords.")
 
             # Change the numerator and denominator arrays so that the transfer
             # function matrix has a common denominator.
-            num, den, denorder = sys._common_den2()
-                        
-            #! TODO: transfer function to state space conversion is still buggy!
+            num, den, denorder = sys._common_den()
+
+            # transfer function to state space conversion now should work!
             ssout = td04ad('C', sys.inputs, sys.outputs, 
-                           denorder, den, num, tol=1e-14)
+                           denorder, den, num, tol=0)
 
             states = ssout[0]
             return StateSpace(ssout[1][:states, :states],

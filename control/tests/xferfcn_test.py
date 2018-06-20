@@ -425,7 +425,7 @@ class TestXferFcn(unittest.TestCase):
             [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
         p = sys.pole()
 
-        np.testing.assert_array_almost_equal(p, [-7., -3., -2., -2.])
+        np.testing.assert_array_almost_equal(p, [-2., -2., -7., -3., -2.])
 
     # Tests for TransferFunction.feedback.
 
