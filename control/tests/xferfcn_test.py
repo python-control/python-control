@@ -427,8 +427,14 @@ class TestXferFcn(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(p, [-2., -2., -7., -3., -2.])
 
-    # Tests for TransferFunction.feedback.
-
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testDoubleCancelingPoleSiso(self):
+        
+        H = TransferFunction([1,1],[1,2,1])
+        p = H.pole()
+        np.testing.assert_array_almost_equal(p, [-1, -1])
+    
+    # Tests for TransferFunction.feedback
     def testFeedbackSISO(self):
         """Test for correct SISO transfer function feedback."""
 

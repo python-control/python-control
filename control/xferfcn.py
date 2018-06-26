@@ -752,16 +752,17 @@ only implemented for SISO functions.")
         # pre-calculate the poles for all num, den
         # has zeros, poles, gain, list for pole indices not in den, 
         # number of poles known at the time analyzed
-        self2 = self.minreal()
+
+        # do not calculate minreal. Rory's hint .minreal()
         poleset = []
         for i in range(self.outputs):
             poleset.append([])
             for j in range(self.inputs):
-                if abs(self2.num[i][j]).max() <= eps:
+                if abs(self.num[i][j]).max() <= eps:
                     poleset[-1].append( [array([], dtype=float),
-                               roots(self2.den[i][j]), 0.0, [], 0 ])
+                               roots(self.den[i][j]), 0.0, [], 0 ])
                 else:
-                    z, p, k = tf2zpk(self2.num[i][j], self2.den[i][j])
+                    z, p, k = tf2zpk(self.num[i][j], self.den[i][j])
                     poleset[-1].append([ z, p, k, [], 0])
         
         # collect all individual poles
