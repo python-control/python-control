@@ -396,9 +396,9 @@ class TestMatlab(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testModred(self):
         modred(self.siso_ss1, [1])
-        modred(self.siso_ss2 * self.siso_ss3, [0, 1])
-        modred(self.siso_ss3, [1], 'matchdc')
-        modred(self.siso_ss3, [1], 'truncate')
+        modred(self.siso_ss2 * self.siso_ss1, [0, 1])
+        modred(self.siso_ss1, [1], 'matchdc')
+        modred(self.siso_ss1, [1], 'truncate')
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga(self):
