@@ -133,7 +133,10 @@ def observable_form(xsys):
     Wrz = obsv(zsys.A, zsys.C)
 
     # Transformation from one form to another
-    Tzx = inv(Wrz) * Wrx
+    Tzx = solve(Wrz, Wrx)  # matrix left division, Tzx = inv(Wrz) * Wrx
+
+    if matrix_rank(Tzx) != xsys.states:
+        raise ValueError("Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
     zsys.B = Tzx * xsys.B
