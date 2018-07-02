@@ -10,7 +10,8 @@ import unittest
 import numpy as np
 import control as ctrl
 from control.statesp import StateSpace
-from control.matlab import ss, tf, bode
+from control.xferfcn import TransferFunction
+from control.matlab import ss, tf, bode, rss
 from control.exception import slycot_check
 import matplotlib.pyplot as plt
 
@@ -45,7 +46,7 @@ class TestFreqresp(unittest.TestCase):
       ctrl.bode_plot(ctrl.tf([5], [1, 1]))
 
       # Check to make sure there are two axes and that each axes has two lines
-      assert len(plt.gcf().axes) == 2
+      self.assertEqual(len(plt.gcf().axes), 2)
       for ax in plt.gcf().axes:
          # Make sure there are 2 lines in each subplot
          assert len(ax.get_lines()) == 2
@@ -55,7 +56,7 @@ class TestFreqresp(unittest.TestCase):
       ctrl.bode_plot([ctrl.tf([1], [1,2,1]), ctrl.tf([5], [1, 1])])
 
       # Check to make sure there are two axes and that each axes has two lines
-      assert len(plt.gcf().axes) == 2
+      self.assertEqual(len(plt.gcf().axes), 2)
       for ax in plt.gcf().axes:
          # Make sure there are 2 lines in each subplot
          assert len(ax.get_lines()) == 2
@@ -67,7 +68,7 @@ class TestFreqresp(unittest.TestCase):
       ctrl.bode_plot(ctrl.tf([5], [1, 1]))
 
       # Check to make sure there are two axes and that each axes has one line
-      assert len(plt.gcf().axes) == 2
+      self.assertEqual(len(plt.gcf().axes), 2)
       for ax in plt.gcf().axes:
          # Make sure there is only 1 line in the subplot
          assert len(ax.get_lines()) == 1
@@ -77,7 +78,7 @@ class TestFreqresp(unittest.TestCase):
          if ax.get_label() == 'control-bode-magnitude':
             break
       ax.semilogx([1e-2, 1e1], 20 * np.log10([1, 1]), 'k-')
-      assert len(ax.get_lines()) == 2
+      self.assertEqual(len(ax.get_lines()), 2)
 
    def test_doubleint(self):
       # 30 May 2016, RMM: added to replicate typecast bug in freqresp.py
@@ -106,6 +107,62 @@ class TestFreqresp(unittest.TestCase):
 
       #plt.figure(4)
       #bode(sysMIMO,self.omega)
+
+   def test_discrete(self):
+      # Test discrete time frequency response
+
+      # SISO state space systems with either fixed or unspecified sampling times
+      sys = rss(3, 1, 1)
+      siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1)
+      siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, True)
+
+      # MIMO state space systems with either fixed or unspecified sampling times
+      A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
+      B = [[1., 4.], [-3., -3.], [-2., 1.]]
+      C = [[4., 2., -3.], [1., 4., 3.]]
+      D = [[-2., 4.], [0., 1.]]
+      mimo_ss1d = StateSpace(A, B, C, D, 0.1)
+      mimo_ss2d = StateSpace(A, B, C, D, True)
+
+      # SISO transfer functions
+      siso_tf1d = TransferFunction([1, 1], [1, 2, 1], 0.1)
+      siso_tf2d = TransferFunction([1, 1], [1, 2, 1], True)
+
+      # Go through each system and call the code, checking return types
+      for sys in (siso_ss1d, siso_ss2d, mimo_ss1d, mimo_ss2d,
+                siso_tf1d, siso_tf2d):
+         # Set frequency range to just below Nyquist freq (for Bode)
+         omega_ok = np.linspace(10e-4,0.99,100) * np.pi/sys.dt
+
+         # Test frequency response
+         ret = sys.freqresp(omega_ok)
+
+         # Check for warning if frequency is out of range
+         import warnings
+         warnings.simplefilter('always', UserWarning)   # don't supress
+         with warnings.catch_warnings(record=True) as w:
+            omega_bad = np.linspace(10e-4,1.1,10) * np.pi/sys.dt
+            ret = sys.freqresp(omega_bad)
+            print("len(w) =", len(w))
+            self.assertEqual(len(w), 1)
+            self.assertIn("above", str(w[-1].message))
+            self.assertIn("Nyquist", str(w[-1].message))
+
+         # Test bode plots (currently only implemented for SISO)
+         if (sys.inputs == 1 and sys.outputs == 1):
+            # Generic call (frequency range calculated automatically)
+            ret_ss = bode(sys)
+
+            # Convert to transfer function and test bode again
+            systf = tf(sys);
+            ret_tf = bode(systf)
+
+            # Make sure we can pass a frequency range
+            bode(sys, omega_ok)
+
+         else:
+            # Calling bode should generate a not implemented error
+            self.assertRaises(NotImplementedError, bode, (sys,))
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
