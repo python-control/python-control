@@ -537,8 +537,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             # from
             # https://dspace.mit.edu/bitstream/handle/1721.1/841/P-0802-06587335.pdf.
             # The QZ algorithm solves the generalized eigenvalue problem: given
-            # `L = [A, B; C, D]` and `M = [I_nxn 0]`, find all finite λ for
-            # which there exist nontrivial solutions of the equation `Lz - λMz`.
+            # `L = [A, B; C, D]` and `M = [I_nxn 0]`, find all finite lambda 
+            # for which there exist nontrivial solutions of the equation
+            # `Lz - lamba Mz`.
             #
             # The generalized eigenvalue problem is only solvable if its
             # arguments are square matrices.

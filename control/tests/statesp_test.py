@@ -42,7 +42,8 @@ class TestStateSpace(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(p, true_p)
 
-    def testZero(self):
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testMIMOZero_nonsquare(self):
         """Evaluate the zeros of a MIMO system."""
 
         z = np.sort(self.sys1.zero())
