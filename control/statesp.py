@@ -757,7 +757,6 @@ def _convertToStateSpace(sys, **kw):
                                                   [1., 1., 1.]].
 
     """
-
     from .xferfcn import TransferFunction
     import itertools
     if isinstance(sys, StateSpace):
@@ -771,20 +770,17 @@ cannot take keywords.")
         try:
             from slycot import td04ad
             if len(kw):
-                raise TypeError("If sys is a TransferFunction, _convertToStateSpace \
-    cannot take keywords.")
+                raise TypeError("If sys is a TransferFunction, "
+                                "_convertToStateSpace cannot take keywords.")
 
             # Change the numerator and denominator arrays so that the transfer
             # function matrix has a common denominator.
-            num, den = sys._common_den()
-            # Make a list of the orders of the denominator polynomials.
-            index = [len(den) - 1 for i in range(sys.outputs)]
-            # Repeat the common denominator along the rows.
-            den = array([den for i in range(sys.outputs)])
-            #! TODO: transfer function to state space conversion is still buggy!
-            #print num
-            #print shape(num)
-            ssout = td04ad('R',sys.inputs, sys.outputs, index, den, num,tol=0.0)
+            # matrices are also sized/padded to fit td04ad
+            num, den, denorder = sys.minreal()._common_den()
+
+            # transfer function to state space conversion now should work!
+            ssout = td04ad('C', sys.inputs, sys.outputs, 
+                           denorder, den, num, tol=0)
 
             states = ssout[0]
             return StateSpace(ssout[1][:states, :states],
