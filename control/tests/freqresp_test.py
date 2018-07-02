@@ -46,7 +46,7 @@ class TestFreqresp(unittest.TestCase):
       ctrl.bode_plot(ctrl.tf([5], [1, 1]))
 
       # Check to make sure there are two axes and that each axes has two lines
-      assert len(plt.gcf().axes) == 2
+      self.assertEqual(len(plt.gcf().axes), 2)
       for ax in plt.gcf().axes:
          # Make sure there are 2 lines in each subplot
          assert len(ax.get_lines()) == 2
@@ -56,7 +56,7 @@ class TestFreqresp(unittest.TestCase):
       ctrl.bode_plot([ctrl.tf([1], [1,2,1]), ctrl.tf([5], [1, 1])])
 
       # Check to make sure there are two axes and that each axes has two lines
-      assert len(plt.gcf().axes) == 2
+      self.assertEqual(len(plt.gcf().axes), 2)
       for ax in plt.gcf().axes:
          # Make sure there are 2 lines in each subplot
          assert len(ax.get_lines()) == 2
@@ -68,7 +68,7 @@ class TestFreqresp(unittest.TestCase):
       ctrl.bode_plot(ctrl.tf([5], [1, 1]))
 
       # Check to make sure there are two axes and that each axes has one line
-      assert len(plt.gcf().axes) == 2
+      self.assertEqual(len(plt.gcf().axes), 2)
       for ax in plt.gcf().axes:
          # Make sure there is only 1 line in the subplot
          assert len(ax.get_lines()) == 1
@@ -78,7 +78,7 @@ class TestFreqresp(unittest.TestCase):
          if ax.get_label() == 'control-bode-magnitude':
             break
       ax.semilogx([1e-2, 1e1], 20 * np.log10([1, 1]), 'k-')
-      assert len(ax.get_lines()) == 2
+      self.assertEqual(len(ax.get_lines()), 2)
 
    def test_doubleint(self):
       # 30 May 2016, RMM: added to replicate typecast bug in freqresp.py
@@ -144,9 +144,9 @@ class TestFreqresp(unittest.TestCase):
             omega_bad = np.linspace(10e-4,1.1,10) * np.pi/sys.dt
             ret = sys.freqresp(omega_bad)
             print("len(w) =", len(w))
-            assert len(w) == 1
-            assert "above" in str(w[-1].message)
-            assert "Nyquist" in str(w[-1].message)
+            self.assertEqual(len(w), 1)
+            self.assertIn("above", str(w[-1].message))
+            self.assertIn("Nyquist", str(w[-1].message))
 
          # Test bode plots (currently only implemented for SISO)
          if (sys.inputs == 1 and sys.outputs == 1):
@@ -162,12 +162,7 @@ class TestFreqresp(unittest.TestCase):
 
          else:
             # Calling bode should generate a not implemented error
-            try:
-               ret_ss = bode(sys)
-               raise RuntimeError("MIMO bode seems to be implemented?")
-            except NotImplementedError:
-               # This is where we should end up (so do nothing)
-               continue
+            self.assertRaises(NotImplementedError, bode, (sys,))
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)

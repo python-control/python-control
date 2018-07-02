@@ -460,7 +460,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if isdtime(self, strict=True):
             dt = timebase(self)
             cmplx_freqs = exp(1.j * omega * dt)
-            if (max(omega) * dt > math.pi):
+            if max(abs(omega)) * dt > math.pi:
                 warn("freqresp: frequency evaluation above Nyquist frequency")
         else:
             cmplx_freqs = omega * 1.j
