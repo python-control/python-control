@@ -55,12 +55,14 @@ $Id$
 import numpy as np
 from numpy import angle, any, array, empty, finfo, insert, ndarray, ones, \
     polyadd, polymul, polyval, roots, sort, sqrt, zeros, squeeze, exp, pi, \
-    where, delete, real, poly, poly1d
+    where, delete, real, poly, poly1d, nonzero
 import scipy as sp
+from numpy.polynomial.polynomial import polyfromroots
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 import warnings
 from warnings import warn
+from itertools import chain
 from .lti import LTI, timebaseEqual, timebase, isdtime
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -574,8 +576,11 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
 
     def pole(self):
         """Compute the poles of a transfer function."""
-        num, den = self._common_den()
-        return roots(den)
+        num, den, denorder = self._common_den()
+        rts = []
+        for d, o in zip(den,denorder):
+            rts.extend(roots(d[:o+1]))
+        return np.array(rts)
 
     def zero(self):
         """Compute the zeros of a transfer function."""
@@ -687,15 +692,17 @@ only implemented for SISO functions.")
 
         return out
 
+
     def _common_den(self, imag_tol=None):
         """
-        Compute MIMO common denominator; return it and an adjusted numerator.
+        Compute MIMO common denominators; return them and adjusted numerators.
 
-        This function computes the single denominator containing all
-        the poles of sys.den, and reports it as the array d.  The
-        output numerator array n is modified to use the common
-        denominator; the coefficient arrays are also padded with zeros
-        to be the same size as d.  n is an sys.outputs by sys.inputs
+        This function computes the denominators per input containing all
+        the poles of sys.den, and reports it as the array den.  The
+        output numerator array num is modified to use the common
+        denominator for this input/column; the coefficient arrays are also 
+        padded with zeros to be the same size for all num/den.  
+        num is an sys.outputs by sys.inputs
         by len(d) array.
 
         Parameters
@@ -709,14 +716,23 @@ only implemented for SISO functions.")
         num: array
             Multi-dimensional array of numerator coefficients. num[i][j]
             gives the numerator coefficient array for the ith input and jth
-            output
+            output, also prepared for use in td04ad; matches the denorder
+            order; highest coefficient starts on the left.
 
         den: array
-            Array of coefficients for common denominator polynomial
+            Multi-dimensional array of coefficients for common denominator 
+            polynomial, one row per input. The array is prepared for use in
+            slycot td04ad, the first element is the highest-order polynomial
+            coefficiend of s, matching the order in denorder, if denorder <
+            number of columns in den, the den is padded with zeros
+            
+        denorder: array of int, orders of den, one per input
+
+
 
         Examples
         --------
-        >>> n, d = sys._common_den()
+        >>> num, den, denorder = sys._common_den()
 
         """
 
@@ -727,144 +743,90 @@ only implemented for SISO functions.")
         if (imag_tol is None):
             imag_tol = 1e-8     # TODO: figure out the right number to use
 
-        # A sorted list to keep track of cumulative poles found as we scan
-        # self.den.
-        poles = []
+        # A list to keep track of cumulative poles found as we scan
+        # self.den[..][..]
+        poles = [ [] for j in range(self.inputs) ]
 
-        # A 3-D list to keep track of common denominator poles not present in
-        # the self.den[i][j].
-        missingpoles = [[[] for j in range(self.inputs)]
-                        for i in range(self.outputs)]
+        # RvP, new implementation 180526, issue #194
 
+        # pre-calculate the poles for all num, den
+        # has zeros, poles, gain, list for pole indices not in den, 
+        # number of poles known at the time analyzed
+
+        # do not calculate minreal. Rory's hint .minreal()
+        poleset = []
         for i in range(self.outputs):
+            poleset.append([])
             for j in range(self.inputs):
-                # A sorted array of the poles of this SISO denominator.
-                currentpoles = sort(roots(self.den[i][j]))
-
-                cp_ind = 0  # Index in currentpoles.
-                p_ind = 0  # Index in poles.
-
-                # Crawl along the list of current poles and the list of
-                # cumulative poles, until one of them reaches the end.  Keep in
-                # mind that both lists are always sorted.
-                while cp_ind < len(currentpoles) and p_ind < len(poles):
-                    if abs(currentpoles[cp_ind] - poles[p_ind]) < (10 * eps):
-                        # If the current element of both
-                        # lists match, then we're
-                        # good.  Move to the next pair of elements.
-                        cp_ind += 1
-                    elif currentpoles[cp_ind] < poles[p_ind]:
-                        # We found a pole in this transfer function that's not
-                        # in the list of cumulative poles.  Add it to the list.
-                        poles.insert(p_ind, currentpoles[cp_ind])
-                        # Now mark this pole as "missing" in all previous
-                        # denominators.
-                        for k in range(i):
-                            for m in range(self.inputs):
-                                # All previous rows.
-                                missingpoles[k][m].append(currentpoles[cp_ind])
-                        for m in range(j):
-                            # This row only.
-                            missingpoles[i][m].append(currentpoles[cp_ind])
-                        cp_ind += 1
+                if abs(self.num[i][j]).max() <= eps:
+                    poleset[-1].append( [array([], dtype=float),
+                               roots(self.den[i][j]), 0.0, [], 0 ])
+                else:
+                    z, p, k = tf2zpk(self.num[i][j], self.den[i][j])
+                    poleset[-1].append([ z, p, k, [], 0])
+        
+        # collect all individual poles
+        epsnm = eps * self.inputs * self.outputs
+        for j in range(self.inputs):
+            for i in range(self.outputs):
+                currentpoles = poleset[i][j][1]
+                nothave = ones(currentpoles.shape, dtype=bool)
+                for ip, p in enumerate(poles[j]):
+                    idx, = nonzero(
+                        (abs(currentpoles - p) < epsnm) * nothave)
+                    if len(idx):
+                        nothave[idx[0]] = False
                     else:
-                        # There is a pole in the cumulative list of poles that
-                        # is not in our transfer function denominator.  Mark
-                        # this pole as "missing", and do not increment cp_ind.
-                        missingpoles[i][j].append(poles[p_ind])
-                    p_ind += 1
+                        # remember id of pole not in tf
+                        poleset[i][j][3].append(ip)
+                for h, c in zip(nothave, currentpoles):
+                    if h:
+                        poles[j].append(c)
+                # remember how many poles now known
+                poleset[i][j][4] = len(poles[j])
 
-                if cp_ind == len(currentpoles) and p_ind < len(poles):
-                    # If we finished scanning currentpoles first, then all the
-                    # remaining cumulative poles are missing poles.
-                    missingpoles[i][j].extend(poles[p_ind:])
-                elif cp_ind < len(currentpoles) and p_ind == len(poles):
-                    # If we finished scanning the cumulative poles first, then
-                    # all the reamining currentpoles need to be added to poles.
-                    poles.extend(currentpoles[cp_ind:])
-                    # Now mark these poles as "missing" in previous
-                    # denominators.
-                    for k in range(i):
-                        for m in range(self.inputs):
-                            # All previous rows.
-                            missingpoles[k][m].extend(currentpoles[cp_ind:])
-                    for m in range(j):
-                        # This row only.
-                        missingpoles[i][m].extend(currentpoles[cp_ind:])
-
-        # Construct the common denominator.
-        den = 1.
-        n = 0
-        while n < len(poles):
-            if abs(poles[n].imag) > 10 * eps:
-                # To prevent buildup of imaginary part error, handle complex
-                # pole pairs together.
-                #
-                # Because we might have repeated real parts of poles
-                # and the fact that we are using lexigraphical
-                # ordering, we can't just combine adjacent poles.
-                # Instead, we have to figure out the multiplicity
-                # first, then multiple the pairs from the outside in.
-
-                # Figure out the multiplicity
-                m = 1          # multiplicity count
-                while (n+m < len(poles) and
-                       poles[n].real == poles[n+m].real and
-                       poles[n].imag * poles[n+m].imag > 0):
-                    m += 1
-
-                # Multiple pairs from the outside in
-                for i in range(m):
-                    quad = polymul([1., -poles[n]], [1., -poles[n+2*(m-i)-1]])
-                    assert all(quad.imag < 10 * eps), \
-                        "Quadratic has a nontrivial imaginary part: %g" \
-                        % quad.imag.max()
-
-                    den = polymul(den, quad.real)
-                    n += 1      # move to next pair
-                n += m          # skip past conjugate pairs
+        # figure out maximum number of poles, for sizing the den
+        npmax = max([len(p) for p in poles])
+        den = zeros((self.inputs, npmax+1), dtype=float)
+        num = zeros((max(1,self.outputs,self.inputs), 
+                     max(1,self.outputs,self.inputs), npmax+1), dtype=float)
+        denorder = zeros((self.inputs,), dtype=int)
+        
+        for j in range(self.inputs):
+            if not len(poles[j]):
+                # no poles matching this input; only one or more gains
+                den[j,0] = 1.0
+                for i in range(self.outputs):
+                    num[i,j,0] = poleset[i][j][2]
             else:
-                den = polymul(den, [1., -poles[n].real])
-                n += 1
+                # create the denominator matching this input
+                np = len(poles[j])
+                den[j,np::-1] = polyfromroots(poles[j]).real
+                denorder[j] = np
+                for i in range(self.outputs):
+                    # start with the current set of zeros for this output
+                    nwzeros = list(poleset[i][j][0])
+                    # add all poles not found in the original denominator, 
+                    # and the ones later added from other denominators
+                    for ip in chain(poleset[i][j][3],
+                                    range(poleset[i][j][4],np)):
+                        nwzeros.append(poles[j][ip])
+                    
+                    numpoly = poleset[i][j][2] * polyfromroots(nwzeros).real 
+                    m = npmax - len(numpoly)
+                    #print(j,i,m,len(numpoly),len(poles[j]))
+                    if m < 0:
+                        num[i,j,::-1] = numpoly
+                    else:
+                        num[i,j,:m:-1] = numpoly   
+        if (abs(den.imag) > epsnm).any():
+            print("Warning: The denominator has a nontrivial imaginary part: %f"
+                      % abs(den.imag).max())
+        den = den.real
 
-        # Modify the numerators so that they each take the common denominator.
-        num = deepcopy(self.num)
-        if isinstance(den, float):
-            den = array([den])
+        return num, den, denorder
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                # The common denominator has leading coefficient 1.  Scale out
-                # the existing denominator's leading coefficient.
-                assert self.den[i][j][0], "The i = %i, j = %i denominator has \
-a zero leading coefficient." % (i, j)
-                num[i][j] = num[i][j] / self.den[i][j][0]
-
-                # Multiply in the missing poles.
-                for p in missingpoles[i][j]:
-                    num[i][j] = polymul(num[i][j], [1., -p])
-
-        # Pad all numerator polynomials with zeros so that the numerator arrays
-        # are the same size as the denominator.
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                pad = len(den) - len(num[i][j])
-                if (pad > 0):
-                    num[i][j] = insert(
-                        num[i][j], zeros(pad, dtype=int),
-                        zeros(pad))
-
-        # Finally, convert the numerator to a 3-D array.
-        num = array(num)
-        # Remove trivial imaginary parts.
-        # Check for nontrivial imaginary parts.
-        if any(abs(num.imag) > sqrt(eps)):
-            print ("Warning: The numerator has a nontrivial imaginary part: %g"
-                   % abs(num.imag).max())
-        num = num.real
-
-        return num, den
-
+        
     def sample(self, Ts, method='zoh', alpha=None):
         """Convert a continuous-time system to discrete time
 
@@ -1353,6 +1315,11 @@ def _cleanPart(data):
         (isinstance(data, ndarray) and data.ndim == 0)):
         # Data is a scalar (including 0d ndarray)
         data = [[array([data])]]
+    elif (isinstance(data, ndarray) and data.ndim == 3 and
+          isinstance(data[0,0,0], valid_types)):
+        data = [ [ array(data[i,j]) 
+            for j in range(data.shape[1])]
+            for i in range(data.shape[0])]
     elif (isinstance(data, valid_collection) and
             all([isinstance(d, valid_types) for d in data])):
         data = [[array(data)]]

@@ -54,8 +54,7 @@ $Id$
 import math
 import numpy as np
 from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, matrix, ones, poly, poly1d, roots, shape, sin, \
-    zeros, squeeze
+    dot, empty, exp, eye, isinf, matrix, ones, pad, shape, sin, zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
@@ -516,17 +515,41 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def zero(self):
         """Compute the zeros of a state space system."""
 
-        if self.inputs > 1 or self.outputs > 1:
-            raise NotImplementedError("StateSpace.zeros is currently \
-implemented only for SISO systems.")
+        if not self.states:
+            return np.array([])
 
-        den = poly1d(poly(self.A))
-        # Compute the numerator based on zeros
-        #! TODO: This is currently limited to SISO systems
-        num = poly1d(poly(self.A - dot(self.B, self.C)) + ((self.D[0, 0] - 1) *
-            den))
+        # Use AB08ND from Slycot if it's available, otherwise use
+        # scipy.lingalg.eigvals().
+        try:
+            from slycot import ab08nd
 
-        return roots(num)
+            out = ab08nd(self.A.shape[0], self.B.shape[1], self.C.shape[0],
+                         self.A, self.B, self.C, self.D)
+            nu = out[0]
+            return sp.linalg.eigvals(out[8][0:nu,0:nu], out[9][0:nu,0:nu])
+        except ImportError:  # Slycot unavailable. Fall back to scipy.
+            if self.C.shape[0] != self.D.shape[1]:
+                raise NotImplementedError("StateSpace.zero only supports "
+                                          "systems with the same number of "
+                                          "inputs as outputs.")
+
+            # This implements the QZ algorithm for finding transmission zeros
+            # from
+            # https://dspace.mit.edu/bitstream/handle/1721.1/841/P-0802-06587335.pdf.
+            # The QZ algorithm solves the generalized eigenvalue problem: given
+            # `L = [A, B; C, D]` and `M = [I_nxn 0]`, find all finite lambda 
+            # for which there exist nontrivial solutions of the equation
+            # `Lz - lamba Mz`.
+            #
+            # The generalized eigenvalue problem is only solvable if its
+            # arguments are square matrices.
+            L = concatenate((concatenate((self.A, self.B), axis=1),
+                             concatenate((self.C, self.D), axis=1)), axis=0)
+            M = pad(eye(self.A.shape[0]), ((0, self.C.shape[0]),
+                                           (0, self.B.shape[1])), "constant")
+            return np.array([x for x in sp.linalg.eigvals(L, M,
+                                                          overwrite_a=True)
+                             if not isinf(x)])
 
     # Feedback around a state space system
     def feedback(self, other=1, sign=-1):
@@ -757,7 +780,6 @@ def _convertToStateSpace(sys, **kw):
                                                   [1., 1., 1.]].
 
     """
-
     from .xferfcn import TransferFunction
     import itertools
     if isinstance(sys, StateSpace):
@@ -771,20 +793,17 @@ cannot take keywords.")
         try:
             from slycot import td04ad
             if len(kw):
-                raise TypeError("If sys is a TransferFunction, _convertToStateSpace \
-    cannot take keywords.")
+                raise TypeError("If sys is a TransferFunction, "
+                                "_convertToStateSpace cannot take keywords.")
 
             # Change the numerator and denominator arrays so that the transfer
             # function matrix has a common denominator.
-            num, den = sys._common_den()
-            # Make a list of the orders of the denominator polynomials.
-            index = [len(den) - 1 for i in range(sys.outputs)]
-            # Repeat the common denominator along the rows.
-            den = array([den for i in range(sys.outputs)])
-            #! TODO: transfer function to state space conversion is still buggy!
-            #print num
-            #print shape(num)
-            ssout = td04ad('R',sys.inputs, sys.outputs, index, den, num,tol=0.0)
+            # matrices are also sized/padded to fit td04ad
+            num, den, denorder = sys.minreal()._common_den()
+
+            # transfer function to state space conversion now should work!
+            ssout = td04ad('C', sys.inputs, sys.outputs, 
+                           denorder, den, num, tol=0)
 
             states = ssout[0]
             return StateSpace(ssout[1][:states, :states],

@@ -6,6 +6,7 @@
 import unittest
 import numpy as np
 from control import *
+from control import matlab
 
 class TestDiscrete(unittest.TestCase):
     """Tests for the DiscreteStateSpace class."""
