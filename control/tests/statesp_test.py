@@ -43,14 +43,35 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(p, true_p)
 
     def testZero(self):
-        """Evaluate the zeros of a SISO system."""
+        """Evaluate the zeros of a MIMO system."""
 
-        sys = StateSpace(self.sys1.A, [[3.], [-2.], [4.]], [[-1., 3., 2.]], [[-4.]])
-        z = sys.zero()
+        z = np.sort(self.sys1.zero())
+        true_z = np.sort([44.41465, -0.490252, -5.924398])
 
-        np.testing.assert_array_almost_equal(z, [4.26864638637134,
-            -3.75932319318567 + 1.10087776649554j,
-            -3.75932319318567 - 1.10087776649554j])
+        np.testing.assert_array_almost_equal(z, true_z)
+
+        A = np.array([[1, 0, 0, 0, 0, 0],
+                      [0, 1, 0, 0, 0, 0],
+                      [0, 0, 3, 0, 0, 0],
+                      [0, 0, 0,-4, 0, 0],
+                      [0, 0, 0, 0,-1, 0],
+                      [0, 0, 0, 0, 0, 3]])
+        B = np.array([[0,-1],
+                      [-1,0],
+                      [1,-1],
+                      [0, 0],
+                      [0, 1],
+                      [-1,-1]])
+        C = np.array([[1, 0, 0, 1, 0, 0],
+                      [0, 1, 0, 1, 0, 1],
+                      [0, 0, 1, 0, 0, 1]])
+        D = np.zeros((3,2))
+        sys = StateSpace(A, B, C, D)
+
+        z = np.sort(sys.zero())
+        true_z = np.sort([2., -1.])
+
+        np.testing.assert_array_almost_equal(z, true_z)
 
     def testAdd(self):
         """Add two MIMO systems."""
