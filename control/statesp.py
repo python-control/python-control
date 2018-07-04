@@ -414,7 +414,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
     # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """Evaluate the system's transfer func. at a list of freqs, omega.
+        """
+        Evaluate the system's transfer func. at a list of freqs, omega.
 
         mag, phase, omega = self.freqresp(omega)
 
@@ -427,22 +428,22 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
              G(exp(j*omega*dt)) = mag*exp(j*phase).
 
-        Inputs:
+        Inputs
         ------
-           omega: A list of frequencies in radians/sec at which the system
-                    should be evaluated. The list can be either a python list
-                    or a numpy array and will be sorted before evaluation.
+        omega: A list of frequencies in radians/sec at which the system
+            should be evaluated. The list can be either a python list
+            or a numpy array and will be sorted before evaluation.
 
-        Returns:
+        Returns
         -------
-           mag: The magnitude (absolute value, not dB or log10) of the system
-                frequency response.
+        mag: The magnitude (absolute value, not dB or log10) of the system
+            frequency response.
 
-           phase: The wrapped phase in radians of the system frequency
-                  response.
+        phase: The wrapped phase in radians of the system frequency
+            response.
 
-           omega: The list of sorted frequencies at which the response
-                    was evaluated.
+        omega: The list of sorted frequencies at which the response
+            was evaluated.
 
         """
 

@@ -129,7 +129,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
     wg: float or array_like
         Frequency for gain margin (at phase crossover, phase = -180 degrees)
     wp: float or array_like
-        Frequency for phase margin (at gain crossover, gain = 0 dB)
+        Frequency for phase margin (at gain crossover, gain = 1)
     ws: float or array_like
         Frequency for stability margin (complex gain closest to -1)
     """
@@ -343,12 +343,12 @@ def margin(*args):
     wg: float
         Frequency for gain margin (at phase crossover, phase = -180 degrees)
     wp: float
-        Frequency for phase margin (at gain crossover, gain = 0 dB)
+        Frequency for phase margin (at gain crossover, gain = 1)
 
     Margins are calculated for a SISO open-loop system.
 
     If there is more than one gain crossover, the one at the smallest
-    margin (deviation from gain=0dB), in absolute sense, is
+    margin (deviation from gain = 1), in absolute sense, is
     returned. Likewise the smallest phase margin (in absolute sense)
     is returned.
 

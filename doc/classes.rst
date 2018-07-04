@@ -1,7 +1,9 @@
-LTI system classes
-==================
-
+.. _class-ref:
 .. currentmodule:: control
+
+******************
+LTI system classes
+******************
 
 The classes listed below are used to represent models of linear time-invariant
 (LTI) systems.  They are usually created from factory functions such as
@@ -14,3 +16,4 @@ these directly.
    TransferFunction
    StateSpace
    FRD
+

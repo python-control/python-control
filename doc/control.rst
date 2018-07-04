@@ -1,30 +1,29 @@
 .. _function-ref:
 
-==================
+******************
 Function reference
-==================
+******************
 
+.. Include header information from the main control module
 .. automodule:: control
     :no-members:
     :no-inherited-members:
 
-.. currentmodule:: control
-
 System creation
 ===============
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     ss
     tf
-    frd
+    FRD
     rss
     drss
 
 System interconnections
 =======================
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     append
     connect
@@ -37,7 +36,7 @@ Frequency domain plotting
 =========================
 
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     bode_plot
     nyquist_plot
@@ -57,7 +56,7 @@ Time domain simulation
 ======================
 
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     forced_response
     impulse_response
@@ -68,7 +67,7 @@ Time domain simulation
 Block diagram algebra
 =====================
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     series
     parallel
@@ -78,7 +77,7 @@ Block diagram algebra
 Control system analysis
 =======================
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     dcgain
     evalfr
@@ -94,7 +93,7 @@ Control system analysis
 Matrix computations
 ===================
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     care
     dare
@@ -107,7 +106,7 @@ Matrix computations
 Control system synthesis
 ========================
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     acker
     h2syn
@@ -119,7 +118,7 @@ Control system synthesis
 Model simplification tools
 ==========================
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     minreal
     balred
@@ -133,7 +132,7 @@ Model simplification tools
 Utility functions and conversions
 =================================
 .. autosummary::
-    :toctree: generated/
+   :toctree: generated/
 
     augw
     canonical_form

@@ -61,7 +61,8 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 # Bode plot
 def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         Plot=True, omega_limits=None, omega_num=None, *args, **kwargs):
-    """Bode plot for a system
+    """
+    Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -84,7 +85,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         If Hz=True the limits are in Hz otherwise in rad/s.
     omega_num: int
         number of samples
-    *args, **kwargs:
+    \*args, \**kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -253,7 +254,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
 # Nyquist plot
 def nyquist_plot(syslist, omega=None, Plot=True, color='b',
                  labelFreq=0, *args, **kwargs):
-    """Nyquist plot for a system
+    """
+    Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
@@ -267,7 +269,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         If True, plot magnitude
     labelFreq : int
         Label every nth frequency on the plot
-    *args, **kwargs:
+    \*args, \**kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -283,6 +285,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> real, imag, freq = nyquist_plot(sys)
+
     """
     # If argument was a singleton, turn it into a list
     if (not getattr(syslist, '__iter__', False)):

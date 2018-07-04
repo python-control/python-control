@@ -1,6 +1,6 @@
-============
+************
 Introduction
-============
+************
 
 Welcome to the Python Control Systems Toolbox (python-control) User's
 Manual.  This manual contains information on using the python-control
@@ -8,7 +8,7 @@ package, including documentation for all functions in the package and
 examples illustrating their use.
 
 Overview of the Toolbox
------------------------
+=======================
 
 The python-control package is a set of python classes and functions that
 implement common operations for the analysis and design of feedback control
@@ -20,7 +20,7 @@ many of the common functions corresponding to commands available in the
 MATLAB Control Systems Toolbox.
 
 Some Differences from MATLAB
-----------------------------
+============================
 The python-control package makes use of NumPy and SciPy.  A list of general
 differences between NumPy and MATLAB can be found `here
 <http://www.scipy.org/NumPy_for_Matlab_Users>`_.
@@ -33,7 +33,7 @@ some thing to keep in mind:
 * You cannot use braces for collections; use tuples instead
 
 Installation
-------------
+============
 
 The `python-control` package may be installed using pip, conda or the
 standard distutils/setuptools mechanisms.
@@ -83,7 +83,7 @@ The package requires `numpy` and `scipy`, and the plotting routines require
 described above.
 
 Getting Started
----------------
+===============
 
 There are two different ways to use the package.  For the default interface
 described in :ref:`function-ref`, simply import the control package as follows::
