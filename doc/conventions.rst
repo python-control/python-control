@@ -2,9 +2,9 @@
 
 .. currentmodule:: control
 
-###################
+*******************
 Library conventions
-###################
+*******************
 
 The python-control library uses a set of standard conventions for the way
 that different types of standard information used by the library.
@@ -190,7 +190,6 @@ Variables that can be configured, along with their default values:
 Functions that can be used to set standard configurations:
 
 .. autosummary::
-    :toctree: generated/
 
     use_fbs_defaults
     use_matlab_defaults
