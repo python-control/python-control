@@ -42,6 +42,8 @@ MOCK_MODULES = [
     'numpy',
     'numpy.linalg',
     'numpy.linalg.linalg',
+    'numpy.polynomial',
+    'numpy.polynomial.polynomial',
     'numpy.random',
     'numpy.testing',
     'pylab',
