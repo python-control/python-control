@@ -1162,8 +1162,7 @@ def tf(*args):
     tf2ss
 
     Notes
-    --------
-
+    -----
     ``num[i][j]`` contains the polynomial coefficients of the numerator
     for the transfer function from the (j+1)st input to the (i+1)st output.
     ``den[i][j]`` works the same way.
