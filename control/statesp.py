@@ -525,7 +525,11 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             out = ab08nd(self.A.shape[0], self.B.shape[1], self.C.shape[0],
                          self.A, self.B, self.C, self.D)
             nu = out[0]
-            return sp.linalg.eigvals(out[8][0:nu,0:nu], out[9][0:nu,0:nu])
+            if nu == 0:
+                return np.array([])
+            else:
+                return sp.linalg.eigvals(out[8][0:nu,0:nu], out[9][0:nu,0:nu])
+            
         except ImportError:  # Slycot unavailable. Fall back to scipy.
             if self.C.shape[0] != self.D.shape[1]:
                 raise NotImplementedError("StateSpace.zero only supports "
