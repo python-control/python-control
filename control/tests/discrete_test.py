@@ -6,6 +6,7 @@
 import unittest
 import numpy as np
 from control import *
+from control import matlab
 
 class TestDiscrete(unittest.TestCase):
     """Tests for the DiscreteStateSpace class."""
@@ -92,6 +93,70 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(timebase(self.siso_tf3d), True);
         self.assertEqual(timebase(self.siso_tf3d, strict=False), 1);
 
+    def test_timebase_conversions(self):
+        '''Check to make sure timebases transfer properly'''
+        tf1 = TransferFunction([1,1],[1,2,3])       # unspecified
+        tf2 = TransferFunction([1,1],[1,2,3], 0)    # cont time
+        tf3 = TransferFunction([1,1],[1,2,3], True) # dtime, unspec 
+        tf4 = TransferFunction([1,1],[1,2,3], 1)    # dtime, dt=1
+
+        # Make sure unspecified timebase is converted correctly
+        self.assertEqual(timebase(tf1*tf1), timebase(tf1))
+        self.assertEqual(timebase(tf1*tf2), timebase(tf2))
+        self.assertEqual(timebase(tf1*tf3), timebase(tf3))
+        self.assertEqual(timebase(tf1*tf4), timebase(tf4))
+        self.assertEqual(timebase(tf2*tf1), timebase(tf2))
+        self.assertEqual(timebase(tf3*tf1), timebase(tf3))
+        self.assertEqual(timebase(tf4*tf1), timebase(tf4))
+        self.assertEqual(timebase(tf1+tf1), timebase(tf1))
+        self.assertEqual(timebase(tf1+tf2), timebase(tf2))
+        self.assertEqual(timebase(tf1+tf3), timebase(tf3))
+        self.assertEqual(timebase(tf1+tf4), timebase(tf4))
+        self.assertEqual(timebase(feedback(tf1, tf1)), timebase(tf1))
+        self.assertEqual(timebase(feedback(tf1, tf2)), timebase(tf2))
+        self.assertEqual(timebase(feedback(tf1, tf3)), timebase(tf3))
+        self.assertEqual(timebase(feedback(tf1, tf4)), timebase(tf4))
+
+        # Make sure discrete time without sampling is converted correctly
+        self.assertEqual(timebase(tf3*tf3), timebase(tf3))
+        self.assertEqual(timebase(tf3*tf4), timebase(tf4))
+        self.assertEqual(timebase(tf3+tf3), timebase(tf3))
+        self.assertEqual(timebase(tf3+tf3), timebase(tf4))
+        self.assertEqual(timebase(feedback(tf3, tf3)), timebase(tf3))
+        self.assertEqual(timebase(feedback(tf3, tf4)), timebase(tf4))
+
+        # Make sure all other combinations are errors
+        try:
+            tf2*tf3             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            tf2*tf4             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            tf2+tf3             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            tf2+tf4             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            feedback(tf2, tf3)  # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            feedback(tf2, tf4)   # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        
     def testisdtime(self):
         # Constant
         self.assertEqual(isdtime(1), True);

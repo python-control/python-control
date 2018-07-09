@@ -108,12 +108,12 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             Linear SISO system
         mag, phase, omega : sequence of array_like
             Arrays of magnitudes (absolute values, not dB), phases (degrees),
-            and corresponding frequencies.  Crossover frequencies returned are
+            and corresponding frequencies. Crossover frequencies returned are
             in the same units as those in `omega` (e.g., rad/sec or Hz).
     returnall: bool, optional
-        If true, return all margins found. If false (default), return only the
-        minimum stability margins.  For frequency data or FRD systems, only one
-        margin is found and returned.
+        If true, return all margins found. If False (default), return only the
+        minimum stability margins. For frequency data or FRD systems, only
+        margins in the given frequency region can be found and returned.
     epsw: float, optional
         Frequencies below this value (default 0.0) are considered static gain,
         and not returned as margin.
@@ -127,11 +127,11 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
     sm: float or array_like
         Stability margin, the minimum distance from the Nyquist plot to -1
     wg: float or array_like
-        Gain margin crossover frequency (where phase crosses -180 degrees)
+        Frequency for gain margin (at phase crossover, phase = -180 degrees)
     wp: float or array_like
-        Phase margin crossover frequency (where gain crosses 0 dB)
+        Frequency for phase margin (at gain crossover, gain = 1)
     ws: float or array_like
-        Stability margin frequency (where Nyquist plot is closest to -1)
+        Frequency for stability margin (complex gain closest to -1)
     """
 
     try:
@@ -340,18 +340,22 @@ def margin(*args):
         Gain margin
     pm : float
         Phase margin (in degrees)
-    Wcg : float
-        Gain crossover frequency (corresponding to phase margin)
-    Wcp : float
-        Phase crossover frequency (corresponding to gain margin) (in rad/sec)
+    wg: float
+        Frequency for gain margin (at phase crossover, phase = -180 degrees)
+    wp: float
+        Frequency for phase margin (at gain crossover, gain = 1)
 
-    Margins are of SISO open-loop. If more than one crossover frequency is
-    detected, returns the lowest corresponding margin.
+    Margins are calculated for a SISO open-loop system.
+
+    If there is more than one gain crossover, the one at the smallest
+    margin (deviation from gain = 1), in absolute sense, is
+    returned. Likewise the smallest phase margin (in absolute sense)
+    is returned.
 
     Examples
     --------
     >>> sys = tf(1, [1, 2, 1, 0])
-    >>> gm, pm, Wcg, Wcp = margin(sys)
+    >>> gm, pm, wg, wp = margin(sys)
 
     """
     if len(args) == 1:
