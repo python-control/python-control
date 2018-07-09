@@ -264,7 +264,7 @@ def zero(sys):
     return sys.zero()
 
 def damp(sys, doprint=True):
-    '''
+    """
     Compute natural frequency, damping ratio, and poles of a system
 
     The function takes 1 or 2 parameters
@@ -285,24 +285,26 @@ def damp(sys, doprint=True):
     poles: array
         Pole locations
 
-
     Algorithm
-    --------
-        If the system is continuous,
-           wn = abs(poles)
-           Z  = -real(poles)/poles.
+    ---------
+    If the system is continuous,
+        wn = abs(poles)
+        Z  = -real(poles)/poles.
 
-        If the system is discrete, the discrete poles are mapped to their
-        equivalent location in the s-plane via
-           s = log10(poles)/dt
-        and
-          wn = abs(s)
-          Z = -real(s)/wn.
+    If the system is discrete, the discrete poles are mapped to their
+    equivalent location in the s-plane via
+
+        s = log10(poles)/dt
+
+    and
+
+        wn = abs(s)
+        Z = -real(s)/wn.
 
     See Also
     --------
     pole
-    '''
+    """
     wn, damping, poles = sys.damp()
     if doprint:
         print('_____Eigenvalue______ Damping___ Frequency_')

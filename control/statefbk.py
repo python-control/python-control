@@ -52,6 +52,7 @@ __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'acker']
 def place(A, B, p):
     """Place closed loop eigenvalues
     K = place(A, B, p)
+
     Parameters
     ----------
     A : 2-d array
