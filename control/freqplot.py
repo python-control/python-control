@@ -70,8 +70,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     ----------
     syslist : linsys
         List of linear input/output systems (single system is OK)
-    omega : freq_range
-        Range of frequencies in rad/sec
+    omega : list
+        List of frequencies in rad/sec to be used for frequency response
     dB : boolean
         If True, plot result in dB
     Hz : boolean
