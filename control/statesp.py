@@ -1248,7 +1248,7 @@ object.")
 
 def rss(states=1, outputs=1, inputs=1):
     """
-    Create a stable **continuous** random state space object.
+    Create a stable *continuous* random state space object.
 
     Parameters
     ----------
@@ -1285,7 +1285,7 @@ def rss(states=1, outputs=1, inputs=1):
 
 def drss(states=1, outputs=1, inputs=1):
     """
-    Create a stable **discrete** random state space object.
+    Create a stable *discrete* random state space object.
 
     Parameters
     ----------
