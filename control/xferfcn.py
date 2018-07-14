@@ -1017,7 +1017,7 @@ def _convertToTransferFunction(sys, **kw):
     If sys is an array-like type, then it is converted to a constant-gain
     transfer function.
 
-    >>> sys = _convertToTransferFunction([[1. 0.], [2. 3.]])
+    >>> sys = _convertToTransferFunction([[1., 0.], [2., 3.]])
 
     In this example, the numerator matrix will be
        [[[1.0], [0.0]], [[2.0], [3.0]]]

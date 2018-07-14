@@ -452,8 +452,8 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
     scalar, then the number of inputs and outputs can be specified
     manually, as in:
 
-    >>> sys = _convertToFRD(3.) # Assumes inputs = outputs = 1
-    >>> sys = _convertToFRD(1., inputs=3, outputs=2)
+    >>> frd = _convertToFRD(3., omega) # Assumes inputs = outputs = 1
+    >>> frd = _convertToFRD(1., omegs, inputs=3, outputs=2)
 
     In the latter example, sys's matrix transfer function is [[1., 1., 1.]
                                                               [1., 1., 1.]].
