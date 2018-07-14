@@ -106,7 +106,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     2. If a discrete time model is given, the frequency response is plotted
     along the upper branch of the unit circle, using the mapping z = exp(j
     \omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
-    time base.  If not timebase is specified (dt = True), dt is set to 1.
+    timebase.  If not timebase is specified (dt = True), dt is set to 1.
 
     Examples
     --------

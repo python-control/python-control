@@ -77,9 +77,8 @@ performed.
 
 Discrete time systems
 ---------------------
-By default, all systems are considered to be continuous time systems.  A
-discrete time system is created by specifying the 'time base' dt.  The time
-base argument can be given when a system is constructed:
+A discrete time system is created by specifying a nonzero 'timebase', dt.
+The timebase argument can be given when a system is constructed:
 
 * dt = None: no timebase specified
 * dt = 0: continuous time system
@@ -89,11 +88,16 @@ base argument can be given when a system is constructed:
 Only the :class:`StateSpace` and :class:`TransferFunction` classes allow
 explicit representation of discrete time systems.
 
-Systems must have the same time base in order to be combined.  For
-continuous time systems, the :func:`sample_system` function or the
-:meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods can be
-used to create a discrete time system from a continuous time system.  See
-:ref:`utility-and-conversions`.
+Systems must have compatible timebases in order to be combined.  A system
+with timebase `None` can be combined with a system having a specified
+timebase, and the result will have the timebase of the latter system.
+Similarly, a discrete time system with unspecified sampling time (`dt =
+True`) can be combined with a system having a specified sampling time, and
+the result will be a discrete time system with the sample time of the latter
+system.  For continuous time systems, the :func:`sample_system` function or
+the :meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods
+can be used to create a discrete time system from a continuous time system.
+See :ref:`utility-and-conversions`.
 
 Conversion between representations
 ----------------------------------
