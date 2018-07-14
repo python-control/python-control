@@ -62,11 +62,10 @@ For users with the Anaconda distribution of Python, the following
 commands can be used::
 
   conda install numpy scipy matplotlib    # if not yet installed
-  conda install -c python-control -c cyclus slycot control
+  conda install -c conda-forge control
 
-This installs `slycot` and `python-control` from the `python-control`
-channel and uses the `cyclus` channel to obtain the required `lapack`
-package. 
+This installs `slycot` and `python-control` from conda-forge, including the
+`openblas` package.
 
 Alternatively, to use setuptools, first `download the source <https://github.com/python-control/python-control/releases>`_ and unpack
 it.  To install in your home directory, use::
