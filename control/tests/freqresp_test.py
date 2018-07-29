@@ -141,6 +141,11 @@ class TestFreqresp(unittest.TestCase):
          import warnings
          warnings.simplefilter('always', UserWarning)   # don't supress
          with warnings.catch_warnings(record=True) as w:
+            # Set up warnings filter to only show warnings in control module
+            warnings.filterwarnings("ignore")
+            warnings.filterwarnings("always", module="control")
+
+            # Look for a warning about sampling above Nyquist frequency
             omega_bad = np.linspace(10e-4,1.1,10) * np.pi/sys.dt
             ret = sys.freqresp(omega_bad)
             print("len(w) =", len(w))
