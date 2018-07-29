@@ -148,7 +148,11 @@ class TestStateSpace(unittest.TestCase):
         # Deprecated version of the call (should generate warning)
         import warnings
         with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+            # Set up warnings filter to only show warnings in control module
+            warnings.filterwarnings("ignore")
+            warnings.filterwarnings("always", module="control")
+            
+            # Make sure that we get a pending deprecation warning
             sys.evalfr(1.)
             assert len(w) == 1
             assert issubclass(w[-1].category, PendingDeprecationWarning)
