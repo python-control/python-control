@@ -607,6 +607,102 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         return StateSpace(A, B, C, D, dt)
 
+    def lft(self, other, nu=-1, ny=-1):
+        """Return the Linear Fractional Transformation.
+
+        See definition here:
+        https://www.mathworks.com/help/control/ref/lft.html
+
+        Parameters
+        ----------
+        other: LTI
+            The lower LTI system
+        ny: int, optional
+            Dimension of (plant) measurement output.
+        nu: int, optional
+            Dimension of (plant) control input.
+        """
+        other = _convertToStateSpace(other)
+        # maximal values for nu, ny
+        if ny == -1:
+            ny = min(other.inputs, self.outputs)
+        if nu == -1:
+            nu = min(other.outputs, self.inputs)
+        # dimension check
+        # TODO
+
+        # Figure out the sampling time to use
+        if (self.dt == None and other.dt != None):
+            dt = other.dt       # use dt from second argument
+        elif (other.dt == None and self.dt != None) or \
+                timebaseEqual(self, other):
+            dt = self.dt        # use dt from first argument
+        else:
+            raise ValueError("Systems have different sampling times")
+
+        # submatrices
+        A = self.A
+        B1 = self.B[:, :self.inputs - nu]
+        B2 = self.B[:, self.inputs - nu:]
+        C1 = self.C[:self.outputs - ny, :]
+        C2 = self.C[self.outputs - ny:, :]
+        D11 = self.D[:self.outputs - ny, :self.inputs - nu]
+        D12 = self.D[:self.outputs - ny, self.inputs - nu:]
+        D21 = self.D[self.outputs - ny:, :self.inputs - nu]
+        D22 = self.D[self.outputs - ny:, self.inputs - nu:]
+
+        # submatrices
+        Abar = other.A
+        Bbar1 = other.B[:, :ny]
+        Bbar2 = other.B[:, ny:]
+        Cbar1 = other.C[:nu, :]
+        Cbar2 = other.C[nu:, :]
+        Dbar11 = other.D[:nu, :ny]
+        Dbar12 = other.D[:nu, ny:]
+        Dbar21 = other.D[nu:, :ny]
+        Dbar22 = other.D[nu:, ny:]
+
+        # well-posed check
+        F = np.block([[np.eye(ny), -D22], [-Dbar11, np.eye(nu)]])
+        if matrix_rank(F) != ny + nu:
+            raise ValueError("lft not well-posed to working precision.")
+        
+        # solve for the resulting ss by solving for [y, u] using [x,
+        # xbar] and [w1, w2].
+        TH = np.linalg.solve(F, np.block(
+            [[C2, np.zeros((ny, other.states)), D21, np.zeros((ny, other.inputs - ny))],
+             [np.zeros((nu, self.states)), Cbar1, np.zeros((nu, self.inputs - nu)), Dbar12]]
+        ))
+        T11 = TH[:ny, :self.states]
+        T12 = TH[:ny, self.states: self.states + other.states]
+        T21 = TH[ny:, :self.states]
+        T22 = TH[ny:, self.states: self.states + other.states]
+        H11 = TH[:ny, self.states + other.states: self.states + other.states + self.inputs - nu]
+        H12 = TH[:ny, self.states + other.states + self.inputs - nu:]
+        H21 = TH[ny:, self.states + other.states: self.states + other.states + self.inputs - nu]
+        H22 = TH[ny:, self.states + other.states + self.inputs - nu:]
+        
+        Ares = np.block([
+            [A + B2.dot(T21), B2.dot(T22)],
+            [Bbar1.dot(T11), Abar + Bbar1.dot(T12)]
+        ])
+
+        Bres = np.block([
+            [B1 + B2.dot(H21), B2.dot(H22)],
+            [Bbar1.dot(H11), Bbar2 + Bbar1.dot(H12)]
+        ])
+
+        Cres = np.block([
+            [C1 + D12.dot(T21), D12.dot(T22)],
+            [Dbar21.dot(T11), Cbar2 + Dbar21.dot(T12)]
+        ])
+
+        Dres = np.block([
+            [D11 + D12.dot(H21), D12.dot(H22)],
+            [Dbar21.dot(H11), Dbar22 + Dbar21.dot(H12)]
+        ])
+        return StateSpace(Ares, Bres, Cres, Dres, dt)
+
     def minreal(self, tol=0.0):
         """Calculate a minimal realization, removes unobservable and
         uncontrollable states"""
