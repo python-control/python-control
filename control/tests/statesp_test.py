@@ -449,7 +449,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_equal(D, g.D)
 
     def test_lft(self):
-        """ compare lft function with matlab implementation"""
+        """ test lft function with result obtained from matlab implementation"""
         # test case
         A = [[1, 2, 3],
              [1, 4, 5],
@@ -473,17 +473,28 @@ class TestStateSpace(unittest.TestCase):
         Dk = [[0, 2],
               [0, 0]]
         K = StateSpace(Ak, Bk, Ck, Dk)
-        pk = P.lft(K, 2, 1)
 
-        # correct result (from matlab)
-        Ak = [1, 2, 3, 4, 6, 12, 1, 4, 5, 17, 38, 61, 2, 3, 4, 9, 26, 37, 2, 3, 0, 3, 14, 18, 4, 6, 0, 8, 27, 35, 18, 27, 0, 29, 109, 144]
-        Bk = [0, 10, 10, 7, 15, 58]
-        Ck = [1, 4, 5, 0, 0, 0]
-        Dk = [0]
-        np.testing.assert_allclose(np.flatten(pk.A), Ak)
-        np.testing.assert_allclose(np.flatten(pk.B), Bk)
-        np.testing.assert_allclose(np.flatten(pk.C), Ck)
-        np.testing.assert_allclose(np.flatten(pk.D), Dk)
+        # case 1
+        pk = P.lft(K, 2, 1)
+        Amatlab = [1, 2, 3, 4, 6, 12, 1, 4, 5, 17, 38, 61, 2, 3, 4, 9, 26, 37, 2, 3, 0, 3, 14, 18, 4, 6, 0, 8, 27, 35, 18, 27, 0, 29, 109, 144]
+        Bmatlab = [0, 10, 10, 7, 15, 58]
+        Cmatlab = [1, 4, 5, 0, 0, 0]
+        Dmatlab = [0]
+        np.testing.assert_allclose(np.array(pk.A).reshape(-1), Amatlab)
+        np.testing.assert_allclose(np.array(pk.B).reshape(-1), Bmatlab)
+        np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
+        np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
+
+        # case 2
+        pk = P.lft(K)
+        Amatlab = [1, 2, 3, 4, 6, 12, -3, -2, 5, 11, 14, 31, -2, -3, 4, 3, 2, 7, 0.6, 3.4, 5, -0.6, -0.4, 0, 0.8, 6.2, 10, 0.2, -4.2, -4, 7.4, 33.6, 45, -0.4, -8.6, -3]
+        Bmatlab = []
+        Cmatlab = []
+        Dmatlab = []
+        np.testing.assert_allclose(np.array(pk.A).reshape(-1), Amatlab)
+        np.testing.assert_allclose(np.array(pk.B).reshape(-1), Bmatlab)
+        np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
+        np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
 
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
