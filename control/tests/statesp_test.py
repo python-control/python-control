@@ -448,6 +448,42 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_equal(empty((D.shape[0], 0)), g.C)
         np.testing.assert_array_equal(D, g.D)
 
+    def test_lft(self):
+        """ compare lft function with matlab implementation"""
+        # test case
+        A = [[1, 2, 3],
+             [1, 4, 5],
+             [2, 3, 4]]
+        B = [[0, 2],
+             [5, 6],
+             [5, 2]]
+        C = [[1, 4, 5],
+             [2, 3, 0]]
+        D = [[0, 0],
+             [3, 0]]
+        P = StateSpace(A, B, C, D)
+        Ak = [[0, 2, 3],
+              [2, 3, 5],
+              [2, 1, 9]]
+        Bk = [[1, 1],
+              [2, 3],
+              [9, 4]]
+        Ck = [[1, 4, 5],
+              [2, 3, 6]]
+        Dk = [[0, 2],
+              [0, 0]]
+        K = StateSpace(Ak, Bk, Ck, Dk)
+        pk = P.lft(K, 2, 1)
+
+        # correct result (from matlab)
+        Ak = [1, 2, 3, 4, 6, 12, 1, 4, 5, 17, 38, 61, 2, 3, 4, 9, 26, 37, 2, 3, 0, 3, 14, 18, 4, 6, 0, 8, 27, 35, 18, 27, 0, 29, 109, 144]
+        Bk = [0, 10, 10, 7, 15, 58]
+        Ck = [1, 4, 5, 0, 0, 0]
+        Dk = [0]
+        np.testing.assert_allclose(np.flatten(pk.A), Ak)
+        np.testing.assert_allclose(np.flatten(pk.B), Bk)
+        np.testing.assert_allclose(np.flatten(pk.C), Ck)
+        np.testing.assert_allclose(np.flatten(pk.D), Dk)
 
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
