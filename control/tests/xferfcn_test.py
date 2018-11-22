@@ -5,8 +5,8 @@
 
 import unittest
 import numpy as np
-from control.statesp import StateSpace, _convertToStateSpace
-from control.xferfcn import TransferFunction, _convertToTransferFunction
+from control.statesp import StateSpace, _convertToStateSpace, rss
+from control.xferfcn import TransferFunction, _convertToTransferFunction, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
 # from control.lti import isdtime
@@ -535,6 +535,25 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H.den[0][0], H2.den[0][0])
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[1][0])
         np.testing.assert_array_almost_equal(H.den[1][0], H2.den[1][0])
+
+    def testIndexing(self):
+        tm = ss2tf(rss(5, 3, 3))
+
+        # scalar indexing
+        sys01 = tm[0, 1]
+        np.testing.assert_array_almost_equal(sys01.num[0][0], tm.num[0][1])
+        np.testing.assert_array_almost_equal(sys01.den[0][0], tm.den[0][1])
+
+        # slice indexing
+        sys = tm[:2, 1:3]
+        np.testing.assert_array_almost_equal(sys.num[0][0], tm.num[0][1])
+        np.testing.assert_array_almost_equal(sys.den[0][0], tm.den[0][1])
+        np.testing.assert_array_almost_equal(sys.num[0][1], tm.num[0][2])
+        np.testing.assert_array_almost_equal(sys.den[0][1], tm.den[0][2])
+        np.testing.assert_array_almost_equal(sys.num[1][0], tm.num[1][1])
+        np.testing.assert_array_almost_equal(sys.den[1][0], tm.den[1][1])
+        np.testing.assert_array_almost_equal(sys.num[1][1], tm.num[1][2])
+        np.testing.assert_array_almost_equal(sys.den[1][1], tm.den[1][2])
 
     def testMatrixMult(self):
         """MIMO transfer functions should be multiplyable by constant
