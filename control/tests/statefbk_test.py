@@ -188,7 +188,7 @@ class TestStatefbk(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_continuous(self):
         """
-        Check that we can place eigenvalues for DICO='C'
+        Check that we can place eigenvalues for dtime=False
         """
         A = np.array([[1., -2.], [3., -4.]])
         B = np.array([[5.], [7.]])
@@ -243,13 +243,13 @@ class TestStatefbk(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_discrete(self):
         """
-        Check that we can place poles using DICO='D' (discrete time)
+        Check that we can place poles using dtime=True (discrete time)
         """
         A = np.array([[1., 0], [0, 0.5]])
         B = np.array([[5.], [7.]])
 
         P = np.array([0.5, 0.5])
-        K = place_varga(A, B, P, DICO='D')
+        K = place_varga(A, B, P, dtime=True)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         # No guarantee of the ordering, so sort them
         P.sort()
@@ -269,7 +269,7 @@ class TestStatefbk(unittest.TestCase):
         P = np.array([0.2, 0.6])
         P_expected = np.array([0.5, 0.6])
         alpha = 0.51
-        K = place_varga(A, B, P, DICO='D', alpha=alpha)
+        K = place_varga(A, B, P, dtime=True, alpha=alpha)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         P_expected.sort()
         P_placed.sort()
