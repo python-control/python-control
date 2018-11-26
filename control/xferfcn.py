@@ -584,12 +584,14 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
 
     def zero(self):
         """Compute the zeros of a transfer function."""
-        if self.inputs > 1 or self.outputs > 1:
-            raise NotImplementedError("TransferFunction.zero is currently \
-only implemented for SISO systems.")
-        else:
-            #for now, just give zeros of a SISO tf
-            return roots(self.num[0][0])
+        sp = np.shape(self.num);
+        intersection = lambda a, b : [x for x in a if x in b];
+        zeros = roots(self.num[0][0]);
+        for i in range(sp[0]):
+            for j in range(sp[1]):
+                zeros = intersection(zeros, self.num[i][j]);
+
+        return zeros;
 
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two LTI objects."""
