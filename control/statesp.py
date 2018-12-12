@@ -193,20 +193,14 @@ class StateSpace(LTI):
 
         """
 
-        # Indices of useless states.
-        useless = []
-
         # Search for useless states.
-        for i in range(self.states):
-            if (all(self.A[i, :] == zeros((1, self.states))) and
-                all(self.B[i, :] == zeros((1, self.inputs)))):
-                useless.append(i)
-                # To avoid duplucate indices in useless, jump to the next
-                # iteration.
-                continue
-            if (all(self.A[:, i] == zeros((self.states, 1))) and
-                all(self.C[:, i] == zeros((self.outputs, 1)))):
-                useless.append(i)
+        ax1_A = np.where(~self.A.any(axis=1))[0]
+        ax1_B = np.where(~self.B.any(axis=1))[0]
+        ax0_A = np.where(~self.A.any(axis=0))[1]
+        ax0_C = np.where(~self.C.any(axis=0))[1]
+        useless_1 = np.intersect1d(ax1_A, ax1_B, assume_unique=True)
+        useless_2 = np.intersect1d(ax0_A, ax0_C, assume_unique=True)
+        useless = np.concatenate((useless_1, useless_2))       
 
         # Remove the useless states.
         self.A = delete(self.A, useless, 0)
