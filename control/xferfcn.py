@@ -510,7 +510,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
             # Convert the frequency to discrete time
             dt = timebase(self)
             s = exp(1.j * omega * dt)
-            if (omega * dt > pi):
+            if np.any(omega * dt > pi):
                 warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = 1.j * omega
