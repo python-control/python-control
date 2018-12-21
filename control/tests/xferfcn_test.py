@@ -536,6 +536,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[1][0])
         np.testing.assert_array_almost_equal(H.den[1][0], H2.den[1][0])
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testIndexing(self):
         tm = ss2tf(rss(5, 3, 3))
 
