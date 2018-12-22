@@ -385,7 +385,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         with input value s = i * omega.
 
         """
-        warn("StateSpace.evalfr(omega) will be depracted in a future "
+        warn("StateSpace.evalfr(omega) will be deprecated in a future "
              "release of python-control; use evalfr(sys, omega*1j) instead",
              PendingDeprecationWarning)
         return self._evalfr(omega)
