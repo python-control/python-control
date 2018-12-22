@@ -840,9 +840,13 @@ only implemented for SISO functions.")
                     num[i,j,0] = poleset[i][j][2]
             else:
                 # create the denominator matching this input
+                # polyfromroots gives coeffs in opposite order from what we use
+                # coefficients should be padded on right, ending at np
                 np = len(poles[j])
                 den[j,np::-1] = polyfromroots(poles[j]).real
                 denorder[j] = np
+
+                # now create the numerator, also padded on the right
                 for i in range(self.outputs):
                     # start with the current set of zeros for this output
                     nwzeros = list(poleset[i][j][0])
@@ -851,14 +855,15 @@ only implemented for SISO functions.")
                     for ip in chain(poleset[i][j][3],
                                     range(poleset[i][j][4],np)):
                         nwzeros.append(poles[j][ip])
-                    
+
                     numpoly = poleset[i][j][2] * polyfromroots(nwzeros).real 
-                    m = npmax - len(numpoly)
-                    #print(j,i,m,len(numpoly),len(poles[j]))
-                    if m < 0:
-                        num[i,j,::-1] = numpoly
-                    else:
-                        num[i,j,:m:-1] = numpoly   
+                    # print(numpoly, den[j])
+                    # polyfromroots gives coeffs in opposite order => invert
+                    # numerator polynomial should be padded on left and right
+                    #   ending at np to line up with what td04ad expects...
+                    num[i, j, np+1-len(numpoly):np+1] = numpoly[::-1]
+                    # print(num[i, j])
+
         if (abs(den.imag) > epsnm).any():
             print("Warning: The denominator has a nontrivial imaginary part: %f"
                       % abs(den.imag).max())
