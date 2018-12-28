@@ -8,6 +8,7 @@ import unittest                 # unit test module
 import re                       # regular expressions
 import os                       # operating system commands
 
+
 def test_all(verbosity=0):
     """ Runs all tests written for python-control.
     """
@@ -15,16 +16,12 @@ def test_all(verbosity=0):
         start_dir = './'
         pattern = '*_test.py'
         top_level_dir = '../'
-        testModules = \
-            unittest.defaultTestLoader.discover(start_dir, pattern=pattern, \
-                                                top_level_dir=top_level_dir)
-
-        for mod in test_mods:
-            print('Running tests in', mod)
-            tests = unittest.defaultTestLoader.loadTestFromModule(mod)
+        test_mods = unittest.defaultTestLoader.discover(start_dir, pattern=pattern,
+                                                        top_level_dir=top_level_dir)
+        for suite in test_mods:
+            print("Running tests in: ", suite)
             t = unittest.TextTestRunner()
-            t.run(tests)
-            print('Completed tests in', mod)
+            t.run(suite)
 
     except:
         testModules = findTests('./tests/')
@@ -33,8 +30,8 @@ def test_all(verbosity=0):
         for mod in testModules:
             print('Running tests in', mod)
             suiteList=[]        # list of unittest.TestSuite objects
-            exec('import '+mod+' as currentModule')
-
+            exec('import control.tests.'+mod+' as currentModule')
+            print(currentModule.suite())
             try:
                 currentSuite = currentModule.suite()
                 if isinstance(currentSuite, unittest.TestSuite):
