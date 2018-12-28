@@ -122,9 +122,12 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax, f = nogrid()
         pylab.title(new_figure_name)
 
+        ax = pylab.axes()
+
         if PrintGain:
+            click_point, = ax.plot([0], [0],color='k',markersize = 0,marker='s',zorder=20)
             f.canvas.mpl_connect(
-                'button_release_event', partial(_RLFeedbackClicks, sys=sys))
+                'button_release_event', partial(_RLFeedbackClicks, sys=sys,fig=f,point=click_point))
 
         # plot open loop poles
         poles = array(denp.r)
@@ -157,6 +160,7 @@ def _default_gains(num, den, xlim, ylim):
     kmax = _k_max(num, den, real_break, k_break)
     kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
     kvect.sort()
+
     mymat = _RLFindRoots(num, den, kvect)
     mymat = _RLSortRoots(mymat)
     open_loop_poles = den.roots
@@ -346,7 +350,7 @@ def _RLSortRoots(mymat):
     return sorted
 
 
-def _RLFeedbackClicks(event, sys):
+def _RLFeedbackClicks(event, sys,fig,point):
     """Print root-locus gain feedback for clicks on the root-locus plot
     """
     s = complex(event.xdata, event.ydata)
@@ -354,5 +358,11 @@ def _RLFeedbackClicks(event, sys):
     if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+        point.set_ydata(s.imag)
+        point.set_xdata(s.real)
+        point.set_markersize(8)
+        fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
+              (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+        fig.canvas.draw()
 
 rlocus = root_locus
