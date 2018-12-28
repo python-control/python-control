@@ -82,9 +82,21 @@ class LTI:
         return self.dt == 0
 
     def issiso(self):
+        '''Check to see if a system is single input, single output'''
         return self.inputs == 1 and self.outputs == 1
 
     def damp(self):
+        '''Natural frequency, damping ratio of system poles
+
+        Returns
+        -------
+        wn : array
+            Natural frequencies for each system pole
+        zeta : array
+            Damping ratio for each system pole
+        poles : array
+            Array of system poles
+        '''
         poles = self.pole()
 
         if isdtime(self, strict=True):
@@ -102,6 +114,16 @@ class LTI:
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
+    """
+    Check to see if a system is single input, single output
+
+    Parameters
+    ----------
+    sys : LTI system
+        System to be checked
+    strict: bool (default = False)
+        If strict is True, do not treat scalars as SISO
+    """
     if isinstance(sys, (int, float, complex, np.number)) and not strict:
         return True
     elif not isinstance(sys, LTI):
@@ -264,7 +286,7 @@ def zero(sys):
     return sys.zero()
 
 def damp(sys, doprint=True):
-    '''
+    """
     Compute natural frequency, damping ratio, and poles of a system
 
     The function takes 1 or 2 parameters
@@ -285,24 +307,26 @@ def damp(sys, doprint=True):
     poles: array
         Pole locations
 
-
     Algorithm
-    --------
-        If the system is continuous,
-           wn = abs(poles)
-           Z  = -real(poles)/poles.
+    ---------
+    If the system is continuous,
+        wn = abs(poles)
+        Z  = -real(poles)/poles.
 
-        If the system is discrete, the discrete poles are mapped to their
-        equivalent location in the s-plane via
-           s = log10(poles)/dt
-        and
-          wn = abs(s)
-          Z = -real(s)/wn.
+    If the system is discrete, the discrete poles are mapped to their
+    equivalent location in the s-plane via
+
+        s = log10(poles)/dt
+
+    and
+
+        wn = abs(s)
+        Z = -real(s)/wn.
 
     See Also
     --------
     pole
-    '''
+    """
     wn, damping, poles = sys.damp()
     if doprint:
         print('_____Eigenvalue______ Damping___ Frequency_')

@@ -592,7 +592,6 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     else:
         new_X0 = X0
         U[0] = 1.
-        print("discrete", U)
 
     T, yout, _xout = forced_response(
         sys, T, U, new_X0,

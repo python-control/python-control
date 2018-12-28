@@ -43,24 +43,39 @@ class TestMinreal(unittest.TestCase):
             if s.states > sr.states:
                 self.nreductions += 1
             else:
+                # Check to make sure that poles and zeros match
+
+                # For poles, just look at eigenvalues of A
                 np.testing.assert_array_almost_equal(
                     np.sort(eigvals(s.A)), np.sort(eigvals(sr.A)))
+
+                # For zeros, need to extract SISO systems
                 for i in range(m):
                     for j in range(p):
-                        ht1 = matlab.tf(
-                            matlab.ss(s.A, s.B[:,i], s.C[j,:], s.D[j,i]))
-                        ht2 = matlab.tf(
-                            matlab.ss(sr.A, sr.B[:,i], sr.C[j,:], sr.D[j,i]))
-                        try:
-                            self.assert_numden_almost_equal(
-                                ht1.num[0][0], ht2.num[0][0],
-                                ht1.den[0][0], ht2.den[0][0])
-                        except Exception as e:
-                            # for larger systems, the tf minreal's
-                            # the original rss, but not the balanced one
-                            if n < 6:
-                                raise e
+                        # Extract SISO dynamixs from input i to output j
+                        s1 = matlab.ss(s.A, s.B[:,i], s.C[j,:], s.D[j,i])
+                        s2 = matlab.ss(sr.A, sr.B[:,i], sr.C[j,:], sr.D[j,i])
 
+                        # Check that the zeros match
+                        # Note: sorting doesn't work => have to do the hard way
+                        z1 = matlab.zero(s1)
+                        z2 = matlab.zero(s2)
+
+                        # Start by making sure we have the same # of zeros
+                        self.assertEqual(len(z1), len(z2))
+
+                        # Make sure all zeros in s1 are in s2
+                        for zero in z1:
+                            # Find the closest zero
+                            self.assertAlmostEqual(min(abs(z2 - zero)), 0.)
+
+                        # Make sure all zeros in s2 are in s1
+                        for zero in z2:
+                            # Find the closest zero
+                            self.assertAlmostEqual(min(abs(z1 - zero)), 0.)
+
+        # Make sure that the number of systems reduced is as expected
+        # (Need to update this number if you change the seed at top of file)
         self.assertEqual(self.nreductions, 2)
 
     def testMinrealSS(self):

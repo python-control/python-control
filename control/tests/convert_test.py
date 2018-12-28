@@ -40,7 +40,7 @@ class TestConvert(unittest.TestCase):
         # Set to True to print systems to the output.
         self.debug = False
         # get consistent results
-        np.random.seed(9)
+        np.random.seed(7)
 
     def printSys(self, sys, ind):
         """Print system to the standard output."""
@@ -141,10 +141,9 @@ class TestConvert(unittest.TestCase):
                             ssxfrm_real = ssxfrm_mag * np.cos(ssxfrm_phase)
                             ssxfrm_imag = ssxfrm_mag * np.sin(ssxfrm_phase)
                             np.testing.assert_array_almost_equal( \
-                                ssorig_real, ssxfrm_real)
+                            ssorig_real, ssxfrm_real)
                             np.testing.assert_array_almost_equal( \
-                                ssorig_imag, ssxfrm_imag)
-
+                            ssorig_imag, ssxfrm_imag)
                             #
                             # Make sure xform'd TF has same frequency response
                             #
@@ -198,8 +197,9 @@ class TestConvert(unittest.TestCase):
         """Regression: tf2ss for MIMO static gain"""
         import control
         # 2x3 TFM
-        gmimo = control.tf2ss(control.tf([[ [23],   [3],  [5] ], [ [-1],  [0.125],  [101.3] ]],
-                                         [[ [46], [0.1], [80] ], [  [2],   [-0.1],      [1] ]]))
+        gmimo = control.tf2ss(control.tf(
+                [[ [23],   [3],  [5] ], [ [-1],  [0.125],  [101.3] ]],
+                [[ [46], [0.1], [80] ], [  [2],   [-0.1],      [1] ]]))
         self.assertEqual(0, gmimo.states)
         self.assertEqual(3, gmimo.inputs)
         self.assertEqual(2, gmimo.outputs)
@@ -229,6 +229,44 @@ class TestConvert(unittest.TestCase):
         numref = np.asarray(d)[...,np.newaxis]
         np.testing.assert_array_equal(numref, np.array(gtf.num) / np.array(gtf.den))
 
+    def testTf2SsDuplicatePoles(self):
+        """Tests for "too few poles for MIMO tf #111" """
+        import control
+        try:
+            import slycot
+            num = [ [ [1], [0] ],
+                   [ [0], [1] ] ]
+
+            den = [ [ [1,0], [1] ],
+                [ [1],   [1,0] ] ]
+            g = control.tf(num, den)
+            s = control.ss(g)
+            np.testing.assert_array_equal(g.pole(), s.pole())
+        except ImportError:
+            print("Slycot not present, skipping")
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_tf2ss_robustness(self):
+        """Unit test to make sure that tf2ss is working correctly.
+         Source: https://github.com/python-control/python-control/issues/240
+        """
+        import control
+        
+        num =  [ [[0], [1]],           [[1],   [0]] ]
+        den1 = [ [[1], [1,1]],         [[1,4], [1]] ]
+        sys1tf = control.tf(num, den1)
+        sys1ss = control.tf2ss(sys1tf)
+
+        # slight perturbation
+        den2 = [ [[1], [1e-10, 1, 1]], [[1,4], [1]] ]
+        sys2tf = control.tf(num, den2)
+        sys2ss = control.tf2ss(sys2tf)
+
+        # Make sure that the poles match for StateSpace and TransferFunction
+        np.testing.assert_array_almost_equal(np.sort(sys1tf.pole()),
+                                             np.sort(sys1ss.pole()))
+        np.testing.assert_array_almost_equal(np.sort(sys2tf.pole()),
+                                             np.sort(sys2ss.pole()))
 
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)

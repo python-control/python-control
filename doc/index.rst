@@ -1,14 +1,9 @@
-.. Python-Control documentation master file, created by
-   sphinx-quickstart on Thu Jan  6 09:49:36 2011.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
+##############################
 Python Control Systems Library
-==============================
+##############################
 
 The Python Control Systems Library (`python-control`) is a Python package that
 implements basic operations for analysis and design of feedback control systems.
-
 
 .. rubric:: Features
 
@@ -17,7 +12,8 @@ implements basic operations for analysis and design of feedback control systems.
 - Time response: initial, step, impulse
 - Frequency response: Bode and Nyquist plots
 - Control analysis: stability, reachability, observability, stability margins
-- Control design: eigenvalue placement, linear quadratic regulator
+- Control design: eigenvalue placement, LQR, H2, Hinf
+- Model reduction: balanced realizations, Hankel singular values
 - Estimator design: linear quadratic estimator (Kalman filter)
 
 .. rubric:: Documentation

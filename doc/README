@@ -1,7 +1,11 @@
 Sphinx Documentation
 --------------------
+This directory contains the user manual for the python-control
+toolbox.  The documentation is built using sphinx.  The master toctree
+document is index.rst.
 
-Note: Sphinx actually runs and imports python code, so broken code, or code not in conf.py sys.path, cannot be documented!
+Note: Sphinx actually runs and imports python code, so broken code, or
+code not in conf.py sys.path, cannot be documented!
 
 1.  Get Sphinx [http://sphinx.pocoo.org/]
     [python setup.py build/install]
@@ -14,7 +18,8 @@ Note: Sphinx actually runs and imports python code, so broken code, or code not 
 4.  >> touch *.rst
     >> make html  [or make latex]
 
-Creating/updating manual on sourceforge:
+Creating/updating manual on readthedocs.org:
 
-5.  >> rsync -rav _build/html/ user@shell.sourceforge.net:/home/project-web/python-control/htdocs/manual-N.mx/
-
+5.  Log in to readthedocs.org and go to the 'Admin' menu for
+python-control.  Choose 'Versions' from the sidebar and mark the
+latest release as 'Active'.  Update the default version if needed.

@@ -336,14 +336,16 @@ def mixsyn(g,w1=None,w2=None,w3=None):
     Returns
     -------
     k: synthesized controller; StateSpace object
-    cl: closed system mapping evaluation inputs to evaluation outputs; if p is the augmented plant, with
-        [z] = [p11 p12] [w], then cl is the system from w->z with u=-k*y.  StateSpace object.
+    cl: closed system mapping evaluation inputs to evaluation outputs; if 
+    p is the augmented plant, with
+        [z] = [p11 p12] [w], 
         [y]   [p21   g] [u]
+    then cl is the system from w->z with u=-k*y.  StateSpace object.
 
     info: tuple with entries, in order,
-      gamma: scalar; H-infinity norm of cl
-      rcond: array; estimates of reciprocal condition numbers
-              computed during synthesis.  See hinfsyn for details
+        - gamma: scalar; H-infinity norm of cl
+        - rcond: array; estimates of reciprocal condition numbers
+          computed during synthesis.  See hinfsyn for details
 
     If a weighting w is scalar, it will be replaced by I*w, where I is
     ny-by-ny for w1 and w3, and nu-by-nu for w2.

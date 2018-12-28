@@ -24,7 +24,7 @@ Features
 Links
 =====
 
-- Project home page: http://python-control.sourceforge.net
+- Project home page: http://python-control.org
 - Source code repository: https://github.com/python-control/python-control
 - Documentation: http://python-control.readthedocs.org/
 - Issue tracker: https://github.com/python-control/python-control/issues
@@ -46,7 +46,7 @@ https://github.com/python-control/Slycot
 Installation
 ============
 
-The package may be installed using pip or distutils.
+The package may be installed using pip, conda, or distutils.
 
 Pip
 ---
@@ -55,6 +55,14 @@ To install using pip::
 
   pip install slycot   # optional
   pip install control
+
+conda-forge
+-----------
+
+Binaries are available from conda-forge for selected platforms (Linux and
+MacOS).  Install using
+
+  conda install -c conda-forge control
 
 Distutils
 ---------
