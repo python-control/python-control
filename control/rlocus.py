@@ -56,6 +56,8 @@ from .xferfcn import _convertToTransferFunction
 from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate
 from functools import partial
+from .lti import isdtime
+from .grid import sgrid, zgrid, nogrid
 
 __all__ = ['root_locus', 'rlocus']
 
@@ -85,7 +87,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
     grid: boolean (default = False)
-        If True plot s-plane grid. 
+        If True plot omega-damping grid.
 
     Returns
     -------
@@ -163,6 +165,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
         else:
             ax.axhline(0., linestyle=':', color='k',zorder=-20)
             ax.axvline(0., linestyle=':', color='k')
+
     return mymat, kvect
 
 

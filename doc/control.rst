@@ -154,3 +154,5 @@ Utility functions and conversions
     timebase
     timebaseEqual
     unwrap
+    use_fbs_defaults
+    use_matlab_defaults

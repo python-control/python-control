@@ -71,8 +71,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     ----------
     syslist : linsys
         List of linear input/output systems (single system is OK)
-    omega : freq_range
-        Range of frequencies in rad/sec
+    omega : list
+        List of frequencies in rad/sec to be used for frequency response
     dB : boolean
         If True, plot result in dB
     Hz : boolean
@@ -109,7 +109,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     2. If a discrete time model is given, the frequency response is plotted
     along the upper branch of the unit circle, using the mapping z = exp(j
     \omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
-    time base.  If not timebase is specified (dt = True), dt is set to 1.
+    timebase.  If not timebase is specified (dt = True), dt is set to 1.
 
     Examples
     --------
@@ -237,6 +237,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 if margins:
                     margin = stability_margins(sys)
                     gm, pm, Wcg, Wcp = margin[0], margin[1], margin[3], margin[4]
+                    # TODO: add some documentation describing why this is here
                     phase_at_cp = phases[0][(np.abs(omegas[0] - Wcp)).argmin()]
                     if phase_at_cp >= 0.:
                         phase_limit = 180.
@@ -287,6 +288,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                                     transform=ax_phase.transAxes,fontsize=8 if int(matplotlib.__version__[0]) == 1 else 6)
                     else:
                         plt.suptitle('Gm = %.2f %s(at %.2f %s), Pm = %.2f %s (at %.2f %s)'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b',Wcg,'Hz' if Hz else 'rad/s',pm if deg else math.radians(pm),'deg' if deg else 'rad',Wcp,'Hz' if Hz else 'rad/s'))
+
 
                 if nyquistfrq_plot:
                     ax_phase.axvline(nyquistfrq_plot, color=pltline[0].get_color())

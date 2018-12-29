@@ -491,6 +491,46 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
         if other < 0:
             return (TransferFunction([1], [1]) / self) * (self**(other+1))
 
+    def __getitem__(self, key):
+        key1, key2 = key
+
+        # pre-process
+        if isinstance(key1, int):
+            key1 = slice(key1, key1 + 1, 1)
+        if isinstance(key2, int):
+            key2 = slice(key2, key2 + 1, 1)
+        # dim1
+        start1, stop1, step1 = key1.start, key1.stop, key1.step
+        if step1 is None:
+            step1 = 1
+        if start1 is None:
+            start1 = 0
+        if stop1 is None:
+            stop1 = len(self.num)
+        # dim1
+        start2, stop2, step2 = key2.start, key2.stop, key2.step
+        if step2 is None:
+            step2 = 1
+        if start2 is None:
+            start2 = 0
+        if stop2 is None:
+            stop2 = len(self.num[0])
+
+        num = []
+        den = []
+        for i in range(start1, stop1, step1):
+            num_i = []
+            den_i = []
+            for j in range(start2, stop2, step2):
+                num_i.append(self.num[i][j])
+                den_i.append(self.den[i][j])
+            num.append(num_i)
+            den.append(den_i)
+        if self.isctime():
+            return TransferFunction(num, den)
+        else:
+            return TransferFunction(num, den, self.dt)
+
     def evalfr(self, omega):
         """Evaluate a transfer function at a single angular frequency.
 
@@ -510,7 +550,7 @@ has %i row(s)\n(output(s))." % (other.inputs, self.outputs))
             # Convert the frequency to discrete time
             dt = timebase(self)
             s = exp(1.j * omega * dt)
-            if (omega * dt > pi):
+            if np.any(omega * dt > pi):
                 warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = 1.j * omega
@@ -800,9 +840,13 @@ only implemented for SISO functions.")
                     num[i,j,0] = poleset[i][j][2]
             else:
                 # create the denominator matching this input
+                # polyfromroots gives coeffs in opposite order from what we use
+                # coefficients should be padded on right, ending at np
                 np = len(poles[j])
                 den[j,np::-1] = polyfromroots(poles[j]).real
                 denorder[j] = np
+
+                # now create the numerator, also padded on the right
                 for i in range(self.outputs):
                     # start with the current set of zeros for this output
                     nwzeros = list(poleset[i][j][0])
@@ -811,14 +855,15 @@ only implemented for SISO functions.")
                     for ip in chain(poleset[i][j][3],
                                     range(poleset[i][j][4],np)):
                         nwzeros.append(poles[j][ip])
-                    
+
                     numpoly = poleset[i][j][2] * polyfromroots(nwzeros).real 
-                    m = npmax - len(numpoly)
-                    #print(j,i,m,len(numpoly),len(poles[j]))
-                    if m < 0:
-                        num[i,j,::-1] = numpoly
-                    else:
-                        num[i,j,:m:-1] = numpoly   
+                    # print(numpoly, den[j])
+                    # polyfromroots gives coeffs in opposite order => invert
+                    # numerator polynomial should be padded on left and right
+                    #   ending at np to line up with what td04ad expects...
+                    num[i, j, np+1-len(numpoly):np+1] = numpoly[::-1]
+                    # print(num[i, j])
+
         if (abs(den.imag) > epsnm).any():
             print("Warning: The denominator has a nontrivial imaginary part: %f"
                       % abs(den.imag).max())
@@ -1017,7 +1062,7 @@ def _convertToTransferFunction(sys, **kw):
     If sys is an array-like type, then it is converted to a constant-gain
     transfer function.
 
-    >>> sys = _convertToTransferFunction([[1. 0.], [2. 3.]])
+    >>> sys = _convertToTransferFunction([[1., 0.], [2., 3.]])
 
     In this example, the numerator matrix will be
        [[[1.0], [0.0]], [[2.0], [3.0]]]

@@ -385,7 +385,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         with input value s = i * omega.
 
         """
-        warn("StateSpace.evalfr(omega) will be depracted in a future "
+        warn("StateSpace.evalfr(omega) will be deprecated in a future "
              "release of python-control; use evalfr(sys, omega*1j) instead",
              PendingDeprecationWarning)
         return self._evalfr(omega)
@@ -1248,7 +1248,7 @@ object.")
 
 def rss(states=1, outputs=1, inputs=1):
     """
-    Create a stable **continuous** random state space object.
+    Create a stable *continuous* random state space object.
 
     Parameters
     ----------
@@ -1285,7 +1285,7 @@ def rss(states=1, outputs=1, inputs=1):
 
 def drss(states=1, outputs=1, inputs=1):
     """
-    Create a stable **discrete** random state space object.
+    Create a stable *discrete* random state space object.
 
     Parameters
     ----------
