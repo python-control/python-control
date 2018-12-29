@@ -111,8 +111,7 @@ def nichols_plot(sys_list, omega=None, grid=True):
         nichols_grid()
 
 
-# TODO: Consider making line style configurable
-def nichols_grid(cl_mags=None, cl_phases=None):
+def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
     """Nichols chart grid
 
     Plots a Nichols chart grid on the current axis, or creates a new chart
@@ -126,6 +125,8 @@ def nichols_grid(cl_mags=None, cl_phases=None):
     cl_phases : array-like (degrees), optional
         Array of closed-loop phases defining the iso-phase lines on a custom
         Nichols chart. Must be in the range -360 < cl_phases < 0
+    line_style : string, optional
+        .. seealso:: https://matplotlib.org/gallery/lines_bars_and_markers/linestyles.html
 
     Returns
     -------
@@ -192,10 +193,10 @@ def nichols_grid(cl_mags=None, cl_phases=None):
 
     for phase_offset in phase_offsets:
         # Draw M and N contours
-        plt.plot(m_phase + phase_offset, m_mag, color='gray',
-                 linestyle='dotted', zorder=0)
-        plt.plot(n_phase + phase_offset, n_mag, color='gray',
-                 linestyle='dotted', zorder=0)
+        plt.plot(m_phase + phase_offset, m_mag, color='lightgray',
+                 linestyle=line_style, zorder=0)
+        plt.plot(n_phase + phase_offset, n_mag, color='lightgray',
+                 linestyle=line_style, zorder=0)
 
         # Add magnitude labels
         for x, y, m in zip(m_phase[:][-1] + phase_offset, m_mag[:][-1], cl_mags):
