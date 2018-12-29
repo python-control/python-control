@@ -45,17 +45,17 @@ import matplotlib.pyplot as plt
 from .ctrlutil import unwrap
 from .freqplot import default_frequency_range
 
-__all__ = ['nichols_plot', 'nichols']
+__all__ = ['nichols_plot', 'nichols', 'nichols_grid']
 
-# Nichols plot
-def nichols_plot(syslist, omega=None, grid=True):
+
+def nichols_plot(sys_list, omega=None, grid=True):
     """Nichols plot for a system
 
     Plots a Nichols plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
-    syslist : list of LTI, or LTI
+    sys_list : list of LTI, or LTI
         List of linear input/output systems (single system is OK)
     omega : array_like
         Range of frequencies (list or bounds) in rad/sec
@@ -68,14 +68,14 @@ def nichols_plot(syslist, omega=None, grid=True):
     """
 
     # If argument was a singleton, turn it into a list
-    if (not getattr(syslist, '__iter__', False)):
-        syslist = (syslist,)
+    if not getattr(sys_list, '__iter__', False):
+        sys_list = (sys_list,)
 
     # Select a default range if none is provided
     if omega is None:
-        omega = default_frequency_range(syslist)
+        omega = default_frequency_range(sys_list)
 
-    for sys in syslist:
+    for sys in sys_list:
         # Get the magnitude and phase of the system
         mag_tmp, phase_tmp, omega = sys.freqresp(omega)
         mag = np.squeeze(mag_tmp)
@@ -100,8 +100,8 @@ def nichols_plot(syslist, omega=None, grid=True):
     if grid:
         nichols_grid()
 
-# Nichols grid
-#! TODO: Consider making linestyle configurable
+
+# TODO: Consider making line style configurable
 def nichols_grid(cl_mags=None, cl_phases=None):
     """Nichols chart grid
 
@@ -137,12 +137,12 @@ def nichols_grid(cl_mags=None, cl_phases=None):
         # The key set of magnitudes are always generated, since this
         # guarantees a recognizable Nichols chart grid.
         key_cl_mags = np.array([-40.0, -20.0, -12.0, -6.0, -3.0, -1.0, -0.5, 0.0,
-                                     0.25, 0.5, 1.0, 3.0, 6.0, 12.0])
+                                0.25, 0.5, 1.0, 3.0, 6.0, 12.0])
         # Extend the range of magnitudes if necessary. The extended arange
         # will end up empty if no extension is required. Assumes that closed-loop
         # magnitudes are approximately aligned with open-loop magnitudes beyond
         # the value of np.min(key_cl_mags)
-        cl_mag_step = -20.0 # dB
+        cl_mag_step = -20.0  # dB
         extended_cl_mags = np.arange(np.min(key_cl_mags),
                                      ol_mag_min + cl_mag_step, cl_mag_step)
         cl_mags = np.concatenate((extended_cl_mags, key_cl_mags))
@@ -163,12 +163,12 @@ def nichols_grid(cl_mags=None, cl_phases=None):
     # Find the M-contours
     m = m_circles(cl_mags, phase_min=np.min(cl_phases), phase_max=np.max(cl_phases))
     m_mag = 20*sp.log10(np.abs(m))
-    m_phase = sp.mod(sp.degrees(sp.angle(m)), -360.0) # Unwrap
+    m_phase = sp.mod(sp.degrees(sp.angle(m)), -360.0)  # Unwrap
 
     # Find the N-contours
     n = n_circles(cl_phases, mag_min=np.min(cl_mags), mag_max=np.max(cl_mags))
     n_mag = 20*sp.log10(np.abs(n))
-    n_phase = sp.mod(sp.degrees(sp.angle(n)), -360.0) # Unwrap
+    n_phase = sp.mod(sp.degrees(sp.angle(n)), -360.0)  # Unwrap
 
     # Plot the contours behind other plot elements.
     # The "phase offset" is used to produce copies of the chart that cover
@@ -203,7 +203,7 @@ def nichols_grid(cl_mags=None, cl_phases=None):
 # generating Nichols plots
 #
 
-# Compute contours of a closed-loop transfer function
+
 def closed_loop_contours(Gcl_mags, Gcl_phases):
     """Contours of the function Gcl = Gol/(1+Gol), where
     Gol is an open-loop transfer function, and Gcl is a corresponding
@@ -229,7 +229,7 @@ def closed_loop_contours(Gcl_mags, Gcl_phases):
     # Invert Gcl = Gol/(1+Gol) to map the contours into the open-loop space
     return Gcl/(1.0 - Gcl)
 
-# M-circle
+
 def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     """Constant-magnitude contours of the function Gcl = Gol/(1+Gol), where
     Gol is an open-loop transfer function, and Gcl is a corresponding
@@ -255,7 +255,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     Gcl_mags, Gcl_phases = sp.meshgrid(10.0**(mags/20.0), phases)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
 
-# N-circle
+
 def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     """Constant-phase contours of the function Gcl = Gol/(1+Gol), where
     Gol is an open-loop transfer function, and Gcl is a corresponding
@@ -280,6 +280,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     mags = sp.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
     Gcl_phases, Gcl_mags = sp.meshgrid(sp.radians(phases), mags)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
+
 
 # Function aliases
 nichols = nichols_plot
