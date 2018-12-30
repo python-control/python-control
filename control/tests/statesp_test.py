@@ -8,8 +8,8 @@ import numpy as np
 from numpy.linalg import solve
 from scipy.linalg import eigvals, block_diag
 from control import matlab
-from control.statesp import StateSpace, _convertToStateSpace
-from control.xferfcn import TransferFunction
+from control.statesp import StateSpace, _convertToStateSpace, tf2ss
+from control.xferfcn import TransferFunction, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
 
@@ -20,23 +20,53 @@ class TestStateSpace(unittest.TestCase):
     def setUp(self):
         """Set up a MIMO system to test operations on."""
 
-        A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
-        B = [[1., 4.], [-3., -3.], [-2., 1.]]
-        C = [[4., 2., -3.], [1., 4., 3.]]
-        D = [[-2., 4.], [0., 1.]]
+        # sys1: 3-states square system (2 inputs x 2 outputs)
+        A322 = [[-3., 4., 2.],
+                [-1., -3., 0.],
+                [2., 5., 3.]]
+        B322 = [[1., 4.],
+                [-3., -3.],
+                [-2., 1.]]
+        C322 = [[4., 2., -3.],
+                [1., 4., 3.]]
+        D322 = [[-2., 4.],
+                [0., 1.]]
+        self.sys322 = StateSpace(A322, B322, C322, D322)
 
-        a = [[4., 1.], [2., -3]]
-        b = [[5., 2.], [-3., -3.]]
-        c = [[2., -4], [0., 1.]]
-        d = [[3., 2.], [1., -1.]]
+        # sys1: 2-states square system (2 inputs x 2 outputs)
+        A222 = [[4., 1.],
+                [2., -3]]
+        B222 = [[5., 2.],
+                [-3., -3.]]
+        C222 = [[2., -4],
+                [0., 1.]]
+        D222 = [[3., 2.],
+                [1., -1.]]
+        self.sys222 = StateSpace(A222, B222, C222, D222)
 
-        self.sys1 = StateSpace(A, B, C, D)
-        self.sys2 = StateSpace(a, b, c, d)
+        # sys3: 6 states non square system (2 inputs x 3 outputs)
+        A623 = np.array([[1, 0, 0, 0, 0, 0],
+                         [0, 1, 0, 0, 0, 0],
+                         [0, 0, 3, 0, 0, 0],
+                         [0, 0, 0, -4, 0, 0],
+                         [0, 0, 0, 0, -1, 0],
+                         [0, 0, 0, 0, 0, 3]])
+        B623 = np.array([[0, -1],
+                        [-1, 0],
+                        [1, -1],
+                        [0, 0],
+                        [0, 1],
+                        [-1, -1]])
+        C623 = np.array([[1, 0, 0, 1, 0, 0],
+                         [0, 1, 0, 1, 0, 1],
+                         [0, 0, 1, 0, 0, 1]])
+        D623 = np.zeros((3, 2))
+        self.sys623 = StateSpace(A623, B623, C623, D623)
 
     def test_pole(self):
         """Evaluate the poles of a MIMO system."""
 
-        p = np.sort(self.sys1.pole())
+        p = np.sort(self.sys322.pole())
         true_p = np.sort([3.34747678408874,
                           -3.17373839204437 + 1.47492908003839j,
                           -3.17373839204437 - 1.47492908003839j])
@@ -49,35 +79,43 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_equal(sys.zero(), np.array([]))
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def test_zero_mimo_non_square(self):
-        """Evaluate the zeros of a MIMO system."""
+    def test_zero_siso(self):
+        """Evaluate the zeros of a SISO system."""
+        # extract only first input / first output system of sys222. This system is denoted sys111
+        #  or tf111
+        tf111 = ss2tf(self.sys222)
+        sys111 = tf2ss(tf111[0, 0])
 
-        z = np.sort(self.sys1.zero())
+        # compute zeros as root of the characteristic polynomial at the numerator of tf111
+        # this method is simple and assumed as valid in this test
+        true_z = np.sort(tf111[0, 0].zero())
+        # Compute the zeros through ab08nd, which is tested here
+        z = np.sort(sys111.zero())
+
+        np.testing.assert_almost_equal(true_z, z)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_zero_mimo_sys322_square(self):
+        """Evaluate the zeros of a square MIMO system."""
+
+        z = np.sort(self.sys322.zero())
         true_z = np.sort([44.41465, -0.490252, -5.924398])
-
         np.testing.assert_array_almost_equal(z, true_z)
 
-        A = np.array([[1, 0, 0, 0, 0, 0],
-                      [0, 1, 0, 0, 0, 0],
-                      [0, 0, 3, 0, 0, 0],
-                      [0, 0, 0, -4, 0, 0],
-                      [0, 0, 0, 0, -1, 0],
-                      [0, 0, 0, 0, 0, 3]])
-        B = np.array([[0, -1],
-                      [-1, 0],
-                      [1, -1],
-                      [0, 0],
-                      [0, 1],
-                      [-1, -1]])
-        C = np.array([[1, 0, 0, 1, 0, 0],
-                      [0, 1, 0, 1, 0, 1],
-                      [0, 0, 1, 0, 0, 1]])
-        D = np.zeros((3, 2))
-        sys = StateSpace(A, B, C, D)
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_zero_mimo_sys222_square(self):
+        """Evaluate the zeros of a square MIMO system."""
 
-        z = np.sort(sys.zero())
+        z = np.sort(self.sys222.zero())
+        true_z = np.sort([-10.568501,   3.368501])
+        np.testing.assert_array_almost_equal(z, true_z)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_zero_mimo_sys623_non_square(self):
+        """Evaluate the zeros of a non square MIMO system."""
+
+        z = np.sort(self.sys623.zero())
         true_z = np.sort([2., -1.])
-
         np.testing.assert_array_almost_equal(z, true_z)
 
     def test_add_ss(self):
@@ -89,7 +127,7 @@ class TestStateSpace(unittest.TestCase):
         C = [[4., 2., -3., 2., -4.], [1., 4., 3., 0., 1.]]
         D = [[1., 6.], [1., 0.]]
 
-        sys = self.sys1 + self.sys2
+        sys = self.sys322 + self.sys222
 
         np.testing.assert_array_almost_equal(sys.A, A)
         np.testing.assert_array_almost_equal(sys.B, B)
@@ -105,7 +143,7 @@ class TestStateSpace(unittest.TestCase):
         C = [[4., 2., -3., -2., 4.], [1., 4., 3., 0., -1.]]
         D = [[-5., 2.], [-1., 2.]]
 
-        sys = self.sys1 - self.sys2
+        sys = self.sys322 - self.sys222
 
         np.testing.assert_array_almost_equal(sys.A, A)
         np.testing.assert_array_almost_equal(sys.B, B)
@@ -121,7 +159,7 @@ class TestStateSpace(unittest.TestCase):
         C = [[-4., 12., 4., 2., -3.], [0., 1., 1., 4., 3.]]
         D = [[-2., -8.], [1., -1.]]
 
-        sys = self.sys1 * self.sys2
+        sys = self.sys322 * self.sys222
 
         np.testing.assert_array_almost_equal(sys.A, A)
         np.testing.assert_array_almost_equal(sys.B, B)
