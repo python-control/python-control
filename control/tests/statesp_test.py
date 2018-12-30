@@ -13,6 +13,7 @@ from control.xferfcn import TransferFunction
 from control.lti import evalfr
 from control.exception import slycot_check
 
+
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
 
@@ -37,14 +38,14 @@ class TestStateSpace(unittest.TestCase):
 
         p = np.sort(self.sys1.pole())
         true_p = np.sort([3.34747678408874,
-            -3.17373839204437 + 1.47492908003839j,
-            -3.17373839204437 - 1.47492908003839j])
+                          -3.17373839204437 + 1.47492908003839j,
+                          -3.17373839204437 - 1.47492908003839j])
 
         np.testing.assert_array_almost_equal(p, true_p)
 
     def testEmptyZero(self):
         """Test to make sure zero() works with no zeros in system"""
-        sys = _convertToStateSpace(TransferFunction([1], [1,2,1]))
+        sys = _convertToStateSpace(TransferFunction([1], [1, 2, 1]))
         np.testing.assert_array_equal(sys.zero(), np.array([]))
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -59,19 +60,19 @@ class TestStateSpace(unittest.TestCase):
         A = np.array([[1, 0, 0, 0, 0, 0],
                       [0, 1, 0, 0, 0, 0],
                       [0, 0, 3, 0, 0, 0],
-                      [0, 0, 0,-4, 0, 0],
-                      [0, 0, 0, 0,-1, 0],
+                      [0, 0, 0, -4, 0, 0],
+                      [0, 0, 0, 0, -1, 0],
                       [0, 0, 0, 0, 0, 3]])
-        B = np.array([[0,-1],
-                      [-1,0],
-                      [1,-1],
+        B = np.array([[0, -1],
+                      [-1, 0],
+                      [1, -1],
                       [0, 0],
                       [0, 1],
-                      [-1,-1]])
+                      [-1, -1]])
         C = np.array([[1, 0, 0, 1, 0, 0],
                       [0, 1, 0, 1, 0, 1],
                       [0, 0, 1, 0, 0, 1]])
-        D = np.zeros((3,2))
+        D = np.zeros((3, 2))
         sys = StateSpace(A, B, C, D)
 
         z = np.sort(sys.zero())
@@ -151,7 +152,7 @@ class TestStateSpace(unittest.TestCase):
             # Set up warnings filter to only show warnings in control module
             warnings.filterwarnings("ignore")
             warnings.filterwarnings("always", module="control")
-            
+
             # Make sure that we get a pending deprecation warning
             sys.evalfr(1.)
             assert len(w) == 1
@@ -186,13 +187,13 @@ class TestStateSpace(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMinreal(self):
         """Test a minreal model reduction"""
-        #A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]
+        # A = [-2, 0.5, 0; 0.5, -0.3, 0; 0, 0, -0.1]
         A = [[-2, 0.5, 0], [0.5, -0.3, 0], [0, 0, -0.1]]
-        #B = [0.3, -1.3; 0.1, 0; 1, 0]
+        # B = [0.3, -1.3; 0.1, 0; 1, 0]
         B = [[0.3, -1.3], [0.1, 0.], [1.0, 0.0]]
-        #C = [0, 0.1, 0; -0.3, -0.2, 0]
+        # C = [0, 0.1, 0; -0.3, -0.2, 0]
         C = [[0., 0.1, 0.0], [-0.3, -0.2, 0.0]]
-        #D = [0 -0.8; -0.3 0]
+        # D = [0 -0.8; -0.3 0]
         D = [[0., -0.8], [-0.3, 0.]]
         # sys = ss(A, B, C, D)
 
@@ -235,47 +236,46 @@ class TestStateSpace(unittest.TestCase):
         C1 = [[0., 0.1, 0.0], [-0.3, -0.2, 0.0]]
         D1 = [[0., -0.8], [-0.3, 0.]]
         s = TransferFunction([1, 0], [1])
-        h = 1/(s+1)/(s+2)
+        h = 1 / (s + 1) / (s + 2)
         sys1 = StateSpace(A1, B1, C1, D1)
         sys2 = _convertToStateSpace(h)
         sys3c = sys1.append(sys2)
-        np.testing.assert_array_almost_equal(sys1.A, sys3c.A[:3,:3])
-        np.testing.assert_array_almost_equal(sys1.B, sys3c.B[:3,:2])
-        np.testing.assert_array_almost_equal(sys1.C, sys3c.C[:2,:3])
-        np.testing.assert_array_almost_equal(sys1.D, sys3c.D[:2,:2])
-        np.testing.assert_array_almost_equal(sys2.A, sys3c.A[3:,3:])
-        np.testing.assert_array_almost_equal(sys2.B, sys3c.B[3:,2:])
-        np.testing.assert_array_almost_equal(sys2.C, sys3c.C[2:,3:])
-        np.testing.assert_array_almost_equal(sys2.D, sys3c.D[2:,2:])
-        np.testing.assert_array_almost_equal(sys3c.A[:3,3:], np.zeros( (3, 2)) )
-        np.testing.assert_array_almost_equal(sys3c.A[3:,:3], np.zeros( (2, 3)) )
-
+        np.testing.assert_array_almost_equal(sys1.A, sys3c.A[:3, :3])
+        np.testing.assert_array_almost_equal(sys1.B, sys3c.B[:3, :2])
+        np.testing.assert_array_almost_equal(sys1.C, sys3c.C[:2, :3])
+        np.testing.assert_array_almost_equal(sys1.D, sys3c.D[:2, :2])
+        np.testing.assert_array_almost_equal(sys2.A, sys3c.A[3:, 3:])
+        np.testing.assert_array_almost_equal(sys2.B, sys3c.B[3:, 2:])
+        np.testing.assert_array_almost_equal(sys2.C, sys3c.C[2:, 3:])
+        np.testing.assert_array_almost_equal(sys2.D, sys3c.D[2:, 2:])
+        np.testing.assert_array_almost_equal(sys3c.A[:3, 3:], np.zeros((3, 2)))
+        np.testing.assert_array_almost_equal(sys3c.A[3:, :3], np.zeros((2, 3)))
 
     def testArrayAccessSS(self):
 
         sys1 = StateSpace([[1., 2.], [3., 4.]],
-                [[5., 6.], [6., 8.]],
-                [[9., 10.], [11., 12.]],
-                [[13., 14.], [15., 16.]], 1)
+                          [[5., 6.], [6., 8.]],
+                          [[9., 10.], [11., 12.]],
+                          [[13., 14.], [15., 16.]], 1)
 
-        sys1_11 = sys1[0,1]
+        sys1_11 = sys1[0, 1]
         np.testing.assert_array_almost_equal(sys1_11.A,
-                sys1.A)
+                                             sys1.A)
         np.testing.assert_array_almost_equal(sys1_11.B,
-                sys1.B[:,1])
+                                             sys1.B[:, 1])
         np.testing.assert_array_almost_equal(sys1_11.C,
-                sys1.C[0,:])
+                                             sys1.C[0, :])
         np.testing.assert_array_almost_equal(sys1_11.D,
-                sys1.D[0,1])
+                                             sys1.D[0, 1])
 
         assert sys1.dt == sys1_11.dt
 
     def test_dcgain_cont(self):
         """Test DC gain for continuous-time state-space systems"""
-        sys = StateSpace(-2.,6.,5.,0)
+        sys = StateSpace(-2., 6., 5., 0)
         np.testing.assert_equal(sys.dcgain(), 15.)
 
-        sys2 = StateSpace(-2, [6., 4.], [[5.],[7.],[11]], np.zeros((3,2)))
+        sys2 = StateSpace(-2, [6., 4.], [[5.], [7.], [11]], np.zeros((3, 2)))
         expected = np.array([[15., 10.], [21., 14.], [33., 22.]])
         np.testing.assert_array_equal(sys2.dcgain(), expected)
 
@@ -305,113 +305,109 @@ class TestStateSpace(unittest.TestCase):
         # the SISO case is also tested in test_dc_gain_{cont,discr}
         import itertools
         # iterate over input and output sizes, and continuous (dt=None) and discrete (dt=True) time
-        for inputs,outputs,dt in itertools.product(range(1,6),range(1,6),[None,True]):
-            states = max(inputs,outputs)
+        for inputs, outputs, dt in itertools.product(range(1, 6), range(1, 6), [None, True]):
+            states = max(inputs, outputs)
 
             # a matrix that is singular at DC, and has no "useless" states as in _remove_useless_states
-            a = np.triu(np.tile(2,(states,states)))
+            a = np.triu(np.tile(2, (states, states)))
             # eigenvalues all +2, except for ...
-            a[0,0] = 0 if dt is None else 1
-            b = np.eye(max(inputs,states))[:states,:inputs]
-            c = np.eye(max(outputs,states))[:outputs,:states]
-            d = np.zeros((outputs,inputs))
-            sys = StateSpace(a,b,c,d,dt)
-            dc = np.squeeze(np.tile(np.nan,(outputs,inputs)))
+            a[0, 0] = 0 if dt is None else 1
+            b = np.eye(max(inputs, states))[:states, :inputs]
+            c = np.eye(max(outputs, states))[:outputs, :states]
+            d = np.zeros((outputs, inputs))
+            sys = StateSpace(a, b, c, d, dt)
+            dc = np.squeeze(np.tile(np.nan, (outputs, inputs)))
             np.testing.assert_array_equal(dc, sys.dcgain())
-
 
     def test_scalarStaticGain(self):
         """Regression: can we create a scalar static gain?"""
-        g1=StateSpace([],[],[],[2])
-        g2=StateSpace([],[],[],[3])
+        g1 = StateSpace([], [], [], [2])
+        g2 = StateSpace([], [], [], [3])
 
         # make sure StateSpace internals, specifically ABC matrix
         # sizes, are OK for LTI operations
-        g3 = g1*g2
-        self.assertEqual(6, g3.D[0,0])
-        g4 = g1+g2
-        self.assertEqual(5, g4.D[0,0])
+        g3 = g1 * g2
+        self.assertEqual(6, g3.D[0, 0])
+        g4 = g1 + g2
+        self.assertEqual(5, g4.D[0, 0])
         g5 = g1.feedback(g2)
-        self.assertAlmostEqual(2./7, g5.D[0,0])
+        self.assertAlmostEqual(2. / 7, g5.D[0, 0])
         g6 = g1.append(g2)
-        np.testing.assert_array_equal(np.diag([2,3]),g6.D)
+        np.testing.assert_array_equal(np.diag([2, 3]), g6.D)
 
     def test_matrixStaticGain(self):
         """Regression: can we create matrix static gains?"""
-        d1 = np.matrix([[1,2,3],[4,5,6]])
-        d2 = np.matrix([[7,8],[9,10],[11,12]])
-        g1=StateSpace([],[],[],d1)
+        d1 = np.matrix([[1, 2, 3], [4, 5, 6]])
+        d2 = np.matrix([[7, 8], [9, 10], [11, 12]])
+        g1 = StateSpace([], [], [], d1)
 
         # _remove_useless_states was making A = [[0]]
-        self.assertEqual((0,0), g1.A.shape)
+        self.assertEqual((0, 0), g1.A.shape)
 
-        g2=StateSpace([],[],[],d2)
-        g3=StateSpace([],[],[],d2.T)
+        g2 = StateSpace([], [], [], d2)
+        g3 = StateSpace([], [], [], d2.T)
 
-        h1 = g1*g2
-        np.testing.assert_array_equal(d1*d2, h1.D)
-        h2 = g1+g3
-        np.testing.assert_array_equal(d1+d2.T, h2.D)
+        h1 = g1 * g2
+        np.testing.assert_array_equal(d1 * d2, h1.D)
+        h2 = g1 + g3
+        np.testing.assert_array_equal(d1 + d2.T, h2.D)
         h3 = g1.feedback(g2)
-        np.testing.assert_array_almost_equal(solve(np.eye(2)+d1*d2,d1), h3.D)
+        np.testing.assert_array_almost_equal(
+            solve(np.eye(2) + d1 * d2, d1), h3.D)
         h4 = g1.append(g2)
-        np.testing.assert_array_equal(block_diag(d1,d2),h4.D)
-
+        np.testing.assert_array_equal(block_diag(d1, d2), h4.D)
 
     def test_remove_useless_states(self):
         """Regression: _remove_useless_states gives correct ABC sizes"""
-        g1 = StateSpace(np.zeros((3,3)),
-                        np.zeros((3,4)),
-                        np.zeros((5,3)),
-                        np.zeros((5,4)))
-        self.assertEqual((0,0), g1.A.shape)
-        self.assertEqual((0,4), g1.B.shape)
-        self.assertEqual((5,0), g1.C.shape)
-        self.assertEqual((5,4), g1.D.shape)
+        g1 = StateSpace(np.zeros((3, 3)),
+                        np.zeros((3, 4)),
+                        np.zeros((5, 3)),
+                        np.zeros((5, 4)))
+        self.assertEqual((0, 0), g1.A.shape)
+        self.assertEqual((0, 4), g1.B.shape)
+        self.assertEqual((5, 0), g1.C.shape)
+        self.assertEqual((5, 4), g1.D.shape)
         self.assertEqual(0, g1.states)
-
 
     def test_BadEmptyMatrices(self):
         """Mismatched ABCD matrices when some are empty"""
-        self.assertRaises(ValueError,StateSpace, [1], [],  [],  [1])
-        self.assertRaises(ValueError,StateSpace, [1], [1], [],  [1])
-        self.assertRaises(ValueError,StateSpace, [1], [],  [1], [1])
-        self.assertRaises(ValueError,StateSpace, [],  [1], [],  [1])
-        self.assertRaises(ValueError,StateSpace, [],  [1], [1], [1])
-        self.assertRaises(ValueError,StateSpace, [],  [],  [1], [1])
-        self.assertRaises(ValueError,StateSpace, [1], [1], [1], [])
-
+        self.assertRaises(ValueError, StateSpace, [1], [], [], [1])
+        self.assertRaises(ValueError, StateSpace, [1], [1], [], [1])
+        self.assertRaises(ValueError, StateSpace, [1], [], [1], [1])
+        self.assertRaises(ValueError, StateSpace, [], [1], [], [1])
+        self.assertRaises(ValueError, StateSpace, [], [1], [1], [1])
+        self.assertRaises(ValueError, StateSpace, [], [], [1], [1])
+        self.assertRaises(ValueError, StateSpace, [1], [1], [1], [])
 
     def test_minrealStaticGain(self):
         """Regression: minreal on static gain was failing"""
-        g1 = StateSpace([],[],[],[1])
+        g1 = StateSpace([], [], [], [1])
         g2 = g1.minreal()
         np.testing.assert_array_equal(g1.A, g2.A)
         np.testing.assert_array_equal(g1.B, g2.B)
         np.testing.assert_array_equal(g1.C, g2.C)
         np.testing.assert_array_equal(g1.D, g2.D)
 
-
     def test_Empty(self):
         """Regression: can we create an empty StateSpace object?"""
-        g1=StateSpace([],[],[],[])
-        self.assertEqual(0,g1.states)
-        self.assertEqual(0,g1.inputs)
-        self.assertEqual(0,g1.outputs)
-
+        g1 = StateSpace([], [], [], [])
+        self.assertEqual(0, g1.states)
+        self.assertEqual(0, g1.inputs)
+        self.assertEqual(0, g1.outputs)
 
     def test_MatrixToStateSpace(self):
         """_convertToStateSpace(matrix) gives ss([],[],[],D)"""
-        D = np.matrix([[1,2,3],[4,5,6]])
+        D = np.matrix([[1, 2, 3], [4, 5, 6]])
         g = _convertToStateSpace(D)
+
         def empty(shape):
             m = np.matrix([])
             m.shape = shape
             return m
-        np.testing.assert_array_equal(empty((0,0)), g.A)
-        np.testing.assert_array_equal(empty((0,D.shape[1])), g.B)
-        np.testing.assert_array_equal(empty((D.shape[0],0)), g.C)
-        np.testing.assert_array_equal(D,g.D)
+        np.testing.assert_array_equal(empty((0, 0)), g.A)
+        np.testing.assert_array_equal(empty((0, D.shape[1])), g.B)
+        np.testing.assert_array_equal(empty((D.shape[0], 0)), g.C)
+        np.testing.assert_array_equal(D, g.D)
 
 
 class TestRss(unittest.TestCase):
@@ -448,6 +444,7 @@ class TestRss(unittest.TestCase):
                     for z in p:
                         self.assertTrue(z.real < 0)
 
+
 class TestDrss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.drss."""
 
@@ -482,15 +479,14 @@ class TestDrss(unittest.TestCase):
                     for z in p:
                         self.assertTrue(abs(z) < 1)
 
-
     def testPoleStatic(self):
         """Regression: pole() of static gain is empty array"""
         np.testing.assert_array_equal(np.array([]),
-                                      StateSpace([],[],[],[[1]]).pole())
+                                      StateSpace([], [], [], [[1]]).pole())
 
 
 def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
+    return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
 
 
 if __name__ == "__main__":
