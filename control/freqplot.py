@@ -395,7 +395,15 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args,
                 # Plot the primary curve and mirror image
                 p = plt.plot(x, y, '-', color=color, *args, **kwargs)
                 c = p[0].get_color()
+                ax = plt.gca()
+                # Plot arrow to indicate Nyquist encirclement orientation
+                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
+                         head_width=0.2, head_length=0.2)
+
                 plt.plot(x, -y, '-', color=c, *args, **kwargs)
+                ax.arrow(x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2, fc=c, ec=c,
+                         head_width=0.2, head_length=0.2)
+
                 # Mark the -1 point
                 plt.plot([-1], [0], 'r+')
 
@@ -426,6 +434,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args,
         ax = plt.gca()
         ax.set_xlabel("Real axis")
         ax.set_ylabel("Imaginary axis")
+        ax.grid(color="lightgray")
 
     return x, y, omega
 
