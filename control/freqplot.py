@@ -324,7 +324,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         return mags, phases, omegas
 
 
-def nyquist_plot(syslist, omega=None, Plot=True, color='b',
+def nyquist_plot(syslist, omega=None, Plot=True, color=None,
                  labelFreq=0, *args, **kwargs):
     """
     Nyquist plot for a system
@@ -393,8 +393,9 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
 
             if Plot:
                 # Plot the primary curve and mirror image
-                plt.plot(x, y, '-', color=color, *args, **kwargs)
-                plt.plot(x, -y, '--', color=color, *args, **kwargs)
+                p = plt.plot(x, y, '-', color=color, *args, **kwargs)
+                c = p[0].get_color()
+                plt.plot(x, -y, '-', color=c, *args, **kwargs)
                 # Mark the -1 point
                 plt.plot([-1], [0], 'r+')
 
