@@ -167,15 +167,6 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             mag = np.atleast_1d(np.squeeze(mag_tmp))
             phase = np.atleast_1d(np.squeeze(phase_tmp))
             phase = unwrap(phase)
-            nyquistfrq_plot = None
-            if Hz:
-                omega_plot = omega_sys / (2. * math.pi)
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq / (2. * math.pi)
-            else:
-                omega_plot = omega_sys
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq
 
             mags.append(mag)
             phases.append(phase)
@@ -185,6 +176,16 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             # TODO: Not current implemented; just use subplot for now
 
             if Plot:
+                nyquistfrq_plot = None
+                if Hz:
+                    omega_plot = omega_sys / (2. * math.pi)
+                    if nyquistfrq:
+                        nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+                else:
+                    omega_plot = omega_sys
+                    if nyquistfrq:
+                        nyquistfrq_plot = nyquistfrq
+
                 # Set up the axes with labels so that multiple calls to
                 # bode_plot will superimpose the data.  This was implicit
                 # before matplotlib 2.1, but changed after that (See
