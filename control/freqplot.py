@@ -421,7 +421,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
                     plt.text(xpt, ypt,
                              ' ' + str(int(np.round(f / 1000 ** pow1000, 0))) +
                              ' ' + prefix + 'Hz')
-        return x, y, omega
+    return x, y, omega
 
 
 # TODO: think about how (and whether) to handle lists of systems
