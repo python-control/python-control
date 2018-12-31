@@ -324,8 +324,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         return mags, phases, omegas
 
 
-def nyquist_plot(syslist, omega=None, Plot=True, color=None,
-                 labelFreq=0, *args, **kwargs):
+def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args, **kwargs):
     """
     Nyquist plot for a system
 
@@ -377,6 +376,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None,
                              "or frequency vector. ")
         omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
                             num=50, endpoint=True, base=10.0)
+
     for sys in syslist:
         if sys.inputs > 1 or sys.outputs > 1:
             # TODO: Add MIMO nyquist plots.
@@ -419,9 +419,14 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None,
                     # np.round() is used because 0.99... appears
                     # instead of 1.0, and this would otherwise be
                     # truncated to 0.
-                    plt.text(xpt, ypt,
-                             ' ' + str(int(np.round(f / 1000 ** pow1000, 0))) +
-                             ' ' + prefix + 'Hz')
+                    plt.text(xpt, ypt, ' ' + str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
+                             prefix + 'Hz')
+
+    if Plot:
+        ax = plt.gca()
+        ax.set_xlabel("Real axis")
+        ax.set_ylabel("Imaginary axis")
+
     return x, y, omega
 
 
