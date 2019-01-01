@@ -76,10 +76,12 @@ script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
   # set PYTHONPATH for examples
-  - export PYTHONPATH=$PWD
-  # pmw needed for examples/tfvis.py
-  - conda install -c conda-forge pmw
-  - '(cd examples && bash run_examples.sh)'
+  - if [[ "$SLYCOT" != "" ]]; then
+      export PYTHONPATH=$PWD
+      # pmw needed for examples/tfvis.py
+      conda install -c conda-forge pmw
+      '(cd examples && bash run_examples.sh)'
+    fi
 
 after_success:
   - coveralls
