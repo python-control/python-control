@@ -39,11 +39,19 @@ from __future__ import print_function
 
 import numpy as np
 import matplotlib.pyplot as mpl
-from matplotlib.mlab import frange, find
+
 from scipy.integrate import odeint
 from .exception import ControlNotImplemented
 
 __all__ = ['phase_plot', 'box_grid']
+
+
+def _find(condition):
+    """Returns indices where ravel(a) is true.
+    Private implementation of deprecated matplotlib.mlab.find
+    """
+    return np.nonzero(np.ravel(condition))[0]
+
 
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
               lingrid=None, lintime=None, logtime=None, timepts=None,
@@ -70,11 +78,11 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         dxdt = F(x, t) that accepts a state x of dimension 2 and
         returns a derivative dx/dt of dimension 2.
 
-    X, Y: ndarray, optional
-        Two 1-D arrays representing x and y coordinates of a grid.
-        These arguments are passed to meshgrid and generate the lists
-        of points at which the vector field is plotted.  If absent (or
-        None), the vector field is not plotted.
+    X, Y: 3-element sequences, optional, as [start, stop, npts]
+        Two 3-element sequences specifying x and y coordinates of a
+        grid.  These arguments are passed to linspace and meshgrid to
+        generate the points at which the vector field is plotted.  If
+        absent (or None), the vector field is not plotted.
 
     scale: float, optional
         Scale size of arrows; default = 1
@@ -145,8 +153,8 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     #! TODO: Add sanity checks
     elif (X is not None and Y is not None):
         (x1, x2) = np.meshgrid(
-            frange(X[0], X[1], float(X[1]-X[0])/X[2]),
-            frange(Y[0], Y[1], float(Y[1]-Y[0])/Y[2]));
+            np.linspace(X[0], X[1], X[2]),
+            np.linspace(Y[0], Y[1], Y[2]))
     else:
         # If we weren't given any grid points, don't plot arrows
         Narrows = 0;
@@ -234,12 +242,12 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
                 elif (logtimeFlag):
                     # Use an exponential time vector
                     # MATLAB: tind = find(time < (j-k) / lambda, 1, 'last');
-                    tarr = find(time < (j-k) / timefactor);
+                    tarr = _find(time < (j-k) / timefactor);
                     tind = tarr[-1] if len(tarr) else 0;
                 elif (timeptsFlag):
                     # Use specified time points
                     # MATLAB: tind = find(time < Y[j], 1, 'last');
-                    tarr = find(time < timepts[j]);
+                    tarr = _find(time < timepts[j]);
                     tind = tarr[-1] if len(tarr) else 0;
 
                 # For tailless arrows, skip the first point
@@ -295,8 +303,8 @@ def box_grid(xlimp, ylimp):
     box defined by the corners [xmin ymin] and [xmax ymax].
     """
 
-    sx10 = frange(xlimp[0], xlimp[1], float(xlimp[1]-xlimp[0])/xlimp[2])
-    sy10 = frange(ylimp[0], ylimp[1], float(ylimp[1]-ylimp[0])/ylimp[2])
+    sx10 = np.linspace(xlimp[0], xlimp[1], xlimp[2])
+    sy10 = np.linspace(ylimp[0], ylimp[1], ylimp[2])
 
     sx1 = np.hstack((0, sx10, 0*sy10+sx10[0], sx10, 0*sy10+sx10[-1]))
     sx2 = np.hstack((0, 0*sx10+sy10[0], sy10, 0*sx10+sy10[-1], sy10))
