@@ -75,6 +75,8 @@ install:
 script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
+  # set PYTHONPATH for examples
+  - export PYTHONPATH=$PWD
   - '(cd examples && bash run_examples.sh)'
 
 after_success:
