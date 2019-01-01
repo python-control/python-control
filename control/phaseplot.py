@@ -155,6 +155,8 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         (x1, x2) = np.meshgrid(
             np.linspace(X[0], X[1], X[2]),
             np.linspace(Y[0], Y[1], Y[2]))
+        Narrows = len(x1)
+
     else:
         # If we weren't given any grid points, don't plot arrows
         Narrows = 0;
