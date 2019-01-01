@@ -101,5 +101,5 @@ plt.ylabel('signal [1]')
 plt.legend()
 plt.title('Disturbance response')
 
-if 'PYCONTROL_TEST_EXAMPLES' not in os.environ():
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
     plt.show()

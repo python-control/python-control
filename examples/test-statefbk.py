@@ -1,6 +1,8 @@
 # test-statefbk.py - Unit tests for state feedback code
 # RMM, 6 Sep 2010
 
+from __future__ import print_function
+
 import numpy as np              # Numerical library
 from scipy import *             # Load the scipy functions
 from control.matlab import *    # Load the controls systems library
@@ -18,10 +20,10 @@ sys = ss(A, B, C, 0);
 
 # Controllability
 Wc = ctrb(A, B)
-print "Wc = ", Wc
+print("Wc = ", Wc)
 
 # Observability
 Wo = obsv(A, C)
-print "Wo = ", Wo
+print("Wo = ", Wo)
 
 

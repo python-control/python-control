@@ -122,5 +122,5 @@ mpl.plot([0], [0], 'k.') # 'MarkerSize', AM_data_markersize*3);
 mpl.xlabel('$x_1$'); mpl.ylabel('$x_2$');
 mpl.title('Undamped system\nLyapunov stable, not asympt. stable')
 
-if 'PYCONTROL_TEST_EXAMPLES' not in os.environ():
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
     mpl.show()

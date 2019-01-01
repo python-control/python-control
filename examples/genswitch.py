@@ -5,6 +5,8 @@
 # of a genetic switch.  Plots time traces and a phase portrait using
 # the python-control library.
 
+import os
+
 import numpy as np
 import matplotlib.pyplot as mpl
 from scipy.integrate import odeint
@@ -50,7 +52,6 @@ mpl.ylabel('z2, f(z1)');
 mpl.figure(3); mpl.clf(); # subplot(221);
 mpl.plot(tim1, sol1[:,0], 'b-', tim1, sol1[:,1], 'g--');
 # set(pl, 'LineWidth', AM_data_linewidth);
-mpl.hold(True);
 mpl.plot([tim1[-1], tim1[-1]+1], 
          [sol1[-1,0], sol2[0,1]], 'ko:', 
          [tim1[-1], tim1[-1]+1], [sol1[-1,1], sol2[0,0]], 'ko:');
@@ -71,10 +72,11 @@ phase_plot(genswitch, X0 = box_grid([0, 5, 6], [0, 5, 6]), T = 10,
           timepts = [0.2, 0.6, 1.2])
 
 # Add the stable equilibrium points
-mpl.hold(True);
 mpl.plot(eqpt[0], eqpt[1], 'k.', eqpt[1], eqpt[0], 'k.', 
   eqpt[2], eqpt[2], 'k.')       # 'MarkerSize', AM_data_markersize*3);
 
 mpl.xlabel('Protein A [scaled]');
 mpl.ylabel('Protein B [scaled]');       # 'Rotation', 90);
 
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    mpl.show()

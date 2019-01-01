@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from __future__ import print_function
+
 """ Simple GUI application for visualizing how the poles/zeros of the transfer
 function effects the bode, nyquist and step response of a SISO system """
 
@@ -348,7 +350,7 @@ class Analysis:
             tvec, yvec = control.matlab.step(self.sys)
             plt.plot(tvec.T, yvec)
         except:
-            print "Error plotting step response"
+            print("Error plotting step response")
         plt.suptitle('Step Response')
 
         self.canvas_pzmap.show()
@@ -372,4 +374,6 @@ def create_analysis():
     root.mainloop()
 
 if __name__ == '__main__':
-    create_analysis()
+    import os
+    if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+        create_analysis()
