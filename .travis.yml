@@ -75,6 +75,7 @@ install:
 script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
+  - '(cd examples && bash run_examples.sh)'
 
 after_success:
   - coveralls
