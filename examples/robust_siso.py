@@ -4,6 +4,8 @@ Based on Example 2.11 from Multivariable Feedback Control, Skogestad
 and Postlethwaite, 1st Edition.
 """
 
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -99,4 +101,5 @@ plt.ylabel('signal [1]')
 plt.legend()
 plt.title('Disturbance response')
 
-plt.show()
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ():
+    plt.show()
