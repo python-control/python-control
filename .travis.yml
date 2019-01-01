@@ -79,7 +79,8 @@ script:
   - if [[ "$SLYCOT" != "" ]]; then
       export PYTHONPATH=$PWD
       # pmw needed for examples/tfvis.py
-      conda install -c conda-forge pmw
+      # future is needed for Python 2, also for examples/tfvis.py
+      conda install -c conda-forge pmw future
       '(cd examples && bash run_examples.sh)'
     fi
 
