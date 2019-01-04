@@ -610,7 +610,11 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def lft(self, other, nu=-1, ny=-1):
         """Return the Linear Fractional Transformation.
 
-        See definition here:
+        A definition of the LFT operator can be found in Appendix A.7,
+        page 512 in the 2nd Edition, Multivariable Feedback Control by
+        Sigurd Skogestad.
+
+        An alternative definition can be found here:
         https://www.mathworks.com/help/control/ref/lft.html
 
         Parameters
@@ -621,6 +625,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             Dimension of (plant) measurement output.
         nu: int, optional
             Dimension of (plant) control input.
+
         """
         other = _convertToStateSpace(other)
         # maximal values for nu, ny
