@@ -19,8 +19,8 @@ sys = ss(A, B, C, 0);
 # Eigenvalue placement
 #from slycot import sb01bd
 K = place(A, B, [-3, -2, -1])
-print "Pole place: K = ", K
-print "Pole place: eigs = ", np.linalg.eig(A - B * K)[0]
+print("Pole place: K = ", K)
+print("Pole place: eigs = ", np.linalg.eig(A - B * K)[0])
 
 # from slycot import ab01md
 # Ac, Bc, ncont, info = ab01md('I', A, B)
