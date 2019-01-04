@@ -348,7 +348,7 @@ class Analysis:
             tvec, yvec = control.matlab.step(self.sys)
             plt.plot(tvec.T, yvec)
         except:
-            print "Error plotting step response"
+            print("Error plotting step response")
         plt.suptitle('Step Response')
 
         self.canvas_pzmap.show()
