@@ -6,7 +6,7 @@
 import unittest
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace, rss
-from control.xferfcn import TransferFunction, _convertToTransferFunction, ss2tf
+from control.xferfcn import TransferFunction, _convert_to_transfer_function, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
 # from control.lti import isdtime
@@ -459,7 +459,7 @@ class TestXferFcn(unittest.TestCase):
         D = [[1., 0.], [0., 1.], [1., 0.]]
         sys = StateSpace(A, B, C, D)
 
-        tfsys = _convertToTransferFunction(sys)
+        tfsys = _convert_to_transfer_function(sys)
 
         num = [[np.array([1., -7., 10.]), np.array([-1., 10.])],
                [np.array([2., -8.]), np.array([1., -2., -8.])],
@@ -530,7 +530,7 @@ class TestXferFcn(unittest.TestCase):
         H = TransferFunction([[h.num[0][0]], [(h*s).num[0][0]]],
                              [[h.den[0][0]], [h.den[0][0]]])
         sys = _convertToStateSpace(H)
-        H2 = _convertToTransferFunction(sys)
+        H2 = _convert_to_transfer_function(sys)
         np.testing.assert_array_almost_equal(H.num[0][0], H2.num[0][0])
         np.testing.assert_array_almost_equal(H.den[0][0], H2.den[0][0])
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[1][0])
