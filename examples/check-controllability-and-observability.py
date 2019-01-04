@@ -1,5 +1,8 @@
-# test-statefbk.py - Example for state feedback code
-# RMM, 6 Sep 2010
+""" check-controllability-and-observability.py
+
+Example to check the controllability and the observability of a state space system.
+RMM, 6 Sep 2010
+"""
 
 from scipy import *  # Load the scipy functions
 from control.matlab import *  # Load the controls systems library
