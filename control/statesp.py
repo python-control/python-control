@@ -638,7 +638,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                 timebaseEqual(self, other):
             dt = self.dt        # use dt from first argument
         else:
-            raise ValueError("Systems have different sampling times")
+            raise ValueError("Systems have different time bases")
 
         # submatrices
         A = self.A
