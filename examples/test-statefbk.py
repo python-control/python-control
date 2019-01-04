@@ -5,7 +5,6 @@ from scipy import *  # Load the scipy functions
 from control.matlab import *  # Load the controls systems library
 
 # Parameters defining the system
-
 m = 250.0  # system mass
 k = 40.0  # spring constant
 b = 60.0  # damping constant
@@ -25,10 +24,8 @@ sys = ss(A, B, C, 0)
 
 # Check controllability
 Wc = ctrb(A, B)
-print "Wc = ", Wc
+print("Wc = ", Wc)
 
 # Check Observability
 Wo = obsv(A, C)
-print "Wo = ", Wo
-
-
+print("Wo = ", Wo)
