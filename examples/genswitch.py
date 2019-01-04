@@ -8,7 +8,6 @@
 import numpy as np
 import matplotlib.pyplot as mpl
 from scipy.integrate import odeint
-from matplotlib.mlab import frange
 from control import phase_plot, box_grid
 
 # Simple model of a genetic switch
@@ -34,7 +33,7 @@ tim2 = np.linspace(11, 25, 100);
 sol2 = odeint(genswitch, sol1[-1,:] + [2, -2], tim2)
 
 # First plot out the curves that define the equilibria
-u = frange(0, 4.5, 0.1)
+u = np.linspace(0, 4.5, 46)
 f = np.divide(mu, (1 + u**n))   # mu / (1 + u^n), elementwise
 
 mpl.figure(1); mpl.clf();
