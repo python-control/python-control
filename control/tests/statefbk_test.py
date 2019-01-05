@@ -11,6 +11,7 @@ from control.matlab import *
 from control.exception import slycot_check, ControlDimension
 from control.mateqn import care, dare
 
+
 class TestStatefbk(unittest.TestCase):
     """Test state feedback functions"""
 
@@ -28,38 +29,38 @@ class TestStatefbk(unittest.TestCase):
         A = np.matrix("1. 2.; 3. 4.")
         B = np.matrix("5.; 7.")
         Wctrue = np.matrix("5. 19.; 7. 43.")
-        Wc = ctrb(A,B)
+        Wc = ctrb(A, B)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
     def testCtrbMIMO(self):
         A = np.matrix("1. 2.; 3. 4.")
         B = np.matrix("5. 6.; 7. 8.")
         Wctrue = np.matrix("5. 6. 19. 22.; 7. 8. 43. 50.")
-        Wc = ctrb(A,B)
+        Wc = ctrb(A, B)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
     def testObsvSISO(self):
         A = np.matrix("1. 2.; 3. 4.")
         C = np.matrix("5. 7.")
         Wotrue = np.matrix("5. 7.; 26. 38.")
-        Wo = obsv(A,C)
+        Wo = obsv(A, C)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     def testObsvMIMO(self):
         A = np.matrix("1. 2.; 3. 4.")
         C = np.matrix("5. 6.; 7. 8.")
         Wotrue = np.matrix("5. 6.; 7. 8.; 23. 34.; 31. 46.")
-        Wo = obsv(A,C)
+        Wo = obsv(A, C)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     def testCtrbObsvDuality(self):
         A = np.matrix("1.2 -2.3; 3.4 -4.5")
         B = np.matrix("5.8 6.9; 8. 9.1")
-        Wc = ctrb(A,B);
+        Wc = ctrb(A, B);
         A = np.transpose(A)
         C = np.transpose(B)
-        Wo = np.transpose(obsv(A,C));
-        np.testing.assert_array_almost_equal(Wc,Wo)
+        Wo = np.transpose(obsv(A, C));
+        np.testing.assert_array_almost_equal(Wc, Wo)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGramWc(self):
@@ -69,7 +70,7 @@ class TestStatefbk(unittest.TestCase):
         D = np.matrix("13. 14.; 15. 16.")
         sys = ss(A, B, C, D)
         Wctrue = np.matrix("18.5 24.5; 24.5 32.5")
-        Wc = gram(sys,'c')
+        Wc = gram(sys, 'c')
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -80,7 +81,7 @@ class TestStatefbk(unittest.TestCase):
         D = np.matrix("13. 14.; 15. 16.")
         sys = ss(A, B, C, D)
         Rctrue = np.matrix("4.30116263 5.6961343; 0. 0.23249528")
-        Rc = gram(sys,'cf')
+        Rc = gram(sys, 'cf')
         np.testing.assert_array_almost_equal(Rc, Rctrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -91,7 +92,7 @@ class TestStatefbk(unittest.TestCase):
         D = np.matrix("13. 14.; 15. 16.")
         sys = ss(A, B, C, D)
         Wotrue = np.matrix("257.5 -94.5; -94.5 56.5")
-        Wo = gram(sys,'o')
+        Wo = gram(sys, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -100,9 +101,9 @@ class TestStatefbk(unittest.TestCase):
         B = np.matrix("5.; 7.")
         C = np.matrix("6. 8.")
         D = np.matrix("9.")
-        sys = ss(A,B,C,D)
+        sys = ss(A, B, C, D)
         Wotrue = np.matrix("198. -72.; -72. 44.")
-        Wo = gram(sys,'o')
+        Wo = gram(sys, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -113,13 +114,13 @@ class TestStatefbk(unittest.TestCase):
         D = np.matrix("13. 14.; 15. 16.")
         sys = ss(A, B, C, D)
         Rotrue = np.matrix("16.04680654 -5.8890222; 0. 4.67112593")
-        Ro = gram(sys,'of')
+        Ro = gram(sys, 'of')
         np.testing.assert_array_almost_equal(Ro, Rotrue)
 
     def testGramsys(self):
-        num =[1.]
+        num = [1.]
         den = [1., 1., 1.]
-        sys = tf(num,den)
+        sys = tf(num, den)
         self.assertRaises(ValueError, gram, sys, 'o')
         self.assertRaises(ValueError, gram, sys, 'c')
 
@@ -160,16 +161,16 @@ class TestStatefbk(unittest.TestCase):
 
     def testPlace(self):
         # Matrices shamelessly stolen from scipy example code.
-        A = np.array([[1.380,  -0.2077,  6.715, -5.676],
-                      [-0.5814, -4.290,   0,      0.6750],
-                      [1.067,   4.273,  -6.654,  5.893],
-                      [0.0480,  4.273,   1.343, -2.104]])
+        A = np.array([[1.380, -0.2077, 6.715, -5.676],
+                      [-0.5814, -4.290, 0, 0.6750],
+                      [1.067, 4.273, -6.654, 5.893],
+                      [0.0480, 4.273, 1.343, -2.104]])
 
-        B = np.array([[0,      5.679],
-                      [1.136,  1.136],
-                      [0,      0,],
-                      [-3.146,  0]])
-        P = np.array([-0.5+1j, -0.5-1j, -5.0566, -8.6659])
+        B = np.array([[0, 5.679],
+                      [1.136, 1.136],
+                      [0, 0, ],
+                      [-3.146, 0]])
+        P = np.array([-0.5 + 1j, -0.5 - 1j, -5.0566, -8.6659])
         K = place(A, B, P)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         # No guarantee of the ordering, so sort them
@@ -211,7 +212,7 @@ class TestStatefbk(unittest.TestCase):
         # https://github.com/python-control/python-control/issues/177
         A = np.array([[0, 1], [100, 0]])
         B = np.array([[0], [1]])
-        P = np.array([-20 + 10*1j, -20 - 10*1j])
+        P = np.array([-20 + 10 * 1j, -20 - 10 * 1j])
         K = place(A, B, P, method="varga")
         P_placed = np.linalg.eigvals(A - B.dot(K))
 
@@ -274,7 +275,6 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P_expected, P_placed)
 
-
     def check_LQR(self, K, S, poles, Q, R):
         S_expected = np.array(np.sqrt(Q * R))
         K_expected = S_expected / R
@@ -282,7 +282,6 @@ class TestStatefbk(unittest.TestCase):
         np.testing.assert_array_almost_equal(S, S_expected)
         np.testing.assert_array_almost_equal(K, K_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
-
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_LQR_integrator(self):
