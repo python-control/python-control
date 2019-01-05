@@ -13,7 +13,7 @@ import numpy as np
 # import scipy as sp
 from control.timeresp import *
 from control.statesp import *
-from control.xferfcn import TransferFunction, _convertToTransferFunction
+from control.xferfcn import TransferFunction, _convert_to_transfer_function
 from control.dtime import c2d
 from control.exception import slycot_check
 
@@ -28,7 +28,7 @@ class TestTimeresp(unittest.TestCase):
 
         # Create some transfer functions
         self.siso_tf1 = TransferFunction([1], [1, 2, 1])
-        self.siso_tf2 = _convertToTransferFunction(self.siso_ss1)
+        self.siso_tf2 = _convert_to_transfer_function(self.siso_ss1)
 
         # Create MIMO system, contains ``siso_ss1`` twice
         A = np.matrix("1. -2. 0.  0.;"

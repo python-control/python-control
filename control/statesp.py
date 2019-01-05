@@ -62,7 +62,7 @@ import scipy as sp
 from scipy.signal import lti, cont2discrete
 from warnings import warn
 from .lti import LTI, timebase, timebaseEqual, isdtime
-from .xferfcn import _convertToTransferFunction
+from .xferfcn import _convert_to_transfer_function
 from copy import deepcopy
 
 __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
