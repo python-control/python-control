@@ -64,6 +64,7 @@ from warnings import warn
 from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convert_to_transfer_function
 from copy import deepcopy
+from .exception import ControlArgument, ControlDimension
 
 __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
@@ -1330,3 +1331,105 @@ def ssdata(sys):
     """
     ss = _convertToStateSpace(sys)
     return ss.A, ss.B, ss.C, ss.D
+
+
+def consistent_dimensions(A=None, B=None, C=None, D=None):
+    """
+    Return a boolean stating if dimensions of the state-space matrices are consistent.
+
+    A state space representation should verify:
+    - A square matrix [n_states x n_states]
+    - B [n_states x n_inputs]
+    - C [n_outputs x n_states]
+    - D [n_outputs x n_inputs]
+    Parameters
+    ----------
+    A: ndarray - optional
+        State space system matrix
+    B: ndarray - optional
+        State space input matrix
+    C: ndarray - optional
+        State space output matrix
+    D: ndarray - optional
+        State space feedthrough matrix
+
+    Returns
+    -------
+    consistency: boolean
+        True if state space input matrices have consistent dimensions
+        False otherwise
+    """
+    try:
+        if A is not None:
+            if not isinstance(A, np.ndarray):
+                raise ControlArgument("A is not a numpy array.")
+            else:
+
+                n_row_A = A.shape[0]
+                n_col_A = A.shape[1]
+                if n_row_A != n_col_A:
+                    raise ControlDimension("System matrix is not square. "
+                                           "(n_row_A: {} != n_col_A: {}).".format(n_row_A, n_col_A))
+                else:
+                    n_states = n_row_A
+
+        if B is not None:
+            if not isinstance(B, np.ndarray):
+                raise ControlArgument("B is not a numpy array.")
+
+            n_row_B = B.shape[0]
+            n_col_B = B.shape[1]
+
+            try:
+                if n_row_B != n_states:
+                    raise ControlDimension("Input matrix has not the right number of states. "
+                                           "(n_row_B: {} != n_states: {}).".format(n_row_B, n_states))
+                else:
+                    n_inputs = n_col_B
+            except NameError:
+                warn("State space representation has no System matrix.")
+                n_states = n_row_B
+
+        if C is not None:
+            if not isinstance(C, np.ndarray):
+                raise ControlArgument("C is not a numpy array.")
+
+            n_row_C = C.shape[0]
+            n_col_C = C.shape[1]
+
+            try:
+                if n_col_C != n_states:
+                    raise ControlDimension("Output matrix has not the right number of states. "
+                                           "(n_row_C: {} != n_states: {}).".format(n_row_C,
+                                                                                   n_states))
+                else:
+                    n_outputs = n_row_C
+            except NameError:
+                warn("State space representation has no system matrix nor input matrix.")
+
+        if D is not None:
+            if not isinstance(D, np.ndarray):
+                raise ControlArgument("D is not a numpy array.")
+
+            n_row_D = D.shape[0]
+            n_col_D = D.shape[1]
+
+            try:
+                if n_row_D != n_outputs:
+                    raise ControlDimension("Feedthrough matrix has not the right number of "
+                                           "outputs. (n_row_D: {} != n_outputs: "
+                                           "{}).".format(n_row_D, n_outputs))
+            except NameError:
+                warn("State space representation has no output matrix.")
+
+            try:
+                if n_col_D != n_inputs:
+                    raise ControlDimension("Feedthrough matrix has not the right number of inputs. "
+                                           "(n_row_D: {} != n_inputs: {}).".format(n_col_D,
+                                                                                   n_inputs))
+            except NameError:
+                warn("State space representation has no input matrix.")
+    except ControlDimension:
+        return False
+
+    return True

@@ -8,7 +8,7 @@ import numpy as np
 from numpy.linalg import solve
 from scipy.linalg import eigvals, block_diag
 from control import matlab
-from control.statesp import StateSpace, _convertToStateSpace, tf2ss
+from control.statesp import StateSpace, _convertToStateSpace, tf2ss, consistent_dimensions
 from control.xferfcn import TransferFunction, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
@@ -21,47 +21,47 @@ class TestStateSpace(unittest.TestCase):
         """Set up a MIMO system to test operations on."""
 
         # sys1: 3-states square system (2 inputs x 2 outputs)
-        A322 = [[-3., 4., 2.],
-                [-1., -3., 0.],
-                [2., 5., 3.]]
-        B322 = [[1., 4.],
-                [-3., -3.],
-                [-2., 1.]]
-        C322 = [[4., 2., -3.],
-                [1., 4., 3.]]
-        D322 = [[-2., 4.],
-                [0., 1.]]
-        self.sys322 = StateSpace(A322, B322, C322, D322)
+        self.A322 = np.array([[-3., 4., 2.],
+                              [-1., -3., 0.],
+                              [2., 5., 3.]])
+        self.B322 = np.array([[1., 4.],
+                              [-3., -3.],
+                              [-2., 1.]])
+        self.C322 = np.array([[4., 2., -3.],
+                              [1., 4., 3.]])
+        self.D322 = np.array([[-2., 4.],
+                              [0., 1.]])
+        self.sys322 = StateSpace(self.A322, self.B322, self.C322, self.D322)
 
         # sys1: 2-states square system (2 inputs x 2 outputs)
-        A222 = [[4., 1.],
-                [2., -3]]
-        B222 = [[5., 2.],
-                [-3., -3.]]
-        C222 = [[2., -4],
-                [0., 1.]]
-        D222 = [[3., 2.],
-                [1., -1.]]
-        self.sys222 = StateSpace(A222, B222, C222, D222)
+        self.A222 = np.array([[4., 1.],
+                              [2., -3]])
+        self.B222 = np.array([[5., 2.],
+                              [-3., -3.]])
+        self.C222 = np.array([[2., -4],
+                              [0., 1.]])
+        self.D222 = np.array([[3., 2.],
+                              [1., -1.]])
+        self.sys222 = StateSpace(self.A222, self.B222, self.C222, self.D222)
 
         # sys3: 6 states non square system (2 inputs x 3 outputs)
-        A623 = np.array([[1, 0, 0, 0, 0, 0],
-                         [0, 1, 0, 0, 0, 0],
-                         [0, 0, 3, 0, 0, 0],
-                         [0, 0, 0, -4, 0, 0],
-                         [0, 0, 0, 0, -1, 0],
-                         [0, 0, 0, 0, 0, 3]])
-        B623 = np.array([[0, -1],
-                        [-1, 0],
-                        [1, -1],
-                        [0, 0],
-                        [0, 1],
-                        [-1, -1]])
-        C623 = np.array([[1, 0, 0, 1, 0, 0],
-                         [0, 1, 0, 1, 0, 1],
-                         [0, 0, 1, 0, 0, 1]])
-        D623 = np.zeros((3, 2))
-        self.sys623 = StateSpace(A623, B623, C623, D623)
+        self.A623 = np.array([[1, 0, 0, 0, 0, 0],
+                              [0, 1, 0, 0, 0, 0],
+                              [0, 0, 3, 0, 0, 0],
+                              [0, 0, 0, -4, 0, 0],
+                              [0, 0, 0, 0, -1, 0],
+                              [0, 0, 0, 0, 0, 3]])
+        self.B623 = np.array([[0, -1],
+                              [-1, 0],
+                              [1, -1],
+                              [0, 0],
+                              [0, 1],
+                              [-1, -1]])
+        self.C623 = np.array([[1, 0, 0, 1, 0, 0],
+                              [0, 1, 0, 1, 0, 1],
+                              [0, 0, 1, 0, 0, 1]])
+        self.D623 = np.zeros((3, 2))
+        self.sys623 = StateSpace(self.A623, self.B623, self.C623, self.D623)
 
     def test_pole(self):
         """Evaluate the poles of a MIMO system."""
@@ -107,7 +107,7 @@ class TestStateSpace(unittest.TestCase):
         """Evaluate the zeros of a square MIMO system."""
 
         z = np.sort(self.sys222.zero())
-        true_z = np.sort([-10.568501,   3.368501])
+        true_z = np.sort([-10.568501, 3.368501])
         np.testing.assert_array_almost_equal(z, true_z)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -207,13 +207,13 @@ class TestStateSpace(unittest.TestCase):
         sys = StateSpace(A, B, C, D)
 
         true_mag = [[[0.0852992637230322, 0.00103596611395218],
-                    [0.935374692849736, 0.799380720864549]],
-                   [[0.55656854563842, 0.301542699860857],
-                    [0.609178071542849, 0.0382108097985257]]]
+                     [0.935374692849736, 0.799380720864549]],
+                    [[0.55656854563842, 0.301542699860857],
+                     [0.609178071542849, 0.0382108097985257]]]
         true_phase = [[[-0.566195599644593, -1.68063565332582],
-                      [3.0465958317514, 3.14141384339534]],
-                     [[2.90457947657161, 3.10601268291914],
-                      [-0.438157380501337, -1.40720969147217]]]
+                       [3.0465958317514, 3.14141384339534]],
+                      [[2.90457947657161, 3.10601268291914],
+                       [-0.438157380501337, -1.40720969147217]]]
         true_omega = [0.1, 10.]
 
         mag, phase, omega = sys.freqresp(true_omega)
@@ -241,7 +241,7 @@ class TestStateSpace(unittest.TestCase):
         self.assertEqual(sysr.inputs, sys.inputs)
         self.assertEqual(sysr.outputs, sys.outputs)
         np.testing.assert_array_almost_equal(
-            eigvals(sysr.A), [-2.136154, -0.1638459])
+                eigvals(sysr.A), [-2.136154, -0.1638459])
 
     def test_append_ss(self):
         """Test appending two state-space systems."""
@@ -290,7 +290,6 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys3c.A[3:, :3], np.zeros((2, 3)))
 
     def test_array_access_ss(self):
-
         sys1 = StateSpace([[1., 2.], [3., 4.]],
                           [[5., 6.], [6., 8.]],
                           [[9., 10.], [11., 12.]],
@@ -392,7 +391,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_equal(d1 + d2.T, h2.D)
         h3 = g1.feedback(g2)
         np.testing.assert_array_almost_equal(
-            solve(np.eye(2) + d1 * d2, d1), h3.D)
+                solve(np.eye(2) + d1 * d2, d1), h3.D)
         h4 = g1.append(g2)
         np.testing.assert_array_equal(block_diag(d1, d2), h4.D)
 
@@ -443,10 +442,38 @@ class TestStateSpace(unittest.TestCase):
             m = np.matrix([])
             m.shape = shape
             return m
+
         np.testing.assert_array_equal(empty((0, 0)), g.A)
         np.testing.assert_array_equal(empty((0, D.shape[1])), g.B)
         np.testing.assert_array_equal(empty((D.shape[0], 0)), g.C)
         np.testing.assert_array_equal(D, g.D)
+
+    def test_consistent_dimensions_322(self):
+        true = consistent_dimensions(self.A322, self.B322, self.C322, self.D322)
+        np.testing.assert_(true)
+        true = consistent_dimensions(B=self.B322, C=self.C322, D=self.D322)
+        np.testing.assert_(true)
+        true = consistent_dimensions(A=self.A322, C=self.C322, D=self.D322)
+        np.testing.assert_(true)
+        true = consistent_dimensions(A=self.A322, B=self.B322, D=self.D322)
+        np.testing.assert_(true)
+        true = consistent_dimensions(A=self.A322, B=self.B322, C=self.C322)
+        np.testing.assert_(true)
+
+    def test_consistent_dimensions_bad_inputs(self):
+        # Number of states not consistent
+        true = consistent_dimensions(A=self.A222, B=self.B322, C=self.C322, D=self.D322)
+        np.testing.assert_(not true)
+        true = consistent_dimensions(self.A322, self.B222, self.C322, self.D322)
+        np.testing.assert_(not true)
+        true = consistent_dimensions(A=self.A322, C=self.C222, D=self.D322)
+        np.testing.assert_(not true)
+        # Number of input not consistent
+        true = consistent_dimensions(A=self.A322, B=self.B322, D=self.A322)
+        np.testing.assert_(not true)
+        # Number of output not consistent
+        true = consistent_dimensions(A=self.A322, C=self.C322, D=self.A322)
+        np.testing.assert_(not true)
 
 
 class TestRss(unittest.TestCase):

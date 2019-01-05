@@ -46,7 +46,9 @@ class ControlSlycot(Exception):
 
 class ControlDimension(Exception):
     """Raised when dimensions of system objects are not correct"""
-    pass
+    def __init__(self, error):
+        print("[Control] Dimension error.")
+        print(error)
 
 class ControlArgument(Exception):
     """Raised when arguments to a function are not correct"""
