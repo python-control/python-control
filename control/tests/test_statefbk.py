@@ -188,6 +188,7 @@ class TestStatefbk(unittest.TestCase):
         # Error not raised anymore as fallback solution is implemented.
         # np.testing.assert_raises(ValueError, place, A, B, P_repeated)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_place_varga_continuous(self):
         """
         Check that we can place eigenvalues for dtime=False
@@ -220,6 +221,7 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P, P_placed)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_pleace_varga_continuous_partial_eigs(self):
         """
         Check that we are able to use the alpha parameter to only place
@@ -241,6 +243,7 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P_expected, P_placed)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_place_varga_discrete(self):
         """
         Check that we can place poles using dtime=True (discrete time)
@@ -256,6 +259,7 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P, P_placed)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_place_varga_discrete_partial_eigs(self):
         """"
         Check that we can only assign a single eigenvalue in the discrete
