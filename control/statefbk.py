@@ -46,11 +46,11 @@ import scipy as sp
 from . import statesp
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'acker']
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr']
 
 
 # Pole placement
-def place(A, B, p):
+def place(A, B, p, method="YT", dtime=False, alpha=None):
     """Place closed loop eigenvalues
     K = place(A, B, p)
 
@@ -62,6 +62,19 @@ def place(A, B, p):
         Input matrix
     p : 1-d list
         Desired eigenvalue locations
+    method : string - optional
+        Method used for pole placement: {"YT", "KNV0", "varga", "acker"}
+    dtime: optional (useful only if method=="varga")
+        False for continuous time pole placement or True for discrete time.
+        The default is dtime=False.
+    alpha: double scalar (useful only if method=="varga")
+       If DICO='C', then _place_varga will leave the eigenvalues with real
+       real part less than alpha untouched.
+       If DICO='D', the _place_varga will leave eigenvalues with modulus
+       less than alpha untouched.
+
+       By default (alpha=None), _place_varga computes alpha such that all
+       poles will be placed.
 
     Returns
     -------
@@ -92,32 +105,60 @@ def place(A, B, p):
 
     See Also
     --------
-    place_varga, acker
+    _acker, _place_varga
     """
-    from scipy.signal import place_poles
+    if method == "acker":
+        return _acker(A, B, p)
+    if method == "varga":
+        try:
+            return _place_varga(A, B, p, dtime=dtime, alpha=alpha)
+        except ControlSlycot as error:
+            print("[Pole placement] Fallback strategy: using Tits-Yang method from scipy.")
+            return place(A, B, p)
+    else:
+        try:
+            from scipy.signal import place_poles
+        except ImportError as error:
+            print(error)
+            print("[Pole placement] Fallback strategy: using Varga method from slycot.")
+            try:
+                K = _place_varga(A, B, p, dtime=dtime, alpha=alpha)
+                return K
+            except ControlSlycot as error:
+                print("[Pole placement] Fallback strategy: using Ackermanm method.")
+                return _acker(A, B, p)
 
-    # Convert the system inputs to NumPy arrays
-    A_mat = np.array(A)
-    B_mat = np.array(B)
-    if A_mat.shape[0] != A_mat.shape[1]:
-        raise ControlDimension("A must be a square matrix. "
-                               "rows: {} != columns: {}".format(A_mat.shape[0],
-                                                                A_mat.shape[1]))
+        # Convert the system inputs to NumPy arrays
+        A_mat = np.array(A)
+        B_mat = np.array(B)
+        if A_mat.shape[0] != A_mat.shape[1]:
+            raise ControlDimension("A must be a square matrix. "
+                                   "rows: {} != columns: {}".format(A_mat.shape[0],
+                                                                    A_mat.shape[1]))
 
-    if A_mat.shape[0] != B_mat.shape[0]:
-        raise ControlDimension("The number of rows of A ({}) must equal "
-                               "the number of rows in B ({})". format(A_mat.shape[0],
-                                                                      B_mat.shape[0]))
+        if A_mat.shape[0] != B_mat.shape[0]:
+            raise ControlDimension("The number of rows of A ({}) must equal "
+                                   "the number of rows in B ({})".format(A_mat.shape[0],
+                                                                         B_mat.shape[0]))
 
-    # Convert desired poles to numpy array
-    placed_eigs = np.array(p)
+        # Convert desired poles to numpy array
+        placed_eigs = np.array(p)
 
-    result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
-    K = result.gain_matrix
-    return K
+        try:
+            result = place_poles(A_mat, B_mat, placed_eigs, method=method)
+        except ValueError as error:
+            print("[Pole placement] Redundant pole location. "
+                  "Fallback strategy: using Ackermann method.")
+            try:
+                return _acker(A, B, p)
+            except ValueError as error:
+                print("Pole placement failed.")
+                return None
+        K = result.gain_matrix
+        return K
 
 
-def place_varga(A, B, p, dtime=False, alpha=None):
+def _place_varga(A, B, p, dtime=False, alpha=None):
     """Place closed loop eigenvalues
     K = place_varga(A, B, p, dtime=False, alpha=None)
 
@@ -164,18 +205,18 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
-    >>> K = place_varga(A, B, [-2, -5])
+    >>> K = _place_varga(A, B, [-2, -5])
 
     See Also:
     --------
-    place, acker
+    place, _acker
     """
 
     # Make sure that SLICOT is installed
     try:
         from slycot import sb01bd
-    except ImportError:
-        raise ControlSlycot("Can't find slycot module 'sb01bd'.")
+    except ImportError as error:
+        raise ControlSlycot(error)
 
     # Convert the system inputs to NumPy arrays
     A_mat = np.array(A)
@@ -221,7 +262,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     return -F
 
 
-def acker(A, B, poles):
+def _acker(A, B, poles):
     """Pole placement using Ackermann method
 
     Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
@@ -243,7 +284,7 @@ def acker(A, B, poles):
 
     See Also:
     --------
-    place, place_varga
+    place, _place_varga
     """
 
     # Convert the inputs to matrices
