@@ -402,13 +402,13 @@ class TestMatlab(unittest.TestCase):
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga(self):
-        place_varga(self.siso_ss1.A, self.siso_ss1.B, [-2, -2])
+        place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2], method="varga")
 
     def testPlace(self):
         place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2.5])
 
     def testAcker(self):
-        acker(self.siso_ss1.A, self.siso_ss1.B, [-2, -2.5])
+        place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2.5], method="acker")
 
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")

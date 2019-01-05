@@ -6,7 +6,7 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
+from control.statefbk import ctrb, obsv, place, _place_varga, lqr, gram, _acker
 from control.matlab import *
 from control.exception import slycot_check, ControlDimension
 from control.mateqn import care, dare
@@ -144,7 +144,7 @@ class TestStatefbk(unittest.TestCase):
                 poles = pole(des)
 
                 # Now place the poles using acker
-                K = acker(sys.A, sys.B, poles)
+                K = _acker(sys.A, sys.B, poles)
                 new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
                 placed = pole(new)
 
@@ -184,9 +184,10 @@ class TestStatefbk(unittest.TestCase):
         # Check that we get an error if we ask for too many poles in the same
         # location. Here, rank(B) = 2, so lets place three at the same spot.
         P_repeated = np.array([-0.5, -0.5, -0.5, -8.6659])
-        np.testing.assert_raises(ValueError, place, A, B, P_repeated)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+        # Error not raised anymore as fallback solution is implemented.
+        # np.testing.assert_raises(ValueError, place, A, B, P_repeated)
+
     def testPlace_varga_continuous(self):
         """
         Check that we can place eigenvalues for dtime=False
@@ -195,7 +196,7 @@ class TestStatefbk(unittest.TestCase):
         B = np.array([[5.], [7.]])
 
         P = np.array([-2., -2.])
-        K = place_varga(A, B, P)
+        K = _place_varga(A, B, P)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         # No guarantee of the ordering, so sort them
         P.sort()
@@ -211,7 +212,7 @@ class TestStatefbk(unittest.TestCase):
         A = np.array([[0, 1], [100, 0]])
         B = np.array([[0], [1]])
         P = np.array([-20 + 10*1j, -20 - 10*1j])
-        K = place_varga(A, B, P)
+        K = place(A, B, P, method="varga")
         P_placed = np.linalg.eigvals(A - B.dot(K))
 
         # No guarantee of the ordering, so sort them
@@ -219,7 +220,6 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P, P_placed)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_continuous_partial_eigs(self):
         """
         Check that we are able to use the alpha parameter to only place
@@ -233,7 +233,7 @@ class TestStatefbk(unittest.TestCase):
         P = np.array([-3.])
         P_expected = np.array([-2.0, -3.0])
         alpha = -1.5
-        K = place_varga(A, B, P, alpha=alpha)
+        K = place(A, B, P, method="varga", alpha=alpha)
 
         P_placed = np.linalg.eigvals(A - B.dot(K))
         # No guarantee of the ordering, so sort them
@@ -241,7 +241,6 @@ class TestStatefbk(unittest.TestCase):
         P_placed.sort()
         np.testing.assert_array_almost_equal(P_expected, P_placed)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_discrete(self):
         """
         Check that we can place poles using dtime=True (discrete time)
@@ -250,14 +249,13 @@ class TestStatefbk(unittest.TestCase):
         B = np.array([[5.], [7.]])
 
         P = np.array([0.5, 0.5])
-        K = place_varga(A, B, P, dtime=True)
+        K = place(A, B, P, method="varga", dtime=True)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         # No guarantee of the ordering, so sort them
         P.sort()
         P_placed.sort()
         np.testing.assert_array_almost_equal(P, P_placed)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testPlace_varga_discrete_partial_eigs(self):
         """"
         Check that we can only assign a single eigenvalue in the discrete
@@ -270,7 +268,7 @@ class TestStatefbk(unittest.TestCase):
         P = np.array([0.2, 0.6])
         P_expected = np.array([0.5, 0.6])
         alpha = 0.51
-        K = place_varga(A, B, P, dtime=True, alpha=alpha)
+        K = place(A, B, P, method="varga", dtime=True, alpha=alpha)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         P_expected.sort()
         P_placed.sort()
@@ -331,7 +329,8 @@ class TestStatefbk(unittest.TestCase):
 
 
 def test_suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
+    return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
+
 
 if __name__ == '__main__':
     unittest.main()
