@@ -1,10 +1,11 @@
-# statefbk.py - tools for state feedback control
-#
-# Author: Richard M. Murray, Roberto Bucher
-# Date: 31 May 2010
-#
-# This file contains routines for designing state space controllers
-#
+""" statefbk.py
+
+This file contains routines for designing state space controllers through state feedback control.
+"""
+
+__author__ = "Richard M. Murray"
+__contributor__ = "Roberto Bucher"
+
 # Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
 #
@@ -98,12 +99,15 @@ def place(A, B, p):
     # Convert the system inputs to NumPy arrays
     A_mat = np.array(A)
     B_mat = np.array(B)
-    if (A_mat.shape[0] != A_mat.shape[1]):
-        raise ControlDimension("A must be a square matrix")
+    if A_mat.shape[0] != A_mat.shape[1]:
+        raise ControlDimension("A must be a square matrix. "
+                               "rows: {} != columns: {}".format(A_mat.shape[0],
+                                                                A_mat.shape[1]))
 
-    if (A_mat.shape[0] != B_mat.shape[0]):
-        err_str = "The number of rows of A must equal the number of rows in B"
-        raise ControlDimension(err_str)
+    if A_mat.shape[0] != B_mat.shape[0]:
+        raise ControlDimension("The number of rows of A ({}) must equal "
+                               "the number of rows in B ({})". format(A_mat.shape[0],
+                                                                      B_mat.shape[0]))
 
     # Convert desired poles to numpy array
     placed_eigs = np.array(p)
@@ -171,14 +175,13 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     try:
         from slycot import sb01bd
     except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb01bd'")
+        raise ControlSlycot("Can't find slycot module 'sb01bd'.")
 
     # Convert the system inputs to NumPy arrays
     A_mat = np.array(A)
     B_mat = np.array(B)
-    if (A_mat.shape[0] != A_mat.shape[1] or
-        A_mat.shape[0] != B_mat.shape[0]):
-        raise ControlDimension("matrix dimensions are incorrect")
+    if A_mat.shape[0] != A_mat.shape[1] or A_mat.shape[0] != B_mat.shape[0]:
+        raise ControlDimension("Matrix dimensions are incorrect.")
 
     # Compute the system eigenvalues and convert poles to numpy array
     system_eigs = np.linalg.eig(A_mat)[0]
@@ -186,13 +189,13 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     # Need a character parameter for SB01BD
     if dtime:
-        DICO = 'D'
+        dico = 'D'
     else:
-        DICO = 'C'
+        dico = 'C'
 
     if alpha is None:
         # SB01BD ignores eigenvalues with real part less than alpha
-        # (if DICO='C') or with modulus less than alpha
+        # (if DICO = 'C') or with modulus less than alpha
         # (if DICO = 'D').
         if dtime:
             # For discrete time, slycot only cares about modulus, so just make
@@ -205,22 +208,23 @@ def place_varga(A, B, p, dtime=False, alpha=None):
             # the same as what slicot thinks are the eigs. So we need some
             # numerical breathing room. The following is pretty heuristic,
             # but does the trick
-            alpha = -2*abs(min(system_eigs.real))
+            alpha = -2 * abs(min(system_eigs.real))
     elif dtime and alpha < 0.0:
-        raise ValueError("Need alpha > 0 when DICO='D'")
-
+        raise ValueError("Need alpha > 0 when DICO='D'.")
 
     # Call SLICOT routine to place the eigenvalues
-    A_z,w,nfp,nap,nup,F,Z = \
+    A_z, w, nfp, nap, nup, F, Z = \
         sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
-               A_mat, B_mat, placed_eigs, DICO)
+               A_mat, B_mat, placed_eigs, dico)
 
     # Return the gain matrix, with MATLAB gain convention
     return -F
 
-# Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
+
 def acker(A, B, poles):
     """Pole placement using Ackermann method
+
+    Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 
     Call:
     K = acker(A, B, poles)
@@ -237,7 +241,11 @@ def acker(A, B, poles):
     K: matrix
         Gains such that A - B K has given eigenvalues
 
+    See Also:
+    --------
+    place, place_varga
     """
+
     # Convert the inputs to matrices
     a = np.mat(A)
     b = np.mat(B)
@@ -245,22 +253,23 @@ def acker(A, B, poles):
     # Make sure the system is controllable
     ct = ctrb(A, B)
     if np.linalg.matrix_rank(ct) != a.shape[0]:
-        raise ValueError("System not reachable; pole placement invalid")
+        raise ValueError("System is not reachable, pole placement is invalid.")
 
     # Compute the desired characteristic polynomial
     p = np.real(np.poly(poles))
 
     # Place the poles using Ackermann's method
     n = np.size(p)
-    pmat = p[n-1]*a**0
-    for i in np.arange(1,n):
-        pmat = pmat + p[n-i-1]*a**i
+    pmat = p[n - 1] * a ** 0
+    for i in np.arange(1, n):
+        pmat = pmat + p[n - i - 1] * a ** i
     K = np.linalg.solve(ct, pmat)
 
-    K = K[-1][:]                # Extract the last row
+    K = K[-1][:]  # Extract the last row
     return K
 
-def lqr(*args, **keywords):
+
+def lqr(*args):
     """lqr(A, B, Q, R[, N])
 
     Linear quadratic regulator design
@@ -312,63 +321,64 @@ def lqr(*args, **keywords):
         from slycot import sb02md
         from slycot import sb02mt
     except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb02md' or 'sb02nt'")
+        raise ControlSlycot("Can't find slycot module 'sb02md' or 'sb02nt'.")
 
     #
     # Process the arguments and figure out what inputs we received
     #
 
     # Get the system description
-    if (len(args) < 3):
-        raise ControlArgument("not enough input arguments")
+    if len(args) < 3:
+        raise ControlArgument("Not enough input arguments.")
 
     try:
         # If this works, we were (probably) passed a system as the
         # first argument; extract A and B
-        A = np.array(args[0].A, ndmin=2, dtype=float);
-        B = np.array(args[0].B, ndmin=2, dtype=float);
-        index = 1;
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        B = np.array(args[0].B, ndmin=2, dtype=float)
+        index = 1
     except AttributeError:
         # Arguments should be A and B matrices
-        A = np.array(args[0], ndmin=2, dtype=float);
-        B = np.array(args[1], ndmin=2, dtype=float);
-        index = 2;
+        A = np.array(args[0], ndmin=2, dtype=float)
+        B = np.array(args[1], ndmin=2, dtype=float)
+        index = 2
 
     # Get the weighting matrices (converting to matrices, if needed)
-    Q = np.array(args[index], ndmin=2, dtype=float);
-    R = np.array(args[index+1], ndmin=2, dtype=float);
-    if (len(args) > index + 2):
-        N = np.array(args[index+2], ndmin=2, dtype=float);
+    Q = np.array(args[index], ndmin=2, dtype=float)
+    R = np.array(args[index + 1], ndmin=2, dtype=float)
+    if len(args) > index + 2:
+        N = np.array(args[index + 2], ndmin=2, dtype=float)
     else:
-        N = np.zeros((Q.shape[0], R.shape[1]));
+        N = np.zeros((Q.shape[0], R.shape[1]))
 
     # Check dimensions for consistency
-    nstates = B.shape[0];
-    ninputs = B.shape[1];
-    if (A.shape[0] != nstates or A.shape[1] != nstates):
-        raise ControlDimension("inconsistent system dimensions")
+    nstates = B.shape[0]
+    ninputs = B.shape[1]
+    # TODO: Create / Figure out a generic function to check for inconsistent system
+    if A.shape[0] != nstates or A.shape[1] != nstates:
+        raise ControlDimension("Inconsistent system dimensions.")
 
     elif (Q.shape[0] != nstates or Q.shape[1] != nstates or
           R.shape[0] != ninputs or R.shape[1] != ninputs or
           N.shape[0] != nstates or N.shape[1] != ninputs):
-        raise ControlDimension("incorrect weighting matrix dimensions")
+        raise ControlDimension("Incorrect weighting matrix dimensions.")
 
     # Compute the G matrix required by SB02MD
-    A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = \
-        sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N');
+    A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N')
 
     # Call the SLICOT function
-    X,rcond,w,S,U,A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
+    X, rcond, w, S, U, A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
 
     # Now compute the return value
     # We assume that R is positive definite and, hence, invertible
-    K = np.linalg.solve(R, np.dot(B.T, X) + N.T);
-    S = X;
-    E = w[0:nstates];
+    K = np.linalg.solve(R, np.dot(B.T, X) + N.T)
+    S = X
+    E = w[0:nstates]
 
     return K, S, E
 
-def ctrb(A,B):
+
+def ctrb(A, B):
     """Controllabilty matrix
 
     Parameters
@@ -392,10 +402,11 @@ def ctrb(A,B):
     bmat = np.mat(B)
     n = np.shape(amat)[0]
     # Construct the controllability matrix
-    ctrb = bmat
+    C = bmat
     for i in range(1, n):
-        ctrb = np.hstack((ctrb, amat**i*bmat))
-    return ctrb
+        C = np.hstack((C, amat ** i * bmat))
+    return C
+
 
 def obsv(A, C):
     """Observability matrix
@@ -422,22 +433,24 @@ def obsv(A, C):
     n = np.shape(amat)[0]
 
     # Construct the controllability matrix
-    obsv = cmat
+    O = cmat
     for i in range(1, n):
-        obsv = np.vstack((obsv, cmat*amat**i))
-    return obsv
+        O = np.vstack((O, cmat * amat ** i))
+    return O
 
-def gram(sys,type):
+
+def gram(sys, desired_computation_str):
     """Gramian (controllability or observability)
 
     Parameters
     ----------
     sys: StateSpace
         State-space system to compute Gramian for
-    type: String
+    desired_computation_str: String
         Type of desired computation.
-        `type` is either 'c' (controllability) or 'o' (observability). To compute the
-        Cholesky factors of gramians use 'cf' (controllability) or 'of' (observability)
+        `desired_computation_str` is either 'c' (controllability) or 'o' (observability).
+        To compute the Cholesky factors of gramians use 'cf' (controllability)
+        or 'of' (observability)
 
     Returns
     -------
@@ -448,7 +461,7 @@ def gram(sys,type):
     ------
     ValueError
         * if system is not instance of StateSpace class
-        * if `type` is not 'c', 'o', 'cf' or 'of'
+        * if `desired_computation_str` is not 'c', 'o', 'cf' or 'of'
         * if system is unstable (sys.A has eigenvalues not in left half plane)
 
     ImportError
@@ -457,71 +470,71 @@ def gram(sys,type):
 
     Examples
     --------
-    >>> Wc = gram(sys,'c')
-    >>> Wo = gram(sys,'o')
-    >>> Rc = gram(sys,'cf'), where Wc=Rc'*Rc
-    >>> Ro = gram(sys,'of'), where Wo=Ro'*Ro
+    >>> Wc = gram(sys, 'c')
+    >>> Wo = gram(sys, 'o')
+    >>> Rc = gram(sys, 'cf')  #, where Wc = Rc' * Rc
+    >>> Ro = gram(sys, 'of')  #, where Wo = Ro' * Ro
 
     """
 
-    #Check for ss system object
-    if not isinstance(sys,statesp.StateSpace):
+    # Check for ss system object
+    if not isinstance(sys, statesp.StateSpace):
         raise ValueError("System must be StateSpace!")
-    if type not in ['c', 'o', 'cf', 'of']:
+    if desired_computation_str not in ['c', 'o', 'cf', 'of']:
         raise ValueError("That type is not supported!")
 
-    #TODO: Check for continous or discrete, only continuous supported right now
-        # if isCont():
-        #    dico = 'C'
-        # elif isDisc():
-        #    dico = 'D'
-        # else:
+    # TODO: Check for continuous or discrete, only continuous supported right now
+    # if isCont():
+    #    dico = 'C'
+    # elif isDisc():
+    #    dico = 'D'
+    # else:
     dico = 'C'
 
-    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
-        # or a method of the StateSpace class?
+    # TODO: Check system is stable, perhaps a utility in ctrlutil.py
+    # or a method of the StateSpace class?
     if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
-        raise ValueError("Oops, the system is unstable!")
+        raise ValueError("The system is unstable.")
 
-    if type=='c' or type=='o':
-        #Compute Gramian by the Slycot routine sb03md
-        #make sure Slycot is installed
+    if desired_computation_str == 'c' or desired_computation_str == 'o':
+        # Compute Gramian by the Slycot routine sb03md
+        # make sure Slycot is installed
         try:
             from slycot import sb03md
         except ImportError:
-            raise ControlSlycot("can't find slycot module 'sb03md'")
-        if type=='c':
+            raise ControlSlycot("Can't find slycot module 'sb03md'.")
+        if desired_computation_str == 'c':
             tra = 'T'
-            C = -np.dot(sys.B,sys.B.transpose())
-        elif type=='o':
+            C = -np.dot(sys.B, sys.B.transpose())
+        elif desired_computation_str == 'o':
             tra = 'N'
-            C = -np.dot(sys.C.transpose(),sys.C)
+            C = -np.dot(sys.C.transpose(), sys.C)
         n = sys.states
-        U = np.zeros((n,n))
-        A = np.array(sys.A)         # convert to NumPy array for slycot
-        X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
+        U = np.zeros((n, n))
+        A = np.array(sys.A)  # convert to NumPy array for slycot
+        X, scale, sep, ferr, w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
         gram = X
         return gram
 
-    elif type=='cf' or type=='of':
-        #Compute cholesky factored gramian from slycot routine sb03od
+    elif desired_computation_str == 'cf' or desired_computation_str == 'of':
+        # Compute cholesky factored gramian from slycot routine sb03od
         try:
             from slycot import sb03od
         except ImportError:
-            raise ControlSlycot("can't find slycot module 'sb03od'")
-        tra='N'
+            raise ControlSlycot("Can't find slycot module 'sb03od'.")
+        tra = 'N'
         n = sys.states
-        Q = np.zeros((n,n))
-        A = np.array(sys.A)         # convert to NumPy array for slycot
-        if type=='cf':
+        Q = np.zeros((n, n))
+        A = np.array(sys.A)  # convert to NumPy array for slycot
+        if desired_computation_str == 'cf':
             m = sys.B.shape[1]
             B = np.zeros_like(A)
-            B[0:m,0:n] = sys.B.transpose()
-            X,scale,w = sb03od(n, m, A.transpose(), Q, B, dico, fact='N', trans=tra)
-        elif type=='of':
+            B[0:m, 0:n] = sys.B.transpose()
+            X, scale, w = sb03od(n, m, A.transpose(), Q, B, dico, fact='N', trans=tra)
+        elif desired_computation_str == 'of':
             m = sys.C.shape[0]
             C = np.zeros_like(A)
-            C[0:n,0:m] = sys.C.transpose()
-            X,scale,w = sb03od(n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
+            C[0:n, 0:m] = sys.C.transpose()
+            X, scale, w = sb03od(n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
         gram = X
         return gram
