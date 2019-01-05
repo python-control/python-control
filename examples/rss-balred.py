@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os
+
 import numpy as np
 import control.modelsimp as msimp
 import control.matlab as mt
@@ -29,7 +31,6 @@ plt.figure(1)
 y, t = mt.step(fsys)
 yr, tr = mt.step(rsys)
 plt.plot(t.T, y.T)
-plt.hold(True)
 plt.plot(tr.T, yr.T)
 
 # Repeat balanced reduction, now with 100-dimensional random state space
@@ -41,4 +42,8 @@ plt.figure(2)
 yrand, trand = mt.impulse(sysrand)
 yrandr, trandr = mt.impulse(rsysrand)
 plt.plot(trand.T, yrand.T, trandr.T, yrandr.T) 
+
+
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    plt.show()
 

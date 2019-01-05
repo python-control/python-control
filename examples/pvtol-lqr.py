@@ -3,9 +3,11 @@
 #
 # This file works through an LQR based design problem, using the
 # planar vertical takeoff and landing (PVTOL) aircraft example from
-# Astrom and Mruray, Chapter 5.  It is intended to demonstrate the
+# Astrom and Murray, Chapter 5.  It is intended to demonstrate the
 # basic functionality of the python-control package.
 #
+
+import os
 
 from numpy import *             # Grab all of the NumPy functions
 from matplotlib.pyplot import * # Grab MATLAB plotting functions
@@ -118,9 +120,9 @@ H1ay = ss(Ay - By*K1a[1,alt], By*K1a[1,alt]*yd[alt,:], Cy, Dy);
 (Yy, Ty) = step(H1ay, T=linspace(0,10,100));
 
 subplot(221); title("Identity weights")
-# plot(T, Y[:,1, 1], '-', T, Y[:,2, 2], '--'); hold(True);
-plot(Tx.T, Yx.T, '-', Ty.T, Yy.T, '--'); hold(True);
-plot([0, 10], [1, 1], 'k-'); hold(True);
+# plot(T, Y[:,1, 1], '-', T, Y[:,2, 2], '--');
+plot(Tx.T, Yx.T, '-', Ty.T, Yy.T, '--'); 
+plot([0, 10], [1, 1], 'k-'); 
 
 axis([0, 10, -0.1, 1.4]); 
 ylabel('position');
@@ -141,10 +143,10 @@ H1cx = ss(Ax - Bx*K1c[0,lat], Bx*K1c[0,lat]*xd[lat,:],Cx, Dx);
 [Y3, T3] = step(H1cx, T=linspace(0,10,100));
 
 subplot(222); title("Effect of input weights")
-plot(T1.T, Y1.T, 'b-'); hold(True);
-plot(T2.T, Y2.T, 'b-'); hold(True);
-plot(T3.T, Y3.T, 'b-'); hold(True);
-plot([0 ,10], [1, 1], 'k-'); hold(True);
+plot(T1.T, Y1.T, 'b-');
+plot(T2.T, Y2.T, 'b-');
+plot(T3.T, Y3.T, 'b-');
+plot([0 ,10], [1, 1], 'k-');
 
 axis([0, 10, -0.1, 1.4]); 
 
@@ -190,4 +192,6 @@ title("Physically motivated weights")
 xlabel('time'); 
 legend(('x', 'y'), loc='lower right');
 
-show()
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    show()
+

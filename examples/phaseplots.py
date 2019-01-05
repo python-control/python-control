@@ -4,6 +4,8 @@
 # This file contains examples of phase portraits pulled from "Feedback
 # Systems" by Astrom and Murray (Princeton University Press, 2008).
 
+import os
+
 import numpy as np
 import matplotlib.pyplot as mpl
 from control.phaseplot import phase_plot
@@ -120,4 +122,5 @@ mpl.plot([0], [0], 'k.') # 'MarkerSize', AM_data_markersize*3);
 mpl.xlabel('$x_1$'); mpl.ylabel('$x_2$');
 mpl.title('Undamped system\nLyapunov stable, not asympt. stable')
 
-mpl.show()
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    mpl.show()
