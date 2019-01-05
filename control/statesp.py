@@ -10,7 +10,7 @@ python-control library.
 
 # Python 3 compatibility (needs to go here)
 from __future__ import print_function
-from __future__ import division # for _convertToStateSpace
+from __future__ import division  # for _convertToStateSpace
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -166,9 +166,9 @@ class StateSpace(LTI):
         if 0 == self.states:
             # static gain
             # matrix's default "empty" shape is 1x0
-            A.shape = (0,0)
-            B.shape = (0,self.inputs)
-            C.shape = (self.outputs,0)
+            A.shape = (0, 0)
+            B.shape = (0, self.inputs)
+            C.shape = (self.outputs, 0)
 
         # Check that the matrix sizes are consistent.
         if self.states != A.shape[0]:
@@ -200,13 +200,13 @@ class StateSpace(LTI):
         # Search for useless states.
         for i in range(self.states):
             if (all(self.A[i, :] == zeros((1, self.states))) and
-               all(self.B[i, :] == zeros((1, self.inputs)))):
+                    all(self.B[i, :] == zeros((1, self.inputs)))):
                 useless.append(i)
                 # To avoid duplicate indices in useless, jump to the next
                 # iteration.
                 continue
             if (all(self.A[:, i] == zeros((self.states, 1))) and
-               all(self.C[:, i] == zeros((self.outputs, 1)))):
+                    all(self.C[:, i] == zeros((self.outputs, 1)))):
                 useless.append(i)
 
         # Remove the useless states.
@@ -227,9 +227,9 @@ class StateSpace(LTI):
         str += "C = " + self.C.__str__() + "\n\n"
         str += "D = " + self.D.__str__() + "\n"
         # TODO: replace with standard calls to lti functions
-        if (type(self.dt) == bool and self.dt is True):
+        if type(self.dt) == bool and self.dt is True:
             str += "\ndt unspecified\n"
-        elif (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
+        elif not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
             str += "\ndt = " + self.dt.__str__() + "\n"
         return str
 
@@ -262,20 +262,20 @@ class StateSpace(LTI):
 
             # Figure out the sampling time to use
             if self.dt is None and other.dt is not None:
-                dt = other.dt       # use dt from second argument
+                dt = other.dt  # use dt from second argument
             elif (other.dt is None and self.dt is not None) or \
                     (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
+                dt = self.dt  # use dt from first argument
             else:
                 raise ValueError("Systems have different sampling times")
 
             # Concatenate the various arrays
             A = concatenate((
                 concatenate((self.A, zeros((self.A.shape[0],
-                                           other.A.shape[-1]))),axis=1),
+                                            other.A.shape[-1]))), axis=1),
                 concatenate((zeros((other.A.shape[0], self.A.shape[-1])),
-                                other.A),axis=1)
-                            ),axis=0)
+                             other.A), axis=1)
+            ), axis=0)
             B = concatenate((self.B, other.B), axis=0)
             C = concatenate((self.C, other.C), axis=1)
             D = self.D + other.D
@@ -319,21 +319,20 @@ class StateSpace(LTI):
 but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
             # Figure out the sampling time to use
-            if (self.dt == None and other.dt != None):
-                dt = other.dt       # use dt from second argument
-            elif (other.dt == None and self.dt != None) or \
-                    (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
+            if self.dt is None and other.dt is not None:
+                dt = other.dt  # use dt from second argument
+            elif other.dt is None and self.dt is not None or timebaseEqual(self, other):
+                dt = self.dt  # use dt from first argument
             else:
                 raise ValueError("Systems have different sampling times")
 
             # Concatenate the various arrays
             A = concatenate(
-                (concatenate((other.A, zeros((other.A.shape[0], self.A.shape[1]))),
-                 axis=1),
-                concatenate((self.B * other.C, self.A), axis=1)), axis=0)
+                    (concatenate((other.A, zeros((other.A.shape[0], self.A.shape[1]))),
+                                 axis=1),
+                     concatenate((self.B * other.C, self.A), axis=1)), axis=0)
             B = concatenate((other.B, self.B * other.D), axis=0)
-            C = concatenate((self.D * other.C, self.C),axis=1)
+            C = concatenate((self.D * other.C, self.C), axis=1)
             D = self.D * other.D
 
         return StateSpace(A, B, C, D, dt)
@@ -497,7 +496,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
                 # kk+1 because enumerate starts at kk = 0.
                 # but zero-th spot is already filled.
-                Gfrf[:, :, kk+1] = result[0] + self.D
+                Gfrf[:, :, kk + 1] = result[0] + self.D
 
         except ImportError:  # Slycot unavailable. Fall back to horner.
             for kk, cmplx_freqs_kk in enumerate(cmplx_freqs):
@@ -562,14 +561,14 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         # Check to make sure the dimensions are OK
         if (self.inputs != other.outputs) or (self.outputs != other.inputs):
-                raise ValueError("State space systems don't have compatible inputs/outputs for "
-                                 "feedback.")
+            raise ValueError("State space systems don't have compatible inputs/outputs for "
+                             "feedback.")
 
         # Figure out the sampling time to use
         if self.dt is None and other.dt is not None:
-            dt = other.dt       # use dt from second argument
+            dt = other.dt  # use dt from second argument
         elif other.dt is None and self.dt is not None or timebaseEqual(self, other):
-            dt = self.dt        # use dt from first argument
+            dt = self.dt  # use dt from first argument
         else:
             raise ValueError("Systems have different sampling times")
 
@@ -614,18 +613,17 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             try:
                 from slycot import tb01pd
                 B = empty((self.states, max(self.inputs, self.outputs)))
-                B[:,:self.inputs] = self.B
+                B[:, :self.inputs] = self.B
                 C = empty((max(self.outputs, self.inputs), self.states))
-                C[:self.outputs,:] = self.C
+                C[:self.outputs, :] = self.C
                 A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs,
                                      self.A, B, C, tol=tol)
-                return StateSpace(A[:nr,:nr], B[:nr,:self.inputs],
-                                  C[:self.outputs,:nr], self.D)
+                return StateSpace(A[:nr, :nr], B[:nr, :self.inputs],
+                                  C[:self.outputs, :nr], self.D)
             except ImportError:
                 raise TypeError("minreal requires slycot tb01pd")
         else:
             return StateSpace(self)
-
 
     # TODO: add discrete time check
     def returnScipySignalLTI(self):
@@ -750,7 +748,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """
         try:
             if self.isctime():
-                gain = np.asarray(self.D-self.C.dot(np.linalg.solve(self.A, self.B)))
+                gain = np.asarray(self.D - self.C.dot(np.linalg.solve(self.A, self.B)))
             else:
                 gain = self.horner(1)
         except LinAlgError:
@@ -839,7 +837,7 @@ cannot take keywords.")
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)),
-            sys * ones((outputs, inputs)))
+                          sys * ones((outputs, inputs)))
 
     # If this is a matrix, try to create a constant feedthrough
     try:
@@ -847,9 +845,10 @@ cannot take keywords.")
         return StateSpace([], [], [], D)
     except Exception as e:
         print("Failure to assume argument is matrix-like in" \
-            " _convertToStateSpace, result %s" % e)
+              " _convertToStateSpace, result %s" % e)
 
     raise TypeError("Can't convert given type to StateSpace system.")
+
 
 # TODO: add discrete time option
 def _rss_generate(states, inputs, outputs, type):
@@ -876,13 +875,13 @@ def _rss_generate(states, inputs, outputs, type):
     # Check for valid input arguments.
     if states < 1 or states % 1:
         raise ValueError("states must be a positive integer.  states = %g." %
-            states)
+                         states)
     if inputs < 1 or inputs % 1:
         raise ValueError("inputs must be a positive integer.  inputs = %g." %
-            inputs)
+                         inputs)
     if outputs < 1 or outputs % 1:
         raise ValueError("outputs must be a positive integer.  outputs = %g." %
-            outputs)
+                         outputs)
 
     # Make some poles for A.  Preallocate a complex array.
     poles = zeros(states) + zeros(states) * 0.j
@@ -892,13 +891,13 @@ def _rss_generate(states, inputs, outputs, type):
         if rand() < pRepeat and i != 0 and i != states - 1:
             # Small chance of copying poles, if we're not at the first or last
             # element.
-            if poles[i-1].imag == 0:
+            if poles[i - 1].imag == 0:
                 # Copy previous real pole.
-                poles[i] = poles[i-1]
+                poles[i] = poles[i - 1]
                 i += 1
             else:
                 # Copy previous complex conjugate pair of poles.
-                poles[i:i+2] = poles[i-2:i]
+                poles[i:i + 2] = poles[i - 2:i]
                 i += 2
         elif rand() < pReal or i == states - 1:
             # No-oscillation pole.
@@ -915,7 +914,7 @@ def _rss_generate(states, inputs, outputs, type):
                 mag = rand()
                 phase = 2. * math.pi * rand()
                 poles[i] = complex(mag * cos(phase), mag * sin(phase))
-            poles[i+1] = complex(poles[i].real, -poles[i].imag)
+            poles[i + 1] = complex(poles[i].real, -poles[i].imag)
             i += 2
 
     # Now put the poles in A as real blocks on the diagonal.
@@ -926,9 +925,9 @@ def _rss_generate(states, inputs, outputs, type):
             A[i, i] = poles[i].real
             i += 1
         else:
-            A[i, i] = A[i+1, i+1] = poles[i].real
-            A[i, i+1] = poles[i].imag
-            A[i+1, i] = -poles[i].imag
+            A[i, i] = A[i + 1, i + 1] = poles[i].real
+            A[i, i + 1] = poles[i].imag
+            A[i + 1, i] = -poles[i].imag
             i += 2
     # Finally, apply a transformation so that A is not block-diagonal.
     while True:
@@ -970,7 +969,7 @@ def _rss_generate(states, inputs, outputs, type):
 # Convert a MIMO system to a SISO system
 # TODO: add discrete time check
 def _mimo2siso(sys, input, output, warn_conversion=False):
-    #pylint: disable=W0622
+    # pylint: disable=W0622
     """
     Convert a MIMO system to a SISO system. (Convert a system with multiple
     inputs and/or outputs, to a system with a single input and output.)
@@ -1010,7 +1009,7 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
                          "Selected output: {sel}, "
                          "number of system outputs: {ext}."
                          .format(sel=output, ext=sys.outputs))
-    #Convert sys to SISO if necessary
+    # Convert sys to SISO if necessary
     if sys.inputs > 1 or sys.outputs > 1:
         if warn_conversion:
             warn("Converting MIMO system to SISO system. "
@@ -1065,7 +1064,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
     if sys.inputs > 1:
         if warn_conversion:
             warn("Converting MIMO system to SIMO system. "
-                 "Only input {i} is used." .format(i=input))
+                 "Only input {i} is used.".format(i=input))
         # $X = A*X + B*U
         #  Y = C*X + D*U
         new_B = sys.B[:, input]
