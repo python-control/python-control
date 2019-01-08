@@ -410,20 +410,26 @@ class TestMatlab(unittest.TestCase):
     def testAcker(self):
         place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2.5], method="acker")
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_lqr_not_semi_positive_definite_constraints(self):
+        np.testing.assert_raises(ValueError, lqr, self.siso_ss1.A, self.siso_ss1.B, np.eye(2),
+                                 -np.eye(1))
+
+        np.testing.assert_raises(ValueError, lqr, self.siso_ss2.A, self.siso_ss2.B, np.eye(3),
+                                 np.eye(1), [[1], [1], [2]])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testLQR(self):
+    def test_lqr(self):
         (K, S, E) = lqr(self.siso_ss1.A, self.siso_ss1.B, np.eye(2), np.eye(1))
 
-        # Should work if [Q N;N' R] is positive semi-definite
-        (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, 10*np.eye(3), \
-                            np.eye(1), [[1], [1], [2]])
+        (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, 10*np.eye(3),
+                        np.eye(1), [[1], [1], [2]])
 
     @unittest.skip("check not yet implemented")
     def testLQR_checks(self):
         # Make sure we get a warning if [Q N;N' R] is not positive semi-definite
         (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, np.eye(3), \
-                            np.eye(1), [[1], [1], [2]])
+                        np.eye(1), [[1], [1], [2]])
 
     def testRss(self):
         rss(1)

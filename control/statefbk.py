@@ -392,6 +392,13 @@ def lqr(*args):
     else:
         N = np.zeros((Q.shape[0], R.shape[1]))
 
+    # Check that LQR problem is solvable
+    QN = np.column_stack((Q, N))
+    NTR = np.column_stack((N.T, R))
+    QN_NTR = np.row_stack((QN, NTR))
+    if not np.all(np.linalg.eigvals(QN_NTR) >= 0):
+        raise ValueError("[Q N;N' R] should be positive semi-definite.")
+
     # Check dimensions for consistency
     nstates = B.shape[0]
     ninputs = B.shape[1]
