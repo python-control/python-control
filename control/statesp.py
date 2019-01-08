@@ -84,7 +84,7 @@ def _matrix(a):
     module.
     """
     from numpy import matrix
-    am = matrix(a)
+    am = matrix(a, dtype=float)
     if (1, 0) == am.shape:
         am.shape = (0, 0)
     return am
