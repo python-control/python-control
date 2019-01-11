@@ -4,6 +4,8 @@ Based on Example 3.8 from Multivariable Feedback Control, Skogestad
 and Postlethwaite, 1st Edition.
 """
 
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -68,7 +70,7 @@ def analysis():
     plt.ylabel('output')
     plt.ylim([-1.1,2.1])
     plt.legend()
-    plt.title('o/l response to input [1,0]')
+    plt.title('o/l response\nto input [1,0]')
 
     plt.subplot(1,3,2)
     plt.plot(t,yu2[0],label='$y_1$')
@@ -77,7 +79,7 @@ def analysis():
     plt.ylabel('output')
     plt.ylim([-1.1,2.1])
     plt.legend()
-    plt.title('o/l response to input [0,1]')
+    plt.title('o/l response\nto input [0,1]')
 
     plt.subplot(1,3,3)
     plt.plot(t,yuz[0],label='$y_1$')
@@ -86,7 +88,7 @@ def analysis():
     plt.ylabel('output')
     plt.ylim([-1.1,2.1])
     plt.legend()
-    plt.title('o/l response to input [1,-1]')
+    plt.title('o/l response\nto input [1,-1]')
 
 
 def synth(wb1,wb2):
@@ -103,7 +105,7 @@ def synth(wb1,wb2):
     wp2 = ss(weighting(wb=wb2, m=1.5, a=1e-4))
     wp = wp1.append(wp2)
     k,_,info = mixsyn(g,wp,wu)
-    return k, info.gamma
+    return k, info[0]
 
 
 def step_opposite(g,t):
@@ -177,4 +179,6 @@ def design():
 
 analysis()
 design()
-plt.show()
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    plt.show()
+

@@ -40,15 +40,17 @@
 #
 # $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
 
-from numpy import real, imag
-from .lti import LTI
+from numpy import real, imag, linspace, exp, cos, sin, sqrt
+from math import pi
+from .lti import LTI, isdtime, isctime
+from .grid import sgrid, zgrid, nogrid
 
 __all__ = ['pzmap']
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, Plot=True, title='Pole Zero Map'):
+def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
     """
     Plot a pole/zero map for a linear system.
 
@@ -59,6 +61,8 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
     Plot: bool
         If ``True`` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
+    grid: boolean (default = False)
+        If True plot omega-damping grid.
 
     Returns
     -------
@@ -75,18 +79,22 @@ def pzmap(sys, Plot=True, title='Pole Zero Map'):
 
     if (Plot):
         import matplotlib.pyplot as plt
+
+        if grid:
+            if isdtime(sys, strict=True):
+                ax, fig = zgrid()
+            else:
+                ax, fig = sgrid()
+        else:
+            ax, fig = nogrid()
+
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
-            plt.scatter(real(poles), imag(poles), s=50, marker='x')
+            ax.scatter(real(poles), imag(poles), s=50, marker='x', facecolors='k')
         if len(zeros) > 0:
-            plt.scatter(real(zeros), imag(zeros), s=50, marker='o',
-                        facecolors='none')
-        # Add axes
-        #Somewhat silly workaround
-        plt.axhline(y=0, color='black')
-        plt.axvline(x=0, color='black')
-        plt.xlabel('Re')
-        plt.ylabel('Im')
+            ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
+                        facecolors='none', edgecolors='k')
+
 
         plt.title(title)
 

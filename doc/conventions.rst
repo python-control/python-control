@@ -15,7 +15,7 @@ LTI system representation
 Linear time invariant (LTI) systems are represented in python-control in
 state space, transfer function, or frequency response data (FRD) form.  Most
 functions in the toolbox will operate on any of these data types and
-functions for converting between between compatible types is provided.
+functions for converting between compatible types is provided.
 
 State space systems
 -------------------

@@ -414,6 +414,14 @@ class TestMatlab(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testLQR(self):
         (K, S, E) = lqr(self.siso_ss1.A, self.siso_ss1.B, np.eye(2), np.eye(1))
+
+        # Should work if [Q N;N' R] is positive semi-definite
+        (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, 10*np.eye(3), \
+                            np.eye(1), [[1], [1], [2]])
+
+    @unittest.skip("check not yet implemented")
+    def testLQR_checks(self):
+        # Make sure we get a warning if [Q N;N' R] is not positive semi-definite
         (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, np.eye(3), \
                             np.eye(1), [[1], [1], [2]])
 

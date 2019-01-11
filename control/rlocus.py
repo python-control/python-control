@@ -47,12 +47,15 @@
 
 # Packages used by this module
 import numpy as np
-from scipy import array, poly1d, row_stack, zeros_like, real, imag
+from scipy import array, poly1d, row_stack, zeros_like, real, imag, exp, sin, cos, linspace, sqrt
+from math import pi
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
-from .xferfcn import _convertToTransferFunction
+from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from functools import partial
+from .lti import isdtime
+from .grid import sgrid, zgrid, nogrid
 
 __all__ = ['root_locus', 'rlocus']
 
@@ -82,7 +85,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
     grid: boolean (default = False)
-        If True plot s-plane grid. 
+        If True plot omega-damping grid.
 
     Returns
     -------
@@ -110,12 +113,21 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         while new_figure_name in figure_title:
             new_figure_name = "Root Locus " + str(rloc_num)
             rloc_num += 1
-        f = pylab.figure(new_figure_name)
+        if grid:
+            if isdtime(sys, strict=True):
+                ax, f = zgrid()
+            else:
+                ax, f = sgrid()
+        else:
+            ax, f = nogrid()
+        pylab.title(new_figure_name)
+
+        ax = pylab.axes()
 
         if PrintGain:
+            click_point, = ax.plot([0], [0],color='k',markersize = 0,marker='s',zorder=20)
             f.canvas.mpl_connect(
-                'button_release_event', partial(_RLFeedbackClicks, sys=sys))
-        ax = pylab.axes()
+                'button_release_event', partial(_RLFeedbackClicks, sys=sys,fig=f,point=click_point))
 
         # plot open loop poles
         poles = array(denp.r)
@@ -128,17 +140,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
 
         # Now plot the loci
         for col in mymat.T:
-            ax.plot(real(col), imag(col), plotstr)
+            ax.plot(real(col), imag(col), plotstr, lw=3)
 
         # Set up plot axes and labels
         if xlim:
             ax.set_xlim(xlim)
         if ylim:
             ax.set_ylim(ylim)
-        ax.set_xlabel('Real')
-        ax.set_ylabel('Imaginary')
-        if grid:
-            _sgrid_func()
     return mymat, kvect
 
 
@@ -152,6 +160,7 @@ def _default_gains(num, den, xlim, ylim):
     kmax = _k_max(num, den, real_break, k_break)
     kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
     kvect.sort()
+
     mymat = _RLFindRoots(num, den, kvect)
     mymat = _RLSortRoots(mymat)
     open_loop_poles = den.roots
@@ -279,7 +288,7 @@ def _systopoly1d(sys):
 
     else:
         # Convert to a transfer function, if needed
-        sys = _convertToTransferFunction(sys)
+        sys = _convert_to_transfer_function(sys)
 
         # Make sure we have a SISO system
         if (sys.inputs > 1 or sys.outputs > 1):
@@ -341,7 +350,7 @@ def _RLSortRoots(mymat):
     return sorted
 
 
-def _RLFeedbackClicks(event, sys):
+def _RLFeedbackClicks(event, sys,fig,point):
     """Print root-locus gain feedback for clicks on the root-locus plot
     """
     s = complex(event.xdata, event.ydata)
@@ -349,89 +358,11 @@ def _RLFeedbackClicks(event, sys):
     if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
-
-
-def _sgrid_func(fig=None, zeta=None, wn=None):
-    if fig is None:
-        fig = pylab.gcf()
-    ax = fig.gca()
-    xlocator = ax.get_xaxis().get_major_locator()
-
-    ylim = ax.get_ylim()
-    ytext_pos_lim = ylim[1] - (ylim[1] - ylim[0]) * 0.03
-    xlim = ax.get_xlim()
-    xtext_pos_lim = xlim[0] + (xlim[1] - xlim[0]) * 0.0
-
-    if zeta is None:
-        zeta = _default_zetas(xlim, ylim)
-
-    angules = []
-    for z in zeta:
-        if (z >= 1e-4) and (z <= 1):
-            angules.append(np.pi/2 + np.arcsin(z))
-        else:
-            zeta.remove(z)
-    y_over_x = np.tan(angules)
-
-    # zeta-constant lines
-
-    index = 0
-
-    for yp in y_over_x:
-        ax.plot([0, xlocator()[0]], [0, yp*xlocator()[0]], color='gray',
-                linestyle='dashed', linewidth=0.5)
-        ax.plot([0, xlocator()[0]], [0, -yp * xlocator()[0]], color='gray',
-                linestyle='dashed', linewidth=0.5)
-        an = "%.2f" % zeta[index]
-        if yp < 0:
-            xtext_pos = 1/yp * ylim[1]
-            ytext_pos = yp * xtext_pos_lim
-            if np.abs(xtext_pos) > np.abs(xtext_pos_lim):
-                xtext_pos = xtext_pos_lim
-            else:
-                ytext_pos = ytext_pos_lim
-            ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos], fontsize=8)
-        index += 1
-    ax.plot([0, 0], [ylim[0], ylim[1]], color='gray', linestyle='dashed', linewidth=0.5)
-
-    angules = np.linspace(-90, 90, 20)*np.pi/180
-    if wn is None:
-        wn = _default_wn(xlocator(), ylim)
-
-    for om in wn:
-        if om < 0:
-            yp = np.sin(angules)*np.abs(om)
-            xp = -np.cos(angules)*np.abs(om)
-            ax.plot(xp, yp, color='gray',
-                    linestyle='dashed', linewidth=0.5)
-            an = "%.2f" % -om
-            ax.annotate(an, textcoords='data', xy=[om, 0], fontsize=8)
-
-
-def _default_zetas(xlim, ylim):
-    """Return default list of dumps coefficients"""
-    sep1 = -xlim[0]/4
-    ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1, 4, 1)]
-    sep2 = ylim[1] / 3
-    ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1, 3, 1)]
-
-    angules = np.concatenate((ang1, ang2))
-    angules = np.insert(angules, len(angules), np.pi/2)
-    zeta = np.sin(angules)
-    return zeta.tolist()
-
-
-def _default_wn(xloc, ylim):
-    """Return default wn for root locus plot"""
-
-    wn = xloc
-    sep = xloc[1]-xloc[0]
-    while np.abs(wn[0]) < ylim[1]:
-        wn = np.insert(wn, 0, wn[0]-sep)
-
-    while len(wn) > 7:
-        wn = wn[0:-1:2]
-
-    return wn
+        point.set_ydata(s.imag)
+        point.set_xdata(s.real)
+        point.set_markersize(8)
+        fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
+              (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+        fig.canvas.draw()
 
 rlocus = root_locus

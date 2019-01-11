@@ -98,7 +98,7 @@ figure(6); clf; subplot(221);
 bode(L, logspace(-4, 3));
 
 # Add crossover line
-subplot(211); hold(True);
+subplot(211);
 loglog([1e-4, 1e3], [1, 1], 'k-')
 
 # Replot phase starting at -90 degrees
@@ -107,7 +107,6 @@ phase = phase - 360;
 
 subplot(212);
 semilogx([1e-4, 1e3], [-180, -180], 'k-')
-hold(True);
 semilogx(w, np.squeeze(phase), 'b-')
 axis([1e-4, 1e3, -360, 0]);
 xlabel('Frequency [deg]'); ylabel('Phase [deg]');
@@ -118,7 +117,7 @@ xlabel('Frequency [deg]'); ylabel('Phase [deg]');
 # Nyquist plot for complete design
 #
 figure(7); clf;
-axis([-700, 5300, -3000, 3000]); hold(True);
+axis([-700, 5300, -3000, 3000]);
 nyquist(L, (0.0001, 1000));
 axis([-700, 5300, -3000, 3000]);
 
@@ -127,7 +126,7 @@ plot([-400, -400, 200, 200, -400], [-100, 100, 100, -100, -100], 'r-')
 
 # Expanded region  
 figure(8); clf; subplot(231); 
-axis([-10, 5, -20, 20]); hold(True);
+axis([-10, 5, -20, 20]);
 nyquist(L);
 axis([-10, 5, -20, 20]);
 
@@ -145,7 +144,7 @@ color = 'b';
 
 figure(9); 
 (Yvec, Tvec) = step(T, linspace(1, 20));
-plot(Tvec.T, Yvec.T); hold(True);
+plot(Tvec.T, Yvec.T);
 
 (Yvec, Tvec) = step(Co*S, linspace(1, 20));
 plot(Tvec.T, Yvec.T);

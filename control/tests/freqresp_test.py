@@ -13,6 +13,7 @@ from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, rss
 from control.exception import slycot_check
+from control.tests.margin_test import assert_array_almost_equal
 import matplotlib.pyplot as plt
 
 class TestFreqresp(unittest.TestCase):
@@ -108,6 +109,34 @@ class TestFreqresp(unittest.TestCase):
       #plt.figure(4)
       #bode(sysMIMO,self.omega)
 
+   def test_bode_margin(self):
+      num = [1000]
+      den = [1, 25, 100, 0]
+      sys = ctrl.tf(num, den)
+      ctrl.bode_plot(sys, margins=True,dB=False,deg = True)
+      fig = plt.gcf()
+      allaxes = fig.get_axes()
+
+      mag_to_infinity = (np.array([6.07828691, 6.07828691]),
+                         np.array([1.00000000e+00, 1.00000000e-08]))
+      assert_array_almost_equal(mag_to_infinity, allaxes[0].lines[2].get_data())
+
+      gm_to_infinty = (np.array([10., 10.]), np.array([4.00000000e-01, 1.00000000e-08]))
+      assert_array_almost_equal(gm_to_infinty, allaxes[0].lines[3].get_data())
+
+      one_to_gm = (np.array([10., 10.]), np.array([1., 0.4]))
+      assert_array_almost_equal(one_to_gm, allaxes[0].lines[4].get_data())
+
+      pm_to_infinity = (np.array([6.07828691, 6.07828691]),
+                        np.array([100000., -157.46405841]))
+      assert_array_almost_equal(pm_to_infinity, allaxes[1].lines[2].get_data())
+
+      pm_to_phase = (np.array([6.07828691, 6.07828691]), np.array([-157.46405841, -180.]))
+      assert_array_almost_equal(pm_to_phase, allaxes[1].lines[3].get_data())
+
+      phase_to_infinity = (np.array([10., 10.]), np.array([1.00000000e-08, -1.80000000e+02]))
+      assert_array_almost_equal(phase_to_infinity, allaxes[1].lines[4].get_data())
+      
    def test_discrete(self):
       # Test discrete time frequency response
 

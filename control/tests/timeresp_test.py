@@ -13,8 +13,9 @@ import numpy as np
 # import scipy as sp
 from control.timeresp import *
 from control.statesp import *
-from control.xferfcn import TransferFunction, _convertToTransferFunction
+from control.xferfcn import TransferFunction, _convert_to_transfer_function
 from control.dtime import c2d
+from control.exception import slycot_check
 
 class TestTimeresp(unittest.TestCase):
     def setUp(self):
@@ -27,7 +28,7 @@ class TestTimeresp(unittest.TestCase):
 
         # Create some transfer functions
         self.siso_tf1 = TransferFunction([1], [1, 2, 1])
-        self.siso_tf2 = _convertToTransferFunction(self.siso_ss1)
+        self.siso_tf2 = _convert_to_transfer_function(self.siso_ss1)
 
         # Create MIMO system, contains ``siso_ss1`` twice
         A = np.matrix("1. -2. 0.  0.;"
@@ -232,6 +233,23 @@ class TestTimeresp(unittest.TestCase):
         h1 = TransferFunction([1.], [1., 0.], 1.)
         t, yout = impulse_response(h1, np.arange(4))
         np.testing.assert_array_equal(yout[0], [0., 1., 0., 0.])
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_step_robustness(self):
+        "Unit test: https://github.com/python-control/python-control/issues/240"
+        # Create 2 input, 2 output system
+        num =  [ [[0], [1]],           [[1],   [0]] ]
+        
+        den1 = [ [[1], [1,1]],         [[1,4], [1]] ]
+        sys1 = TransferFunction(num, den1)
+
+        den2 = [ [[1], [1e-10, 1, 1]], [[1,4], [1]] ]   # slight perturbation
+        sys2 = TransferFunction(num, den2)
+
+        # Compute step response from input 1 to output 1, 2
+        t1, y1 = step_response(sys1, input=0)
+        t2, y2 = step_response(sys2, input=0)
+        np.testing.assert_array_almost_equal(y1, y2)
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
