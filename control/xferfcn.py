@@ -281,11 +281,11 @@ class TransferFunction(LTI):
         else:
             outstr = "$$"
 
-        for i in range(self.inputs):
-            for j in range(self.outputs):
+        for i in range(self.outputs):
+            for j in range(self.inputs):
                 # Convert the numerator and denominator polynomials to strings.
-                numstr = _tf_polynomial_to_string(self.num[j][i], var=var)
-                denstr = _tf_polynomial_to_string(self.den[j][i], var=var)
+                numstr = _tf_polynomial_to_string(self.num[i][j], var=var)
+                denstr = _tf_polynomial_to_string(self.den[i][j], var=var)
 
 
                 outstr += r"\frac{" + numstr + "}{" + denstr + "}"
