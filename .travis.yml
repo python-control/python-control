@@ -53,6 +53,8 @@ before_install:
   # Install openblas if slycot is being used
   - if [[ "$SLYCOT" != "" ]]; then
         conda install openblas;
+        # also install scikit-build for the build process
+        conda install -c conda-forge scikit-build;
     fi
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
