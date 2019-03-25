@@ -51,10 +51,10 @@ before_install:
   - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage
   - source activate test-environment
   # Install openblas if slycot is being used
+  # also install scikit-build for the build process
   - if [[ "$SLYCOT" != "" ]]; then
-        conda install openblas;
-        # also install scikit-build for the build process
-        conda install -c conda-forge scikit-build;
+      conda install openblas;
+      conda install -c conda-forge scikit-build;
     fi
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
