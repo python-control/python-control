@@ -202,7 +202,7 @@ class StateSpace(LTI):
         ax0_C = np.where(~self.C.any(axis=0))[1]
         useless_1 = np.intersect1d(ax1_A, ax1_B, assume_unique=True)
         useless_2 = np.intersect1d(ax0_A, ax0_C, assume_unique=True)
-        useless = np.concatenate((useless_1, useless_2))
+        useless = np.union1d(useless_1, useless_2)
 
         # Remove the useless states.
         self.A = delete(self.A, useless, 0)
