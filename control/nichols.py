@@ -94,7 +94,7 @@ def nichols_plot(sys_list, omega=None, grid=True):
         # Convert to Nichols-plot format (phase in degrees,
         # and magnitude in dB)
         x = unwrap(sp.degrees(phase), 360)
-        y = 20*sp.log10(mag)
+        y = 20 * sp.log10(mag)
 
         # Generate the plot
         plt.plot(x, y)
@@ -154,8 +154,7 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
         # magnitudes are approximately aligned with open-loop magnitudes beyond
         # the value of np.min(key_cl_mags)
         cl_mag_step = -20.0  # dB
-        extended_cl_mags = np.arange(np.min(key_cl_mags),
-                                     ol_mag_min + cl_mag_step, cl_mag_step)
+        extended_cl_mags = np.arange(np.min(key_cl_mags), ol_mag_min + cl_mag_step, cl_mag_step)
         cl_mags = np.concatenate((extended_cl_mags, key_cl_mags))
 
     # N-circle phases (should be in the range -360 to 0)
@@ -173,12 +172,12 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
 
     # Find the M-contours
     m = m_circles(cl_mags, phase_min=np.min(cl_phases), phase_max=np.max(cl_phases))
-    m_mag = 20*sp.log10(np.abs(m))
+    m_mag = 20 * sp.log10(np.abs(m))
     m_phase = sp.mod(sp.degrees(sp.angle(m)), -360.0)  # Unwrap
 
     # Find the N-contours
     n = n_circles(cl_phases, mag_min=np.min(cl_mags), mag_max=np.max(cl_mags))
-    n_mag = 20*sp.log10(np.abs(n))
+    n_mag = 20 * sp.log10(np.abs(n))
     n_phase = sp.mod(sp.degrees(sp.angle(n)), -360.0)  # Unwrap
 
     # Plot the contours behind other plot elements.
@@ -187,16 +186,14 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
     # over the range -360 < phase < 0. Given the range
     # the base chart is computed over, the phase offset should be 0
     # for -360 < ol_phase_min < 0.
-    phase_offset_min = 360.0*np.ceil(ol_phase_min/360.0)
-    phase_offset_max = 360.0*np.ceil(ol_phase_max/360.0) + 360.0
+    phase_offset_min = 360.0 * np.ceil(ol_phase_min / 360.0)
+    phase_offset_max = 360.0 * np.ceil(ol_phase_max / 360.0) + 360.0
     phase_offsets = np.arange(phase_offset_min, phase_offset_max, 360.0)
 
     for phase_offset in phase_offsets:
         # Draw M and N contours
-        plt.plot(m_phase + phase_offset, m_mag, color='lightgray',
-                 linestyle=line_style, zorder=0)
-        plt.plot(n_phase + phase_offset, n_mag, color='lightgray',
-                 linestyle=line_style, zorder=0)
+        plt.plot(m_phase + phase_offset, m_mag, color='lightgray', linestyle=line_style, zorder=0)
+        plt.plot(n_phase + phase_offset, n_mag, color='lightgray', linestyle=line_style, zorder=0)
 
         # Add magnitude labels
         for x, y, m in zip(m_phase[:][-1] + phase_offset, m_mag[:][-1], cl_mags):
@@ -235,10 +232,10 @@ def closed_loop_contours(Gcl_mags, Gcl_phases):
     # Compute the contours in Gcl-space. Since we're given closed-loop
     # magnitudes and phases, this is just a case of converting them into
     # a complex number.
-    Gcl = Gcl_mags*sp.exp(1.j*Gcl_phases)
+    Gcl = Gcl_mags * sp.exp(1.j * Gcl_phases)
 
     # Invert Gcl = Gol/(1+Gol) to map the contours into the open-loop space
-    return Gcl/(1.0 - Gcl)
+    return Gcl / (1.0 - Gcl)
 
 
 def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
@@ -263,7 +260,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     # Convert magnitudes and phase range into a grid suitable for
     # building contours
     phases = sp.radians(sp.linspace(phase_min, phase_max, 2000))
-    Gcl_mags, Gcl_phases = sp.meshgrid(10.0**(mags/20.0), phases)
+    Gcl_mags, Gcl_phases = sp.meshgrid(10.0**(mags / 20.0), phases)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
 
 
@@ -288,7 +285,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     """
     # Convert phases and magnitude range into a grid suitable for
     # building contours
-    mags = sp.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
+    mags = sp.linspace(10**(mag_min / 20.0), 10**(mag_max / 20.0), 2000)
     Gcl_phases, Gcl_mags = sp.meshgrid(sp.radians(phases), mags)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
 

@@ -47,9 +47,8 @@ from .exception import ControlSlycot, ControlArgument
 
 __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
-#### Lyapunov equation solvers lyap and dlyap
 
-def lyap(A,Q,C=None,E=None):
+def lyap(A, Q, C=None, E=None):
     """ X = lyap(A,Q) solves the continuous-time Lyapunov equation
 
         :math:`A X + X A^T + Q = 0`
@@ -84,34 +83,33 @@ def lyap(A,Q,C=None,E=None):
 
     # Reshape 1-d arrays
     if len(shape(A)) == 1:
-        A = A.reshape(1,A.size)
+        A = A.reshape(1, A.size)
 
     if len(shape(Q)) == 1:
-        Q = Q.reshape(1,Q.size)
+        Q = Q.reshape(1, Q.size)
 
     if C is not None and len(shape(C)) == 1:
-        C = C.reshape(1,C.size)
+        C = C.reshape(1, C.size)
 
     if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1,E.size)
+        E = E.reshape(1, E.size)
 
     # Determine main dimensions
     if size(A) == 1:
         n = 1
     else:
-        n = size(A,0)
+        n = size(A, 0)
 
     if size(Q) == 1:
         m = 1
     else:
-        m = size(Q,0)
+        m = size(Q, 0)
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
         # Check input data for consistency
         if shape(A) != shape(Q):
-            raise ControlArgument("A and Q must be matrices of identical \
-                                sizes.")
+            raise ControlArgument("A and Q must be matrices of identical sizes.")
 
         if size(A) > 1 and shape(A)[0] != shape(A)[1]:
             raise ControlArgument("A must be a quadratic matrix.")
@@ -124,18 +122,16 @@ def lyap(A,Q,C=None,E=None):
 
         # Solve the Lyapunov equation by calling Slycot function sb03md
         try:
-            X,scale,sep,ferr,w = sb03md(n,-Q,A,eye(n,n),'C',trana='T')
+            X, scale, sep, ferr, w = sb03md(n, -Q, A, eye(n, n), 'C', trana='T')
         except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
-            elif ve.info == n+1:
-                e = ValueError("The matrix A and -A have common or very \
-                    close eigenvalues.")
+            elif ve.info == n + 1:
+                e = ValueError("The matrix A and -A have common or very close eigenvalues.")
                 e.info = ve.info
             else:
-                e = ValueError("The QR algorithm failed to compute all \
-                    the eigenvalues (see LAPACK Library routine DGEES).")
+                e = ValueError("The QR algorithm failed to compute all the eigenvalues (see LAPACK Library routine DGEES).")
                 e.info = ve.info
             raise e
 
@@ -150,19 +146,19 @@ def lyap(A,Q,C=None,E=None):
 
         if (size(C) > 1 and shape(C)[0] != n) or \
             (size(C) > 1 and shape(C)[1] != m) or \
-            (size(C) == 1 and size(A) != 1) or (size(C) == 1 and size(Q) != 1):
+                (size(C) == 1 and size(A) != 1) or (size(C) == 1 and size(Q) != 1):
             raise ControlArgument("C matrix has incompatible dimensions.")
 
         # Solve the Sylvester equation by calling the Slycot function sb04md
         try:
-            X = sb04md(n,m,A,Q,-C)
+            X = sb04md(n, m, A, Q, -C)
         except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
             elif ve.info > m:
                 e = ValueError("A singular matrix was encountered whilst \
-                    solving for the %i-th column of matrix X." % ve.info-m)
+                    solving for the %i-th column of matrix X." % ve.info - m)
                 e.info = ve.info
             else:
                 e = ValueError("The QR algorithm failed to compute all the \
@@ -175,15 +171,13 @@ def lyap(A,Q,C=None,E=None):
         # Check input data for consistency
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
-            (size(Q) == 1 and n > 1):
-            raise ControlArgument("Q must be a square matrix with the same \
-                dimension as A.")
+                (size(Q) == 1 and n > 1):
+            raise ControlArgument("Q must be a square matrix with the same dimension as A.")
 
         if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
             (size(E) > 1 and shape(E)[0] != n) or \
-            (size(E) == 1 and n > 1):
-            raise ControlArgument("E must be a square matrix with the same \
-                dimension as A.")
+                (size(E) == 1 and n > 1):
+            raise ControlArgument("E must be a square matrix with the same dimension as A.")
 
         if not (asarray(Q) == asarray(Q).T).all():
             raise ControlArgument("Q must be a symmetric matrix.")
@@ -197,8 +191,8 @@ def lyap(A,Q,C=None,E=None):
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
         try:
-            A,E,Q,Z,X,scale,sep,ferr,alphar,alphai,beta = \
-                sg03ad('C','B','N','T','L',n,A,E,eye(n,n),eye(n,n),-Q)
+            A, E, Q, Z, X, scale, sep, ferr, alphar, alphai, beta = \
+                sg03ad('C', 'B', 'N', 'T', 'L', n, A, E, eye(n, n), eye(n, n), -Q)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 4:
                 e = ValueError(ve.message)
@@ -231,7 +225,7 @@ def lyap(A,Q,C=None,E=None):
     return X
 
 
-def dlyap(A,Q,C=None,E=None):
+def dlyap(A, Q, C=None, E=None):
     """ dlyap(A,Q) solves the discrete-time Lyapunov equation
 
         :math:`A X A^T - X + Q = 0`
@@ -271,27 +265,27 @@ def dlyap(A,Q,C=None,E=None):
 
     # Reshape 1-d arrays
     if len(shape(A)) == 1:
-        A = A.reshape(1,A.size)
+        A = A.reshape(1, A.size)
 
     if len(shape(Q)) == 1:
-        Q = Q.reshape(1,Q.size)
+        Q = Q.reshape(1, Q.size)
 
     if C is not None and len(shape(C)) == 1:
-        C = C.reshape(1,C.size)
+        C = C.reshape(1, C.size)
 
     if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1,E.size)
+        E = E.reshape(1, E.size)
 
     # Determine main dimensions
     if size(A) == 1:
         n = 1
     else:
-        n = size(A,0)
+        n = size(A, 0)
 
     if size(Q) == 1:
         m = 1
     else:
-        m = size(Q,0)
+        m = size(Q, 0)
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
@@ -311,7 +305,7 @@ def dlyap(A,Q,C=None,E=None):
 
         # Solve the Lyapunov equation by calling the Slycot function sb03md
         try:
-            X,scale,sep,ferr,w = sb03md(n,-Q,A,eye(n,n),'D',trana='T')
+            X, scale, sep, ferr, w = sb03md(n, -Q, A, eye(n, n), 'D', trana='T')
         except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
@@ -333,19 +327,19 @@ def dlyap(A,Q,C=None,E=None):
 
         if (size(C) > 1 and shape(C)[0] != n) or \
             (size(C) > 1 and shape(C)[1] != m) or \
-            (size(C) == 1 and size(A) != 1) or (size(C) == 1 and size(Q) != 1):
+                (size(C) == 1 and size(A) != 1) or (size(C) == 1 and size(Q) != 1):
             raise ControlArgument("C matrix has incompatible dimensions")
 
         # Solve the Sylvester equation by calling Slycot function sb04qd
         try:
-            X = sb04qd(n,m,-A,asarray(Q).T,C)
+            X = sb04qd(n, m, -A, asarray(Q).T, C)
         except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
             elif ve.info > m:
                 e = ValueError("A singular matrix was encountered whilst \
-                    solving for the %i-th column of matrix X." % ve.info-m)
+                    solving for the %i-th column of matrix X." % ve.info - m)
                 e.info = ve.info
             else:
                 e = ValueError("The QR algorithm failed to compute all the \
@@ -358,13 +352,13 @@ def dlyap(A,Q,C=None,E=None):
         # Check input data for consistency
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
-            (size(Q) == 1 and n > 1):
+                (size(Q) == 1 and n > 1):
             raise ControlArgument("Q must be a square matrix with the same \
                 dimension as A.")
 
         if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
             (size(E) > 1 and shape(E)[0] != n) or \
-            (size(E) == 1 and n > 1):
+                (size(E) == 1 and n > 1):
             raise ControlArgument("E must be a square matrix with the same \
                 dimension as A.")
 
@@ -374,8 +368,8 @@ def dlyap(A,Q,C=None,E=None):
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
         try:
-            A,E,Q,Z,X,scale,sep,ferr,alphar,alphai,beta = \
-                sg03ad('D','B','N','T','L',n,A,E,eye(n,n),eye(n,n),-Q)
+            A, E, Q, Z, X, scale, sep, ferr, alphar, alphai, beta = \
+                sg03ad('D', 'B', 'N', 'T', 'L', n, A, E, eye(n, n), eye(n, n), -Q)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 4:
                 e = ValueError(ve.message)
@@ -408,10 +402,9 @@ def dlyap(A,Q,C=None,E=None):
     return X
 
 
+# Riccati equation solvers care and dare
 
-#### Riccati equation solvers care and dare
-
-def care(A,B,Q,R=None,S=None,E=None):
+def care(A, B, Q, R=None, S=None, E=None):
     """ (X,L,G) = care(A,B,Q,R=None) solves the continuous-time algebraic Riccati
     equation
 
@@ -453,35 +446,35 @@ def care(A,B,Q,R=None,S=None,E=None):
 
     # Reshape 1-d arrays
     if len(shape(A)) == 1:
-        A = A.reshape(1,A.size)
+        A = A.reshape(1, A.size)
 
     if len(shape(B)) == 1:
-        B = B.reshape(1,B.size)
+        B = B.reshape(1, B.size)
 
     if len(shape(Q)) == 1:
-        Q = Q.reshape(1,Q.size)
+        Q = Q.reshape(1, Q.size)
 
     if R is not None and len(shape(R)) == 1:
-        R = R.reshape(1,R.size)
+        R = R.reshape(1, R.size)
 
     if S is not None and len(shape(S)) == 1:
-        S = S.reshape(1,S.size)
+        S = S.reshape(1, S.size)
 
     if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1,E.size)
+        E = E.reshape(1, E.size)
 
     # Determine main dimensions
     if size(A) == 1:
         n = 1
     else:
-        n = size(A,0)
+        n = size(A, 0)
 
     if size(B) == 1:
         m = 1
     else:
-        m = size(B,1)
+        m = size(B, 1)
     if R is None:
-        R = eye(m,m)
+        R = eye(m, m)
 
     # Solve the standard algebraic Riccati equation
     if S is None and E is None:
@@ -491,12 +484,12 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
-            size(Q) == 1 and n > 1:
+                size(Q) == 1 and n > 1:
             raise ControlArgument("Q must be a quadratic matrix of the same \
                 dimension as A.")
 
         if (size(B) > 1 and shape(B)[0] != n) or \
-            size(B) == 1 and n > 1:
+                size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
         if not (asarray(Q) == asarray(Q).T).all():
@@ -512,12 +505,12 @@ def care(A,B,Q,R=None,S=None,E=None):
         # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
         try:
-            A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = sb02mt(n,m,B,R)
+            A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = sb02mt(n, m, B, R)
         except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
-            elif ve.info == m+1:
+            elif ve.info == m + 1:
                 e = ValueError("The matrix R is numerically singular.")
                 e.info = ve.info
             else:
@@ -527,7 +520,7 @@ def care(A,B,Q,R=None,S=None,E=None):
             raise e
 
         try:
-            X,rcond,w,S_o,U,A_inv = sb02md(n,A,G,Q,'C')
+            X, rcond, w, S_o, U, A_inv = sb02md(n, A, G, Q, 'C')
         except ValueError as ve:
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
@@ -556,13 +549,13 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(dot(1/(R_ba), asarray(B_ba).T), X)
+            G = dot(dot(1 / R_ba, asarray(B_ba).T), X)
         else:
             G = dot(solve(R_ba, asarray(B_ba).T), X)
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , w[:n] , G )
+        return X, w[:n], G
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
@@ -572,30 +565,30 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
-            size(Q) == 1 and n > 1:
+                size(Q) == 1 and n > 1:
             raise ControlArgument("Q must be a quadratic matrix of the same \
                 dimension as A.")
 
         if (size(B) > 1 and shape(B)[0] != n) or \
-            size(B) == 1 and n > 1:
+                size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
         if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
             (size(E) > 1 and shape(E)[0] != n) or \
-            size(E) == 1 and n > 1:
+                size(E) == 1 and n > 1:
             raise ControlArgument("E must be a quadratic matrix of the same \
                 dimension as A.")
 
         if (size(R) > 1 and shape(R)[0] != shape(R)[1]) or \
             (size(R) > 1 and shape(R)[0] != m) or \
-            size(R) == 1 and m > 1:
+                size(R) == 1 and m > 1:
             raise ControlArgument("R must be a quadratic matrix of the same \
                 dimension as the number of columns in the B matrix.")
 
         if (size(S) > 1 and shape(S)[0] != n) or \
             (size(S) > 1 and shape(S)[1] != m) or \
             size(S) == 1 and n > 1 or \
-            size(S) == 1 and m > 1:
+                size(S) == 1 and m > 1:
             raise ControlArgument("Incompatible dimensions of S matrix.")
 
         if not (asarray(Q) == asarray(Q).T).all():
@@ -613,8 +606,8 @@ def care(A,B,Q,R=None,S=None,E=None):
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
         try:
-            rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
-                    sg02ad('C','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
+            rcondu, X, alfar, alfai, beta, S_o, T, U, iwarn = \
+                sg02ad('C', 'B', 'N', 'U', 'N', 'N', 'S', 'R', n, m, 0, A, E, B, Q, R, S)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
@@ -652,26 +645,27 @@ def care(A,B,Q,R=None,S=None,E=None):
             raise e
 
         # Calculate the closed-loop eigenvalues L
-        L = zeros((n,1))
+        L = zeros((n, 1))
         L.dtype = 'complex64'
         for i in range(n):
-            L[i] = (alfar[i] + alfai[i]*1j)/beta[i]
+            L[i] = (alfar[i] + alfai[i] * 1j) / beta[i]
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(1/(R_b), dot(asarray(B_b).T, dot(X,E_b)) + asarray(S_b).T)
+            G = dot(1 / R_b, dot(asarray(B_b).T, dot(X, E_b)) + asarray(S_b).T)
         else:
             G = solve(R_b, dot(asarray(B_b).T, dot(X, E_b)) + asarray(S_b).T)
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , L , G)
+        return X, L, G
 
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters.")
 
-def dare(A,B,Q,R,S=None,E=None):
+
+def dare(A, B, Q, R, S=None, E=None):
     """ (X,L,G) = dare(A,B,Q,R) solves the discrete-time algebraic Riccati
     equation
 
@@ -702,7 +696,8 @@ def dare(A,B,Q,R,S=None,E=None):
         L = eigvals(A - B.dot(G))
         return X, L, G
 
-def dare_old(A,B,Q,R,S=None,E=None):
+
+def dare_old(A, B, Q, R, S=None, E=None):
     # Make sure we can import required slycot routine
     try:
         from slycot import sb02md
@@ -722,33 +717,33 @@ def dare_old(A,B,Q,R,S=None,E=None):
 
     # Reshape 1-d arrays
     if len(shape(A)) == 1:
-        A = A.reshape(1,A.size)
+        A = A.reshape(1, A.size)
 
     if len(shape(B)) == 1:
-        B = B.reshape(1,B.size)
+        B = B.reshape(1, B.size)
 
     if len(shape(Q)) == 1:
-        Q = Q.reshape(1,Q.size)
+        Q = Q.reshape(1, Q.size)
 
     if R is not None and len(shape(R)) == 1:
-        R = R.reshape(1,R.size)
+        R = R.reshape(1, R.size)
 
     if S is not None and len(shape(S)) == 1:
-        S = S.reshape(1,S.size)
+        S = S.reshape(1, S.size)
 
     if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1,E.size)
+        E = E.reshape(1, E.size)
 
     # Determine main dimensions
     if size(A) == 1:
         n = 1
     else:
-        n = size(A,0)
+        n = size(A, 0)
 
     if size(B) == 1:
         m = 1
     else:
-        m = size(B,1)
+        m = size(B, 1)
 
     # Solve the standard algebraic Riccati equation
     if S is None and E is None:
@@ -758,12 +753,12 @@ def dare_old(A,B,Q,R,S=None,E=None):
 
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
-            size(Q) == 1 and n > 1:
+                size(Q) == 1 and n > 1:
             raise ControlArgument("Q must be a quadratic matrix of the same \
                 dimension as A.")
 
         if (size(B) > 1 and shape(B)[0] != n) or \
-            size(B) == 1 and n > 1:
+                size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
         if not (asarray(Q) == asarray(Q).T).all():
@@ -780,12 +775,12 @@ def dare_old(A,B,Q,R,S=None,E=None):
         # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
         try:
-            A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = sb02mt(n,m,B,R)
+            A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = sb02mt(n, m, B, R)
         except ValueError as ve:
             if ve.info < 0:
                 e = ValueError(ve.message)
                 e.info = ve.info
-            elif ve.info == m+1:
+            elif ve.info == m + 1:
                 e = ValueError("The matrix R is numerically singular.")
                 e.info = ve.info
             else:
@@ -795,7 +790,7 @@ def dare_old(A,B,Q,R,S=None,E=None):
             raise e
 
         try:
-            X,rcond,w,S,U,A_inv = sb02md(n,A,G,Q,'D')
+            X, rcond, w, S, U, A_inv = sb02md(n, A, G, Q, 'D')
         except ValueError as ve:
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
@@ -824,15 +819,15 @@ def dare_old(A,B,Q,R,S=None,E=None):
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(1/(dot(asarray(B_ba).T, dot(X, B_ba)) + R_ba), \
-                dot(asarray(B_ba).T, dot(X, A_ba)))
+            G = dot(1 / (dot(asarray(B_ba).T, dot(X, B_ba)) + R_ba),
+                    dot(asarray(B_ba).T, dot(X, A_ba)))
         else:
-            G = solve(dot(asarray(B_ba).T, dot(X, B_ba)) + R_ba, \
-                dot(asarray(B_ba).T, dot(X, A_ba)))
+            G = solve(dot(asarray(B_ba).T, dot(X, B_ba)) + R_ba,
+                      dot(asarray(B_ba).T, dot(X, A_ba)))
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , w[:n] , G)
+        return X, w[:n], G
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
@@ -842,30 +837,30 @@ def dare_old(A,B,Q,R,S=None,E=None):
 
         if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
             (size(Q) > 1 and shape(Q)[0] != n) or \
-            size(Q) == 1 and n > 1:
+                size(Q) == 1 and n > 1:
             raise ControlArgument("Q must be a quadratic matrix of the same \
                 dimension as A.")
 
         if (size(B) > 1 and shape(B)[0] != n) or \
-            size(B) == 1 and n > 1:
+                size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
         if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
             (size(E) > 1 and shape(E)[0] != n) or \
-            size(E) == 1 and n > 1:
+                size(E) == 1 and n > 1:
             raise ControlArgument("E must be a quadratic matrix of the same \
                 dimension as A.")
 
         if (size(R) > 1 and shape(R)[0] != shape(R)[1]) or \
             (size(R) > 1 and shape(R)[0] != m) or \
-            size(R) == 1 and m > 1:
+                size(R) == 1 and m > 1:
             raise ControlArgument("R must be a quadratic matrix of the same \
                 dimension as the number of columns in the B matrix.")
 
         if (size(S) > 1 and shape(S)[0] != n) or \
             (size(S) > 1 and shape(S)[1] != m) or \
             size(S) == 1 and n > 1 or \
-            size(S) == 1 and m > 1:
+                size(S) == 1 and m > 1:
             raise ControlArgument("Incompatible dimensions of S matrix.")
 
         if not (asarray(Q) == asarray(Q).T).all():
@@ -884,8 +879,8 @@ def dare_old(A,B,Q,R,S=None,E=None):
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
         try:
-            rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
-                    sg02ad('D','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
+            rcondu, X, alfar, alfai, beta, S_o, T, U, iwarn = \
+                sg02ad('D', 'B', 'N', 'U', 'N', 'N', 'S', 'R', n, m, 0, A, E, B, Q, R, S)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
@@ -922,22 +917,22 @@ def dare_old(A,B,Q,R,S=None,E=None):
                 e.info = ve.info
             raise e
 
-        L = zeros((n,1))
+        L = zeros((n, 1))
         L.dtype = 'complex64'
         for i in range(n):
-            L[i] = (alfar[i] + alfai[i]*1j)/beta[i]
+            L[i] = (alfar[i] + alfai[i] * 1j) / beta[i]
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(1/(dot(asarray(B_b).T, dot(X,B_b)) + R_b), \
-                dot(asarray(B_b).T, dot(X,A_b)) + asarray(S_b).T)
+            G = dot(1 / (dot(asarray(B_b).T, dot(X, B_b)) + R_b),
+                    dot(asarray(B_b).T, dot(X, A_b)) + asarray(S_b).T)
         else:
-            G = solve(dot(asarray(B_b).T, dot(X,B_b)) + R_b, \
-                dot(asarray(B_b).T, dot(X,A_b)) + asarray(S_b).T)
+            G = solve(dot(asarray(B_b).T, dot(X, B_b)) + R_b,
+                      dot(asarray(B_b).T, dot(X, A_b)) + asarray(S_b).T)
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , L , G)
+        return X, L, G
 
     # Invalid set of input parameters
     else:

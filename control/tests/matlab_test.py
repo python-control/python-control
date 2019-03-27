@@ -551,14 +551,12 @@ class TestMatlab(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             sysc.D, np.mat([[1], [0], [0]]))
 
-
-
     def testFRD(self):
         h = tf([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
         frd1 = frd(h, omega)
         assert isinstance(frd1, FRD)
-        frd2 = frd(frd1.fresp[0,0,:], omega)
+        frd2 = frd(frd1.fresp[0, 0, :], omega)
         assert isinstance(frd2, FRD)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")

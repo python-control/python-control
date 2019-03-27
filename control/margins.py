@@ -59,6 +59,7 @@ from . import frdata
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
 
+
 # helper functions for stability_margins
 def _polyimsplit(pol):
     """split a polynomial with (iw) applied into a real and an
@@ -69,11 +70,13 @@ def _polyimsplit(pol):
     rpencil[-3::-4] = -1.
     ipencil[-2::-4] = 1.
     ipencil[-4::-4] = -1.
-    return pol * rpencil, pol*ipencil
+    return pol * rpencil, pol * ipencil
+
 
 def _polysqr(pol):
     """return a polynomial squared"""
     return np.polymul(pol, pol)
+
 
 # Took the framework for the old function by
 # Sawyer B. Fuller <minster@caltech.edu>, removed a lot of the innards
@@ -141,8 +144,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             sys = sysdata
         elif getattr(sysdata, '__iter__', False) and len(sysdata) == 3:
             mag, phase, omega = sysdata
-            sys = frdata.FRD(mag * np.exp(1j * phase * math.pi/180),
-                             omega, smooth=True)
+            sys = frdata.FRD(mag * np.exp(1j * phase * math.pi / 180), omega, smooth=True)
         else:
             sys = xferfcn._convert_to_transfer_function(sysdata)
     except Exception as e:
@@ -171,9 +173,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
         # evaluate response at remaining frequencies, to test for phase 180 vs 0
         with np.errstate(all='ignore'):
-            resp_w_180 = np.real(
-                    np.polyval(sys.num[0][0], 1.j*w_180) /
-                    np.polyval(sys.den[0][0], 1.j*w_180))
+            resp_w_180 = np.real(np.polyval(sys.num[0][0], 1.j * w_180) / np.polyval(sys.den[0][0], 1.j * w_180))
 
         # only keep frequencies where the negative real axis is crossed
         w_180 = w_180[np.real(resp_w_180) <= 0.0]
@@ -192,21 +192,19 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         # point -1, then take the derivative. Second derivative needs to be >0
         # to have a minimum
         test_wstabd = np.polyadd(_polysqr(rden), _polysqr(iden))
-        test_wstabn = np.polyadd(_polysqr(np.polyadd(rnum,rden)),
-                                 _polysqr(np.polyadd(inum,iden)))
+        test_wstabn = np.polyadd(_polysqr(np.polyadd(rnum, rden)),
+                                 _polysqr(np.polyadd(inum, iden)))
         test_wstab = np.polysub(
-            np.polymul(np.polyder(test_wstabn),test_wstabd),
-            np.polymul(np.polyder(test_wstabd),test_wstabn))
+            np.polymul(np.polyder(test_wstabn), test_wstabd),
+            np.polymul(np.polyder(test_wstabd), test_wstabn))
 
         # find the solutions, for positive omega, and only real ones
         wstab = np.roots(test_wstab)
-        wstab = np.real(wstab[(np.imag(wstab) == 0) *
-                        (np.real(wstab) >= 0)])
+        wstab = np.real(wstab[(np.imag(wstab) == 0) * (np.real(wstab) >= 0)])
 
         # and find the value of the 2nd derivative there, needs to be positive
         wstabplus = np.polyval(np.polyder(test_wstab), wstab)
-        wstab = np.real(wstab[(np.imag(wstab) == 0) * (wstab > epsw) *
-                              (wstabplus > 0.)])
+        wstab = np.real(wstab[(np.imag(wstab) == 0) * (wstab > epsw) * (wstabplus > 0.)])
         wstab.sort()
 
     else:
@@ -226,42 +224,37 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         # Find all crossings, note that this depends on omega having
         # a correct range
         widx = np.where(np.diff(np.sign(mod(sys.omega))))[0]
-        wc = np.array(
-            [ sp.optimize.brentq(mod, sys.omega[i], sys.omega[i+1])
-              for i in widx if i+1 < len(sys.omega)])
+        wc = np.array([sp.optimize.brentq(mod, sys.omega[i], sys.omega[i + 1]) for i in widx if i + 1 < len(sys.omega)])
 
         # find the phase crossings ang(H(jw) == -180
         widx = np.where(np.diff(np.sign(arg(sys.omega))))[0]
         widx = widx[np.real(sys._evalfr(sys.omega[widx])[0][0]) <= 0]
         w_180 = np.array(
-            [ sp.optimize.brentq(arg, sys.omega[i], sys.omega[i+1])
-              for i in widx if i+1 < len(sys.omega) ])
+            [sp.optimize.brentq(arg, sys.omega[i], sys.omega[i + 1])
+             for i in widx if i + 1 < len(sys.omega)])
 
         # find all stab margins?
         widx = np.where(np.diff(np.sign(np.diff(dstab(sys.omega)))))[0]
-        wstab = np.array([ sp.optimize.minimize_scalar(
-                  dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
-              for i in widx if i+1 < len(sys.omega) and
-              np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] > 0 ])
-        wstab = wstab[(wstab >= sys.omega[0]) *
-                      (wstab <= sys.omega[-1])]
+        wstab = np.array([sp.optimize.minimize_scalar(dstab,
+                                                      bracket=(sys.omega[i],
+                                                               sys.omega[i + 1])).x
+                          for i in widx if i + 1 < len(sys.omega) and np.diff(np.diff(dstab(sys.omega[i - 1:i + 2])))[0] > 0])
+        wstab = wstab[(wstab >= sys.omega[0]) * (wstab <= sys.omega[-1])]
 
-
-    # margins, as iterables, converted frdata and xferfcn calculations to
-    # vector for this
+    # margins, as iterables, converted frdata and xferfcn calculations to vector for this
     with np.errstate(all='ignore'):
         gain_w_180 = np.abs(sys._evalfr(w_180)[0][0])
-        GM = 1.0/gain_w_180
-    SM = np.abs(sys._evalfr(wstab)[0][0]+1)
+        GM = 1.0 / gain_w_180
+
+    SM = np.abs(sys._evalfr(wstab)[0][0] + 1)
     PM = np.remainder(np.angle(sys._evalfr(wc)[0][0], deg=True), 360.0) - 180.0
-    
+
     if returnall:
         return GM, PM, SM, w_180, wc, wstab
     else:
         if GM.shape[0] and not np.isinf(GM).all():
             with np.errstate(all='ignore'):
-                gmidx = np.where(np.abs(np.log(GM)) == 
-                                 np.min(np.abs(np.log(GM))))
+                gmidx = np.where(np.abs(np.log(GM)) == np.min(np.abs(np.log(GM))))
         else:
             gmidx = -1
         if PM.shape[0]:
@@ -272,11 +265,11 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             (not SM.shape[0] and float('inf')) or np.amin(SM),
             (not gmidx != -1 and float('nan')) or w_180[gmidx][0],
             (not wc.shape[0] and float('nan')) or wc[pmidx][0],
-            (not wstab.shape[0] and float('nan')) or wstab[SM==np.amin(SM)][0])
+            (not wstab.shape[0] and float('nan')) or wstab[SM == np.amin(SM)][0])
 
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
-#! TODO - need to add test functions
+# TODO - need to add test functions
 def phase_crossover_frequencies(sys):
     """Compute frequencies and gains at intersections with real axis
     in Nyquist plot.
@@ -302,14 +295,14 @@ def phase_crossover_frequencies(sys):
     tf = xferfcn._convert_to_transfer_function(sys)
 
     # if not siso, fall back to (0,0) element
-    #! TODO: should add a check and warning here
+    # TODO: should add a check and warning here
     num = tf.num[0][0]
     den = tf.den[0][0]
 
     # Compute frequencies that we cross over the real axis
-    numj = (1.j)**np.arange(len(num)-1,-1,-1)*num
-    denj = (-1.j)**np.arange(len(den)-1,-1,-1)*den
-    allfreq = np.roots(np.imag(np.polymul(numj,denj)))
+    numj = (1.j)**np.arange(len(num) - 1, -1, -1) * num
+    denj = (-1.j)**np.arange(len(den) - 1, -1, -1) * den
+    allfreq = np.roots(np.imag(np.polymul(numj, denj)))
     realfreq = np.real(allfreq[np.isreal(allfreq)])
     realposfreq = realfreq[realfreq >= 0.]
 
@@ -355,16 +348,15 @@ def margin(*args):
     Examples
     --------
     >>> sys = tf(1, [1, 2, 1, 0])
-    >>> gm, pm, wg, wp = margin(sys)
+    >>> gm, pm, wg, wp = margins(sys)
 
     """
     if len(args) == 1:
         sys = args[0]
-        margin = stability_margins(sys)
+        margins = stability_margins(sys)
     elif len(args) == 3:
-        margin = stability_margins(args)
+        margins = stability_margins(args)
     else:
-        raise ValueError("Margin needs 1 or 3 arguments; received %i."
-            % len(args))
+        raise ValueError("Margin needs 1 or 3 arguments; received %i." % len(args))
 
-    return margin[0], margin[1], margin[3], margin[4]
+    return margins[0], margins[1], margins[3], margins[4]

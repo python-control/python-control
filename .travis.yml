@@ -15,7 +15,7 @@ python:
 
 # Test against multiple version of SciPy, with and without slycot
 #
-# Because there were significant changes in SciPy between v0 and v1, we 
+# Because there were significant changes in SciPy between v0 and v1, we
 # test against both of these using the Travis CI environment capability
 #
 # We also want to test with and without slycot
@@ -73,6 +73,7 @@ install:
 
 # command to run tests
 script:
+  - flake8 control/
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
 

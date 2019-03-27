@@ -41,7 +41,6 @@ import numpy as np
 import matplotlib.pyplot as mpl
 
 from scipy.integrate import odeint
-from .exception import ControlNotImplemented
 
 __all__ = ['phase_plot', 'box_grid']
 
@@ -54,8 +53,8 @@ def _find(condition):
 
 
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
-              lingrid=None, lintime=None, logtime=None, timepts=None,
-              parms=(), verbose=True):
+               lingrid=None, lintime=None, logtime=None, timepts=None,
+               parms=(), verbose=True):
     """
     Phase plot for 2D dynamical systems
 
@@ -127,31 +126,33 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     #
     # Figure out ranges for phase plot (argument processing)
     #
-    #! TODO: need to add error checking to arguments
-    #! TODO: think through proper action if multiple options are given
+    # TODO: need to add error checking to arguments
+    # TODO: think through proper action if multiple options are given
     #
-    autoFlag = False; logtimeFlag = False; timeptsFlag = False; Narrows = 0;
+    autoFlag = False
+    logtimeFlag = False
+    timeptsFlag = False
 
     if lingrid is not None:
-        autoFlag = True;
-        Narrows = lingrid;
-        if (verbose):
+        autoFlag = True
+        Narrows = lingrid
+        if verbose:
             print('Using auto arrows\n')
 
     elif logtime is not None:
-        logtimeFlag = True;
-        Narrows = logtime[0];
-        timefactor = logtime[1];
-        if (verbose):
+        logtimeFlag = True
+        Narrows = logtime[0]
+        timefactor = logtime[1]
+        if verbose:
             print('Using logtime arrows\n')
 
     elif timepts is not None:
-        timeptsFlag = True;
-        Narrows = len(timepts);
+        timeptsFlag = True
+        Narrows = len(timepts)
 
     # Figure out the set of points for the quiver plot
-    #! TODO: Add sanity checks
-    elif (X is not None and Y is not None):
+    # TODO: Add sanity checks
+    elif X is not None and Y is not None:
         (x1, x2) = np.meshgrid(
             np.linspace(X[0], X[1], X[2]),
             np.linspace(Y[0], Y[1], Y[2]))
@@ -159,43 +160,43 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
     else:
         # If we weren't given any grid points, don't plot arrows
-        Narrows = 0;
+        Narrows = 0
 
-    if ((not autoFlag) and (not logtimeFlag) and (not timeptsFlag)
-        and (Narrows > 0)):
+    if not autoFlag and not logtimeFlag and not timeptsFlag and Narrows > 0:
         # Now calculate the vector field at those points
-        (nr,nc) = x1.shape;
+        (nr, nc) = x1.shape
         dx = np.empty((nr, nc, 2))
         for i in range(nr):
             for j in range(nc):
-                dx[i, j, :] = np.squeeze(odefun((x1[i,j], x2[i,j]), 0, *parms))
+                dx[i, j, :] = np.squeeze(odefun((x1[i, j], x2[i, j]), 0, *parms))
 
         # Plot the quiver plot
-        #! TODO: figure out arguments to make arrows show up correctly
+        # TODO: figure out arguments to make arrows show up correctly
         if scale is None:
-            mpl.quiver(x1, x2, dx[:,:,1], dx[:,:,2], angles='xy')
-        elif (scale != 0):
-            #! TODO: optimize parameters for arrows
-            #! TODO: figure out arguments to make arrows show up correctly
-            xy = mpl.quiver(x1, x2, dx[:,:,0]*np.abs(scale),
-                            dx[:,:,1]*np.abs(scale), angles='xy')
-            # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b');
+            mpl.quiver(x1, x2, dx[:, :, 1], dx[:, :, 2], angles='xy')
+        elif scale != 0:
+            # TODO: optimize parameters for arrows
+            # TODO: figure out arguments to make arrows show up correctly
+            _ = mpl.quiver(x1, x2, dx[:, :, 0] * np.abs(scale), dx[:, :, 1] * np.abs(scale), angles='xy')
+            # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b')
 
-        #! TODO: Tweak the shape of the plot
+        # TODO: Tweak the shape of the plot
         # a=gca; set(a,'DataAspectRatio',[1,1,1]);
         # set(a,'XLim',X(1:2)); set(a,'YLim',Y(1:2));
-        mpl.xlabel('x1'); mpl.ylabel('x2');
+        mpl.xlabel('x1')
+        mpl.ylabel('x2')
 
     # See if we should also generate the streamlines
     if X0 is None or len(X0) == 0:
         return
 
     # Convert initial conditions to a numpy array
-    X0 = np.array(X0);
-    (nr, nc) = np.shape(X0);
+    X0 = np.array(X0)
+    (nr, nc) = np.shape(X0)
 
     # Generate some empty matrices to keep arrow information
-    x1 = np.empty((nr, Narrows)); x2 = np.empty((nr, Narrows));
+    x1 = np.empty((nr, Narrows))
+    x2 = np.empty((nr, Narrows))
     dx = np.empty((nr, Narrows, 2))
 
     # See if we were passed a simulation time
@@ -203,71 +204,75 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         T = 50
 
     # Parse the time we were passed
-    TSPAN = T;
-    if (isinstance(T, (int, float))):
-        TSPAN = np.linspace(0, T, 100);
+    TSPAN = T
+    if isinstance(T, (int, float)):
+        TSPAN = np.linspace(0, T, 100)
 
     # Figure out the limits for the plot
     if scale is None:
         # Assume that the current axis are set as we want them
-        alim = mpl.axis();
-        xmin = alim[0]; xmax = alim[1];
-        ymin = alim[2]; ymax = alim[3];
+        alim = mpl.axis()
+        xmin = alim[0]
+        xmax = alim[1]
+        ymin = alim[2]
+        ymax = alim[3]
     else:
         # Use the maximum extent of all trajectories
-        xmin = np.min(X0[:,0]); xmax = np.max(X0[:,0]);
-        ymin = np.min(X0[:,1]); ymax = np.max(X0[:,1]);
+        xmin = np.min(X0[:, 0])
+        xmax = np.max(X0[:, 0])
+        ymin = np.min(X0[:, 1])
+        ymax = np.max(X0[:, 1])
 
     # Generate the streamlines for each initial condition
     for i in range(nr):
-        state = odeint(odefun, X0[i], TSPAN, args=parms);
+        state = odeint(odefun, X0[i], TSPAN, args=parms)
         time = TSPAN
 
-        mpl.plot(state[:,0], state[:,1])
-        #! TODO: add back in colors for stream lines
+        mpl.plot(state[:, 0], state[:, 1])
+        # TODO: add back in colors for stream lines
         # PP_stream_color(np.mod(i-1, len(PP_stream_color))+1));
         # set(h[i], 'LineWidth', PP_stream_linewidth);
 
         # Plot arrows if quiver parameters were 'auto'
-        if (autoFlag or logtimeFlag or timeptsFlag):
+        if autoFlag or logtimeFlag or timeptsFlag:
             # Compute the locations of the arrows
-            #! TODO: check this logic to make sure it works in python
+            # TODO: check this logic to make sure it works in python
             for j in range(Narrows):
 
                 # Figure out starting index; headless arrows start at 0
-                k = -1 if scale is None else 0;
+                k = -1 if scale is None else 0
 
                 # Figure out what time index to use for the next point
-                if (autoFlag):
+                if autoFlag:
                     # Use a linear scaling based on ODE time vector
-                    tind = np.floor((len(time)/Narrows) * (j-k)) + k;
-                elif (logtimeFlag):
+                    tind = np.floor((len(time) / Narrows) * (j - k)) + k
+                elif logtimeFlag:
                     # Use an exponential time vector
                     # MATLAB: tind = find(time < (j-k) / lambda, 1, 'last');
-                    tarr = _find(time < (j-k) / timefactor);
-                    tind = tarr[-1] if len(tarr) else 0;
-                elif (timeptsFlag):
+                    tarr = _find(time < (j - k) / timefactor)
+                    tind = tarr[-1] if len(tarr) else 0
+                elif timeptsFlag:
                     # Use specified time points
                     # MATLAB: tind = find(time < Y[j], 1, 'last');
-                    tarr = _find(time < timepts[j]);
-                    tind = tarr[-1] if len(tarr) else 0;
+                    tarr = _find(time < timepts[j])
+                    tind = tarr[-1] if len(tarr) else 0
 
                 # For tailless arrows, skip the first point
                 if tind == 0 and scale is None:
-                    continue;
+                    continue
 
                 # Figure out the arrow at this point on the curve
-                x1[i,j] = state[tind, 0];
-                x2[i,j] = state[tind, 1];
+                x1[i, j] = state[tind, 0]
+                x2[i, j] = state[tind, 1]
 
                 # Skip arrows outside of initial condition box
-                if (scale is not None or
-                     (x1[i,j] <= xmax and x1[i,j] >= xmin and
-                      x2[i,j] <= ymax and x2[i,j] >= ymin)):
-                    v = odefun((x1[i,j], x2[i,j]), 0, *parms)
-                    dx[i, j, 0] = v[0]; dx[i, j, 1] = v[1];
+                if scale is not None or (xmax >= x1[i, j] >= xmin and ymax >= x2[i, j] >= ymin):
+                    v = odefun((x1[i, j], x2[i, j]), 0, *parms)
+                    dx[i, j, 0] = v[0]
+                    dx[i, j, 1] = v[1]
                 else:
-                    dx[i, j, 0] = 0; dx[i, j, 1] = 0;
+                    dx[i, j, 0] = 0
+                    dx[i, j, 1] = 0
 
     # Set the plot shape before plotting arrows to avoid warping
     # a=gca;
@@ -280,21 +285,21 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     # Plot arrows on the streamlines
     if scale is None and Narrows > 0:
         # Use a tailless arrow
-        #! TODO: figure out arguments to make arrows show up correctly
-        mpl.quiver(x1, x2, dx[:,:,0], dx[:,:,1], angles='xy')
-    elif (scale != 0 and Narrows > 0):
-        #! TODO: figure out arguments to make arrows show up correctly
-        xy = mpl.quiver(x1, x2, dx[:,:,0]*abs(scale), dx[:,:,1]*abs(scale),
-                        angles='xy')
+        # TODO: figure out arguments to make arrows show up correctly
+        mpl.quiver(x1, x2, dx[:, :, 0], dx[:, :, 1], angles='xy')
+    elif scale != 0 and Narrows > 0:
+        # TODO: figure out arguments to make arrows show up correctly
+        _ = mpl.quiver(x1, x2, dx[:, :, 0] * abs(scale), dx[:, :, 1] * abs(scale), angles='xy')
         # set(xy, 'LineWidth', PP_arrow_linewidth);
         # set(xy, 'AutoScale', 'off');
         # set(xy, 'AutoScaleFactor', 0);
 
-    if (scale < 0):
-        bp = mpl.plot(x1, x2, 'b.');		# add dots at base
+    if scale < 0:
+        _ = mpl.plot(x1, x2, 'b.')  # add dots at base
         # set(bp, 'MarkerSize', PP_arrow_markersize);
 
-    return;
+    return
+
 
 # Utility function for generating initial conditions around a box
 def box_grid(xlimp, ylimp):
@@ -308,7 +313,7 @@ def box_grid(xlimp, ylimp):
     sx10 = np.linspace(xlimp[0], xlimp[1], xlimp[2])
     sy10 = np.linspace(ylimp[0], ylimp[1], ylimp[2])
 
-    sx1 = np.hstack((0, sx10, 0*sy10+sx10[0], sx10, 0*sy10+sx10[-1]))
-    sx2 = np.hstack((0, 0*sx10+sy10[0], sy10, 0*sx10+sy10[-1], sy10))
+    sx1 = np.hstack((0, sx10, 0 * sy10 + sx10[0], sx10, 0 * sy10 + sx10[-1]))
+    sx2 = np.hstack((0, 0 * sx10 + sy10[0], sy10, 0 * sx10 + sy10[-1], sy10))
 
-    return np.transpose( np.vstack((sx1, sx2)) )
+    return np.transpose(np.vstack((sx1, sx2)))

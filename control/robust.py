@@ -41,11 +41,11 @@
 
 # External packages and modules
 import numpy as np
-from .exception import *
+from .exception import ControlSlycot
 from .statesp import StateSpace
-from .statefbk import *
 
-def h2syn(P,nmeas,ncon):
+
+def h2syn(P, nmeas, ncon):
     """H_2 control synthesis for plant P.
 
     Parameters
@@ -72,25 +72,25 @@ def h2syn(P,nmeas,ncon):
     >>> K = h2syn(P,nmeas,ncon)
 
     """
-    #Check for ss system object, need a utility for this?
+    # Check for ss system object, need a utility for this?
 
-    #TODO: Check for continous or discrete, only continuous supported right now
-        # if isCont():
-        #    dico = 'C'
-        # elif isDisc():
-        #    dico = 'D'
-        # else:
-    dico = 'C'
+    # TODO: Check for continous or discrete, only continuous supported right now
+    # if isCont():
+    #    dico = 'C'
+    # elif isDisc():
+    #    dico = 'D'
+    # else:
+    #    dico = 'C'
 
     try:
         from slycot import sb10hd
     except ImportError:
         raise ControlSlycot("can't find slycot subroutine sb10hd")
 
-    n = np.size(P.A,0)
-    m = np.size(P.B,1)
-    np_ = np.size(P.C,0)
-    out = sb10hd(n,m,np_,ncon,nmeas,P.A,P.B,P.C,P.D)
+    n = np.size(P.A, 0)
+    m = np.size(P.B, 1)
+    np_ = np.size(P.C, 0)
+    out = sb10hd(n, m, np_, ncon, nmeas, P.A, P.B, P.C, P.D)
     Ak = out[0]
     Bk = out[1]
     Ck = out[2]
@@ -100,7 +100,8 @@ def h2syn(P,nmeas,ncon):
 
     return K
 
-def hinfsyn(P,nmeas,ncon):
+
+def hinfsyn(P, nmeas, ncon):
     """H_{inf} control synthesis for plant P.
 
     Parameters
@@ -136,26 +137,26 @@ def hinfsyn(P,nmeas,ncon):
 
     """
 
-    #Check for ss system object, need a utility for this?
+    # Check for ss system object, need a utility for this?
 
-    #TODO: Check for continous or discrete, only continuous supported right now
-        # if isCont():
-        #    dico = 'C'
-        # elif isDisc():
-        #    dico = 'D'
-        # else:
-    dico = 'C'
+    # TODO: Check for continous or discrete, only continuous supported right now
+    # if isCont():
+    #    dico = 'C'
+    # elif isDisc():
+    #    dico = 'D'
+    # else:
+    #   dico = 'C'
 
     try:
         from slycot import sb10ad
     except ImportError:
         raise ControlSlycot("can't find slycot subroutine sb10ad")
 
-    n = np.size(P.A,0)
-    m = np.size(P.B,1)
-    np_ = np.size(P.C,0)
+    n = np.size(P.A, 0)
+    m = np.size(P.B, 1)
+    np_ = np.size(P.C, 0)
     gamma = 1.e100
-    out = sb10ad(n,m,np_,ncon,nmeas,gamma,P.A,P.B,P.C,P.D)
+    out = sb10ad(n, m, np_, ncon, nmeas, gamma, P.A, P.B, P.C, P.D)
     gam = out[0]
     Ak = out[1]
     Bk = out[2]
@@ -202,21 +203,20 @@ def _size_as_needed(w, wname, n):
     """
     from . import append, ss
     if w is not None:
-        if not isinstance(w,StateSpace):
+        if not isinstance(w, StateSpace):
             w = ss(w)
-        if 1==w.inputs and 1==w.outputs:
-            w = append(*(w,)*n)
+        if 1 == w.inputs and 1 == w.outputs:
+            w = append(*(w,) * n)
         else:
             if w.inputs != n:
-                msg=("{}: weighting function has {} inputs, expected {}".
-                      format(wname,w.inputs,n))
+                msg = ("{}: weighting function has {} inputs, expected {}".format(wname, w.inputs, n))
                 raise ValueError(msg)
     else:
-        w = ss([],[],[],[])
+        w = ss([], [], [], [])
     return w
 
 
-def augw(g,w1=None,w2=None,w3=None):
+def augw(g, w1=None, w2=None, w3=None):
     """Augment plant for mixed sensitivity problem.
 
     Parameters
@@ -254,12 +254,12 @@ def augw(g,w1=None,w2=None,w3=None):
     ny = g.outputs
     nu = g.inputs
 
-    w1,w2,w3 = [_size_as_needed(w,wname,n)
-                for w,wname,n in zip((w1,w2,w3),
-                                     ('w1','w2','w3'),
-                                     (ny,nu,ny))]
+    w1, w2, w3 = [_size_as_needed(w, wname, n)
+                  for w, wname, n in zip((w1, w2, w3),
+                                         ('w1', 'w2', 'w3'),
+                                         (ny, nu, ny))]
 
-    if not isinstance(g,StateSpace):
+    if not isinstance(g, StateSpace):
         g = ss(g)
 
     #       w         u
@@ -270,11 +270,11 @@ def augw(g,w1=None,w2=None,w3=None):
     #  v  [ I    |    -g    ]
 
     # error summer: inputs are -y and r=w
-    Ie = ss([],[],[],np.eye(ny))
+    Ie = ss([], [], [], np.eye(ny))
     # control: needed to "distribute" control input
-    Iu = ss([],[],[],np.eye(nu))
+    Iu = ss([], [], [], np.eye(nu))
 
-    sysall = append(w1,w2,w3,Ie,g,Iu)
+    sysall = append(w1, w2, w3, Ie, g, Iu)
 
     niw1 = w1.inputs
     niw2 = w2.inputs
@@ -284,43 +284,44 @@ def augw(g,w1=None,w2=None,w3=None):
     now2 = w2.outputs
     now3 = w3.outputs
 
-    q = np.zeros((niw1+niw2+niw3+ny+nu,2))
-    q[:,0] = np.arange(1,q.shape[0]+1)
+    q = np.zeros((niw1 + niw2 + niw3 + ny + nu, 2))
+    q[:, 0] = np.arange(1, q.shape[0] + 1)
 
     # Ie -> w1
-    q[:niw1,1] = np.arange(1+now1+now2+now3,
-                           1+now1+now2+now3+niw1)
+    q[:niw1, 1] = np.arange(1 + now1 + now2 + now3,
+                            1 + now1 + now2 + now3 + niw1)
 
     # Iu -> w2
-    q[niw1:niw1+niw2,1] = np.arange(1+now1+now2+now3+2*ny,
-                                    1+now1+now2+now3+2*ny+niw2)
+    q[niw1:niw1 + niw2, 1] = np.arange(1 + now1 + now2 + now3 + 2 * ny,
+                                       1 + now1 + now2 + now3 + 2 * ny + niw2)
 
     # y -> w3
-    q[niw1+niw2:niw1+niw2+niw3,1] = np.arange(1+now1+now2+now3+ny,
-                                              1+now1+now2+now3+ny+niw3)
+    q[niw1 + niw2:niw1 + niw2 + niw3, 1] = np.arange(1 + now1 + now2 + now3 + ny,
+                                                     1 + now1 + now2 + now3 + ny + niw3)
 
     # -y -> Iy; note the leading -
-    q[niw1+niw2+niw3:niw1+niw2+niw3+ny,1] = -np.arange(1+now1+now2+now3+ny,
-                                                       1+now1+now2+now3+2*ny)
+    q[niw1 + niw2 + niw3:niw1 + niw2 + niw3 + ny, 1] = -np.arange(1 + now1 + now2 + now3 + ny,
+                                                                  1 + now1 + now2 + now3 + 2 * ny)
 
     # Iu -> G
-    q[niw1+niw2+niw3+ny:niw1+niw2+niw3+ny+nu,1] = np.arange(1+now1+now2+now3+2*ny,
-                                                            1+now1+now2+now3+2*ny+nu)
+    q[niw1 + niw2 + niw3 + ny:niw1 + niw2 + niw3 + ny + nu, 1] = np.arange(1 + now1 + now2 + now3 + 2 * ny,
+                                                                           1 + now1 + now2 + now3 + 2 * ny + nu)
 
     # input indices: to Ie and Iu
-    ii = np.hstack((np.arange(1+now1+now2+now3,
-                              1+now1+now2+now3+ny),
-                    np.arange(1+now1+now2+now3+ny+nu,
-                              1+now1+now2+now3+ny+nu+nu)))
+    ii = np.hstack((np.arange(1 + now1 + now2 + now3,
+                              1 + now1 + now2 + now3 + ny),
+                    np.arange(1 + now1 + now2 + now3 + ny + nu,
+                              1 + now1 + now2 + now3 + ny + nu + nu)))
 
     # output indices
-    oi = np.arange(1,1+now1+now2+now3+ny)
+    oi = np.arange(1, 1 + now1 + now2 + now3 + ny)
 
-    p = connect(sysall,q,ii,oi)
+    p = connect(sysall, q, ii, oi)
 
     return p
 
-def mixsyn(g,w1=None,w2=None,w3=None):
+
+def mixsyn(g, w1=None, w2=None, w3=None):
     """Mixed-sensitivity H-infinity synthesis.
 
     mixsyn(g,w1,w2,w3) -> k,cl,info
@@ -336,9 +337,9 @@ def mixsyn(g,w1=None,w2=None,w3=None):
     Returns
     -------
     k: synthesized controller; StateSpace object
-    cl: closed system mapping evaluation inputs to evaluation outputs; if 
+    cl: closed system mapping evaluation inputs to evaluation outputs; if
     p is the augmented plant, with
-        [z] = [p11 p12] [w], 
+        [z] = [p11 p12] [w],
         [y]   [p21   g] [u]
     then cl is the system from w->z with u=-k*y.  StateSpace object.
 
@@ -356,8 +357,8 @@ def mixsyn(g,w1=None,w2=None,w3=None):
     """
     nmeas = g.outputs
     ncon = g.inputs
-    p = augw(g,w1,w2,w3)
+    p = augw(g, w1, w2, w3)
 
-    k,cl,gamma,rcond=hinfsyn(p,nmeas,ncon)
-    info = gamma,rcond
-    return k,cl,info
+    k, cl, gamma, rcond = hinfsyn(p, nmeas, ncon)
+    info = gamma, rcond
+    return k, cl, info

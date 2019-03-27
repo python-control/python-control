@@ -90,7 +90,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         number of samples
     margins : boolean
         if True, plot gain and phase margin
-    \*args, \**kwargs:
+    *args, **kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -109,8 +109,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     but it returns a MIMO response.
 
     2. If a discrete time model is given, the frequency response is plotted
-    along the upper branch of the unit circle, using the mapping z = exp(j
-    \omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
+    along the upper branch of the unit circle, using the mapping z = exp(j/ omega dt)
+    where omega ranges from 0 to pi/dt and dt is the discrete
     timebase.  If not timebase is specified (dt = True), dt is set to 1.
 
     Examples
@@ -140,13 +140,13 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             if Hz:
                 omega_limits *= 2. * math.pi
             if omega_num:
-                omega = sp.logspace(np.log10(omega_limits[0]), 
-                                    np.log10(omega_limits[1]), 
-                                    num=omega_num, 
+                omega = sp.logspace(np.log10(omega_limits[0]),
+                                    np.log10(omega_limits[1]),
+                                    num=omega_num,
                                     endpoint=True)
             else:
-                omega = sp.logspace(np.log10(omega_limits[0]), 
-                                    np.log10(omega_limits[1]), 
+                omega = sp.logspace(np.log10(omega_limits[0]),
+                                    np.log10(omega_limits[1]),
                                     endpoint=True)
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
@@ -243,7 +243,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                         phase_limit = 180.
 
                     ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':')
-                    ax_phase.axhline(y=phase_limit if deg else math.radians(phase_limit), 
+                    ax_phase.axhline(y=phase_limit if deg else math.radians(phase_limit),
                                      color='k', linestyle=':')
                     mag_ylim = ax_mag.get_ylim()
                     phase_ylim = ax_phase.get_ylim()
@@ -255,39 +255,30 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                             ax_mag.loglog([Wcp, Wcp], [1., 1e-8], color='k', linestyle=':')
 
                         if deg:
-                            ax_phase.semilogx([Wcp, Wcp], [1e5, phase_limit + pm], 
-                                              color='k', linestyle=':')
-                            ax_phase.semilogx([Wcp, Wcp], [phase_limit + pm, phase_limit], 
-                                              color='k')
+                            ax_phase.semilogx([Wcp, Wcp], [1e5, phase_limit + pm], color='k', linestyle=':')
+                            ax_phase.semilogx([Wcp, Wcp], [phase_limit + pm, phase_limit], color='k')
                         else:
-                            ax_phase.semilogx([Wcp, Wcp], [1e5, math.radians(phase_limit) +
-                                                           math.radians(pm)], 
-                                              color='k', linestyle=':')
-                            ax_phase.semilogx([Wcp, Wcp], [math.radians(phase_limit) +
-                                                           math.radians(pm), 
-                                                           math.radians(phase_limit)], color='k')
+                            ax_phase.semilogx([Wcp, Wcp], [1e5, math.radians(phase_limit) + math.radians(pm)], color='k', linestyle=':')
+                            ax_phase.semilogx([Wcp, Wcp], [math.radians(phase_limit) + math.radians(pm), math.radians(phase_limit)], color='k')
 
                     if gm != float('inf') and Wcg != float('nan'):
                         if dB:
-                            ax_mag.semilogx([Wcg, Wcg], [-20. * np.log10(gm), -1e5], color='k', 
-                                            linestyle=':')
+                            ax_mag.semilogx([Wcg, Wcg], [-20. * np.log10(gm), -1e5], color='k', linestyle=':')
                             ax_mag.semilogx([Wcg, Wcg], [0, -20 * np.log10(gm)], color='k')
                         else:
                             ax_mag.loglog([Wcg, Wcg], [1. / gm, 1e-8], color='k', linestyle=':')
                             ax_mag.loglog([Wcg, Wcg], [1., 1. / gm], color='k')
 
                         if deg:
-                            ax_phase.semilogx([Wcg, Wcg], [1e-8, phase_limit], 
-                                              color='k', linestyle=':')
+                            ax_phase.semilogx([Wcg, Wcg], [1e-8, phase_limit], color='k', linestyle=':')
                         else:
-                            ax_phase.semilogx([Wcg, Wcg], [1e-8, math.radians(phase_limit)], 
-                                              color='k', linestyle=':')
+                            ax_phase.semilogx([Wcg, Wcg], [1e-8, math.radians(phase_limit)], color='k', linestyle=':')
 
                     ax_mag.set_ylim(mag_ylim)
                     ax_phase.set_ylim(phase_ylim)
-                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)' % 
+                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)' %
                                  (20 * np.log10(gm) if dB else gm,
-                                  'dB ' if dB else '\b', Wcg, pm if deg else math.radians(pm), 
+                                  'dB ' if dB else '\b', Wcg, pm if deg else math.radians(pm),
                                   'deg' if deg else 'rad', Wcp))
 
                 if nyquistfrq_plot:
@@ -342,7 +333,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args,
         Used to specify the color of the plot
     labelFreq : int
         Label every nth frequency on the plot
-    \*args, \**kwargs:
+    *args, **kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -362,7 +353,10 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args,
     """
     # If argument was a singleton, turn it into a list
     if not getattr(syslist, '__iter__', False):
-        syslist = (syslist,)
+        syslist = [syslist]
+
+    if len(syslist) <= 0:
+        raise ValueError("syslist should contain at least one element")
 
     # Select a default range if none is provided
     if omega is None:
@@ -397,11 +391,11 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args,
                 c = p[0].get_color()
                 ax = plt.gca()
                 # Plot arrow to indicate Nyquist encirclement orientation
-                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
+                ax.arrow(x[0], y[0], (x[1] - x[0]) / 2, (y[1] - y[0]) / 2, fc=c, ec=c,
                          head_width=0.2, head_length=0.2)
 
                 plt.plot(x, -y, '-', color=c, *args, **kwargs)
-                ax.arrow(x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2, fc=c, ec=c,
+                ax.arrow(x[-1], -y[-1], (x[-1] - x[-2]) / 2, (y[-1] - y[-2]) / 2, fc=c, ec=c,
                          head_width=0.2, head_length=0.2)
 
                 # Mark the -1 point
@@ -427,8 +421,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args,
                     # np.round() is used because 0.99... appears
                     # instead of 1.0, and this would otherwise be
                     # truncated to 0.
-                    plt.text(xpt, ypt, ' ' + str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
-                             prefix + 'Hz')
+                    plt.text(xpt, ypt, ' ' + str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' + prefix + 'Hz')
 
     if Plot:
         ax = plt.gca()
@@ -521,7 +514,7 @@ def gangof4_plot(P, C, omega=None):
 
 
 # Compute reasonable defaults for axes
-def default_frequency_range(syslist, Hz=None, number_of_samples=None, 
+def default_frequency_range(syslist, Hz=None, number_of_samples=None,
                             feature_periphery_decade=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
@@ -598,8 +591,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 # * at the origin and real <= 0 & imag==0: log!
                 # * at 1.: would result in omega=0. (logaritmic plot!)
                 features_ = features_[(features_.imag != 0.0) | (features_.real > 0.)]
-                features_ = features_[np.bitwise_not((features_.imag == 0.0) & 
-                                                     (np.abs(features_.real - 1.0) < 1.e-10))]
+                features_ = features_[np.bitwise_not((features_.imag == 0.0) & (np.abs(features_.real - 1.0) < 1.e-10))]
                 # TODO: improve
                 features__ = np.abs(np.log(features_) / (1.j * sys.dt))
                 features = np.concatenate((features, features__))

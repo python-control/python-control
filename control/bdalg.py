@@ -61,8 +61,10 @@ from . import frdata as frd
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
+
 def series(sys1, *sysn):
-    """Return the series connection (... \* sys3 \*) sys2 \* sys1
+    """
+    Return the series connection (... \* sys3 \*) sys2 \* sys1
 
     Parameters
     ----------
@@ -103,7 +105,8 @@ def series(sys1, *sysn):
 
     """
     from functools import reduce
-    return reduce(lambda x, y:y*x, sysn, sys1)
+    return reduce(lambda x, y: y * x, sysn, sys1)
+
 
 def parallel(sys1, *sysn):
     """
@@ -148,7 +151,8 @@ def parallel(sys1, *sysn):
 
     """
     from functools import reduce
-    return reduce(lambda x, y:x+y, sysn, sys1)
+    return reduce(lambda x, y: x + y, sysn, sys1)
+
 
 def negate(sys):
     """
@@ -178,9 +182,10 @@ def negate(sys):
 
     """
 
-    return -sys;
+    return -sys
 
-#! TODO: expand to allow sys2 default to work in MIMO case?
+
+# TODO: expand to allow sys2 default to work in MIMO case?
 def feedback(sys1, sys2=1, sign=-1):
     """
     Feedback interconnection between two I/O systems.
@@ -226,14 +231,10 @@ def feedback(sys1, sys2=1, sign=-1):
     """
 
     # Check for correct input types.
-    if not isinstance(sys1, (int, float, complex, np.number,
-                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
-        raise TypeError("sys1 must be a TransferFunction, StateSpace " +
-                        "or FRD object, or a scalar.")
-    if not isinstance(sys2, (int, float, complex, np.number,
-                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
-        raise TypeError("sys2 must be a TransferFunction, StateSpace " +
-                        "or FRD object, or a scalar.")
+    if not isinstance(sys1, (int, float, complex, np.number, tf.TransferFunction, ss.StateSpace, frd.FRD)):
+        raise TypeError("sys1 must be a TransferFunction, StateSpace or FRD object, or a scalar.")
+    if not isinstance(sys2, (int, float, complex, np.number, tf.TransferFunction, ss.StateSpace, frd.FRD)):
+        raise TypeError("sys2 must be a TransferFunction, StateSpace or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.
@@ -244,15 +245,15 @@ def feedback(sys1, sys2=1, sign=-1):
             sys1 = ss._convertToStateSpace(sys1)
         elif isinstance(sys2, frd.FRD):
             sys1 = ss._convertToFRD(sys1)
-        else: # sys2 is a scalar.
+        else:  # sys2 is a scalar.
             sys1 = tf._convert_to_transfer_function(sys1)
             sys2 = tf._convert_to_transfer_function(sys2)
 
     return sys1.feedback(sys2, sign)
 
-def append(*sys):
-    '''append(sys1, sys2, ..., sysn)
 
+def append(*sys):
+    """
     Group models by appending their inputs and outputs
 
     Forms an augmented system model, and appends the inputs and
@@ -278,16 +279,17 @@ def append(*sys):
     >>> sys2 = ss("-1.", "1.", "1.", "0.")
     >>> sys = append(sys1, sys2)
 
-    .. todo::
-        also implement for transfer function, zpk, etc.
-    '''
+    # TODO : also implement for transfer function, zpk, etc.
+    """
+
     s1 = sys[0]
     for s in sys[1:]:
         s1 = s1.append(s)
     return s1
 
+
 def connect(sys, Q, inputv, outputv):
-    '''
+    """
     Index-base interconnection of system
 
     The system sys is a system typically constructed with append, with
@@ -324,23 +326,24 @@ def connect(sys, Q, inputv, outputv):
     >>> sys = append(sys1, sys2)
     >>> Q = sp.mat([ [ 1, 2], [2, -1] ]) # basically feedback, output 2 in 1
     >>> sysc = connect(sys, Q, [2], [1, 2])
-    '''
+    """
+
     # first connect
-    K = sp.zeros( (sys.inputs, sys.outputs) )
+    K = sp.zeros((sys.inputs, sys.outputs))
     for r in sp.array(Q).astype(int):
-        inp = r[0]-1
+        inp = r[0] - 1
         for outp in r[1:]:
-            if outp > 0 and outp <= sys.outputs:
-                K[inp,outp-1] = 1.
+            if 0 < outp <= sys.outputs:
+                K[inp, outp - 1] = 1.
             elif outp < 0 and -outp >= -sys.outputs:
-                K[inp,-outp-1] = -1.
+                K[inp, -outp - 1] = -1.
     sys = sys.feedback(sp.matrix(K), sign=1)
 
     # now trim
-    Ytrim = sp.zeros( (len(outputv), sys.outputs) )
-    Utrim = sp.zeros( (sys.inputs, len(inputv)) )
-    for i,u in enumerate(inputv):
-        Utrim[u-1,i] = 1.
-    for i,y in enumerate(outputv):
-        Ytrim[i,y-1] = 1.
-    return sp.matrix(Ytrim)*sys*sp.matrix(Utrim)
+    Ytrim = sp.zeros((len(outputv), sys.outputs))
+    Utrim = sp.zeros((sys.inputs, len(inputv)))
+    for i, u in enumerate(inputv):
+        Utrim[u - 1, i] = 1.
+    for i, y in enumerate(outputv):
+        Ytrim[i, y - 1] = 1.
+    return sp.matrix(Ytrim) * sys * sp.matrix(Utrim)

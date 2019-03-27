@@ -51,8 +51,8 @@ $Id$
 """
 
 # Import MATLAB-like functions that are defined in other packages
-from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
-from numpy import linspace, logspace
+from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf  # noqa F403, F401
+from numpy import linspace, logspace  # noqa F403, F401
 
 # If configuration is not yet set, import and use MATLAB defaults
 import sys
@@ -61,30 +61,30 @@ if not ('.config' in sys.modules):
     config.use_matlab_defaults()
 
 # Control system library
-from ..statesp import *
-from ..xferfcn import *
-from ..lti import *
-from ..frdata import *
-from ..dtime import *
-from ..exception import ControlArgument
+from ..statesp import *  # noqa F403, F401
+from ..xferfcn import *  # noqa F403, F401
+from ..lti import *  # noqa F403, F401
+from ..frdata import *  # noqa F403, F401
+from ..dtime import *  # noqa F403, F401
+from ..exception import ControlArgument  # noqa F403, F401
 
 # Import MATLAB-like functions that can be used as-is
-from ..ctrlutil import *
-from ..freqplot import nyquist, gangof4
-from ..nichols import nichols
-from ..bdalg import *
-from ..pzmap import *
-from ..statefbk import *
-from ..delay import *
-from ..modelsimp import *
-from ..mateqn import *
-from ..margins import margin
-from ..rlocus import rlocus
-from ..dtime import c2d
+from ..ctrlutil import *  # noqa F403, F401
+from ..freqplot import nyquist, gangof4  # noqa F403, F401
+from ..nichols import nichols  # noqa F403, F401
+from ..bdalg import *  # noqa F403, F401
+from ..pzmap import *  # noqa F403, F401
+from ..statefbk import *  # noqa F403, F401
+from ..delay import *  # noqa F403, F401
+from ..modelsimp import *  # noqa F403, F401
+from ..mateqn import *  # noqa F403, F401
+from ..margins import margin  # noqa F403, F401
+from ..rlocus import rlocus  # noqa F403, F401
+from ..dtime import c2d  # noqa F403, F401
 
 # Import functions specific to Matlab compatibility package
-from .timeresp import *
-from .wrappers import *
+from .timeresp import *  # noqa F403, F401
+from .wrappers import *  # noqa F403, F401
 
 r"""
 The following tables give an overview of the module ``control.matlab``.

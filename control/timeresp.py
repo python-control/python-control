@@ -61,6 +61,7 @@ from .lti import isdtime, isctime
 __all__ = ['forced_response', 'step_response', 'initial_response',
            'impulse_response']
 
+
 # Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
@@ -112,11 +113,11 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
     """
     # convert nearly everything to an array.
     out_array = np.asarray(in_obj)
-    if (transpose):
+    if transpose:
         out_array = np.transpose(out_array)
 
     # Test element data type, elements must be numbers
-    legal_kinds = set(("i", "f", "c"))  # integer, float, complex
+    legal_kinds = {"i", "f", "c"}  # integer, float, complex
     if out_array.dtype.kind not in legal_kinds:
         err_msg = "Wrong element data type: '{d}'. Array elements " \
                   "must be numbers.".format(d=str(out_array.dtype))
@@ -223,9 +224,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
         raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
                         '(For example ``StateSpace`` or ``TransferFunction``)')
     sys = _convertToStateSpace(sys)
-    A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
-        np.asarray(sys.D)
-#    d_type = A.dtype
+    A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), np.asarray(sys.D)
+
     n_states = A.shape[0]
     n_inputs = B.shape[1]
     n_outputs = C.shape[0]
@@ -234,23 +234,20 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     if isdtime(sys, strict=True):
         if T is None:
             if U is None:
-                raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
-                                 'zero for discrete-time simulation')
+                raise ValueError('Parameters ``T`` and ``U`` can\'t both be zero for discrete-time simulation')
             # Set T to integers with same length as U
             T = range(len(U))
         else:
             # Make sure the input vector and time vector have same length
             # TODO: allow interpolation of the input vector
             if len(U) != len(T):
-                ValueError('Pamameter ``T`` must have same length as'
-                           'input vector ``U``')
+                ValueError('Pamameter ``T`` must have same length as input vector ``U``')
 
     # Test if T has shape (n,) or (1, n);
     # T must be array-like and values must be increasing.
     # The length of T determines the length of the input vector.
     if T is None:
-        raise ValueError('Parameter ``T``: must be array-like, and contain '
-                         '(strictly monotonic) increasing numbers.')
+        raise ValueError('Parameter ``T``: must be array-like, and contain (strictly monotonic) increasing numbers.')
     T = _check_convert_array(T, [('any',), (1, 'any')],
                              'Parameter ``T``: ', squeeze=True,
                              transpose=transpose)
@@ -260,8 +257,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     n_steps = len(T)            # number of simulation steps
 
     # create X0 if not given, test if X0 has correct shape
-    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
-                              'Parameter ``X0``: ', squeeze=True)
+    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)], 'Parameter ``X0``: ', squeeze=True)
 
     xout = np.zeros((n_states, n_steps))
     xout[:, 0] = X0
@@ -277,20 +273,17 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
             # Solve using matrix exponential
             expAdt = sp.linalg.expm(A * dt)
             for i in range(1, n_steps):
-                xout[:, i] = dot(expAdt, xout[:, i-1])
+                xout[:, i] = dot(expAdt, xout[:, i - 1])
             yout = dot(C, xout)
 
         # General algorithm that interpolates U in between output points
         else:
             # Test if U has correct shape and type
-            legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
-                           [(n_inputs, n_steps)]
-            U = _check_convert_array(U, legal_shapes,
-                                     'Parameter ``U``: ', squeeze=False,
-                                     transpose=transpose)
+            legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else [(n_inputs, n_steps)]
+            U = _check_convert_array(U, legal_shapes, 'Parameter ``U``: ', squeeze=False, transpose=transpose)
             # convert 1D array to 2D array with only one row
             if len(U.shape) == 1:
-                U = U.reshape(1, -1)  # pylint: disable=E1103
+                U = U.reshape(1, -1)
 
             # Algorithm: to integrate from time 0 to time dt, with linear
             # interpolation between inputs u(0) = u0 and u(dt) = u1, we solve
@@ -308,12 +301,12 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
                          [np.zeros((n_inputs, n_states + 2 * n_inputs))]])
             expM = sp.linalg.expm(M)
             Ad = expM[:n_states, :n_states]
-            Bd1 = expM[:n_states, n_states+n_inputs:]
+            Bd1 = expM[:n_states, n_states + n_inputs:]
             Bd0 = expM[:n_states, n_states:n_states + n_inputs] - Bd1
 
             for i in range(1, n_steps):
-                xout[:, i] = (dot(Ad, xout[:, i-1]) + dot(Bd0, U[:, i-1]) +
-                              dot(Bd1, U[:, i]))
+                xout[:, i] = (dot(Ad, xout[:, i - 1]) + dot(Bd0, U[:, i - 1]) + dot(Bd1, U[:, i]))
+
             yout = dot(C, xout) + dot(D, U)
 
         yout = squeeze(yout)
@@ -329,12 +322,13 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
         yout = sp.transpose(yout)
 
     # See if we need to transpose the data back into MATLAB form
-    if (transpose):
+    if transpose:
         T = np.transpose(T)
         yout = np.transpose(yout)
         xout = np.transpose(xout)
 
     return T, yout, xout
+
 
 def _get_ss_simo(sys, input=None, output=None):
     """Return a SISO or SIMO state-space version of sys
@@ -353,6 +347,7 @@ def _get_ss_simo(sys, input=None, output=None):
         return _mimo2simo(sys_ss, input, warn_conversion=warn)
     else:
         return _mimo2siso(sys_ss, input, output, warn_conversion=warn)
+
 
 def step_response(sys, T=None, X0=0., input=None, output=None,
                   transpose=False, return_x=False):
@@ -424,8 +419,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
 
     U = np.ones_like(T)
 
-    T, yout, xout = forced_response(sys, T, U, X0,
-                                     transpose=transpose)
+    T, yout, xout = forced_response(sys, T, U, X0, transpose=transpose)
 
     if return_x:
         return T, yout, xout
@@ -433,8 +427,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     return T, yout
 
 
-def initial_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, return_x=False):
+def initial_response(sys, T=None, X0=0., input=0, output=None, transpose=False, return_x=False):
     # pylint: disable=W0622
     """Initial condition response of a linear system
 
@@ -506,8 +499,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     return T, yout
 
 
-def impulse_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, return_x=False):
+def impulse_response(sys, T=None, X0=0., input=0, output=None, transpose=False, return_x=False):
     # pylint: disable=W0622
     """Impulse response of a linear system
 
@@ -574,8 +566,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     # create X0 if not given, test if X0 has correct shape.
     # Must be done here because it is used for computations here.
     n_states = sys.A.shape[0]
-    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
-                              'Parameter ``X0``: \n', squeeze=True)
+    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)], 'Parameter ``X0``: \n', squeeze=True)
 
     # Compute T and U, no checks necessary, they will be checked in lsim
     if T is None:

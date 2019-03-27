@@ -47,8 +47,8 @@
 
 # Packages used by this module
 import numpy as np
-from scipy import array, poly1d, row_stack, zeros_like, real, imag, exp, sin, cos, linspace, sqrt
-from math import pi
+from scipy import array, poly1d, row_stack, zeros_like, real, imag
+
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
 from .xferfcn import _convert_to_transfer_function
@@ -86,6 +86,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         calculate gain, damping and print
     grid: boolean (default = False)
         If True plot omega-damping grid.
+    plotstr: ?
 
     Returns
     -------
@@ -93,6 +94,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         Computed root locations, given as a 2d array
     klist : ndarray or list
         Gains used.  Same as klist keyword argument if provided.
+
     """
 
     # Convert numerator and denominator to polynomials if they aren't
@@ -125,9 +127,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         ax = pylab.axes()
 
         if PrintGain:
-            click_point, = ax.plot([0], [0],color='k',markersize = 0,marker='s',zorder=20)
-            f.canvas.mpl_connect(
-                'button_release_event', partial(_RLFeedbackClicks, sys=sys,fig=f,point=click_point))
+            click_point, = ax.plot([0], [0], color='k', markersize=0, marker='s', zorder=20)
+            f.canvas.mpl_connect('button_release_event', partial(_RLFeedbackClicks, sys=sys, fig=f, point=click_point))
 
         # plot open loop poles
         poles = array(denp.r)
@@ -151,8 +152,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
 
 
 def _default_gains(num, den, xlim, ylim):
-    """Unsupervised gains calculation for root locus plot. 
-    
+    """Unsupervised gains calculation for root locus plot.
+
     References:
      Ogata, K. (2002). Modern control engineering (4th ed.). Upper Saddle River, NJ : New Delhi: Prentice Hall.."""
 
@@ -178,16 +179,15 @@ def _default_gains(num, den, xlim, ylim):
     mymat_xl = np.append(mymat_xl, important_points)
     false_gain = den.coeffs[0] / num.coeffs[0]
     if false_gain < 0 and not den.order > num.order:
-        raise ValueError("Not implemented support for 0 degrees root "
-                         "locus with equal order of numerator and denominator.")
+        raise ValueError("Not implemented support for 0 degrees root locus with equal order of numerator and denominator.")
 
     if xlim is None and false_gain > 0:
         x_tolerance = 0.05 * (np.max(np.real(mymat_xl)) - np.min(np.real(mymat_xl)))
         xlim = _ax_lim(mymat_xl)
     elif xlim is None and false_gain < 0:
-        axmin = np.min(np.real(important_points))-(np.max(np.real(important_points))-np.min(np.real(important_points)))
+        axmin = np.min(np.real(important_points)) - (np.max(np.real(important_points)) - np.min(np.real(important_points)))
         axmin = np.min(np.array([axmin, np.min(np.real(mymat_xl))]))
-        axmax = np.max(np.real(important_points))+np.max(np.real(important_points))-np.min(np.real(important_points))
+        axmax = np.max(np.real(important_points)) + np.max(np.real(important_points)) - np.min(np.real(important_points))
         axmax = np.max(np.array([axmax, np.max(np.real(mymat_xl))]))
         xlim = [axmin, axmax]
         x_tolerance = 0.05 * (axmax - axmin)
@@ -206,10 +206,10 @@ def _default_gains(num, den, xlim, ylim):
 
     while (indexes_too_far[0].size > 0) and (kvect.size < 5000):
         for index in indexes_too_far[0]:
-            new_gains = np.linspace(kvect[index], kvect[index+1], 5)
+            new_gains = np.linspace(kvect[index], kvect[index + 1], 5)
             new_points = _RLFindRoots(num, den, new_gains[1:4])
-            kvect = np.insert(kvect, index+1, new_gains[1:4])
-            mymat = np.insert(mymat, index+1, new_points, axis=0)
+            kvect = np.insert(kvect, index + 1, new_gains[1:4])
+            mymat = np.insert(mymat, index + 1, new_points, axis=0)
 
         mymat = _RLSortRoots(mymat)
         distance_points = np.abs(np.diff(mymat, axis=0)) > tolerance  # distance between points
@@ -261,9 +261,9 @@ def _k_max(num, den, real_break_points, k_break_points):
     false_gain = den.coeffs[0] / num.coeffs[0]
 
     if asymp_number > 0:
-        asymp_center = (np.sum(den.roots) - np.sum(num.roots))/asymp_number
+        asymp_center = (np.sum(den.roots) - np.sum(num.roots)) / asymp_number
         distance_max = 4 * np.max(np.abs(important_points - asymp_center))
-        asymp_angles = (2 * np.arange(0, asymp_number)-1) * np.pi / asymp_number
+        asymp_angles = (2 * np.arange(0, asymp_number) - 1) * np.pi / asymp_number
         if false_gain > 0:
             farthest_points = asymp_center + distance_max * np.exp(asymp_angles * 1j)  # farthest points over asymptotes
         else:
@@ -282,7 +282,7 @@ def _k_max(num, den, real_break_points, k_break_points):
 def _systopoly1d(sys):
     """Extract numerator and denominator polynomails for a system"""
     # Allow inputs from the signal processing toolbox
-    if (isinstance(sys, scipy.signal.lti)):
+    if isinstance(sys, scipy.signal.lti):
         nump = sys.num
         denp = sys.den
 
@@ -291,7 +291,7 @@ def _systopoly1d(sys):
         sys = _convert_to_transfer_function(sys)
 
         # Make sure we have a SISO system
-        if (sys.inputs > 1 or sys.outputs > 1):
+        if sys.inputs > 1 or sys.outputs > 1:
             raise ControlMIMONotImplemented()
 
         # Start by extracting the numerator and denominator from system object
@@ -299,13 +299,13 @@ def _systopoly1d(sys):
         denp = sys.den[0][0]
 
     # Check to see if num, den are already polynomials; otherwise convert
-    if (not isinstance(nump, poly1d)):
+    if not isinstance(nump, poly1d):
         nump = poly1d(nump)
 
-    if (not isinstance(denp, poly1d)):
+    if not isinstance(denp, poly1d):
         denp = poly1d(denp)
 
-    return (nump, denp)
+    return nump, denp
 
 
 def _RLFindRoots(nump, denp, kvect):
@@ -332,37 +332,42 @@ def _RLSortRoots(mymat):
     locus doesn't show weird pseudo-branches as roots jump from
     one branch to another."""
 
-    sorted = zeros_like(mymat)
+    sorted_mat = zeros_like(mymat)
+    prevrow = None
+
     for n, row in enumerate(mymat):
         if n == 0:
-            sorted[n, :] = row
+            sorted_mat[n, :] = row
+            prevrow = row
         else:
             # sort the current row by finding the element with the
             # smallest absolute distance to each root in the
             # previous row
             available = list(range(len(prevrow)))
             for elem in row:
-                evect = elem-prevrow[available]
+                evect = elem - prevrow[available]
                 ind1 = abs(evect).argmin()
                 ind = available.pop(ind1)
-                sorted[n, ind] = elem
-        prevrow = sorted[n, :]
-    return sorted
+                sorted_mat[n, ind] = elem
+
+            prevrow = sorted_mat[n, :]
+    return sorted_mat
 
 
-def _RLFeedbackClicks(event, sys,fig,point):
+def _RLFeedbackClicks(event, sys, fig, point):
     """Print root-locus gain feedback for clicks on the root-locus plot
     """
     s = complex(event.xdata, event.ydata)
-    K = -1./sys.horner(s)
-    if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
+    K = -1. / sys.horner(s)
+    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < 0.04:
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
         point.set_ydata(s.imag)
         point.set_xdata(s.real)
         point.set_markersize(8)
         fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-              (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+                     (s.real, s.imag, K.real, -1 * s.real / abs(s)))
         fig.canvas.draw()
+
 
 rlocus = root_locus

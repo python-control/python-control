@@ -44,6 +44,7 @@ setup(
                       'matplotlib'],
     tests_require=['scipy',
                    'matplotlib',
-                   'nose'],
+                   'nose',
+                   'flake8'],
     test_suite = 'nose.collector',
 )

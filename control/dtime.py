@@ -51,6 +51,7 @@ from .statesp import StateSpace, _convertToStateSpace
 
 __all__ = ['sample_system', 'c2d']
 
+
 # Sample a continuous time system
 def sample_system(sysc, Ts, method='zoh', alpha=None):
     """Convert a continuous time system to discrete time
@@ -66,6 +67,9 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
         Sampling period
     method : string
         Method to use for conversion: 'matched', 'tustin', 'zoh' (default)
+    alpha : float within [0, 1]
+        The generalized bilinear transformation weighting parameter, which
+        should only be specified with method="gbt", and is ignored otherwise
 
     Returns
     -------
@@ -91,7 +95,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
 
 
 def c2d(sysc, Ts, method='zoh'):
-    '''
+    """
     Return a discrete-time system
 
     Parameters
@@ -109,7 +113,7 @@ def c2d(sysc, Ts, method='zoh'):
         'impulse'    Impulse-invariant discretization, currently not implemented
         'tustin'     Bilinear (Tustin) approximation, only SISO
         'matched'    Matched pole-zero method, only SISO
-    '''
+    """
     #  Call the sample_system() function to do the work
     sysd = sample_system(sysc, Ts, method)
     if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):

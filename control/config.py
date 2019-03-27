@@ -14,6 +14,7 @@ bode_Hz = False                 # Bode plot frequency units
 bode_number_of_samples = None   # Bode plot number of samples
 bode_feature_periphery_decade = 1.0  # Bode plot feature periphery in decades
 
+
 # Set defaults to match MATLAB
 def use_matlab_defaults():
     """
@@ -23,9 +24,13 @@ def use_matlab_defaults():
         * Bode plots plot gain in dB, phase in degrees, frequency in Hertz
     """
     # Bode plot defaults
-    global bode_dB; bode_dB = True
-    global bode_deg; bode_deg = True
-    global bode_Hz; bode_Hz = True
+    global bode_dB
+    bode_dB = True
+    global bode_deg
+    bode_deg = True
+    global bode_Hz
+    bode_Hz = True
+
 
 # Set defaults to match FBS (Astrom and Murray)
 def use_fbs_defaults():
@@ -37,6 +42,9 @@ def use_fbs_defaults():
           frequency in Hertz
     """
     # Bode plot defaults
-    global bode_dB; bode_dB = False
-    global bode_deg; bode_deg = True
-    global bode_Hz; bode_Hz = True
+    global bode_dB
+    bode_dB = False
+    global bode_deg
+    bode_deg = True
+    global bode_Hz
+    bode_Hz = True

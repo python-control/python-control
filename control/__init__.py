@@ -46,34 +46,34 @@ for analyzing and designing feedback control systems.
 
 # Import functions from within the control system library
 # Note: the functions we use are specified as __all__ variables in the modules
-from .bdalg import *
-from .delay import *
-from .dtime import *
-from .freqplot import *
-from .lti import *
-from .margins import *
-from .mateqn import *
-from .modelsimp import *
-from .nichols import *
-from .phaseplot import *
-from .pzmap import *
-from .rlocus import *
-from .statefbk import *
-from .statesp import *
-from .timeresp import *
-from .xferfcn import *
-from .ctrlutil import *
-from .frdata import *
-from .canonical import *
-from .robust import *
-from .config import *
+from .bdalg import *  # noqa F403, F401
+from .delay import *  # noqa F403, F401
+from .dtime import *  # noqa F403, F401
+from .freqplot import *  # noqa F403, F401
+from .lti import *  # noqa F403, F401
+from .margins import *  # noqa F403, F401
+from .mateqn import *  # noqa F403, F401
+from .modelsimp import *  # noqa F403, F401
+from .nichols import *  # noqa F403, F401
+from .phaseplot import *  # noqa F403, F401
+from .pzmap import *  # noqa F403, F401
+from .rlocus import *  # noqa F403, F401
+from .statefbk import *  # noqa F403, F401
+from .statesp import *  # noqa F403, F401
+from .timeresp import *  # noqa F403, F401
+from .xferfcn import *  # noqa F403, F401
+from .ctrlutil import *  # noqa F403, F401
+from .frdata import *  # noqa F403, F401
+from .canonical import *  # noqa F403, F401
+from .robust import *  # noqa F403, F401
+from .config import *  # noqa F403, F401
 
 # Exceptions
-from .exception import *
+from .exception import *  # noqa F403, F401
 
 # Version information
 try:
-    from ._version import __version__, __commit__
+    from ._version import __version__, __commit__   # noqa F403, F401
 except ImportError:
     __version__ = "dev"
 

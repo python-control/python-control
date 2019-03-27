@@ -11,6 +11,7 @@ from numpy.linalg import solve, matrix_rank, eig
 
 __all__ = ['canonical_form', 'reachable_form', 'observable_form']
 
+
 def canonical_form(xsys, form='reachable'):
     """Convert a system into canonical form
 
@@ -40,8 +41,7 @@ def canonical_form(xsys, form='reachable'):
     elif form == 'modal':
         return modal_form(xsys)
     else:
-        raise ControlNotImplemented(
-            "Canonical form '%s' not yet implemented" % form)
+        raise ControlNotImplemented("Canonical form '%s' not yet implemented" % form)
 
 
 # Reachable canonical form
@@ -62,8 +62,7 @@ def reachable_form(xsys):
     """
     # Check to make sure we have a SISO system
     if not issiso(xsys):
-        raise ControlNotImplemented(
-            "Canonical forms for MIMO systems not yet supported")
+        raise ControlNotImplemented("Canonical forms for MIMO systems not yet supported")
 
     # Create a new system, starting with a copy of the old one
     zsys = StateSpace(xsys)
@@ -74,9 +73,9 @@ def reachable_form(xsys):
     zsys.A = zeros(shape(xsys.A))
     Apoly = poly(xsys.A)                # characteristic polynomial
     for i in range(0, xsys.states):
-        zsys.A[0, i] = -Apoly[i+1] / Apoly[0]
-        if (i+1 < xsys.states):
-            zsys.A[i+1, i] = 1.0
+        zsys.A[0, i] = -Apoly[i + 1] / Apoly[0]
+        if i + 1 < xsys.states:
+            zsys.A[i + 1, i] = 1.0
 
     # Compute the reachability matrices for each set of states
     Wrx = ctrb(xsys.A, xsys.B)
@@ -126,9 +125,9 @@ def observable_form(xsys):
     zsys.A = zeros(shape(xsys.A))
     Apoly = poly(xsys.A)                # characteristic polynomial
     for i in range(0, xsys.states):
-        zsys.A[i, 0] = -Apoly[i+1] / Apoly[0]
-        if (i+1 < xsys.states):
-            zsys.A[i, i+1] = 1
+        zsys.A[i, 0] = -Apoly[i + 1] / Apoly[0]
+        if i + 1 < xsys.states:
+            zsys.A[i, i + 1] = 1
 
     # Compute the observability matrices for each set of states
     Wrx = obsv(xsys.A, xsys.C)
@@ -144,6 +143,7 @@ def observable_form(xsys):
     zsys.B = Tzx * xsys.B
 
     return zsys, Tzx
+
 
 def modal_form(xsys):
     """Convert a system into modal canonical form
@@ -176,7 +176,7 @@ def modal_form(xsys):
     # Sorting eigenvalues and respective vectors by largest to smallest eigenvalue
     idx = eigval.argsort()[::-1]
     eigval = eigval[idx]
-    eigvec = eigvec[:,idx]
+    eigvec = eigvec[:, idx]
 
     # If all eigenvalues are real, the matrix of eigenvectors is Tzx directly
     if not iscomplex(eigval).any():

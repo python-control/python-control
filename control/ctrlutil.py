@@ -47,8 +47,9 @@ import math
 
 __all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
 
+
 # Utility function to unwrap an angle measurement
-def unwrap(angle, period=2*math.pi):
+def unwrap(angle, period=2 * math.pi):
     """Unwrap a phase angle to give a continuous curve
 
     Parameters
@@ -72,14 +73,16 @@ def unwrap(angle, period=2*math.pi):
 
     """
     dangle = np.diff(angle)
-    dangle_desired = (dangle + period/2.) % period - period/2.
+    dangle_desired = (dangle + period / 2.) % period - period / 2.
     correction = np.cumsum(dangle_desired - dangle)
     angle[1:] += correction
     return angle
 
+
 def issys(obj):
     """Return True if an object is a system, otherwise False"""
     return isinstance(obj, lti.LTI)
+
 
 def db2mag(db):
     """Convert a gain in decibels (dB) to a magnitude
@@ -100,6 +103,7 @@ def db2mag(db):
 
     """
     return 10. ** (db / 20.)
+
 
 def mag2db(mag):
     """Convert a magnitude to decibels (dB)

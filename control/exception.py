@@ -39,32 +39,38 @@
 #
 # $Id$
 
+
 class ControlSlycot(Exception):
     """Exception for Slycot import.  Used when we can't import a function
     from the slycot package"""
     pass
 
+
 class ControlDimension(Exception):
     """Raised when dimensions of system objects are not correct"""
     pass
+
 
 class ControlArgument(Exception):
     """Raised when arguments to a function are not correct"""
     pass
 
+
 class ControlMIMONotImplemented(Exception):
     """Function is not currently implemented for MIMO systems"""
     pass
+
 
 class ControlNotImplemented(Exception):
     """Functionality is not yet implemented"""
     pass
 
+
 # Utility function to see if slycot is installed
 def slycot_check():
     try:
-        import slycot
-    except:
+        import slycot  # noqa F401
+    except ImportError:
         return False
     else:
         return True

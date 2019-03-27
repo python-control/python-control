@@ -18,6 +18,7 @@ from numpy import absolute, real
 __all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
            'pole', 'zero', 'damp', 'evalfr', 'freqresp', 'dcgain']
 
+
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
@@ -59,7 +60,7 @@ class LTI:
         """
 
         # If no timebase is given, answer depends on strict flag
-        if self.dt == None:
+        if self.dt is None:
             return True if not strict else False
 
         # Look for dt > 0 (also works if dt = True)
@@ -71,8 +72,6 @@ class LTI:
 
         Parameters
         ----------
-        sys : LTI system
-            System to be checked
         strict: bool (default = False)
             If strict is True, make sure that timebase is not None
         """
@@ -82,11 +81,11 @@ class LTI:
         return self.dt == 0
 
     def issiso(self):
-        '''Check to see if a system is single input, single output'''
+        """Check to see if a system is single input, single output"""
         return self.inputs == 1 and self.outputs == 1
 
     def damp(self):
-        '''Natural frequency, damping ratio of system poles
+        """Natural frequency, damping ratio of system poles
 
         Returns
         -------
@@ -96,21 +95,21 @@ class LTI:
             Damping ratio for each system pole
         poles : array
             Array of system poles
-        '''
+        """
         poles = self.pole()
 
         if isdtime(self, strict=True):
-            splane_poles = np.log(poles)/self.dt
+            splane_poles = np.log(poles) / self.dt
         else:
             splane_poles = poles
         wn = absolute(splane_poles)
-        Z = -real(splane_poles)/wn
+        Z = -real(splane_poles) / wn
         return wn, Z, poles
 
     def dcgain(self):
         """Return the zero-frequency gain"""
-        raise NotImplementedError("dcgain not implemented for %s objects" %
-                                  str(self.__class__))
+        raise NotImplementedError("dcgain not implemented for %s objects" % str(self.__class__))
+
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
@@ -132,6 +131,7 @@ def issiso(sys, strict=False):
     # Done with the tricky stuff...
     return sys.issiso()
 
+
 # Return the timebase (with conversion if unspecified)
 def timebase(sys, strict=True):
     """Return the timebase for an LTI system
@@ -148,12 +148,13 @@ def timebase(sys, strict=True):
         raise ValueError("Timebase not defined")
 
     # Return the sample time, with converstion to float if strict is false
-    if (sys.dt == None):
+    if sys.dt is None:
         return None
-    elif (strict):
+    elif strict:
         return float(sys.dt)
 
     return sys.dt
+
 
 # Check to see if two timebases are equal
 def timebaseEqual(sys1, sys2):
@@ -167,14 +168,15 @@ def timebaseEqual(sys1, sys2):
     timebase (dt > 0) then their timebases must be equal.
     """
 
-    if (type(sys1.dt) == bool or type(sys2.dt) == bool):
+    if isinstance(sys1.dt, bool) or isinstance(sys2.dt, bool):
         # Make sure both are unspecified discrete timebases
         return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
-    elif (sys1.dt is None or sys2.dt is None):
+    elif sys1.dt is None or sys2.dt is None:
         # One or the other is unspecified => the other can be anything
         return True
     else:
         return sys1.dt == sys2.dt
+
 
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):
@@ -201,6 +203,7 @@ def isdtime(sys, strict=False):
     # Got passed something we don't recognize
     return False
 
+
 # Check to see if a system is a continuous time system
 def isctime(sys, strict=False):
     """
@@ -225,6 +228,7 @@ def isctime(sys, strict=False):
 
     # Got passed something we don't recognize
     return False
+
 
 def pole(sys):
     """
@@ -285,6 +289,7 @@ def zero(sys):
 
     return sys.zero()
 
+
 def damp(sys, doprint=True):
     """
     Compute natural frequency, damping ratio, and poles of a system
@@ -330,7 +335,7 @@ def damp(sys, doprint=True):
     wn, damping, poles = sys.damp()
     if doprint:
         print('_____Eigenvalue______ Damping___ Frequency_')
-        for p, d, w in zip(poles, damping, wn) :
+        for p, d, w in zip(poles, damping, wn):
             if abs(p.imag) < 1e-12:
                 print("%10.4g            %10.4g %10.4g" %
                       (p.real, 1.0, -p.real))
@@ -338,6 +343,7 @@ def damp(sys, doprint=True):
                 print("%10.4g%+10.4gj %10.4g %10.4g" %
                       (p.real, p.imag, d, w))
     return wn, damping, poles
+
 
 def evalfr(sys, x):
     """
@@ -380,6 +386,7 @@ def evalfr(sys, x):
     if issiso(sys):
         return sys.horner(x)[0][0]
     return sys.horner(x)
+
 
 def freqresp(sys, omega):
     """
@@ -434,6 +441,7 @@ def freqresp(sys, omega):
     """
 
     return sys.freqresp(omega)
+
 
 def dcgain(sys):
     """Return the zero-frequency (or DC) gain of the given system

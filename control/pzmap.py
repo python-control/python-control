@@ -40,12 +40,12 @@
 #
 # $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
 
-from numpy import real, imag, linspace, exp, cos, sin, sqrt
-from math import pi
-from .lti import LTI, isdtime, isctime
+from numpy import real, imag
+from .lti import LTI, isdtime
 from .grid import sgrid, zgrid, nogrid
 
 __all__ = ['pzmap']
+
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
@@ -77,7 +77,7 @@ def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
     poles = sys.pole()
     zeros = sys.zero()
 
-    if (Plot):
+    if Plot:
         import matplotlib.pyplot as plt
 
         if grid:
@@ -92,9 +92,7 @@ def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
         if len(poles) > 0:
             ax.scatter(real(poles), imag(poles), s=50, marker='x', facecolors='k')
         if len(zeros) > 0:
-            ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
-                        facecolors='none', edgecolors='k')
-
+            ax.scatter(real(zeros), imag(zeros), s=50, marker='o', facecolors='none', edgecolors='k')
 
         plt.title(title)
 
