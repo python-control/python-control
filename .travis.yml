@@ -62,7 +62,7 @@ before_install:
 # Install packages
 install:
   # Install packages needed by python-control
-  - conda install $SCIPY matplotlib
+  - conda install $SCIPY matplotlib flake8
   # Build slycot from source
   # For python 3, need to provide pointer to python library
   #! git clone https://github.com/repagh/Slycot.git slycot;
@@ -71,9 +71,11 @@ install:
       cd slycot; python setup.py install; cd ..;
     fi
 
+before_script:
+  - flake8 control/
+
 # command to run tests
 script:
-  - flake8 control/
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
 
