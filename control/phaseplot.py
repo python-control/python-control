@@ -295,7 +295,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         # set(xy, 'AutoScaleFactor', 0);
 
     if scale < 0:
-        _ = mpl.plot(x1, x2, 'b.')  # add dots at base
+        mpl.plot(x1, x2, 'b.')  # add dots at base
         # set(bp, 'MarkerSize', PP_arrow_markersize);
 
     return

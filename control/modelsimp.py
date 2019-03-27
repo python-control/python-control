@@ -290,7 +290,7 @@ def balred(sys, orders, method='truncate', alpha=None):
 
     # check if orders is a list or a scalar
     try:
-        _ = iter(orders)
+        iter(orders)
     except TypeError:  # if orders is a scalar
         orders = [orders]
 

@@ -148,9 +148,8 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         else:
             sys = xferfcn._convert_to_transfer_function(sysdata)
     except Exception as e:
-        print (e)
-        raise ValueError("Margin sysdata must be either a linear system or "
-                         "a 3-sequence of mag, phase, omega.")
+        print(e)
+        raise ValueError("Margin sysdata must be either a linear system or a 3-sequence of mag, phase, omega.")
 
     # calculate gain of system
     if isinstance(sys, xferfcn.TransferFunction):
