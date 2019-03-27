@@ -368,7 +368,7 @@ second has %i." % (self.outputs, other.outputs))
         if self.ifunc is None:
             try:
                 out = self.fresp[:, :, where(self.omega == omega)[0][0]]
-            except:
+            except IndexError:
                 raise ValueError("Frequency %f not in frequency list, try an interpolating FRD if you want additional points" % omega)
         else:
             if getattr(omega, '__iter__', False):
@@ -469,18 +469,18 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
         return FRD(fresp, omega, smooth=True)
 
     # try converting constant matrices
-    try:
-        sys = array(sys)
-        outputs, inputs = sys.shape
-        fresp = empty((outputs, inputs, len(omega)), dtype=float)
-        for i in range(outputs):
-            for j in range(inputs):
-                fresp[i, j, :] = sys[i, j]
-        return FRD(fresp, omega, smooth=True)
-    except:
-        pass
 
-    raise TypeError('''Can't convert given type "%s" to FRD system.''' % sys.__class__)
+    sys = array(sys)
+    outputs, inputs = sys.shape
+    fresp = empty((outputs, inputs, len(omega)), dtype=float)
+    for i in range(outputs):
+        for j in range(inputs):
+            fresp[i, j, :] = sys[i, j]
+
+    try:
+        return FRD(fresp, omega, smooth=True)
+    except(TypeError, ValueError):
+        raise TypeError('''Can't convert given type "%s" to FRD system.''' % sys.__class__)
 
 
 def frd(*args, **kwargs):

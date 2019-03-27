@@ -873,7 +873,6 @@ def dare_old(A, B, Q, R, S=None, E=None):
         A_b = copy(A)
         R_b = copy(R)
         B_b = copy(B)
-        E_b = copy(E)
         S_b = copy(S)
 
         # Solve the generalized algebraic Riccati equation by calling the

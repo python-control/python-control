@@ -524,7 +524,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
     Parameters
     ----------
-    syslist : list of LTI
+    syslist : tuple of LTI
         List of linear input/output systems (single system is OK)
     Hz: boolean
         If True, the limits (first and last value) of the frequencies
@@ -598,7 +598,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
             else:
                 # TODO
                 raise NotImplementedError('type of system in not implemented now')
-        except:
+        except NotImplementedError:
             pass
 
     # Make sure there is at least one point in the range

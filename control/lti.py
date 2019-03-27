@@ -170,7 +170,11 @@ def timebaseEqual(sys1, sys2):
 
     if isinstance(sys1.dt, bool) or isinstance(sys2.dt, bool):
         # Make sure both are unspecified discrete timebases
-        return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
+        if (isinstance(sys1.dt, bool) and not isinstance(sys2.dt, bool)) or \
+                (not isinstance(sys1.dt, bool) and isinstance(sys2.dt, bool)):
+            return False
+
+        return sys1.dt == sys2.dt
     elif sys1.dt is None or sys2.dt is None:
         # One or the other is unspecified => the other can be anything
         return True

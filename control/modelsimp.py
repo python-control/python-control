@@ -410,7 +410,6 @@ def markov(Y, U, M):
     """
 
     # Convert input parameters to matrices (if they aren't already)
-    Ymat = np.mat(Y)
     Umat = np.mat(U)
     n = np.size(U)
 
