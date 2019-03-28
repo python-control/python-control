@@ -272,14 +272,15 @@ class TransferFunction(LTI):
         """LaTeX representation of the transfer function, for Jupyter notebook"""
 
         mimo = self.inputs > 1 or self.outputs > 1
+
         if var is None:
             # ! TODO: replace with standard calls to lti functions
             var = 's' if self.dt is None or self.dt == 0 else 'z'
 
+        out = ['$$']
+
         if mimo:
-            outstr = r"$$\begin{bmatrix}"
-        else:
-            outstr = "$$"
+            out.append(r"\begin{bmatrix}")
 
         for i in range(self.outputs):
             for j in range(self.inputs):
@@ -287,23 +288,24 @@ class TransferFunction(LTI):
                 numstr = _tf_polynomial_to_string(self.num[i][j], var=var)
                 denstr = _tf_polynomial_to_string(self.den[i][j], var=var)
 
+                out += [r"\frac{", numstr, "}{", denstr, "}"]
 
-                outstr += r"\frac{" + numstr + "}{" + denstr + "}"
                 if mimo and j < self.outputs - 1:
-                    outstr += "&"
+                    out.append("&")
+
             if mimo:
-                outstr += r"\\ "
+                out.append(r"\\")
 
         if mimo:
-            outstr += r"\end{bmatrix}"
+            out.append(r" \end{bmatrix}")
 
         # See if this is a discrete time system with specific sampling time
         if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
-            outstr += "\quad dt = " + self.dt.__str__()
+            out += ["\quad dt = ", str(self.dt)]
 
-        outstr += "$$"
+        out.append("$$")
 
-        return outstr
+        return ''.join(out)
 
     def __neg__(self):
         """Negate a transfer function."""
