@@ -177,7 +177,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         elif scale != 0:
             # TODO: optimize parameters for arrows
             # TODO: figure out arguments to make arrows show up correctly
-            _ = mpl.quiver(x1, x2, dx[:, :, 0] * np.abs(scale), dx[:, :, 1] * np.abs(scale), angles='xy')
+            mpl.quiver(x1, x2, dx[:, :, 0] * np.abs(scale), dx[:, :, 1] * np.abs(scale), angles='xy')
             # set(xy, 'LineWidth', PP_arrow_linewidth, 'Color', 'b')
 
         # TODO: Tweak the shape of the plot
@@ -289,7 +289,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         mpl.quiver(x1, x2, dx[:, :, 0], dx[:, :, 1], angles='xy')
     elif scale != 0 and Narrows > 0:
         # TODO: figure out arguments to make arrows show up correctly
-        _ = mpl.quiver(x1, x2, dx[:, :, 0] * abs(scale), dx[:, :, 1] * abs(scale), angles='xy')
+        mpl.quiver(x1, x2, dx[:, :, 0] * abs(scale), dx[:, :, 1] * abs(scale), angles='xy')
         # set(xy, 'LineWidth', PP_arrow_linewidth);
         # set(xy, 'AutoScale', 'off');
         # set(xy, 'AutoScaleFactor', 0);
