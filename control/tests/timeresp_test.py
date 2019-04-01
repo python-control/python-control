@@ -87,6 +87,61 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_equal(Tc.shape, Td.shape)
         np.testing.assert_array_equal(youtc.shape, youtd.shape)
 
+    def test_step_info(self):
+        # From matlab docs:
+        sys = TransferFunction([1,5,5],[1,1.65,5,6.5,2])
+        Strue = {
+            'RiseTime': 3.8456,
+            'SettlingTime': 27.9762,
+            'SettlingMin': 2.0689,
+            'SettlingMax': 2.6873,
+            'Overshoot': 7.4915,
+            'Undershoot': 0,
+            'Peak': 2.6873,
+            'PeakTime': 8.0530
+        }
+
+        S = step_info(sys)
+
+        # Very arbitrary tolerance because I don't know if the
+        # response from the MATLAB is really that accurate.
+        # maybe it is a good idea to change the Strue to match
+        # but I didn't do it because I don't know if it is
+        # accurate either...
+        rtol = 2e-2
+        np.testing.assert_allclose(
+            S.get('RiseTime'),
+            Strue.get('RiseTime'),
+            rtol=rtol)
+        np.testing.assert_allclose(
+            S.get('SettlingTime'),
+            Strue.get('SettlingTime'),
+            rtol=rtol)
+        np.testing.assert_allclose(
+            S.get('SettlingMin'),
+            Strue.get('SettlingMin'),
+            rtol=rtol)
+        np.testing.assert_allclose(
+            S.get('SettlingMax'),
+            Strue.get('SettlingMax'),
+            rtol=rtol)
+        np.testing.assert_allclose(
+            S.get('Overshoot'),
+            Strue.get('Overshoot'),
+            rtol=rtol)
+        np.testing.assert_allclose(
+            S.get('Undershoot'),
+            Strue.get('Undershoot'),
+            rtol=rtol)
+        np.testing.assert_allclose(
+            S.get('Peak'),
+            Strue.get('Peak'),
+            rtol=rtol)
+        np.testing.assert_allclose(
+            S.get('PeakTime'),
+            Strue.get('PeakTime'),
+            rtol=rtol)
+
     def test_impulse_response(self):
         # Test SISO system
         sys = self.siso_ss1
