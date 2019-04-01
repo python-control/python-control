@@ -143,7 +143,7 @@ class TestTimeresp(unittest.TestCase):
             rtol=rtol)
         np.testing.assert_allclose(
             S.get('SteadyStateValue'),
-            Strue.get('2.50'),
+            2.50,
             rtol=rtol)
 
     def test_impulse_response(self):
