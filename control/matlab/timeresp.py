@@ -95,6 +95,7 @@ def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
         Undershoot: Percentage of undershoot
         Peak: Absolute peak value
         PeakTime: time of the Peak
+        SteadyStateValue: Steady-state value
 
 
     See Also
