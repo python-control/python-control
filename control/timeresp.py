@@ -169,7 +169,8 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., transpose=False):
+def forced_response(sys, T=None, U=0., X0=0., transpose=False,
+                    interpolate=False):
     """Simulate the output of a linear system.
 
     As a convenience for parameters `U`, `X0`:
@@ -199,6 +200,13 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
+
+    interpolate:bool
+        If True and system is a discrete time system, the input will
+        be interpolated between the given time steps and the output
+        will be given at system sampling rate.  Otherwise, only return
+        the output at the times given in `T`.  No effect on continuous
+        time simulations (default = False).
 
     Returns
     -------
@@ -236,8 +244,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
             if U is None:
                 raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
                                  'zero for discrete-time simulation')
-            # Set T to integers with same length as U
-            T = range(len(U))
+            # Set T to equally spaced samples with same length as U
+            T = np.array(range(len(U))) * (1 if sys.dt == True else sys.dt)
         else:
             # Make sure the input vector and time vector have same length
             # TODO: allow interpolation of the input vector
@@ -316,14 +324,41 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
                               dot(Bd1, U[:, i]))
             yout = dot(C, xout) + dot(D, U)
 
+        tout = T
         yout = squeeze(yout)
         xout = squeeze(xout)
 
     else:
+        # Discrete type system => use SciPy signal processing toolbox
+        if (sys.dt != True):
+            # Make sure that the time increment is a multiple of sampling time
+
+            # First make sure that time increment is bigger than sampling time
+            if dt < sys.dt:
+                raise ValueError("Time steps ``T`` must match sampling time")
+
+            # Now check to make sure it is a multiple (with check against
+            # sys.dt because floating point mod can have small errors
+            elif not (np.isclose(dt % sys.dt, 0) or
+                      np.isclose(dt % sys.dt, sys.dt)):
+                raise ValueError("Time steps ``T`` must be multiples of " \
+                                 "sampling time")
+        else:
+            sys.dt = dt         # For unspecified sampling time, use time incr
+
         # Discrete time simulation using signal processing toolbox
         dsys = (A, B, C, D, sys.dt)
+
+        # Use signal processing toolbox for the discrete time simulation
         # Transpose the input to match toolbox convention 
         tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), T, X0)
+
+        if not interpolate:
+            # If dt is different from sys.dt, resample the output
+            inc = int(round(dt / sys.dt))
+            tout = T            # Return exact list of time steps
+            yout = yout[::inc,:]
+            xout = xout[::inc,:]
 
         # Transpose the output and state vectors to match local convention
         xout = sp.transpose(xout)
@@ -331,11 +366,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
 
     # See if we need to transpose the data back into MATLAB form
     if (transpose):
-        T = np.transpose(T)
+        tout = np.transpose(tout)
         yout = np.transpose(yout)
         xout = np.transpose(xout)
 
-    return T, yout, xout
+    return tout, yout, xout
 
 def _get_ss_simo(sys, input=None, output=None):
     """Return a SISO or SIMO state-space version of sys
