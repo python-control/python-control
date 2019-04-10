@@ -623,7 +623,12 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
     if T is None:
-        T = _default_response_times(sys.A, 100)
+        if isctime(sys):
+            T = _default_response_times(sys.A, 1000)
+        else:
+            # For discrete time, use integers
+            tvec = _default_response_times(sys.A, 1000)
+            T = range(int(np.ceil(max(tvec))))
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose)
@@ -707,7 +712,13 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     # Compute T and U, no checks necessary, they will be checked in lsim
     if T is None:
-        T = _default_response_times(sys.A, 100)
+        if isctime(sys):
+            T = _default_response_times(sys.A, 100)
+        else:
+            # For discrete time, use integers
+            tvec = _default_response_times(sys.A, 100)
+            T = range(int(np.ceil(max(tvec))))
+
     U = np.zeros_like(T)
 
     # Compute new X0 that contains the impulse
