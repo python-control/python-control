@@ -4,7 +4,7 @@ Time response routines in the Matlab compatibility package
 Note that the return arguments are different than in the standard control package.
 """
 
-__all__ = ['step', 'impulse', 'initial', 'lsim']
+__all__ = ['step', 'stepinfo', 'impulse', 'initial', 'lsim']
 
 def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     '''
@@ -65,6 +65,52 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
         return yout, T, xout
 
     return yout, T
+
+def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
+    '''
+    Step response characteristics (Rise time, Settling Time, Peak and others).
+
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    SettlingTimeThreshold: float value, optional
+        Defines the error to compute settling time (default = 0.02)
+
+    RiseTimeLimits: tuple (lower_threshold, upper_theshold)
+        Defines the lower and upper threshold for RiseTime computation
+
+    Returns
+    -------
+    S: a dictionary containing:
+        RiseTime: Time from 10% to 90% of the steady-state value.
+        SettlingTime: Time to enter inside a default error of 2%
+        SettlingMin: Minimum value after RiseTime
+        SettlingMax: Maximum value after RiseTime
+        Overshoot: Percentage of the Peak relative to steady value
+        Undershoot: Percentage of undershoot
+        Peak: Absolute peak value
+        PeakTime: time of the Peak
+        SteadyStateValue: Steady-state value
+
+
+    See Also
+    --------
+    step, lsim, initial, impulse
+
+    Examples
+    --------
+    >>> S = stepinfo(sys, T)
+    '''
+    from ..timeresp import step_info
+
+    S = step_info(sys, T, SettlingTimeThreshold, RiseTimeLimits)
+
+    return S
 
 def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     '''

@@ -9,6 +9,7 @@ import numpy as np
 from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.matlab import *
 from control.exception import slycot_check, ControlDimension
+from control.mateqn import care, dare
 
 class TestStatefbk(unittest.TestCase):
     """Test state feedback functions"""
@@ -297,6 +298,37 @@ class TestStatefbk(unittest.TestCase):
         Q, R = 10., 2.
         K, S, poles = lqr(sys, Q, R)
         self.check_LQR(K, S, poles, Q, R)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_care(self):
+        #unit test for stabilizing and anti-stabilizing feedbacks
+        #continuous-time
+
+        A = np.diag([1,-1])
+        B = np.identity(2)
+        Q = np.identity(2)
+        R = np.identity(2)
+        S = 0 * B
+        E = np.identity(2)
+        X, L , G = care(A, B, Q, R, S, E, stabilizing=True)
+        assert np.all(np.real(L) < 0)
+        X, L , G = care(A, B, Q, R, S, E, stabilizing=False)
+        assert np.all(np.real(L) > 0)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_dare(self):
+        #discrete-time
+        A = np.diag([0.5,2])
+        B = np.identity(2)
+        Q = np.identity(2)
+        R = np.identity(2)
+        S = 0 * B
+        E = np.identity(2)
+        X, L , G = dare(A, B, Q, R, S, E, stabilizing=True)
+        assert np.all(np.abs(L) < 1)
+        X, L , G = dare(A, B, Q, R, S, E, stabilizing=False)
+        assert np.all(np.abs(L) > 1)
+
 
 def test_suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)

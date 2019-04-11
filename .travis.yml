@@ -51,8 +51,10 @@ before_install:
   - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage
   - source activate test-environment
   # Install openblas if slycot is being used
+  # also install scikit-build for the build process
   - if [[ "$SLYCOT" != "" ]]; then
-        conda install openblas;
+      conda install openblas;
+      conda install -c conda-forge scikit-build;
     fi
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
@@ -65,16 +67,30 @@ install:
   - conda install $SCIPY matplotlib
   # Build slycot from source
   # For python 3, need to provide pointer to python library
+  # Use "Unix Makefiles" as generator, because Ninja cannot handle Fortran
   #! git clone https://github.com/repagh/Slycot.git slycot;
   - if [[ "$SLYCOT" != "" ]]; then
       git clone https://github.com/python-control/Slycot.git slycot;
-      cd slycot; python setup.py install; cd ..;
+      cd slycot; python setup.py install -G "Unix Makefiles"; cd ..;
     fi
 
 # command to run tests
 script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
+
+  # only run examples if Slycot is install
+  # set PYTHONPATH for examples
+  # pmw needed for examples/tfvis.py
+  # future is needed for Python 2, also for examples/tfvis.py
+
+  - if [[ "$SLYCOT" != "" ]]; then
+      export PYTHONPATH=$PWD;
+      conda install -c conda-forge pmw future;
+      cd examples; bash run_examples.sh; cd ..;
+    fi
+
+# arbitrary change to try to trigger travis build
 
 after_success:
   - coveralls

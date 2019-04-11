@@ -58,7 +58,7 @@ from .lti import LTI     # base class of StateSpace, TransferFunction
 from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso
 from .lti import isdtime, isctime
 
-__all__ = ['forced_response', 'step_response', 'initial_response',
+__all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
            'impulse_response']
 
 # Helper function for checking array-like parameters
@@ -169,7 +169,8 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., transpose=False):
+def forced_response(sys, T=None, U=0., X0=0., transpose=False,
+                    interpolate=False):
     """Simulate the output of a linear system.
 
     As a convenience for parameters `U`, `X0`:
@@ -199,6 +200,13 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
     transpose: bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
+
+    interpolate:bool
+        If True and system is a discrete time system, the input will
+        be interpolated between the given time steps and the output
+        will be given at system sampling rate.  Otherwise, only return
+        the output at the times given in `T`.  No effect on continuous
+        time simulations (default = False).
 
     Returns
     -------
@@ -236,8 +244,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
             if U is None:
                 raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
                                  'zero for discrete-time simulation')
-            # Set T to integers with same length as U
-            T = range(len(U))
+            # Set T to equally spaced samples with same length as U
+            T = np.array(range(len(U))) * (1 if sys.dt == True else sys.dt)
         else:
             # Make sure the input vector and time vector have same length
             # TODO: allow interpolation of the input vector
@@ -316,13 +324,41 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
                               dot(Bd1, U[:, i]))
             yout = dot(C, xout) + dot(D, U)
 
+        tout = T
         yout = squeeze(yout)
         xout = squeeze(xout)
 
     else:
+        # Discrete type system => use SciPy signal processing toolbox
+        if (sys.dt != True):
+            # Make sure that the time increment is a multiple of sampling time
+
+            # First make sure that time increment is bigger than sampling time
+            if dt < sys.dt:
+                raise ValueError("Time steps ``T`` must match sampling time")
+
+            # Now check to make sure it is a multiple (with check against
+            # sys.dt because floating point mod can have small errors
+            elif not (np.isclose(dt % sys.dt, 0) or
+                      np.isclose(dt % sys.dt, sys.dt)):
+                raise ValueError("Time steps ``T`` must be multiples of " \
+                                 "sampling time")
+        else:
+            sys.dt = dt         # For unspecified sampling time, use time incr
+
         # Discrete time simulation using signal processing toolbox
         dsys = (A, B, C, D, sys.dt)
-        tout, yout, xout = sp.signal.dlsim(dsys, U, T, X0)
+
+        # Use signal processing toolbox for the discrete time simulation
+        # Transpose the input to match toolbox convention 
+        tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), T, X0)
+
+        if not interpolate:
+            # If dt is different from sys.dt, resample the output
+            inc = int(round(dt / sys.dt))
+            tout = T            # Return exact list of time steps
+            yout = yout[::inc,:]
+            xout = xout[::inc,:]
 
         # Transpose the output and state vectors to match local convention
         xout = sp.transpose(xout)
@@ -330,11 +366,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False):
 
     # See if we need to transpose the data back into MATLAB form
     if (transpose):
-        T = np.transpose(T)
+        tout = np.transpose(tout)
         yout = np.transpose(yout)
         xout = np.transpose(xout)
 
-    return T, yout, xout
+    return tout, yout, xout
 
 def _get_ss_simo(sys, input=None, output=None):
     """Return a SISO or SIMO state-space version of sys
@@ -432,6 +468,98 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
 
     return T, yout
 
+def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
+    '''
+    Step response characteristics (Rise time, Settling Time, Peak and others).
+
+    Parameters
+    ----------
+    sys: StateSpace, or TransferFunction
+        LTI system to simulate
+
+    T: array-like object, optional
+        Time vector (argument is autocomputed if not given)
+
+    SettlingTimeThreshold: float value, optional
+        Defines the error to compute settling time (default = 0.02)
+
+    RiseTimeLimits: tuple (lower_threshold, upper_theshold)
+        Defines the lower and upper threshold for RiseTime computation
+
+    Returns
+    -------
+    S: a dictionary containing:
+        RiseTime: Time from 10% to 90% of the steady-state value.
+        SettlingTime: Time to enter inside a default error of 2%
+        SettlingMin: Minimum value after RiseTime
+        SettlingMax: Maximum value after RiseTime
+        Overshoot: Percentage of the Peak relative to steady value
+        Undershoot: Percentage of undershoot
+        Peak: Absolute peak value
+        PeakTime: time of the Peak
+        SteadyStateValue: Steady-state value
+
+
+    See Also
+    --------
+    step, lsim, initial, impulse
+
+    Examples
+    --------
+    >>> info = step_info(sys, T)
+    '''
+    sys = _get_ss_simo(sys)
+    if T is None:
+        if isctime(sys):
+            T = _default_response_times(sys.A, 1000)
+        else:
+            # For discrete time, use integers
+            tvec = _default_response_times(sys.A, 1000)
+            T = range(int(np.ceil(max(tvec))))
+
+    T, yout = step_response(sys, T)
+
+    # Steady state value
+    InfValue = yout[-1]
+
+    # RiseTime
+    tr_lower_index = (np.where(yout >= RiseTimeLimits[0] * InfValue)[0])[0]
+    tr_upper_index = (np.where(yout >= RiseTimeLimits[1] * InfValue)[0])[0]
+    RiseTime = T[tr_upper_index] - T[tr_lower_index]
+
+    # SettlingTime
+    sup_margin = (1. + SettlingTimeThreshold) * InfValue
+    inf_margin = (1. - SettlingTimeThreshold) * InfValue
+    # find Steady State looking for the first point out of specified limits
+    for i in reversed(range(T.size)):
+        if((yout[i] <= inf_margin) | (yout[i] >= sup_margin)):
+            SettlingTime = T[i + 1]
+            break
+
+    # Peak
+    PeakIndex = np.abs(yout).argmax()
+    PeakValue = yout[PeakIndex]
+    PeakTime = T[PeakIndex]
+    SettlingMax = (yout).max()
+    SettlingMin = (yout[tr_upper_index:]).min()
+    # I'm really not very confident about UnderShoot:
+    UnderShoot = yout.min()
+    OverShoot = 100. * (yout.max() - InfValue) / (InfValue - yout[0])
+
+    # Return as a dictionary
+    S = {
+        'RiseTime': RiseTime,
+        'SettlingTime': SettlingTime,
+        'SettlingMin': SettlingMin,
+        'SettlingMax': SettlingMax,
+        'Overshoot': OverShoot,
+        'Undershoot': UnderShoot,
+        'Peak': PeakValue,
+        'PeakTime': PeakTime,
+        'SteadyStateValue': InfValue
+    }
+
+    return S
 
 def initial_response(sys, T=None, X0=0., input=0, output=None,
                      transpose=False, return_x=False):
@@ -495,7 +623,12 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
     if T is None:
-        T = _default_response_times(sys.A, 100)
+        if isctime(sys):
+            T = _default_response_times(sys.A, 1000)
+        else:
+            # For discrete time, use integers
+            tvec = _default_response_times(sys.A, 1000)
+            T = range(int(np.ceil(max(tvec))))
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose)
@@ -579,7 +712,13 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     # Compute T and U, no checks necessary, they will be checked in lsim
     if T is None:
-        T = _default_response_times(sys.A, 100)
+        if isctime(sys):
+            T = _default_response_times(sys.A, 100)
+        else:
+            # For discrete time, use integers
+            tvec = _default_response_times(sys.A, 100)
+            T = range(int(np.ceil(max(tvec))))
+
     U = np.zeros_like(T)
 
     # Compute new X0 that contains the impulse
