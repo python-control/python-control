@@ -375,7 +375,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 def _get_ss_simo(sys, input=None, output=None):
     """Return a SISO or SIMO state-space version of sys
 
-    If input is not sfpecified, select first input and issue warning
+    If input is not specified, select first input and issue warning
     """
     sys_ss = _convertToStateSpace(sys)
     if sys_ss.issiso():
