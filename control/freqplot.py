@@ -280,7 +280,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                             ax_phase.semilogx([Wcp, Wcp], [1e5, math.radians(phase_limit) +
                                                            math.radians(pm)],
                                               color='k', linestyle=':', zorder=-20)
-                            ax_phase.semilogx([Wcp, Wcp], [math.radians(phase_limit) + math.radians(pm) 
+                            ax_phase.semilogx([Wcp, Wcp], [math.radians(phase_limit) + math.radians(pm),
                                                            math.radians(phase_limit)], 
                                               color='k', zorder=-20)
 
