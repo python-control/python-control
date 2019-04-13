@@ -43,8 +43,11 @@
 import numpy as np
 from .exception import *
 from .statesp import StateSpace
+from .xferfcn import tf
 from .statefbk import *
+import numbers
 
+__all__ = ['h2syn', 'hinfsyn', 'augw', 'mixsyn', 'makeweight']
 
 def h2syn(P, nmeas, ncon):
     """H_2 control synthesis for plant P.
@@ -227,7 +230,6 @@ def augw(g, w1=None, w2=None, w3=None):
     w1: weighting on S; None, scalar, or k1-by-ny LTI object
     w2: weighting on KS; None, scalar, or k2-by-nu LTI object
     w3: weighting on T; None, scalar, or k3-by-ny LTI object
-    p: augmented plant; StateSpace object
 
     If a weighting is None, no augmentation is done for it.  At least
     one weighting must not be None.
@@ -365,3 +367,55 @@ def mixsyn(g, w1=None, w2=None, w3=None):
     k, cl, gamma, rcond = hinfsyn(p, nmeas, ncon)
     info = gamma, rcond
     return k, cl, info
+
+
+def makeweight(dcgain, wc, hfgain, order=1, Ts=None):
+    """ Compute a weight transfer function, noted W
+
+    Parameters
+    ----------
+        dcgain : double positive scalar
+            Low frequency gain of 1/W; should be < 1
+        wc : double strictly positive scalar
+            Design frequency (where |W| is approximately 1)
+        hfgain : double positive scalar
+            High frequency gain of 1/W; should be > 1
+        order : int strictly positive scalar - optional
+            Order of the output transfer function
+        Ts : double strictly positive scalar - optional
+            Sampling time in case W is discrete
+    W - SISO LTI object
+    """
+    if not isinstance(dcgain, numbers.Real):
+        raise ControlArgument("dcgain should be a real scalar number")
+    if dcgain < 0:
+        raise ValueError("dcgain should be a positive real scalar number")
+
+    if not isinstance(wc, numbers.Real):
+        raise ControlArgument("wc should be a real scalar number")
+    if wc <= 0:
+        raise ValueError("wc should be a strictly positive real scalar number")
+
+    if not isinstance(hfgain, numbers.Real):
+        raise ControlArgument("hfgain should be a real scalar number")
+    if hfgain < 0:
+        raise ValueError("hfgain should be a positive real scalar number")
+
+    if not isinstance(order, numbers.Integral):
+        raise ControlArgument("order should be an integral scalar number")
+    if order <= 0:
+        raise ValueError("order should be a strictly positive integral scalar number")
+
+    # TODO: Implement discrete behavior
+    if Ts is not None:
+        raise ControlNotImplemented("makeweight cannot return discrete weight function")
+    if Ts is not None and not isinstance(Ts, numbers.Real):
+        raise ControlArgument("Ts should be a real scalar number")
+    if Ts is not None and Ts <= 0:
+        raise ValueError("Ts should be a strictly positive real scalar number")
+
+    s = tf([1, 0], [1])
+
+    W = (s + wc * (dcgain ** (1. / order))) ** order / (s / (hfgain ** (1. / order)) + wc) ** order
+
+    return W

@@ -143,6 +143,7 @@ Utility functions and conversions
     issiso
     issys
     mag2db
+    makeweight
     observable_form
     pade
     reachable_form

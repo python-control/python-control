@@ -10,18 +10,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from control import tf, ss, mixsyn, feedback, step_response
-
-
-def weighting(wb, m, a):
-    """weighting(wb,m,a) -> wf
-    wb - design frequency (where |wf| is approximately 1)
-    m - high frequency gain of 1/wf; should be > 1
-    a - low frequency gain of 1/wf; should be < 1
-    wf - SISO LTI object
-    """
-    s = tf([1, 0], [1])
-    return (s / m + wb) / (s + wb * a)
+from control import tf, ss, mixsyn, feedback, step_response, makeweight
 
 
 def plant():
@@ -103,8 +92,8 @@ def synth(wb1, wb2):
     """
     g = plant()
     wu = ss([], [], [], np.eye(2))
-    wp1 = ss(weighting(wb=wb1, m=1.5, a=1e-4))
-    wp2 = ss(weighting(wb=wb2, m=1.5, a=1e-4))
+    wp1 = ss(1/makeweight(wc=wb1, hfgain=1.5, dcgain=1e-4))
+    wp2 = ss(1/makeweight(wc=wb2, hfgain=1.5, dcgain=1e-4))
     wp = wp1.append(wp2)
     k, _, info = mixsyn(g, wp, wu)
     return k, info[0]

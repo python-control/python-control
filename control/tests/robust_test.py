@@ -2,12 +2,12 @@ import unittest
 import numpy as np
 import control
 import control.robust
-from control.exception import slycot_check
+from control.exception import slycot_check, ControlArgument, ControlNotImplemented
 
 
 class TestHinf(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testHinfsyn(self):
+    def test_hinfsyn(self):
         """Test hinfsyn"""
         p = control.ss(-1, [1, 1], [[1], [1]], [[0, 1], [1, 0]])
         k, cl, gam, rcond = control.robust.hinfsyn(p, 1, 1)
@@ -29,7 +29,7 @@ class TestHinf(unittest.TestCase):
 
 class TestH2(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testH2syn(self):
+    def test_h2syn(self):
         """Test h2syn"""
         p = control.ss(-1, [1, 1], [[1], [1]], [[0, 1], [1, 0]])
         k = control.robust.h2syn(p, 1, 1)
@@ -62,7 +62,7 @@ class TestAugw(unittest.TestCase):
                     maxnum, g, h))
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testSisoW1(self):
+    def test_augw_siso_w1(self):
         """SISO plant with S weighting"""
         from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
@@ -80,7 +80,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g, p[1, 1])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testSisoW2(self):
+    def test_augw_siso_w2(self):
         """SISO plant with KS weighting"""
         from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
@@ -98,7 +98,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g, p[1, 1])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testSisoW3(self):
+    def test_augw_siso_w3(self):
         """SISO plant with T weighting"""
         from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
@@ -116,7 +116,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g, p[1, 1])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testSisoW123(self):
+    def test_augw_siso_w123(self):
         """SISO plant with all weights"""
         from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
@@ -144,7 +144,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g, p[3, 1])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testMimoW1(self):
+    def test_augw_mimo_w1(self):
         """MIMO plant with S weighting"""
         from control import augw, ss
         g = ss([[-1., -2], [-3, -4]],
@@ -177,7 +177,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 1], p[3, 3])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testMimoW2(self):
+    def test_augw_mimo_w2(self):
         """MIMO plant with KS weighting"""
         from control import augw, ss
         g = ss([[-1., -2], [-3, -4]],
@@ -210,7 +210,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 1], p[3, 3])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testMimoW3(self):
+    def test_augw_mimo_w3(self):
         """MIMO plant with T weighting"""
         from control import augw, ss
         g = ss([[-1., -2], [-3, -4]],
@@ -243,7 +243,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 1], p[3, 3])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testMimoW123(self):
+    def test_augw_mimo_w123(self):
         """MIMO plant with all weights"""
         from control import augw, ss, append
         g = ss([[-1., -2], [-3, -4]],
@@ -306,7 +306,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 1], p[7, 3])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testErrors(self):
+    def test_augw_errors(self):
         """Error cases handled"""
         from control import augw, ss
         # no weights
@@ -324,7 +324,7 @@ class TestMixsyn(unittest.TestCase):
 
     # it's a relatively simple wrapper; compare results with augw, hinfsyn
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testSiso(self):
+    def test_mixsyn_siso(self):
         """mixsyn with SISO system"""
         from control import tf, augw, hinfsyn, mixsyn
         from control import ss
@@ -362,6 +362,30 @@ class TestMixsyn(unittest.TestCase):
         np.testing.assert_allclose(gam, info[0])
 
         np.testing.assert_allclose(rcond, info[1])
+
+
+class TestMakeweight(unittest.TestCase):
+    def test_makeweight_invalid_inputs(self):
+        self.assertRaises(ControlArgument, control.makeweight, None, 1, 1)
+        self.assertRaises(ControlArgument, control.makeweight, 1, [1], 1)
+        self.assertRaises(ControlArgument, control.makeweight, 1, 1, np.array(1))
+
+    def test_makeweight_out_of_bound_inputs(self):
+        self.assertRaises(ValueError, control.makeweight, -1, 1, 1)
+        self.assertRaises(ValueError, control.makeweight, 1, 0, 1)
+        self.assertRaises(ValueError, control.makeweight, 1, 1, -1)
+        self.assertRaises(ValueError, control.makeweight, 1, 1, 1, 0)
+        self.assertRaises(ControlNotImplemented, control.makeweight, 1, 1, 1, 1, 0)
+
+    def test_makeweight_first_order(self):
+        W = control.makeweight(100, .4, .10)
+        np.testing.assert_almost_equal(abs(control.evalfr(W, .4j * 1e-6)), 100)
+        np.testing.assert_almost_equal(abs(control.evalfr(W, .4j*1e6)), .10)
+
+    def test_makeweight_second_order(self):
+        W = control.makeweight(100, .4, .10, order=2)
+        np.testing.assert_almost_equal(abs(control.evalfr(W, .4j*1e-6)), 100)
+        np.testing.assert_almost_equal(abs(control.evalfr(W, .4j*1e6)), .10)
 
 
 if __name__ == "__main__":
