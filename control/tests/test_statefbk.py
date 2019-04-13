@@ -6,7 +6,7 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-from control.statefbk import ctrb, obsv, place, _place_varga, lqr, gram, _acker
+from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.matlab import *
 from control.exception import slycot_check, ControlDimension
 from control.mateqn import care, dare
@@ -144,7 +144,7 @@ class TestStatefbk(unittest.TestCase):
                 poles = pole(des)
 
                 # Now place the poles using acker
-                K = _acker(sys.A, sys.B, poles)
+                K = acker(sys.A, sys.B, poles)
                 new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
                 placed = pole(new)
 
@@ -197,7 +197,7 @@ class TestStatefbk(unittest.TestCase):
         B = self.B_siso
 
         P = np.array([-2., -2.])
-        K = _place_varga(A, B, P)
+        K = place_varga(A, B, P)
         P_placed = np.linalg.eigvals(A - B.dot(K))
         # No guarantee of the ordering, so sort them
         P.sort()

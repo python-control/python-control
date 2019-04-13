@@ -108,6 +108,7 @@ Control system synthesis
 .. autosummary::
    :toctree: generated/
 
+    acker
     h2syn
     hinfsyn
     lqr

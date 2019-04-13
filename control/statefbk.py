@@ -45,8 +45,9 @@ import numpy as np
 import scipy as sp
 from . import statesp
 from .exception import ControlSlycot, ControlArgument, ControlDimension
+import warnings
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr']
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr', 'place_varga', 'acker']
 
 
 # Pole placement
@@ -67,13 +68,12 @@ def place(A, B, p, method="YT", dtime=False, alpha=None):
     dtime: optional (useful only if method=="varga")
         False for continuous time pole placement or True for discrete time.
         The default is dtime=False.
+        If dtime is not null, place_varga will leave the eigenvalues with modulus
+        less than alpha untouched. Otherwise, place_varga will leave the eigenvalues with real
+        real part less than alpha untouched.
     alpha: double scalar (useful only if method=="varga")
-       If DICO='C', then _place_varga will leave the eigenvalues with real
-       real part less than alpha untouched.
-       If DICO='D', the _place_varga will leave eigenvalues with modulus
-       less than alpha untouched.
 
-       By default (alpha=None), _place_varga computes alpha such that all
+       By default (alpha=None), place_varga computes alpha such that all
        poles will be placed.
 
     Returns
@@ -105,28 +105,28 @@ def place(A, B, p, method="YT", dtime=False, alpha=None):
 
     See Also
     --------
-    _acker, _place_varga
+    acker, place_varga
     """
     if method == "acker":
-        return _acker(A, B, p)
+        return acker(A, B, p)
     if method == "varga":
         try:
-            return _place_varga(A, B, p, dtime=dtime, alpha=alpha)
+            return place_varga(A, B, p, dtime=dtime, alpha=alpha)
         except ControlSlycot as error:
-            print("[Pole placement] Fallback strategy: using Tits-Yang method from scipy.")
+            warnings.warn("[Pole placement] Fallback strategy: using Tits-Yang method from scipy.")
             return place(A, B, p)
     else:
         try:
             from scipy.signal import place_poles
         except ImportError as error:
-            print(error)
-            print("[Pole placement] Fallback strategy: using Varga method from slycot.")
+            warnings.warn(error)
+            warnings.warn("[Pole placement] Fallback strategy: using Varga method from slycot.")
             try:
-                K = _place_varga(A, B, p, dtime=dtime, alpha=alpha)
+                K = place_varga(A, B, p, dtime=dtime, alpha=alpha)
                 return K
             except ControlSlycot as error:
-                print("[Pole placement] Fallback strategy: using Ackermanm method.")
-                return _acker(A, B, p)
+                warnings.warn("[Pole placement] Fallback strategy: using Ackermanm method.")
+                return acker(A, B, p)
 
         # Convert the system inputs to NumPy arrays
         A_mat = np.array(A)
@@ -147,18 +147,18 @@ def place(A, B, p, method="YT", dtime=False, alpha=None):
         try:
             result = place_poles(A_mat, B_mat, placed_eigs, method=method)
         except ValueError as error:
-            print("[Pole placement] Redundant pole location. "
+            warnings.warn("[Pole placement] Redundant pole location. "
                   "Fallback strategy: using Ackermann method.")
             try:
-                return _acker(A, B, p)
+                return acker(A, B, p)
             except ValueError as error:
-                print("Pole placement failed.")
+                warnings.warn("Pole placement failed.")
                 return None
         K = result.gain_matrix
         return K
 
 
-def _place_varga(A, B, p, dtime=False, alpha=None):
+def place_varga(A, B, p, dtime=False, alpha=None):
     """Place closed loop eigenvalues
     K = place_varga(A, B, p, dtime=False, alpha=None)
 
@@ -175,11 +175,10 @@ def _place_varga(A, B, p, dtime=False, alpha=None):
     ---------------
     dtime: False for continuous time pole placement or True for discrete time.
             The default is dtime=False.
+            If dtime is not null, place_varga will leave the eigenvalues with modulus
+            less than alpha untouched. Otherwise, place_varga will leave the eigenvalues with real
+            real part less than alpha untouched.
     alpha: double scalar
-           If DICO='C', then place_varga will leave the eigenvalues with real
-           real part less than alpha untouched.
-           If DICO='D', the place_varga will leave eigenvalues with modulus
-           less than alpha untouched.
 
            By default (alpha=None), place_varga computes alpha such that all
            poles will be placed.
@@ -205,11 +204,11 @@ def _place_varga(A, B, p, dtime=False, alpha=None):
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
-    >>> K = _place_varga(A, B, [-2, -5])
+    >>> K = place_varga(A, B, [-2, -5])
 
     See Also:
     --------
-    place, _acker
+    place, acker
     """
 
     # Make sure that SLICOT is installed
@@ -236,8 +235,8 @@ def _place_varga(A, B, p, dtime=False, alpha=None):
 
     if alpha is None:
         # SB01BD ignores eigenvalues with real part less than alpha
-        # (if DICO = 'C') or with modulus less than alpha
-        # (if DICO = 'D').
+        # (if dico = 'C') or with modulus less than alpha
+        # (if dico = 'D').
         if dtime:
             # For discrete time, slycot only cares about modulus, so just make
             # alpha the smallest it can be.
@@ -251,7 +250,7 @@ def _place_varga(A, B, p, dtime=False, alpha=None):
             # but does the trick
             alpha = -2 * abs(min(system_eigs.real))
     elif dtime and alpha < 0.0:
-        raise ValueError("Need alpha > 0 when DICO='D'.")
+        raise ValueError("Need alpha > 0 when dico='D'.")
 
     # Call SLICOT routine to place the eigenvalues
     A_z, w, nfp, nap, nup, F, Z = \
@@ -262,10 +261,9 @@ def _place_varga(A, B, p, dtime=False, alpha=None):
     return -F
 
 
-def _acker(A, B, poles):
+# Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
+def acker(A, B, poles):
     """Pole placement using Ackermann method
-
-    Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 
     Call:
     K = acker(A, B, poles)
@@ -284,7 +282,7 @@ def _acker(A, B, poles):
 
     See Also:
     --------
-    place, _place_varga
+    place, place_varga
     """
 
     # Convert the inputs to matrices
@@ -480,16 +478,16 @@ def obsv(A, C):
     return O
 
 
-def gram(sys, desired_computation_str):
+def gram(sys, gramian_type):
     """Gramian (controllability or observability)
 
     Parameters
     ----------
     sys: StateSpace
         State-space system to compute Gramian for
-    desired_computation_str: String
+    gramian_type: String
         Type of desired computation.
-        `desired_computation_str` is either 'c' (controllability) or 'o' (observability).
+        `gramian_type` is either 'c' (controllability) or 'o' (observability).
         To compute the Cholesky factors of gramians use 'cf' (controllability)
         or 'of' (observability)
 
@@ -502,7 +500,7 @@ def gram(sys, desired_computation_str):
     ------
     ValueError
         * if system is not instance of StateSpace class
-        * if `desired_computation_str` is not 'c', 'o', 'cf' or 'of'
+        * if `gramian_type` is not 'c', 'o', 'cf' or 'of'
         * if system is unstable (sys.A has eigenvalues not in left half plane)
 
     ImportError
@@ -521,7 +519,7 @@ def gram(sys, desired_computation_str):
     # Check for ss system object
     if not isinstance(sys, statesp.StateSpace):
         raise ValueError("System must be StateSpace!")
-    if desired_computation_str not in ['c', 'o', 'cf', 'of']:
+    if gramian_type not in ['c', 'o', 'cf', 'of']:
         raise ValueError("That type is not supported!")
 
     # TODO: Check for continuous or discrete, only continuous supported right now
@@ -537,17 +535,17 @@ def gram(sys, desired_computation_str):
     if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
         raise ValueError("The system is unstable.")
 
-    if desired_computation_str == 'c' or desired_computation_str == 'o':
+    if gramian_type == 'c' or gramian_type == 'o':
         # Compute Gramian by the Slycot routine sb03md
         # make sure Slycot is installed
         try:
             from slycot import sb03md
         except ImportError:
             raise ControlSlycot("Can't find slycot module 'sb03md'.")
-        if desired_computation_str == 'c':
+        if gramian_type == 'c':
             tra = 'T'
             C = -np.dot(sys.B, sys.B.transpose())
-        elif desired_computation_str == 'o':
+        elif gramian_type == 'o':
             tra = 'N'
             C = -np.dot(sys.C.transpose(), sys.C)
         n = sys.states
@@ -557,7 +555,7 @@ def gram(sys, desired_computation_str):
         gram = X
         return gram
 
-    elif desired_computation_str == 'cf' or desired_computation_str == 'of':
+    elif gramian_type == 'cf' or gramian_type == 'of':
         # Compute cholesky factored gramian from slycot routine sb03od
         try:
             from slycot import sb03od
@@ -567,12 +565,12 @@ def gram(sys, desired_computation_str):
         n = sys.states
         Q = np.zeros((n, n))
         A = np.array(sys.A)  # convert to NumPy array for slycot
-        if desired_computation_str == 'cf':
+        if gramian_type == 'cf':
             m = sys.B.shape[1]
             B = np.zeros_like(A)
             B[0:m, 0:n] = sys.B.transpose()
             X, scale, w = sb03od(n, m, A.transpose(), Q, B, dico, fact='N', trans=tra)
-        elif desired_computation_str == 'of':
+        elif gramian_type == 'of':
             m = sys.C.shape[0]
             C = np.zeros_like(A)
             C[0:n, 0:m] = sys.C.transpose()
