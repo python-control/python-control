@@ -41,7 +41,7 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
-from scipy import shape, size, asarray, asmatrix, copy, zeros, eye, dot
+from scipy import shape, size, array, asarray, copy, zeros, eye, dot
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
 
@@ -703,8 +703,8 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True):
     if S is not None or E is not None or not stabilizing:
         return dare_old(A, B, Q, R, S, E, stabilizing)
     else:
-        Rmat = asmatrix(R)
-        Qmat = asmatrix(Q)
+        Rmat = array(R, ndmin=2)
+        Qmat = array(Q, ndmin=2)
         X = solve_discrete_are(A, B, Qmat, Rmat)
         G = solve(B.T.dot(X).dot(B) + Rmat, B.T.dot(X).dot(A))
         L = eigvals(A - B.dot(G))

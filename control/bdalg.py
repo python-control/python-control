@@ -334,7 +334,7 @@ def connect(sys, Q, inputv, outputv):
                 K[inp,outp-1] = 1.
             elif outp < 0 and -outp >= -sys.outputs:
                 K[inp,-outp-1] = -1.
-    sys = sys.feedback(sp.matrix(K), sign=1)
+    sys = sys.feedback(sp.array(K), sign=1)
 
     # now trim
     Ytrim = sp.zeros( (len(outputv), sys.outputs) )
@@ -343,4 +343,4 @@ def connect(sys, Q, inputv, outputv):
         Utrim[u-1,i] = 1.
     for i,y in enumerate(outputv):
         Ytrim[i,y-1] = 1.
-    return sp.matrix(Ytrim)*sys*sp.matrix(Utrim)
+    return sp.array(Ytrim) * sys * sp.array(Utrim)

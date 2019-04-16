@@ -51,7 +51,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 # External function declarations
 import numpy as np
 from numpy import angle, array, empty, ones, \
-    real, imag, matrix, absolute, eye, linalg, where, dot
+    real, imag, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
 from .lti import LTI
 
@@ -79,6 +79,10 @@ class FRD(LTI):
     represent the inputs.
 
     """
+
+    # Allow NDarray * StateSpace to give StateSpace._rmul_() priority
+    # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html#numpy.class.__array_priority__
+    __array_priority__ = 11     # override ndarray and matrix types
 
     epsw = 1e-8
 
@@ -433,12 +437,13 @@ second has %i." % (self.outputs, other.outputs))
         # TODO: vectorize this
         # TODO: handle omega re-mapping
         for k, w in enumerate(other.omega):
-            fresp[:, :, k] = self.fresp[:, :, k].view(type=matrix)* \
+            fresp[:, :, k] = np.dot(
+                self.fresp[:, :, k],
                 linalg.solve(
-                eye(self.inputs) +
-                other.fresp[:, :, k].view(type=matrix) *
-                self.fresp[:, :, k].view(type=matrix),
-                eye(self.inputs))
+                    eye(self.inputs) + np.dot(other.fresp[:, :, k], 
+                                              self.fresp[:, :, k]),
+                    eye(self.inputs))
+            )
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 

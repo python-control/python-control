@@ -310,7 +310,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             #   [ u(dt) ] = exp [  0     0    I ] [  u0   ]
             #   [u1 - u0]       [  0     0    0 ] [u1 - u0]
 
-            M = np.bmat([[A * dt, B * dt, np.zeros((n_states, n_inputs))],
+            M = np.block([[A * dt, B * dt, np.zeros((n_states, n_inputs))],
                          [np.zeros((n_inputs, n_states + n_inputs)),
                           np.identity(n_inputs)],
                          [np.zeros((n_inputs, n_states + 2 * n_inputs))]])

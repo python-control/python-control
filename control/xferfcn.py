@@ -91,6 +91,10 @@ class TransferFunction(LTI):
     discrete time system with unspecified sampling time.
     """
 
+    # Allow NDarray * StateSpace to give StateSpace._rmul_() priority
+    # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html#numpy.class.__array_priority__
+    __array_priority__ = 11     # override ndarray and matrix types
+
     def __init__(self, *args):
         """TransferFunction(num, den[, dt])
 

@@ -47,7 +47,7 @@ from __future__ import print_function
 import numpy as np
 from .exception import ControlSlycot
 from .lti import isdtime, isctime
-from .statesp import StateSpace
+from .statesp import StateSpace, ssmatrix
 from .statefbk import gram
 
 __all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
@@ -96,7 +96,7 @@ def hsvd(sys):
     w, v = np.linalg.eig(WoWc)
 
     hsv = np.sqrt(w)
-    hsv = np.matrix(hsv)
+    hsv = np.array(hsv, ndmin=2)                # was np.matrix(hsv)
     hsv = np.sort(hsv)
     hsv = np.fliplr(hsv)
     # Return the Hankel singular values
@@ -406,16 +406,17 @@ def markov(Y, U, M):
     """
 
     # Convert input parameters to matrices (if they aren't already)
-    Ymat = np.mat(Y)
-    Umat = np.mat(U)
+    Ymat = np.array(Y)
+    Umat = np.array(U)
     n = np.size(U)
 
     # Construct a matrix of control inputs to invert
     UU = Umat
     for i in range(1, M-1):
-        newCol = np.vstack((0, UU[0:n-1,i-2]))
+        #! TODO: second index on UU doesn't seem right; could be neg or pos??
+        newCol = np.vstack((0, np.reshape(UU[0:n-1,i-2], (-1,1))))
         UU = np.hstack((UU, newCol))
-    Ulast = np.vstack((0, UU[0:n-1,M-2]))
+    Ulast = np.vstack((0, np.reshape(UU[0:n-1,M-2], (-1,1))))
     for i in range(n-1,0,-1):
         Ulast[i] = np.sum(Ulast[0:i-1])
     UU = np.hstack((UU, Ulast))

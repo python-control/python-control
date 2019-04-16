@@ -238,9 +238,9 @@ def acker(A, B, poles):
         Gains such that A - B K has given eigenvalues
 
     """
-    # Convert the inputs to matrices
-    a = np.mat(A)
-    b = np.mat(B)
+    # Convert the inputs to matrices (arrays)
+    a = np.array(A)
+    b = np.array(B)
 
     # Make sure the system is controllable
     ct = ctrb(A, B)
@@ -252,9 +252,9 @@ def acker(A, B, poles):
 
     # Place the poles using Ackermann's method
     n = np.size(p)
-    pmat = p[n-1]*a**0
+    pmat = p[n-1] * np.linalg.matrix_power(a, 0)
     for i in np.arange(1,n):
-        pmat = pmat + p[n-i-1]*a**i
+        pmat = pmat + np.dot(p[n-i-1], np.linalg.matrix_power(a, i))
     K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
@@ -388,13 +388,13 @@ def ctrb(A,B):
     """
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.mat(A)
-    bmat = np.mat(B)
+    amat = np.array(A)
+    bmat = np.array(B)
     n = np.shape(amat)[0]
     # Construct the controllability matrix
     ctrb = bmat
     for i in range(1, n):
-        ctrb = np.hstack((ctrb, amat**i*bmat))
+        ctrb = np.hstack((ctrb, np.dot(np.linalg.matrix_power(amat, i), bmat)))
     return ctrb
 
 def obsv(A, C):
@@ -417,14 +417,14 @@ def obsv(A, C):
    """
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.mat(A)
-    cmat = np.mat(C)
+    amat = np.array(A)
+    cmat = np.array(C)
     n = np.shape(amat)[0]
 
     # Construct the controllability matrix
     obsv = cmat
     for i in range(1, n):
-        obsv = np.vstack((obsv, cmat*amat**i))
+        obsv = np.vstack((obsv, np.dot(cmat, np.linalg.matrix_power(amat, i))))
     return obsv
 
 def gram(sys,type):
