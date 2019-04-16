@@ -128,6 +128,19 @@ class TestStateSpaceMatrix(unittest.TestCase):
 
         Mcomplex = np.array([[1j, 0], [0, 1j]]) * M
         self.assertFalse(isinstance(Mcomplex, ct.StateSpaceMatrix))
+
+    def test_power(self):
+        """Test matrix exponential"""
+        # Generate cases that should work
+        M = ct.ssmatrix([[1, 1], [-1, 2]])
+        np.testing.assert_array_almost_equal(M**0, np.eye(2))
+        np.testing.assert_array_almost_equal(M**1, M)
+        np.testing.assert_array_almost_equal(M**2, np.dot(M, M))
+        np.testing.assert_array_almost_equal(M**3, M*M*M)
+
+        # Make sure that we get errors if we do something wrong
+        self.assertRaises(TypeError, lambda : M**0.5)
+        self.assertRaises(np.linalg.LinAlgError, lambda : M[0,:]**2)
         
     def test_getitem(self):
         M = ct.StateSpaceMatrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])

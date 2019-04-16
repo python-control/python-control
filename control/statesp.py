@@ -176,6 +176,10 @@ class StateSpaceMatrix(np.ndarray):
         product = np.dot(other, self)
         return product if np.isrealobj(product) else np.asarray(product)
 
+    def __pow__(self, n):
+        """Raise a (square) matrix to the (integer) power `n`"""
+        return np.linalg.matrix_power(self, n)
+
     def __getitem__(self, index):
         """Get elements of a state-space matrix and return matrix"""
         # return np.matrix.__getitem__(self, index)     # legacy
