@@ -65,29 +65,147 @@ from .lti import LTI, timebase, timebaseEqual, isdtime
 from .xferfcn import _convert_to_transfer_function
 from copy import deepcopy
 
-__all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
+__all__ = ['StateSpaceMatrix', 'StateSpace', 'ss', 'rss', 'drss', 'tf2ss',
+           'ssdata', 'ssmatrix']
 
+class StateSpaceMatrix(np.ndarray):
+    """StateSpaceMatrix(M, [axis=0])
 
-def _matrix(a):
-    """Wrapper around numpy.matrix that reshapes empty matrices to be 0x0
+    A class for representing state-space matrices
 
-    Parameters
-    ----------
-    a: sequence passed to numpy.matrix
+    The StateSpaceMatrix class is used to represent the state-space
+    matrices t hat define a StateSpace system (A, B, C, D).  It is
+    mainly a wrapper for the ndarray class, but it maintains matrices
+    as 2-dimensional arrays.  It is similar to the NDmatrix class
+    (which is being deprecated), but with more limited functionality.
 
-    Returns
-    -------
-    am: result of numpy.matrix(a), except if a is empty, am will be 0x0.
+    In addition, for empty matrices the size of the StateSpaceMatrix
+    instance is set to 0x0 (needed within various StateSpace methods).
 
-    numpy.matrix([]) has size 1x0; for empty StateSpace objects, we
-    need 0x0 matrices, so use this instead of numpy.matrix in this
-    module.
     """
-    from numpy import matrix
-    am = matrix(a, dtype=float)
-    if (1, 0) == am.shape:
-        am.shape = (0, 0)
-    return am
+    # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
+    __array_priority__ = 20     # override ndarray and matrix types
+
+    def __new__(subtype, data=[], axis=1, dtype=float, copy=True):
+        """Create a StateSpaceMatrix object
+
+        Parameters
+        ----------
+        data: array-like object defining matrix values
+        axis: if data is 1D, choose its axis in the 2D representation
+
+        Returns
+        -------
+        M: 2D array representing the matrix.  If data = [], shape = (0,0)
+        """
+
+        # Legacy code
+        # self = np.matrix.__new__(subtype, data, dtype=float)
+        # if (self.shape == (1, 0)):
+        #     self.shape = (0, 0)
+        # return self
+
+        # See if this is already a StateSpaceMatrix(from np.matrix.__new__)
+        if isinstance(data, StateSpaceMatrix):
+            dtype2 = data.dtype
+            if (dtype is None):
+                dtype = dtype2
+            if (dtype2 == dtype) and (not copy):
+                return data
+            return data.astype(dtype)
+
+        # If data is passed as a string, use (deprecated?) matrix constructor
+        if isinstance(data, str):
+            data = np.matrix(data, copy=True)
+
+        # Convert the data into an array
+        arr = np.array(data, dtype=dtype, copy=copy)
+        ndim = arr.ndim
+        shape = arr.shape
+
+        # Change the shape of the array into a 2D array
+        if (ndim > 2):
+            raise ValueError("state-space matrix must be 2-dimensional")
+
+        elif (ndim == 2 and shape == (1, 0)) or \
+             (ndim == 1 and shape == (0, )):
+            # Passed an empty matrix or empty vector; change shape to (0, 0)
+            shape = (0, 0)
+
+        elif ndim == 1:
+            # Passed a row or column vector
+            shape = (1, shape[0]) if axis == 1 else (shape[0], 1)
+
+        elif ndim == 0:
+            # Passed a constant; turn into a matrix
+            shape = (1, 1)
+
+        # Make sure the data representation matches the shape we used
+        # (from np.matrix.__new__) 
+        order = 'C'
+        if (ndim == 2) and arr.flags.fortran:
+            order = 'F'
+
+        #  Create the actual object used to store the result
+        self = np.ndarray.__new__(subtype, shape, arr.dtype,
+                                  buffer = arr, order = order)
+        return self
+
+    # Override multiplication operation to emulate nd.matrix (vs elementwise)
+    def __mul__(self, other):
+        """Multiply or scale state-space matrices"""
+        # return np.matrix.__mul__(self, other)         # legacy
+        # Check to see if arguments are (real) scalars in disguise
+        # (from np.matrix.__mul__)
+        if isinstance(other, (np.ndarray, list, tuple)) :
+            # return np.dot(self, np.asmatrix(other))   # legacy
+            # Promote 1D vectors to row matrices and return ndarray
+            #! TODO: check to see if return type is correct
+            product = np.dot(self, np.array(other, copy=False, ndmin=2))
+            return product if np.isrealobj(product) else np.asarray(product)
+
+        if np.isscalar(other) or not hasattr(other, '__rmul__') :
+            product = np.dot(self, other)
+            return product if np.isrealobj(product) else np.asarray(product)
+
+        return NotImplemented
+
+    def __rmul__(self, other):
+        """Multiply or scale state-space matrices"""
+        # return np.matrix.__rmul__(self, other)        # legacy
+        product = np.dot(other, self)
+        return product if np.isrealobj(product) else np.asarray(product)
+
+    def __getitem__(self, index):
+        """Get elements of a state-space matrix and return matrix"""
+        # return np.matrix.__getitem__(self, index)     # legacy
+        self._getitem = True    # to get back raw item (from np.matrix.__mul__)
+        try:
+            out = np.ndarray.__getitem__(self, index)
+        finally:
+            self._getitem = False
+
+        if out.ndim == 0:
+            # If we get down to a scalar, return the actual scalar
+            return out[()]
+        if out.ndim == 1:
+            # Got a row/column vector; figure out what to return
+            # (from np.matrix.__mul__)
+            sh = out.shape[0]
+            try:
+                n = len(index)
+            except Exception:
+                n = 0
+            if n > 1 and np.isscalar(index[1]):
+                out.shape = (sh, 1)
+            else:
+                out.shape = (1, sh)
+        return out
+
+
+#! TODO: Remove this function once changes are all done
+def _matrix(a): return StateSpaceMatrix(a)
+def ssmatrix(a): return StateSpaceMatrix(a, copy=False)
 
 
 class StateSpace(LTI):
@@ -114,6 +232,10 @@ class StateSpace(LTI):
     system will be treated as a discrete time system with unspecified
     sampling time.
     """
+
+    # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
+    # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html#numpy.class.__array_priority__
+    __array_priority__ = 11     # override ndarray and matrix types
 
     def __init__(self, *args):
         """
@@ -198,8 +320,8 @@ class StateSpace(LTI):
         # as an array.
         ax1_A = np.where(~self.A.any(axis=1))[0]
         ax1_B = np.where(~self.B.any(axis=1))[0]
-        ax0_A = np.where(~self.A.any(axis=0))[1]
-        ax0_C = np.where(~self.C.any(axis=0))[1]
+        ax0_A = np.where(~self.A.any(axis=0))[0]
+        ax0_C = np.where(~self.C.any(axis=0))[0]
         useless_1 = np.intersect1d(ax1_A, ax1_B, assume_unique=True)
         useless_2 = np.intersect1d(ax0_A, ax0_C, assume_unique=True)
         useless = np.union1d(useless_1, useless_2)
@@ -593,9 +715,12 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         T1 = eye(self.outputs) + sign * D1 * E_D2
         T2 = eye(self.inputs) + sign * E_D2 * D1
 
-        A = concatenate((concatenate((A1 + sign * B1 * E_D2 * C1, sign * B1 * E_C2), axis=1),
-                         concatenate((B2 * T1 * C1, A2 + sign * B2 * D1 * E_C2), axis=1)),
-                        axis=0)
+        A = concatenate((
+                concatenate(
+                    (A1 + sign * B1 * E_D2 * C1, sign * B1 * E_C2), axis=1),
+                concatenate(
+                    (B2 * T1 * C1, A2 + sign * B2 * D1 * E_C2), axis=1)),
+                axis=0)
         B = concatenate((B1 * T2, B2 * D1 * T2), axis=0)
         C = concatenate((T1 * C1, sign * D1 * E_C2), axis=1)
         D = D1 * T2
@@ -740,8 +865,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = lti(asarray(self.A), asarray(self.B[:, j]),
-                                asarray(self.C[i, :]), asarray(self.D[i, j]))
+                out[i][j] = lti(asarray(self.A), asarray(self.B[:, [j]]),
+                                asarray(self.C[[i], :]),
+                                _matrix(self.D[[i], [j]]))
 
         return out
 
@@ -778,7 +904,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             raise IOError('must provide indices of length 2 for state space')
         i = indices[0]
         j = indices[1]
-        return StateSpace(self.A, self.B[:, j], self.C[i, :], self.D[i, j], self.dt)
+        return StateSpace(self.A, self.B[:, [j]], self.C[[i], :],
+                          _matrix(self.D[[i], [j]]), self.dt)
 
     def sample(self, Ts, method='zoh', alpha=None):
         """Convert a continuous time system to discrete time
@@ -859,10 +986,10 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 def _convertToStateSpace(sys, **kw):
     """Convert a system to state space form (if needed).
 
-    If sys is already a state space, then it is returned.  If sys is a transfer
-    function object, then it is converted to a state space and returned.  If sys
-    is a scalar, then the number of inputs and outputs can be specified
-    manually, as in:
+    If sys is already a state space, then it is returned.  If sys is a
+    transfer function object, then it is converted to a state space
+    and returned.  If sys is a scalar, then the number of inputs and
+    outputs can be specified manually, as in:
 
     >>> sys = _convertToStateSpace(3.) # Assumes inputs = outputs = 1
     >>> sys = _convertToStateSpace(1., inputs=3, outputs=2)
@@ -875,8 +1002,8 @@ def _convertToStateSpace(sys, **kw):
     import itertools
     if isinstance(sys, StateSpace):
         if len(kw):
-            raise TypeError("If sys is a StateSpace, _convertToStateSpace \
-cannot take keywords.")
+            raise TypeError("If sys is a StateSpace object, "
+                            "_convertToStateSpace cannot take keywords.")
 
         # Already a state space system; just return it
         return sys
@@ -897,8 +1024,10 @@ cannot take keywords.")
                            denorder, den, num, tol=0)
 
             states = ssout[0]
-            return StateSpace(ssout[1][:states, :states], ssout[2][:states, :sys.inputs],
-                              ssout[3][:sys.outputs, :states], ssout[4], sys.dt)
+            return StateSpace(ssout[1][:states, :states],
+                              ssout[2][:states, :sys.inputs],
+                              ssout[3][:sys.outputs, :states],
+                              ssout[4], sys.dt)
         except ImportError:
             # No Slycot.  Scipy tf->ss can't handle MIMO, but static
             # MIMO is an easy special case we can check for here
@@ -908,7 +1037,8 @@ cannot take keywords.")
                        for drow in sys.den)
             if 1 == maxn and 1 == maxd:
                 D = empty((sys.outputs, sys.inputs), dtype=float)
-                for i, j in itertools.product(range(sys.outputs), range(sys.inputs)):
+                for i, j in itertools.product(range(sys.outputs),
+                                              range(sys.inputs)):
                     D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
                 return StateSpace([], [], [], D, sys.dt)
             else:
