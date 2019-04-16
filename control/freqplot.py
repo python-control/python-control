@@ -40,7 +40,7 @@
 # SUCH DAMAGE.
 #
 # $Id$
-
+import matplotlib
 import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
@@ -89,7 +89,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     omega_num: int
         number of samples
     margins : boolean
-        if True, plot gain and phase margin
+        If True, plot gain and phase margin
     \*args, \**kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
@@ -193,23 +193,35 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # The code below should work on all cases.
 
                 # Get the current figure
-                fig = plt.gcf()
-                ax_mag = None
-                ax_phase = None
 
-                # Get the current axes if they already exist
-                for ax in fig.axes:
-                    if ax.get_label() == 'control-bode-magnitude':
-                        ax_mag = ax
-                    elif ax.get_label() == 'control-bode-phase':
-                        ax_phase = ax
+                if 'sisotool' in kwargs:
+                    fig = kwargs['fig']
+                    ax_mag = fig.axes[0]
+                    ax_phase = fig.axes[2]
+                    sisotool = kwargs['sisotool']
+                    del kwargs['fig']
+                    del kwargs['sisotool']
+                else:
+                    fig = plt.gcf()
+                    ax_mag = None
+                    ax_phase = None
+                    sisotool = False
 
-                # If no axes present, create them from scratch
-                if ax_mag is None or ax_phase is None:
-                    plt.clf()
-                    ax_mag = plt.subplot(211, label='control-bode-magnitude')
-                    ax_phase = plt.subplot(212, label='control-bode-phase',
-                                           sharex=ax_mag)
+                    # Get the current axes if they already exist
+                    for ax in fig.axes:
+                        if ax.get_label() == 'control-bode-magnitude':
+                            ax_mag = ax
+                        elif ax.get_label() == 'control-bode-phase':
+                            ax_phase = ax
+
+                    # If no axes present, create them from scratch
+                    if ax_mag is None or ax_phase is None:
+                        plt.clf()
+                        ax_mag = plt.subplot(211,
+                                             label='control-bode-magnitude')
+                        ax_phase = plt.subplot(212,
+                                               label='control-bode-phase',
+                                               sharex=ax_mag)
 
                 # Magnitude plot
                 if dB:
@@ -237,58 +249,107 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 if margins:
                     margin = stability_margins(sys)
                     gm, pm, Wcg, Wcp = margin[0], margin[1], margin[3], margin[4]
-                    if pm >= 0.:
-                        phase_limit = -180.
-                    else:
+                    # TODO: add some documentation describing why this is here
+                    phase_at_cp = phases[0][(np.abs(omegas[0] - Wcp)).argmin()]
+                    if phase_at_cp >= 0.:
                         phase_limit = 180.
+                    else:
+                        phase_limit = -180.
 
-                    ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':')
+                    if Hz:
+                        Wcg, Wcp = Wcg/(2*math.pi),Wcp/(2*math.pi)
+
+                    ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':',
+                                   zorder=-20)
                     ax_phase.axhline(y=phase_limit if deg else math.radians(phase_limit), 
-                                     color='k', linestyle=':')
+                                     color='k', linestyle=':', zorder=-20)
                     mag_ylim = ax_mag.get_ylim()
                     phase_ylim = ax_phase.get_ylim()
 
                     if pm != float('inf') and Wcp != float('nan'):
                         if dB:
-                            ax_mag.semilogx([Wcp, Wcp], [0., -1e5], color='k', linestyle=':')
+                            ax_mag.semilogx([Wcp, Wcp], [0.,-1e5],
+                                            color='k', linestyle=':',
+                                            zorder=-20)
                         else:
-                            ax_mag.loglog([Wcp, Wcp], [1., 1e-8], color='k', linestyle=':')
+                            ax_mag.loglog([Wcp,Wcp], [1.,1e-8],color='k',
+                                          linestyle=':', zorder=-20)
 
                         if deg:
-                            ax_phase.semilogx([Wcp, Wcp], [1e5, phase_limit + pm], 
-                                              color='k', linestyle=':')
-                            ax_phase.semilogx([Wcp, Wcp], [phase_limit + pm, phase_limit], 
-                                              color='k')
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [1e5, phase_limit+pm], 
+                                              color='k', linestyle=':',
+                                              zorder=-20)
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [phase_limit + pm, phase_limit], 
+                                              color='k', zorder=-20)
                         else:
-                            ax_phase.semilogx([Wcp, Wcp], [1e5, math.radians(phase_limit) +
-                                                           math.radians(pm)], 
-                                              color='k', linestyle=':')
-                            ax_phase.semilogx([Wcp, Wcp], [math.radians(phase_limit) +
-                                                           math.radians(pm), 
-                                                           math.radians(phase_limit)], color='k')
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [1e5, math.radians(phase_limit) +
+                                               math.radians(pm)],
+                                              color='k', linestyle=':',
+                                              zorder=-20)
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [math.radians(phase_limit) +
+                                               math.radians(pm),
+                                               math.radians(phase_limit)], 
+                                              color='k', zorder=-20)
 
                     if gm != float('inf') and Wcg != float('nan'):
                         if dB:
-                            ax_mag.semilogx([Wcg, Wcg], [-20. * np.log10(gm), -1e5], color='k', 
-                                            linestyle=':')
-                            ax_mag.semilogx([Wcg, Wcg], [0, -20 * np.log10(gm)], color='k')
+                            ax_mag.semilogx([Wcg, Wcg],
+                                            [-20.*np.log10(gm), -1e5],
+                                            color='k', linestyle=':',
+                                            zorder=-20)
+                            ax_mag.semilogx([Wcg, Wcg], [0,-20*np.log10(gm)],
+                                            color='k', zorder=-20)
                         else:
-                            ax_mag.loglog([Wcg, Wcg], [1. / gm, 1e-8], color='k', linestyle=':')
-                            ax_mag.loglog([Wcg, Wcg], [1., 1. / gm], color='k')
+                            ax_mag.loglog([Wcg, Wcg],
+                                          [1./gm,1e-8],color='k',
+                                          linestyle=':', zorder=-20)
+                            ax_mag.loglog([Wcg, Wcg],
+                                          [1.,1./gm],color='k', zorder=-20)
 
                         if deg:
-                            ax_phase.semilogx([Wcg, Wcg], [1e-8, phase_limit], 
-                                              color='k', linestyle=':')
+                            ax_phase.semilogx([Wcg, Wcg], [1e-8, phase_limit],
+                                              color='k', linestyle=':',
+                                              zorder=-20)
                         else:
-                            ax_phase.semilogx([Wcg, Wcg], [1e-8, math.radians(phase_limit)], 
-                                              color='k', linestyle=':')
+                            ax_phase.semilogx([Wcg, Wcg],
+                                              [1e-8, math.radians(phase_limit)],
+                                              color='k', linestyle=':',
+                                              zorder=-20)
 
                     ax_mag.set_ylim(mag_ylim)
                     ax_phase.set_ylim(phase_ylim)
-                    plt.suptitle('Gm = %.2f %s(at %.2f rad/s), Pm = %.2f %s (at %.2f rad/s)' % 
-                                 (20 * np.log10(gm) if dB else gm,
-                                  'dB ' if dB else '\b', Wcg, pm if deg else math.radians(pm), 
-                                  'deg' if deg else 'rad', Wcp))
+
+                    if sisotool:
+                        ax_mag.text(0.04, 0.06,
+                                    'G.M.: %.2f %s\nFreq: %.2f %s' % 
+                                    (20*np.log10(gm) if dB else gm,
+                                     'dB ' if dB else '',
+                                     Wcg, 'Hz' if Hz else 'rad/s'), 
+                                    horizontalalignment='left',
+                                    verticalalignment='bottom',
+                                    transform=ax_mag.transAxes,
+                                    fontsize=8 if int(matplotlib.__version__[0]) == 1 else 6)
+                        ax_phase.text(0.04, 0.06,
+                                      'P.M.: %.2f %s\nFreq: %.2f %s' %
+                                      (pm if deg else math.radians(pm),
+                                       'deg' if deg else 'rad',
+                                       Wcp, 'Hz' if Hz else 'rad/s'), 
+                                      horizontalalignment='left',
+                                      verticalalignment='bottom',
+                                      transform=ax_phase.transAxes,
+                                      fontsize=8 if int(matplotlib.__version__[0]) == 1 else 6)
+                    else:
+                        plt.suptitle('Gm = %.2f %s(at %.2f %s), Pm = %.2f %s (at %.2f %s)' % 
+                                     (20*np.log10(gm) if dB else gm, 
+                                      'dB ' if dB else '\b',
+                                      Wcg, 'Hz' if Hz else 'rad/s', 
+                                      pm if deg else math.radians(pm),
+                                      'deg' if deg else 'rad',
+                                      Wcp, 'Hz' if Hz else 'rad/s'))
 
                 if nyquistfrq_plot:
                     ax_phase.axvline(nyquistfrq_plot, color=pltline[0].get_color())
@@ -302,12 +363,19 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     return np.arange(v1, v2 + 1) * period
                 if deg:
                     ylim = ax_phase.get_ylim()
-                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0], ylim[1], 45.))
-                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0], ylim[1], 15.), minor=True)
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1], 45.))
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1], 15.),
+                                        minor=True)
                 else:
                     ylim = ax_phase.get_ylim()
-                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0], ylim[1], math.pi / 4.))
-                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0], ylim[1], math.pi / 12.),
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1],
+                                                                 math.pi / 4.))
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1],
+                                                                 math.pi / 12.),
                                         minor=True)
                 ax_phase.grid(False if margins else True, which='both')
                 # ax_mag.grid(which='minor', alpha=0.3)
@@ -316,7 +384,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # ax_phase.grid(which='major', alpha=0.9)
 
                 # Label the frequency axis
-                ax_phase.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+                ax_phase.set_xlabel("Frequency (Hz)" if Hz
+                                    else "Frequency (rad/sec)")
 
     if len(syslist) == 1:
         return mags[0], phases[0], omegas[0]
@@ -324,7 +393,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         return mags, phases, omegas
 
 
-def nyquist_plot(syslist, omega=None, Plot=True, color=None, labelFreq=0, *args, **kwargs):
+def nyquist_plot(syslist, omega=None, Plot=True, color=None,
+                 labelFreq=0, *args, **kwargs):
     """
     Nyquist plot for a system
 
@@ -683,6 +753,10 @@ def gen_prefix(pow1000):
             'z',  # zepto (10^-21)
             'y'][8 - pow1000]  # yocto (10^-24)
 
+def find_nearest_omega(omega_list, omega):
+    omega_list = np.asarray(omega_list)
+    idx = (np.abs(omega_list - omega)).argmin()
+    return omega_list[(np.abs(omega_list - omega)).argmin()]
 
 # Function aliases
 bode = bode_plot
