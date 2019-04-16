@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 import control as ct
 
+
 class TestStateSpaceMatrix(unittest.TestCase):
     """Tests for the StateSpaceMatrix class."""
 
@@ -25,7 +26,6 @@ class TestStateSpaceMatrix(unittest.TestCase):
         np.testing.assert_array_equal(M, np.array([[1, 1]]))
 
         # Use axis to switch to a column vector
-        #! TODO: not yet implemented
         M = ct.StateSpaceMatrix([1, 1], axis=0)
         self.assertEqual(M.shape, (2, 1))
         np.testing.assert_array_equal(M, np.array([[1], [1]]))
@@ -34,7 +34,7 @@ class TestStateSpaceMatrix(unittest.TestCase):
         M = ct.StateSpaceMatrix(1)
         self.assertEqual(M.shape, (1, 1))
         np.testing.assert_array_equal(M, np.array([[1]]))
-        
+
         # Empty matrix should have shape (0, 0)
         M = ct.StateSpaceMatrix([[]])
         self.assertEqual(M.shape, (0, 0))
@@ -44,7 +44,7 @@ class TestStateSpaceMatrix(unittest.TestCase):
         warnings.filterwarnings("ignore")
         M = ct.StateSpaceMatrix("1, 1; 1, 1")
         warnings.filterwarnings("default")
-        self.assertEqual(M.shape, (2,2))
+        self.assertEqual(M.shape, (2, 2))
         self.assertTrue(isinstance(M, ct.StateSpaceMatrix))
 
     def test_mul(self):
@@ -104,13 +104,13 @@ class TestStateSpaceMatrix(unittest.TestCase):
 
         Mint = 5 * M
         self.assertTrue(isinstance(Mint, ct.StateSpaceMatrix))
-        
+
         Mreal = M * 5.5
         self.assertTrue(isinstance(Mreal, ct.StateSpaceMatrix))
-        
+
         Mreal = 5.5 * M
         self.assertTrue(isinstance(Mreal, ct.StateSpaceMatrix))
-        
+
         Mcomplex = M * 1j
         self.assertFalse(isinstance(Mcomplex, ct.StateSpaceMatrix))
 
@@ -119,10 +119,10 @@ class TestStateSpaceMatrix(unittest.TestCase):
 
         Mreal = M * np.array([[5.5, 0], [0, 5.5]])
         self.assertTrue(isinstance(Mreal, ct.StateSpaceMatrix))
-        
+
         Mreal = np.array([[5.5, 0], [0, 5.5]]) * M
         self.assertTrue(isinstance(Mreal, ct.StateSpaceMatrix))
-        
+
         Mcomplex = M * np.array([[1j, 0], [0, 1j]])
         self.assertFalse(isinstance(Mcomplex, ct.StateSpaceMatrix))
 
@@ -139,70 +139,69 @@ class TestStateSpaceMatrix(unittest.TestCase):
         np.testing.assert_array_almost_equal(M**3, M*M*M)
 
         # Make sure that we get errors if we do something wrong
-        self.assertRaises(TypeError, lambda : M**0.5)
-        self.assertRaises(np.linalg.LinAlgError, lambda : M[0,:]**2)
-        
+        self.assertRaises(TypeError, lambda: M**0.5)
+        self.assertRaises(np.linalg.LinAlgError, lambda: M[0, :]**2)
+
     def test_getitem(self):
         M = ct.StateSpaceMatrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
         # Extracting full slice gives back what we started with
-        S1 = M[:,:]
+        S1 = M[:, :]
         self.assertTrue(isinstance(S1, ct.StateSpaceMatrix))
         self.assertEqual(S1.shape, M.shape)
         np.testing.assert_array_equal(S1, M)
 
         # Extracting multiple columns using slice
-        S2 = M[:,0:2]
+        S2 = M[:, 0:2]
         self.assertTrue(isinstance(S2, ct.StateSpaceMatrix))
         self.assertEqual(S2.shape, (3, 2))
         np.testing.assert_array_equal(S2, [[1, 2], [4, 5], [7, 8]])
 
         # Extracting multiple columns using array
-        S3 = M[:,[0,1]]
+        S3 = M[:, [0, 1]]
         self.assertTrue(isinstance(S3, ct.StateSpaceMatrix))
         self.assertEqual(S3.shape, (3, 2))
         np.testing.assert_array_equal(S3, [[1, 2], [4, 5], [7, 8]])
-        
+
         # Extracting single column returns column matrix
-        S4 = M[:,1]
+        S4 = M[:, 1]
         self.assertTrue(isinstance(S4, ct.StateSpaceMatrix))
         self.assertEqual(S4.shape, (3, 1))
         np.testing.assert_array_equal(S4, [[2], [5], [8]])
 
         # Extracting multiple rows using slice
-        S5 = M[0:2,:]
+        S5 = M[0:2, :]
         self.assertTrue(isinstance(S5, ct.StateSpaceMatrix))
         self.assertEqual(S5.shape, (2, 3))
         np.testing.assert_array_equal(S5, [[1, 2, 3], [4, 5, 6]])
 
         # Extracting multiple rows using array
-        S6 = M[[0,1],:]
+        S6 = M[[0, 1], :]
         self.assertTrue(isinstance(S6, ct.StateSpaceMatrix))
         self.assertEqual(S6.shape, (2, 3))
         np.testing.assert_array_equal(S6, [[1, 2, 3], [4, 5, 6]])
-        
+
         # Extracting single row returns row matrix
-        S6 = M[1,:]
+        S6 = M[1, :]
         self.assertTrue(isinstance(S6, ct.StateSpaceMatrix))
         self.assertEqual(S6.shape, (1, 3))
         np.testing.assert_array_equal(S6, [[4, 5, 6]])
 
         # Extracting row and column slices returns matrix
-        S7 = M[0:2,0:2]
+        S7 = M[0:2, 0:2]
         self.assertTrue(isinstance(S7, ct.StateSpaceMatrix))
         self.assertEqual(S7.shape, (2, 2))
         np.testing.assert_array_equal(S7, [[1, 2], [4, 5]])
 
-        # Extracting single row and column returns matrix
-        #! TODO: uncomment (not true for original matrix class)
+        # Extracting single row and column returns scalar
         S8 = M[1, 1]
-        # self.assertTrue(isinstance(S8, ct.StateSpaceMatrix))
-        # self.assertEqual(S8.shape, (1, 1))
-        np.testing.assert_array_equal(S8, [[5]])
-        
+        self.assertTrue(np.isscalar(S8))
+        self.assertEqual(S8, 5)
+
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestStateSpaceMatrix)
+
 
 if __name__ == "__main__":
     unittest.main()
