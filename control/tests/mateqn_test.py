@@ -43,11 +43,11 @@ Author: Bjorn Olofsson
 """
 
 import unittest
-from numpy import matrix
 from numpy.testing import assert_array_almost_equal, assert_array_less
 # need scipy version of eigvals for generalized eigenvalue problem
 from scipy.linalg import eigvals, solve
 from scipy import zeros,dot
+from control.statesp import ssmatrix
 from control.mateqn import lyap,dlyap,care,dare
 from control.exception import slycot_check
 
@@ -56,81 +56,81 @@ class TestMatrixEquations(unittest.TestCase):
     """These are tests for the matrix equation solvers in mateqn.py"""
 
     def test_lyap(self):
-        A = matrix([[-1, 1],[-1, 0]])
-        Q = matrix([[1,0],[0,1]])
+        A = ssmatrix([[-1, 1], [-1, 0]])
+        Q = ssmatrix([[1, 0], [0, 1]])
         X = lyap(A,Q)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X + X * A.T + Q, zeros((2,2)))
 
-        A = matrix([[1, 2],[-3, -4]])
-        Q = matrix([[3, 1],[1, 1]])
+        A = ssmatrix([[1, 2], [-3, -4]])
+        Q = ssmatrix([[3, 1], [1, 1]])
         X = lyap(A,Q)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X + X * A.T + Q, zeros((2,2)))
 
     def test_lyap_sylvester(self):
         A = 5
-        B = matrix([[4, 3], [4, 3]])
-        C = matrix([2, 1])
+        B = ssmatrix([[4, 3], [4, 3]])
+        C = ssmatrix([2, 1])
         X = lyap(A,B,C)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X + X * B + C, zeros((1,2)))
 
-        A = matrix([[2,1],[1,2]])
-        B = matrix([[1,2],[0.5,0.1]])
-        C = matrix([[1,0],[0,1]])
+        A = ssmatrix([[2, 1], [1, 2]])
+        B = ssmatrix([[1, 2], [0.5, 0.1]])
+        C = ssmatrix([[1, 0], [0, 1]])
         X = lyap(A,B,C)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X + X * B + C, zeros((2,2)))
 
     def test_lyap_g(self):
-        A = matrix([[-1, 2],[-3, -4]])
-        Q = matrix([[3, 1],[1, 1]])
-        E = matrix([[1,2],[2,1]])
+        A = ssmatrix([[-1, 2], [-3, -4]])
+        Q = ssmatrix([[3, 1], [1, 1]])
+        E = ssmatrix([[1,2], [2,1]])
         X = lyap(A,Q,None,E)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X * E.T + E * X * A.T + Q, zeros((2,2)))
 
     def test_dlyap(self):
-        A = matrix([[-0.6, 0],[-0.1, -0.4]])
-        Q = matrix([[1,0],[0,1]])
+        A = ssmatrix([[-0.6, 0], [-0.1, -0.4]])
+        Q = ssmatrix([[1,0], [0,1]])
         X = dlyap(A,Q)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X * A.T - X + Q, zeros((2,2)))
 
-        A = matrix([[-0.6, 0],[-0.1, -0.4]])
-        Q = matrix([[3, 1],[1, 1]])
+        A = ssmatrix([[-0.6, 0], [-0.1, -0.4]])
+        Q = ssmatrix([[3, 1], [1, 1]])
         X = dlyap(A,Q)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X * A.T - X + Q, zeros((2,2)))
 
     def test_dlyap_g(self):
-        A = matrix([[-0.6, 0],[-0.1, -0.4]])
-        Q = matrix([[3, 1],[1, 1]])
-        E = matrix([[1, 1],[2, 1]])
+        A = ssmatrix([[-0.6, 0], [-0.1, -0.4]])
+        Q = ssmatrix([[3, 1], [1, 1]])
+        E = ssmatrix([[1, 1], [2, 1]])
         X = dlyap(A,Q,None,E)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X * A.T - E * X * E.T + Q, zeros((2,2)))
 
     def test_dlyap_sylvester(self):
         A = 5
-        B = matrix([[4, 3], [4, 3]])
-        C = matrix([2, 1])
+        B = ssmatrix([[4, 3], [4, 3]])
+        C = ssmatrix([2, 1])
         X = dlyap(A,B,C)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X * B.T - X + C, zeros((1,2)))
 
-        A = matrix([[2,1],[1,2]])
-        B = matrix([[1,2],[0.5,0.1]])
-        C = matrix([[1,0],[0,1]])
+        A = ssmatrix([[2,1], [1,2]])
+        B = ssmatrix([[1,2], [0.5,0.1]])
+        C = ssmatrix([[1,0], [0,1]])
         X = dlyap(A,B,C)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A * X * B.T - X + C, zeros((2,2)))
 
     def test_care(self):
-        A = matrix([[-2, -1],[-1, -1]])
-        Q = matrix([[0, 0],[0, 1]])
-        B = matrix([[1, 0],[0, 4]])
+        A = ssmatrix([[-2, -1], [-1, -1]])
+        Q = ssmatrix([[0, 0], [0, 1]])
+        B = ssmatrix([[1, 0], [0, 4]])
 
         X,L,G = care(A,B,Q)
         # print("The solution obtained is", X)
@@ -139,12 +139,12 @@ class TestMatrixEquations(unittest.TestCase):
         assert_array_almost_equal(B.T * X, G)
 
     def test_care_g(self):
-        A = matrix([[-2, -1],[-1, -1]])
-        Q = matrix([[0, 0],[0, 1]])
-        B = matrix([[1, 0],[0, 4]])
-        R = matrix([[2, 0],[0, 1]])
-        S = matrix([[0, 0],[0, 0]])
-        E = matrix([[2, 1],[1, 2]])
+        A = ssmatrix([[-2, -1], [-1, -1]])
+        Q = ssmatrix([[0, 0], [0, 1]])
+        B = ssmatrix([[1, 0], [0, 4]])
+        R = ssmatrix([[2, 0], [0, 1]])
+        S = ssmatrix([[0, 0], [0, 0]])
+        E = ssmatrix([[2, 1], [1, 2]])
 
         X,L,G = care(A,B,Q,R,S,E)
         # print("The solution obtained is", X)
@@ -153,12 +153,12 @@ class TestMatrixEquations(unittest.TestCase):
             (E.T * X * B + S) * solve(R, B.T * X * E + S.T)  + Q, zeros((2,2)))
         assert_array_almost_equal(solve(R, B.T * X * E + S.T), G)
 
-        A = matrix([[-2, -1],[-1, -1]])
-        Q = matrix([[0, 0],[0, 1]])
-        B = matrix([[1],[0]])
+        A = ssmatrix([[-2, -1], [-1, -1]])
+        Q = ssmatrix([[0, 0], [0, 1]])
+        B = ssmatrix([[1], [0]])
         R = 1
-        S = matrix([[1],[0]])
-        E = matrix([[2, 1],[1, 2]])
+        S = ssmatrix([[1], [0]])
+        E = ssmatrix([[2, 1], [1, 2]])
 
         X,L,G = care(A,B,Q,R,S,E)
         # print("The solution obtained is", X)
@@ -168,10 +168,10 @@ class TestMatrixEquations(unittest.TestCase):
         assert_array_almost_equal(dot( 1/R , dot(B.T,dot(X,E)) + S.T) , G)
 
     def test_dare(self):
-        A = matrix([[-0.6, 0],[-0.1, -0.4]])
-        Q = matrix([[2, 1],[1, 0]])
-        B = matrix([[2, 1],[0, 1]])
-        R = matrix([[1, 0],[0, 1]])
+        A = ssmatrix([[-0.6, 0], [-0.1, -0.4]])
+        Q = ssmatrix([[2, 1], [1, 0]])
+        B = ssmatrix([[2, 1], [0, 1]])
+        R = ssmatrix([[1, 0], [0, 1]])
 
         X,L,G = dare(A,B,Q,R)
         # print("The solution obtained is", X)
@@ -183,28 +183,29 @@ class TestMatrixEquations(unittest.TestCase):
         lam = eigvals(A - B * G)
         assert_array_less(abs(lam), 1.0)
 
-        A = matrix([[1, 0],[-1, 1]])
-        Q = matrix([[0, 1],[1, 1]])
-        B = matrix([[1],[0]])
+        A = ssmatrix([[1, 0], [-1, 1]])
+        Q = ssmatrix([[0, 1], [1, 1]])
+        B = ssmatrix([[1], [0]])
         R = 2
 
         X,L,G = dare(A,B,Q,R)
         # print("The solution obtained is", X)
         assert_array_almost_equal(
-            A.T * X * A - X -
-            A.T * X * B * solve(B.T *  X * B + R, B.T * X * A) + Q, zeros((2,2)))
+            A.T * X * A - X
+            - A.T * X * B * solve(B.T *  X * B + R, B.T * X * A)
+            + Q, zeros((2,2)))
         assert_array_almost_equal(B.T * X * A / (B.T * X * B + R), G)
         # check for stable closed loop
         lam = eigvals(A - B * G)
         assert_array_less(abs(lam), 1.0)
 
     def test_dare_g(self):
-        A = matrix([[-0.6, 0],[-0.1, -0.4]])
-        Q = matrix([[2, 1],[1, 3]])
-        B = matrix([[1, 5],[2, 4]])
-        R = matrix([[1, 0],[0, 1]])
-        S = matrix([[1, 0],[2, 0]])
-        E = matrix([[2, 1],[1, 2]])
+        A = ssmatrix([[-0.6, 0], [-0.1, -0.4]])
+        Q = ssmatrix([[2, 1], [1, 3]])
+        B = ssmatrix([[1, 5], [2, 4]])
+        R = ssmatrix([[1, 0], [0, 1]])
+        S = ssmatrix([[1, 0], [2, 0]])
+        E = ssmatrix([[2, 1], [1, 2]])
 
         X,L,G = dare(A,B,Q,R,S,E)
         # print("The solution obtained is", X)
@@ -217,12 +218,12 @@ class TestMatrixEquations(unittest.TestCase):
         lam = eigvals(A - B * G, E)
         assert_array_less(abs(lam), 1.0)
 
-        A = matrix([[-0.6, 0],[-0.1, -0.4]])
-        Q = matrix([[2, 1],[1, 3]])
-        B = matrix([[1],[2]])
+        A = ssmatrix([[-0.6, 0], [-0.1, -0.4]])
+        Q = ssmatrix([[2, 1], [1, 3]])
+        B = ssmatrix([[1], [2]])
         R = 1
-        S = matrix([[1],[2]])
-        E = matrix([[2, 1],[1, 2]])
+        S = ssmatrix([[1], [2]])
+        E = ssmatrix([[2, 1], [1, 2]])
 
         X,L,G = dare(A,B,Q,R,S,E)
         # print("The solution obtained is", X)

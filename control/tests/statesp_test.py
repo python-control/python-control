@@ -300,11 +300,10 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys1_11.A,
                                              sys1.A)
         np.testing.assert_array_almost_equal(sys1_11.B,
-                                             sys1.B[:, 1])
+                                             sys1.B[:, [1]])
         np.testing.assert_array_almost_equal(sys1_11.C,
-                                             sys1.C[0, :])
-        np.testing.assert_array_almost_equal(sys1_11.D,
-                                             sys1.D[0, 1])
+                                             sys1.C[[0], :])
+        np.testing.assert_array_almost_equal(sys1_11.D, sys1.D[0,1])
 
         assert sys1.dt == sys1_11.dt
 
@@ -370,14 +369,14 @@ class TestStateSpace(unittest.TestCase):
         g4 = g1 + g2
         self.assertEqual(5, g4.D[0, 0])
         g5 = g1.feedback(g2)
-        self.assertAlmostEqual(2. / 7, g5.D[0, 0])
+        np.testing.assert_array_almost_equal(2. / 7, g5.D[0, 0])
         g6 = g1.append(g2)
         np.testing.assert_array_equal(np.diag([2, 3]), g6.D)
 
     def test_matrix_static_gain(self):
         """Regression: can we create matrix static gains?"""
-        d1 = np.matrix([[1, 2, 3], [4, 5, 6]])
-        d2 = np.matrix([[7, 8], [9, 10], [11, 12]])
+        d1 = np.array([[1, 2, 3], [4, 5, 6]])
+        d2 = np.array([[7, 8], [9, 10], [11, 12]])
         g1 = StateSpace([], [], [], d1)
 
         # _remove_useless_states was making A = [[0]]
@@ -387,12 +386,12 @@ class TestStateSpace(unittest.TestCase):
         g3 = StateSpace([], [], [], d2.T)
 
         h1 = g1 * g2
-        np.testing.assert_array_equal(d1 * d2, h1.D)
+        np.testing.assert_array_equal(np.dot(d1, d2), h1.D)
         h2 = g1 + g3
         np.testing.assert_array_equal(d1 + d2.T, h2.D)
         h3 = g1.feedback(g2)
         np.testing.assert_array_almost_equal(
-            solve(np.eye(2) + d1 * d2, d1), h3.D)
+            solve(np.eye(2) + np.dot(d1, d2), d1), h3.D)
         h4 = g1.append(g2)
         np.testing.assert_array_equal(block_diag(d1, d2), h4.D)
 
@@ -436,11 +435,11 @@ class TestStateSpace(unittest.TestCase):
 
     def test_matrix_to_state_space(self):
         """_convertToStateSpace(matrix) gives ss([],[],[],D)"""
-        D = np.matrix([[1, 2, 3], [4, 5, 6]])
+        D = np.array([[1, 2, 3], [4, 5, 6]])
         g = _convertToStateSpace(D)
 
         def empty(shape):
-            m = np.matrix([])
+            m = np.array([])
             m.shape = shape
             return m
         np.testing.assert_array_equal(empty((0, 0)), g.A)
@@ -495,6 +494,17 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_allclose(np.array(pk.B).reshape(-1), Bmatlab)
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
+
+    def test_horner(self):
+        """Test horner() function"""
+        # Make sure we can compute the transfer function at a complex value
+        self.sys322.horner(1.+1.j)
+
+        # Make sure result agrees with frequency response
+        mag, phase, omega = self.sys322.freqresp([1])
+        np.testing.assert_array_almost_equal(
+            self.sys322.horner(1.j),
+            mag[:,:,0] * np.exp(1.j * phase[:,:,0]))
 
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
@@ -567,7 +577,6 @@ class TestDrss(unittest.TestCase):
         """Regression: pole() of static gain is empty array."""
         np.testing.assert_array_equal(np.array([]),
                                       StateSpace([], [], [], [[1]]).pole())
-
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)

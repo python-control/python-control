@@ -203,7 +203,7 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(0, gmimo.states)
         self.assertEqual(3, gmimo.inputs)
         self.assertEqual(2, gmimo.outputs)
-        d = np.matrix([[0.5, 30, 0.0625], [-0.5, -1.25, 101.3]])
+        d = np.array([[0.5, 30, 0.0625], [-0.5, -1.25, 101.3]])
         np.testing.assert_array_equal(d, gmimo.D)
 
     def testSs2tfStaticSiso(self):
@@ -220,7 +220,7 @@ class TestConvert(unittest.TestCase):
         a = []
         b = []
         c = []
-        d = np.matrix([[0.5, 30, 0.0625], [-0.5, -1.25, 101.3]])
+        d = np.array([[0.5, 30, 0.0625], [-0.5, -1.25, 101.3]])
         gtf = control.ss2tf(control.ss(a,b,c,d))
 
         # we need a 3x2x1 array to compare with gtf.num

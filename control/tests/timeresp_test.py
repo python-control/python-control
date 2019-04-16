@@ -20,10 +20,10 @@ from control.exception import slycot_check
 class TestTimeresp(unittest.TestCase):
     def setUp(self):
         """Set up some systems for testing out MATLAB functions"""
-        A = np.matrix("1. -2.; 3. -4.")
-        B = np.matrix("5.; 7.")
-        C = np.matrix("6. 8.")
-        D = np.matrix("9.")
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
+        C = np.array([[6., 8.]])
+        D = np.array([[9.]])
         self.siso_ss1 = StateSpace(A, B, C, D)
 
         # Create some transfer functions
@@ -31,18 +31,19 @@ class TestTimeresp(unittest.TestCase):
         self.siso_tf2 = _convert_to_transfer_function(self.siso_ss1)
 
         # Create MIMO system, contains ``siso_ss1`` twice
-        A = np.matrix("1. -2. 0.  0.;"
-                      "3. -4. 0.  0.;"
-                      "0.  0. 1. -2.;"
-                      "0.  0. 3. -4. ")
-        B = np.matrix("5. 0.;"
-                      "7. 0.;"
-                      "0. 5.;"
-                      "0. 7. ")
-        C = np.matrix("6. 8. 0. 0.;"
-                      "0. 0. 6. 8. ")
-        D = np.matrix("9. 0.;"
-                      "0. 9. ")
+        A = np.array(
+            [[1., -2., 0.,  0.],
+             [3., -4., 0.,  0.],
+             [0.,  0., 1., -2.],
+             [0.,  0., 3., -4.]])
+        B = np.array([[5., 0.],
+                       [7., 0.],
+                       [0., 5.],
+                       [0., 7.]])
+        C = np.array([[6., 8., 0., 0.],
+                       [0., 0., 6., 8.,]])
+        D = np.array([[9., 0.],
+                       [0., 9.]])
         self.mimo_ss1 = StateSpace(A, B, C, D)
 
         # Create discrete time systems
@@ -209,7 +210,7 @@ class TestTimeresp(unittest.TestCase):
 
         # Test MIMO system, which contains ``siso_ss1`` twice
         sys = self.mimo_ss1
-        x0 = np.matrix(".5; 1.; .5; 1.")
+        x0 = np.array([[.5], [1.], [.5], [1.]])
         _t, y_00 = initial_response(sys, T=t, X0=x0, input=0, output=0)
         _t, y_11 = initial_response(sys, T=t, X0=x0, input=1, output=1)
         np.testing.assert_array_almost_equal(y_00, youttrue, decimal=4)
@@ -218,7 +219,7 @@ class TestTimeresp(unittest.TestCase):
     def test_initial_response_no_trim(self):
         # test MIMO system without trimming
         t = np.linspace(0, 1, 10)
-        x0 = np.matrix(".5; 1.; .5; 1.")
+        x0 = np.array([[.5], [1.], [.5], [1.]])
         youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                              1.1508, 0.5833, 0.1645, -0.1391])
         sys = self.mimo_ss1
@@ -243,7 +244,7 @@ class TestTimeresp(unittest.TestCase):
 
         # test with initial value and special algorithm for ``U=0``
         u = 0
-        x0 = np.matrix(".5; 1.")
+        x0 = np.array([[.5], [1.]])
         youttrue = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                              1.1508, 0.5833, 0.1645, -0.1391])
         _t, yout, _xout = forced_response(self.siso_ss1, t, u, x0)
@@ -253,7 +254,7 @@ class TestTimeresp(unittest.TestCase):
         # first system: initial value, second system: step response
         u = np.array([[0., 0, 0, 0, 0, 0, 0, 0, 0, 0],
                       [1., 1, 1, 1, 1, 1, 1, 1, 1, 1]])
-        x0 = np.matrix(".5; 1; 0; 0")
+        x0 = np.array([.5, 1, 0, 0])
         youttrue = np.array([[11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                               1.1508, 0.5833, 0.1645, -0.1391],
                              [9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165,
@@ -273,9 +274,9 @@ class TestTimeresp(unittest.TestCase):
 
     def test_lsim_double_integrator(self):
         # Note: scipy.signal.lsim fails if A is not invertible
-        A = np.mat("0. 1.;0. 0.")
-        B = np.mat("0.; 1.")
-        C = np.mat("1. 0.")
+        A = [[0., 1.], [0., 0.]]
+        B = [[0.], [1.]]
+        C = np.array([1., 0.])
         D = 0.
         sys = StateSpace(A, B, C, D)
 

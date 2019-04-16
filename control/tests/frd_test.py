@@ -166,7 +166,7 @@ class TestFRD(unittest.TestCase):
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
         f1 = _convertToFRD(1, omega)
-        f2 = _convertToFRD(np.matrix([[1, 0], [0.1, -1]]), omega)
+        f2 = _convertToFRD(np.array([[1, 0], [0.1, -1]]), omega)
         f2 = _convertToFRD([[1, 0], [0.1, -1]], omega)
         f1, f2  # reference to avoid pyflakes error
 
@@ -213,11 +213,11 @@ class TestFRD(unittest.TestCase):
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMIMOfb2(self):
-        sys = StateSpace(np.matrix('-2.0 0 0; 0 -1 1; 0 0 -3'),
-                         np.matrix('1.0 0; 0 0; 0 1'),
+        sys = StateSpace(np.array([[-2.0, 0, 0], [0, -1, 1], [0, 0, -3]]),
+                         np.array([[1.0, 0], [0, 0], [0, 1]]),
                          np.eye(3), np.zeros((3, 2)))
         omega = np.logspace(-1, 2, 10)
-        K = np.matrix('1 0.3 0; 0.1 0 0')
+        K = np.array([[1, 0.3, 0], [0.1, 0, 0]])
         f1 = FRD(sys, omega).feedback(K)
         f2 = FRD(sys.feedback(K), omega)
         np.testing.assert_array_almost_equal(
@@ -249,7 +249,7 @@ class TestFRD(unittest.TestCase):
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
                          [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]])
-        sys2 = np.matrix([[1, 0, 0], [0, 1, 0]]) * sys
+        sys2 = np.array([[1, 0, 0], [0, 1, 0]]) * sys
         omega = np.logspace(-1, 2, 10)
         f1 = FRD(sys, omega, smooth=True)
         f2 = FRD(sys2, omega, smooth=True)
@@ -268,15 +268,15 @@ class TestFRD(unittest.TestCase):
         # sys = ss([-2 0 0; 0 -1 1; 0 0 -3],
         #  [1 0; 0 0; 0 1], eye(3), zeros(3,2))
         # bfr = frd(bsys, [1])
-        sys = StateSpace(np.matrix('-2.0 0 0; 0 -1 1; 0 0 -3'),
-                         np.matrix('1.0 0; 0 0; 0 1'),
+        sys = StateSpace(np.array([[-2.0, 0, 0], [0, -1, 1], [0, 0, -3]]),
+                         np.array([[1.0, 0], [0, 0], [0, 1]]),
                          np.eye(3), np.zeros((3, 2)))
         omega = np.logspace(-1, 2, 10)
         f1 = FRD(sys, omega)
         np.testing.assert_array_almost_equal(
             (f1.freqresp([1.0])[0] *
              np.exp(1j*f1.freqresp([1.0])[1])).reshape(3, 2),
-            np.matrix('0.4-0.2j 0; 0 0.1-0.2j; 0 0.3-0.1j'))
+            np.array([[0.4-0.2j, 0], [0, 0.1-0.2j], [0, 0.3-0.1j]]))
 
 
 def suite():

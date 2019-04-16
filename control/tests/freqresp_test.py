@@ -18,12 +18,12 @@ import matplotlib.pyplot as plt
 
 class TestFreqresp(unittest.TestCase):
    def setUp(self):
-      self.A = np.matrix('1,1;0,1')
-      self.C = np.matrix('1,0')
+      self.A = np.array([[1, 1], [0, 1]])
+      self.C = np.array([[1, 0]])
       self.omega = np.linspace(10e-2,10e2,1000)
 
    def test_siso(self):
-      B = np.matrix('0;1')
+      B = np.array([[0], [1]])
       D = 0
       sys = StateSpace(self.A,B,self.C,D)
 
@@ -83,9 +83,9 @@ class TestFreqresp(unittest.TestCase):
 
    def test_doubleint(self):
       # 30 May 2016, RMM: added to replicate typecast bug in freqresp.py
-      A = np.matrix('0, 1; 0, 0');
-      B = np.matrix('0; 1');
-      C = np.matrix('1, 0');
+      A = np.array([[0, 1], [0, 0]]);
+      B = np.array([[0], [1]]);
+      C = np.array([[1, 0]]);
       D = 0;
       sys = ss(A, B, C, D);
       bode(sys);
@@ -93,8 +93,8 @@ class TestFreqresp(unittest.TestCase):
    @unittest.skipIf(not slycot_check(), "slycot not installed")
    def test_mimo(self):
       # MIMO
-      B = np.matrix('1,0;0,1')
-      D = np.matrix('0,0')
+      B = np.array([[1, 0], [0, 1]])
+      D = np.array([[0, 0]])
       sysMIMO = ss(self.A,B,self.C,D)
 
       frqMIMO = sysMIMO.freqresp(self.omega)

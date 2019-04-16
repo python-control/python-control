@@ -41,12 +41,12 @@ class TestTfInputIntElement(unittest.TestCase):
         self.assertAlmostEqual(1.0, ctl.dcgain(sys))
 
     def test_ss_input_with_int_element(self):
-        ident = np.matrix(np.identity(2), dtype=int)
-        a = np.matrix([[0, 1],
-                       [-1, -2]], dtype=int) * ident
-        b = np.matrix([[0],
-                       [1]], dtype=int)
-        c = np.matrix([[0, 1]], dtype=int)
+        ident = np.array(np.identity(2), dtype=int)
+        a = np.array([[0, 1],
+                      [-1, -2]], dtype=int) * ident
+        b = np.array([[0],
+                      [1]], dtype=int)
+        c = np.array([[0, 1]], dtype=int)
         d = 0
 
         sys = ctl.ss(a, b, c, d)

@@ -9,7 +9,7 @@ import unittest
 import numpy as np
 import scipy.signal
 from numpy.testing import assert_array_almost_equal
-from numpy import array, asarray, matrix, asmatrix, zeros, ones, linspace,\
+from numpy import array, asarray, zeros, ones, linspace,\
                   all, hstack, vstack, c_, r_
 from matplotlib.pylab import show, figure, plot, legend, subplot2grid
 from control.matlab import ss, step, impulse, initial, lsim, dcgain, \
@@ -28,11 +28,11 @@ class TestControlMatlab(unittest.TestCase):
         #Test: can matplotlib correctly plot matrices?
         #Yes, but slightly inconvenient
         figure()
-        t = matrix([[ 1.],
+        t = array([[ 1.],
                     [ 2.],
                     [ 3.],
                     [ 4.]])
-        y = matrix([[ 1., 4.],
+        y = array([[ 1., 4.],
                     [ 4., 5.],
                     [ 9., 6.],
                     [16., 7.]])
@@ -42,11 +42,11 @@ class TestControlMatlab(unittest.TestCase):
 
     def make_SISO_mats(self):
         """Return matrices for a SISO system"""
-        A = matrix([[-81.82, -45.45],
+        A = array([[-81.82, -45.45],
                     [ 10.,    -1.  ]])
-        B = matrix([[9.09],
+        B = array([[9.09],
                     [0.  ]])
-        C = matrix([[0, 0.159]])
+        C = array([[0, 0.159]])
         D = zeros((1, 1))
         return A, B, C, D
 
@@ -202,7 +202,7 @@ class TestControlMatlab(unittest.TestCase):
 
         #X0=[1,1] : produces a spike
         subplot2grid(plot_shape, (0, 1))
-        t, y = initial(sys, X0=matrix("1; 1"))
+        t, y = initial(sys, X0=array([1, 1]))
         plot(t, y)
 
         #Test MIMO system
@@ -250,9 +250,10 @@ class TestControlMatlab(unittest.TestCase):
 
         #Convert array-like objects to arrays
         #Input is matrix, shape (1,3), must convert to array
-        arr = _check_convert_array(matrix("1. 2 3"), [(3,), (1,3)], 'Test: ')
-        assert isinstance(arr, np.ndarray)
-        assert not isinstance(arr, matrix)
+        #! RMM, 14 Apr 2019: removed since matrix is no longer supported
+        # arr = _check_convert_array(matrix("1. 2 3"), [(3,), (1,3)], 'Test: ')
+        # assert isinstance(arr, np.ndarray)
+        # assert not isinstance(arr, matrix)
 
         #Input is list, shape (1,3), must convert to array
         arr = _check_convert_array([[1., 2, 3]], [(3,), (1,3)], 'Test: ')
@@ -320,9 +321,9 @@ class TestControlMatlab(unittest.TestCase):
 
         #Test with matrices
         subplot2grid(plot_shape, (1, 0))
-        t = matrix(linspace(0, 1, 100))
-        u = matrix(r_[1:1:50j, 0:0:50j])
-        x0 = matrix("0.; 0")
+        t = array(linspace(0, 1, 100))
+        u = array(r_[1:1:50j, 0:0:50j])
+        x0 = array([0., 0])
         y, t_out, _x = lsim(sys, u, t, x0)
         plot(t_out, y, label='y')
         plot(t_out, asarray(u/10)[0], label='u/10')
@@ -332,7 +333,7 @@ class TestControlMatlab(unittest.TestCase):
         subplot2grid(plot_shape, (1, 1))
         A, B, C, D = self.make_MIMO_mats()
         sys = ss(A, B, C, D)
-        t = matrix(linspace(0, 1, 100))
+        t = array(linspace(0, 1, 100))
         u = array([r_[1:1:50j, 0:0:50j],
                    r_[0:1:50j, 0:0:50j]])
         x0 = [0, 0, 0, 0]
@@ -404,12 +405,12 @@ class TestControlMatlab(unittest.TestCase):
         #Test with additional systems --------------------------------------------
         #They have crossed inputs and direct feedthrough
         #SISO system
-        As = matrix([[-81.82, -45.45],
+        As = array([[-81.82, -45.45],
                      [ 10.,    -1.  ]])
-        Bs = matrix([[9.09],
+        Bs = array([[9.09],
                      [0.  ]])
-        Cs = matrix([[0, 0.159]])
-        Ds = matrix([[0.02]])
+        Cs = array([[0, 0.159]])
+        Ds = array([[0.02]])
         sys_siso = ss(As, Bs, Cs, Ds)
         #    t, y = step(sys_siso)
         #    plot(t, y, label='sys_siso d=0.02')
@@ -428,7 +429,7 @@ class TestControlMatlab(unittest.TestCase):
                     [0   , 0   ]])
         Cm = array([[0, 0,     0, 0.159],
                     [0, 0.159, 0, 0    ]])
-        Dm = matrix([[0,   0.02],
+        Dm = array([[0,   0.02],
                      [0.02, 0  ]])
         sys_mimo = ss(Am, Bm, Cm, Dm)
 
