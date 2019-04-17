@@ -420,7 +420,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
         else:
             # For discrete time, use integers
             tvec = _default_response_times(sys.A, 100)
-            T = range(int(np.ceil(max(tvec))))
+            T = np.arange(tvec.max() / sys.dt) * sys.dt
 
     U = np.ones_like(T)
 
