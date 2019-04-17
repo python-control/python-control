@@ -481,8 +481,12 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9))
     InfValue = yout[-1]
 
     # RiseTime
-    tr_lower_index = (np.where(yout >= RiseTimeLimits[0] * InfValue)[0])[0]
-    tr_upper_index = (np.where(yout >= RiseTimeLimits[1] * InfValue)[0])[0]
+    if InfValue >= 0:
+        tr_lower_index = (np.where(yout >= RiseTimeLimits[0] * InfValue)[0])[0]
+        tr_upper_index = (np.where(yout >= RiseTimeLimits[1] * InfValue)[0])[0]
+    else:
+        tr_lower_index = (np.where(yout <= RiseTimeLimits[0] * InfValue)[0])[0]
+        tr_upper_index = (np.where(yout <= RiseTimeLimits[1] * InfValue)[0])[0]
     RiseTime = T[tr_upper_index] - T[tr_lower_index]
 
     # SettlingTime
