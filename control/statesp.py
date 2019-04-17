@@ -74,7 +74,7 @@ class StateSpaceMatrix(np.ndarray):
     A class for representing state-space matrices
 
     The StateSpaceMatrix class is used to represent the state-space
-    matrices t hat define a StateSpace system (A, B, C, D).  It is
+    matrices that define a StateSpace system (A, B, C, D).  It is
     mainly a wrapper for the ndarray class, but it maintains matrices
     as 2-dimensional arrays.  It is similar to the NDmatrix class
     (which is being deprecated), but with more limited functionality.
