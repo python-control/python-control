@@ -67,6 +67,7 @@ from .frdata import *
 from .canonical import *
 from .robust import *
 from .config import *
+from .sisotool import *
 
 # Exceptions
 from .exception import *

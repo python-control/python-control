@@ -600,6 +600,16 @@ class TestXferFcn(unittest.TestCase):
         sys = TransferFunction([1,-1], [1], True)
         np.testing.assert_equal(sys.dcgain(), 0)
 
+    def test_ss2tf(self):
+        A = np.array([[-4, -1], [-1, -4]])
+        B = np.array([[1], [3]])
+        C = np.array([[3, 1]])
+        D = 0
+        sys = ss2tf(A, B, C, D)
+        true_sys = TransferFunction([6., 14.], [1., 8., 15.])
+        np.testing.assert_almost_equal(sys.num, true_sys.num)
+        np.testing.assert_almost_equal(sys.den, true_sys.den)
+
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)

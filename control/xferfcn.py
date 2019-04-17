@@ -268,6 +268,45 @@ class TransferFunction(LTI):
     # represent as string, makes display work for IPython
     __repr__ = __str__
 
+    def _repr_latex_(self, var=None):
+        """LaTeX representation of the transfer function, for Jupyter notebook"""
+
+        mimo = self.inputs > 1 or self.outputs > 1
+
+        if var is None:
+            # ! TODO: replace with standard calls to lti functions
+            var = 's' if self.dt is None or self.dt == 0 else 'z'
+
+        out = ['$$']
+
+        if mimo:
+            out.append(r"\begin{bmatrix}")
+
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                # Convert the numerator and denominator polynomials to strings.
+                numstr = _tf_polynomial_to_string(self.num[i][j], var=var)
+                denstr = _tf_polynomial_to_string(self.den[i][j], var=var)
+
+                out += [r"\frac{", numstr, "}{", denstr, "}"]
+
+                if mimo and j < self.outputs - 1:
+                    out.append("&")
+
+            if mimo:
+                out.append(r"\\")
+
+        if mimo:
+            out.append(r" \end{bmatrix}")
+
+        # See if this is a discrete time system with specific sampling time
+        if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
+            out += ["\quad dt = ", str(self.dt)]
+
+        out.append("$$")
+
+        return ''.join(out)
+
     def __neg__(self):
         """Negate a transfer function."""
 
