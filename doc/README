@@ -18,7 +18,7 @@ code not in conf.py sys.path, cannot be documented!
 4.  >> touch *.rst
     >> make html  [or make latex]
 
-Creating/updating manual on readthedocs.org:
+Creating/updating the manual on readthedocs.org:
 
 5.  Log in to readthedocs.org and go to the 'Admin' menu for
 python-control.  Choose 'Versions' from the sidebar and mark the
