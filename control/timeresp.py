@@ -482,6 +482,7 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9))
             T = range(int(np.ceil(max(tvec))))
 
     T, yout = step_response(sys, T)
+    yout = yout.flatten()
 
     # Steady state value
     InfValue = yout[-1]
