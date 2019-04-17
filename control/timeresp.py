@@ -490,8 +490,9 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9))
     RiseTime = T[tr_upper_index] - T[tr_lower_index]
 
     # SettlingTime
-    sup_margin = (1. + SettlingTimeThreshold) * InfValue
-    inf_margin = (1. - SettlingTimeThreshold) * InfValue
+    sup_margin = (1. + SettlingTimeThreshold * np.sign(InfValue)) * InfValue
+    inf_margin = (1. - SettlingTimeThreshold * np.sign(InfValue)) * InfValue
+    SettlingTime = 0
     # find Steady State looking for the first point out of specified limits
     for i in reversed(range(T.size)):
         if (yout[i] <= inf_margin) | (yout[i] >= sup_margin):
@@ -502,13 +503,13 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9))
 
     # Peak
     PeakIndex = np.abs(yout).argmax()
-    PeakValue = yout[PeakIndex]
+    PeakValue = np.abs(yout[PeakIndex])
     PeakTime = T[PeakIndex]
-    SettlingMax = (yout).max()
+    SettlingMax = (yout[tr_upper_index:]).max()
     SettlingMin = (yout[tr_upper_index:]).min()
     # I'm really not very confident about UnderShoot:
     UnderShoot = yout.min()
-    OverShoot = 100. * (yout.max() - InfValue) / (InfValue - yout[0])
+    OverShoot = 100. * (np.sign(InfValue) * PeakValue - InfValue) / (InfValue - yout[0])
 
     # Return as a dictionary
     S = {
