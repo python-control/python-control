@@ -473,13 +473,6 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9))
     >>> info = step_info(sys, T)
     '''
     sys = _get_ss_simo(sys)
-    if T is None:
-        if isctime(sys):
-            T = _default_response_times(sys.A, 1000)
-        else:
-            # For discrete time, use integers
-            tvec = _default_response_times(sys.A, 1000)
-            T = range(int(np.ceil(max(tvec))))
 
     T, yout = step_response(sys, T)
     yout = yout.flatten()
