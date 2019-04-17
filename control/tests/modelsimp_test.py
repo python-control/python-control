@@ -5,6 +5,7 @@
 
 import unittest
 import numpy as np
+import warnings
 from control.modelsimp import *
 from control.matlab import *
 from control.exception import slycot_check
@@ -17,9 +18,19 @@ class TestModelsimp(unittest.TestCase):
         C = np.array([[6., 8.]])
         D = np.array([[9.]])
         sys = ss(A,B,C,D)
-        hsv = hsvd(sys)
+        hsv = hsvd(sys, return_type=np.ndarray)
         hsvtrue = np.array([[24.42686, 0.5731395]]) # from MATLAB
         np.testing.assert_array_almost_equal(hsv, hsvtrue)
+
+        # Make sure default type values are correct
+        self.assertTrue(isinstance(hsv, np.ndarray))
+
+        # Check that default type generates a warning
+        # TODO: remove this check with matrix type is deprecated
+        with warnings.catch_warnings(record=True) as w:
+            hsv = hsvd(sys)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue(isinstance(hsv, np.ndarray))
 
     def testMarkov(self):
         U = np.array([[1.], [1.], [1.], [1.], [1.]])

@@ -6,6 +6,7 @@
 from __future__ import print_function
 import unittest
 import numpy as np
+import warnings
 from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.matlab import *
 from control.exception import slycot_check, ControlDimension
@@ -28,37 +29,57 @@ class TestStatefbk(unittest.TestCase):
         A = np.array([[1., 2.], [3., 4.]])
         B = np.array([[5.], [7.]])
         Wctrue = np.array([[5., 19.], [7., 43.]])
-        Wc = ctrb(A,B)
+        Wc = ctrb(A, B, return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
+
+        # Check that default type generates a warning
+        # TODO: remove this check with matrix type is deprecated
+        with warnings.catch_warnings(record=True) as w:
+            Wc = ctrb(A, B)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue(isinstance(Wc, np.ndarray))
 
     def testCtrbMIMO(self):
         A = np.array([[1., 2.], [3., 4.]])
         B = np.array([[5., 6.], [7., 8.]])
         Wctrue = np.array([[5., 6., 19., 22.], [7., 8., 43., 50.]])
-        Wc = ctrb(A,B)
+        Wc = ctrb(A, B, return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
+
+        # Make sure default type values are correct
+        self.assertTrue(isinstance(Wc, np.ndarray))
 
     def testObsvSISO(self):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 7.]])
         Wotrue = np.array([[5., 7.], [26., 38.]])
-        Wo = obsv(A,C)
+        Wo = obsv(A, C, return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
+
+        # Make sure default type values are correct
+        self.assertTrue(isinstance(Wo, np.ndarray))
+
+        # Check that default type generates a warning
+        # TODO: remove this check with matrix type is deprecated
+        with warnings.catch_warnings(record=True) as w:
+            Wo = obsv(A, C)
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue(isinstance(Wo, np.ndarray))
 
     def testObsvMIMO(self):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 6.], [7., 8.]])
         Wotrue = np.array([[5., 6.], [7., 8.], [23., 34.], [31., 46.]])
-        Wo = obsv(A,C)
+        Wo = obsv(A, C, return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     def testCtrbObsvDuality(self):
         A = np.array([[1.2, -2.3], [3.4, -4.5]])
         B = np.array([[5.8, 6.9], [8., 9.1]])
-        Wc = ctrb(A,B);
+        Wc = ctrb(A, B, return_type=np.ndarray);
         A = np.transpose(A)
         C = np.transpose(B)
-        Wo = np.transpose(obsv(A,C));
+        Wo = np.transpose(obsv(A, C, return_type=np.ndarray));
         np.testing.assert_array_almost_equal(Wc,Wo)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -69,8 +90,15 @@ class TestStatefbk(unittest.TestCase):
         D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Wctrue = np.array([[18.5, 24.5], [24.5, 32.5]])
-        Wc = gram(sys,'c')
+        Wc = gram(sys, 'c', return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
+
+        # Check that default type generates a warning
+        # TODO: remove this check with matrix type is deprecated
+        with warnings.catch_warnings(record=True) as w:
+            Wc = gram(sys, 'c')
+            self.assertTrue(issubclass(w[-1].category, UserWarning))
+            self.assertTrue(isinstance(Wc, np.ndarray))
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testGramRc(self):
@@ -80,7 +108,7 @@ class TestStatefbk(unittest.TestCase):
         D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Rctrue = np.array([[4.30116263, 5.6961343], [0., 0.23249528]])
-        Rc = gram(sys,'cf')
+        Rc = gram(sys, 'cf', return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Rc, Rctrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -91,7 +119,7 @@ class TestStatefbk(unittest.TestCase):
         D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Wotrue = np.array([[257.5, -94.5], [-94.5, 56.5]])
-        Wo = gram(sys,'o')
+        Wo = gram(sys, 'o', return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -102,7 +130,7 @@ class TestStatefbk(unittest.TestCase):
         D = np.array([[9.]])
         sys = ss(A,B,C,D)
         Wotrue = np.array([[198., -72.], [-72., 44.]])
-        Wo = gram(sys,'o')
+        Wo = gram(sys, 'o', return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -113,15 +141,15 @@ class TestStatefbk(unittest.TestCase):
         D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Rotrue = np.array([[16.04680654, -5.8890222], [0., 4.67112593]])
-        Ro = gram(sys,'of')
+        Ro = gram(sys, 'of', return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Ro, Rotrue)
 
     def testGramsys(self):
         num =[1.]
         den = [1., 1., 1.]
         sys = tf(num,den)
-        self.assertRaises(ValueError, gram, sys, 'o')
-        self.assertRaises(ValueError, gram, sys, 'c')
+        self.assertRaises(ValueError, gram, sys, 'o', return_type=np.ndarray)
+        self.assertRaises(ValueError, gram, sys, 'c', return_type=np.ndarray)
 
     def testAcker(self):
         for states in range(1, self.maxStates):
@@ -133,7 +161,7 @@ class TestStatefbk(unittest.TestCase):
                     print(sys)
 
                 # Make sure the system is not degenerate
-                Cmat = ctrb(sys.A, sys.B)
+                Cmat = ctrb(sys.A, sys.B, return_type=np.ndarray)
                 if np.linalg.matrix_rank(Cmat) != states:
                     if (self.debug):
                         print("  skipping (not reachable or ill conditioned)")
@@ -144,7 +172,7 @@ class TestStatefbk(unittest.TestCase):
                 poles = pole(des)
 
                 # Now place the poles using acker
-                K = acker(sys.A, sys.B, poles)
+                K = acker(sys.A, sys.B, poles, return_type=np.ndarray)
                 new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
                 placed = pole(new)
 

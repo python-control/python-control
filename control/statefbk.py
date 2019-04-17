@@ -42,6 +42,7 @@
 # External packages and modules
 import numpy as np
 import scipy as sp
+import warnings
 from . import statesp
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
@@ -219,7 +220,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     return -F
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
-def acker(A, B, poles):
+def acker(A, B, poles, return_type=np.matrix):
     """Pole placement using Ackermann method
 
     Call:
@@ -238,12 +239,18 @@ def acker(A, B, poles):
         Gains such that A - B K has given eigenvalues
 
     """
+    # If return_type is np.matrix, issue a pending deprecation warning
+    if (return_type is np.matrix):
+        warnings.warn("Returning numpy.matrix, soon to be deprecated; "
+                      "make sure calling code can handle nparray.",
+                      stacklevel=2)
+
     # Convert the inputs to matrices (arrays)
-    a = np.array(A)
-    b = np.array(B)
+    a = statesp.ssmatrix(A)
+    b = statesp.ssmatrix(B)
 
     # Make sure the system is controllable
-    ct = ctrb(A, B)
+    ct = ctrb(A, B, return_type=np.ndarray)
     if np.linalg.matrix_rank(ct) != a.shape[0]:
         raise ValueError("System not reachable; pole placement invalid")
 
@@ -258,7 +265,7 @@ def acker(A, B, poles):
     K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
-    return K
+    return K.view(type=return_type)
 
 def lqr(*args, **keywords):
     """lqr(A, B, Q, R[, N])
@@ -368,13 +375,17 @@ def lqr(*args, **keywords):
 
     return K, S, E
 
-def ctrb(A,B):
+
+def ctrb(A, B, return_type=np.matrix):
     """Controllabilty matrix
 
     Parameters
     ----------
     A, B: array_like or string
         Dynamics and input matrix of the system
+
+    return_type: nparray subtype, optional (default = numpy.matrix)
+        Set the ndarray subtype for the return value
 
     Returns
     -------
@@ -386,24 +397,35 @@ def ctrb(A,B):
     >>> C = ctrb(A, B)
 
     """
+    # If return_type is np.matrix, issue a pending deprecation warning
+    if (return_type is np.matrix):
+        warnings.warn("Returning numpy.matrix, soon to be deprecated; "
+                      "make sure calling code can handle nparray.",
+                      stacklevel=2)
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.array(A)
-    bmat = np.array(B)
+    amat = statesp.ssmatrix(A)
+    bmat = statesp.ssmatrix(B)
     n = np.shape(amat)[0]
     # Construct the controllability matrix
     ctrb = bmat
     for i in range(1, n):
         ctrb = np.hstack((ctrb, np.dot(np.linalg.matrix_power(amat, i), bmat)))
-    return ctrb
 
-def obsv(A, C):
+    # Return the observability matrix in the desired type
+    return ctrb.view(type=return_type)
+
+
+def obsv(A, C, return_type=np.matrix):
     """Observability matrix
 
     Parameters
     ----------
     A, C: array_like or string
         Dynamics and output matrix of the system
+
+    return_type: nparray subtype, optional (default = numpy.matrix)
+        Set the ndarray subtype for the return value
 
     Returns
     -------
@@ -414,20 +436,28 @@ def obsv(A, C):
     --------
     >>> O = obsv(A, C)
 
-   """
+    """
+    # If return_type is np.matrix, issue a pending deprecation warning
+    if (return_type is np.matrix):
+        warnings.warn("Returning numpy.matrix, soon to be deprecated; "
+                      "make sure calling code can handle nparray.",
+                      stacklevel=2)
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.array(A)
-    cmat = np.array(C)
+    amat = statesp.ssmatrix(A)
+    cmat = statesp.ssmatrix(C)
     n = np.shape(amat)[0]
 
     # Construct the controllability matrix
     obsv = cmat
     for i in range(1, n):
         obsv = np.vstack((obsv, np.dot(cmat, np.linalg.matrix_power(amat, i))))
-    return obsv
 
-def gram(sys,type):
+    # Return the observability matrix in the desired type
+    return obsv.view(type=return_type)
+
+
+def gram(sys, type, return_type=np.matrix):
     """Gramian (controllability or observability)
 
     Parameters
@@ -436,8 +466,9 @@ def gram(sys,type):
         State-space system to compute Gramian for
     type: String
         Type of desired computation.
-        `type` is either 'c' (controllability) or 'o' (observability). To compute the
-        Cholesky factors of gramians use 'cf' (controllability) or 'of' (observability)
+        `type` is either 'c' (controllability) or 'o' (observability). To
+        compute the Cholesky factors of gramians use 'cf' (controllability) or
+        'of' (observability)
 
     Returns
     -------
@@ -463,6 +494,11 @@ def gram(sys,type):
     >>> Ro = gram(sys,'of'), where Wo=Ro'*Ro
 
     """
+    # If return_type is np.matrix, issue a pending deprecation warning
+    if (return_type is np.matrix):
+        warnings.warn("Returning numpy.matrix, soon to be deprecated; "
+                      "make sure calling code can handle nparray.",
+                      stacklevel=2)
 
     #Check for ss system object
     if not isinstance(sys,statesp.StateSpace):
@@ -501,7 +537,7 @@ def gram(sys,type):
         A = np.array(sys.A)         # convert to NumPy array for slycot
         X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
         gram = X
-        return gram
+        return gram.view(type=return_type)
 
     elif type=='cf' or type=='of':
         #Compute cholesky factored gramian from slycot routine sb03od
@@ -524,4 +560,4 @@ def gram(sys,type):
             C[0:n,0:m] = sys.C.transpose()
             X,scale,w = sb03od(n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
         gram = X
-        return gram
+        return gram.view(type=return_type)
