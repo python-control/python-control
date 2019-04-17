@@ -490,8 +490,10 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9))
     inf_margin = (1. - SettlingTimeThreshold) * InfValue
     # find Steady State looking for the first point out of specified limits
     for i in reversed(range(T.size)):
-        if((yout[i] <= inf_margin) | (yout[i] >= sup_margin)):
-            SettlingTime = T[i + 1]
+        if (yout[i] <= inf_margin) | (yout[i] >= sup_margin):
+            if T.size > i + 1:
+                i = i + 1
+            SettlingTime = T[i]
             break
 
     # Peak
