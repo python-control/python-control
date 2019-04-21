@@ -61,6 +61,7 @@ from .lti import isdtime, isctime
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
            'impulse_response']
 
+
 # Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
@@ -170,7 +171,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 # Forced response of a linear system
 def forced_response(sys, T=None, U=0., X0=0., transpose=False,
-                    interpolate=False):
+                    interpolate=False, squeeze=True):
     """Simulate the output of a linear system.
 
     As a convenience for parameters `U`, `X0`:
@@ -192,21 +193,27 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         Input array giving input at each time `T` (default = 0).
 
         If `U` is ``None`` or ``0``, a special algorithm is used. This special
-        algorithm is faster than the general algorithm, which is used otherwise.
+        algorithm is faster than the general algorithm, which is used
+        otherwise.
 
     X0: array-like or number, optional
         Initial condition (default = 0).
 
-    transpose: bool
+    transpose: bool, optional (default=False)
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and scipy.signal.lsim)
 
-    interpolate:bool
+    interpolate: bool, optional (default=False)
         If True and system is a discrete time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
         time simulations (default = False).
+
+    squeeze: bool, optional (default=True)
+        If True, remove single-dimensional entries from the shape of
+        the output.  For single output systems, this converts the
+        output response to a 1D array.
 
     Returns
     -------
@@ -226,6 +233,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     >>> T, yout, xout = forced_response(sys, T, u, X0)
 
     See :ref:`time-series-convention`.
+
     """
     if not isinstance(sys, LTI):
         raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
@@ -245,7 +253,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                 raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
-            T = np.array(range(len(U))) * (1 if sys.dt == True else sys.dt)
+            T = np.array(range(len(U))) * (1 if sys.dt is True else sys.dt)
         else:
             # Make sure the input vector and time vector have same length
             # TODO: allow interpolation of the input vector
@@ -264,7 +272,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                              transpose=transpose)
     dt = T[1] - T[0]
     if not np.allclose(T[1:] - T[:-1], dt):
-        raise ValueError('Parameter ``T``: time values must be equally spaced.')
+        raise ValueError("Parameter ``T``: time values must be "
+                         "equally spaced.")
     n_steps = len(T)            # number of simulation steps
 
     # create X0 if not given, test if X0 has correct shape
@@ -323,14 +332,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                 xout[:, i] = (dot(Ad, xout[:, i-1]) + dot(Bd0, U[:, i-1]) +
                               dot(Bd1, U[:, i]))
             yout = dot(C, xout) + dot(D, U)
-
         tout = T
-        yout = squeeze(yout)
-        xout = squeeze(xout)
 
     else:
         # Discrete type system => use SciPy signal processing toolbox
-        if (sys.dt != True):
+        if (sys.dt is not True):
             # Make sure that the time increment is a multiple of sampling time
 
             # First make sure that time increment is bigger than sampling time
@@ -341,7 +347,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             # sys.dt because floating point mod can have small errors
             elif not (np.isclose(dt % sys.dt, 0) or
                       np.isclose(dt % sys.dt, sys.dt)):
-                raise ValueError("Time steps ``T`` must be multiples of " \
+                raise ValueError("Time steps ``T`` must be multiples of "
                                  "sampling time")
         else:
             sys.dt = dt         # For unspecified sampling time, use time incr
@@ -350,27 +356,33 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         dsys = (A, B, C, D, sys.dt)
 
         # Use signal processing toolbox for the discrete time simulation
-        # Transpose the input to match toolbox convention 
+        # Transpose the input to match toolbox convention
         tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), T, X0)
 
         if not interpolate:
             # If dt is different from sys.dt, resample the output
             inc = int(round(dt / sys.dt))
             tout = T            # Return exact list of time steps
-            yout = yout[::inc,:]
-            xout = xout[::inc,:]
+            yout = yout[::inc, :]
+            xout = xout[::inc, :]
 
         # Transpose the output and state vectors to match local convention
         xout = sp.transpose(xout)
         yout = sp.transpose(yout)
 
+    # Get rid of unneeded dimensions
+    if squeeze:
+        yout = np.squeeze(yout)
+        xout = np.squeeze(xout)
+
     # See if we need to transpose the data back into MATLAB form
-    if (transpose):
+    if transpose:
         tout = np.transpose(tout)
         yout = np.transpose(yout)
         xout = np.transpose(xout)
 
     return tout, yout, xout
+
 
 def _get_ss_simo(sys, input=None, output=None):
     """Return a SISO or SIMO state-space version of sys
@@ -390,8 +402,9 @@ def _get_ss_simo(sys, input=None, output=None):
     else:
         return _mimo2siso(sys_ss, input, output, warn_conversion=warn)
 
+
 def step_response(sys, T=None, X0=0., input=None, output=None,
-                  transpose=False, return_x=False):
+                  transpose=False, return_x=False, squeeze=True):
     # pylint: disable=W0622
     """Step response of a linear system
 
@@ -430,6 +443,11 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     return_x: bool
         If True, return the state vector (default = False).
 
+    squeeze: bool, optional (default=True)
+        If True, remove single-dimensional entries from the shape of
+        the output.  For single output systems, this converts the
+        output response to a 1D array.
+
     Returns
     -------
     T: array
@@ -460,15 +478,17 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
 
     U = np.ones_like(T)
 
-    T, yout, xout = forced_response(sys, T, U, X0,
-                                     transpose=transpose)
+    T, yout, xout = forced_response(sys, T, U, X0, transpose=transpose,
+                                    squeeze=squeeze)
 
     if return_x:
         return T, yout, xout
 
     return T, yout
 
-def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
+
+def step_info(sys, T=None, SettlingTimeThreshold=0.02,
+              RiseTimeLimits=(0.1, 0.9)):
     '''
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
@@ -561,8 +581,9 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9))
 
     return S
 
+
 def initial_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, return_x=False):
+                     transpose=False, return_x=False, squeeze=True):
     # pylint: disable=W0622
     """Initial condition response of a linear system
 
@@ -601,6 +622,11 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     return_x: bool
         If True, return the state vector (default = False).
 
+    squeeze: bool, optional (default=True)
+        If True, remove single-dimensional entries from the shape of
+        the output.  For single output systems, this converts the
+        output response to a 1D array.
+
     Returns
     -------
     T: array
@@ -631,7 +657,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
             T = range(int(np.ceil(max(tvec))))
     U = np.zeros_like(T)
 
-    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose)
+    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
+                                     squeeze=squeeze)
 
     if return_x:
         return T, yout, _xout
@@ -640,7 +667,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
 
 
 def impulse_response(sys, T=None, X0=0., input=0, output=None,
-                     transpose=False, return_x=False):
+                     transpose=False, return_x=False, squeeze=True):
     # pylint: disable=W0622
     """Impulse response of a linear system
 
@@ -679,6 +706,11 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     return_x: bool
         If True, return the state vector (default = False).
 
+    squeeze: bool, optional (default=True)
+        If True, remove single-dimensional entries from the shape of
+        the output.  For single output systems, this converts the
+        output response to a 1D array.
+
     Returns
     -------
     T: array
@@ -698,11 +730,13 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     """
     sys = _get_ss_simo(sys, input, output)
 
-    # System has direct feedthrough, can't simulate impulse response numerically
+    # System has direct feedthrough, can't simulate impulse response
+    # numerically
     if np.any(sys.D != 0) and isctime(sys):
-        warnings.warn('System has direct feedthrough: ``D != 0``. The infinite '
-                      'impulse at ``t=0`` does not appear in the output. \n'
-                      'Results may be meaningless!')
+        warnings.warn("System has direct feedthrough: ``D != 0``. The "
+                      "infinite impulse at ``t=0`` does not appear in the "
+                      "output.\n"
+                      "Results may be meaningless!")
 
     # create X0 if not given, test if X0 has correct shape.
     # Must be done here because it is used for computations here.
@@ -732,9 +766,8 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
         new_X0 = X0
         U[0] = 1.
 
-    T, yout, _xout = forced_response(
-        sys, T, U, new_X0,
-        transpose=transpose)
+    T, yout, _xout = forced_response(sys, T, U, new_X0, transpose=transpose,
+                                     squeeze=squeeze)
 
     if return_x:
         return T, yout, _xout
