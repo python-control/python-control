@@ -115,7 +115,7 @@ class StateSpace(LTI):
     sampling time.
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kw):
         """
         StateSpace(A, B, C, D[, dt])
 
@@ -152,6 +152,9 @@ class StateSpace(LTI):
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
+        # Process keyword arguments
+        remove_useless = kw.get('remove_useless', True)
+
         A, B, C, D = [_matrix(M) for M in (A, B, C, D)]
 
         # TODO: use super here?
@@ -183,7 +186,7 @@ class StateSpace(LTI):
             raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
-        self._remove_useless_states()
+        if remove_useless: self._remove_useless_states()
 
     def _remove_useless_states(self):
         """Check for states that don't do anything, and remove them.

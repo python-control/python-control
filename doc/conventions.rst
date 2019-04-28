@@ -85,8 +85,9 @@ The timebase argument can be given when a system is constructed:
 * dt > 0: discrete time system with sampling period 'dt'
 * dt = True: discrete time with unspecified sampling period
 
-Only the :class:`StateSpace` and :class:`TransferFunction` classes allow
-explicit representation of discrete time systems.
+Only the :class:`StateSpace`, :class:`TransferFunction`, and
+:class:`InputOutputSystem` classes allow explicit representation of
+discrete time systems.
 
 Systems must have compatible timebases in order to be combined.  A system
 with timebase `None` can be combined with a system having a specified
@@ -106,6 +107,14 @@ constructor for the desired data type using the original system as the sole
 argument or using the explicit conversion functions :func:`ss2tf` and
 :func:`tf2ss`.
 
+Input/output systems
+====================
+
+.. automodule:: control.iosys
+   :no-members:
+   :no-inherited-members:
+
+.. currentmodule:: control
 .. _time-series-convention:
 
 Time series data

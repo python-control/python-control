@@ -1,11 +1,25 @@
-# timeresp.py - time-domain simulation routes
-"""Time domain simulation.
+# timeresp.py - time-domain simulation routines
+#
+# This file contains a collection of functions that calculate time
+# responses for linear systems.
 
-This file contains a collection of functions that calculate time
-responses for linear systems.
+"""The :mod:`~control.timeresp` module contains a collection of
+functions that are used to compute time-domain simulations of LTI
+systems.
 
-See doc/conventions.rst#time-series-conventions_ for more information
-on how time series data are represented.
+Arguments to time-domain simulations include a time vector, an input
+vector (when needed), and an initial condition vector.  The most
+general function for simulating LTI systems the
+:func:`forced_response` function, which has the form::
+
+    t, y = forced_response(sys, T, U, X0)
+
+where `T` is a vector of times at which the response should be
+evaluated, `U` is a vector of inputs (one for each time point) and
+`X0` is the initial condition for the system.
+
+See :ref:`time-series-convention` for more information on how time
+series data are represented.
 
 """
 

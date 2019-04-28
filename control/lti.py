@@ -178,6 +178,28 @@ def timebaseEqual(sys1, sys2):
     else:
         return sys1.dt == sys2.dt
 
+# Find a common timebase between two or more systems
+def _find_timebase(sys1, *sysn):
+    """Find the common timebase between systems, otherwise return False"""
+
+    # Create a list of systems to check
+    syslist = [sys1]
+    syslist.append(*sysn)
+
+    # Look for a common timebase
+    dt = None
+
+    for sys in syslist:
+        # Make sure time bases are consistent
+        if (dt is None and sys.dt is not None) or \
+           (dt is True and isdiscrete(sys)):
+            # Timebase was not specified; set to match this system
+            dt = sys.dt
+        elif dt != sys.dt:
+            return False
+    return dt
+
+
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):
     """
@@ -199,6 +221,15 @@ def isdtime(sys, strict=False):
     # Check for a transfer function or state-space object
     if isinstance(sys, LTI):
         return sys.isdtime(strict)
+
+    # Check to see if object has a dt object
+    if hasattr(sys, 'dt'):
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt == None:
+            return True if not strict else False
+
+        # Look for dt > 0 (also works if dt = True)
+        return sys.dt > 0
 
     # Got passed something we don't recognize
     return False
@@ -224,6 +255,13 @@ def isctime(sys, strict=False):
     # Check for a transfer function or state space object
     if isinstance(sys, LTI):
         return sys.isctime(strict)
+
+    # Check to see if object has a dt object
+    if hasattr(sys, 'dt'):
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt is None:
+            return True if not strict else False
+        return sys.dt == 0
 
     # Got passed something we don't recognize
     return False

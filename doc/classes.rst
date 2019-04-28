@@ -1,9 +1,9 @@
 .. _class-ref:
 .. currentmodule:: control
 
-******************
-LTI system classes
-******************
+**********************
+Control system classes
+**********************
 
 The classes listed below are used to represent models of linear time-invariant
 (LTI) systems.  They are usually created from factory functions such as
@@ -16,4 +16,17 @@ these directly.
    TransferFunction
    StateSpace
    FRD
+   InputOutputSystem
 
+Input/Output system subclasses
+==============================
+
+Input/output systems are accessed primarily via a set of subclasses
+that allow for linear, nonlinear, and interconnected elements:
+
+.. autosummary::
+   :toctree: generated/
+
+   LinearIOSystem
+   NonlinearIOSystem
+   InterconnectedSystem

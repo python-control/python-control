@@ -61,6 +61,7 @@ Time domain simulation
     forced_response
     impulse_response
     initial_response
+    input_output_response
     step_response
     phase_plot
 
@@ -126,6 +127,14 @@ Model simplification tools
     modred
     era
     markov
+
+Nonlinear system support
+========================
+.. autosummary::
+   :toctree: generated/
+
+   find_eqpt
+   linearize
 
 .. _utility-and-conversions:
 
