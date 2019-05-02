@@ -336,7 +336,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     else:
         # Discrete type system => use SciPy signal processing toolbox
-        if (sys.dt is not True):
+        if sys.dt is not True:
             # Make sure that the time increment is a multiple of sampling time
 
             # First make sure that time increment is bigger than sampling time
