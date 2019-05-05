@@ -154,6 +154,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             ax.set_xlim(xlim)
         if ylim:
             ax.set_ylim(ylim)
+
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
         if grid and sisotool:
@@ -163,6 +164,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
         else:
             ax.axhline(0., linestyle=':', color='k',zorder=-20)
             ax.axvline(0., linestyle=':', color='k')
+
+        x0, x1 = ax.get_xlim()
+        y0, y1 = ax.get_ylim()
+        if abs(x0-x1) >= abs(y0-y1):
+            ax.set_xlim(0. - 0.5*abs(y0-y1) ,0. +0.5*abs(y0-y1))
+        else:
+            ax.set_ylim(0. - 0.5 * abs(x0 - x1), 0. + 0.5 * abs(x0 - x1))
     return mymat, kvect
 
 
@@ -220,7 +228,11 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
         y_tolerance = 0.05 * (ylim[1] - ylim[0])
 
     tolerance = np.min([x_tolerance, y_tolerance])
+    # print('len kvect',len(kvect))
     indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
+    # print('indexes too far',indexes_too_far)
+    # print('my mat',mymat[ indexes_too_far])
+    # print('kvect',kvect[indexes_too_far])
 
     while (len(indexes_too_far) > 0) and (kvect.size < 5000):
         for counter,index in enumerate(indexes_too_far):
@@ -232,6 +244,10 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
 
         mymat = _RLSortRoots(mymat)
         indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
+    #     print('indexes_too_far',indexes_too_far)
+    #     print('mymat',mymat[indexes_too_far])
+    #     print('kvect',kvect[indexes_too_far])
+    # print('len kvect after',len(kvect))
 
     new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
     new_points = _RLFindRoots(num, den, new_gains[1:4])
@@ -260,7 +276,7 @@ def _indexes_filt(mymat,tolerance,zoom_xlim=None,zoom_ylim=None):
                     break
 
         # Check if the zoom box is not overshot and insert points where neccessary
-        if len(indexes_too_far_filtered) == 0 and len(mymat) <300:
+        if len(indexes_too_far_filtered) == 0 and len(mymat) <500:
             limits = [zoom_xlim[0],zoom_xlim[1],zoom_ylim[0],zoom_ylim[1]]
             for index,limit in enumerate(limits):
                 if index <= 1:
@@ -437,21 +453,35 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=False):
 
     (nump, denp) = _systopoly1d(sys)
 
+    xlim = ax_rlocus.get_xlim()
+    ylim = ax_rlocus.get_ylim()
+    x_tolerance = 0.05 * abs((xlim[1] - xlim[0]))
+    y_tolerance = 0.05 * abs((ylim[1] - ylim[0]))
+    gain_tolerance = np.mean([x_tolerance, y_tolerance])
+
     # Catch type error when event click is in the figure but not in an axis
     try:
         s = complex(event.xdata, event.ydata)
         K = -1. / sys.horner(s)
+        K_xlim = -1. / sys.horner(complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
+        K_ylim = -1. / sys.horner(complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
 
     except TypeError:
         K = float('inf')
+        K_xlim = float('inf')
+        K_ylim = float('inf')
+    print('gain',K)
+    print('x_tolerance:',x_tolerance)
+    print('y_tolerance:',y_tolerance)
+    print('gain_tolerance:',gain_tolerance)
+    print('margin:',abs(K.imag / K.real))
+    print('Argument clickpoint',abs(K.imag / K.real))
+    print('Argument X_scale:',abs(K_xlim.imag/K_xlim.real))
+    print('Argument Y_scale:',abs(K_ylim.imag/K_ylim.real))
+    gain_tolerance += 0.1*max([abs(K_ylim.imag/K_ylim.real),abs(K_xlim.imag/K_xlim.real)])
+    print('New gain tolerance:',gain_tolerance)
 
-    xlim = ax_rlocus.get_xlim()
-    ylim = ax_rlocus.get_ylim()
-    x_tolerance = 0.05 * (xlim[1] - xlim[0])
-    y_tolerance = 0.05 * (ylim[1] - ylim[0])
-    gain_tolerance = np.min([x_tolerance, y_tolerance])*1e-1
-
-    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes:
+    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes and K.real > 0.:
 
         # Display the parameters in the output window and figure
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %

@@ -129,6 +129,8 @@ def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
     ax_rlocus.get_xaxis().set_label_coords(0.5, -0.15)
     ax_rlocus.get_yaxis().set_label_coords(-0.15, 0.5)
 
+
+
     # Generate the step response and plot it
     sys_closed = (K*sys).feedback(1)
     if tvect is None:
