@@ -173,7 +173,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             ax.set_xlim(0. - 0.5*abs(y0-y1) ,0. +0.5*abs(y0-y1))
         else:
             ax.set_ylim(0. - 0.5 * abs(x0 - x1), 0. + 0.5 * abs(x0 - x1))
-            
+
     return mymat, kvect
 
 
@@ -460,7 +460,7 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=False):
     ylim = ax_rlocus.get_ylim()
     x_tolerance = 0.05 * abs((xlim[1] - xlim[0]))
     y_tolerance = 0.05 * abs((ylim[1] - ylim[0]))
-    gain_tolerance = np.mean([x_tolerance, y_tolerance])
+    gain_tolerance = np.mean([x_tolerance, y_tolerance])*0.1
 
     # Catch type error when event click is in the figure but not in an axis
     try:
