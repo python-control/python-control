@@ -52,10 +52,12 @@ import matplotlib.pyplot as plt
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
-from .xferfcn import _convertToTransferFunction
+from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate
 from functools import partial
+from .lti import isdtime
+from .grid import sgrid, zgrid, nogrid
 
 __all__ = ['root_locus', 'rlocus']
 
@@ -85,7 +87,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
     grid: boolean (default = False)
-        If True plot s-plane grid. 
+        If True plot omega-damping grid.
 
     Returns
     -------
@@ -171,6 +173,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             ax.set_xlim(0. - 0.5*abs(y0-y1) ,0. +0.5*abs(y0-y1))
         else:
             ax.set_ylim(0. - 0.5 * abs(x0 - x1), 0. + 0.5 * abs(x0 - x1))
+            
     return mymat, kvect
 
 
@@ -365,7 +368,7 @@ def _systopoly1d(sys):
 
     else:
         # Convert to a transfer function, if needed
-        sys = _convertToTransferFunction(sys)
+        sys = _convert_to_transfer_function(sys)
 
         # Make sure we have a SISO system
         if (sys.inputs > 1 or sys.outputs > 1):

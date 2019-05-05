@@ -60,9 +60,12 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 #
 
 # Bode plot
+
+
 def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
-        Plot=True, omega_limits=None, omega_num=None,margins=None, *args, **kwargs):
-    """Bode plot for a system
+              Plot=True, omega_limits=None, omega_num=None, margins=None, *args, **kwargs):
+    """
+    Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -70,8 +73,8 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     ----------
     syslist : linsys
         List of linear input/output systems (single system is OK)
-    omega : freq_range
-        Range of frequencies in rad/sec
+    omega : list
+        List of frequencies in rad/sec to be used for frequency response
     dB : boolean
         If True, plot result in dB
     Hz : boolean
@@ -87,7 +90,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         number of samples
     margins : boolean
         If True, plot gain and phase margin
-    *args, **kwargs:
+    \*args, \**kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -108,7 +111,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     2. If a discrete time model is given, the frequency response is plotted
     along the upper branch of the unit circle, using the mapping z = exp(j
     \omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
-    time base.  If not timebase is specified (dt = True), dt is set to 1.
+    timebase.  If not timebase is specified (dt = True), dt is set to 1.
 
     Examples
     --------
@@ -117,12 +120,15 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     """
     # Set default values for options
     from . import config
-    if (dB is None): dB = config.bode_dB
-    if (deg is None): deg = config.bode_deg
-    if (Hz is None): Hz = config.bode_Hz
+    if dB is None:
+        dB = config.bode_dB
+    if deg is None:
+        deg = config.bode_deg
+    if Hz is None:
+        Hz = config.bode_Hz
 
     # If argument was a singleton, turn it into a list
-    if (not getattr(syslist, '__iter__', False)):
+    if not getattr(syslist, '__iter__', False):
         syslist = (syslist,)
 
     if omega is None:
@@ -132,15 +138,20 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         else:
             omega_limits = np.array(omega_limits)
             if Hz:
-                omega_limits *= 2.*math.pi
+                omega_limits *= 2. * math.pi
             if omega_num:
-                omega = sp.logspace(np.log10(omega_limits[0]), np.log10(omega_limits[1]), num=omega_num, endpoint=True)
+                omega = sp.logspace(np.log10(omega_limits[0]), 
+                                    np.log10(omega_limits[1]), 
+                                    num=omega_num, 
+                                    endpoint=True)
             else:
-                omega = sp.logspace(np.log10(omega_limits[0]), np.log10(omega_limits[1]), endpoint=True)
+                omega = sp.logspace(np.log10(omega_limits[0]), 
+                                    np.log10(omega_limits[1]), 
+                                    endpoint=True)
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
-        if (sys.inputs > 1 or sys.outputs > 1):
+        if sys.inputs > 1 or sys.outputs > 1:
             # TODO: Add MIMO bode plots.
             raise NotImplementedError("Bode is currently only implemented for SISO systems.")
         else:
@@ -156,31 +167,33 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
             mag = np.atleast_1d(np.squeeze(mag_tmp))
             phase = np.atleast_1d(np.squeeze(phase_tmp))
             phase = unwrap(phase)
-            nyquistfrq_plot = None
-            if Hz:
-                omega_plot = omega_sys / (2. * math.pi)
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq / (2. * math.pi)
-            else:
-                omega_plot = omega_sys
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq
 
             mags.append(mag)
             phases.append(phase)
             omegas.append(omega_sys)
             nyquistfrqs.append(nyquistfrq)
             # Get the dimensions of the current axis, which we will divide up
-            #! TODO: Not current implemented; just use subplot for now
+            # TODO: Not current implemented; just use subplot for now
 
-            if (Plot):
+            if Plot:
+                nyquistfrq_plot = None
+                if Hz:
+                    omega_plot = omega_sys / (2. * math.pi)
+                    if nyquistfrq:
+                        nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+                else:
+                    omega_plot = omega_sys
+                    if nyquistfrq:
+                        nyquistfrq_plot = nyquistfrq
+
                 # Set up the axes with labels so that multiple calls to
                 # bode_plot will superimpose the data.  This was implicit
                 # before matplotlib 2.1, but changed after that (See
-                # https://github.com/matplotlib/matplotlib/issues/9024). 
+                # https://github.com/matplotlib/matplotlib/issues/9024).
                 # The code below should work on all cases.
 
                 # Get the current figure
+
                 if 'sisotool' in kwargs:
                     fig = kwargs['fig']
                     ax_mag = fig.axes[0]
@@ -204,8 +217,10 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     # If no axes present, create them from scratch
                     if ax_mag is None or ax_phase is None:
                         plt.clf()
-                        ax_mag = plt.subplot(211, label = 'control-bode-magnitude')
-                        ax_phase = plt.subplot(212, label = 'control-bode-phase',
+                        ax_mag = plt.subplot(211,
+                                             label='control-bode-magnitude')
+                        ax_phase = plt.subplot(212,
+                                               label='control-bode-phase',
                                                sharex=ax_mag)
 
                 # Magnitude plot
@@ -213,9 +228,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag),
                                               *args, **kwargs)
                 else:
-
                     pltline = ax_mag.loglog(omega_plot, mag, *args, **kwargs)
-
 
                 if nyquistfrq_plot:
                     ax_mag.axvline(nyquistfrq_plot,
@@ -236,6 +249,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 if margins:
                     margin = stability_margins(sys)
                     gm, pm, Wcg, Wcp = margin[0], margin[1], margin[3], margin[4]
+                    # TODO: add some documentation describing why this is here
                     phase_at_cp = phases[0][(np.abs(omegas[0] - Wcp)).argmin()]
                     if phase_at_cp >= 0.:
                         phase_limit = 180.
@@ -245,47 +259,97 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                     if Hz:
                         Wcg, Wcp = Wcg/(2*math.pi),Wcp/(2*math.pi)
 
-                    ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':',zorder=-20)
-                    ax_phase.axhline(y=phase_limit if deg else math.radians(phase_limit), color='k', linestyle=':',zorder=-20)
+                    ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':',
+                                   zorder=-20)
+                    ax_phase.axhline(y=phase_limit if deg else math.radians(phase_limit), 
+                                     color='k', linestyle=':', zorder=-20)
                     mag_ylim = ax_mag.get_ylim()
                     phase_ylim = ax_phase.get_ylim()
 
                     if pm != float('inf') and Wcp != float('nan'):
                         if dB:
-                            ax_mag.semilogx([Wcp, Wcp], [0.,-1e5],color='k', linestyle=':',zorder=-20)
+                            ax_mag.semilogx([Wcp, Wcp], [0.,-1e5],
+                                            color='k', linestyle=':',
+                                            zorder=-20)
                         else:
-                            ax_mag.loglog([Wcp,Wcp], [1.,1e-8],color='k',linestyle=':',zorder=-20)
+                            ax_mag.loglog([Wcp,Wcp], [1.,1e-8],color='k',
+                                          linestyle=':', zorder=-20)
 
                         if deg:
-                            ax_phase.semilogx([Wcp, Wcp], [1e5, phase_limit+pm],color='k', linestyle=':',zorder=-20)
-                            ax_phase.semilogx([Wcp, Wcp], [phase_limit + pm, phase_limit],color='k',zorder=-20)
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [1e5, phase_limit+pm], 
+                                              color='k', linestyle=':',
+                                              zorder=-20)
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [phase_limit + pm, phase_limit], 
+                                              color='k', zorder=-20)
                         else:
-                            ax_phase.semilogx([Wcp, Wcp], [1e5, math.radians(phase_limit)+math.radians(pm)],color='k', linestyle=':',zorder=-20)
-                            ax_phase.semilogx([Wcp, Wcp], [math.radians(phase_limit) +math.radians(pm), math.radians(phase_limit)],color='k',zorder=-20)
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [1e5, math.radians(phase_limit) +
+                                               math.radians(pm)],
+                                              color='k', linestyle=':',
+                                              zorder=-20)
+                            ax_phase.semilogx([Wcp, Wcp],
+                                              [math.radians(phase_limit) +
+                                               math.radians(pm),
+                                               math.radians(phase_limit)], 
+                                              color='k', zorder=-20)
 
                     if gm != float('inf') and Wcg != float('nan'):
                         if dB:
-                            ax_mag.semilogx([Wcg, Wcg], [-20.*np.log10(gm), -1e5],color='k', linestyle=':',zorder=-20)
-                            ax_mag.semilogx([Wcg, Wcg], [0,-20*np.log10(gm)],color='k',zorder=-20)
+                            ax_mag.semilogx([Wcg, Wcg],
+                                            [-20.*np.log10(gm), -1e5],
+                                            color='k', linestyle=':',
+                                            zorder=-20)
+                            ax_mag.semilogx([Wcg, Wcg], [0,-20*np.log10(gm)],
+                                            color='k', zorder=-20)
                         else:
-                            ax_mag.loglog([Wcg, Wcg], [1./gm,1e-8],color='k', linestyle=':',zorder=-20)
-                            ax_mag.loglog([Wcg, Wcg], [1.,1./gm],color='k',zorder=-20)
+                            ax_mag.loglog([Wcg, Wcg],
+                                          [1./gm,1e-8],color='k',
+                                          linestyle=':', zorder=-20)
+                            ax_mag.loglog([Wcg, Wcg],
+                                          [1.,1./gm],color='k', zorder=-20)
 
                         if deg:
-                            ax_phase.semilogx([Wcg, Wcg], [1e-8, phase_limit],color='k', linestyle=':',zorder=-20)
+                            ax_phase.semilogx([Wcg, Wcg], [1e-8, phase_limit],
+                                              color='k', linestyle=':',
+                                              zorder=-20)
                         else:
-                            ax_phase.semilogx([Wcg, Wcg], [1e-8, math.radians(phase_limit)],color='k', linestyle=':',zorder=-20)
+                            ax_phase.semilogx([Wcg, Wcg],
+                                              [1e-8, math.radians(phase_limit)],
+                                              color='k', linestyle=':',
+                                              zorder=-20)
 
                     ax_mag.set_ylim(mag_ylim)
                     ax_phase.set_ylim(phase_ylim)
 
                     if sisotool:
-                        ax_mag.text(0.04, 0.06, 'G.M.: %.2f %s\nFreq: %.2f %s'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '',Wcg,'Hz' if Hz else 'rad/s'), horizontalalignment='left', verticalalignment='bottom',
-                                    transform=ax_mag.transAxes,fontsize=8 if int(matplotlib.__version__[0]) == 1 else 6)
-                        ax_phase.text(0.04, 0.06, 'P.M.: %.2f %s\nFreq: %.2f %s'%(pm if deg else math.radians(pm),'deg' if deg else 'rad',Wcp,'Hz' if Hz else 'rad/s'), horizontalalignment='left', verticalalignment='bottom',
-                                    transform=ax_phase.transAxes,fontsize=8 if int(matplotlib.__version__[0]) == 1 else 6)
+                        ax_mag.text(0.04, 0.06,
+                                    'G.M.: %.2f %s\nFreq: %.2f %s' % 
+                                    (20*np.log10(gm) if dB else gm,
+                                     'dB ' if dB else '',
+                                     Wcg, 'Hz' if Hz else 'rad/s'), 
+                                    horizontalalignment='left',
+                                    verticalalignment='bottom',
+                                    transform=ax_mag.transAxes,
+                                    fontsize=8 if int(matplotlib.__version__[0]) == 1 else 6)
+                        ax_phase.text(0.04, 0.06,
+                                      'P.M.: %.2f %s\nFreq: %.2f %s' %
+                                      (pm if deg else math.radians(pm),
+                                       'deg' if deg else 'rad',
+                                       Wcp, 'Hz' if Hz else 'rad/s'), 
+                                      horizontalalignment='left',
+                                      verticalalignment='bottom',
+                                      transform=ax_phase.transAxes,
+                                      fontsize=8 if int(matplotlib.__version__[0]) == 1 else 6)
                     else:
-                        plt.suptitle('Gm = %.2f %s(at %.2f %s), Pm = %.2f %s (at %.2f %s)'%(20*np.log10(gm) if dB else gm,'dB ' if dB else '\b',Wcg,'Hz' if Hz else 'rad/s',pm if deg else math.radians(pm),'deg' if deg else 'rad',Wcp,'Hz' if Hz else 'rad/s'))
+                        plt.suptitle('Gm = %.2f %s(at %.2f %s), Pm = %.2f %s (at %.2f %s)' % 
+                                     (20*np.log10(gm) if dB else gm, 
+                                      'dB ' if dB else '\b',
+                                      Wcg, 'Hz' if Hz else 'rad/s', 
+                                      pm if deg else math.radians(pm),
+                                      'deg' if deg else 'rad',
+                                      Wcp, 'Hz' if Hz else 'rad/s'))
 
                 if nyquistfrq_plot:
                     ax_phase.axvline(nyquistfrq_plot, color=pltline[0].get_color())
@@ -293,18 +357,26 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # Add a grid to the plot + labeling
                 ax_phase.set_ylabel("Phase (deg)" if deg else "Phase (rad)")
 
-                def genZeroCenteredSeries(val_min, val_max, period):
+                def gen_zero_centered_series(val_min, val_max, period):
                     v1 = np.ceil(val_min / period - 0.2)
                     v2 = np.floor(val_max / period + 0.2)
                     return np.arange(v1, v2 + 1) * period
                 if deg:
                     ylim = ax_phase.get_ylim()
-                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], 45.))
-                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], 15.), minor=True)
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1], 45.))
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1], 15.),
+                                        minor=True)
                 else:
                     ylim = ax_phase.get_ylim()
-                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], math.pi / 4.))
-                    ax_phase.set_yticks(genZeroCenteredSeries(ylim[0], ylim[1], math.pi / 12.), minor=True)
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1],
+                                                                 math.pi / 4.))
+                    ax_phase.set_yticks(gen_zero_centered_series(ylim[0],
+                                                                 ylim[1],
+                                                                 math.pi / 12.),
+                                        minor=True)
                 ax_phase.grid(False if margins else True, which='both')
                 # ax_mag.grid(which='minor', alpha=0.3)
                 # ax_mag.grid(which='major', alpha=0.9)
@@ -312,17 +384,19 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                 # ax_phase.grid(which='major', alpha=0.9)
 
                 # Label the frequency axis
-                ax_phase.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+                ax_phase.set_xlabel("Frequency (Hz)" if Hz
+                                    else "Frequency (rad/sec)")
 
     if len(syslist) == 1:
         return mags[0], phases[0], omegas[0]
     else:
         return mags, phases, omegas
 
-# Nyquist plot
-def nyquist_plot(syslist, omega=None, Plot=True, color='b',
+
+def nyquist_plot(syslist, omega=None, Plot=True, color=None,
                  labelFreq=0, *args, **kwargs):
-    """Nyquist plot for a system
+    """
+    Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
@@ -334,9 +408,11 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         Range of frequencies (list or bounds) in rad/sec
     Plot : boolean
         If True, plot magnitude
+    color : string
+        Used to specify the color of the plot
     labelFreq : int
         Label every nth frequency on the plot
-    *args, **kwargs:
+    \*args, \**kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -352,9 +428,10 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> real, imag, freq = nyquist_plot(sys)
+
     """
     # If argument was a singleton, turn it into a list
-    if (not getattr(syslist, '__iter__', False)):
+    if not getattr(syslist, '__iter__', False):
         syslist = (syslist,)
 
     # Select a default range if none is provided
@@ -362,14 +439,16 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
         omega = default_frequency_range(syslist)
 
     # Interpolate between wmin and wmax if a tuple or list are provided
-    elif (isinstance(omega, list) | isinstance(omega, tuple)):
+    elif isinstance(omega, list) or isinstance(omega, tuple):
         # Only accept tuple or list of length 2
-        if (len(omega) != 2):
-            raise ValueError("Supported frequency arguments are (wmin,wmax) tuple or list, or frequency vector. ")
+        if len(omega) != 2:
+            raise ValueError("Supported frequency arguments are (wmin,wmax) tuple or list, "
+                             "or frequency vector. ")
         omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
                             num=50, endpoint=True, base=10.0)
+
     for sys in syslist:
-        if (sys.inputs > 1 or sys.outputs > 1):
+        if sys.inputs > 1 or sys.outputs > 1:
             # TODO: Add MIMO nyquist plots.
             raise NotImplementedError("Nyquist is currently only implemented for SISO systems.")
         else:
@@ -379,18 +458,27 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
             phase = np.squeeze(phase_tmp)
 
             # Compute the primary curve
-            x = sp.multiply(mag, sp.cos(phase));
-            y = sp.multiply(mag, sp.sin(phase));
+            x = sp.multiply(mag, sp.cos(phase))
+            y = sp.multiply(mag, sp.sin(phase))
 
-            if (Plot):
+            if Plot:
                 # Plot the primary curve and mirror image
-                plt.plot(x, y, '-', color=color, *args, **kwargs);
-                plt.plot(x, -y, '--', color=color, *args, **kwargs);
+                p = plt.plot(x, y, '-', color=color, *args, **kwargs)
+                c = p[0].get_color()
+                ax = plt.gca()
+                # Plot arrow to indicate Nyquist encirclement orientation
+                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
+                         head_width=0.2, head_length=0.2)
+
+                plt.plot(x, -y, '-', color=c, *args, **kwargs)
+                ax.arrow(x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2, fc=c, ec=c,
+                         head_width=0.2, head_length=0.2)
+
                 # Mark the -1 point
                 plt.plot([-1], [0], 'r+')
 
             # Label the frequencies of the points
-            if (labelFreq):
+            if labelFreq:
                 ind = slice(None, None, labelFreq)
                 for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
                     # Convert to Hz
@@ -409,13 +497,19 @@ def nyquist_plot(syslist, omega=None, Plot=True, color='b',
                     # np.round() is used because 0.99... appears
                     # instead of 1.0, and this would otherwise be
                     # truncated to 0.
-                    plt.text(xpt, ypt,
-                             ' ' + str(int(np.round(f / 1000 ** pow1000, 0))) +
-                             ' ' + prefix + 'Hz')
-        return x, y, omega
+                    plt.text(xpt, ypt, ' ' + str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
+                             prefix + 'Hz')
 
-# Gang of Four
-#! TODO: think about how (and whether) to handle lists of systems
+    if Plot:
+        ax = plt.gca()
+        ax.set_xlabel("Real axis")
+        ax.set_ylabel("Imaginary axis")
+        ax.grid(color="lightgray")
+
+    return x, y, omega
+
+
+# TODO: think about how (and whether) to handle lists of systems
 def gangof4_plot(P, C, omega=None):
     """Plot the "Gang of 4" transfer functions for a system
 
@@ -433,24 +527,24 @@ def gangof4_plot(P, C, omega=None):
     -------
     None
     """
-    if (P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs > 1):
+    if P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs > 1:
         # TODO: Add MIMO go4 plots.
         raise NotImplementedError("Gang of four is currently only implemented for SISO systems.")
     else:
 
         # Select a default range if none is provided
-        #! TODO: This needs to be made more intelligent
+        # TODO: This needs to be made more intelligent
         if omega is None:
             omega = default_frequency_range((P, C))
 
         # Compute the senstivity functions
-        L = P * C;
-        S = feedback(1, L);
-        T = L * S;
-        
+        L = P * C
+        S = feedback(1, L)
+        T = L * S
+
         # Set up the axes with labels so that multiple calls to
         # gangof4_plot will superimpose the data.  See details in bode_plot.
-        plot_axes = {'t' : None, 's' : None, 'ps' : None, 'cs' : None}
+        plot_axes = {'t': None, 's': None, 'ps': None, 'cs': None}
         for ax in plt.gcf().axes:
             label = ax.get_label()
             if label.startswith('control-gangof4-'):
@@ -462,35 +556,31 @@ def gangof4_plot(P, C, omega=None):
         # if any of the axes are missing, start from scratch
         if any((ax is None for ax in plot_axes.values())):
             plt.clf()
-            plot_axes = {'t' : plt.subplot(221,label='control-gangof4-t'),
-                         'ps' : plt.subplot(222,label='control-gangof4-ps'),
-                         'cs' : plt.subplot(223,label='control-gangof4-cs'),
-                         's' : plt.subplot(224,label='control-gangof4-s')}
+            plot_axes = {'t': plt.subplot(221, label='control-gangof4-t'),
+                         'ps': plt.subplot(222, label='control-gangof4-ps'),
+                         'cs': plt.subplot(223, label='control-gangof4-cs'),
+                         's': plt.subplot(224, label='control-gangof4-s')}
 
         #
         # Plot the four sensitivity functions
         #
 
-        #! TODO: Need to add in the mag = 1 lines
-        mag_tmp, phase_tmp, omega = T.freqresp(omega);
+        # TODO: Need to add in the mag = 1 lines
+        mag_tmp, phase_tmp, omega = T.freqresp(omega)
         mag = np.squeeze(mag_tmp)
-        phase = np.squeeze(phase_tmp)
-        plot_axes['t'].loglog(omega, mag);
+        plot_axes['t'].loglog(omega, mag)
 
-        mag_tmp, phase_tmp, omega = (P * S).freqresp(omega);
+        mag_tmp, phase_tmp, omega = (P * S).freqresp(omega)
         mag = np.squeeze(mag_tmp)
-        phase = np.squeeze(phase_tmp)
-        plot_axes['ps'].loglog(omega, mag);
+        plot_axes['ps'].loglog(omega, mag)
 
-        mag_tmp, phase_tmp, omega = (C * S).freqresp(omega);
+        mag_tmp, phase_tmp, omega = (C * S).freqresp(omega)
         mag = np.squeeze(mag_tmp)
-        phase = np.squeeze(phase_tmp)
-        plot_axes['cs'].loglog(omega, mag);
+        plot_axes['cs'].loglog(omega, mag)
 
-        mag_tmp, phase_tmp, omega = S.freqresp(omega);
+        mag_tmp, phase_tmp, omega = S.freqresp(omega)
         mag = np.squeeze(mag_tmp)
-        phase = np.squeeze(phase_tmp)
-        plot_axes['s'].loglog(omega, mag);
+        plot_axes['s'].loglog(omega, mag)
 
 #
 # Utility functions
@@ -499,8 +589,10 @@ def gangof4_plot(P, C, omega=None):
 # generating frequency domain plots
 #
 
+
 # Compute reasonable defaults for axes
-def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_periphery_decade=None):
+def default_frequency_range(syslist, Hz=None, number_of_samples=None, 
+                            feature_periphery_decade=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
@@ -543,9 +635,9 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
 
     # Set default values for options
     from . import config
-    if (number_of_samples is None):
+    if number_of_samples is None:
         number_of_samples = config.bode_number_of_samples
-    if (feature_periphery_decade is None):
+    if feature_periphery_decade is None:
         feature_periphery_decade = config.bode_feature_periphery_decade
 
     # Find the list of all poles and zeros in the systems
@@ -553,7 +645,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
     freq_interesting = []
 
     # detect if single sys passed by checking if it is sequence-like
-    if (not getattr(syslist, '__iter__', False)):
+    if not getattr(syslist, '__iter__', False):
         syslist = (syslist,)
 
     for sys in syslist:
@@ -561,9 +653,9 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
             # Add new features to the list
             if sys.isctime():
                 features_ = np.concatenate((np.abs(sys.pole()),
-                                           np.abs(sys.zero())))
+                                            np.abs(sys.zero())))
                 # Get rid of poles and zeros at the origin
-                features_ = features_[features_ != 0.0];
+                features_ = features_[features_ != 0.0]
                 features = np.concatenate((features, features_))
             elif sys.isdtime(strict=True):
                 fn = math.pi * 1. / sys.dt
@@ -571,12 +663,13 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
                 freq_interesting.append(fn * 0.9)
 
                 features_ = np.concatenate((sys.pole(),
-                                           sys.zero()))
+                                            sys.zero()))
                 # Get rid of poles and zeros
                 # * at the origin and real <= 0 & imag==0: log!
                 # * at 1.: would result in omega=0. (logaritmic plot!)
                 features_ = features_[(features_.imag != 0.0) | (features_.real > 0.)]
-                features_ = features_[np.bitwise_not((features_.imag == 0.0) & (np.abs(features_.real - 1.0) < 1.e-10))]
+                features_ = features_[np.bitwise_not((features_.imag == 0.0) & 
+                                                     (np.abs(features_.real - 1.0) < 1.e-10))]
                 # TODO: improve
                 features__ = np.abs(np.log(features_) / (1.j * sys.dt))
                 features = np.concatenate((features, features__))
@@ -586,18 +679,17 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
         except:
             pass
 
-
     # Make sure there is at least one point in the range
-    if (features.shape[0] == 0):
-        features = np.array([1.]);
+    if features.shape[0] == 0:
+        features = np.array([1.])
 
     if Hz:
-        features /= 2.*math.pi
+        features /= 2. * math.pi
         features = np.log10(features)
         lsp_min = np.floor(np.min(features) - feature_periphery_decade)
         lsp_max = np.ceil(np.max(features) + feature_periphery_decade)
-        lsp_min += np.log10(2.*math.pi)
-        lsp_max += np.log10(2.*math.pi)
+        lsp_min += np.log10(2. * math.pi)
+        lsp_max += np.log10(2. * math.pi)
     else:
         features = np.log10(features)
         lsp_min = np.floor(np.min(features) - feature_periphery_decade)
@@ -606,7 +698,8 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
         lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
         lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
 
-    #! TODO: Add a check in discrete case to make sure we don't get aliasing (Attention: there is a list of system but only one omega vector)
+    # TODO: Add a check in discrete case to make sure we don't get aliasing
+    # (Attention: there is a list of system but only one omega vector)
 
     # Set the range to be an order of magnitude beyond any features
     if number_of_samples:
@@ -615,13 +708,14 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None, feature_pe
         omega = sp.logspace(lsp_min, lsp_max, endpoint=True)
     return omega
 
+
 #
 # KLD 5/23/11: Two functions to create nice looking labels
 #
 def get_pow1000(num):
-    '''Determine the exponent for which the significand of a number is within the
+    """Determine the exponent for which the significand of a number is within the
     range [1, 1000).
-    '''
+    """
     # Based on algorithm from http://www.mail-archive.com/matplotlib-users@lists.sourceforge.net/msg14433.html, accessed 2010/11/7
     # by Jason Heeris 2009/11/18
     from decimal import Decimal
@@ -633,9 +727,10 @@ def get_pow1000(num):
         dnum = -dnum
     return int(floor(dnum.log10() / 3))
 
+
 def gen_prefix(pow1000):
-    '''Return the SI prefix for a power of 1000.
-    '''
+    """Return the SI prefix for a power of 1000.
+    """
     # Prefixes according to Table 5 of [BIPM 2006] (excluding hecto,
     # deca, deci, and centi).
     if pow1000 < -8 or pow1000 > 8:

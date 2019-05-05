@@ -28,10 +28,9 @@ env:
 before_install:
   # Install gfortran for testing slycot; use apt-get instead of conda in
   # order to include the proper CXXABI dependency (updated in GCC 4.9)
-  # Also need to include liblapack here, to make sure paths are right
   - if [[ "$SLYCOT" != "" ]]; then
       sudo apt-get update -qq;
-      sudo apt-get install gfortran liblapack-dev;
+      sudo apt-get install gfortran;
     fi
   # Install display manager to allow testing of plotting functions
   - export DISPLAY=:99.0
@@ -51,6 +50,12 @@ before_install:
   - conda info -a
   - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage
   - source activate test-environment
+  # Install openblas if slycot is being used
+  # also install scikit-build for the build process
+  - if [[ "$SLYCOT" != "" ]]; then
+      conda install openblas;
+      conda install -c conda-forge scikit-build;
+    fi
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
   # coveralls not in conda repos => install via pip instead
@@ -62,16 +67,30 @@ install:
   - conda install $SCIPY matplotlib
   # Build slycot from source
   # For python 3, need to provide pointer to python library
+  # Use "Unix Makefiles" as generator, because Ninja cannot handle Fortran
   #! git clone https://github.com/repagh/Slycot.git slycot;
   - if [[ "$SLYCOT" != "" ]]; then
       git clone https://github.com/python-control/Slycot.git slycot;
-      cd slycot; python setup.py install; cd ..;
+      cd slycot; python setup.py install -G "Unix Makefiles"; cd ..;
     fi
 
 # command to run tests
 script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
   - coverage run setup.py test
+
+  # only run examples if Slycot is install
+  # set PYTHONPATH for examples
+  # pmw needed for examples/tfvis.py
+  # future is needed for Python 2, also for examples/tfvis.py
+
+  - if [[ "$SLYCOT" != "" ]]; then
+      export PYTHONPATH=$PWD;
+      conda install -c conda-forge pmw future;
+      cd examples; bash run_examples.sh; cd ..;
+    fi
+
+# arbitrary change to try to trigger travis build
 
 after_success:
   - coveralls

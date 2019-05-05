@@ -7,11 +7,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import warnings
 
-def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None, plotstr_rlocus = 'b' if int(matplotlib.__version__[0]) == 1 else 'C0',rlocus_grid = False, omega = None, dB = None, Hz = None, deg = None, omega_limits = None, omega_num = None,margins_bode = True, tvect=None):
-
-    """Sisotool
-
-    Sisotool style collection of plots inspired by the matlab sisotool.
+def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
+             plotstr_rlocus = 'b' if int(matplotlib.__version__[0]) == 1 else 'C0',
+             rlocus_grid = False, omega = None, dB = None, Hz = None,
+             deg = None, omega_limits = None, omega_num = None,
+             margins_bode = True, tvect=None):
+    """
+    Sisotool style collection of plots inspired by MATLAB's sisotool.
     The left two plots contain the bode magnitude and phase diagrams.
     The top right plot is a clickable root locus plot, clicking on the
     root locus will change the gain of the system. The bottom left plot
