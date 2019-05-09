@@ -46,23 +46,32 @@ https://github.com/python-control/Slycot
 Installation
 ============
 
-The package may be installed using pip, conda, or distutils.
+Conda and conda-forge
+---------------------
+
+The easiest way to get started with the Control Systems library is
+using `Conda <https://conda.io>`_.
+
+The Control Systems library has been packages for the `conda-forge
+<https://conda-forge.org>`_ Conda channel, and as of Slycot version
+0.3.4, binaries for that package are available for 64-bit Windows,
+OSX, and Linux.
+
+To install both the Control Systems library and Slycot in an existing
+conda environment, run::
+
+  conda install -c conda-forge control slycot
 
 Pip
 ---
 
 To install using pip::
 
-  pip install slycot   # optional
+  pip install slycot   # optional; see below
   pip install control
 
-conda-forge
------------
-
-Binaries are available from conda-forge for selected platforms (Linux and
-MacOS).  Install using
-
-  conda install -c conda-forge control
+If you install Slycot using pip you'll need a development environment
+(e.g., Python development files, C and Fortran compilers).
 
 Distutils
 ---------
