@@ -424,8 +424,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
              G(exp(j*omega*dt)) = mag*exp(j*phase).
 
-        Inputs
-        ------
+        Parameters
+        ----------
         omega: A list of frequencies in radians/sec at which the system
             should be evaluated. The list can be either a python list
             or a numpy array and will be sorted before evaluation.
