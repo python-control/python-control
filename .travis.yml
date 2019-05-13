@@ -1,5 +1,9 @@
 sudo: false
 language: python
+dist: xenial
+
+services:
+  - xvfb
 
 cache:
   apt: true
@@ -9,8 +13,8 @@ cache:
     - $HOME/.local
 
 python:
+  - "3.7"
   - "3.6"
-  - "3.5"
   - "2.7"
 
 # Test against multiple version of SciPy, with and without slycot
@@ -32,9 +36,6 @@ before_install:
       sudo apt-get update -qq;
       sudo apt-get install gfortran;
     fi
-  # Install display manager to allow testing of plotting functions
-  - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
   # use miniconda to install numpy/scipy, to avoid lengthy build from source
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
