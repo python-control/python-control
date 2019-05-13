@@ -15,7 +15,7 @@ Creating linear models
 
    tf
    ss
-   frd
+   FRD
    rss
    drss
 
