@@ -23,7 +23,7 @@ Some differences from MATLAB
 The python-control package makes use of `NumPy <http://www.numpy.org>`_ and
 `SciPy <https://www.scipy.org>`_.  A list of general differences between
 NumPy and MATLAB can be found `here
-<http://www.scipy.org/NumPy_for_Matlab_Users>`_.
+<https://docs.scipy.org/doc/numpy/user/numpy-for-matlab-users.html>`_.
 
 In terms of the python-control package more specifically, here are
 some thing to keep in mind:
