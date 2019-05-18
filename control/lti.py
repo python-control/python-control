@@ -54,8 +54,9 @@ class LTI:
 
         Parameters
         ----------
-        strict: bool (default = False)
-            If strict is True, make sure that timebase is not None
+        strict: bool, optional
+            If strict is True, make sure that timebase is not None.  Default 
+            is False. 
         """
 
         # If no timebase is given, answer depends on strict flag
@@ -73,8 +74,9 @@ class LTI:
         ----------
         sys : LTI system
             System to be checked
-        strict: bool (default = False)
-            If strict is True, make sure that timebase is not None
+        strict: bool, optional
+            If strict is True, make sure that timebase is not None.  Default 
+            is False. 
         """
         # If no timebase is given, answer depends on strict flag
         if self.dt is None:
