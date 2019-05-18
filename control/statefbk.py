@@ -421,7 +421,7 @@ def obsv(A, C):
     n = np.shape(amat)[0]
 
     # Construct the observability matrix
-    obsv = np.hstack([cmat] + [cmat*amat**i for i in range(1, n)])
+    obsv = np.vstack([cmat] + [cmat*amat**i for i in range(1, n)])
     return obsv
 
 def gram(sys,type):
