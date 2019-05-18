@@ -34,7 +34,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(issiso(sys, strict=True), True)
 
         # MIMO transfer function
-        sys = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]], 
+        sys = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]],
                  [[[1, 10], [1, 20]], [[1, 30], [1, 40]]]);
         self.assertEqual(issiso(sys), False)
         self.assertEqual(issiso(sys, strict=True), False)
