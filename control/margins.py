@@ -144,7 +144,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             sys = frdata.FRD(mag * np.exp(1j * phase * math.pi/180),
                              omega, smooth=True)
         else:
-            sys = xferfcn._convertToTransferFunction(sysdata)
+            sys = xferfcn._convert_to_transfer_function(sysdata)
     except Exception as e:
         print (e)
         raise ValueError("Margin sysdata must be either a linear system or "
@@ -299,7 +299,7 @@ def phase_crossover_frequencies(sys):
     """
 
     # Convert to a transfer function
-    tf = xferfcn._convertToTransferFunction(sys)
+    tf = xferfcn._convert_to_transfer_function(sys)
 
     # if not siso, fall back to (0,0) element
     #! TODO: should add a check and warning here

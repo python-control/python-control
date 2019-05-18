@@ -54,8 +54,9 @@ class LTI:
 
         Parameters
         ----------
-        strict: bool (default = False)
-            If strict is True, make sure that timebase is not None
+        strict: bool, optional
+            If strict is True, make sure that timebase is not None.  Default 
+            is False. 
         """
 
         # If no timebase is given, answer depends on strict flag
@@ -73,8 +74,9 @@ class LTI:
         ----------
         sys : LTI system
             System to be checked
-        strict: bool (default = False)
-            If strict is True, make sure that timebase is not None
+        strict: bool, optional
+            If strict is True, make sure that timebase is not None.  Default 
+            is False. 
         """
         # If no timebase is given, answer depends on strict flag
         if self.dt is None:
@@ -82,9 +84,21 @@ class LTI:
         return self.dt == 0
 
     def issiso(self):
+        '''Check to see if a system is single input, single output'''
         return self.inputs == 1 and self.outputs == 1
 
     def damp(self):
+        '''Natural frequency, damping ratio of system poles
+
+        Returns
+        -------
+        wn : array
+            Natural frequencies for each system pole
+        zeta : array
+            Damping ratio for each system pole
+        poles : array
+            Array of system poles
+        '''
         poles = self.pole()
 
         if isdtime(self, strict=True):
@@ -102,6 +116,16 @@ class LTI:
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
+    """
+    Check to see if a system is single input, single output
+
+    Parameters
+    ----------
+    sys : LTI system
+        System to be checked
+    strict: bool (default = False)
+        If strict is True, do not treat scalars as SISO
+    """
     if isinstance(sys, (int, float, complex, np.number)) and not strict:
         return True
     elif not isinstance(sys, LTI):

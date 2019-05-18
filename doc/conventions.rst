@@ -15,7 +15,7 @@ LTI system representation
 Linear time invariant (LTI) systems are represented in python-control in
 state space, transfer function, or frequency response data (FRD) form.  Most
 functions in the toolbox will operate on any of these data types and
-functions for converting between between compatible types is provided.
+functions for converting between compatible types is provided.
 
 State space systems
 -------------------
@@ -45,8 +45,8 @@ transfer functions
 .. math::
 
   G(s) = \frac{\text{num}(s)}{\text{den}(s)}
-       = \frac{a_0 s^n + a_1 s^{n-1} + \cdots + a_n}
-              {b_0 s^m + b_1 s^{m-1} + \cdots + b_m},
+       = \frac{a_0 s^m + a_1 s^{m-1} + \cdots + a_m}
+              {b_0 s^n + b_1 s^{n-1} + \cdots + b_n},
 
 where n is generally greater than or equal to m (for a proper transfer
 function).
@@ -77,11 +77,10 @@ performed.
 
 Discrete time systems
 ---------------------
-By default, all systems are considered to be continuous time systems.  A
-discrete time system is created by specifying the 'time base' dt.  The time
-base argument can be given when a system is constructed:
+A discrete time system is created by specifying a nonzero 'timebase', dt.
+The timebase argument can be given when a system is constructed:
 
-* dt = None: no timebase specified
+* dt = None: no timebase specified (default)
 * dt = 0: continuous time system
 * dt > 0: discrete time system with sampling period 'dt'
 * dt = True: discrete time with unspecified sampling period
@@ -89,11 +88,16 @@ base argument can be given when a system is constructed:
 Only the :class:`StateSpace` and :class:`TransferFunction` classes allow
 explicit representation of discrete time systems.
 
-Systems must have the same time base in order to be combined.  For
-continuous time systems, the :func:`sample_system` function or the
-:meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods can be
-used to create a discrete time system from a continuous time system.  See
-:ref:`utility-and-conversions`.
+Systems must have compatible timebases in order to be combined.  A system
+with timebase `None` can be combined with a system having a specified
+timebase; the result will have the timebase of the latter system.
+Similarly, a discrete time system with unspecified sampling time (`dt =
+True`) can be combined with a system having a specified sampling time;
+the result will be a discrete time system with the sample time of the latter
+system.  For continuous time systems, the :func:`sample_system` function or
+the :meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods
+can be used to create a discrete time system from a continuous time system.
+See :ref:`utility-and-conversions`.
 
 Conversion between representations
 ----------------------------------
@@ -106,18 +110,23 @@ argument or using the explicit conversion functions :func:`ss2tf` and
 
 Time series data
 ================
-
-This is a convention for function arguments and return values that
-represent time series: sequences of values that change over time. It
-is used throughout the library, for example in the functions
+A variety of functions in the library return time series data: sequences of
+values that change over time.  A common set of conventions is used for
+returning such data: columns represent different points in time, rows are
+different components (e.g., inputs, outputs or states).  For return
+arguments, an array of times is given as the first returned argument,
+followed by one or more arrays of variable values.  This convention is used
+throughout the library, for example in the functions
 :func:`forced_response`, :func:`step_response`, :func:`impulse_response`,
 and :func:`initial_response`.
 
 .. note::
-    This convention is different from the convention used in the library
-    :mod:`scipy.signal`. In Scipy's convention the meaning of rows and columns
-    is interchanged.  Thus, all 2D values must be transposed when they are
-    used with functions from :mod:`scipy.signal`.
+    The convention used by python-control is different from the convention
+    used in the `scipy.signal
+    <https://docs.scipy.org/doc/scipy/reference/signal.html>`_ library. In
+    Scipy's convention the meaning of rows and columns is interchanged.
+    Thus, all 2D values must be transposed when they are used with functions
+    from `scipy.signal`_.
 
 Types:
 
@@ -153,12 +162,12 @@ The initial conditions are either 1D, or 2D with shape (j, 1)::
 
 As all simulation functions return *arrays*, plotting is convenient::
 
-    t, y = step(sys)
+    t, y = step_response(sys)
     plot(t, y)
 
 The output of a MIMO system can be plotted like this::
 
-    t, y, x = lsim(sys, u, t)
+    t, y, x = forced_response(sys, u, t)
     plot(t, y[0], label='y_0')
     plot(t, y[1], label='y_1')
 
@@ -177,7 +186,7 @@ conventions.  The currently configurable options allow the units for Bode
 plots to be set as dB for gain, degrees for phase and Hertz for frequency
 (MATLAB conventions) or the gain can be given in magnitude units (powers of
 10), corresponding to the conventions used in `Feedback Systems
-<http://www.cds.caltech.edu/~murray/FBSwiki>`_.
+<http://fbsbook.org>`_ (FBS).
 
 Variables that can be configured, along with their default values:
   * bode_dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
@@ -190,6 +199,7 @@ Variables that can be configured, along with their default values:
 Functions that can be used to set standard configurations:
 
 .. autosummary::
-
+    :toctree: generated/
+    
     use_fbs_defaults
     use_matlab_defaults

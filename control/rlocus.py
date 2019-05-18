@@ -47,19 +47,24 @@
 
 # Packages used by this module
 import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
-from .xferfcn import _convertToTransferFunction
+from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
+from .sisotool import _SisotoolUpdate
 from functools import partial
+from .lti import isdtime
+from .grid import sgrid, zgrid, nogrid
 
 __all__ = ['root_locus', 'rlocus']
 
-
 # Main function: compute a root locus diagram
-def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
-               PrintGain=True, grid=False):
+def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplotlib.__version__[0]) == 1 else 'C0', Plot=True,
+               PrintGain=True, grid=False, **kwargs):
+
     """Root locus plot
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
@@ -82,7 +87,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
         If True, report mouse clicks when close to the root-locus branches,
         calculate gain, damping and print
     grid: boolean (default = False)
-        If True plot s-plane grid. 
+        If True plot omega-damping grid.
 
     Returns
     -------
@@ -96,26 +101,42 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
     (nump, denp) = _systopoly1d(sys)
 
     if kvect is None:
+        start_mat = _RLFindRoots(nump, denp, [1])
         kvect, mymat, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
     else:
+        start_mat = _RLFindRoots(nump, denp, [kvect[0]])
         mymat = _RLFindRoots(nump, denp, kvect)
         mymat = _RLSortRoots(mymat)
 
+    # Check for sisotool mode
+    sisotool = False if 'sisotool' not in kwargs else True
+
     # Create the Plot
     if Plot:
-        figure_number = pylab.get_fignums()
-        figure_title = [pylab.figure(numb).canvas.get_window_title() for numb in figure_number]
-        new_figure_name = "Root Locus"
-        rloc_num = 1
-        while new_figure_name in figure_title:
-            new_figure_name = "Root Locus " + str(rloc_num)
-            rloc_num += 1
-        f = pylab.figure(new_figure_name)
+        if sisotool:
+            f = kwargs['fig']
+            ax = f.axes[1]
 
-        if PrintGain:
+        else:
+            figure_number = pylab.get_fignums()
+            figure_title = [pylab.figure(numb).canvas.get_window_title() for numb in figure_number]
+            new_figure_name = "Root Locus"
+            rloc_num = 1
+            while new_figure_name in figure_title:
+                new_figure_name = "Root Locus " + str(rloc_num)
+                rloc_num += 1
+            f = pylab.figure(new_figure_name)
+            ax = pylab.axes()
+
+        if PrintGain and sisotool == False:
             f.canvas.mpl_connect(
-                'button_release_event', partial(_RLFeedbackClicks, sys=sys))
-        ax = pylab.axes()
+                'button_release_event', partial(_RLClickDispatcher,sys=sys, fig=f,ax_rlocus=f.axes[0],plotstr=plotstr))
+
+        elif sisotool == True:
+            f.axes[1].plot([root.real for root in start_mat], [root.imag for root in start_mat], 'm.', marker='s', markersize=8,zorder=20,label='gain_point')
+            f.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" % (start_mat[0][0].real, start_mat[0][0].imag, 1, -1 * start_mat[0][0].real / abs(start_mat[0][0])),fontsize = 12 if int(matplotlib.__version__[0]) == 1 else 10)
+            f.canvas.mpl_connect(
+                'button_release_event',partial(_RLClickDispatcher,sys=sys, fig=f,ax_rlocus=f.axes[1],plotstr=plotstr, sisotool=sisotool, bode_plot_params=kwargs['bode_plot_params'],tvect=kwargs['tvect']))
 
         # plot open loop poles
         poles = array(denp.r)
@@ -127,8 +148,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.plot(real(zeros), imag(zeros), 'o')
 
         # Now plot the loci
-        for col in mymat.T:
-            ax.plot(real(col), imag(col), plotstr)
+        for index,col in enumerate(mymat.T):
+            ax.plot(real(col), imag(col), plotstr,label='rootlocus')
 
         # Set up plot axes and labels
         if xlim:
@@ -137,14 +158,20 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='-', Plot=True,
             ax.set_ylim(ylim)
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
-        if grid:
+        if grid and sisotool:
+            _sgrid_func(f)
+        elif grid:
             _sgrid_func()
+        else:
+            ax.axhline(0., linestyle=':', color='k',zorder=-20)
+            ax.axvline(0., linestyle=':', color='k')
+
     return mymat, kvect
 
 
-def _default_gains(num, den, xlim, ylim):
-    """Unsupervised gains calculation for root locus plot. 
-    
+def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
+    """Unsupervised gains calculation for root locus plot.
+
     References:
      Ogata, K. (2002). Modern control engineering (4th ed.). Upper Saddle River, NJ : New Delhi: Prentice Hall.."""
 
@@ -152,6 +179,7 @@ def _default_gains(num, den, xlim, ylim):
     kmax = _k_max(num, den, real_break, k_break)
     kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
     kvect.sort()
+
     mymat = _RLFindRoots(num, den, kvect)
     mymat = _RLSortRoots(mymat)
     open_loop_poles = den.roots
@@ -167,7 +195,8 @@ def _default_gains(num, den, xlim, ylim):
     important_points = np.concatenate((singular_points, real_break), axis=0)
     important_points = np.concatenate((important_points, np.zeros(2)), axis=0)
     mymat_xl = np.append(mymat_xl, important_points)
-    false_gain = den.coeffs[0] / num.coeffs[0]
+
+    false_gain = float(den.coeffs[0]) / float(num.coeffs[0])
     if false_gain < 0 and not den.order > num.order:
         raise ValueError("Not implemented support for 0 degrees root "
                          "locus with equal order of numerator and denominator.")
@@ -176,9 +205,11 @@ def _default_gains(num, den, xlim, ylim):
         x_tolerance = 0.05 * (np.max(np.real(mymat_xl)) - np.min(np.real(mymat_xl)))
         xlim = _ax_lim(mymat_xl)
     elif xlim is None and false_gain < 0:
-        axmin = np.min(np.real(important_points))-(np.max(np.real(important_points))-np.min(np.real(important_points)))
+        axmin = np.min(np.real(important_points)) - (
+                    np.max(np.real(important_points)) - np.min(np.real(important_points)))
         axmin = np.min(np.array([axmin, np.min(np.real(mymat_xl))]))
-        axmax = np.max(np.real(important_points))+np.max(np.real(important_points))-np.min(np.real(important_points))
+        axmax = np.max(np.real(important_points)) + np.max(np.real(important_points)) - np.min(
+            np.real(important_points))
         axmax = np.max(np.array([axmax, np.max(np.real(mymat_xl))]))
         xlim = [axmin, axmax]
         x_tolerance = 0.05 * (axmax - axmin)
@@ -191,20 +222,19 @@ def _default_gains(num, den, xlim, ylim):
     else:
         y_tolerance = 0.05 * (ylim[1] - ylim[0])
 
-    tolerance = np.max([x_tolerance, y_tolerance])
-    distance_points = np.abs(np.diff(mymat, axis=0))
-    indexes_too_far = np.where(distance_points > tolerance)
+    tolerance = np.min([x_tolerance, y_tolerance])
+    indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
 
-    while (indexes_too_far[0].size > 0) and (kvect.size < 5000):
-        for index in indexes_too_far[0]:
-            new_gains = np.linspace(kvect[index], kvect[index+1], 5)
+    while (len(indexes_too_far) > 0) and (kvect.size < 5000):
+        for counter,index in enumerate(indexes_too_far):
+            index = index + counter*3
+            new_gains = np.linspace(kvect[index], kvect[index + 1], 5)
             new_points = _RLFindRoots(num, den, new_gains[1:4])
-            kvect = np.insert(kvect, index+1, new_gains[1:4])
-            mymat = np.insert(mymat, index+1, new_points, axis=0)
+            kvect = np.insert(kvect, index + 1, new_gains[1:4])
+            mymat = np.insert(mymat, index + 1, new_points, axis=0)
 
         mymat = _RLSortRoots(mymat)
-        distance_points = np.abs(np.diff(mymat, axis=0)) > tolerance  # distance between points
-        indexes_too_far = np.where(distance_points)
+        indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
 
     new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
     new_points = _RLFindRoots(num, den, new_gains[1:4])
@@ -213,6 +243,49 @@ def _default_gains(num, den, xlim, ylim):
     mymat = _RLSortRoots(mymat)
     return kvect, mymat, xlim, ylim
 
+def _indexes_filt(mymat,tolerance,zoom_xlim=None,zoom_ylim=None):
+    """Calculate the distance between points and return the indexes.
+    Filter the indexes so only the resolution of points within the xlim and ylim is improved when zoom is used"""
+    distance_points = np.abs(np.diff(mymat, axis=0))
+    indexes_too_far = list(np.unique(np.where(distance_points > tolerance)[0]))
+
+    if zoom_xlim != None and zoom_ylim != None:
+        x_tolerance_zoom = 0.05 * (zoom_xlim[1] - zoom_xlim[0])
+        y_tolerance_zoom = 0.05 * (zoom_ylim[1] - zoom_ylim[0])
+        tolerance_zoom = np.min([x_tolerance_zoom, y_tolerance_zoom])
+        indexes_too_far_zoom = list(np.unique(np.where(distance_points > tolerance_zoom)[0]))
+        indexes_too_far_filtered = []
+
+        for index in indexes_too_far_zoom:
+            for point in mymat[index]:
+                if (zoom_xlim[0] <= point.real <= zoom_xlim[1]) and  (zoom_ylim[0] <= point.imag <= zoom_ylim[1]):
+                    indexes_too_far_filtered.append(index)
+                    break
+
+        # Check if the zoom box is not overshot and insert points where neccessary
+        if len(indexes_too_far_filtered) == 0 and len(mymat) <300:
+            limits = [zoom_xlim[0],zoom_xlim[1],zoom_ylim[0],zoom_ylim[1]]
+            for index,limit in enumerate(limits):
+                if index <= 1:
+                    asign = np.sign(real(mymat)-limit)
+                else:
+                    asign = np.sign(imag(mymat) - limit)
+                signchange = ((np.roll(asign, 1, axis=0) - asign) != 0).astype(int)
+                signchange[0] = np.zeros((len(mymat[0])))
+                if len(np.where(signchange ==1)[0]) > 0:
+                    indexes_too_far_filtered.append(np.where(signchange == 1)[0][0]-1)
+
+        if len(indexes_too_far_filtered) > 0 :
+            if indexes_too_far_filtered[0] != 0:
+                indexes_too_far_filtered.insert(0,indexes_too_far_filtered[0]-1)
+            if not indexes_too_far_filtered[-1] +1 >= len(mymat)-2:
+                indexes_too_far_filtered.append(indexes_too_far_filtered[-1]+1)
+
+        indexes_too_far.extend(indexes_too_far_filtered)
+
+    indexes_too_far = list(np.unique(indexes_too_far))
+    indexes_too_far.sort()
+    return indexes_too_far
 
 def _break_points(num, den):
     """Extract break points over real axis and the gains give these location"""
@@ -279,7 +352,7 @@ def _systopoly1d(sys):
 
     else:
         # Convert to a transfer function, if needed
-        sys = _convertToTransferFunction(sys)
+        sys = _convert_to_transfer_function(sys)
 
         # Make sure we have a SISO system
         if (sys.inputs > 1 or sys.outputs > 1):
@@ -301,7 +374,6 @@ def _systopoly1d(sys):
 
 def _RLFindRoots(nump, denp, kvect):
     """Find the roots for the root locus."""
-
     # Convert numerator and denominator to polynomials if they aren't
     roots = []
     for k in kvect:
@@ -316,7 +388,6 @@ def _RLFindRoots(nump, denp, kvect):
 
     mymat = row_stack(roots)
     return mymat
-
 
 def _RLSortRoots(mymat):
     """Sort the roots from sys._RLFindRoots, so that the root
@@ -340,21 +411,84 @@ def _RLSortRoots(mymat):
         prevrow = sorted[n, :]
     return sorted
 
+def _RLClickDispatcher(event,sys,fig,ax_rlocus,plotstr,sisotool=False,bode_plot_params=None,tvect=None):
+    """Rootlocus plot click dispatcher"""
 
-def _RLFeedbackClicks(event, sys):
-    """Print root-locus gain feedback for clicks on the root-locus plot
-    """
-    s = complex(event.xdata, event.ydata)
-    K = -1./sys.horner(s)
-    if abs(K.real) > 1e-8 and abs(K.imag/K.real) < 0.04:
+    # If zoom is used on the rootlocus plot smooth and update it
+    if plt.get_current_fig_manager().toolbar.mode in ['zoom rect','pan/zoom'] and event.inaxes == ax_rlocus.axes:
+        (nump, denp) = _systopoly1d(sys)
+        xlim,ylim = ax_rlocus.get_xlim(),ax_rlocus.get_ylim()
+
+        kvect,mymat, xlim,ylim = _default_gains(nump, denp,xlim=None,ylim=None, zoom_xlim=xlim,zoom_ylim=ylim)
+        _removeLine('rootlocus', ax_rlocus)
+
+        for i,col in enumerate(mymat.T):
+            ax_rlocus.plot(real(col), imag(col), plotstr,label='rootlocus')
+
+    # if a point is clicked on the rootlocus plot visually emphasize it
+    else:
+        K = _RLFeedbackClicksPoint(event, sys, fig,ax_rlocus,sisotool)
+        if sisotool and K is not None:
+            _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect)
+
+    # Update the canvas
+    fig.canvas.draw()
+
+
+def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=False):
+    """Display root-locus gain feedback point for clicks on the root-locus plot"""
+
+    (nump, denp) = _systopoly1d(sys)
+
+    # Catch type error when event click is in the figure but not in an axis
+    try:
+        s = complex(event.xdata, event.ydata)
+        K = -1. / sys.horner(s)
+
+    except TypeError:
+        K = float('inf')
+
+    xlim = ax_rlocus.get_xlim()
+    ylim = ax_rlocus.get_ylim()
+    x_tolerance = 0.05 * (xlim[1] - xlim[0])
+    y_tolerance = 0.05 * (ylim[1] - ylim[0])
+    gain_tolerance = np.min([x_tolerance, y_tolerance])*1e-1
+
+    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes:
+
+        # Display the parameters in the output window and figure
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
               (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+        fig.suptitle("Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
+                     (s.real, s.imag, K.real, -1 * s.real / abs(s)),fontsize = 12 if int(matplotlib.__version__[0]) == 1 else 10)
 
+        # Remove the previous line
+        _removeLine(label='gain_point',ax=ax_rlocus)
+
+        # Visualise clicked point, display all roots for sisotool mode
+        if sisotool:
+            mymat = _RLFindRoots(nump, denp, K.real)
+            ax_rlocus.plot([root.real for root in mymat], [root.imag for root in mymat], 'm.', marker='s', markersize=8,
+                           zorder=20,label='gain_point')
+        else:
+            ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20,label='gain_point')
+
+        return K.real[0][0]
+
+
+def _removeLine(label,ax):
+    """Remove a line from the ax when a label is specified"""
+    for line in reversed(ax.lines):
+        if line.get_label() == label:
+            line.remove()
+            del line
 
 def _sgrid_func(fig=None, zeta=None, wn=None):
     if fig is None:
         fig = pylab.gcf()
-    ax = fig.gca()
+        ax = fig.gca()
+    else:
+        ax = fig.axes[1]
     xlocator = ax.get_xaxis().get_major_locator()
 
     ylim = ax.get_ylim()

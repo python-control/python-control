@@ -245,6 +245,29 @@ class TestConvert(unittest.TestCase):
         except ImportError:
             print("Slycot not present, skipping")
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_tf2ss_robustness(self):
+        """Unit test to make sure that tf2ss is working correctly.
+         Source: https://github.com/python-control/python-control/issues/240
+        """
+        import control
+        
+        num =  [ [[0], [1]],           [[1],   [0]] ]
+        den1 = [ [[1], [1,1]],         [[1,4], [1]] ]
+        sys1tf = control.tf(num, den1)
+        sys1ss = control.tf2ss(sys1tf)
+
+        # slight perturbation
+        den2 = [ [[1], [1e-10, 1, 1]], [[1,4], [1]] ]
+        sys2tf = control.tf(num, den2)
+        sys2ss = control.tf2ss(sys2tf)
+
+        # Make sure that the poles match for StateSpace and TransferFunction
+        np.testing.assert_array_almost_equal(np.sort(sys1tf.pole()),
+                                             np.sort(sys1ss.pole()))
+        np.testing.assert_array_almost_equal(np.sort(sys2tf.pole()),
+                                             np.sort(sys2ss.pole()))
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
 

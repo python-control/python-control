@@ -6,9 +6,10 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-from control.statefbk import ctrb, obsv, place, lqr, gram, acker
+from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.matlab import *
 from control.exception import slycot_check, ControlDimension
+from control.mateqn import care, dare
 
 class TestStatefbk(unittest.TestCase):
     """Test state feedback functions"""
@@ -186,7 +187,10 @@ class TestStatefbk(unittest.TestCase):
         np.testing.assert_raises(ValueError, place, A, B, P_repeated)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def testPlace_varga(self):
+    def testPlace_varga_continuous(self):
+        """
+        Check that we can place eigenvalues for dtime=False
+        """
         A = np.array([[1., -2.], [3., -4.]])
         B = np.array([[5.], [7.]])
 
@@ -201,6 +205,77 @@ class TestStatefbk(unittest.TestCase):
         # Test that the dimension checks work.
         np.testing.assert_raises(ControlDimension, place, A[1:, :], B, P)
         np.testing.assert_raises(ControlDimension, place, A, B[1:, :], P)
+
+        # Regression test against bug #177
+        # https://github.com/python-control/python-control/issues/177
+        A = np.array([[0, 1], [100, 0]])
+        B = np.array([[0], [1]])
+        P = np.array([-20 + 10*1j, -20 - 10*1j])
+        K = place_varga(A, B, P)
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+
+        # No guarantee of the ordering, so sort them
+        P.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P, P_placed)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testPlace_varga_continuous_partial_eigs(self):
+        """
+        Check that we are able to use the alpha parameter to only place
+        a subset of the eigenvalues, for the continous time case.
+        """
+        # A matrix has eigenvalues at s=-1, and s=-2. Choose alpha = -1.5
+        # and check that eigenvalue at s=-2 stays put.
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
+
+        P = np.array([-3.])
+        P_expected = np.array([-2.0, -3.0])
+        alpha = -1.5
+        K = place_varga(A, B, P, alpha=alpha)
+
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+        # No guarantee of the ordering, so sort them
+        P_expected.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P_expected, P_placed)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testPlace_varga_discrete(self):
+        """
+        Check that we can place poles using dtime=True (discrete time)
+        """
+        A = np.array([[1., 0], [0, 0.5]])
+        B = np.array([[5.], [7.]])
+
+        P = np.array([0.5, 0.5])
+        K = place_varga(A, B, P, dtime=True)
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+        # No guarantee of the ordering, so sort them
+        P.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P, P_placed)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testPlace_varga_discrete_partial_eigs(self):
+        """"
+        Check that we can only assign a single eigenvalue in the discrete
+        time case.
+        """
+        # A matrix has eigenvalues at 1.0 and 0.5. Set alpha = 0.51, and
+        # check that the eigenvalue at 0.5 is not moved.
+        A = np.array([[1., 0], [0, 0.5]])
+        B = np.array([[5.], [7.]])
+        P = np.array([0.2, 0.6])
+        P_expected = np.array([0.5, 0.6])
+        alpha = 0.51
+        K = place_varga(A, B, P, dtime=True, alpha=alpha)
+        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_expected.sort()
+        P_placed.sort()
+        np.testing.assert_array_almost_equal(P_expected, P_placed)
+
 
     def check_LQR(self, K, S, poles, Q, R):
         S_expected = np.array(np.sqrt(Q * R))
@@ -223,6 +298,37 @@ class TestStatefbk(unittest.TestCase):
         Q, R = 10., 2.
         K, S, poles = lqr(sys, Q, R)
         self.check_LQR(K, S, poles, Q, R)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_care(self):
+        #unit test for stabilizing and anti-stabilizing feedbacks
+        #continuous-time
+
+        A = np.diag([1,-1])
+        B = np.identity(2)
+        Q = np.identity(2)
+        R = np.identity(2)
+        S = 0 * B
+        E = np.identity(2)
+        X, L , G = care(A, B, Q, R, S, E, stabilizing=True)
+        assert np.all(np.real(L) < 0)
+        X, L , G = care(A, B, Q, R, S, E, stabilizing=False)
+        assert np.all(np.real(L) > 0)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_dare(self):
+        #discrete-time
+        A = np.diag([0.5,2])
+        B = np.identity(2)
+        Q = np.identity(2)
+        R = np.identity(2)
+        S = 0 * B
+        E = np.identity(2)
+        X, L , G = dare(A, B, Q, R, S, E, stabilizing=True)
+        assert np.all(np.abs(L) < 1)
+        X, L , G = dare(A, B, Q, R, S, E, stabilizing=False)
+        assert np.all(np.abs(L) > 1)
+
 
 def test_suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)

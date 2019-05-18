@@ -12,7 +12,8 @@ implements basic operations for analysis and design of feedback control systems.
 - Time response: initial, step, impulse
 - Frequency response: Bode and Nyquist plots
 - Control analysis: stability, reachability, observability, stability margins
-- Control design: eigenvalue placement, linear quadratic regulator
+- Control design: eigenvalue placement, LQR, H2, Hinf
+- Model reduction: balanced realizations, Hankel singular values
 - Estimator design: linear quadratic estimator (Kalman filter)
 
 .. rubric:: Documentation

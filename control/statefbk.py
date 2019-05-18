@@ -113,11 +113,11 @@ def place(A, B, p):
     return K
 
 
-def place_varga(A, B, p):
+def place_varga(A, B, p, dtime=False, alpha=None):
     """Place closed loop eigenvalues
-    K = place_varga(A, B, p)
+    K = place_varga(A, B, p, dtime=False, alpha=None)
 
-    Parameters
+    Required Parameters
     ----------
     A : 2-d array
         Dynamics matrix
@@ -125,6 +125,20 @@ def place_varga(A, B, p):
         Input matrix
     p : 1-d list
         Desired eigenvalue locations
+
+    Optional Parameters
+    ---------------
+    dtime: False for continuous time pole placement or True for discrete time.
+            The default is dtime=False.
+    alpha: double scalar
+           If DICO='C', then place_varga will leave the eigenvalues with real
+           real part less than alpha untouched.
+           If DICO='D', the place_varga will leave eigenvalues with modulus
+           less than alpha untouched.
+
+           By default (alpha=None), place_varga computes alpha such that all
+           poles will be placed.
+
     Returns
     -------
     K : 2-d array
@@ -146,7 +160,7 @@ def place_varga(A, B, p):
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
-    >>> K = place(A, B, [-2, -5])
+    >>> K = place_varga(A, B, [-2, -5])
 
     See Also:
     --------
@@ -160,24 +174,46 @@ def place_varga(A, B, p):
         raise ControlSlycot("can't find slycot module 'sb01bd'")
 
     # Convert the system inputs to NumPy arrays
-    A_mat = np.array(A);
-    B_mat = np.array(B);
+    A_mat = np.array(A)
+    B_mat = np.array(B)
     if (A_mat.shape[0] != A_mat.shape[1] or
         A_mat.shape[0] != B_mat.shape[0]):
         raise ControlDimension("matrix dimensions are incorrect")
 
     # Compute the system eigenvalues and convert poles to numpy array
     system_eigs = np.linalg.eig(A_mat)[0]
-    placed_eigs = np.array(p);
+    placed_eigs = np.array(p)
 
-    # SB01BD sets eigenvalues with real part less than alpha
-    # We want to place all poles of the system => set alpha to minimum
-    alpha = min(system_eigs.real);
+    # Need a character parameter for SB01BD
+    if dtime:
+        DICO = 'D'
+    else:
+        DICO = 'C'
+
+    if alpha is None:
+        # SB01BD ignores eigenvalues with real part less than alpha
+        # (if DICO='C') or with modulus less than alpha
+        # (if DICO = 'D').
+        if dtime:
+            # For discrete time, slycot only cares about modulus, so just make
+            # alpha the smallest it can be.
+            alpha = 0.0
+        else:
+            # Choosing alpha=min_eig is insufficient and can lead to an
+            # error or not having all the eigenvalues placed that we wanted.
+            # Evidently, what python thinks are the eigs is not precisely
+            # the same as what slicot thinks are the eigs. So we need some
+            # numerical breathing room. The following is pretty heuristic,
+            # but does the trick
+            alpha = -2*abs(min(system_eigs.real))
+    elif dtime and alpha < 0.0:
+        raise ValueError("Need alpha > 0 when DICO='D'")
+
 
     # Call SLICOT routine to place the eigenvalues
     A_z,w,nfp,nap,nup,F,Z = \
         sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
-               A_mat, B_mat, placed_eigs, 'C');
+               A_mat, B_mat, placed_eigs, DICO)
 
     # Return the gain matrix, with MATLAB gain convention
     return -F
