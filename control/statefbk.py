@@ -368,7 +368,7 @@ def lqr(*args, **keywords):
 
     return K, S, E
 
-def ctrb(A,B):
+def ctrb(A, B):
     """Controllabilty matrix
 
     Parameters
@@ -391,10 +391,9 @@ def ctrb(A,B):
     amat = np.mat(A)
     bmat = np.mat(B)
     n = np.shape(amat)[0]
+
     # Construct the controllability matrix
-    ctrb = bmat
-    for i in range(1, n):
-        ctrb = np.hstack((ctrb, amat**i*bmat))
+    ctrb = np.hstack([bmat] + [amat**i*bmat for i in range(1, n)])
     return ctrb
 
 def obsv(A, C):
@@ -421,10 +420,8 @@ def obsv(A, C):
     cmat = np.mat(C)
     n = np.shape(amat)[0]
 
-    # Construct the controllability matrix
-    obsv = cmat
-    for i in range(1, n):
-        obsv = np.vstack((obsv, cmat*amat**i))
+    # Construct the observability matrix
+    obsv = np.hstack([cmat] + [cmat*amat**i for i in range(1, n)])
     return obsv
 
 def gram(sys,type):
