@@ -6,7 +6,7 @@ from control.lti import *
 from control.xferfcn import tf
 from control import c2d
 from control.matlab import tf2ss
-import numpy as np
+from control.exception import slycot_check
 
 class TestUtils(unittest.TestCase):
     def test_pole(self):
@@ -33,6 +33,8 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(issiso(sys), True)
         self.assertEqual(issiso(sys, strict=True), True)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_issiso_mimo(self):
         # MIMO transfer function
         sys = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]],
                  [[[1, 10], [1, 20]], [[1, 30], [1, 40]]]);
