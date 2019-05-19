@@ -136,9 +136,12 @@ def modred(sys, ELIM, method='matchdc'):
     Raises
     ------
     ValueError
-        - if `method` is not either ``'matchdc'`` or ``'truncate'``
-        - if eigenvalues of `sys.A` are not all in left half plane
-          (`sys` must be stable)
+        Raised under the following conditions:
+
+            * if `method` is not either ``'matchdc'`` or ``'truncate'``
+
+            * if eigenvalues of `sys.A` are not all in left half plane
+              (`sys` must be stable)
 
     Examples
     --------

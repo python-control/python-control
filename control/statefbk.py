@@ -375,7 +375,6 @@ def lqr(*args, **keywords):
 
     return K, S, E
 
-
 def ctrb(A, B, return_type=np.matrix):
     """Controllabilty matrix
 
@@ -407,10 +406,10 @@ def ctrb(A, B, return_type=np.matrix):
     amat = statesp.ssmatrix(A)
     bmat = statesp.ssmatrix(B)
     n = np.shape(amat)[0]
+
     # Construct the controllability matrix
-    ctrb = bmat
-    for i in range(1, n):
-        ctrb = np.hstack((ctrb, np.dot(np.linalg.matrix_power(amat, i), bmat)))
+    ctrb = np.hstack([bmat] + [np.dot(np.linalg.matrix_power(amat, i), bmat)
+                               for i in range(1, n)])
 
     # Return the observability matrix in the desired type
     return ctrb.view(type=return_type)
@@ -448,10 +447,9 @@ def obsv(A, C, return_type=np.matrix):
     cmat = statesp.ssmatrix(C)
     n = np.shape(amat)[0]
 
-    # Construct the controllability matrix
-    obsv = cmat
-    for i in range(1, n):
-        obsv = np.vstack((obsv, np.dot(cmat, np.linalg.matrix_power(amat, i))))
+    # Construct the observability matrix
+    obsv = np.vstack([cmat] + [np.dot(cmat, np.linalg.matrix_power(amat, i))
+                               for i in range(1, n)])
 
     # Return the observability matrix in the desired type
     return obsv.view(type=return_type)

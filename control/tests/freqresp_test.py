@@ -113,7 +113,7 @@ class TestFreqresp(unittest.TestCase):
       num = [1000]
       den = [1, 25, 100, 0]
       sys = ctrl.tf(num, den)
-      ctrl.bode_plot(sys, margins=True,dB=False,deg = True)
+      ctrl.bode_plot(sys, margins=True,dB=False,deg = True, Hz=False)
       fig = plt.gcf()
       allaxes = fig.get_axes()
 
@@ -136,7 +136,7 @@ class TestFreqresp(unittest.TestCase):
 
       phase_to_infinity = (np.array([10., 10.]), np.array([1.00000000e-08, -1.80000000e+02]))
       assert_array_almost_equal(phase_to_infinity, allaxes[1].lines[4].get_data())
-      
+
    def test_discrete(self):
       # Test discrete time frequency response
 

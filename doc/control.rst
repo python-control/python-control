@@ -16,7 +16,7 @@ System creation
 
     ss
     tf
-    FRD
+    frd
     rss
     drss
 
