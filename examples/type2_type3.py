@@ -5,7 +5,7 @@
 from matplotlib.pyplot import * # Grab MATLAB plotting functions
 from control.matlab import *    # MATLAB-like functions
 from scipy import pi
-integrator =  tf( [0, 1], [1, 0] ) # 1/s
+integrator =  tf([0, 1], [1, 0]) # 1/s
 
 # Parameters defining the system
 J = 1.0
@@ -28,16 +28,18 @@ C_type3 = (1. + Ki*integrator)*(1. + Kii*integrator)*Kp
 
 # System Transfer Functions
 # tricky because the disturbance (base motion) is coupled in by friction
-closed_loop_type2 = feedback(C_type2*feedback(P,friction),gyro)
-disturbance_rejection_type2 = P*friction/(1.+P*friction+P*C_type2)
-closed_loop_type3 = feedback(C_type3*feedback(P,friction),gyro)
-disturbance_rejection_type3 = P*friction/(1.+P*friction+P*C_type3)
+closed_loop_type2 = feedback(C_type2*feedback(P, friction), gyro)
+disturbance_rejection_type2 = P*friction/(1. + P*friction+P*C_type2)
+closed_loop_type3 = feedback(C_type3*feedback(P, friction), gyro)
+disturbance_rejection_type3 = P*friction/(1. + P*friction + P*C_type3)
 
 # Bode plot for the system
 figure(1)
-bode(closed_loop_type2, logspace(0,2)*2*pi, dB=True, Hz=True) # blue
-bode(closed_loop_type3, logspace(0,2)*2*pi, dB=True, Hz=True) # green
+bode(closed_loop_type2, logspace(0, 2)*2*pi, dB=True, Hz=True) # blue
+bode(closed_loop_type3, logspace(0, 2)*2*pi, dB=True, Hz=True) # green
+show()
 
 figure(2)
-bode(disturbance_rejection_type2, logspace(0,2)*2*pi, Hz=True) # blue
-bode(disturbance_rejection_type3, logspace(0,2)*2*pi, Hz=True) # green
+bode(disturbance_rejection_type2, logspace(0, 2)*2*pi, Hz=True) # blue
+bode(disturbance_rejection_type3, logspace(0, 2)*2*pi, Hz=True) # green
+show()
