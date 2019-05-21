@@ -138,6 +138,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             f.canvas.mpl_connect(
                 'button_release_event',partial(_RLClickDispatcher,sys=sys, fig=f,ax_rlocus=f.axes[1],plotstr=plotstr, sisotool=sisotool, bode_plot_params=kwargs['bode_plot_params'],tvect=kwargs['tvect']))
 
+        # zoom update on xlim/ylim changed, only then data on new limits
+        # is available, i.e., cannot combine with _RLClickDispatcher
+        dpfun = partial(
+            _RLZoomDispatcher, sys=sys, ax_rlocus=ax, plotstr=plotstr)
+        ax.callbacks.connect('xlim_changed', dpfun)
+        ax.callbacks.connect('ylim_changed', dpfun)
+
         # plot open loop poles
         poles = array(denp.r)
         ax.plot(real(poles), imag(poles), 'x')
@@ -427,23 +434,30 @@ def _RLSortRoots(mymat):
         prevrow = sorted[n, :]
     return sorted
 
+def _RLZoomDispatcher(event, sys, ax_rlocus, plotstr):
+    """Rootlocus plot zoom dispatcher"""
+
+    nump, denp = _systopoly1d(sys)
+    xlim, ylim = ax_rlocus.get_xlim(), ax_rlocus.get_ylim()
+            
+    kvect, mymat, xlim, ylim = _default_gains(
+        nump, denp, xlim=None, ylim=None, zoom_xlim=xlim, zoom_ylim=ylim)
+    _removeLine('rootlocus', ax_rlocus)
+    
+    for i, col in enumerate(mymat.T):
+        ax_rlocus.plot(real(col), imag(col), plotstr, label='rootlocus',
+                       scalex=False, scaley=False)
+
 def _RLClickDispatcher(event,sys,fig,ax_rlocus,plotstr,sisotool=False,bode_plot_params=None,tvect=None):
     """Rootlocus plot click dispatcher"""
 
-    # If zoom is used on the rootlocus plot smooth and update it
-    if plt.get_current_fig_manager().toolbar.mode in ['zoom rect','pan/zoom'] and event.inaxes == ax_rlocus.axes:
-        (nump, denp) = _systopoly1d(sys)
-        xlim,ylim = ax_rlocus.get_xlim(),ax_rlocus.get_ylim()
+    # Zoom is handled by specialized callback above, only do gain plot
+    if event.inaxes == ax_rlocus.axes and \
+       plt.get_current_fig_manager().toolbar.mode not in \
+           {'zoom rect','pan/zoom'}:
 
-        kvect,mymat, xlim,ylim = _default_gains(nump, denp,xlim=None,ylim=None, zoom_xlim=xlim,zoom_ylim=ylim)
-        _removeLine('rootlocus', ax_rlocus)
-
-        for i,col in enumerate(mymat.T):
-            ax_rlocus.plot(real(col), imag(col), plotstr,label='rootlocus')
-
-    # if a point is clicked on the rootlocus plot visually emphasize it
-    else:
-        K = _RLFeedbackClicksPoint(event, sys, fig,ax_rlocus,sisotool)
+        # if a point is clicked on the rootlocus plot visually emphasize it
+        K = _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool)
         if sisotool and K is not None:
             _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect)
 
@@ -473,16 +487,16 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=False):
         K = float('inf')
         K_xlim = float('inf')
         K_ylim = float('inf')
-    print('gain',K)
-    print('x_tolerance:',x_tolerance)
-    print('y_tolerance:',y_tolerance)
-    print('gain_tolerance:',gain_tolerance)
-    print('margin:',abs(K.imag / K.real))
-    print('Argument clickpoint',abs(K.imag / K.real))
-    print('Argument X_scale:',abs(K_xlim.imag/K_xlim.real))
-    print('Argument Y_scale:',abs(K_ylim.imag/K_ylim.real))
+    # print('gain',K)
+    # print('x_tolerance:',x_tolerance)
+    # print('y_tolerance:',y_tolerance)
+    # print('gain_tolerance:',gain_tolerance)
+    # print('margin:',abs(K.imag / K.real))
+    # print('Argument clickpoint',abs(K.imag / K.real))
+    # print('Argument X_scale:',abs(K_xlim.imag/K_xlim.real))
+    # print('Argument Y_scale:',abs(K_ylim.imag/K_ylim.real))
     gain_tolerance += 0.1*max([abs(K_ylim.imag/K_ylim.real),abs(K_xlim.imag/K_xlim.real)])
-    print('New gain tolerance:',gain_tolerance)
+    # print('New gain tolerance:',gain_tolerance)
 
     if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes and K.real > 0.:
 
