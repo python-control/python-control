@@ -174,13 +174,6 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             ax.axhline(0., linestyle=':', color='k',zorder=-20)
             ax.axvline(0., linestyle=':', color='k')
 
-        x0, x1 = ax.get_xlim()
-        y0, y1 = ax.get_ylim()
-        if abs(x0-x1) >= abs(y0-y1):
-            ax.set_xlim(0. - 0.5*abs(y0-y1) ,0. +0.5*abs(y0-y1))
-        else:
-            ax.set_ylim(0. - 0.5 * abs(x0 - x1), 0. + 0.5 * abs(x0 - x1))
-
     return mymat, kvect
 
 
