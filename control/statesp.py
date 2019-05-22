@@ -410,8 +410,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
     # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """
-        Evaluate the system's transfer func. at a list of freqs, omega.
+        """Evaluate the system's transfer func. at a list of freqs, omega.
 
         mag, phase, omega = self.freqresp(omega)
 
@@ -424,22 +423,25 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
              G(exp(j*omega*dt)) = mag*exp(j*phase).
 
-        Inputs
-        ------
-        omega: A list of frequencies in radians/sec at which the system
-            should be evaluated. The list can be either a python list
-            or a numpy array and will be sorted before evaluation.
+        Parameters
+        ----------
+        omega : array
+            A list of frequencies in radians/sec at which the system should be
+            evaluated. The list can be either a python list or a numpy array
+            and will be sorted before evaluation.
 
         Returns
         -------
-        mag: The magnitude (absolute value, not dB or log10) of the system
+        mag : float
+            The magnitude (absolute value, not dB or log10) of the system
             frequency response.
 
-        phase: The wrapped phase in radians of the system frequency
-            response.
+        phase : float
+            The wrapped phase in radians of the system frequency response.
 
-        omega: The list of sorted frequencies at which the response
-            was evaluated.
+        omega : array
+            The list of sorted frequencies at which the response was
+            evaluated.
 
         """
 
@@ -614,11 +616,11 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Parameters
         ----------
-        other: LTI
+        other : LTI
             The lower LTI system
-        ny: int, optional
+        ny : int, optional
             Dimension of (plant) measurement output.
-        nu: int, optional
+        nu : int, optional
             Dimension of (plant) control input.
 
         """
@@ -793,19 +795,21 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         method :  {"gbt", "bilinear", "euler", "backward_diff", "zoh"}
             Which method to use:
 
-               * gbt: generalized bilinear transformation
-               * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
-               * euler: Euler (or forward differencing) method ("gbt" with alpha=0)
-               * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
-               * zoh: zero-order hold (default)
+            * gbt: generalized bilinear transformation
+            * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
+            * euler: Euler (or forward differencing) method ("gbt" with 
+              alpha=0)
+            * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
+            * zoh: zero-order hold (default)
 
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter, which
-            should only be specified with method="gbt", and is ignored otherwise
+            should only be specified with method="gbt", and is ignored
+            otherwise
 
         Returns
         -------
-        sysd : StateSpace system
+        sysd : StateSpace
             Discrete time system, with sampling rate Ts
 
         Notes
@@ -1079,18 +1083,18 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
 
     Parameters
     ----------
-    sys: StateSpace
+    sys : StateSpace
         Linear (MIMO) system that should be converted.
-    input: int
+    input : int
         Index of the input that will become the SISO system's only input.
-    output: int
+    output : int
         Index of the output that will become the SISO system's only output.
-    warn_conversion: bool
-        If True: print a warning message when sys is a MIMO system.
-        Warn that a conversion will take place.
+    warn_conversion : bool, optional
+        If `True`, print a message when sys is a MIMO system,
+        warning that a conversion will take place.  Default is False.
 
     Returns
-    sys: StateSpace
+    sys : StateSpace
         The converted (SISO) system.
     """
     if not (isinstance(input, int) and isinstance(output, int)):
@@ -1341,16 +1345,16 @@ def rss(states=1, outputs=1, inputs=1):
 
     Parameters
     ----------
-    states: integer
+    states : integer
         Number of state variables
-    inputs: integer
+    inputs : integer
         Number of system inputs
-    outputs: integer
+    outputs : integer
         Number of system outputs
 
     Returns
     -------
-    sys: StateSpace
+    sys : StateSpace
         The randomly created linear system
 
     Raises
@@ -1379,16 +1383,16 @@ def drss(states=1, outputs=1, inputs=1):
 
     Parameters
     ----------
-    states: integer
+    states : integer
         Number of state variables
-    inputs: integer
+    inputs : integer
         Number of system inputs
-    outputs: integer
+    outputs : integer
         Number of system outputs
 
     Returns
     -------
-    sys: StateSpace
+    sys : StateSpace
         The randomly created linear system
 
     Raises
@@ -1417,7 +1421,7 @@ def ssdata(sys):
 
     Parameters
     ----------
-    sys: LTI (StateSpace, or TransferFunction)
+    sys : LTI (StateSpace, or TransferFunction)
         LTI system whose data will be returned
 
     Returns

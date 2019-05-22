@@ -162,12 +162,12 @@ The initial conditions are either 1D, or 2D with shape (j, 1)::
 
 As all simulation functions return *arrays*, plotting is convenient::
 
-    t, y = step(sys)
+    t, y = step_response(sys)
     plot(t, y)
 
 The output of a MIMO system can be plotted like this::
 
-    t, y, x = lsim(sys, u, t)
+    t, y, x = forced_response(sys, u, t)
     plot(t, y[0], label='y_0')
     plot(t, y[1], label='y_1')
 

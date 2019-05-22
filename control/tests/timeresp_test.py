@@ -10,7 +10,6 @@
 
 import unittest
 import numpy as np
-# import scipy as sp
 from control.timeresp import *
 from control.statesp import *
 from control.xferfcn import TransferFunction, _convert_to_transfer_function
@@ -309,7 +308,7 @@ class TestTimeresp(unittest.TestCase):
     def test_discrete_initial(self):
         h1 = TransferFunction([1.], [1., 0.], 1.)
         t, yout = impulse_response(h1, np.arange(4))
-        np.testing.assert_array_equal(yout[0], [0., 1., 0., 0.])
+        np.testing.assert_array_equal(yout, [0., 1., 0., 0.])
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_step_robustness(self):
@@ -345,27 +344,32 @@ class TestTimeresp(unittest.TestCase):
         # No timebase in system => output should match input
         #
         # Initial response
-        tout, yout = initial_response(self.siso_dtf1, Tin2, siso_x0)
+        tout, yout = initial_response(self.siso_dtf1, Tin2, siso_x0,
+                                      squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Impulse response
-        tout, yout = impulse_response(self.siso_dtf1, Tin2)
+        tout, yout = impulse_response(self.siso_dtf1, Tin2,
+                                      squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Step response
-        tout, yout = step_response(self.siso_dtf1, Tin2)
+        tout, yout = step_response(self.siso_dtf1, Tin2,
+                                   squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Forced response with specified time vector
-        tout, yout, xout = forced_response(self.siso_dtf1, Tin2, np.sin(Tin2))
+        tout, yout, xout = forced_response(self.siso_dtf1, Tin2, np.sin(Tin2),
+                                           squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Forced response with no time vector, no sample time (should use 1)
-        tout, yout, xout = forced_response(self.siso_dtf1, None, np.sin(Tin1))
+        tout, yout, xout = forced_response(self.siso_dtf1, None, np.sin(Tin1),
+                                           squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin1)
 
@@ -380,49 +384,58 @@ class TestTimeresp(unittest.TestCase):
         # Matching timebase in system => output should match input
         #
         # Initial response
-        tout, yout = initial_response(self.siso_dtf2, Tin2, siso_x0)
+        tout, yout = initial_response(self.siso_dtf2, Tin2, siso_x0,
+                                      squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Impulse response
-        tout, yout = impulse_response(self.siso_dtf2, Tin2)
+        tout, yout = impulse_response(self.siso_dtf2, Tin2,
+                                      squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Step response
-        tout, yout = step_response(self.siso_dtf2, Tin2)
+        tout, yout = step_response(self.siso_dtf2, Tin2,
+                                   squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Forced response
-        tout, yout, xout = forced_response(self.siso_dtf2, Tin2, np.sin(Tin2))
+        tout, yout, xout = forced_response(self.siso_dtf2, Tin2, np.sin(Tin2),
+                                           squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Forced response with no time vector, use sample time
-        tout, yout, xout = forced_response(self.siso_dtf2, None, np.sin(Tin2))
+        tout, yout, xout = forced_response(self.siso_dtf2, None, np.sin(Tin2),
+                                           squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin2)
 
         # Compatible timebase in system => output should match input
         #
         # Initial response
-        tout, yout = initial_response(self.siso_dtf2, Tin1, siso_x0)
+        tout, yout = initial_response(self.siso_dtf2, Tin1, siso_x0,
+                                      squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin1)
 
         # Impulse response
-        tout, yout = impulse_response(self.siso_dtf2, Tin1)
+        tout, yout = impulse_response(self.siso_dtf2, Tin1,
+                                      squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin1)
 
         # Step response
-        tout, yout = step_response(self.siso_dtf2, Tin1)
+        tout, yout = step_response(self.siso_dtf2, Tin1,
+                                   squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin1)
 
         # Forced response
-        tout, yout, xout = forced_response(self.siso_dtf2, Tin1, np.sin(Tin1))
+        tout, yout, xout = forced_response(self.siso_dtf2, Tin1, np.sin(Tin1),
+                                           squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         np.testing.assert_array_equal(tout, Tin1)
 
@@ -431,7 +444,8 @@ class TestTimeresp(unittest.TestCase):
         #
         # Initial response
         tout, yout, xout = forced_response(self.siso_dtf2, Tin1,
-                                           np.sin(Tin1), interpolate=True)
+                                           np.sin(Tin1), interpolate=True,
+                                           squeeze=False)
         self.assertEqual(np.shape(tout), np.shape(yout[0,:]))
         self.assertTrue(np.allclose(tout[1:] - tout[:-1],  self.siso_dtf2.dt))
 
@@ -442,8 +456,61 @@ class TestTimeresp(unittest.TestCase):
         #
         # Initial response
         with self.assertRaises(Exception) as context:
-            tout, yout = initial_response(self.siso_dtf2, Tin3, siso_x0)
+            tout, yout = initial_response(self.siso_dtf2, Tin3, siso_x0,
+                                          squeeze=False)
         self.assertTrue(isinstance(context.exception, ValueError))
+
+    def test_time_series_data_convention(self):
+        """Make sure time series data matches documentation conventions"""
+        # SISO continuous time
+        t, y = step_response(self.siso_ss1)
+        self.assertTrue(isinstance(t, np.ndarray)
+                        and not isinstance(t, np.matrix))
+        self.assertTrue(len(t.shape) == 1)
+        self.assertTrue(len(y.shape) == 1) # SISO returns "scalar" output
+        self.assertTrue(len(t) == len(y))  # Allows direct plotting of output
+
+        # SISO discrete time
+        t, y = step_response(self.siso_dss1)
+        self.assertTrue(isinstance(t, np.ndarray)
+                        and not isinstance(t, np.matrix))
+        self.assertTrue(len(t.shape) == 1)
+        self.assertTrue(len(y.shape) == 1) # SISO returns "scalar" output
+        self.assertTrue(len(t) == len(y))  # Allows direct plotting of output
+
+        # MIMO continuous time
+        tin = np.linspace(0, 10, 100)
+        uin = [np.sin(tin), np.cos(tin)]
+        t, y, x = forced_response(self.mimo_ss1, tin, uin)
+        self.assertTrue(isinstance(t, np.ndarray)
+                        and not isinstance(t, np.matrix))
+        self.assertTrue(len(t.shape) == 1)
+        self.assertTrue(len(y[0].shape) == 1)
+        self.assertTrue(len(y[1].shape) == 1)
+        self.assertTrue(len(t) == len(y[0]))
+        self.assertTrue(len(t) == len(y[1]))
+
+        # MIMO discrete time
+        tin = np.linspace(0, 10, 100)
+        uin = [np.sin(tin), np.cos(tin)]
+        t, y, x = forced_response(self.mimo_dss1, tin, uin)
+        self.assertTrue(isinstance(t, np.ndarray)
+                        and not isinstance(t, np.matrix))
+        self.assertTrue(len(t.shape) == 1)
+        self.assertTrue(len(y[0].shape) == 1)
+        self.assertTrue(len(y[1].shape) == 1)
+        self.assertTrue(len(t) == len(y[0]))
+        self.assertTrue(len(t) == len(y[1]))
+
+        # Allow input time as 2D array (output should be 1D)
+        tin = np.array(np.linspace(0, 10, 100), ndmin=2)
+        t, y = step_response(self.siso_ss1, tin)
+        self.assertTrue(isinstance(t, np.ndarray)
+                        and not isinstance(t, np.matrix))
+        self.assertTrue(len(t.shape) == 1)
+        self.assertTrue(len(y.shape) == 1) # SISO returns "scalar" output
+        self.assertTrue(len(t) == len(y))  # Allows direct plotting of output
+
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
