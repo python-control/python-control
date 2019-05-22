@@ -238,11 +238,7 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
         y_tolerance = 0.05 * (ylim[1] - ylim[0])
 
     tolerance = np.min([x_tolerance, y_tolerance])
-    # print('len kvect',len(kvect))
     indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
-    # print('indexes too far',indexes_too_far)
-    # print('my mat',mymat[ indexes_too_far])
-    # print('kvect',kvect[indexes_too_far])
 
     while (len(indexes_too_far) > 0) and (kvect.size < 5000):
         for counter,index in enumerate(indexes_too_far):
@@ -254,10 +250,6 @@ def _default_gains(num, den, xlim, ylim,zoom_xlim=None,zoom_ylim=None):
 
         mymat = _RLSortRoots(mymat)
         indexes_too_far = _indexes_filt(mymat,tolerance,zoom_xlim,zoom_ylim)
-    #     print('indexes_too_far',indexes_too_far)
-    #     print('mymat',mymat[indexes_too_far])
-    #     print('kvect',kvect[indexes_too_far])
-    # print('len kvect after',len(kvect))
 
     new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
     new_points = _RLFindRoots(num, den, new_gains[1:4])
@@ -487,16 +479,8 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=False):
         K = float('inf')
         K_xlim = float('inf')
         K_ylim = float('inf')
-    # print('gain',K)
-    # print('x_tolerance:',x_tolerance)
-    # print('y_tolerance:',y_tolerance)
-    # print('gain_tolerance:',gain_tolerance)
-    # print('margin:',abs(K.imag / K.real))
-    # print('Argument clickpoint',abs(K.imag / K.real))
-    # print('Argument X_scale:',abs(K_xlim.imag/K_xlim.real))
-    # print('Argument Y_scale:',abs(K_ylim.imag/K_ylim.real))
+
     gain_tolerance += 0.1*max([abs(K_ylim.imag/K_ylim.real),abs(K_xlim.imag/K_xlim.real)])
-    # print('New gain tolerance:',gain_tolerance)
 
     if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes and K.real > 0.:
 
