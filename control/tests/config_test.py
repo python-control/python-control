@@ -59,6 +59,8 @@ class TestConfig(unittest.TestCase):
         ct.bode_plot(self.sys, omega, deg=False)
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
+
+        ct.reset_defaults()
         
     def test_matlab_bode(self):
         ct.use_matlab_defaults();
@@ -104,6 +106,8 @@ class TestConfig(unittest.TestCase):
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+        ct.reset_defaults()
+
     def test_custom_bode_default(self):
         ct.bode_dB = True
         ct.bode_deg = True
@@ -125,6 +129,8 @@ class TestConfig(unittest.TestCase):
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+        ct.reset_defaults()
+
     def test_bode_number_of_samples(self):
         # Set the number of samples (default is 50, from np.logspace)
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
@@ -139,8 +145,11 @@ class TestConfig(unittest.TestCase):
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
         self.assertEqual(len(mag_ret), 87)
 
+        ct.reset_defaults()
+
     def test_bode_feature_periphery_decade(self):
         # Generate a sample Bode plot to figure out the range it uses
+        ct.reset_defaults()     # Make sure starting state is correct
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=False)
         omega_min, omega_max = omega_ret[[0,  -1]]
 
@@ -157,6 +166,21 @@ class TestConfig(unittest.TestCase):
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=True)
         np.testing.assert_almost_equal(omega_ret[0], omega_min*10)
         np.testing.assert_almost_equal(omega_ret[-1], omega_max/10)
+
+        ct.reset_defaults()
+
+    def test_reset_defaults(self):
+        ct.use_matlab_defaults()
+        ct.reset_defaults()
+        self.assertEquals(ct.config.bode_dB, False)
+        self.assertEquals(ct.config.bode_deg, True)
+        self.assertEquals(ct.config.bode_Hz, False)
+        self.assertEquals(ct.config.bode_number_of_samples, None)
+        self.assertEquals(ct.config.bode_feature_periphery_decade, 1.0)
+
+    def tearDown(self):
+        # Get rid of any figures that we created
+        plt.close('all')
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
