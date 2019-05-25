@@ -39,4 +39,4 @@ def use_fbs_defaults():
     # Bode plot defaults
     global bode_dB; bode_dB = False
     global bode_deg; bode_deg = True
-    global bode_Hz; bode_Hz = True
+    global bode_Hz; bode_Hz = False
