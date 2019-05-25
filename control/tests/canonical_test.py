@@ -123,6 +123,40 @@ class TestCanonical(unittest.TestCase):
                 np.dot(np.dot(C_true, matrix_power(A_true, i)), B_true),
                 np.dot(np.dot(C, matrix_power(A, i)), B))
 
+        # Reorder rows to get complete coverage (real eigenvalue cxrtvfirst)
+        A_true = np.array([[-1,  0, 0,  0],
+                           [ 0, -2,  1,  0],
+                           [ 0, -1, -2,  0],
+                           [ 0,  0,  0, -3]])
+        B_true = np.array([[0], [0], [1], [1]])
+        C_true = np.array([[0, 1, 0, 1]])
+        D_true = np.array([[0]])
+
+        A = np.linalg.solve(T_true, A_true) * T_true
+        B = np.linalg.solve(T_true, B_true)
+        C = C_true * T_true
+        D = D_true
+
+        # Create state space system and convert to modal canonical form
+        sys_check, T_check = canonical_form(ss(A, B, C, D), 'modal')
+
+        # Check A and D matrix, which are uniquely defined
+        np.testing.assert_array_almost_equal(sys_check.A, A_true)
+        np.testing.assert_array_almost_equal(sys_check.D, D_true)
+
+        # B matrix should be all ones (or zero if not controllable)
+        # TODO: need to update modal_form() to implement this
+        if np.allclose(T_check, T_true):
+            np.testing.assert_array_almost_equal(sys_check.B, B_true)
+            np.testing.assert_array_almost_equal(sys_check.C, C_true)
+
+        # Make sure Hankel coefficients are OK
+        from numpy.linalg import matrix_power
+        for i in range(A.shape[0]):
+            np.testing.assert_almost_equal(
+                np.dot(np.dot(C_true, matrix_power(A_true, i)), B_true),
+                np.dot(np.dot(C, matrix_power(A, i)), B))
+            
         # Modal form only supports SISO
         sys = tf([[ [1], [1] ]], [[ [1, 2, 1], [1, 2, 1] ]])
         np.testing.assert_raises(ControlNotImplemented, modal_form, sys)
