@@ -9,7 +9,7 @@ from control.statesp import StateSpace, _convertToStateSpace, rss
 from control.xferfcn import TransferFunction, _convert_to_transfer_function, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
-# from control.lti import isdtime
+from control.lti import isctime, isdtime
 
 
 class TestXferFcn(unittest.TestCase):
@@ -609,6 +609,21 @@ class TestXferFcn(unittest.TestCase):
         true_sys = TransferFunction([6., 14.], [1., 8., 15.])
         np.testing.assert_almost_equal(sys.num, true_sys.num)
         np.testing.assert_almost_equal(sys.den, true_sys.den)
+
+    def test_class_constants(self):
+        # Make sure that the 's' variable is defined properly
+        s = TransferFunction.s
+        G = (s + 1)/(s**2 + 2*s + 1)
+        np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
+        np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
+        self.assertTrue(isctime(G, strict=True))
+
+        # Make sure that the 'z' variable is defined properly
+        z = TransferFunction.z
+        G = (z + 1)/(z**2 + 2*z + 1)
+        np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
+        np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
+        self.assertTrue(isdtime(G, strict=True))
 
 
 def suite():

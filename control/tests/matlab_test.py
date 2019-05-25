@@ -664,6 +664,22 @@ class TestMatlab(unittest.TestCase):
         self.assertAlmostEqual(wg, 0.176469728448)
         self.assertAlmostEqual(wp, 0.0616288455466)
 
+    def test_tf_string_args(self):
+        # Make sure that the 's' variable is defined properly
+        s = tf('s')
+        G = (s + 1)/(s**2 + 2*s + 1)
+        np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
+        np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
+        self.assertTrue(isctime(G, strict=True))
+
+        # Make sure that the 'z' variable is defined properly
+        z = tf('z')
+        G = (z + 1)/(z**2 + 2*z + 1)
+        np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
+        np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
+        self.assertTrue(isdtime(G, strict=True))
+
+
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):
 #        sisotf = ss2tf(self.siso_ss1)
