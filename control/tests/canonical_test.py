@@ -2,9 +2,10 @@
 
 import unittest
 import numpy as np
-from control import ss
-from control.canonical import canonical_form
-
+from control import ss, tf
+from control.canonical import canonical_form, reachable_form, \
+    observable_form, modal_form
+from control.exception import ControlNotImplemented
 
 class TestCanonical(unittest.TestCase):
     """Tests for the canonical forms class"""
@@ -39,6 +40,11 @@ class TestCanonical(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys_check.C, C_true)
         np.testing.assert_array_almost_equal(sys_check.D, D_true)
         np.testing.assert_array_almost_equal(T_check, T_true)
+
+        # Reachable form only supports SISO
+        sys = tf([[ [1], [1] ]], [[ [1, 2, 1], [1, 2, 1] ]])
+        np.testing.assert_raises(ControlNotImplemented, reachable_form, sys)
+        
 
     def test_unreachable_system(self):
         """Test reachable canonical form with an unreachable system"""
@@ -76,12 +82,50 @@ class TestCanonical(unittest.TestCase):
         sys_check, T_check = canonical_form(ss(A, B, C, D), "modal")
 
         # Check against the true values
-        #TODO: Test in respect to ambiguous transformation (system characteristics?)
+        # TODO: Test in respect to ambiguous transformation (system characteristics?)
         np.testing.assert_array_almost_equal(sys_check.A, A_true)
         #np.testing.assert_array_almost_equal(sys_check.B, B_true)
         #np.testing.assert_array_almost_equal(sys_check.C, C_true)
         np.testing.assert_array_almost_equal(sys_check.D, D_true)
         #np.testing.assert_array_almost_equal(T_check, T_true)
+
+        # Check conversion when there are complex eigenvalues
+        A_true = np.array([[-1,  1,  0,  0],
+                           [-1, -1,  0,  0],
+                           [ 0,  0, -2,  0],
+                           [ 0,  0,  0, -3]])
+        B_true = np.array([[0], [1], [0], [1]])
+        C_true = np.array([[1, 0, 0, 1]])
+        D_true = np.array([[0]])
+
+        A = np.linalg.solve(T_true, A_true) * T_true
+        B = np.linalg.solve(T_true, B_true)
+        C = C_true * T_true
+        D = D_true
+
+        # Create state space system and convert to modal canonical form
+        sys_check, T_check = canonical_form(ss(A, B, C, D), 'modal')
+
+        # Check A and D matrix, which are uniquely defined
+        np.testing.assert_array_almost_equal(sys_check.A, A_true)
+        np.testing.assert_array_almost_equal(sys_check.D, D_true)
+
+        # B matrix should be all ones (or zero if not controllable)
+        # TODO: need to update modal_form() to implement this
+        if np.allclose(T_check, T_true):
+            np.testing.assert_array_almost_equal(sys_check.B, B_true)
+            np.testing.assert_array_almost_equal(sys_check.C, C_true)
+
+        # Make sure Hankel coefficients are OK
+        from numpy.linalg import matrix_power
+        for i in range(A.shape[0]):
+            np.testing.assert_almost_equal(
+                np.dot(np.dot(C_true, matrix_power(A_true, i)), B_true),
+                np.dot(np.dot(C, matrix_power(A, i)), B))
+
+        # Modal form only supports SISO
+        sys = tf([[ [1], [1] ]], [[ [1, 2, 1], [1, 2, 1] ]])
+        np.testing.assert_raises(ControlNotImplemented, modal_form, sys)
         
     def test_observable_form(self):
         """Test the observable canonical form"""
@@ -114,6 +158,11 @@ class TestCanonical(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys_check.D, D_true)
         np.testing.assert_array_almost_equal(T_check, T_true)
 
+        # Observable form only supports SISO
+        sys = tf([[ [1], [1] ]], [[ [1, 2, 1], [1, 2, 1] ]])
+        np.testing.assert_raises(ControlNotImplemented, observable_form, sys)
+        
+
     def test_unobservable_system(self):
         """Test observable canonical form with an unobservable system"""
 
@@ -126,3 +175,18 @@ class TestCanonical(unittest.TestCase):
 
         # Check if an exception is raised
         np.testing.assert_raises(ValueError, canonical_form, sys, "observable")
+
+    def test_arguments(self):
+        # Additional unit tests added on 25 May 2019 to increase coverage
+
+        # Unknown canonical forms should generate exception
+        sys = tf([1], [1, 2, 1])
+        np.testing.assert_raises(
+            ControlNotImplemented, canonical_form, sys, 'unknown')
+
+def suite():
+    return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
+
+
+if __name__ == "__main__":
+    unittest.main()
