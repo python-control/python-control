@@ -90,6 +90,14 @@ class TransferFunction(LTI):
     are combined.  If 'dt' is set to True, the system will be treated as a
     discrete time system with unspecified sampling time.
 
+    The TransferFunction class defines two constants ``s`` and ``z`` that
+    represent the differentiation and delay operators in continuous and
+    discrete time.  These can be used to create variables that allow algebraic
+    creation of transfer functions.  For example,
+
+    >>> s = TransferFunction.s
+    >>> G  = (s + 1)/(s**2 + 2*s + 1)
+
     """
     def __init__(self, *args):
         """TransferFunction(num, den[, dt])
