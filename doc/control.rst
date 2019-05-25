@@ -89,6 +89,7 @@ Control system analysis
     zero
     pzmap
     root_locus
+    sisotool
 
 Matrix computations
 ===================
