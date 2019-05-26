@@ -285,6 +285,9 @@ class InputOutputSystem(object):
             return new_io_sys
         elif not isinstance(sys2, InputOutputSystem):
             raise ValueError("Unknown I/O system object ", sys1)
+        else:
+            # Both systetms are InputOutputSystems => use __mul__
+            return InputOutputSystem.__mul__(sys2, sys1)
 
     def __add__(sys1, sys2):
         """Add two input/output systems (parallel interconnection)"""
@@ -344,12 +347,12 @@ class InputOutputSystem(object):
         # Create a new system to hold the negation
         newsys = InterconnectedSystem((sys,), dt=sys.dt)
 
-        # Set up the input map (negate the input)
-        newsys.set_input_map(-np.eye(sys.ninputs))
+        # Set up the input map (identity)
+        newsys.set_input_map(np.eye(sys.ninputs))
         # TODO: set up input names
 
-        # Set up the output map (identity)
-        newsys.set_output_map(np.eye(sys.noutputs))
+        # Set up the output map (negate the output)
+        newsys.set_output_map(-np.eye(sys.noutputs))
         # TODO: set up output names
 
         # Return the newly created system
@@ -1021,9 +1024,6 @@ class InterconnectedSystem(InputOutputSystem):
             sys._update_params(local, warning=warning)
 
     def _rhs(self, t, x, u):
-        # Create a vector to hold all of the results
-        xdot = np.zeros((self.nstates,))
-
         # Make sure state and input are vectors
         x = np.array(x, ndmin=1)
         u = np.array(u, ndmin=1)
@@ -1031,11 +1031,11 @@ class InterconnectedSystem(InputOutputSystem):
         # Compute the input and output vectors
         ulist, ylist = self._compute_static_io(t, x, u)
 
-        # Go through each system and update the _RHS for that system
-        xdot = np.zeros((self.nstates,))
-        state_index = 0; input_index = 0
+        # Go through each system and update the right hand side for that system
+        xdot = np.zeros((self.nstates,))        # Array to hold results
+        state_index = 0; input_index = 0        # Start at the beginning
         for sys in self.syslist:
-            # Update the _RHS for this subsystem
+            # Update the right hand side for this subsystem
             if sys.nstates != 0:
                 xdot[state_index:state_index + sys.nstates] = sys._rhs(
                     t, x[state_index:state_index + sys.nstates],

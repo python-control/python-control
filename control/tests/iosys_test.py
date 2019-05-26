@@ -302,6 +302,69 @@ class TestIOSys(unittest.TestCase):
 
     @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
                      "requires SciPy 1.0 or greater")
+    def test_rmul(self):
+        # Test right multiplication
+        # TODO: replace with better tests when conversions are implemented
+
+        # Set up parameters for simulation
+        T, U, X0 = self.T, self.U, self.X0
+
+        # Linear system with input and output nonlinearities
+        # Also creates a nested interconnected system
+        ioslin = ios.LinearIOSystem(self.siso_linsys)
+        nlios =  ios.NonlinearIOSystem(None, \
+            lambda t, x, u, params: u*u, inputs=1, outputs=1)
+        sys1 = nlios * ioslin
+        sys2 = ios.InputOutputSystem.__rmul__(nlios, sys1)
+
+        # Make sure we got the right thing (via simulation comparison)
+        ios_t, ios_y = ios.input_output_response(sys2, T, U, X0)
+        lti_t, lti_y, lti_x = ct.forced_response(ioslin, T, U*U, X0)
+        np.testing.assert_array_almost_equal(ios_y, lti_y*lti_y, decimal=3)
+
+    @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
+                     "requires SciPy 1.0 or greater")
+    def test_neg(self):
+        """Test negation of a system"""
+
+        # Set up parameters for simulation
+        T, U, X0 = self.T, self.U, self.X0
+
+        # Static nonlinear system
+        nlios =  ios.NonlinearIOSystem(None, \
+            lambda t, x, u, params: u*u, inputs=1, outputs=1)
+        ios_t, ios_y = ios.input_output_response(-nlios, T, U, X0)
+        np.testing.assert_array_almost_equal(ios_y, -U*U, decimal=3)
+
+        # Linear system with input nonlinearity
+        # Also creates a nested interconnected system
+        ioslin = ios.LinearIOSystem(self.siso_linsys)
+        sys = (ioslin) * (-nlios)
+
+        # Make sure we got the right thing (via simulation comparison)
+        ios_t, ios_y = ios.input_output_response(sys, T, U, X0)
+        lti_t, lti_y, lti_x = ct.forced_response(ioslin, T, U*U, X0)
+        np.testing.assert_array_almost_equal(ios_y, -lti_y, decimal=3)
+
+    @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
+                     "requires SciPy 1.0 or greater")
+    def test_feedback(self):
+        # Set up parameters for simulation
+        T, U, X0 = self.T, self.U, self.X0
+
+        # Linear system with constant feedback (via "nonlinear" mapping)
+        ioslin = ios.LinearIOSystem(self.siso_linsys)
+        nlios =  ios.NonlinearIOSystem(None, \
+            lambda t, x, u, params: u, inputs=1, outputs=1)
+        iosys = ct.feedback(ioslin, nlios)
+        linsys = ct.feedback(self.siso_linsys, 1)
+
+        ios_t, ios_y = ios.input_output_response(iosys, T, U, X0)
+        lti_t, lti_y, lti_x = ct.forced_response(linsys, T, U, X0)
+        np.testing.assert_array_almost_equal(ios_y, lti_y, decimal=3)
+
+    @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
+                     "requires SciPy 1.0 or greater")
     def test_bdalg_functions(self):
         """Test block diagram functions algebra on I/O systems"""
         # Set up parameters for simulation
@@ -379,6 +442,12 @@ class TestIOSys(unittest.TestCase):
         linsys_multiply = linsys_2i3o * linsys_3i2o
         iosys_multiply = iosys_2i3o * iosys_3i2o
         lin_t, lin_y, lin_x = ct.forced_response(linsys_multiply, T, U3, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_multiply, T, U3, X0)
+        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+
+        # Right multiplication
+        # TODO: add real tests once conversion from other types is supported
+        iosys_multiply = ios.InputOutputSystem.__rmul__(iosys_3i2o, iosys_2i3o)
         ios_t, ios_y = ios.input_output_response(iosys_multiply, T, U3, X0)
         np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
 
@@ -591,15 +660,15 @@ class TestIOSys(unittest.TestCase):
                      (ss_series.C, lin_series.C), (ss_series.D, lin_series.D)):
             np.testing.assert_array_almost_equal(M, N)
 
-        # Series interconnection (sys1 * sys2) using named signals
+        # Series interconnection (sys1 * sys2) using named + mixed signals
         ios_connect = ios.InterconnectedSystem(
             (sys2, sys1),
             connections=(
-                ('sys1.u[0]', 'sys2.y[0]'),
+                (('sys1', 'u[0]'), 'sys2.y[0]'),
                 ('sys1.u[1]', 'sys2.y[1]')
             ),
-            inplist=('sys2.u[0]', 'sys2.u[1]'),
-            outlist=('sys1.y[0]', 'sys1.y[1]')
+            inplist=('sys2.u[0]', ('sys2', 1)),
+            outlist=((1, 'y[0]'), 'sys1.y[1]')
         )
         lin_series = ct.linearize(ios_connect, 0, 0)
         for M, N in ((ss_series.A, lin_series.A), (ss_series.B, lin_series.B),
