@@ -715,11 +715,14 @@ class TestXferFcn(unittest.TestCase):
         self.assertTrue(isinstance(str(sys), str))
         self.assertTrue(isinstance(sys._repr_latex_(), str))
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_printing_mimo(self):
         # MIMO, continuous time
         sys = ss2tf(rss(4, 2, 3))
         self.assertTrue(isinstance(str(sys), str))
         self.assertTrue(isinstance(sys._repr_latex_(), str))
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_size_mismatch(self):
         sys1 = ss2tf(rss(2, 2, 2))
 
