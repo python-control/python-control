@@ -7,9 +7,11 @@ import unittest
 import sys as pysys
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace, rss
-from control.xferfcn import TransferFunction, _convert_to_transfer_function, ss2tf
+from control.xferfcn import TransferFunction, _convert_to_transfer_function, \
+    ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
+from control.dtime import sample_system
 # from control.lti import isdtime
 
 
@@ -24,23 +26,53 @@ class TestXferFcn(unittest.TestCase):
     def test_constructor_bad_input_type(self):
         """Give the constructor invalid input types."""
 
-        self.assertRaises(TypeError, TransferFunction, [[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
+        # MIMO requires lists of lists of vectors (not lists of vectors)
+        self.assertRaises(
+            TypeError,
+            TransferFunction, [[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
+        TransferFunction([[ [0., 1.], [2., 3.] ]], [[ [5., 2.], [3., 0.] ]])
+
+        # Single argument of the wrong type
+        self.assertRaises(TypeError, TransferFunction, [1])
+
+        # Too many arguments
+        self.assertRaises(ValueError, TransferFunction, 1, 2, 3, 4)
+
+        # Different numbers of elements in numerator rows
+        self.assertRaises(
+            ValueError,
+            TransferFunction, [ [[0, 1], [2, 3]],
+                                [[4, 5]] ],
+                              [ [[6, 7], [4, 5]],
+                                [[2, 3], [0, 1]] ])
+        self.assertRaises(
+            ValueError,
+            TransferFunction, [ [[0, 1], [2, 3]],
+                                [[4, 5], [6, 7]] ],
+                              [ [[6, 7], [4, 5]],
+                                [[2, 3]] ])
+        TransferFunction(       # This version is OK
+            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
+            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ])
 
     def test_constructor_inconsistent_dimension(self):
-        """Give the constructor a numerator and denominator of different
-        sizes."""
+        """Give constructor numerators, denominators of different sizes."""
 
-        self.assertRaises(ValueError, TransferFunction, [[[1.]]], [[[1.], [2., 3.]]])
-        self.assertRaises(ValueError, TransferFunction, [[[1.]]], [[[1.]], [[2., 3.]]])
-        self.assertRaises(ValueError, TransferFunction, [[[1.]]],
-                          [[[1.], [1., 2.]], [[5., 2.], [2., 3.]]])
+        self.assertRaises(ValueError, TransferFunction,
+            [[[1.]]], [[[1.], [2., 3.]]])
+        self.assertRaises(ValueError, TransferFunction,
+            [[[1.]]], [[[1.]], [[2., 3.]]])
+        self.assertRaises(ValueError, TransferFunction,
+            [[[1.]]], [[[1.], [1., 2.]], [[5., 2.], [2., 3.]]])
 
     def test_constructor_inconsistent_columns(self):
         """Give the constructor inputs that do not have the same number of
         columns in each row."""
 
-        self.assertRaises(ValueError, TransferFunction, 1., [[[1.]], [[2.], [3.]]])
-        self.assertRaises(ValueError, TransferFunction, [[[1.]], [[2.], [3.]]], 1.)
+        self.assertRaises(ValueError, TransferFunction,
+                          1., [[[1.]], [[2.], [3.]]])
+        self.assertRaises(ValueError, TransferFunction,
+                          [[[1.]], [[2.], [3.]]], 1.)
 
     def test_constructor_zero_denominator(self):
         """Give the constructor a transfer function with a zero denominator."""
@@ -54,7 +86,8 @@ class TestXferFcn(unittest.TestCase):
         """Add two transfer function matrices of different sizes."""
 
         sys1 = TransferFunction([[[1., 2.]]], [[[4., 5.]]])
-        sys2 = TransferFunction([[[4., 3.]], [[1., 2.]]], [[[1., 6.]], [[2., 4.]]])
+        sys2 = TransferFunction([[[4., 3.]], [[1., 2.]]],
+                                [[[1., 6.]], [[2., 4.]]])
         self.assertRaises(ValueError, sys1.__add__, sys2)
         self.assertRaises(ValueError, sys1.__sub__, sys2)
         self.assertRaises(ValueError, sys1.__radd__, sys2)
@@ -65,7 +98,8 @@ class TestXferFcn(unittest.TestCase):
 
         sys1 = TransferFunction([[[1., 2.], [4., 5.]], [[2., 5.], [4., 3.]]],
                                 [[[6., 2.], [4., 1.]], [[6., 7.], [2., 4.]]])
-        sys2 = TransferFunction([[[1.]], [[2.]], [[3.]]], [[[4.]], [[5.]], [[6.]]])
+        sys2 = TransferFunction([[[1.]], [[2.]], [[3.]]],
+                                [[[4.]], [[5.]], [[6.]]])
         self.assertRaises(ValueError, sys1.__mul__, sys2)
         self.assertRaises(ValueError, sys2.__mul__, sys1)
         self.assertRaises(ValueError, sys1.__rmul__, sys2)
@@ -313,6 +347,45 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, sys3.den)
         np.testing.assert_array_equal(sys4.den, sys3.num)
 
+    def test_div(self):
+        # Make sure that sampling times work correctly
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]], True)
+        sys3 = sys1 / sys2
+        self.assertEqual(sys3.dt, True)
+
+        sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]], 0.5)
+        sys3 = sys1 / sys2
+        self.assertEqual(sys3.dt, 0.5)
+
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1], 0.1)
+        self.assertRaises(ValueError, TransferFunction.__truediv__, sys1, sys2)
+
+        sys1 = sample_system(rss(4, 1, 1), 0.5)
+        sys3 = TransferFunction.__rtruediv__(sys2, sys1)
+        self.assertEqual(sys3.dt, 0.5)
+
+    def test_pow(self):
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        self.assertRaises(ValueError, TransferFunction.__pow__, sys1, 0.5)
+
+    def test_slice(self):
+        sys = TransferFunction(
+            [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
+            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ])
+        sys1 = sys[1:, 1:]
+        self.assertEqual((sys1.inputs, sys1.outputs), (2, 1))
+
+        sys2 = sys[:2, :2]
+        self.assertEqual((sys2.inputs, sys2.outputs), (2, 2))
+
+        sys = TransferFunction(
+            [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
+            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ], 0.5)
+        sys1 = sys[1:, 1:]
+        self.assertEqual((sys1.inputs, sys1.outputs), (2, 1))
+        self.assertEqual(sys1.dt, 0.5)
+
     def test_evalfr_siso(self):
         """Evaluate the frequency response of a SISO system at one frequency."""
 
@@ -320,18 +393,21 @@ class TestXferFcn(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(evalfr(sys, 1j),
                                              np.array([[-0.5 - 0.5j]]))
-        np.testing.assert_array_almost_equal(evalfr(sys, 32j),
-                                             np.array([[0.00281959302585077 - 0.030628473607392j]]))
+        np.testing.assert_array_almost_equal(
+            evalfr(sys, 32j),
+            np.array([[0.00281959302585077 - 0.030628473607392j]]))
 
         # Test call version as well
         np.testing.assert_almost_equal(sys(1.j), -0.5 - 0.5j)
-        np.testing.assert_almost_equal(sys(32.j), 0.00281959302585077 - 0.030628473607392j)
+        np.testing.assert_almost_equal(
+            sys(32.j), 0.00281959302585077 - 0.030628473607392j)
 
         # Test internal version (with real argument)
-        np.testing.assert_array_almost_equal(sys._evalfr(1.),
-                                             np.array([[-0.5 - 0.5j]]))
-        np.testing.assert_array_almost_equal(sys._evalfr(32.),
-                                             np.array([[0.00281959302585077 - 0.030628473607392j]]))
+        np.testing.assert_array_almost_equal(
+            sys._evalfr(1.), np.array([[-0.5 - 0.5j]]))
+        np.testing.assert_array_almost_equal(
+            sys._evalfr(32.),
+            np.array([[0.00281959302585077 - 0.030628473607392j]]))
 
     # This test only works in Python 3 due to a conflict with the same
     # warning type in other test modules (frd_test.py).  See
@@ -348,6 +424,11 @@ class TestXferFcn(unittest.TestCase):
 
             # Make sure that we get a pending deprecation warning
             self.assertRaises(PendingDeprecationWarning, sys.evalfr, 1.)
+
+    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
+    def test_evalfr_dtime(self):
+        sys = TransferFunction([1., 3., 5], [1., 6., 2., -1], 0.1)
+        np.testing.assert_array_almost_equal(sys(1j), -0.5 - 0.5j)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_evalfr_mimo(self):
@@ -368,7 +449,8 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys(2.j), resp)
 
     def test_freqresp_siso(self):
-        """Evaluate the magnitude and phase of a SISO system at multiple frequencies."""
+        """Evaluate the magnitude and phase of a SISO system at 
+        multiple frequencies."""
 
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
 
@@ -385,7 +467,8 @@ class TestXferFcn(unittest.TestCase):
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_freqresp_mimo(self):
-        """Evaluate the magnitude and phase of a MIMO system at multiple frequencies."""
+        """Evaluate the magnitude and phase of a MIMO system at 
+        multiple frequencies."""
 
         num = [[[1., 2.], [0., 3.], [2., -1.]],
                [[1.], [4., 0.], [1., -4., 3.]]]
@@ -394,16 +477,17 @@ class TestXferFcn(unittest.TestCase):
         sys = TransferFunction(num, den)
 
         true_omega = [0.1, 1., 10.]
-        true_mag = [[[0.496287094505259, 0.307147558416976, 0.0334738176210382],
+        true_mag = [[[0.49628709, 0.30714755, 0.03347381],
                     [300., 3., 0.03], [1., 1., 1.]],
-                    [[33.3333333333333, 0.333333333333333, 0.00333333333333333],
-                    [0.390285696125482, 1.26491106406735, 0.198759144198533],
-                    [3.01663720059274, 4.47213595499958, 104.92378186093]]]
-        true_phase = [[[3.7128711165168e-4, 0.185347949995695, 1.30770596539255],
-                      [-np.pi, -np.pi, -np.pi], [0., 0., 0.]],
+                    [[33.333333, 0.33333333, 0.00333333],
+                     [0.39028569, 1.26491106, 0.19875914],
+                    [3.01663720, 4.47213595, 104.92378186]]]
+        true_phase = [[[3.7128711e-4, 0.18534794,
+                        1.30770596], [-np.pi, -np.pi, -np.pi],
+                       [0., 0., 0.]],
                       [[-np.pi, -np.pi, -np.pi],
-                      [-1.66852323415362, -1.89254688119154, -1.62050658356412],
-                      [-0.132989648369409, -1.1071487177940, -2.7504672066207]]]
+                       [-1.66852323, -1.89254688, -1.62050658],
+                       [-0.13298964, -1.10714871, -2.75046720]]]
 
         mag, phase, omega = sys.freqresp(true_omega)
 
@@ -417,8 +501,9 @@ class TestXferFcn(unittest.TestCase):
     def test_pole_mimo(self):
         """Test for correct MIMO poles."""
 
-        sys = TransferFunction([[[1.], [1.]], [[1.], [1.]]],
-                               [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
+        sys = TransferFunction(
+            [[[1.], [1.]], [[1.], [1.]]],
+            [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
         p = sys.pole()
 
         np.testing.assert_array_almost_equal(p, [-2., -2., -7., -3., -2.])
@@ -618,6 +703,40 @@ class TestXferFcn(unittest.TestCase):
         true_sys = TransferFunction([6., 14.], [1., 8., 15.])
         np.testing.assert_almost_equal(sys.num, true_sys.num)
         np.testing.assert_almost_equal(sys.den, true_sys.den)
+
+    def test_printing(self):
+        # SISO, continuous time
+        sys = ss2tf(rss(4, 1, 1))
+        self.assertTrue(isinstance(str(sys), str))
+        self.assertTrue(isinstance(sys._repr_latex_(), str))
+
+        # SISO, discrete time
+        sys = sample_system(sys, 1)
+        self.assertTrue(isinstance(str(sys), str))
+        self.assertTrue(isinstance(sys._repr_latex_(), str))
+
+        # MIMO, continuous time
+        sys = ss2tf(rss(4, 2, 3))
+        self.assertTrue(isinstance(str(sys), str))
+        self.assertTrue(isinstance(sys._repr_latex_(), str))
+
+    def test_size_mismatch(self):
+        sys1 = ss2tf(rss(2, 2, 2))
+
+        # Different number of inputs
+        sys2 = ss2tf(rss(3, 1, 2))
+        self.assertRaises(ValueError, TransferFunction.__add__, sys1, sys2)
+
+        # Different number of outputs
+        sys2 = ss2tf(rss(3, 2, 1))
+        self.assertRaises(ValueError, TransferFunction.__add__, sys1, sys2)
+
+        # Inputs and outputs don't match
+        self.assertRaises(ValueError, TransferFunction.__mul__, sys2, sys1)
+
+        # Feedback mismatch (MIMO not implemented)
+        self.assertRaises(NotImplementedError,
+                          TransferFunction.feedback, sys2, sys1)
 
 
 def suite():
