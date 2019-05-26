@@ -4,6 +4,7 @@
 # RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
 
 import unittest
+import sys as pysys
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace, rss
 from control.xferfcn import TransferFunction, _convert_to_transfer_function, ss2tf
@@ -332,13 +333,21 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys._evalfr(32.),
                                              np.array([[0.00281959302585077 - 0.030628473607392j]]))
 
+    # This test only works in Python 3 due to a conflict with the same
+    # warning type in other test modules (frd_test.py).  See
+    # https://bugs.python.org/issue4180 for more details
+    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
+    def test_evalfr_deprecated(self):
+        sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+
         # Deprecated version of the call (should generate warning)
         import warnings
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            sys.evalfr(1.)
-            assert len(w) == 1
-            assert issubclass(w[-1].category, PendingDeprecationWarning)
+        with warnings.catch_warnings():
+            # Make warnings generate an exception
+            warnings.simplefilter('error')
+
+            # Make sure that we get a pending deprecation warning
+            self.assertRaises(PendingDeprecationWarning, sys.evalfr, 1.)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_evalfr_mimo(self):
@@ -597,7 +606,7 @@ class TestXferFcn(unittest.TestCase):
 
         # summer
         # causes a RuntimeWarning due to the divide by zero
-        sys = TransferFunction([1,-1], [1], True)
+        sys = TransferFunction([1, -1], [1], True)
         np.testing.assert_equal(sys.dcgain(), 0)
 
     def test_ss2tf(self):

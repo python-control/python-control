@@ -5,6 +5,7 @@
 
 
 import unittest
+import sys as pysys
 import numpy as np
 import control as ct
 from control.statesp import StateSpace
@@ -387,17 +388,31 @@ class TestFRD(unittest.TestCase):
         # Should get an error if we evaluate at an unknown frequency
         self.assertRaises(ValueError, frd_tf.eval, 2)
 
-        # FRD.eval() is being deprecated
+    # This test only works in Python 3 due to a conflict with the same
+    # warning type in other test modules (frd_test.py).  See
+    # https://bugs.python.org/issue4180 for more details
+    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
+    def test_evalfr_deprecated(self):
+        sys_tf = ct.tf([1], [1, 2, 1])
+        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
+
+        # Deprecated version of the call (should generate warning)
         import warnings
-        with warnings.catch_warnings(record=True) as w:
-            # Set up warnings filter to only show warnings in control module
-            warnings.filterwarnings("ignore")
-            warnings.filterwarnings("always", module="control")
+        with warnings.catch_warnings():
+            # Make warnings generate an exception
+            warnings.simplefilter('error')
 
             # Make sure that we get a pending deprecation warning
-            frd_tf.evalfr(1.)
-            assert len(w) == 1
-            assert issubclass(w[-1].category, PendingDeprecationWarning)
+            self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
+
+        # FRD.evalfr() is being deprecated
+        import warnings
+        with warnings.catch_warnings():
+            # Make warnings generate an exception
+            warnings.simplefilter('error')
+
+            # Make sure that we get a pending deprecation warning
+            self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
 
             
 def suite():
