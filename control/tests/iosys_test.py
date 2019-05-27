@@ -108,9 +108,9 @@ class TestIOSys(unittest.TestCase):
         linsys = self.siso_linsys
 
         # Create a nonlinear system with the same dynamics
-        nlupd = lambda t, x, u, param: \
+        nlupd = lambda t, x, u, params: \
             np.reshape(linsys.A * np.reshape(x, (-1, 1)) + linsys.B * u, (-1,))
-        nlout = lambda t, x, u, param: \
+        nlout = lambda t, x, u, params: \
             np.reshape(linsys.C * np.reshape(x, (-1, 1)) + linsys.D * u, (-1,))
         nlsys = ios.NonlinearIOSystem(nlupd, nlout)
 
@@ -134,9 +134,9 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_almost_equal(linsys.D, linearized.D)
 
         # Create a simple nonlinear system to check (kinematic car)
-        def kincar_update(t, x, u, param):
+        def kincar_update(t, x, u, params):
             return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
-        def kincar_output(t, x, u, param):
+        def kincar_output(t, x, u, params):
             return np.array([x[0], x[1]])
         iosys = ios.NonlinearIOSystem(kincar_update, kincar_output)
         linearized = iosys.linearize([0, 0, 0], [0, 0])
@@ -535,9 +535,44 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
+        # Specify inputs and outputs to constrain (replicate previous)
+        xeq, ueq, result = ios.find_eqpt(
+            nlsys, [0, 0, 0, 0], [0.01, 4*9.8], y0=[0.1, 0.1],
+            iy = [0, 1], return_result=True)
+        self.assertTrue(result.success)
+        np.testing.assert_array_almost_equal(
+            nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
+        np.testing.assert_array_almost_equal(
+            nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
+
+        # Now solve the problem with the original PVTOL variables
+        # Constrain the output angle and x velocity
+        nlsys_full = ios.NonlinearIOSystem(pvtol_full, None)
+        xeq, ueq, result = ios.find_eqpt(
+            nlsys_full, [0, 0, 0, 0, 0, 0], [0.01, 4*9.8],
+            y0=[0, 0, 0.1, 0.1, 0, 0], iy = [2, 3],
+            idx=[2, 3, 4, 5], ix=[0, 1], return_result=True)
+        self.assertTrue(result.success)
+        np.testing.assert_array_almost_equal(
+            nlsys_full._out(0, xeq, ueq)[[2, 3]], [0.1, 0.1], decimal=5)
+        np.testing.assert_array_almost_equal(
+            nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
+
+        # PVTOL with output = y velocity
+        xeq, ueq, result = ios.find_eqpt(
+            nlsys_full, [0, 0, 0, 0.1, 0, 0], [0.01, 4*9.8],
+            y0=[0, 0, 0, 0.1, 0, 0], iy=[3],
+            dx0=[0.1, 0, 0, 0, 0, 0], idx=[1, 2, 3, 4, 5],
+            ix=[0, 1], return_result=True)
+        self.assertTrue(result.success)
+        np.testing.assert_array_almost_equal(
+            nlsys_full._out(0, xeq, ueq)[-3:], [0.1, 0, 0], decimal=5)
+        np.testing.assert_array_almost_equal(
+            nlsys_full._rhs(0, xeq, ueq)[-5:], np.zeros((5,)), decimal=5)
+
         # Unobservable system
         linsys = ct.StateSpace(
-            [[-1, 1], [0, -2]], [[0], [1]], [[0, 0]], [[0]], True)
+            [[-1, 1], [0, -2]], [[0], [1]], [[0, 0]], [[0]])
         lnios = ios.LinearIOSystem(linsys)
 
         # If result is returned, user has to check
@@ -802,13 +837,13 @@ def suite():
 
 
 # Predator prey dynamics
-def predprey(t, x, u, param={}):
-    r = param.get('r', 2)
-    d = param.get('d', 0.7)
-    b = param.get('b', 0.3)
-    k = param.get('k', 10)
-    a = param.get('a', 8)
-    c = param.get('c', 4)
+def predprey(t, x, u, params={}):
+    r = params.get('r', 2)
+    d = params.get('d', 0.7)
+    b = params.get('b', 0.3)
+    k = params.get('k', 10)
+    a = params.get('a', 8)
+    c = params.get('c', 4)
 
     # Dynamics for the system
     dx0 = r * x[0] * (1 - x[0]/k) - a * x[1] * x[0]/(c + x[0])
@@ -817,15 +852,15 @@ def predprey(t, x, u, param={}):
     return np.array([dx0, dx1])
 
 
-# Planar vertical takeoff and landing dynamics
-def pvtol(t, x, u, param={}):
+# Reduced planar vertical takeoff and landing dynamics
+def pvtol(t, x, u, params={}):
     from math import sin, cos
-    m = param.get('m', 4.)      # kg, system mass
-    J = param.get('J', 0.0475)  # kg m^2, system inertia 
-    r = param.get('r', 0.25)    # m, thrust offset
-    g = param.get('g', 9.8)     # m/s, gravitational constant
-    c = param.get('c', 0.05)    # N s/m, rotational damping
-    l = param.get('c', 0.1)     # m, pivot location
+    m = params.get('m', 4.)      # kg, system mass
+    J = params.get('J', 0.0475)  # kg m^2, system inertia 
+    r = params.get('r', 0.25)    # m, thrust offset
+    g = params.get('g', 9.8)     # m/s, gravitational constant
+    c = params.get('c', 0.05)    # N s/m, rotational damping
+    l = params.get('c', 0.1)     # m, pivot location
     return np.array([
         x[3],
         -c/m * x[1] + 1/m * cos(x[0]) * u[0] - 1/m * sin(x[0]) * u[1],
@@ -833,17 +868,32 @@ def pvtol(t, x, u, param={}):
         -l/J * sin(x[0]) + r/J * u[0]
     ])
 
+def pvtol_full(t, x, u, params={}):
+    from math import sin, cos
+    m = params.get('m', 4.)      # kg, system mass
+    J = params.get('J', 0.0475)  # kg m^2, system inertia 
+    r = params.get('r', 0.25)    # m, thrust offset
+    g = params.get('g', 9.8)     # m/s, gravitational constant
+    c = params.get('c', 0.05)    # N s/m, rotational damping
+    l = params.get('c', 0.1)     # m, pivot location
+    return np.array([
+        x[3], x[4], x[5],
+        -c/m * x[3] + 1/m * cos(x[2]) * u[0] - 1/m * sin(x[2]) * u[1],
+        -g - c/m * x[4] + 1/m * sin(x[2]) * u[0] + 1/m * cos(x[2]) * u[1],
+        -l/J * sin(x[2]) + r/J * u[0]
+    ])
+
 
 # Second order system dynamics
-def secord_update(t, x, u, param={}):
-    omega0 = param.get('omega0', 1.)
-    zeta = param.get('zeta', 0.5)
+def secord_update(t, x, u, params={}):
+    omega0 = params.get('omega0', 1.)
+    zeta = params.get('zeta', 0.5)
     u = np.array(u, ndmin=1)
     return np.array([
         x[1],
         -2 * zeta * omega0 * x[1] - omega0*omega0 * x[0] + u[0]
     ])
-def secord_output(t, x, u, param={}):
+def secord_output(t, x, u, params={}):
     return np.array([x[0]])
 
 

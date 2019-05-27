@@ -496,7 +496,7 @@ class InputOutputSystem(object):
         Raises
         ------
         ValueError
-            if the inputs, outputs, or timebases of the systems are 
+            if the inputs, outputs, or timebases of the systems are
             incompatible.
 
         """
@@ -1333,7 +1333,7 @@ class InterconnectedSystem(InputOutputSystem):
                 (output_map,
                  np.zeros((output_map.shape[0], ninputs))),
                 axis=1)
-            
+
         if output_map.shape[1] != noutputs + ninputs:
             ValueError("Output map is not the right shape")
         self.output_map = output_map
@@ -1431,7 +1431,7 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
             raise NameError("scipy.integrate.solve_ivp not found; "
                             "use SciPy 1.0 or greater")
         soln = sp.integrate.solve_ivp(ivp_rhs, (T0, Tf), X0, t_eval=T,
-        method=method, vectorized=False)
+                                      method=method, vectorized=False)
 
         # Compute the output associated with the state (and use sys.out to
         # figure out the number of outputs just in case it wasn't specified)
@@ -1497,7 +1497,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
 
 
 def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
-              return_result=False, **kw):
+              iu=None, iy=None, ix=None, idx=None, dx0=None,
+              return_y=False, return_result=False, **kw):
     """Find the equilibrium point for an input/output system.
 
     Returns the value of an equlibrium point given the initial state and
@@ -1505,7 +1506,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
 
     Parameters
     ----------
-    x0 : list of states
+    x0 : list of initial state values
         Initial guess for the value of the state near the equilibrium point.
     u0 : list of input values, optional
         If `y0` is not specified, sets the equilibrium value of the input.  If
@@ -1519,6 +1520,29 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     params : dict, optional
         Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
+    iu : list of input indices, optional
+        If specified, only the inputs with the given indices will be fixed at
+        the specified values in solving for an equilibrium point.  All other
+        inputs will be varied.  Input indices can be listed in any order.
+    iy : list of output indices, optional
+        If specified, only the outputs with the given indices will be fixed at
+        the specified values in solving for an equilibrium point.  All other
+        outputs will be varied.  Output indices can be listed in any order.
+    ix : list of state indices, optional
+        If specified, states with the given indices will be fixed at the
+        specified values in solving for an equilibrium point.  All other
+        states will be varied.  State indices can be listed in any order.
+    dx0 : list of update values, optional
+        If specified, the value of update map must match the listed value
+        instead of the default value of 0.
+    idx : list of state indices, optional
+        If specified, state updates with the given indices will have their
+        update maps fixed at the values given in `dx0`.  All other update
+        values will be ignored in solving for an equilibrium point.  State
+        indices can be listed in any order.  By default, all updates will be
+        fixed at `dx0` in searching for an equilibrium point.
+    return_y : bool, optional
+        If True, return the value of output at the equilibrium point.
     return_result : bool, optional
         If True, return the `result` option from the scipy root function used
         to compute the equilibrium point.
@@ -1528,10 +1552,14 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     xeq : array of states
         Value of the states at the equilibrium point, or `None` if no
         equilibrium point was found and `return_result` was False.
-    ueq : array of input value
+    ueq : array of input values
         Value of the inputs at the equilibrium point, or `None` if no
         equilibrium point was found and `return_result` was False.
-    result : scipy root() result object
+    yeq : array of output values, optional
+        If `return_y` is True, returns the value of the outputs at the
+        equilibrium point, or `None` if no equilibrium point was found and
+        `return_result` was False.
+    result : scipy root() result object, optional
         If `return_result` is True, returns the `result` from the scipy root
         function.
 
@@ -1543,53 +1571,166 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     ninputs = _find_size(sys.ninputs, u0)
     noutputs = _find_size(sys.noutputs, y0)
 
+    # Discrete-time not yet supported
+    if isdtime(sys, strict=True):
+        raise NotImplementedError(
+            "Discrete time systems are not yet supported.")
+
     # Make sure the input arguments match the sizes of the system
     if len(x0) != nstates or \
        (u0 is not None and len(u0) != ninputs) or \
-       (y0 is not None and len(y0) != noutputs):
+       (y0 is not None and len(y0) != noutputs) or \
+       (dx0 is not None and len(dx0) != nstates):
         raise ValueError("Length of input arguments does not match system.")
 
     # Update the parameter values
     sys._update_params(params)
 
     # Decide what variables to minimize
-    if y0 is None:
-        # Take u0 as fixed and minimize over x
-        def ode_rhs(z): return sys._rhs(t, z, u0)
-        result = root(ode_rhs, x0, **kw)
-
-        # Decide what to return
-        if return_result:
-            # Return whatever we got, along with the result dictionary
-            return result.x, u0, result
-        elif result.success:
-            # Return the result of the optimization
-            return result.x, u0
+    if all([x is None for x in (iu, iy, ix, idx)]):
+        # Special cases: either inputs or outputs are constrained
+        if y0 is None:
+            # Take u0 as fixed and minimize over x
+            # TODO: update to allow discrete time systems
+            def ode_rhs(z): return sys._rhs(t, z, u0)
+            result = root(ode_rhs, x0, **kw)
+            z = (result.x, u0, sys._out(t, result.x, u0))
         else:
-            # Something went wrong, don't return anything
-            return None, None
+            # Take y0 as fixed and minimize over x and u
+            def rootfun(z):
+                # Split z into x and u
+                x, u = np.split(z, [nstates])
+                # TODO: update to allow discrete time systems
+                return np.concatenate(
+                    (sys._rhs(t, x, u), sys._out(t, x, u) - y0), axis=0)
+            z0 = np.concatenate((x0, u0), axis=0)   # Put variables together
+            result = root(rootfun, z0, **kw)        # Find the eq point
+            x, u = np.split(result.x, [nstates])    # Split result back in two
+            z = (x, u, sys._out(t, x, u))
 
     else:
-        # Take y0 as fixed and minimize over x and u
+        # General case: figure out what variables to constrain
+        # Verify the indices we are using are all in range
+        if iu is not None:
+            iu = np.unique(iu)
+            if any([not isinstance(x, int) for x in iu]) or \
+               (len(iu) > 0 and (min(iu) < 0 or max(iu) >= ninputs)):
+                assert ValueError("One or more input indices is invalid")
+        else:
+            iu = []
+
+        if iy is not None:
+            iy = np.unique(iy)
+            if any([not isinstance(x, int) for x in iy]) or \
+               min(iy) < 0 or max(iy) >= noutputs:
+                assert ValueError("One or more output indices is invalid")
+        else:
+            iy = list(range(noutputs))
+
+        if ix is not None:
+            ix = np.unique(ix)
+            if any([not isinstance(x, int) for x in ix]) or \
+               min(ix) < 0 or max(ix) >= nstates:
+                assert ValueError("One or more state indices is invalid")
+        else:
+            ix = []
+
+        if idx is not None:
+            idx = np.unique(idx)
+            if any([not isinstance(x, int) for x in idx]) or \
+               min(idx) < 0 or max(idx) >= nstates:
+                assert ValueError("One or more deriv indices is invalid")
+        else:
+            idx = list(range(nstates))
+
+        # Construct the index lists for mapping variables and constraints
+        #
+        # The mechanism by which we implement the root finding function is to
+        # map the subset of variables we are searching over into the inputs
+        # and states, and then return a function that represents the equations
+        # we are trying to solve.
+        #
+        # To do this, we need to carry out the following operations:
+        #
+        # 1. Given the current values of the free variables (z), map them into
+        #    the portions of the state and input vectors that are not fixed.
+        #
+        # 2. Compute the update and output maps for the input/output system
+        #    and extract the subset of equations that should be equal to zero.
+        #
+        # We perform these functions by computing four sets of index lists:
+        #
+        # * state_vars: indices of states that are allowed to vary
+        # * input_vars: indices of inputs that are allowed to vary
+        # * deriv_vars: indices of derivatives that must be constrained
+        # * output_vars: indices of outputs that must be constrained
+        #
+        # This index lists can all be precomputed based on the `iu`, `iy`,
+        # `ix`, and `idx` lists that were passed as arguments to `find_eqpts`
+        # and were processed above.
+
+        # Get the states and inputs that were not listed as fixed
+        state_vars = np.delete(np.array(range(nstates)), ix)
+        input_vars = np.delete(np.array(range(ninputs)), iu)
+
+        # Set the outputs and derivs that will serve as constraints
+        output_vars = np.array(iy)
+        deriv_vars = np.array(idx)
+
+        # Verify that the number of degrees of freedom all add up correctly
+        num_freedoms = len(state_vars) + len(input_vars)
+        num_constraints = len(output_vars) + len(deriv_vars)
+        if num_constraints != num_freedoms:
+            warn("Number of constraints (%d) does not match number of degrees "
+                 "of freedom (%d).  Results may be meaningless." %
+                 (num_constraints, num_freedoms))
+
+        # Make copies of the state and input variables to avoid overwriting
+        # and convert to floats (in case ints were used for initial conditions)
+        x = np.array(x0, dtype=float)
+        u = np.array(u0, dtype=float)
+        dx0 = np.array(dx0, dtype=float) if dx0 is not None \
+            else np.zeros(x.shape)
+
+        # Keep track of the number of states in the set of free variables
+        nstate_vars = len(state_vars)
+        dtime = isdtime(sys, strict=True)
+
         def rootfun(z):
-            # Split z into x and u
-            x, u = np.split(z, [nstates])
-            return np.concatenate(
-                (sys._rhs(t, x, u), sys._out(t, x, u) - y0), axis=0)
-        z0 = np.concatenate((x0, u0), axis=0)
+            # Map the vector of values into the states and inputs
+            x[state_vars] = z[:nstate_vars]
+            u[input_vars] = z[nstate_vars:]
+
+            # Compute the update and output maps
+            dx = sys._rhs(t, x, u) - dx0
+            if dtime: dx -= x           # TODO: check
+            dy = sys._out(t, x, u) - y0
+
+            # Map the results into the constrained variables
+            return np.concatenate((dx[deriv_vars], dy[output_vars]), axis=0)
+
+        # Set the initial condition for the root finding algorithm
+        z0 = np.concatenate((x[state_vars], u[input_vars]), axis=0)
+
+        # Finally, call the root finding function
         result = root(rootfun, z0, **kw)
 
-        # Decide what to return
-        z = np.split(result.x, [nstates])
-        if return_result:
-            # Return whatever we got, along with the result dictionary
-            return z[0], z[1], result
-        elif result.success:
-            # Return the result of the optimization
-            return z[0], z[1]
-        else:
-            # Something went wrong, don't return anything
-            return None, None
+        # Extract out the results and insert into x and u
+        x[state_vars] = result.x[:nstate_vars]
+        u[input_vars] = result.x[nstate_vars:]
+        z = (x, u, sys._out(t, x, u))
+
+    # Return the result based on what the user wants and what we found
+    if not return_y: z = z[0:2]     # Strip y from result if not desired
+    if return_result:
+        # Return whatever we got, along with the result dictionary
+        return z + (result,)
+    elif result.success:
+        # Return the result of the optimization
+        return z
+    else:
+        # Something went wrong, don't return anything
+        return (None, None, None) if return_y else (None, None)
 
 
 # Linearize an input/output system
@@ -1640,9 +1781,11 @@ def _find_size(sysval, vecval):
     else:
         raise ValueError("Can't determine size of system component.")
 
+
 # Convert a state space system into an input/output system (wrapper)
 def ss2io(*args, **kw): return LinearIOSystem(*args, **kw)
 ss2io.__doc__ = LinearIOSystem.__init__.__doc__
+
 
 # Convert a transfer function into an input/output system (wrapper)
 def tf2io(*args, **kw):
