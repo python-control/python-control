@@ -61,6 +61,21 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
 
+    @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
+                     "requires SciPy 1.0 or greater")
+    def test_tf2io(self):
+        # Create a transfer function from the state space system
+        linsys = self.siso_linsys
+        tfsys = ct.ss2tf(linsys)
+        iosys = ct.tf2io(tfsys)
+
+        # Verify correctness via simulation
+        T, U, X0 = self.T, self.U, self.X0
+        lti_t, lti_y, lti_x = ct.forced_response(linsys, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys, T, U, X0)
+        np.testing.assert_array_almost_equal(lti_t, ios_t)
+        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+
     def test_ss2io(self):
         # Create an input/output system from the linear system
         linsys = self.siso_linsys
@@ -174,6 +189,23 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
 
+        # Connect systems with different timebases
+        linsys2c = self.siso_linsys
+        linsys2c.dt = 0         # Reset the timebase
+        iosys2c = ios.LinearIOSystem(linsys2c)
+        iosys_series = ios.InterconnectedSystem(
+            (iosys1, iosys2c),   # systems
+            ((1, 0),),          # interconnection (series)
+            0,                  # input = first system
+            1                   # output = second system
+        )
+        self.assertTrue(ct.isctime(iosys_series, strict=True))
+        ios_t, ios_y, ios_x = ios.input_output_response(
+            iosys_series, T, U, X0, return_x=True)
+        lti_t, lti_y, lti_x = ct.forced_response(linsys_series, T, U, X0)
+        np.testing.assert_array_almost_equal(lti_t, ios_t)
+        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+
         # Feedback interconnection
         linsys_feedback = ct.feedback(linsys1, linsys2)
         iosys_feedback = ios.InterconnectedSystem(
@@ -248,7 +280,7 @@ class TestIOSys(unittest.TestCase):
         # Nonlinear system in feeback loop with LTI system
         iosys = ios.InterconnectedSystem(
             (lnios, nlios),         # linear system w/ nonlinear feedback
-            ((1, 0),                # feedback interconnection
+            ((1,),                  # feedback interconnection (sig to 0)
              (0, (1, 0, -1))),
             0,                      # input to linear system
             0                       # output from linear system
@@ -535,11 +567,19 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
-        # Specify inputs and outputs to constrain (replicate previous)
+        # Specify outputs to constrain (replicate previous)
         xeq, ueq, result = ios.find_eqpt(
             nlsys, [0, 0, 0, 0], [0.01, 4*9.8], y0=[0.1, 0.1],
             iy = [0, 1], return_result=True)
         self.assertTrue(result.success)
+        np.testing.assert_array_almost_equal(
+            nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
+        np.testing.assert_array_almost_equal(
+            nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
+
+        # Specify inputs to constrain (replicate previous), w/ no result
+        xeq, ueq = ios.find_eqpt(
+            nlsys, [0, 0, 0, 0], [0.01, 4*9.8], y0=[0.1, 0.1], iu = [])
         np.testing.assert_array_almost_equal(
             nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
@@ -555,6 +595,19 @@ class TestIOSys(unittest.TestCase):
         self.assertTrue(result.success)
         np.testing.assert_array_almost_equal(
             nlsys_full._out(0, xeq, ueq)[[2, 3]], [0.1, 0.1], decimal=5)
+        np.testing.assert_array_almost_equal(
+            nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
+
+        # Fix one input and vary the other
+        nlsys_full = ios.NonlinearIOSystem(pvtol_full, None)
+        xeq, ueq, result = ios.find_eqpt(
+            nlsys_full, [0, 0, 0, 0, 0, 0], [0.01, 4*9.8],
+            y0=[0, 0, 0.1, 0.1, 0, 0], iy=[3], iu=[1],
+            idx=[2, 3, 4, 5], ix=[0, 1], return_result=True)
+        self.assertTrue(result.success)
+        np.testing.assert_almost_equal(ueq[1], 4*9.8, decimal=5)
+        np.testing.assert_array_almost_equal(
+            nlsys_full._out(0, xeq, ueq)[[3]], [0.1], decimal=5)
         np.testing.assert_array_almost_equal(
             nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
 

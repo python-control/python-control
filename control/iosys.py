@@ -400,7 +400,7 @@ class InputOutputSystem(object):
         system model given the state, input, parameters, and time.
 
         """
-        # If not output function was defined in subclass, return state
+        # If no output function was defined in subclass, return state
         return x
 
     def set_inputs(self, inputs, prefix='u'):
