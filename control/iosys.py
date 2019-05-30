@@ -8,14 +8,11 @@
 #       - Use this to implement signal names for operators?
 #   * Allow constant inputs for MIMO input_output_response (w/out ones)
 #   * Add support for constants/matrices as part of operators (1 + P)
-#   * Put together a linearization-based example (from FBS or OBC)
 #   * Add unit tests (and example?) for time-varying systems
 #   * Allow time vector for discrete time simulations to be multiples of dt
 #   * Check the way initial outputs for discrete time systems are handled
 #   * Rename 'connections' as 'conlist' to match 'inplist' and 'outlist'?
 #   * Allow signal summation in InterconnectedSystem diagrams (via new output?)
-#   * Add ability to choose which inputs/outputs to constrain in find_eqpt()
-#   * Add support for (and examples of) class instantiation of I/O systems?
 #
 
 """The :mod:`~control.iosys` module contains the
