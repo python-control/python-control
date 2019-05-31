@@ -5,7 +5,8 @@ import numpy as np
 from control.lti import *
 from control.xferfcn import tf
 from control import c2d
-import numpy as np
+from control.matlab import tf2ss
+from control.exception import slycot_check
 
 class TestUtils(unittest.TestCase):
     def test_pole(self):
@@ -17,6 +18,33 @@ class TestUtils(unittest.TestCase):
         sys = tf([-1, 42], [1, 10])
         np.testing.assert_equal(sys.zero(), 42)
         np.testing.assert_equal(zero(sys), 42)
+
+    def test_issiso(self):
+        self.assertEqual(issiso(1), True)
+        self.assertRaises(ValueError, issiso, 1, strict=True)
+
+        # SISO transfer function
+        sys = tf([-1, 42], [1, 10])
+        self.assertEqual(issiso(sys), True)
+        self.assertEqual(issiso(sys, strict=True), True)
+
+        # SISO state space system
+        sys = tf2ss(sys)
+        self.assertEqual(issiso(sys), True)
+        self.assertEqual(issiso(sys, strict=True), True)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_issiso_mimo(self):
+        # MIMO transfer function
+        sys = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]],
+                 [[[1, 10], [1, 20]], [[1, 30], [1, 40]]]);
+        self.assertEqual(issiso(sys), False)
+        self.assertEqual(issiso(sys, strict=True), False)
+
+        # MIMO state space system
+        sys = tf2ss(sys)
+        self.assertEqual(issiso(sys), False)
+        self.assertEqual(issiso(sys, strict=True), False)
 
     def test_damp(self):
         # Test the continuous time case.
@@ -41,3 +69,9 @@ class TestUtils(unittest.TestCase):
         sys = tf(84, [1, 2])
         np.testing.assert_equal(sys.dcgain(), 42)
         np.testing.assert_equal(dcgain(sys), 42)
+
+def suite():
+    return unittest.TestLoader().loadTestsFromTestCase(TestUtils)
+
+if __name__ == "__main__":
+    unittest.main()

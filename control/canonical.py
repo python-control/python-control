@@ -88,7 +88,9 @@ def reachable_form(xsys):
     # Transformation from one form to another
     Tzx = solve(Wrx.T, Wrz.T).T  # matrix right division, Tzx = Wrz * inv(Wrx)
 
-    if matrix_rank(Tzx) != xsys.states:
+    # Check to make sure inversion was OK.  Note that since we are inverting
+    # Wrx and we already checked its rank, this exception should never occur
+    if matrix_rank(Tzx) != xsys.states:         # pragma: no cover
         raise ValueError("Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix

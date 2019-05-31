@@ -138,6 +138,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             f.canvas.mpl_connect(
                 'button_release_event',partial(_RLClickDispatcher,sys=sys, fig=f,ax_rlocus=f.axes[1],plotstr=plotstr, sisotool=sisotool, bode_plot_params=kwargs['bode_plot_params'],tvect=kwargs['tvect']))
 
+        # zoom update on xlim/ylim changed, only then data on new limits
+        # is available, i.e., cannot combine with _RLClickDispatcher
+        dpfun = partial(
+            _RLZoomDispatcher, sys=sys, ax_rlocus=ax, plotstr=plotstr)
+        ax.callbacks.connect('xlim_changed', dpfun)
+        ax.callbacks.connect('ylim_changed', dpfun)
+
         # plot open loop poles
         poles = array(denp.r)
         ax.plot(real(poles), imag(poles), 'x')
@@ -156,6 +163,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None, plotstr='b' if int(matplot
             ax.set_xlim(xlim)
         if ylim:
             ax.set_ylim(ylim)
+
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
         if grid and sisotool:
@@ -263,7 +271,7 @@ def _indexes_filt(mymat,tolerance,zoom_xlim=None,zoom_ylim=None):
                     break
 
         # Check if the zoom box is not overshot and insert points where neccessary
-        if len(indexes_too_far_filtered) == 0 and len(mymat) <300:
+        if len(indexes_too_far_filtered) == 0 and len(mymat) <500:
             limits = [zoom_xlim[0],zoom_xlim[1],zoom_ylim[0],zoom_ylim[1]]
             for index,limit in enumerate(limits):
                 if index <= 1:
@@ -411,23 +419,30 @@ def _RLSortRoots(mymat):
         prevrow = sorted[n, :]
     return sorted
 
+def _RLZoomDispatcher(event, sys, ax_rlocus, plotstr):
+    """Rootlocus plot zoom dispatcher"""
+
+    nump, denp = _systopoly1d(sys)
+    xlim, ylim = ax_rlocus.get_xlim(), ax_rlocus.get_ylim()
+            
+    kvect, mymat, xlim, ylim = _default_gains(
+        nump, denp, xlim=None, ylim=None, zoom_xlim=xlim, zoom_ylim=ylim)
+    _removeLine('rootlocus', ax_rlocus)
+    
+    for i, col in enumerate(mymat.T):
+        ax_rlocus.plot(real(col), imag(col), plotstr, label='rootlocus',
+                       scalex=False, scaley=False)
+
 def _RLClickDispatcher(event,sys,fig,ax_rlocus,plotstr,sisotool=False,bode_plot_params=None,tvect=None):
     """Rootlocus plot click dispatcher"""
 
-    # If zoom is used on the rootlocus plot smooth and update it
-    if plt.get_current_fig_manager().toolbar.mode in ['zoom rect','pan/zoom'] and event.inaxes == ax_rlocus.axes:
-        (nump, denp) = _systopoly1d(sys)
-        xlim,ylim = ax_rlocus.get_xlim(),ax_rlocus.get_ylim()
+    # Zoom is handled by specialized callback above, only do gain plot
+    if event.inaxes == ax_rlocus.axes and \
+       plt.get_current_fig_manager().toolbar.mode not in \
+           {'zoom rect','pan/zoom'}:
 
-        kvect,mymat, xlim,ylim = _default_gains(nump, denp,xlim=None,ylim=None, zoom_xlim=xlim,zoom_ylim=ylim)
-        _removeLine('rootlocus', ax_rlocus)
-
-        for i,col in enumerate(mymat.T):
-            ax_rlocus.plot(real(col), imag(col), plotstr,label='rootlocus')
-
-    # if a point is clicked on the rootlocus plot visually emphasize it
-    else:
-        K = _RLFeedbackClicksPoint(event, sys, fig,ax_rlocus,sisotool)
+        # if a point is clicked on the rootlocus plot visually emphasize it
+        K = _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool)
         if sisotool and K is not None:
             _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect)
 
@@ -440,21 +455,27 @@ def _RLFeedbackClicksPoint(event,sys,fig,ax_rlocus,sisotool=False):
 
     (nump, denp) = _systopoly1d(sys)
 
+    xlim = ax_rlocus.get_xlim()
+    ylim = ax_rlocus.get_ylim()
+    x_tolerance = 0.05 * abs((xlim[1] - xlim[0]))
+    y_tolerance = 0.05 * abs((ylim[1] - ylim[0]))
+    gain_tolerance = np.mean([x_tolerance, y_tolerance])*0.1
+
     # Catch type error when event click is in the figure but not in an axis
     try:
         s = complex(event.xdata, event.ydata)
         K = -1. / sys.horner(s)
+        K_xlim = -1. / sys.horner(complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
+        K_ylim = -1. / sys.horner(complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
 
     except TypeError:
         K = float('inf')
+        K_xlim = float('inf')
+        K_ylim = float('inf')
 
-    xlim = ax_rlocus.get_xlim()
-    ylim = ax_rlocus.get_ylim()
-    x_tolerance = 0.05 * (xlim[1] - xlim[0])
-    y_tolerance = 0.05 * (ylim[1] - ylim[0])
-    gain_tolerance = np.min([x_tolerance, y_tolerance])*1e-1
+    gain_tolerance += 0.1*max([abs(K_ylim.imag/K_ylim.real),abs(K_xlim.imag/K_xlim.real)])
 
-    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes:
+    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and event.inaxes == ax_rlocus.axes and K.real > 0.:
 
         # Display the parameters in the output window and figure
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
