@@ -11,12 +11,8 @@ from control.xferfcn import TransferFunction, _convert_to_transfer_function, \
     ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
-<<<<<<< HEAD
 from control.lti import isctime, isdtime
-=======
 from control.dtime import sample_system
-# from control.lti import isdtime
->>>>>>> master
 
 
 class TestXferFcn(unittest.TestCase):
