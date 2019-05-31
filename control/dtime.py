@@ -112,6 +112,9 @@ def c2d(sysc, Ts, method='zoh'):
     '''
     #  Call the sample_system() function to do the work
     sysd = sample_system(sysc, Ts, method)
+
+    # TODO: is this check needed?  If sysc is  StateSpace, sysd is too?
     if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):
-        return _convertToStateSpace(sysd)
+        return _convertToStateSpace(sysd)       # pragma: no cover
+
     return sysd

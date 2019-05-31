@@ -603,18 +603,24 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
-    Hz: boolean
+
+    Hz : bool
         If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
-    number_of_samples: int
-        Number of samples to generate
-    feature_periphery_decade: float
+
+    number_of_samples : int, optional
+        Number of samples to generate.  Defaults to ``numpy.logspace`` default
+        value.
+
+    feature_periphery_decade : float, optional
         Defines how many decades shall be included in the frequency range on
         both sides of features (poles, zeros).
-        Example: If there is a feature, e.g. a pole, at 1Hz and feature_periphery_decade=1.
-        then the range of frequencies shall span 0.1 .. 10 Hz.
-        The default value is read from config.bode_feature_periphery_decade.
+
+        Example: If there is a feature, e.g. a pole, at 1 Hz and
+        feature_periphery_decade=1., then the range of frequencies shall span
+        0.1 .. 10 Hz.  The default value is read from
+        ``config.bode_feature_periphery_decade``.
 
     Returns
     -------
@@ -626,6 +632,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
     >>> from matlab import ss
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> omega = default_frequency_range(sys)
+
     """
     # This code looks at the poles and zeros of all of the systems that
     # we are plotting and sets the frequency range to be one decade above

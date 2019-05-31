@@ -113,6 +113,7 @@ class TestFreqresp(unittest.TestCase):
       num = [1000]
       den = [1, 25, 100, 0]
       sys = ctrl.tf(num, den)
+      plt.figure()
       ctrl.bode_plot(sys, margins=True,dB=False,deg = True, Hz=False)
       fig = plt.gcf()
       allaxes = fig.get_axes()

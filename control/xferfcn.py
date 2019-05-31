@@ -125,9 +125,10 @@ class TransferFunction(LTI):
                                 % type(args[0]))
             num = args[0].num
             den = args[0].den
+            # TODO: not sure this can ever happen since dt is always present
             try:
                 dt = args[0].dt
-            except NameError:
+            except NameError:   # pragma: no coverage
                 dt = None
         else:
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."

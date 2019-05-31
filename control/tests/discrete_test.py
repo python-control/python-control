@@ -340,6 +340,7 @@ class TestDiscrete(unittest.TestCase):
 
         # Check errors
         self.assertRaises(ValueError, sample_system, self.siso_ss1d, 1)
+        self.assertRaises(ValueError, sample_system, self.siso_tf1d, 1)
         self.assertRaises(ValueError, sample_system, self.siso_ss1, 1, 'unknown')
 
     def test_sample_ss(self):

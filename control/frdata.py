@@ -49,6 +49,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 """
 
 # External function declarations
+from warnings import warn
 import numpy as np
 from numpy import angle, array, empty, ones, \
     real, imag, absolute, eye, linalg, where, dot
@@ -191,9 +192,10 @@ class FRD(LTI):
 
         if isinstance(other, FRD):
             # verify that the frequencies match
-            if (other.omega != self.omega).any():
-                print("Warning: frequency points do not match; expect"
-                      " truncation and interpolation")
+            if len(other.omega) != len(self.omega) or \
+               (other.omega != self.omega).any():
+                warn("Frequency points do not match; expect"
+                      " truncation and interpolation.")
 
         # Convert the second argument to a frequency response function.
         # or re-base the frd to the current omega (if needed)
@@ -344,8 +346,9 @@ second has %i." % (self.outputs, other.outputs))
         intermediate values.
 
         """
-        warn("FRD.evalfr(omega) will be deprecated in a future release of python-control; use sys.eval(omega) instead", 
-             PendingDeprecationWarning)
+        warn("FRD.evalfr(omega) will be deprecated in a future release "
+             "of python-control; use sys.eval(omega) instead", 
+             PendingDeprecationWarning)         # pragma: no coverage
         return self._evalfr(omega)
 
     # Define the `eval` function to evaluate an FRD at a given (real)
@@ -356,7 +359,7 @@ second has %i." % (self.outputs, other.outputs))
     def eval(self, omega):
         """Evaluate a transfer function at a single angular frequency.
 
-        self._evalfr(omega) returns the value of the frequency response
+        self.evalfr(omega) returns the value of the frequency response
         at frequency omega.
 
         Note that a "normal" FRD only returns values for which there is an
@@ -467,7 +470,8 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
 
     if isinstance(sys, FRD):
         omega.sort()
-        if (abs(omega - sys.omega) < FRD.epsw).all():
+        if len(omega) == len(sys.omega) and \
+           (abs(omega - sys.omega) < FRD.epsw).all():
             # frequencies match, and system was already frd; simply use
             return sys
 
