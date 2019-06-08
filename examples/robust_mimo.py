@@ -21,7 +21,7 @@ def weighting(wb, m, a):
     wf - SISO LTI object
     """
     s = tf([1, 0], [1])
-    return (s / m + wb) / (s + wb * a)
+    return (s/m + wb) / (s + wb*a)
 
 
 def plant():
@@ -44,7 +44,7 @@ def triv_sigma(g, w):
     w - frequencies, length m
     s - (m,n) array of singular values of g(1j*w)"""
     m, p, _ = g.freqresp(w)
-    sjw = (m * np.exp(1j * p * np.pi / 180)).transpose(2, 0, 1)
+    sjw = (m*np.exp(1j*p*np.pi/180)).transpose(2, 0, 1)
     sv = np.linalg.svd(sjw, compute_uv=False)
     return sv
 
@@ -135,8 +135,8 @@ def design():
     g = plant()
     w = np.logspace(-2, 2, 101)
     I = ss([], [], [], np.eye(2))
-    s1 = I.feedback(g * k1)
-    s2 = I.feedback(g * k2)
+    s1 = I.feedback(g*k1)
+    s2 = I.feedback(g*k2)
 
     # frequency response
     sv1 = triv_sigma(s1, w)
@@ -145,10 +145,10 @@ def design():
     plt.figure(2)
 
     plt.subplot(1, 2, 1)
-    plt.semilogx(w, 20 * np.log10(sv1[:, 0]), label=r'$\sigma_1(S_1)$')
-    plt.semilogx(w, 20 * np.log10(sv1[:, 1]), label=r'$\sigma_2(S_1)$')
-    plt.semilogx(w, 20 * np.log10(sv2[:, 0]), label=r'$\sigma_1(S_2)$')
-    plt.semilogx(w, 20 * np.log10(sv2[:, 1]), label=r'$\sigma_2(S_2)$')
+    plt.semilogx(w, 20*np.log10(sv1[:, 0]), label=r'$\sigma_1(S_1)$')
+    plt.semilogx(w, 20*np.log10(sv1[:, 1]), label=r'$\sigma_2(S_1)$')
+    plt.semilogx(w, 20*np.log10(sv2[:, 0]), label=r'$\sigma_1(S_2)$')
+    plt.semilogx(w, 20*np.log10(sv2[:, 1]), label=r'$\sigma_2(S_2)$')
     plt.ylim([-60, 10])
     plt.ylabel('magnitude [dB]')
     plt.xlim([1e-2, 1e2])
@@ -162,8 +162,8 @@ def design():
     # design 2, output 2 does not, and is very fast, while output 1
     # has a larger initial inverse response than in design 1
     time = np.linspace(0, 10, 301)
-    t1 = (g * k1).feedback(I)
-    t2 = (g * k2).feedback(I)
+    t1 = (g*k1).feedback(I)
+    t2 = (g*k2).feedback(I)
 
     y1 = step_opposite(t1, time)
     y2 = step_opposite(t2, time)

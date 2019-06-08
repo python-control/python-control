@@ -28,24 +28,24 @@ c = 0.05  # damping factor (estimated)
 
 # State space dynamics
 xe = [0, 0, 0, 0, 0, 0]  # equilibrium point of interest
-ue = [0, m * g]  # (note these are lists, not matrices)
+ue = [0, m*g]  # (note these are lists, not matrices)
 
 # Dynamics matrix (use matrix type so that * works for multiplication)
 A = np.matrix(
     [[0, 0, 0, 1, 0, 0],
      [0, 0, 0, 0, 1, 0],
      [0, 0, 0, 0, 0, 1],
-     [0, 0, (-ue[0] * np.sin(xe[2]) - ue[1] * np.cos(xe[2])) / m, -c / m, 0, 0],
-     [0, 0, (ue[0] * np.cos(xe[2]) - ue[1] * np.sin(xe[2])) / m, 0, -c / m, 0],
+     [0, 0, (-ue[0]*np.sin(xe[2]) - ue[1]*np.cos(xe[2]))/m, -c/m, 0, 0],
+     [0, 0, (ue[0]*np.cos(xe[2]) - ue[1]*np.sin(xe[2]))/m, 0, -c/m, 0],
      [0, 0, 0, 0, 0, 0]]
 )
 
 # Input matrix
 B = np.matrix(
     [[0, 0], [0, 0], [0, 0],
-     [np.cos(xe[2]) / m, -np.sin(xe[2]) / m],
-     [np.sin(xe[2]) / m, np.cos(xe[2]) / m],
-     [r / J, 0]]
+     [np.cos(xe[2])/m, -np.sin(xe[2])/m],
+     [np.sin(xe[2])/m, np.cos(xe[2])/m],
+     [r/J, 0]]
 )
 
 # Output matrix 
@@ -118,11 +118,11 @@ K1a = np.matrix(K)
 # (T, Y) = step(H1a, T=np.linspace(0,10,100));
 
 # Step response for the first input
-H1ax = ss(Ax - Bx * K1a[0, lat], Bx * K1a[0, lat] * xd[lat, :], Cx, Dx)
+H1ax = ss(Ax - Bx*K1a[0, lat], Bx*K1a[0, lat]*xd[lat, :], Cx, Dx)
 Yx, Tx = step(H1ax, T=np.linspace(0, 10, 100))
 
 # Step response for the second input
-H1ay = ss(Ay - By * K1a[1, alt], By * K1a[1, alt] * yd[alt, :], Cy, Dy)
+H1ay = ss(Ay - By*K1a[1, alt], By*K1a[1, alt]*yd[alt, :], Cy, Dy)
 Yy, Ty = step(H1ay, T=np.linspace(0, 10, 100))
 
 plt.subplot(221)
@@ -138,15 +138,15 @@ plt.legend(('x', 'y'), loc='lower right')
 # Look at different input weightings
 Qu1a = np.diag([1, 1])
 K1a, X, E = lqr(A, B, Qx1, Qu1a)
-H1ax = ss(Ax - Bx * K1a[0, lat], Bx * K1a[0, lat] * xd[lat, :], Cx, Dx)
+H1ax = ss(Ax - Bx*K1a[0, lat], Bx*K1a[0, lat]*xd[lat, :], Cx, Dx)
 
-Qu1b = (40 ** 2) * np.diag([1, 1])
+Qu1b = (40 ** 2)*np.diag([1, 1])
 K1b, X, E = lqr(A, B, Qx1, Qu1b)
-H1bx = ss(Ax - Bx * K1b[0, lat], Bx * K1b[0, lat] * xd[lat, :], Cx, Dx)
+H1bx = ss(Ax - Bx*K1b[0, lat], Bx*K1b[0, lat]*xd[lat, :], Cx, Dx)
 
-Qu1c = (200 ** 2) * np.diag([1, 1])
+Qu1c = (200 ** 2)*np.diag([1, 1])
 K1c, X, E = lqr(A, B, Qx1, Qu1c)
-H1cx = ss(Ax - Bx * K1c[0, lat], Bx * K1c[0, lat] * xd[lat, :], Cx, Dx)
+H1cx = ss(Ax - Bx*K1c[0, lat], Bx*K1c[0, lat]*xd[lat, :], Cx, Dx)
 
 [Y1, T1] = step(H1ax, T=np.linspace(0, 10, 100))
 [Y2, T2] = step(H1bx, T=np.linspace(0, 10, 100))
@@ -165,13 +165,13 @@ plt.axis([0, 10, -0.1, 1.4])
 plt.text(5.3, 0.4, 'rho')
 
 # Output weighting - change Qx to use outputs
-Qx2 = C.T * C
-Qu2 = 0.1 * np.diag([1, 1])
+Qx2 = C.T*C
+Qu2 = 0.1*np.diag([1, 1])
 K, X, E = lqr(A, B, Qx2, Qu2)
 K2 = np.matrix(K)
 
-H2x = ss(Ax - Bx * K2[0, lat], Bx * K2[0, lat] * xd[lat, :], Cx, Dx)
-H2y = ss(Ay - By * K2[1, alt], By * K2[1, alt] * yd[alt, :], Cy, Dy)
+H2x = ss(Ax - Bx*K2[0, lat], Bx*K2[0, lat]*xd[lat, :], Cx, Dx)
+H2y = ss(Ay - By*K2[1, alt], By*K2[1, alt]*yd[alt, :], Cy, Dy)
 
 plt.subplot(223)
 plt.title("Output weighting")
@@ -191,13 +191,13 @@ plt.legend(('x', 'y'), loc='lower right')
 # due to loss in efficiency.
 #
 
-Qx3 = np.diag([100, 10, 2 * np.pi / 5, 0, 0, 0])
-Qu3 = 0.1 * np.diag([1, 10])
+Qx3 = np.diag([100, 10, 2*np.pi/5, 0, 0, 0])
+Qu3 = 0.1*np.diag([1, 10])
 (K, X, E) = lqr(A, B, Qx3, Qu3)
 K3 = np.matrix(K)
 
-H3x = ss(Ax - Bx * K3[0, lat], Bx * K3[0, lat] * xd[lat, :], Cx, Dx)
-H3y = ss(Ay - By * K3[1, alt], By * K3[1, alt] * yd[alt, :], Cy, Dy)
+H3x = ss(Ax - Bx*K3[0, lat], Bx*K3[0, lat]*xd[lat, :], Cx, Dx)
+H3y = ss(Ay - By*K3[1, alt], By*K3[1, alt]*yd[alt, :], Cy, Dy)
 plt.subplot(224)
 # step(H3x, H3y, 10)
 [Y3x, T3x] = step(H3x, T=np.linspace(0, 10, 100))

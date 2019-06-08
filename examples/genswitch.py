@@ -17,7 +17,7 @@ from control import phase_plot, box_grid
 # This function implements the basic model of the genetic switch
 # Parameters taken from Gardner, Cantor and Collins, Nature, 2000
 def genswitch(y, t, mu=4, n=2):
-    return mu / (1 + y[1]**n) - y[0], mu / (1 + y[0]**n) - y[1]
+    return mu/(1 + y[1]**n) - y[0], mu/(1 + y[0]**n) - y[1]
 
 # Run a simulation from an initial condition
 tim1 = np.linspace(0, 10, 100)
@@ -36,7 +36,7 @@ sol2 = odeint(genswitch, sol1[-1, :] + [2, -2], tim2)
 
 # First plot out the curves that define the equilibria
 u = np.linspace(0, 4.5, 46)
-f = np.divide(mu, (1 + u**n))   # mu / (1 + u^n), element-wise
+f = np.divide(mu, (1 + u**n))   # mu/(1 + u^n), element-wise
 
 plt.figure(1); plt.clf()
 plt.axis([0, 5, 0, 5])                 # box on;

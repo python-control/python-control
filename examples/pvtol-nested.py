@@ -57,7 +57,7 @@ bode(Li)
 
 # Compute the sensitivity and complementary sensitivity functions
 Si = feedback(1, Li)
-Ti = Li * Si
+Ti = Li*Si
 
 # Check to make sure that the specification is met
 plt.figure(3)

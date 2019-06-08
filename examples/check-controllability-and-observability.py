@@ -17,11 +17,11 @@ b = 60.0  # damping constant
 
 # System matrices
 A = matrix([[1, -1, 1.],
-            [1, -k / m, -b / m],
+            [1, -k/m, -b/m],
             [1, 1, 1]])
 
 B = matrix([[0],
-            [1 / m],
+            [1/m],
             [1]])
 
 C = matrix([[1., 0, 1.]])

@@ -20,13 +20,13 @@ plt.close('all')
 
 # Define the ODEs for a damped (inverted) pendulum
 def invpend_ode(x, t, m=1., l=1., b=0.2, g=1):
-    return x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0])
+    return x[1], -b/m*x[1] + (g*l/m)*np.sin(x[0])
 
 
 # Set up the figure the way we want it to look
 plt.figure()
 plt.clf()
-plt.axis([-2 * pi, 2 * pi, -2.1, 2.1])
+plt.axis([-2*pi, 2*pi, -2.1, 2.1])
 plt.title('Inverted pendulum')
 
 # Outer trajectories
