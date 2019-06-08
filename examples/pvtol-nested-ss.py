@@ -14,15 +14,15 @@ from control.matlab import *    # MATLAB-like functions
 import numpy as np
 
 # System parameters
-m = 4			# mass of aircraft
-J = 0.0475		# inertia around pitch axis
-r = 0.25		# distance to center of force
-g = 9.8			# gravitational constant
-c = 0.05	 	# damping factor (estimated)
+m = 4           # mass of aircraft
+J = 0.0475      # inertia around pitch axis
+r = 0.25        # distance to center of force
+g = 9.8         # gravitational constant
+c = 0.05        # damping factor (estimated)
 
 # Transfer functions for dynamics
-Pi = tf([r], [J, 0, 0])	 # inner loop (roll)
-Po = tf([1], [m, c, 0])	 # outer loop (position)
+Pi = tf([r], [J, 0, 0])  # inner loop (roll)
+Po = tf([1], [m, c, 0])  # outer loop (position)
 
 # Use state space versions
 Pi = tf2ss(Pi)
@@ -78,7 +78,7 @@ bode(Hi)
 
 # Now design the lateral control system
 a, b, K = 0.02, 5, 2
-Co = -K*tf([1, 0.3], [1, 10])		# another lead compensator
+Co = -K*tf([1, 0.3], [1, 10])  # another lead compensator
 
 # Convert to statespace
 Co = tf2ss(Co)

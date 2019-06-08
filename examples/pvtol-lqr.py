@@ -62,8 +62,8 @@ D = np.matrix([[0, 0], [0, 0]])
 # The way these vectors are used is to compute the closed loop system
 # dynamics as
 #
-#	xdot = Ax + B u		=>	xdot = (A-BK)x + K xd
-#         u = -K(x - xd)		   y = Cx
+#   xdot = Ax + B u  =>  xdot = (A-BK)x + K xd
+#      u = -K(x - xd)       y = Cx
 #
 # The closed loop dynamics can be simulated using the "step" command, 
 # with K*xd as the input vector (assumes that the "input" is unit size,

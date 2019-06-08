@@ -16,15 +16,15 @@ from control.matlab import *    # MATLAB-like functions
 import numpy as np
 
 # System parameters
-m = 4				# mass of aircraft
-J = 0.0475			# inertia around pitch axis
-r = 0.25			# distance to center of force
-g = 9.8			    # gravitational constant
-c = 0.05	 		# damping factor (estimated)
+m = 4               # mass of aircraft
+J = 0.0475          # inertia around pitch axis
+r = 0.25            # distance to center of force
+g = 9.8             # gravitational constant
+c = 0.05            # damping factor (estimated)
 
 # Transfer functions for dynamics
 Pi = tf([r], [J, 0, 0])  # inner loop (roll)
-Po = tf([1], [m, c, 0])	 # outer loop (position)
+Po = tf([1], [m, c, 0])  # outer loop (position)
 
 # Use state space versions
 Pi = tf2ss(Pi)
@@ -40,7 +40,7 @@ Po = tf2ss(Po)
 
 # Design a simple lead controller for the system
 k, a, b = 200, 2, 50
-Ci = k*tf([1, a], [1, b])		# lead compensator
+Ci = k*tf([1, a], [1, b])  # lead compensator
 Li = Pi*Ci
 
 # Bode plot for the open loop process

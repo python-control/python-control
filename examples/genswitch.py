@@ -24,7 +24,7 @@ tim1 = np.linspace(0, 10, 100)
 sol1 = odeint(genswitch, [1, 5], tim1)
 
 # Extract the equilibrium points
-mu = 4; n = 2			# switch parameters
+mu = 4; n = 2           # switch parameters
 eqpt = np.empty(3)
 eqpt[0] = sol1[0, -1]
 eqpt[1] = sol1[1, -1]
