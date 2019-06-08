@@ -111,6 +111,8 @@ def place(A, B, p):
 
     result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
     K = result.gain_matrix
+
+    # TODO: add return type conversion
     return K
 
 
@@ -129,16 +131,17 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Optional Parameters
     ---------------
-    dtime: False for continuous time pole placement or True for discrete time.
-            The default is dtime=False.
-    alpha: double scalar
-           If DICO='C', then place_varga will leave the eigenvalues with real
-           real part less than alpha untouched.
-           If DICO='D', the place_varga will leave eigenvalues with modulus
-           less than alpha untouched.
+    dtime : bool
+        False for continuous time pole placement or True for discrete time.
+        The default is dtime=False.
+    alpha : double scalar
+        If DICO='C', then place_varga will leave the eigenvalues with real
+        real part less than alpha untouched.
+        If DICO='D', the place_varga will leave eigenvalues with modulus
+        less than alpha untouched.
 
-           By default (alpha=None), place_varga computes alpha such that all
-           poles will be placed.
+        By default (alpha=None), place_varga computes alpha such that all
+        poles will be placed.
 
     Returns
     -------
@@ -217,6 +220,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
                A_mat, B_mat, placed_eigs, DICO)
 
     # Return the gain matrix, with MATLAB gain convention
+    # TODO: add return type conversion
     return -F
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
@@ -232,6 +236,9 @@ def acker(A, B, poles, return_type=None):
         State and input matrix of the system
     poles: 1-d list
         Desired eigenvalue locations
+    return_type :  ndarray subtype, optional
+        Set the ndarray subtype for the return value.  The default value can
+        be set using the `~control.use_numpy_matrix` function.
 
     Returns
     -------
@@ -367,22 +374,25 @@ def lqr(*args, **keywords):
     S = X;
     E = w[0:nstates];
 
+    # TODO: add return type conversion
     return K, S, E
+
 
 def ctrb(A, B, return_type=None):
     """Controllabilty matrix
 
     Parameters
     ----------
-    A, B: array_like or string
+    A, B : array_like or string
         Dynamics and input matrix of the system
 
-    return_type: nparray subtype, optional (default = numpy.matrix)
-        Set the ndarray subtype for the return value
+    return_type :  ndarray subtype, optional
+        Set the ndarray subtype for the return value.  The default value can
+        be set using the `~control.use_numpy_matrix` function.
 
     Returns
     -------
-    C: matrix
+    C : matrix
         Controllability matrix
 
     Examples
@@ -408,15 +418,15 @@ def obsv(A, C, return_type=None):
 
     Parameters
     ----------
-    A, C: array_like or string
+    A, C : array_like or string
         Dynamics and output matrix of the system
-
-    return_type: nparray subtype, optional (default = numpy.matrix)
-        Set the ndarray subtype for the return value
+    return_type :  ndarray subtype, optional
+        Set the ndarray subtype for the return value.  The default value can
+        be set using the `~control.use_numpy_matrix` function.
 
     Returns
     -------
-    O: matrix
+    O : matrix
         Observability matrix
 
     Examples
@@ -442,17 +452,20 @@ def gram(sys, type, return_type=None):
 
     Parameters
     ----------
-    sys: StateSpace
+    sys : StateSpace
         State-space system to compute Gramian for
-    type: String
+    type : String
         Type of desired computation.
         `type` is either 'c' (controllability) or 'o' (observability). To
         compute the Cholesky factors of gramians use 'cf' (controllability) or
         'of' (observability)
+    return_type :  ndarray subtype, optional
+        Set the ndarray subtype for the return value.  The default value can
+        be set using the `~control.use_numpy_matrix` function.
 
     Returns
     -------
-    gram: array
+    gram : array
         Gramian of system
 
     Raises
