@@ -108,7 +108,7 @@ bode(L, np.logspace(-4, 3))
 for ax in plt.gcf().axes:
     if ax.get_label() == 'control-bode-magnitude':
         break
-    ax.semilogx([1e-4, 1e3], 20*np.log10([1, 1]), 'k-')
+ax.semilogx([1e-4, 1e3], 20*np.log10([1, 1]), 'k-')
 
 #
 # Replot phase starting at -90 degrees
