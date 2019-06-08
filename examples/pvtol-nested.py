@@ -118,14 +118,14 @@ for ax in plt.gcf().axes:
     if ax.get_label() == 'control-bode-phase':
         break
 
-    # Recreate the frequency response and shift the phase
-    mag, phase, w = freqresp(L, np.logspace(-4, 3))
-    phase = phase - 360
+# Recreate the frequency response and shift the phase
+mag, phase, w = freqresp(L, np.logspace(-4, 3))
+phase = phase - 360
 
-    # Replot the phase by hand
-    ax.semilogx([1e-4, 1e3], [-180, -180], 'k-')
-    ax.semilogx(w, np.squeeze(phase), 'b-')
-    ax.axis([1e-4, 1e3, -360, 0])
+# Replot the phase by hand
+ax.semilogx([1e-4, 1e3], [-180, -180], 'k-')
+ax.semilogx(w, np.squeeze(phase), 'b-')
+ax.axis([1e-4, 1e3, -360, 0])
 plt.xlabel('Frequency [deg]')
 plt.ylabel('Phase [deg]')
 # plt.set(gca, 'YTick', [-360, -270, -180, -90, 0])
