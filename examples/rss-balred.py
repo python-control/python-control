@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 plt.close('all')
 
-# controlable canonical realization computed in matlab for the transfer function:
+# controllable canonical realization computed in Matlab for the transfer function:
 # num = [1 11 45 32], den = [1 15 60 200 60]
 A = np.matrix('-15., -7.5, -6.25, -1.875; \
 8., 0., 0., 0.; \
@@ -24,8 +24,8 @@ D = np.matrix('0.')
 fsys = StateSpace(A, B, C, D)
 
 # The reduced system, truncating the order by 1
-ord = 3
-rsys = msimp.balred(fsys, ord, method='truncate')
+n = 3
+rsys = msimp.balred(fsys, n, method='truncate')
 
 # Comparison of the step responses of the full and reduced systems
 plt.figure(1)
@@ -42,8 +42,7 @@ rsysrand = msimp.balred(sysrand, 10, method='truncate')
 plt.figure(2)
 yrand, trand = mt.impulse(sysrand)
 yrandr, trandr = mt.impulse(rsysrand)
-plt.plot(trand.T, yrand.T, trandr.T, yrandr.T) 
-
+plt.plot(trand.T, yrand.T, trandr.T, yrandr.T)
 
 if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
     plt.show()
