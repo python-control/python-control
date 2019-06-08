@@ -10,7 +10,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from control import tf, ss, mixsyn, feedback, step_response
+from control import tf, ss, mixsyn, step_response
 
 
 def weighting(wb, m, a):

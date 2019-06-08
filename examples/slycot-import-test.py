@@ -5,7 +5,6 @@ RMM, 28 May 09
 """
 
 import numpy as np
-from scipy import *
 from control.matlab import *
 from control.exception import slycot_check
 
@@ -35,8 +34,8 @@ if slycot_check():
 
     n = 3  # Number of states
     m = 1  # Number of inputs
-    npp = 3 # Number of placed eigen values
-    alpha = 1 # Maximum threshold for eigen values
+    npp = 3  # Number of placed eigen values
+    alpha = 1  # Maximum threshold for eigen values
     dico = 'D'  # Discrete system
     _, _, _, _, _, K, _ = sb01bd(n, m, npp, alpha, A, B, w, dico, tol=0.0, ldwork=None)
     print("[slycot] K = ", K)

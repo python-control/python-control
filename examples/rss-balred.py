@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 plt.close('all')
 
-#controlable canonical realization computed in matlab for the transfer function:
+# controlable canonical realization computed in matlab for the transfer function:
 # num = [1 11 45 32], den = [1 15 60 200 60]
 A = np.matrix('-15., -7.5, -6.25, -1.875; \
 8., 0., 0., 0.; \
@@ -21,10 +21,11 @@ C = np.matrix('0.5, 0.6875, 0.7031, 0.5')
 D = np.matrix('0.')
 
 # The full system
-fsys = StateSpace(A,B,C,D)
+fsys = StateSpace(A, B, C, D)
+
 # The reduced system, truncating the order by 1
 ord = 3
-rsys = msimp.balred(fsys,ord, method = 'truncate')
+rsys = msimp.balred(fsys, ord, method='truncate')
 
 # Comparison of the step responses of the full and reduced systems
 plt.figure(1)
@@ -35,7 +36,7 @@ plt.plot(tr.T, yr.T)
 
 # Repeat balanced reduction, now with 100-dimensional random state space
 sysrand = mt.rss(100, 1, 1)
-rsysrand = msimp.balred(sysrand,10,method ='truncate')
+rsysrand = msimp.balred(sysrand, 10, method='truncate')
 
 # Comparison of the impulse responses of the full and reduced random systems
 plt.figure(2)

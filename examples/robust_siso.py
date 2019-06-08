@@ -11,7 +11,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-from control import tf, ss, mixsyn, feedback, step_response
+from control import tf, mixsyn, feedback, step_response
 
 s = tf([1, 0], 1)
 # the plant
