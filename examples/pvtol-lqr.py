@@ -30,6 +30,10 @@ c = 0.05    # damping factor (estimated)
 xe = [0, 0, 0, 0, 0, 0]  # equilibrium point of interest
 ue = [0, m*g]  # (note these are lists, not matrices)
 
+# TODO: The following objects need converting from np.matrix to np.array
+# This will involve re-working the subsequent equations as the shapes
+# See below.
+
 # Dynamics matrix (use matrix type so that * works for multiplication)
 A = np.matrix(
     [[0, 0, 0, 1, 0, 0],
@@ -116,6 +120,29 @@ K1a = np.matrix(K)
 # Note: python-control requires we do this 1 input at a time
 # H1a = ss(A-B*K1a, B*K1a*concatenate((xd, yd), axis=1), C, D);
 # (T, Y) = step(H1a, T=np.linspace(0,10,100));
+
+# TODO: The following equations will need modifying when converting from np.matrix to np.array
+# because the results and even intermediate calculations will be different with numpy arrays
+# For example:
+# Bx = B[lat, 0]
+# Will need to be changed to:
+# Bx = B[lat, 0].reshape(-1, 1)
+# (if we want it to have the same shape as before)
+
+# For reference, here is a list of the correct shapes of these objects:
+# A: (6, 6)
+# B: (6, 2)
+# C: (2, 6)
+# D: (2, 2)
+# xd: (6, 1)
+# yd: (6, 1)
+# Ax: (4, 4)
+# Bx: (4, 1)
+# Cx: (1, 4)
+# Dx: ()
+# Ay: (2, 2)
+# By: (2, 1)
+# Cy: (1, 2)
 
 # Step response for the first input
 H1ax = ss(Ax - Bx*K1a[0, lat], Bx*K1a[0, lat]*xd[lat, :], Cx, Dx)
