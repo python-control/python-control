@@ -20,11 +20,11 @@ from control.matlab import *  # MATLAB-like functions
 #
 
 # System parameters
-m = 4  # mass of aircraft
+m = 4       # mass of aircraft
 J = 0.0475  # inertia around pitch axis
-r = 0.25  # distance to center of force
-g = 9.8  # gravitational constant
-c = 0.05  # damping factor (estimated)
+r = 0.25    # distance to center of force
+g = 9.8     # gravitational constant
+c = 0.05    # damping factor (estimated)
 
 # State space dynamics
 xe = [0, 0, 0, 0, 0, 0]  # equilibrium point of interest

@@ -10,8 +10,8 @@ from control.exception import slycot_check
 
 # Parameters defining the system
 m = 250.0  # system mass
-k = 40.0  # spring constant
-b = 60.0  # damping constant
+k = 40.0   # spring constant
+b = 60.0   # damping constant
 
 # System matrices
 A = np.matrix([[1, -1, 1.], [1, -k/m, -b/m], [1, 1, 1]])
@@ -32,11 +32,11 @@ if slycot_check():
     # Import routine sb01bd used for pole placement.
     from slycot import sb01bd
 
-    n = 3  # Number of states
-    m = 1  # Number of inputs
-    npp = 3  # Number of placed eigen values
-    alpha = 1  # Maximum threshold for eigen values
-    dico = 'D'  # Discrete system
+    n = 3        # Number of states
+    m = 1        # Number of inputs
+    npp = 3      # Number of placed eigen values
+    alpha = 1    # Maximum threshold for eigen values
+    dico = 'D'   # Discrete system
     _, _, _, _, _, K, _ = sb01bd(n, m, npp, alpha, A, B, w, dico, tol=0.0, ldwork=None)
     print("[slycot] K = ", K)
     print("[slycot] eigs = ", np.linalg.eig(A + np.dot(B, K))[0])
