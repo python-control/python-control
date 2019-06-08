@@ -45,11 +45,11 @@ from __future__ import print_function
 
 # External packages and modules
 import numpy as np
-import warnings
 from .exception import ControlSlycot
 from .lti import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
+from .config import get_ss_return_type
 
 __all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
 
@@ -57,7 +57,7 @@ __all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
 #   The following returns the Hankel singular values, which are singular values
 #of the matrix formed by multiplying the controllability and observability
 #grammians
-def hsvd(sys, return_type=np.matrix):
+def hsvd(sys, return_type=None):
     """Calculate the Hankel singular values.
 
     Parameters
@@ -90,12 +90,6 @@ def hsvd(sys, return_type=np.matrix):
     >>> H = hsvd(sys)
 
     """
-    # If return_type is np.matrix, issue a pending deprecation warning
-    if (return_type is np.matrix):
-        warnings.warn("Returning numpy.matrix, soon to be deprecated; "
-                      "make sure calling code can handle nparray.",
-                      stacklevel=2)
-
     # TODO: implement for discrete time systems
     if (isdtime(sys, strict=True)):
         raise NotImplementedError("Function not implemented in discrete time")
@@ -111,7 +105,7 @@ def hsvd(sys, return_type=np.matrix):
     hsv = np.fliplr(hsv)
 
     # Return the Hankel singular values (casting type, if needed)
-    return hsv.view(type=return_type)
+    return hsv.view(type=get_ss_return_type(return_type))
 
 def modred(sys, ELIM, method='matchdc'):
     """

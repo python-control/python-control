@@ -11,6 +11,8 @@ from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.matlab import *
 from control.exception import slycot_check, ControlDimension
 from control.mateqn import care, dare
+from control.config import use_numpy_matrix
+from control.statesp import StateSpaceMatrix
 
 class TestStatefbk(unittest.TestCase):
     """Test state feedback functions"""
@@ -29,11 +31,15 @@ class TestStatefbk(unittest.TestCase):
         A = np.array([[1., 2.], [3., 4.]])
         B = np.array([[5.], [7.]])
         Wctrue = np.array([[5., 19.], [7., 43.]])
-        Wc = ctrb(A, B, return_type=np.ndarray)
-        np.testing.assert_array_almost_equal(Wc, Wctrue)
 
-        # Check that default type generates a warning
+        use_numpy_matrix(False)
+        Wc = ctrb(A, B)
+        np.testing.assert_array_almost_equal(Wc, Wctrue)
+        self.assertTrue(isinstance(Wc, StateSpaceMatrix))
+
+        # Check that default using np.matrix generates a warning
         # TODO: remove this check with matrix type is deprecated
+        use_numpy_matrix(True)
         with warnings.catch_warnings(record=True) as w:
             Wc = ctrb(A, B)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
@@ -53,6 +59,7 @@ class TestStatefbk(unittest.TestCase):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 7.]])
         Wotrue = np.array([[5., 7.], [26., 38.]])
+        use_numpy_matrix(True)  # set default, but override in next statement
         Wo = obsv(A, C, return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
@@ -61,6 +68,7 @@ class TestStatefbk(unittest.TestCase):
 
         # Check that default type generates a warning
         # TODO: remove this check with matrix type is deprecated
+        use_numpy_matrix(True)
         with warnings.catch_warnings(record=True) as w:
             Wo = obsv(A, C)
             self.assertTrue(issubclass(w[-1].category, UserWarning))
@@ -95,6 +103,7 @@ class TestStatefbk(unittest.TestCase):
 
         # Check that default type generates a warning
         # TODO: remove this check with matrix type is deprecated
+        use_numpy_matrix(True)
         with warnings.catch_warnings(record=True) as w:
             Wc = gram(sys, 'c')
             self.assertTrue(issubclass(w[-1].category, UserWarning))
@@ -359,7 +368,10 @@ class TestStatefbk(unittest.TestCase):
 
 
 def test_suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
+    
+   status1 = unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
+   status2 = unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
+   return status1 and status2
 
 if __name__ == '__main__':
     unittest.main()
