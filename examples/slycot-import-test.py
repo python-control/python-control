@@ -14,9 +14,9 @@ k = 40.0   # spring constant
 b = 60.0   # damping constant
 
 # System matrices
-A = np.matrix([[1, -1, 1.], [1, -k/m, -b/m], [1, 1, 1]])
-B = np.matrix([[0], [1/m], [1]])
-C = np.matrix([[1., 0, 1.]])
+A = np.array([[1, -1, 1.], [1, -k/m, -b/m], [1, 1, 1]])
+B = np.array([[0], [1/m], [1]])
+C = np.array([[1., 0, 1.]])
 sys = ss(A, B, C, 0)
 
 # Python control may be used without slycot, for example for a pole placement.

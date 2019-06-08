@@ -12,13 +12,20 @@ plt.close('all')
 
 # controllable canonical realization computed in Matlab for the transfer function:
 # num = [1 11 45 32], den = [1 15 60 200 60]
-A = np.matrix('-15., -7.5, -6.25, -1.875; \
-8., 0., 0., 0.; \
-0., 4., 0., 0.; \
-0., 0., 1., 0.')
-B = np.matrix('2.; 0.; 0.; 0.')
-C = np.matrix('0.5, 0.6875, 0.7031, 0.5')
-D = np.matrix('0.')
+A = np.array([
+    [-15., -7.5, -6.25, -1.875],
+    [8., 0., 0., 0.],
+    [0., 4., 0., 0.],
+    [0., 0., 1., 0.]
+])
+B = np.array([
+    [2.],
+    [0.],
+    [0.],
+    [0.]
+])
+C = np.array([[0.5, 0.6875, 0.7031, 0.5]])
+D = np.array([[0.]])
 
 # The full system
 fsys = StateSpace(A, B, C, D)
