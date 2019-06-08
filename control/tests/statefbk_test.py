@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 import unittest
+import sys as pysys
 import numpy as np
 import warnings
 from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
@@ -37,6 +38,14 @@ class TestStatefbk(unittest.TestCase):
         np.testing.assert_array_almost_equal(Wc, Wctrue)
         self.assertTrue(isinstance(Wc, StateSpaceMatrix))
 
+    # This test only works in Python 3 due to a conflict with the same
+    # warning type in other test modules (frd_test.py).  See
+    # https://bugs.python.org/issue4180 for more details
+    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
+    def test_ctrb_siso_deprecated(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        B = np.array([[5.], [7.]])
+        
         # Check that default using np.matrix generates a warning
         # TODO: remove this check with matrix type is deprecated
         use_numpy_matrix(True)
@@ -65,6 +74,14 @@ class TestStatefbk(unittest.TestCase):
 
         # Make sure default type values are correct
         self.assertTrue(isinstance(Wo, np.ndarray))
+
+    # This test only works in Python 3 due to a conflict with the same
+    # warning type in other test modules (frd_test.py).  See
+    # https://bugs.python.org/issue4180 for more details
+    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
+    def test_obsv_siso_deprecated(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        C = np.array([[5., 7.]])
 
         # Check that default type generates a warning
         # TODO: remove this check with matrix type is deprecated
@@ -101,6 +118,17 @@ class TestStatefbk(unittest.TestCase):
         Wc = gram(sys, 'c', return_type=np.ndarray)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
+    # This test only works in Python 3 due to a conflict with the same
+    # warning type in other test modules (frd_test.py).  See
+    # https://bugs.python.org/issue4180 for more details
+    @unittest.skipIf(pysys.version_info < (3, 0) or not slycot_check(),
+                     "test requires Python 3+ and slycot")
+    def test_gram_wc_deprecated(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5., 6.], [7., 8.]])
+        C = np.array([[4., 5.], [6., 7.]])
+        D = np.array([[13., 14.], [15., 16.]])
+        sys = ss(A, B, C, D)
         # Check that default type generates a warning
         # TODO: remove this check with matrix type is deprecated
         use_numpy_matrix(True)
