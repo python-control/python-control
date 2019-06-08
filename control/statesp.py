@@ -167,7 +167,8 @@ class StateSpaceMatrix(np.ndarray):
             product = np.dot(self, other)
             return product if np.isrealobj(product) else np.asarray(product)
 
-        return NotImplemented
+        raise NotImplementedError("Unknown object for StateSpaceMatrix "
+                                  "multiplication.")
 
     def __rmul__(self, other):
         """Multiply or scale state-space matrices"""
@@ -175,9 +176,19 @@ class StateSpaceMatrix(np.ndarray):
         product = np.dot(other, self)
         return product if np.isrealobj(product) else np.asarray(product)
 
+    def __imul__(self, other):
+        return self.__mul__(other)
+
     def __pow__(self, n):
         """Raise a (square) matrix to the (integer) power `n`"""
         return np.linalg.matrix_power(self, n)
+
+    def __rpow__(self, other):
+        raise NotImplementedError("StateSpaceMatrix powers are not "
+                                  "implemented.")
+
+    def __ipow__(self, n):
+        return self.__pow__(n)
 
     def __getitem__(self, index):
         """Get elements of a state-space matrix and return matrix"""

@@ -96,7 +96,7 @@ class TestStateSpaceMatrix(unittest.TestCase):
         self.assertEqual(CmRm.shape, (2, 2))
         np.testing.assert_array_equal(CmRm, np.dot(Cm, Rm))
 
-    def test_multiple_other(self):
+    def test_multiply_other(self):
         """Make sure that certain operations preserve StateSpaceMatrix type"""
         M = ct.StateSpaceMatrix([[1, 1], [1, 1]])
         Mint = M * 5
@@ -129,7 +129,30 @@ class TestStateSpaceMatrix(unittest.TestCase):
         Mcomplex = np.array([[1j, 0], [0, 1j]]) * M
         self.assertFalse(isinstance(Mcomplex, ct.StateSpaceMatrix))
 
-    def test_power(self):
+    def test_imul(self):
+        # Make sure that multiplying two matrices gives a matrix
+        M1 = ct.StateSpaceMatrix([[1, 1], [1, -1]])
+        M2 = ct.StateSpaceMatrix([[1, 2], [2, 1]])
+        Mprod = M1; Mprod *= M2
+        self.assertTrue(isinstance(Mprod, ct.StateSpaceMatrix))
+        self.assertEqual(Mprod.shape, (2, 2))
+        np.testing.assert_array_equal(Mprod, np.dot(M1, M2))
+
+        # Matrix times a (state-space) column vector gives a column vector
+        Cm = ct.StateSpaceMatrix([[1], [2]])
+        MCm = M1; MCm *= Cm
+        self.assertTrue(isinstance(MCm, ct.StateSpaceMatrix))
+        self.assertEqual(MCm.shape, (2, 1))
+        np.testing.assert_array_equal(MCm, np.dot(M1, Cm))
+
+        # Matrix times a (ndarray) column vector gives a column vector
+        Ca = np.array([[1], [2]])
+        MCa = M1; MCa *= Ca
+        self.assertTrue(isinstance(MCa, ct.StateSpaceMatrix))
+        self.assertEqual(MCa.shape, (2, 1))
+        np.testing.assert_array_equal(MCa, np.dot(M1, Ca))
+
+    def test_pow(self):
         """Test matrix exponential"""
         # Generate cases that should work
         M = ct.ssmatrix([[1, 1], [-1, 2]])
@@ -141,6 +164,19 @@ class TestStateSpaceMatrix(unittest.TestCase):
         # Make sure that we get errors if we do something wrong
         self.assertRaises(TypeError, lambda: M**0.5)
         self.assertRaises(np.linalg.LinAlgError, lambda: M[0, :]**2)
+
+    def test_ipow(self):
+        """Test matrix exponential"""
+        # Generate cases that should work
+        M = ct.ssmatrix([[1, 1], [-1, 2]])
+        M0 = M; M0 **= 0
+        M1 = M; M1 **= 1
+        M2 = M; M2 **= 2
+        M3 = M; M3 **= 3
+        np.testing.assert_array_almost_equal(M0, np.eye(2))
+        np.testing.assert_array_almost_equal(M1, M)
+        np.testing.assert_array_almost_equal(M2, np.dot(M, M))
+        np.testing.assert_array_almost_equal(M3, M*M*M)
 
     def test_getitem(self):
         M = ct.StateSpaceMatrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
