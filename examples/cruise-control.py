@@ -301,7 +301,7 @@ def cruise_plot(sys, t, y, t_hill=5, vref=20, antiwindup=False,
     while min(y[v_ind]) < v_min: v_min -= 1
 
     # Create arrays for return values
-    subplot_axes = subplots.copy()
+    subplot_axes = list(subplots)
 
     # Velocity profile
     if subplot_axes[0] is None:
