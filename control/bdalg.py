@@ -248,7 +248,7 @@ def feedback(sys1, sys2=1, sign=-1):
         elif isinstance(sys2, ss.StateSpace):
             sys1 = ss._convertToStateSpace(sys1)
         elif isinstance(sys2, frd.FRD):
-            sys1 = ss._convertToFRD(sys1)
+            sys1 = frd._convertToFRD(sys1, sys2.omega)
         else: # sys2 is a scalar.
             sys1 = tf._convert_to_transfer_function(sys1)
             sys2 = tf._convert_to_transfer_function(sys2)

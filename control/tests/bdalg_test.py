@@ -253,9 +253,27 @@ class TestFeedback(unittest.TestCase):
         assert_equal(ref.C, tst.C)
         assert_equal(ref.D, tst.D)
 
+    def test_feedback_args(self):
+        # Added 25 May 2019 to cover missing exception handling in feedback()
+        # If first argument is not LTI or convertable, generate an exception
+        args = ([1], self.sys2)
+        self.assertRaises(TypeError, ctrl.feedback, *args)
+
+        # If second argument is not LTI or convertable, generate an exception
+        args = (self.sys1, np.array([1]))
+        self.assertRaises(TypeError, ctrl.feedback, *args)
+
+        # Convert first argument to FRD, if needed
+        h = TransferFunction([1], [1, 2, 2])
+        omega = np.logspace(-1, 2, 10)
+        frd = ctrl.FRD(h, omega)
+        sys = ctrl.feedback(1, frd)
+        self.assertTrue(isinstance(sys, ctrl.FRD))
+
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
+
 
 if __name__ == "__main__":
     unittest.main()

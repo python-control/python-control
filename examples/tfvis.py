@@ -56,6 +56,7 @@ from numpy.core.fromnumeric import size
 from control.matlab import logspace
 from numpy import conj
 
+
 def make_poly(facts):
     """ Create polynomial from factors """
     poly = [1]
@@ -63,7 +64,8 @@ def make_poly(facts):
         poly = polymul(poly, [1, -factor])
 
     return real(poly)
-    
+
+
 def coeff_string_check(text):
     """ Check so textfield entry is valid string of coeffs. """
     try:
@@ -72,6 +74,7 @@ def coeff_string_check(text):
         return Pmw.PARTIAL
 
     return Pmw.OK
+
 
 class TFInput:
     """ Class for handling input of transfer function coeffs."""
@@ -150,6 +153,7 @@ class TFInput:
         self.numerator_widget.setentry(
             ' '.join([format(i,'.3g') for i in self.numerator]))
 
+
 class Analysis:
     """ Main class for GUI visualising transfer functions """
     def __init__(self, parent):
@@ -179,7 +183,7 @@ class Analysis:
         self.sys = self.tfi.get_tf()
 
         tkinter.Button(self.entries, text='Apply', command=self.apply,
-               width=9).grid(row=0, column=1, rowspan=3, padx=10, pady=5)
+                       width=9).grid(row=0, column=1, rowspan=3, padx=10, pady=5)
 
         self.f_bode = plt.figure(figsize=(4, 4))
         self.f_nyquist = plt.figure(figsize=(4, 4))
@@ -187,35 +191,35 @@ class Analysis:
         self.f_step = plt.figure(figsize=(4, 4))
 
         self.canvas_pzmap = FigureCanvasTkAgg(self.f_pzmap,
-                                                master=self.figure)
+                                              master=self.figure)
         self.canvas_pzmap.draw()
         self.canvas_pzmap.get_tk_widget().grid(row=0, column=0,
-                                                padx=0, pady=0)
+                                               padx=0, pady=0)
 
         self.canvas_bode = FigureCanvasTkAgg(self.f_bode,
-                                                master=self.figure)
+                                             master=self.figure)
         self.canvas_bode.draw()
         self.canvas_bode.get_tk_widget().grid(row=0, column=1,
-                                                padx=0, pady=0)
+                                              padx=0, pady=0)
 
         self.canvas_step = FigureCanvasTkAgg(self.f_step,
-                                                master=self.figure)
+                                             master=self.figure)
         self.canvas_step.draw()
         self.canvas_step.get_tk_widget().grid(row=1, column=0,
-                                                padx=0, pady=0)
+                                              padx=0, pady=0)
 
         self.canvas_nyquist = FigureCanvasTkAgg(self.f_nyquist, 
                                                 master=self.figure)
         self.canvas_nyquist.draw()
         self.canvas_nyquist.get_tk_widget().grid(row=1, column=1,
-                                                    padx=0, pady=0)
+                                                 padx=0, pady=0)
 
         self.canvas_pzmap.mpl_connect('button_press_event',
-                                        self.button_press)
+                                      self.button_press)
         self.canvas_pzmap.mpl_connect('button_release_event',
-                                        self.button_release)
+                                      self.button_release)
         self.canvas_pzmap.mpl_connect('motion_notify_event',
-                                        self.mouse_move)    
+                                      self.mouse_move)
 
         self.apply()    
 
@@ -223,7 +227,7 @@ class Analysis:
         """ Handle button presses, detect if we are going to move
         any poles/zeros"""
         # find closest pole/zero
-        if (event.xdata != None and event.ydata != None):
+        if event.xdata != None and event.ydata != None:
 
             new = event.xdata + 1.0j*event.ydata
 
@@ -361,6 +365,7 @@ class Analysis:
         self.canvas_step.draw()
         self.canvas_nyquist.draw()
 
+
 def create_analysis():
     """ Create main object """
     def handler():
@@ -375,6 +380,7 @@ def create_analysis():
     root.title('Analysis of Linear Systems')
     Analysis(root)
     root.mainloop()
+
 
 if __name__ == '__main__':
     import os

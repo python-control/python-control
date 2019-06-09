@@ -10,8 +10,8 @@ C1 = [[1., 0]]
 sys1ss = ss(A1, B1, C1, 0)
 sys1tf = ss2tf(sys1ss)
 
-sys2tf = tf([1, 0.5], [1, 5]);
-sys2ss = tf2ss(sys2tf);
+sys2tf = tf([1, 0.5], [1, 5])
+sys2ss = tf2ss(sys2tf)
 
 # Series composition
-series1 = sys1ss + sys2ss;
+series1 = sys1ss + sys2ss

@@ -82,6 +82,7 @@ Compensator design
    :toctree: generated/
 
    rlocus
+   sisotool
    place
    lqr
 
