@@ -84,14 +84,11 @@ script:
   # set PYTHONPATH for examples
   # pmw needed for examples/tfvis.py
   # future is needed for Python 2, also for examples/tfvis.py
-
   - if [[ "$SLYCOT" != "" ]]; then
       export PYTHONPATH=$PWD;
       conda install -c conda-forge pmw future;
-      cd examples; bash run_examples.sh; cd ..;
+      (cd examples; bash run_examples.sh);
     fi
-
-# arbitrary change to try to trigger travis build
 
 after_success:
   - coveralls
