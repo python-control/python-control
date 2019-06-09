@@ -1085,8 +1085,8 @@ class InterconnectedSystem(InputOutputSystem):
                     ysys.reshape((-1,))
 
                 # Store the input in the second part of ylist
-                ylist[noutputs + output_index:
-                      noutputs + output_index + sys.ninputs] = \
+                ylist[noutputs + input_index:
+                      noutputs + input_index + sys.ninputs] = \
                     ulist[input_index:input_index + sys.ninputs]
 
                 # Increment the index pointers
