@@ -90,7 +90,7 @@ def vehicle_update(t, x, u, params={}):
     Fr  = m * g * Cr * sign(v)
 
     # The aerodynamic drag is proportional to the square of the speed: Fa =
-    # 1/\rho Cd A |v| v, where ρ is the density of air, Cd is the
+    # 1/\rho Cd A |v| v, where \rho is the density of air, Cd is the
     # shape-dependent aerodynamic drag coefficient, and A is the frontal area
     # of the car.
 
