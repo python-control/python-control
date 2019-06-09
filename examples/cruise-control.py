@@ -37,7 +37,7 @@ def vehicle_update(t, x, u, params={}):
     ----------
     x : array
          System state: car velocity in m/s
-    u : arrayn
+    u : array
          System input: [throttle, gear, road_slope], where throttle is
          a float between 0 and 1, gear is an integer between 1 and 5,
          and road_slope is in rad.
