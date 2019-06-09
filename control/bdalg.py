@@ -224,6 +224,11 @@ def feedback(sys1, sys2=1, sign=-1):
     scalars, then TransferFunction.feedback is used.
 
     """
+    # Allow anything with a feedback function to call that function
+    try:
+        return sys1.feedback(sys2, sign)
+    except AttributeError:
+        pass
 
     # Check for correct input types.
     if not isinstance(sys1, (int, float, complex, np.number,

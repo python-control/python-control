@@ -68,6 +68,7 @@ from .canonical import *
 from .robust import *
 from .config import *
 from .sisotool import *
+from .iosys import *
 
 # Exceptions
 from .exception import *
