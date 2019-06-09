@@ -84,13 +84,13 @@ def vehicle_update(t, x, u, params={}):
     Fg = m * g * sin(theta)
 
     # A simple model of rolling friction is Fr = m g Cr sgn(v), where Cr is
-    # the coefficient of rolling friction and sgn(v) is the sign of v (±1) or
+    # the coefficient of rolling friction and sgn(v) is the sign of v (+/- 1) or
     # zero if v = 0.
     
     Fr  = m * g * Cr * sign(v)
 
     # The aerodynamic drag is proportional to the square of the speed: Fa =
-    # 1/\rho Cd A |v| v, where ρ is the density of air, Cd is the
+    # 1/\rho Cd A |v| v, where \rho is the density of air, Cd is the
     # shape-dependent aerodynamic drag coefficient, and A is the frontal area
     # of the car.
 
@@ -301,7 +301,7 @@ def cruise_plot(sys, t, y, t_hill=5, vref=20, antiwindup=False,
     while min(y[v_ind]) < v_min: v_min -= 1
 
     # Create arrays for return values
-    subplot_axes = subplots.copy()
+    subplot_axes = list(subplots)
 
     # Velocity profile
     if subplot_axes[0] is None:
