@@ -37,7 +37,7 @@ def vehicle_update(t, x, u, params={}):
     ----------
     x : array
          System state: car velocity in m/s
-    u : array
+    u : arrayn
          System input: [throttle, gear, road_slope], where throttle is
          a float between 0 and 1, gear is an integer between 1 and 5,
          and road_slope is in rad.
@@ -84,7 +84,7 @@ def vehicle_update(t, x, u, params={}):
     Fg = m * g * sin(theta)
 
     # A simple model of rolling friction is Fr = m g Cr sgn(v), where Cr is
-    # the coefficient of rolling friction and sgn(v) is the sign of v (±1) or
+    # the coefficient of rolling friction and sgn(v) is the sign of v (+/- 1) or
     # zero if v = 0.
     
     Fr  = m * g * Cr * sign(v)
