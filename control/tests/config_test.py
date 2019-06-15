@@ -182,6 +182,9 @@ class TestConfig(unittest.TestCase):
         # Get rid of any figures that we created
         plt.close('all')
 
+        # Reset the configuration defaults
+        ct.config.reset_defaults()
+
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
 

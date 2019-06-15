@@ -41,16 +41,17 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
-from scipy import shape, size, asarray, asmatrix, copy, zeros, eye, dot
+from scipy import shape, size, array, asarray, copy, zeros, eye, dot
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
+from .statesp import _ssmatrix
 
 __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
 #### Lyapunov equation solvers lyap and dlyap
 
-def lyap(A,Q,C=None,E=None):
-    """ X = lyap(A,Q) solves the continuous-time Lyapunov equation
+def lyap(A, Q, C=None, E=None):
+    """X = lyap(A, Q) solves the continuous-time Lyapunov equation
 
         :math:`A X + X A^T + Q = 0`
 
@@ -69,7 +70,9 @@ def lyap(A,Q,C=None,E=None):
         :math:`A X E^T + E X A^T + Q = 0`
 
     where Q is a symmetric matrix and A, Q and E are square matrices
-    of the same dimension. """
+    of the same dimension.
+
+    """
 
     # Make sure we have access to the right slycot routines
     try:
@@ -84,27 +87,27 @@ def lyap(A,Q,C=None,E=None):
 
     # Reshape 1-d arrays
     if len(shape(A)) == 1:
-        A = A.reshape(1,A.size)
+        A = A.reshape(1, A.size)
 
     if len(shape(Q)) == 1:
-        Q = Q.reshape(1,Q.size)
+        Q = Q.reshape(1, Q.size)
 
     if C is not None and len(shape(C)) == 1:
-        C = C.reshape(1,C.size)
+        C = C.reshape(1, C.size)
 
     if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1,E.size)
+        E = E.reshape(1, E.size)
 
     # Determine main dimensions
     if size(A) == 1:
         n = 1
     else:
-        n = size(A,0)
+        n = size(A, 0)
 
     if size(Q) == 1:
         m = 1
     else:
-        m = size(Q,0)
+        m = size(Q, 0)
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
@@ -228,7 +231,7 @@ def lyap(A,Q,C=None,E=None):
     else:
         raise ControlArgument("Invalid set of input parameters")
 
-    return X
+    return _ssmatrix(X)
 
 
 def dlyap(A,Q,C=None,E=None):
@@ -405,12 +408,10 @@ def dlyap(A,Q,C=None,E=None):
     else:
         raise ControlArgument("Invalid set of input parameters")
 
-    return X
-
+    return _ssmatrix(X)
 
 
 #### Riccati equation solvers care and dare
-
 def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
     """ (X,L,G) = care(A,B,Q,R=None) solves the continuous-time algebraic Riccati
     equation
@@ -566,7 +567,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , w[:n] , G )
+        return (_ssmatrix(X) , w[:n] , _ssmatrix(G))
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
@@ -673,7 +674,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , L , G)
+        return (_ssmatrix(X), L, _ssmatrix(G))
 
     # Invalid set of input parameters
     else:
@@ -703,12 +704,12 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True):
     if S is not None or E is not None or not stabilizing:
         return dare_old(A, B, Q, R, S, E, stabilizing)
     else:
-        Rmat = asmatrix(R)
-        Qmat = asmatrix(Q)
+        Rmat = _ssmatrix(R)
+        Qmat = _ssmatrix(Q)
         X = solve_discrete_are(A, B, Qmat, Rmat)
         G = solve(B.T.dot(X).dot(B) + Rmat, B.T.dot(X).dot(A))
         L = eigvals(A - B.dot(G))
-        return X, L, G
+        return _ssmatrix(X), L, _ssmatrix(G)
 
 def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
     # Make sure we can import required slycot routine
@@ -845,7 +846,7 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , w[:n] , G)
+        return (_ssmatrix(X) , w[:n], _ssmatrix(G))
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
@@ -954,7 +955,7 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , L , G)
+        return (_ssmatrix(X), L, _ssmatrix(G))
 
     # Invalid set of input parameters
     else:

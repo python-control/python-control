@@ -43,6 +43,7 @@
 import numpy as np
 import scipy as sp
 from . import statesp
+from .statesp import _ssmatrix
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
 __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'acker']
@@ -110,7 +111,7 @@ def place(A, B, p):
 
     result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
     K = result.gain_matrix
-    return K
+    return _ssmatrix(K)
 
 
 def place_varga(A, B, p, dtime=False, alpha=None):
@@ -141,7 +142,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Returns
     -------
-    K : 2-d array
+    K : 2D array
         Gain such that A - B K has eigenvalues given in p.
 
 
@@ -216,7 +217,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
                A_mat, B_mat, placed_eigs, DICO)
 
     # Return the gain matrix, with MATLAB gain convention
-    return -F
+    return _ssmatrix(-F)
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
@@ -239,8 +240,8 @@ def acker(A, B, poles):
 
     """
     # Convert the inputs to matrices
-    a = np.mat(A)
-    b = np.mat(B)
+    a = _ssmatrix(A)
+    b = _ssmatrix(B)
 
     # Make sure the system is controllable
     ct = ctrb(A, B)
@@ -252,13 +253,13 @@ def acker(A, B, poles):
 
     # Place the poles using Ackermann's method
     n = np.size(p)
-    pmat = p[n-1]*a**0
+    pmat = p[n-1] * np.linalg.matrix_power(a, 0)
     for i in np.arange(1,n):
-        pmat = pmat + p[n-i-1]*a**i
+        pmat = pmat + np.dot(p[n-i-1], np.linalg.matrix_power(a, i))
     K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
-    return K
+    return _ssmatrix(K)
 
 def lqr(*args, **keywords):
     """lqr(A, B, Q, R[, N])
@@ -293,11 +294,11 @@ def lqr(*args, **keywords):
 
     Returns
     -------
-    K: 2-d array
+    K: 2D array
         State feedback gains
-    S: 2-d array
+    S: 2D array
         Solution to Riccati equation
-    E: 1-d array
+    E: 1D array
         Eigenvalues of the closed loop system
 
     Examples
@@ -366,7 +367,7 @@ def lqr(*args, **keywords):
     S = X;
     E = w[0:nstates];
 
-    return K, S, E
+    return _ssmatrix(K), _ssmatrix(S), E
 
 def ctrb(A, B):
     """Controllabilty matrix
@@ -388,13 +389,14 @@ def ctrb(A, B):
     """
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.mat(A)
-    bmat = np.mat(B)
+    amat = _ssmatrix(A)
+    bmat = _ssmatrix(B)
     n = np.shape(amat)[0]
 
     # Construct the controllability matrix
-    ctrb = np.hstack([bmat] + [amat**i*bmat for i in range(1, n)])
-    return ctrb
+    ctrb = np.hstack([bmat] + [np.dot(np.linalg.matrix_power(amat, i), bmat)
+                                      for i in range(1, n)])
+    return _ssmatrix(ctrb)
 
 def obsv(A, C):
     """Observability matrix
@@ -416,13 +418,14 @@ def obsv(A, C):
    """
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.mat(A)
-    cmat = np.mat(C)
+    amat = _ssmatrix(A)
+    cmat = _ssmatrix(C)
     n = np.shape(amat)[0]
 
     # Construct the observability matrix
-    obsv = np.vstack([cmat] + [cmat*amat**i for i in range(1, n)])
-    return obsv
+    obsv = np.vstack([cmat] + [np.dot(cmat, np.linalg.matrix_power(amat, i))
+                               for i in range(1, n)])
+    return _ssmatrix(obsv)
 
 def gram(sys,type):
     """Gramian (controllability or observability)
@@ -498,7 +501,7 @@ def gram(sys,type):
         A = np.array(sys.A)         # convert to NumPy array for slycot
         X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
         gram = X
-        return gram
+        return _ssmatrix(gram)
 
     elif type=='cf' or type=='of':
         #Compute cholesky factored gramian from slycot routine sb03od
@@ -521,4 +524,4 @@ def gram(sys,type):
             C[0:n,0:m] = sys.C.transpose()
             X,scale,w = sb03od(n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
         gram = X
-        return gram
+        return _ssmatrix(gram)
