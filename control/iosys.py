@@ -363,7 +363,11 @@ class InputOutputSystem(object):
 
         elif isinstance(signals, int):
             # Number of signals given; make up the names
-            return signals, {'x[%d]' % i: i for i in range(signals)}
+            return signals, {'%s[%d]' % (prefix, i): i for i in range(signals)}
+
+        elif isinstance(signals, str):
+            # Single string given => single signal with given name
+            return 1, {signals: 0}
 
         elif all(isinstance(s, str) for s in signals):
             # Use the list of strings as the signal names
