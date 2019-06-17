@@ -326,7 +326,7 @@ def connect(sys, Q, inputv, outputv):
     >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6, 8]], [[9.]])
     >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
     >>> sys = append(sys1, sys2)
-    >>> Q = [[1, 2], [2, -1]])  # negative feedback interconnection
+    >>> Q = [[1, 2], [2, -1]]  # negative feedback interconnection
     >>> sysc = connect(sys, Q, [2], [1, 2])
 
     """

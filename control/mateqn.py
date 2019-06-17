@@ -41,7 +41,7 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
-from scipy import shape, size, array, asarray, copy, zeros, eye, dot
+from numpy import shape, size, array, asarray, copy, zeros, eye, dot
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
 from .statesp import _ssmatrix

@@ -439,6 +439,8 @@ second has %i." % (self.outputs, other.outputs))
                       dtype=complex)
         # TODO: vectorize this
         # TODO: handle omega re-mapping
+        # TODO: is there a reason to use linalg.solve instead of linalg.inv?
+        # https://github.com/python-control/python-control/pull/314#discussion_r294075154
         for k, w in enumerate(other.omega):
             fresp[:, :, k] = np.dot(
                 self.fresp[:, :, k],

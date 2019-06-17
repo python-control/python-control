@@ -252,6 +252,7 @@ def acker(A, B, poles):
     p = np.real(np.poly(poles))
 
     # Place the poles using Ackermann's method
+    # TODO: compute pmat using Horner's method (O(n) instead of O(n^2))
     n = np.size(p)
     pmat = p[n-1] * np.linalg.matrix_power(a, 0)
     for i in np.arange(1,n):
