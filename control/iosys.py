@@ -210,6 +210,17 @@ class InputOutputSystem(object):
     def __repr__(self):
         return self.name if self.name is not None else str(type(self))
 
+    def __str__(self):
+        """String representation of an input/output system"""
+        str = "System: " + (self.name if self.name else "(none)") + "\n"
+        str += "Inputs (%d): " % self.ninputs
+        for key in self.input_index: str += key + ", "
+        str += "\nOutputs (%d): " % self.noutputs
+        for key in self.output_index: str += key + ", "
+        str += "\nStates (%d): " % self.nstates
+        for key in self.state_index: str += key + ", "
+        return str
+
     def __mul__(sys2, sys1):
         """Multiply two input/output systems (series interconnection)"""
 
@@ -437,7 +448,7 @@ class InputOutputSystem(object):
             optional prefix parameter).
         prefix : string, optional
             If `outputs` is an integer, create the names of the states using
-            the given prefix (default = 'u').  The names of the input will be
+            the given prefix (default = 'y').  The names of the input will be
             of the form `prefix[i]`.
 
         """
@@ -457,7 +468,7 @@ class InputOutputSystem(object):
             optional prefix parameter).
         prefix : string, optional
             If `states` is an integer, create the names of the states using
-            the given prefix (default = 'u').  The names of the input will be
+            the given prefix (default = 'x').  The names of the input will be
             of the form `prefix[i]`.
 
         """
@@ -671,13 +682,16 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
         # Process input, output, state lists, if given
         # Make sure they match the size of the linear system
-        ninputs, self.input_index = self._process_signal_list(inputs)
+        ninputs, self.input_index = self._process_signal_list(
+            inputs if inputs is not None else linsys.inputs, prefix='u')
         if ninputs is not None and linsys.inputs != ninputs:
             raise ValueError("Wrong number/type of inputs given.")
-        noutputs, self.output_index = self._process_signal_list(outputs)
+        noutputs, self.output_index = self._process_signal_list(
+            outputs if outputs is not None else linsys.outputs, prefix='y')
         if noutputs is not None and linsys.outputs != noutputs:
             raise ValueError("Wrong number/type of outputs given.")
-        nstates, self.state_index = self._process_signal_list(states)
+        nstates, self.state_index = self._process_signal_list(
+            states if states is not None else linsys.states, prefix='x')
         if nstates is not None and linsys.states != nstates:
             raise ValueError("Wrong number/type of states given.")
 
@@ -872,20 +886,20 @@ class InterconnectedSystem(InputOutputSystem):
 
         inplist : tuple of input specifications, optional
             List of specifications for how the inputs for the overall system
-            are mapped to the subsystems.  The input specification is the same
-            as the form defined in the connection specification.  Each system
-            input is added to the input for the listed subsystem.
+            are mapped to the subsystem inputs.  The input specification is
+            the same as the form defined in the connection specification.
+            Each system input is added to the input for the listed subsystem.
 
             If omitted, the input map can be specified using the
             `set_input_map` method.
 
         outlist : tuple of output specifications, optional
             List of specifications for how the outputs for the subsystems are
-            mapped to overall system.  The output specification is the same as
-            the form defined in the connection specification (including the
-            optional gain term).  Numbered outputs must be chosen from the
-            list of subsystem outputs, but named outputs can also be contained
-            in the list of subsystem inputs.
+            mapped to overall system outputs.  The output specification is the
+            same as the form defined in the connection specification
+            (including the optional gain term).  Numbered outputs must be
+            chosen from the list of subsystem outputs, but named outputs can
+            also be contained in the list of subsystem inputs.
 
             If omitted, the output map can be specified using the
             `set_output_map` method.
@@ -968,10 +982,12 @@ class InterconnectedSystem(InputOutputSystem):
             states=nstates, params=params, dt=dt)
 
         # If input or output list was specified, update it
-        nsignals, self.input_index = self._process_signal_list(inputs)
+        nsignals, self.input_index = \
+            self._process_signal_list(inputs, prefix='u')
         if nsignals is not None and len(inplist) != nsignals:
             raise ValueError("Wrong number/type of inputs given.")
-        nsignals, self.output_index = self._process_signal_list(outputs)
+        nsignals, self.output_index = \
+            self._process_signal_list(outputs, prefix='y')
         if nsignals is not None and len(outlist) != nsignals:
             raise ValueError("Wrong number/type of outputs given.")
 
@@ -985,8 +1001,10 @@ class InterconnectedSystem(InputOutputSystem):
 
         # Convert the input list to a matrix: maps system to subsystems
         self.input_map = np.zeros((ninputs, self.ninputs))
-        for index in range(len(inplist)):
-            self.input_map[self._parse_input_spec(inplist[index]), index] = 1
+        for index, inpspec in enumerate(inplist):
+            if isinstance(inpspec, (int, str, tuple)): inpspec = [inpspec]
+            for spec in inpspec:
+                self.input_map[self._parse_input_spec(spec), index] = 1
 
         # Convert the output list to a matrix: maps subsystems to system
         self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
@@ -1120,10 +1138,9 @@ class InterconnectedSystem(InputOutputSystem):
     def _parse_input_spec(self, spec):
         """Parse an input specification and returns the index
 
-        This function parses a specification of an input of an
-        interconnected system component and returns the index of that
-        input in the internal input vector.  Input specifications
-        are of one of the following forms:
+        This function parses a specification of an input of an interconnected
+        system component and returns the index of that input in the internal
+        input vector.  Input specifications are of one of the following forms:
 
             i               first input for the ith system
             (i,)            first input for the ith system
@@ -1232,8 +1249,8 @@ class InterconnectedSystem(InputOutputSystem):
             # For now, only allow signal level of system name
             # TODO: expand to allow nested signal names
             if len(namelist) != 2:
-                raise ValueError("Couldn't parse signal reference '%s'."
-                                 % spec)
+                raise ValueError("Couldn't parse %s signal reference '%s'."
+                                 % (signame, spec))
 
             system_index = self._find_system(namelist[0])
             if system_index is None:
