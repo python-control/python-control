@@ -222,8 +222,8 @@ class TestCanonical(unittest.TestCase):
         """Test similarty transform"""
 
         # Single input, single output systems
-        siso_ini = tf2ss(tf([1, 1], [1, 2, 1]))
-        for form in 'reachable', 'observable', 'modal':
+        siso_ini = tf2ss(tf([1, 1], [1, 1, 1]))
+        for form in 'reachable', 'observable':
             # Convert the system to one of the canonical forms
             siso_can, T_can = canonical_form(siso_ini, form)
 
