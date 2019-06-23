@@ -182,9 +182,13 @@ class StateSpace(LTI):
         # Process keyword arguments
         remove_useless = kw.get('remove_useless', True)
 
+        # Convert all matrices to standard form
         A = _ssmatrix(A)
         B = _ssmatrix(B, axis=0)
         C = _ssmatrix(C, axis=1)
+        if np.isscalar(D) and D == 0 and B.shape[1] > 0 and C.shape[0] > 0:
+            # If D is a scalar zero, broadcast it to the proper size
+            D = np.zeros((C.shape[0], B.shape[1]))
         D = _ssmatrix(D)
 
         # TODO: use super here?

@@ -63,6 +63,29 @@ class TestStateSpace(unittest.TestCase):
         D623 = np.zeros((3, 2))
         self.sys623 = StateSpace(A623, B623, C623, D623)
 
+    def test_D_broadcast(self):
+        """Test broadcast of D=0 to the right shape"""
+        # Giving D as a scalar 0 should broadcast to the right shape
+        sys = StateSpace(self.sys623.A, self.sys623.B, self.sys623.C, 0)
+        np.testing.assert_array_equal(self.sys623.D, sys.D)
+
+        # Giving D as a matrix of the wrong size should generate an error
+        with self.assertRaises(ValueError):
+            sys = StateSpace(sys.A, sys.B, sys.C, np.array([[0]]))
+
+        # Make sure that empty systems still work
+        sys = StateSpace([], [], [], 1)
+        np.testing.assert_array_equal(sys.D, [[1]])
+
+        sys = StateSpace([], [], [], [[0]])
+        np.testing.assert_array_equal(sys.D, [[0]])
+
+        sys = StateSpace([], [], [], [0])
+        np.testing.assert_array_equal(sys.D, [[0]])
+
+        sys = StateSpace([], [], [], 0)
+        np.testing.assert_array_equal(sys.D, [[0]])
+
     def test_pole(self):
         """Evaluate the poles of a MIMO system."""
 
