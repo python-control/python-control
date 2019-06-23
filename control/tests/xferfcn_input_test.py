@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 
 from numpy import int, int8, int16, int32, int64
-from numpy import float, float16, float32, float64, float128
+from numpy import float, float16, float32, float64, longdouble
 from numpy import all, ndarray, array
 
 from control.xferfcn import _clean_part
@@ -73,7 +73,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_all_scalar_types(self):
         """Test single scalar value for all valid data types."""
-        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, float128]:
+        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, longdouble]:
             num = dtype(1)
             num_ = _clean_part(num)
 
@@ -92,7 +92,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_all_np_array_types(self):
         """Test scalar value in numpy array of ndim=0 for all data types."""
-        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, float128]:
+        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, longdouble]:
             num = np.array(1, dtype=dtype)
             num_ = _clean_part(num)
 
@@ -102,7 +102,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_all_np_array_types2(self):
         """Test numpy array for all types."""
-        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, float128]:
+        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, longdouble]:
             num = np.array([1, 2], dtype=dtype)
             num_ = _clean_part(num)
 
@@ -112,7 +112,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_list_all_types(self):
         """Test list of a single value for all data types."""
-        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, float128]:
+        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, longdouble]:
             num = [dtype(1)]
             num_ = _clean_part(num)
             assert isinstance(num_, list)
@@ -121,7 +121,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_list_all_types2(self):
         """List of list of numbers of all data types."""
-        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, float128]:
+        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, longdouble]:
             num = [dtype(1), dtype(2)]
             num_ = _clean_part(num)
             assert isinstance(num_, list)
@@ -130,7 +130,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_tuple_all_types(self):
         """Test tuple of a single value for all data types."""
-        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, float128]:
+        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, longdouble]:
             num = (dtype(1),)
             num_ = _clean_part(num)
             assert isinstance(num_, list)
@@ -139,7 +139,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_tuple_all_types2(self):
         """Test tuple of a single value for all data types."""
-        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, float128]:
+        for dtype in [int, int8, int16, int32, int64, float, float16, float32, float64, longdouble]:
             num = (dtype(1), dtype(2))
             num_ = _clean_part(num)
             assert isinstance(num_, list)
@@ -184,7 +184,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_list_list_array(self):
         """List of list of numpy arrays for all valid types."""
-        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, float128:
+        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, longdouble:
             num = [[array([1, 1], dtype=dtype), array([2, 2], dtype=dtype)]]
             num_ = _clean_part(num)
 
@@ -195,7 +195,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_tuple_list_array(self):
         """Tuple of list of numpy arrays for all valid types."""
-        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, float128:
+        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, longdouble:
             num = ([array([1, 1], dtype=dtype), array([2, 2], dtype=dtype)],)
             num_ = _clean_part(num)
 
@@ -206,7 +206,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_list_tuple_array(self):
         """List of tuple of numpy array for all valid types."""
-        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, float128:
+        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, longdouble:
             num = [(array([1, 1], dtype=dtype), array([2, 2], dtype=dtype))]
             num_ = _clean_part(num)
 
@@ -217,7 +217,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_tuple_tuples_arrays(self):
         """Tuple of tuples of numpy arrays for all valid types."""
-        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, float128:
+        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, longdouble:
             num = ((array([1, 1], dtype=dtype), array([2, 2], dtype=dtype)),
                    (array([3, 4], dtype=dtype), array([4, 4], dtype=dtype)))
             num_ = _clean_part(num)
@@ -229,7 +229,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_list_tuples_arrays(self):
         """List of tuples of numpy arrays for all valid types."""
-        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, float128:
+        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, longdouble:
             num = [(array([1, 1], dtype=dtype), array([2, 2], dtype=dtype)),
                    (array([3, 4], dtype=dtype), array([4, 4], dtype=dtype))]
             num_ = _clean_part(num)
@@ -241,7 +241,7 @@ class TestXferFcnInput(unittest.TestCase):
 
     def test_clean_part_list_list_arrays(self):
         """List of list of numpy arrays for all valid types."""
-        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, float128:
+        for dtype in int, int8, int16, int32, int64, float, float16, float32, float64, longdouble:
             num = [[array([1, 1], dtype=dtype), array([2, 2], dtype=dtype)],
                    [array([3, 3], dtype=dtype), array([4, 4], dtype=dtype)]]
             num_ = _clean_part(num)
