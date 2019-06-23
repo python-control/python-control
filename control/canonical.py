@@ -6,10 +6,11 @@ from .lti import issiso
 from .statesp import StateSpace
 from .statefbk import ctrb, obsv
 
-from numpy import zeros, shape, poly, iscomplex, hstack
+from numpy import zeros, shape, poly, iscomplex, hstack, dot, transpose
 from numpy.linalg import solve, matrix_rank, eig
 
-__all__ = ['canonical_form', 'reachable_form', 'observable_form']
+__all__ = ['canonical_form', 'reachable_form', 'observable_form', 'modal_form',
+           'similarity_transform']
 
 def canonical_form(xsys, form='reachable'):
     """Convert a system into canonical form
@@ -212,3 +213,37 @@ def modal_form(xsys):
     zsys.C = xsys.C.dot(Tzx)
 
     return zsys, Tzx
+
+
+def similarity_transform(xsys, T, timescale=1):
+    """Perform a similarity transformation, with option time rescaling.
+
+    Transform a linear state space system to a new state space representation
+    z = T x, where T is an invertible matrix.
+
+    Parameters
+    ----------
+    T : 2D invertible array
+        The matrix `T` defines the new set of coordinates z = T x.
+    timescale : float
+        If present, also rescale the time unit to tau = timescale * t
+
+    Returns
+    -------
+    zsys : StateSpace object
+        System in transformed coordinates, with state 'z'
+
+    """
+    # Create a new system, starting with a copy of the old one
+    zsys = StateSpace(xsys)
+
+    # Define a function to compute the right inverse (solve x M = y)
+    def rsolve(M, y):
+        return transpose(solve(transpose(M), transpose(y)))
+
+    # Update the system matrices
+    zsys.A = rsolve(T, dot(T, zsys.A)) / timescale
+    zsys.B = dot(T, zsys.B) / timescale
+    zsys.C = rsolve(T, zsys.C)
+
+    return zsys

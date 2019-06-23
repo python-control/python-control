@@ -2,9 +2,9 @@
 
 import unittest
 import numpy as np
-from control import ss, tf
+from control import ss, tf, tf2ss, ss2tf
 from control.canonical import canonical_form, reachable_form, \
-    observable_form, modal_form
+    observable_form, modal_form, similarity_transform
 from control.exception import ControlNotImplemented
 
 class TestCanonical(unittest.TestCase):
@@ -218,6 +218,76 @@ class TestCanonical(unittest.TestCase):
         np.testing.assert_raises(
             ControlNotImplemented, canonical_form, sys, 'unknown')
 
+    def test_similarity(self):
+        """Test similarty transform"""
+
+        # Single input, single output systems
+        siso_ini = tf2ss(tf([1, 1], [1, 2, 1]))
+        for form in 'reachable', 'observable', 'modal':
+            # Convert the system to one of the canonical forms
+            siso_can, T_can = canonical_form(siso_ini, form)
+
+            # Use a similarity transformation to transform it back
+            siso_sim = similarity_transform(siso_can, np.linalg.inv(T_can))
+
+            # Make sure everything goes back to the original form
+            np.testing.assert_array_almost_equal(siso_sim.A, siso_ini.A)
+            np.testing.assert_array_almost_equal(siso_sim.B, siso_ini.B)
+            np.testing.assert_array_almost_equal(siso_sim.C, siso_ini.C)
+            np.testing.assert_array_almost_equal(siso_sim.D, siso_ini.D)
+
+        # Multi-input, multi-output systems
+        mimo_ini = ss(
+            [[-1, 1, 0, 0], [0, -2, 1, 0], [0, 0, -3, 1], [0, 0, 0, -4]],
+            [[1, 0], [0, 0], [0, 1], [1, 1]],
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]],
+            np.zeros((3, 2)))
+
+        # Simple transformation: row/col flips + scaling
+        mimo_txf = np.array(
+            [[0, 1, 0, 0], [2, 0, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+
+        # Transform the system and transform it back
+        mimo_sim = similarity_transform(mimo_ini, mimo_txf)
+        mimo_new = similarity_transform(mimo_sim, np.linalg.inv(mimo_txf))
+        np.testing.assert_array_almost_equal(mimo_new.A, mimo_ini.A)
+        np.testing.assert_array_almost_equal(mimo_new.B, mimo_ini.B)
+        np.testing.assert_array_almost_equal(mimo_new.C, mimo_ini.C)
+        np.testing.assert_array_almost_equal(mimo_new.D, mimo_ini.D)
+
+        # Make sure rescaling by identify does nothing
+        mimo_new = similarity_transform(mimo_ini, np.eye(4))
+        np.testing.assert_array_almost_equal(mimo_new.A, mimo_ini.A)
+        np.testing.assert_array_almost_equal(mimo_new.B, mimo_ini.B)
+        np.testing.assert_array_almost_equal(mimo_new.C, mimo_ini.C)
+        np.testing.assert_array_almost_equal(mimo_new.D, mimo_ini.D)
+        
+        # Time rescaling
+        mimo_tim = similarity_transform(mimo_ini, np.eye(4), timescale=0.3)
+        mimo_new = similarity_transform(mimo_tim, np.eye(4), timescale=1/0.3)
+        np.testing.assert_array_almost_equal(mimo_new.A, mimo_ini.A)
+        np.testing.assert_array_almost_equal(mimo_new.B, mimo_ini.B)
+        np.testing.assert_array_almost_equal(mimo_new.C, mimo_ini.C)
+        np.testing.assert_array_almost_equal(mimo_new.D, mimo_ini.D)
+
+        # Time + transformation, in one step
+        mimo_sim = similarity_transform(mimo_ini, mimo_txf, timescale=0.3)
+        mimo_new = similarity_transform(mimo_sim, np.linalg.inv(mimo_txf),
+                                        timescale=1/0.3)
+        np.testing.assert_array_almost_equal(mimo_new.A, mimo_ini.A)
+        np.testing.assert_array_almost_equal(mimo_new.B, mimo_ini.B)
+        np.testing.assert_array_almost_equal(mimo_new.C, mimo_ini.C)
+        np.testing.assert_array_almost_equal(mimo_new.D, mimo_ini.D)
+
+        # Time + transformation, in two steps
+        mimo_sim = similarity_transform(mimo_ini, mimo_txf, timescale=0.3)
+        mimo_tim = similarity_transform(mimo_sim, np.eye(4), timescale=1/0.3)
+        mimo_new = similarity_transform(mimo_tim, np.linalg.inv(mimo_txf))
+        np.testing.assert_array_almost_equal(mimo_new.A, mimo_ini.A)
+        np.testing.assert_array_almost_equal(mimo_new.B, mimo_ini.B)
+        np.testing.assert_array_almost_equal(mimo_new.C, mimo_ini.C)
+        np.testing.assert_array_almost_equal(mimo_new.D, mimo_ini.D)
+        
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
 
