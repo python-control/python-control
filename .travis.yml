@@ -31,7 +31,7 @@ env:
 # Exclude combinations that are very unlikely (and don't work)
 matrix:
   exclude:
-    - python: 3.7			# python3.7 should use latest scipy
+    - python: "3.7"			# python3.7 should use latest scipy
       env: SCIPY="scipy==0.19.1" SLYCOT=
 
 # install required system libraries
