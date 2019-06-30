@@ -26,6 +26,7 @@ implements basic operations for analysis and design of feedback control systems.
    control
    classes
    matlab
+   flatsys
 
 * :ref:`genindex`
 
