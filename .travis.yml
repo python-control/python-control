@@ -28,6 +28,12 @@ env:
   - SCIPY=scipy SLYCOT=			# default, w/out slycot
   - SCIPY="scipy==0.19.1" SLYCOT=	# legacy support, w/out slycot
 
+# Exclude combinations that are very unlikely (and don't work)
+matrix:
+  exclude:
+    - python: "3.7"			# python3.7 should use latest scipy
+      env: SCIPY="scipy==0.19.1" SLYCOT=
+
 # install required system libraries
 before_install:
   # Install gfortran for testing slycot; use apt-get instead of conda in
