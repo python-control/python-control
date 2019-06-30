@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# statesp_test.py - test state space class
-# RMM, 30 Mar 2011 (based on TestStateSp from v0.4a)
+# statesp_test.py - test state space class with use_numpy_matrix(False)
+# RMM, 14 Jun 2019 (coverted from statesp_test.py)
 
 import unittest
 import numpy as np
@@ -12,13 +12,14 @@ from control.statesp import StateSpace, _convertToStateSpace, tf2ss
 from control.xferfcn import TransferFunction, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
-
+from control.config import use_numpy_matrix, reset_defaults
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
 
     def setUp(self):
         """Set up a MIMO system to test operations on."""
+        use_numpy_matrix(False)
 
         # sys1: 3-states square system (2 inputs x 2 outputs)
         A322 = [[-3., 4., 2.],
@@ -63,28 +64,18 @@ class TestStateSpace(unittest.TestCase):
         D623 = np.zeros((3, 2))
         self.sys623 = StateSpace(A623, B623, C623, D623)
 
-    def test_D_broadcast(self):
-        """Test broadcast of D=0 to the right shape"""
-        # Giving D as a scalar 0 should broadcast to the right shape
-        sys = StateSpace(self.sys623.A, self.sys623.B, self.sys623.C, 0)
-        np.testing.assert_array_equal(self.sys623.D, sys.D)
-
-        # Giving D as a matrix of the wrong size should generate an error
-        with self.assertRaises(ValueError):
-            sys = StateSpace(sys.A, sys.B, sys.C, np.array([[0]]))
-
-        # Make sure that empty systems still work
-        sys = StateSpace([], [], [], 1)
-        np.testing.assert_array_equal(sys.D, [[1]])
-
-        sys = StateSpace([], [], [], [[0]])
-        np.testing.assert_array_equal(sys.D, [[0]])
-
-        sys = StateSpace([], [], [], [0])
-        np.testing.assert_array_equal(sys.D, [[0]])
-
-        sys = StateSpace([], [], [], 0)
-        np.testing.assert_array_equal(sys.D, [[0]])
+    def test_matlab_style_constructor(self):
+        # Use (deprecated?) matrix-style construction string (w/ warnings off)
+        import warnings
+        warnings.filterwarnings("ignore")   # turn off warnings
+        sys = StateSpace("-1 1; 0 2", "0; 1", "1, 0", "0")
+        warnings.resetwarnings()            # put things back to original state
+        self.assertEqual(sys.A.shape, (2, 2))
+        self.assertEqual(sys.B.shape, (2, 1))
+        self.assertEqual(sys.C.shape, (1, 2))
+        self.assertEqual(sys.D.shape, (1, 1))
+        for X in [sys.A, sys.B, sys.C, sys.D]:
+            self.assertTrue(isinstance(X, np.matrix))
 
     def test_pole(self):
         """Evaluate the poles of a MIMO system."""
@@ -219,6 +210,9 @@ class TestStateSpace(unittest.TestCase):
             assert len(w) == 1
             assert issubclass(w[-1].category, PendingDeprecationWarning)
 
+            # Leave the warnings filter like we found it
+            warnings.resetwarnings()
+
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_freq_resp(self):
         """Evaluate the frequency response at multiple frequencies."""
@@ -323,11 +317,10 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys1_11.A,
                                              sys1.A)
         np.testing.assert_array_almost_equal(sys1_11.B,
-                                             sys1.B[:, 1])
+                                             sys1.B[:, [1]])
         np.testing.assert_array_almost_equal(sys1_11.C,
-                                             sys1.C[0, :])
-        np.testing.assert_array_almost_equal(sys1_11.D,
-                                             sys1.D[0, 1])
+                                             sys1.C[[0], :])
+        np.testing.assert_array_almost_equal(sys1_11.D, sys1.D[0,1])
 
         assert sys1.dt == sys1_11.dt
 
@@ -336,7 +329,7 @@ class TestStateSpace(unittest.TestCase):
         sys = StateSpace(-2., 6., 5., 0)
         np.testing.assert_equal(sys.dcgain(), 15.)
 
-        sys2 = StateSpace(-2, [6., 4.], [[5.], [7.], [11]], np.zeros((3, 2)))
+        sys2 = StateSpace(-2, [[6., 4.]], [[5.], [7.], [11]], np.zeros((3, 2)))
         expected = np.array([[15., 10.], [21., 14.], [33., 22.]])
         np.testing.assert_array_equal(sys2.dcgain(), expected)
 
@@ -393,14 +386,14 @@ class TestStateSpace(unittest.TestCase):
         g4 = g1 + g2
         self.assertEqual(5, g4.D[0, 0])
         g5 = g1.feedback(g2)
-        self.assertAlmostEqual(2. / 7, g5.D[0, 0])
+        np.testing.assert_array_almost_equal(2. / 7, g5.D[0, 0])
         g6 = g1.append(g2)
         np.testing.assert_array_equal(np.diag([2, 3]), g6.D)
 
     def test_matrix_static_gain(self):
         """Regression: can we create matrix static gains?"""
-        d1 = np.matrix([[1, 2, 3], [4, 5, 6]])
-        d2 = np.matrix([[7, 8], [9, 10], [11, 12]])
+        d1 = np.array([[1, 2, 3], [4, 5, 6]])
+        d2 = np.array([[7, 8], [9, 10], [11, 12]])
         g1 = StateSpace([], [], [], d1)
 
         # _remove_useless_states was making A = [[0]]
@@ -410,12 +403,12 @@ class TestStateSpace(unittest.TestCase):
         g3 = StateSpace([], [], [], d2.T)
 
         h1 = g1 * g2
-        np.testing.assert_array_equal(d1 * d2, h1.D)
+        np.testing.assert_array_equal(np.dot(d1, d2), h1.D)
         h2 = g1 + g3
         np.testing.assert_array_equal(d1 + d2.T, h2.D)
         h3 = g1.feedback(g2)
         np.testing.assert_array_almost_equal(
-            solve(np.eye(2) + d1 * d2, d1), h3.D)
+            solve(np.eye(2) + np.dot(d1, d2), d1), h3.D)
         h4 = g1.append(g2)
         np.testing.assert_array_equal(block_diag(d1, d2), h4.D)
 
@@ -459,11 +452,11 @@ class TestStateSpace(unittest.TestCase):
 
     def test_matrix_to_state_space(self):
         """_convertToStateSpace(matrix) gives ss([],[],[],D)"""
-        D = np.matrix([[1, 2, 3], [4, 5, 6]])
+        D = np.array([[1, 2, 3], [4, 5, 6]])
         g = _convertToStateSpace(D)
 
         def empty(shape):
-            m = np.matrix([])
+            m = np.array([])
             m.shape = shape
             return m
         np.testing.assert_array_equal(empty((0, 0)), g.A)
@@ -519,10 +512,27 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
 
+    def test_horner(self):
+        """Test horner() function"""
+        # Make sure we can compute the transfer function at a complex value
+        self.sys322.horner(1.+1.j)
+
+        # Make sure result agrees with frequency response
+        mag, phase, omega = self.sys322.freqresp([1])
+        np.testing.assert_array_almost_equal(
+            self.sys322.horner(1.j),
+            mag[:,:,0] * np.exp(1.j * phase[:,:,0]))
+
+    def tearDown(self):
+        reset_defaults()        # reset configuration defaults
+
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
 
     def setUp(self):
+        use_numpy_matrix(False)
+
         # Number of times to run each of the randomized tests.
         self.numTests = 100
         # Maxmimum number of states to test + 1
@@ -552,11 +562,16 @@ class TestRss(unittest.TestCase):
                     for z in p:
                         self.assertTrue(z.real < 0)
 
+    def tearDown(self):
+        reset_defaults()        # reset configuration defaults
+
 
 class TestDrss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.drss."""
 
     def setUp(self):
+        use_numpy_matrix(False)
+        
         # Number of times to run each of the randomized tests.
         self.numTests = 100
         # Maximum number of states to test + 1
@@ -611,6 +626,8 @@ class TestDrss(unittest.TestCase):
         linsys.A[0, 0] = -3
         np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
 
+    def tearDown(self):
+        reset_defaults()        # reset configuration defaults
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)

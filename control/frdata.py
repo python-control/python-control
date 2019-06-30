@@ -52,7 +52,7 @@ $Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
 from warnings import warn
 import numpy as np
 from numpy import angle, array, empty, ones, \
-    real, imag, matrix, absolute, eye, linalg, where, dot
+    real, imag, absolute, eye, linalg, where, dot
 from scipy.interpolate import splprep, splev
 from .lti import LTI
 
@@ -80,6 +80,10 @@ class FRD(LTI):
     represent the inputs.
 
     """
+
+    # Allow NDarray * StateSpace to give StateSpace._rmul_() priority
+    # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html
+    __array_priority__ = 11     # override ndarray and matrix types
 
     epsw = 1e-8
 
@@ -435,13 +439,16 @@ second has %i." % (self.outputs, other.outputs))
                       dtype=complex)
         # TODO: vectorize this
         # TODO: handle omega re-mapping
+        # TODO: is there a reason to use linalg.solve instead of linalg.inv?
+        # https://github.com/python-control/python-control/pull/314#discussion_r294075154
         for k, w in enumerate(other.omega):
-            fresp[:, :, k] = self.fresp[:, :, k].view(type=matrix)* \
+            fresp[:, :, k] = np.dot(
+                self.fresp[:, :, k],
                 linalg.solve(
-                eye(self.inputs) +
-                other.fresp[:, :, k].view(type=matrix) *
-                self.fresp[:, :, k].view(type=matrix),
-                eye(self.inputs))
+                    eye(self.inputs)
+                    + np.dot(other.fresp[:, :, k], self.fresp[:, :, k]),
+                    eye(self.inputs))
+            )
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 

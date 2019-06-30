@@ -53,8 +53,8 @@ $Id$
 
 import math
 import numpy as np
-from numpy import all, angle, any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, isinf, matrix, ones, pad, shape, sin, zeros, squeeze
+from numpy import any, array, asarray, concatenate, cos, delete, \
+    dot, empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
@@ -62,32 +62,56 @@ import scipy as sp
 from scipy.signal import lti, cont2discrete
 from warnings import warn
 from .lti import LTI, timebase, timebaseEqual, isdtime
-from .xferfcn import _convert_to_transfer_function
+from . import config
 from copy import deepcopy
 
 __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 
-def _matrix(a):
-    """Wrapper around numpy.matrix that reshapes empty matrices to be 0x0
+def _ssmatrix(data, axis=1):
+    """Convert argument to a (possibly empty) state space matrix.
 
     Parameters
     ----------
-    a: sequence passed to numpy.matrix
+    data : array, list, or string
+        Input data defining the contents of the 2D array
+    axis : 0 or 1
+        If input data is 1D, which axis to use for return object.  The default
+        is 1, corresponding to a row matrix.
 
     Returns
     -------
-    am: result of numpy.matrix(a), except if a is empty, am will be 0x0.
+    arr : 2D array, with shape (0, 0) if a is empty
 
-    numpy.matrix([]) has size 1x0; for empty StateSpace objects, we
-    need 0x0 matrices, so use this instead of numpy.matrix in this
-    module.
     """
-    from numpy import matrix
-    am = matrix(a, dtype=float)
-    if (1, 0) == am.shape:
-        am.shape = (0, 0)
-    return am
+    # Convert the data into an array or matrix, as configured
+    # If data is passed as a string, use (deprecated?) matrix constructor
+    if config._use_numpy_matrix or isinstance(data, str):
+        arr = np.matrix(data, dtype=float)
+    else:
+        arr = np.array(data, dtype=float)
+    ndim = arr.ndim
+    shape = arr.shape
+
+    # Change the shape of the array into a 2D array
+    if (ndim > 2):
+        raise ValueError("state-space matrix must be 2-dimensional")
+
+    elif (ndim == 2 and shape == (1, 0)) or \
+         (ndim == 1 and shape == (0, )):
+        # Passed an empty matrix or empty vector; change shape to (0, 0)
+        shape = (0, 0)
+
+    elif ndim == 1:
+        # Passed a row or column vector
+        shape = (1, shape[0]) if axis == 1 else (shape[0], 1)
+
+    elif ndim == 0:
+        # Passed a constant; turn into a matrix
+        shape = (1, 1)
+
+    #  Create the actual object used to store the result
+    return arr.reshape(shape)
 
 
 class StateSpace(LTI):
@@ -115,6 +139,10 @@ class StateSpace(LTI):
     sampling time.
     """
 
+    # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
+    __array_priority__ = 11     # override ndarray and matrix types
+
+
     def __init__(self, *args, **kw):
         """
         StateSpace(A, B, C, D[, dt])
@@ -128,7 +156,6 @@ class StateSpace(LTI):
         call StateSpace(sys), where sys is a StateSpace object.
 
         """
-
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
@@ -155,7 +182,14 @@ class StateSpace(LTI):
         # Process keyword arguments
         remove_useless = kw.get('remove_useless', True)
 
-        A, B, C, D = [_matrix(M) for M in (A, B, C, D)]
+        # Convert all matrices to standard form
+        A = _ssmatrix(A)
+        B = _ssmatrix(B, axis=0)
+        C = _ssmatrix(C, axis=1)
+        if np.isscalar(D) and D == 0 and B.shape[1] > 0 and C.shape[0] > 0:
+            # If D is a scalar zero, broadcast it to the proper size
+            D = np.zeros((C.shape[0], B.shape[1]))
+        D = _ssmatrix(D)
 
         # TODO: use super here?
         LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
@@ -197,12 +231,15 @@ class StateSpace(LTI):
 
         """
 
-        # Search for useless states and get the indices of these states
-        # as an array.
+        # Search for useless states and get indices of these states.
+        #
+        # Note: shape from np.where depends on whether we are storing state
+        # space objects as np.matrix or np.array.  Code below will work
+        # correctly in either case.
         ax1_A = np.where(~self.A.any(axis=1))[0]
         ax1_B = np.where(~self.B.any(axis=1))[0]
-        ax0_A = np.where(~self.A.any(axis=0))[1]
-        ax0_C = np.where(~self.C.any(axis=0))[1]
+        ax0_A = np.where(~self.A.any(axis=0))[-1]
+        ax0_C = np.where(~self.C.any(axis=0))[-1]
         useless_1 = np.intersect1d(ax1_A, ax1_B, assume_unique=True)
         useless_2 = np.intersect1d(ax0_A, ax0_C, assume_unique=True)
         useless = np.union1d(useless_1, useless_2)
@@ -327,12 +364,14 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
             # Concatenate the various arrays
             A = concatenate(
-                (concatenate((other.A, zeros((other.A.shape[0], self.A.shape[1]))),
-                 axis=1),
-                concatenate((self.B * other.C, self.A), axis=1)), axis=0)
-            B = concatenate((other.B, self.B * other.D), axis=0)
-            C = concatenate((self.D * other.C, self.C),axis=1)
-            D = self.D * other.D
+                (concatenate((other.A,
+                              zeros((other.A.shape[0], self.A.shape[1]))),
+                             axis=1),
+                 concatenate((np.dot(self.B, other.C), self.A), axis=1)),
+                axis=0)
+            B = concatenate((other.B, np.dot(self.B, other.D)), axis=0)
+            C = concatenate((np.dot(self.D, other.C), self.C),axis=1)
+            D = np.dot(self.D, other.D)
 
         return StateSpace(A, B, C, D, dt)
 
@@ -356,9 +395,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         # try to treat this as a matrix
         try:
-            X = _matrix(other)
-            C = X * self.C
-            D = X * self.D
+            X = _ssmatrix(other)
+            C = np.dot(X, self.C)
+            D = np.dot(X, self.D)
             return StateSpace(self.A, self.B, C, D, self.dt)
 
         except Exception as e:
@@ -407,8 +446,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Returns a matrix of values evaluated at complex variable s.
         """
-        resp = self.C * solve(s * eye(self.states) - self.A,
-                              self.B) + self.D
+        resp = np.dot(self.C, solve(s * eye(self.states) - self.A,
+                                    self.B)) + self.D
         return array(resp)
 
     # Method for generating the frequency response of the system
@@ -582,7 +621,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         C2 = other.C
         D2 = other.D
 
-        F = eye(self.inputs) - sign * D2 * D1
+        F = eye(self.inputs) - sign * np.dot(D2, D1)
         if matrix_rank(F) != self.inputs:
             raise ValueError("I - sign * D2 * D1 is singular to working precision.")
 
@@ -595,15 +634,20 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         E_D2 = E_D2_C2[:, :other.inputs]
         E_C2 = E_D2_C2[:, other.inputs:]
 
-        T1 = eye(self.outputs) + sign * D1 * E_D2
-        T2 = eye(self.inputs) + sign * E_D2 * D1
+        T1 = eye(self.outputs) + sign * np.dot(D1, E_D2)
+        T2 = eye(self.inputs) + sign * np.dot(E_D2, D1)
 
-        A = concatenate((concatenate((A1 + sign * B1 * E_D2 * C1, sign * B1 * E_C2), axis=1),
-                         concatenate((B2 * T1 * C1, A2 + sign * B2 * D1 * E_C2), axis=1)),
-                        axis=0)
-        B = concatenate((B1 * T2, B2 * D1 * T2), axis=0)
-        C = concatenate((T1 * C1, sign * D1 * E_C2), axis=1)
-        D = D1 * T2
+        A = concatenate(
+            (concatenate(
+                (A1 + sign * np.dot(np.dot(B1, E_D2), C1),
+                 sign * np.dot(B1, E_C2)), axis=1),
+             concatenate(
+                 (np.dot(B2, np.dot(T1, C1)),
+                  A2 + sign * np.dot(np.dot(B2, D1), E_C2)), axis=1)),
+            axis=0)
+        B = concatenate((np.dot(B1, T2), np.dot(np.dot(B2, D1), T2)), axis=0)
+        C = concatenate((np.dot(T1, C1), sign * np.dot(D1, E_C2)), axis=1)
+        D = np.dot(D1, T2)
 
         return StateSpace(A, B, C, D, dt)
 
@@ -671,7 +715,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         F = np.block([[np.eye(ny), -D22], [-Dbar11, np.eye(nu)]])
         if matrix_rank(F) != ny + nu:
             raise ValueError("lft not well-posed to working precision.")
-        
+
         # solve for the resulting ss by solving for [y, u] using [x,
         # xbar] and [w1, w2].
         TH = np.linalg.solve(F, np.block(
@@ -686,7 +730,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         H12 = TH[:ny, self.states + other.states + self.inputs - nu:]
         H21 = TH[ny:, self.states + other.states: self.states + other.states + self.inputs - nu]
         H22 = TH[ny:, self.states + other.states + self.inputs - nu:]
-        
+
         Ares = np.block([
             [A + B2.dot(T21), B2.dot(T22)],
             [Bbar1.dot(T11), Abar + Bbar1.dot(T12)]
@@ -746,7 +790,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         for i in range(self.outputs):
             for j in range(self.inputs):
                 out[i][j] = lti(asarray(self.A), asarray(self.B[:, j]),
-                                asarray(self.C[i, :]), asarray(self.D[i, j]))
+                                asarray(self.C[i, :]), self.D[i, j])
 
         return out
 
@@ -800,7 +844,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
             * gbt: generalized bilinear transformation
             * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
-            * euler: Euler (or forward differencing) method ("gbt" with 
+            * euler: Euler (or forward differencing) method ("gbt" with
               alpha=0)
             * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
             * zoh: zero-order hold (default)
@@ -946,7 +990,7 @@ cannot take keywords.")
 
     # If this is a matrix, try to create a constant feedthrough
     try:
-        D = _matrix(sys)
+        D = _ssmatrix(sys)
         return StateSpace([], [], [], D)
     except Exception as e:
         print("Failure to assume argument is matrix-like in" \
