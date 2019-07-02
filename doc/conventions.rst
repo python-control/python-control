@@ -209,6 +209,8 @@ Functions that can be used to set standard configurations:
 
 .. autosummary::
     :toctree: generated/
-    
+
+    reset_defaults
     use_fbs_defaults
     use_matlab_defaults
+    use_numpy_matrix
