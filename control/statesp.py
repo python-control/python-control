@@ -86,7 +86,7 @@ def _ssmatrix(data, axis=1):
     """
     # Convert the data into an array or matrix, as configured
     # If data is passed as a string, use (deprecated?) matrix constructor
-    if config._use_numpy_matrix or isinstance(data, str):
+    if config.defaults['statesp.use_numpy_matrix'] or isinstance(data, str):
         arr = np.matrix(data, dtype=float)
     else:
         arr = np.array(data, dtype=float)
@@ -128,15 +128,21 @@ class StateSpace(LTI):
     where u is the input, y is the output, and x is the state.
 
     The main data members are the A, B, C, and D matrices.  The class also
-    keeps track of the number of states (i.e., the size of A).
+    keeps track of the number of states (i.e., the size of A).  The data
+    format used to store state space matrices is set using the value of
+    `config.defaults['use_numpy_matrix']`.  If True (default), the state space
+    elements are stored as `numpy.matrix` objects; otherwise they are
+    `numpy.ndarray` objects.  The :func:`~control.use_numpy_matrix` function
+    can be used to set the storage type.
 
-    Discrete-time state space system are implemented by using the 'dt' instance
-    variable and setting it to the sampling period.  If 'dt' is not None,
-    then it must match whenever two state space systems are combined.
+    Discrete-time state space system are implemented by using the 'dt'
+    instance variable and setting it to the sampling period.  If 'dt' is not
+    None, then it must match whenever two state space systems are combined.
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
-    system will be treated as a discrete time system with unspecified
-    sampling time.
+    system will be treated as a discrete time system with unspecified sampling
+    time.
+
     """
 
     # Allow ndarray * StateSpace to give StateSpace._rmul_() priority

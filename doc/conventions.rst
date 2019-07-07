@@ -190,20 +190,31 @@ can be computed like this::
 Package configuration
 =====================
 
-The python-control library can be customized to allow for different plotting
-conventions.  The currently configurable options allow the units for Bode
-plots to be set as dB for gain, degrees for phase and Hertz for frequency
-(MATLAB conventions) or the gain can be given in magnitude units (powers of
-10), corresponding to the conventions used in `Feedback Systems
-<http://fbsbook.org>`_ (FBS).
+The python-control library can be customized to allow for different default
+values for selected parameters.  This includes the ability to set the style
+for Bode plots and establishing the underlying representation for state space
+matrices.
+
+To set the default value of a configuration variable, set the appropriate
+element of the `control.config.defaults` dictionary:
+
+.. code-block:: python
+
+    control.config.defaults['module.variable'] = value
+
+There are also
+functions available set collections of variables based on standard
+configurations.
 
 Variables that can be configured, along with their default values:
-  * bode_dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
-  * bode_deg (True): Bode plot phase plotted in degrees (otherwise radians)
-  * bode_Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
-  * bode_number_of_samples (None): Number of frequency points in Bode plots
-  * bode_feature_periphery_decade (1.0): How many decades to include in the
-    frequency range on both sides of features (poles, zeros). 
+  * bode.dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
+  * bode.deg (True): Bode plot phase plotted in degrees (otherwise radians)
+  * bode.Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
+  * freqplot.number_of_samples (None): Number of frequency points in Bode plots
+  * freqplot.feature_periphery_decade (1.0): How many decades to include in the
+    frequency range on both sides of features (poles, zeros).
+  * statesp.use_numpy_matrix: set the return type for state space matrices to
+    `numpy.matrix` (verus numpy.ndarray)
 
 Functions that can be used to set standard configurations:
 

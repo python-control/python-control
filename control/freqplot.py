@@ -48,6 +48,7 @@ import math
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
+from .config import defaults
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
            'bode', 'nyquist', 'gangof4']
@@ -62,10 +63,10 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 # Bode plot
 
 
-def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
-              Plot=True, omega_limits=None, omega_num=None, margins=None, *args, **kwargs):
-    """
-    Bode plot for a system
+def bode_plot(syslist, omega=None,
+              Plot=True, omega_limits=None, omega_num=None,
+              margins=None, *args, **kwargs):
+    """Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -76,18 +77,21 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     omega : list
         List of frequencies in rad/sec to be used for frequency response
     dB : boolean
-        If True, plot result in dB
+        If True, plot result in dB.  Defaults to config.defaults['bode.dB'].
     Hz : boolean
-        If True, plot frequency in Hz (omega must be provided in rad/sec)
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
+        Defaults to config.defaults['bode.Hz']
     deg : boolean
-        If True, plot phase in degrees (else radians)
+        If True, plot phase in degrees (else radians).  Defaults to
+        config.defaults['bode.deg']
     Plot : boolean
         If True, plot magnitude and phase
     omega_limits: tuple, list, ... of two values
         Limits of the to generate frequency vector.
         If Hz=True the limits are in Hz otherwise in rad/s.
     omega_num: int
-        number of samples
+        Number of samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
     margins : boolean
         If True, plot gain and phase margin
     \*args, \**kwargs:
@@ -101,6 +105,12 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
         phase in radians
     omega : array (list if len(syslist) > 1)
         frequency in rad/sec
+
+    Other Parameters
+    ----------------
+    grid : bool
+        If True, plot grid lines on gain and phase plots.  Default is set by
+        config.defaults['bode.grid'].
 
     Notes
     -----
@@ -117,15 +127,13 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag, phase, omega = bode(sys)
+
     """
-    # Set default values for options
-    from . import config
-    if dB is None:
-        dB = config.bode_dB
-    if deg is None:
-        deg = config.bode_deg
-    if Hz is None:
-        Hz = config.bode_Hz
+    # Set default values for options (and pop from list to allow use in plots)
+    dB = kwargs.pop('dB', defaults.get('bode.dB', False))
+    deg = kwargs.pop('deg', defaults.get('bode.deg', True))
+    Hz = kwargs.pop('Hz', defaults.get('bode.Hz', False))
+    grid = kwargs.pop('grid', defaults.get('bode.grid', True))
 
     # If argument was a singleton, turn it into a list
     if not getattr(syslist, '__iter__', False):
@@ -235,7 +243,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                                    color=pltline[0].get_color())
 
                 # Add a grid to the plot + labeling
-                ax_mag.grid(False if margins else True, which='both')
+                ax_mag.grid(grid and not margins, which='both')
                 ax_mag.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
 
                 # Phase plot
@@ -377,7 +385,7 @@ def bode_plot(syslist, omega=None, dB=None, Hz=None, deg=None,
                                                                  ylim[1],
                                                                  math.pi / 12.),
                                         minor=True)
-                ax_phase.grid(False if margins else True, which='both')
+                ax_phase.grid(grid and not margins, which='both')
                 # ax_mag.grid(which='minor', alpha=0.3)
                 # ax_mag.grid(which='major', alpha=0.9)
                 # ax_phase.grid(which='minor', alpha=0.3)
@@ -592,7 +600,7 @@ def gangof4_plot(P, C, omega=None):
 
 # Compute reasonable defaults for axes
 def default_frequency_range(syslist, Hz=None, number_of_samples=None, 
-                            feature_periphery_decade=None):
+                            feature_periphery_decades=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
@@ -603,24 +611,18 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
-
     Hz : bool
         If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
-
     number_of_samples : int, optional
-        Number of samples to generate.  Defaults to ``numpy.logspace`` default
-        value.
-
-    feature_periphery_decade : float, optional
+        Number of samples to generate.  The default value is read from
+        ``config.defaults['freqplot.number_of_samples'].  If None, then the
+        default from `numpy.logspace` is used.
+    feature_periphery_decades : float, optional
         Defines how many decades shall be included in the frequency range on
-        both sides of features (poles, zeros).
-
-        Example: If there is a feature, e.g. a pole, at 1 Hz and
-        feature_periphery_decade=1., then the range of frequencies shall span
-        0.1 .. 10 Hz.  The default value is read from
-        ``config.bode_feature_periphery_decade``.
+        both sides of features (poles, zeros).  The default value is read from
+        ``config.defaults['freqplot.feature_periphery_decades']``.
 
     Returns
     -------
@@ -643,9 +645,10 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
     # Set default values for options
     from . import config
     if number_of_samples is None:
-        number_of_samples = config.bode_number_of_samples
-    if feature_periphery_decade is None:
-        feature_periphery_decade = config.bode_feature_periphery_decade
+        number_of_samples = config.defaults['freqplot.number_of_samples']
+    if feature_periphery_decades is None:
+        feature_periphery_decades = \
+            config.defaults['freqplot.feature_periphery_decades']
 
     # Find the list of all poles and zeros in the systems
     features = np.array(())
@@ -693,14 +696,14 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
     if Hz:
         features /= 2. * math.pi
         features = np.log10(features)
-        lsp_min = np.floor(np.min(features) - feature_periphery_decade)
-        lsp_max = np.ceil(np.max(features) + feature_periphery_decade)
+        lsp_min = np.floor(np.min(features) - feature_periphery_decades)
+        lsp_max = np.ceil(np.max(features) + feature_periphery_decades)
         lsp_min += np.log10(2. * math.pi)
         lsp_max += np.log10(2. * math.pi)
     else:
         features = np.log10(features)
-        lsp_min = np.floor(np.min(features) - feature_periphery_decade)
-        lsp_max = np.ceil(np.max(features) + feature_periphery_decade)
+        lsp_min = np.floor(np.min(features) - feature_periphery_decades)
+        lsp_max = np.ceil(np.max(features) + feature_periphery_decades)
     if freq_interesting:
         lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
         lsp_max = max(lsp_max, np.log10(max(freq_interesting)))
