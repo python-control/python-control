@@ -199,6 +199,42 @@ class TestFreqresp(unittest.TestCase):
             # Calling bode should generate a not implemented error
             self.assertRaises(NotImplementedError, bode, (sys,))
 
+      def test_options(self):
+         """Test ability to set parameter values"""
+      # Generate a Bode plot of a transfer function
+      sys = ctrl.tf([1000], [1, 25, 100, 0])
+      fig1 = plt.figure()
+      ctrl.bode_plot(sys, dB=False, deg = True, Hz=False)
+
+      # Save the parameter values
+      left1, right1 = fig1.axes[0].xaxis.get_data_interval()
+      numpoints1 = len(fig1.axes[0].lines[0].get_data()[0])
+
+      # Same transfer function, but add a decade on each end
+      ctrl.config.set_defaults('freqplot', feature_periphery_decades=2)
+      fig2 = plt.figure()
+      ctrl.bode_plot(sys, dB=False, deg = True, Hz=False)
+      left2, right2 = fig2.axes[0].xaxis.get_data_interval()
+
+      # Make sure we got an extra decade on each end
+      self.assertAlmostEqual(left2, 0.1 * left1)
+      self.assertAlmostEqual(right2, 10 * right1)
+
+      # Same transfer function, but add more points to the plot
+      ctrl.config.set_defaults(
+         'freqplot', feature_periphery_decades=2, number_of_samples=13)
+      fig3 = plt.figure()
+      ctrl.bode_plot(sys, dB=False, deg = True, Hz=False)
+      numpoints3 = len(fig3.axes[0].lines[0].get_data()[0])
+
+      # Make sure we got the right number of points
+      self.assertNotEqual(numpoints1, numpoints3)
+      self.assertEqual(numpoints3, 13)
+
+      # Reset default parameters to avoid contamination
+      ctrl.config.reset_defaults()
+
+
 def suite():
    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
 

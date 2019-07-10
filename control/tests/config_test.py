@@ -17,6 +17,36 @@ class TestConfig(unittest.TestCase):
         # Create a simple second order system to use for testing
         self.sys = ct.tf([10], [1, 2, 1])
 
+    def test_set_defaults(self):
+        ct.config.set_defaults('config', test1=1, test2=2, test3=None)
+        self.assertEqual(ct.config.defaults['config.test1'], 1)
+        self.assertEqual(ct.config.defaults['config.test2'], 2)
+        self.assertEqual(ct.config.defaults['config.test3'], None)
+
+    def test_get_param(self):
+        self.assertEqual(
+            ct.config._get_param('bode', 'dB'),
+            ct.config.defaults['bode.dB'])
+        self.assertEqual(ct.config._get_param('bode', 'dB', 1), 1)
+        ct.config.defaults['config.test1'] = 1
+        self.assertEqual(ct.config._get_param('config', 'test1', None), 1)
+        self.assertEqual(ct.config._get_param('config', 'test1', None, 1), 1)
+        
+        ct.config.defaults['config.test3'] = None
+        self.assertEqual(ct.config._get_param('config', 'test3'), None)
+        self.assertEqual(ct.config._get_param('config', 'test3', 1), 1)
+        self.assertEqual(
+            ct.config._get_param('config', 'test3', None, 1), None)
+        
+        self.assertEqual(ct.config._get_param('config', 'test4'), None)
+        self.assertEqual(ct.config._get_param('config', 'test4', 1), 1)
+        self.assertEqual(ct.config._get_param('config', 'test4', 2, 1), 2)
+        self.assertEqual(ct.config._get_param('config', 'test4', None, 3), 3)
+
+        self.assertEqual(
+            ct.config._get_param('config', 'test4', {'test4':1}, None), 1)
+
+
     def test_fbs_bode(self):
         ct.use_fbs_defaults();
 

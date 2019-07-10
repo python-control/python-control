@@ -68,6 +68,12 @@ from copy import deepcopy
 __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 
+# Define module default parameter values
+_statesp_defaults = {
+    'statesp.use_numpy_matrix':True,
+}
+
+
 def _ssmatrix(data, axis=1):
     """Convert argument to a (possibly empty) state space matrix.
 
