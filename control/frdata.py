@@ -1,51 +1,47 @@
+# Copyright (c) 2010 by California Institute of Technology
+# Copyright (c) 2012 by Delft University of Technology
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# 3. Neither the names of the California Institute of Technology nor
+#    the Delft University of Technology nor
+#    the names of its contributors may be used to endorse or promote
+#    products derived from this software without specific prior
+#    written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
+# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
+# Date: 02 Oct 12
+
 from __future__ import division
+
 """
 Frequency response data representation and functions.
 
 This module contains the FRD class and also functions that operate on
 FRD data.
-"""
-
-"""Copyright (c) 2010 by California Institute of Technology
-   Copyright (c) 2012 by Delft University of Technology
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-3. Neither the names of the California Institute of Technology nor
-   the Delft University of Technology nor
-   the names of its contributors may be used to endorse or promote
-   products derived from this software without specific prior
-   written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGE.
-
-Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
-Date: 02 Oct 12
-Revised:
-
-$Id: frd.py 185 2012-08-30 05:44:32Z murrayrm $
-
 """
 
 # External function declarations
@@ -56,21 +52,22 @@ from numpy import angle, array, empty, ones, \
 from scipy.interpolate import splprep, splev
 from .lti import LTI
 
-__all__ = ['FRD', 'frd']
+__all__ = ['FrequencyResponseData', 'FRD', 'frd']
 
-class FRD(LTI):
-    """FRD(d, w)
+
+class FrequencyResponseData(LTI):
+    """FrequencyResponseData(d, w)
 
     A class for models defined by frequency response data (FRD)
 
-    The FRD class is used to represent systems in frequency response data form.
+    The FrequencyResponseData (FRD) class is used to represent systems in
+    frequency response data form.
 
-    The main data members are 'omega' and 'fresp', where `omega` is a 1D
-    array with the frequency points of the response, and `fresp` is a 3D array,
-    with the first dimension corresponding to the output index of the FRD,
-    the second dimension corresponding to the input index, and the 3rd dimension
-    corresponding to the frequency points in omega.
-    For example,
+    The main data members are 'omega' and 'fresp', where `omega` is a 1D array
+    with the frequency points of the response, and `fresp` is a 3D array, with
+    the first dimension corresponding to the output index of the FRD, the
+    second dimension corresponding to the input index, and the 3rd dimension
+    corresponding to the frequency points in omega.  For example,
 
     >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
 
@@ -88,9 +85,7 @@ class FRD(LTI):
     epsw = 1e-8
 
     def __init__(self, *args, **kwargs):
-        """FRD(d, w)
-
-        Construct an FRD object
+        """Construct an FRD object.
 
         The default constructor is FRD(d, w), where w is an iterable of
         frequency points, and d is the matching frequency data.
@@ -154,10 +149,10 @@ class FRD(LTI):
                                dtype=tuple)
             for i in range(self.fresp.shape[0]):
                 for j in range(self.fresp.shape[1]):
-                    self.ifunc[i,j],u = splprep(
+                    self.ifunc[i, j], u = splprep(
                         u=self.omega, x=[real(self.fresp[i, j, :]),
                                          imag(self.fresp[i, j, :])],
-                        w=1.0/(absolute(self.fresp[i, j, :])+0.001), s=0.0)
+                        w=1.0/(absolute(self.fresp[i, j, :]) + 0.001), s=0.0)
         else:
             self.ifunc = None
         LTI.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
@@ -166,7 +161,7 @@ class FRD(LTI):
         """String representation of the transfer function."""
 
         mimo = self.inputs > 1 or self.outputs > 1
-        outstr = [ 'frequency response data ' ]
+        outstr = ['frequency response data ']
 
         mt, pt, wt = self.freqresp(self.omega)
         for i in range(self.inputs):
@@ -176,9 +171,9 @@ class FRD(LTI):
                 outstr.append('Freq [rad/s]  Response   ')
                 outstr.append('------------  ---------------------')
                 outstr.extend(
-                    [ '%12.3f  %10.4g%+10.4gj' % (w, m, p)
-                      for m, p, w in zip(real(self.fresp[j,i,:]), imag(self.fresp[j,i,:]), wt) ])
-
+                    ['%12.3f  %10.4g%+10.4gj' % (w, m, p)
+                     for m, p, w in zip(real(self.fresp[j, i, :]),
+                                        imag(self.fresp[j, i, :]), wt)])
 
         return '\n'.join(outstr)
 
@@ -194,8 +189,8 @@ class FRD(LTI):
             # verify that the frequencies match
             if len(other.omega) != len(self.omega) or \
                (other.omega != self.omega).any():
-                warn("Frequency points do not match; expect"
-                      " truncation and interpolation.")
+                warn("Frequency points do not match; expect "
+                     "truncation and interpolation.")
 
         # Convert the second argument to a frequency response function.
         # or re-base the frd to the current omega (if needed)
@@ -214,7 +209,7 @@ second has %i." % (self.outputs, other.outputs))
     def __radd__(self, other):
         """Right add two LTI objects (parallel connection)."""
 
-        return self + other;
+        return self + other
 
     def __sub__(self, other):
         """Subtract two LTI objects."""
@@ -238,8 +233,9 @@ second has %i." % (self.outputs, other.outputs))
 
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
-            raise ValueError("H = G1*G2: input-output size mismatch"
-                " G1 has %i input(s), G2 has %i output(s)." %
+            raise ValueError(
+                "H = G1*G2: input-output size mismatch: "
+                "G1 has %i input(s), G2 has %i output(s)." %
                 (self.inputs, other.outputs))
 
         inputs = other.inputs
@@ -247,7 +243,7 @@ second has %i." % (self.outputs, other.outputs))
         fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
         for i in range(len(self.omega)):
-            fresp[:,:,i] = dot(self.fresp[:,:,i], other.fresp[:,:,i])
+            fresp[:, :, i] = dot(self.fresp[:, :, i], other.fresp[:, :, i])
         return FRD(fresp, self.omega,
                    smooth=(self.ifunc is not None) and
                           (other.ifunc is not None))
@@ -264,8 +260,9 @@ second has %i." % (self.outputs, other.outputs))
 
         # Check that the input-output sizes are consistent.
         if self.outputs != other.inputs:
-            raise ValueError("H = G1*G2: input-output size mismatch"
-                " G1 has %i input(s), G2 has %i output(s)." %
+            raise ValueError(
+                "H = G1*G2: input-output size mismatch: "
+                "G1 has %i input(s), G2 has %i output(s)." %
                 (other.inputs, self.outputs))
 
         inputs = self.inputs
@@ -274,7 +271,7 @@ second has %i." % (self.outputs, other.outputs))
         fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
         for i in range(len(self.omega)):
-            fresp[:,:,i] = dot(other.fresp[:,:,i], self.fresp[:,:,i])
+            fresp[:, :, i] = dot(other.fresp[:, :, i], self.fresp[:, :, i])
         return FRD(fresp, self.omega,
                    smooth=(self.ifunc is not None) and
                           (other.ifunc is not None))
@@ -289,11 +286,11 @@ second has %i." % (self.outputs, other.outputs))
         else:
             other = _convertToFRD(other, omega=self.omega)
 
-
         if (self.inputs > 1 or self.outputs > 1 or
             other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError(
-                "FRD.__truediv__ is currently implemented only for SISO systems.")
+                "FRD.__truediv__ is currently only implemented for SISO "
+                "systems.")
 
         return FRD(self.fresp/other.fresp, self.omega,
                    smooth=(self.ifunc is not None) and
@@ -315,7 +312,8 @@ second has %i." % (self.outputs, other.outputs))
         if (self.inputs > 1 or self.outputs > 1 or
             other.inputs > 1 or other.outputs > 1):
             raise NotImplementedError(
-                "FRD.__rtruediv__ is currently implemented only for SISO systems.")
+                "FRD.__rtruediv__ is currently only implemented for "
+                "SISO systems.")
 
         return other / self
 
@@ -323,12 +321,12 @@ second has %i." % (self.outputs, other.outputs))
     def __rdiv__(self, other):
         return self.__rtruediv__(other)
 
-    def __pow__(self,other):
+    def __pow__(self, other):
         if not type(other) == int:
             raise ValueError("Exponent must be an integer")
         if other == 0:
-            return FRD(ones(self.fresp.shape),self.omega,
-                       smooth=(self.ifunc is not None)) #unity
+            return FRD(ones(self.fresp.shape), self.omega,
+                       smooth=(self.ifunc is not None))  # unity
         if other > 0:
             return self * (self**(other-1))
         if other < 0:
@@ -347,7 +345,7 @@ second has %i." % (self.outputs, other.outputs))
 
         """
         warn("FRD.evalfr(omega) will be deprecated in a future release "
-             "of python-control; use sys.eval(omega) instead", 
+             "of python-control; use sys.eval(omega) instead",
              PendingDeprecationWarning)         # pragma: no coverage
         return self._evalfr(omega)
 
@@ -381,7 +379,7 @@ second has %i." % (self.outputs, other.outputs))
         if self.ifunc is None:
             try:
                 out = self.fresp[:, :, where(self.omega == omega)[0][0]]
-            except:
+            except Exception:
                 raise ValueError(
                     "Frequency %f not in frequency list, try an interpolating"
                     " FRD if you want additional points" % omega)
@@ -389,14 +387,14 @@ second has %i." % (self.outputs, other.outputs))
             if getattr(omega, '__iter__', False):
                 for i in range(self.outputs):
                     for j in range(self.inputs):
-                        for k,w in enumerate(omega):
-                            frraw = splev(w, self.ifunc[i,j], der=0)
-                            out[i,j,k] = frraw[0] + 1.0j*frraw[1]
+                        for k, w in enumerate(omega):
+                            frraw = splev(w, self.ifunc[i, j], der=0)
+                            out[i, j, k] = frraw[0] + 1.0j * frraw[1]
             else:
                 for i in range(self.outputs):
                     for j in range(self.inputs):
-                        frraw = splev(omega, self.ifunc[i,j], der=0)
-                        out[i,j] = frraw[0] + 1.0j*frraw[1]
+                        frraw = splev(omega, self.ifunc[i, j], der=0)
+                        out[i, j] = frraw[0] + 1.0j * frraw[1]
 
         return out
 
@@ -406,9 +404,10 @@ second has %i." % (self.outputs, other.outputs))
 
         mag, phase, omega = self.freqresp(omega)
 
-        reports the value of the magnitude, phase, and angular frequency of the
-        transfer function matrix evaluated at s = i * omega, where omega is a
-        list of angular frequencies, and is a sorted version of the input omega.
+        reports the value of the magnitude, phase, and angular frequency of
+        the transfer function matrix evaluated at s = i * omega, where omega
+        is a list of angular frequencies, and is a sorted version of the input
+        omega.
 
         """
 
@@ -431,8 +430,7 @@ second has %i." % (self.outputs, other.outputs))
 
         other = _convertToFRD(other, omega=self.omega)
 
-        if (self.outputs != other.inputs or
-            self.inputs != other.outputs):
+        if (self.outputs != other.inputs or self.inputs != other.outputs):
             raise ValueError(
                 "FRD.feedback, inputs/outputs mismatch")
         fresp = empty((self.outputs, self.inputs, len(other.omega)),
@@ -451,6 +449,20 @@ second has %i." % (self.outputs, other.outputs))
             )
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
+
+#
+# Allow FRD as an alias for the FrequencyResponseData class
+#
+# Note: This class was initially given the name "FRD", but this caused
+# problems with documentation on MacOS platforms, since files were generated
+# for control.frd and control.FRD, which are not differentiated on most MacOS
+# filesystems, which are case insensitive.  Renaming the FRD class to be
+# FrequenceResponseData and then assigning FRD to point to the same object
+# fixes this problem.
+#
+
+FRD = FrequencyResponseData
+
 
 def _convertToFRD(sys, omega, inputs=1, outputs=1):
     """Convert a system to frequency response data form (if needed).
@@ -495,17 +507,18 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
     # try converting constant matrices
     try:
         sys = array(sys)
-        outputs,inputs = sys.shape
+        outputs, inputs = sys.shape
         fresp = empty((outputs, inputs, len(omega)), dtype=float)
         for i in range(outputs):
             for j in range(inputs):
-                fresp[i,j,:] = sys[i,j]
+                fresp[i, j, :] = sys[i, j]
         return FRD(fresp, omega, smooth=True)
-    except:
+    except Exception:
         pass
 
     raise TypeError('''Can't convert given type "%s" to FRD system.''' %
                     sys.__class__)
+
 
 def frd(*args):
     """frd(d, w)
