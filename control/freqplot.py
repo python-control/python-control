@@ -602,10 +602,10 @@ def gangof4_plot(P, C, omega=None):
         # if any of the axes are missing, start from scratch
         if any((ax is None for ax in plot_axes.values())):
             plt.clf()
-            plot_axes = {'t': plt.subplot(221, label='control-gangof4-t'),
+            plot_axes = {'s': plt.subplot(221, label='control-gangof4-s'),
                          'ps': plt.subplot(222, label='control-gangof4-ps'),
                          'cs': plt.subplot(223, label='control-gangof4-cs'),
-                         's': plt.subplot(224, label='control-gangof4-s')}
+                         't': plt.subplot(224, label='control-gangof4-t')}
 
         #
         # Plot the four sensitivity functions
