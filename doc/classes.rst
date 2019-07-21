@@ -15,7 +15,7 @@ these directly.
 
    TransferFunction
    StateSpace
-   FRD
+   FrequencyResponseData
    InputOutputSystem
 
 Input/Output system subclasses

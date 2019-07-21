@@ -62,8 +62,8 @@ function.  A full list of functions can be found in :ref:`function-ref`.
 
 FRD (frequency response data) systems
 -------------------------------------
-The :class:`FRD` class is used to represent systems in frequency response
-data form.
+The :class:`FrequencyResponseData` (FRD) class is used to represent systems in
+frequency response data form.
 
 The main data members are `omega` and `fresp`, where `omega` is a 1D array
 with the frequency points of the response, and `fresp` is a 3D array, with
