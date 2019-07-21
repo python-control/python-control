@@ -87,6 +87,10 @@ from ..sisotool import sisotool
 from .timeresp import *
 from .wrappers import *
 
+# Set up defaults corresponding to MATLAB conventions
+from ..config import *
+use_matlab_defaults()
+
 r"""
 The following tables give an overview of the module ``control.matlab``.
 They also show the implementation progress and the planned features of the

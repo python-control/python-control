@@ -44,8 +44,17 @@ from numpy import real, imag, linspace, exp, cos, sin, sqrt
 from math import pi
 from .lti import LTI, isdtime, isctime
 from .grid import sgrid, zgrid, nogrid
+from . import config
 
 __all__ = ['pzmap']
+
+
+# Define default parameter values for this module
+_pzmap_defaults = {
+    'pzmap.grid':False,         # Plot omega-damping grid
+    'pzmap.Plot':True,          # Generate plot using Matplotlib
+}
+
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
@@ -71,6 +80,10 @@ def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
     zeros: array
         The system's zeros.
     """
+    # Get parameter values
+    Plot = config._get_param('rlocus', 'Plot', grid, True)
+    grid = config._get_param('rlocus', 'grid', grid, False)
+    
     if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')
 

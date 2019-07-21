@@ -46,6 +46,7 @@
 # $Id$
 
 # Packages used by this module
+from functools import partial
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
@@ -55,15 +56,22 @@ import pylab                    # plotting routines
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate
-from functools import partial
+from . import config
 
 __all__ = ['root_locus', 'rlocus']
+
+# Default values for module parameters
+_rlocus_defaults = {
+    'rlocus.grid':True,
+    'rlocus.plotstr':'b' if int(matplotlib.__version__[0]) == 1 else 'C0',
+    'rlocus.PrintGain':True,
+    'rlocus.Plot':True
+}
 
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None,
-               plotstr='b' if int(matplotlib.__version__[0]) == 1 else 'C0',
-               Plot=True, PrintGain=True, grid=False, **kwargs):
+               plotstr=None, Plot=True, PrintGain=None, grid=None, **kwargs):
 
     """Root locus plot
 
@@ -96,6 +104,11 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     klist : ndarray or list
         Gains used.  Same as klist keyword argument if provided.
     """
+    # Get parameter values
+    plotstr = config._get_param('rlocus', 'plotstr', plotstr, _rlocus_defaults)
+    grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
+    PrintGain = config._get_param(
+        'rlocus', 'PrintGain', PrintGain, _rlocus_defaults)
 
     # Convert numerator and denominator to polynomials if they aren't
     (nump, denp) = _systopoly1d(sys)

@@ -11,10 +11,41 @@ import control as ct
 import matplotlib.pyplot as plt
 from math import pi, log10
 
+
 class TestConfig(unittest.TestCase):
     def setUp(self):
         # Create a simple second order system to use for testing
         self.sys = ct.tf([10], [1, 2, 1])
+
+    def test_set_defaults(self):
+        ct.config.set_defaults('config', test1=1, test2=2, test3=None)
+        self.assertEqual(ct.config.defaults['config.test1'], 1)
+        self.assertEqual(ct.config.defaults['config.test2'], 2)
+        self.assertEqual(ct.config.defaults['config.test3'], None)
+
+    def test_get_param(self):
+        self.assertEqual(
+            ct.config._get_param('bode', 'dB'),
+            ct.config.defaults['bode.dB'])
+        self.assertEqual(ct.config._get_param('bode', 'dB', 1), 1)
+        ct.config.defaults['config.test1'] = 1
+        self.assertEqual(ct.config._get_param('config', 'test1', None), 1)
+        self.assertEqual(ct.config._get_param('config', 'test1', None, 1), 1)
+        
+        ct.config.defaults['config.test3'] = None
+        self.assertEqual(ct.config._get_param('config', 'test3'), None)
+        self.assertEqual(ct.config._get_param('config', 'test3', 1), 1)
+        self.assertEqual(
+            ct.config._get_param('config', 'test3', None, 1), None)
+        
+        self.assertEqual(ct.config._get_param('config', 'test4'), None)
+        self.assertEqual(ct.config._get_param('config', 'test4', 1), 1)
+        self.assertEqual(ct.config._get_param('config', 'test4', 2, 1), 2)
+        self.assertEqual(ct.config._get_param('config', 'test4', None, 3), 3)
+
+        self.assertEqual(
+            ct.config._get_param('config', 'test4', {'test4':1}, None), 1)
+
 
     def test_fbs_bode(self):
         ct.use_fbs_defaults();
@@ -109,9 +140,9 @@ class TestConfig(unittest.TestCase):
         ct.reset_defaults()
 
     def test_custom_bode_default(self):
-        ct.bode_dB = True
-        ct.bode_deg = True
-        ct.bode_Hz = True
+        ct.config.defaults['bode.dB'] = True
+        ct.config.defaults['bode.deg'] = True
+        ct.config.defaults['bode.Hz'] = True
 
         # Generate a Bode plot
         plt.figure()
@@ -137,7 +168,7 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(len(mag_ret), 87)
 
         # Change the default number of samples
-        ct.config.bode_number_of_samples = 76
+        ct.config.defaults['freqplot.number_of_samples'] = 76
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys)
         self.assertEqual(len(mag_ret), 76)
         
@@ -154,7 +185,7 @@ class TestConfig(unittest.TestCase):
         omega_min, omega_max = omega_ret[[0,  -1]]
 
         # Reset the periphery decade value (should add one decade on each end)
-        ct.config.bode_feature_periphery_decade = 2
+        ct.config.defaults['freqplot.feature_periphery_decades'] = 2
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=False)
         np.testing.assert_almost_equal(omega_ret[0], omega_min/10)
         np.testing.assert_almost_equal(omega_ret[-1], omega_max * 10)
@@ -162,7 +193,7 @@ class TestConfig(unittest.TestCase):
         # Make sure it also works in rad/sec, in opposite direction
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=True)
         omega_min, omega_max = omega_ret[[0,  -1]]
-        ct.config.bode_feature_periphery_decade = 1
+        ct.config.defaults['freqplot.feature_periphery_decades'] = 1
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=True)
         np.testing.assert_almost_equal(omega_ret[0], omega_min*10)
         np.testing.assert_almost_equal(omega_ret[-1], omega_max/10)
@@ -172,11 +203,13 @@ class TestConfig(unittest.TestCase):
     def test_reset_defaults(self):
         ct.use_matlab_defaults()
         ct.reset_defaults()
-        self.assertEquals(ct.config.bode_dB, False)
-        self.assertEquals(ct.config.bode_deg, True)
-        self.assertEquals(ct.config.bode_Hz, False)
-        self.assertEquals(ct.config.bode_number_of_samples, None)
-        self.assertEquals(ct.config.bode_feature_periphery_decade, 1.0)
+        self.assertEqual(ct.config.defaults['bode.dB'], False)
+        self.assertEqual(ct.config.defaults['bode.deg'], True)
+        self.assertEqual(ct.config.defaults['bode.Hz'], False)
+        self.assertEqual(
+            ct.config.defaults['freqplot.number_of_samples'], None)
+        self.assertEqual(
+            ct.config.defaults['freqplot.feature_periphery_decades'], 1.0)
 
     def tearDown(self):
         # Get rid of any figures that we created

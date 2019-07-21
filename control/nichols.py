@@ -54,11 +54,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .ctrlutil import unwrap
 from .freqplot import default_frequency_range
+from . import config
 
 __all__ = ['nichols_plot', 'nichols', 'nichols_grid']
 
+# Default parameters values for the nichols module
+_nichols_defaults = {
+    'nichols.grid':True,
+}
 
-def nichols_plot(sys_list, omega=None, grid=True):
+
+def nichols_plot(sys_list, omega=None, grid=None):
     """Nichols plot for a system
 
     Plots a Nichols plot for the system over a (optional) frequency range.
@@ -76,6 +82,9 @@ def nichols_plot(sys_list, omega=None, grid=True):
     -------
     None
     """
+    # Get parameter values
+    grid = config._get_param('nichols', 'grid', grid, True)
+
 
     # If argument was a singleton, turn it into a list
     if not getattr(sys_list, '__iter__', False):
