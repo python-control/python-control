@@ -62,6 +62,7 @@ from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
 from itertools import chain
+from re import sub
 from .lti import LTI, timebaseEqual, timebase, isdtime
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -301,6 +302,9 @@ class TransferFunction(LTI):
                 # Convert the numerator and denominator polynomials to strings.
                 numstr = _tf_polynomial_to_string(self.num[i][j], var=var)
                 denstr = _tf_polynomial_to_string(self.den[i][j], var=var)
+
+                numstr = _tf_string_to_latex(numstr, var=var)
+                denstr = _tf_string_to_latex(denstr, var=var)
 
                 out += [r"\frac{", numstr, "}{", denstr, "}"]
 
@@ -1095,6 +1099,13 @@ def _tf_polynomial_to_string(coeffs, var='s'):
             thestr = "-%s" % (newstr,)
         else:
             thestr = newstr
+    return thestr
+
+
+def _tf_string_to_latex(thestr, var='s'):
+    thestr = sub(var + r'\^(\d{2,})', var + r'^{\1}', thestr)
+    thestr = sub(r'[eE]\+(\d+)', r' \\cdot 10^{\1}', thestr)
+    thestr = sub(r'[eE]\-(\d+)', r' \\cdot 10^{-\1}', thestr)
     return thestr
 
 
