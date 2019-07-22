@@ -1103,6 +1103,9 @@ def _tf_polynomial_to_string(coeffs, var='s'):
 
 
 def _tf_string_to_latex(thestr, var='s'):
+    """ make sure to superscript all digits in a polynomial string
+        and convert float coefficients in scientific notation
+        to prettier LaTeX representation """
     thestr = sub(var + r'\^(\d{2,})', var + r'^{\1}', thestr)
     thestr = sub(r'[eE]\+(\d+)', r' \\cdot 10^{\1}', thestr)
     thestr = sub(r'[eE]\-(\d+)', r' \\cdot 10^{-\1}', thestr)
