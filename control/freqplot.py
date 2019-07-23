@@ -575,58 +575,67 @@ def gangof4_plot(P, C, omega=None):
         # TODO: Add MIMO go4 plots.
         raise NotImplementedError(
             "Gang of four is currently only implemented for SISO systems.")
-    else:
 
-        # Select a default range if none is provided
-        # TODO: This needs to be made more intelligent
-        if omega is None:
-            omega = default_frequency_range((P, C))
+    # Get the default parameter values
+    dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
+    Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
+    grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
 
-        # Compute the senstivity functions
-        L = P * C
-        S = feedback(1, L)
-        T = L * S
+    # Select a default range if none is provided
+    # TODO: This needs to be made more intelligent
+    if omega is None:
+        omega = default_frequency_range((P, C))
 
-        # Set up the axes with labels so that multiple calls to
-        # gangof4_plot will superimpose the data.  See details in bode_plot.
-        plot_axes = {'t': None, 's': None, 'ps': None, 'cs': None}
-        for ax in plt.gcf().axes:
-            label = ax.get_label()
-            if label.startswith('control-gangof4-'):
-                key = label[len('control-gangof4-'):]
-                if key not in plot_axes:
-                    raise RuntimeError(
-                        "unknown gangof4 axis type '{}'".format(label))
-                plot_axes[key] = ax
+    # Compute the senstivity functions
+    L = P * C
+    S = feedback(1, L)
+    T = L * S
 
-        # if any of the axes are missing, start from scratch
-        if any((ax is None for ax in plot_axes.values())):
-            plt.clf()
-            plot_axes = {'s': plt.subplot(221, label='control-gangof4-s'),
-                         'ps': plt.subplot(222, label='control-gangof4-ps'),
-                         'cs': plt.subplot(223, label='control-gangof4-cs'),
-                         't': plt.subplot(224, label='control-gangof4-t')}
+    # Set up the axes with labels so that multiple calls to
+    # gangof4_plot will superimpose the data.  See details in bode_plot.
+    plot_axes = {'t': None, 's': None, 'ps': None, 'cs': None}
+    for ax in plt.gcf().axes:
+        label = ax.get_label()
+        if label.startswith('control-gangof4-'):
+            key = label[len('control-gangof4-'):]
+            if key not in plot_axes:
+                raise RuntimeError(
+                    "unknown gangof4 axis type '{}'".format(label))
+            plot_axes[key] = ax
 
-        #
-        # Plot the four sensitivity functions
-        #
+    # if any of the axes are missing, start from scratch
+    if any((ax is None for ax in plot_axes.values())):
+        plt.clf()
+        plot_axes = {'s': plt.subplot(221, label='control-gangof4-s'),
+                     'ps': plt.subplot(222, label='control-gangof4-ps'),
+                     'cs': plt.subplot(223, label='control-gangof4-cs'),
+                     't': plt.subplot(224, label='control-gangof4-t')}
 
-        # TODO: Need to add in the mag = 1 lines
-        mag_tmp, phase_tmp, omega = T.freqresp(omega)
-        mag = np.squeeze(mag_tmp)
-        plot_axes['t'].loglog(omega, mag)
+    #
+    # Plot the four sensitivity functions
+    #
+    omega_plot = omega / (2. * math.pi) if Hz else omega
 
-        mag_tmp, phase_tmp, omega = (P * S).freqresp(omega)
-        mag = np.squeeze(mag_tmp)
-        plot_axes['ps'].loglog(omega, mag)
+    # TODO: Need to add in the mag = 1 lines
+    mag_tmp, phase_tmp, omega = S.freqresp(omega)
+    mag = np.squeeze(mag_tmp)
+    plot_axes['s'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['s'].grid(grid, which='both')
 
-        mag_tmp, phase_tmp, omega = (C * S).freqresp(omega)
-        mag = np.squeeze(mag_tmp)
-        plot_axes['cs'].loglog(omega, mag)
+    mag_tmp, phase_tmp, omega = (P * S).freqresp(omega)
+    mag = np.squeeze(mag_tmp)
+    plot_axes['ps'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['ps'].grid(grid, which='both')
 
-        mag_tmp, phase_tmp, omega = S.freqresp(omega)
-        mag = np.squeeze(mag_tmp)
-        plot_axes['s'].loglog(omega, mag)
+    mag_tmp, phase_tmp, omega = (C * S).freqresp(omega)
+    mag = np.squeeze(mag_tmp)
+    plot_axes['cs'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['cs'].grid(grid, which='both')
+
+    mag_tmp, phase_tmp, omega = T.freqresp(omega)
+    mag = np.squeeze(mag_tmp)
+    plot_axes['t'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['t'].grid(grid, which='both')
 
 #
 # Utility functions
