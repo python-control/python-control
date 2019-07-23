@@ -554,7 +554,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None,
 #
 
 # TODO: think about how (and whether) to handle lists of systems
-def gangof4_plot(P, C, omega=None):
+def gangof4_plot(P, C, omega=None, **kwargs):
     """Plot the "Gang of 4" transfer functions for a system
 
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
@@ -620,22 +620,34 @@ def gangof4_plot(P, C, omega=None):
     mag_tmp, phase_tmp, omega = S.freqresp(omega)
     mag = np.squeeze(mag_tmp)
     plot_axes['s'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['s'].set_ylabel("$|S|$")
+    plot_axes['s'].tick_params(labelbottom=False)
     plot_axes['s'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = (P * S).freqresp(omega)
     mag = np.squeeze(mag_tmp)
     plot_axes['ps'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['ps'].tick_params(labelbottom=False)
+    plot_axes['ps'].set_ylabel("$|PS|$")
     plot_axes['ps'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = (C * S).freqresp(omega)
     mag = np.squeeze(mag_tmp)
     plot_axes['cs'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['cs'].set_xlabel(
+        "Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+    plot_axes['cs'].set_ylabel("$|CS|$")
     plot_axes['cs'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = T.freqresp(omega)
     mag = np.squeeze(mag_tmp)
     plot_axes['t'].loglog(omega_plot, 20 * np.log10(mag) if dB else mag)
+    plot_axes['t'].set_xlabel(
+        "Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+    plot_axes['t'].set_ylabel("$|T|$")
     plot_axes['t'].grid(grid, which='both')
+
+    plt.tight_layout()
 
 #
 # Utility functions
