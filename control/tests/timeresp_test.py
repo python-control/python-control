@@ -259,7 +259,7 @@ class TestTimeresp(unittest.TestCase):
                               42.3227, 44.9694, 47.1599, 48.9776]])
         _t, yout, _xout = forced_response(self.mimo_ss1, t, u, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
-        
+
         # Test discrete MIMO system to use correct convention for input
         sysc = self.mimo_ss1
         dt=t[1]-t[0]
@@ -269,6 +269,17 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_equal(Tc.shape, Td.shape)
         np.testing.assert_array_equal(youtc.shape, youtd.shape)
         np.testing.assert_array_almost_equal(youtc, youtd, decimal=4)
+
+        # Test discrete MIMO system without default T argument
+        u = np.array([[0., 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                      [1., 1, 1, 1, 1, 1, 1, 1, 1, 1]])
+        x0 = np.matrix(".5; 1; 0; 0")
+        youttrue = np.array([[11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
+                              1.1508, 0.5833, 0.1645, -0.1391],
+                             [9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165,
+                              42.3227, 44.9694, 47.1599, 48.9776]])
+        _t, yout, _xout = forced_response(sysd, U=u, X0=x0)
+        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
     def test_lsim_double_integrator(self):
         # Note: scipy.signal.lsim fails if A is not invertible
