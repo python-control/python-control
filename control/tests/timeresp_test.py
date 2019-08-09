@@ -252,7 +252,7 @@ class TestTimeresp(unittest.TestCase):
         # first system: initial value, second system: step response
         u = np.array([[0., 0, 0, 0, 0, 0, 0, 0, 0, 0],
                       [1., 1, 1, 1, 1, 1, 1, 1, 1, 1]])
-        x0 = np.matrix(".5; 1; 0; 0")
+        x0 = np.array([[.5], [1], [0], [0]])
         youttrue = np.array([[11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                               1.1508, 0.5833, 0.1645, -0.1391],
                              [9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165,
@@ -273,7 +273,7 @@ class TestTimeresp(unittest.TestCase):
         # Test discrete MIMO system without default T argument
         u = np.array([[0., 0, 0, 0, 0, 0, 0, 0, 0, 0],
                       [1., 1, 1, 1, 1, 1, 1, 1, 1, 1]])
-        x0 = np.matrix(".5; 1; 0; 0")
+        x0 = np.array([[.5], [1], [0], [0]])
         youttrue = np.array([[11., 8.1494, 5.9361, 4.2258, 2.9118, 1.9092,
                               1.1508, 0.5833, 0.1645, -0.1391],
                              [9., 17.6457, 24.7072, 30.4855, 35.2234, 39.1165,

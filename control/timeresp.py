@@ -273,14 +273,16 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                 raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
-            if len(U.shape) == 1:
+            if U.ndim == 1:
                 n_steps = U.shape[0]
             else:
                 n_steps = U.shape[1]
             T = np.array(range(n_steps)) * (1 if sys.dt is True else sys.dt)
         else:
             # Make sure the input vector and time vector have same length
-            if (len(U.shape) == 1 and U.shape[0] != T.shape[0]) or (len(U.shape) > 1 and U.shape[1] != T.shape[0]):
+            # TODO: allow interpolation of the input vector
+            if (U.ndim == 1 and U.shape[0] != T.shape[0]) or \
+                    (U.ndim > 1 and U.shape[1] != T.shape[0]):
                 ValueError('Pamameter ``T`` must have same elements as'
                            ' the number of columns in input array ``U``')
 
