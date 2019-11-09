@@ -840,7 +840,7 @@ class TransferFunction(LTI):
         # Machine precision for floats.
         eps = finfo(float).eps
 
-        # Decide on the tolerance to use in deciding of a pole is complex
+        # Decide on the tolerance to use in deciding if a pole is complex
         if (imag_tol is None):
             imag_tol = 1e-8     # TODO: figure out the right number to use
 
@@ -874,7 +874,7 @@ class TransferFunction(LTI):
                 nothave = ones(currentpoles.shape, dtype=bool)
                 for ip, p in enumerate(poles[j]):
                     idx, = nonzero(
-                        (abs(currentpoles - p) < epsnm) * nothave)
+                        (abs(currentpoles - p) < sqrt(epsnm)) * nothave)
                     if len(idx):
                         nothave[idx[0]] = False
                     else:
@@ -890,7 +890,8 @@ class TransferFunction(LTI):
         npmax = max([len(p) for p in poles])
         den = zeros((self.inputs, npmax + 1), dtype=float)
         num = zeros((max(1, self.outputs, self.inputs),
-                     max(1, self.outputs, self.inputs), npmax + 1),
+                     max(1, self.outputs, self.inputs),
+                     npmax + 1),
                     dtype=float)
         denorder = zeros((self.inputs,), dtype=int)
 
@@ -901,11 +902,18 @@ class TransferFunction(LTI):
                 for i in range(self.outputs):
                     num[i, j, 0] = poleset[i][j][2]
             else:
-                # create the denominator matching this input polyfromroots
-                # gives coeffs in opposite order from what we use coefficients
-                # should be padded on right, ending at np
+                # create the denominator matching this input
+                # polyfromroots gives coeffs in opposite order from what we use
+                # coefficients should be padded on right, ending at np
                 np = len(poles[j])
-                den[j, np::-1] = polyfromroots(poles[j]).real
+                denpoly = polyfromroots(poles[j])
+                if (abs(denpoly.imag) > imag_tol).any():
+                    warn("The denominator of the transfer function "
+                         "for input {j} to output {i}  has a nontrivial "
+                         "imaginary part of {imag}, which was removed".format(
+                                 i=i, j=j, imag=max(denpoly.imag)))
+                denpoly = denpoly.real
+                den[j, np::-1] = denpoly
                 denorder[j] = np
 
                 # now create the numerator, also padded on the right
@@ -926,12 +934,8 @@ class TransferFunction(LTI):
                     num[i, j, np + 1 - len(numpoly):np + 1] = numpoly[::-1]
                     # print(num[i, j])
 
-        if (abs(den.imag) > epsnm).any():
-            print("Warning: The denominator has a nontrivial imaginary part: "
-                  " %f" % abs(den.imag).max())
-        den = den.real
-
         return num, den, denorder
+
 
     def sample(self, Ts, method='zoh', alpha=None):
         """Convert a continuous-time system to discrete time
