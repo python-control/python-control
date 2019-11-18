@@ -1244,7 +1244,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         if isinstance(spec, str):
             # If we got a dotted string, break up into pieces
-            namelist = re.split('\.', spec)
+            namelist = re.split(r'\.', spec)
 
             # For now, only allow signal level of system name
             # TODO: expand to allow nested signal names
