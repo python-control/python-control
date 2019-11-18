@@ -41,7 +41,8 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
-from numpy import shape, size, asarray, copy, zeros, eye, dot, finfo
+from numpy import shape, size, asarray, copy, zeros, eye, dot, \
+    finfo, inexact, atleast_2d
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
 from .statesp import _ssmatrix
@@ -963,5 +964,9 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
 
 def _is_symmetric(M):
-    eps = finfo(M.dtype).eps
-    return ((M - M.T) < eps).all()
+    M = atleast_2d(M)
+    if isinstance(M[0, 0], inexact):
+        eps = finfo(M.dtype).eps
+        return ((M - M.T) < eps).all()
+    else:
+        return (M == M.T).all()
