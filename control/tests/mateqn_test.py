@@ -50,7 +50,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_less, \
 from scipy.linalg import eigvals, solve
 from scipy import zeros,dot
 from control.mateqn import lyap,dlyap,care,dare
-from control.exception import slycot_check
+from control.exception import slycot_check, ControlArgument
 
 @unittest.skipIf(not slycot_check(), "slycot not installed")
 class TestMatrixEquations(unittest.TestCase):
@@ -242,6 +242,62 @@ class TestMatrixEquations(unittest.TestCase):
         # check for stable closed loop
         lam = eigvals(A - B.dot(G), E)
         assert_array_less(abs(lam), 1.0)
+
+    def test_raise(self):
+        """ Test exception raise for invalid inputs """
+
+        # correct shapes and forms
+        A = array([[1, 0], [-1, -1]])
+        Q = array([[2, 1], [1, 2]])
+        C = array([[1, 0], [0, 1]])
+        E = array([[2, 1], [1, 2]])
+
+        # these fail
+        Afq = array([[1, 0, 0], [-1, -1, 0]])
+        Qfq = array([[2, 1, 0], [1, 2, 0]])
+        Qfs = array([[2, 1], [-1, 2]])
+        Cfd = array([[1, 0, 0], [0, 1, 0]])
+        Efq = array([[2, 1, 0], [1, 2, 0]])
+
+        for cdlyap in [lyap, dlyap]:
+            assert_raises(ControlArgument, cdlyap, Afq, Q)
+            assert_raises(ControlArgument, cdlyap, A, Qfq)
+            assert_raises(ControlArgument, cdlyap, A, Qfs)
+            assert_raises(ControlArgument, cdlyap, Afq, Q, C)
+            assert_raises(ControlArgument, cdlyap, A, Qfq, C)
+            assert_raises(ControlArgument, cdlyap, A, Q, Cfd)
+            assert_raises(ControlArgument, cdlyap, A, Qfq, None, E)
+            assert_raises(ControlArgument, cdlyap, A, Q, None, Efq)
+            assert_raises(ControlArgument, cdlyap, A, Qfs, None, E)
+            assert_raises(ControlArgument, cdlyap, A, Q, C, E)
+
+        B = array([[1, 0], [0, 1]])
+        Bf = array([[1, 0], [0, 1], [1, 1]])
+        R = Q
+        Rfs = Qfs
+        Rfq = Qfq
+        S = array([[0, 0], [0, 0]])
+        Sf = array([[0, 0, 0], [0, 0, 0]])
+        E = array([[2, 1], [1, 2]])
+        Ef = array([[2, 1], [1, 2], [1, 2]])
+
+        assert_raises(ControlArgument, care, Afq, B, Q)
+        assert_raises(ControlArgument, care, A, B, Qfq)
+        assert_raises(ControlArgument, care, A, Bf, Q)
+        assert_raises(ControlArgument, care, 1, B, 1)
+        assert_raises(ControlArgument, care, A, B, Qfs)
+        assert_raises(ValueError, dare, A, B, Q, Rfs)
+        for cdare in [care, dare]:
+            assert_raises(ControlArgument, cdare, Afq, B, Q, R, S, E)
+            assert_raises(ControlArgument, cdare, A, B, Qfq, R, S, E)
+            assert_raises(ControlArgument, cdare, A, Bf, Q, R, S, E)
+            assert_raises(ControlArgument, cdare, A, B, Q, R, S, Ef)
+            assert_raises(ControlArgument, cdare, A, B, Q, Rfq, S, E)
+            assert_raises(ControlArgument, cdare, A, B, Q, R, Sf, E)
+            assert_raises(ControlArgument, cdare, A, B, Qfs, R, S, E)
+            assert_raises(ControlArgument, cdare, A, B, Q, Rfs, S, E)
+            assert_raises(ControlArgument, cdare, A, B, Q, R, S)
+
 
 def suite():
     return unittest.TestLoader().loadTestsFromTestCase(TestMatrixEquations)
