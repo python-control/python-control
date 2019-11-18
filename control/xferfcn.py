@@ -319,7 +319,7 @@ class TransferFunction(LTI):
 
         # See if this is a discrete time system with specific sampling time
         if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
-            out += ["\quad dt = ", str(self.dt)]
+            out += [r"\quad dt = ", str(self.dt)]
 
         out.append("$$")
 
