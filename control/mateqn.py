@@ -41,7 +41,7 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
-from numpy import shape, size, array, asarray, copy, zeros, eye, dot
+from numpy import shape, size, asarray, copy, zeros, eye, dot, finfo
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
 from .statesp import _ssmatrix
@@ -122,7 +122,7 @@ def lyap(A, Q, C=None, E=None):
         if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
             raise ControlArgument("Q must be a quadratic matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the Lyapunov equation by calling Slycot function sb03md
@@ -188,7 +188,7 @@ def lyap(A, Q, C=None, E=None):
             raise ControlArgument("E must be a square matrix with the same \
                 dimension as A.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Make sure we have access to the write slicot routine
@@ -309,7 +309,7 @@ def dlyap(A,Q,C=None,E=None):
         if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
             raise ControlArgument("Q must be a quadratic matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the Lyapunov equation by calling the Slycot function sb03md
@@ -371,7 +371,7 @@ def dlyap(A,Q,C=None,E=None):
             raise ControlArgument("E must be a square matrix with the same \
                 dimension as A.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the generalized Lyapunov equation by calling Slycot
@@ -500,10 +500,10 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
             size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -603,10 +603,10 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
             size(S) == 1 and m > 1:
             raise ControlArgument("Incompatible dimensions of S matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -775,10 +775,10 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
             size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -882,10 +882,10 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
             size(S) == 1 and m > 1:
             raise ControlArgument("Incompatible dimensions of S matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -960,3 +960,8 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters.")
+
+
+def _is_symmetric(M):
+    eps = finfo(M.dtype).eps
+    return ((M - M.T) < eps).all()
