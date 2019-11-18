@@ -1106,9 +1106,11 @@ def _tf_string_to_latex(thestr, var='s'):
     """ make sure to superscript all digits in a polynomial string
         and convert float coefficients in scientific notation
         to prettier LaTeX representation """
+    # TODO: make the multiplication sign configurable
+    expmul = r' \\times'
     thestr = sub(var + r'\^(\d{2,})', var + r'^{\1}', thestr)
-    thestr = sub(r'[eE]\+(\d+)', r' \\cdot 10^{\1}', thestr)
-    thestr = sub(r'[eE]\-(\d+)', r' \\cdot 10^{-\1}', thestr)
+    thestr = sub(r'[eE]\+0*(\d+)', expmul + r' 10^{\1}', thestr)
+    thestr = sub(r'[eE]\-0*(\d+)', expmul + r' 10^{-\1}', thestr)
     return thestr
 
 
