@@ -874,8 +874,10 @@ class TransferFunction(LTI):
                 currentpoles = poleset[i][j][1]
                 nothave = ones(currentpoles.shape, dtype=bool)
                 for ip, p in enumerate(poles[j]):
-                    collect = ((abs(currentpoles.real - p.real) < real_tol) &
-                               (abs(currentpoles.imag - p.imag) < imag_tol) &
+                    collect = (np.isclose(currentpoles.real, p.real,
+                                          atol=real_tol) &
+                               np.isclose(currentpoles.imag, p.imag,
+                                          atol=imag_tol) &
                                nothave)
                     if np.any(collect):
                         # mark first found pole as already collected
