@@ -43,10 +43,11 @@
 import numpy as np
 import scipy as sp
 from . import statesp
+from .mateqn import care
 from .statesp import _ssmatrix
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'acker']
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe', 'acker']
 
 
 # Pole placement
@@ -219,6 +220,73 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     # Return the gain matrix, with MATLAB gain convention
     return _ssmatrix(-F)
 
+# contributed by Sawyer B. Fuller <minster@uw.edu>
+def lqe(A, G, C, QN, RN, NN=None):
+    """lqe(A, G, C, QN, RN, [, N])
+
+    Linear quadratic estimator design (Kalman filter) for continuous-time
+    systems. Given the system
+
+    Given the system
+    .. math::
+        x = Ax + Bu + Gw
+        y = Cx + Du + v
+     
+    with unbiased process noise w and measurement noise v with covariances
+
+    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+
+    The lqe() function computes the observer gain matrix L such that the
+    stationary (non-time-varying) Kalman filter
+
+    .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
+
+    produces a state estimate that x_e that minimizes the expected squared error
+    using the sensor measurements y. The noise cross-correlation `NN` is set to
+    zero when omitted.
+
+    Parameters
+    ----------
+    A, G: 2-d array
+        Dynamics and noise input matrices
+    QN, RN: 2-d array
+        Process and sensor noise covariance matrices
+    NN: 2-d array, optional
+        Cross covariance matrix
+
+    Returns
+    -------
+    L: 2D array
+        Kalman estimator gain
+    P: 2D array
+        Solution to Riccati equation
+        .. math::
+            A P + P A^T - (P C^T + G N) R^-1  (C P + N^T G^T) + G Q G^T = 0
+    E: 1D array
+        Eigenvalues of estimator poles eig(A - L C)
+        
+
+    Examples
+    --------
+    >>> K, P, E = lqe(A, G, C, QN, RN)
+    >>> K, P, E = lqe(A, G, C, QN, RN, NN)
+
+    See Also
+    --------
+    lqr
+    """
+
+    # TODO: incorporate cross-covariance NN, something like this,
+    # which doesn't work for some reason
+    #if NN is None:
+    #    NN = np.zeros(QN.size(0),RN.size(1))
+    #NG = G @ NN
+
+    #LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
+    P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
+    return _ssmatrix(LT.T), _ssmatrix(P), _ssmatrix(E)
+
+
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
     """Pole placement using Ackermann method
@@ -307,6 +375,10 @@ def lqr(*args, **keywords):
     >>> K, S, E = lqr(sys, Q, R, [N])
     >>> K, S, E = lqr(A, B, Q, R, [N])
 
+    See Also
+    --------
+    lqe
+    
     """
 
     # Make sure that SLICOT is installed
