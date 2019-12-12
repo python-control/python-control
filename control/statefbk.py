@@ -283,7 +283,10 @@ def lqe(A, G, C, QN, RN, NN=None):
     #NG = G @ NN
 
     #LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
-    P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
+    #P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
+    A, G, C = np.array(A, ndmin=2), np.array(G, ndmin=2), np.array(C, ndmin=2)
+    QN, RN =  np.array(QN, ndmin=2), np.array(RN, ndmin=2)
+    P, E, LT = care(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
     return _ssmatrix(LT.T), _ssmatrix(P), _ssmatrix(E)
 
 
