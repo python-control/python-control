@@ -24,22 +24,30 @@ python:
 #
 # We also want to test with and without slycot
 env:
-  - SCIPY=scipy SLYCOT=slycot		# default, with slycot
+  - SCIPY=scipy SLYCOT=conda		# default, with slycot via conda
   - SCIPY=scipy SLYCOT=			# default, w/out slycot
   - SCIPY="scipy==0.19.1" SLYCOT=	# legacy support, w/out slycot
 
-# Exclude combinations that are very unlikely (and don't work)
 matrix:
+  # Exclude combinations that are very unlikely (and don't work)
   exclude:
     - python: "3.7"			# python3.7 should use latest scipy
       env: SCIPY="scipy==0.19.1" SLYCOT=
+
+  # Add optional builds that test against latest version of slycot
+  allow_failures:
+    - name: "linux, Python 3.7, slycot=source"
+      os: linux
+      dist: xenial
+      services: xvfb
+      env: SCIPY=scipy SLCOT=source
 
 # install required system libraries
 before_install:
   # Install gfortran for testing slycot; use apt-get instead of conda in
   # order to include the proper CXXABI dependency (updated in GCC 4.9)
   # Note: these commands should match the slycot .travis.yml configuration
-  - if [[ "$SLYCOT" != "" ]]; then
+  - if [[ "$SLYCOT" = "source" ]]; then
       sudo apt-get update -qq;
       sudo apt-get install liblapack-dev libblas-dev;
       sudo apt-get install gfortran;
@@ -60,9 +68,8 @@ before_install:
   - conda info -a
   - conda create -q -n test-environment python="$TRAVIS_PYTHON_VERSION" pip coverage
   - source activate test-environment
-  # Install openblas if slycot is being used
-  # also install scikit-build for the build process
-  - if [[ "$SLYCOT" != "" ]]; then
+  # Install scikit-build for the build process if slycot is being used
+  - if [[ "$SLYCOT" = "source" ]]; then
       conda install openblas;
       conda install -c conda-forge scikit-build;
     fi
@@ -75,13 +82,14 @@ before_install:
 install:
   # Install packages needed by python-control
   - conda install $SCIPY matplotlib
-  # Build slycot from source
-  # For python 3, need to provide pointer to python library
-  # Use "Unix Makefiles" as generator, because Ninja cannot handle Fortran
-  #! git clone https://github.com/repagh/Slycot.git slycot;
-  - if [[ "$SLYCOT" != "" ]]; then
+  - if [[ "$SLYCOT" = "source" ]]; then
+      # Build slycot from source
+      # Use "Unix Makefiles" as generator, because Ninja cannot handle Fortran
       git clone https://github.com/python-control/Slycot.git slycot;
       cd slycot; python setup.py install -G "Unix Makefiles"; cd ..;
+    else if [[ "$SLYCOT" = "conda" ]]; then
+      # Use version of slycot on conda-forge
+      conda install -c conda-forge slycot;
     fi
 
 # command to run tests
