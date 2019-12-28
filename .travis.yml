@@ -38,9 +38,12 @@ matrix:
 before_install:
   # Install gfortran for testing slycot; use apt-get instead of conda in
   # order to include the proper CXXABI dependency (updated in GCC 4.9)
+  # Note: these commands should match the slycot .travis.yml configuration
   - if [[ "$SLYCOT" != "" ]]; then
       sudo apt-get update -qq;
+      sudo apt-get install liblapack-dev libblas-dev;
       sudo apt-get install gfortran;
+      sudo apt-get install cmake;
     fi
   # use miniconda to install numpy/scipy, to avoid lengthy build from source
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
