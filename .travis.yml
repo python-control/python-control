@@ -89,7 +89,7 @@ install:
   - if [[ "$SLYCOT" = "source" ]]; then
       git clone https://github.com/python-control/Slycot.git slycot;
       cd slycot; python setup.py install -G "Unix Makefiles"; cd ..;
-    else if [[ "$SLYCOT" = "conda" ]]; then
+    elif [[ "$SLYCOT" = "conda" ]]; then
       conda install -c conda-forge slycot;
     fi
 
