@@ -36,13 +36,13 @@ jobs:
       dist: xenial
       services: xvfb
       python: "2.7"
-      env: SCIPY=scipy SLCOT=source
+      env: SCIPY=scipy SLYCOT=source
     - name: "linux, Python 3.7, slycot=source"
       os: linux
       dist: xenial
       services: xvfb
       python: "3.7"
-      env: SCIPY=scipy SLCOT=source
+      env: SCIPY=scipy SLYCOT=source
 
 matrix:
   # Exclude combinations that are very unlikely (and don't work)
@@ -56,13 +56,13 @@ matrix:
       dist: xenial
       services: xvfb
       python: "2.7"
-      env: SCIPY=scipy SLCOT=source
+      env: SCIPY=scipy SLYCOT=source
     - name: "linux, Python 3.7, slycot=source"
       os: linux
       dist: xenial
       services: xvfb
       python: "3.7"
-      env: SCIPY=scipy SLCOT=source
+      env: SCIPY=scipy SLYCOT=source
 
 # install required system libraries
 before_install:
