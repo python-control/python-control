@@ -82,13 +82,14 @@ before_install:
 install:
   # Install packages needed by python-control
   - conda install $SCIPY matplotlib
+  
+  # Figure out how to build slycot
+  #   source: use "Unix Makefiles" as generator; Ninja cannot handle Fortran
+  #   conda: use pre-compiled version of slycot on conda-forge
   - if [[ "$SLYCOT" = "source" ]]; then
-      # Build slycot from source
-      # Use "Unix Makefiles" as generator, because Ninja cannot handle Fortran
       git clone https://github.com/python-control/Slycot.git slycot;
       cd slycot; python setup.py install -G "Unix Makefiles"; cd ..;
     else if [[ "$SLYCOT" = "conda" ]]; then
-      # Use version of slycot on conda-forge
       conda install -c conda-forge slycot;
     fi
 
