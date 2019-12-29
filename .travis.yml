@@ -104,7 +104,7 @@ before_install:
 install:
   # Install packages needed by python-control
   - conda install $SCIPY matplotlib
-  
+
   # Figure out how to build slycot
   #   source: use "Unix Makefiles" as generator; Ninja cannot handle Fortran
   #   conda: use pre-compiled version of slycot on conda-forge
