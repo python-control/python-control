@@ -100,6 +100,32 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_equal(linsys.C, iosys_named.C)
         np.testing.assert_array_equal(linsys.D, iosys_named.D)
 
+    # Make sure unspecified inputs/outputs/states are handled properly
+    def test_iosys_unspecified(self):
+        # System with unspecified inputs and outputs
+        sys = ios.NonlinearIOSystem(secord_update, secord_output)
+        np.testing.assert_raises(TypeError, sys.__mul__, sys)
+
+    # Make sure we can print various types of I/O systems
+    def test_iosys_print(self):
+        # Send the output to /dev/null
+        import os
+        f = open(os.devnull,"w")
+
+        # Simple I/O system
+        iosys = ct.ss2io(self.siso_linsys)
+        print(iosys, file=f)
+
+        # I/O system without ninputs, noutputs
+        ios_unspecified = ios.NonlinearIOSystem(secord_update, secord_output)
+        print(ios_unspecified, file=f)
+
+        # I/O system with derived inputs and outputs
+        ios_linearized = ios.linearize(ios_unspecified, [0, 0], [0])
+        print(ios_linearized, file=f)
+
+        f.close()
+
     @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
                      "requires SciPy 1.0 or greater")
     def test_nonlinear_iosys(self):
@@ -831,7 +857,6 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_equal(io_feedback.B, ss_feedback.B)
         np.testing.assert_array_equal(io_feedback.C, ss_feedback.C)
         np.testing.assert_array_equal(io_feedback.D, ss_feedback.D)
-
 
     def test_duplicates(self):
         nlios =  ios.NonlinearIOSystem(None, \
