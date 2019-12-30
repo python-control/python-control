@@ -8,6 +8,7 @@
 # operations on input/output systems.  Separate unit tests should be
 # created for that purpose.
 
+from __future__ import print_function
 import unittest
 import warnings
 import numpy as np
