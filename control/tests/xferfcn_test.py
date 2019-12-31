@@ -496,7 +496,6 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(omega, true_omega)
 
     # Tests for TransferFunction.pole and TransferFunction.zero.
-
     def test_common_den(self):
         """ Test the helper function to compute common denomitators."""
 
