@@ -130,7 +130,7 @@ def dcgain(*args):
     -------
     gain: ndarray
         The gain of each output versus each input:
-        :math:`y = gain \cdot u`
+        :math:`y = gain \\cdot u`
 
     Notes
     -----
@@ -140,7 +140,7 @@ def dcgain(*args):
     All systems are first converted to state space form. The function then
     computes:
 
-    .. math:: gain = - C \cdot A^{-1} \cdot B + D
+    .. math:: gain = - C \\cdot A^{-1} \\cdot B + D
     '''
     #Convert the parameters to state space form
     if len(args) == 4:

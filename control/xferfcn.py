@@ -61,6 +61,7 @@ from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
 from itertools import chain
+from re import sub
 from .lti import LTI, timebaseEqual, timebase, isdtime
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -301,6 +302,9 @@ class TransferFunction(LTI):
                 numstr = _tf_polynomial_to_string(self.num[i][j], var=var)
                 denstr = _tf_polynomial_to_string(self.den[i][j], var=var)
 
+                numstr = _tf_string_to_latex(numstr, var=var)
+                denstr = _tf_string_to_latex(denstr, var=var)
+
                 out += [r"\frac{", numstr, "}{", denstr, "}"]
 
                 if mimo and j < self.outputs - 1:
@@ -314,7 +318,7 @@ class TransferFunction(LTI):
 
         # See if this is a discrete time system with specific sampling time
         if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
-            out += ["\quad dt = ", str(self.dt)]
+            out += [r"\quad dt = ", str(self.dt)]
 
         out.append("$$")
 
@@ -1095,6 +1099,18 @@ def _tf_polynomial_to_string(coeffs, var='s'):
             thestr = "-%s" % (newstr,)
         else:
             thestr = newstr
+    return thestr
+
+
+def _tf_string_to_latex(thestr, var='s'):
+    """ make sure to superscript all digits in a polynomial string
+        and convert float coefficients in scientific notation
+        to prettier LaTeX representation """
+    # TODO: make the multiplication sign configurable
+    expmul = r' \\times'
+    thestr = sub(var + r'\^(\d{2,})', var + r'^{\1}', thestr)
+    thestr = sub(r'[eE]\+0*(\d+)', expmul + r' 10^{\1}', thestr)
+    thestr = sub(r'[eE]\-0*(\d+)', expmul + r' 10^{-\1}', thestr)
     return thestr
 
 

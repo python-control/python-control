@@ -110,7 +110,7 @@ def bode_plot(syslist, omega=None,
         config.defaults['freqplot.number_of_samples'].
     margins : bool
         If True, plot gain and phase margin.
-    \*args, \**kwargs:
+    \\*args, \\*\\*kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns
@@ -139,7 +139,7 @@ def bode_plot(syslist, omega=None,
 
     2. If a discrete time model is given, the frequency response is plotted
     along the upper branch of the unit circle, using the mapping z = exp(j
-    \omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
+    \\omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
     timebase.  If not timebase is specified (dt = True), dt is set to 1.
 
     Examples
@@ -450,7 +450,7 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None,
         Used to specify the color of the plot
     labelFreq : int
         Label every nth frequency on the plot
-    \*args, \**kwargs:
+    \\*args, \\*\\*kwargs:
         Additional options to matplotlib (color, linestyle, etc)
 
     Returns

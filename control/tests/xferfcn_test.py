@@ -449,7 +449,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys(2.j), resp)
 
     def test_freqresp_siso(self):
-        """Evaluate the magnitude and phase of a SISO system at 
+        """Evaluate the magnitude and phase of a SISO system at
         multiple frequencies."""
 
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
@@ -467,7 +467,7 @@ class TestXferFcn(unittest.TestCase):
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_freqresp_mimo(self):
-        """Evaluate the magnitude and phase of a MIMO system at 
+        """Evaluate the magnitude and phase of a MIMO system at
         multiple frequencies."""
 
         num = [[[1., 2.], [0., 3.], [2., -1.]],
@@ -547,6 +547,7 @@ class TestXferFcn(unittest.TestCase):
                                              np.zeros((3, 5, 6)))
         np.testing.assert_array_almost_equal(den, denref)
 
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_pole_mimo(self):
         """Test for correct MIMO poles."""
 
@@ -803,6 +804,28 @@ class TestXferFcn(unittest.TestCase):
         # Feedback mismatch (MIMO not implemented)
         self.assertRaises(NotImplementedError,
                           TransferFunction.feedback, sys2, sys1)
+
+    def test_latex_repr(self):
+        """ Test latex printout for TransferFunction """
+        Hc = TransferFunction([1e-5, 2e5, 3e-4],
+                              [1.2e34, 2.3e-4, 2.3e-45])
+        Hd = TransferFunction([1e-5, 2e5, 3e-4],
+                              [1.2e34, 2.3e-4, 2.3e-45],
+                              .1)
+        # TODO: make the multiplication sign configurable
+        expmul = r'\times'
+        for var, H, suffix in zip(['s', 'z'],
+                                  [Hc, Hd],
+                                  ['', r'\quad dt = 0.1']):
+            ref = (r'$$\frac{'
+                   r'1 ' + expmul + ' 10^{-5} ' + var + '^2 '
+                   r'+ 2 ' + expmul + ' 10^{5} ' + var + ' + 0.0003'
+                   r'}{'
+                   r'1.2 ' + expmul + ' 10^{34} ' + var + '^2 '
+                   r'+ 0.00023 ' + var + ' '
+                   r'+ 2.3 ' + expmul + ' 10^{-45}'
+                   r'}' + suffix + '$$')
+            self.assertEqual(H._repr_latex_(), ref)
 
 
 def suite():
