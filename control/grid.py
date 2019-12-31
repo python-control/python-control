@@ -175,7 +175,7 @@ def zgrid(zetas=None, wns=None):
         an_x = xret[an_i]
         an_y = yret[an_i]
         num = '{:1.1f}'.format(a)
-        ax.annotate("$\\frac{"+num+"\pi}{T}$", xy=(an_x, an_y), xytext=(an_x, an_y), size=9)
+        ax.annotate(r"$\frac{"+num+r"\pi}{T}$", xy=(an_x, an_y), xytext=(an_x, an_y), size=9)
 
     _final_setup(ax)
     return ax, fig

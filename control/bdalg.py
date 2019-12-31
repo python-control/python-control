@@ -62,7 +62,7 @@ __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
 
 def series(sys1, *sysn):
-    """Return the series connection (... \* sys3 \*) sys2 \* sys1
+    """Return the series connection (... \\* sys3 \\*) sys2 \\* sys1
 
     Parameters
     ----------
