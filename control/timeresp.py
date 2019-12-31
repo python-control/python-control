@@ -365,7 +365,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             # Make sure that the time increment is a multiple of sampling time
 
             # First make sure that time increment is bigger than sampling time
-            if dt < sys.dt:
+            # (with allowance for small precision errors)
+            if dt < sys.dt and not np.isclose(dt, sys.dt):
                 raise ValueError("Time steps ``T`` must match sampling time")
 
             # Now check to make sure it is a multiple (with check against
@@ -374,11 +375,13 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                       np.isclose(dt % sys.dt, sys.dt)):
                 raise ValueError("Time steps ``T`` must be multiples of "
                                  "sampling time")
+            sys_dt = sys.dt
+
         else:
-            sys.dt = dt         # For unspecified sampling time, use time incr
+            sys_dt = dt         # For unspecified sampling time, use time incr
 
         # Discrete time simulation using signal processing toolbox
-        dsys = (A, B, C, D, sys.dt)
+        dsys = (A, B, C, D, sys_dt)
 
         # Use signal processing toolbox for the discrete time simulation
         # Transpose the input to match toolbox convention
@@ -386,7 +389,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
         if not interpolate:
             # If dt is different from sys.dt, resample the output
-            inc = int(round(dt / sys.dt))
+            inc = int(round(dt / sys_dt))
             tout = T            # Return exact list of time steps
             yout = yout[::inc, :]
             xout = xout[::inc, :]
