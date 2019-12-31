@@ -57,7 +57,6 @@ from numpy import angle, array, empty, finfo, ndarray, ones, \
     polyadd, polymul, polyval, roots, sqrt, zeros, squeeze, exp, pi, \
     where, delete, real, poly, nonzero
 import scipy as sp
-from numpy.polynomial.polynomial import polyfromroots
 from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
 from copy import deepcopy
 from warnings import warn
@@ -807,8 +806,6 @@ class TransferFunction(LTI):
         output numerator array num is modified to use the common
         denominator for this input/column; the coefficient arrays are also
         padded with zeros to be the same size for all num/den.
-        num is an sys.outputs by sys.inputs
-        by len(d) array.
 
         Parameters
         ----------
@@ -819,17 +816,20 @@ class TransferFunction(LTI):
         Returns
         -------
         num: array
-            Multi-dimensional array of numerator coefficients. num[i][j]
-            gives the numerator coefficient array for the ith input and jth
-            output, also prepared for use in td04ad; matches the denorder
-            order; highest coefficient starts on the left.
+            n by n by kd where n = max(sys.outputs,sys.inputs)
+                              kd = max(denorder)+1
+            Multi-dimensional array of numerator coefficients. num[i,j]
+            gives the numerator coefficient array for the ith output and jth
+            input; padded for use in td04ad ('C' option); matches the
+            denorder order; highest coefficient starts on the left.
 
         den: array
+            sys.inputs by kd
             Multi-dimensional array of coefficients for common denominator
             polynomial, one row per input. The array is prepared for use in
             slycot td04ad, the first element is the highest-order polynomial
-            coefficiend of s, matching the order in denorder, if denorder <
-            number of columns in den, the den is padded with zeros
+            coefficient of s, matching the order in denorder. If denorder <
+            number of columns in den, the den is padded with zeros.
 
         denorder: array of int, orders of den, one per input
 
@@ -843,16 +843,18 @@ class TransferFunction(LTI):
 
         # Machine precision for floats.
         eps = finfo(float).eps
+        real_tol = sqrt(eps * self.inputs * self.outputs)
 
-        # Decide on the tolerance to use in deciding of a pole is complex
+        # The tolerance to use in deciding if a pole is complex
         if (imag_tol is None):
-            imag_tol = 1e-8     # TODO: figure out the right number to use
+            imag_tol = 2 * real_tol
 
         # A list to keep track of cumulative poles found as we scan
         # self.den[..][..]
         poles = [[] for j in range(self.inputs)]
 
         # RvP, new implementation 180526, issue #194
+        # BG, modification, issue #343, PR #354
 
         # pre-calculate the poles for all num, den
         # has zeros, poles, gain, list for pole indices not in den,
@@ -871,30 +873,36 @@ class TransferFunction(LTI):
                     poleset[-1].append([z, p, k, [], 0])
 
         # collect all individual poles
-        epsnm = eps * self.inputs * self.outputs
         for j in range(self.inputs):
             for i in range(self.outputs):
                 currentpoles = poleset[i][j][1]
                 nothave = ones(currentpoles.shape, dtype=bool)
                 for ip, p in enumerate(poles[j]):
-                    idx, = nonzero(
-                        (abs(currentpoles - p) < epsnm) * nothave)
-                    if len(idx):
-                        nothave[idx[0]] = False
+                    collect = (np.isclose(currentpoles.real, p.real,
+                                          atol=real_tol) &
+                               np.isclose(currentpoles.imag, p.imag,
+                                          atol=imag_tol) &
+                               nothave)
+                    if np.any(collect):
+                        # mark first found pole as already collected
+                        nothave[nonzero(collect)[0][0]] = False
                     else:
                         # remember id of pole not in tf
                         poleset[i][j][3].append(ip)
                 for h, c in zip(nothave, currentpoles):
                     if h:
+                        if abs(c.imag) < imag_tol:
+                            c = c.real
                         poles[j].append(c)
                 # remember how many poles now known
                 poleset[i][j][4] = len(poles[j])
 
         # figure out maximum number of poles, for sizing the den
-        npmax = max([len(p) for p in poles])
-        den = zeros((self.inputs, npmax + 1), dtype=float)
+        maxindex = max([len(p) for p in poles])
+        den = zeros((self.inputs, maxindex + 1), dtype=float)
         num = zeros((max(1, self.outputs, self.inputs),
-                     max(1, self.outputs, self.inputs), npmax + 1),
+                     max(1, self.outputs, self.inputs),
+                     maxindex + 1),
                     dtype=float)
         denorder = zeros((self.inputs,), dtype=int)
 
@@ -905,12 +913,11 @@ class TransferFunction(LTI):
                 for i in range(self.outputs):
                     num[i, j, 0] = poleset[i][j][2]
             else:
-                # create the denominator matching this input polyfromroots
-                # gives coeffs in opposite order from what we use coefficients
-                # should be padded on right, ending at np
-                np = len(poles[j])
-                den[j, np::-1] = polyfromroots(poles[j]).real
-                denorder[j] = np
+                # create the denominator matching this input
+                # coefficients should be padded on right, ending at maxindex
+                maxindex = len(poles[j])
+                den[j, :maxindex+1] = poly(poles[j])
+                denorder[j] = maxindex
 
                 # now create the numerator, also padded on the right
                 for i in range(self.outputs):
@@ -919,21 +926,14 @@ class TransferFunction(LTI):
                     # add all poles not found in the original denominator,
                     # and the ones later added from other denominators
                     for ip in chain(poleset[i][j][3],
-                                    range(poleset[i][j][4], np)):
+                                    range(poleset[i][j][4], maxindex)):
                         nwzeros.append(poles[j][ip])
 
-                    numpoly = poleset[i][j][2] * polyfromroots(nwzeros).real
-                    # print(numpoly, den[j])
-                    # polyfromroots gives coeffs in opposite order => invert
+                    numpoly = poleset[i][j][2] * np.atleast_1d(poly(nwzeros))
                     # numerator polynomial should be padded on left and right
-                    #   ending at np to line up with what td04ad expects...
-                    num[i, j, np + 1 - len(numpoly):np + 1] = numpoly[::-1]
+                    #   ending at maxindex to line up with what td04ad expects.
+                    num[i, j, maxindex+1-len(numpoly):maxindex+1] = numpoly
                     # print(num[i, j])
-
-        if (abs(den.imag) > epsnm).any():
-            print("Warning: The denominator has a nontrivial imaginary part: "
-                  " %f" % abs(den.imag).max())
-        den = den.real
 
         return num, den, denorder
 

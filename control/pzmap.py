@@ -81,7 +81,7 @@ def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
         The system's zeros.
     """
     # Get parameter values
-    Plot = config._get_param('rlocus', 'Plot', grid, True)
+    Plot = config._get_param('rlocus', 'Plot', Plot, True)
     grid = config._get_param('rlocus', 'grid', grid, False)
     
     if not isinstance(sys, LTI):

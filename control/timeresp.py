@@ -200,7 +200,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     sys: LTI (StateSpace, or TransferFunction)
         LTI system to simulate
 
-    T: array-like
+    T: array-like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
 
     U: array-like or number, optional
@@ -260,6 +260,12 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     n_inputs = B.shape[1]
     n_outputs = C.shape[0]
 
+    # Convert inputs to numpy arrays for easier shape checking
+    if U is not None:
+        U = np.asarray(U)
+    if T is not None:
+        T = np.asarray(T)
+
     # Set and/or check time vector in discrete time case
     if isdtime(sys, strict=True):
         if T is None:
@@ -267,13 +273,18 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                 raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
-            T = np.array(range(len(U))) * (1 if sys.dt is True else sys.dt)
+            if U.ndim == 1:
+                n_steps = U.shape[0]
+            else:
+                n_steps = U.shape[1]
+            T = np.array(range(n_steps)) * (1 if sys.dt is True else sys.dt)
         else:
             # Make sure the input vector and time vector have same length
             # TODO: allow interpolation of the input vector
-            if len(U) != len(T):
-                ValueError('Pamameter ``T`` must have same length as'
-                           'input vector ``U``')
+            if (U.ndim == 1 and U.shape[0] != T.shape[0]) or \
+                    (U.ndim > 1 and U.shape[1] != T.shape[0]):
+                ValueError('Pamameter ``T`` must have same elements as'
+                           ' the number of columns in input array ``U``')
 
     # Test if T has shape (n,) or (1, n);
     # T must be array-like and values must be increasing.
@@ -288,7 +299,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     if not np.allclose(T[1:] - T[:-1], dt):
         raise ValueError("Parameter ``T``: time values must be "
                          "equally spaced.")
-    n_steps = len(T)            # number of simulation steps
+    n_steps = T.shape[0]            # number of simulation steps
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],

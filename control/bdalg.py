@@ -169,11 +169,6 @@ def negate(sys):
     This function is a wrapper for the __neg__ function in the StateSpace and
     TransferFunction classes.  The output type is the same as the input type.
 
-    If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems must
-    match.  If only one of the system has a timebase, the return
-    timebase will be set to match it.
-
     Examples
     --------
     >>> sys2 = negate(sys1) # Same as sys2 = -sys1.

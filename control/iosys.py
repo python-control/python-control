@@ -212,12 +212,12 @@ class InputOutputSystem(object):
 
     def __str__(self):
         """String representation of an input/output system"""
-        str = "System: " + (self.name if self.name else "(none)") + "\n"
-        str += "Inputs (%d): " % self.ninputs
+        str = "System: " + (self.name if self.name else "(None)") + "\n"
+        str += "Inputs (%s): " % self.ninputs
         for key in self.input_index: str += key + ", "
-        str += "\nOutputs (%d): " % self.noutputs
+        str += "\nOutputs (%s): " % self.noutputs
         for key in self.output_index: str += key + ", "
-        str += "\nStates (%d): " % self.nstates
+        str += "\nStates (%s): " % self.nstates
         for key in self.state_index: str += key + ", "
         return str
 
@@ -317,13 +317,8 @@ class InputOutputSystem(object):
         ninputs = sys1.ninputs
         noutputs = sys1.noutputs
 
-        # Make sure timebase are compatible
-        dt = _find_timebase(sys1, sys2)
-        if dt is False:
-            raise ValueError("System timebases are not compabile")
-
         # Create a new system to handle the composition
-        newsys = InterconnectedSystem((sys1, sys2), dt=dt)
+        newsys = InterconnectedSystem((sys1, sys2))
 
         # Set up the input map
         newsys.set_input_map(np.concatenate(
@@ -937,6 +932,7 @@ class InterconnectedSystem(InputOutputSystem):
         system_count = 0
         for sys in syslist:
             # Make sure time bases are consistent
+            # TODO: Use lti._find_timebase() instead?
             if dt is None and sys.dt is not None:
                 # Timebase was not specified; set to match this system
                 dt = sys.dt
@@ -948,7 +944,7 @@ class InterconnectedSystem(InputOutputSystem):
                sys.nstates is None:
                 raise TypeError("System '%s' must define number of inputs, "
                                 "outputs, states in order to be connected" %
-                                sys)
+                                sys.name)
 
             # Keep track of the offsets into the states, inputs, outputs
             self.input_offset.append(ninputs)
