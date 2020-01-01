@@ -3,3 +3,5 @@ scipy
 matplotlib
 sphinx_rtd_theme
 numpydoc
+ipykernel
+nbsphinx
