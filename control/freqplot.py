@@ -110,8 +110,10 @@ def bode_plot(syslist, omega=None,
         config.defaults['freqplot.number_of_samples'].
     margins : bool
         If True, plot gain and phase margin.
-    \\*args, \\*\\*kwargs:
-        Additional options to matplotlib (color, linestyle, etc)
+    *args
+        Additional arguments for :func:`matplotlib.plot` (color, linestyle, etc)
+    **kwargs:
+        Additional keywords (passed to `matplotlib`)
 
     Returns
     -------
@@ -450,8 +452,10 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None,
         Used to specify the color of the plot
     labelFreq : int
         Label every nth frequency on the plot
-    \\*args, \\*\\*kwargs:
-        Additional options to matplotlib (color, linestyle, etc)
+    *args
+        Additional arguments for :func:`matplotlib.plot` (color, linestyle, etc)
+    **kwargs:
+        Additional keywords (passed to `matplotlib`)
 
     Returns
     -------
