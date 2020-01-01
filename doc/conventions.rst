@@ -107,13 +107,6 @@ constructor for the desired data type using the original system as the sole
 argument or using the explicit conversion functions :func:`ss2tf` and
 :func:`tf2ss`.
 
-Input/output systems
-====================
-
-.. automodule:: control.iosys
-   :no-members:
-   :no-inherited-members:
-
 .. currentmodule:: control
 .. _time-series-convention:
 
