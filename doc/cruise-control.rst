@@ -1,5 +1,5 @@
-Cruise control example from FBS
--------------------------------
+Cruise control design example (as a nonlinear I/O system)
+---------------------------------------------------------
 
 Code
 ....

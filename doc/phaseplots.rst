@@ -1,5 +1,5 @@
-Phase  plots
-------------
+Phase  plot examples
+--------------------
 
 Code
 ....

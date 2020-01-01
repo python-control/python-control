@@ -1,5 +1,8 @@
-Secord order system (MATLAB)
-----------------------------
+Secord order system (MATLAB module example)
+-------------------------------------------
+
+This example computes time and frequency responses for a second-order
+system using the MATLAB compatibility module.
 
 Code
 ....

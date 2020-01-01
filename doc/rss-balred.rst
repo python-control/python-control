@@ -1,5 +1,5 @@
-Balanced model reduction
-------------------------
+Balanced model reduction examples
+---------------------------------
 
 Code
 ....

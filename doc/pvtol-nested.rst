@@ -1,5 +1,5 @@
-Planar vertical takeoff and landing (PVTOL) nested controller
--------------------------------------------------------------
+Inner/outer control design for vertical takeoff and landing aircraft
+--------------------------------------------------------------------
 
 This script demonstrates the use of the python-control package for
 analysis and design of a controller for a vectored thrust aircraft
