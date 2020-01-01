@@ -16,10 +16,11 @@ these directly.
    TransferFunction
    StateSpace
    FrequencyResponseData
-   InputOutputSystem
+   ~iosys.InputOutputSystem
 
-Input/Output system subclasses
+Input/output system subclasses
 ==============================
+.. currentmodule:: control.iosys
 
 Input/output systems are accessed primarily via a set of subclasses
 that allow for linear, nonlinear, and interconnected elements:

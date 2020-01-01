@@ -89,7 +89,7 @@ language = None
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
 exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store',
-                    '**.ipynb_checkpoints']
+                    '*.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -97,7 +97,7 @@ pygments_style = 'sphinx'
 #This config value contains the locations and names of other projects that 
 #should be linked to in this documentation.
 intersphinx_mapping = \
-    {'scipy':('https://docs.scipy.org/doc/scipy/reference/', None),
+    {'scipy':('https://docs.scipy.org/doc/scipy/reference', None),
      'numpy':('https://docs.scipy.org/doc/numpy', None)}
 
 #If this is True, todo and todolist produce output, else they produce nothing. 

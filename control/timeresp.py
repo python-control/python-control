@@ -245,7 +245,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     Notes
     -----
     For discrete time systems, the input/output response is computed using the
-    :ref:`scipy.signal.dlsim` function.
+    :scipy-signal:ref:`scipy.signal.dlsim` function.
 
     For continuous time systems, the output is computed using the matrix
     exponential `exp(A t)` and assuming linear interpolation of the inputs
