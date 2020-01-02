@@ -471,6 +471,45 @@ class TestTimeresp(unittest.TestCase):
                                           squeeze=False)
         self.assertTrue(isinstance(context.exception, ValueError))
 
+    def test_discrete_time_steps(self):
+        """Make sure rounding errors in sample time are handled properly"""
+        # See https://github.com/python-control/python-control/issues/332)
+        #
+        # These tests play around with the input time vector to make sure that
+        # small rounding errors don't generate spurious errors.
+
+        # Discrete time system to use for simulation
+        # self.siso_dtf2 = TransferFunction([1], [1, 1, 0.25], 0.2)
+
+        # Set up a time range and simulate
+        T = np.arange(0, 100, 0.2)
+        tout1, yout1 = step_response(self.siso_dtf2, T)
+
+        # Simulate every other time step
+        T = np.arange(0, 100, 0.4)
+        tout2, yout2 = step_response(self.siso_dtf2, T)
+        np.testing.assert_array_almost_equal(tout1[::2], tout2)
+        np.testing.assert_array_almost_equal(yout1[::2], yout2)
+
+        # Add a small error into some of the time steps
+        T = np.arange(0, 100, 0.2)
+        T[1:-2:2] -= 1e-12      # tweak second value and a few others
+        tout3, yout3 = step_response(self.siso_dtf2, T)
+        np.testing.assert_array_almost_equal(tout1, tout3)
+        np.testing.assert_array_almost_equal(yout1, yout3)
+
+        # Add a small error into some of the time steps (w/ skipping)
+        T = np.arange(0, 100, 0.4)
+        T[1:-2:2] -= 1e-12      # tweak second value and a few others
+        tout4, yout4 = step_response(self.siso_dtf2, T)
+        np.testing.assert_array_almost_equal(tout2, tout4)
+        np.testing.assert_array_almost_equal(yout2, yout4)
+
+        # Make sure larger errors *do* generate an error
+        T = np.arange(0, 100, 0.2)
+        T[1:-2:2] -= 1e-3      # change second value and a few others
+        self.assertRaises(ValueError, step_response, self.siso_dtf2, T)
+
     def test_time_series_data_convention(self):
         """Make sure time series data matches documentation conventions"""
         # SISO continuous time
