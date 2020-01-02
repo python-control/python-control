@@ -101,7 +101,7 @@ def bode_plot(syslist, omega=None,
         If True, plot phase in degrees (else radians).  Default value (True)
         config.defaults['bode.deg']
     Plot : bool
-        If True, plot magnitude and phase
+        If True (default), plot magnitude and phase
     omega_limits: tuple, list, ... of two values
         Limits of the to generate frequency vector.
         If Hz=True the limits are in Hz otherwise in rad/s.

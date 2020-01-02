@@ -100,21 +100,24 @@ T = feedback(L, 1)
 
 plt.figure(6)
 plt.clf()
-plt.subplot(221)
 bode(L, logspace(-4, 3))
 
-# Add crossover line
-plt.subplot(211)
-plt.loglog([1e-4, 1e3], [1, 1], 'k-')
+# Add crossover line to magnitude plot
+for ax in plt.gcf().axes:
+    if ax.get_label() == 'control-bode-magnitude':
+        break
+ax.semilogx([1e-4, 1e3], 20*np.log10([1, 1]), 'k-')
 
 # Re-plot phase starting at -90 degrees
 mag, phase, w = freqresp(L, logspace(-4, 3))
 phase = phase - 360
 
-plt.subplot(212)
-plt.semilogx([1e-4, 1e3], [-180, -180], 'k-')
-plt.semilogx(w, np.squeeze(phase), 'b-')
-plt.axis([1e-4, 1e3, -360, 0])
+for ax in plt.gcf().axes:
+    if ax.get_label() == 'control-bode-phase':
+        break
+ax.semilogx([1e-4, 1e3], [-180, -180], 'k-')
+ax.semilogx(w, np.squeeze(phase), 'b-')
+ax.axis([1e-4, 1e3, -360, 0])
 plt.xlabel('Frequency [deg]')
 plt.ylabel('Phase [deg]')
 # plt.set(gca, 'YTick', [-360, -270, -180, -90, 0])
