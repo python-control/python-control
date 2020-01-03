@@ -24,9 +24,9 @@ python:
 #
 # We also want to test with and without slycot
 env:
-  - SCIPY=scipy SLYCOT=conda		# default, with slycot via conda
-  - SCIPY=scipy SLYCOT=			# default, w/out slycot
-  - SCIPY="scipy==0.19.1" SLYCOT=	# legacy support, w/out slycot
+  - SCIPY=scipy SLYCOT=conda       # default, with slycot via conda
+  - SCIPY=scipy SLYCOT=            # default, w/out slycot
+  - SCIPY="scipy==0.19.1" SLYCOT=  # legacy support, w/out slycot
 
 # Add optional builds that test against latest version of slycot
 jobs:
@@ -47,7 +47,7 @@ jobs:
 matrix:
   # Exclude combinations that are very unlikely (and don't work)
   exclude:
-    - python: "3.7"			# python3.7 should use latest scipy
+    - python: "3.7"            # python3.7 should use latest scipy
       env: SCIPY="scipy==0.19.1" SLYCOT=
 
   allow_failures:
