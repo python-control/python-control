@@ -56,8 +56,7 @@ def _find(condition):
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
               lingrid=None, lintime=None, logtime=None, timepts=None,
               parms=(), verbose=True):
-    """
-    Phase plot for 2D dynamical systems
+    """Phase plot for 2D dynamical systems
 
     Produces a vector field or stream line plot for a planar system.
 
@@ -98,20 +97,19 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
         len(X0) that gives the simulation time for each initial
         condition.  Default value = 50.
 
-    lingrid = N or (N, M): integer or 2-tuple of integers, optional
-        If X0 is given and X, Y are missing, a grid of arrows is
-        produced using the limits of the initial conditions, with N
-        grid points in each dimension or N grid points in x and M grid
-        points in y.
+    lingrid : integer or 2-tuple of integers, optional
+        Argument is either N or (N, M).  If X0 is given and X, Y are missing,
+        a grid of arrows is produced using the limits of the initial
+        conditions, with N grid points in each dimension or N grid points in x
+        and M grid points in y.
 
-    lintime = N: integer, optional
-        Draw N arrows using equally space time points
+    lintime : integer or tuple (integer, float), optional
+        If a single integer N is given, draw N arrows using equally space time
+        points.  If a tuple (N, lambda) is given, draw N arrows using
+        exponential time constant lambda
 
-    logtime = (N, lambda): (integer, float), optional
-        Draw N arrows using exponential time constant lambda
-
-    timepts = [t1, t2, ...]: array-like, optional
-        Draw arrows at the given list times
+    timepts : array-like, optional
+        Draw arrows at the given list times [t1, t2, ...]
 
     parms: tuple, optional
         List of parameters to pass to vector field: `func(x, t, *parms)`
@@ -122,6 +120,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
 
     Examples
     --------
+
     """
 
     #

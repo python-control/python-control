@@ -242,6 +242,15 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     --------
     step_response, initial_response, impulse_response
 
+    Notes
+    -----
+    For discrete time systems, the input/output response is computed using the
+    :scipy-signal:ref:`scipy.signal.dlsim` function.
+
+    For continuous time systems, the output is computed using the matrix
+    exponential `exp(A t)` and assuming linear interpolation of the inputs
+    between time points.
+
     Examples
     --------
     >>> T, yout, xout = forced_response(sys, T, u, X0)
@@ -491,9 +500,15 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     --------
     forced_response, initial_response, impulse_response
 
+    Notes
+    -----
+    This function uses the `forced_response` function with the input set to a
+    unit step.
+
     Examples
     --------
     >>> T, yout = step_response(sys, T, X0)
+
     """
     sys = _get_ss_simo(sys, input, output)
     if T is None:
@@ -668,6 +683,11 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     --------
     forced_response, impulse_response, step_response
 
+    Notes
+    -----
+    This function uses the `forced_response` function with the input set to
+    zero.
+
     Examples
     --------
     >>> T, yout = initial_response(sys, T, X0)
@@ -752,9 +772,16 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     --------
     forced_response, initial_response, step_response
 
+    Notes
+    -----
+    This function uses the `forced_response` function to compute the time
+    response. For continuous time systems, the initial condition is altered to
+    account for the initial impulse.
+
     Examples
     --------
     >>> T, yout = impulse_response(sys, T, X0)
+
     """
     sys = _get_ss_simo(sys, input, output)
 

@@ -22,52 +22,6 @@ general class that defines any continuous or discrete time dynamical system.
 Input/output systems can be simulated and also used to compute equilibrium
 points and linearizations.
 
-An input/output system is defined as a dynamical system that has a system
-state as well as inputs and outputs (either inputs or states can be empty).
-The dynamics of the system can be in continuous or discrete time.  To simulate
-an input/output system, use the :func:`~control.input_output_response`
-function::
-
-  t, y = input_output_response(io_sys, T, U, X0, params)
-
-An input/output system can be linearized around an equilibrium point to obtain
-a :class:`~control.StateSpace` linear system.  Use the
-:func:`~control.find_eqpts` function to obtain an equilibrium point and the
-:func:`~control.linearize` function to linearize about that equilibrium point::
-
-  xeq, ueq = find_eqpt(io_sys, X0, U0)
-  ss_sys = linearize(io_sys, xeq, ueq)
-
-Input/output systems can be created from state space LTI systems by using the
-:class:`~control.LinearIOSystem` class`::
-
-  io_sys = LinearIOSystem(ss_sys)
-
-Nonlinear input/output systems can be created using the
-:class:`~control.NonlinearIoSystem` class, which requires the definition of an
-update function (for the right hand side of the differential or different
-equation) and and output function (computes the outputs from the state)::
-
-  io_sys = NonlinearIOSystem(updfcn, outfcn, inputs=M, outputs=P, states=N)
-
-More complex input/output systems can be constructed by using the
-:class:`~control.InterconnectedSystem` class, which allows a collection of
-input/output subsystems to be combined with internal connections between the
-subsystems and a set of overall system inputs and outputs that link to the
-subsystems::
-
-    steering = ct.InterconnectedSystem(
-        (plant, controller), name='system',
-        connections=(('controller.e', '-plant.y')),
-        inplist=('controller.e'), inputs='r',
-        outlist=('plant.y'), outputs='y')
-
-Interconnected systems can also be created using block diagram manipulations
-such as the :func:`~control.series`, :func:`~control.parallel`, and
-:func:`~control.feedback` functions.  The :class:`~control.InputOutputSystem`
-class also supports various algebraic operations such as `*` (series
-interconnection) and `+` (parallel interconnection).
-
 """
 
 __author__ = "Richard Murray"
@@ -1585,6 +1539,11 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     ninputs = _find_size(sys.ninputs, u0)
     noutputs = _find_size(sys.noutputs, y0)
 
+    # Convert x0, u0, y0 to arrays, if needed
+    if np.isscalar(x0): x0 = np.ones((nstates,)) * x0
+    if np.isscalar(u0): u0 = np.ones((ninputs,)) * u0
+    if np.isscalar(y0): y0 = np.ones((ninputs,)) * y0
+
     # Discrete-time not yet supported
     if isdtime(sys, strict=True):
         raise NotImplementedError(
@@ -1680,7 +1639,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         # * output_vars: indices of outputs that must be constrained
         #
         # This index lists can all be precomputed based on the `iu`, `iy`,
-        # `ix`, and `idx` lists that were passed as arguments to `find_eqpts`
+        # `ix`, and `idx` lists that were passed as arguments to `find_eqpt`
         # and were processed above.
 
         # Get the states and inputs that were not listed as fixed

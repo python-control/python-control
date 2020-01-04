@@ -62,12 +62,12 @@ __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
 
 def series(sys1, *sysn):
-    """Return the series connection (... \\* sys3 \\*) sys2 \\* sys1
+    """Return the series connection (sysn \\* ... \\*) sys2 \\* sys1
 
     Parameters
     ----------
     sys1 : scalar, StateSpace, TransferFunction, or FRD
-    sysn : other scalars, StateSpaces, TransferFunctions, or FRDs
+    *sysn : other scalars, StateSpaces, TransferFunctions, or FRDs
 
     Returns
     -------
@@ -108,7 +108,7 @@ def series(sys1, *sysn):
 
 def parallel(sys1, *sysn):
     """
-    Return the parallel connection sys1 + sys2 (+ sys3 + ...)
+    Return the parallel connection sys1 + sys2 (+ ... + sysn)
 
     Parameters
     ----------
@@ -263,7 +263,7 @@ def append(*sys):
 
     Parameters
     ----------
-    sys1, sys2, ... sysn: StateSpace or Transferfunction
+    sys1, sys2, ..., sysn: StateSpace or Transferfunction
         LTI systems to combine
 
 

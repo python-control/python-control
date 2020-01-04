@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 
 plt.close('all')
 
-# controllable canonical realization computed in Matlab for the transfer function:
-# num = [1 11 45 32], den = [1 15 60 200 60]
+# controllable canonical realization computed in MATLAB for the
+# transfer function: num = [1 11 45 32], den = [1 15 60 200 60]
 A = np.array([
     [-15., -7.5, -6.25, -1.875],
     [8., 0., 0., 0.],
@@ -53,4 +53,3 @@ plt.plot(trand.T, yrand.T, trandr.T, yrandr.T)
 
 if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
     plt.show()
-
