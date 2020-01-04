@@ -205,10 +205,13 @@ Input/output system classes
    LinearIOSystem
    NonlinearIOSystem
 
-Flat systems functions
-----------------------
+Input/output system functions
+-----------------------------
 .. autosummary::
 
    find_eqpt
    linearize
+   input_output_response
+   ss2io
+   tf2io
 

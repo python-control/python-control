@@ -139,6 +139,9 @@ Nonlinear system support
 
    ~iosys.find_eqpt
    ~iosys.linearize
+   ~iosys.input_output_response
+   ~iosys.ss2io
+   ~iosys.tf2io
    flatsys.point_to_point
 
 .. _utility-and-conversions:
