@@ -66,7 +66,7 @@ values in FBS2e.
 
 We begin by defining the dynamics of the system
 
-.. code-block::
+.. code-block:: python
 
   import control
   import numpy as np
@@ -96,7 +96,7 @@ We begin by defining the dynamics of the system
 
 We now create an input/output system using these dynamics:
 
-.. code-block::
+.. code-block:: python
 
   io_predprey = control.NonlinearIOSystem(
       predprey_rhs, None, inputs=('u'), outputs=('H', 'L'),
@@ -108,7 +108,7 @@ will be used as the output of the system.
 The `io_predprey` system can now be simulated to obtain the open loop dynamics
 of the system:
 
-.. code-block::
+.. code-block:: python
 
   X0 = [25, 20]                 # Initial H, L
   T = np.linspace(0, 70, 500)   # Simulation 70 years of time
@@ -127,7 +127,7 @@ We can also create a feedback controller to stabilize a desired population of
 the system.  We begin by finding the (unstable) equilibrium point for the
 system and computing the linearization about that point.
 
-.. code-block::
+.. code-block:: python
 
   eqpt = control.find_eqpt(io_predprey, X0, 0)
   xeq = eqpt[0]                         # choose the nonzero equilibrium point
@@ -137,7 +137,7 @@ We next compute a controller that stabilizes the equilibrium point using
 eigenvalue placement and computing the feedforward gain using the number of
 lynxes as the desired output (following FBS2e, Example 7.5):
 
-.. code-block::
+.. code-block:: python
 
   K = control.place(lin_predprey.A, lin_predprey.B, [-0.1, -0.2])
   A, B = lin_predprey.A, lin_predprey.B
@@ -149,7 +149,7 @@ applies a corrective input based on deviations from the equilibrium point.
 This system has no dynamics, since it is a static (affine) map, and can
 constructed using the `~control.ios.NonlinearIOSystem` class:
 
-.. code-block::
+.. code-block:: python
 
   io_controller = control.NonlinearIOSystem(
     None,
@@ -162,7 +162,7 @@ populations followed by the desired lynx population.
 To connect the controller to the predatory-prey model, we create an
 `InterconnectedSystem`:
 
-.. code-block::
+.. code-block:: python
 
   io_closed = control.InterconnectedSystem(
     (io_predprey, io_controller),	# systems
@@ -177,7 +177,7 @@ To connect the controller to the predatory-prey model, we create an
        
 Finally, we simulate the closed loop system:
 
-.. code-block::
+.. code-block:: python
 
   # Simulate the system
   t, y = control.input_output_response(io_closed, T, 30, [15, 20])
