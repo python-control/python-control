@@ -261,7 +261,7 @@ class TestAugw(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testMimoW123(self):
         """MIMO plant with all weights"""
-        from control import augw, ss, append
+        from control import augw, ss, append, minreal
         g = ss([[-1., -2], [-3, -4]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]],
@@ -311,10 +311,10 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(w2[1, 1], p[3, 3])
         # u->z3 should be w3*g
         w3g = w3 * g;
-        self.siso_almost_equal(w3g[0, 0], p[4, 2])
-        self.siso_almost_equal(w3g[0, 1], p[4, 3])
-        self.siso_almost_equal(w3g[1, 0], p[5, 2])
-        self.siso_almost_equal(w3g[1, 1], p[5, 3])
+        self.siso_almost_equal(w3g[0, 0], minreal(p[4, 2]))
+        self.siso_almost_equal(w3g[0, 1], minreal(p[4, 3]))
+        self.siso_almost_equal(w3g[1, 0], minreal(p[5, 2]))
+        self.siso_almost_equal(w3g[1, 1], minreal(p[5, 3]))
         # u->v should be -g
         self.siso_almost_equal(-g[0, 0], p[6, 2])
         self.siso_almost_equal(-g[0, 1], p[6, 3])
