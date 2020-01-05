@@ -27,6 +27,7 @@ and we can write the solutions of the nonlinear system as functions of
 .. math::
     x &= \beta(z, \dot z, \dots, z^{(q)}) \\
     u &= \gamma(z, \dot z, \dots, z^{(q)}).
+    :label: flat2state
 
 For a differentially flat system, all of the feasible trajectories for
 the system can be written as functions of a flat output :math:`z(\cdot)` and
@@ -52,7 +53,7 @@ and we see that the initial and final condition in the full state
 space depends on just the output :math:`z` and its derivatives at the
 initial and final times.  Thus any trajectory for :math:`z` that satisfies
 these boundary conditions will be a feasible trajectory for the
-system, using equation~\eqref{eq:trajgen:flat2state} to determine the
+system, using equation :eq:`flat2state` to determine the
 full state space and input trajectories.
 
 In particular, given initial and final conditions on :math:`z` and its
@@ -142,7 +143,7 @@ For more general systems, the `FlatSystem` object must be created manually
 In addition to the flat system descriptionn, a set of basis functions
 :math:`\phi_i(t)` must be chosen.  The `FlatBasis` class is used to represent
 the basis functions.  A polynomial basis function of the form 1, :math:`t`,
-:math:`t^2:, ... can be computed using the `PolyBasis` class, which is
+:math:`t^2`, ... can be computed using the `PolyBasis` class, which is
 initialized by passing the desired order of the polynomial basis set:
 
     polybasis = control.flatsys.PolyBasis(N)
@@ -225,9 +226,9 @@ derived *Feedback Systems* by Astrom and Murray, Example 3.11.
 
 To find a trajectory from an initial state :math:`x_0` to a final state
 :math:`x_\text{f}` in time :math:`T_\text{f}` we solve a point-to-point
-trajectory generation problem. We also set the initial and final inputs, whi
-ch sets the vehicle velocity :math:`v` and steering wheel angle :math:`\delta`
-at the endpoints.
+trajectory generation problem. We also set the initial and final inputs, which
+sets the vehicle velocity :math:`v` and steering wheel angle :math:`\delta` at
+the endpoints.
 
 .. code-block:: python
 
