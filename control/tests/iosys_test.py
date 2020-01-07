@@ -60,7 +60,7 @@ class TestIOSys(unittest.TestCase):
         lti_t, lti_y, lti_x = ct.forced_response(linsys, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
-        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+        np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
     @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
                      "requires SciPy 1.0 or greater")
@@ -75,7 +75,7 @@ class TestIOSys(unittest.TestCase):
         lti_t, lti_y, lti_x = ct.forced_response(linsys, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
-        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+        np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
     def test_ss2io(self):
         # Create an input/output system from the linear system
@@ -161,7 +161,7 @@ class TestIOSys(unittest.TestCase):
         lti_t, lti_y, lti_x = ct.forced_response(linsys, T, U, X0)
         ios_t, ios_y = ios.input_output_response(nlsys, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
-        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+        np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
     def test_linearize(self):
         # Create a single input/single output linear system
@@ -214,7 +214,7 @@ class TestIOSys(unittest.TestCase):
             iosys_series, T, U, X0, return_x=True)
         lti_t, lti_y, lti_x = ct.forced_response(linsys_series, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
-        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+        np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
         # Connect systems with different timebases
         linsys2c = self.siso_linsys
@@ -231,7 +231,7 @@ class TestIOSys(unittest.TestCase):
             iosys_series, T, U, X0, return_x=True)
         lti_t, lti_y, lti_x = ct.forced_response(linsys_series, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
-        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+        np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
         # Feedback interconnection
         linsys_feedback = ct.feedback(linsys1, linsys2)
@@ -246,7 +246,7 @@ class TestIOSys(unittest.TestCase):
             iosys_feedback, T, U, X0, return_x=True)
         lti_t, lti_y, lti_x = ct.forced_response(linsys_feedback, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
-        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+        np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
     @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
                      "requires SciPy 1.0 or greater")
@@ -357,7 +357,7 @@ class TestIOSys(unittest.TestCase):
 
         lin_t, lin_y, lin_x = ct.forced_response(linsys_parallel, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys_parallel, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
                      "requires SciPy 1.0 or greater")
@@ -420,7 +420,7 @@ class TestIOSys(unittest.TestCase):
 
         ios_t, ios_y = ios.input_output_response(iosys, T, U, X0)
         lti_t, lti_y, lti_x = ct.forced_response(linsys, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_y, lti_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lti_y,atol=0.002,rtol=0.)
 
     @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
                      "requires SciPy 1.0 or greater")
@@ -442,7 +442,7 @@ class TestIOSys(unittest.TestCase):
         iosys_series = ct.series(linio1, linio2)
         lin_t, lin_y, lin_x = ct.forced_response(linsys_series, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys_series, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         # Make sure that systems don't commute
         linsys_series = ct.series(linsys2, linsys1)
@@ -454,21 +454,21 @@ class TestIOSys(unittest.TestCase):
         iosys_parallel = ct.parallel(linio1, linio2)
         lin_t, lin_y, lin_x = ct.forced_response(linsys_parallel, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys_parallel, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         # Negation
         linsys_negate = ct.negate(linsys1)
         iosys_negate = ct.negate(linio1)
         lin_t, lin_y, lin_x = ct.forced_response(linsys_negate, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys_negate, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         # Feedback interconnection
         linsys_feedback = ct.feedback(linsys1, linsys2)
         iosys_feedback = ct.feedback(linio1, linio2)
         lin_t, lin_y, lin_x = ct.forced_response(linsys_feedback, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys_feedback, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     @unittest.skipIf(StrictVersion(sp.__version__) < "1.0",
                      "requires SciPy 1.0 or greater")
@@ -496,26 +496,26 @@ class TestIOSys(unittest.TestCase):
         iosys_multiply = iosys_3i2o * iosys_2i3o
         lin_t, lin_y, lin_x = ct.forced_response(linsys_multiply, T, U2, X0)
         ios_t, ios_y = ios.input_output_response(iosys_multiply, T, U2, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         linsys_multiply = linsys_2i3o * linsys_3i2o
         iosys_multiply = iosys_2i3o * iosys_3i2o
         lin_t, lin_y, lin_x = ct.forced_response(linsys_multiply, T, U3, X0)
         ios_t, ios_y = ios.input_output_response(iosys_multiply, T, U3, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         # Right multiplication
         # TODO: add real tests once conversion from other types is supported
         iosys_multiply = ios.InputOutputSystem.__rmul__(iosys_3i2o, iosys_2i3o)
         ios_t, ios_y = ios.input_output_response(iosys_multiply, T, U3, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         # Feedback
         linsys_multiply = ct.feedback(linsys_3i2o, linsys_2i3o)
         iosys_multiply = iosys_3i2o.feedback(iosys_2i3o)
         lin_t, lin_y, lin_x = ct.forced_response(linsys_multiply, T, U3, X0)
         ios_t, ios_y = ios.input_output_response(iosys_multiply, T, U3, X0)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         # Mismatch should generate exception
         args = (iosys_3i2o, iosys_3i2o)
@@ -536,8 +536,8 @@ class TestIOSys(unittest.TestCase):
         # Simulate and compare to LTI output
         ios_t, ios_y = ios.input_output_response(lnios, T, U, X0)
         lin_t, lin_y, lin_x = ct.forced_response(linsys, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_t, lin_t, decimal=3)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_t, lin_t,atol=0.002,rtol=0.)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
         # Test MIMO system, converted to discrete time
         linsys = ct.StateSpace(self.mimo_linsys1)
@@ -552,8 +552,8 @@ class TestIOSys(unittest.TestCase):
         # Simulate and compare to LTI output
         ios_t, ios_y = ios.input_output_response(lnios, T, U, X0)
         lin_t, lin_y, lin_x = ct.forced_response(linsys, T, U, X0)
-        np.testing.assert_array_almost_equal(ios_t, lin_t, decimal=3)
-        np.testing.assert_array_almost_equal(ios_y, lin_y, decimal=3)
+        np.testing.assert_allclose(ios_t, lin_t,atol=0.002,rtol=0.)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     def test_find_eqpts(self):
         """Test find_eqpt function"""
@@ -738,7 +738,7 @@ class TestIOSys(unittest.TestCase):
 
         # Check to make sure results are OK
         np.testing.assert_array_almost_equal(lti_t, ios_t)
-        np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=3)
+        np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
     def test_named_signals(self):
         sys1 = ios.NonlinearIOSystem(
