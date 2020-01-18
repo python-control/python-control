@@ -134,16 +134,17 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Optional Parameters
     ---------------
-    dtime: False for continuous time pole placement or True for discrete time.
-            The default is dtime=False.
-    alpha: double scalar
-           If DICO='C', then place_varga will leave the eigenvalues with real
-           real part less than alpha untouched.
-           If DICO='D', the place_varga will leave eigenvalues with modulus
-           less than alpha untouched.
+    dtime : bool
+        False for continuous time pole placement or True for discrete time.
+        The default is dtime=False.
 
-           By default (alpha=None), place_varga computes alpha such that all
-           poles will be placed.
+    alpha : double scalar
+       If DICO='C', then place_varga will leave the eigenvalues with real real
+       part less than alpha untouched.  If DICO='D', the place_varga will
+       leave eigenvalues with modulus less than alpha untouched.
+
+       By default (alpha=None), place_varga computes alpha such that all poles
+       will be placed.
 
     Returns
     -------
@@ -153,14 +154,13 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Algorithm
     ---------
-        This function is a wrapper for the slycot function sb01bd, which
-        implements the pole placement algorithm of Varga [1]. In contrast to
-        the algorithm used by place(), the Varga algorithm can place
-        multiple poles at the same location. The placement, however, may not
-        be as robust.
+    This function is a wrapper for the slycot function sb01bd, which
+    implements the pole placement algorithm of Varga [1]. In contrast to the
+    algorithm used by place(), the Varga algorithm can place multiple poles at
+    the same location. The placement, however, may not be as robust.
 
-        [1] Varga A. "A Schur method for pole assignment."
-            IEEE Trans. Automatic Control, Vol. AC-26, pp. 517-519, 1981.
+    [1] Varga A. "A Schur method for pole assignment."  IEEE Trans. Automatic
+        Control, Vol. AC-26, pp. 517-519, 1981.
 
     Examples
     --------
@@ -171,6 +171,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     See Also:
     --------
     place, acker
+
     """
 
     # Make sure that SLICOT is installed
@@ -213,7 +214,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
             # but does the trick
             alpha = -2*abs(min(system_eigs.real))
     elif dtime and alpha < 0.0:
-        raise ValueError("Need alpha > 0 when DICO='D'")
+        raise ValueError("Discrete time systems require alpha > 0")
 
 
     # Call SLICOT routine to place the eigenvalues
