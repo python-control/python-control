@@ -97,6 +97,7 @@ before_install:
     fi
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
+  - conda install pytest
   # coveralls not in conda repos => install via pip instead
   - pip install coveralls
 
