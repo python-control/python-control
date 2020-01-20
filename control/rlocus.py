@@ -64,14 +64,14 @@ __all__ = ['root_locus', 'rlocus']
 _rlocus_defaults = {
     'rlocus.grid':True,
     'rlocus.plotstr':'b' if int(matplotlib.__version__[0]) == 1 else 'C0',
-    'rlocus.PrintGain':True,
-    'rlocus.Plot':True
+    'rlocus.print_gain':True,
+    'rlocus.plot':True
 }
 
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None,
-               plotstr=None, Plot=True, PrintGain=None, grid=None, **kwargs):
+               plotstr=None, plot=True, print_gain=None, grid=None, **kwargs):
 
     """Root locus plot
 
@@ -89,9 +89,9 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         Set limits of x axis, normally with tuple (see matplotlib.axes).
     ylim : tuple or list, optional
         Set limits of y axis, normally with tuple (see matplotlib.axes).
-    Plot : boolean, optional
+    plot : boolean, optional
         If True (default), plot root locus diagram.
-    PrintGain : bool
+    print_gain : bool
         If True (default), report mouse clicks when close to the root locus
         branches, calculate gain, damping and print.
     grid : bool
@@ -104,11 +104,27 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     klist : ndarray or list
         Gains used.  Same as klist keyword argument if provided.
     """
+    # Check to see if legacy 'Plot' keyword was used
+    if 'Plot' in kwargs:
+        import warnings
+        warnings.warn("'Plot' keyword is deprecated in root_locus; "
+                      "use 'plot'", FutureWarning)
+        # Map 'Plot' keyword to 'plot' keyword
+        plot= kwargs.pop('Plot')
+
+    # Check to see if legacy 'PrintGain' keyword was used
+    if 'PrintGain' in kwargs:
+        import warnings
+        warnings.warn("'PrintGain' keyword is deprecated in root_locus; "
+                      "use 'print_gain'", FutureWarning)
+        # Map 'PrintGain' keyword to 'print_gain' keyword
+        print_gain = kwargs.pop('PrintGain')
+
     # Get parameter values
     plotstr = config._get_param('rlocus', 'plotstr', plotstr, _rlocus_defaults)
     grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
-    PrintGain = config._get_param(
-        'rlocus', 'PrintGain', PrintGain, _rlocus_defaults)
+    print_gain = config._get_param(
+        'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
     # Convert numerator and denominator to polynomials if they aren't
     (nump, denp) = _systopoly1d(sys)
@@ -125,7 +141,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     sisotool = False if 'sisotool' not in kwargs else True
 
     # Create the Plot
-    if Plot:
+    if plot:
         if sisotool:
             f = kwargs['fig']
             ax = f.axes[1]
@@ -143,7 +159,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             f = pylab.figure(new_figure_name)
             ax = pylab.axes()
 
-        if PrintGain and not sisotool:
+        if print_gain and not sisotool:
             f.canvas.mpl_connect(
                 'button_release_event',
                 partial(_RLClickDispatcher, sys=sys, fig=f,
