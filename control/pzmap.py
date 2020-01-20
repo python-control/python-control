@@ -50,8 +50,8 @@ __all__ = ['pzmap']
 
 # Define default parameter values for this module
 _pzmap_defaults = {
-    'pzmap.grid':False,         # Plot omega-damping grid
-    'pzmap.plot':True,          # Generate plot using Matplotlib
+    'pzmap.grid': False,       # Plot omega-damping grid
+    'pzmap.plot': True,        # Generate plot using Matplotlib
 }
 
 
@@ -89,7 +89,7 @@ def pzmap(sys, plot=True, grid=False, title='Pole Zero Map', **kwargs):
     # Get parameter values
     plot = config._get_param('rlocus', 'plot', plot, True)
     grid = config._get_param('rlocus', 'grid', grid, False)
-    
+
     if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')
 
@@ -114,7 +114,6 @@ def pzmap(sys, plot=True, grid=False, title='Pole Zero Map', **kwargs):
         if len(zeros) > 0:
             ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
                        facecolors='none', edgecolors='k')
-
 
         plt.title(title)
 

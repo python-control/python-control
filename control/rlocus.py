@@ -62,10 +62,10 @@ __all__ = ['root_locus', 'rlocus']
 
 # Default values for module parameters
 _rlocus_defaults = {
-    'rlocus.grid':True,
-    'rlocus.plotstr':'b' if int(matplotlib.__version__[0]) == 1 else 'C0',
-    'rlocus.print_gain':True,
-    'rlocus.plot':True
+    'rlocus.grid': True,
+    'rlocus.plotstr': 'b' if int(matplotlib.__version__[0]) == 1 else 'C0',
+    'rlocus.print_gain': True,
+    'rlocus.plot': True
 }
 
 
@@ -110,7 +110,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         warnings.warn("'Plot' keyword is deprecated in root_locus; "
                       "use 'plot'", FutureWarning)
         # Map 'Plot' keyword to 'plot' keyword
-        plot= kwargs.pop('Plot')
+        plot = kwargs.pop('Plot')
 
     # Check to see if legacy 'PrintGain' keyword was used
     if 'PrintGain' in kwargs:
