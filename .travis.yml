@@ -119,7 +119,7 @@ install:
 # command to run tests
 script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
-  - coverage run -m pytest -k control/tests --disable-warnings
+  - coverage run -m pytest --disable-warnings control/tests
 
   # only run examples if Slycot is install
   # set PYTHONPATH for examples
