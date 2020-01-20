@@ -13,7 +13,6 @@ cache:
     - $HOME/.local
 
 python:
-  - "3.8"
   - "3.7"
   - "3.6"
   - "2.7"
@@ -69,6 +68,12 @@ matrix:
       dist: xenial
       services: xvfb
       python: "3.7"
+      env: SCIPY=scipy SLYCOT=source
+    - name: "linux, Python 3.8, slycot=source"
+      os: linux
+      dist: xenial
+      services: xvfb
+      python: "3.8"
       env: SCIPY=scipy SLYCOT=source
 
 # install required system libraries
