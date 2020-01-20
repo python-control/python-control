@@ -118,7 +118,7 @@ install:
 # command to run tests
 script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
-  - coverage run setup.py test
+  - coverage run -m pytest --disable-warnings
 
   # only run examples if Slycot is install
   # set PYTHONPATH for examples
