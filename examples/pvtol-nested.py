@@ -26,10 +26,6 @@ c = 0.05            # damping factor (estimated)
 Pi = tf([r], [J, 0, 0])  # inner loop (roll)
 Po = tf([1], [m, c, 0])  # outer loop (position)
 
-# Use state space versions
-Pi = tf2ss(Pi)
-Po = tf2ss(Po)
-
 #
 # Inner loop control design
 #
@@ -170,7 +166,7 @@ plt.plot(Tvec.T, Yvec.T)
 
 plt.figure(10)
 plt.clf()
-P, Z = pzmap(T, Plot=True)
+P, Z = pzmap(T, plot=True, grid=True)
 print("Closed loop poles and zeros: ", P, Z)
 
 # Gang of Four
