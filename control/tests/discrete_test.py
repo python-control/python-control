@@ -5,7 +5,9 @@
 
 import unittest
 import numpy as np
-from control import *
+from control import StateSpace, TransferFunction, feedback, step_response, \
+    isdtime, timebase, isctime, sample_system, bode, impulse_response, \
+    timebaseEqual, forced_response
 from control import matlab
 
 class TestDiscrete(unittest.TestCase):
