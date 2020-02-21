@@ -656,8 +656,10 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         return np.array(xdot).reshape((-1,))
 
     def _out(self, t, x, u):
-        y = self.C * np.reshape(x, (-1, 1)) + self.D * np.reshape(u, (-1, 1))
-        return np.array(y).reshape((self.noutputs,))
+        # Convert input to column vector and then change output to 1D array
+        y = np.dot(self.C, np.reshape(x, (-1, 1))) \
+            + np.dot(self.D, np.reshape(u, (-1, 1)))
+        return np.array(y).reshape((-1,))
 
 
 class NonlinearIOSystem(InputOutputSystem):
