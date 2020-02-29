@@ -63,6 +63,50 @@ class TestStateSpace(unittest.TestCase):
         D623 = np.zeros((3, 2))
         self.sys623 = StateSpace(A623, B623, C623, D623)
 
+        # Systems with complex matrices, sysC322, sysC222, sysC623
+        # These systems have the same shape as the previous ones
+
+        A = np.array([[6.0 + 9.0j, 8.0 + 9.0j,  -4.0 - 7.0j],
+                      [8.0 - 7.0j, 3.0,         1.0 - 1.0j],
+                      [-7.0 + 9.0j, -8.0 + 6.0j, 9.0 + 8.0j]])
+        B = np.array([[6.0 + 3.0j, -9.0 - 2.0j],
+                      [9.0 + 5.0j,  7.0 + 3.0j],
+                      [3.0 + 5.0j, 8.0 - 6.0j]])
+        C = np.array([[4.0 + 4.0j, -4.0 + 9.0j, -8.0 - 1.0j],
+        [-9.0 - 3.0j, -9.0 - 9.0j, 6.0 - 2.0j]])
+        D = np.array([[5.0 - 1.0j, -6.0 + 4.0j],
+        [6.0 + 3.0j, 5.0j]])
+        self.sysC322 = StateSpace(A, B, C, D)
+
+        A = np.array([[-4.0 - 7.0j, 3.0 + 9.0j],
+        [3.0, -6.0 - 3.0j]])
+        B = np.array([[2.0, 5.0 + 7.0j],
+        [-5.0 + 4.0j, -5.0 + 9.0j]])
+        C = np.array([[1.0 + 6.0j, -7.0 + 6.0j],
+        [-7.0 - 5.0j, -5.0 - 5.0j]])
+        D = np.array([[8.0 + 2.0j, -6.0 - 3.0j],
+        [-3.0 - 1.0j, -5.0 + 6.0j]])
+        self.sysC222 = StateSpace(A, B, C, D)
+
+        A = np.array(
+        [[2.0 - 8.0j, -2.0 + 6.0j, 8.0 - 1.0j, -6.0 + 7.0j, -5.0 - 3.0j, -5.0 - 6.0j],
+        [1.0 - 1.0j, 1.0 + 7.0j, -7.0 + 8.0j, 6.0 + 2.0j, 3.0, 8.0 - 5.0j],
+        [8.0 - 7.0j, -8.0 - 8.0j, 1.0 - 6.0j, -4.0 + 1.0j, 4.0 - 2.0j, -7.0 - 2.0j],
+        [-4.0 + 9.0j, -8.0 - 2.0j, -1.0 - 4.0j, 1.0 - 7.0j, 5.0 - 8.0j, 6.0 - 9.0j],
+        [5.0 - 9.0j, 1.0 - 5.0j, -9.0 - 7.0j, -6.0 + 7.0j, -1.0 - 5.0j, 1.0 + 8.0j],
+        [5.0 + 5.0j, 5.0 + 6.0j, -3.0 - 7.0j, 2.0 + 2.0j, -8.0 - 7.0j, 9.0 + 8.0j]])
+        B = np.array([[6.0j, 5.0 + 3.0j, 8.0 + 4.0j],
+        [-9.0j, -2.0 - 1.0j, 9.0 - 6.0j],
+        [-3.0 - 9.0j, -5.0 + 1.0j, 1.0 - 2.0j],
+        [8.0 - 6.0j, -2.0 - 4.0j, -8.0 + 2.0j],
+        [-2.0 + 3.0j, -8.0 + 5.0j, -5.0 + 5.0j],
+        [-7.0 + 4.0j, -7.0 - 6.0j, -3.0 - 8.0j]])
+        C = np.array([[8.0 + 6.0j, -3.0j, -1.0 + 7.0j, 2.0j, 6.0 - 6.0j, 3.0 - 1.0j],
+        [5.0 + 1.0j, -1.0 + 8.0j, -4.0 + 1.0j, 2.0j, 6.0 - 4.0j, -2.0 - 5.0j]])
+        D = np.array([[7.0 - 4.0j, -5.0 - 1.0j, -5.0 + 8.0j],
+        [-6.0 + 8.0j, -6.0 - 6.0j, -1.0 + 9.0j]])
+        self.sysC623 = StateSpace(A, B, C, D)
+
     def test_D_broadcast(self):
         """Test broadcast of D=0 to the right shape"""
         # Giving D as a scalar 0 should broadcast to the right shape
@@ -518,6 +562,177 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_allclose(np.array(pk.B).reshape(-1), Bmatlab)
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
+
+    def test_pole_complex(self):
+        """Evaluate the poles of a complex MIMO system."""
+
+        p = np.sort(self.sysC322.pole())
+        true_p = np.sort([21.7521962567499187 +7.8381752267389437j
+        -6.4620734598457208 +2.8701578198630169j,
+        2.7098772030958163 +6.2916669533980274j])
+
+        np.testing.assert_array_almost_equal(p, true_p)
+
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_zero_siso_complex(self):
+        """Evaluate the zeros of a complex SISO system."""
+        # extract only first input / first output system of sysC222. This system is denoted sysC111
+        #  or tfC111
+        tfC111 = ss2tf(self.sysC222)
+        sysC111 = tf2ss(tfC111[0, 0])
+
+        # compute zeros as root of the characteristic polynomial at the numerator of tfC111
+        # this method is simple and assumed as valid in this test
+        true_z = np.sort(tfC111[0, 0].zero())
+        # Compute the zeros through ab08nd, which is tested here
+        z = np.sort(sysC111.zero())
+
+        np.testing.assert_almost_equal(true_z, z)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_zero_mimo_sysC322_square_complex(self):
+        """Evaluate the zeros of a square complex MIMO system."""
+
+        z = np.sort(self.sysC322.zero())
+        true_z = np.sort([36.4937595620286217 +8.0738640861708575j,
+                -4.7860079612333388 +29.3266582804945379j,
+                -7.4509692664104161 +5.5262915134608006j])
+        np.testing.assert_array_almost_equal(z, true_z)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_zero_mimo_sysC222_square_complex(self):
+        """Evaluate the zeros of a square complex MIMO system."""
+
+        z = np.sort(self.sysC222.zero())
+        true_z = np.sort([-10.5685005560737366,
+                        3.3685005560737391])
+        np.testing.assert_array_almost_equal(z, true_z)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_zero_mimo_sysC623_non_square_complex(self):
+        """Evaluate the zeros of a non square complex MIMO system."""
+
+        z = np.sort(self.sysC623.zero())
+        true_z = np.sort([]) # System has no transmission zeros, not sure what slycot returns
+        np.testing.assert_array_almost_equal(z, true_z)
+
+    def test_add_ss_complex(self):
+        """Add two complex MIMO systems."""
+
+        A = np.array([[6.0 +9.0j, 8.0 +9.0j, -4.0 -7.0j, 0.0, 0.0],
+                    [8.0 -7.0j, 3.0, 1.0 -1.0j, 0.0, 0.0],
+                    [-7.0 +9.0j, -8.0 +6.0j, 9.0 +8.0j, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, -4.0 -7.0j, 3.0 +9.0j],
+                    [0.0, 0.0, 0.0, 3.0, -6.0 -3.0j]])
+        B = np.array([[6.0 +3.0j, -9.0 -2.0j],
+                    [9.0 +5.0j, 7.0 +3.0j],
+                    [3.0 +5.0j, 8.0 -6.0j],
+                    [2.0, 5.0 +7.0j],
+                    [-5.0 +4.0j, -5.0 +9.0j]])
+        C = np.array([[4.0 +4.0j, -4.0 +9.0j, -8.0 -1.0j, 1.0 +6.0j, -7.0 +6.0j],
+                    [-9.0 -3.0j, -9.0 -9.0j, 6.0 -2.0j, -7.0 -5.0j, -5.0 -5.0j]])
+        D = np.array([[13.0 +1.0j, -12.0 +1.0j],
+                    [3.0 +2.0j, -5.0 +11.0j]])
+
+        sys = self.sysC322 + self.sysC222
+
+        np.testing.assert_array_almost_equal(sys.A, A)
+        np.testing.assert_array_almost_equal(sys.B, B)
+        np.testing.assert_array_almost_equal(sys.C, C)
+        np.testing.assert_array_almost_equal(sys.D, D)
+
+    def test_subtract_ss_complex(self):
+        """Subtract two complex MIMO systems."""
+
+        A = np.array([[6.0 +9.0j, 8.0 +9.0j, -4.0 -7.0j, 0.0, 0.0],
+                    [8.0 -7.0j, 3.0, 1.0 -1.0j, 0.0, 0.0],
+                    [-7.0 +9.0j, -8.0 +6.0j, 9.0 +8.0j, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, -4.0 -7.0j, 3.0 +9.0j],
+                    [0.0, 0.0, 0.0, 3.0, -6.0 -3.0j]])
+        B = np.array([[6.0 +3.0j, -9.0 -2.0j],
+                    [9.0 +5.0j, 7.0 +3.0j],
+                    [3.0 +5.0j, 8.0 -6.0j],
+                    [2.0, 5.0 +7.0j],
+                    [-5.0 +4.0j, -5.0 +9.0j]])
+        C = np.array([[4.0 +4.0j, -4.0 +9.0j, -8.0 -1.0j, -1.0 -6.0j, 7.0 -6.0j],
+                    [-9.0 -3.0j, -9.0 -9.0j, 6.0 -2.0j, 7.0 +5.0j, 5.0 +5.0j]])
+        D = np.array([[-3.0 -3.0j, 7.0j],
+                    [9.0 +4.0j, 5.0 -1.0j]])
+
+        sys = self.sysC322 - self.sysC222
+
+        np.testing.assert_array_almost_equal(sys.A, A)
+        np.testing.assert_array_almost_equal(sys.B, B)
+        np.testing.assert_array_almost_equal(sys.C, C)
+        np.testing.assert_array_almost_equal(sys.D, D)
+
+    def test_multiply_ss_complex(self):
+        """Multiply two complex MIMO systems."""
+
+        A = np.array([[6.0 +9.0j, 8.0 +9.0j, -4.0 -7.0j, 41.0 +98.0j, -25.0 +70.0j],
+                    [8.0 -7.0j, 3.0, 1.0 -1.0j, -55.0 +3.0j, -113.0 -31.0j],
+                    [-7.0 +9.0j, -8.0 +6.0j, 9.0 +8.0j, -113.0 +25.0j, -121.0 -27.0j],
+                    [0.0, 0.0, 0.0, -4.0 -7.0j, 3.0 +9.0j],
+                    [0.0, 0.0, 0.0, 3.0, -6.0 -3.0j]])
+        B = np.array([[67.0 +51.0j, 30.0 -80.0j],
+                    [44.0 +42.0j, -92.0 -30.0j],
+                    [-16.0 +56.0j, -7.0 +39.0j],
+                    [2.0, 5.0 +7.0j],
+                    [-5.0 +4.0j, -5.0 +9.0j]])
+        C = np.array([[4.0 +4.0j, -4.0 +9.0j, -8.0 -1.0j, 73.0 +31.0j, 21.0 +47.0j],
+                    [-9.0 -3.0j, -9.0 -9.0j, 6.0 -2.0j, 13.0 +4.0j, -35.0 -10.0j]])
+        D = np.array([[64.0 -4.0j, -27.0 -65.0j],
+                    [47.0 +21.0j, -57.0 -61.0j]])
+
+        sys = self.sysC322 * self.sysC222
+
+        np.testing.assert_array_almost_equal(sys.A, A)
+        np.testing.assert_array_almost_equal(sys.B, B)
+        np.testing.assert_array_almost_equal(sys.C, C)
+        np.testing.assert_array_almost_equal(sys.D, D)
+
+    def test_evalfr(self):
+        """Evaluate the frequency response at one frequency."""
+
+        resp = [[4.6799374736968655 -34.9854626345217383j,
+                -10.8392352552155344 -10.3778031623880267j],
+                [28.8313352973005479 +17.1145433776227947j,
+                5.6628990560933081 +8.8759694583057787j]]
+
+        # Correct versions of the call
+        np.testing.assert_almost_equal(evalfr(sysC322, 1j), resp)
+        np.testing.assert_almost_equal(sysC322._evalfr(1.), resp)
+
+        # Deprecated version of the call (should generate warning)
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            # Set up warnings filter to only show warnings in control module
+            warnings.filterwarnings("ignore")
+            warnings.filterwarnings("always", module="control")
+
+            # Make sure that we get a pending deprecation warning
+            sys.evalfr(1.)
+            assert len(w) == 1
+            assert issubclass(w[-1].category, PendingDeprecationWarning)
+
+    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def test_freq_resp(self):
+        """Evaluate the frequency response at multiple frequencies."""
+
+        true_mag = [[15.2721178549527039, 3.9176691825112484, 20.5865790875032246],
+        [24.5384389050919864, 2.8374330975514015, 18.2268344283306227]]
+
+        true_phase = [[1.0345533469994428, 2.2133291186570987, 2.6715324185062164],
+        [1.8217663044282106, -2.8266936088743044, 2.2694910839768196]]
+        true_omega = [0.1, 10, 0.01j, -1j];
+
+        mag, phase, omega = sysC623.freqresp(true_omega)
+
+        np.testing.assert_almost_equal(mag, true_mag)
+        np.testing.assert_almost_equal(phase, true_phase)
+        np.testing.assert_equal(omega, true_omega)
+
 
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
