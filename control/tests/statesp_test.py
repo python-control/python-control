@@ -692,7 +692,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
-    def test_evalfr(self):
+    def test_evalfr_complex(self):
         """Evaluate the frequency response at one frequency."""
 
         resp = [[4.6799374736968655 -34.9854626345217383j,
@@ -701,8 +701,8 @@ class TestStateSpace(unittest.TestCase):
                 5.6628990560933081 +8.8759694583057787j]]
 
         # Correct versions of the call
-        np.testing.assert_almost_equal(evalfr(sysC322, 1j), resp)
-        np.testing.assert_almost_equal(sysC322._evalfr(1.), resp)
+        np.testing.assert_almost_equal(evalfr(self.sysC322, 1j), resp)
+        np.testing.assert_almost_equal(self.sysC322._evalfr(1.), resp)
 
         # Deprecated version of the call (should generate warning)
         import warnings
