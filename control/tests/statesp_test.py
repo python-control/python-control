@@ -727,7 +727,7 @@ class TestStateSpace(unittest.TestCase):
         [1.8217663044282106, -2.8266936088743044, 2.2694910839768196]]
         true_omega = [0.1, 10, 0.01j, -1j];
 
-        mag, phase, omega = sysC623.freqresp(true_omega)
+        mag, phase, omega = self.sysC623.freqresp(true_omega)
 
         np.testing.assert_almost_equal(mag, true_mag)
         np.testing.assert_almost_equal(phase, true_phase)
