@@ -712,7 +712,7 @@ class TestStateSpace(unittest.TestCase):
             warnings.filterwarnings("always", module="control")
 
             # Make sure that we get a pending deprecation warning
-            sys.evalfr(1.)
+            self.sysC322.evalfr(1.)
             assert len(w) == 1
             assert issubclass(w[-1].category, PendingDeprecationWarning)
 
