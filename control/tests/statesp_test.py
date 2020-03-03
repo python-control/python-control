@@ -594,9 +594,9 @@ class TestStateSpace(unittest.TestCase):
         """Evaluate the zeros of a square complex MIMO system."""
 
         z = np.sort(self.sysC322.zero())
-        true_z = np.sort([36.4937595620286217 +8.0738640861708575j,
-                -4.7860079612333388 +29.3266582804945379j,
-                -7.4509692664104161 +5.5262915134608006j])
+        true_z = np.sort([36.493759 + 8.073864j,
+                -4.7860079 + 29.3266582j,
+                -7.4509692 +5.5262915j])
         np.testing.assert_array_almost_equal(z, true_z)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -604,8 +604,8 @@ class TestStateSpace(unittest.TestCase):
         """Evaluate the zeros of a square complex MIMO system."""
 
         z = np.sort(self.sysC222.zero())
-        true_z = np.sort([-10.5685005560737366,
-                        3.3685005560737391])
+        true_z = np.sort([-10.56850055,
+                        3.3685005])
         np.testing.assert_array_almost_equal(z, true_z)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -694,10 +694,10 @@ class TestStateSpace(unittest.TestCase):
     def test_evalfr_complex(self):
         """Evaluate the frequency response at one frequency."""
 
-        resp = [[4.6799374736968655 -34.9854626345217383j,
-                -10.8392352552155344 -10.3778031623880267j],
-                [28.8313352973005479 +17.1145433776227947j,
-                5.6628990560933081 +8.8759694583057787j]]
+        resp = [[4.6799374 - 34.9854626j,
+                -10.8392352 - 10.3778031j],
+                [28.8313352 + 17.1145433j,
+                5.6628990 + 8.8759694j]]
 
         # Correct versions of the call
         np.testing.assert_almost_equal(evalfr(self.sysC322, 1j), resp)
@@ -719,11 +719,11 @@ class TestStateSpace(unittest.TestCase):
     def test_freq_resp_complex(self):
         """Evaluate the frequency response at multiple frequencies."""
 
-        true_mag = [[15.2721178549527039, 3.9176691825112484, 20.5865790875032246],
-        [24.5384389050919864, 2.8374330975514015, 18.2268344283306227]]
+        true_mag = [[15.2721178, 3.9176691, 20.5865790],
+        [24.5384389, 2.8374330, 18.2268344]]
 
-        true_phase = [[1.0345533469994428, 2.2133291186570987, 2.6715324185062164],
-        [1.8217663044282106, -2.8266936088743044, 2.2694910839768196]]
+        true_phase = [[1.03455334, 2.2133291, 2.6715324],
+        [1.8217663, -2.8266936, 2.2694910]]
         true_omega = [0.1, 10, 0.01j, -1j];
 
         mag, phase, omega = self.sysC623.freqresp(true_omega)
