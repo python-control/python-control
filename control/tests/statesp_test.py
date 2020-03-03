@@ -12,9 +12,6 @@ from control.statesp import StateSpace, _convertToStateSpace, tf2ss
 from control.xferfcn import TransferFunction, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
-import warnings
-warnings.filterwarnings("error", category=np.ComplexWarning)
-
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
