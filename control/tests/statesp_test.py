@@ -12,6 +12,8 @@ from control.statesp import StateSpace, _convertToStateSpace, tf2ss
 from control.xferfcn import TransferFunction, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
+import warnings
+warnings.filterwarnings("error", category=np.ComplexWarning)
 
 
 class TestStateSpace(unittest.TestCase):
@@ -717,7 +719,7 @@ class TestStateSpace(unittest.TestCase):
             assert issubclass(w[-1].category, PendingDeprecationWarning)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def test_freq_resp(self):
+    def test_freq_resp_complex(self):
         """Evaluate the frequency response at multiple frequencies."""
 
         true_mag = [[15.2721178549527039, 3.9176691825112484, 20.5865790875032246],
