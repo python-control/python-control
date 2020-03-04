@@ -425,8 +425,8 @@ def bode_plot(syslist, omega=None,
 #
 
 
-def nyquist_plot(syslist, hl=0.1, hw=0.1, color=None, omega=None, Plot=True,
-                 labelFreq=0, *args, **kwargs):
+def nyquist_plot(syslist, omega=None, Plot=True,
+                 labelFreq=0, hl=0.1, hw=0.1, color=None, *args, **kwargs):
     """
     Nyquist plot for a system
     Plots a Nyquist plot for the system over a (optional) frequency range.
