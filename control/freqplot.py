@@ -425,7 +425,7 @@ def bode_plot(syslist, omega=None,
 #
 
 
-def nyquist_plot(syslist, hl=0.1, hw=0.1, omega=None, Plot=True,
+def nyquist_plot(syslist, hl=0.1, hw=0.1, color=None, omega=None, Plot=True,
                  labelFreq=0, *args, **kwargs):
     """
     Nyquist plot for a system
