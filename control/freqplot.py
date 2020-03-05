@@ -424,7 +424,6 @@ def bode_plot(syslist, omega=None,
 # Nyquist plot
 #
 
-
 def nyquist_plot(syslist, omega=None, Plot=True,
                  labelFreq=0, hl=0.1, hw=0.1, color=None, *args, **kwargs):
     """
@@ -499,11 +498,11 @@ def nyquist_plot(syslist, omega=None, Plot=True,
                 c = p[0].get_color()
                 ax = plt.gca()
                 # Plot arrow to indicate Nyquist encirclement orientation
-                ax.arrow(x[0], y[0], ((x[1]-x[0])/2), ((y[1]-y[0])/2), fc=c, ec=c,
-                         head_width=hw, head_length=hl, color=color)
+                ax.arrow(x[0], y[0], ((x[1]-x[0])/2), ((y[1]-y[0])/2),
+                         fc=c, ec=c, head_width=hw, head_length=hl,
+                         color=color)
 
-                plt.plot(x, -y, '-', color=color, *args, **kwargs)
-                # plt.figure()
+                plt.plot(x, -y, '-', color=c, *args, **kwargs)
                 ax.arrow(
                     x[-1], -y[-1], ((x[-1]-x[-2])/2), ((y[-1]-y[-2])/2),
                     fc=c, ec=c, head_width=hw, head_length=hl, color=color)
@@ -548,8 +547,6 @@ def nyquist_plot(syslist, omega=None, Plot=True,
 #
 
 # TODO: think about how (and whether) to handle lists of systems
-
-
 def gangof4_plot(P, C, omega=None, **kwargs):
     """Plot the "Gang of 4" transfer functions for a system
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
@@ -650,8 +647,6 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 #
 
 # Compute reasonable defaults for axes
-
-
 def default_frequency_range(syslist, Hz=None, number_of_samples=None,
                             feature_periphery_decades=None):
     """Compute a reasonable default frequency range for frequency
@@ -771,7 +766,6 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
 #
 # KLD 5/23/11: Two functions to create nice looking labels
 #
-
 
 def get_pow1000(num):
     """Determine exponent for which significand of a number is within the
