@@ -129,6 +129,7 @@ def bode_plot(syslist, omega=None,
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         config.defaults['bode.grid'].
+
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
 
@@ -137,6 +138,7 @@ def bode_plot(syslist, omega=None,
     1. Alternatively, you may use the lower-level method (mag, phase, freq)
     = sys.freqresp(freq) to generate the frequency response for a system,
     but it returns a MIMO response.
+
     2. If a discrete time model is given, the frequency response is plotted
     along the upper branch of the unit circle, using the mapping z = exp(j
     \\omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
