@@ -83,7 +83,9 @@ def bode_plot(syslist, omega=None,
               Plot=True, omega_limits=None, omega_num=None,
               margins=None, *args, **kwargs):
     """Bode plot for a system
+
     Plots a Bode plot for the system over a (optional) frequency range.
+
     Parameters
     ----------
     syslist : linsys
@@ -112,6 +114,7 @@ def bode_plot(syslist, omega=None,
         Additional arguments for :func:`matplotlib.plot` (color, linestyle, etc)
     **kwargs:
         Additional keywords (passed to `matplotlib`)
+
     Returns
     -------
     mag : array (list if len(syslist) > 1)
@@ -120,6 +123,7 @@ def bode_plot(syslist, omega=None,
         phase in radians
     omega : array (list if len(syslist) > 1)
         frequency in rad/sec
+        
     Other Parameters
     ----------------
     grid : bool
@@ -127,6 +131,7 @@ def bode_plot(syslist, omega=None,
         config.defaults['bode.grid'].
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
+
     Notes
     -----
     1. Alternatively, you may use the lower-level method (mag, phase, freq)
@@ -136,10 +141,12 @@ def bode_plot(syslist, omega=None,
     along the upper branch of the unit circle, using the mapping z = exp(j
     \\omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
     timebase.  If not timebase is specified (dt = True), dt is set to 1.
+
     Examples
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag, phase, omega = bode(sys)
+
     """
     # Make a copy of the kwargs dictonary since we will modify it
     kwargs = dict(kwargs)
@@ -428,7 +435,9 @@ def nyquist_plot(syslist, omega=None, Plot=True,
                  labelFreq=0, hl=0.1, hw=0.1, color=None, *args, **kwargs):
     """
     Nyquist plot for a system
+
     Plots a Nyquist plot for the system over a (optional) frequency range.
+
     Parameters
     ----------
     syslist : list of LTI
@@ -441,12 +450,11 @@ def nyquist_plot(syslist, omega=None, Plot=True,
         Used to specify the color of the plot
     labelFreq : int
         Label every nth frequency on the plot
-    hl : float (default 0.1), Head length of arrow
-    hw : float (default 0.1), Head width of arrow
     *args
         Additional arguments for :func:`matplotlib.plot` (color, linestyle, etc)
     **kwargs:
         Additional keywords (passed to `matplotlib`)
+
     Returns
     -------
     real : array
@@ -455,10 +463,12 @@ def nyquist_plot(syslist, omega=None, Plot=True,
         imaginary part of the frequency response array
     freq : array
         frequencies
+
     Examples
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> real, imag, freq = nyquist_plot(sys)
+
     """
     # If argument was a singleton, turn it into a list
     if not getattr(syslist, '__iter__', False):
@@ -549,14 +559,17 @@ def nyquist_plot(syslist, omega=None, Plot=True,
 # TODO: think about how (and whether) to handle lists of systems
 def gangof4_plot(P, C, omega=None, **kwargs):
     """Plot the "Gang of 4" transfer functions for a system
+
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
     [T, PS; CS, S]
+
     Parameters
     ----------
     P, C : LTI
         Linear input/output systems (process and control)
     omega : array
         Range of frequencies (list or bounds) in rad/sec
+
     Returns
     -------
     None
@@ -651,8 +664,10 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
                             feature_periphery_decades=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
+
     Finds a reasonable default frequency range by examining the features
     (poles and zeros) of the systems in syslist.
+
     Parameters
     ----------
     syslist : list of LTI
@@ -669,15 +684,18 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
         Defines how many decades shall be included in the frequency range on
         both sides of features (poles, zeros).  The default value is read from
         ``config.defaults['freqplot.feature_periphery_decades']``.
+
     Returns
     -------
     omega : array
         Range of frequencies in rad/sec
+
     Examples
     --------
     >>> from matlab import ss
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> omega = default_frequency_range(sys)
+
     """
     # This code looks at the poles and zeros of all of the systems that
     # we are plotting and sets the frequency range to be one decade above
