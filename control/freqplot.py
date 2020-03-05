@@ -123,7 +123,7 @@ def bode_plot(syslist, omega=None,
         phase in radians
     omega : array (list if len(syslist) > 1)
         frequency in rad/sec
-        
+
     Other Parameters
     ----------------
     grid : bool
@@ -434,7 +434,8 @@ def bode_plot(syslist, omega=None,
 #
 
 def nyquist_plot(syslist, omega=None, Plot=True,
-                 labelFreq=0, hl=0.1, hw=0.1, color=None, *args, **kwargs):
+                 labelFreq=0, arrowhead_length=0.1, arrowhead_width=0.1, 
+                 color=None, *args, **kwargs):
     """
     Nyquist plot for a system
 
@@ -452,6 +453,8 @@ def nyquist_plot(syslist, omega=None, Plot=True,
         Used to specify the color of the plot
     labelFreq : int
         Label every nth frequency on the plot
+    arrowhead_width : arrow head width
+    arrowhead_length : arrow head length
     *args
         Additional arguments for :func:`matplotlib.plot` (color, linestyle, etc)
     **kwargs:
@@ -510,14 +513,15 @@ def nyquist_plot(syslist, omega=None, Plot=True,
                 c = p[0].get_color()
                 ax = plt.gca()
                 # Plot arrow to indicate Nyquist encirclement orientation
-                ax.arrow(x[0], y[0], ((x[1]-x[0])/2), ((y[1]-y[0])/2),
-                         fc=c, ec=c, head_width=hw, head_length=hl,
-                         color=color)
+                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
+                         head_width=arrowhead_width, 
+                         head_length=arrowhead_length)
 
                 plt.plot(x, -y, '-', color=c, *args, **kwargs)
                 ax.arrow(
-                    x[-1], -y[-1], ((x[-1]-x[-2])/2), ((y[-1]-y[-2])/2),
-                    fc=c, ec=c, head_width=hw, head_length=hl, color=color)
+                    x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
+                    fc=c, ec=c, head_width=arrowhead_width, 
+                    head_length=arrowhead_length)
 
                 # Mark the -1 point
                 plt.plot([-1], [0], 'r+')
