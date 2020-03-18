@@ -50,7 +50,6 @@ jobs:
       python: "3.8"
       env: SCIPY=scipy SLYCOT=source
 
-matrix:
   # Exclude combinations that are very unlikely (and don't work)
   exclude:
     - python: "3.7"            # python3.7 should use latest scipy
