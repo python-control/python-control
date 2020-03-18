@@ -561,9 +561,9 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_raises(ValueError, tf1._common_den)
         np.testing.assert_raises(ValueError, tf2._common_den)
 
-        _, den1, _ = tf1._common_den(allownonproper=True)
+        _, den1, _ = tf1._common_den(allow_nonproper=True)
         np.testing.assert_array_almost_equal(den1, common_den_ref)
-        _, den2, _ = tf2._common_den(allownonproper=True)
+        _, den2, _ = tf2._common_den(allow_nonproper=True)
         np.testing.assert_array_almost_equal(den2, common_den_ref)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")

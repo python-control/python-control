@@ -679,7 +679,7 @@ class TransferFunction(LTI):
 
     def pole(self):
         """Compute the poles of a transfer function."""
-        _, den, denorder = self._common_den(allownonproper=True)
+        _, den, denorder = self._common_den(allow_nonproper=True)
         rts = []
         for d, o in zip(den, denorder):
             rts.extend(roots(d[:o + 1]))
@@ -797,7 +797,7 @@ class TransferFunction(LTI):
 
         return out
 
-    def _common_den(self, imag_tol=None, allownonproper=False):
+    def _common_den(self, imag_tol=None, allow_nonproper=False):
         """
         Compute MIMO common denominators; return them and adjusted numerators.
 
@@ -813,7 +813,7 @@ class TransferFunction(LTI):
             Threshold for the imaginary part of a root to use in detecting
             complex poles
 
-        allownonproper : boolean
+        allow_nonproper : boolean
             Do not enforce proper transfer functions
 
         Returns
@@ -825,8 +825,8 @@ class TransferFunction(LTI):
             gives the numerator coefficient array for the ith output and jth
             input; padded for use in td04ad ('C' option); matches the
             denorder order; highest coefficient starts on the left.
-            If allownonproper=True and the order of a numerator exceeds the
-            order of the common denominator, num will be retured as None
+            If allow_nonproper=True and the order of a numerator exceeds the
+            order of the common denominator, num will be returned as None
 
         den: array
             sys.inputs by kd
@@ -942,7 +942,7 @@ class TransferFunction(LTI):
                     # numerater has a higher order than the denominator, the
                     # padding will fail
                     if len(numpoly) > maxindex + 1:
-                        if allownonproper:
+                        if allow_nonproper:
                             havenonproper = True
                             break
                         raise ValueError(
