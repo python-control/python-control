@@ -433,8 +433,9 @@ def bode_plot(syslist, omega=None,
 # Nyquist plot
 #
 
-def nyquist_plot(syslist, omega=None, Plot=True, color=None,
-                 labelFreq=0, *args, **kwargs):
+def nyquist_plot(syslist, omega=None, Plot=True,
+                 labelFreq=0, arrowhead_length=0.1, arrowhead_width=0.1, 
+                 color=None, *args, **kwargs):
     """
     Nyquist plot for a system
 
@@ -452,6 +453,8 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None,
         Used to specify the color of the plot
     labelFreq : int
         Label every nth frequency on the plot
+    arrowhead_width : arrow head width
+    arrowhead_length : arrow head length
     *args
         Additional arguments for :func:`matplotlib.plot` (color, linestyle, etc)
     **kwargs:
@@ -511,12 +514,14 @@ def nyquist_plot(syslist, omega=None, Plot=True, color=None,
                 ax = plt.gca()
                 # Plot arrow to indicate Nyquist encirclement orientation
                 ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
-                         head_width=0.2, head_length=0.2)
+                         head_width=arrowhead_width, 
+                         head_length=arrowhead_length)
 
                 plt.plot(x, -y, '-', color=c, *args, **kwargs)
                 ax.arrow(
                     x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                    fc=c, ec=c, head_width=0.2, head_length=0.2)
+                    fc=c, ec=c, head_width=arrowhead_width, 
+                    head_length=arrowhead_length)
 
                 # Mark the -1 point
                 plt.plot([-1], [0], 'r+')
