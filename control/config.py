@@ -114,11 +114,11 @@ def use_matlab_defaults():
 
     The following conventions are used:
         * Bode plots plot gain in dB, phase in degrees, frequency in
-          Hertz, with grids
+          rad/sec, with grids
         * State space class and functions use Numpy matrix objects
 
     """
-    set_defaults('bode', dB=True, deg=True, Hz=True, grid=True)
+    set_defaults('bode', dB=True, deg=True, Hz=False, grid=True)
     set_defaults('statesp', use_numpy_matrix=True)
 
 
@@ -128,7 +128,7 @@ def use_fbs_defaults():
 
     The following conventions are used:
         * Bode plots plot gain in powers of ten, phase in degrees,
-          frequency in Hertz, no grid
+          frequency in rad/sec, no grid
 
     """
     set_defaults('bode', dB=False, deg=True, Hz=False, grid=False)

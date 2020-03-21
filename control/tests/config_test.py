@@ -107,8 +107,8 @@ class TestConfig(unittest.TestCase):
         mag_data = mag_line[0].get_data()
         mag_x, mag_y = mag_data
 
-        # Make sure the x-axis is in Hertz and y-axis is in dB
-        np.testing.assert_almost_equal(mag_x[0], 0.001 / (2*pi), decimal=6)
+        # Make sure the x-axis is in rad/sec and y-axis is in dB
+        np.testing.assert_almost_equal(mag_x[0], 0.001, decimal=6)
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
 
         # Get the phase line
@@ -117,8 +117,8 @@ class TestConfig(unittest.TestCase):
         phase_data = phase_line[0].get_data()
         phase_x, phase_y = phase_data
 
-        # Make sure the x-axis is in Hertz and y-axis is in degrees
-        np.testing.assert_almost_equal(phase_x[-1], 1000 / (2*pi), decimal=1)
+        # Make sure the x-axis is in rad/sec and y-axis is in degrees
+        np.testing.assert_almost_equal(phase_x[-1], 1000, decimal=1)
         np.testing.assert_almost_equal(phase_y[-1], -180, decimal=0)
         
         # Override the defaults and make sure that works as well
