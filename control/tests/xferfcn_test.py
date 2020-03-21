@@ -546,6 +546,26 @@ class TestXferFcn(unittest.TestCase):
                                              np.zeros((3, 5, 6)))
         np.testing.assert_array_almost_equal(den, denref)
 
+    def test_common_den_nonproper(self):
+        """ Test _common_den with order(num)>order(den) """
+
+        tf1 = TransferFunction(
+                [[[1., 2., 3.]], [[1., 2.]]],
+                [[[1., -2.]], [[1., -3.]]])
+        tf2 = TransferFunction(
+                [[[1., 2.]], [[1., 2., 3.]]],
+                [[[1., -2.]], [[1., -3.]]])
+
+        common_den_ref = np.array([[1., -5., 6.]])
+
+        np.testing.assert_raises(ValueError, tf1._common_den)
+        np.testing.assert_raises(ValueError, tf2._common_den)
+
+        _, den1, _ = tf1._common_den(allow_nonproper=True)
+        np.testing.assert_array_almost_equal(den1, common_den_ref)
+        _, den2, _ = tf2._common_den(allow_nonproper=True)
+        np.testing.assert_array_almost_equal(den2, common_den_ref)
+
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_pole_mimo(self):
         """Test for correct MIMO poles."""
@@ -556,6 +576,14 @@ class TestXferFcn(unittest.TestCase):
         p = sys.pole()
 
         np.testing.assert_array_almost_equal(p, [-2., -2., -7., -3., -2.])
+
+        # non proper transfer function
+        sys2 = TransferFunction(
+            [[[1., 2., 3., 4.], [1.]], [[1.], [1.]]],
+            [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
+        p2 = sys2.pole()
+
+        np.testing.assert_array_almost_equal(p2, [-2., -2., -7., -3., -2.])
 
     def test_double_cancelling_poles_siso(self):
 
