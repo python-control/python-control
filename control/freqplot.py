@@ -114,7 +114,7 @@ def bode_plot(syslist, omega=None,
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
     **kwargs : `matplotlib` plot keyword properties, optional
         Additional keywords (passed to `matplotlib`)
-w
+
     Returns
     -------
     mag : array (list if len(syslist) > 1)
@@ -442,7 +442,7 @@ w
 # Nyquist plot
 #
 
-def nyquist_plot(syslist, omega=None, plot=True, labelFreq=0,
+def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                  arrowhead_length=0.1, arrowhead_width=0.1,
                  color=None, *args, **kwargs):
     """
@@ -460,7 +460,7 @@ def nyquist_plot(syslist, omega=None, plot=True, labelFreq=0,
         If True, plot magnitude
     color : string
         Used to specify the color of the plot
-    labelFreq : int
+    label_freq : int
         Label every nth frequency on the plot
     arrowhead_width : arrow head width
     arrowhead_length : arrow head length
@@ -491,6 +491,14 @@ def nyquist_plot(syslist, omega=None, plot=True, labelFreq=0,
                       "use 'plot'", FutureWarning)
         # Map 'Plot' keyword to 'plot' keyword
         plot = kwargs.pop('Plot')
+
+    # Check to see if legacy 'labelFreq' keyword was used
+    if 'labelFreq' in kwargs:
+        import warnings
+        warnings.warn("'labelFreq' keyword is deprecated in nyquist_plot; "
+                      "use 'label_freq'", FutureWarning)
+        # Map 'labelFreq' keyword to 'label_freq' keyword
+        label_freq = kwargs.pop('labelFreq')
 
     # If argument was a singleton, turn it into a list
     if not getattr(syslist, '__iter__', False):
@@ -544,8 +552,8 @@ def nyquist_plot(syslist, omega=None, plot=True, labelFreq=0,
                 plt.plot([-1], [0], 'r+')
 
             # Label the frequencies of the points
-            if labelFreq:
-                ind = slice(None, None, labelFreq)
+            if label_freq:
+                ind = slice(None, None, label_freq)
                 for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
                     # Convert to Hz
                     f = omegapt / (2 * sp.pi)
