@@ -236,7 +236,7 @@ class TestFreqresp(unittest.TestCase):
 
 
 def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
+   return unittest.TestLoader().loadTestsFromTestCase(TestFreqresp)
 
 if __name__ == '__main__':
    unittest.main()
