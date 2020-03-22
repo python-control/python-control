@@ -513,12 +513,19 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     sys = _get_ss_simo(sys, input, output)
     if T is None:
         if isctime(sys):
-            T = _default_response_times(sys.A, 100)
+            if sys.A.shape == (0, 0):
+                # No dynamics; use the unit time interval
+                T = np.linspace(0, 1, 100, endpoint=False)
+            else:
+                T = _default_response_times(sys.A, 100)
         else:
             # For discrete time, use integers
-            tvec = _default_response_times(sys.A, 100)
-            T = range(int(np.ceil(max(tvec))))
-
+            if sys.A.shape == (0, 0):
+                # No dynamics; use 100 time steps
+                T = range(100)
+            else:
+                tvec = _default_response_times(sys.A, 100)
+                T = range(int(np.ceil(max(tvec))))
     U = np.ones_like(T)
 
     T, yout, xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -574,11 +581,21 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02,
     sys = _get_ss_simo(sys)
     if T is None:
         if isctime(sys):
-            T = _default_response_times(sys.A, 1000)
+            if sys.A.shape == (0, 0):
+                # No dynamics; use the unit time interval
+                T = np.linspace(0, 1, 100, endpoint=False)
+            else:
+                # Use 1000 time points for accuracy
+                T = _default_response_times(sys.A, 1000)
         else:
             # For discrete time, use integers
-            tvec = _default_response_times(sys.A, 1000)
-            T = range(int(np.ceil(max(tvec))))
+            if sys.A.shape == (0, 0):
+                # No dynamics; use 100 time steps
+                T = range(100)
+            else:
+                # Use 1000 time points for accuracy
+                tvec = _default_response_times(sys.A, 1000)
+                T = range(int(np.ceil(max(tvec))))
 
     T, yout = step_response(sys, T)
 
@@ -698,11 +715,19 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     # The initial vector X0 is created in forced_response(...) if necessary
     if T is None:
         if isctime(sys):
-            T = _default_response_times(sys.A, 1000)
+            if sys.A.shape == (0, 0):
+                # No dynamics; use the unit time interval
+                T = np.linspace(0, 1, 100, endpoint=False)
+            else:
+                T = _default_response_times(sys.A, 100)
         else:
             # For discrete time, use integers
-            tvec = _default_response_times(sys.A, 1000)
-            T = range(int(np.ceil(max(tvec))))
+            if sys.A.shape == (0, 0):
+                # No dynamics; use 100 time steps
+                T = range(100)
+            else:
+                tvec = _default_response_times(sys.A, 100)
+                T = range(int(np.ceil(max(tvec))))
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -802,12 +827,19 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     # Compute T and U, no checks necessary, they will be checked in lsim
     if T is None:
         if isctime(sys):
-            T = _default_response_times(sys.A, 100)
+            if sys.A.shape == (0, 0):
+                # No dynamics; use the unit time interval
+                T = np.linspace(0, 1, 100, endpoint=False)
+            else:
+                T = _default_response_times(sys.A, 100)
         else:
             # For discrete time, use integers
-            tvec = _default_response_times(sys.A, 100)
-            T = range(int(np.ceil(max(tvec))))
-
+            if sys.A.shape == (0, 0):
+                # No dynamics; use 100 time steps
+                T = range(100)
+            else:
+                tvec = _default_response_times(sys.A, 100)
+                T = range(int(np.ceil(max(tvec))))
     U = np.zeros_like(T)
 
     # Compute new X0 that contains the impulse
