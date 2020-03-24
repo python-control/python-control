@@ -29,9 +29,6 @@ class TestStateSpace(unittest.TestCase):
         nichols(self.sys, grid=False)
         ngrid()
 
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
-
 
 if __name__ == "__main__":
     unittest.main()

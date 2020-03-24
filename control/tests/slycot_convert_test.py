@@ -192,10 +192,6 @@ class TestSlycot(unittest.TestCase):
                                     decimal=2)
 
 
-# These are here for once the above is made into a unittest.
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestSlycot)
-
 if __name__ == '__main__':
     unittest.main()
 

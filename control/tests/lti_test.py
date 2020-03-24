@@ -70,8 +70,6 @@ class TestUtils(unittest.TestCase):
         np.testing.assert_equal(sys.dcgain(), 42)
         np.testing.assert_equal(dcgain(sys), 42)
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestUtils)
 
 if __name__ == "__main__":
     unittest.main()

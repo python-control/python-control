@@ -384,9 +384,6 @@ class TestDiscrete(unittest.TestCase):
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
 
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)
-
 
 if __name__ == "__main__":
     unittest.main()

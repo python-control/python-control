@@ -218,9 +218,6 @@ class TestConfig(unittest.TestCase):
         # Reset the configuration defaults
         ct.config.reset_defaults()
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
-
 
 if __name__ == '__main__':
     unittest.main()

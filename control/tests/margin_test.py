@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# margin_test.py - test suit for stability margin commands
+# margin_test.py - test suite for stability margin commands
 # RMM, 15 Jul 2011
 
 from __future__ import print_function
@@ -310,8 +310,6 @@ class TestMargin(unittest.TestCase):
             assert_array_almost_equal(
                 res, test['result'], test['digits'])
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestMargin)
 
 if __name__ == "__main__":
     unittest.main()

@@ -827,9 +827,5 @@ class TestXferFcn(unittest.TestCase):
             self.assertEqual(H._repr_latex_(), ref)
 
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestXferFcn)
-
-
 if __name__ == "__main__":
     unittest.main()

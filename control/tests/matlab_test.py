@@ -688,8 +688,6 @@ class TestMatlab(unittest.TestCase):
 #        for i in range(len(tfdata)):
 #            np.testing.assert_array_almost_equal(tfdata_1[i], tfdata_2[i])
 
-def test_suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestMatlab)
 
 if __name__ == '__main__':
     unittest.main()

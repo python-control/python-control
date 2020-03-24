@@ -288,9 +288,6 @@ class TestCanonical(unittest.TestCase):
         np.testing.assert_array_almost_equal(mimo_new.C, mimo_ini.C)
         np.testing.assert_array_almost_equal(mimo_new.D, mimo_ini.D)
         
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
-
 
 if __name__ == "__main__":
     unittest.main()

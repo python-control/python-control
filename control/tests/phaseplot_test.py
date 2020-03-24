@@ -77,8 +77,6 @@ class TestPhasePlot(unittest.TestCase):
     def oscillator_ode(self, x, t, m=1., b=1, k=1, extra=None):
         return (x[1], -k/m*x[0] - b/m*x[1])
 
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestPhasePlot)
 
 if __name__ == '__main__':
     unittest.main()

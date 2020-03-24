@@ -255,9 +255,5 @@ class TestXferFcnInput(unittest.TestCase):
             np.testing.assert_array_equal(num_[1][1], array([4.0, 4.0], dtype=float))
 
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestXferFcnInput)
-
-
 if __name__ == "__main__":
     unittest.main()

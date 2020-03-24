@@ -235,8 +235,5 @@ class TestFreqresp(unittest.TestCase):
       ctrl.config.reset_defaults()
 
 
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestFreqresp)
-
 if __name__ == '__main__':
    unittest.main()

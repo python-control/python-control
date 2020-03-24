@@ -268,8 +268,6 @@ class TestConvert(unittest.TestCase):
         np.testing.assert_array_almost_equal(np.sort(sys2tf.pole()),
                                              np.sort(sys2ss.pole()))
 
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
 
 if __name__ == "__main__":
     unittest.main()
