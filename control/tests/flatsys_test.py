@@ -127,9 +127,5 @@ class TestFlatSys(unittest.TestCase):
         ct.reset_defaults()
 
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestFlatSys)
-
-
 if __name__ == '__main__':
     unittest.main()

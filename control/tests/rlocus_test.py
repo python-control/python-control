@@ -68,8 +68,6 @@ class TestRootLocus(unittest.TestCase):
         assert_array_almost_equal(zoom_x,zoom_x_valid)
         assert_array_almost_equal(zoom_y,zoom_y_valid)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestRootLocus)
 
 if __name__ == "__main__":
     unittest.main()

@@ -409,11 +409,5 @@ class TestStatefbk(unittest.TestCase):
         reset_defaults()
 
 
-def test_suite():
-    
-   status1 = unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
-   status2 = unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
-   return status1 and status2
-
 if __name__ == '__main__':
     unittest.main()

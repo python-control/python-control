@@ -108,9 +108,6 @@ class TestMinreal(unittest.TestCase):
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_array_almost_equal(hm.den[0][0], hr.den[0][0])
 
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestMinreal)
-
 
 if __name__ == "__main__":
     unittest.main()

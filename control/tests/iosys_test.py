@@ -911,10 +911,6 @@ class TestIOSys(unittest.TestCase):
             self.assertEqual(len(warnval), 0)
 
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
-
-
 # Predator prey dynamics
 def predprey(t, x, u, params={}):
     r = params.get('r', 2)

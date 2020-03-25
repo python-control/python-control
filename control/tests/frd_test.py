@@ -415,8 +415,5 @@ class TestFRD(unittest.TestCase):
             self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
 
             
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestFRD)
-
 if __name__ == "__main__":
     unittest.main()
