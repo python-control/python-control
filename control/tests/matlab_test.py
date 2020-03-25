@@ -132,7 +132,7 @@ class TestMatlab(unittest.TestCase):
         # pzmap(self.siso_ss2);         not implemented
         pzmap(self.siso_tf1);
         pzmap(self.siso_tf2);
-        pzmap(self.siso_tf2, Plot=False);
+        pzmap(self.siso_tf2, plot=False);
 
     def testStep(self):
         t = np.linspace(0, 1, 10)
@@ -326,7 +326,7 @@ class TestMatlab(unittest.TestCase):
         bode(self.siso_ss1)
         bode(self.siso_tf1)
         bode(self.siso_tf2)
-        (mag, phase, freq) = bode(self.siso_tf2, Plot=False)
+        (mag, phase, freq) = bode(self.siso_tf2, plot=False)
         bode(self.siso_tf1, self.siso_tf2)
         w = logspace(-3, 3);
         bode(self.siso_ss1, w)
@@ -339,7 +339,7 @@ class TestMatlab(unittest.TestCase):
         rlocus(self.siso_tf1)
         rlocus(self.siso_tf2)
         klist = [1, 10, 100]
-        rlist, klist_out = rlocus(self.siso_tf2, klist, Plot=False)
+        rlist, klist_out = rlocus(self.siso_tf2, klist, plot=False)
         np.testing.assert_equal(len(rlist), len(klist))
         np.testing.assert_array_equal(klist, klist_out)
 
@@ -349,7 +349,7 @@ class TestMatlab(unittest.TestCase):
         nyquist(self.siso_tf2)
         w = logspace(-3, 3);
         nyquist(self.siso_tf2, w)
-        (real, imag, freq) = nyquist(self.siso_tf2, w, Plot=False)
+        (real, imag, freq) = nyquist(self.siso_tf2, w, plot=False)
 
     def testNichols(self):
         nichols(self.siso_ss1)

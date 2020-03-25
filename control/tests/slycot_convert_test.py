@@ -154,19 +154,19 @@ class TestSlycot(unittest.TestCase):
                         for inputNum in range(inputs):
                             for outputNum in range(outputs):
                                 [ssOriginalMag, ssOriginalPhase, freq] =\
-                                    matlab.bode(ssOriginal, Plot=False)
+                                    matlab.bode(ssOriginal, plot=False)
                                 [tfOriginalMag, tfOriginalPhase, freq] =\
                                     matlab.bode(matlab.tf(
                                         numOriginal[outputNum][inputNum],
-                                        denOriginal[outputNum]), Plot=False)
+                                        denOriginal[outputNum]), plot=False)
                                 [ssTransformedMag, ssTransformedPhase, freq] =\
                                     matlab.bode(ssTransformed,
-                                                freq, Plot=False)
+                                                freq, plot=False)
                                 [tfTransformedMag, tfTransformedPhase, freq] =\
                                     matlab.bode(matlab.tf(
                                         numTransformed[outputNum][inputNum],
                                         denTransformed[outputNum]),
-                                        freq, Plot=False)
+                                        freq, plot=False)
                                 # print('numOrig=',
                                 #  numOriginal[outputNum][inputNum])
                                 # print('denOrig=',
