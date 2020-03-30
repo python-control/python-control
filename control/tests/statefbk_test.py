@@ -344,8 +344,5 @@ class TestStatefbk(unittest.TestCase):
         assert np.all(np.abs(L) > 1)
 
 
-def test_suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestStatefbk)
-
 if __name__ == '__main__':
     unittest.main()

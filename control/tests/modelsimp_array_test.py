@@ -169,9 +169,6 @@ class TestModelsimp(unittest.TestCase):
         # Reset configuration variables to their original settings
         control.config.reset_defaults()
         
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestModelsimp)
-
 
 if __name__ == '__main__':
     unittest.main()

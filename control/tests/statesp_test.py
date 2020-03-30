@@ -826,9 +826,5 @@ class TestDrss(unittest.TestCase):
         np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
 
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
-
-
 if __name__ == "__main__":
     unittest.main()

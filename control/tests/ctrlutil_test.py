@@ -58,8 +58,5 @@ class TestUtils(unittest.TestCase):
         np.testing.assert_array_almost_equal(db_array, self.db)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestUtils)
-
 if __name__ == "__main__":
     unittest.main()

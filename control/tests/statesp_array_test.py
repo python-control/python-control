@@ -629,9 +629,6 @@ class TestDrss(unittest.TestCase):
     def tearDown(self):
         reset_defaults()        # reset configuration defaults
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestStateSpace)
-
 
 if __name__ == "__main__":
     unittest.main()

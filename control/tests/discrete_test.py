@@ -5,7 +5,9 @@
 
 import unittest
 import numpy as np
-from control import *
+from control import StateSpace, TransferFunction, feedback, step_response, \
+    isdtime, timebase, isctime, sample_system, bode, impulse_response, \
+    timebaseEqual, forced_response
 from control import matlab
 
 class TestDiscrete(unittest.TestCase):
@@ -381,9 +383,6 @@ class TestDiscrete(unittest.TestCase):
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
-
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)
 
 
 if __name__ == "__main__":

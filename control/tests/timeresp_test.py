@@ -562,8 +562,5 @@ class TestTimeresp(unittest.TestCase):
         self.assertTrue(len(t) == len(y))  # Allows direct plotting of output
 
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
-
 if __name__ == '__main__':
     unittest.main()

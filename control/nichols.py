@@ -60,7 +60,7 @@ __all__ = ['nichols_plot', 'nichols', 'nichols_grid']
 
 # Default parameters values for the nichols module
 _nichols_defaults = {
-    'nichols.grid':True,
+    'nichols.grid': True,
 }
 
 
@@ -156,12 +156,13 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
         # Default chart magnitudes
         # The key set of magnitudes are always generated, since this
         # guarantees a recognizable Nichols chart grid.
-        key_cl_mags = np.array([-40.0, -20.0, -12.0, -6.0, -3.0, -1.0, -0.5, 0.0,
-                                0.25, 0.5, 1.0, 3.0, 6.0, 12.0])
+        key_cl_mags = np.array([-40.0, -20.0, -12.0, -6.0, -3.0, -1.0, -0.5,
+                                0.0, 0.25, 0.5, 1.0, 3.0, 6.0, 12.0])
+
         # Extend the range of magnitudes if necessary. The extended arange
-        # will end up empty if no extension is required. Assumes that closed-loop
-        # magnitudes are approximately aligned with open-loop magnitudes beyond
-        # the value of np.min(key_cl_mags)
+        # will end up empty if no extension is required. Assumes that
+        # closed-loop magnitudes are approximately aligned with open-loop
+        # magnitudes beyond the value of np.min(key_cl_mags)
         cl_mag_step = -20.0  # dB
         extended_cl_mags = np.arange(np.min(key_cl_mags),
                                      ol_mag_min + cl_mag_step, cl_mag_step)
@@ -171,7 +172,8 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
     if cl_phases is None:
         # Choose a reasonable set of default phases (denser if the open-loop
         # data is restricted to a relatively small range of phases).
-        key_cl_phases = np.array([-0.25, -45.0, -90.0, -180.0, -270.0, -325.0, -359.75])
+        key_cl_phases = np.array([-0.25, -45.0, -90.0, -180.0, -270.0,
+                                  -325.0, -359.75])
         if np.abs(ol_phase_max - ol_phase_min) < 90.0:
             other_cl_phases = np.arange(-10.0, -360.0, -10.0)
         else:
@@ -181,7 +183,8 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
         assert ((-360.0 < np.min(cl_phases)) and (np.max(cl_phases) < 0.0))
 
     # Find the M-contours
-    m = m_circles(cl_mags, phase_min=np.min(cl_phases), phase_max=np.max(cl_phases))
+    m = m_circles(cl_mags, phase_min=np.min(cl_phases),
+                  phase_max=np.max(cl_phases))
     m_mag = 20*sp.log10(np.abs(m))
     m_phase = sp.mod(sp.degrees(sp.angle(m)), -360.0)  # Unwrap
 
@@ -208,9 +211,11 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
                  linestyle=line_style, zorder=0)
 
         # Add magnitude labels
-        for x, y, m in zip(m_phase[:][-1] + phase_offset, m_mag[:][-1], cl_mags):
+        for x, y, m in zip(m_phase[:][-1] + phase_offset, m_mag[:][-1],
+                           cl_mags):
             align = 'right' if m < 0.0 else 'left'
-            plt.text(x, y, str(m) + ' dB', size='small', ha=align, color='gray')
+            plt.text(x, y, str(m) + ' dB', size='small', ha=align,
+                     color='gray')
 
     # Fit axes to generated chart
     plt.axis([phase_offset_min - 360.0, phase_offset_max - 360.0,

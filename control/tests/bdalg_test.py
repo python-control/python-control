@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# bdalg_test.py - test suit for block diagram algebra
+# bdalg_test.py - test suite for block diagram algebra
 # RMM, 30 Mar 2011 (based on TestBDAlg from v0.4a)
 
 import unittest
@@ -269,10 +269,6 @@ class TestFeedback(unittest.TestCase):
         frd = ctrl.FRD(h, omega)
         sys = ctrl.feedback(1, frd)
         self.assertTrue(isinstance(sys, ctrl.FRD))
-
-
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
 
 
 if __name__ == "__main__":

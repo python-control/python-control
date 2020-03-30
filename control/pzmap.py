@@ -1,7 +1,7 @@
 # pzmap.py - computations involving poles and zeros
 #
 # Author: Richard M. Murray
-# Date: 7 Sep 09
+# Date: 7 Sep 2009
 #
 # This file contains functions that compute poles, zeros and related
 # quantities for a linear system.
@@ -38,7 +38,6 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $Id:pzmap.py 819 2009-05-29 21:28:07Z murray $
 
 from numpy import real, imag, linspace, exp, cos, sin, sqrt
 from math import pi
@@ -51,15 +50,15 @@ __all__ = ['pzmap']
 
 # Define default parameter values for this module
 _pzmap_defaults = {
-    'pzmap.grid':False,         # Plot omega-damping grid
-    'pzmap.Plot':True,          # Generate plot using Matplotlib
+    'pzmap.grid': False,       # Plot omega-damping grid
+    'pzmap.plot': True,        # Generate plot using Matplotlib
 }
 
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
+def pzmap(sys, plot=True, grid=False, title='Pole Zero Map', **kwargs):
     """
     Plot a pole/zero map for a linear system.
 
@@ -67,7 +66,7 @@ def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
     ----------
     sys: LTI (StateSpace or TransferFunction)
         Linear system for which poles and zeros are computed.
-    Plot: bool
+    plot: bool
         If ``True`` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
     grid: boolean (default = False)
@@ -80,17 +79,24 @@ def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
     zeros: array
         The system's zeros.
     """
+    # Check to see if legacy 'Plot' keyword was used
+    if 'Plot' in kwargs:
+        import warnings
+        warnings.warn("'Plot' keyword is deprecated in pzmap; use 'plot'",
+                      FutureWarning)
+        plot = kwargs['Plot']
+
     # Get parameter values
-    Plot = config._get_param('rlocus', 'Plot', Plot, True)
+    plot = config._get_param('rlocus', 'plot', plot, True)
     grid = config._get_param('rlocus', 'grid', grid, False)
-    
+
     if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')
 
     poles = sys.pole()
     zeros = sys.zero()
 
-    if (Plot):
+    if (plot):
         import matplotlib.pyplot as plt
 
         if grid:
@@ -103,11 +109,11 @@ def pzmap(sys, Plot=True, grid=False, title='Pole Zero Map'):
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
-            ax.scatter(real(poles), imag(poles), s=50, marker='x', facecolors='k')
+            ax.scatter(real(poles), imag(poles), s=50, marker='x',
+                       facecolors='k')
         if len(zeros) > 0:
             ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
-                        facecolors='none', edgecolors='k')
-
+                       facecolors='none', edgecolors='k')
 
         plt.title(title)
 

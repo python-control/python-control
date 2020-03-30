@@ -62,8 +62,6 @@ class TestSisotool(unittest.TestCase):
         step_response_moved = np.array([[ 0.,          0.02458187,  0.16529784 , 0.46602716 , 0.91012035 , 1.43364313, 1.93996334 , 2.3190105  , 2.47041552 , 2.32724853] ])
         assert_array_almost_equal(ax_step.lines[0].get_data()[1][:10],step_response_moved)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestSisotool)
 
 if __name__ == "__main__":
     unittest.main()

@@ -299,8 +299,5 @@ class TestMatrixEquations(unittest.TestCase):
             assert_raises(ControlArgument, cdare, A, B, Q, R, S)
 
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestMatrixEquations)
-
 if __name__ == "__main__":
     unittest.main()

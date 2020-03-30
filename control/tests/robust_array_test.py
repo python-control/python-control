@@ -388,5 +388,6 @@ class TestMixsyn(unittest.TestCase):
     def tearDown(self):
         control.config.reset_defaults()
 
+
 if __name__ == "__main__":
     unittest.main()

@@ -108,7 +108,7 @@ class TestConvert(unittest.TestCase):
                             ssorig_mag, ssorig_phase, ssorig_omega = \
                                 bode(_mimo2siso(ssOriginal, \
                                                         inputNum, outputNum), \
-                                                 deg=False, Plot=False)
+                                                 deg=False, plot=False)
                             ssorig_real = ssorig_mag * np.cos(ssorig_phase)
                             ssorig_imag = ssorig_mag * np.sin(ssorig_phase)
 
@@ -121,7 +121,7 @@ class TestConvert(unittest.TestCase):
 
                             tforig_mag, tforig_phase, tforig_omega = \
                                 bode(tforig, ssorig_omega, \
-                                                 deg=False, Plot=False)
+                                                 deg=False, plot=False)
 
                             tforig_real = tforig_mag * np.cos(tforig_phase)
                             tforig_imag = tforig_mag * np.sin(tforig_phase)
@@ -137,7 +137,7 @@ class TestConvert(unittest.TestCase):
                                 bode(_mimo2siso(ssTransformed, \
                                                         inputNum, outputNum), \
                                                  ssorig_omega, \
-                                                 deg=False, Plot=False)
+                                                 deg=False, plot=False)
                             ssxfrm_real = ssxfrm_mag * np.cos(ssxfrm_phase)
                             ssxfrm_imag = ssxfrm_mag * np.sin(ssxfrm_phase)
                             np.testing.assert_array_almost_equal( \
@@ -152,7 +152,7 @@ class TestConvert(unittest.TestCase):
                             tfxfrm = tf(num, den)
                             tfxfrm_mag, tfxfrm_phase, tfxfrm_omega = \
                                 bode(tfxfrm, ssorig_omega, \
-                                                 deg=False, Plot=False)
+                                                 deg=False, plot=False)
 
                             tfxfrm_real = tfxfrm_mag * np.cos(tfxfrm_phase)
                             tfxfrm_imag = tfxfrm_mag * np.sin(tfxfrm_phase)
@@ -268,8 +268,6 @@ class TestConvert(unittest.TestCase):
         np.testing.assert_array_almost_equal(np.sort(sys2tf.pole()),
                                              np.sort(sys2ss.pole()))
 
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestConvert)
 
 if __name__ == "__main__":
     unittest.main()

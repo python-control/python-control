@@ -679,7 +679,7 @@ class TransferFunction(LTI):
 
     def pole(self):
         """Compute the poles of a transfer function."""
-        num, den, denorder = self._common_den()
+        _, den, denorder = self._common_den(allow_nonproper=True)
         rts = []
         for d, o in zip(den, denorder):
             rts.extend(roots(d[:o + 1]))
@@ -797,7 +797,7 @@ class TransferFunction(LTI):
 
         return out
 
-    def _common_den(self, imag_tol=None):
+    def _common_den(self, imag_tol=None, allow_nonproper=False):
         """
         Compute MIMO common denominators; return them and adjusted numerators.
 
@@ -813,6 +813,9 @@ class TransferFunction(LTI):
             Threshold for the imaginary part of a root to use in detecting
             complex poles
 
+        allow_nonproper : boolean
+            Do not enforce proper transfer functions
+
         Returns
         -------
         num: array
@@ -822,6 +825,8 @@ class TransferFunction(LTI):
             gives the numerator coefficient array for the ith output and jth
             input; padded for use in td04ad ('C' option); matches the
             denorder order; highest coefficient starts on the left.
+            If allow_nonproper=True and the order of a numerator exceeds the
+            order of the common denominator, num will be returned as None
 
         den: array
             sys.inputs by kd
@@ -906,6 +911,8 @@ class TransferFunction(LTI):
                     dtype=float)
         denorder = zeros((self.inputs,), dtype=int)
 
+        havenonproper = False
+
         for j in range(self.inputs):
             if not len(poles[j]):
                 # no poles matching this input; only one or more gains
@@ -930,10 +937,27 @@ class TransferFunction(LTI):
                         nwzeros.append(poles[j][ip])
 
                     numpoly = poleset[i][j][2] * np.atleast_1d(poly(nwzeros))
+
+                    # td04ad expects a proper transfer function. If the
+                    # numerater has a higher order than the denominator, the
+                    # padding will fail
+                    if len(numpoly) > maxindex + 1:
+                        if allow_nonproper:
+                            havenonproper = True
+                            break
+                        raise ValueError(
+                            self.__str__() +
+                            "is not a proper transfer function. "
+                            "The degree of the numerators must not exceed "
+                            "the degree of the denominators.")
+
                     # numerator polynomial should be padded on left and right
                     #   ending at maxindex to line up with what td04ad expects.
                     num[i, j, maxindex+1-len(numpoly):maxindex+1] = numpoly
                     # print(num[i, j])
+
+        if havenonproper:
+            num = None
 
         return num, den, denorder
 

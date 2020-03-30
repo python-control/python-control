@@ -28,7 +28,7 @@ env:
   - SCIPY=scipy SLYCOT=            # default, w/out slycot
   - SCIPY="scipy==0.19.1" SLYCOT=  # legacy support, w/out slycot
 
-# Add optional builds that test against latest version of slycot
+# Add optional builds that test against latest version of slycot, python
 jobs:
   include:
     - name: "linux, Python 2.7, slycot=source"
@@ -43,8 +43,13 @@ jobs:
       services: xvfb
       python: "3.7"
       env: SCIPY=scipy SLYCOT=source
+    - name: "linux, Python 3.8, slycot=source"
+      os: linux
+      dist: xenial
+      services: xvfb
+      python: "3.8"
+      env: SCIPY=scipy SLYCOT=source
 
-matrix:
   # Exclude combinations that are very unlikely (and don't work)
   exclude:
     - python: "3.7"            # python3.7 should use latest scipy
@@ -62,6 +67,12 @@ matrix:
       dist: xenial
       services: xvfb
       python: "3.7"
+      env: SCIPY=scipy SLYCOT=source
+    - name: "linux, Python 3.8, slycot=source"
+      os: linux
+      dist: xenial
+      services: xvfb
+      python: "3.8"
       env: SCIPY=scipy SLYCOT=source
 
 # install required system libraries
@@ -97,6 +108,7 @@ before_install:
     fi
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
+  - conda install pytest
   # coveralls not in conda repos => install via pip instead
   - pip install coveralls
 
@@ -118,7 +130,7 @@ install:
 # command to run tests
 script:
   - 'if [ $SLYCOT != "" ]; then python -c "import slycot"; fi'
-  - coverage run setup.py test
+  - coverage run -m pytest --disable-warnings control/tests
 
   # only run examples if Slycot is install
   # set PYTHONPATH for examples
