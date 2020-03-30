@@ -684,12 +684,14 @@ class TestStateSpace(unittest.TestCase):
         D = np.array([[64.0 -4.0j, -27.0 -65.0j],
                     [47.0 +21.0j, -57.0 -61.0j]])
 
-        sys = self.sysC322 * self.sysC222
+        sys_aux = StateSpace(A, B, C, D)
 
-        np.testing.assert_array_almost_equal(sys.A, A)
-        np.testing.assert_array_almost_equal(sys.B, B)
-        np.testing.assert_array_almost_equal(sys.C, C)
-        np.testing.assert_array_almost_equal(sys.D, D)
+        sys = series(self.sysC322, self.sysC222)
+
+        np.testing.assert_array_almost_equal(sys.A, sys_aux.A)
+        np.testing.assert_array_almost_equal(sys.B, sys_aux.B)
+        np.testing.assert_array_almost_equal(sys.C, sys_aux.C)
+        np.testing.assert_array_almost_equal(sys.D, sys_aux.D)
 
     def test_evalfr_complex(self):
         """Evaluate the frequency response at one frequency."""
