@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 from numpy.linalg import solve
 from scipy.linalg import eigvals, block_diag
-from control import matlab
+from control import matlab, series
 from control.statesp import StateSpace, _convertToStateSpace, tf2ss
 from control.xferfcn import TransferFunction, ss2tf
 from control.lti import evalfr
