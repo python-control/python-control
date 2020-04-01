@@ -578,10 +578,15 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # Use AB08ND from Slycot if it's available, otherwise use
         # scipy.lingalg.eigvals().
         try:
-            from slycot import ab08nd
-
-            out = ab08nd(self.A.shape[0], self.B.shape[1], self.C.shape[0],
-                         self.A, self.B, self.C, self.D)
+            if np.isrealobj(self.A) and np.isrealobj(self.B) and\
+            np.isrealobj(self.C) and np.isrealobj(self.D):
+                from slycot import ab08nd
+                out = ab08nd(self.A.shape[0], self.B.shape[1], self.C.shape[0],
+                self.A, self.B, self.C, self.D)
+            else:
+                from slycot import ab08nz
+                out = ab08nz(self.A.shape[0], self.B.shape[1], self.C.shape[0],
+                            self.A, self.B, self.C, self.D)
             nu = out[0]
             if nu == 0:
                 return np.array([])
