@@ -1445,7 +1445,7 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
             y.append(sys._out(T[i], x, u(T[i])))
 
             # Update the state for the next iteration
-            x = sys._rhs(T[i], x, u(T[i]))
+            x = x + sys._rhs(T[i], x, u(T[i])) * dt
 
         # Convert output to numpy arrays
         soln.y = np.transpose(np.array(soln.y))
