@@ -52,7 +52,7 @@ from .statesp import StateSpace, _convertToStateSpace
 __all__ = ['sample_system', 'c2d']
 
 # Sample a continuous time system
-def sample_system(sysc, dt, method='zoh', alpha=None):
+def sample_system(sysc, Ts, method='zoh', alpha=None):
     """Convert a continuous time system to discrete time
 
     Creates a discrete time system from a continuous time system by
@@ -62,10 +62,10 @@ def sample_system(sysc, dt, method='zoh', alpha=None):
     ----------
     sysc : linsys
         Continuous time system to be converted
-    dt : real
+    Ts : real
         Sampling period
     method : string
-        Method to use for conversion, e.g. 'matched', 'tustin', 'zoh' (default)
+        Method to use for conversion, e.g. 'matched', 'zoh' (default)
 
     Returns
     -------
