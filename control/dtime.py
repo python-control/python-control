@@ -52,7 +52,7 @@ from .statesp import StateSpace, _convertToStateSpace
 __all__ = ['sample_system', 'c2d']
 
 # Sample a continuous time system
-def sample_system(sysc, Ts, method='zoh', alpha=None):
+def sample_system(sysc, dt, method='zoh', alpha=None):
     """Convert a continuous time system to discrete time
 
     Creates a discrete time system from a continuous time system by
@@ -62,10 +62,10 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
     ----------
     sysc : linsys
         Continuous time system to be converted
-    Ts : real
+    dt : real
         Sampling period
     method : string
-        Method to use for conversion: 'matched', 'tustin', 'zoh' (default)
+        Method to use for conversion, e.g. 'matched', 'tustin', 'zoh' (default)
 
     Returns
     -------
@@ -89,32 +89,4 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
 
     return sysc.sample(Ts, method, alpha)
 
-
-def c2d(sysc, Ts, method='zoh'):
-    '''
-    Return a discrete-time system
-
-    Parameters
-    ----------
-    sysc: LTI (StateSpace or TransferFunction), continuous
-        System to be converted
-
-    Ts: number
-        Sample time for the conversion
-
-    method: string, optional
-        Method to be applied,
-        'zoh'        Zero-order hold on the inputs (default)
-        'foh'        First-order hold, currently not implemented
-        'impulse'    Impulse-invariant discretization, currently not implemented
-        'tustin'     Bilinear (Tustin) approximation, only SISO
-        'matched'    Matched pole-zero method, only SISO
-    '''
-    #  Call the sample_system() function to do the work
-    sysd = sample_system(sysc, Ts, method)
-
-    # TODO: is this check needed?  If sysc is  StateSpace, sysd is too?
-    if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):
-        return _convertToStateSpace(sysd)       # pragma: no cover
-
-    return sysd
+c2d = sample_system 
