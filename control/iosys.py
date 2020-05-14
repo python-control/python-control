@@ -1758,6 +1758,9 @@ def _find_size(sysval, vecval):
     # None or 0, which is a valid value for "a (sysval, ) vector of zeros".
     if not vecval:
         return 0 if sysval is None else sysval
+    elif sysval == 1:
+        # (1, scalar) is also a valid combination from legacy code
+        return 1
     raise ValueError("Can't determine size of system component.")
 
 
