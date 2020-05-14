@@ -851,17 +851,19 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         ----------
         Ts : float
             Sampling period
-        method :  {"gbt", "bilinear", "euler", "backward_diff", "zoh"}
-            Which method to use:
+        method : {"gbt", "bilinear", "euler", "backward_diff", "foh", 
+                  "impulse", zoh"}
+            Method to use for sampling:
 
             * gbt: generalized bilinear transformation
             * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
-            * euler: Euler (or forward differencing) method ("gbt" with
-              alpha=0)
-            * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
+            * euler: Euler (or forward difference) method ("gbt" with alpha=0)
+            * backward_diff: Backwards difference ("gbt" with alpha=1.0)
+            * foh: first-order hold
+            * impulse: equivalent impulse response
             * zoh: zero-order hold (default)
-
-        alpha : float within [0, 1]
+        
+        alpha : float within [0, 1], optional
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
             otherwise
@@ -873,7 +875,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Notes
         -----
-        Uses the command 'cont2discrete' from scipy.signal
+        Uses the command 'cont2discrete' from `scipy.signal`
 
         Examples
         --------

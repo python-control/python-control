@@ -943,24 +943,27 @@ class TransferFunction(LTI):
         ----------
         Ts : float
             Sampling period
-        method : {"gbt", "bilinear", "euler", "backward_diff",
-                  "zoh", "matched"}
+        method : {"gbt", "bilinear", "euler", "backward_diff", "foh", 
+                  "impulse", "matched", "zoh"}
             Method to use for sampling:
 
             * gbt: generalized bilinear transformation
             * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
             * euler: Euler (or forward difference) method ("gbt" with alpha=0)
             * backward_diff: Backwards difference ("gbt" with alpha=1.0)
+            * foh: first-order hold
+            * impulse: equivalent impulse response
+            * matched: pole-zero matched
             * zoh: zero-order hold (default)
 
-        alpha : float within [0, 1]
+        alpha : float within [0, 1], optional
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
             otherwise.
 
         Returns
         -------
-        sysd : StateSpace system
+        sysd : TransferFunction system
             Discrete time system, with sampling rate Ts
 
         Notes
@@ -982,8 +985,8 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        numd, dend, dt = cont2discrete(sys, Ts, method, alpha)
-        return TransferFunction(numd[0, :], dend, dt)
+        numd, dend, dt2 = cont2discrete(sys, Ts, method, alpha)
+        return TransferFunction(numd[0, :], dend, Ts)
 
     def dcgain(self):
         """Return the zero-frequency (or DC) gain
