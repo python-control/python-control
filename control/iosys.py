@@ -883,6 +883,7 @@ class InterconnectedSystem(InputOutputSystem):
         self.syslist_index = {}
         dt = None
         nstates = 0; self.state_offset = []
+        nstatenames = []
         ninputs = 0; self.input_offset = []
         noutputs = 0; self.output_offset = []
         system_count = 0
@@ -908,6 +909,7 @@ class InterconnectedSystem(InputOutputSystem):
             self.state_offset.append(nstates)
 
             # Keep track of the total number of states, inputs, outputs
+            nstatenames += [sys.name + statename for statename in list(sys.state_index)]
             nstates += sys.nstates
             ninputs += sys.ninputs
             noutputs += sys.noutputs
@@ -916,7 +918,7 @@ class InterconnectedSystem(InputOutputSystem):
             # TODO: look for duplicated system names
             self.syslist_index[sys.name] = system_count
             system_count += 1
-
+            
         # Check for duplicate systems or duplicate names
         sysobj_list = []
         sysname_list = []
@@ -928,10 +930,13 @@ class InterconnectedSystem(InputOutputSystem):
             sysobj_list.append(sys)
             sysname_list.append(sys.name)
 
+        # This might cause a problem if there are duplicate names...
+        states = states or nstatenames
+
         # Create the I/O system
         super(InterconnectedSystem, self).__init__(
             inputs=len(inplist), outputs=len(outlist),
-            states=nstates, params=params, dt=dt)
+            states=states, params=params, dt=dt, name=name)
 
         # If input or output list was specified, update it
         nsignals, self.input_index = \
@@ -939,7 +944,7 @@ class InterconnectedSystem(InputOutputSystem):
         if nsignals is not None and len(inplist) != nsignals:
             raise ValueError("Wrong number/type of inputs given.")
         nsignals, self.output_index = \
-            self._process_signal_list(outputs, prefix='y')
+            self._process_signal_list(outputs or len(outlist), prefix='y')
         if nsignals is not None and len(outlist) != nsignals:
             raise ValueError("Wrong number/type of outputs given.")
 
