@@ -80,7 +80,6 @@ from ..modelsimp import *
 from ..mateqn import *
 from ..margins import margin
 from ..rlocus import rlocus
-from ..dtime import c2d
 from ..sisotool import sisotool
 
 # Import functions specific to Matlab compatibility package

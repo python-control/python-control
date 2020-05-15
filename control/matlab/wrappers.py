@@ -5,9 +5,10 @@ Wrappers for the Matlab compatibility module
 import numpy as np
 from ..statesp import ss
 from ..xferfcn import tf
+from ..dtime import sample_system
 from scipy.signal import zpk2tf
 
-__all__ = ['bode', 'ngrid', 'dcgain']
+__all__ = ['bode', 'ngrid', 'dcgain', 'c2d']
 
 def bode(*args, **keywords):
     """bode(syslist[, omega, dB, Hz, deg, ...])
@@ -159,3 +160,59 @@ def dcgain(*args):
     else:
         raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
                          "arguments.")
+
+c2d = sample_system
+c2d.__doc__ = \
+    """Convert a continuous time system to discrete time
+
+    Creates a discrete time system from a continuous time system by
+    sampling.  Multiple methods of conversion are supported.
+
+    Parameters
+    ----------
+    sysc : LTI (StateSpace or TransferFunction)
+        A linear system to be converted
+    Ts : real
+        Sampling period
+    method : {"gbt", "bilinear", "euler", "backward_diff", "foh", 
+                "impulse", "matched", "zoh"}
+        Method to use for sampling:
+
+        * gbt: generalized bilinear transformation
+        * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
+        * euler: Euler (or forward difference) method ("gbt" with alpha=0)
+        * backward_diff: Backwards difference ("gbt" with alpha=1.0)
+        * foh: first-order hold
+        * impulse: equivalent impulse response
+        * matched: pole-zero matched
+        * zoh: zero-order hold (default)
+
+    alpha : float within [0, 1], optional
+        The generalized bilinear transformation weighting parameter, which
+        should only be specified with method="gbt", and is ignored
+        otherwise.
+
+    Returns
+    -------
+    sysd : LTI (TransferFunction or StateSpace) system
+        Discrete time system, with sampling rate Ts
+
+    Notes
+    -----
+    1. if system is a TransferFunction, only available for SISO
+
+    2. 'matched' is only available for TransferFunction systems
+
+    3. Uses the command `cont2discrete` from `scipy.signal`
+
+
+    Returns
+    -------
+    sysd : LTI (StateSpace or TransferFunction)
+        A discrete time linear system with sampling rate Ts
+
+    Examples
+    --------
+    >>> sysc = tf([1], [1, 2, 1])
+    >>> sysd = c2d(sysc, 1, method='zoh')
+    """

@@ -49,7 +49,7 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 from .lti import isctime
 from .statesp import StateSpace, _convertToStateSpace
 
-__all__ = ['sample_system', 'c2d']
+__all__ = ['sample_system']
 
 # Sample a continuous time system
 def sample_system(sysc, Ts, method='zoh', alpha=None):
@@ -65,7 +65,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
     Ts : real
         Sampling period
     method : string
-        Method to use for conversion, e.g. 'matched', 'zoh' (default)
+        Method to use for conversion, e.g. 'zoh' (default)
 
     Returns
     -------
@@ -80,7 +80,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
     Examples
     --------
     >>> sysc = TransferFunction([1], [1, 2, 1])
-    >>> sysd = sample_system(sysc, 1, method='matched')
+    >>> sysd = sample_system(sysc, 1, method='zoh')
     """
 
     # Make sure we have a continuous time system
@@ -88,5 +88,3 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
         raise ValueError("First argument must be continuous time system")
 
     return sysc.sample(Ts, method, alpha)
-
-c2d = sample_system 
