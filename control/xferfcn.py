@@ -985,7 +985,7 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        numd, dend, dt2 = cont2discrete(sys, Ts, method, alpha)
+        numd, dend, _ = cont2discrete(sys, Ts, method, alpha)
         return TransferFunction(numd[0, :], dend, Ts)
 
     def dcgain(self):
