@@ -780,7 +780,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         The InterconnectedSystem class is used to represent an input/output
         system that consists of an interconnection between a set of subystems.
-        The outputs of each subsystem can be summed together to to provide
+        The outputs of each subsystem can be summed together to provide
         inputs to other subsystems.  The overall system inputs and outputs can
         be any subset of subsystem inputs and outputs.
 
