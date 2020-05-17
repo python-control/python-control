@@ -46,10 +46,12 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 
 """
 
+from warnings import warn
 from .lti import isctime
 from .statesp import StateSpace, _convertToStateSpace
 
-__all__ = ['sample_system']
+__all__ = ['sample_system', 'c2d']
+
 
 # Sample a continuous time system
 def sample_system(sysc, Ts, method='zoh', alpha=None):
@@ -88,3 +90,19 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
         raise ValueError("First argument must be continuous time system")
 
     return sysc.sample(Ts, method, alpha)
+
+
+def c2d(sysc, Ts, method='zoh'):
+    """(Deprecated) Return a discrete-time system; use sample_system instead"""
+    warn("The function `c2d` will be deprecated in a future release.  Use"
+         "`sample_system` (or `matlab.c2d`) instead.",
+         PendingDeprecationWarning)
+
+    #  Call the sample_system() function to do the work
+    sysd = sample_system(sysc, Ts, method)
+
+    # TODO: is this check needed?  If sysc is  StateSpace, sysd is too?
+    if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):
+        return _convertToStateSpace(sysd)       # pragma: no cover
+
+    return sysd

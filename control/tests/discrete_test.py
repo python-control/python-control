@@ -384,6 +384,15 @@ class TestDiscrete(unittest.TestCase):
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
 
+    def test_c2d_deprecated(self):
+        from control import c2d
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            c2d(self.siso_ss1, 1)
+            assert issubclass(w[0].category, PendingDeprecationWarning)
+            assert "c2d" in str(w[0].message)
+
 
 if __name__ == "__main__":
     unittest.main()

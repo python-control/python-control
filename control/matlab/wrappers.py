@@ -161,6 +161,7 @@ def dcgain(*args):
         raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
                          "arguments.")
 
+
 c2d = sample_system
 c2d.__doc__ = \
     """Convert a continuous time system to discrete time
@@ -174,7 +175,7 @@ c2d.__doc__ = \
         A linear system to be converted
     Ts : real
         Sampling period
-    method : {"gbt", "bilinear", "euler", "backward_diff", "foh", 
+    method : {"gbt", "bilinear", "euler", "backward_diff", "foh",
                 "impulse", "matched", "zoh"}
         Method to use for sampling:
 
