@@ -94,9 +94,21 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_equal(Tc.shape, Td.shape)
         np.testing.assert_array_equal(youtc.shape, youtd.shape)
 
+    # Recreate issue #374 ("Bug in step_response()")
+    def test_step_nostates(self):
+        # Continuous time, constant system
+        sys = TransferFunction([1], [1])
+        t, y = step_response(sys)
+        np.testing.assert_array_equal(y, np.ones(len(t)))
+
+        # Discrete time, constant system
+        sys = TransferFunction([1], [1], 1)
+        t, y = step_response(sys)
+        np.testing.assert_array_equal(y, np.ones(len(t)))
+
     def test_step_info(self):
         # From matlab docs:
-        sys = TransferFunction([1,5,5],[1,1.65,5,6.5,2])
+        sys = TransferFunction([1, 5, 5], [1, 1.65, 5, 6.5, 2])
         Strue = {
             'RiseTime': 3.8456,
             'SettlingTime': 27.9762,
