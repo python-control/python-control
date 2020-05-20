@@ -902,7 +902,7 @@ class InterconnectedSystem(InputOutputSystem):
             # TODO: look for duplicated system names
             self.syslist_index[sys.name] = system_count
             system_count += 1
-            
+
         # Check for duplicate systems or duplicate names
         sysobj_list = []
         sysname_list = []
