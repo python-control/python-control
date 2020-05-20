@@ -108,6 +108,14 @@ class InputOutputSystem(object):
       The default is to return the entire system state.
 
     """
+
+    idCounter = 0
+    def name_or_default(self, name=None):
+        if name is None:
+            name = "sys[{}]".format(InputOutputSystem.idCounter)
+            InputOutputSystem.idCounter += 1
+        return name
+
     def __init__(self, inputs=None, outputs=None, states=None, params={},
                  dt=None, name=None):
         """Create an input/output system.
@@ -143,7 +151,8 @@ class InputOutputSystem(object):
             functions for the system as default values, overriding internal
             defaults.
         name : string, optional
-            System name (used for specifying signals)
+            System name (used for specifying signals). If unspecified, a generic
+            name <sys[id]> is generated with a unique integer id.
 
         Returns
         -------
@@ -152,9 +161,9 @@ class InputOutputSystem(object):
 
         """
         # Store the input arguments
-        self.params = params.copy()     # default parameters
-        self.dt = dt                    # timebase
-        self.name = name                # system name
+        self.params = params.copy()             # default parameters
+        self.dt = dt                            # timebase
+        self.name = self.name_or_default(name)  # system name
 
         # Parse and store the number of inputs, outputs, and states
         self.set_inputs(inputs)
@@ -204,28 +213,18 @@ class InputOutputSystem(object):
         if dt is False:
             raise ValueError("System timebases are not compabile")
 
+        inplist = [(0,i) for i in range(sys1.ninputs)]
+        outlist = [(1,i) for i in range(sys2.noutputs)]
         # Return the series interconnection between the systems
-        newsys = InterconnectedSystem((sys1, sys2))
+        newsys = InterconnectedSystem((sys1, sys2), inplist=inplist, outlist=outlist)
 
-        #  Set up the connecton map
+        #  Set up the connection map manually
         newsys.set_connect_map(np.block(
             [[np.zeros((sys1.ninputs, sys1.noutputs)),
               np.zeros((sys1.ninputs, sys2.noutputs))],
              [np.eye(sys2.ninputs, sys1.noutputs),
               np.zeros((sys2.ninputs, sys2.noutputs))]]
         ))
-
-        # Set up the input map
-        newsys.set_input_map(np.concatenate(
-            (np.eye(sys1.ninputs), np.zeros((sys2.ninputs, sys1.ninputs))),
-            axis=0))
-        # TODO: set up input names
-
-        # Set up the output map
-        newsys.set_output_map(np.concatenate(
-            (np.zeros((sys2.noutputs, sys1.noutputs)), np.eye(sys2.noutputs)),
-            axis=1))
-        # TODO: set up output names
 
         # Return the newly created system
         return newsys
@@ -271,18 +270,10 @@ class InputOutputSystem(object):
         ninputs = sys1.ninputs
         noutputs = sys1.noutputs
 
+        inplist = [[(0,i),(1,i)] for i in range(ninputs)]
+        outlist = [[(0,i),(1,i)] for i in range(noutputs)]
         # Create a new system to handle the composition
-        newsys = InterconnectedSystem((sys1, sys2))
-
-        # Set up the input map
-        newsys.set_input_map(np.concatenate(
-            (np.eye(ninputs), np.eye(ninputs)), axis=0))
-        # TODO: set up input names
-
-        # Set up the output map
-        newsys.set_output_map(np.concatenate(
-            (np.eye(noutputs), np.eye(noutputs)), axis=1))
-        # TODO: set up output names
+        newsys = InterconnectedSystem((sys1, sys2), inplist=inplist, outlist=outlist)
 
         # Return the newly created system
         return newsys
@@ -301,16 +292,10 @@ class InputOutputSystem(object):
         if sys.ninputs is None or sys.noutputs is None:
             raise ValueError("Can't determine number of inputs or outputs")
 
+        inplist = [(0,i) for i in range(sys.ninputs)]
+        outlist = [(0,i,-1) for i in range(sys.noutputs)]
         # Create a new system to hold the negation
-        newsys = InterconnectedSystem((sys,), dt=sys.dt)
-
-        # Set up the input map (identity)
-        newsys.set_input_map(np.eye(sys.ninputs))
-        # TODO: set up input names
-
-        # Set up the output map (negate the output)
-        newsys.set_output_map(-np.eye(sys.noutputs))
-        # TODO: set up output names
+        newsys = InterconnectedSystem((sys,), dt=sys.dt, inplist=inplist, outlist=outlist)
 
         # Return the newly created system
         return newsys
@@ -482,28 +467,19 @@ class InputOutputSystem(object):
         if dt is False:
             raise ValueError("System timebases are not compabile")
 
+        inplist = [(0,i) for i in range(self.ninputs)]
+        outlist = [(0,i) for i in range(self.noutputs)]
         # Return the series interconnection between the systems
-        newsys = InterconnectedSystem((self, other), params=params, dt=dt)
+        newsys = InterconnectedSystem((self, other), inplist=inplist, outlist=outlist,
+                                      params=params, dt=dt)
 
-        #  Set up the connecton map
+        #  Set up the connecton map manually
         newsys.set_connect_map(np.block(
             [[np.zeros((self.ninputs, self.noutputs)),
               sign * np.eye(self.ninputs, other.noutputs)],
              [np.eye(other.ninputs, self.noutputs),
               np.zeros((other.ninputs, other.noutputs))]]
         ))
-
-        # Set up the input map
-        newsys.set_input_map(np.concatenate(
-            (np.eye(self.ninputs), np.zeros((other.ninputs, self.ninputs))),
-            axis=0))
-        # TODO: set up input names
-
-        # Set up the output map
-        newsys.set_output_map(np.concatenate(
-            (np.eye(self.noutputs), np.zeros((self.noutputs, other.noutputs))),
-            axis=1))
-        # TODO: set up output names
 
         # Return the newly created system
         return newsys
@@ -566,7 +542,9 @@ class InputOutputSystem(object):
 
     def copy(self):
         """Make a copy of an input/output system."""
-        return copy.copy(self)
+        newsys = copy.copy(self)
+        newsys.name = self.name_or_default(None)
+        return newsys
 
 
 class LinearIOSystem(InputOutputSystem, StateSpace):
@@ -808,10 +786,13 @@ class InterconnectedSystem(InputOutputSystem):
         syslist : array_like of InputOutputSystems
             The list of input/output systems to be connected
 
-        connections : tuple of connection specifications, optional
+        connections : list of tuple of connection specifications, optional
             Description of the internal connections between the subsystems.
-            Each element of the tuple describes an input to one of the
-            subsystems.  The entries are are of the form:
+
+                [connection1, connection2, ...]
+
+            Each connection is a tuple that describes an input to one of the
+            subsystems.  The entries are of the form:
 
                 (input-spec, output-spec1, output-spec2, ...)
 
@@ -835,10 +816,15 @@ class InterconnectedSystem(InputOutputSystem):
             If omitted, the connection map (matrix) can be specified using the
             :func:`~control.InterconnectedSystem.set_connect_map` method.
 
-        inplist : tuple of input specifications, optional
+        inplist : List of tuple of input specifications, optional
             List of specifications for how the inputs for the overall system
             are mapped to the subsystem inputs.  The input specification is
-            the same as the form defined in the connection specification.
+            similar to the form defined in the connection specification, except
+            that connections do not specify an input-spec, since these are
+            the system inputs. The entries are thus of the form:
+
+                (output-spec1, output-spec2, ...)
+
             Each system input is added to the input for the listed subsystem.
 
             If omitted, the input map can be specified using the
@@ -847,7 +833,7 @@ class InterconnectedSystem(InputOutputSystem):
         outlist : tuple of output specifications, optional
             List of specifications for how the outputs for the subsystems are
             mapped to overall system outputs.  The output specification is the
-            same as the form defined in the connection specification
+            same as the form defined in the inplist specification
             (including the optional gain term).  Numbered outputs must be
             chosen from the list of subsystem outputs, but named outputs can
             also be contained in the list of subsystem inputs.
@@ -883,7 +869,6 @@ class InterconnectedSystem(InputOutputSystem):
         self.syslist_index = {}
         dt = None
         nstates = 0; self.state_offset = []
-        nstatenames = []
         ninputs = 0; self.input_offset = []
         noutputs = 0; self.output_offset = []
         system_count = 0
@@ -909,7 +894,6 @@ class InterconnectedSystem(InputOutputSystem):
             self.state_offset.append(nstates)
 
             # Keep track of the total number of states, inputs, outputs
-            nstatenames += [sys.name + statename for statename in list(sys.state_index)]
             nstates += sys.nstates
             ninputs += sys.ninputs
             noutputs += sys.noutputs
@@ -927,11 +911,17 @@ class InterconnectedSystem(InputOutputSystem):
                 warn("Duplicate object found in system list: %s" % str(sys))
             elif sys.name is not None and sys.name in sysname_list:
                 warn("Duplicate name found in system list: %s" % sys.name)
+                
             sysobj_list.append(sys)
             sysname_list.append(sys.name)
 
-        # This might cause a problem if there are duplicate names...
-        states = states or nstatenames
+        # This won't work when there are duplicate sysnames
+        # Should we throw an error rather than just warning above?
+        # Users can use sys.copy() to get a unique name for the dup system.
+        if states is None:
+            states = []
+            for sys in sysobj_list:
+                states += [sys.name + '.' + statename for statename in sys.state_index.keys()]
 
         # Create the I/O system
         super(InterconnectedSystem, self).__init__(
@@ -939,14 +929,16 @@ class InterconnectedSystem(InputOutputSystem):
             states=states, params=params, dt=dt, name=name)
 
         # If input or output list was specified, update it
-        nsignals, self.input_index = \
-            self._process_signal_list(inputs, prefix='u')
-        if nsignals is not None and len(inplist) != nsignals:
-            raise ValueError("Wrong number/type of inputs given.")
-        nsignals, self.output_index = \
-            self._process_signal_list(outputs or len(outlist), prefix='y')
-        if nsignals is not None and len(outlist) != nsignals:
-            raise ValueError("Wrong number/type of outputs given.")
+        if inputs is not None:
+            nsignals, self.input_index = \
+                self._process_signal_list(inputs, prefix='u')
+            if nsignals is not None and len(inplist) != nsignals:
+                raise ValueError("Wrong number/type of inputs given.")
+        if outputs is not None:
+            nsignals, self.output_index = \
+                self._process_signal_list(outputs, prefix='y')
+            if nsignals is not None and len(outlist) != nsignals:
+                raise ValueError("Wrong number/type of outputs given.")
 
         # Convert the list of interconnections to a connection map (matrix)
         self.connect_map = np.zeros((ninputs, noutputs))
@@ -964,10 +956,18 @@ class InterconnectedSystem(InputOutputSystem):
                 self.input_map[self._parse_input_spec(spec), index] = 1
 
         # Convert the output list to a matrix: maps subsystems to system
+        # why can subsystem inputs map to outputs? shouldn't it be
+        # system inputs (hence self.ninputs instead of ninputs)?
         self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
-        for index in range(len(outlist)):
-            ylist_index, gain = self._parse_output_spec(outlist[index])
-            self.output_map[index, ylist_index] = gain
+        for index, outspec in enumerate(outlist):
+            if isinstance(outspec, (int, str, tuple)): outspec = [outspec]
+            for spec in outspec:
+                ylist_index, gain = self._parse_output_spec(spec)
+                self.output_map[index, ylist_index] = gain
+        # self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
+        # for index in range(len(outlist)):
+        #     ylist_index, gain = self._parse_output_spec(outlist[index])
+        #     self.output_map[index, ylist_index] = gain
 
         # Save the parameters for the system
         self.params = params.copy()
