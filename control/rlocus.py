@@ -71,7 +71,8 @@ _rlocus_defaults = {
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None,
-               plotstr=None, plot=True, print_gain=None, grid=None, **kwargs):
+               plotstr=None, plot=True, print_gain=None, grid=None, fig=None, 
+               **kwargs):
 
     """Root locus plot
 
@@ -96,6 +97,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         branches, calculate gain, damping and print.
     grid : bool
         If True plot omega-damping grid.  Default is False.
+    fig : Matplotlib figure
+        Figure in which to create root locus plot 
 
     Returns
     -------
@@ -143,10 +146,11 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     # Create the Plot
     if plot:
         if sisotool:
-            f = kwargs['fig']
-            ax = f.axes[1]
+            ax = fig.axes[1]
 
         else:
+            if fig is None: 
+                fig = pylab.gcf()
             figure_number = pylab.get_fignums()
             figure_title = [
                 pylab.figure(numb).canvas.get_window_title()
@@ -156,29 +160,29 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             while new_figure_name in figure_title:
                 new_figure_name = "Root Locus " + str(rloc_num)
                 rloc_num += 1
-            f = pylab.figure(new_figure_name)
+            fig.canvas.set_window_title(new_figure_name)
             ax = pylab.axes()
 
         if print_gain and not sisotool:
-            f.canvas.mpl_connect(
+            fig.canvas.mpl_connect(
                 'button_release_event',
-                partial(_RLClickDispatcher, sys=sys, fig=f,
-                        ax_rlocus=f.axes[0], plotstr=plotstr))
+                partial(_RLClickDispatcher, sys=sys, fig=fig,
+                        ax_rlocus=fig.axes[0], plotstr=plotstr))
 
         elif sisotool:
-            f.axes[1].plot(
+            fig.axes[1].plot(
                 [root.real for root in start_mat],
                 [root.imag for root in start_mat],
                 'm.', marker='s', markersize=8, zorder=20, label='gain_point')
-            f.suptitle(
+            fig.suptitle(
                 "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
                 (start_mat[0][0].real, start_mat[0][0].imag,
                  1, -1 * start_mat[0][0].real / abs(start_mat[0][0])),
                 fontsize=12 if int(matplotlib.__version__[0]) == 1 else 10)
-            f.canvas.mpl_connect(
+            fig.canvas.mpl_connect(
                 'button_release_event',
-                partial(_RLClickDispatcher, sys=sys, fig=f,
-                        ax_rlocus=f.axes[1], plotstr=plotstr,
+                partial(_RLClickDispatcher, sys=sys, fig=fig,
+                        ax_rlocus=fig.axes[1], plotstr=plotstr,
                         sisotool=sisotool,
                         bode_plot_params=kwargs['bode_plot_params'],
                         tvect=kwargs['tvect']))
