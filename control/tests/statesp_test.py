@@ -519,6 +519,25 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
 
+    def test_repr(self):
+        ref322 = """StateSpace(array([[-3.,  4.,  2.],
+       [-1., -3.,  0.],
+       [ 2.,  5.,  3.]]), array([[ 1.,  4.],
+       [-3., -3.],
+       [-2.,  1.]]), array([[ 4.,  2., -3.],
+       [ 1.,  4.,  3.]]), array([[-2.,  4.],
+       [ 0.,  1.]]){dt})"""
+        self.assertEqual(repr(self.sys322), ref322.format(dt=''))
+        sysd = StateSpace(self.sys322.A, self.sys322.B,
+                          self.sys322.C, self.sys322.D, 0.4)
+        self.assertEqual(repr(sysd), ref322.format(dt=", 0.4"))
+        array = np.array
+        sysd2 = eval(repr(sysd))
+        np.testing.assert_allclose(sysd.A, sysd2.A)
+        np.testing.assert_allclose(sysd.B, sysd2.B)
+        np.testing.assert_allclose(sysd.C, sysd2.C)
+        np.testing.assert_allclose(sysd.D, sysd2.D)
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
 
@@ -610,7 +629,6 @@ class TestDrss(unittest.TestCase):
         # Change the A matrix for the original system
         linsys.A[0, 0] = -3
         np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -279,8 +279,17 @@ class TransferFunction(LTI):
 
         return outstr
 
-    # represent as string, makes display work for IPython
-    __repr__ = __str__
+    # represent to implement a re-loadable version
+    def __repr__(self):
+        """Print transfer function in loadable form"""
+        if self.issiso():
+            return "TransferFunction({num}, {den}{dt})".format(
+                num=self.num[0][0].__repr__(), den=self.den[0][0].__repr__(),
+                dt=(isdtime(self, strict=True) and ', {}'.format(self.dt)) or '')
+        else:
+            return "TransferFunction({num}, {den}{dt})".format(
+                num=self.num.__repr__(), den=self.den.__repr__(),
+                dt=(isdtime(self, strict=True) and ', {}'.format(self.dt)) or '')
 
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook"""

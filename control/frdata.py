@@ -161,14 +161,14 @@ class FrequencyResponseData(LTI):
         """String representation of the transfer function."""
 
         mimo = self.inputs > 1 or self.outputs > 1
-        outstr = ['frequency response data ']
+        outstr = ['Frequency response data']
 
         mt, pt, wt = self.freqresp(self.omega)
         for i in range(self.inputs):
             for j in range(self.outputs):
                 if mimo:
                     outstr.append("Input %i to output %i:" % (i + 1, j + 1))
-                outstr.append('Freq [rad/s]  Response   ')
+                outstr.append('Freq [rad/s]  Response')
                 outstr.append('------------  ---------------------')
                 outstr.extend(
                     ['%12.3f  %10.4g%+10.4gj' % (w, m, p)
@@ -176,6 +176,15 @@ class FrequencyResponseData(LTI):
                                         imag(self.fresp[j, i, :]), wt)])
 
         return '\n'.join(outstr)
+
+    def __repr__(self):
+        """Loadable string representation,
+
+        limited for number of data points.
+        """
+        return "FrequencyResponseData({d}, {w}{smooth})".format(
+            d=repr(self.fresp), w=repr(self.omega),
+            smooth=(self.ifunc and ", smooth=True") or "")
 
     def __neg__(self):
         """Negate a transfer function."""
