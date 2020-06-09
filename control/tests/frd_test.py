@@ -424,7 +424,8 @@ class TestFRD(unittest.TestCase):
             "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]])," \
             " array([  0.1,   1. ,  10. , 100. ]))"
         ref1 = ref0[:-1] + ", smooth=True)"
-        sysm = FrequencyResponseData(array([[1],[2]]) @ sys0.fresp, sys0.omega)
+        sysm = FrequencyResponseData(
+            np.matmul(array([[1],[2]]), sys0.fresp), sys0.omega)
 
         self.assertEqual(repr(sys0), ref0)
         self.assertEqual(repr(sys1), ref1)
