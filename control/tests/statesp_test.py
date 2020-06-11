@@ -611,6 +611,24 @@ class TestDrss(unittest.TestCase):
         linsys.A[0, 0] = -3
         np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
 
+    def test_sample_system_prewarping(self): 
+        """test that prewarping works when converting from cont to discrete time system"""
+        A = np.array([
+            [ 0.00000000e+00,  1.00000000e+00,  0.00000000e+00, 0.00000000e+00],
+            [-3.81097561e+01, -1.12500000e+00,  0.00000000e+00, 0.00000000e+00],
+            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00, 1.00000000e+00],
+            [ 0.00000000e+00,  0.00000000e+00, -1.66356135e+04, -1.34748470e+01]])
+        B = np.array([
+            [    0.        ], [   38.1097561 ],[    0.     ],[16635.61352143]])
+        C = np.array([[0.90909091, 0.        , 0.09090909, 0.       ],])
+        wwarp = 50
+        Ts = 0.025
+        plant = StateSpace(A,B,C,0)
+        plant_d_warped = plant.sample(Ts, prewarp_frequency=wwarp)
+        np.testing.assert_array_almost_equal(
+            evalfr(plant, wwarp*1j), 
+            evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
+            decimal=4)
 
 if __name__ == "__main__":
     unittest.main()
