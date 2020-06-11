@@ -868,7 +868,7 @@ class TestXferFcn(unittest.TestCase):
         Ts = 0.025
         plant = StateSpace(A,B,C,0)
         plant = ss2tf(plant)
-        plant_d_warped = plant.sample(Ts, prewarp_frequency=wwarp)
+        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
         np.testing.assert_array_almost_equal(
             evalfr(plant, wwarp*1j), 
             evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 

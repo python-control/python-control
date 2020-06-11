@@ -988,7 +988,9 @@ class TransferFunction(LTI):
         
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
-            time system's magnitude and phase
+            time system's magnitude and phase (the gain=1 crossover frequency, 
+            for example). Should only be specified with method='bilinear' or 
+            'gbt' with alpha=0.5 and ignored otherwise.
 
         Returns
         -------
@@ -1014,11 +1016,12 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        if prewarp_frequency is not None:
+        if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
+                prewarp_frequency is not None:
             Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
-            numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
-        else:
-            numd, dend, _ = cont2discrete(sys, Ts, method, alpha)
+        else: 
+            Twarp = Ts
+        numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
         return TransferFunction(numd[0, :], dend, Ts)
 
     def dcgain(self):

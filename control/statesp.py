@@ -868,7 +868,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
-            time system's magnitude and phase
+            time system's magnitude and phase (the gain=1 crossover frequency, 
+            for example). Should only be specified with method='bilinear' or 
+            'gbt' with alpha=0.5 and ignored otherwise.
 
         Returns
         -------
@@ -889,11 +891,12 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             raise ValueError("System must be continuous time system")
 
         sys = (self.A, self.B, self.C, self.D)
-        if prewarp_frequency is not None:
+        if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
+                prewarp_frequency is not None:
             Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
-            Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
-        else:
-            Ad, Bd, C, D, _ = cont2discrete(sys, Ts, method, alpha)
+        else: 
+            Twarp = Ts
+        Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
         return StateSpace(Ad, Bd, C, D, Ts)
 
     def dcgain(self):
