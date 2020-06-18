@@ -69,7 +69,7 @@ import numpy as np              # NumPy library
 from scipy.signal.ltisys import _default_response_times
 import warnings
 from .lti import LTI     # base class of StateSpace, TransferFunction
-from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso
+from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso, ssdata
 from .lti import isdtime, isctime
 
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
@@ -512,7 +512,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     """
     sys = _get_ss_simo(sys, input, output)
     if T is None:
-        T = _get_response_times(sys, N=100)
+        T = _get_response_times(sys)
     U = np.ones_like(T)
 
     T, yout, xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -567,7 +567,7 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02,
     '''
     sys = _get_ss_simo(sys)
     if T is None:
-        T = _get_response_times(sys, N=1000)
+        T = _get_response_times(sys)
 
     T, yout = step_response(sys, T)
 
@@ -686,8 +686,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
     if T is None:
-        # TODO: default step size inconsistent with step/impulse_response()
-        T = _get_response_times(sys, N=1000)
+        T = _get_response_times(sys)
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -786,7 +785,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     # Compute T and U, no checks necessary, they will be checked in lsim
     if T is None:
-        T = _get_response_times(sys, N=100)
+        T = _get_response_times(sys)
     U = np.zeros_like(T)
 
     # Compute new X0 that contains the impulse
@@ -808,21 +807,24 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     return T, yout
 
-
+# utility function to find time period for time responses if not provided
+def _get_default_tfinal(sys):
+    A = ssdata(sys)[0]
+    if A.shape == (0,0): 
+        return 1.0 # no dynamics, use unit time interval
+    if isdtime(sys, strict=True):
+        A = 1.0/sys.dt * (A - np.eye(A.shape[0])) # zoh approximation
+    poles = sp.linalg.eigvals(A)
+    tfinal = 7.0 / min(abs(poles.real))
+    return tfinal if np.isfinite(tfinal) else 1.0
+    
 # Utility function to get response times
-def _get_response_times(sys, N=100):
-    if isctime(sys):
-        if sys.A.shape == (0, 0):
-            # No dynamics; use the unit time interval
-            T = np.linspace(0, 1, N, endpoint=False)
-        else:
-            T = _default_response_times(sys.A, N)
-    else:
-        # For discrete time, use integers
-        if sys.A.shape == (0, 0):
-            # No dynamics; use N time steps
-            T = range(N)
-        else:
-            tvec = _default_response_times(sys.A, N)
-            T = range(int(np.ceil(max(tvec))))
-    return T
+def _get_response_times(sys, N=1000, tfinal=None):
+    """Returns a time vector suitable for observing the response of the 
+    slowest poles of a system. if system is discrete-time, N is ignored"""
+    if tfinal == None: 
+        tfinal = _get_default_tfinal(sys)
+    if isdtime(sys, strict=True):
+        return np.arange(0, tfinal, sys.dt)
+    else: 
+        return np.linspace(0, tfinal, N, endpoint=False)
