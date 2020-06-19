@@ -690,7 +690,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=1000,
     # The initial vector X0 is created in forced_response(...) if necessary
     if T is None or np.asarray(T).size == 1:
         T = _get_response_times(sys, N=T_num, tfinal=T)
-    U = 0 #np.zeros_like(T)
+    U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
                                      squeeze=squeeze)
@@ -777,7 +777,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=1000,
     """
     sys = _get_ss_simo(sys, input, output)
 
-    # System has direct feedthrough, can't simulate impulse response
+    # if system has direct feedthrough, can't simulate impulse response
     # numerically
     if np.any(sys.D != 0) and isctime(sys):
         warnings.warn("System has direct feedthrough: ``D != 0``. The "
@@ -786,7 +786,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=1000,
                       "Results may be meaningless!")
 
     # create X0 if not given, test if X0 has correct shape.
-    # Must be done here because it is used for computations here.
+    # Must be done here because it is used for computations below.
     n_states = sys.A.shape[0]
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: \n', squeeze=True)
