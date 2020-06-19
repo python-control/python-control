@@ -21,8 +21,9 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     sys: StateSpace, or TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number (time vector is 
+        autocomputed if not given)
 
     X0: array-like or number, optional
         Initial condition (default = 0)
@@ -59,7 +60,7 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     from ..timeresp import step_response
 
     T, yout, xout = step_response(sys, T, X0, input, output,
-                                  transpose = True, return_x=True)
+                                  transpose=True, return_x=True)
 
     if return_x:
         return yout, T, xout
@@ -75,8 +76,9 @@ def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
     sys: StateSpace, or TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number (time vector is 
+        autocomputed if not given)
 
     SettlingTimeThreshold: float value, optional
         Defines the error to compute settling time (default = 0.02)
@@ -127,9 +129,10 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     sys: StateSpace, TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
-
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number (time vector is 
+        autocomputed if not given)
+    
     X0: array-like or number, optional
         Initial condition (default = 0)
 
@@ -182,9 +185,10 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
     sys: StateSpace, or TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
-
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number (time vector is 
+        autocomputed if not given)
+    
     X0: array-like object or number, optional
         Initial condition (default = 0)
 
@@ -245,9 +249,8 @@ def lsim(sys, U=0., T=None, X0=0.):
         If `U` is ``None`` or ``0``, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used otherwise.
 
-    T: array-like
-        Time steps at which the input is defined, numbers must be (strictly
-        monotonic) increasing.
+    T: array-like, optional for discrete LTI `sys`
+        Time steps at which the input is defined; values must be evenly spaced.
 
     X0: array-like or number, optional
         Initial condition (default = 0).
