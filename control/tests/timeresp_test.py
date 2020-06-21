@@ -415,10 +415,6 @@ class TestTimeresp(unittest.TestCase):
             100, 
             initial_response(sys, 100)[0][-1], 
             decimal=.5)
-        
-        
-        # slow system max 
-        # to add: impose N, impose tfinal
 
 
     def test_time_vector(self):
