@@ -11,6 +11,7 @@
 import unittest
 import numpy as np
 from control.timeresp import *
+from control.timeresp import _ideal_tfinal_and_dt, _default_time_vector
 from control.statesp import *
 from control.xferfcn import TransferFunction, _convert_to_transfer_function
 from control.dtime import c2d
@@ -93,6 +94,7 @@ class TestTimeresp(unittest.TestCase):
         Td, youtd = step_response(sysd, Tvec, input=0)
         np.testing.assert_array_equal(Tc.shape, Td.shape)
         np.testing.assert_array_equal(youtc.shape, youtd.shape)
+
 
     # Recreate issue #374 ("Bug in step_response()")
     def test_step_nostates(self):
@@ -346,9 +348,78 @@ class TestTimeresp(unittest.TestCase):
         sys2 = TransferFunction(num, den2)
 
         # Compute step response from input 1 to output 1, 2
-        t1, y1 = step_response(sys1, input=0)
-        t2, y2 = step_response(sys2, input=0)
+        t1, y1 = step_response(sys1, input=0, T_num=100)
+        t2, y2 = step_response(sys2, input=0, T_num=100)
         np.testing.assert_array_almost_equal(y1, y2)
+
+    def test_auto_generated_time_vector(self):
+        # confirm a TF with a pole at p simulates for 7.0/p seconds
+        p = 0.5
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, .5]))[0], 
+            (7/p))
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, .5]).sample(.1))[0], 
+            (7/p))
+        # confirm a TF with poles at 0 and p simulates for 7.0/p seconds
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, .5, 0]))[0], 
+            (7/p))
+        # confirm a TF with a natural frequency of wn rad/s gets a 
+        # dt of 1/(7.0*wn)
+        wn = 10
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, 0, wn**2]))[1], 
+            1/(7.0*wn))
+        zeta = .1
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, 2*zeta*wn, wn**2]))[1], 
+            1/(7.0*wn))
+        # but a smapled one keeps its dt
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, 2*zeta*wn, wn**2]).sample(.1))[1], 
+            .1)
+        np.testing.assert_array_almost_equal(
+            np.diff(initial_response(TransferFunction(1, [1, 2*zeta*wn, wn**2]).sample(.1))[0][0:2]), 
+            .1)
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, 2*zeta*wn, wn**2]))[1], 
+            1/(7.0*wn))
+        # TF with fast oscillations simulates only 5000 time steps even with long tfinal
+        self.assertEqual(5000, 
+            len(_default_time_vector(TransferFunction(1, [1, 0, wn**2]),tfinal=100)))
+        # and simulates for 7.0/dt time steps 
+        self.assertEqual(
+            len(_default_time_vector(TransferFunction(1, [1, 0, wn**2]))), 
+            int(7.0/(1/(7.0*wn))))
+        
+        sys = TransferFunction(1, [1, .5, 0])
+        sysdt = TransferFunction(1, [1, .5, 0], .1)
+        # test impose number of time steps
+        self.assertEqual(10, len(step_response(sys, T_num=10)[0]))
+        self.assertEqual(10, len(step_response(sysdt, T_num=10)[0]))
+        # test impose final time
+        np.testing.assert_array_almost_equal(
+            100, 
+            step_response(sys, 100)[0][-1], 
+            decimal=.5)
+        np.testing.assert_array_almost_equal(
+            100, 
+            step_response(sysdt, 100)[0][-1], 
+            decimal=.5)
+        np.testing.assert_array_almost_equal(
+            100, 
+            impulse_response(sys, 100)[0][-1], 
+            decimal=.5)
+        np.testing.assert_array_almost_equal(
+            100, 
+            initial_response(sys, 100)[0][-1], 
+            decimal=.5)
+        
+        
+        # slow system max 
+        # to add: impose N, impose tfinal
+
 
     def test_time_vector(self):
         "Unit test: https://github.com/python-control/python-control/issues/239"
