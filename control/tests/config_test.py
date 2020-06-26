@@ -48,7 +48,7 @@ class TestConfig(unittest.TestCase):
 
 
     def test_fbs_bode(self):
-        ct.use_fbs_defaults();
+        ct.use_fbs_defaults()
 
         # Generate a Bode plot
         plt.figure()
@@ -94,7 +94,7 @@ class TestConfig(unittest.TestCase):
         ct.reset_defaults()
         
     def test_matlab_bode(self):
-        ct.use_matlab_defaults();
+        ct.use_matlab_defaults()
 
         # Generate a Bode plot
         plt.figure()
@@ -210,6 +210,23 @@ class TestConfig(unittest.TestCase):
             ct.config.defaults['freqplot.number_of_samples'], None)
         self.assertEqual(
             ct.config.defaults['freqplot.feature_periphery_decades'], 1.0)
+
+    def test_legacy_defaults(self):
+        ct.use_legacy_defaults('0.8.3')
+        assert(isinstance(ct.ss(0,0,0,1).D, np.matrix))
+        ct.reset_defaults()
+        assert(isinstance(ct.ss(0,0,0,1).D, np.ndarray))
+    
+    def test_change_default_dt(self):
+        ct.set_defaults('statesp', default_dt=0)
+        self.assertEqual(ct.ss(0,0,0,1).dt, 0)
+        ct.set_defaults('statesp', default_dt=None)
+        self.assertEqual(ct.ss(0,0,0,1).dt, None)
+        ct.set_defaults('xferfcn', default_dt=0)
+        self.assertEqual(ct.tf(1, 1).dt, 0)
+        ct.set_defaults('xferfcn', default_dt=None)
+        self.assertEqual(ct.tf(1, 1).dt, None)
+        
 
     def tearDown(self):
         # Get rid of any figures that we created
