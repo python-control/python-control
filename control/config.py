@@ -161,6 +161,13 @@ def use_numpy_matrix(flag=True, warn=True):
     set_defaults('statesp', use_numpy_matrix=flag)
 
 def use_legacy_defaults(version):
+    """ Sets the defaults to whatever they were in a given release.
+
+    Parameters
+    ----------
+    version : string
+        version number of the defaults desired. Currently only supports `0.8.3`. 
+    """
     if version == '0.8.3': 
         use_numpy_matrix(True) # alternatively: set_defaults('statesp', use_numpy_matrix=True)
     else:

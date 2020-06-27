@@ -149,7 +149,8 @@ class StateSpace(LTI):
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified sampling
-    time.
+    time. The default value of 'dt' is None and can be changed by changing the 
+    value of ``control.config.defaults['statesp.default_dt']``.
 
     """
 
