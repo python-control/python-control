@@ -463,8 +463,14 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
-        autocomputed if not given)
+        Time vector, or simulation time duration if a number. If T is not 
+        provided, an attempt is made to create it automatically from the 
+        dynamics of sys. If sys is continuous-time, the time increment dt 
+        is chosen small enough to show the fastest mode, and the simulation 
+        time period tfinal long enough to show the slowest mode, excluding 
+        poles at the origin. If this results in too many time steps (>5000),
+        dt is reduced. If sys is discrete-time, only tfinal is computed, and 
+        tfinal is reduced if it requires too many simulation steps. 
 
     X0: array-like or number, optional
         Initial condition (default = 0)
@@ -545,7 +551,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is 
-        autocomputed if not given)
+        autocomputed if not given, see :func:`step_response` for more detail)
 
     T_num: number, optional
         Number of time steps to use in simulation if T is not provided as an 
@@ -635,7 +641,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is 
-        autocomputed if not given)
+        autocomputed if not given; see  :func:`step_response` for more detail)
 
     X0: array-like or number, optional
         Initial condition (default = 0)
@@ -725,7 +731,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is 
-        autocomputed if not given)
+        autocomputed if not given; see :func:`step_response` for more detail)
 
     X0: array-like or number, optional
         Initial condition (default = 0)
