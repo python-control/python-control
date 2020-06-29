@@ -1,10 +1,11 @@
 import unittest
 import numpy as np
 from control.sisotool import sisotool
-from control.tests.margin_test import assert_array_almost_equal
 from control.rlocus import _RLClickDispatcher
 from control.xferfcn import TransferFunction
 import matplotlib.pyplot as plt
+
+from numpy.testing import assert_array_almost_equal
 
 class TestSisotool(unittest.TestCase):
     """These are tests for the sisotool in sisotool.py."""
@@ -59,7 +60,7 @@ class TestSisotool(unittest.TestCase):
         assert_array_almost_equal(ax_mag.lines[0].get_data()[1][10:20],bode_mag_moved)
 
         # Check if the step response has changed
-        step_response_moved = np.array([[ 0.,          0.02458187,  0.16529784 , 0.46602716 , 0.91012035 , 1.43364313, 1.93996334 , 2.3190105  , 2.47041552 , 2.32724853] ])
+        step_response_moved = np.array([ 0.,          0.02458187,  0.16529784 , 0.46602716 , 0.91012035 , 1.43364313, 1.93996334 , 2.3190105  , 2.47041552 , 2.32724853])
         assert_array_almost_equal(ax_step.lines[0].get_data()[1][:10],step_response_moved)
 
 

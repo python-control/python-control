@@ -6,26 +6,16 @@
 from __future__ import print_function
 import unittest
 import numpy as np
-from control.xferfcn import TransferFunction
-from control.frdata import FRD
+from numpy.testing import assert_array_almost_equal, assert_allclose
+
+from control.frdata import FrequencyResponseData
+from control.margins import margin, phase_crossover_frequencies, \
+                            stability_margins
 from control.statesp import StateSpace
-from control.margins import *
+from control.xferfcn import TransferFunction
 
-def assert_array_almost_equal(x, y, ndigit=4):
 
-    x = np.array(x)
-    y = np.array(y)
-    try:
-        if np.isfinite(x).any() and \
-           np.equal(np.isfinite(x), np.isfinite(y)).all() and \
-           np.equal(np.isnan(x), np.isnan(y)).all():
-            np.testing.assert_array_almost_equal(
-                x[np.isfinite(x)], y[np.isfinite(y)], ndigit)
-            return
-    except TypeError as e:
-        print("Error", e, "with", x, "and", y)
-        #raise e
-    np.testing.assert_array_almost_equal(x, y, ndigit)
+
 
 class TestMargin(unittest.TestCase):
     """These are tests for the margin commands in margin.py."""
@@ -41,11 +31,11 @@ class TestMargin(unittest.TestCase):
         (StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
             [[1., 0.]], [[0.]]),
         [], [], [147.0743], [2.5483]),
-        ((8.75*(4*s**2+0.4*s+1))/((100*s+1)*(s**2+0.22*s+1)) * 
-         1./(s**2/(10.**2)+2*0.04*s/10.+1), 
+        ((8.75*(4*s**2+0.4*s+1))/((100*s+1)*(s**2+0.22*s+1)) *
+         1./(s**2/(10.**2)+2*0.04*s/10.+1),
         [2.2716], [10.0053], [97.5941, -157.7904, 134.7359],
         [0.0850, 0.9373, 1.0919]))
-        
+
 
         """
         sys1 = tf([1, 2], [1, 2, 3]);
@@ -96,8 +86,8 @@ class TestMargin(unittest.TestCase):
             dict(sys='type3', K=1.0, digits=3, result=(
                 0.0626, 37.1748, 0.1119, 0.7951)),
             )
-        
-        
+
+
         # from "A note on the Gain and Phase Margin Concepts
         # Journal of Control and Systems Engineering, Yazdan Bavafi-Toosi,
         # Dec 2015, vol 3 iss 1, pp 51-59
@@ -122,18 +112,18 @@ class TestMargin(unittest.TestCase):
             'example21' :
             0.002*(s+0.02)*(s+0.05)*(s+5)*(s+10)/(
                 (s-0.0005)*(s+0.0001)*(s+0.01)*(s+0.2)*(s+1)*(s+100)**2 ),
-            
+
             'example23' :
             ((s+0.1)**2 + 1)*(s-0.1)/(
                 ((s+0.1)**2+4)*(s+1) ),
-            
+
             'example25a' :
             s/(s**2+2*s+2)**4,
-            
+
             'example26a' :
             ((s-0.1)**2 + 1)/(
                 (s + 0.1)*((s-0.2)**2 + 4) ),
-            
+
             'example26b': ((s-0.1)**2 + 1)/(
                 (s - 0.3)*((s-0.2)**2 + 4) )
         }
@@ -156,19 +146,15 @@ class TestMargin(unittest.TestCase):
                 [-14.5640],
                 [0.0022]))
         )
-            
-            
+
+
     def test_stability_margins(self):
         omega = np.logspace(-2, 2, 2000)
-        for sys,rgm,rwgm,rpm,rwpm in self.tsys:
-            print(sys)
-            out = np.array(stability_margins(sys))
+        for sys, rgm, rwgm, rpm, rwpm in self.tsys:
+            out = stability_margins(sys)
             gm, pm, sm, wg, wp, ws = out
-            outf = np.array(stability_margins(FRD(sys, omega)))
-            print(out,'\n', outf)
-            #print(out != np.array(None))
-            assert_array_almost_equal(
-                out, outf, 2)
+            outf = stability_margins(FrequencyResponseData(sys, omega))
+            assert_array_almost_equal(out, outf, 2)
         # final one with fixed values
         assert_array_almost_equal(
             [gm, pm, sm, wg, wp, ws],
@@ -180,7 +166,7 @@ class TestMargin(unittest.TestCase):
             [gm, pm, wg, wp],
             self.stability_margins4[:2] + self.stability_margins4[3:5], 3)
 
-        
+
     def test_stability_margins_all(self):
         for sys,rgm,rwgm,rpm,rwpm in self.tsys:
             out = stability_margins(sys, returnall=True)
@@ -194,8 +180,8 @@ class TestMargin(unittest.TestCase):
 
     def test_phase_crossover_frequencies(self):
         omega, gain = phase_crossover_frequencies(self.sys2)
-        assert_array_almost_equal(omega, [1.73205,  0.])
-        assert_array_almost_equal(gain, [-0.5,  0.25])
+        assert_array_almost_equal(omega, [1.73205,  0.], 4)
+        assert_array_almost_equal(gain, [-0.5,  0.25], 2)
 
         tf = TransferFunction([1],[1,1])
         omega, gain = phase_crossover_frequencies(tf)
@@ -206,8 +192,8 @@ class TestMargin(unittest.TestCase):
         tf = TransferFunction([[[1],[2]],[[3],[4]]],
                               [[[1, 2, 3, 4],[1,1]],[[1,1],[1,1]]])
         omega, gain = phase_crossover_frequencies(tf)
-        assert_array_almost_equal(omega, [1.73205081,  0.])
-        assert_array_almost_equal(gain, [-0.5,  0.25])
+        assert_array_almost_equal(omega, [1.73205081,  0.], 4)
+        assert_array_almost_equal(gain, [-0.5,  0.25], 2)
 
     def test_mag_phase_omega(self):
         # test for bug reported in gh-58
@@ -250,7 +236,7 @@ class TestMargin(unittest.TestCase):
         # calculate response as complex number
         resp = 10**(gain / 20) * np.exp(1j * phase / (180./np.pi))
         # frequency response data
-        fresp = FRD(resp, f*2*np.pi, smooth=True)
+        fresp = FrequencyResponseData(resp, f*2*np.pi, smooth=True)
         s=TransferFunction([1,0],[1])
         G=1./(s**2)
         K=1.
@@ -260,24 +246,67 @@ class TestMargin(unittest.TestCase):
         assert_array_almost_equal(
             [pm], [44.55], 2)
 
+    def test_frd_indexing(self):
+        """FRD edge cases
+
+        Make sure frd objects with non benign data do not raise exceptions when
+        the stability criteria evaluate at the first or last frequency point
+        """
+        # frequency points just a little under 1. and over 2.
+        w = np.linspace(.99, 2.01, 11)
+
+        # Note: stability_margins will convert the frd with smooth=True
+
+        # gain margins
+        # p crosses -180 at w[0]=1. and w[-1]=2.
+        m = 0.6
+        p = -180*(2*w-1)
+        d = m*np.exp(1J*np.pi/180*p)
+        frd_gm = FrequencyResponseData(d, w)
+        gm, _, _, wg, _, _ = stability_margins(frd_gm, returnall=True)
+        assert_allclose(gm, [1/m, 1/m], atol=0.01)
+        assert_allclose(wg, [1., 2.], atol=0.01)
+
+        # phase margins
+        # m crosses 1 at w[0]=1. and w[-1]=2.
+        m = -(2*w-3)**4 + 2
+        p = -90.
+        d = m*np.exp(1J*np.pi/180*p)
+        frd_pm = FrequencyResponseData(d, w)
+        _, pm, _, _, wp, _ = stability_margins(frd_pm, returnall=True)
+        assert_allclose(pm, [90., 90.], atol=0.01)
+        assert_allclose(wp, [1., 2.], atol=0.01)
+
+        # stability margins
+        # minimum abs(d+1)=1-m at w[1]=1. and w[-2]=2., in nyquist plot
+        w = np.arange(.9, 2.1, 0.1)
+        m = 0.6
+        p = -180*(2*w-1)
+        d = m*np.exp(1J*np.pi/180*p)
+        frd_sm = FrequencyResponseData(d, w)
+        _, _, sm, _, _, ws = stability_margins(frd_sm, returnall=True)
+        assert_allclose(sm, [1-m, 1-m], atol=0.01)
+        assert_allclose(ws, [1., 2.], atol=0.01)
+
     def test_nocross(self):
-        # what happens when no gain/phase crossover?
+        """Test no gain/phase crossovers"""
         s = TransferFunction([1, 0], [1])
         h1 = 1/(1+s)
         h2 = 3*(10+s)/(2+s)
         h3 = 0.01*(10-s)/(2+s)/(1+s)
         gm, pm, wm, wg, wp, ws = stability_margins(h1)
-        assert_array_almost_equal(
-            [gm, pm, wg, wp],
-            [float('Inf'), float('Inf'), float('NaN'), float('NaN')]) 
+        assert np.isinf(gm)
+        assert np.isinf(pm)
+        assert np.isnan(wg)
+        assert np.isnan(wp)
         gm, pm, wm, wg, wp, ws = stability_margins(h2)
-        self.assertEqual(pm, float('Inf'))
+        assert np.isinf(pm)
         gm, pm, wm, wg, wp, ws = stability_margins(h3)
-        self.assertTrue(np.isnan(wp))
-        omega = np.logspace(-2,2, 100)
-        out1b = stability_margins(FRD(h1, omega))
-        out2b = stability_margins(FRD(h2, omega))
-        out3b = stability_margins(FRD(h3, omega))
+        assert np.isnan(wp)
+        omega = np.logspace(-2, 2, 100)
+        stability_margins(FrequencyResponseData(h1, omega))
+        stability_margins(FrequencyResponseData(h2, omega))
+        stability_margins(FrequencyResponseData(h3, omega))
 
     def test_zmore_margin(self):
         print("""
@@ -294,7 +323,7 @@ class TestMargin(unittest.TestCase):
         indicated, Matlab gives phase margin -180, at w = 0. for higher or
         lower gains, results match
         """.format(**self.types))
-                
+
         sdict = self.tmargin[0]
         for test in self.tmargin[1:]:
             res = margin(sdict[test['sys']]*test['K'])
