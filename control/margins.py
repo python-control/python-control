@@ -241,7 +241,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         widx = np.where(np.diff(np.sign(np.diff(dstab(sys.omega)))))[0]
         wstab = np.array([ sp.optimize.minimize_scalar(
                   dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
-              for i in widx if i+1 < len(sys.omega) and
+              for i in widx if i-1 >= 0 and
               np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] > 0 ])
         wstab = wstab[(wstab >= sys.omega[0]) *
                       (wstab <= sys.omega[-1])]
