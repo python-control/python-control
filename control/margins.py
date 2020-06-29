@@ -211,41 +211,40 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
     else:
         # a bit coarse, have the interpolated frd evaluated again
-        def mod(w):
-            """to give the function to calculate |G(jw)| = 1"""
+        def _mod(w):
+            """Calculate |G(jw)| - 1"""
             return np.abs(sys._evalfr(w)[0][0]) - 1
 
-        def arg(w):
-            """function to calculate the phase angle at -180 deg"""
+        def _arg(w):
+            """Calculate the phase angle at -180 deg"""
             return np.angle(-sys._evalfr(w)[0][0])
 
-        def dstab(w):
-            """function to calculate the distance from -1 point"""
+        def _dstab(w):
+            """Calculate the distance from -1 point"""
             return np.abs(sys._evalfr(w)[0][0] + 1.)
 
         # Find all crossings, note that this depends on omega having
         # a correct range
-        widx = np.where(np.diff(np.sign(mod(sys.omega))))[0]
+        widx = np.where(np.diff(np.sign(_mod(sys.omega))))[0]
         wc = np.array(
-            [ sp.optimize.brentq(mod, sys.omega[i], sys.omega[i+1])
-              for i in widx if i+1 < len(sys.omega)])
+            [sp.optimize.brentq(_mod, sys.omega[i], sys.omega[i+1])
+             for i in widx])
 
         # find the phase crossings ang(H(jw) == -180
-        widx = np.where(np.diff(np.sign(arg(sys.omega))))[0]
+        widx = np.where(np.diff(np.sign(_arg(sys.omega))))[0]
         widx = widx[np.real(sys._evalfr(sys.omega[widx])[0][0]) <= 0]
         w_180 = np.array(
-            [ sp.optimize.brentq(arg, sys.omega[i], sys.omega[i+1])
-              for i in widx if i+1 < len(sys.omega) ])
+            [sp.optimize.brentq(_arg, sys.omega[i], sys.omega[i+1])
+             for i in widx])
 
         # find all stab margins?
-        widx = np.where(np.diff(np.sign(np.diff(dstab(sys.omega)))))[0]
-        wstab = np.array([ sp.optimize.minimize_scalar(
-                  dstab, bracket=(sys.omega[i], sys.omega[i+1])).x
-              for i in widx if i-1 >= 0 and
-              np.diff(np.diff(dstab(sys.omega[i-1:i+2])))[0] > 0 ])
-        wstab = wstab[(wstab >= sys.omega[0]) *
-                      (wstab <= sys.omega[-1])]
-
+        widx, = np.where(np.diff(np.sign(np.diff(_dstab(sys.omega)))) > 0)
+        wstab = np.array(
+            [sp.optimize.minimize_scalar(_dstab,
+                                         bracket=(sys.omega[i], sys.omega[i+1])
+                                         ).x
+             for i in widx])
+        wstab = wstab[(wstab >= sys.omega[0]) * (wstab <= sys.omega[-1])]
 
     # margins, as iterables, converted frdata and xferfcn calculations to
     # vector for this
@@ -254,13 +253,13 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         GM = 1.0/gain_w_180
     SM = np.abs(sys._evalfr(wstab)[0][0]+1)
     PM = np.remainder(np.angle(sys._evalfr(wc)[0][0], deg=True), 360.0) - 180.0
-    
+
     if returnall:
         return GM, PM, SM, w_180, wc, wstab
     else:
         if GM.shape[0] and not np.isinf(GM).all():
             with np.errstate(all='ignore'):
-                gmidx = np.where(np.abs(np.log(GM)) == 
+                gmidx = np.where(np.abs(np.log(GM)) ==
                                  np.min(np.abs(np.log(GM))))
         else:
             gmidx = -1
