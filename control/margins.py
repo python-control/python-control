@@ -1,12 +1,12 @@
-"""margin.py
+"""margins.py
 
 Functions for computing stability margins and related functions.
 
 Routines in this module:
 
-margin.stability_margins
-margin.phase_crossover_frequencies
-margin.margin
+margins.stability_margins
+margins.phase_crossover_frequencies
+margins.margin
 """
 
 # Python 3 compatibility (needs to go here)

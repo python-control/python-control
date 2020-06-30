@@ -15,10 +15,8 @@ from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 
 
-
-
 class TestMargin(unittest.TestCase):
-    """These are tests for the margin commands in margin.py."""
+    """These are tests for the margin commands in margins.py."""
 
     def setUp(self):
         # system, gain margin, gm freq, phase margin, pm freq
