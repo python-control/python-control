@@ -819,9 +819,11 @@ class TestXferFcn(unittest.TestCase):
                                      [None, True, 1],
                                      ['', '', '\ndt = 1\n']):
             assert str(TransferFunction([1, 0], [2, 1], dt)) == \
-                f"\n   {var}\n-------\n2 {var} + 1\n{dtstring}"
+                "\n   {var}\n-------\n2 {var} + 1\n{dtstring}".format(
+                    var=var, dtstring=dtstring)
             assert str(TransferFunction([2, 0, -1], [1, 0, 0, 1.2], dt)) == \
-                f"\n2 {var}^2 - 1\n---------\n{var}^3 + 1.2\n{dtstring}"
+                "\n2 {var}^2 - 1\n---------\n{var}^3 + 1.2\n{dtstring}".format(
+                    var=var, dtstring=dtstring)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_printing_mimo(self):
