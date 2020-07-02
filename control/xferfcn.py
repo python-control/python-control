@@ -1087,8 +1087,6 @@ def _tf_polynomial_to_string(coeffs, var='s'):
 
     for k in range(len(coeffs)):
         coefstr = '%.4g' % abs(coeffs[k])
-        if coefstr[-4:] == '0000':
-            coefstr = coefstr[:-5]
         power = (N - k)
         if power == 0:
             if coefstr != '0':
