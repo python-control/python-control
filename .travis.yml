@@ -19,7 +19,7 @@ python:
 
 # Test against multiple version of SciPy, with and without slycot
 #
-# Because there were significant changes in SciPy between v0 and v1, we 
+# Because there were significant changes in SciPy between v0 and v1, we
 # test against both of these using the Travis CI environment capability
 #
 # We also want to test with and without slycot
@@ -84,7 +84,6 @@ before_install:
       sudo apt-get update -qq;
       sudo apt-get install liblapack-dev libblas-dev;
       sudo apt-get install gfortran;
-      sudo apt-get install cmake;
     fi
   # use miniconda to install numpy/scipy, to avoid lengthy build from source
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -104,7 +103,7 @@ before_install:
   # Install scikit-build for the build process if slycot is being used
   - if [[ "$SLYCOT" = "source" ]]; then
       conda install openblas;
-      conda install -c conda-forge scikit-build;
+      conda install -c conda-forge cmake scikit-build;
     fi
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
