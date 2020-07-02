@@ -806,6 +806,23 @@ class TestXferFcn(unittest.TestCase):
         self.assertTrue(isinstance(str(sys), str))
         self.assertTrue(isinstance(sys._repr_latex_(), str))
 
+    def test_printing_polynomial(self):
+        """Cover all _tf_polynomial_to_string code branches"""
+        # Note: the assertions below use plain assert statements instead of
+        # unittest methods so that debugging with pytest is easier
+
+        assert str(TransferFunction([0], [1])) == "\n0\n-\n1\n"
+        assert str(TransferFunction([1.0001], [-1.1111])) == \
+            "\n  1\n------\n-1.111\n"
+        assert str(TransferFunction([0, 1], [0, 1.])) == "\n1\n-\n1\n"
+        for var, dt, dtstring in zip(["s", "z", "z"],
+                                     [None, True, 1],
+                                     ['', '', '\ndt = 1\n']):
+            assert str(TransferFunction([1, 0], [2, 1], dt)) == \
+                f"\n   {var}\n-------\n2 {var} + 1\n{dtstring}"
+            assert str(TransferFunction([2, 0, -1], [1, 0, 0, 1.2], dt)) == \
+                f"\n2 {var}^2 - 1\n---------\n{var}^3 + 1.2\n{dtstring}"
+
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_printing_mimo(self):
         # MIMO, continuous time
