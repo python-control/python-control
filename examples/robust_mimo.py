@@ -44,7 +44,7 @@ def triv_sigma(g, w):
     w - frequencies, length m
     s - (m,n) array of singular values of g(1j*w)"""
     m, p, _ = g.freqresp(w)
-    sjw = (m*np.exp(1j*p*np.pi/180)).transpose(2, 0, 1)
+    sjw = (m*np.exp(1j*p)).transpose(2, 0, 1)
     sv = np.linalg.svd(sjw, compute_uv=False)
     return sv
 
