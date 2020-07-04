@@ -639,19 +639,36 @@ class TransferFunction(LTI):
 
         return out
 
-    # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """Evaluate a transfer function at a list of angular frequencies.
+        """Evaluate the transfer function at a list of angular frequencies.
 
-        mag, phase, omega = self.freqresp(omega)
+        Reports the frequency response of the system,
 
-        reports the value of the magnitude, phase, and angular frequency of
-        the transfer function matrix evaluated at s = i * omega, where omega
-        is a list of angular frequencies, and is a sorted version of the input
-        omega.
+             G(j*omega) = mag*exp(j*phase)
 
+        for continuous time. For discrete time systems, the response is
+        evaluated around the unit circle such that
+
+             G(exp(j*omega*dt)) = mag*exp(j*phase).
+
+        Parameters
+        ----------
+        omega : array_like
+            A list of frequencies in radians/sec at which the system should be
+            evaluated. The list can be either a python list or a numpy array
+            and will be sorted before evaluation.
+
+        Returns
+        -------
+        mag : (self.outputs, self.inputs, len(omega)) ndarray
+            The magnitude (absolute value, not dB or log10) of the system
+            frequency response.
+        phase : (self.outputs, self.inputs, len(omega)) ndarray
+            The wrapped phase in radians of the system frequency response.
+        omega : ndarray or list or tuple
+            The list of sorted frequencies at which the response was
+            evaluated.
         """
-
         # Preallocate outputs.
         numfreq = len(omega)
         mag = empty((self.outputs, self.inputs, numfreq))
