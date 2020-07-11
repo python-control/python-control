@@ -983,7 +983,7 @@ class TransferFunction(LTI):
 
         return num, den, denorder
 
-    def sample(self, Ts, method='zoh', alpha=None):
+    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None):
         """Convert a continuous-time system to discrete time
 
         Creates a discrete-time system from a continuous-time system by
@@ -1007,6 +1007,12 @@ class TransferFunction(LTI):
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
             otherwise.
+        
+        prewarp_frequency : float within [0, infinity)
+            The frequency [rad/s] at which to match with the input continuous-
+            time system's magnitude and phase (the gain=1 crossover frequency, 
+            for example). Should only be specified with method='bilinear' or 
+            'gbt' with alpha=0.5 and ignored otherwise.
 
         Returns
         -------
@@ -1032,8 +1038,13 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        numd, dend, dt = cont2discrete(sys, Ts, method, alpha)
-        return TransferFunction(numd[0, :], dend, dt)
+        if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
+                prewarp_frequency is not None:
+            Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+        else: 
+            Twarp = Ts
+        numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
+        return TransferFunction(numd[0, :], dend, Ts)
 
     def dcgain(self):
         """Return the zero-frequency (or DC) gain

@@ -837,7 +837,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         j = indices[1]
         return StateSpace(self.A, self.B[:, j], self.C[i, :], self.D[i, j], self.dt)
 
-    def sample(self, Ts, method='zoh', alpha=None):
+    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None):
         """Convert a continuous time system to discrete time
 
         Creates a discrete-time system from a continuous-time system by
@@ -862,6 +862,12 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             should only be specified with method="gbt", and is ignored
             otherwise
 
+        prewarp_frequency : float within [0, infinity)
+            The frequency [rad/s] at which to match with the input continuous-
+            time system's magnitude and phase (the gain=1 crossover frequency, 
+            for example). Should only be specified with method='bilinear' or 
+            'gbt' with alpha=0.5 and ignored otherwise.
+
         Returns
         -------
         sysd : StateSpace
@@ -881,8 +887,13 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             raise ValueError("System must be continuous time system")
 
         sys = (self.A, self.B, self.C, self.D)
-        Ad, Bd, C, D, dt = cont2discrete(sys, Ts, method, alpha)
-        return StateSpace(Ad, Bd, C, D, dt)
+        if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
+                prewarp_frequency is not None:
+            Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+        else: 
+            Twarp = Ts
+        Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
+        return StateSpace(Ad, Bd, C, D, Ts)
 
     def dcgain(self):
         """Return the zero-frequency gain
