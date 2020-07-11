@@ -48,7 +48,7 @@
 # Packages used by this module
 from functools import partial
 import numpy as np
-import matplotlib as mlt
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
@@ -62,7 +62,7 @@ __all__ = ['root_locus', 'rlocus']
 # Default values for module parameters
 _rlocus_defaults = {
     'rlocus.grid': True,
-    'rlocus.plotstr': 'b' if int(mlt.__version__[0]) == 1 else 'C0',
+    'rlocus.plotstr': 'b' if int(mpl.__version__[0]) == 1 else 'C0',
     'rlocus.print_gain': True,
     'rlocus.plot': True
 }
@@ -167,7 +167,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                 "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
                 (start_mat[0][0].real, start_mat[0][0].imag,
                  1, -1 * start_mat[0][0].real / abs(start_mat[0][0])),
-                fontsize=12 if int(mlt.__version__[0]) == 1 else 10)
+                fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
             fig.canvas.mpl_connect(
                 'button_release_event',
                 partial(_RLClickDispatcher, sys=sys, fig=fig,
@@ -573,7 +573,7 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
         fig.suptitle(
             "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
             (s.real, s.imag, K.real, -1 * s.real / abs(s)),
-            fontsize=12 if int(mlt.__version__[0]) == 1 else 10)
+            fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
 
         # Remove the previous line
         _removeLine(label='gain_point', ax=ax_rlocus)
