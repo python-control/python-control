@@ -49,6 +49,7 @@ class TestRootLocus(unittest.TestCase):
     def test_root_locus_zoom(self):
         """Check the zooming functionality of the Root locus plot"""
         system = TransferFunction([1000], [1, 25, 100, 0])
+        plt.figure()
         root_locus(system)
         fig = plt.gcf()
         ax_rlocus = fig.axes[0]
