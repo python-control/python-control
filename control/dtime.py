@@ -52,7 +52,7 @@ from .statesp import StateSpace, _convertToStateSpace
 __all__ = ['sample_system', 'c2d']
 
 # Sample a continuous time system
-def sample_system(sysc, Ts, method='zoh', alpha=None):
+def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None):
     """Convert a continuous time system to discrete time
 
     Creates a discrete time system from a continuous time system by
@@ -66,6 +66,10 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
         Sampling period
     method : string
         Method to use for conversion: 'matched', 'tustin', 'zoh' (default)
+
+    prewarp_frequency : float within [0, infinity)
+        The frequency [rad/s] at which to match with the input continuous-
+        time system's magnitude and phase
 
     Returns
     -------
@@ -87,10 +91,10 @@ def sample_system(sysc, Ts, method='zoh', alpha=None):
     if not isctime(sysc):
         raise ValueError("First argument must be continuous time system")
 
-    return sysc.sample(Ts, method, alpha)
+    return sysc.sample(Ts, method, alpha, prewarp_frequency)
 
 
-def c2d(sysc, Ts, method='zoh'):
+def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
     '''
     Return a discrete-time system
 
@@ -109,9 +113,14 @@ def c2d(sysc, Ts, method='zoh'):
         'impulse'    Impulse-invariant discretization, currently not implemented
         'tustin'     Bilinear (Tustin) approximation, only SISO
         'matched'    Matched pole-zero method, only SISO
+
+    prewarp_frequency : float within [0, infinity)
+            The frequency [rad/s] at which to match with the input continuous-
+            time system's magnitude and phase
+
     '''
     #  Call the sample_system() function to do the work
-    sysd = sample_system(sysc, Ts, method)
+    sysd = sample_system(sysc, Ts, method, prewarp_frequency)
 
     # TODO: is this check needed?  If sysc is  StateSpace, sysd is too?
     if isinstance(sysc, StateSpace) and not isinstance(sysd, StateSpace):

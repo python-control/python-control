@@ -60,16 +60,20 @@ SUCH DAMAGE.
 
 Initial Author: Eike Welk
 Date: 12 May 2011
+
+Modified: Sawyer B. Fuller (minster@uw.edu) to add discrete-time 
+capability and better automatic time vector creation
+Date: June 2020
+
 $Id$
 """
 
 # Libraries that we make use of
 import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
-from scipy.signal.ltisys import _default_response_times
 import warnings
 from .lti import LTI     # base class of StateSpace, TransferFunction
-from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso
+from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso, ssdata
 from .lti import isdtime, isctime
 
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
@@ -440,7 +444,7 @@ def _get_ss_simo(sys, input=None, output=None):
         return _mimo2siso(sys_ss, input, output, warn_conversion=warn)
 
 
-def step_response(sys, T=None, X0=0., input=None, output=None,
+def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
                   transpose=False, return_x=False, squeeze=True):
     # pylint: disable=W0622
     """Step response of a linear system
@@ -458,8 +462,15 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     sys: StateSpace, or TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number. If T is not 
+        provided, an attempt is made to create it automatically from the 
+        dynamics of sys. If sys is continuous-time, the time increment dt 
+        is chosen small enough to show the fastest mode, and the simulation 
+        time period tfinal long enough to show the slowest mode, excluding 
+        poles at the origin. If this results in too many time steps (>5000),
+        dt is reduced. If sys is discrete-time, only tfinal is computed, and 
+        tfinal is reduced if it requires too many simulation steps. 
 
     X0: array-like or number, optional
         Initial condition (default = 0)
@@ -472,6 +483,10 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     output: int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
+    
+    T_num: number, optional
+        Number of time steps to use in simulation if T is not provided as an 
+        array (autocomputed if not given); ignored if sys is discrete-time.  
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -511,8 +526,8 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
 
     """
     sys = _get_ss_simo(sys, input, output)
-    if T is None:
-        T = _get_response_times(sys, N=100)
+    if T is None or np.asarray(T).size == 1:
+        T = _default_time_vector(sys, N=T_num, tfinal=T)
     U = np.ones_like(T)
 
     T, yout, xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -524,7 +539,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None,
     return T, yout
 
 
-def step_info(sys, T=None, SettlingTimeThreshold=0.02,
+def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
               RiseTimeLimits=(0.1, 0.9)):
     '''
     Step response characteristics (Rise time, Settling Time, Peak and others).
@@ -534,8 +549,13 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02,
     sys: StateSpace, or TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number (time vector is 
+        autocomputed if not given, see :func:`step_response` for more detail)
+
+    T_num: number, optional
+        Number of time steps to use in simulation if T is not provided as an 
+        array (autocomputed if not given); ignored if sys is discrete-time.  
 
     SettlingTimeThreshold: float value, optional
         Defines the error to compute settling time (default = 0.02)
@@ -566,9 +586,9 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02,
     >>> info = step_info(sys, T)
     '''
     sys = _get_ss_simo(sys)
-    if T is None:
-        T = _get_response_times(sys, N=1000)
-
+    if T is None or np.asarray(T).size == 1:
+        T = _default_time_vector(sys, N=T_num, tfinal=T)
+    
     T, yout = step_response(sys, T)
 
     # Steady state value
@@ -588,33 +608,21 @@ def step_info(sys, T=None, SettlingTimeThreshold=0.02,
             SettlingTime = T[i + 1]
             break
 
-    # Peak
     PeakIndex = np.abs(yout).argmax()
-    PeakValue = yout[PeakIndex]
-    PeakTime = T[PeakIndex]
-    SettlingMax = (yout).max()
-    SettlingMin = (yout[tr_upper_index:]).min()
-    # I'm really not very confident about UnderShoot:
-    UnderShoot = yout.min()
-    OverShoot = 100. * (yout.max() - InfValue) / (InfValue - yout[0])
-
-    # Return as a dictionary
-    S = {
+    return {
         'RiseTime': RiseTime,
         'SettlingTime': SettlingTime,
-        'SettlingMin': SettlingMin,
-        'SettlingMax': SettlingMax,
-        'Overshoot': OverShoot,
-        'Undershoot': UnderShoot,
-        'Peak': PeakValue,
-        'PeakTime': PeakTime,
+        'SettlingMin': yout[tr_upper_index:].min(),
+        'SettlingMax': yout.max(),
+        'Overshoot': 100. * (yout.max() - InfValue) / (InfValue - yout[0]),
+        'Undershoot': yout.min(), # not very confident about this
+        'Peak': yout[PeakIndex],
+        'PeakTime':  T[PeakIndex],
         'SteadyStateValue': InfValue
-    }
-
-    return S
+        }
 
 
-def initial_response(sys, T=None, X0=0., input=0, output=None,
+def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=True):
     # pylint: disable=W0622
     """Initial condition response of a linear system
@@ -631,10 +639,11 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     sys: StateSpace, or TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number (time vector is 
+        autocomputed if not given; see  :func:`step_response` for more detail)
 
-    X0: array-like object or number, optional
+    X0: array-like or number, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
@@ -646,6 +655,10 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     output: int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
+    
+    T_num: number, optional
+        Number of time steps to use in simulation if T is not provided as an 
+        array (autocomputed if not given); ignored if sys is discrete-time.  
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -685,9 +698,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
 
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
-    if T is None:
-        # TODO: default step size inconsistent with step/impulse_response()
-        T = _get_response_times(sys, N=1000)
+    if T is None or np.asarray(T).size == 1:
+        T = _default_time_vector(sys, N=T_num, tfinal=T)
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -699,7 +711,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None,
     return T, yout
 
 
-def impulse_response(sys, T=None, X0=0., input=0, output=None,
+def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=True):
     # pylint: disable=W0622
     """Impulse response of a linear system
@@ -717,10 +729,11 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     sys: StateSpace, TransferFunction
         LTI system to simulate
 
-    T: array-like object, optional
-        Time vector (argument is autocomputed if not given)
+    T: array-like or number, optional
+        Time vector, or simulation time duration if a number (time vector is 
+        autocomputed if not given; see :func:`step_response` for more detail)
 
-    X0: array-like object or number, optional
+    X0: array-like or number, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
@@ -731,6 +744,10 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     output: int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
+
+    T_num: number, optional
+        Number of time steps to use in simulation if T is not provided as an 
+        array (autocomputed if not given); ignored if sys is discrete-time.  
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -770,7 +787,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
     """
     sys = _get_ss_simo(sys, input, output)
 
-    # System has direct feedthrough, can't simulate impulse response
+    # if system has direct feedthrough, can't simulate impulse response
     # numerically
     if np.any(sys.D != 0) and isctime(sys):
         warnings.warn("System has direct feedthrough: ``D != 0``. The "
@@ -779,14 +796,14 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
                       "Results may be meaningless!")
 
     # create X0 if not given, test if X0 has correct shape.
-    # Must be done here because it is used for computations here.
+    # Must be done here because it is used for computations below.
     n_states = sys.A.shape[0]
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: \n', squeeze=True)
 
-    # Compute T and U, no checks necessary, they will be checked in lsim
-    if T is None:
-        T = _get_response_times(sys, N=100)
+    # Compute T and U, no checks necessary, will be checked in forced_response
+    if T is None or np.asarray(T).size == 1:
+        T = _default_time_vector(sys, N=T_num, tfinal=T)
     U = np.zeros_like(T)
 
     # Compute new X0 that contains the impulse
@@ -808,21 +825,61 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None,
 
     return T, yout
 
-
-# Utility function to get response times
-def _get_response_times(sys, N=100):
-    if isctime(sys):
-        if sys.A.shape == (0, 0):
-            # No dynamics; use the unit time interval
-            T = np.linspace(0, 1, N, endpoint=False)
-        else:
-            T = _default_response_times(sys.A, N)
+# utility function to find time period and time increment using pole locations
+def _ideal_tfinal_and_dt(sys):
+    constant = 7.0
+    tolerance = 1e-10
+    A = ssdata(sys)[0]
+    if A.shape == (0,0): 
+        # no dynamics
+        tfinal = constant * 1.0 
+        dt = sys.dt if isdtime(sys, strict=True) else 1.0
     else:
-        # For discrete time, use integers
-        if sys.A.shape == (0, 0):
-            # No dynamics; use N time steps
-            T = range(N)
+        poles = sp.linalg.eigvals(A)
+        if isdtime(sys, strict=True):
+            poles = np.log(poles)/sys.dt # z-poles to s-plane using s=(lnz)/dt
+        
+        # calculate ideal dt
+        if isdtime(sys, strict=True):
+            dt = sys.dt
         else:
-            tvec = _default_response_times(sys.A, N)
-            T = range(int(np.ceil(max(tvec))))
-    return T
+            fastest_natural_frequency = max(abs(poles))
+            dt = 1/constant / fastest_natural_frequency
+        
+        # calculate ideal tfinal
+        poles = poles[abs(poles.real) > tolerance] # ignore poles near im axis
+        if poles.size == 0:        
+            slowest_decay_rate = 1.0
+        else:
+            slowest_decay_rate = min(abs(poles.real))
+        tfinal = constant / slowest_decay_rate  
+
+    return tfinal, dt
+
+# test below: ct with pole at the origin is 7 seconds, ct with pole at .5 is 14 s long, 
+def _default_time_vector(sys, N=None, tfinal=None):
+    """Returns a time vector suitable for observing the response of the 
+    both the slowest poles and fastest resonant modes. if system is 
+    discrete-time, N is ignored """
+    
+    N_max = 5000
+    N_min_ct = 100
+    N_min_dt = 7 # more common to see just a few samples in discrete-time
+    
+    ideal_tfinal, ideal_dt = _ideal_tfinal_and_dt(sys)
+    
+    if isdtime(sys, strict=True):
+        if tfinal is None: 
+            # for discrete time, change from ideal_tfinal if N too large/small
+            N = int(np.clip(ideal_tfinal/sys.dt, N_min_dt, N_max))# [N_min, N_max]
+            tfinal = sys.dt * N
+        else: 
+            N = int(tfinal/sys.dt)
+    else: 
+        if tfinal is None: 
+            # for continuous time, simulate to ideal_tfinal but limit N
+            tfinal = ideal_tfinal
+        if N is None:     
+            N = int(np.clip(tfinal/ideal_dt, N_min_ct, N_max)) # N<-[N_min, N_max]
+            
+    return np.linspace(0, tfinal, N, endpoint=False)

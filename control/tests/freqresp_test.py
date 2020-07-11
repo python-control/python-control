@@ -7,14 +7,16 @@
 # including bode plots.
 
 import unittest
+import matplotlib.pyplot as plt
 import numpy as np
+from numpy.testing import assert_array_almost_equal
+
 import control as ctrl
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, rss
 from control.exception import slycot_check
-from control.tests.margin_test import assert_array_almost_equal
-import matplotlib.pyplot as plt
+
 
 class TestFreqresp(unittest.TestCase):
    def setUp(self):
@@ -51,7 +53,7 @@ class TestFreqresp(unittest.TestCase):
       for ax in plt.gcf().axes:
          # Make sure there are 2 lines in each subplot
          assert len(ax.get_lines()) == 2
-      
+
       # Generate two plots as a list; should be on the same axes
       plt.figure(2); plt.clf();
       ctrl.bode_plot([ctrl.tf([1], [1,2,1]), ctrl.tf([5], [1, 1])])
