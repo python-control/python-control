@@ -283,8 +283,14 @@ class StateSpace(LTI):
             string += "\ndt = " + self.dt.__str__() + "\n"
         return string
 
-    # represent as string, makes display work for IPython
-    __repr__ = __str__
+    # represent to implement a re-loadable version
+    # TODO: remove the conversion to array when matrix is no longer used
+    def __repr__(self):
+        """Print state-space system in loadable form."""
+        return "StateSpace({A}, {B}, {C}, {D}{dt})".format(
+            A=asarray(self.A).__repr__(), B=asarray(self.B).__repr__(),
+            C=asarray(self.C).__repr__(), D=asarray(self.D).__repr__(),
+            dt=(isdtime(self, strict=True) and ", {}".format(self.dt)) or '')
 
     # Negation of a system
     def __neg__(self):

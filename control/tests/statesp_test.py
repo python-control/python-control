@@ -519,6 +519,25 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
 
+    def test_repr(self):
+        ref322 = """StateSpace(array([[-3.,  4.,  2.],
+       [-1., -3.,  0.],
+       [ 2.,  5.,  3.]]), array([[ 1.,  4.],
+       [-3., -3.],
+       [-2.,  1.]]), array([[ 4.,  2., -3.],
+       [ 1.,  4.,  3.]]), array([[-2.,  4.],
+       [ 0.,  1.]]){dt})"""
+        self.assertEqual(repr(self.sys322), ref322.format(dt=''))
+        sysd = StateSpace(self.sys322.A, self.sys322.B,
+                          self.sys322.C, self.sys322.D, 0.4)
+        self.assertEqual(repr(sysd), ref322.format(dt=", 0.4"))
+        array = np.array
+        sysd2 = eval(repr(sysd))
+        np.testing.assert_allclose(sysd.A, sysd2.A)
+        np.testing.assert_allclose(sysd.B, sysd2.B)
+        np.testing.assert_allclose(sysd.C, sysd2.C)
+        np.testing.assert_allclose(sysd.D, sysd2.D)
+
     def test_str(self):
         """Test that printing the system works"""
         tsys = self.sys322
@@ -652,6 +671,7 @@ class TestDrss(unittest.TestCase):
             evalfr(plant, wwarp*1j), 
             evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
             decimal=4)
+
 
 if __name__ == "__main__":
     unittest.main()

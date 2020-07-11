@@ -872,6 +872,46 @@ class TestXferFcn(unittest.TestCase):
                    r'+ 2.3 ' + expmul + ' 10^{-45}'
                    r'}' + suffix + '$$')
             self.assertEqual(H._repr_latex_(), ref)
+
+    def test_repr(self):
+        """Test __repr__ printout."""
+        Hc = TransferFunction([-1., 4.], [1., 3., 5.])
+        Hd = TransferFunction([2., 3., 0.], [1., -3., 4., 0], 2.0)
+        Hcm = TransferFunction(
+            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
+            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ])
+        Hdm = TransferFunction(
+            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
+            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ], 0.5)
+
+        refs = [
+            "TransferFunction(array([-1.,  4.]), array([1., 3., 5.]))",
+            "TransferFunction(array([2., 3., 0.]),"
+            " array([ 1., -3.,  4.,  0.]), 2.0)",
+            "TransferFunction([[array([1]), array([2, 3])],"
+            " [array([4, 5]), array([6, 7])]],"
+            " [[array([6, 7]), array([4, 5])],"
+            " [array([2, 3]), array([1])]])",
+            "TransferFunction([[array([1]), array([2, 3])],"
+            " [array([4, 5]), array([6, 7])]],"
+            " [[array([6, 7]), array([4, 5])],"
+            " [array([2, 3]), array([1])]], 0.5)" ]
+        self.assertEqual(repr(Hc), refs[0])
+        self.assertEqual(repr(Hd), refs[1])
+        self.assertEqual(repr(Hcm), refs[2])
+        self.assertEqual(repr(Hdm), refs[3])
+
+        # and reading back
+        array = np.array
+        for H in (Hc, Hd, Hcm, Hdm):
+            H2 = eval(H.__repr__())
+            for p in range(len(H.num)):
+                for m in range(len(H.num[0])):
+                    np.testing.assert_array_almost_equal(
+                        H.num[p][m], H2.num[p][m])
+                    np.testing.assert_array_almost_equal(
+                        H.den[p][m], H2.den[p][m])
+            self.assertEqual(H.dt, H2.dt)
     
     def test_sample_system_prewarping(self): 
         """test that prewarping works when converting from cont to discrete time system"""
@@ -892,6 +932,7 @@ class TestXferFcn(unittest.TestCase):
             evalfr(plant, wwarp*1j), 
             evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
             decimal=4)
+
 
 if __name__ == "__main__":
     unittest.main()

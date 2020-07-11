@@ -10,7 +10,7 @@ import numpy as np
 import control as ct
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from control.frdata import FRD, _convertToFRD
+from control.frdata import FRD, _convertToFRD, FrequencyResponseData
 from control import bdalg
 from control import freqplot
 from control.exception import slycot_check
@@ -414,6 +414,56 @@ class TestFRD(unittest.TestCase):
             # Make sure that we get a pending deprecation warning
             self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
 
-            
+    def test_repr_str(self):
+        # repr printing
+        array = np.array
+        sys0 = FrequencyResponseData([1.0, 0.9+0.1j, 0.1+2j, 0.05+3j],
+                                     [0.1, 1.0, 10.0, 100.0])
+        sys1 = FrequencyResponseData(sys0.fresp, sys0.omega, smooth=True)
+        ref0 = "FrequencyResponseData(" \
+            "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]])," \
+            " array([  0.1,   1. ,  10. , 100. ]))"
+        ref1 = ref0[:-1] + ", smooth=True)"
+        sysm = FrequencyResponseData(
+            np.matmul(array([[1],[2]]), sys0.fresp), sys0.omega)
+
+        self.assertEqual(repr(sys0), ref0)
+        self.assertEqual(repr(sys1), ref1)
+        sys0r = eval(repr(sys0))
+        np.testing.assert_array_almost_equal(sys0r.fresp, sys0.fresp)
+        np.testing.assert_array_almost_equal(sys0r.omega, sys0.omega)
+        sys1r = eval(repr(sys1))
+        np.testing.assert_array_almost_equal(sys1r.fresp, sys1.fresp)
+        np.testing.assert_array_almost_equal(sys1r.omega, sys1.omega)
+        assert(sys1.ifunc is not None)
+
+        refs = """Frequency response data
+Freq [rad/s]  Response
+------------  ---------------------
+       0.100           1        +0j
+       1.000         0.9      +0.1j
+      10.000         0.1        +2j
+     100.000        0.05        +3j"""
+        self.assertEqual(str(sys0), refs)
+        self.assertEqual(str(sys1), refs)
+
+        # print multi-input system
+        refm = """Frequency response data
+Input 1 to output 1:
+Freq [rad/s]  Response
+------------  ---------------------
+       0.100           1        +0j
+       1.000         0.9      +0.1j
+      10.000         0.1        +2j
+     100.000        0.05        +3j
+Input 2 to output 1:
+Freq [rad/s]  Response
+------------  ---------------------
+       0.100           2        +0j
+       1.000         1.8      +0.2j
+      10.000         0.2        +4j
+     100.000         0.1        +6j"""
+        self.assertEqual(str(sysm), refm)
+
 if __name__ == "__main__":
     unittest.main()
