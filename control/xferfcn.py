@@ -63,9 +63,14 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, timebaseEqual, timebase, isdtime
+from . import config
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
+
+# Define module default parameter values
+_xferfcn_defaults = {
+    'xferfcn.default_dt': None}
 
 class TransferFunction(LTI):
 
@@ -88,7 +93,9 @@ class TransferFunction(LTI):
     instance variable and setting it to something other than 'None'.  If 'dt'
     has a non-zero value, then it must match whenever two transfer functions
     are combined.  If 'dt' is set to True, the system will be treated as a
-    discrete time system with unspecified sampling time.
+    discrete time system with unspecified sampling time. The default value of 
+    'dt' is None and can be changed by changing the value of 
+    ``control.config.defaults['xferfcn.default_dt']``.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
@@ -117,7 +124,7 @@ class TransferFunction(LTI):
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             (num, den) = args
-            dt = None
+            dt = config.defaults['xferfcn.default_dt']
         elif len(args) == 3:
             # Discrete time transfer function
             (num, den, dt) = args
@@ -133,7 +140,7 @@ class TransferFunction(LTI):
             try:
                 dt = args[0].dt
             except NameError:   # pragma: no coverage
-                dt = None
+                dt = config.defaults['xferfcn.default_dt']
         else:
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))
@@ -264,11 +271,9 @@ class TransferFunction(LTI):
 
                 # Center the numerator or denominator
                 if len(numstr) < dashcount:
-                    numstr = (' ' * int(round((dashcount - len(numstr)) / 2)) +
-                              numstr)
+                    numstr = ' ' * ((dashcount - len(numstr)) // 2) + numstr
                 if len(denstr) < dashcount:
-                    denstr = (' ' * int(round((dashcount - len(denstr)) / 2)) +
-                              denstr)
+                    denstr = ' ' * ((dashcount - len(denstr)) // 2) + denstr
 
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
 
@@ -639,19 +644,36 @@ class TransferFunction(LTI):
 
         return out
 
-    # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """Evaluate a transfer function at a list of angular frequencies.
+        """Evaluate the transfer function at a list of angular frequencies.
 
-        mag, phase, omega = self.freqresp(omega)
+        Reports the frequency response of the system,
 
-        reports the value of the magnitude, phase, and angular frequency of
-        the transfer function matrix evaluated at s = i * omega, where omega
-        is a list of angular frequencies, and is a sorted version of the input
-        omega.
+             G(j*omega) = mag*exp(j*phase)
 
+        for continuous time. For discrete time systems, the response is
+        evaluated around the unit circle such that
+
+             G(exp(j*omega*dt)) = mag*exp(j*phase).
+
+        Parameters
+        ----------
+        omega : array_like
+            A list of frequencies in radians/sec at which the system should be
+            evaluated. The list can be either a python list or a numpy array
+            and will be sorted before evaluation.
+
+        Returns
+        -------
+        mag : (self.outputs, self.inputs, len(omega)) ndarray
+            The magnitude (absolute value, not dB or log10) of the system
+            frequency response.
+        phase : (self.outputs, self.inputs, len(omega)) ndarray
+            The wrapped phase in radians of the system frequency response.
+        omega : ndarray or list or tuple
+            The list of sorted frequencies at which the response was
+            evaluated.
         """
-
         # Preallocate outputs.
         numfreq = len(omega)
         mag = empty((self.outputs, self.inputs, numfreq))
@@ -1087,8 +1109,6 @@ def _tf_polynomial_to_string(coeffs, var='s'):
 
     for k in range(len(coeffs)):
         coefstr = '%.4g' % abs(coeffs[k])
-        if coefstr[-4:] == '0000':
-            coefstr = coefstr[:-5]
         power = (N - k)
         if power == 0:
             if coefstr != '0':

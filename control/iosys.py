@@ -1645,8 +1645,10 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         # and were processed above.
 
         # Get the states and inputs that were not listed as fixed
-        state_vars = np.delete(np.array(range(nstates)), ix)
-        input_vars = np.delete(np.array(range(ninputs)), iu)
+        state_vars = (range(nstates) if not len(ix)
+                      else np.delete(np.array(range(nstates)), ix))
+        input_vars = (range(ninputs) if not len(iu)
+                      else np.delete(np.array(range(ninputs)), iu))
 
         # Set the outputs and derivs that will serve as constraints
         output_vars = np.array(iy)

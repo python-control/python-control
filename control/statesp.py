@@ -71,7 +71,9 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 # Define module default parameter values
 _statesp_defaults = {
     'statesp.use_numpy_matrix': True,
-}
+    'statesp.default_dt': None,
+    'statesp.remove_useless_states': True, 
+    }
 
 
 def _ssmatrix(data, axis=1):
@@ -147,7 +149,8 @@ class StateSpace(LTI):
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified sampling
-    time.
+    time. The default value of 'dt' is None and can be changed by changing the 
+    value of ``control.config.defaults['statesp.default_dt']``.
 
     """
 
@@ -171,7 +174,7 @@ class StateSpace(LTI):
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
-            dt = None
+            dt = config.defaults['statesp.default_dt']
         elif len(args) == 5:
             # Discrete time system
             (A, B, C, D, dt) = args
@@ -187,12 +190,12 @@ class StateSpace(LTI):
             try:
                 dt = args[0].dt
             except NameError:
-                dt = None
+                dt = config.defaults['statesp.default_dt']
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get('remove_useless', True)
+        remove_useless = kw.get('remove_useless', config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
         A = _ssmatrix(A)
@@ -267,18 +270,18 @@ class StateSpace(LTI):
         self.outputs = self.C.shape[0]
 
     def __str__(self):
-        """String representation of the state space."""
-
-        str = "A = " + self.A.__str__() + "\n\n"
-        str += "B = " + self.B.__str__() + "\n\n"
-        str += "C = " + self.C.__str__() + "\n\n"
-        str += "D = " + self.D.__str__() + "\n"
+        """Return string representation of the state space system."""
+        string = "\n".join([
+            "{} = {}\n".format(Mvar,
+                               "\n    ".join(str(M).splitlines()))
+            for Mvar, M in zip(["A", "B", "C", "D"],
+                               [self.A, self.B, self.C, self.D])])
         # TODO: replace with standard calls to lti functions
         if (type(self.dt) == bool and self.dt is True):
-            str += "\ndt unspecified\n"
+            string += "\ndt unspecified\n"
         elif (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
-            str += "\ndt = " + self.dt.__str__() + "\n"
-        return str
+            string += "\ndt = " + self.dt.__str__() + "\n"
+        return string
 
     # represent as string, makes display work for IPython
     __repr__ = __str__
@@ -462,11 +465,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                                     self.B)) + self.D
         return array(resp)
 
-    # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """Evaluate the system's transfer func. at a list of freqs, omega.
-
-        mag, phase, omega = self.freqresp(omega)
+        """Evaluate the system's transfer function at a list of frequencies
 
         Reports the frequency response of the system,
 
@@ -479,26 +479,22 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Parameters
         ----------
-        omega : array
+        omega : array_like
             A list of frequencies in radians/sec at which the system should be
             evaluated. The list can be either a python list or a numpy array
             and will be sorted before evaluation.
 
         Returns
         -------
-        mag : float
+        mag : (self.outputs, self.inputs, len(omega)) ndarray
             The magnitude (absolute value, not dB or log10) of the system
             frequency response.
-
-        phase : float
+        phase : (self.outputs, self.inputs, len(omega)) ndarray
             The wrapped phase in radians of the system frequency response.
-
-        omega : array
+        omega : ndarray
             The list of sorted frequencies at which the response was
             evaluated.
-
         """
-
         # In case omega is passed in as a list, rather than a proper array.
         omega = np.asarray(omega)
 
