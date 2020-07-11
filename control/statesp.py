@@ -462,11 +462,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                                     self.B)) + self.D
         return array(resp)
 
-    # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """Evaluate the system's transfer func. at a list of freqs, omega.
-
-        mag, phase, omega = self.freqresp(omega)
+        """Evaluate the system's transfer function at a list of frequencies
 
         Reports the frequency response of the system,
 
@@ -479,26 +476,22 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Parameters
         ----------
-        omega : array
+        omega : array_like
             A list of frequencies in radians/sec at which the system should be
             evaluated. The list can be either a python list or a numpy array
             and will be sorted before evaluation.
 
         Returns
         -------
-        mag : float
+        mag : (self.outputs, self.inputs, len(omega)) ndarray
             The magnitude (absolute value, not dB or log10) of the system
             frequency response.
-
-        phase : float
+        phase : (self.outputs, self.inputs, len(omega)) ndarray
             The wrapped phase in radians of the system frequency response.
-
-        omega : array
+        omega : ndarray
             The list of sorted frequencies at which the response was
             evaluated.
-
         """
-
         # In case omega is passed in as a list, rather than a proper array.
         omega = np.asarray(omega)
 
