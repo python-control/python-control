@@ -50,7 +50,7 @@ from functools import partial
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from scipy import array, poly1d, row_stack, zeros_like, real, imag
+from numpy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
 import pylab                    # plotting routines
 from .xferfcn import _convert_to_transfer_function

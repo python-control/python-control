@@ -33,10 +33,10 @@ class TestSisotool(unittest.TestCase):
 
         # Check the step response before moving the point
         step_response_original = np.array(
-            [0., 0.02233651, 0.13118374, 0.33078542, 0.5907113, 0.87041549,
-             1.13038536, 1.33851053, 1.47374666, 1.52757114])
-        assert_array_almost_equal(ax_step.lines[0].get_data()[1][:10],
-                                  step_response_original, 4)
+            [0., 0.0217, 0.1281, 0.3237, 0.5797, 0.8566, 1.116,
+             1.3261, 1.4659, 1.526])
+        assert_array_almost_equal(
+            ax_step.lines[0].get_data()[1][:10], step_response_original, 4)
 
         bode_plot_params = {
             'omega': None,
@@ -78,10 +78,10 @@ class TestSisotool(unittest.TestCase):
 
         # Check if the step response has changed
         step_response_moved = np.array(
-            [0., 0.02458187, 0.16529784, 0.46602716, 0.91012035, 1.43364313,
-             1.93996334, 2.3190105, 2.47041552, 2.32724853])
-        assert_array_almost_equal(ax_step.lines[0].get_data()[1][:10],
-                                  step_response_moved, 4)
+            [0., 0.0239, 0.161 , 0.4547, 0.8903, 1.407,
+             1.9121, 2.2989, 2.4686, 2.353])
+        assert_array_almost_equal(
+            ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
 
 
 if __name__ == "__main__":
