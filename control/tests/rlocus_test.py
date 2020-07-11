@@ -4,13 +4,14 @@
 # RMM, 1 Jul 2011
 
 import unittest
+import matplotlib.pyplot as plt
 import numpy as np
+from numpy.testing import assert_array_almost_equal
+
 from control.rlocus import root_locus, _RLClickDispatcher
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
 from control.bdalg import feedback
-import matplotlib.pyplot as plt
-from control.tests.margin_test import assert_array_almost_equal
 
 
 class TestRootLocus(unittest.TestCase):
