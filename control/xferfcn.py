@@ -63,9 +63,14 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, timebaseEqual, timebase, isdtime
+from . import config
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
+
+# Define module default parameter values
+_xferfcn_defaults = {
+    'xferfcn.default_dt': None}
 
 class TransferFunction(LTI):
 
@@ -88,7 +93,9 @@ class TransferFunction(LTI):
     instance variable and setting it to something other than 'None'.  If 'dt'
     has a non-zero value, then it must match whenever two transfer functions
     are combined.  If 'dt' is set to True, the system will be treated as a
-    discrete time system with unspecified sampling time.
+    discrete time system with unspecified sampling time. The default value of 
+    'dt' is None and can be changed by changing the value of 
+    ``control.config.defaults['xferfcn.default_dt']``.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
@@ -117,7 +124,7 @@ class TransferFunction(LTI):
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             (num, den) = args
-            dt = None
+            dt = config.defaults['xferfcn.default_dt']
         elif len(args) == 3:
             # Discrete time transfer function
             (num, den, dt) = args
@@ -133,7 +140,7 @@ class TransferFunction(LTI):
             try:
                 dt = args[0].dt
             except NameError:   # pragma: no coverage
-                dt = None
+                dt = config.defaults['xferfcn.default_dt']
         else:
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))

@@ -71,7 +71,9 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 # Define module default parameter values
 _statesp_defaults = {
     'statesp.use_numpy_matrix': True,
-}
+    'statesp.default_dt': None,
+    'statesp.remove_useless_states': True, 
+    }
 
 
 def _ssmatrix(data, axis=1):
@@ -147,7 +149,8 @@ class StateSpace(LTI):
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified sampling
-    time.
+    time. The default value of 'dt' is None and can be changed by changing the 
+    value of ``control.config.defaults['statesp.default_dt']``.
 
     """
 
@@ -171,7 +174,7 @@ class StateSpace(LTI):
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
-            dt = None
+            dt = config.defaults['statesp.default_dt']
         elif len(args) == 5:
             # Discrete time system
             (A, B, C, D, dt) = args
@@ -187,12 +190,12 @@ class StateSpace(LTI):
             try:
                 dt = args[0].dt
             except NameError:
-                dt = None
+                dt = config.defaults['statesp.default_dt']
         else:
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get('remove_useless', True)
+        remove_useless = kw.get('remove_useless', config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
         A = _ssmatrix(A)
