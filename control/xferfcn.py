@@ -63,9 +63,14 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, timebaseEqual, timebase, isdtime
+from . import config
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
+
+# Define module default parameter values
+_xferfcn_defaults = {
+    'xferfcn.default_dt': None}
 
 class TransferFunction(LTI):
 
@@ -88,7 +93,9 @@ class TransferFunction(LTI):
     instance variable and setting it to something other than 'None'.  If 'dt'
     has a non-zero value, then it must match whenever two transfer functions
     are combined.  If 'dt' is set to True, the system will be treated as a
-    discrete time system with unspecified sampling time.
+    discrete time system with unspecified sampling time. The default value of 
+    'dt' is None and can be changed by changing the value of 
+    ``control.config.defaults['xferfcn.default_dt']``.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
@@ -117,7 +124,7 @@ class TransferFunction(LTI):
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             (num, den) = args
-            dt = None
+            dt = config.defaults['xferfcn.default_dt']
         elif len(args) == 3:
             # Discrete time transfer function
             (num, den, dt) = args
@@ -133,7 +140,7 @@ class TransferFunction(LTI):
             try:
                 dt = args[0].dt
             except NameError:   # pragma: no coverage
-                dt = None
+                dt = config.defaults['xferfcn.default_dt']
         else:
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))
@@ -264,11 +271,9 @@ class TransferFunction(LTI):
 
                 # Center the numerator or denominator
                 if len(numstr) < dashcount:
-                    numstr = (' ' * int(round((dashcount - len(numstr)) / 2)) +
-                              numstr)
+                    numstr = ' ' * ((dashcount - len(numstr)) // 2) + numstr
                 if len(denstr) < dashcount:
-                    denstr = (' ' * int(round((dashcount - len(denstr)) / 2)) +
-                              denstr)
+                    denstr = ' ' * ((dashcount - len(denstr)) // 2) + denstr
 
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
 
@@ -279,8 +284,17 @@ class TransferFunction(LTI):
 
         return outstr
 
-    # represent as string, makes display work for IPython
-    __repr__ = __str__
+    # represent to implement a re-loadable version
+    def __repr__(self):
+        """Print transfer function in loadable form"""
+        if self.issiso():
+            return "TransferFunction({num}, {den}{dt})".format(
+                num=self.num[0][0].__repr__(), den=self.den[0][0].__repr__(),
+                dt=(isdtime(self, strict=True) and ', {}'.format(self.dt)) or '')
+        else:
+            return "TransferFunction({num}, {den}{dt})".format(
+                num=self.num.__repr__(), den=self.den.__repr__(),
+                dt=(isdtime(self, strict=True) and ', {}'.format(self.dt)) or '')
 
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook"""
@@ -639,19 +653,36 @@ class TransferFunction(LTI):
 
         return out
 
-    # Method for generating the frequency response of the system
     def freqresp(self, omega):
-        """Evaluate a transfer function at a list of angular frequencies.
+        """Evaluate the transfer function at a list of angular frequencies.
 
-        mag, phase, omega = self.freqresp(omega)
+        Reports the frequency response of the system,
 
-        reports the value of the magnitude, phase, and angular frequency of
-        the transfer function matrix evaluated at s = i * omega, where omega
-        is a list of angular frequencies, and is a sorted version of the input
-        omega.
+             G(j*omega) = mag*exp(j*phase)
 
+        for continuous time. For discrete time systems, the response is
+        evaluated around the unit circle such that
+
+             G(exp(j*omega*dt)) = mag*exp(j*phase).
+
+        Parameters
+        ----------
+        omega : array_like
+            A list of frequencies in radians/sec at which the system should be
+            evaluated. The list can be either a python list or a numpy array
+            and will be sorted before evaluation.
+
+        Returns
+        -------
+        mag : (self.outputs, self.inputs, len(omega)) ndarray
+            The magnitude (absolute value, not dB or log10) of the system
+            frequency response.
+        phase : (self.outputs, self.inputs, len(omega)) ndarray
+            The wrapped phase in radians of the system frequency response.
+        omega : ndarray or list or tuple
+            The list of sorted frequencies at which the response was
+            evaluated.
         """
-
         # Preallocate outputs.
         numfreq = len(omega)
         mag = empty((self.outputs, self.inputs, numfreq))
@@ -961,7 +992,7 @@ class TransferFunction(LTI):
 
         return num, den, denorder
 
-    def sample(self, Ts, method='zoh', alpha=None):
+    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None):
         """Convert a continuous-time system to discrete time
 
         Creates a discrete-time system from a continuous-time system by
@@ -985,6 +1016,12 @@ class TransferFunction(LTI):
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
             otherwise.
+        
+        prewarp_frequency : float within [0, infinity)
+            The frequency [rad/s] at which to match with the input continuous-
+            time system's magnitude and phase (the gain=1 crossover frequency, 
+            for example). Should only be specified with method='bilinear' or 
+            'gbt' with alpha=0.5 and ignored otherwise.
 
         Returns
         -------
@@ -1010,8 +1047,13 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        numd, dend, dt = cont2discrete(sys, Ts, method, alpha)
-        return TransferFunction(numd[0, :], dend, dt)
+        if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
+                prewarp_frequency is not None:
+            Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+        else: 
+            Twarp = Ts
+        numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
+        return TransferFunction(numd[0, :], dend, Ts)
 
     def dcgain(self):
         """Return the zero-frequency (or DC) gain
@@ -1087,8 +1129,6 @@ def _tf_polynomial_to_string(coeffs, var='s'):
 
     for k in range(len(coeffs)):
         coefstr = '%.4g' % abs(coeffs[k])
-        if coefstr[-4:] == '0000':
-            coefstr = coefstr[:-5]
         power = (N - k)
         if power == 0:
             if coefstr != '0':

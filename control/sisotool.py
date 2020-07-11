@@ -136,7 +136,7 @@ def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
     # Generate the step response and plot it
     sys_closed = (K*sys).feedback(1)
     if tvect is None:
-        tvect, yout = step_response(sys_closed)
+        tvect, yout = step_response(sys_closed, T_num=100)
     else:
         tvect, yout = step_response(sys_closed,tvect)
     ax_step.plot(tvect, yout)

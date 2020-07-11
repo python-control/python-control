@@ -806,6 +806,25 @@ class TestXferFcn(unittest.TestCase):
         self.assertTrue(isinstance(str(sys), str))
         self.assertTrue(isinstance(sys._repr_latex_(), str))
 
+    def test_printing_polynomial(self):
+        """Cover all _tf_polynomial_to_string code branches"""
+        # Note: the assertions below use plain assert statements instead of
+        # unittest methods so that debugging with pytest is easier
+
+        assert str(TransferFunction([0], [1])) == "\n0\n-\n1\n"
+        assert str(TransferFunction([1.0001], [-1.1111])) == \
+            "\n  1\n------\n-1.111\n"
+        assert str(TransferFunction([0, 1], [0, 1.])) == "\n1\n-\n1\n"
+        for var, dt, dtstring in zip(["s", "z", "z"],
+                                     [None, True, 1],
+                                     ['', '', '\ndt = 1\n']):
+            assert str(TransferFunction([1, 0], [2, 1], dt)) == \
+                "\n   {var}\n-------\n2 {var} + 1\n{dtstring}".format(
+                    var=var, dtstring=dtstring)
+            assert str(TransferFunction([2, 0, -1], [1, 0, 0, 1.2], dt)) == \
+                "\n2 {var}^2 - 1\n---------\n{var}^3 + 1.2\n{dtstring}".format(
+                    var=var, dtstring=dtstring)
+
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_printing_mimo(self):
         # MIMO, continuous time
@@ -853,6 +872,66 @@ class TestXferFcn(unittest.TestCase):
                    r'+ 2.3 ' + expmul + ' 10^{-45}'
                    r'}' + suffix + '$$')
             self.assertEqual(H._repr_latex_(), ref)
+
+    def test_repr(self):
+        """Test __repr__ printout."""
+        Hc = TransferFunction([-1., 4.], [1., 3., 5.])
+        Hd = TransferFunction([2., 3., 0.], [1., -3., 4., 0], 2.0)
+        Hcm = TransferFunction(
+            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
+            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ])
+        Hdm = TransferFunction(
+            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
+            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ], 0.5)
+
+        refs = [
+            "TransferFunction(array([-1.,  4.]), array([1., 3., 5.]))",
+            "TransferFunction(array([2., 3., 0.]),"
+            " array([ 1., -3.,  4.,  0.]), 2.0)",
+            "TransferFunction([[array([1]), array([2, 3])],"
+            " [array([4, 5]), array([6, 7])]],"
+            " [[array([6, 7]), array([4, 5])],"
+            " [array([2, 3]), array([1])]])",
+            "TransferFunction([[array([1]), array([2, 3])],"
+            " [array([4, 5]), array([6, 7])]],"
+            " [[array([6, 7]), array([4, 5])],"
+            " [array([2, 3]), array([1])]], 0.5)" ]
+        self.assertEqual(repr(Hc), refs[0])
+        self.assertEqual(repr(Hd), refs[1])
+        self.assertEqual(repr(Hcm), refs[2])
+        self.assertEqual(repr(Hdm), refs[3])
+
+        # and reading back
+        array = np.array
+        for H in (Hc, Hd, Hcm, Hdm):
+            H2 = eval(H.__repr__())
+            for p in range(len(H.num)):
+                for m in range(len(H.num[0])):
+                    np.testing.assert_array_almost_equal(
+                        H.num[p][m], H2.num[p][m])
+                    np.testing.assert_array_almost_equal(
+                        H.den[p][m], H2.den[p][m])
+            self.assertEqual(H.dt, H2.dt)
+    
+    def test_sample_system_prewarping(self): 
+        """test that prewarping works when converting from cont to discrete time system"""
+        A = np.array([
+            [ 0.00000000e+00,  1.00000000e+00,  0.00000000e+00, 0.00000000e+00],
+            [-3.81097561e+01, -1.12500000e+00,  0.00000000e+00, 0.00000000e+00],
+            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00, 1.00000000e+00],
+            [ 0.00000000e+00,  0.00000000e+00, -1.66356135e+04, -1.34748470e+01]])
+        B = np.array([
+            [    0.        ], [   38.1097561 ],[    0.     ],[16635.61352143]])
+        C = np.array([[0.90909091, 0.        , 0.09090909, 0.       ],])
+        wwarp = 50
+        Ts = 0.025
+        plant = StateSpace(A,B,C,0)
+        plant = ss2tf(plant)
+        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
+        np.testing.assert_array_almost_equal(
+            evalfr(plant, wwarp*1j), 
+            evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
+            decimal=4)
 
 
 if __name__ == "__main__":

@@ -519,6 +519,48 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
 
+    def test_repr(self):
+        ref322 = """StateSpace(array([[-3.,  4.,  2.],
+       [-1., -3.,  0.],
+       [ 2.,  5.,  3.]]), array([[ 1.,  4.],
+       [-3., -3.],
+       [-2.,  1.]]), array([[ 4.,  2., -3.],
+       [ 1.,  4.,  3.]]), array([[-2.,  4.],
+       [ 0.,  1.]]){dt})"""
+        self.assertEqual(repr(self.sys322), ref322.format(dt=''))
+        sysd = StateSpace(self.sys322.A, self.sys322.B,
+                          self.sys322.C, self.sys322.D, 0.4)
+        self.assertEqual(repr(sysd), ref322.format(dt=", 0.4"))
+        array = np.array
+        sysd2 = eval(repr(sysd))
+        np.testing.assert_allclose(sysd.A, sysd2.A)
+        np.testing.assert_allclose(sysd.B, sysd2.B)
+        np.testing.assert_allclose(sysd.C, sysd2.C)
+        np.testing.assert_allclose(sysd.D, sysd2.D)
+
+    def test_str(self):
+        """Test that printing the system works"""
+        tsys = self.sys322
+        tref = ("A = [[-3.  4.  2.]\n"
+                "     [-1. -3.  0.]\n"
+                "     [ 2.  5.  3.]]\n"
+                "\n"
+                "B = [[ 1.  4.]\n"
+                "     [-3. -3.]\n"
+                "     [-2.  1.]]\n"
+                "\n"
+                "C = [[ 4.  2. -3.]\n"
+                "     [ 1.  4.  3.]]\n"
+                "\n"
+                "D = [[-2.  4.]\n"
+                "     [ 0.  1.]]\n")
+        assert str(tsys) == tref
+        tsysdtunspec = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, True)
+        assert str(tsysdtunspec) == tref + "\ndt unspecified\n"
+        sysdt1 = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, 1.)
+        assert str(sysdt1) == tref + "\ndt = 1.0\n"
+
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
 
@@ -610,6 +652,25 @@ class TestDrss(unittest.TestCase):
         # Change the A matrix for the original system
         linsys.A[0, 0] = -3
         np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
+
+    def test_sample_system_prewarping(self): 
+        """test that prewarping works when converting from cont to discrete time system"""
+        A = np.array([
+            [ 0.00000000e+00,  1.00000000e+00,  0.00000000e+00, 0.00000000e+00],
+            [-3.81097561e+01, -1.12500000e+00,  0.00000000e+00, 0.00000000e+00],
+            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00, 1.00000000e+00],
+            [ 0.00000000e+00,  0.00000000e+00, -1.66356135e+04, -1.34748470e+01]])
+        B = np.array([
+            [    0.        ], [   38.1097561 ],[    0.     ],[16635.61352143]])
+        C = np.array([[0.90909091, 0.        , 0.09090909, 0.       ],])
+        wwarp = 50
+        Ts = 0.025
+        plant = StateSpace(A,B,C,0)
+        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
+        np.testing.assert_array_almost_equal(
+            evalfr(plant, wwarp*1j), 
+            evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
+            decimal=4)
 
 
 if __name__ == "__main__":

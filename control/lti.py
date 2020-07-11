@@ -55,8 +55,8 @@ class LTI:
         Parameters
         ----------
         strict: bool, optional
-            If strict is True, make sure that timebase is not None.  Default 
-            is False. 
+            If strict is True, make sure that timebase is not None.  Default
+            is False.
         """
 
         # If no timebase is given, answer depends on strict flag
@@ -75,8 +75,8 @@ class LTI:
         sys : LTI system
             System to be checked
         strict: bool, optional
-            If strict is True, make sure that timebase is not None.  Default 
-            is False. 
+            If strict is True, make sure that timebase is not None.  Default
+            is False.
         """
         # If no timebase is given, answer depends on strict flag
         if self.dt is None:
@@ -421,6 +421,7 @@ def evalfr(sys, x):
         return sys.horner(x)[0][0]
     return sys.horner(x)
 
+
 def freqresp(sys, omega):
     """
     Frequency response of an LTI system at multiple angular frequencies.
@@ -430,13 +431,20 @@ def freqresp(sys, omega):
     sys: StateSpace or TransferFunction
         Linear system
     omega: array_like
-        List of frequencies
+        A list of frequencies in radians/sec at which the system should be
+        evaluated. The list can be either a python list or a numpy array
+        and will be sorted before evaluation.
 
     Returns
     -------
-    mag: ndarray
-    phase: ndarray
-    omega: list, tuple, or ndarray
+    mag : (self.outputs, self.inputs, len(omega)) ndarray
+        The magnitude (absolute value, not dB or log10) of the system
+        frequency response.
+    phase : (self.outputs, self.inputs, len(omega)) ndarray
+        The wrapped phase in radians of the system frequency response.
+    omega : ndarray or list or tuple
+        The list of sorted frequencies at which the response was
+        evaluated.
 
     See Also
     --------
@@ -472,8 +480,8 @@ def freqresp(sys, omega):
         #>>> # frequency response from the 1st input to the 2nd output, for
         #>>> # s = 0.1i, i, 10i.
     """
-
     return sys.freqresp(omega)
+
 
 def dcgain(sys):
     """Return the zero-frequency (or DC) gain of the given system

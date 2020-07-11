@@ -48,11 +48,10 @@
 # Packages used by this module
 from functools import partial
 import numpy as np
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-from scipy import array, poly1d, row_stack, zeros_like, real, imag
+from numpy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
-import pylab                    # plotting routines
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate
@@ -63,7 +62,7 @@ __all__ = ['root_locus', 'rlocus']
 # Default values for module parameters
 _rlocus_defaults = {
     'rlocus.grid': True,
-    'rlocus.plotstr': 'b' if int(matplotlib.__version__[0]) == 1 else 'C0',
+    'rlocus.plotstr': 'b' if int(mpl.__version__[0]) == 1 else 'C0',
     'rlocus.print_gain': True,
     'rlocus.plot': True
 }
@@ -71,7 +70,8 @@ _rlocus_defaults = {
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None,
-               plotstr=None, plot=True, print_gain=None, grid=None, **kwargs):
+               plotstr=None, plot=True, print_gain=None, grid=None, ax=None, 
+               **kwargs):
 
     """Root locus plot
 
@@ -96,6 +96,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         branches, calculate gain, damping and print.
     grid : bool
         If True plot omega-damping grid.  Default is False.
+    ax : Matplotlib axis
+        axis on which to create root locus plot 
 
     Returns
     -------
@@ -143,42 +145,33 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     # Create the Plot
     if plot:
         if sisotool:
-            f = kwargs['fig']
-            ax = f.axes[1]
-
+            fig = kwargs['fig']
+            ax = fig.axes[1]
         else:
-            figure_number = pylab.get_fignums()
-            figure_title = [
-                pylab.figure(numb).canvas.get_window_title()
-                for numb in figure_number]
-            new_figure_name = "Root Locus"
-            rloc_num = 1
-            while new_figure_name in figure_title:
-                new_figure_name = "Root Locus " + str(rloc_num)
-                rloc_num += 1
-            f = pylab.figure(new_figure_name)
-            ax = pylab.axes()
+            if ax is None: 
+                ax = plt.gca()
+                fig = ax.figure
+                ax.set_title('Root Locus')
 
         if print_gain and not sisotool:
-            f.canvas.mpl_connect(
+            fig.canvas.mpl_connect(
                 'button_release_event',
-                partial(_RLClickDispatcher, sys=sys, fig=f,
-                        ax_rlocus=f.axes[0], plotstr=plotstr))
-
+                partial(_RLClickDispatcher, sys=sys, fig=fig,
+                        ax_rlocus=fig.axes[0], plotstr=plotstr))
         elif sisotool:
-            f.axes[1].plot(
+            fig.axes[1].plot(
                 [root.real for root in start_mat],
                 [root.imag for root in start_mat],
                 'm.', marker='s', markersize=8, zorder=20, label='gain_point')
-            f.suptitle(
+            fig.suptitle(
                 "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
                 (start_mat[0][0].real, start_mat[0][0].imag,
                  1, -1 * start_mat[0][0].real / abs(start_mat[0][0])),
-                fontsize=12 if int(matplotlib.__version__[0]) == 1 else 10)
-            f.canvas.mpl_connect(
+                fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
+            fig.canvas.mpl_connect(
                 'button_release_event',
-                partial(_RLClickDispatcher, sys=sys, fig=f,
-                        ax_rlocus=f.axes[1], plotstr=plotstr,
+                partial(_RLClickDispatcher, sys=sys, fig=fig,
+                        ax_rlocus=fig.axes[1], plotstr=plotstr,
                         sisotool=sisotool,
                         bode_plot_params=kwargs['bode_plot_params'],
                         tvect=kwargs['tvect']))
@@ -580,7 +573,7 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
         fig.suptitle(
             "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
             (s.real, s.imag, K.real, -1 * s.real / abs(s)),
-            fontsize=12 if int(matplotlib.__version__[0]) == 1 else 10)
+            fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
 
         # Remove the previous line
         _removeLine(label='gain_point', ax=ax_rlocus)
@@ -609,7 +602,7 @@ def _removeLine(label, ax):
 
 def _sgrid_func(fig=None, zeta=None, wn=None):
     if fig is None:
-        fig = pylab.gcf()
+        fig = plt.gcf()
         ax = fig.gca()
     else:
         ax = fig.axes[1]
