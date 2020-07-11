@@ -519,6 +519,29 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_allclose(np.array(pk.C).reshape(-1), Cmatlab)
         np.testing.assert_allclose(np.array(pk.D).reshape(-1), Dmatlab)
 
+    def test_str(self):
+        """Test that printing the system works"""
+        tsys = self.sys322
+        tref = ("A = [[-3.  4.  2.]\n"
+                "     [-1. -3.  0.]\n"
+                "     [ 2.  5.  3.]]\n"
+                "\n"
+                "B = [[ 1.  4.]\n"
+                "     [-3. -3.]\n"
+                "     [-2.  1.]]\n"
+                "\n"
+                "C = [[ 4.  2. -3.]\n"
+                "     [ 1.  4.  3.]]\n"
+                "\n"
+                "D = [[-2.  4.]\n"
+                "     [ 0.  1.]]\n")
+        assert str(tsys) == tref
+        tsysdtunspec = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, True)
+        assert str(tsysdtunspec) == tref + "\ndt unspecified\n"
+        sysdt1 = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, 1.)
+        assert str(sysdt1) == tref + "\ndt = 1.0\n"
+
+
 class TestRss(unittest.TestCase):
     """These are tests for the proper functionality of statesp.rss."""
 

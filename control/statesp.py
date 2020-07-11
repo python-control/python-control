@@ -267,18 +267,18 @@ class StateSpace(LTI):
         self.outputs = self.C.shape[0]
 
     def __str__(self):
-        """String representation of the state space."""
-
-        str = "A = " + self.A.__str__() + "\n\n"
-        str += "B = " + self.B.__str__() + "\n\n"
-        str += "C = " + self.C.__str__() + "\n\n"
-        str += "D = " + self.D.__str__() + "\n"
+        """Return string representation of the state space system."""
+        string = "\n".join([
+            "{} = {}\n".format(Mvar,
+                               "\n    ".join(str(M).splitlines()))
+            for Mvar, M in zip(["A", "B", "C", "D"],
+                               [self.A, self.B, self.C, self.D])])
         # TODO: replace with standard calls to lti functions
         if (type(self.dt) == bool and self.dt is True):
-            str += "\ndt unspecified\n"
+            string += "\ndt unspecified\n"
         elif (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
-            str += "\ndt = " + self.dt.__str__() + "\n"
-        return str
+            string += "\ndt = " + self.dt.__str__() + "\n"
+        return string
 
     # represent as string, makes display work for IPython
     __repr__ = __str__
