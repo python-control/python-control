@@ -136,11 +136,12 @@ def nogrid():
     return ax, f
 
 
-def zgrid(zetas=None, wns=None):
+def zgrid(zetas=None, wns=None, ax=None):
     '''Draws discrete damping and frequency grid'''
 
     fig = plt.gcf()
-    ax = fig.gca()
+    if ax is None:
+        ax = fig.gca()
 
     # Constant damping lines
     if zetas is None:
@@ -154,11 +155,11 @@ def zgrid(zetas=None, wns=None):
         # Draw upper part in retangular coordinates
         xret = mag*cos(ang)
         yret = mag*sin(ang)
-        ax.plot(xret, yret, 'k:', lw=1)
+        ax.plot(xret, yret, ':', color='grey', lw=0.75)
         # Draw lower part in retangular coordinates
         xret = mag*cos(-ang)
         yret = mag*sin(-ang)
-        ax.plot(xret, yret, 'k:', lw=1)
+        ax.plot(xret, yret, ':', color='grey', lw=0.75)
         # Annotation
         an_i = int(len(xret)/2.5)
         an_x = xret[an_i]
@@ -177,7 +178,7 @@ def zgrid(zetas=None, wns=None):
         # Draw in retangular coordinates
         xret = mag*cos(ang)
         yret = mag*sin(ang)
-        ax.plot(xret, yret, 'k:', lw=1)
+        ax.plot(xret, yret, ':', color='grey', lw=0.75)
         # Annotation
         an_i = -1
         an_x = xret[an_i]

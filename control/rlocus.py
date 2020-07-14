@@ -43,6 +43,9 @@
 # RMM, 2 April 2011: modified to work with new LTI structure (see ChangeLog)
 #   * Not tested: should still work on signal.ltisys objects
 #
+# Sawyer B. Fuller (minster@uw.edu) 21 May 2020:
+#   * added compatibility with discrete-time systems.
+#
 # $Id$
 
 # Packages used by this module
@@ -52,9 +55,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from numpy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
+from .lti import isdtime
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate
+from .grid import sgrid, zgrid
 from . import config
 
 __all__ = ['root_locus', 'rlocus']
@@ -131,6 +136,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     # Convert numerator and denominator to polynomials if they aren't
     (nump, denp) = _systopoly1d(sys)
 
+    # if discrete-time system and if xlim and ylim are not given,
+    #  that we a view of the unit circle
+    if xlim is None and isdtime(sys, strict=True):
+        xlim = (-1.2, 1.2)
+    if ylim is None and isdtime(sys, strict=True):
+        xlim = (-1.3, 1.3)
+
     if kvect is None:
         start_mat = _RLFindRoots(nump, denp, [1])
         kvect, mymat, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
@@ -163,10 +175,14 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                 [root.real for root in start_mat],
                 [root.imag for root in start_mat],
                 'm.', marker='s', markersize=8, zorder=20, label='gain_point')
+            s = start_mat[0][0]
+            if isdtime(sys, strict=True):
+                zeta = -np.cos(np.angle(np.log(s)))
+            else:
+                zeta = -1 * s.real / abs(s)
             fig.suptitle(
                 "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-                (start_mat[0][0].real, start_mat[0][0].imag,
-                 1, -1 * start_mat[0][0].real / abs(start_mat[0][0])),
+                (s.real, s.imag, 1, zeta),
                 fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
             fig.canvas.mpl_connect(
                 'button_release_event',
@@ -199,20 +215,31 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             ax.plot(real(col), imag(col), plotstr, label='rootlocus')
 
         # Set up plot axes and labels
+        ax.set_xlabel('Real')
+        ax.set_ylabel('Imaginary')
+
+        if grid and sisotool:
+            if isdtime(sys, strict=True):
+                zgrid(ax=ax)
+            else:
+                _sgrid_func(f)
+        elif grid:
+            if isdtime(sys, strict=True):
+                zgrid(ax=ax)
+            else:
+                _sgrid_func()
+        else:
+            ax.axhline(0., linestyle=':', color='k', zorder=-20)
+            ax.axvline(0., linestyle=':', color='k', zorder=-20)
+            if isdtime(sys, strict=True):
+                ax.add_patch(plt.Circle((0,0), radius=1.0,
+                     linestyle=':', edgecolor='k', linewidth=1.5,
+                     fill=False, zorder=-20))
+
         if xlim:
             ax.set_xlim(xlim)
         if ylim:
             ax.set_ylim(ylim)
-
-        ax.set_xlabel('Real')
-        ax.set_ylabel('Imaginary')
-        if grid and sisotool:
-            _sgrid_func(f)
-        elif grid:
-            _sgrid_func()
-        else:
-            ax.axhline(0., linestyle=':', color='k', zorder=-20)
-            ax.axvline(0., linestyle=':', color='k')
 
     return mymat, kvect
 
@@ -567,12 +594,17 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
     if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and \
        event.inaxes == ax_rlocus.axes and K.real > 0.:
 
+        if isdtime(sys, strict=True):
+            zeta = -np.cos(np.angle(np.log(s)))
+        else:
+            zeta = -1 * s.real / abs(s)
+
         # Display the parameters in the output window and figure
         print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
-              (s.real, s.imag, K.real, -1 * s.real / abs(s)))
+              (s.real, s.imag, K.real, zeta))
         fig.suptitle(
             "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-            (s.real, s.imag, K.real, -1 * s.real / abs(s)),
+            (s.real, s.imag, K.real, zeta),
             fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
 
         # Remove the previous line
@@ -616,13 +648,13 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
     if zeta is None:
         zeta = _default_zetas(xlim, ylim)
 
-    angules = []
+    angles = []
     for z in zeta:
         if (z >= 1e-4) and (z <= 1):
-            angules.append(np.pi/2 + np.arcsin(z))
+            angles.append(np.pi/2 + np.arcsin(z))
         else:
             zeta.remove(z)
-    y_over_x = np.tan(angules)
+    y_over_x = np.tan(angles)
 
     # zeta-constant lines
 
@@ -647,14 +679,14 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
     ax.plot([0, 0], [ylim[0], ylim[1]],
             color='gray', linestyle='dashed', linewidth=0.5)
 
-    angules = np.linspace(-90, 90, 20)*np.pi/180
+    angles = np.linspace(-90, 90, 20)*np.pi/180
     if wn is None:
         wn = _default_wn(xlocator(), ylim)
 
     for om in wn:
         if om < 0:
-            yp = np.sin(angules)*np.abs(om)
-            xp = -np.cos(angules)*np.abs(om)
+            yp = np.sin(angles)*np.abs(om)
+            xp = -np.cos(angles)*np.abs(om)
             ax.plot(xp, yp, color='gray',
                     linestyle='dashed', linewidth=0.5)
             an = "%.2f" % -om
@@ -662,15 +694,15 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
 
 
 def _default_zetas(xlim, ylim):
-    """Return default list of dumps coefficients"""
+    """Return default list of damping coefficients"""
     sep1 = -xlim[0]/4
     ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1, 4, 1)]
     sep2 = ylim[1] / 3
     ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1, 3, 1)]
 
-    angules = np.concatenate((ang1, ang2))
-    angules = np.insert(angules, len(angules), np.pi/2)
-    zeta = np.sin(angules)
+    angles = np.concatenate((ang1, ang2))
+    angles = np.insert(angles, len(angles), np.pi/2)
+    zeta = np.sin(angles)
     return zeta.tolist()
 
 
