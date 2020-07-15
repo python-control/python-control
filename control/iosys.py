@@ -964,10 +964,6 @@ class InterconnectedSystem(InputOutputSystem):
             for spec in outspec:
                 ylist_index, gain = self._parse_output_spec(spec)
                 self.output_map[index, ylist_index] = gain
-        # self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
-        # for index in range(len(outlist)):
-        #     ylist_index, gain = self._parse_output_spec(outlist[index])
-        #     self.output_map[index, ylist_index] = gain
 
         # Save the parameters for the system
         self.params = params.copy()
