@@ -956,8 +956,6 @@ class InterconnectedSystem(InputOutputSystem):
                 self.input_map[self._parse_input_spec(spec), index] = 1
 
         # Convert the output list to a matrix: maps subsystems to system
-        # why can subsystem inputs map to outputs? shouldn't it be
-        # system inputs (hence self.ninputs instead of ninputs)?
         self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
         for index, outspec in enumerate(outlist):
             if isinstance(outspec, (int, str, tuple)): outspec = [outspec]
