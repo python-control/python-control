@@ -76,7 +76,8 @@ class InputOutputSystem(object):
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
     name : string, optional
-        System name (used for specifying signals)
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Attributes
     ----------
@@ -540,10 +541,10 @@ class InputOutputSystem(object):
         linsys = StateSpace(A, B, C, D, self.dt, remove_useless=False)
         return LinearIOSystem(linsys)
 
-    def copy(self):
+    def copy(self, newname=None):
         """Make a copy of an input/output system."""
         newsys = copy.copy(self)
-        newsys.name = self.name_or_default(None)
+        newsys.name = self.name_or_default(newname)
         return newsys
 
 
@@ -588,7 +589,8 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             functions for the system as default values, overriding internal
             defaults.
         name : string, optional
-            System name (used for specifying signals)
+            System name (used for specifying signals). If unspecified, a generic
+            name <sys[id]> is generated with a unique integer id.
 
         Returns
         -------
@@ -706,7 +708,8 @@ class NonlinearIOSystem(InputOutputSystem):
             * dt = True       Discrete time with unspecified sampling time
 
         name : string, optional
-            System name (used for specifying signals).
+            System name (used for specifying signals). If unspecified, a generic
+            name <sys[id]> is generated with a unique integer id.
 
         Returns
         -------
@@ -841,6 +844,23 @@ class InterconnectedSystem(InputOutputSystem):
             If omitted, the output map can be specified using the
             `set_output_map` method.
 
+        inputs : int, list of str or None, optional
+            Description of the system inputs.  This can be given as an integer
+            count or as a list of strings that name the individual signals.
+            If an integer count is specified, the names of the signal will be
+            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+            this parameter is not given or given as `None`, the relevant
+            quantity will be determined when possible based on other
+            information provided to functions using the system.
+
+        outputs : int, list of str or None, optional
+            Description of the system outputs.  Same format as `inputs`.
+
+        states : int, list of str, or None, optional
+            Description of the system states.  Same format as `inputs`, except
+            the state names will be of the form '<subsys_name>.<state_name>',
+            for each subsys in syslist and each state_name of each subsys.
+
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
             functions for the system as default values, overriding internal
@@ -857,7 +877,8 @@ class InterconnectedSystem(InputOutputSystem):
             * dt = True       Discrete time with unspecified sampling time
 
         name : string, optional
-            System name (used for specifying signals).
+            System name (used for specifying signals). If unspecified, a generic
+            name <sys[id]> is generated with a unique integer id.
 
         """
         # Convert input and output names to lists if they aren't already
@@ -904,24 +925,29 @@ class InterconnectedSystem(InputOutputSystem):
             system_count += 1
 
         # Check for duplicate systems or duplicate names
-        sysobj_list = []
-        sysname_list = []
+        # Duplicates are renamed sysname_1, sysname_2, etc.
+        sysobj_name_dct = {}
+        sysname_count_dct = {}
         for sys in syslist:
-            if sys in sysobj_list:
-                warn("Duplicate object found in system list: %s" % str(sys))
-            elif sys.name is not None and sys.name in sysname_list:
-                warn("Duplicate name found in system list: %s" % sys.name)
+            if sys in sysobj_name_dct:
+                raise ValueError("Duplicate object found in system list: %s" % str(sys))
+            elif sys.name is not None and sys.name in sysname_count_dct:
+                count = sysname_count_dct[sys.name]
+                sysname_count_dct[sys.name] += 1
+                sysname = sys.name + "_" + str(count)
+                sysobj_name_dct[sys] = sysname
+                warn("Duplicate name found in system list. Renamed to {}".format(sysname))
+            else:
+                sysname_count_dct[sys.name] = 1
+                sysobj_name_dct[sys] = sys.name
                 
-            sysobj_list.append(sys)
-            sysname_list.append(sys.name)
-
         # This won't work when there are duplicate sysnames
         # Should we throw an error rather than just warning above?
         # Users can use sys.copy() to get a unique name for the dup system.
         if states is None:
             states = []
-            for sys in sysobj_list:
-                states += [sys.name + '.' + statename for statename in sys.state_index.keys()]
+            for sys, name in sysobj_name_dct.items():
+                states += [name + '.' + statename for statename in sys.state_index.keys()]
 
         # Create the I/O system
         super(InterconnectedSystem, self).__init__(

@@ -802,10 +802,64 @@ class TestIOSys(unittest.TestCase):
         )
         ss_feedback = ct.feedback(self.mimo_linsys1, self.mimo_linsys2)
         lin_feedback = ct.linearize(ios_connect, 0, 0)
-        np.testing.assert_array_almost_equal(ss_feedback.A, lin_feedback.A)
-        np.testing.assert_array_almost_equal(ss_feedback.B, lin_feedback.B)
-        np.testing.assert_array_almost_equal(ss_feedback.C, lin_feedback.C)
-        np.testing.assert_array_almost_equal(ss_feedback.D, lin_feedback.D)
+        for M, N in ((ss_feedback.A, lin_feedback.A), (ss_feedback.B, lin_feedback.B),
+                     (ss_feedback.C, lin_feedback.C), (ss_feedback.D, lin_feedback.D)):
+            np.testing.assert_array_almost_equal(M, N)
+
+        # We also enforce generic names to be present when systems are created
+        # without names (sys, states, inputs and outputs)
+        def check_name_and_ios_counts(sys):
+            self.assertIsNotNone(sys.name)
+            self.assertEqual(len(sys.state_index), sys.nstates)
+            self.assertEqual(len(sys.input_index), sys.ninputs)
+            self.assertEqual(len(sys.output_index), sys.noutputs)
+
+        sys = ct.LinearIOSystem(self.mimo_linsys1)
+        check_name_and_ios_counts(sys)
+        
+        nlios222 = ct.NonlinearIOSystem(
+            lambda t,x,u,params: x, inputs=2, outputs=2, states=2
+        )
+        nlios202 = ct.NonlinearIOSystem(
+            None, lambda t,x,u,params: u, inputs=2, outputs=2
+        )
+        check_name_and_ios_counts(nlios202)
+
+        # Unnamed/unnamed connections
+        uu_series = nlios222 * nlios202
+        uu_parallel = nlios222 + nlios202
+        u_neg = - nlios222
+        uu_feedback = nlios202.feedback(nlios222)
+        uu_dup = nlios222 * nlios222.copy()
+        uu_hierarchical = uu_series*nlios222
+
+        check_name_and_ios_counts(uu_series)
+        check_name_and_ios_counts(uu_parallel)
+        check_name_and_ios_counts(u_neg)
+        check_name_and_ios_counts(uu_feedback)
+        check_name_and_ios_counts(uu_dup)
+        check_name_and_ios_counts(uu_hierarchical)
+
+        # Unnamed/named connections
+        un_series = nlios222 * sys1
+        un_parallel = nlios222 + sys1
+        un_feedback = nlios202.feedback(sys1)
+        un_dup = nlios222 * sys1.copy()
+        un_hierarchical = uu_series*nlios222
+
+        check_name_and_ios_counts(un_series)
+        check_name_and_ios_counts(un_parallel)
+        check_name_and_ios_counts(un_feedback)
+        check_name_and_ios_counts(un_dup)
+        check_name_and_ios_counts(un_hierarchical)
+
+        # Name conflict (test new names are assigned)
+        same_name_nlios222 = nlios222.copy(nlios222.name)
+        same_name_sum = nlios222 + same_name_nlios222
+        check_name_and_ios_counts(same_name_sum)
+
+        # Same system conflict
+        self.assertRaises(ValueError, lambda: nlios222*nlios222)
 
     def test_lineariosys_statespace(self):
         """Make sure that a LinearIOSystem is also a StateSpace object"""
