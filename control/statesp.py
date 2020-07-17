@@ -72,9 +72,9 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 # Define module default parameter values
 _statesp_defaults = {
     'statesp.use_numpy_matrix': False,  # False is default in 0.9.0 and above
-    'statesp.default_dt': None,
+    'statesp.default_dt': 0,
     'statesp.remove_useless_states': True,
-    }
+}
 
 
 def _ssmatrix(data, axis=1):
@@ -974,7 +974,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return np.squeeze(gain)
 
     def is_static_gain(self):
-         """True if and only if the system has no dynamics, that is, 
+         """True if and only if the system has no dynamics, that is,
          if A and B are zero. """
          return not np.any(self.A) and not np.any(self.B)
 
