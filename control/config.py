@@ -59,6 +59,9 @@ def reset_defaults():
     from .statesp import _statesp_defaults
     defaults.update(_statesp_defaults)
 
+    from .iosys import _iosys_defaults
+    defaults.update(_iosys_defaults)
+
 
 def _get_param(module, param, argval=None, defval=None, pop=False):
     """Return the default value for a configuration option.
@@ -208,8 +211,13 @@ def use_legacy_defaults(version):
     # Go backwards through releases and reset defaults
     #
 
-    # Version 0.9.0: switched to 'array' as default for state space objects
+    # Version 0.9.0:
     if major == 0 and minor < 9:
+        # switched to 'array' as default for state space objects
         set_defaults('statesp', use_numpy_matrix=True)
+        # switched to 0 (=continuous) as default timestep
+        set_defaults('statesp', default_dt=None)
+        set_defaults('xferfcn', default_dt=None)
+        set_defaults('iosys', default_dt=None)
 
     return (major, minor, patch)

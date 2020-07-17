@@ -62,7 +62,7 @@ import scipy as sp
 from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
-from .lti import LTI, timebase, timebaseEqual, isdtime
+from .lti import LTI, common_timebase, isdtime
 from . import config
 from copy import deepcopy
 
@@ -180,7 +180,10 @@ class StateSpace(LTI):
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
-            dt = config.defaults['statesp.default_dt']
+            if _isstaticgain(A, B, C, D): 
+                dt = None
+            else:
+                dt = config.defaults['statesp.default_dt']
         elif len(args) == 5:
             # Discrete time system
             (A, B, C, D, dt) = args
@@ -196,9 +199,12 @@ class StateSpace(LTI):
             try:
                 dt = args[0].dt
             except NameError:
-                dt = config.defaults['statesp.default_dt']
+                if _isstaticgain(A, B, C, D): 
+                    dt = None
+                else:
+                    dt = config.defaults['statesp.default_dt']
         else:
-            raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
+            raise ValueError("Expected 1, 4, or 5 arguments; received %i." % len(args))
 
         # Process keyword arguments
         remove_useless = kw.get('remove_useless',
@@ -330,14 +336,7 @@ class StateSpace(LTI):
                     (self.outputs != other.outputs)):
                 raise ValueError("Systems have different shapes.")
 
-            # Figure out the sampling time to use
-            if self.dt is None and other.dt is not None:
-                dt = other.dt       # use dt from second argument
-            elif (other.dt is None and self.dt is not None) or \
-                    (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
-            else:
-                raise ValueError("Systems have different sampling times")
+            dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
             A = concatenate((
@@ -386,16 +385,8 @@ class StateSpace(LTI):
             # Check to make sure the dimensions are OK
             if self.inputs != other.outputs:
                 raise ValueError("C = A * B: A has %i column(s) (input(s)), \
-but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
-
-            # Figure out the sampling time to use
-            if (self.dt == None and other.dt != None):
-                dt = other.dt       # use dt from second argument
-            elif (other.dt == None and self.dt != None) or \
-                    (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
-            else:
-                raise ValueError("Systems have different sampling times")
+                    but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
+            dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
             A = concatenate(
@@ -467,9 +458,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Evaluate a SS system's transfer function at a single frequency"""
         # Figure out the point to evaluate the transfer function
         if isdtime(self, strict=True):
-            dt = timebase(self)
-            s = exp(1.j * omega * dt)
-            if omega * dt > math.pi:
+            s = exp(1.j * omega * self.dt)
+            if omega * self.dt > math.pi:
                 warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = omega * 1.j
@@ -526,9 +516,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # axis (continuous time) or unit circle (discrete time).
         omega.sort()
         if isdtime(self, strict=True):
-            dt = timebase(self)
-            cmplx_freqs = exp(1.j * omega * dt)
-            if max(np.abs(omega)) * dt > math.pi:
+            cmplx_freqs = exp(1.j * omega * self.dt)
+            if max(np.abs(omega)) * self.dt > math.pi:
                 warn("freqresp: frequency evaluation above Nyquist frequency")
         else:
             cmplx_freqs = omega * 1.j
@@ -631,14 +620,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if (self.inputs != other.outputs) or (self.outputs != other.inputs):
                 raise ValueError("State space systems don't have compatible inputs/outputs for "
                                  "feedback.")
-
-        # Figure out the sampling time to use
-        if self.dt is None and other.dt is not None:
-            dt = other.dt       # use dt from second argument
-        elif other.dt is None and self.dt is not None or timebaseEqual(self, other):
-            dt = self.dt        # use dt from first argument
-        else:
-            raise ValueError("Systems have different sampling times")
+        dt = common_timebase(self.dt, other.dt)
 
         A1 = self.A
         B1 = self.B
@@ -708,14 +690,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # dimension check
         # TODO
 
-        # Figure out the sampling time to use
-        if (self.dt == None and other.dt != None):
-            dt = other.dt       # use dt from second argument
-        elif (other.dt == None and self.dt != None) or \
-                timebaseEqual(self, other):
-            dt = self.dt        # use dt from first argument
-        else:
-            raise ValueError("Systems have different time bases")
+        dt = common_timebase(self.dt, other.dt)
 
         # submatrices
         A = self.A
@@ -858,8 +833,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if not isinstance(other, StateSpace):
             other = _convertToStateSpace(other)
 
-        if self.dt != other.dt:
-            raise ValueError("Systems must have the same time step")
+        self.dt = common_timebase(self.dt, other.dt)
 
         n = self.states + other.states
         m = self.inputs + other.inputs
@@ -1293,6 +1267,11 @@ def _mimo2simo(sys, input, warn_conversion=False):
 
     return sys
 
+def _isstaticgain(A, B, C, D):
+    """returns True if and only if the system has no dynamics, that is, 
+    if A and B are zero. """
+    return not np.any(np.matrix(A, dtype=float)) \
+        and not np.any(np.matrix(B, dtype=float))
 
 def ss(*args):
     """ss(A, B, C, D[, dt])

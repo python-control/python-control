@@ -246,7 +246,8 @@ class TestConfig:
 
     def test_change_default_dt_static(self):
         """Test that static gain systems always have dt=None"""
-        ct.set_defaults('control', default_dt=0)
+        ct.set_defaults('xferfcn', default_dt=0)
         assert ct.tf(1, 1).dt is None
+        ct.set_defaults('statesp', default_dt=0)
         assert ct.ss(0, 0, 0, 1).dt is None
         # TODO: add in test for static gain iosys
