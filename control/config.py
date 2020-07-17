@@ -59,6 +59,9 @@ def reset_defaults():
     from .statesp import _statesp_defaults
     defaults.update(_statesp_defaults)
 
+    from .iosys import _iosys_defaults
+    defaults.update(_iosys_defaults)
+
 
 def _get_param(module, param, argval=None, defval=None, pop=False):
     """Return the default value for a configuration option.
@@ -170,5 +173,8 @@ def use_legacy_defaults(version):
     """
     if version == '0.8.3': 
         use_numpy_matrix(True) # alternatively: set_defaults('statesp', use_numpy_matrix=True)
+        set_defaults('statesp', default_dt=None)
+        set_defaults('xferfcn', default_dt=None)
+        set_defaults('iosys', default_dt=None)
     else:
         raise ValueError('''version number not recognized. Possible values are: ['0.8.3']''') 

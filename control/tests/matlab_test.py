@@ -613,20 +613,20 @@ class TestMatlab(unittest.TestCase):
         # margin command should remove the solution for w = nearly zero
 
         # Example is a concocted two-body satellite with flexible link
-        Jb = 400;
-        Jp = 1000;
-        k = 10;
-        b = 5;
+        Jb = 400
+        Jp = 1000
+        k = 10
+        b = 5
 
         # can now define an "s" variable, to make TF's
-        s = tf([1, 0], [1]);
-        hb1 = 1/(Jb*s);
-        hb2 = 1/s;
-        hp1 = 1/(Jp*s);
-        hp2 = 1/s;
+        s = tf([1, 0], [1])
+        hb1 = 1/(Jb*s)
+        hb2 = 1/s
+        hp1 = 1/(Jp*s)
+        hp2 = 1/s
 
         # convert to ss and append
-        sat0 = append(ss(hb1), ss(hb2), k, b, ss(hp1), ss(hp2));
+        sat0 = append(ss(hb1), ss(hb2), k, b, ss(hp1), ss(hp2))
 
         # connection of the elements with connect call
         Q = [[1, -3, -4],  # link moment (spring, damper), feedback to body
@@ -635,9 +635,9 @@ class TestMatlab(unittest.TestCase):
              [4,  1, -5],  # damper input
              [5,  3,  4],  # link moment, acting on payload
              [6,  5,  0]]
-        inputs = [1];
-        outputs = [1, 2, 5, 6];
-        sat1 = connect(sat0, Q, inputs, outputs);
+        inputs = [1]
+        outputs = [1, 2, 5, 6]
+        sat1 = connect(sat0, Q, inputs, outputs)
 
         # matched notch filter
         wno = 0.19

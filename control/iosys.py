@@ -38,12 +38,16 @@ from warnings import warn
 
 from .statesp import StateSpace, tf2ss
 from .timeresp import _check_convert_array
-from .lti import isctime, isdtime, _find_timebase
+from .lti import isctime, isdtime, common_timebase
+from . import config
 
 __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
            'InterconnectedSystem', 'input_output_response', 'find_eqpt',
            'linearize', 'ss2io', 'tf2io']
 
+# Define module default parameter values
+_iosys_defaults = {
+    'iosys.default_dt': 0}
 
 class InputOutputSystem(object):
     """A class for representing input/output systems.
@@ -109,7 +113,7 @@ class InputOutputSystem(object):
 
     """
     def __init__(self, inputs=None, outputs=None, states=None, params={},
-                 dt=None, name=None):
+                 name=None, **kwargs):
         """Create an input/output system.
 
         The InputOutputSystem contructor is used to create an input/output
@@ -153,7 +157,7 @@ class InputOutputSystem(object):
         """
         # Store the input arguments
         self.params = params.copy()     # default parameters
-        self.dt = dt                    # timebase
+        self.dt = kwargs.get('dt', config.defaults['iosys.default_dt'])                    # timebase
         self.name = name                # system name
 
         # Parse and store the number of inputs, outputs, and states
@@ -200,10 +204,8 @@ class InputOutputSystem(object):
                              "inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = _find_timebase(sys1, sys2)
-        if dt is False:
-            raise ValueError("System timebases are not compabile")
-
+        dt = common_timebase(sys1.dt, sys2.dt)
+        
         # Return the series interconnection between the systems
         newsys = InterconnectedSystem((sys1, sys2))
 
@@ -478,10 +480,8 @@ class InputOutputSystem(object):
                              "inputs and outputs")
 
         # Make sure timebases are compatible
-        dt = _find_timebase(self, other)
-        if dt is False:
-            raise ValueError("System timebases are not compabile")
-
+        dt = common_timebase(self.dt, other.dt)
+        
         # Return the series interconnection between the systems
         newsys = InterconnectedSystem((self, other), params=params, dt=dt)
 
@@ -670,7 +670,8 @@ class NonlinearIOSystem(InputOutputSystem):
 
     """
     def __init__(self, updfcn, outfcn=None, inputs=None, outputs=None,
-                 states=None, params={}, dt=None, name=None):
+                 states=None, params={},  
+                 name=None, **kwargs):
         """Create a nonlinear I/O system given update and output functions.
 
         Creates an `InputOutputSystem` for a nonlinear system by specifying a
@@ -741,6 +742,7 @@ class NonlinearIOSystem(InputOutputSystem):
         self.outfcn = outfcn
 
         # Initialize the rest of the structure
+        dt = kwargs.get('dt', config.defaults['iosys.default_dt'])
         super(NonlinearIOSystem, self).__init__(
             inputs=inputs, outputs=outputs, states=states,
             params=params, dt=dt, name=name
@@ -881,19 +883,14 @@ class InterconnectedSystem(InputOutputSystem):
         # Check to make sure all systems are consistent
         self.syslist = syslist
         self.syslist_index = {}
-        dt = None
         nstates = 0; self.state_offset = []
         ninputs = 0; self.input_offset = []
         noutputs = 0; self.output_offset = []
         system_count = 0
+
         for sys in syslist:
             # Make sure time bases are consistent
-            # TODO: Use lti._find_timebase() instead?
-            if dt is None and sys.dt is not None:
-                # Timebase was not specified; set to match this system
-                dt = sys.dt
-            elif dt != sys.dt:
-                raise TypeError("System timebases are not compatible")
+            dt = common_timebase(dt, sys.dt)
 
             # Make sure number of inputs, outputs, states is given
             if sys.ninputs is None or sys.noutputs is None or \

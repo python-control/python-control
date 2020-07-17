@@ -349,7 +349,7 @@ class TestXferFcn(unittest.TestCase):
 
     def test_div(self):
         # Make sure that sampling times work correctly
-        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1], None)
         sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]], True)
         sys3 = sys1 / sys2
         self.assertEqual(sys3.dt, True)
@@ -659,7 +659,7 @@ class TestXferFcn(unittest.TestCase):
         g = TransferFunction([1,1],[1,1]).minreal()
         np.testing.assert_array_almost_equal(1.0, g.num[0][0])
         np.testing.assert_array_almost_equal(1.0, g.den[0][0])
-        np.testing.assert_equal(None, g.dt)
+        np.testing.assert_equal(0, g.dt)
 
     def test_minreal_4(self):
         """Check minreal on discrete TFs."""

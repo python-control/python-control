@@ -9,13 +9,13 @@ LTI.__init__
 isdtime()
 isctime()
 timebase()
-timebaseEqual()
+common_timebase()
 """
 
 import numpy as np
 from numpy import absolute, real
 
-__all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
+__all__ = ['issiso', 'timebase', 'common_timebase', 'isdtime', 'isctime',
            'pole', 'zero', 'damp', 'evalfr', 'freqresp', 'dcgain']
 
 class LTI:
@@ -157,48 +157,31 @@ def timebase(sys, strict=True):
 
     return sys.dt
 
-# Check to see if two timebases are equal
-def timebaseEqual(sys1, sys2):
-    """Check to see if two systems have the same timebase
-
-    timebaseEqual(sys1, sys2)
-
-    returns True if the timebases for the two systems are compatible.  By
-    default, systems with timebase 'None' are compatible with either
-    discrete or continuous timebase systems.  If two systems have a discrete
-    timebase (dt > 0) then their timebases must be equal.
-    """
-
-    if (type(sys1.dt) == bool or type(sys2.dt) == bool):
-        # Make sure both are unspecified discrete timebases
-        return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
-    elif (sys1.dt is None or sys2.dt is None):
-        # One or the other is unspecified => the other can be anything
-        return True
-    else:
-        return sys1.dt == sys2.dt
-
-# Find a common timebase between two or more systems
-def _find_timebase(sys1, *sysn):
-    """Find the common timebase between systems, otherwise return False"""
-
-    # Create a list of systems to check
-    syslist = [sys1]
-    syslist.append(*sysn)
-
-    # Look for a common timebase
-    dt = None
-
-    for sys in syslist:
-        # Make sure time bases are consistent
-        if (dt is None and sys.dt is not None) or \
-           (dt is True and isdiscrete(sys)):
-            # Timebase was not specified; set to match this system
-            dt = sys.dt
-        elif dt != sys.dt:
-            return False
-    return dt
-
+def common_timebase(dt1, dt2):
+    """Find the common timebase when interconnecting systems."""
+    # cases: 
+    # if either dt is None, they are compatible with anything
+    # if either dt is True (discrete with unspecified time base), 
+    #   use the timebase of the other, if it is also discrete
+    # otherwise they must be equal (holds for both cont and discrete systems)
+    if dt1 is None: 
+        return dt2
+    elif dt2 is None: 
+        return dt1
+    elif dt1 is True: 
+        if dt2 > 0:
+            return dt2
+        else: 
+            raise ValueError("Systems have incompatible timebases")
+    elif dt2 is True: 
+        if dt1 > 0: 
+            return dt1
+        else: 
+            raise ValueError("Systems have incompatible timebases")
+    elif np.isclose(dt1, dt2):
+        return dt1
+    else: 
+        raise ValueError("Systems have incompatible timebases")
 
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):
