@@ -70,7 +70,7 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
 # Define module default parameter values
 _xferfcn_defaults = {
-    'xferfcn.default_dt': None}
+    'xferfcn.default_dt': 0}
 
 class TransferFunction(LTI):
 
@@ -1564,6 +1564,20 @@ def _clean_part(data):
 
     return data
 
+def _isstaticgain(num, den):
+    """returns true if and only if all of the numerator and denominator 
+    polynomials of the (possibly MIMO) transfer funnction are zeroth order, 
+    that is, if the system has no dynamics. """
+    num, den = _clean_part(num), _clean_part(den)
+    for m in range(len(num)):
+        for n in range(len(num[m])):
+            if len(num[m][n]) > 1: 
+                return False
+    for m in range(len(den)):
+        for n in range(len(den[m])):
+            if len(den[m][n]) > 1: 
+                return False
+    return True
 
 # Define constants to represent differentiation, unit delay
 TransferFunction.s = TransferFunction([1, 0], [1], 0)
