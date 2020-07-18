@@ -659,7 +659,6 @@ class TestXferFcn(unittest.TestCase):
         g = TransferFunction([1,1],[1,1]).minreal()
         np.testing.assert_array_almost_equal(1.0, g.num[0][0])
         np.testing.assert_array_almost_equal(1.0, g.den[0][0])
-        np.testing.assert_equal(0, g.dt)
 
     def test_minreal_4(self):
         """Check minreal on discrete TFs."""
