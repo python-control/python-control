@@ -605,7 +605,7 @@ class TransferFunction(LTI):
         if isdtime(self, strict=True):
             # Convert the frequency to discrete time
             s = exp(1.j * omega * self.dt)
-            if np.any(omega * dt > pi):
+            if np.any(omega * self.dt > pi):
                 warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = 1.j * omega
