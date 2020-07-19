@@ -544,7 +544,7 @@ class InputOutputSystem(object):
     def copy(self, newname=None):
         """Make a copy of an input/output system."""
         newsys = copy.copy(self)
-        newsys.name = self.name_or_default("copy of " + self.name if not newname)
+        newsys.name = self.name_or_default("copy of " + self.name if not newname else newname)
         return newsys
 
 
@@ -937,9 +937,6 @@ class InterconnectedSystem(InputOutputSystem):
                 sysobj_name_dct[sys] = sys.name
                 self.syslist_index[sys.name] = sysidx
 
-        # This won't work when there are duplicate sysnames
-        # Should we throw an error rather than just warning above?
-        # Users can use sys.copy() to get a unique name for the dup system.
         if states is None:
             states = []
             for sys, sysname in sysobj_name_dct.items():

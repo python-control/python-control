@@ -817,7 +817,8 @@ class TestIOSys(unittest.TestCase):
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(self.mimo_linsys1)
         self.assertEquals(sys.name, "sys[0]")
-
+        self.assertEquals(sys.copy().name, "copy of sys[0]")
+        
         namedsys = ios.NonlinearIOSystem(
             updfcn = lambda t, x, u, params: np.array(
                 np.dot(self.mimo_linsys1.A, np.reshape(x, (-1, 1))) \
@@ -837,7 +838,6 @@ class TestIOSys(unittest.TestCase):
         unnamedsys2 = ct.NonlinearIOSystem(
             None, lambda t,x,u,params: u, inputs=2, outputs=2
         )
-        breakpoint()
         self.assertEquals(unnamedsys2.name, "sys[2]")
 
         # Unnamed/unnamed connections
@@ -852,8 +852,8 @@ class TestIOSys(unittest.TestCase):
         self.assertEquals(uu_parallel.name, "sys[4]")
         self.assertEquals(u_neg.name, "sys[5]")
         self.assertEquals(uu_feedback.name, "sys[6]")
-        self.assertEquals(uu_dup.name, "sys[8]")
-        self.assertEquals(uu_hierarchical.name, "sys[9]")
+        self.assertEquals(uu_dup.name, "sys[7]")
+        self.assertEquals(uu_hierarchical.name, "sys[8]")
 
         # Unnamed/named connections
         un_series = unnamedsys1 * namedsys
@@ -862,21 +862,15 @@ class TestIOSys(unittest.TestCase):
         un_dup = unnamedsys1 * namedsys.copy()
         un_hierarchical = uu_series*unnamedsys1
 
-        self.assertEquals(un_series.name, "sys[10]")
-        self.assertEquals(un_parallel.name, "sys[11]")
-        self.assertEquals(un_feedback.name, "sys[12]")
-        self.assertEquals(un_dup.name, "sys[14]")
-        self.assertEquals(un_hierarchical.name, "sys[15]")
-
-        # Name conflict (test new names are assigned)
-        same_name_sum = unnamedsys1 + unnamedsys1.copy(unnamedsys1.name)
-        self.assertEquals(same_name_sum.name, "sys[16]")
+        self.assertEquals(un_series.name, "sys[9]")
+        self.assertEquals(un_parallel.name, "sys[10]")
+        self.assertEquals(un_feedback.name, "sys[11]")
+        self.assertEquals(un_dup.name, "sys[12]")
+        self.assertEquals(un_hierarchical.name, "sys[13]")
 
         # Same system conflict
         with warnings.catch_warnings(record=True) as warnval:
-            # Trigger a warning
             unnamedsys1 * unnamedsys1
-            # Verify that we got a warning
             self.assertEqual(len(warnval), 1)
 
     def test_signals_naming_convention(self):
@@ -945,8 +939,9 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_equal(io_feedback.D, ss_feedback.D)
 
     def test_duplicates(self):
-        nlios =  ios.NonlinearIOSystem(None, \
-            lambda t, x, u, params: u*u, inputs=1, outputs=1)
+        nlios =  ios.NonlinearIOSystem(lambda t,x,u,params: x, \
+                                       lambda t, x, u, params: u*u, \
+                                       inputs=1, outputs=1, states=1, name="sys")
 
         # Turn off deprecation warnings
         warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -967,7 +962,11 @@ class TestIOSys(unittest.TestCase):
         nlios2 = nlios.copy()
         with warnings.catch_warnings(record=True) as warnval:
             ios_series = nlios1 * nlios2
-            self.assertEqual(len(warnval), 0)
+            self.assertEquals(len(warnval), 1)
+            # when subsystems have the same name, duplicates are
+            # renamed <subsysname_i>
+            self.assertTrue("copy of sys_1.x[0]" in ios_series.state_index.keys())
+            self.assertTrue("copy of sys.x[0]" in ios_series.state_index.keys())
 
         # Duplicate names
         iosys_siso = ct.LinearIOSystem(self.siso_linsys)
