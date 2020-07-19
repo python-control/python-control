@@ -763,17 +763,19 @@ class TestIOSys(unittest.TestCase):
         ios_mul = sys1 * sys2
         ss_series = self.mimo_linsys1 * self.mimo_linsys2
         lin_series = ct.linearize(ios_mul, 0, 0)
-        for M, N in ((ss_series.A, lin_series.A), (ss_series.B, lin_series.B),
-                     (ss_series.C, lin_series.C), (ss_series.D, lin_series.D)):
-            np.testing.assert_array_almost_equal(M, N)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
 
         # Series interconnection (sys1 * sys2) using series
         ios_series = ct.series(sys2, sys1)
         ss_series = ct.series(self.mimo_linsys2, self.mimo_linsys1)
         lin_series = ct.linearize(ios_series, 0, 0)
-        for M, N in ((ss_series.A, lin_series.A), (ss_series.B, lin_series.B),
-                     (ss_series.C, lin_series.C), (ss_series.D, lin_series.D)):
-            np.testing.assert_array_almost_equal(M, N)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
 
         # Series interconnection (sys1 * sys2) using named + mixed signals
         ios_connect = ios.InterconnectedSystem(
@@ -786,9 +788,10 @@ class TestIOSys(unittest.TestCase):
             outlist=((1, 'y[0]'), 'sys1.y[1]')
         )
         lin_series = ct.linearize(ios_connect, 0, 0)
-        for M, N in ((ss_series.A, lin_series.A), (ss_series.B, lin_series.B),
-                     (ss_series.C, lin_series.C), (ss_series.D, lin_series.D)):
-            np.testing.assert_array_almost_equal(M, N)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
 
         # Make sure that we can use input signal names as system outputs
         ios_connect = ios.InterconnectedSystem(
@@ -802,9 +805,10 @@ class TestIOSys(unittest.TestCase):
         )
         ss_feedback = ct.feedback(self.mimo_linsys1, self.mimo_linsys2)
         lin_feedback = ct.linearize(ios_connect, 0, 0)
-        for M, N in ((ss_feedback.A, lin_feedback.A), (ss_feedback.B, lin_feedback.B),
-                     (ss_feedback.C, lin_feedback.C), (ss_feedback.D, lin_feedback.D)):
-            np.testing.assert_array_almost_equal(M, N)
+        np.testing.assert_array_almost_equal(ss_feedback.A, lin_feedback.A)
+        np.testing.assert_array_almost_equal(ss_feedback.B, lin_feedback.B)
+        np.testing.assert_array_almost_equal(ss_feedback.C, lin_feedback.C)
+        np.testing.assert_array_almost_equal(ss_feedback.D, lin_feedback.D)
 
         # We also enforce generic names to be present when systems are created
         # without names (sys, states, inputs and outputs)
