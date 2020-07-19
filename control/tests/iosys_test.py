@@ -810,60 +810,87 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_almost_equal(ss_feedback.C, lin_feedback.C)
         np.testing.assert_array_almost_equal(ss_feedback.D, lin_feedback.D)
 
-        # We also enforce generic names to be present when systems are created
-        # without names (sys, states, inputs and outputs)
-        def check_name_and_ios_counts(sys):
-            self.assertIsNotNone(sys.name)
-            self.assertEqual(len(sys.state_index), sys.nstates)
-            self.assertEqual(len(sys.input_index), sys.ninputs)
-            self.assertEqual(len(sys.output_index), sys.noutputs)
+    def test_sys_naming_convention(self):
+        """Enforce generic system names 'sys[i]' to be present when systems are created
+        without explicit names."""
 
+        ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(self.mimo_linsys1)
-        check_name_and_ios_counts(sys)
-        
-        nlios222 = ct.NonlinearIOSystem(
+        self.assertEquals(sys.name, "sys[0]")
+
+        namedsys = ios.NonlinearIOSystem(
+            updfcn = lambda t, x, u, params: np.array(
+                np.dot(self.mimo_linsys1.A, np.reshape(x, (-1, 1))) \
+                + np.dot(self.mimo_linsys1.B, np.reshape(u, (-1, 1)))
+            ).reshape(-1,),
+            outfcn = lambda t, x, u, params: np.array(
+                self.mimo_linsys1.C * np.reshape(x, (-1, 1)) \
+                + self.mimo_linsys1.D * np.reshape(u, (-1, 1))
+            ).reshape(-1,),
+            inputs = ('u[0]', 'u[1]'),
+            outputs = ('y[0]', 'y[1]'),
+            states = self.mimo_linsys1.states,
+            name = 'namedsys')
+        unnamedsys1 = ct.NonlinearIOSystem(
             lambda t,x,u,params: x, inputs=2, outputs=2, states=2
         )
-        nlios202 = ct.NonlinearIOSystem(
+        unnamedsys2 = ct.NonlinearIOSystem(
             None, lambda t,x,u,params: u, inputs=2, outputs=2
         )
-        check_name_and_ios_counts(nlios202)
+        breakpoint()
+        self.assertEquals(unnamedsys2.name, "sys[2]")
 
         # Unnamed/unnamed connections
-        uu_series = nlios222 * nlios202
-        uu_parallel = nlios222 + nlios202
-        u_neg = - nlios222
-        uu_feedback = nlios202.feedback(nlios222)
-        uu_dup = nlios222 * nlios222.copy()
-        uu_hierarchical = uu_series*nlios222
+        uu_series = unnamedsys1 * unnamedsys2
+        uu_parallel = unnamedsys1 + unnamedsys2
+        u_neg = - unnamedsys1
+        uu_feedback = unnamedsys2.feedback(unnamedsys1)
+        uu_dup = unnamedsys1 * unnamedsys1.copy()
+        uu_hierarchical = uu_series*unnamedsys1
 
-        check_name_and_ios_counts(uu_series)
-        check_name_and_ios_counts(uu_parallel)
-        check_name_and_ios_counts(u_neg)
-        check_name_and_ios_counts(uu_feedback)
-        check_name_and_ios_counts(uu_dup)
-        check_name_and_ios_counts(uu_hierarchical)
+        self.assertEquals(uu_series.name, "sys[3]")
+        self.assertEquals(uu_parallel.name, "sys[4]")
+        self.assertEquals(u_neg.name, "sys[5]")
+        self.assertEquals(uu_feedback.name, "sys[6]")
+        self.assertEquals(uu_dup.name, "sys[8]")
+        self.assertEquals(uu_hierarchical.name, "sys[9]")
 
         # Unnamed/named connections
-        un_series = nlios222 * sys1
-        un_parallel = nlios222 + sys1
-        un_feedback = nlios202.feedback(sys1)
-        un_dup = nlios222 * sys1.copy()
-        un_hierarchical = uu_series*nlios222
+        un_series = unnamedsys1 * namedsys
+        un_parallel = unnamedsys1 + namedsys
+        un_feedback = unnamedsys2.feedback(namedsys)
+        un_dup = unnamedsys1 * namedsys.copy()
+        un_hierarchical = uu_series*unnamedsys1
 
-        check_name_and_ios_counts(un_series)
-        check_name_and_ios_counts(un_parallel)
-        check_name_and_ios_counts(un_feedback)
-        check_name_and_ios_counts(un_dup)
-        check_name_and_ios_counts(un_hierarchical)
+        self.assertEquals(un_series.name, "sys[10]")
+        self.assertEquals(un_parallel.name, "sys[11]")
+        self.assertEquals(un_feedback.name, "sys[12]")
+        self.assertEquals(un_dup.name, "sys[14]")
+        self.assertEquals(un_hierarchical.name, "sys[15]")
 
         # Name conflict (test new names are assigned)
-        same_name_nlios222 = nlios222.copy(nlios222.name)
-        same_name_sum = nlios222 + same_name_nlios222
-        check_name_and_ios_counts(same_name_sum)
+        same_name_sum = unnamedsys1 + unnamedsys1.copy(unnamedsys1.name)
+        self.assertEquals(same_name_sum.name, "sys[16]")
 
         # Same system conflict
-        self.assertRaises(ValueError, lambda: nlios222*nlios222)
+        with warnings.catch_warnings(record=True) as warnval:
+            # Trigger a warning
+            unnamedsys1 * unnamedsys1
+            # Verify that we got a warning
+            self.assertEqual(len(warnval), 1)
+
+    def test_signals_naming_convention(self):
+        """Enforce generic names to be present when systems are created
+        without explicit signal names:
+        input: 'u[i]'
+        state: 'x[i]'
+        output: 'y[i]'
+        """
+        sys = ct.LinearIOSystem(self.mimo_linsys1)
+        self.assertEqual(len(sys.state_index), sys.nstates)
+        self.assertEqual(len(sys.input_index), sys.ninputs)
+        self.assertEqual(len(sys.output_index), sys.noutputs)
+        
 
     def test_lineariosys_statespace(self):
         """Make sure that a LinearIOSystem is also a StateSpace object"""

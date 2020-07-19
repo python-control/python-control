@@ -892,8 +892,9 @@ class InterconnectedSystem(InputOutputSystem):
         nstates = 0; self.state_offset = []
         ninputs = 0; self.input_offset = []
         noutputs = 0; self.output_offset = []
-        system_count = 0
-        for sys in syslist:
+        sysobj_name_dct = {}
+        sysname_count_dct = {}
+        for sysidx, sys in enumerate(syslist):
             # Make sure time bases are consistent
             # TODO: Use lti._find_timebase() instead?
             if dt is None and sys.dt is not None:
@@ -919,35 +920,30 @@ class InterconnectedSystem(InputOutputSystem):
             ninputs += sys.ninputs
             noutputs += sys.noutputs
 
-            # Store the index to the system for later retrieval
-            # TODO: look for duplicated system names
-            self.syslist_index[sys.name] = system_count
-            system_count += 1
-
-        # Check for duplicate systems or duplicate names
-        # Duplicates are renamed sysname_1, sysname_2, etc.
-        sysobj_name_dct = {}
-        sysname_count_dct = {}
-        for sys in syslist:
+            # Check for duplicate systems or duplicate names
+            # Duplicates are renamed sysname_1, sysname_2, etc.
             if sys in sysobj_name_dct:
-                raise ValueError("Duplicate object found in system list: %s" % str(sys))
-            elif sys.name is not None and sys.name in sysname_count_dct:
+                sys = sys.copy()
+                warn("Duplicate object found in system list: %s. Making a copy" % str(sys))
+            if sys.name is not None and sys.name in sysname_count_dct:
                 count = sysname_count_dct[sys.name]
                 sysname_count_dct[sys.name] += 1
                 sysname = sys.name + "_" + str(count)
                 sysobj_name_dct[sys] = sysname
+                self.syslist_index[sysname] = sysidx
                 warn("Duplicate name found in system list. Renamed to {}".format(sysname))
             else:
                 sysname_count_dct[sys.name] = 1
                 sysobj_name_dct[sys] = sys.name
-                
+                self.syslist_index[sys.name] = sysidx
+
         # This won't work when there are duplicate sysnames
         # Should we throw an error rather than just warning above?
         # Users can use sys.copy() to get a unique name for the dup system.
         if states is None:
             states = []
-            for sys, name in sysobj_name_dct.items():
-                states += [name + '.' + statename for statename in sys.state_index.keys()]
+            for sys, sysname in sysobj_name_dct.items():
+                states += [sysname + '.' + statename for statename in sys.state_index.keys()]
 
         # Create the I/O system
         super(InterconnectedSystem, self).__init__(
