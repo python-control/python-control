@@ -544,7 +544,7 @@ class InputOutputSystem(object):
     def copy(self, newname=None):
         """Make a copy of an input/output system."""
         newsys = copy.copy(self)
-        newsys.name = self.name_or_default(newname)
+        newsys.name = self.name_or_default("copy of " + self.name if not newname)
         return newsys
 
 
