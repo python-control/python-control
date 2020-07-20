@@ -72,9 +72,11 @@ class InputOutputSystem(object):
     states : int, list of str, or None
         Description of the system states.  Same format as `inputs`.
     dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous time, True
-        indicates discrete time with undefined sampling time, positive number
-        is discrete time with specified sampling time.
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either  
+        continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
@@ -89,9 +91,11 @@ class InputOutputSystem(object):
         Dictionary of signal names for the inputs, outputs and states and the
         index of the corresponding array
     dt : None, True or float
-        System timebase.  None (default) indicates continuous time, True
-        indicates discrete time with undefined sampling time, positive number
-        is discrete time with specified sampling time.
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either  
+        continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
@@ -137,10 +141,11 @@ class InputOutputSystem(object):
         states : int, list of str, or None
             Description of the system states.  Same format as `inputs`.
         dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
+            System timebase. 0 (default) indicates continuous
+            time, True indicates discrete time with unspecified sampling
             time, positive number is discrete time with specified
-            sampling time.
+            sampling time, None indicates unspecified timebase (either  
+            continuous or discrete time).
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
             functions for the system as default values, overriding internal
@@ -600,10 +605,11 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         states : int, list of str, or None, optional
             Description of the system states.  Same format as `inputs`.
         dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
+            System timebase. 0 (default) indicates continuous
+            time, True indicates discrete time with unspecified sampling
             time, positive number is discrete time with specified
-            sampling time.
+            sampling time, None indicates unspecified timebase (either  
+            continuous or discrete time).
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
             functions for the system as default values, overriding internal
@@ -722,10 +728,10 @@ class NonlinearIOSystem(InputOutputSystem):
             operating in continuous or discrete time.  It can have the
             following values:
 
-            * dt = None       No timebase specified
-            * dt = 0          Continuous time system
-            * dt > 0          Discrete time system with sampling time dt
-            * dt = True       Discrete time with unspecified sampling time
+            * dt = 0: continuous time system (default)
+            * dt > 0: discrete time system with sampling period 'dt'
+            * dt = True: discrete time with unspecified sampling period
+            * dt = None: no timebase specified 
 
         name : string, optional
             System name (used for specifying signals).
@@ -866,10 +872,10 @@ class InterconnectedSystem(InputOutputSystem):
             operating in continuous or discrete time.  It can have the
             following values:
 
-            * dt = None       No timebase specified
-            * dt = 0          Continuous time system
-            * dt > 0          Discrete time system with sampling time dt
-            * dt = True       Discrete time with unspecified sampling time
+            * dt = 0: continuous time system (default)
+            * dt > 0: discrete time system with sampling period 'dt'
+            * dt = True: discrete time with unspecified sampling period
+            * dt = None: no timebase specified 
 
         name : string, optional
             System name (used for specifying signals).

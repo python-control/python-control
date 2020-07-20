@@ -142,15 +142,22 @@ class StateSpace(LTI):
     `numpy.ndarray` objects.  The :func:`~control.use_numpy_matrix` function
     can be used to set the storage type.
 
-    Discrete-time state space system are implemented by using the 'dt'
-    instance variable and setting it to the sampling period.  If 'dt' is not
-    None, then it must match whenever two state space systems are combined.
-    Setting dt = 0 specifies a continuous system, while leaving dt = None
-    means the system timebase is not specified.  If 'dt' is set to True, the
-    system will be treated as a discrete time system with unspecified sampling
-    time. The default value of 'dt' is None and can be changed by changing the 
-    value of ``control.config.defaults['control.default_dt']``.
+    A discrete time system is created by specifying a nonzero 'timebase', dt 
+    when the system is constructed:
 
+    * dt = 0: continuous time system (default)
+    * dt > 0: discrete time system with sampling period 'dt'
+    * dt = True: discrete time with unspecified sampling period
+    * dt = None: no timebase specified 
+
+    Systems must have compatible timebases in order to be combined. A discrete 
+    time system with unspecified sampling time (`dt = True`) can be combined 
+    with a system having a specified sampling time; the result will be a 
+    discrete time system with the sample time of the latter system. Similarly, 
+    a system with timebase `None` can be combined with a system having any 
+    timebase; the result will have the timebase of the latter system. 
+    The default value of dt can be changed by changing the value of 
+    ``control.config.defaults['control.default_dt']``.
     """
 
     # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
@@ -1270,8 +1277,7 @@ def ss(*args):
         Output matrix
     D: array_like or string
         Feed forward matrix
-    dt: If present, specifies the sampling period and a discrete time
-        system is created
+    dt: If present, specifies the timebase of the system
 
     Returns
     -------

@@ -72,7 +72,6 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 _xferfcn_defaults = {}
 
 class TransferFunction(LTI):
-
     """TransferFunction(num, den[, dt])
 
     A class for representing transfer functions
@@ -88,12 +87,21 @@ class TransferFunction(LTI):
     means that the numerator of the transfer function from the 6th input to the
     3rd output is set to s^2 + 4s + 8.
 
-    Discrete-time transfer functions are implemented by using the 'dt'
-    instance variable and setting it to something other than 'None'.  If 'dt'
-    has a non-zero value, then it must match whenever two transfer functions
-    are combined.  If 'dt' is set to True, the system will be treated as a
-    discrete time system with unspecified sampling time. The default value of 
-    'dt' is None and can be changed by changing the value of 
+    A discrete time transfer function is created by specifying a nonzero 
+    'timebase' dt when the system is constructed:
+
+    * dt = 0: continuous time system (default)
+    * dt > 0: discrete time system with sampling period 'dt'
+    * dt = True: discrete time with unspecified sampling period
+    * dt = None: no timebase specified 
+
+    Systems must have compatible timebases in order to be combined. A discrete 
+    time system with unspecified sampling time (`dt = True`) can be combined 
+    with a system having a specified sampling time; the result will be a 
+    discrete time system with the sample time of the latter system. Similarly, 
+    a system with timebase `None` can be combined with a system having any 
+    timebase; the result will have the timebase of the latter system. 
+    The default value of dt can be changed by changing the value of 
     ``control.config.defaults['control.default_dt']``.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
@@ -103,8 +111,8 @@ class TransferFunction(LTI):
 
     >>> s = TransferFunction.s
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
-
     """
+    
     def __init__(self, *args):
         """TransferFunction(num, den[, dt])
 

@@ -80,27 +80,24 @@ Discrete time systems
 A discrete time system is created by specifying a nonzero 'timebase', dt.
 The timebase argument can be given when a system is constructed:
 
-* dt = None: no timebase specified (default)
-* dt = 0: continuous time system
+* dt = 0: continuous time system (default)
 * dt > 0: discrete time system with sampling period 'dt'
 * dt = True: discrete time with unspecified sampling period
+* dt = None: no timebase specified 
 
 Only the :class:`StateSpace`, :class:`TransferFunction`, and
 :class:`InputOutputSystem` classes allow explicit representation of
 discrete time systems.
 
-Systems must have compatible timebases in order to be combined.  A system
-with timebase `None` can be combined with a system having a specified
-timebase; the result will have the timebase of the latter system.
-Similarly, a discrete time system with unspecified sampling time (`dt =
-True`) can be combined with a system having a specified sampling time;
-the result will be a discrete time system with the sample time of the latter
-system.  For continuous time systems, the :func:`sample_system` function or
-the :meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods
+Systems must have compatible timebases in order to be combined. A discrete time 
+system with unspecified sampling time (`dt = True`) can be combined with a system 
+having a specified sampling time; the result will be a discrete time system with the sample time of the latter
+system.  Similarly, a system with timebase `None` can be combined with a system having a specified
+timebase; the result will have the timebase of the latter system. For continuous 
+time systems, the :func:`sample_system` function or the :meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods
 can be used to create a discrete time system from a continuous time system.
 See :ref:`utility-and-conversions`. The default value of 'dt' can be changed by
-changing the values of ``control.config.defaults['statesp.default_dt']`` and 
-``control.config.defaults['xferfcn.default_dt']``.
+changing the value of ``control.config.defaults['control.default_dt']``.
 
 Conversion between representations
 ----------------------------------
