@@ -820,14 +820,8 @@ class TestIOSys(unittest.TestCase):
         self.assertEquals(sys.copy().name, "copy of sys[0]")
         
         namedsys = ios.NonlinearIOSystem(
-            updfcn = lambda t, x, u, params: np.array(
-                np.dot(self.mimo_linsys1.A, np.reshape(x, (-1, 1))) \
-                + np.dot(self.mimo_linsys1.B, np.reshape(u, (-1, 1)))
-            ).reshape(-1,),
-            outfcn = lambda t, x, u, params: np.array(
-                self.mimo_linsys1.C * np.reshape(x, (-1, 1)) \
-                + self.mimo_linsys1.D * np.reshape(u, (-1, 1))
-            ).reshape(-1,),
+            updfcn = lambda t, x, u, params: x,
+            outfcn = lambda t, x, u, params: u,
             inputs = ('u[0]', 'u[1]'),
             outputs = ('y[0]', 'y[1]'),
             states = self.mimo_linsys1.states,
@@ -880,11 +874,59 @@ class TestIOSys(unittest.TestCase):
         state: 'x[i]'
         output: 'y[i]'
         """
+        ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(self.mimo_linsys1)
+        for statename in ["x[0]", "x[1]"]:
+            self.assertTrue(statename in sys.state_index)
+        for inputname in ["u[0]", "u[1]"]:
+            self.assertTrue(inputname in sys.input_index)
+        for outputname in ["y[0]", "y[1]"]:
+            self.assertTrue(outputname in sys.output_index)
         self.assertEqual(len(sys.state_index), sys.nstates)
         self.assertEqual(len(sys.input_index), sys.ninputs)
         self.assertEqual(len(sys.output_index), sys.noutputs)
-        
+
+        namedsys = ios.NonlinearIOSystem(
+            updfcn = lambda t, x, u, params: x,
+            outfcn = lambda t, x, u, params: u,
+            inputs = ('u0'),
+            outputs = ('y0'),
+            states = ('x0'),
+            name = 'namedsys')
+        unnamedsys = ct.NonlinearIOSystem(
+            lambda t,x,u,params: x, inputs=1, outputs=1, states=1
+        )
+        self.assertTrue('u0' in namedsys.input_index)
+        self.assertTrue('y0' in namedsys.output_index)
+        self.assertTrue('x0' in namedsys.state_index)
+
+        # Unnamed/named connections
+        un_series = unnamedsys * namedsys
+        un_parallel = unnamedsys + namedsys
+        un_feedback = unnamedsys.feedback(namedsys)
+        un_dup = unnamedsys * namedsys.copy()
+        un_hierarchical = un_series*unnamedsys
+        u_neg = - unnamedsys
+
+        self.assertTrue("sys[1].x[0]" in un_series.state_index)
+        self.assertTrue("namedsys.x0" in un_series.state_index)
+        self.assertTrue("sys[1].x[0]" in un_parallel.state_index)
+        self.assertTrue("namedsys.x0" in un_series.state_index)
+        self.assertTrue("sys[1].x[0]" in un_feedback.state_index)
+        self.assertTrue("namedsys.x0" in un_feedback.state_index)
+        self.assertTrue("sys[1].x[0]" in un_dup.state_index)
+        self.assertTrue("copy of namedsys.x0" in un_dup.state_index)
+        self.assertTrue("sys[1].x[0]" in un_hierarchical.state_index)
+        self.assertTrue("sys[2].sys[1].x[0]" in un_hierarchical.state_index)
+        self.assertTrue("sys[1].x[0]" in u_neg.state_index)
+
+        # Same system conflict
+        with warnings.catch_warnings(record=True) as warnval:
+            same_name_series = unnamedsys * unnamedsys
+            self.assertEquals(len(warnval), 1)
+            self.assertTrue("sys[1].x[0]" in same_name_series.state_index)
+            self.assertTrue("copy of sys[1].x[0]" in same_name_series.state_index)
+
     def test_named_signals_linearize_inconsistent(self):
         """Mare sure that providing inputs or outputs not consistent with
            updfcn or outfcn fail
