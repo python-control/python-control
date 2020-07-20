@@ -71,7 +71,6 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 # Define module default parameter values
 _statesp_defaults = {
     'statesp.use_numpy_matrix': True,
-    'statesp.default_dt': 0,
     'statesp.remove_useless_states': True, 
     }
 
@@ -150,7 +149,7 @@ class StateSpace(LTI):
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified sampling
     time. The default value of 'dt' is None and can be changed by changing the 
-    value of ``control.config.defaults['statesp.default_dt']``.
+    value of ``control.config.defaults['control.default_dt']``.
 
     """
 
@@ -177,7 +176,7 @@ class StateSpace(LTI):
             if _isstaticgain(A, B, C, D): 
                 dt = None
             else:
-                dt = config.defaults['statesp.default_dt']
+                dt = config.defaults['control.default_dt']
         elif len(args) == 5:
             # Discrete time system
             (A, B, C, D, dt) = args
@@ -196,7 +195,7 @@ class StateSpace(LTI):
                 if _isstaticgain(A, B, C, D): 
                     dt = None
                 else:
-                    dt = config.defaults['statesp.default_dt']
+                    dt = config.defaults['control.default_dt']
         else:
             raise ValueError("Expected 1, 4, or 5 arguments; received %i." % len(args))
 

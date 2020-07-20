@@ -69,8 +69,7 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
 
 # Define module default parameter values
-_xferfcn_defaults = {
-    'xferfcn.default_dt': 0}
+_xferfcn_defaults = {}
 
 class TransferFunction(LTI):
 
@@ -95,7 +94,7 @@ class TransferFunction(LTI):
     are combined.  If 'dt' is set to True, the system will be treated as a
     discrete time system with unspecified sampling time. The default value of 
     'dt' is None and can be changed by changing the value of 
-    ``control.config.defaults['xferfcn.default_dt']``.
+    ``control.config.defaults['control.default_dt']``.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
@@ -127,7 +126,7 @@ class TransferFunction(LTI):
             if _isstaticgain(num, den):
                 dt = None
             else: 
-                dt = config.defaults['xferfcn.default_dt']
+                dt = config.defaults['control.default_dt']
         elif len(args) == 3:
             # Discrete time transfer function
             (num, den, dt) = args
@@ -146,7 +145,7 @@ class TransferFunction(LTI):
                 if _isstaticgain(num, den):
                     dt = None
                 else: 
-                    dt = config.defaults['xferfcn.default_dt']
+                    dt = config.defaults['control.default_dt']
         else:
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))

@@ -15,7 +15,7 @@ __all__ = ['defaults', 'set_defaults', 'reset_defaults',
 
 # Package level default values
 _control_defaults = {
-    # No package level defaults (yet)
+    'control.default_dt':0
 }
 defaults = dict(_control_defaults)
 
@@ -173,8 +173,6 @@ def use_legacy_defaults(version):
     """
     if version == '0.8.3': 
         use_numpy_matrix(True) # alternatively: set_defaults('statesp', use_numpy_matrix=True)
-        set_defaults('statesp', default_dt=None)
-        set_defaults('xferfcn', default_dt=None)
-        set_defaults('iosys', default_dt=None)
+        set_defaults('control', default_dt=None)
     else:
         raise ValueError('''version number not recognized. Possible values are: ['0.8.3']''') 

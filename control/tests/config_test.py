@@ -218,29 +218,28 @@ class TestConfig(unittest.TestCase):
         assert(isinstance(ct.ss(0,0,0,1).D, np.ndarray))
     
     def test_change_default_dt(self):
-        # TransferFunction
         # test that system with dynamics uses correct default dt
-        ct.set_defaults('xferfcn', default_dt=0)
+        ct.set_defaults('control', default_dt=0)
         self.assertEqual(ct.tf(1, [1,1]).dt, 0)
-        ct.set_defaults('xferfcn', default_dt=None)
-        self.assertEqual(ct.tf(1, [1,1]).dt, None)
-        # test that a static gain transfer function always has dt=None
-        ct.set_defaults('xferfcn', default_dt=0)
-        self.assertEqual(ct.tf(1, 1).dt, None)
-
-        # StateSpace
-        # test that system with dynamics uses correct default dt
-        ct.set_defaults('statesp', default_dt=0)
         self.assertEqual(ct.ss(1,0,0,1).dt, 0)
-        ct.set_defaults('statesp', default_dt=None)
+        self.assertEqual(ct.iosys.NonlinearIOSystem(
+            lambda t, x, u: u*x*x, 
+            lambda t, x, u: x, inputs=1, outputs=1).dt, 0)
+        ct.set_defaults('control', default_dt=None)
+        self.assertEqual(ct.tf(1, [1,1]).dt, None)
         self.assertEqual(ct.ss(1,0,0,1).dt, None)
-        # test that a static gain state space system always has dt=None
-        ct.set_defaults('statesp', default_dt=0)
-        self.assertEqual(ct.ss(0,0,0,1).dt, None)
+        self.assertEqual(ct.iosys.NonlinearIOSystem(
+            lambda t, x, u: u*x*x, 
+            lambda t, x, u: x, inputs=1, outputs=1).dt, None)
+        
+        # test that static gain systems always have dt=None
+        ct.set_defaults('control', default_dt=0)
+        self.assertEqual(ct.tf(1, 1).dt, None)
+        self.assertEqual(ct.ss(0,0,0,1).dt, None)        
+        # TODO: add in test for static gain iosys
 
         ct.reset_defaults()
         
-
     def tearDown(self):
         # Get rid of any figures that we created
         plt.close('all')

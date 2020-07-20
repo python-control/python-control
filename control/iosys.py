@@ -46,8 +46,7 @@ __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
            'linearize', 'ss2io', 'tf2io']
 
 # Define module default parameter values
-_iosys_defaults = {
-    'iosys.default_dt': 0}
+_iosys_defaults = {}
 
 class InputOutputSystem(object):
     """A class for representing input/output systems.
@@ -157,7 +156,7 @@ class InputOutputSystem(object):
         """
         # Store the input arguments
         self.params = params.copy()     # default parameters
-        self.dt = kwargs.get('dt', config.defaults['iosys.default_dt'])                    # timebase
+        self.dt = kwargs.get('dt', config.defaults['control.default_dt'])                    # timebase
         self.name = name                # system name
 
         # Parse and store the number of inputs, outputs, and states
@@ -742,7 +741,7 @@ class NonlinearIOSystem(InputOutputSystem):
         self.outfcn = outfcn
 
         # Initialize the rest of the structure
-        dt = kwargs.get('dt', config.defaults['iosys.default_dt'])
+        dt = kwargs.get('dt', config.defaults['control.default_dt'])
         super(NonlinearIOSystem, self).__init__(
             inputs=inputs, outputs=outputs, states=states,
             params=params, dt=dt, name=name
