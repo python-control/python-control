@@ -822,10 +822,10 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
     # Set the range to be an order of magnitude beyond any features
     if number_of_samples:
-        omega = sp.logspace(
+        omega = np.logspace(
             lsp_min, lsp_max, num=number_of_samples, endpoint=True)
     else:
-        omega = sp.logspace(lsp_min, lsp_max, endpoint=True)
+        omega = np.logspace(lsp_min, lsp_max, endpoint=True)
     return omega
 
 

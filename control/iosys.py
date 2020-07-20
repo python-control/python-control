@@ -1663,8 +1663,10 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         # and were processed above.
 
         # Get the states and inputs that were not listed as fixed
-        state_vars = np.delete(np.array(range(nstates)), ix)
-        input_vars = np.delete(np.array(range(ninputs)), iu)
+        state_vars = (range(nstates) if not len(ix)
+                      else np.delete(np.array(range(nstates)), ix))
+        input_vars = (range(ninputs) if not len(iu)
+                      else np.delete(np.array(range(ninputs)), iu))
 
         # Set the outputs and derivs that will serve as constraints
         output_vars = np.array(iy)
@@ -1763,16 +1765,23 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
     return sys.linearize(xeq, ueq, t=t, params=params, **kw)
 
 
-# Utility function to find the size of a system parameter
 def _find_size(sysval, vecval):
-    if sysval is not None:
-        return sysval
-    elif hasattr(vecval, '__len__'):
+    """Utility function to find the size of a system parameter
+
+    If both parameters are not None, they must be consistent.
+    """
+    if hasattr(vecval, '__len__'):
+        if sysval is not None and sysval != len(vecval):
+            raise ValueError("Inconsistend information to determine size "
+                             "of system component")
         return len(vecval)
-    elif vecval is None:
-        return 0
-    else:
-        raise ValueError("Can't determine size of system component.")
+    # None or 0, which is a valid value for "a (sysval, ) vector of zeros".
+    if not vecval:
+        return 0 if sysval is None else sysval
+    elif sysval == 1:
+        # (1, scalar) is also a valid combination from legacy code
+        return 1
+    raise ValueError("Can't determine size of system component.")
 
 
 # Convert a state space system into an input/output system (wrapper)

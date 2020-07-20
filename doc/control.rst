@@ -117,6 +117,7 @@ Control system synthesis
     h2syn
     hinfsyn
     lqr
+    lqe
     mixsyn
     place
 

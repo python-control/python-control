@@ -4,13 +4,14 @@
 # RMM, 1 Jul 2011
 
 import unittest
+import matplotlib.pyplot as plt
 import numpy as np
+from numpy.testing import assert_array_almost_equal
+
 from control.rlocus import root_locus, _RLClickDispatcher
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
 from control.bdalg import feedback
-import matplotlib.pyplot as plt
-from control.tests.margin_test import assert_array_almost_equal
 
 
 class TestRootLocus(unittest.TestCase):
@@ -48,6 +49,7 @@ class TestRootLocus(unittest.TestCase):
     def test_root_locus_zoom(self):
         """Check the zooming functionality of the Root locus plot"""
         system = TransferFunction([1000], [1, 25, 100, 0])
+        plt.figure()
         root_locus(system)
         fig = plt.gcf()
         ax_rlocus = fig.axes[0]

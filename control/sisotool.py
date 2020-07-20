@@ -2,7 +2,7 @@ __all__ = ['sisotool']
 
 from .freqplot import bode_plot
 from .timeresp import step_response
-from .lti import issiso
+from .lti import issiso, isdtime
 import matplotlib
 import matplotlib.pyplot as plt
 import warnings
@@ -136,10 +136,13 @@ def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
     # Generate the step response and plot it
     sys_closed = (K*sys).feedback(1)
     if tvect is None:
-        tvect, yout = step_response(sys_closed)
+        tvect, yout = step_response(sys_closed, T_num=100)
     else:
         tvect, yout = step_response(sys_closed,tvect)
-    ax_step.plot(tvect, yout)
+    if isdtime(sys_closed, strict=True):
+        ax_step.plot(tvect, yout, 'o')
+    else:
+        ax_step.plot(tvect, yout)
     ax_step.axhline(1.,linestyle=':',color='k',zorder=-20)
 
     # Manually adjust the spacing and draw the canvas

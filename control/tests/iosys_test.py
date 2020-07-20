@@ -286,19 +286,19 @@ class TestIOSys(unittest.TestCase):
         # Set up parameters for simulation
         T, U, X0 = self.T, self.U, self.X0
 
-        # Single nonlinear system - no states 
-        ios_t, ios_y = ios.input_output_response(nlios, T, U, X0)
+        # Single nonlinear system - no states
+        ios_t, ios_y = ios.input_output_response(nlios, T, U)
         np.testing.assert_array_almost_equal(ios_y, U*U, decimal=3)
 
         # Composed nonlinear system (series)
-        ios_t, ios_y = ios.input_output_response(nlios1 * nlios2, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(nlios1 * nlios2, T, U)
         np.testing.assert_array_almost_equal(ios_y, U**4, decimal=3)
 
         # Composed nonlinear system (parallel)
-        ios_t, ios_y = ios.input_output_response(nlios1 + nlios2, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(nlios1 + nlios2, T, U)
         np.testing.assert_array_almost_equal(ios_y, 2*U**2, decimal=3)
 
-        # Nonlinear system composed with LTI system (series)
+        # Nonlinear system composed with LTI system (series) -- with states
         ios_t, ios_y = ios.input_output_response(
             nlios * lnios * nlios, T, U, X0)
         lti_t, lti_y, lti_x = ct.forced_response(linsys, T, U*U, X0)
@@ -323,7 +323,7 @@ class TestIOSys(unittest.TestCase):
              (1, (0, 0, -1))),
             0, 0
         )
-        args = (iosys, T, U, X0)
+        args = (iosys, T, U)
         self.assertRaises(RuntimeError, ios.input_output_response, *args)
 
         # Algebraic loop due to feedthrough term
@@ -392,7 +392,7 @@ class TestIOSys(unittest.TestCase):
         # Static nonlinear system
         nlios =  ios.NonlinearIOSystem(None, \
             lambda t, x, u, params: u*u, inputs=1, outputs=1)
-        ios_t, ios_y = ios.input_output_response(-nlios, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(-nlios, T, U)
         np.testing.assert_array_almost_equal(ios_y, -U*U, decimal=3)
 
         # Linear system with input nonlinearity
@@ -885,6 +885,49 @@ class TestIOSys(unittest.TestCase):
         self.assertEqual(len(sys.input_index), sys.ninputs)
         self.assertEqual(len(sys.output_index), sys.noutputs)
         
+    def test_named_signals_linearize_inconsistent(self):
+        """Mare sure that providing inputs or outputs not consistent with
+           updfcn or outfcn fail
+        """
+
+        def updfcn(t, x, u, params):
+            """2 inputs, 2 states"""
+            return np.array(
+                np.dot(self.mimo_linsys1.A, np.reshape(x, (-1, 1)))
+                + np.dot(self.mimo_linsys1.B, np.reshape(u, (-1, 1)))
+                ).reshape(-1,)
+
+        def outfcn(t, x, u, params):
+            """2 states, 2 outputs"""
+            return np.array(
+                    self.mimo_linsys1.C * np.reshape(x, (-1, 1))
+                    + self.mimo_linsys1.D * np.reshape(u, (-1, 1))
+                ).reshape(-1,)
+
+        for inputs, outputs in [
+                (('u[0]'), ('y[0]', 'y[1]')),  # not enough u
+                (('u[0]', 'u[1]', 'u[toomuch]'), ('y[0]', 'y[1]')),
+                (('u[0]', 'u[1]'), ('y[0]')),  # not enough y
+                (('u[0]', 'u[1]'), ('y[0]', 'y[1]', 'y[toomuch]'))]:
+            sys1 = ios.NonlinearIOSystem(updfcn=updfcn,
+                                         outfcn=outfcn,
+                                         inputs=inputs,
+                                         outputs=outputs,
+                                         states=self.mimo_linsys1.states,
+                                         name='sys1')
+            self.assertRaises(ValueError, sys1.linearize, [0, 0], [0, 0])
+
+        sys2 = ios.NonlinearIOSystem(updfcn=updfcn,
+                                     outfcn=outfcn,
+                                     inputs=('u[0]', 'u[1]'),
+                                     outputs=('y[0]', 'y[1]'),
+                                     states=self.mimo_linsys1.states,
+                                     name='sys1')
+        for x0, u0 in [([0], [0, 0]),
+                       ([0, 0, 0], [0, 0]),
+                       ([0, 0], [0]),
+                       ([0, 0], [0, 0, 0])]:
+            self.assertRaises(ValueError, sys2.linearize, x0, u0)
 
     def test_lineariosys_statespace(self):
         """Make sure that a LinearIOSystem is also a StateSpace object"""
@@ -1015,7 +1058,7 @@ def predprey(t, x, u, params={}):
 def pvtol(t, x, u, params={}):
     from math import sin, cos
     m = params.get('m', 4.)      # kg, system mass
-    J = params.get('J', 0.0475)  # kg m^2, system inertia 
+    J = params.get('J', 0.0475)  # kg m^2, system inertia
     r = params.get('r', 0.25)    # m, thrust offset
     g = params.get('g', 9.8)     # m/s, gravitational constant
     c = params.get('c', 0.05)    # N s/m, rotational damping
@@ -1030,7 +1073,7 @@ def pvtol(t, x, u, params={}):
 def pvtol_full(t, x, u, params={}):
     from math import sin, cos
     m = params.get('m', 4.)      # kg, system mass
-    J = params.get('J', 0.0475)  # kg m^2, system inertia 
+    J = params.get('J', 0.0475)  # kg m^2, system inertia
     r = params.get('r', 0.25)    # m, thrust offset
     g = params.get('g', 9.8)     # m/s, gravitational constant
     c = params.get('c', 0.05)    # N s/m, rotational damping
