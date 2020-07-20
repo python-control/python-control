@@ -72,7 +72,6 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 # Define module default parameter values
 _statesp_defaults = {
     'statesp.use_numpy_matrix': False,  # False is default in 0.9.0 and above
-    'statesp.default_dt': 0,
     'statesp.remove_useless_states': True,
 }
 
@@ -155,8 +154,8 @@ class StateSpace(LTI):
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified sampling
-    time. The default value of 'dt' is None and can be changed by changing the
-    value of ``control.config.defaults['statesp.default_dt']``.
+    time. The default value of 'dt' is 0 and can be changed by changing the
+    value of ``control.config.defaults['control.default_dt']``.
 
     """
 
@@ -180,10 +179,10 @@ class StateSpace(LTI):
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
-            if _isstaticgain(A, B, C, D): 
+            if _isstaticgain(A, B, C, D):
                 dt = None
             else:
-                dt = config.defaults['statesp.default_dt']
+                dt = config.defaults['control.default_dt']
         elif len(args) == 5:
             # Discrete time system
             (A, B, C, D, dt) = args
@@ -199,10 +198,10 @@ class StateSpace(LTI):
             try:
                 dt = args[0].dt
             except NameError:
-                if _isstaticgain(A, B, C, D): 
+                if _isstaticgain(A, B, C, D):
                     dt = None
                 else:
-                    dt = config.defaults['statesp.default_dt']
+                    dt = config.defaults['control.default_dt']
         else:
             raise ValueError("Expected 1, 4, or 5 arguments; received %i." % len(args))
 
@@ -1268,7 +1267,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
     return sys
 
 def _isstaticgain(A, B, C, D):
-    """returns True if and only if the system has no dynamics, that is, 
+    """returns True if and only if the system has no dynamics, that is,
     if A and B are zero. """
     return not np.any(np.matrix(A, dtype=float)) \
         and not np.any(np.matrix(B, dtype=float))

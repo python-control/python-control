@@ -70,8 +70,7 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 
 
 # Define module default parameter values
-_xferfcn_defaults = {
-    'xferfcn.default_dt': 0}
+_xferfcn_defaults = {}
 
 class TransferFunction(LTI):
 
@@ -95,8 +94,8 @@ class TransferFunction(LTI):
     has a non-zero value, then it must match whenever two transfer functions
     are combined.  If 'dt' is set to True, the system will be treated as a
     discrete time system with unspecified sampling time. The default value of
-    'dt' is None and can be changed by changing the value of
-    ``control.config.defaults['xferfcn.default_dt']``.
+    'dt' is 0 and can be changed by changing the value of
+    ``control.config.defaults['control.default_dt']``.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
@@ -127,8 +126,8 @@ class TransferFunction(LTI):
             (num, den) = args
             if _isstaticgain(num, den):
                 dt = None
-            else: 
-                dt = config.defaults['xferfcn.default_dt']
+            else:
+                dt = config.defaults['control.default_dt']
         elif len(args) == 3:
             # Discrete time transfer function
             (num, den, dt) = args
@@ -146,8 +145,8 @@ class TransferFunction(LTI):
             except NameError:   # pragma: no coverage
                 if _isstaticgain(num, den):
                     dt = None
-                else: 
-                    dt = config.defaults['xferfcn.default_dt']
+                else:
+                    dt = config.defaults['control.default_dt']
         else:
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))
@@ -421,7 +420,7 @@ class TransferFunction(LTI):
         outputs = self.outputs
 
         dt = common_timebase(self.dt, other.dt)
-        
+
         # Preallocate the numerator and denominator of the sum.
         num = [[[0] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
@@ -1083,16 +1082,16 @@ class TransferFunction(LTI):
         return np.squeeze(gain)
 
     def is_static_gain(self):
-         """returns True if and only if all of the numerator and denominator 
-         polynomials of the (possibly MIMO) transfer function are zeroth order, 
+         """returns True if and only if all of the numerator and denominator
+         polynomials of the (possibly MIMO) transfer function are zeroth order,
          that is, if the system has no dynamics. """
-         for list_of_polys in self.num, self.den: 
+         for list_of_polys in self.num, self.den:
              for row in list_of_polys:
                  for poly in row:
-                     if len(poly) > 1: 
+                     if len(poly) > 1:
                          return False
          return True
-         
+
 # c2d function contributed by Benjamin White, Oct 2012
 def _c2d_matched(sysC, Ts):
     # Pole-zero match method of continuous to discrete time conversion
@@ -1566,15 +1565,15 @@ def _clean_part(data):
     return data
 
 def _isstaticgain(num, den):
-    """returns True if and only if all of the numerator and denominator 
-    polynomials of the (possibly MIMO) transfer funnction are zeroth order, 
+    """returns True if and only if all of the numerator and denominator
+    polynomials of the (possibly MIMO) transfer funnction are zeroth order,
     that is, if the system has no dynamics. """
     num, den = _clean_part(num), _clean_part(den)
-    for list_of_polys in num, den: 
+    for list_of_polys in num, den:
         for row in list_of_polys:
             for poly in row:
                 poly_trimmed = np.trim_zeros(poly, 'f') # trim leading zeros
-                if len(poly_trimmed) > 1: 
+                if len(poly_trimmed) > 1:
                     return False
     return True
 
