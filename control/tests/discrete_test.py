@@ -135,13 +135,18 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(timebase(feedback(tf3, tf4)), timebase(tf4))
 
         # Make sure all other combinations are errors
-        self.assertRaises(ValueError, tf2.__mul__, tf3)
-        self.assertRaises(ValueError, tf2.__mul__, tf4)
-        self.assertRaises(ValueError, tf2.__add__, tf3)
-        self.assertRaises(ValueError, tf2.__add__, tf4)
-        self.assertRaises(ValueError, tf2.feedback, tf3)
-        self.assertRaises(ValueError, tf2.feedback, tf4)
-        
+        with self.assertRaises(ValueError): tf2*tf3
+        with self.assertRaises(ValueError): tf3*tf2
+        with self.assertRaises(ValueError): tf2*tf4
+        with self.assertRaises(ValueError): tf4*tf2
+        with self.assertRaises(ValueError): tf2+tf3
+        with self.assertRaises(ValueError): tf3+tf2
+        with self.assertRaises(ValueError): tf2+tf4
+        with self.assertRaises(ValueError): tf4+tf2
+        with self.assertRaises(ValueError): feedback(tf2, tf3)
+        with self.assertRaises(ValueError): feedback(tf3, tf2)
+        with self.assertRaises(ValueError): feedback(tf2, tf4)
+        with self.assertRaises(ValueError): feedback(tf4, tf2)        
         
     def testisdtime(self):
         # Constant
