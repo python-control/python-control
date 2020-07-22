@@ -323,9 +323,9 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys1_11.A,
                                              sys1.A)
         np.testing.assert_array_almost_equal(sys1_11.B,
-                                             sys1.B[:, 1])
+                                             sys1.B[:, 1:2])
         np.testing.assert_array_almost_equal(sys1_11.C,
-                                             sys1.C[0, :])
+                                             sys1.C[0:1, :])
         np.testing.assert_array_almost_equal(sys1_11.D,
                                              sys1.D[0, 1])
 

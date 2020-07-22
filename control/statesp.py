@@ -70,14 +70,17 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 # Define module default parameter values
 _statesp_defaults = {
-    'statesp.use_numpy_matrix': True,
+    'statesp.use_numpy_matrix': False,
     'statesp.default_dt': None,
     'statesp.remove_useless_states': True, 
     }
 
 
 def _ssmatrix(data, axis=1):
-    """Convert argument to a (possibly empty) state space matrix.
+    """Convert argument to a (possibly empty) 2D state space matrix.
+
+    The axis keyword argument makes it convenient to specify that if the input
+    is a vector, it is a row (axis=1) or column (axis=0) vector.
 
     Parameters
     ----------
@@ -94,8 +97,10 @@ def _ssmatrix(data, axis=1):
     """
     # Convert the data into an array or matrix, as configured
     # If data is passed as a string, use (deprecated?) matrix constructor
-    if config.defaults['statesp.use_numpy_matrix'] or isinstance(data, str):
+    if config.defaults['statesp.use_numpy_matrix']:
         arr = np.matrix(data, dtype=float)
+    elif isinstance(data, str):
+        arr = np.array(np.matrix(data, dtype=float))
     else:
         arr = np.array(data, dtype=float)
     ndim = arr.ndim
@@ -195,12 +200,20 @@ class StateSpace(LTI):
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get('remove_useless', config.defaults['statesp.remove_useless_states'])
+        remove_useless = kw.get('remove_useless', 
+                                config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
         A = _ssmatrix(A)
-        B = _ssmatrix(B, axis=0)
-        C = _ssmatrix(C, axis=1)
+        # if B is a 1D array, turn it into a column vector if it fits
+        if np.asarray(B).ndim == 1 and len(B) == A.shape[0]:
+            B = _ssmatrix(B, axis=0)
+        else:
+            B = _ssmatrix(B)
+        if np.asarray(C).ndim == 1 and len(C) == A.shape[0]:
+            C = _ssmatrix(C, axis=1)
+        else:
+            C = _ssmatrix(C, axis=0) #if this doesn't work, error below
         if np.isscalar(D) and D == 0 and B.shape[1] > 0 and C.shape[0] > 0:
             # If D is a scalar zero, broadcast it to the proper size
             D = np.zeros((C.shape[0], B.shape[1]))
@@ -1240,8 +1253,8 @@ def _mimo2simo(sys, input, warn_conversion=False):
                  "Only input {i} is used." .format(i=input))
         # $X = A*X + B*U
         #  Y = C*X + D*U
-        new_B = sys.B[:, input]
-        new_D = sys.D[:, input]
+        new_B = sys.B[:, input:input+1]
+        new_D = sys.D[:, input:input+1]
         sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt)
 
     return sys

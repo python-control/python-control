@@ -53,7 +53,7 @@ class TestIOSys(unittest.TestCase):
         for x, u in (([0, 0], 0), ([1, 0], 0), ([0, 1], 0), ([0, 0], 1)):
             np.testing.assert_array_almost_equal(
                 np.reshape(iosys._rhs(0, x, u), (-1,1)),
-                linsys.A * np.reshape(x, (-1, 1)) + linsys.B * u)
+                np.dot(linsys.A, np.reshape(x, (-1, 1))) + np.dot(linsys.B, u))
 
         # Make sure that simulations also line up
         T, U, X0 = self.T, self.U, self.X0
