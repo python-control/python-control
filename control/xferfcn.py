@@ -114,7 +114,7 @@ class TransferFunction(LTI):
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         """TransferFunction(num, den[, dt])
 
         Construct a transfer function.
@@ -132,10 +132,6 @@ class TransferFunction(LTI):
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             (num, den) = args
-            if _isstaticgain(num, den):
-                dt = None
-            else:
-                dt = config.defaults['control.default_dt']
         elif len(args) == 3:
             # Discrete time transfer function
             (num, den, dt) = args
@@ -147,14 +143,6 @@ class TransferFunction(LTI):
                                 % type(args[0]))
             num = args[0].num
             den = args[0].den
-            # TODO: not sure this can ever happen since dt is always present
-            try:
-                dt = args[0].dt
-            except NameError:   # pragma: no coverage
-                if _isstaticgain(num, den):
-                    dt = None
-                else:
-                    dt = config.defaults['control.default_dt']
         else:
             raise ValueError("Needs 1, 2 or 3 arguments; received %i."
                              % len(args))
@@ -212,11 +200,35 @@ class TransferFunction(LTI):
                 if zeronum:
                     den[i][j] = ones(1)
 
-        LTI.__init__(self, inputs, outputs, dt)
+        LTI.__init__(self, inputs, outputs)
         self.num = num
         self.den = den
 
         self._truncatecoeff()
+
+        # get dt
+        if len(args) == 2:
+            # no dt given in positional arguments
+            if 'dt' in kwargs:
+                dt = kwargs['dt']
+            elif self.is_static_gain():
+                dt = None
+            else:
+                dt = config.defaults['control.default_dt']
+        elif len(args) == 3:
+            # Discrete time transfer function
+            if 'dt' in kwargs:
+                warn('received multiple dt arguments, using positional arg'%dt)
+        elif len(args) == 1:
+            # TODO: not sure this can ever happen since dt is always present
+            try:
+                dt = args[0].dt
+            except NameError:   # pragma: no coverage
+                if self.is_static_gain():
+                    dt = None
+                else:
+                    dt = config.defaults['control.default_dt']
+        self.dt = dt
 
     def __call__(self, s):
         """Evaluate the system's transfer function for a complex variable
@@ -1571,19 +1583,6 @@ def _clean_part(data):
                     data[i][j][k] = float(data[i][j][k])
 
     return data
-
-def _isstaticgain(num, den):
-    """returns True if and only if all of the numerator and denominator
-    polynomials of the (possibly MIMO) transfer funnction are zeroth order,
-    that is, if the system has no dynamics. """
-    num, den = _clean_part(num), _clean_part(den)
-    for list_of_polys in num, den:
-        for row in list_of_polys:
-            for poly in row:
-                poly_trimmed = np.trim_zeros(poly, 'f') # trim leading zeros
-                if len(poly_trimmed) > 1:
-                    return False
-    return True
 
 # Define constants to represent differentiation, unit delay
 TransferFunction.s = TransferFunction([1, 0], [1], 0)

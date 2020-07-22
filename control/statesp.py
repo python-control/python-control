@@ -170,7 +170,7 @@ class StateSpace(LTI):
     __array_priority__ = 11     # override ndarray and matrix types
 
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, **kwargs):
         """
         StateSpace(A, B, C, D[, dt])
 
@@ -183,16 +183,13 @@ class StateSpace(LTI):
         call StateSpace(sys), where sys is a StateSpace object.
 
         """
+        # first get A, B, C, D matrices
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
-            if _isstaticgain(A, B, C, D):
-                dt = None
-            else:
-                dt = config.defaults['control.default_dt']
         elif len(args) == 5:
             # Discrete time system
-            (A, B, C, D, dt) = args
+            (A, B, C, D, _) = args
         elif len(args) == 1:
             # Use the copy constructor.
             if not isinstance(args[0], StateSpace):
@@ -202,19 +199,12 @@ class StateSpace(LTI):
             B = args[0].B
             C = args[0].C
             D = args[0].D
-            try:
-                dt = args[0].dt
-            except NameError:
-                if _isstaticgain(A, B, C, D):
-                    dt = None
-                else:
-                    dt = config.defaults['control.default_dt']
         else:
             raise ValueError("Expected 1, 4, or 5 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get('remove_useless',
-                                config.defaults['statesp.remove_useless_states'])
+        remove_useless = kwargs.get('remove_useless',
+                                    config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
         A = _ssmatrix(A)
@@ -233,12 +223,33 @@ class StateSpace(LTI):
         D = _ssmatrix(D)
 
         # TODO: use super here?
-        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
+        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0])
         self.A = A
         self.B = B
         self.C = C
         self.D = D
 
+        # now set dt
+        if len(args) == 4:
+            if 'dt' in kwargs:
+                dt = kwargs['dt']
+            elif self.is_static_gain():
+                dt = None
+            else:
+                dt = config.defaults['control.default_dt']
+        elif len(args) == 5:
+            dt = args[4]
+            if 'dt' in kwargs:
+                warn('received multiple dt arguments, using positional arg'%dt)
+        elif len(args) == 1:
+            try:
+                dt = args[0].dt
+            except NameError:
+                if self.is_static_gain():
+                    dt = None
+                else:
+                    dt = config.defaults['control.default_dt']
+        self.dt = dt
         self.states = A.shape[1]
 
         if 0 == self.states:
@@ -954,6 +965,12 @@ class StateSpace(LTI):
         return np.squeeze(gain)
 
     def is_static_gain(self):
+        """True if and only if the system has no dynamics, that is,
+        if A and B are zero. """
+        return not np.any(self.A) and not np.any(self.B)
+
+
+    def is_static_gain(self):
          """True if and only if the system has no dynamics, that is,
          if A and B are zero. """
          return not np.any(self.A) and not np.any(self.B)
@@ -1272,12 +1289,6 @@ def _mimo2simo(sys, input, warn_conversion=False):
         sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt)
 
     return sys
-
-def _isstaticgain(A, B, C, D):
-    """returns True if and only if the system has no dynamics, that is,
-    if A and B are zero. """
-    return not np.any(np.matrix(A, dtype=float)) \
-        and not np.any(np.matrix(B, dtype=float))
 
 def ss(*args):
     """ss(A, B, C, D[, dt])
