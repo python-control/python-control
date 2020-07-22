@@ -218,7 +218,7 @@ class TransferFunction(LTI):
         elif len(args) == 3:
             # Discrete time transfer function
             if 'dt' in kwargs:
-                warn('received multiple dt arguments, using positional arg'%dt)
+                warn('received multiple dt arguments, using positional arg dt=%s'%dt)
         elif len(args) == 1:
             # TODO: not sure this can ever happen since dt is always present
             try:
@@ -1322,7 +1322,7 @@ def _convert_to_transfer_function(sys, **kw):
     raise TypeError("Can't convert given type to TransferFunction system.")
 
 
-def tf(*args):
+def tf(*args, **kwargs):
     """tf(num, den[, dt])
 
     Create a transfer function system. Can create MIMO systems.
@@ -1412,7 +1412,7 @@ def tf(*args):
     """
 
     if len(args) == 2 or len(args) == 3:
-        return TransferFunction(*args)
+        return TransferFunction(*args, **kwargs)
     elif len(args) == 1:
         # Look for special cases defining differential/delay operator
         if args[0] == 's':
@@ -1433,7 +1433,7 @@ def tf(*args):
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 
-def ss2tf(*args):
+def ss2tf(*args, **kwargs):
     """ss2tf(sys)
 
     Transform a state space system to a transfer function.
@@ -1498,7 +1498,7 @@ def ss2tf(*args):
     from .statesp import StateSpace
     if len(args) == 4 or len(args) == 5:
         # Assume we were given the A, B, C, D matrix and (optional) dt
-        return _convert_to_transfer_function(StateSpace(*args))
+        return _convert_to_transfer_function(StateSpace(*args, **kwargs))
 
     elif len(args) == 1:
         sys = args[0]

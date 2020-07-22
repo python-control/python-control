@@ -240,7 +240,7 @@ class StateSpace(LTI):
         elif len(args) == 5:
             dt = args[4]
             if 'dt' in kwargs:
-                warn('received multiple dt arguments, using positional arg'%dt)
+                warn('received multiple dt arguments, using positional arg dt=%s'%dt)
         elif len(args) == 1:
             try:
                 dt = args[0].dt
@@ -1290,7 +1290,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
 
     return sys
 
-def ss(*args):
+def ss(*args, **kwargs):
     """ss(A, B, C, D[, dt])
 
     Create a state space system.
@@ -1366,7 +1366,7 @@ def ss(*args):
     """
 
     if len(args) == 4 or len(args) == 5:
-        return StateSpace(*args)
+        return StateSpace(*args, **kwargs)
     elif len(args) == 1:
         from .xferfcn import TransferFunction
         sys = args[0]
@@ -1378,7 +1378,7 @@ def ss(*args):
             raise TypeError("ss(sys): sys must be a StateSpace or \
 TransferFunction object.  It is %s." % type(sys))
     else:
-        raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
+        raise ValueError("Needs 1, 4, or 5 arguments; received %i." % len(args))
 
 
 def tf2ss(*args):
