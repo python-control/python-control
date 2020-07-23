@@ -49,6 +49,11 @@ jobs:
       services: xvfb
       python: "3.8"
       env: SCIPY=scipy SLYCOT=source
+    - name: "use numpy matrix"
+      dist: xenial
+      services: xvfb
+      python: "3.8"
+      env: SCIPY=scipy SLYCOT=source PYTHON_CONTROL_STATESPACE_ARRAY=1
 
   # Exclude combinations that are very unlikely (and don't work)
   exclude:
