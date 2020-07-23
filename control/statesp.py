@@ -70,7 +70,7 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 # Define module default parameter values
 _statesp_defaults = {
-    'statesp.use_numpy_matrix': False,
+    'statesp.use_numpy_matrix': True,
     'statesp.default_dt': None,
     'statesp.remove_useless_states': True, 
     }
