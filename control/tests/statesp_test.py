@@ -245,6 +245,26 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_almost_equal(phase, true_phase)
         np.testing.assert_equal(omega, true_omega)
 
+    def test_is_static_gain(self):
+        A0 = np.zeros((2,2))
+        A1 = A0.copy()
+        A1[0,1] = 1.1
+        B0 = np.zeros((2,1))
+        B1 = B0.copy()
+        B1[0,0] = 1.3
+        C0 = A0
+        C1 = np.eye(2)
+        D0 = 0
+        D1 = np.ones((2,1))
+        self.assertTrue(StateSpace(A0, B0, C1, D1).is_static_gain()) # True
+        # fix this once remove_useless_states is false by default
+        #print(StateSpace(A1, B0, C1, D1).is_static_gain()) # should be False when remove_useless is false
+        self.assertFalse(StateSpace(A0, B1, C1, D1).is_static_gain()) # False
+        self.assertFalse(StateSpace(A1, B1, C1, D1).is_static_gain()) # False
+        self.assertTrue(StateSpace(A0, B0, C0, D0).is_static_gain()) # True
+        self.assertTrue(StateSpace(A0, B0, C0, D1).is_static_gain()) # True
+        self.assertTrue(StateSpace(A0, B0, C1, D0).is_static_gain()) # True
+        
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_minreal(self):
         """Test a minreal model reduction."""
@@ -652,26 +672,6 @@ class TestDrss(unittest.TestCase):
         # Change the A matrix for the original system
         linsys.A[0, 0] = -3
         np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
-
-    def test_sample_system_prewarping(self): 
-        """test that prewarping works when converting from cont to discrete time system"""
-        A = np.array([
-            [ 0.00000000e+00,  1.00000000e+00,  0.00000000e+00, 0.00000000e+00],
-            [-3.81097561e+01, -1.12500000e+00,  0.00000000e+00, 0.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00, 1.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00, -1.66356135e+04, -1.34748470e+01]])
-        B = np.array([
-            [    0.        ], [   38.1097561 ],[    0.     ],[16635.61352143]])
-        C = np.array([[0.90909091, 0.        , 0.09090909, 0.       ],])
-        wwarp = 50
-        Ts = 0.025
-        plant = StateSpace(A,B,C,0)
-        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
-        np.testing.assert_array_almost_equal(
-            evalfr(plant, wwarp*1j), 
-            evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
-            decimal=4)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,7 +40,7 @@ class TestDiscrete(unittest.TestCase):
         self.mimo_ss2d = StateSpace(A, B, C, D, 0.2)
 
         # Single input, single output continuus and discrete transfer function
-        self.siso_tf1 = TransferFunction([1, 1], [1, 2, 1], None)
+        self.siso_tf1 = TransferFunction([1, 1], [1, 2, 1],  None)
         self.siso_tf1c = TransferFunction([1, 1], [1, 2, 1], 0)
         self.siso_tf1d = TransferFunction([1, 1], [1, 2, 1], 0.1)
         self.siso_tf2d = TransferFunction([1, 1], [1, 2, 1], 0.2)
@@ -74,6 +74,18 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(self.siso_tf1d.dt, 0.1)
         self.assertEqual(self.siso_tf2d.dt, 0.2)
         self.assertEqual(self.siso_tf3d.dt, True)
+
+        # keyword argument check
+        # dynamic systems
+        self.assertEqual(TransferFunction(1, [1, 1], dt=0.1).dt, 0.1)
+        self.assertEqual(TransferFunction(1, [1, 1], 0.1).dt, 0.1)
+        self.assertEqual(StateSpace(1,1,1,1, dt=0.1).dt, 0.1)
+        self.assertEqual(StateSpace(1,1,1,1, 0.1).dt, 0.1)
+        # static gain system, dt argument should still override default dt
+        self.assertEqual(TransferFunction(1, [1,], dt=0.1).dt, 0.1)
+        self.assertEqual(TransferFunction(1, [1,], 0.1).dt, 0.1)
+        self.assertEqual(StateSpace(0,0,1,1, dt=0.1).dt, 0.1)
+        self.assertEqual(StateSpace(0,0,1,1, 0.1).dt, 0.1)
 
     def testCopyConstructor(self):
         for sys in (self.siso_ss1, self.siso_ss1c, self.siso_ss1d):
@@ -325,10 +337,27 @@ class TestDiscrete(unittest.TestCase):
             sysd = sample_system(sysc, 1, method="matched")
             self.assertEqual(sysd.dt, 1)
 
+        # bilinear approximation with prewarping test
+        wwarp = 50
+        Ts = 0.025
+        # test state space version
+        plant = self.siso_ss1c
+        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
+        np.testing.assert_array_almost_equal(
+            plant.evalfr(wwarp), 
+            plant_d_warped.evalfr(wwarp))
+        # test transfer function version
+        plant = self.siso_tf1c
+        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
+        np.testing.assert_array_almost_equal(
+            plant.evalfr(wwarp), 
+            plant_d_warped.evalfr(wwarp))
+
         # Check errors
         self.assertRaises(ValueError, sample_system, self.siso_ss1d, 1)
         self.assertRaises(ValueError, sample_system, self.siso_tf1d, 1)
         self.assertRaises(ValueError, sample_system, self.siso_ss1, 1, 'unknown')
+
 
     def test_sample_ss(self):
         # double integrators, two different ways

@@ -409,6 +409,26 @@ class TestXferFcn(unittest.TestCase):
             sys._evalfr(32.),
             np.array([[0.00281959302585077 - 0.030628473607392j]]))
 
+    def test_is_static_gain(self):
+        numstatic = 1.1
+        denstatic = 1.2
+        numdynamic = [1,1]
+        dendynamic = [2,1]
+        numstaticmimo = [[[1.1,], [1.2,]], [[1.2,], [0.8,]]]        
+        denstaticmimo = [[[1.9,], [1.2,]], [[1.2,], [0.8,]]]
+        numdynamicmimo = [[[1.1, 0.9], [1.2]], [[1.2], [0.8]]]        
+        dendynamicmimo = [[[1.1, 0.7], [0.2]], [[1.2], [0.8]]]
+        self.assertTrue(TransferFunction(numstatic,denstatic).is_static_gain()) # True
+        self.assertTrue(TransferFunction(numstaticmimo,denstaticmimo).is_static_gain()) # True
+        
+        self.assertFalse(TransferFunction(numstatic,dendynamic).is_static_gain()) # False
+        self.assertFalse(TransferFunction(numdynamic,dendynamic).is_static_gain()) # False
+        self.assertFalse(TransferFunction(numdynamic,denstatic).is_static_gain()) # False
+        self.assertFalse(TransferFunction(numstatic,dendynamic).is_static_gain()) # False
+        
+        self.assertFalse(TransferFunction(numstaticmimo,dendynamicmimo).is_static_gain()) # False
+        self.assertFalse(TransferFunction(numdynamicmimo,denstaticmimo).is_static_gain()) # False
+        
     # This test only works in Python 3 due to a conflict with the same
     # warning type in other test modules (frd_test.py).  See
     # https://bugs.python.org/issue4180 for more details
@@ -912,26 +932,5 @@ class TestXferFcn(unittest.TestCase):
                         H.den[p][m], H2.den[p][m])
             self.assertEqual(H.dt, H2.dt)
     
-    def test_sample_system_prewarping(self): 
-        """test that prewarping works when converting from cont to discrete time system"""
-        A = np.array([
-            [ 0.00000000e+00,  1.00000000e+00,  0.00000000e+00, 0.00000000e+00],
-            [-3.81097561e+01, -1.12500000e+00,  0.00000000e+00, 0.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00, 1.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00, -1.66356135e+04, -1.34748470e+01]])
-        B = np.array([
-            [    0.        ], [   38.1097561 ],[    0.     ],[16635.61352143]])
-        C = np.array([[0.90909091, 0.        , 0.09090909, 0.       ],])
-        wwarp = 50
-        Ts = 0.025
-        plant = StateSpace(A,B,C,0)
-        plant = ss2tf(plant)
-        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
-        np.testing.assert_array_almost_equal(
-            evalfr(plant, wwarp*1j), 
-            evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
-            decimal=4)
-
-
 if __name__ == "__main__":
     unittest.main()
