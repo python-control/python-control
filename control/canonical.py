@@ -6,7 +6,8 @@ from .lti import issiso
 from .statesp import StateSpace
 from .statefbk import ctrb, obsv
 
-from numpy import zeros, shape, poly, iscomplex, hstack, dot, transpose
+from numpy import zeros, zeros_like, shape, poly, iscomplex, vstack, hstack, dot, \
+    transpose, empty
 from numpy.linalg import solve, matrix_rank, eig
 
 __all__ = ['canonical_form', 'reachable_form', 'observable_form', 'modal_form',
@@ -70,9 +71,9 @@ def reachable_form(xsys):
     zsys = StateSpace(xsys)
 
     # Generate the system matrices for the desired canonical form
-    zsys.B = zeros(shape(xsys.B))
+    zsys.B = zeros_like(xsys.B)
     zsys.B[0, 0] = 1.0
-    zsys.A = zeros(shape(xsys.A))
+    zsys.A = zeros_like(xsys.A)
     Apoly = poly(xsys.A)                # characteristic polynomial
     for i in range(0, xsys.states):
         zsys.A[0, i] = -Apoly[i+1] / Apoly[0]
@@ -124,9 +125,9 @@ def observable_form(xsys):
     zsys = StateSpace(xsys)
 
     # Generate the system matrices for the desired canonical form
-    zsys.C = zeros(shape(xsys.C))
+    zsys.C = zeros_like(xsys.C)
     zsys.C[0, 0] = 1
-    zsys.A = zeros(shape(xsys.A))
+    zsys.A = zeros_like(xsys.A)
     Apoly = poly(xsys.A)                # characteristic polynomial
     for i in range(0, xsys.states):
         zsys.A[i, 0] = -Apoly[i+1] / Apoly[0]
@@ -144,7 +145,7 @@ def observable_form(xsys):
         raise ValueError("Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
-    zsys.B = Tzx * xsys.B
+    zsys.B = Tzx.dot(xsys.B)
 
     return zsys, Tzx
 
@@ -174,9 +175,9 @@ def modal_form(xsys):
     # Calculate eigenvalues and matrix of eigenvectors Tzx,
     eigval, eigvec = eig(xsys.A)
 
-    # Eigenvalues and according eigenvectors are not sorted,
+    # Eigenvalues and corresponding eigenvectors are not sorted,
     # thus modal transformation is ambiguous
-    # Sorting eigenvalues and respective vectors by largest to smallest eigenvalue
+    # Sort eigenvalues and vectors from largest to smallest eigenvalue
     idx = eigval.argsort()[::-1]
     eigval = eigval[idx]
     eigvec = eigvec[:,idx]
@@ -189,23 +190,18 @@ def modal_form(xsys):
 
         # Keep track of complex conjugates (need only one)
         lst_conjugates = []
-        Tzx = None
+        Tzx = empty((0, xsys.A.shape[0])) # empty zero-height row matrix
         for val, vec in zip(eigval, eigvec.T):
             if iscomplex(val):
                 if val not in lst_conjugates:
                     lst_conjugates.append(val.conjugate())
-                    if Tzx is not None:
-                        Tzx = hstack((Tzx, hstack((vec.real.T, vec.imag.T))))
-                    else:
-                        Tzx = hstack((vec.real.T, vec.imag.T))
+                    Tzx = vstack((Tzx, vec.real, vec.imag))
                 else:
                     # if conjugate has already been seen, skip this eigenvalue
                     lst_conjugates.remove(val)
             else:
-                if Tzx is not None:
-                    Tzx = hstack((Tzx, vec.real.T))
-                else:
-                    Tzx = vec.real.T
+                Tzx = vstack((Tzx, vec.real))
+        Tzx = Tzx.T
 
     # Generate the system matrices for the desired canonical form
     zsys.A = solve(Tzx, xsys.A).dot(Tzx)
