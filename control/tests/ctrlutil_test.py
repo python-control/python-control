@@ -1,11 +1,13 @@
-import unittest
-import numpy as np
-from control.ctrlutil import *
+"""ctrlutil_test.py"""
 
-class TestUtils(unittest.TestCase):
-    def setUp(self):
-        self.mag = np.array([1, 10, 100, 2, 0.1, 0.01])
-        self.db = np.array([0, 20, 40, 6.0205999, -20, -40])
+import numpy as np
+
+from control.ctrlutil import db2mag, mag2db, unwrap
+
+class TestUtils:
+
+    mag = np.array([1, 10, 100, 2, 0.1, 0.01])
+    db = np.array([0, 20, 40, 6.0205999, -20, -40])
 
     def check_unwrap_array(self, angle, period=None):
         if period is None:
@@ -56,7 +58,3 @@ class TestUtils(unittest.TestCase):
     def test_mag2db_array(self):
         db_array = mag2db(self.mag)
         np.testing.assert_array_almost_equal(db_array, self.db)
-
-
-if __name__ == "__main__":
-    unittest.main()
