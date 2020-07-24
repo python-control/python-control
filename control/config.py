@@ -168,8 +168,9 @@ def use_legacy_defaults(version):
     version : string
         version number of the defaults desired. ranges from '0.1' to '0.8.4'. 
     """
-    first_digit = int(version[0])
-    second_digit = int(version[2])
+    numbers_list = version.split(".")
+    first_digit = int(numbers_list[0])
+    second_digit = int(numbers_list[1].strip('abcdef')) # remove trailing letters
     if second_digit < 8:
         # TODO: anything for 0.7 and below if needed
         pass
