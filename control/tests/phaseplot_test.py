@@ -1,27 +1,28 @@
-#!/usr/bin/env python
-#
-# phaseplot_test.py - test phase plot functions
-# RMM, 17 24 2011 (based on TestMatlab from v0.4c)
-#
-# This test suite calls various phaseplot functions.  Since the plots
-# themselves can't be verified, this is mainly here to make sure all
-# of the function arguments are handled correctly.  If you run an
-# individual test by itself and then type show(), it should pop open
-# the figures so that you can check them visually.
+"""phaseplot_test.py - test phase plot functions
 
-import unittest
-import numpy as np
-import scipy as sp
+RMM, 17 24 2011 (based on TestMatlab from v0.4c)
+
+This test suite calls various phaseplot functions.  Since the plots
+themselves can't be verified, this is mainly here to make sure all
+of the function arguments are handled correctly.  If you run an
+individual test by itself and then type show(), it should pop open
+the figures so that you can check them visually.
+"""
+
+
 import matplotlib.pyplot as mpl
-from control import phase_plot
+import numpy as np
 from numpy import pi
+import pytest
+from control import phase_plot
 
-class TestPhasePlot(unittest.TestCase):
-    def setUp(self):
-        pass
+
+
+@pytest.mark.usefixtures("mplcleanup")
+class TestPhasePlot:
 
     def testInvPendNoSims(self):
-        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10))
+        phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10));
 
     def testInvPendSims(self):
         phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10),
@@ -74,12 +75,8 @@ class TestPhasePlot(unittest.TestCase):
     # Sample dynamical systems - inverted pendulum
     def invpend_ode(self, x, t, m=1., l=1., b=0, g=9.8):
         import numpy as np
-        return (x[1], -b/m*x[1] + (g*l/m)*np.sin(x[0]))
+        return (x[1], -b/m*x[1] + (g*l/m) * np.sin(x[0]))
 
     # Sample dynamical systems - oscillator
     def oscillator_ode(self, x, t, m=1., b=1, k=1, extra=None):
         return (x[1], -k/m*x[0] - b/m*x[1])
-
-
-if __name__ == '__main__':
-    unittest.main()
