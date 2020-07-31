@@ -325,7 +325,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     # Separate out the discrete and continuous time cases
     if isctime(sys):
         # Solve the differential equation, copied from scipy.signal.ltisys.
-        dot, squeeze, = np.dot, np.squeeze  # Faster and shorter code
+        dot = np.dot  # Faster and shorter code
 
         # Faster algorithm if U is zero
         if U is None or (isinstance(U, (int, float)) and U == 0):
