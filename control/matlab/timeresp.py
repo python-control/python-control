@@ -22,7 +22,7 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
 
     X0: array-like or number, optional
@@ -67,7 +67,7 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
 
     return yout, T
 
-def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
+def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9)):
     '''
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
@@ -77,7 +77,7 @@ def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
 
     SettlingTimeThreshold: float value, optional
@@ -110,7 +110,7 @@ def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
     '''
     from ..timeresp import step_info
 
-    S = step_info(sys, T, SettlingTimeThreshold, RiseTimeLimits)
+    S = step_info(sys, T, None, SettlingTimeThreshold, RiseTimeLimits)
 
     return S
 
@@ -130,9 +130,9 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-    
+
     X0: array-like or number, optional
         Initial condition (default = 0)
 
@@ -186,9 +186,9 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-    
+
     X0: array-like object or number, optional
         Initial condition (default = 0)
 
