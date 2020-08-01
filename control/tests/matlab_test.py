@@ -652,7 +652,7 @@ class TestMatlab(unittest.TestCase):
 
         # start with the basic satellite model sat1, and get the
         # payload attitude response
-        Hp = tf(sp.matrix([0, 0, 0, 1])*sat1)
+        Hp = tf(np.array([0, 0, 0, 1])*sat1)
 
         # total open loop
         Hol = Hc*Hno*Hp
