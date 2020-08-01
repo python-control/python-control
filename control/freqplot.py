@@ -40,11 +40,13 @@
 # SUCH DAMAGE.
 #
 # $Id$
+
+import math
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import scipy as sp
 import numpy as np
-import math
+
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
@@ -184,12 +186,12 @@ def bode_plot(syslist, omega=None,
             if Hz:
                 omega_limits *= 2. * math.pi
             if omega_num:
-                omega = sp.logspace(np.log10(omega_limits[0]),
+                omega = np.logspace(np.log10(omega_limits[0]),
                                     np.log10(omega_limits[1]),
                                     num=omega_num,
                                     endpoint=True)
             else:
-                omega = sp.logspace(np.log10(omega_limits[0]),
+                omega = np.logspace(np.log10(omega_limits[0]),
                                     np.log10(omega_limits[1]),
                                     endpoint=True)
 
@@ -530,8 +532,8 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
             phase = np.squeeze(phase_tmp)
 
             # Compute the primary curve
-            x = sp.multiply(mag, sp.cos(phase))
-            y = sp.multiply(mag, sp.sin(phase))
+            x = np.multiply(mag, np.cos(phase))
+            y = np.multiply(mag, np.sin(phase))
 
             if plot:
                 # Plot the primary curve and mirror image
@@ -557,7 +559,7 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                 ind = slice(None, None, label_freq)
                 for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
                     # Convert to Hz
-                    f = omegapt / (2 * sp.pi)
+                    f = omegapt / (2 * np.pi)
 
                     # Factor out multiples of 1000 and limit the
                     # result to the range [-8, 8].
