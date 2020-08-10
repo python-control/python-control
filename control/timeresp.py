@@ -815,7 +815,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         new_X0 = B + X0
     else:
         new_X0 = X0
-        U[0] = 1.
+        U[0] = 1./sys.dt # unit area impulse
 
     T, yout, _xout = forced_response(sys, T, U, new_X0, transpose=transpose,
                                      squeeze=squeeze)
