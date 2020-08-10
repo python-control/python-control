@@ -204,14 +204,15 @@ class TestTimeresp(unittest.TestCase):
         np.testing.assert_array_almost_equal(
             yy, np.vstack((youttrue, np.zeros_like(youttrue))), decimal=4)
 
-        # discrete time
-        self.siso_tf1
+    def test_discrete_time_impulse(self):
+        # discrete time impulse sampled version should match cont time
         dt = 0.1
-        sysdt = self.siso_tf1.sample(dt, 'impulse')
         t = np.arange(0, 3, dt)
-        np.testing.assert_array_almost_equal(control.impulse_response(sys, t)[1],
-                                             control.impulse_response(sysdt, t)[1])
-
+        sys = self.siso_tf1
+        sysdt = sys.sample(dt, 'impulse')
+        np.testing.assert_array_almost_equal(impulse_response(sys, t)[1],
+                                             impulse_response(sysdt, t)[1])
+        
     def test_initial_response(self):
         # Test SISO system
         sys = self.siso_ss1
