@@ -228,9 +228,11 @@ def lqe(A, G, C, QN, RN, NN=None):
     systems. Given the system
 
     Given the system
+
     .. math::
-        x = Ax + Bu + Gw
-        y = Cx + Du + v
+    
+        x &= Ax + Bu + Gw \\\\
+        y &= Cx + Du + v
      
     with unbiased process noise w and measurement noise v with covariances
 
@@ -260,7 +262,9 @@ def lqe(A, G, C, QN, RN, NN=None):
         Kalman estimator gain
     P: 2D array
         Solution to Riccati equation
+
         .. math::
+
             A P + P A^T - (P C^T + G N) R^-1  (C P + N^T G^T) + G Q G^T = 0
     E: 1D array
         Eigenvalues of estimator poles eig(A - L C)
