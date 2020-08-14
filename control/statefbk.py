@@ -263,7 +263,7 @@ def lqe(A, G, C, QN, RN, NN=None):
 
         .. math::
 
-            A P + P A^T - (P C^T + G N) R^-1  (C P + N^T G^T) + G Q G^T = 0
+            A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
     E: 1D array
         Eigenvalues of estimator poles eig(A - L C)
         
