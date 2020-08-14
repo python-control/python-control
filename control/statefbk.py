@@ -227,8 +227,6 @@ def lqe(A, G, C, QN, RN, NN=None):
     Linear quadratic estimator design (Kalman filter) for continuous-time
     systems. Given the system
 
-    Given the system
-
     .. math::
     
         x &= Ax + Bu + Gw \\\\
