@@ -73,7 +73,7 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     func : callable(x, t, ...)
         Computes the time derivative of y (compatible with odeint).
         The function should be the same for as used for
-        scipy.integrate.  Namely, it should be a function of the form
+        :mod:`scipy.integrate`.  Namely, it should be a function of the form
         dxdt = F(x, t) that accepts a state x of dimension 2 and
         returns a derivative dx/dt of dimension 2.
 

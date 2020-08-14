@@ -1514,8 +1514,9 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     return_y : bool, optional
         If True, return the value of output at the equilibrium point.
     return_result : bool, optional
-        If True, return the `result` option from the scipy root function used
-        to compute the equilibrium point.
+        If True, return the `result` option from the
+        :func:`scipy.optimize.root` function used to compute the equilibrium
+        point.
 
     Returns
     -------
@@ -1529,9 +1530,9 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         If `return_y` is True, returns the value of the outputs at the
         equilibrium point, or `None` if no equilibrium point was found and
         `return_result` was False.
-    result : scipy root() result object, optional
-        If `return_result` is True, returns the `result` from the scipy root
-        function.
+    result : :class:`scipy.optimize.OptimizeResult`, optional
+        If `return_result` is True, returns the `result` from the
+        :func:`scipy.optimize.root` function.
 
     """
     from scipy.optimize import root

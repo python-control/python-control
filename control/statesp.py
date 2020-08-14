@@ -72,7 +72,7 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 _statesp_defaults = {
     'statesp.use_numpy_matrix': True,
     'statesp.default_dt': None,
-    'statesp.remove_useless_states': True, 
+    'statesp.remove_useless_states': True,
     }
 
 
@@ -149,7 +149,7 @@ class StateSpace(LTI):
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified sampling
-    time. The default value of 'dt' is None and can be changed by changing the 
+    time. The default value of 'dt' is None and can be changed by changing the
     value of ``control.config.defaults['statesp.default_dt']``.
 
     """
@@ -788,15 +788,15 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
     # TODO: add discrete time check
     def returnScipySignalLTI(self):
-        """Return a list of a list of scipy.signal.lti objects.
+        """Return a list of a list of :class:`scipy.signal.lti` objects.
 
         For instance,
 
         >>> out = ssobject.returnScipySignalLTI()
         >>> out[3][5]
 
-        is a signal.scipy.lti object corresponding to the transfer function from
-        the 6th input to the 4th output."""
+        is a :class:`scipy.signal.lti` object corresponding to the transfer
+        function from the 6th input to the 4th output."""
 
         # Preallocate the output.
         out = [[[] for _ in range(self.inputs)] for _ in range(self.outputs)]
@@ -809,8 +809,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return out
 
     def append(self, other):
-        """Append a second model to the present model. The second
-        model is converted to state-space if necessary, inputs and
+        """Append a second model to the present model.
+
+        The second model is converted to state-space if necessary, inputs and
         outputs are appended and their order is preserved"""
         if not isinstance(other, StateSpace):
             other = _convertToStateSpace(other)
@@ -870,8 +871,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
-            time system's magnitude and phase (the gain=1 crossover frequency, 
-            for example). Should only be specified with method='bilinear' or 
+            time system's magnitude and phase (the gain=1 crossover frequency,
+            for example). Should only be specified with method='bilinear' or
             'gbt' with alpha=0.5 and ignored otherwise.
 
         Returns
@@ -881,7 +882,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Notes
         -----
-        Uses the command 'cont2discrete' from scipy.signal
+        Uses :func:`scipy.signal.cont2discrete`
 
         Examples
         --------
@@ -896,7 +897,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
                 prewarp_frequency is not None:
             Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
-        else: 
+        else:
             Twarp = Ts
         Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
         return StateSpace(Ad, Bd, C, D, Ts)
