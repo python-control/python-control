@@ -96,7 +96,7 @@ def nichols_plot(sys_list, omega=None, grid=None):
 
     for sys in sys_list:
         # Get the magnitude and phase of the system
-        mag_tmp, phase_tmp, omega = sys.freqresp(omega)
+        mag_tmp, phase_tmp, omega = sys.frequency_response(omega)
         mag = np.squeeze(mag_tmp)
         phase = np.squeeze(phase_tmp)
 

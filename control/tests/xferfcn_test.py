@@ -386,7 +386,7 @@ class TestXferFcn(unittest.TestCase):
         self.assertEqual((sys1.inputs, sys1.outputs), (2, 1))
         self.assertEqual(sys1.dt, 0.5)
 
-    def test_evalfr_siso(self):
+    def test_call_siso(self):
         """Evaluate the frequency response of a SISO system at one frequency."""
 
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
@@ -400,38 +400,22 @@ class TestXferFcn(unittest.TestCase):
         # Test call version as well
         np.testing.assert_almost_equal(sys(1.j), -0.5 - 0.5j)
         np.testing.assert_almost_equal(
-            sys(32.j), 0.00281959302585077 - 0.030628473607392j)
+            sys(32j), 0.00281959302585077 - 0.030628473607392j)
 
         # Test internal version (with real argument)
         np.testing.assert_array_almost_equal(
-            sys._evalfr(1.), np.array([[-0.5 - 0.5j]]))
+            sys(1j), np.array([[-0.5 - 0.5j]]))
         np.testing.assert_array_almost_equal(
-            sys._evalfr(32.),
+            sys(32j),
             np.array([[0.00281959302585077 - 0.030628473607392j]]))
 
-    # This test only works in Python 3 due to a conflict with the same
-    # warning type in other test modules (frd_test.py).  See
-    # https://bugs.python.org/issue4180 for more details
     @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
-    def test_evalfr_deprecated(self):
-        sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
-
-        # Deprecated version of the call (should generate warning)
-        import warnings
-        with warnings.catch_warnings():
-            # Make warnings generate an exception
-            warnings.simplefilter('error')
-
-            # Make sure that we get a pending deprecation warning
-            self.assertRaises(PendingDeprecationWarning, sys.evalfr, 1.)
-
-    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
-    def test_evalfr_dtime(self):
+    def test_call_dtime(self):
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1], 0.1)
         np.testing.assert_array_almost_equal(sys(1j), -0.5 - 0.5j)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def test_evalfr_mimo(self):
+    def test_call_mimo(self):
         """Evaluate the frequency response of a MIMO system at one frequency."""
 
         num = [[[1., 2.], [0., 3.], [2., -1.]],
@@ -443,12 +427,12 @@ class TestXferFcn(unittest.TestCase):
                 [-0.083333333333333, -0.188235294117647 - 0.847058823529412j,
                  -1. - 8.j]]
 
-        np.testing.assert_array_almost_equal(sys._evalfr(2.), resp)
+        np.testing.assert_array_almost_equal(evalfr(sys, 2j), resp)
 
         # Test call version as well
         np.testing.assert_array_almost_equal(sys(2.j), resp)
 
-    def test_freqresp_siso(self):
+    def test_frequency_response_siso(self):
         """Evaluate the magnitude and phase of a SISO system at
         multiple frequencies."""
 
@@ -459,14 +443,14 @@ class TestXferFcn(unittest.TestCase):
                        -1.32655885133871]]]
         trueomega = [0.1, 1., 10.]
 
-        mag, phase, omega = sys.freqresp(trueomega)
+        mag, phase, omega = sys.frequency_response(trueomega, squeeze=False)
 
         np.testing.assert_array_almost_equal(mag, truemag)
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_almost_equal(omega, trueomega)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
-    def test_freqresp_mimo(self):
+    def test_frequency_response_mimo(self):
         """Evaluate the magnitude and phase of a MIMO system at
         multiple frequencies."""
 
@@ -489,7 +473,7 @@ class TestXferFcn(unittest.TestCase):
                        [-1.66852323, -1.89254688, -1.62050658],
                        [-0.13298964, -1.10714871, -2.75046720]]]
 
-        mag, phase, omega = sys.freqresp(true_omega)
+        mag, phase, omega = sys.frequency_response(true_omega)
 
         np.testing.assert_array_almost_equal(mag, true_mag)
         np.testing.assert_array_almost_equal(phase, true_phase)

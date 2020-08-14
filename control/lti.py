@@ -13,7 +13,8 @@ timebaseEqual()
 """
 
 import numpy as np
-from numpy import absolute, real
+from numpy import absolute, real, angle, abs
+from warnings import warn
 
 __all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
            'pole', 'zero', 'damp', 'evalfr', 'freqresp', 'dcgain']
@@ -109,10 +110,55 @@ class LTI:
         Z = -real(splane_poles)/wn
         return wn, Z, poles
 
+    def frequency_response(self, omega, squeeze=True):
+        """Evaluate the linear time-invariant system at an array of angular 
+        frequencies.
+
+        Reports the frequency response of the system,
+
+             G(j*omega) = mag*exp(j*phase)
+
+        for continuous time systems. For discrete time systems, the response is
+        evaluated around the unit circle such that
+
+             G(exp(j*omega*dt)) = mag*exp(j*phase).
+
+        Parameters
+        ----------
+        omega : array_like or float
+            A list, tuple, array, or scalar value of frequencies in 
+            radians/sec at which the system will be evaluated. 
+        squeeze: bool, optional (default=True)
+            If True and sys is single input, single output (SISO), return a 
+            1D array or scalar depending on omega's length.
+
+        Returns
+        -------
+        mag : (self.outputs, self.inputs, len(omega)) ndarray
+            The magnitude (absolute value, not dB or log10) of the system
+            frequency response.
+        phase : (self.outputs, self.inputs, len(omega)) ndarray
+            The wrapped phase in radians of the system frequency response.
+        omega : ndarray
+            The (sorted) frequencies at which the response was evaluated.
+        
+        """        
+        omega = np.sort(np.array(omega, ndmin=1))
+        if isdtime(self, strict=True):
+            # Convert the frequency to discrete time
+            if np.any(omega * self.dt > np.pi):
+                warn("__call__: evaluation above Nyquist frequency")
+            s = np.exp(1j * omega * self.dt)
+        else:
+            s = 1j * omega
+        response = self.__call__(s, squeeze=squeeze)
+        return abs(response), angle(response), omega
+
     def dcgain(self):
         """Return the zero-frequency gain"""
         raise NotImplementedError("dcgain not implemented for %s objects" %
                                   str(self.__class__))
+    
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
@@ -379,20 +425,22 @@ def damp(sys, doprint=True):
                       (p.real, p.imag, d, w))
     return wn, damping, poles
 
-def evalfr(sys, x):
+def evalfr(sys, x, squeeze=True):
     """
-    Evaluate the transfer function of an LTI system for a single complex
-    number x.
+    Evaluate the transfer function of an LTI system for complex frequency x.
 
     To evaluate at a frequency, enter x = omega*j, where omega is the
-    frequency in radians
+    frequency in radians per second
 
     Parameters
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    x: scalar
+    x: scalar or array-like
         Complex number
+    squeeze: bool, optional (default=True)
+        If True and sys is single input, single output (SISO), return a 
+        1D array or scalar depending on omega's length.
 
     Returns
     -------
@@ -417,12 +465,12 @@ def evalfr(sys, x):
 
     .. todo:: Add example with MIMO system
     """
-    if issiso(sys):
+    if squeeze and issiso(sys):
         return sys.horner(x)[0][0]
     return sys.horner(x)
 
 
-def freqresp(sys, omega):
+def freqresp(sys, omega, squeeze=True):
     """
     Frequency response of an LTI system at multiple angular frequencies.
 
@@ -434,6 +482,9 @@ def freqresp(sys, omega):
         A list of frequencies in radians/sec at which the system should be
         evaluated. The list can be either a python list or a numpy array
         and will be sorted before evaluation.
+    squeeze: bool, optional (default=True)
+        If True and sys is single input, single output (SISO), return a 
+        1D array or scalar depending on omega's length.
 
     Returns
     -------
@@ -453,9 +504,8 @@ def freqresp(sys, omega):
 
     Notes
     -----
-    This function is a wrapper for StateSpace.freqresp and
-    TransferFunction.freqresp.  The output omega is a sorted version of the
-    input omega.
+    This function is a wrapper for StateSpace.frequency_response and
+    TransferFunction.frequency_response.  
 
     Examples
     --------
@@ -480,7 +530,7 @@ def freqresp(sys, omega):
         #>>> # frequency response from the 1st input to the 2nd output, for
         #>>> # s = 0.1i, i, 10i.
     """
-    return sys.freqresp(omega)
+    return sys.frequency_response(omega, squeeze=squeeze)
 
 
 def dcgain(sys):

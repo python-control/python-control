@@ -204,18 +204,21 @@ class TransferFunction(LTI):
 
         self._truncatecoeff()
 
-    def __call__(self, s):
-        """Evaluate the system's transfer function for a complex variable
+    def __call__(self, s, squeeze=True):
+        """Evaluate the system's transfer function at the complex frequency s/z.
 
-        For a SISO transfer function, returns the value of the
+        For a SISO transfer function, returns the complex value of the
         transfer function.  For a MIMO transfer fuction, returns a
-        matrix of values evaluated at complex variable s."""
+        matrix of values.
+        
+        If squeeze is True (default) and sys is single input, single output 
+        (SISO), return a 1D array or scalar depending on s.
 
-        if self.issiso():
-            # return a scalar
+        """    
+        if squeeze and self.issiso():
+            # return a scalar/1d array of outputs
             return self.horner(s)[0][0]
         else:
-            # return a matrix
             return self.horner(s)
 
     def _truncatecoeff(self):
@@ -608,40 +611,10 @@ class TransferFunction(LTI):
         else:
             return TransferFunction(num, den, self.dt)
 
-    def evalfr(self, omega):
-        """Evaluate a transfer function at a single angular frequency.
-
-        self._evalfr(omega) returns the value of the transfer function
-        matrix with input value s = i * omega.
-
-        """
-        warn("TransferFunction.evalfr(omega) will be deprecated in a "
-             "future release of python-control; use evalfr(sys, omega*1j) "
-             "instead", PendingDeprecationWarning)
-        return self._evalfr(omega)
-
-    def _evalfr(self, omega):
-        """Evaluate a transfer function at a single angular frequency."""
-        # TODO: implement for discrete time systems
-        if isdtime(self, strict=True):
-            # Convert the frequency to discrete time
-            dt = timebase(self)
-            s = exp(1.j * omega * dt)
-            if np.any(omega * dt > pi):
-                warn("_evalfr: frequency evaluation above Nyquist frequency")
-        else:
-            s = 1.j * omega
-
-        return self.horner(s)
-
     def horner(self, s):
-        """Evaluate the systems's transfer function for a complex variable
-
-        Returns a matrix of values evaluated at complex variable s.
-        """
-
+        "Evaluate system's transfer function at complex frequencies s."
         # Preallocate the output.
-        if getattr(s, '__iter__', False):
+        if hasattr(s, '__len__'):
             out = empty((self.outputs, self.inputs, len(s)), dtype=complex)
         else:
             out = empty((self.outputs, self.inputs), dtype=complex)
@@ -654,59 +627,12 @@ class TransferFunction(LTI):
         return out
 
     def freqresp(self, omega):
-        """Evaluate the transfer function at a list of angular frequencies.
-
-        Reports the frequency response of the system,
-
-             G(j*omega) = mag*exp(j*phase)
-
-        for continuous time. For discrete time systems, the response is
-        evaluated around the unit circle such that
-
-             G(exp(j*omega*dt)) = mag*exp(j*phase).
-
-        Parameters
-        ----------
-        omega : array_like
-            A list of frequencies in radians/sec at which the system should be
-            evaluated. The list can be either a python list or a numpy array
-            and will be sorted before evaluation.
-
-        Returns
-        -------
-        mag : (self.outputs, self.inputs, len(omega)) ndarray
-            The magnitude (absolute value, not dB or log10) of the system
-            frequency response.
-        phase : (self.outputs, self.inputs, len(omega)) ndarray
-            The wrapped phase in radians of the system frequency response.
-        omega : ndarray or list or tuple
-            The list of sorted frequencies at which the response was
-            evaluated.
-        """
-        # Preallocate outputs.
-        numfreq = len(omega)
-        mag = empty((self.outputs, self.inputs, numfreq))
-        phase = empty((self.outputs, self.inputs, numfreq))
-
-        # Figure out the frequencies
-        omega.sort()
-        if isdtime(self, strict=True):
-            dt = timebase(self)
-            slist = np.array([exp(1.j * w * dt) for w in omega])
-            if max(omega) * dt > pi:
-                warn("freqresp: frequency evaluation above Nyquist frequency")
-        else:
-            slist = np.array([1j * w for w in omega])
-
-        # Compute frequency response for each input/output pair
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                fresp = (polyval(self.num[i][j], slist) /
-                         polyval(self.den[i][j], slist))
-                mag[i, j, :] = abs(fresp)
-                phase[i, j, :] = angle(fresp)
-
-        return mag, phase, omega
+        warn("TransferFunction.freqresp(omega) will be deprecated in a "
+             "future release of python-control; use "
+             "TransferFunction.frequency_response(sys, omega), or "
+             "freqresp(sys, omega) in the MATLAB compatibility module "
+             "instead", PendingDeprecationWarning)        
+        return self.frequency_response(omega)
 
     def pole(self):
         """Compute the poles of a transfer function."""

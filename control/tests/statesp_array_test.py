@@ -180,7 +180,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
-    def test_evalfr(self):
+    def test_call(self):
         """Evaluate the frequency response at one frequency."""
 
         A = [[-2, 0.5], [0.5, -0.3]]
@@ -196,22 +196,7 @@ class TestStateSpace(unittest.TestCase):
 
         # Correct versions of the call
         np.testing.assert_almost_equal(evalfr(sys, 1j), resp)
-        np.testing.assert_almost_equal(sys._evalfr(1.), resp)
-
-        # Deprecated version of the call (should generate warning)
-        import warnings
-        with warnings.catch_warnings(record=True) as w:
-            # Set up warnings filter to only show warnings in control module
-            warnings.filterwarnings("ignore")
-            warnings.filterwarnings("always", module="control")
-
-            # Make sure that we get a pending deprecation warning
-            sys.evalfr(1.)
-            assert len(w) == 1
-            assert issubclass(w[-1].category, PendingDeprecationWarning)
-
-            # Leave the warnings filter like we found it
-            warnings.resetwarnings()
+        np.testing.assert_almost_equal(sys(1.j), resp)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_freq_resp(self):
@@ -233,7 +218,7 @@ class TestStateSpace(unittest.TestCase):
                       [-0.438157380501337, -1.40720969147217]]]
         true_omega = [0.1, 10.]
 
-        mag, phase, omega = sys.freqresp(true_omega)
+        mag, phase, omega = sys.frequency_response(true_omega)
 
         np.testing.assert_almost_equal(mag, true_mag)
         np.testing.assert_almost_equal(phase, true_phase)
@@ -518,7 +503,7 @@ class TestStateSpace(unittest.TestCase):
         self.sys322.horner(1.+1.j)
 
         # Make sure result agrees with frequency response
-        mag, phase, omega = self.sys322.freqresp([1])
+        mag, phase, omega = self.sys322.frequency_response([1])
         np.testing.assert_array_almost_equal(
             self.sys322.horner(1.j),
             mag[:,:,0] * np.exp(1.j * phase[:,:,0]))

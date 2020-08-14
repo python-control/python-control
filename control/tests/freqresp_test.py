@@ -18,7 +18,7 @@ from control.matlab import ss, tf, bode, rss
 from control.exception import slycot_check
 
 
-class TestFreqresp(unittest.TestCase):
+class TestFrequencyResponse(unittest.TestCase):
    def setUp(self):
       self.A = np.matrix('1,1;0,1')
       self.C = np.matrix('1,0')
@@ -30,7 +30,7 @@ class TestFreqresp(unittest.TestCase):
       sys = StateSpace(self.A,B,self.C,D)
 
       # test frequency response
-      frq=sys.freqresp(self.omega)
+      frq=sys.frequency_response(self.omega)
 
       # test bode plot
       bode(sys)
@@ -84,7 +84,7 @@ class TestFreqresp(unittest.TestCase):
       self.assertEqual(len(ax.get_lines()), 2)
 
    def test_doubleint(self):
-      # 30 May 2016, RMM: added to replicate typecast bug in freqresp.py
+      # 30 May 2016, RMM: added to replicate typecast bug in frequency_response.py
       A = np.matrix('0, 1; 0, 0');
       B = np.matrix('0; 1');
       C = np.matrix('1, 0');
@@ -99,7 +99,7 @@ class TestFreqresp(unittest.TestCase):
       D = np.matrix('0,0')
       sysMIMO = ss(self.A,B,self.C,D)
 
-      frqMIMO = sysMIMO.freqresp(self.omega)
+      frqMIMO = sysMIMO.frequency_response(self.omega)
       tfMIMO = tf(sysMIMO)
 
       #bode(sysMIMO) # - should throw not implemented exception
@@ -167,7 +167,7 @@ class TestFreqresp(unittest.TestCase):
          omega_ok = np.linspace(10e-4,0.99,100) * np.pi/sys.dt
 
          # Test frequency response
-         ret = sys.freqresp(omega_ok)
+         ret = sys.frequency_response(omega_ok)
 
          # Check for warning if frequency is out of range
          import warnings
@@ -179,7 +179,7 @@ class TestFreqresp(unittest.TestCase):
 
             # Look for a warning about sampling above Nyquist frequency
             omega_bad = np.linspace(10e-4,1.1,10) * np.pi/sys.dt
-            ret = sys.freqresp(omega_bad)
+            ret = sys.frequency_response(omega_bad)
             print("len(w) =", len(w))
             self.assertEqual(len(w), 1)
             self.assertIn("above", str(w[-1].message))

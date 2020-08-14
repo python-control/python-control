@@ -189,7 +189,7 @@ class TestStateSpace(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
-    def test_evalfr(self):
+    def test_call(self):
         """Evaluate the frequency response at one frequency."""
 
         A = [[-2, 0.5], [0.5, -0.3]]
@@ -205,7 +205,14 @@ class TestStateSpace(unittest.TestCase):
 
         # Correct versions of the call
         np.testing.assert_almost_equal(evalfr(sys, 1j), resp)
-        np.testing.assert_almost_equal(sys._evalfr(1.), resp)
+        np.testing.assert_almost_equal(sys(1.j), resp)
+
+    def test_freqresp_deprecated(self):
+        A = [[-2, 0.5], [0.5, -0.3]]
+        B = [[0.3, -1.3], [0.1, 0.]]
+        C = [[0., 0.1], [-0.3, -0.2]]
+        D = [[0., -0.8], [-0.3, 0.]]
+        sys = StateSpace(A, B, C, D)
 
         # Deprecated version of the call (should generate warning)
         import warnings
@@ -215,8 +222,7 @@ class TestStateSpace(unittest.TestCase):
             warnings.filterwarnings("always", module="control")
 
             # Make sure that we get a pending deprecation warning
-            sys.evalfr(1.)
-            assert len(w) == 1
+            sys.freqresp(1.)
             assert issubclass(w[-1].category, PendingDeprecationWarning)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
@@ -239,12 +245,12 @@ class TestStateSpace(unittest.TestCase):
                       [-0.438157380501337, -1.40720969147217]]]
         true_omega = [0.1, 10.]
 
-        mag, phase, omega = sys.freqresp(true_omega)
+        mag, phase, omega = sys.frequency_response(true_omega)
 
         np.testing.assert_almost_equal(mag, true_mag)
         np.testing.assert_almost_equal(phase, true_phase)
         np.testing.assert_equal(omega, true_omega)
-
+        
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_minreal(self):
         """Test a minreal model reduction."""
@@ -652,26 +658,5 @@ class TestDrss(unittest.TestCase):
         # Change the A matrix for the original system
         linsys.A[0, 0] = -3
         np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
-
-    def test_sample_system_prewarping(self): 
-        """test that prewarping works when converting from cont to discrete time system"""
-        A = np.array([
-            [ 0.00000000e+00,  1.00000000e+00,  0.00000000e+00, 0.00000000e+00],
-            [-3.81097561e+01, -1.12500000e+00,  0.00000000e+00, 0.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00, 1.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00, -1.66356135e+04, -1.34748470e+01]])
-        B = np.array([
-            [    0.        ], [   38.1097561 ],[    0.     ],[16635.61352143]])
-        C = np.array([[0.90909091, 0.        , 0.09090909, 0.       ],])
-        wwarp = 50
-        Ts = 0.025
-        plant = StateSpace(A,B,C,0)
-        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
-        np.testing.assert_array_almost_equal(
-            evalfr(plant, wwarp*1j), 
-            evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
-            decimal=4)
-
-
 if __name__ == "__main__":
     unittest.main()
