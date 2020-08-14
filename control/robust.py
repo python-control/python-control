@@ -119,8 +119,8 @@ def hinfsyn(P, nmeas, ncon):
     rcond: 4-vector, reciprocal condition estimates of:
         1: control transformation matrix
         2: measurement transformation matrix
-        3: X-Ricatti equation
-        4: Y-Ricatti equation
+        3: X-Riccati equation
+        4: Y-Riccati equation
     TODO: document significance of rcond
 
     Raises
