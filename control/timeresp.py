@@ -219,7 +219,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     transpose: bool, optional (default=False)
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and scipy.signal.lsim)
+        compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
     interpolate: bool, optional (default=False)
         If True and system is a discrete time system, the input will
@@ -249,7 +249,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     Notes
     -----
     For discrete time systems, the input/output response is computed using the
-    :scipy-signal:ref:`scipy.signal.dlsim` function.
+    :func:`scipy.signal.dlsim` function.
 
     For continuous time systems, the output is computed using the matrix
     exponential `exp(A t)` and assuming linear interpolation of the inputs
@@ -490,7 +490,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and scipy.signal.lsim)
+        compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
     return_x: bool
         If True, return the state vector (default = False).
@@ -662,7 +662,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and scipy.signal.lsim)
+        compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
     return_x: bool
         If True, return the state vector (default = False).
@@ -751,7 +751,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and scipy.signal.lsim)
+        compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
     return_x: bool
         If True, return the state vector (default = False).
