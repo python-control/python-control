@@ -110,9 +110,9 @@ def bode_plot(syslist, omega=None,
         config.defaults['freqplot.number_of_samples'].
     margins : bool
         If True, plot gain and phase margin.
-    *args : `matplotlib` plot positional properties, optional
+    *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
-    **kwargs : `matplotlib` plot keyword properties, optional
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns
@@ -465,9 +465,9 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
         Label every nth frequency on the plot
     arrowhead_width : arrow head width
     arrowhead_length : arrow head length
-    *args : `matplotlib` plot positional properties, optional
+    *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
-    **kwargs : `matplotlib` plot keyword properties, optional
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns
@@ -602,7 +602,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
         Linear input/output systems (process and control)
     omega : array
         Range of frequencies (list or bounds) in rad/sec
-    **kwargs : `matplotlib` plot keyword properties, optional
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns

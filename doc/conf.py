@@ -99,7 +99,9 @@ pygments_style = 'sphinx'
 # should be linked to in this documentation.
 intersphinx_mapping = \
     {'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
-     'numpy': ('https://docs.scipy.org/doc/numpy', None)}
+     'numpy': ('https://numpy.org/doc/stable', None),
+     'matplotlib': ('https://matplotlib.org/', None),
+     }
 
 # If this is True, todo and todolist produce output, else they produce nothing.
 # The default is False.

@@ -45,6 +45,7 @@ Frequency domain plotting
     nyquist_plot
     gangof4_plot
     nichols_plot
+    nichols_grid
 
 Note: For plotting commands that create multiple axes on the same plot, the
 individual axes can be retrieved using the axes label (retrieved using the
