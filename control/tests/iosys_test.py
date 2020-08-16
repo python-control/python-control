@@ -860,8 +860,8 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_equal(
             iosys_siso.pole(), self.siso_linsys.pole())
         omega = np.logspace(.1, 10, 100)
-        mag_io, phase_io, omega_io = iosys_siso.freqresp(omega)
-        mag_ss, phase_ss, omega_ss = self.siso_linsys.freqresp(omega)
+        mag_io, phase_io, omega_io = iosys_siso.frequency_response(omega)
+        mag_ss, phase_ss, omega_ss = self.siso_linsys.frequency_response(omega)
         np.testing.assert_array_equal(mag_io, mag_ss)
         np.testing.assert_array_equal(phase_io, phase_ss)
         np.testing.assert_array_equal(omega_io, omega_ss)

@@ -527,6 +527,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # Preallocate 
         out = empty((self.outputs, self.inputs, len(s_arr)), dtype=complex)
         
+        #TODO: can this be vectorized? 
         for idx, s_idx in enumerate(s_arr):
             out[:,:,idx] = \
                 np.dot(self.C, 

@@ -224,8 +224,8 @@ Frequency-domain analysis
 \*  :func:`~control.nichols`    Nichols plot
 \*  :func:`margin`              gain and phase margins
 \   lti/allmargin               all crossover frequencies and margins
-\*  :func:`freqresp`            frequency response over a frequency grid
-\*  :func:`evalfr`              frequency response at single frequency
+\*  :func:`freqresp`            frequency response 
+\*  :func:`evalfr`              frequency response at complex frequency s
 ==  ==========================  ============================================
 
 
