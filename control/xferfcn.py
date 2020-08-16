@@ -204,22 +204,48 @@ class TransferFunction(LTI):
 
         self._truncatecoeff()
 
-    def __call__(self, s, squeeze=True):
-        """Evaluate the system's transfer function at the complex frequency s/z.
-
-        For a SISO transfer function, returns the complex value of the
-        transfer function.  For a MIMO transfer fuction, returns a
-        matrix of values.
+    def __call__(self, x, squeeze=True):
+        """Evaluate system's transfer function at complex frequencies.
+        
+        Evaluates at complex frequencies x, where x is s or z dependong on 
+        whether the system is continuous or discrete-time.
         
         If squeeze is True (default) and sys is single input, single output 
-        (SISO), return a 1D array or scalar depending on s.
+        (SISO), return a 1D array or scalar depending on the shape of x. 
+        For a MIMO system, returns an (n_outputs, n_inputs, n_x) array.
 
-        """    
+        """        
+        out = self.horner(x)
+        if not hasattr(x, '__len__'): 
+            # received a scalar x, squeeze down the array along last dim
+            out = np.squeeze(out, axis=2)
         if squeeze and self.issiso():
             # return a scalar/1d array of outputs
-            return self.horner(s)[0][0]
+            return out[0][0]
         else:
-            return self.horner(s)
+            return out
+
+    def horner(self, s):
+        """Evaluate system's transfer function at complex frequencies s 
+        using Horner's method.
+
+        Expects inputs and outputs to be formatted correctly. Use __call__
+        for a more user-friendly interface. 
+
+        Parameters
+            s : array-like
+
+        Returns
+            output : array of size (outputs, inputs, len(s))
+        
+        """
+        s_arr = np.array(s, ndmin=1) # force to be an array
+        out = empty((self.outputs, self.inputs, len(s_arr)), dtype=complex)
+        for i in range(self.outputs):
+            for j in range(self.inputs):
+                out[i][j] = (polyval(self.num[i][j], s) /
+                             polyval(self.den[i][j], s))
+        return out
 
     def _truncatecoeff(self):
         """Remove extraneous zero coefficients from num and den.
@@ -610,21 +636,6 @@ class TransferFunction(LTI):
             return TransferFunction(num, den)
         else:
             return TransferFunction(num, den, self.dt)
-
-    def horner(self, s):
-        "Evaluate system's transfer function at complex frequencies s."
-        # Preallocate the output.
-        if hasattr(s, '__len__'):
-            out = empty((self.outputs, self.inputs, len(s)), dtype=complex)
-        else:
-            out = empty((self.outputs, self.inputs), dtype=complex)
-
-        for i in range(self.outputs):
-            for j in range(self.inputs):
-                out[i][j] = (polyval(self.num[i][j], s) /
-                             polyval(self.den[i][j], s))
-
-        return out
 
     def freqresp(self, omega):
         warn("TransferFunction.freqresp(omega) will be deprecated in a "

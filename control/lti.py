@@ -465,9 +465,14 @@ def evalfr(sys, x, squeeze=True):
 
     .. todo:: Add example with MIMO system
     """
+    out = sys.horner(x)
+    if not hasattr(x, '__len__'): 
+            # received a scalar x, squeeze down the array along last dim
+            out = np.squeeze(out, axis=2)
     if squeeze and issiso(sys):
-        return sys.horner(x)[0][0]
-    return sys.horner(x)
+        return out[0][0]
+    else: 
+        return out
 
 
 def freqresp(sys, omega, squeeze=True):

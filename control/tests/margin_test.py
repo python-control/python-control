@@ -76,7 +76,7 @@ def test_stability_margins_omega(sys, refout, refoutall):
 def test_stability_margins_3input(sys, refout, refoutall):
     """Test stability_margins() function with mag, phase, omega input"""
     omega = np.logspace(-2, 2, 2000)
-    mag, phase, omega_ = sys.freqresp(omega)
+    mag, phase, omega_ = sys.frequency_response(omega)
     out = stability_margins((mag, phase*180/np.pi, omega_))
     assert_allclose(out, refout, atol=1.5e-3)
 
@@ -92,7 +92,7 @@ def test_margin_sys(sys, refout, refoutall):
 def test_margin_3input(sys, refout, refoutall):
     """Test margin() function with mag, phase, omega input"""
     omega = np.logspace(-2, 2, 2000)
-    mag, phase, omega_ = sys.freqresp(omega)
+    mag, phase, omega_ = sys.frequency_response(omega)
     out = margin((mag, phase*180/np.pi, omega_))
     assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
@@ -113,7 +113,7 @@ def test_phase_crossover_frequencies():
                            [[3], [4]]],
                           [[[1, 2, 3, 4], [1, 1]],
                            [[1, 1], [1, 1]]])
-    omega, gain = phase_crossover_frequencies(tf)
+    omega, gain = phase_crossover_frequencies(tf[0,0])
     assert_allclose(omega, [1.73205,  0.], atol=1.5e-3)
     assert_allclose(gain, [-0.5,  0.25], atol=1.5e-3)
 
@@ -123,7 +123,7 @@ def test_mag_phase_omega():
     sys = TransferFunction(15, [1, 6, 11, 6])
     out = stability_margins(sys)
     omega = np.logspace(-2, 2, 1000)
-    mag, phase, omega = sys.freqresp(omega)
+    mag, phase, omega = sys.frequency_response(omega)
     out2 = stability_margins((mag, phase*180/np.pi, omega))
     ind = [0, 1, 3, 4]   # indices of gm, pm, wg, wp -- ignore sm
     marg1 = np.array(out)[ind]

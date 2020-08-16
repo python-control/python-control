@@ -505,7 +505,7 @@ class TestStateSpace(unittest.TestCase):
         # Make sure result agrees with frequency response
         mag, phase, omega = self.sys322.frequency_response([1])
         np.testing.assert_array_almost_equal(
-            self.sys322.horner(1.j),
+            np.squeeze(self.sys322.horner(1.j)),
             mag[:,:,0] * np.exp(1.j * phase[:,:,0]))
 
     def tearDown(self):

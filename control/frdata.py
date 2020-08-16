@@ -47,7 +47,7 @@ FRD data.
 # External function declarations
 from warnings import warn
 import numpy as np
-from numpy import angle, array, empty, ones, isin, \
+from numpy import angle, array, empty, ones, \
     real, imag, absolute, eye, linalg, where, dot, sort
 from scipy.interpolate import splprep, splev
 from .lti import LTI
@@ -354,7 +354,7 @@ second has %i." % (self.outputs, other.outputs))
         
         squeeze: bool, optional (default=True)
             If True and sys is single input, single output (SISO), return a 
-            1D array or scalar depending on omega's length.
+            1D array or scalar the same length as omega.
 
         """
         omega_array = np.array(omega, ndmin=1) # array-like version of omega 
@@ -362,15 +362,16 @@ second has %i." % (self.outputs, other.outputs))
             raise ValueError("FRD.eval can only accept real-valued omega")
 
         if self.ifunc is None:
-            elements = isin(self.omega, omega)
+            elements = np.isin(self.omega, omega) # binary array
             if sum(elements) < len(omega_array):
                 raise ValueError(
-                    "not all frequencies omega are in frequency list of FRD "
-                    "system. Try an interpolating FRD for additional points.")
+                    '''not all frequencies omega are in frequency list of FRD 
+                    system. Try an interpolating FRD for additional points.''')
             else:
                 out = self.fresp[:, :, elements]
         else:
-            out = empty((self.outputs, self.inputs, len(omega_array)))
+            out = empty((self.outputs, self.inputs, len(omega_array)), 
+                         dtype=complex)
             for i in range(self.outputs):
                 for j in range(self.inputs):
                     for k, w in enumerate(omega_array):

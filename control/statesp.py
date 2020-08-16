@@ -437,60 +437,91 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         raise NotImplementedError("StateSpace.__rdiv__ is not implemented yet.")
 
-    def __call__(self, s, squeeze=True):
-        """Evaluate system's transfer function at complex frequencies s/z.
+    def __call__(self, x, squeeze=True):
+        """Evaluate system's transfer function at complex frequencies.
+        
+        Evaluates at complex frequency x, where x is s or z dependong on 
+        whether the system is continuous or discrete-time.
         
         If squeeze is True (default) and sys is single input, single output 
-        (SISO), return a 1D array or scalar depending on s.
+        (SISO), return a 1D array or scalar depending on the size of x. 
+        For a MIMO system, returns an (n_outputs, n_inputs, n_x) array.
 
         """        
-        # Use TB05AD from Slycot if available
+        # Use Slycot if available
         try:
-            from slycot import tb05ad
-
-            # preallocate
-            s_arr = np.array(s, ndmin=1) # array-like version of s
-            out = np.empty((self.outputs, self.inputs, len(s_arr)), 
-                           dtype=complex)
-            n = self.states
-            m = self.inputs
-            p = self.outputs
-            # The first call both evaluates C(sI-A)^-1 B and also returns
-            # Hessenberg transformed matrices at, bt, ct.
-            result = tb05ad(n, m, p, s_arr[0], self.A,
-                            self.B, self.C, job='NG')
-            # When job='NG', result = (at, bt, ct, g_i, hinvb, info)
-            at = result[0]
-            bt = result[1]
-            ct = result[2]
-
-            # TB05AD frequency evaluation does not include direct feedthrough.
-            out[:, :, 0] = result[3] + self.D
-
-            # Now, iterate through the remaining frequencies using the
-            # transformed state matrices, at, bt, ct.
-
-            # Start at the second frequency, already have the first.
-            for kk, s_kk in enumerate(s_arr[1:len(s_arr)]):
-                result = tb05ad(n, m, p, s_kk, at, bt, ct, job='NH')
-                # When job='NH', result = (g_i, hinvb, info)
-
-                # kk+1 because enumerate starts at kk = 0.
-                # but zero-th spot is already filled.
-                out[:, :, kk+1] = result[0] + self.D
-            
-            if not hasattr(s, '__len__'): 
-                # received a scalar s, squeeze down the array
-                out = np.squeeze(out, axis=2)
-        except ImportError:  # Slycot unavailable. Fall back to horner.
-            out = self.horner(s)
+            out = self.slycot_horner(x)
+        except ImportError:  # Slycot unavailable. use built-in horner.
+            out = self.horner(x)
+        if not hasattr(x, '__len__'): 
+            # received a scalar x, squeeze down the array along last dim
+            out = np.squeeze(out, axis=2)
         if squeeze and self.issiso():
             return out[0][0]
         else:
             return out
 
+    def slycot_horner(self, s):
+        """Evaluate system's transfer function at complex frequencies s 
+        using Horner's method from Slycot.
+
+        Expects inputs and outputs to be formatted correctly. Use __call__
+        for a more user-friendly interface. 
+
+        Parameters
+            s : array-like
+
+        Returns
+            output : array of size (outputs, inputs, len(s))
+        
+        """
+        from slycot import tb05ad
+
+        # preallocate
+        s_arr = np.array(s, ndmin=1) # array-like version of s
+        out = np.empty((self.outputs, self.inputs, len(s_arr)), 
+                        dtype=complex)
+        n = self.states
+        m = self.inputs
+        p = self.outputs
+        # The first call both evaluates C(sI-A)^-1 B and also returns
+        # Hessenberg transformed matrices at, bt, ct.
+        result = tb05ad(n, m, p, s_arr[0], self.A,
+                        self.B, self.C, job='NG')
+        # When job='NG', result = (at, bt, ct, g_i, hinvb, info)
+        at = result[0]
+        bt = result[1]
+        ct = result[2]
+
+        # TB05AD frequency evaluation does not include direct feedthrough.
+        out[:, :, 0] = result[3] + self.D
+
+        # Now, iterate through the remaining frequencies using the
+        # transformed state matrices, at, bt, ct.
+
+        # Start at the second frequency, already have the first.
+        for kk, s_kk in enumerate(s_arr[1:len(s_arr)]):
+            result = tb05ad(n, m, p, s_kk, at, bt, ct, job='NH')
+            # When job='NH', result = (g_i, hinvb, info)
+
+            # kk+1 because enumerate starts at kk = 0.
+            # but zero-th spot is already filled.
+            out[:, :, kk+1] = result[0] + self.D
+        return out
+
     def horner(self, s):
-        """Evaluate systems's transfer function at complex frequencies s.
+        """Evaluate system's transfer function at complex frequencies s 
+        using Horner's method.
+
+        Expects inputs and outputs to be formatted correctly. Use __call__
+        for a more user-friendly interface. 
+
+        Parameters
+            s : array-like
+
+        Returns
+            output : array of size (outputs, inputs, len(s))
+        
         """
         s_arr = np.array(s, ndmin=1) # force to be an array
         # Preallocate 
@@ -501,9 +532,6 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                 np.dot(self.C, 
                        solve(s_idx * eye(self.states) - self.A, self.B)) \
                 + self.D
-        if not hasattr(s, '__len__'): 
-            # received a scalar s, squeeze down the array along last dim
-            out = np.squeeze(out, axis=2)
         return out
 
     def freqresp(self, omega):
@@ -879,7 +907,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             if self.isctime():
                 gain = np.asarray(self.D-self.C.dot(np.linalg.solve(self.A, self.B)))
             else:
-                gain = self.horner(1)
+                gain = np.squeeze(self.horner(1))
         except LinAlgError:
             # eigenvalue at DC
             gain = np.tile(np.nan, (self.outputs, self.inputs))

@@ -213,15 +213,15 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         # a bit coarse, have the interpolated frd evaluated again
         def _mod(w):
             """Calculate |G(jw)| - 1"""
-            return np.abs(sys(1j * w)[0][0]) - 1
+            return np.abs(sys(1j * w)) - 1
 
         def _arg(w):
             """Calculate the phase angle at -180 deg"""
-            return np.angle(-sys(1j * w)[0][0])
+            return np.angle(-sys(1j * w))
 
         def _dstab(w):
             """Calculate the distance from -1 point"""
-            return np.abs(sys(1j * w)[0][0] + 1.)
+            return np.abs(sys(1j * w) + 1.)
 
         # Find all crossings, note that this depends on omega having
         # a correct range
@@ -232,7 +232,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
         # find the phase crossings ang(H(jw) == -180
         widx = np.where(np.diff(np.sign(_arg(sys.omega))))[0]
-        widx = widx[np.real(sys(1j * sys.omega[widx])[0][0]) <= 0]
+        widx = widx[np.real(sys(1j * sys.omega[widx])) <= 0]
         w_180 = np.array(
             [sp.optimize.brentq(_arg, sys.omega[i], sys.omega[i+1])
              for i in widx])
@@ -296,11 +296,10 @@ def phase_crossover_frequencies(sys):
     (array([ 1.73205081,  0.        ]), array([-0.5 ,  0.25]))
     """
 
+    if not sys.issiso(): 
+        raise ValueError("MIMO systems not yet implemented.")
     # Convert to a transfer function
     tf = xferfcn._convert_to_transfer_function(sys)
-
-    # if not siso, fall back to (0,0) element
-    #! TODO: should add a check and warning here
     num = tf.num[0][0]
     den = tf.den[0][0]
 
@@ -313,7 +312,9 @@ def phase_crossover_frequencies(sys):
 
     # using real() to avoid rounding errors and results like 1+0j
     # it would be nice to have a vectorized version of self.evalfr here
-    gain = np.real(np.asarray([tf(1j * f)[0][0] for f in realposfreq]))
+    # update Sawyer B. Fuller 2020.08.15: your wish is my command.
+    #gain = np.real(np.asarray([tf(1j * f) for f in realposfreq]))
+    gain = np.real(tf(1j * realposfreq))
 
     return realposfreq, gain
 

@@ -387,9 +387,9 @@ class TestFRD(unittest.TestCase):
         np.testing.assert_almost_equal(sys_tf(1j), frd_tf(1j))
 
         # Should get an error if we evaluate at an unknown frequency
-        self.assertRaises(Exception, frd_tf.eval(2))
+        self.assertRaises(ValueError, frd_tf.eval, 2)
         # Should get an error if we use __call__ at real-valued frequency
-        self.assertRaises(ValueError, frd_tf(2))
+        self.assertRaises(ValueError, frd_tf, 2)
 
     def test_repr_str(self):
         # repr printing
