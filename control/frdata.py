@@ -156,7 +156,6 @@ class FrequencyResponseData(LTI):
         mimo = self.inputs > 1 or self.outputs > 1
         outstr = ['Frequency response data']
 
-        #mt, pt, wt = self.frequency_response(self.omega)
         for i in range(self.inputs):
             for j in range(self.outputs):
                 if mimo:
@@ -164,9 +163,10 @@ class FrequencyResponseData(LTI):
                 outstr.append('Freq [rad/s]  Response')
                 outstr.append('------------  ---------------------')
                 outstr.extend(
-                    ['%12.3f  %10.4g%+10.4gj' % (w, m, p)
-                     for m, p, w in zip(real(self.fresp[j, i, :]),
-                                        imag(self.fresp[j, i, :]), self.omega)])
+                    ['%12.3f  %10.4g%+10.4gj' % (w, re, im)
+                     for w, re, im in zip(self.omega,
+                                          real(self.fresp[j, i, :]),
+                                          imag(self.fresp[j, i, :]))])
 
         return '\n'.join(outstr)
 
