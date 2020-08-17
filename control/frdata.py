@@ -352,10 +352,11 @@ second has %i." % (self.outputs, other.outputs))
         entry in the omega vector. An interpolating FRD can return
         intermediate values.     
         
+        Parameters
+        ----------
         squeeze: bool, optional (default=True)
             If True and sys is single input, single output (SISO), return a 
             1D array or scalar the same length as omega.
-
         """
         omega_array = np.array(omega, ndmin=1) # array-like version of omega 
         if any(omega_array.imag > 0): 
