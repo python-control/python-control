@@ -440,12 +440,26 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __call__(self, x, squeeze=True):
         """Evaluate system's transfer function at complex frequencies.
         
-        Evaluates at complex frequency x, where x is s or z dependong on 
-        whether the system is continuous or discrete-time.
-        
-        If squeeze is True (default) and sys is single input, single output 
-        (SISO), return a 1D array or scalar depending on the size of x. 
-        For a MIMO system, returns an (n_outputs, n_inputs, n_x) array.
+        Returns the complex frequency response `sys(x)` where `x` is `s` for 
+        continuous-time systems and `x` is `z` for discrete-time systems. 
+
+        To evaluate at a frequency omega in radians per second, enter 
+        x = omega*j, for continuous-time systems, or x = exp(j*omega*dt) for 
+        discrete-time systems. 
+
+        Parameters
+        ----------
+        x: complex scalar or array_like 
+            Complex frequency(s) 
+        squeeze: bool, optional (default=True)
+            If True and sys is single input single output (SISO), returns a 
+            1D array or scalar depending on the length of x. 
+            
+        Returns
+        -------
+        fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray
+            The frequency response of the system. Array is len(x) if and only if
+            system is SISO and squeeze=True.
 
         """        
         # Use Slycot if available

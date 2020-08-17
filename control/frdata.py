@@ -100,6 +100,7 @@ class FrequencyResponseData(LTI):
         object, other than an FRD, call FRD(sys, omega)
 
         """
+        # TODO: discrete-time FRD systems? 
         smooth = kwargs.get('smooth', False)
 
         if len(args) == 2:
@@ -386,29 +387,33 @@ second has %i." % (self.outputs, other.outputs))
         return out
 
     def __call__(self, s, squeeze=True):
-        """Evaluate the system's transfer function at complex frequencies s.
+        """Evaluate system's transfer function at complex frequencies.
+        
+        Returns the complex frequency response `sys(x)` where `x` is `s` for 
+        continuous-time systems and `x` is `z` for discrete-time systems. 
 
-        For a SISO system, returns the complex value of the
-        transfer function.  For a MIMO transfer fuction, returns a
-        matrix of values.
+        To evaluate at a frequency omega in radians per second, enter 
+        x = omega*j.
         
         Parameters
         ----------
-        s : scalar or array_like
-            Complex frequencies
+        x: complex scalar or array_like 
+            Complex frequency(s) 
         squeeze: bool, optional (default=True)
-            If True and sys is single input, single output (SISO), return a 
-            1D array or scalar depending on omega's length.
-
+            If True and sys is single input single output (SISO), returns a 
+            1D array or scalar depending on the length of x. 
+            
         Returns
         -------
-        ndarray or scalar
-            Frequency response
+        fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray
+            The frequency response of the system. Array is len(x) if and only if
+            system is SISO and squeeze=True.
 
         Raises
         ------
         ValueError
-            If `s` is not purely imaginary. 
+            If `s` is not purely imaginary, because FrequencyDomainData systems
+            are only defined at imaginary frequency values. 
 
         """
         if any(abs(np.array(s, ndmin=1).real) > 0):

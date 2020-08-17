@@ -428,23 +428,29 @@ def damp(sys, doprint=True):
 def evalfr(sys, x, squeeze=True):
     """
     Evaluate the transfer function of an LTI system for complex frequency x.
+    
+    Returns the complex frequency response `sys(x)` where `x` is `s` for 
+    continuous-time systems and `x` is `z` for discrete-time systems. 
 
-    To evaluate at a frequency, enter x = omega*j, where omega is the
-    frequency in radians per second
+    To evaluate at a frequency omega in radians per second, enter x = omega*j, 
+    for continuous-time systems, or x = exp(j*omega*dt) for discrete-time 
+    systems. 
 
     Parameters
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    x: scalar or array_like
-        Complex number
+    x: complex scalar or array_like 
+        Complex frequency(s) 
     squeeze: bool, optional (default=True)
-        If True and sys is single input, single output (SISO), return a 
-        1D array or scalar depending on omega's length.
-
+        If True and sys is single input single output (SISO), returns a 
+        1D array or scalar depending on the length of x. 
+        
     Returns
     -------
-    fresp: ndarray
+    fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray 
+        The frequency response of the system. If system is SISO and squeezeThe size of the array depends on 
+        whether system is SISO and squeeze keyword.
 
     See Also
     --------
@@ -453,8 +459,8 @@ def evalfr(sys, x, squeeze=True):
 
     Notes
     -----
-    This function is a wrapper for StateSpace.evalfr and
-    TransferFunction.evalfr.
+    This function is a wrapper for StateSpace.__call__ and
+    TransferFunction.__call__.
 
     Examples
     --------
@@ -465,15 +471,7 @@ def evalfr(sys, x, squeeze=True):
 
     .. todo:: Add example with MIMO system
     """
-    out = sys.horner(x)
-    if not hasattr(x, '__len__'): 
-            # received a scalar x, squeeze down the array along last dim
-            out = np.squeeze(out, axis=2)
-    if squeeze and issiso(sys):
-        return out[0][0]
-    else: 
-        return out
-
+    return sys.__call__(x, squeeze=squeeze)
 
 def freqresp(sys, omega, squeeze=True):
     """
