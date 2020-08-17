@@ -826,7 +826,57 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     return T, yout
 
 # utility function to find time period and time increment using pole locations
-def _ideal_tfinal_and_dt(sys):
+def _ideal_tfinal_and_dt(sys, is_step=True):
+    """helper function to compute ideal simulation duration tfinal and dt, the 
+    time increment. Usually called by _default_time_vector, whose job it is to 
+    bring reality into the picture. 
+    
+    For discrete-time models, dt is inherent and only tfinal is computed.
+
+    Parameters
+    ----------
+    sys : StateSpace or TransferFunction
+        The system whose time response is to be computed
+    is_step : bool
+        Scales the dc value by the magnitude of the nonzero mode since
+        integrating the impulse response gives ∫exp(-λt) = -exp(-λt)/λ.
+        Default is True.
+    Returns
+    -------
+    tfinal : float
+        The final time instance for which the simulation will be performed.
+    dt : float
+        The estimated sampling period for the simulation.
+    
+    Notes
+    ----- 
+    Just by evaluating the fastest mode for dt and slowest for tfinal often
+    leads to unnecessary, bloated sampling (e.g., Transfer(1,[1,1001,1000]))
+    since dt will be very small and tfinal will be too large though the fast
+    mode hardly ever contributes. Similarly, change the numerator to [1, 2, 0]
+    and the simulation would be unnecessarily long and the plot is virtually
+    an L shape since the decay is so fast.
+    
+    Instead, a modal decomposition in time domain hence a truncated ZIR and ZSR
+    can be used such that only the modes that have significant effect on the
+    time response are taken. But the sensitivity of the eigenvalues complicate
+    the matter since dλ = <w, dA*v> with <w,v> = 1. Hence we can only work
+    with simple poles with this formulation. See Golub, Van Loan Section 7.2.2
+    for simple eigenvalue sensitivity about the nonunity of <w,v>. The size of
+    the response is dependent on the size of the eigenshapes rather than the
+    eigenvalues themselves.
+    
+    By Ilhan Polat, with modifications by Sawyer Fuller to integrate into 
+    python-control 2020.08.17
+    """
+
+    sqrt_eps = np.sqrt(np.spacing(1.))
+    default_tfinal = 5  # Default simulation horizon
+    total_cycles = 5  # number of cycles for oscillating modes
+    pts_per_cycle = 25  # Number of points divide a period of oscillation
+    log_decay_percent = np.log(100)  # Factor of reduction for real pole decays
+
+    if sys.is_static_gain(): pass
     constant = 7.0
     tolerance = 1e-10
     A = ssdata(sys)[0]
