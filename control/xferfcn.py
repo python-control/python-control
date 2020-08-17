@@ -233,11 +233,14 @@ class TransferFunction(LTI):
         for a more user-friendly interface. 
 
         Parameters
-            s : array-like
+        ----------
+        s : array_like
+            Complex frequencies
 
         Returns
-            output : array of size (outputs, inputs, len(s))
-        
+        -------
+        output : (outputs, inputs, len(s)) complex ndarray
+            Frequency response
         """
         s_arr = np.array(s, ndmin=1) # force to be an array
         out = empty((self.outputs, self.inputs, len(s_arr)), dtype=complex)

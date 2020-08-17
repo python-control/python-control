@@ -352,10 +352,11 @@ second has %i." % (self.outputs, other.outputs))
         entry in the omega vector. An interpolating FRD can return
         intermediate values.     
         
+        Parameters
+        ----------
         squeeze: bool, optional (default=True)
             If True and sys is single input, single output (SISO), return a 
             1D array or scalar the same length as omega.
-
         """
         omega_array = np.array(omega, ndmin=1) # array-like version of omega 
         if any(omega_array.imag > 0): 
@@ -391,11 +392,23 @@ second has %i." % (self.outputs, other.outputs))
         transfer function.  For a MIMO transfer fuction, returns a
         matrix of values.
         
-        Raises an error if s is not purely imaginary. 
-        
+        Parameters
+        ----------
+        s : scalar or array_like
+            Complex frequencies
         squeeze: bool, optional (default=True)
             If True and sys is single input, single output (SISO), return a 
             1D array or scalar depending on omega's length.
+
+        Returns
+        -------
+        ndarray or scalar
+            Frequency response
+
+        Raises
+        ------
+        ValueError
+            If `s` is not purely imaginary. 
 
         """
         if any(abs(np.array(s, ndmin=1).real) > 0):

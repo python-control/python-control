@@ -436,7 +436,7 @@ def evalfr(sys, x, squeeze=True):
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    x: scalar or array-like
+    x: scalar or array_like
         Complex number
     squeeze: bool, optional (default=True)
         If True and sys is single input, single output (SISO), return a 
