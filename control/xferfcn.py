@@ -260,12 +260,12 @@ class TransferFunction(LTI):
             Frequency response
 
         """
-        s_arr = np.array(s, ndmin=1) # force to be an array
+        s_arr = np.array(x, ndmin=1) # force to be an array
         out = empty((self.outputs, self.inputs, len(s_arr)), dtype=complex)
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = (polyval(self.num[i][j], s) /
-                             polyval(self.den[i][j], s))
+                out[i][j] = (polyval(self.num[i][j], x) /
+                             polyval(self.den[i][j], x))
         return out
 
     def _truncatecoeff(self):
