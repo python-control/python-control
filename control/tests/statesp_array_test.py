@@ -13,6 +13,7 @@ from control.xferfcn import TransferFunction, ss2tf
 from control.lti import evalfr
 from control.exception import slycot_check
 from control.config import use_numpy_matrix, reset_defaults
+from control.config import defaults
 
 class TestStateSpace(unittest.TestCase):
     """Tests for the StateSpace class."""
@@ -74,8 +75,12 @@ class TestStateSpace(unittest.TestCase):
         self.assertEqual(sys.B.shape, (2, 1))
         self.assertEqual(sys.C.shape, (1, 2))
         self.assertEqual(sys.D.shape, (1, 1))
-        for X in [sys.A, sys.B, sys.C, sys.D]:
-            self.assertTrue(isinstance(X, np.matrix))
+        if defaults['statesp.use_numpy_matrix']:
+            for X in [sys.A, sys.B, sys.C, sys.D]:
+                self.assertTrue(isinstance(X, np.matrix))
+        else:
+            for X in [sys.A, sys.B, sys.C, sys.D]:
+                self.assertTrue(isinstance(X, np.ndarray))
 
     def test_pole(self):
         """Evaluate the poles of a MIMO system."""
