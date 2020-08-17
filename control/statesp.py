@@ -438,26 +438,26 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         raise NotImplementedError("StateSpace.__rdiv__ is not implemented yet.")
 
     def __call__(self, x, squeeze=True):
-        """Evaluate system's transfer function at complex frequencies.
+        """Evaluate system's transfer function at complex frequency.
         
         Returns the complex frequency response `sys(x)` where `x` is `s` for 
-        continuous-time systems and `x` is `z` for discrete-time systems. 
+        continuous-time systems and `z` for discrete-time systems. 
 
         To evaluate at a frequency omega in radians per second, enter 
-        x = omega*j, for continuous-time systems, or x = exp(j*omega*dt) for 
+        x = omega*1j, for continuous-time systems, or x = exp(1j*omega*dt) for 
         discrete-time systems. 
 
         Parameters
         ----------
-        x: complex scalar or array_like 
-            Complex frequency(s) 
+        x: complex or complex array_like 
+            Complex frequencies
         squeeze: bool, optional (default=True)
             If True and sys is single input single output (SISO), returns a 
             1D array or scalar depending on the length of x. 
             
         Returns
         -------
-        fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray
+        fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
             The frequency response of the system. Array is len(x) if and only if
             system is SISO and squeeze=True.
 
@@ -472,8 +472,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         else:
             return out
 
-    def slycot_laub(self, s):
-        """Evaluate system's transfer function at complex frequencies s 
+    def slycot_laub(self, x):
+        """Evaluate system's transfer function at complex frequency
         using Laub's method from Slycot.
 
         Expects inputs and outputs to be formatted correctly. Use __call__
@@ -481,27 +481,25 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Parameters
         ----------
-        s : array_like
+        x : complex array_like or complex
             Complex frequency
 
         Returns
         -------
-        output : (outputs, inputs, len(s)) complex ndarray
+        output : (number_outputs, number_inputs, len(x)) complex ndarray
             Frequency response
         """
         from slycot import tb05ad
 
         # preallocate
-        s_arr = np.array(s, ndmin=1) # array-like version of s
-        out = np.empty((self.outputs, self.inputs, len(s_arr)), 
-                        dtype=complex)
+        x_arr = np.array(x, ndmin=1) # array-like version of s
         n = self.states
         m = self.inputs
         p = self.outputs
+        out = np.empty((p, m, len(x_arr)), dtype=complex)
         # The first call both evaluates C(sI-A)^-1 B and also returns
         # Hessenberg transformed matrices at, bt, ct.
-        result = tb05ad(n, m, p, s_arr[0], self.A,
-                        self.B, self.C, job='NG')
+        result = tb05ad(n, m, p, x_arr[0], self.A, self.B, self.C, job='NG')
         # When job='NG', result = (at, bt, ct, g_i, hinvb, info)
         at = result[0]
         bt = result[1]
@@ -514,8 +512,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # transformed state matrices, at, bt, ct.
 
         # Start at the second frequency, already have the first.
-        for kk, s_kk in enumerate(s_arr[1:len(s_arr)]):
-            result = tb05ad(n, m, p, s_kk, at, bt, ct, job='NH')
+        for kk, x_kk in enumerate(x_arr[1:len(x_arr)]):
+            result = tb05ad(n, m, p, x_kk, at, bt, ct, job='NH')
             # When job='NH', result = (g_i, hinvb, info)
 
             # kk+1 because enumerate starts at kk = 0.
@@ -524,10 +522,10 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return out
 
     def horner(self, x):
-        """Evaluate system's transfer function at complex frequencies x
+        """Evaluate system's transfer function at complex frequency
         using Laub's or Horner's method. 
 
-        Evaluates sys(x) where `x` is `s` for continuous-time systems and `z` 
+        Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z` 
         for discrete-time systems. 
         
         Expects inputs and outputs to be formatted correctly. Use __call__
@@ -535,12 +533,12 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Parameters
         ----------
-        x : array_like
+        x : complex array_like or complex
             Complex frequencies
 
         Returns
         -------
-        output : (outputs, inputs, len(s)) complex ndarray
+        output : (number_outputs, number_inputs, len(x)) complex ndarray
             Frequency response
 
         Notes

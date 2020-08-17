@@ -208,23 +208,23 @@ class TransferFunction(LTI):
         """Evaluate system's transfer function at complex frequencies.
         
         Returns the complex frequency response `sys(x)` where `x` is `s` for 
-        continuous-time systems and `x` is `z` for discrete-time systems. 
+        continuous-time systems and `z` for discrete-time systems. 
 
         To evaluate at a frequency omega in radians per second, enter 
-        x = omega*j, for continuous-time systems, or x = exp(j*omega*dt) for 
+        x = omega*1j, for continuous-time systems, or x = exp(1j*omega*dt) for 
         discrete-time systems. 
 
         Parameters
         ----------
-        x: complex scalar or array_like 
-            Complex frequency(s) 
+        x: complex array_like or complex
+            Complex frequencies
         squeeze: bool, optional (default=True)
             If True and sys is single input single output (SISO), returns a 
             1D array or scalar depending on the length of x. 
             
         Returns
         -------
-        fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray
+        fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
             The frequency response of the system. Array is len(x) if and only if
             system is SISO and squeeze=True.
 
@@ -239,22 +239,26 @@ class TransferFunction(LTI):
         else:
             return out
 
-    def horner(self, s):
-        """Evaluates system's transfer function at complex frequencies s 
-        using Horner's method.
+    def horner(self, x):
+        """Evaluate system's transfer function at complex frequency
+        using Horner's method. 
 
+        Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z`
+        for discrete-time systems. 
+        
         Expects inputs and outputs to be formatted correctly. Use __call__
         for a more user-friendly interface. 
 
         Parameters
         ----------
-        s : array_like or scalar
+        x : complex array_like or complex
             Complex frequencies
 
         Returns
         -------
-        output : (outputs, inputs, len(s)) complex ndarray
+        output : (self.outputs, self.inputs, len(x)) complex ndarray
             Frequency response
+
         """
         s_arr = np.array(s, ndmin=1) # force to be an array
         out = empty((self.outputs, self.inputs, len(s_arr)), dtype=complex)

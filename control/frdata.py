@@ -344,10 +344,7 @@ second has %i." % (self.outputs, other.outputs))
     # update Sawyer B. Fuller 2020.08.14: __call__ added to provide a uniform 
     # interface to systems in general and the lti.frequency_response method
     def eval(self, omega, squeeze=True):
-        """Evaluate a transfer function at a single angular frequency.
-
-        self.evalfr(omega) returns the value of the frequency response
-        at frequency omega.
+        """Evaluate a transfer function at angular frequency omega.
 
         Note that a "normal" FRD only returns values for which there is an
         entry in the omega vector. An interpolating FRD can return
@@ -355,10 +352,19 @@ second has %i." % (self.outputs, other.outputs))
         
         Parameters
         ----------
+        omega: float or array_like
+            Frequencies in radians per second
         squeeze: bool, optional (default=True)
-            If True and sys is single input, single output (SISO), return a 
-            1D array or scalar the same length as omega.
-        """
+            If True and sys is single input single output (SISO), returns a 
+            1D array or scalar depending on the length of omega 
+            
+        Returns
+        -------
+        fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray
+            The frequency response of the system. Array is len(x) if and only if
+            system is SISO and squeeze=True.
+
+        """     
         omega_array = np.array(omega, ndmin=1) # array-like version of omega 
         if any(omega_array.imag > 0): 
             raise ValueError("FRD.eval can only accept real-valued omega")
@@ -389,16 +395,15 @@ second has %i." % (self.outputs, other.outputs))
     def __call__(self, s, squeeze=True):
         """Evaluate system's transfer function at complex frequencies.
         
-        Returns the complex frequency response `sys(x)` where `x` is `s` for 
-        continuous-time systems and `x` is `z` for discrete-time systems. 
+        Returns the complex frequency response `sys(s)`.
 
         To evaluate at a frequency omega in radians per second, enter 
-        x = omega*j.
-        
+        x = omega*1j or use FRD.eval(omega)
+
         Parameters
         ----------
-        x: complex scalar or array_like 
-            Complex frequency(s) 
+        s: complex scalar or array_like 
+            Complex frequencies 
         squeeze: bool, optional (default=True)
             If True and sys is single input single output (SISO), returns a 
             1D array or scalar depending on the length of x. 

@@ -134,10 +134,10 @@ class LTI:
 
         Returns
         -------
-        mag : (self.outputs, self.inputs, len(omega)) ndarray
+        mag : (self.outputs, self.inputs, len(omega)) or len(omega) ndarray
             The magnitude (absolute value, not dB or log10) of the system
             frequency response.
-        phase : (self.outputs, self.inputs, len(omega)) ndarray
+        phase : (self.outputs, self.inputs, len(omega)) or len(omega) ndarray
             The wrapped phase in radians of the system frequency response.
         omega : ndarray
             The (sorted) frequencies at which the response was evaluated.
@@ -430,10 +430,10 @@ def evalfr(sys, x, squeeze=True):
     Evaluate the transfer function of an LTI system for complex frequency x.
     
     Returns the complex frequency response `sys(x)` where `x` is `s` for 
-    continuous-time systems and `x` is `z` for discrete-time systems. 
+    continuous-time systems and `z` for discrete-time systems. 
 
-    To evaluate at a frequency omega in radians per second, enter x = omega*j, 
-    for continuous-time systems, or x = exp(j*omega*dt) for discrete-time 
+    To evaluate at a frequency omega in radians per second, enter x = omega*1j, 
+    for continuous-time systems, or x = exp(1j*omega*dt) for discrete-time 
     systems. 
 
     Parameters
@@ -448,9 +448,9 @@ def evalfr(sys, x, squeeze=True):
         
     Returns
     -------
-    fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray 
-        The frequency response of the system. If system is SISO and squeezeThe size of the array depends on 
-        whether system is SISO and squeeze keyword.
+    fresp : (sys.outputs, sys.inputs, len(x)) or len(x) complex ndarray 
+        The frequency response of the system. Array is len(x) if and only if
+        system is SISO and squeeze=True.
 
     See Also
     --------
@@ -481,22 +481,22 @@ def freqresp(sys, omega, squeeze=True):
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    omega: array_like
+    omega: float or array_like
         A list of frequencies in radians/sec at which the system should be
         evaluated. The list can be either a python list or a numpy array
         and will be sorted before evaluation.
     squeeze: bool, optional (default=True)
-        If True and sys is single input, single output (SISO), return a 
+        If True and sys is single input, single output (SISO), returns  
         1D array or scalar depending on omega's length.
 
     Returns
     -------
-    mag : (self.outputs, self.inputs, len(omega)) ndarray
+    mag : (sys.outputs, sys.inputs, len(omega)) or len(omega) ndarray 
         The magnitude (absolute value, not dB or log10) of the system
         frequency response.
-    phase : (self.outputs, self.inputs, len(omega)) ndarray
+    phase : (sys.outputs, sys.inputs, len(omega)) or len(omega) ndarray
         The wrapped phase in radians of the system frequency response.
-    omega : ndarray or list or tuple
+    omega : ndarray
         The list of sorted frequencies at which the response was
         evaluated.
 
