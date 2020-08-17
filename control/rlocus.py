@@ -472,7 +472,7 @@ def _systopoly1d(sys):
         sys = _convert_to_transfer_function(sys)
 
         # Make sure we have a SISO system
-        if (sys.inputs > 1 or sys.outputs > 1):
+        if not sys.issiso():
             raise ControlMIMONotImplemented()
 
         # Start by extracting the numerator and denominator from system object

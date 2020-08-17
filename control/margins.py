@@ -56,6 +56,8 @@ import scipy as sp
 from . import xferfcn
 from .lti import issiso
 from . import frdata
+from .exception import ControlMIMONotImplemented
+
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
 
@@ -155,7 +157,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
         # check for siso
         if not issiso(sys):
-            raise ValueError("Can only do margins for SISO system")
+            raise ControlMIMONotImplemented()
 
         # real and imaginary part polynomials in omega:
         rnum, inum = _polyimsplit(sys.num[0][0])
@@ -297,7 +299,7 @@ def phase_crossover_frequencies(sys):
     """
 
     if not sys.issiso(): 
-        raise ValueError("MIMO systems not yet implemented.")
+        raise ControlMIMONotImplemented()
     # Convert to a transfer function
     tf = xferfcn._convert_to_transfer_function(sys)
     num = tf.num[0][0]

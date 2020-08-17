@@ -365,8 +365,8 @@ second has %i." % (self.outputs, other.outputs))
             elements = np.isin(self.omega, omega) # binary array
             if sum(elements) < len(omega_array):
                 raise ValueError(
-                    '''not all frequencies omega are in frequency list of FRD 
-                    system. Try an interpolating FRD for additional points.''')
+                    "not all frequencies omega are in frequency list of FRD "
+                    "system. Try an interpolating FRD for additional points.")
             else:
                 out = self.fresp[:, :, elements]
         else:
