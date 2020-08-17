@@ -463,10 +463,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         """        
         # Use Slycot if available
-        try:
-            out = self.slycot_horner(x)
-        except ImportError:  # Slycot unavailable. use built-in horner.
-            out = self.horner(x)
+        out = self.horner(x)
         if not hasattr(x, '__len__'): 
             # received a scalar x, squeeze down the array along last dim
             out = np.squeeze(out, axis=2)
@@ -526,33 +523,45 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             out[:, :, kk+1] = result[0] + self.D
         return out
 
-    def horner(self, s):
-        """Evaluate system's transfer function at complex frequencies s 
-        using Horner's method.
+    def horner(self, x):
+        """Evaluate system's transfer function at complex frequencies x
+        using Horner's method. 
 
+        Evaluates sys(x) where `x` is `s` for continuous-time systems and `z` 
+        for discrete-time systems. 
+        
         Expects inputs and outputs to be formatted correctly. Use __call__
         for a more user-friendly interface. 
 
         Parameters
         ----------
-        s : array_like
+        x : array_like
             Complex frequencies
 
         Returns
         -------
         output : (outputs, inputs, len(s)) complex ndarray
             Frequency response
+
+        Notes
+        -----
+            Attempts to use Slycot library, with a fall-back to python code.
         """
-        s_arr = np.array(s, ndmin=1) # force to be an array
-        # Preallocate 
-        out = empty((self.outputs, self.inputs, len(s_arr)), dtype=complex)
-        
-        #TODO: can this be vectorized? 
-        for idx, s_idx in enumerate(s_arr):
-            out[:,:,idx] = \
-                np.dot(self.C, 
-                       solve(s_idx * eye(self.states) - self.A, self.B)) \
-                + self.D
+        try:
+            out = self.slycot_horner(x)
+        except (ImportError, Exception):  
+            # Fall back because either Slycot unavailable or cannot handle 
+            # certain cases.
+            x_arr = np.array(x, ndmin=1) # force to be an array    
+            # Preallocate 
+            out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
+            
+            #TODO: can this be vectorized? 
+            for idx, x_idx in enumerate(x_arr):
+                out[:,:,idx] = \
+                    np.dot(self.C, 
+                        solve(x_idx * eye(self.states) - self.A, self.B)) \
+                    + self.D
         return out
 
     def freqresp(self, omega):
