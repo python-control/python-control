@@ -472,9 +472,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         else:
             return out
 
-    def slycot_horner(self, s):
+    def slycot_laub(self, s):
         """Evaluate system's transfer function at complex frequencies s 
-        using Horner's method from Slycot.
+        using Laub's method from Slycot.
 
         Expects inputs and outputs to be formatted correctly. Use __call__
         for a more user-friendly interface. 
@@ -525,7 +525,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
     def horner(self, x):
         """Evaluate system's transfer function at complex frequencies x
-        using Horner's method. 
+        using Laub's or Horner's method. 
 
         Evaluates sys(x) where `x` is `s` for continuous-time systems and `z` 
         for discrete-time systems. 
@@ -545,10 +545,11 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Notes
         -----
-            Attempts to use Slycot library, with a fall-back to python code.
+            Attempts to use Laub's method from Slycot library, with a 
+            fall-back to python code.
         """
         try:
-            out = self.slycot_horner(x)
+            out = self.slycot_laub(x)
         except (ImportError, Exception):  
             # Fall back because either Slycot unavailable or cannot handle 
             # certain cases.
