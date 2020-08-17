@@ -469,7 +469,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         for a more user-friendly interface. 
 
         Parameters
-            s : array-like
+        ----------
+        s : array_like
+            Complex frequency
 
         Returns
             output : array of size (outputs, inputs, len(s))
