@@ -21,6 +21,8 @@ Programming Language :: Python :: 2.7
 Programming Language :: Python :: 3
 Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
+Programming Language :: Python :: 3.7
+Programming Language :: Python :: 3.8
 Topic :: Software Development
 Topic :: Scientific/Engineering
 Operating System :: Microsoft :: Windows
@@ -42,8 +44,4 @@ setup(
     install_requires=['numpy',
                       'scipy',
                       'matplotlib'],
-    tests_require=['scipy',
-                   'matplotlib',
-                   'nose'],
-    test_suite = 'nose.collector',
 )
