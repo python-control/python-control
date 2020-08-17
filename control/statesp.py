@@ -474,8 +474,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             Complex frequency
 
         Returns
-            output : array of size (outputs, inputs, len(s))
-        
+        -------
+        output : (outputs, inputs, len(s)) complex ndarray
+            Frequency response
         """
         from slycot import tb05ad
 
@@ -519,11 +520,14 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         for a more user-friendly interface. 
 
         Parameters
-            s : array-like
+        ----------
+        s : array_like
+            Complex frequencies
 
         Returns
-            output : array of size (outputs, inputs, len(s))
-        
+        -------
+        output : (outputs, inputs, len(s)) complex ndarray
+            Frequency response
         """
         s_arr = np.array(s, ndmin=1) # force to be an array
         # Preallocate 
