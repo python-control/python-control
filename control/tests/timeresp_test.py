@@ -29,6 +29,12 @@ class TestTimeresp(unittest.TestCase):
         # Create some transfer functions
         self.siso_tf1 = TransferFunction([1], [1, 2, 1])
         self.siso_tf2 = _convert_to_transfer_function(self.siso_ss1)
+        
+        # tests for pole cancellation
+        self.pole_cancellation = TransferFunction([1.067e+05, 5.791e+04], 
+                                            [10.67, 1.067e+05, 5.791e+04])
+        self.no_pole_cancellation = TransferFunction([1.881e+06], 
+                                            [188.1, 1.881e+06])
 
         # Create MIMO system, contains ``siso_ss1`` twice
         A = np.matrix("1. -2. 0.  0.;"
@@ -166,6 +172,14 @@ class TestTimeresp(unittest.TestCase):
             S.get('SteadyStateValue'),
             2.50,
             rtol=rtol)
+
+        # confirm that pole-zero cancellation doesn't perturb results
+        # https://github.com/python-control/python-control/issues/440
+        step_info_no_cancellation = step_info(self.no_pole_cancellation)
+        step_info_cancellation = step_info(self.pole_cancellation)
+        for key in step_info_no_cancellation: 
+            np.testing.assert_allclose(step_info_no_cancellation[key], 
+                                       step_info_cancellation[key], rtol=1e-4)
 
     def test_impulse_response(self):
         # Test SISO system
@@ -348,33 +362,41 @@ class TestTimeresp(unittest.TestCase):
         sys2 = TransferFunction(num, den2)
 
         # Compute step response from input 1 to output 1, 2
-        t1, y1 = step_response(sys1, input=0, T_num=100)
-        t2, y2 = step_response(sys2, input=0, T_num=100)
+        t1, y1 = step_response(sys1, input=0, T=2, T_num=100)
+        t2, y2 = step_response(sys2, input=0, T=2, T_num=100)
         np.testing.assert_array_almost_equal(y1, y2)
 
     def test_auto_generated_time_vector(self):
-        # confirm a TF with a pole at p simulates for 7.0/p seconds
+        # confirm a TF with a pole at p simulates for ratio/p seconds
         p = 0.5
+        ratio = 9.21034*p # taken from code
+        ratio2 = 25*p
         np.testing.assert_array_almost_equal(
             _ideal_tfinal_and_dt(TransferFunction(1, [1, .5]))[0], 
-            (7/p))
+            (ratio/p))
         np.testing.assert_array_almost_equal(
             _ideal_tfinal_and_dt(TransferFunction(1, [1, .5]).sample(.1))[0], 
-            (7/p))
-        # confirm a TF with poles at 0 and p simulates for 7.0/p seconds
+            (ratio2/p))
+        # confirm a TF with poles at 0 and p simulates for ratio/p seconds
         np.testing.assert_array_almost_equal(
             _ideal_tfinal_and_dt(TransferFunction(1, [1, .5, 0]))[0], 
-            (7/p))
+            (ratio2/p))
+
         # confirm a TF with a natural frequency of wn rad/s gets a 
-        # dt of 1/(7.0*wn)
+        # dt of 1/(ratio*wn)
         wn = 10
+        ratio_dt = 1/(0.025133 * ratio * wn)
         np.testing.assert_array_almost_equal(
             _ideal_tfinal_and_dt(TransferFunction(1, [1, 0, wn**2]))[1], 
-            1/(7.0*wn))
+            1/(ratio_dt*ratio*wn))
+        wn = 100
+        np.testing.assert_array_almost_equal(
+            _ideal_tfinal_and_dt(TransferFunction(1, [1, 0, wn**2]))[1], 
+            1/(ratio_dt*ratio*wn))
         zeta = .1
         np.testing.assert_array_almost_equal(
             _ideal_tfinal_and_dt(TransferFunction(1, [1, 2*zeta*wn, wn**2]))[1], 
-            1/(7.0*wn))
+            1/(ratio_dt*ratio*wn))
         # but a smapled one keeps its dt
         np.testing.assert_array_almost_equal(
             _ideal_tfinal_and_dt(TransferFunction(1, [1, 2*zeta*wn, wn**2]).sample(.1))[1], 
@@ -384,37 +406,32 @@ class TestTimeresp(unittest.TestCase):
             .1)
         np.testing.assert_array_almost_equal(
             _ideal_tfinal_and_dt(TransferFunction(1, [1, 2*zeta*wn, wn**2]))[1], 
-            1/(7.0*wn))
+            1/(ratio_dt*ratio*wn))
+        
+        
         # TF with fast oscillations simulates only 5000 time steps even with long tfinal
         self.assertEqual(5000, 
             len(_default_time_vector(TransferFunction(1, [1, 0, wn**2]),tfinal=100)))
-        # and simulates for 7.0/dt time steps 
-        self.assertEqual(
-            len(_default_time_vector(TransferFunction(1, [1, 0, wn**2]))), 
-            int(7.0/(1/(7.0*wn))))
         
         sys = TransferFunction(1, [1, .5, 0])
         sysdt = TransferFunction(1, [1, .5, 0], .1)
         # test impose number of time steps
         self.assertEqual(10, len(step_response(sys, T_num=10)[0]))
-        self.assertEqual(10, len(step_response(sysdt, T_num=10)[0]))
+        # test that discrete ignores T_num
+        self.assertNotEqual(15, len(step_response(sysdt, T_num=15)[0]))
         # test impose final time
         np.testing.assert_array_almost_equal(
             100, 
-            step_response(sys, 100)[0][-1], 
-            decimal=.5)
+            np.ceil(step_response(sys, 100)[0][-1]))
         np.testing.assert_array_almost_equal(
             100, 
-            step_response(sysdt, 100)[0][-1], 
-            decimal=.5)
+            np.ceil(step_response(sysdt, 100)[0][-1]))
         np.testing.assert_array_almost_equal(
             100, 
-            impulse_response(sys, 100)[0][-1], 
-            decimal=.5)
+            np.ceil(impulse_response(sys, 100)[0][-1]))
         np.testing.assert_array_almost_equal(
             100, 
-            initial_response(sys, 100)[0][-1], 
-            decimal=.5)
+            np.ceil(initial_response(sys, 100)[0][-1]))
 
 
     def test_time_vector(self):
