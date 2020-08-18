@@ -61,7 +61,7 @@ SUCH DAMAGE.
 Initial Author: Eike Welk
 Date: 12 May 2011
 
-Modified: Sawyer B. Fuller (minster@uw.edu) to add discrete-time 
+Modified: Sawyer B. Fuller (minster@uw.edu) to add discrete-time
 capability and better automatic time vector creation
 Date: June 2020
 
@@ -463,14 +463,14 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number. If T is not 
-        provided, an attempt is made to create it automatically from the 
-        dynamics of sys. If sys is continuous-time, the time increment dt 
-        is chosen small enough to show the fastest mode, and the simulation 
-        time period tfinal long enough to show the slowest mode, excluding 
+        Time vector, or simulation time duration if a number. If T is not
+        provided, an attempt is made to create it automatically from the
+        dynamics of sys. If sys is continuous-time, the time increment dt
+        is chosen small enough to show the fastest mode, and the simulation
+        time period tfinal long enough to show the slowest mode, excluding
         poles at the origin. If this results in too many time steps (>5000),
-        dt is reduced. If sys is discrete-time, only tfinal is computed, and 
-        tfinal is reduced if it requires too many simulation steps. 
+        dt is reduced. If sys is discrete-time, only tfinal is computed, and
+        tfinal is reduced if it requires too many simulation steps.
 
     X0: array-like or number, optional
         Initial condition (default = 0)
@@ -483,10 +483,10 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     output: int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
-    
+
     T_num: number, optional
-        Number of time steps to use in simulation if T is not provided as an 
-        array (autocomputed if not given); ignored if sys is discrete-time.  
+        Number of time steps to use in simulation if T is not provided as an
+        array (autocomputed if not given); ignored if sys is discrete-time.
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -550,12 +550,12 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given, see :func:`step_response` for more detail)
 
     T_num: number, optional
-        Number of time steps to use in simulation if T is not provided as an 
-        array (autocomputed if not given); ignored if sys is discrete-time.  
+        Number of time steps to use in simulation if T is not provided as an
+        array (autocomputed if not given); ignored if sys is discrete-time.
 
     SettlingTimeThreshold: float value, optional
         Defines the error to compute settling time (default = 0.02)
@@ -588,7 +588,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     sys = _get_ss_simo(sys)
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T)
-    
+
     T, yout = step_response(sys, T)
 
     # Steady state value
@@ -640,7 +640,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given; see  :func:`step_response` for more detail)
 
     X0: array-like or number, optional
@@ -655,10 +655,10 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     output: int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
-    
+
     T_num: number, optional
-        Number of time steps to use in simulation if T is not provided as an 
-        array (autocomputed if not given); ignored if sys is discrete-time.  
+        Number of time steps to use in simulation if T is not provided as an
+        array (autocomputed if not given); ignored if sys is discrete-time.
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -730,7 +730,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given; see :func:`step_response` for more detail)
 
     X0: array-like or number, optional
@@ -746,8 +746,8 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         to not trim outputs
 
     T_num: number, optional
-        Number of time steps to use in simulation if T is not provided as an 
-        array (autocomputed if not given); ignored if sys is discrete-time.  
+        Number of time steps to use in simulation if T is not provided as an
+        array (autocomputed if not given); ignored if sys is discrete-time.
 
     transpose: bool
         If True, transpose all input and output arrays (for backward
@@ -830,56 +830,55 @@ def _ideal_tfinal_and_dt(sys):
     constant = 7.0
     tolerance = 1e-10
     A = ssdata(sys)[0]
-    if A.shape == (0,0): 
+    if A.shape == (0,0):
         # no dynamics
-        tfinal = constant * 1.0 
+        tfinal = constant * 1.0
         dt = sys.dt if isdtime(sys, strict=True) else 1.0
     else:
         poles = sp.linalg.eigvals(A)
-        if isdtime(sys, strict=True):
-            poles = np.log(poles)/sys.dt # z-poles to s-plane using s=(lnz)/dt
-        
         # calculate ideal dt
         if isdtime(sys, strict=True):
+            # z-poles to s-plane using s=(lnz)/dt, no ln(0)
+            poles = np.log(poles[abs(poles) > 0])/sys.dt
             dt = sys.dt
         else:
             fastest_natural_frequency = max(abs(poles))
             dt = 1/constant / fastest_natural_frequency
-        
+
         # calculate ideal tfinal
         poles = poles[abs(poles.real) > tolerance] # ignore poles near im axis
-        if poles.size == 0:        
+        if poles.size == 0:
             slowest_decay_rate = 1.0
         else:
             slowest_decay_rate = min(abs(poles.real))
-        tfinal = constant / slowest_decay_rate  
+        tfinal = constant / slowest_decay_rate
 
     return tfinal, dt
 
-# test below: ct with pole at the origin is 7 seconds, ct with pole at .5 is 14 s long, 
+# test below: ct with pole at the origin is 7 seconds, ct with pole at .5 is 14 s long,
 def _default_time_vector(sys, N=None, tfinal=None):
-    """Returns a time vector suitable for observing the response of the 
-    both the slowest poles and fastest resonant modes. if system is 
+    """Returns a time vector suitable for observing the response of the
+    both the slowest poles and fastest resonant modes. if system is
     discrete-time, N is ignored """
-    
+
     N_max = 5000
     N_min_ct = 100
     N_min_dt = 7 # more common to see just a few samples in discrete-time
-    
+
     ideal_tfinal, ideal_dt = _ideal_tfinal_and_dt(sys)
-    
+
     if isdtime(sys, strict=True):
-        if tfinal is None: 
+        if tfinal is None:
             # for discrete time, change from ideal_tfinal if N too large/small
             N = int(np.clip(ideal_tfinal/sys.dt, N_min_dt, N_max))# [N_min, N_max]
             tfinal = sys.dt * N
-        else: 
+        else:
             N = int(tfinal/sys.dt)
-    else: 
-        if tfinal is None: 
+    else:
+        if tfinal is None:
             # for continuous time, simulate to ideal_tfinal but limit N
             tfinal = ideal_tfinal
-        if N is None:     
+        if N is None:
             N = int(np.clip(tfinal/ideal_dt, N_min_ct, N_max)) # N<-[N_min, N_max]
-            
+
     return np.linspace(0, tfinal, N, endpoint=False)
