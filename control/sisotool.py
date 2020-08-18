@@ -26,10 +26,11 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
     kvect : list or ndarray, optional
         List of gains to use for plotting root locus
     xlim_rlocus : tuple or list, optional
-        control of x-axis range, normally with tuple (see matplotlib.axes)
+        control of x-axis range, normally with tuple
+        (see :doc:`matplotlib:api/axes_api`).
     ylim_rlocus : tuple or list, optional
         control of y-axis range
-    plotstr_rlocus : Additional options to matplotlib
+    plotstr_rlocus : :func:`matplotlib.pyplot.plot` format string, optional
         plotting style for the root locus plot(color, linestyle, etc)
     rlocus_grid: boolean (default = False)
         If True plot s-plane grid.

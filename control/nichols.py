@@ -135,11 +135,9 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
         Array of closed-loop phases defining the iso-phase lines on a custom
         Nichols chart. Must be in the range -360 < cl_phases < 0
     line_style : string, optional
-        .. seealso:: https://matplotlib.org/gallery/lines_bars_and_markers/linestyles.html
+        :doc:`Matplotlib linestyle \
+            <matplotlib:gallery/lines_bars_and_markers/linestyles>`
 
-    Returns
-    -------
-    None
     """
     # Default chart size
     ol_phase_min = -359.99

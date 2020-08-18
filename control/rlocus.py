@@ -75,7 +75,7 @@ _rlocus_defaults = {
 
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None,
-               plotstr=None, plot=True, print_gain=None, grid=None, ax=None, 
+               plotstr=None, plot=True, print_gain=None, grid=None, ax=None,
                **kwargs):
 
     """Root locus plot
@@ -91,9 +91,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     kvect : list or ndarray, optional
         List of gains to use in computing diagram.
     xlim : tuple or list, optional
-        Set limits of x axis, normally with tuple (see matplotlib.axes).
+        Set limits of x axis, normally with tuple
+        (see :doc:`matplotlib:api/axes_api`).
     ylim : tuple or list, optional
-        Set limits of y axis, normally with tuple (see matplotlib.axes).
+        Set limits of y axis, normally with tuple
+        (see :doc:`matplotlib:api/axes_api`).
+    plotstr : :func:`matplotlib.pyplot.plot` format string, optional
+        plotting style specification
     plot : boolean, optional
         If True (default), plot root locus diagram.
     print_gain : bool
@@ -101,8 +105,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         branches, calculate gain, damping and print.
     grid : bool
         If True plot omega-damping grid.  Default is False.
-    ax : Matplotlib axis
-        axis on which to create root locus plot 
+    ax : :class:`matplotlib.axes.Axes`
+        Axes on which to create root locus plot
 
     Returns
     -------
@@ -160,7 +164,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             fig = kwargs['fig']
             ax = fig.axes[1]
         else:
-            if ax is None: 
+            if ax is None:
                 ax = plt.gca()
                 fig = ax.figure
                 ax.set_title('Root Locus')
