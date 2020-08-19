@@ -843,7 +843,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         The system whose time response is to be computed
     is_step : bool
         Scales the dc value by the magnitude of the nonzero mode since
-        integrating the impulse response gives ∫exp(-λt) = -exp(-λt)/λ.
+        integrating the impulse response gives :math:`\int e^{-\lambda t} = -e^{-\lambda t}/ \lambda`
         Default is True.
 
     Returns
