@@ -223,7 +223,7 @@ class TestStateSpace(unittest.TestCase):
 
             # Make sure that we get a pending deprecation warning
             sys.freqresp(1.)
-            assert issubclass(w[-1].category, PendingDeprecationWarning)
+            assert issubclass(w[-1].category, DeprecationWarning)
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def test_freq_resp(self):
