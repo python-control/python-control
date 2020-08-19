@@ -172,7 +172,6 @@ Utility functions and conversions
     tfdata
     timebase
     timebaseEqual
-    common_timebase
     unwrap
     use_fbs_defaults
     use_matlab_defaults
