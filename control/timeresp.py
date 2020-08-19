@@ -843,7 +843,8 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         The system whose time response is to be computed
     is_step : bool
         Scales the dc value by the magnitude of the nonzero mode since
-        integrating the impulse response gives :math:`\int e^{-\lambda t} = -e^{-\lambda t}/ \lambda`
+        integrating the impulse response gives 
+        :math:`\int e^{-\lambda t} = -e^{-\lambda t}/ \lambda`
         Default is True.
 
     Returns
@@ -865,7 +866,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
     Instead, a modal decomposition in time domain hence a truncated ZIR and ZSR
     can be used such that only the modes that have significant effect on the
     time response are taken. But the sensitivity of the eigenvalues complicate
-    the matter since dλ = <w, dA*v> with <w,v> = 1. Hence we can only work
+    the matter since dlambda = <w, dA*v> with <w,v> = 1. Hence we can only work
     with simple poles with this formulation. See Golub, Van Loan Section 7.2.2
     for simple eigenvalue sensitivity about the nonunity of <w,v>. The size of
     the response is dependent on the size of the eigenshapes rather than the
