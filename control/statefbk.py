@@ -53,6 +53,7 @@ __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe', 'acker'
 # Pole placement
 def place(A, B, p):
     """Place closed loop eigenvalues
+
     K = place(A, B, p)
 
     Parameters
@@ -69,21 +70,24 @@ def place(A, B, p):
     K : 2-d array
         Gain such that A - B K has eigenvalues given in p
 
-    Algorithm
-    ---------
-    This is a wrapper function for scipy.signal.place_poles, which
-    implements the Tits and Yang algorithm [1]. It will handle SISO,
-    MISO, and MIMO systems. If you want more control over the algorithm,
-    use scipy.signal.place_poles directly.
 
-    [1] A.L. Tits and Y. Yang, "Globally convergent algorithms for robust
-    pole assignment by state feedback, IEEE Transactions on Automatic
-    Control, Vol. 41, pp. 1432-1452, 1996.
+    Notes
+    -----
+    Algorithm
+        This is a wrapper function for :func:`scipy.signal.place_poles`, which
+        implements the Tits and Yang algorithm [1]_. It will handle SISO,
+        MISO, and MIMO systems. If you want more control over the algorithm,
+        use :func:`scipy.signal.place_poles` directly.
 
     Limitations
-    -----------
-    The algorithm will not place poles at the same location more
-    than rank(B) times.
+        The algorithm will not place poles at the same location more
+        than rank(B) times.
+
+    References
+    ----------
+    .. [1] A.L. Tits and Y. Yang, "Globally convergent algorithms for robust
+       pole assignment by state feedback, IEEE Transactions on Automatic
+       Control, Vol. 41, pp. 1432-1452, 1996.
 
     Examples
     --------
@@ -227,11 +231,11 @@ def lqe(A, G, C, QN, RN, NN=None):
     Linear quadratic estimator design (Kalman filter) for continuous-time
     systems. Given the system
 
-    Given the system
     .. math::
-        x = Ax + Bu + Gw
-        y = Cx + Du + v
-     
+
+        x &= Ax + Bu + Gw \\\\
+        y &= Cx + Du + v
+
     with unbiased process noise w and measurement noise v with covariances
 
     .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
@@ -260,11 +264,14 @@ def lqe(A, G, C, QN, RN, NN=None):
         Kalman estimator gain
     P: 2D array
         Solution to Riccati equation
+
         .. math::
-            A P + P A^T - (P C^T + G N) R^-1  (C P + N^T G^T) + G Q G^T = 0
+
+            A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
+
     E: 1D array
         Eigenvalues of estimator poles eig(A - L C)
-        
+
 
     Examples
     --------
@@ -381,7 +388,7 @@ def lqr(*args, **keywords):
     See Also
     --------
     lqe
-    
+
     """
 
     # Make sure that SLICOT is installed

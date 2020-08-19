@@ -226,10 +226,10 @@ Selected variables that can be configured, along with their default values:
     `numpy.matrix` (verus numpy.ndarray)
 
   * statesp.default_dt and xferfcn.default_dt (None): set the default value of dt when 
-  constructing new LTI systems
+    constructing new LTI systems
 
   * statesp.remove_useless_states (True): remove states that have no effect on the 
-  input-output dynamics of the system 
+    input-output dynamics of the system
 
 Additional parameter variables are documented in individual functions
 

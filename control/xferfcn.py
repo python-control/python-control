@@ -93,8 +93,8 @@ class TransferFunction(LTI):
     instance variable and setting it to something other than 'None'.  If 'dt'
     has a non-zero value, then it must match whenever two transfer functions
     are combined.  If 'dt' is set to True, the system will be treated as a
-    discrete time system with unspecified sampling time. The default value of 
-    'dt' is None and can be changed by changing the value of 
+    discrete time system with unspecified sampling time. The default value of
+    'dt' is None and can be changed by changing the value of
     ``control.config.defaults['xferfcn.default_dt']``.
 
     The TransferFunction class defines two constants ``s`` and ``z`` that
@@ -767,14 +767,14 @@ class TransferFunction(LTI):
         return TransferFunction(num, den, self.dt)
 
     def returnScipySignalLTI(self):
-        """Return a list of a list of scipy.signal.lti objects.
+        """Return a list of a list of :class:`scipy.signal.lti` objects.
 
         For instance,
 
         >>> out = tfobject.returnScipySignalLTI()
         >>> out[3][5]
 
-        is a signal.scipy.lti object corresponding to the
+        is a class:`scipy.signal.lti` object corresponding to the
         transfer function from the 6th input to the 4th output.
 
         """
@@ -981,11 +981,11 @@ class TransferFunction(LTI):
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
             otherwise.
-        
+
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
-            time system's magnitude and phase (the gain=1 crossover frequency, 
-            for example). Should only be specified with method='bilinear' or 
+            time system's magnitude and phase (the gain=1 crossover frequency,
+            for example). Should only be specified with method='bilinear' or
             'gbt' with alpha=0.5 and ignored otherwise.
 
         Returns
@@ -997,7 +997,7 @@ class TransferFunction(LTI):
         -----
         1. Available only for SISO systems
 
-        2. Uses the command `cont2discrete` from `scipy.signal`
+        2. Uses :func:`scipy.signal.cont2discrete`
 
         Examples
         --------
@@ -1015,7 +1015,7 @@ class TransferFunction(LTI):
         if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
                 prewarp_frequency is not None:
             Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
-        else: 
+        else:
             Twarp = Ts
         numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
         return TransferFunction(numd[0, :], dend, Ts)

@@ -72,12 +72,15 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 _statesp_defaults = {
     'statesp.use_numpy_matrix': True,
     'statesp.default_dt': None,
-    'statesp.remove_useless_states': True, 
+    'statesp.remove_useless_states': True,
     }
 
 
 def _ssmatrix(data, axis=1):
-    """Convert argument to a (possibly empty) state space matrix.
+    """Convert argument to a (possibly empty) 2D state space matrix.
+
+    The axis keyword argument makes it convenient to specify that if the input
+    is a vector, it is a row (axis=1) or column (axis=0) vector.
 
     Parameters
     ----------
@@ -94,8 +97,10 @@ def _ssmatrix(data, axis=1):
     """
     # Convert the data into an array or matrix, as configured
     # If data is passed as a string, use (deprecated?) matrix constructor
-    if config.defaults['statesp.use_numpy_matrix'] or isinstance(data, str):
+    if config.defaults['statesp.use_numpy_matrix']:
         arr = np.matrix(data, dtype=float)
+    elif isinstance(data, str):
+        arr = np.array(np.matrix(data, dtype=float))
     else:
         arr = np.array(data, dtype=float)
     ndim = arr.ndim
@@ -149,7 +154,7 @@ class StateSpace(LTI):
     Setting dt = 0 specifies a continuous system, while leaving dt = None
     means the system timebase is not specified.  If 'dt' is set to True, the
     system will be treated as a discrete time system with unspecified sampling
-    time. The default value of 'dt' is None and can be changed by changing the 
+    time. The default value of 'dt' is None and can be changed by changing the
     value of ``control.config.defaults['statesp.default_dt']``.
 
     """
@@ -195,12 +200,20 @@ class StateSpace(LTI):
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get('remove_useless', config.defaults['statesp.remove_useless_states'])
+        remove_useless = kw.get('remove_useless', 
+                                config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
         A = _ssmatrix(A)
-        B = _ssmatrix(B, axis=0)
-        C = _ssmatrix(C, axis=1)
+        # if B is a 1D array, turn it into a column vector if it fits
+        if np.asarray(B).ndim == 1 and len(B) == A.shape[0]:
+            B = _ssmatrix(B, axis=0)
+        else:
+            B = _ssmatrix(B)
+        if np.asarray(C).ndim == 1 and len(C) == A.shape[0]:
+            C = _ssmatrix(C, axis=1)
+        else:
+            C = _ssmatrix(C, axis=0) #if this doesn't work, error below
         if np.isscalar(D) and D == 0 and B.shape[1] > 0 and C.shape[0] > 0:
             # If D is a scalar zero, broadcast it to the proper size
             D = np.zeros((C.shape[0], B.shape[1]))
@@ -807,15 +820,15 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
     # TODO: add discrete time check
     def returnScipySignalLTI(self):
-        """Return a list of a list of scipy.signal.lti objects.
+        """Return a list of a list of :class:`scipy.signal.lti` objects.
 
         For instance,
 
         >>> out = ssobject.returnScipySignalLTI()
         >>> out[3][5]
 
-        is a signal.scipy.lti object corresponding to the transfer function from
-        the 6th input to the 4th output."""
+        is a :class:`scipy.signal.lti` object corresponding to the transfer
+        function from the 6th input to the 4th output."""
 
         # Preallocate the output.
         out = [[[] for _ in range(self.inputs)] for _ in range(self.outputs)]
@@ -828,8 +841,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return out
 
     def append(self, other):
-        """Append a second model to the present model. The second
-        model is converted to state-space if necessary, inputs and
+        """Append a second model to the present model.
+
+        The second model is converted to state-space if necessary, inputs and
         outputs are appended and their order is preserved"""
         if not isinstance(other, StateSpace):
             other = _convertToStateSpace(other)
@@ -889,8 +903,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
-            time system's magnitude and phase (the gain=1 crossover frequency, 
-            for example). Should only be specified with method='bilinear' or 
+            time system's magnitude and phase (the gain=1 crossover frequency,
+            for example). Should only be specified with method='bilinear' or
             'gbt' with alpha=0.5 and ignored otherwise.
 
         Returns
@@ -900,7 +914,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Notes
         -----
-        Uses the command 'cont2discrete' from scipy.signal
+        Uses :func:`scipy.signal.cont2discrete`
 
         Examples
         --------
@@ -915,7 +929,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
                 prewarp_frequency is not None:
             Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
-        else: 
+        else:
             Twarp = Ts
         Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
         return StateSpace(Ad, Bd, C, D, Ts)
@@ -1259,8 +1273,8 @@ def _mimo2simo(sys, input, warn_conversion=False):
                  "Only input {i} is used." .format(i=input))
         # $X = A*X + B*U
         #  Y = C*X + D*U
-        new_B = sys.B[:, input]
-        new_D = sys.D[:, input]
+        new_B = sys.B[:, input:input+1]
+        new_D = sys.D[:, input:input+1]
         sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt)
 
     return sys

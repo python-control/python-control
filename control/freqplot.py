@@ -40,11 +40,13 @@
 # SUCH DAMAGE.
 #
 # $Id$
+
+import math
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import scipy as sp
 import numpy as np
-import math
+
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
@@ -110,9 +112,9 @@ def bode_plot(syslist, omega=None,
         config.defaults['freqplot.number_of_samples'].
     margins : bool
         If True, plot gain and phase margin.
-    *args : `matplotlib` plot positional properties, optional
+    *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
-    **kwargs : `matplotlib` plot keyword properties, optional
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns
@@ -128,21 +130,22 @@ def bode_plot(syslist, omega=None,
     ----------------
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
-        config.defaults['bode.grid'].
+        `config.defaults['bode.grid']`.
+
 
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
 
     Notes
     -----
-    1. Alternatively, you may use the lower-level method (mag, phase, freq)
-    = sys.frequency_response(freq) to generate the frequency response for a system,
-    but it returns a MIMO response.
+    1. Alternatively, you may use the lower-level methods
+       :meth:`LTI.frequency_response` or ``sys(s)`` or ``sys(z)`` or to 
+       generate the frequency response for a single system.
 
     2. If a discrete time model is given, the frequency response is plotted
-    along the upper branch of the unit circle, using the mapping z = exp(j
-    \\omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
-    timebase.  If not timebase is specified (dt = True), dt is set to 1.
+       along the upper branch of the unit circle, using the mapping ``z = exp(1j
+       * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt` is the discrete
+       timebase.  If timebase not specified (``dt=True``), `dt` is set to 1.
 
     Examples
     --------
@@ -183,12 +186,12 @@ def bode_plot(syslist, omega=None,
             if Hz:
                 omega_limits *= 2. * math.pi
             if omega_num:
-                omega = sp.logspace(np.log10(omega_limits[0]),
+                omega = np.logspace(np.log10(omega_limits[0]),
                                     np.log10(omega_limits[1]),
                                     num=omega_num,
                                     endpoint=True)
             else:
-                omega = sp.logspace(np.log10(omega_limits[0]),
+                omega = np.logspace(np.log10(omega_limits[0]),
                                     np.log10(omega_limits[1]),
                                     endpoint=True)
 
@@ -464,9 +467,9 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
         Label every nth frequency on the plot
     arrowhead_width : arrow head width
     arrowhead_length : arrow head length
-    *args : `matplotlib` plot positional properties, optional
+    *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
-    **kwargs : `matplotlib` plot keyword properties, optional
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns
@@ -529,8 +532,8 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
             phase = np.squeeze(phase_tmp)
 
             # Compute the primary curve
-            x = sp.multiply(mag, sp.cos(phase))
-            y = sp.multiply(mag, sp.sin(phase))
+            x = np.multiply(mag, np.cos(phase))
+            y = np.multiply(mag, np.sin(phase))
 
             if plot:
                 # Plot the primary curve and mirror image
@@ -539,13 +542,13 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                 ax = plt.gca()
                 # Plot arrow to indicate Nyquist encirclement orientation
                 ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
-                         head_width=arrowhead_width, 
+                         head_width=arrowhead_width,
                          head_length=arrowhead_length)
 
                 plt.plot(x, -y, '-', color=c, *args, **kwargs)
                 ax.arrow(
                     x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                    fc=c, ec=c, head_width=arrowhead_width, 
+                    fc=c, ec=c, head_width=arrowhead_width,
                     head_length=arrowhead_length)
 
                 # Mark the -1 point
@@ -556,7 +559,7 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                 ind = slice(None, None, label_freq)
                 for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
                     # Convert to Hz
-                    f = omegapt / (2 * sp.pi)
+                    f = omegapt / (2 * np.pi)
 
                     # Factor out multiples of 1000 and limit the
                     # result to the range [-8, 8].
@@ -601,7 +604,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
         Linear input/output systems (process and control)
     omega : array
         Range of frequencies (list or bounds) in rad/sec
-    **kwargs : `matplotlib` plot keyword properties, optional
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns

@@ -22,13 +22,13 @@ class TestCanonical(unittest.TestCase):
         D_true = 42.0
 
         # Perform a coordinate transform with a random invertible matrix
-        T_true = np.matrix([[-0.27144004, -0.39933167,  0.75634684,  0.44135471],
+        T_true =  np.array([[-0.27144004, -0.39933167,  0.75634684,  0.44135471],
                             [-0.74855725, -0.39136285, -0.18142339, -0.50356997],
                             [-0.40688007,  0.81416369,  0.38002113, -0.16483334],
                             [-0.44769516,  0.15654653, -0.50060858,  0.72419146]])
-        A = np.linalg.solve(T_true, A_true)*T_true
+        A = np.linalg.solve(T_true, A_true).dot(T_true)
         B = np.linalg.solve(T_true, B_true)
-        C = C_true*T_true
+        C = C_true.dot(T_true)
         D = D_true
 
         # Create a state space system and convert it to the reachable canonical form
@@ -69,11 +69,11 @@ class TestCanonical(unittest.TestCase):
         D_true = 42.0
 
         # Perform a coordinate transform with a random invertible matrix
-        T_true = np.matrix([[-0.27144004, -0.39933167,  0.75634684,  0.44135471],
+        T_true =  np.array([[-0.27144004, -0.39933167,  0.75634684,  0.44135471],
                             [-0.74855725, -0.39136285, -0.18142339, -0.50356997],
                             [-0.40688007,  0.81416369,  0.38002113, -0.16483334],
                             [-0.44769516,  0.15654653, -0.50060858,  0.72419146]])
-        A = np.linalg.solve(T_true, A_true)*T_true
+        A = np.linalg.solve(T_true, A_true).dot(T_true)
         B = np.linalg.solve(T_true, B_true)
         C = C_true*T_true
         D = D_true
@@ -98,9 +98,9 @@ class TestCanonical(unittest.TestCase):
         C_true = np.array([[1, 0, 0, 1]])
         D_true = np.array([[0]])
 
-        A = np.linalg.solve(T_true, A_true) * T_true
+        A = np.linalg.solve(T_true, A_true).dot(T_true)
         B = np.linalg.solve(T_true, B_true)
-        C = C_true * T_true
+        C = C_true.dot(T_true)
         D = D_true
 
         # Create state space system and convert to modal canonical form
@@ -132,9 +132,9 @@ class TestCanonical(unittest.TestCase):
         C_true = np.array([[0, 1, 0, 1]])
         D_true = np.array([[0]])
 
-        A = np.linalg.solve(T_true, A_true) * T_true
+        A = np.linalg.solve(T_true, A_true).dot(T_true)
         B = np.linalg.solve(T_true, B_true)
-        C = C_true * T_true
+        C = C_true.dot(T_true)
         D = D_true
 
         # Create state space system and convert to modal canonical form
@@ -173,13 +173,13 @@ class TestCanonical(unittest.TestCase):
         D_true = 42.0
 
         # Perform a coordinate transform with a random invertible matrix
-        T_true = np.matrix([[-0.27144004, -0.39933167,  0.75634684,  0.44135471],
+        T_true =  np.array([[-0.27144004, -0.39933167,  0.75634684,  0.44135471],
                             [-0.74855725, -0.39136285, -0.18142339, -0.50356997],
                             [-0.40688007,  0.81416369,  0.38002113, -0.16483334],
                             [-0.44769516,  0.15654653, -0.50060858,  0.72419146]])
-        A = np.linalg.solve(T_true, A_true)*T_true
+        A = np.linalg.solve(T_true, A_true).dot(T_true)
         B = np.linalg.solve(T_true, B_true)
-        C = C_true*T_true
+        C = C_true.dot(T_true)
         D = D_true
 
         # Create a state space system and convert it to the observable canonical form

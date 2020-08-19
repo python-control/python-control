@@ -66,7 +66,7 @@ def pzmap(sys, plot=True, grid=False, title='Pole Zero Map', **kwargs):
     ----------
     sys: LTI (StateSpace or TransferFunction)
         Linear system for which poles and zeros are computed.
-    plot: bool
+    plot: bool, optional
         If ``True`` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
     grid: boolean (default = False)

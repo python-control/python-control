@@ -53,7 +53,7 @@ class TestIOSys(unittest.TestCase):
         for x, u in (([0, 0], 0), ([1, 0], 0), ([0, 1], 0), ([0, 0], 1)):
             np.testing.assert_array_almost_equal(
                 np.reshape(iosys._rhs(0, x, u), (-1,1)),
-                linsys.A * np.reshape(x, (-1, 1)) + linsys.B * u)
+                np.dot(linsys.A, np.reshape(x, (-1, 1))) + np.dot(linsys.B, u))
 
         # Make sure that simulations also line up
         T, U, X0 = self.T, self.U, self.X0
@@ -151,9 +151,9 @@ class TestIOSys(unittest.TestCase):
 
         # Create a nonlinear system with the same dynamics
         nlupd = lambda t, x, u, params: \
-            np.reshape(linsys.A * np.reshape(x, (-1, 1)) + linsys.B * u, (-1,))
+            np.reshape(np.dot(linsys.A, np.reshape(x, (-1, 1))) + np.dot(linsys.B, u), (-1,))
         nlout = lambda t, x, u, params: \
-            np.reshape(linsys.C * np.reshape(x, (-1, 1)) + linsys.D * u, (-1,))
+            np.reshape(np.dot(linsys.C, np.reshape(x, (-1, 1))) + np.dot(linsys.D, u), (-1,))
         nlsys = ios.NonlinearIOSystem(nlupd, nlout)
 
         # Make sure that simulations also line up
@@ -747,8 +747,8 @@ class TestIOSys(unittest.TestCase):
                 + np.dot(self.mimo_linsys1.B, np.reshape(u, (-1, 1)))
             ).reshape(-1,),
             outfcn = lambda t, x, u, params: np.array(
-                self.mimo_linsys1.C * np.reshape(x, (-1, 1)) \
-                + self.mimo_linsys1.D * np.reshape(u, (-1, 1))
+                np.dot(self.mimo_linsys1.C, np.reshape(x, (-1, 1))) \
+                + np.dot(self.mimo_linsys1.D, np.reshape(u, (-1, 1)))
             ).reshape(-1,),
             inputs = ('u[0]', 'u[1]'),
             outputs = ('y[0]', 'y[1]'),
