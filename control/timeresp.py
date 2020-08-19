@@ -931,7 +931,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         # See <w,v> for [[1,2,0], [9,1,0.01], [1,2,10*np.pi]] before/after balance
         b, (sca, perm) = matrix_balance(sys_ss.A, separate=True)
         p, l, r = eig(b, left=True, right=True)
-        # Reciprocal of inner product <w,v> for each λ, (bound the ~infs by 1e12)
+        # Reciprocal of inner product <w,v> for each eigval, (bound the ~infs by 1e12)
         # G = Transfer([1], [1,0,1]) gives zero sensitivity (bound by 1e-12)
         eig_sens = np.reciprocal(maximum(1e-12, einsum('ij,ij->j', l, r).real))
         eig_sens = minimum(1e12, eig_sens)
@@ -951,7 +951,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         dc = np.zeros_like(p, dtype=float)
         # well-conditioned nonzero poles, np.abs just in case
         ok = np.abs(eig_sens) <= 1/sqrt_eps
-        # the averaged t→∞ response of each simple λ on each i/o channel
+        # the averaged t->inf response of each simple eigval on each i/o channel
         # See, A = [[-1, k], [0, -2]], response sizes are k-dependent (that is
         # R/L eigenvector dependent)
         dc[ok] = norm(v[ok, :], axis=1)*norm(w[:, ok], axis=0)*eig_sens[ok]
@@ -973,7 +973,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         if np.any(iw):
             tfinal += (total_cycles * 2 * np.pi / wnsub[iw]).tolist()
             dt += (2 * np.pi / pts_per_cycle / wnsub[iw]).tolist()
-        # The rest ~ts = log(%ss value) / exp(Re(λ)t)
+        # The rest ~ts = log(%ss value) / exp(Re(eigval)t)
         texp_mode = log_decay_percent / np.abs(psub[~iw & ~ints].real)
         tfinal += texp_mode.tolist()
         dt += minimum(texp_mode / 50,
