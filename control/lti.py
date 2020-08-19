@@ -432,9 +432,10 @@ def evalfr(sys, x, squeeze=True):
     Returns the complex frequency response `sys(x)` where `x` is `s` for 
     continuous-time systems and `z` for discrete-time systems. 
 
-    To evaluate at a frequency omega in radians per second, enter x = omega*1j, 
-    for continuous-time systems, or x = exp(1j*omega*dt) for discrete-time 
-    systems. 
+    To evaluate at a frequency omega in radians per second, enter 
+    ``x = omega * 1j`` for continuous-time systems, or 
+    ``x = exp(1j * omega * dt)`` for discrete-time systems, or use 
+    ``freqresp(sys, omega)``. 
 
     Parameters
     ----------

@@ -444,22 +444,23 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         continuous-time systems and `z` for discrete-time systems. 
 
         To evaluate at a frequency omega in radians per second, enter 
-        x = omega*1j, for continuous-time systems, or x = exp(1j*omega*dt) for 
-        discrete-time systems. 
+        ``x = omega * 1j``, for continuous-time systems, or 
+        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use 
+        :meth:`StateSpace.frequency_response`. 
 
         Parameters
         ----------
         x: complex or complex array_like 
             Complex frequencies
         squeeze: bool, optional (default=True)
-            If True and sys is single input single output (SISO), returns a 
-            1D array or scalar depending on the length of x. 
+            If True and `sys` is single input single output (SISO), returns a 
+            1D array or scalar depending on the length of `x`. 
             
         Returns
         -------
         fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
-            The frequency response of the system. Array is len(x) if and only if
-            system is SISO and squeeze=True.
+            The frequency response of the system. Array is ``len(x)`` if and 
+            only if system is SISO and ``squeeze=True``.
 
         """        
         # Use Slycot if available
@@ -476,7 +477,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Evaluate system's transfer function at complex frequency
         using Laub's method from Slycot.
 
-        Expects inputs and outputs to be formatted correctly. Use __call__
+        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
         for a more user-friendly interface. 
 
         Parameters
@@ -492,7 +493,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         from slycot import tb05ad
 
         # preallocate
-        x_arr = np.array(x, ndmin=1) # array-like version of s
+        x_arr = np.atleast_1d(x) # array-like version of x
         n = self.states
         m = self.inputs
         p = self.outputs
@@ -528,7 +529,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z` 
         for discrete-time systems. 
         
-        Expects inputs and outputs to be formatted correctly. Use __call__
+        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
         for a more user-friendly interface. 
 
         Parameters
@@ -538,20 +539,20 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Returns
         -------
-        output : (number_outputs, number_inputs, len(x)) complex ndarray
+        output : (self.outputs, self.inputs, len(x)) complex ndarray
             Frequency response
 
         Notes
         -----
-            Attempts to use Laub's method from Slycot library, with a 
-            fall-back to python code.
+        Attempts to use Laub's method from Slycot library, with a 
+        fall-back to python code.
         """
         try:
             out = self.slycot_laub(x)
         except (ImportError, Exception):  
             # Fall back because either Slycot unavailable or cannot handle 
             # certain cases.
-            x_arr = np.array(x, ndmin=1) # force to be an array    
+            x_arr = np.atleast_1d(x) # force to be an array    
             # Preallocate 
             out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
             
@@ -564,11 +565,17 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         return out
 
     def freqresp(self, omega):
-        warn("StateSpace.freqresp(omega) will be deprecated in a "
+        """(deprecated) Evaluate transfer function at complex frequencies. 
+        
+        .. deprecated::0.9.0 
+            Method has been given the more pythonic name 
+            :meth:`StateSpace.frequency_response`. Or use 
+            :func:`freqresp` in the MATLAB compatibility module.
+        """
+        warn("StateSpace.freqresp(omega) will be removed in a "
              "future release of python-control; use "
-             "StateSpace.frequency_response(sys, omega), or "
-             "freqresp(sys, omega) in the MATLAB compatibility module "
-             "instead", PendingDeprecationWarning)        
+             "sys.frequency_response(omega), or freqresp(sys, omega) in the "
+             "MATLAB compatibility module instead", DeprecationWarning)        
         return self.frequency_response(omega)
 
     # Compute poles and zeros

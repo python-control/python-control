@@ -355,14 +355,14 @@ second has %i." % (self.outputs, other.outputs))
         omega: float or array_like
             Frequencies in radians per second
         squeeze: bool, optional (default=True)
-            If True and sys is single input single output (SISO), returns a 
-            1D array or scalar depending on the length of omega 
+            If True and `sys` is single input single output (SISO), returns a 
+            1D array or scalar depending on the length of `omega` 
             
         Returns
         -------
-        fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray
-            The frequency response of the system. Array is len(x) if and only if
-            system is SISO and squeeze=True.
+        fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
+            The frequency response of the system. Array is ``len(x)`` if and only
+            if system is SISO and ``squeeze=True``.
 
         """     
         omega_array = np.array(omega, ndmin=1) # array-like version of omega 
@@ -398,27 +398,28 @@ second has %i." % (self.outputs, other.outputs))
         Returns the complex frequency response `sys(s)`.
 
         To evaluate at a frequency omega in radians per second, enter 
-        x = omega*1j or use FRD.eval(omega)
+        ``x = omega * 1j`` or use ``sys.eval(omega)``
 
         Parameters
         ----------
         s: complex scalar or array_like 
             Complex frequencies 
         squeeze: bool, optional (default=True)
-            If True and sys is single input single output (SISO), returns a 
-            1D array or scalar depending on the length of x. 
+            If True and `sys` is single input single output (SISO), returns a 
+            1D array or scalar depending on the length of x`. 
             
         Returns
         -------
-        fresp : (num_outputs, num_inputs, len(x)) or len(x) complex ndarray
-            The frequency response of the system. Array is len(x) if and only if
-            system is SISO and squeeze=True.
+        fresp : (self.outputs, self.inputs, len(s)) or len(s) complex ndarray
+            The frequency response of the system. Array is ``len(s)`` if and 
+            only if system is SISO and ``squeeze=True``.
 
         Raises
         ------
         ValueError
-            If `s` is not purely imaginary, because FrequencyDomainData systems
-            are only defined at imaginary frequency values. 
+            If `s` is not purely imaginary, because 
+            :class:`FrequencyDomainData` systems are only defined at imaginary 
+            frequency values. 
 
         """
         if any(abs(np.array(s, ndmin=1).real) > 0):
@@ -431,11 +432,18 @@ second has %i." % (self.outputs, other.outputs))
             return self.eval(complex(s).imag, squeeze=squeeze)
         
     def freqresp(self, omega):
-        warn("FrequencyResponseData.freqresp(omega) will be deprecated in a "
+        """(deprecated) Evaluate transfer function at complex frequencies. 
+        
+        .. deprecated::0.9.0 
+            Method has been given the more pythonic name 
+            :meth:`FrequencyResponseData.frequency_response`. Or use 
+            :func:`freqresp` in the MATLAB compatibility module.
+        """
+        warn("FrequencyResponseData.freqresp(omega) will be removed in a "
              "future release of python-control; use "
-             "FrequencyResponseData.frequency_response(sys, omega), or "
+             "FrequencyResponseData.frequency_response(omega), or "
              "freqresp(sys, omega) in the MATLAB compatibility module "
-             "instead", PendingDeprecationWarning)        
+             "instead", DeprecationWarning)        
         return self.frequency_response(omega)
 
     def feedback(self, other=1, sign=-1):

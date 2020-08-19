@@ -211,22 +211,23 @@ class TransferFunction(LTI):
         continuous-time systems and `z` for discrete-time systems. 
 
         To evaluate at a frequency omega in radians per second, enter 
-        x = omega*1j, for continuous-time systems, or x = exp(1j*omega*dt) for 
-        discrete-time systems. 
+        ``x = omega * 1j``, for continuous-time systems, or 
+        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use 
+        :meth:`TransferFunction.frequency_response`. 
 
         Parameters
         ----------
         x: complex array_like or complex
             Complex frequencies
         squeeze: bool, optional (default=True)
-            If True and sys is single input single output (SISO), returns a 
-            1D array or scalar depending on the length of x. 
+            If True and `sys` is single input single output (SISO), returns a 
+            1D array or scalar depending on the length of `x`. 
             
         Returns
         -------
         fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
-            The frequency response of the system. Array is len(x) if and only if
-            system is SISO and squeeze=True.
+            The frequency response of the system. Array is `len(x)` if and 
+            only if system is SISO and ``squeeze=True``.
 
         """     
         out = self.horner(x)
@@ -246,7 +247,7 @@ class TransferFunction(LTI):
         Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z`
         for discrete-time systems. 
         
-        Expects inputs and outputs to be formatted correctly. Use __call__
+        Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
         for a more user-friendly interface. 
 
         Parameters
@@ -260,8 +261,8 @@ class TransferFunction(LTI):
             Frequency response
 
         """
-        s_arr = np.array(x, ndmin=1) # force to be an array
-        out = empty((self.outputs, self.inputs, len(s_arr)), dtype=complex)
+        x_arr = np.atleast_1d(x) # force to be an array
+        out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
         for i in range(self.outputs):
             for j in range(self.inputs):
                 out[i][j] = (polyval(self.num[i][j], x) /
@@ -659,11 +660,17 @@ class TransferFunction(LTI):
             return TransferFunction(num, den, self.dt)
 
     def freqresp(self, omega):
-        warn("TransferFunction.freqresp(omega) will be deprecated in a "
+        """(deprecated) Evaluate transfer function at complex frequencies. 
+        
+        .. deprecated::0.9.0 
+            Method has been given the more pythonic name 
+            :meth:`TransferFunction.frequency_response`. Or use 
+            :func:`freqresp` in the MATLAB compatibility module.
+        """
+        warn("TransferFunction.freqresp(omega) will be removed in a "
              "future release of python-control; use "
-             "TransferFunction.frequency_response(sys, omega), or "
-             "freqresp(sys, omega) in the MATLAB compatibility module "
-             "instead", PendingDeprecationWarning)        
+             "sys.frequency_response(omega), or freqresp(sys, omega) in the "
+             "MATLAB compatibility module instead", DeprecationWarning)        
         return self.frequency_response(omega)
 
     def pole(self):
