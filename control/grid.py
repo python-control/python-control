@@ -19,10 +19,13 @@ class FormatterDMS(object):
 
 
 class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
-    '''Changed to allow only left hand-side polar grid'''
+    '''Changed to allow only left hand-side polar grid
+
+    https://matplotlib.org/_modules/mpl_toolkits/axisartist/angle_helper.html#ExtremeFinderCycle.__call__
+    '''
     def __call__(self, transform_xy, x1, y1, x2, y2):
-        x_, y_ = np.linspace(x1, x2, self.nx), np.linspace(y1, y2, self.ny)
-        x, y = np.meshgrid(x_, y_)
+        x, y = np.meshgrid(
+            np.linspace(x1, x2, self.nx), np.linspace(y1, y2, self.ny))
         lon, lat = transform_xy(np.ravel(x), np.ravel(y))
 
         with np.errstate(invalid='ignore'):
@@ -41,7 +44,25 @@ class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
         lat_min, lat_max = np.nanmin(lat), np.nanmax(lat)
 
         lon_min, lon_max, lat_min, lat_max = \
-            self._adjust_extremes(lon_min, lon_max, lat_min, lat_max)
+            self._add_pad(lon_min, lon_max, lat_min, lat_max)
+
+        # check cycle
+        if self.lon_cycle:
+            lon_max = min(lon_max, lon_min + self.lon_cycle)
+        if self.lat_cycle:
+            lat_max = min(lat_max, lat_min + self.lat_cycle)
+
+        if self.lon_minmax is not None:
+            min0 = self.lon_minmax[0]
+            lon_min = max(min0, lon_min)
+            max0 = self.lon_minmax[1]
+            lon_max = min(max0, lon_max)
+
+        if self.lat_minmax is not None:
+            min0 = self.lat_minmax[0]
+            lat_min = max(min0, lat_min)
+            max0 = self.lat_minmax[1]
+            lat_max = min(max0, lat_max)
 
         return lon_min, lon_max, lat_min, lat_max
 
