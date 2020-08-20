@@ -6,9 +6,11 @@ Created on Thu Aug 20 20:06:21 2020
 @author: bnavigator
 """
 
+import matplotlib
 import numpy as np
 import pytest
 from matplotlib import pyplot as plt
+from mpl_toolkits.axisartist import Axes as mpltAxes
 
 from control import TransferFunction, config, pzmap
 
@@ -54,10 +56,26 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
 
     if kwargs.get('plot', True):
         ax = plt.gca()
+
         assert ax.get_title() == kwargs.get('title', 'Pole Zero Map')
+
+        # FIXME: This won't work when zgrid and sgrid are unified
+        children = ax.get_children()
+        has_zgrid = False
+        for c in children:
+            if isinstance(c, matplotlib.text.Annotation):
+                if r'\pi' in c.get_text():
+                    has_zgrid = True
+        has_sgrid = isinstance(ax, mpltAxes)
+
         if kwargs.get('grid', False):
-            # TODO: check for correct grid
-            pass
+            assert dt == has_zgrid
+            assert dt != has_sgrid
+        else:
+            assert not has_zgrid
+            assert not has_sgrid
+    else:
+        assert not plt.get_fignums()
 
 
 def test_pzmap_warns():

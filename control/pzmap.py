@@ -58,7 +58,7 @@ _pzmap_defaults = {
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, plot=True, grid=False, title='Pole Zero Map', **kwargs):
+def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     """
     Plot a pole/zero map for a linear system.
 

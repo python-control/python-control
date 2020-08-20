@@ -34,11 +34,9 @@ class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
                 # Changed from 180 to 360 to be able to span only
                 # 90-270 (left hand side)
                 lon -= 360. * ((lon - lon0) > 360.)
-            if self.lat_cycle is not None:
+            if self.lat_cycle is not None:  # pragma: no cover
                 lat0 = np.nanmin(lat)
-                # Changed from 180 to 360 to be able to span only
-                # 90-270 (left hand side)
-                lat -= 360. * ((lat - lat0) > 360.)
+                lat -= 360. * ((lat - lat0) > 180.)
 
         lon_min, lon_max = np.nanmin(lon), np.nanmax(lon)
         lat_min, lat_max = np.nanmin(lat), np.nanmax(lat)
@@ -49,7 +47,7 @@ class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
         # check cycle
         if self.lon_cycle:
             lon_max = min(lon_max, lon_min + self.lon_cycle)
-        if self.lat_cycle:
+        if self.lat_cycle:  # pragma: no cover
             lat_max = min(lat_max, lat_min + self.lat_cycle)
 
         if self.lon_minmax is not None:
