@@ -408,8 +408,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             xout = xout[::inc, :]
 
         # Transpose the output and state vectors to match local convention
-        xout = sp.transpose(xout)
-        yout = sp.transpose(yout)
+        xout = np.transpose(xout)
+        yout = np.transpose(yout)
 
     # Get rid of unneeded dimensions
     if squeeze:
