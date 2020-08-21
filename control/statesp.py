@@ -59,7 +59,8 @@ from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
 import scipy as sp
-from scipy.signal import lti, cont2discrete
+from scipy.signal import cont2discrete
+from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
 from .lti import LTI, timebase, timebaseEqual, isdtime
 from . import config
@@ -200,7 +201,7 @@ class StateSpace(LTI):
             raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get('remove_useless', 
+        remove_useless = kw.get('remove_useless',
                                 config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
@@ -798,9 +799,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         else:
             return StateSpace(self)
 
-
-    # TODO: add discrete time check
-    def returnScipySignalLTI(self):
+    def returnScipySignalLTI(self, strict=True):
         """Return a list of a list of :class:`scipy.signal.lti` objects.
 
         For instance,
@@ -809,15 +808,45 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         >>> out[3][5]
 
         is a :class:`scipy.signal.lti` object corresponding to the transfer
-        function from the 6th input to the 4th output."""
+        function from the 6th input to the 4th output.
+
+        Parameters
+        ----------
+        strict : bool, optional
+            True (default):
+                The timebase `ssobject.dt` cannot be None; it must
+                be continuous (0) or discrete (True or > 0).
+            False:
+              If `ssobject.dt` is None, continuous time
+              :class:`scipy.signal.lti` objects are returned.
+
+        Returns
+        -------
+        out : list of list of :class:`scipy.signal.StateSpace`
+            continuous time (inheriting from :class:`scipy.signal.lti`)
+            or discrete time (inheriting from :class:`scipy.signal.dlti`)
+            SISO objects
+        """
+        if strict and self.dt is None:
+            raise ValueError("with strict=True, dt cannot be None")
+
+        if self.dt:
+            kwdt = {'dt': self.dt}
+        else:
+            # scipy convention for continuous time lti systems: call without
+            # dt keyword argument
+            kwdt = {}
 
         # Preallocate the output.
         out = [[[] for _ in range(self.inputs)] for _ in range(self.outputs)]
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = lti(asarray(self.A), asarray(self.B[:, j]),
-                                asarray(self.C[i, :]), self.D[i, j])
+                out[i][j] = signalStateSpace(asarray(self.A),
+                                             asarray(self.B[:, j:j + 1]),
+                                             asarray(self.C[i:i + 1, :]),
+                                             asarray(self.D[i:i + 1, j:j + 1]),
+                                             **kwdt)
 
         return out
 

@@ -4,6 +4,8 @@
 # RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
 
 import unittest
+import pytest
+
 import sys as pysys
 import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace, rss
@@ -932,6 +934,45 @@ class TestXferFcn(unittest.TestCase):
             evalfr(plant, wwarp*1j), 
             evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
             decimal=4)
+
+
+class TestLTIConverter:
+    """Test returnScipySignalLTI method"""
+
+    @pytest.fixture
+    def mimotf(self, request):
+        """Test system with various dt values"""
+        return TransferFunction([[[11], [12], [13]],
+                                 [[21], [22], [23]]],
+                                [[[1, -1]] * 3] * 2,
+                                request.param)
+
+    @pytest.mark.parametrize("mimotf",
+                             [None,
+                              0,
+                              0.1,
+                              1,
+                              True],
+                             indirect=True)
+    def test_returnScipySignalLTI(self, mimotf):
+        """Test returnScipySignalLTI method with strict=False"""
+        sslti = mimotf.returnScipySignalLTI(strict=False)
+        for i in range(2):
+            for j in range(3):
+                np.testing.assert_allclose(sslti[i][j].num, mimotf.num[i][j])
+                np.testing.assert_allclose(sslti[i][j].den, mimotf.den[i][j])
+                if mimotf.dt == 0:
+                    assert sslti[i][j].dt is None
+                else:
+                    assert sslti[i][j].dt == mimotf.dt
+
+    @pytest.mark.parametrize("mimotf", [None], indirect=True)
+    def test_returnScipySignalLTI_error(self, mimotf):
+        """Test returnScipySignalLTI method with dt=None and strict=True"""
+        with pytest.raises(ValueError):
+            mimotf.returnScipySignalLTI()
+        with pytest.raises(ValueError):
+            mimotf.returnScipySignalLTI(strict=True)
 
 
 if __name__ == "__main__":

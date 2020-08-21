@@ -57,7 +57,8 @@ from numpy import angle, array, empty, finfo, ndarray, ones, \
     polyadd, polymul, polyval, roots, sqrt, zeros, squeeze, exp, pi, \
     where, delete, real, poly, nonzero
 import scipy as sp
-from scipy.signal import lti, tf2zpk, zpk2tf, cont2discrete
+from scipy.signal import tf2zpk, zpk2tf, cont2discrete
+from scipy.signal import TransferFunction as signalTransferFunction
 from copy import deepcopy
 from warnings import warn
 from itertools import chain
@@ -801,7 +802,7 @@ class TransferFunction(LTI):
         # end result
         return TransferFunction(num, den, self.dt)
 
-    def returnScipySignalLTI(self):
+    def returnScipySignalLTI(self, strict=True):
         """Return a list of a list of :class:`scipy.signal.lti` objects.
 
         For instance,
@@ -809,22 +810,44 @@ class TransferFunction(LTI):
         >>> out = tfobject.returnScipySignalLTI()
         >>> out[3][5]
 
-        is a class:`scipy.signal.lti` object corresponding to the
+        is a :class:`scipy.signal.lti` object corresponding to the
         transfer function from the 6th input to the 4th output.
 
-        """
+        Parameters
+        ----------
+        strict : bool, optional
+            True (default):
+                The timebase `tfobject.dt` cannot be None; it must be
+                continuous (0) or discrete (True or > 0).
+            False:
+                if `tfobject.dt` is None, continuous time
+                :class:`scipy.signal.lti`objects are returned
 
-        # TODO: implement for discrete time systems
-        if self.dt != 0 and self.dt is not None:
-            raise NotImplementedError("Function not \
-                    implemented in discrete time")
+        Returns
+        -------
+        out : list of list of :class:`scipy.signal.TransferFunction`
+            continuous time (inheriting from :class:`scipy.signal.lti`)
+            or discrete time (inheriting from :class:`scipy.signal.dlti`)
+            SISO objects
+        """
+        if strict and self.dt is None:
+            raise ValueError("with strict=True, dt cannot be None")
+
+        if self.dt:
+            kwdt = {'dt': self.dt}
+        else:
+            # scipy convention for continuous time lti systems: call without
+            # dt keyword argument
+            kwdt = {}
 
         # Preallocate the output.
         out = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = lti(self.num[i][j], self.den[i][j])
+                out[i][j] = signalTransferFunction(self.num[i][j],
+                                                   self.den[i][j],
+                                                   **kwdt)
 
         return out
 

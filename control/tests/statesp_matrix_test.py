@@ -5,6 +5,7 @@
 
 import unittest
 import numpy as np
+import pytest
 from numpy.linalg import solve
 from scipy.linalg import eigvals, block_diag
 from control import matlab
@@ -671,6 +672,57 @@ class TestDrss(unittest.TestCase):
             evalfr(plant, wwarp*1j), 
             evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
             decimal=4)
+
+
+class TestLTIConverter:
+    """Test returnScipySignalLTI method"""
+
+    @pytest.fixture
+    def mimoss(self, request):
+        """Test system with various dt values"""
+        n = 5
+        m = 3
+        p = 2
+        bx, bu = np.mgrid[1:n + 1, 1:m + 1]
+        cy, cx = np.mgrid[1:p + 1, 1:n + 1]
+        dy, du = np.mgrid[1:p + 1, 1:m + 1]
+        return StateSpace(np.eye(5) + np.eye(5, 5, 1),
+                          bx * bu,
+                          cy * cx,
+                          dy * du,
+                          request.param)
+
+    @pytest.mark.parametrize("mimoss",
+                             [None,
+                              0,
+                              0.1,
+                              1,
+                              True],
+                             indirect=True)
+    def test_returnScipySignalLTI(self, mimoss):
+        """Test returnScipySignalLTI method with strict=False"""
+        sslti = mimoss.returnScipySignalLTI(strict=False)
+        for i in range(mimoss.outputs):
+            for j in range(mimoss.inputs):
+                np.testing.assert_allclose(sslti[i][j].A, mimoss.A)
+                np.testing.assert_allclose(sslti[i][j].B, mimoss.B[:,
+                                                                   j:j + 1])
+                np.testing.assert_allclose(sslti[i][j].C, mimoss.C[i:i + 1,
+                                                                   :])
+                np.testing.assert_allclose(sslti[i][j].D, mimoss.D[i:i + 1,
+                                                                   j:j + 1])
+                if mimoss.dt == 0:
+                    assert sslti[i][j].dt is None
+                else:
+                    assert sslti[i][j].dt == mimoss.dt
+
+    @pytest.mark.parametrize("mimoss", [None], indirect=True)
+    def test_returnScipySignalLTI_error(self, mimoss):
+        """Test returnScipySignalLTI method with dt=None and strict=True"""
+        with pytest.raises(ValueError):
+            mimoss.returnScipySignalLTI()
+        with pytest.raises(ValueError):
+            mimoss.returnScipySignalLTI(strict=True)
 
 
 if __name__ == "__main__":
