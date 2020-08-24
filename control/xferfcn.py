@@ -1093,7 +1093,7 @@ class TransferFunction(LTI):
 
     def is_static_gain(self):
          """returns True if and only if all of the numerator and denominator 
-         polynomials of the (possibly MIMO) transfer funnction are zeroth order, 
+         polynomials of the (possibly MIMO) transfer function are zeroth order, 
          that is, if the system has no dynamics. """
          for list_of_polys in self.num, self.den: 
              for row in list_of_polys:
