@@ -251,7 +251,7 @@ def m_circles(mags, phase_min=-359.75, phase_max=-0.25):
     """
     # Convert magnitudes and phase range into a grid suitable for
     # building contours
-    phases = sp.radians(sp.linspace(phase_min, phase_max, 2000))
+    phases = sp.radians(np.linspace(phase_min, phase_max, 2000))
     Gcl_mags, Gcl_phases = sp.meshgrid(10.0**(mags/20.0), phases)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
 
@@ -277,7 +277,7 @@ def n_circles(phases, mag_min=-40.0, mag_max=12.0):
     """
     # Convert phases and magnitude range into a grid suitable for
     # building contours
-    mags = sp.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
+    mags = np.linspace(10**(mag_min/20.0), 10**(mag_max/20.0), 2000)
     Gcl_phases, Gcl_mags = sp.meshgrid(sp.radians(phases), mags)
     return closed_loop_contours(Gcl_mags, Gcl_phases)
 
