@@ -321,7 +321,7 @@ def connect(sys, Q, inputv, outputv):
     '''
     # first connect
     K = sp.zeros( (sys.inputs, sys.outputs) )
-    for r in sp.array(Q).astype(int):
+    for r in np.array(Q).astype(int):
         inp = r[0]-1
         for outp in r[1:]:
             if outp > 0 and outp <= sys.outputs:
