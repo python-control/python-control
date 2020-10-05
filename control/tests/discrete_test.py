@@ -5,7 +5,10 @@
 
 import unittest
 import numpy as np
-from control import *
+from control import StateSpace, TransferFunction, feedback, step_response, \
+    isdtime, timebase, isctime, sample_system, bode, impulse_response, \
+    timebaseEqual, forced_response
+from control import matlab
 
 class TestDiscrete(unittest.TestCase):
     """Tests for the DiscreteStateSpace class."""
@@ -92,6 +95,70 @@ class TestDiscrete(unittest.TestCase):
         self.assertEqual(timebase(self.siso_tf3d), True);
         self.assertEqual(timebase(self.siso_tf3d, strict=False), 1);
 
+    def test_timebase_conversions(self):
+        '''Check to make sure timebases transfer properly'''
+        tf1 = TransferFunction([1,1],[1,2,3])       # unspecified
+        tf2 = TransferFunction([1,1],[1,2,3], 0)    # cont time
+        tf3 = TransferFunction([1,1],[1,2,3], True) # dtime, unspec 
+        tf4 = TransferFunction([1,1],[1,2,3], 1)    # dtime, dt=1
+
+        # Make sure unspecified timebase is converted correctly
+        self.assertEqual(timebase(tf1*tf1), timebase(tf1))
+        self.assertEqual(timebase(tf1*tf2), timebase(tf2))
+        self.assertEqual(timebase(tf1*tf3), timebase(tf3))
+        self.assertEqual(timebase(tf1*tf4), timebase(tf4))
+        self.assertEqual(timebase(tf2*tf1), timebase(tf2))
+        self.assertEqual(timebase(tf3*tf1), timebase(tf3))
+        self.assertEqual(timebase(tf4*tf1), timebase(tf4))
+        self.assertEqual(timebase(tf1+tf1), timebase(tf1))
+        self.assertEqual(timebase(tf1+tf2), timebase(tf2))
+        self.assertEqual(timebase(tf1+tf3), timebase(tf3))
+        self.assertEqual(timebase(tf1+tf4), timebase(tf4))
+        self.assertEqual(timebase(feedback(tf1, tf1)), timebase(tf1))
+        self.assertEqual(timebase(feedback(tf1, tf2)), timebase(tf2))
+        self.assertEqual(timebase(feedback(tf1, tf3)), timebase(tf3))
+        self.assertEqual(timebase(feedback(tf1, tf4)), timebase(tf4))
+
+        # Make sure discrete time without sampling is converted correctly
+        self.assertEqual(timebase(tf3*tf3), timebase(tf3))
+        self.assertEqual(timebase(tf3*tf4), timebase(tf4))
+        self.assertEqual(timebase(tf3+tf3), timebase(tf3))
+        self.assertEqual(timebase(tf3+tf3), timebase(tf4))
+        self.assertEqual(timebase(feedback(tf3, tf3)), timebase(tf3))
+        self.assertEqual(timebase(feedback(tf3, tf4)), timebase(tf4))
+
+        # Make sure all other combinations are errors
+        try:
+            tf2*tf3             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            tf2*tf4             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            tf2+tf3             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            tf2+tf4             # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            feedback(tf2, tf3)  # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        try:
+            feedback(tf2, tf4)   # Error; incompatible timebases
+            raise ValueError("incompatible operation allowed")
+        except ValueError:
+            pass
+        
     def testisdtime(self):
         # Constant
         self.assertEqual(isdtime(1), True);
@@ -275,6 +342,7 @@ class TestDiscrete(unittest.TestCase):
 
         # Check errors
         self.assertRaises(ValueError, sample_system, self.siso_ss1d, 1)
+        self.assertRaises(ValueError, sample_system, self.siso_tf1d, 1)
         self.assertRaises(ValueError, sample_system, self.siso_ss1, 1, 'unknown')
 
     def test_sample_ss(self):
@@ -285,7 +353,7 @@ class TestDiscrete(unittest.TestCase):
         for sys in (sys1, sys2):
             for h in (0.1, 0.5, 1, 2):
                 Ad = I + h * sys.A
-                Bd = h * sys.B + 0.5 * h**2 * (sys.A * sys.B)
+                Bd = h * sys.B + 0.5 * h**2 * np.dot(sys.A, sys.B)
                 sysd = sample_system(sys, h, method='zoh')
                 np.testing.assert_array_almost_equal(sysd.A, Ad)
                 np.testing.assert_array_almost_equal(sysd.B, Bd)
@@ -315,9 +383,6 @@ class TestDiscrete(unittest.TestCase):
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
-
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestDiscrete)
 
 
 if __name__ == "__main__":

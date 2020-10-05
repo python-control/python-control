@@ -41,16 +41,18 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
-from scipy import shape, size, asarray, asmatrix, copy, zeros, eye, dot
+from numpy import shape, size, asarray, copy, zeros, eye, dot, \
+    finfo, inexact, atleast_2d
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
+from .statesp import _ssmatrix
 
 __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
 #### Lyapunov equation solvers lyap and dlyap
 
-def lyap(A,Q,C=None,E=None):
-    """ X = lyap(A,Q) solves the continuous-time Lyapunov equation
+def lyap(A, Q, C=None, E=None):
+    """X = lyap(A, Q) solves the continuous-time Lyapunov equation
 
         :math:`A X + X A^T + Q = 0`
 
@@ -69,7 +71,9 @@ def lyap(A,Q,C=None,E=None):
         :math:`A X E^T + E X A^T + Q = 0`
 
     where Q is a symmetric matrix and A, Q and E are square matrices
-    of the same dimension. """
+    of the same dimension.
+
+    """
 
     # Make sure we have access to the right slycot routines
     try:
@@ -84,27 +88,27 @@ def lyap(A,Q,C=None,E=None):
 
     # Reshape 1-d arrays
     if len(shape(A)) == 1:
-        A = A.reshape(1,A.size)
+        A = A.reshape(1, A.size)
 
     if len(shape(Q)) == 1:
-        Q = Q.reshape(1,Q.size)
+        Q = Q.reshape(1, Q.size)
 
     if C is not None and len(shape(C)) == 1:
-        C = C.reshape(1,C.size)
+        C = C.reshape(1, C.size)
 
     if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1,E.size)
+        E = E.reshape(1, E.size)
 
     # Determine main dimensions
     if size(A) == 1:
         n = 1
     else:
-        n = size(A,0)
+        n = size(A, 0)
 
     if size(Q) == 1:
         m = 1
     else:
-        m = size(Q,0)
+        m = size(Q, 0)
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
@@ -119,7 +123,7 @@ def lyap(A,Q,C=None,E=None):
         if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
             raise ControlArgument("Q must be a quadratic matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the Lyapunov equation by calling Slycot function sb03md
@@ -185,7 +189,7 @@ def lyap(A,Q,C=None,E=None):
             raise ControlArgument("E must be a square matrix with the same \
                 dimension as A.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Make sure we have access to the write slicot routine
@@ -228,7 +232,7 @@ def lyap(A,Q,C=None,E=None):
     else:
         raise ControlArgument("Invalid set of input parameters")
 
-    return X
+    return _ssmatrix(X)
 
 
 def dlyap(A,Q,C=None,E=None):
@@ -306,7 +310,7 @@ def dlyap(A,Q,C=None,E=None):
         if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
             raise ControlArgument("Q must be a quadratic matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the Lyapunov equation by calling the Slycot function sb03md
@@ -368,7 +372,7 @@ def dlyap(A,Q,C=None,E=None):
             raise ControlArgument("E must be a square matrix with the same \
                 dimension as A.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the generalized Lyapunov equation by calling Slycot
@@ -405,13 +409,11 @@ def dlyap(A,Q,C=None,E=None):
     else:
         raise ControlArgument("Invalid set of input parameters")
 
-    return X
-
+    return _ssmatrix(X)
 
 
 #### Riccati equation solvers care and dare
-
-def care(A,B,Q,R=None,S=None,E=None):
+def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
     """ (X,L,G) = care(A,B,Q,R=None) solves the continuous-time algebraic Riccati
     equation
 
@@ -499,10 +501,10 @@ def care(A,B,Q,R=None,S=None,E=None):
             size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -527,7 +529,11 @@ def care(A,B,Q,R=None,S=None,E=None):
             raise e
 
         try:
-            X,rcond,w,S_o,U,A_inv = sb02md(n,A,G,Q,'C')
+            if stabilizing:
+                sort = 'S'
+            else:
+                sort = 'U'
+            X, rcond, w, S_o, U, A_inv = sb02md(n, A, G, Q, 'C', sort=sort)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
@@ -562,7 +568,7 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , w[:n] , G )
+        return (_ssmatrix(X) , w[:n] , _ssmatrix(G))
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
@@ -598,10 +604,10 @@ def care(A,B,Q,R=None,S=None,E=None):
             size(S) == 1 and m > 1:
             raise ControlArgument("Incompatible dimensions of S matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -613,8 +619,12 @@ def care(A,B,Q,R=None,S=None,E=None):
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
         try:
-            rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
-                    sg02ad('C','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
+            if stabilizing:
+                sort = 'S'
+            else:
+                sort = 'U'
+            rcondu, X, alfar, alfai, beta, S_o, T, U, iwarn = \
+                sg02ad('C', 'B', 'N', 'U', 'N', 'N', sort, 'R', n, m, 0, A, E, B, Q, R, S)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
@@ -665,13 +675,13 @@ def care(A,B,Q,R=None,S=None,E=None):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , L , G)
+        return (_ssmatrix(X), L, _ssmatrix(G))
 
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters.")
 
-def dare(A,B,Q,R,S=None,E=None):
+def dare(A, B, Q, R, S=None, E=None, stabilizing=True):
     """ (X,L,G) = dare(A,B,Q,R) solves the discrete-time algebraic Riccati
     equation
 
@@ -692,17 +702,17 @@ def dare(A,B,Q,R,S=None,E=None):
     matrix :math:`G = (B^T X B + R)^{-1} (B^T X A + S^T)` and the closed loop
     eigenvalues L, i.e., the eigenvalues of A - B G , E.
     """
-    if S is not None or E is not None:
-        return dare_old(A, B, Q, R, S, E)
+    if S is not None or E is not None or not stabilizing:
+        return dare_old(A, B, Q, R, S, E, stabilizing)
     else:
-        Rmat = asmatrix(R)
-        Qmat = asmatrix(Q)
+        Rmat = _ssmatrix(R)
+        Qmat = _ssmatrix(Q)
         X = solve_discrete_are(A, B, Qmat, Rmat)
         G = solve(B.T.dot(X).dot(B) + Rmat, B.T.dot(X).dot(A))
         L = eigvals(A - B.dot(G))
-        return X, L, G
+        return _ssmatrix(X), L, _ssmatrix(G)
 
-def dare_old(A,B,Q,R,S=None,E=None):
+def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
     # Make sure we can import required slycot routine
     try:
         from slycot import sb02md
@@ -766,10 +776,10 @@ def dare_old(A,B,Q,R,S=None,E=None):
             size(B) == 1 and n > 1:
             raise ControlArgument("Incompatible dimensions of B matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -795,7 +805,12 @@ def dare_old(A,B,Q,R,S=None,E=None):
             raise e
 
         try:
-            X,rcond,w,S,U,A_inv = sb02md(n,A,G,Q,'D')
+            if stabilizing:
+                sort = 'S'
+            else:
+                sort = 'U'
+
+            X, rcond, w, S, U, A_inv = sb02md(n, A, G, Q, 'D', sort=sort)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 5:
                 e = ValueError(ve.message)
@@ -832,7 +847,7 @@ def dare_old(A,B,Q,R,S=None,E=None):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , w[:n] , G)
+        return (_ssmatrix(X) , w[:n], _ssmatrix(G))
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
@@ -868,10 +883,10 @@ def dare_old(A,B,Q,R,S=None,E=None):
             size(S) == 1 and m > 1:
             raise ControlArgument("Incompatible dimensions of S matrix.")
 
-        if not (asarray(Q) == asarray(Q).T).all():
+        if not _is_symmetric(Q):
             raise ControlArgument("Q must be a symmetric matrix.")
 
-        if not (asarray(R) == asarray(R).T).all():
+        if not _is_symmetric(R):
             raise ControlArgument("R must be a symmetric matrix.")
 
         # Create back-up of arrays needed for later computations
@@ -884,8 +899,12 @@ def dare_old(A,B,Q,R,S=None,E=None):
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
         try:
-            rcondu,X,alfar,alfai,beta,S_o,T,U,iwarn = \
-                    sg02ad('D','B','N','U','N','N','S','R',n,m,0,A,E,B,Q,R,S)
+            if stabilizing:
+                sort = 'S'
+            else:
+                sort = 'U'
+            rcondu, X, alfar, alfai, beta, S_o, T, U, iwarn = \
+                sg02ad('D', 'B', 'N', 'U', 'N', 'N', sort, 'R', n, m, 0, A, E, B, Q, R, S)
         except ValueError as ve:
             if ve.info < 0 or ve.info > 7:
                 e = ValueError(ve.message)
@@ -937,8 +956,17 @@ def dare_old(A,B,Q,R,S=None,E=None):
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
-        return (X , L , G)
+        return (_ssmatrix(X), L, _ssmatrix(G))
 
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters.")
+
+
+def _is_symmetric(M):
+    M = atleast_2d(M)
+    if isinstance(M[0, 0], inexact):
+        eps = finfo(M.dtype).eps
+        return ((M - M.T) < eps).all()
+    else:
+        return (M == M.T).all()

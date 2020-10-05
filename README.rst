@@ -24,7 +24,7 @@ Features
 Links
 =====
 
-- Project home page: http://python-control.sourceforge.net
+- Project home page: http://python-control.org
 - Source code repository: https://github.com/python-control/python-control
 - Documentation: http://python-control.readthedocs.org/
 - Issue tracker: https://github.com/python-control/python-control/issues
@@ -46,15 +46,32 @@ https://github.com/python-control/Slycot
 Installation
 ============
 
-The package may be installed using pip or distutils.
+Conda and conda-forge
+---------------------
+
+The easiest way to get started with the Control Systems library is
+using `Conda <https://conda.io>`_.
+
+The Control Systems library has been packages for the `conda-forge
+<https://conda-forge.org>`_ Conda channel, and as of Slycot version
+0.3.4, binaries for that package are available for 64-bit Windows,
+OSX, and Linux.
+
+To install both the Control Systems library and Slycot in an existing
+conda environment, run::
+
+  conda install -c conda-forge control slycot
 
 Pip
 ---
 
 To install using pip::
 
-  pip install slycot   # optional
+  pip install slycot   # optional; see below
   pip install control
+
+If you install Slycot using pip you'll need a development environment
+(e.g., Python development files, C and Fortran compilers).
 
 Distutils
 ---------
@@ -82,10 +99,16 @@ You can check out the latest version of the source code with the command::
 Testing
 -------
 
-You can run a set of unit tests to make sure that everything is working
-correctly.  After installation, run::
+You can run the unit tests with `pytest`_ to make sure that everything is
+working correctly.  Inside the source directory, run::
 
-  python setup.py test
+  pytest -v
+
+or to test the installed package::
+
+  pytest --pyargs control -v
+
+.. _pytest: https://docs.pytest.org/
 
 License
 -------

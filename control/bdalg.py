@@ -53,24 +53,25 @@ $Id$
 
 """
 
-import scipy as sp
+import numpy as np
 from . import xferfcn as tf
 from . import statesp as ss
 from . import frdata as frd
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
-def series(sys1, sys2):
-    """Return the series connection sys2 * sys1 for --> sys1 --> sys2 -->.
+
+def series(sys1, *sysn):
+    """Return the series connection (sysn \\* ... \\*) sys2 \\* sys1
 
     Parameters
     ----------
-    sys1: scalar, StateSpace, TransferFunction, or FRD
-    sys2: scalar, StateSpace, TransferFunction, or FRD
+    sys1 : scalar, StateSpace, TransferFunction, or FRD
+    *sysn : other scalars, StateSpaces, TransferFunctions, or FRDs
 
     Returns
     -------
-    out: scalar, StateSpace, or TransferFunction
+    out : scalar, StateSpace, or TransferFunction
 
     Raises
     ------
@@ -96,24 +97,27 @@ def series(sys1, sys2):
 
     Examples
     --------
-    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1.
+    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1
+
+    >>> sys5 = series(sys1, sys2, sys3, sys4) # More systems
 
     """
+    from functools import reduce
+    return reduce(lambda x, y:y*x, sysn, sys1)
 
-    return sys2 * sys1
 
-def parallel(sys1, sys2):
+def parallel(sys1, *sysn):
     """
-    Return the parallel connection sys1 + sys2.
+    Return the parallel connection sys1 + sys2 (+ ... + sysn)
 
     Parameters
     ----------
-    sys1: scalar, StateSpace, TransferFunction, or FRD
-    sys2: scalar, StateSpace, TransferFunction, or FRD
+    sys1 : scalar, StateSpace, TransferFunction, or FRD
+    *sysn : other scalars, StateSpaces, TransferFunctions, or FRDs
 
     Returns
     -------
-    out: scalar, StateSpace, or TransferFunction
+    out : scalar, StateSpace, or TransferFunction
 
     Raises
     ------
@@ -139,11 +143,14 @@ def parallel(sys1, sys2):
 
     Examples
     --------
-    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2.
+    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2
+
+    >>> sys5 = parallel(sys1, sys2, sys3, sys4) # More systems
 
     """
+    from functools import reduce
+    return reduce(lambda x, y:x+y, sysn, sys1)
 
-    return sys1 + sys2
 
 def negate(sys):
     """
@@ -151,28 +158,22 @@ def negate(sys):
 
     Parameters
     ----------
-    sys: StateSpace, TransferFunction or FRD
+    sys : StateSpace, TransferFunction or FRD
 
     Returns
     -------
-    out: StateSpace or TransferFunction
+    out : StateSpace or TransferFunction
 
     Notes
     -----
     This function is a wrapper for the __neg__ function in the StateSpace and
     TransferFunction classes.  The output type is the same as the input type.
 
-    If both systems have a defined timebase (dt = 0 for continuous time,
-    dt > 0 for discrete time), then the timebase for both systems must
-    match.  If only one of the system has a timebase, the return
-    timebase will be set to match it.
-
     Examples
     --------
     >>> sys2 = negate(sys1) # Same as sys2 = -sys1.
 
     """
-
     return -sys;
 
 #! TODO: expand to allow sys2 default to work in MIMO case?
@@ -182,10 +183,10 @@ def feedback(sys1, sys2=1, sign=-1):
 
     Parameters
     ----------
-    sys1: scalar, StateSpace, TransferFunction, FRD
-        The primary plant.
-    sys2: scalar, StateSpace, TransferFunction, FRD
-        The feedback plant (often a feedback controller).
+    sys1 : scalar, StateSpace, TransferFunction, FRD
+        The primary process.
+    sys2 : scalar, StateSpace, TransferFunction, FRD
+        The feedback process (often a feedback controller).
     sign: scalar
         The sign of feedback.  `sign` = -1 indicates negative feedback, and
         `sign` = 1 indicates positive feedback.  `sign` is an optional
@@ -193,7 +194,7 @@ def feedback(sys1, sys2=1, sign=-1):
 
     Returns
     -------
-    out: StateSpace or TransferFunction
+    out : StateSpace or TransferFunction
 
     Raises
     ------
@@ -219,34 +220,40 @@ def feedback(sys1, sys2=1, sign=-1):
     scalars, then TransferFunction.feedback is used.
 
     """
+    # Allow anything with a feedback function to call that function
+    try:
+        return sys1.feedback(sys2, sign)
+    except AttributeError:
+        pass
 
     # Check for correct input types.
-    if not isinstance(sys1, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace, frd.FRD)):
+    if not isinstance(sys1, (int, float, complex, np.number,
+                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
         raise TypeError("sys1 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
-    if not isinstance(sys2, (int, float, complex, tf.TransferFunction,
-                             ss.StateSpace, frd.FRD)):
+    if not isinstance(sys2, (int, float, complex, np.number,
+                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
         raise TypeError("sys2 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.
-    if isinstance(sys1, (int, float, complex)):
+    if isinstance(sys1, (int, float, complex, np.number)):
         if isinstance(sys2, tf.TransferFunction):
-            sys1 = tf._convertToTransferFunction(sys1)
+            sys1 = tf._convert_to_transfer_function(sys1)
         elif isinstance(sys2, ss.StateSpace):
             sys1 = ss._convertToStateSpace(sys1)
         elif isinstance(sys2, frd.FRD):
-            sys1 = ss._convertToFRD(sys1)
+            sys1 = frd._convertToFRD(sys1, sys2.omega)
         else: # sys2 is a scalar.
-            sys1 = tf._convertToTransferFunction(sys1)
-            sys2 = tf._convertToTransferFunction(sys2)
+            sys1 = tf._convert_to_transfer_function(sys1)
+            sys2 = tf._convert_to_transfer_function(sys2)
 
     return sys1.feedback(sys2, sign)
 
 def append(*sys):
-    '''
+    """append(sys1, sys2, ..., sysn)
+
     Group models by appending their inputs and outputs
 
     Forms an augmented system model, and appends the inputs and
@@ -256,7 +263,7 @@ def append(*sys):
 
     Parameters
     ----------
-    sys1, sys2, ... sysn: StateSpace or Transferfunction
+    sys1, sys2, ..., sysn: StateSpace or Transferfunction
         LTI systems to combine
 
 
@@ -268,42 +275,40 @@ def append(*sys):
 
     Examples
     --------
-    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> sys2 = ss("-1.", "1.", "1.", "0.")
+    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]]", [[6., 8]], [[9.]])
+    >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
     >>> sys = append(sys1, sys2)
 
-    .. todo::
-        also implement for transfer function, zpk, etc.
-    '''
+    """
     s1 = sys[0]
     for s in sys[1:]:
         s1 = s1.append(s)
     return s1
 
 def connect(sys, Q, inputv, outputv):
-    '''
-    Index-base interconnection of system
+    """Index-based interconnection of an LTI system.
 
-    The system sys is a system typically constructed with append, with
-    multiple inputs and outputs. The inputs and outputs are connected
-    according to the interconnection matrix Q, and then the final
-    inputs and outputs are trimmed according to the inputs and outputs
-    listed in inputv and outputv.
+    The system `sys` is a system typically constructed with `append`, with
+    multiple inputs and outputs.  The inputs and outputs are connected
+    according to the interconnection matrix `Q`, and then the final inputs and
+    outputs are trimmed according to the inputs and outputs listed in `inputv`
+    and `outputv`.
 
-    Note: to have this work, inputs and outputs start counting at 1!!!!
+    NOTE: Inputs and outputs are indexed starting at 1 and negative values
+    correspond to a negative feedback interconnection.
 
     Parameters
     ----------
-    sys: StateSpace Transferfunction
+    sys : StateSpace Transferfunction
         System to be connected
-    Q: 2d array
+    Q : 2D array
         Interconnection matrix. First column gives the input to be connected
-        second column gives the output to be fed into this input. Negative
+        second column gives the output to be fed into this input.  Negative
         values for the second column mean the feedback is negative, 0 means
-        no connection is made
-    inputv: 1d array
+        no connection is made.  Inputs and outputs are indexed starting at 1.
+    inputv : 1D array
         list of final external inputs
-    outputv: 1d array
+    outputv : 1D array
         list of final external outputs
 
     Returns
@@ -313,14 +318,15 @@ def connect(sys, Q, inputv, outputv):
 
     Examples
     --------
-    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6, 8", "9.")
-    >>> sys2 = ss("-1.", "1.", "1.", "0.")
+    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6, 8]], [[9.]])
+    >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
     >>> sys = append(sys1, sys2)
-    >>> Q = sp.mat([ [ 1, 2], [2, -1] ]) # basically feedback, output 2 in 1
+    >>> Q = [[1, 2], [2, -1]]  # negative feedback interconnection
     >>> sysc = connect(sys, Q, [2], [1, 2])
-    '''
+
+    """
     # first connect
-    K = sp.zeros( (sys.inputs, sys.outputs) )
+    K = np.zeros((sys.inputs, sys.outputs))
     for r in np.array(Q).astype(int):
         inp = r[0]-1
         for outp in r[1:]:
@@ -328,13 +334,14 @@ def connect(sys, Q, inputv, outputv):
                 K[inp,outp-1] = 1.
             elif outp < 0 and -outp >= -sys.outputs:
                 K[inp,-outp-1] = -1.
-    sys = sys.feedback(sp.matrix(K), sign=1)
+    sys = sys.feedback(np.array(K), sign=1)
 
     # now trim
-    Ytrim = sp.zeros( (len(outputv), sys.outputs) )
-    Utrim = sp.zeros( (sys.inputs, len(inputv)) )
+    Ytrim = np.zeros((len(outputv), sys.outputs))
+    Utrim = np.zeros((sys.inputs, len(inputv)))
     for i,u in enumerate(inputv):
         Utrim[u-1,i] = 1.
     for i,y in enumerate(outputv):
         Ytrim[i,y-1] = 1.
-    return sp.matrix(Ytrim)*sys*sp.matrix(Utrim)
+
+    return Ytrim * sys * Utrim

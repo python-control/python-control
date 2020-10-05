@@ -66,7 +66,7 @@ def hsvd(sys):
 
     Returns
     -------
-    H : Matrix
+    H : array
         A list of Hankel singular values
 
     See Also
@@ -96,11 +96,10 @@ def hsvd(sys):
     w, v = np.linalg.eig(WoWc)
 
     hsv = np.sqrt(w)
-    hsv = np.matrix(hsv)
+    hsv = np.array(hsv)
     hsv = np.sort(hsv)
-    hsv = np.fliplr(hsv)
-    # Return the Hankel singular values
-    return hsv
+    # Return the Hankel singular values, high to low
+    return hsv[::-1]
 
 def modred(sys, ELIM, method='matchdc'):
     """
@@ -125,9 +124,12 @@ def modred(sys, ELIM, method='matchdc'):
     Raises
     ------
     ValueError
-        * if `method` is not either ``'matchdc'`` or ``'truncate'``
-        * if eigenvalues of `sys.A` are not all in left half plane
-          (`sys` must be stable)
+        Raised under the following conditions:
+
+            * if `method` is not either ``'matchdc'`` or ``'truncate'``
+
+            * if eigenvalues of `sys.A` are not all in left half plane
+              (`sys` must be stable)
 
     Examples
     --------
@@ -156,15 +158,15 @@ def modred(sys, ELIM, method='matchdc'):
     # Create list of elements not to eliminate (NELIM)
     NELIM = [i for i in range(len(sys.A)) if i not in ELIM]
     # A1 is a matrix of all columns of sys.A not to eliminate
-    A1 = sys.A[:,NELIM[0]]
+    A1 = sys.A[:, NELIM[0]].reshape(-1, 1)
     for i in NELIM[1:]:
-        A1 = np.hstack((A1, sys.A[:,i]))
+        A1 = np.hstack((A1, sys.A[:,i].reshape(-1, 1)))
     A11 = A1[NELIM,:]
     A21 = A1[ELIM,:]
     # A2 is a matrix of all columns of sys.A to eliminate
-    A2 = sys.A[:,ELIM[0]]
+    A2 = sys.A[:, ELIM[0]].reshape(-1, 1)
     for i in ELIM[1:]:
-        A2 = np.hstack((A2, sys.A[:,i]))
+        A2 = np.hstack((A2, sys.A[:,i].reshape(-1, 1)))
     A12 = A2[NELIM,:]
     A22 = A2[ELIM,:]
 
@@ -189,10 +191,10 @@ def modred(sys, ELIM, method='matchdc'):
         A22I_A21 = A22I_A21_B2[:, :A21.shape[1]]
         A22I_B2 = A22I_A21_B2[:, A21.shape[1]:]
 
-        Ar = A11 - A12*A22I_A21
-        Br = B1 - A12*A22I_B2
-        Cr = C1 - C2*A22I_A21
-        Dr = sys.D - C2*A22I_B2
+        Ar = A11 - np.dot(A12, A22I_A21)
+        Br = B1 - np.dot(A12, A22I_B2)
+        Cr = C1 - np.dot(C2, A22I_A21)
+        Dr = sys.D - np.dot(C2, A22I_B2)
     elif method=='truncate':
         # if truncate, simply discard state x2
         Ar = A11
@@ -377,7 +379,7 @@ def era(YY, m, n, nin, nout, r):
     """
     raise NotImplementedError('This function is not implemented yet.')
 
-def markov(Y, U, M):
+def markov(Y, U, m):
     """
     Calculate the first `M` Markov parameters [D CB CAB ...]
     from input `U`, output `Y`.
@@ -388,13 +390,13 @@ def markov(Y, U, M):
         Output data
     U: array_like
         Input data
-    M: integer
+    m: int
         Number of Markov parameters to output
 
     Returns
     -------
-    H: matrix
-        First M Markov parameters
+    H: ndarray
+        First m Markov parameters
 
     Notes
     -----
@@ -402,21 +404,22 @@ def markov(Y, U, M):
 
     Examples
     --------
-    >>> H = markov(Y, U, M)
+    >>> H = markov(Y, U, m)
     """
 
     # Convert input parameters to matrices (if they aren't already)
-    Ymat = np.mat(Y)
-    Umat = np.mat(U)
+    Ymat = np.array(Y)
+    Umat = np.array(U)
     n = np.size(U)
 
     # Construct a matrix of control inputs to invert
     UU = Umat
-    for i in range(1, M-1):
-        newCol = np.vstack((0, UU[0:n-1,i-2]))
+    for i in range(1, m-1):
+        # TODO: second index on UU doesn't seem right; could be neg or pos??
+        newCol = np.vstack((0, np.reshape(UU[0:n-1, i-2], (-1, 1))))
         UU = np.hstack((UU, newCol))
-    Ulast = np.vstack((0, UU[0:n-1,M-2]))
-    for i in range(n-1,0,-1):
+    Ulast = np.vstack((0, np.reshape(UU[0:n-1, m-2], (-1, 1))))
+    for i in range(n-1, 0, -1):
         Ulast[i] = np.sum(Ulast[0:i-1])
     UU = np.hstack((UU, Ulast))
 

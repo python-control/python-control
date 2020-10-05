@@ -12,6 +12,7 @@ timebase()
 timebaseEqual()
 """
 
+import numpy as np
 from numpy import absolute, real
 
 __all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
@@ -53,8 +54,9 @@ class LTI:
 
         Parameters
         ----------
-        strict: bool (default = False)
-            If strict is True, make sure that timebase is not None
+        strict: bool, optional
+            If strict is True, make sure that timebase is not None.  Default
+            is False.
         """
 
         # If no timebase is given, answer depends on strict flag
@@ -72,8 +74,9 @@ class LTI:
         ----------
         sys : LTI system
             System to be checked
-        strict: bool (default = False)
-            If strict is True, make sure that timebase is not None
+        strict: bool, optional
+            If strict is True, make sure that timebase is not None.  Default
+            is False.
         """
         # If no timebase is given, answer depends on strict flag
         if self.dt is None:
@@ -81,12 +84,29 @@ class LTI:
         return self.dt == 0
 
     def issiso(self):
+        '''Check to see if a system is single input, single output'''
         return self.inputs == 1 and self.outputs == 1
 
     def damp(self):
+        '''Natural frequency, damping ratio of system poles
+
+        Returns
+        -------
+        wn : array
+            Natural frequencies for each system pole
+        zeta : array
+            Damping ratio for each system pole
+        poles : array
+            Array of system poles
+        '''
         poles = self.pole()
-        wn = absolute(poles)
-        Z = -real(poles)/wn
+
+        if isdtime(self, strict=True):
+            splane_poles = np.log(poles)/self.dt
+        else:
+            splane_poles = poles
+        wn = absolute(splane_poles)
+        Z = -real(splane_poles)/wn
         return wn, Z, poles
 
     def dcgain(self):
@@ -96,7 +116,17 @@ class LTI:
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
-    if isinstance(sys, (int, float, complex)) and not strict:
+    """
+    Check to see if a system is single input, single output
+
+    Parameters
+    ----------
+    sys : LTI system
+        System to be checked
+    strict: bool (default = False)
+        If strict is True, do not treat scalars as SISO
+    """
+    if isinstance(sys, (int, float, complex, np.number)) and not strict:
         return True
     elif not isinstance(sys, LTI):
         raise ValueError("Object is not an LTI system")
@@ -114,7 +144,7 @@ def timebase(sys, strict=True):
     set to False, dt = True will be returned as 1.
     """
     # System needs to be either a constant or an LTI system
-    if isinstance(sys, (int, float, complex)):
+    if isinstance(sys, (int, float, complex, np.number)):
         return None
     elif not isinstance(sys, LTI):
         raise ValueError("Timebase not defined")
@@ -148,6 +178,28 @@ def timebaseEqual(sys1, sys2):
     else:
         return sys1.dt == sys2.dt
 
+# Find a common timebase between two or more systems
+def _find_timebase(sys1, *sysn):
+    """Find the common timebase between systems, otherwise return False"""
+
+    # Create a list of systems to check
+    syslist = [sys1]
+    syslist.append(*sysn)
+
+    # Look for a common timebase
+    dt = None
+
+    for sys in syslist:
+        # Make sure time bases are consistent
+        if (dt is None and sys.dt is not None) or \
+           (dt is True and isdiscrete(sys)):
+            # Timebase was not specified; set to match this system
+            dt = sys.dt
+        elif dt != sys.dt:
+            return False
+    return dt
+
+
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):
     """
@@ -162,13 +214,22 @@ def isdtime(sys, strict=False):
     """
 
     # Check to see if this is a constant
-    if isinstance(sys, (int, float, complex)):
+    if isinstance(sys, (int, float, complex, np.number)):
         # OK as long as strict checking is off
         return True if not strict else False
 
     # Check for a transfer function or state-space object
     if isinstance(sys, LTI):
         return sys.isdtime(strict)
+
+    # Check to see if object has a dt object
+    if hasattr(sys, 'dt'):
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt == None:
+            return True if not strict else False
+
+        # Look for dt > 0 (also works if dt = True)
+        return sys.dt > 0
 
     # Got passed something we don't recognize
     return False
@@ -187,13 +248,20 @@ def isctime(sys, strict=False):
     """
 
     # Check to see if this is a constant
-    if isinstance(sys, (int, float, complex)):
+    if isinstance(sys, (int, float, complex, np.number)):
         # OK as long as strict checking is off
         return True if not strict else False
 
     # Check for a transfer function or state space object
     if isinstance(sys, LTI):
         return sys.isctime(strict)
+
+    # Check to see if object has a dt object
+    if hasattr(sys, 'dt'):
+        # If no timebase is given, answer depends on strict flag
+        if sys.dt is None:
+            return True if not strict else False
+        return sys.dt == 0
 
     # Got passed something we don't recognize
     return False
@@ -258,7 +326,7 @@ def zero(sys):
     return sys.zero()
 
 def damp(sys, doprint=True):
-    '''
+    """
     Compute natural frequency, damping ratio, and poles of a system
 
     The function takes 1 or 2 parameters
@@ -279,10 +347,26 @@ def damp(sys, doprint=True):
     poles: array
         Pole locations
 
+    Algorithm
+    ---------
+    If the system is continuous,
+        wn = abs(poles)
+        Z  = -real(poles)/poles.
+
+    If the system is discrete, the discrete poles are mapped to their
+    equivalent location in the s-plane via
+
+        s = log10(poles)/dt
+
+    and
+
+        wn = abs(s)
+        Z = -real(s)/wn.
+
     See Also
     --------
     pole
-    '''
+    """
     wn, damping, poles = sys.damp()
     if doprint:
         print('_____Eigenvalue______ Damping___ Frequency_')
@@ -337,6 +421,7 @@ def evalfr(sys, x):
         return sys.horner(x)[0][0]
     return sys.horner(x)
 
+
 def freqresp(sys, omega):
     """
     Frequency response of an LTI system at multiple angular frequencies.
@@ -346,13 +431,20 @@ def freqresp(sys, omega):
     sys: StateSpace or TransferFunction
         Linear system
     omega: array_like
-        List of frequencies
+        A list of frequencies in radians/sec at which the system should be
+        evaluated. The list can be either a python list or a numpy array
+        and will be sorted before evaluation.
 
     Returns
     -------
-    mag: ndarray
-    phase: ndarray
-    omega: list, tuple, or ndarray
+    mag : (self.outputs, self.inputs, len(omega)) ndarray
+        The magnitude (absolute value, not dB or log10) of the system
+        frequency response.
+    phase : (self.outputs, self.inputs, len(omega)) ndarray
+        The wrapped phase in radians of the system frequency response.
+    omega : ndarray or list or tuple
+        The list of sorted frequencies at which the response was
+        evaluated.
 
     See Also
     --------
@@ -388,8 +480,8 @@ def freqresp(sys, omega):
         #>>> # frequency response from the 1st input to the 2nd output, for
         #>>> # s = 0.1i, i, 10i.
     """
-
     return sys.freqresp(omega)
+
 
 def dcgain(sys):
     """Return the zero-frequency (or DC) gain of the given system

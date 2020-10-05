@@ -5,10 +5,12 @@
 
 
 import unittest
+import sys as pysys
 import numpy as np
+import control as ct
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from control.frdata import FRD, _convertToFRD
+from control.frdata import FRD, _convertToFRD, FrequencyResponseData
 from control import bdalg
 from control import freqplot
 from control.exception import slycot_check
@@ -22,6 +24,7 @@ class TestFRD(unittest.TestCase):
     def testBadInputType(self):
         """Give the constructor invalid input types."""
         self.assertRaises(ValueError, FRD)
+        self.assertRaises(TypeError, FRD, [1])
 
     def testInconsistentDimension(self):
         self.assertRaises(TypeError, FRD, [1, 1], [1, 2, 3])
@@ -278,9 +281,189 @@ class TestFRD(unittest.TestCase):
              np.exp(1j*f1.freqresp([1.0])[1])).reshape(3, 2),
             np.matrix('0.4-0.2j 0; 0 0.1-0.2j; 0 0.3-0.1j'))
 
+    def test_string_representation(self):
+        sys = FRD([1, 2, 3], [4, 5, 6])
+        print(sys)              # Just print without checking
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestFRD)
+    def test_frequency_mismatch(self):
+        # Overlapping but non-equal frequency ranges
+        sys1 = FRD([1, 2, 3], [4, 5, 6])
+        sys2 = FRD([2, 3, 4], [5, 6, 7])
+        self.assertRaises(NotImplementedError, FRD.__add__, sys1, sys2)
+
+        # One frequency range is a subset of another
+        sys1 = FRD([1, 2, 3], [4, 5, 6])
+        sys2 = FRD([2, 3], [4, 5])
+        self.assertRaises(NotImplementedError, FRD.__add__, sys1, sys2)
+
+    def test_size_mismatch(self):
+        sys1 = FRD(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
+
+        # Different number of inputs
+        sys2 = FRD(ct.rss(3, 1, 2), np.logspace(-1, 1, 10))
+        self.assertRaises(ValueError, FRD.__add__, sys1, sys2)
+
+        # Different number of outputs
+        sys2 = FRD(ct.rss(3, 2, 1), np.logspace(-1, 1, 10))
+        self.assertRaises(ValueError, FRD.__add__, sys1, sys2)
+
+        # Inputs and outputs don't match
+        self.assertRaises(ValueError, FRD.__mul__, sys2, sys1)
+
+        # Feedback mismatch
+        self.assertRaises(ValueError, FRD.feedback, sys2, sys1)
+
+    def test_operator_conversion(self):
+        sys_tf = ct.tf([1], [1, 2, 1])
+        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 10))
+        frd_2 = FRD(2 * np.ones(10), np.logspace(-1, 1, 10))
+
+        # Make sure that we can add, multiply, and feedback constants
+        sys_add = frd_tf + 2
+        chk_add = frd_tf + frd_2
+        np.testing.assert_array_almost_equal(sys_add.omega, chk_add.omega)
+        np.testing.assert_array_almost_equal(sys_add.fresp, chk_add.fresp)
+
+        sys_radd = 2 + frd_tf
+        chk_radd = frd_2 + frd_tf
+        np.testing.assert_array_almost_equal(sys_radd.omega, chk_radd.omega)
+        np.testing.assert_array_almost_equal(sys_radd.fresp, chk_radd.fresp)
+
+        sys_sub = frd_tf - 2
+        chk_sub = frd_tf - frd_2
+        np.testing.assert_array_almost_equal(sys_sub.omega, chk_sub.omega)
+        np.testing.assert_array_almost_equal(sys_sub.fresp, chk_sub.fresp)
+
+        sys_rsub = 2 - frd_tf
+        chk_rsub = frd_2 - frd_tf
+        np.testing.assert_array_almost_equal(sys_rsub.omega, chk_rsub.omega)
+        np.testing.assert_array_almost_equal(sys_rsub.fresp, chk_rsub.fresp)
+
+        sys_mul = frd_tf * 2
+        chk_mul = frd_tf * frd_2
+        np.testing.assert_array_almost_equal(sys_mul.omega, chk_mul.omega)
+        np.testing.assert_array_almost_equal(sys_mul.fresp, chk_mul.fresp)
+
+        sys_rmul = 2 * frd_tf
+        chk_rmul = frd_2 * frd_tf
+        np.testing.assert_array_almost_equal(sys_rmul.omega, chk_rmul.omega)
+        np.testing.assert_array_almost_equal(sys_rmul.fresp, chk_rmul.fresp)
+
+        sys_rdiv = 2 / frd_tf
+        chk_rdiv = frd_2 / frd_tf
+        np.testing.assert_array_almost_equal(sys_rdiv.omega, chk_rdiv.omega)
+        np.testing.assert_array_almost_equal(sys_rdiv.fresp, chk_rdiv.fresp)
+
+        sys_pow = frd_tf**2
+        chk_pow = FRD(sys_tf**2, np.logspace(-1, 1, 10))
+        np.testing.assert_array_almost_equal(sys_pow.omega, chk_pow.omega)
+        np.testing.assert_array_almost_equal(sys_pow.fresp, chk_pow.fresp)
+
+        sys_pow = frd_tf**-2
+        chk_pow = FRD(sys_tf**-2, np.logspace(-1, 1, 10))
+        np.testing.assert_array_almost_equal(sys_pow.omega, chk_pow.omega)
+        np.testing.assert_array_almost_equal(sys_pow.fresp, chk_pow.fresp)
+
+        # Assertion error if we try to raise to a non-integer power
+        self.assertRaises(ValueError, FRD.__pow__, frd_tf, 0.5)
+
+        # Selected testing on transfer function conversion
+        sys_add = frd_2 + sys_tf
+        chk_add = frd_2 + frd_tf
+        np.testing.assert_array_almost_equal(sys_add.omega, chk_add.omega)
+        np.testing.assert_array_almost_equal(sys_add.fresp, chk_add.fresp)
+
+        # Input/output mismatch size mismatch in  rmul
+        sys1 = FRD(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
+        self.assertRaises(ValueError, FRD.__rmul__, frd_2, sys1)
+
+        # Make sure conversion of something random generates exception
+        self.assertRaises(TypeError,  FRD.__add__, frd_tf, 'string')
+
+    def test_eval(self):
+        sys_tf = ct.tf([1], [1, 2, 1])
+        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
+        np.testing.assert_almost_equal(sys_tf.evalfr(1), frd_tf.eval(1))
+
+        # Should get an error if we evaluate at an unknown frequency
+        self.assertRaises(ValueError, frd_tf.eval, 2)
+
+    # This test only works in Python 3 due to a conflict with the same
+    # warning type in other test modules (frd_test.py).  See
+    # https://bugs.python.org/issue4180 for more details
+    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
+    def test_evalfr_deprecated(self):
+        sys_tf = ct.tf([1], [1, 2, 1])
+        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
+
+        # Deprecated version of the call (should generate warning)
+        import warnings
+        with warnings.catch_warnings():
+            # Make warnings generate an exception
+            warnings.simplefilter('error')
+
+            # Make sure that we get a pending deprecation warning
+            self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
+
+        # FRD.evalfr() is being deprecated
+        import warnings
+        with warnings.catch_warnings():
+            # Make warnings generate an exception
+            warnings.simplefilter('error')
+
+            # Make sure that we get a pending deprecation warning
+            self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
+
+    def test_repr_str(self):
+        # repr printing
+        array = np.array
+        sys0 = FrequencyResponseData([1.0, 0.9+0.1j, 0.1+2j, 0.05+3j],
+                                     [0.1, 1.0, 10.0, 100.0])
+        sys1 = FrequencyResponseData(sys0.fresp, sys0.omega, smooth=True)
+        ref0 = "FrequencyResponseData(" \
+            "array([[[1.  +0.j , 0.9 +0.1j, 0.1 +2.j , 0.05+3.j ]]])," \
+            " array([  0.1,   1. ,  10. , 100. ]))"
+        ref1 = ref0[:-1] + ", smooth=True)"
+        sysm = FrequencyResponseData(
+            np.matmul(array([[1],[2]]), sys0.fresp), sys0.omega)
+
+        self.assertEqual(repr(sys0), ref0)
+        self.assertEqual(repr(sys1), ref1)
+        sys0r = eval(repr(sys0))
+        np.testing.assert_array_almost_equal(sys0r.fresp, sys0.fresp)
+        np.testing.assert_array_almost_equal(sys0r.omega, sys0.omega)
+        sys1r = eval(repr(sys1))
+        np.testing.assert_array_almost_equal(sys1r.fresp, sys1.fresp)
+        np.testing.assert_array_almost_equal(sys1r.omega, sys1.omega)
+        assert(sys1.ifunc is not None)
+
+        refs = """Frequency response data
+Freq [rad/s]  Response
+------------  ---------------------
+       0.100           1        +0j
+       1.000         0.9      +0.1j
+      10.000         0.1        +2j
+     100.000        0.05        +3j"""
+        self.assertEqual(str(sys0), refs)
+        self.assertEqual(str(sys1), refs)
+
+        # print multi-input system
+        refm = """Frequency response data
+Input 1 to output 1:
+Freq [rad/s]  Response
+------------  ---------------------
+       0.100           1        +0j
+       1.000         0.9      +0.1j
+      10.000         0.1        +2j
+     100.000        0.05        +3j
+Input 2 to output 1:
+Freq [rad/s]  Response
+------------  ---------------------
+       0.100           2        +0j
+       1.000         1.8      +0.2j
+      10.000         0.2        +4j
+     100.000         0.1        +6j"""
+        self.assertEqual(str(sysm), refm)
 
 if __name__ == "__main__":
     unittest.main()

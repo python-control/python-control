@@ -132,7 +132,7 @@ class TestMatlab(unittest.TestCase):
         # pzmap(self.siso_ss2);         not implemented
         pzmap(self.siso_tf1);
         pzmap(self.siso_tf2);
-        pzmap(self.siso_tf2, Plot=False);
+        pzmap(self.siso_tf2, plot=False);
 
     def testStep(self):
         t = np.linspace(0, 1, 10)
@@ -326,7 +326,7 @@ class TestMatlab(unittest.TestCase):
         bode(self.siso_ss1)
         bode(self.siso_tf1)
         bode(self.siso_tf2)
-        (mag, phase, freq) = bode(self.siso_tf2, Plot=False)
+        (mag, phase, freq) = bode(self.siso_tf2, plot=False)
         bode(self.siso_tf1, self.siso_tf2)
         w = logspace(-3, 3);
         bode(self.siso_ss1, w)
@@ -339,7 +339,7 @@ class TestMatlab(unittest.TestCase):
         rlocus(self.siso_tf1)
         rlocus(self.siso_tf2)
         klist = [1, 10, 100]
-        rlist, klist_out = rlocus(self.siso_tf2, klist, Plot=False)
+        rlist, klist_out = rlocus(self.siso_tf2, klist, plot=False)
         np.testing.assert_equal(len(rlist), len(klist))
         np.testing.assert_array_equal(klist, klist_out)
 
@@ -349,7 +349,7 @@ class TestMatlab(unittest.TestCase):
         nyquist(self.siso_tf2)
         w = logspace(-3, 3);
         nyquist(self.siso_tf2, w)
-        (real, imag, freq) = nyquist(self.siso_tf2, w, Plot=False)
+        (real, imag, freq) = nyquist(self.siso_tf2, w, plot=False)
 
     def testNichols(self):
         nichols(self.siso_ss1)
@@ -396,17 +396,32 @@ class TestMatlab(unittest.TestCase):
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testModred(self):
         modred(self.siso_ss1, [1])
-        modred(self.siso_ss2 * self.siso_ss3, [0, 1])
-        modred(self.siso_ss3, [1], 'matchdc')
-        modred(self.siso_ss3, [1], 'truncate')
+        modred(self.siso_ss2 * self.siso_ss1, [0, 1])
+        modred(self.siso_ss1, [1], 'matchdc')
+        modred(self.siso_ss1, [1], 'truncate')
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
+    def testPlace_varga(self):
+        place_varga(self.siso_ss1.A, self.siso_ss1.B, [-2, -2])
+
     def testPlace(self):
-        place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2])
+        place(self.siso_ss1.A, self.siso_ss1.B, [-2, -2.5])
+
+    def testAcker(self):
+        acker(self.siso_ss1.A, self.siso_ss1.B, [-2, -2.5])
+
 
     @unittest.skipIf(not slycot_check(), "slycot not installed")
     def testLQR(self):
         (K, S, E) = lqr(self.siso_ss1.A, self.siso_ss1.B, np.eye(2), np.eye(1))
+
+        # Should work if [Q N;N' R] is positive semi-definite
+        (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, 10*np.eye(3), \
+                            np.eye(1), [[1], [1], [2]])
+
+    @unittest.skip("check not yet implemented")
+    def testLQR_checks(self):
+        # Make sure we get a warning if [Q N;N' R] is not positive semi-definite
         (K, S, E) = lqr(self.siso_ss2.A, self.siso_ss2.B, np.eye(3), \
                             np.eye(1), [[1], [1], [2]])
 
@@ -637,7 +652,7 @@ class TestMatlab(unittest.TestCase):
 
         # start with the basic satellite model sat1, and get the
         # payload attitude response
-        Hp = tf(sp.matrix([0, 0, 0, 1])*sat1)
+        Hp = tf(np.array([0, 0, 0, 1])*sat1)
 
         # total open loop
         Hol = Hc*Hno*Hp
@@ -649,6 +664,22 @@ class TestMatlab(unittest.TestCase):
         self.assertAlmostEqual(wg, 0.176469728448)
         self.assertAlmostEqual(wp, 0.0616288455466)
 
+    def test_tf_string_args(self):
+        # Make sure that the 's' variable is defined properly
+        s = tf('s')
+        G = (s + 1)/(s**2 + 2*s + 1)
+        np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
+        np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
+        self.assertTrue(isctime(G, strict=True))
+
+        # Make sure that the 'z' variable is defined properly
+        z = tf('z')
+        G = (z + 1)/(z**2 + 2*z + 1)
+        np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
+        np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
+        self.assertTrue(isdtime(G, strict=True))
+
+
 #! TODO: not yet implemented
 #    def testMIMOtfdata(self):
 #        sisotf = ss2tf(self.siso_ss1)
@@ -657,8 +688,6 @@ class TestMatlab(unittest.TestCase):
 #        for i in range(len(tfdata)):
 #            np.testing.assert_array_almost_equal(tfdata_1[i], tfdata_2[i])
 
-def test_suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestMatlab)
 
 if __name__ == '__main__':
     unittest.main()

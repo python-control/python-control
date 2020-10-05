@@ -43,13 +43,18 @@
 import numpy as np
 import scipy as sp
 from . import statesp
+from .mateqn import care
+from .statesp import _ssmatrix
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'lqr', 'acker']
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe', 'acker']
+
 
 # Pole placement
 def place(A, B, p):
     """Place closed loop eigenvalues
+
+    K = place(A, B, p)
 
     Parameters
     ----------
@@ -63,13 +68,109 @@ def place(A, B, p):
     Returns
     -------
     K : 2-d array
-        Gains such that A - B K has given eigenvalues
+        Gain such that A - B K has eigenvalues given in p
+
+
+    Notes
+    -----
+    Algorithm
+        This is a wrapper function for :func:`scipy.signal.place_poles`, which
+        implements the Tits and Yang algorithm [1]_. It will handle SISO,
+        MISO, and MIMO systems. If you want more control over the algorithm,
+        use :func:`scipy.signal.place_poles` directly.
+
+    Limitations
+        The algorithm will not place poles at the same location more
+        than rank(B) times.
+
+    References
+    ----------
+    .. [1] A.L. Tits and Y. Yang, "Globally convergent algorithms for robust
+       pole assignment by state feedback, IEEE Transactions on Automatic
+       Control, Vol. 41, pp. 1432-1452, 1996.
 
     Examples
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
     >>> K = place(A, B, [-2, -5])
+
+    See Also
+    --------
+    place_varga, acker
+    """
+    from scipy.signal import place_poles
+
+    # Convert the system inputs to NumPy arrays
+    A_mat = np.array(A)
+    B_mat = np.array(B)
+    if (A_mat.shape[0] != A_mat.shape[1]):
+        raise ControlDimension("A must be a square matrix")
+
+    if (A_mat.shape[0] != B_mat.shape[0]):
+        err_str = "The number of rows of A must equal the number of rows in B"
+        raise ControlDimension(err_str)
+
+    # Convert desired poles to numpy array
+    placed_eigs = np.array(p)
+
+    result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
+    K = result.gain_matrix
+    return _ssmatrix(K)
+
+
+def place_varga(A, B, p, dtime=False, alpha=None):
+    """Place closed loop eigenvalues
+    K = place_varga(A, B, p, dtime=False, alpha=None)
+
+    Required Parameters
+    ----------
+    A : 2-d array
+        Dynamics matrix
+    B : 2-d array
+        Input matrix
+    p : 1-d list
+        Desired eigenvalue locations
+
+    Optional Parameters
+    ---------------
+    dtime: False for continuous time pole placement or True for discrete time.
+            The default is dtime=False.
+    alpha: double scalar
+           If DICO='C', then place_varga will leave the eigenvalues with real
+           real part less than alpha untouched.
+           If DICO='D', the place_varga will leave eigenvalues with modulus
+           less than alpha untouched.
+
+           By default (alpha=None), place_varga computes alpha such that all
+           poles will be placed.
+
+    Returns
+    -------
+    K : 2D array
+        Gain such that A - B K has eigenvalues given in p.
+
+
+    Algorithm
+    ---------
+        This function is a wrapper for the slycot function sb01bd, which
+        implements the pole placement algorithm of Varga [1]. In contrast to
+        the algorithm used by place(), the Varga algorithm can place
+        multiple poles at the same location. The placement, however, may not
+        be as robust.
+
+        [1] Varga A. "A Schur method for pole assignment."
+            IEEE Trans. Automatic Control, Vol. AC-26, pp. 517-519, 1981.
+
+    Examples
+    --------
+    >>> A = [[-1, -1], [0, 1]]
+    >>> B = [[0], [1]]
+    >>> K = place_varga(A, B, [-2, -5])
+
+    See Also:
+    --------
+    place, acker
     """
 
     # Make sure that SLICOT is installed
@@ -79,27 +180,122 @@ def place(A, B, p):
         raise ControlSlycot("can't find slycot module 'sb01bd'")
 
     # Convert the system inputs to NumPy arrays
-    A_mat = np.array(A);
-    B_mat = np.array(B);
+    A_mat = np.array(A)
+    B_mat = np.array(B)
     if (A_mat.shape[0] != A_mat.shape[1] or
         A_mat.shape[0] != B_mat.shape[0]):
         raise ControlDimension("matrix dimensions are incorrect")
 
     # Compute the system eigenvalues and convert poles to numpy array
     system_eigs = np.linalg.eig(A_mat)[0]
-    placed_eigs = np.array(p);
+    placed_eigs = np.array(p)
 
-    # SB01BD sets eigenvalues with real part less than alpha
-    # We want to place all poles of the system => set alpha to minimum
-    alpha = min(system_eigs.real);
+    # Need a character parameter for SB01BD
+    if dtime:
+        DICO = 'D'
+    else:
+        DICO = 'C'
+
+    if alpha is None:
+        # SB01BD ignores eigenvalues with real part less than alpha
+        # (if DICO='C') or with modulus less than alpha
+        # (if DICO = 'D').
+        if dtime:
+            # For discrete time, slycot only cares about modulus, so just make
+            # alpha the smallest it can be.
+            alpha = 0.0
+        else:
+            # Choosing alpha=min_eig is insufficient and can lead to an
+            # error or not having all the eigenvalues placed that we wanted.
+            # Evidently, what python thinks are the eigs is not precisely
+            # the same as what slicot thinks are the eigs. So we need some
+            # numerical breathing room. The following is pretty heuristic,
+            # but does the trick
+            alpha = -2*abs(min(system_eigs.real))
+    elif dtime and alpha < 0.0:
+        raise ValueError("Need alpha > 0 when DICO='D'")
+
 
     # Call SLICOT routine to place the eigenvalues
     A_z,w,nfp,nap,nup,F,Z = \
         sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
-               A_mat, B_mat, placed_eigs, 'C');
+               A_mat, B_mat, placed_eigs, DICO)
 
     # Return the gain matrix, with MATLAB gain convention
-    return -F
+    return _ssmatrix(-F)
+
+# contributed by Sawyer B. Fuller <minster@uw.edu>
+def lqe(A, G, C, QN, RN, NN=None):
+    """lqe(A, G, C, QN, RN, [, N])
+
+    Linear quadratic estimator design (Kalman filter) for continuous-time
+    systems. Given the system
+
+    .. math::
+
+        x &= Ax + Bu + Gw \\\\
+        y &= Cx + Du + v
+
+    with unbiased process noise w and measurement noise v with covariances
+
+    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+
+    The lqe() function computes the observer gain matrix L such that the
+    stationary (non-time-varying) Kalman filter
+
+    .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
+
+    produces a state estimate that x_e that minimizes the expected squared error
+    using the sensor measurements y. The noise cross-correlation `NN` is set to
+    zero when omitted.
+
+    Parameters
+    ----------
+    A, G: 2-d array
+        Dynamics and noise input matrices
+    QN, RN: 2-d array
+        Process and sensor noise covariance matrices
+    NN: 2-d array, optional
+        Cross covariance matrix
+
+    Returns
+    -------
+    L: 2D array
+        Kalman estimator gain
+    P: 2D array
+        Solution to Riccati equation
+
+        .. math::
+
+            A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
+
+    E: 1D array
+        Eigenvalues of estimator poles eig(A - L C)
+
+
+    Examples
+    --------
+    >>> K, P, E = lqe(A, G, C, QN, RN)
+    >>> K, P, E = lqe(A, G, C, QN, RN, NN)
+
+    See Also
+    --------
+    lqr
+    """
+
+    # TODO: incorporate cross-covariance NN, something like this,
+    # which doesn't work for some reason
+    #if NN is None:
+    #    NN = np.zeros(QN.size(0),RN.size(1))
+    #NG = G @ NN
+
+    #LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
+    #P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
+    A, G, C = np.array(A, ndmin=2), np.array(G, ndmin=2), np.array(C, ndmin=2)
+    QN, RN =  np.array(QN, ndmin=2), np.array(RN, ndmin=2)
+    P, E, LT = care(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
+    return _ssmatrix(LT.T), _ssmatrix(P), _ssmatrix(E)
+
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
@@ -122,8 +318,8 @@ def acker(A, B, poles):
 
     """
     # Convert the inputs to matrices
-    a = np.mat(A)
-    b = np.mat(B)
+    a = _ssmatrix(A)
+    b = _ssmatrix(B)
 
     # Make sure the system is controllable
     ct = ctrb(A, B)
@@ -134,22 +330,25 @@ def acker(A, B, poles):
     p = np.real(np.poly(poles))
 
     # Place the poles using Ackermann's method
+    # TODO: compute pmat using Horner's method (O(n) instead of O(n^2))
     n = np.size(p)
-    pmat = p[n-1]*a**0
+    pmat = p[n-1] * np.linalg.matrix_power(a, 0)
     for i in np.arange(1,n):
-        pmat = pmat + p[n-i-1]*a**i
+        pmat = pmat + np.dot(p[n-i-1], np.linalg.matrix_power(a, i))
     K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
-    return K
+    return _ssmatrix(K)
 
 def lqr(*args, **keywords):
-    """Linear quadratic regulator design
+    """lqr(A, B, Q, R[, N])
+
+    Linear quadratic regulator design
 
     The lqr() function computes the optimal state feedback controller
     that minimizes the quadratic cost
 
-    .. math:: J = \int_0^\infty (x' Q x + u' R u + 2 x' N u) dt
+    .. math:: J = \\int_0^\\infty (x' Q x + u' R u + 2 x' N u) dt
 
     The function can be called with either 3, 4, or 5 arguments:
 
@@ -174,17 +373,21 @@ def lqr(*args, **keywords):
 
     Returns
     -------
-    K: 2-d array
+    K: 2D array
         State feedback gains
-    S: 2-d array
+    S: 2D array
         Solution to Riccati equation
-    E: 1-d array
+    E: 1D array
         Eigenvalues of the closed loop system
 
     Examples
     --------
     >>> K, S, E = lqr(sys, Q, R, [N])
     >>> K, S, E = lqr(A, B, Q, R, [N])
+
+    See Also
+    --------
+    lqe
 
     """
 
@@ -247,9 +450,9 @@ def lqr(*args, **keywords):
     S = X;
     E = w[0:nstates];
 
-    return K, S, E
+    return _ssmatrix(K), _ssmatrix(S), E
 
-def ctrb(A,B):
+def ctrb(A, B):
     """Controllabilty matrix
 
     Parameters
@@ -269,14 +472,14 @@ def ctrb(A,B):
     """
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.mat(A)
-    bmat = np.mat(B)
+    amat = _ssmatrix(A)
+    bmat = _ssmatrix(B)
     n = np.shape(amat)[0]
+
     # Construct the controllability matrix
-    ctrb = bmat
-    for i in range(1, n):
-        ctrb = np.hstack((ctrb, amat**i*bmat))
-    return ctrb
+    ctrb = np.hstack([bmat] + [np.dot(np.linalg.matrix_power(amat, i), bmat)
+                                      for i in range(1, n)])
+    return _ssmatrix(ctrb)
 
 def obsv(A, C):
     """Observability matrix
@@ -298,15 +501,14 @@ def obsv(A, C):
    """
 
     # Convert input parameters to matrices (if they aren't already)
-    amat = np.mat(A)
-    cmat = np.mat(C)
+    amat = _ssmatrix(A)
+    cmat = _ssmatrix(C)
     n = np.shape(amat)[0]
 
-    # Construct the controllability matrix
-    obsv = cmat
-    for i in range(1, n):
-        obsv = np.vstack((obsv, cmat*amat**i))
-    return obsv
+    # Construct the observability matrix
+    obsv = np.vstack([cmat] + [np.dot(cmat, np.linalg.matrix_power(amat, i))
+                               for i in range(1, n)])
+    return _ssmatrix(obsv)
 
 def gram(sys,type):
     """Gramian (controllability or observability)
@@ -382,7 +584,7 @@ def gram(sys,type):
         A = np.array(sys.A)         # convert to NumPy array for slycot
         X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
         gram = X
-        return gram
+        return _ssmatrix(gram)
 
     elif type=='cf' or type=='of':
         #Compute cholesky factored gramian from slycot routine sb03od
@@ -405,4 +607,4 @@ def gram(sys,type):
             C[0:n,0:m] = sys.C.transpose()
             X,scale,w = sb03od(n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
         gram = X
-        return gram
+        return _ssmatrix(gram)

@@ -67,6 +67,8 @@ from .frdata import *
 from .canonical import *
 from .robust import *
 from .config import *
+from .sisotool import *
+from .iosys import *
 
 # Exceptions
 from .exception import *
@@ -77,8 +79,5 @@ try:
 except ImportError:
     __version__ = "dev"
 
-# The following is to use Numpy's testing framework
-# Tests go under directory tests/, benchmarks under directory benchmarks/
-from numpy.testing import Tester
-test = Tester().test
-bench = Tester().bench
+# Initialize default parameter values
+reset_defaults()

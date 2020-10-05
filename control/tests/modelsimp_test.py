@@ -18,7 +18,7 @@ class TestModelsimp(unittest.TestCase):
         D = np.matrix("9.")
         sys = ss(A,B,C,D)
         hsv = hsvd(sys)
-        hsvtrue = np.matrix("24.42686 0.5731395") # from MATLAB
+        hsvtrue = [24.42686, 0.5731395]  # from MATLAB
         np.testing.assert_array_almost_equal(hsv, hsvtrue)
 
     def testMarkov(self):
@@ -129,9 +129,6 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(rsys.B, Brtrue,decimal=4)
         np.testing.assert_array_almost_equal(rsys.C, Crtrue,decimal=4)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue,decimal=4)
-
-def suite():
-   return unittest.TestLoader().loadTestsFromTestCase(TestModelsimp)
 
 
 if __name__ == '__main__':

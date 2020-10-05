@@ -81,10 +81,15 @@ from ..mateqn import *
 from ..margins import margin
 from ..rlocus import rlocus
 from ..dtime import c2d
+from ..sisotool import sisotool
 
 # Import functions specific to Matlab compatibility package
 from .timeresp import *
 from .wrappers import *
+
+# Set up defaults corresponding to MATLAB conventions
+from ..config import *
+use_matlab_defaults()
 
 r"""
 The following tables give an overview of the module ``control.matlab``.
@@ -241,6 +246,7 @@ Compensator design
 
 ==  ==========================  ============================================
 \*  :func:`rlocus`              evans root locus
+\*  :func:`sisotool`            SISO controller design
 \*  :func:`~control.place`      pole placement
 \   estim                       form estimator given estimator gain
 \   reg                         form regulator given state-feedback and

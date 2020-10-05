@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 #
-# bdalg_test.py - test suit for block diagram algebra
+# bdalg_test.py - test suite for block diagram algebra
 # RMM, 30 Mar 2011 (based on TestBDAlg from v0.4a)
 
 import unittest
 import numpy as np
+from numpy import sort
+import control as ctrl
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
 from control.bdalg import feedback
+from control.lti import zero, pole
 
 class TestFeedback(unittest.TestCase):
     """These are tests for the feedback function in bdalg.py.  Currently, some
@@ -177,8 +180,96 @@ class TestFeedback(unittest.TestCase):
         np.testing.assert_array_almost_equal(ans2.num, [[[1., 4., 7., 6.]]])
         np.testing.assert_array_almost_equal(ans2.den, [[[1., 4., 9., 8., 5.]]])
 
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestFeedback)
+    def testLists(self):
+        """Make sure that lists of various lengths work for operations"""
+        sys1 = ctrl.tf([1, 1], [1, 2])
+        sys2 = ctrl.tf([1, 3], [1, 4])
+        sys3 = ctrl.tf([1, 5], [1, 6])
+        sys4 = ctrl.tf([1, 7], [1, 8])
+        sys5 = ctrl.tf([1, 9], [1, 0])
+
+        # Series
+        sys1_2 = ctrl.series(sys1, sys2)
+        np.testing.assert_array_almost_equal(sort(pole(sys1_2)), [-4., -2.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_2)), [-3., -1.])
+        
+        sys1_3 = ctrl.series(sys1, sys2, sys3);
+        np.testing.assert_array_almost_equal(sort(pole(sys1_3)),
+                                             [-6., -4., -2.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_3)), 
+                                             [-5., -3., -1.])
+        
+        sys1_4 = ctrl.series(sys1, sys2, sys3, sys4);
+        np.testing.assert_array_almost_equal(sort(pole(sys1_4)),
+                                             [-8., -6., -4., -2.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_4)),
+                                             [-7., -5., -3., -1.])
+        
+        sys1_5 = ctrl.series(sys1, sys2, sys3, sys4, sys5);
+        np.testing.assert_array_almost_equal(sort(pole(sys1_5)),
+                                             [-8., -6., -4., -2., -0.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_5)), 
+                                             [-9., -7., -5., -3., -1.])
+
+        # Parallel 
+        sys1_2 = ctrl.parallel(sys1, sys2)
+        np.testing.assert_array_almost_equal(sort(pole(sys1_2)), [-4., -2.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_2)),
+                                             sort(zero(sys1 + sys2)))
+        
+        sys1_3 = ctrl.parallel(sys1, sys2, sys3);
+        np.testing.assert_array_almost_equal(sort(pole(sys1_3)),
+                                             [-6., -4., -2.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_3)), 
+                                             sort(zero(sys1 + sys2 + sys3)))
+        
+        sys1_4 = ctrl.parallel(sys1, sys2, sys3, sys4);
+        np.testing.assert_array_almost_equal(sort(pole(sys1_4)),
+                                             [-8., -6., -4., -2.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_4)), 
+                                             sort(zero(sys1 + sys2 + 
+                                                       sys3 + sys4)))
+
+        
+        sys1_5 = ctrl.parallel(sys1, sys2, sys3, sys4, sys5);
+        np.testing.assert_array_almost_equal(sort(pole(sys1_5)),
+                                             [-8., -6., -4., -2., -0.])
+        np.testing.assert_array_almost_equal(sort(zero(sys1_5)), 
+                                             sort(zero(sys1 + sys2 + 
+                                                       sys3 + sys4 + sys5)))
+    def testMimoSeries(self):
+        """regression: bdalg.series reverses order of arguments"""
+        g1 = ctrl.ss([],[],[],[[1,2],[0,3]])
+        g2 = ctrl.ss([],[],[],[[1,0],[2,3]])
+        ref = g2*g1
+        tst = ctrl.series(g1,g2)
+        # assert_array_equal on mismatched matrices gives
+        # "repr failed for <matrix>: ..."
+        def assert_equal(x,y):
+            np.testing.assert_array_equal(np.asarray(x),
+                                          np.asarray(y))
+        assert_equal(ref.A, tst.A)
+        assert_equal(ref.B, tst.B)
+        assert_equal(ref.C, tst.C)
+        assert_equal(ref.D, tst.D)
+
+    def test_feedback_args(self):
+        # Added 25 May 2019 to cover missing exception handling in feedback()
+        # If first argument is not LTI or convertable, generate an exception
+        args = ([1], self.sys2)
+        self.assertRaises(TypeError, ctrl.feedback, *args)
+
+        # If second argument is not LTI or convertable, generate an exception
+        args = (self.sys1, np.array([1]))
+        self.assertRaises(TypeError, ctrl.feedback, *args)
+
+        # Convert first argument to FRD, if needed
+        h = TransferFunction([1], [1, 2, 2])
+        omega = np.logspace(-1, 2, 10)
+        frd = ctrl.FRD(h, omega)
+        sys = ctrl.feedback(1, frd)
+        self.assertTrue(isinstance(sys, ctrl.FRD))
+
 
 if __name__ == "__main__":
     unittest.main()
