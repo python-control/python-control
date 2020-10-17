@@ -763,17 +763,19 @@ class TestIOSys(unittest.TestCase):
         ios_mul = sys1 * sys2
         ss_series = self.mimo_linsys1 * self.mimo_linsys2
         lin_series = ct.linearize(ios_mul, 0, 0)
-        for M, N in ((ss_series.A, lin_series.A), (ss_series.B, lin_series.B),
-                     (ss_series.C, lin_series.C), (ss_series.D, lin_series.D)):
-            np.testing.assert_array_almost_equal(M, N)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
 
         # Series interconnection (sys1 * sys2) using series
         ios_series = ct.series(sys2, sys1)
         ss_series = ct.series(self.mimo_linsys2, self.mimo_linsys1)
         lin_series = ct.linearize(ios_series, 0, 0)
-        for M, N in ((ss_series.A, lin_series.A), (ss_series.B, lin_series.B),
-                     (ss_series.C, lin_series.C), (ss_series.D, lin_series.D)):
-            np.testing.assert_array_almost_equal(M, N)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
 
         # Series interconnection (sys1 * sys2) using named + mixed signals
         ios_connect = ios.InterconnectedSystem(
@@ -786,9 +788,10 @@ class TestIOSys(unittest.TestCase):
             outlist=((1, 'y[0]'), 'sys1.y[1]')
         )
         lin_series = ct.linearize(ios_connect, 0, 0)
-        for M, N in ((ss_series.A, lin_series.A), (ss_series.B, lin_series.B),
-                     (ss_series.C, lin_series.C), (ss_series.D, lin_series.D)):
-            np.testing.assert_array_almost_equal(M, N)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
 
         # Make sure that we can use input signal names as system outputs
         ios_connect = ios.InterconnectedSystem(
@@ -806,6 +809,123 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_almost_equal(ss_feedback.B, lin_feedback.B)
         np.testing.assert_array_almost_equal(ss_feedback.C, lin_feedback.C)
         np.testing.assert_array_almost_equal(ss_feedback.D, lin_feedback.D)
+
+    def test_sys_naming_convention(self):
+        """Enforce generic system names 'sys[i]' to be present when systems are created
+        without explicit names."""
+
+        ct.InputOutputSystem.idCounter = 0
+        sys = ct.LinearIOSystem(self.mimo_linsys1)
+        self.assertEquals(sys.name, "sys[0]")
+        self.assertEquals(sys.copy().name, "copy of sys[0]")
+        
+        namedsys = ios.NonlinearIOSystem(
+            updfcn = lambda t, x, u, params: x,
+            outfcn = lambda t, x, u, params: u,
+            inputs = ('u[0]', 'u[1]'),
+            outputs = ('y[0]', 'y[1]'),
+            states = self.mimo_linsys1.states,
+            name = 'namedsys')
+        unnamedsys1 = ct.NonlinearIOSystem(
+            lambda t,x,u,params: x, inputs=2, outputs=2, states=2
+        )
+        unnamedsys2 = ct.NonlinearIOSystem(
+            None, lambda t,x,u,params: u, inputs=2, outputs=2
+        )
+        self.assertEquals(unnamedsys2.name, "sys[2]")
+
+        # Unnamed/unnamed connections
+        uu_series = unnamedsys1 * unnamedsys2
+        uu_parallel = unnamedsys1 + unnamedsys2
+        u_neg = - unnamedsys1
+        uu_feedback = unnamedsys2.feedback(unnamedsys1)
+        uu_dup = unnamedsys1 * unnamedsys1.copy()
+        uu_hierarchical = uu_series*unnamedsys1
+
+        self.assertEquals(uu_series.name, "sys[3]")
+        self.assertEquals(uu_parallel.name, "sys[4]")
+        self.assertEquals(u_neg.name, "sys[5]")
+        self.assertEquals(uu_feedback.name, "sys[6]")
+        self.assertEquals(uu_dup.name, "sys[7]")
+        self.assertEquals(uu_hierarchical.name, "sys[8]")
+
+        # Unnamed/named connections
+        un_series = unnamedsys1 * namedsys
+        un_parallel = unnamedsys1 + namedsys
+        un_feedback = unnamedsys2.feedback(namedsys)
+        un_dup = unnamedsys1 * namedsys.copy()
+        un_hierarchical = uu_series*unnamedsys1
+
+        self.assertEquals(un_series.name, "sys[9]")
+        self.assertEquals(un_parallel.name, "sys[10]")
+        self.assertEquals(un_feedback.name, "sys[11]")
+        self.assertEquals(un_dup.name, "sys[12]")
+        self.assertEquals(un_hierarchical.name, "sys[13]")
+
+        # Same system conflict
+        with warnings.catch_warnings(record=True) as warnval:
+            unnamedsys1 * unnamedsys1
+            self.assertEqual(len(warnval), 1)
+
+    def test_signals_naming_convention(self):
+        """Enforce generic names to be present when systems are created
+        without explicit signal names:
+        input: 'u[i]'
+        state: 'x[i]'
+        output: 'y[i]'
+        """
+        ct.InputOutputSystem.idCounter = 0
+        sys = ct.LinearIOSystem(self.mimo_linsys1)
+        for statename in ["x[0]", "x[1]"]:
+            self.assertTrue(statename in sys.state_index)
+        for inputname in ["u[0]", "u[1]"]:
+            self.assertTrue(inputname in sys.input_index)
+        for outputname in ["y[0]", "y[1]"]:
+            self.assertTrue(outputname in sys.output_index)
+        self.assertEqual(len(sys.state_index), sys.nstates)
+        self.assertEqual(len(sys.input_index), sys.ninputs)
+        self.assertEqual(len(sys.output_index), sys.noutputs)
+
+        namedsys = ios.NonlinearIOSystem(
+            updfcn = lambda t, x, u, params: x,
+            outfcn = lambda t, x, u, params: u,
+            inputs = ('u0'),
+            outputs = ('y0'),
+            states = ('x0'),
+            name = 'namedsys')
+        unnamedsys = ct.NonlinearIOSystem(
+            lambda t,x,u,params: x, inputs=1, outputs=1, states=1
+        )
+        self.assertTrue('u0' in namedsys.input_index)
+        self.assertTrue('y0' in namedsys.output_index)
+        self.assertTrue('x0' in namedsys.state_index)
+
+        # Unnamed/named connections
+        un_series = unnamedsys * namedsys
+        un_parallel = unnamedsys + namedsys
+        un_feedback = unnamedsys.feedback(namedsys)
+        un_dup = unnamedsys * namedsys.copy()
+        un_hierarchical = un_series*unnamedsys
+        u_neg = - unnamedsys
+
+        self.assertTrue("sys[1].x[0]" in un_series.state_index)
+        self.assertTrue("namedsys.x0" in un_series.state_index)
+        self.assertTrue("sys[1].x[0]" in un_parallel.state_index)
+        self.assertTrue("namedsys.x0" in un_series.state_index)
+        self.assertTrue("sys[1].x[0]" in un_feedback.state_index)
+        self.assertTrue("namedsys.x0" in un_feedback.state_index)
+        self.assertTrue("sys[1].x[0]" in un_dup.state_index)
+        self.assertTrue("copy of namedsys.x0" in un_dup.state_index)
+        self.assertTrue("sys[1].x[0]" in un_hierarchical.state_index)
+        self.assertTrue("sys[2].sys[1].x[0]" in un_hierarchical.state_index)
+        self.assertTrue("sys[1].x[0]" in u_neg.state_index)
+
+        # Same system conflict
+        with warnings.catch_warnings(record=True) as warnval:
+            same_name_series = unnamedsys * unnamedsys
+            self.assertEquals(len(warnval), 1)
+            self.assertTrue("sys[1].x[0]" in same_name_series.state_index)
+            self.assertTrue("copy of sys[1].x[0]" in same_name_series.state_index)
 
     def test_named_signals_linearize_inconsistent(self):
         """Mare sure that providing inputs or outputs not consistent with
@@ -904,8 +1024,9 @@ class TestIOSys(unittest.TestCase):
         np.testing.assert_array_equal(io_feedback.D, ss_feedback.D)
 
     def test_duplicates(self):
-        nlios =  ios.NonlinearIOSystem(None, \
-            lambda t, x, u, params: u*u, inputs=1, outputs=1)
+        nlios =  ios.NonlinearIOSystem(lambda t,x,u,params: x, \
+                                       lambda t, x, u, params: u*u, \
+                                       inputs=1, outputs=1, states=1, name="sys")
 
         # Turn off deprecation warnings
         warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -926,7 +1047,11 @@ class TestIOSys(unittest.TestCase):
         nlios2 = nlios.copy()
         with warnings.catch_warnings(record=True) as warnval:
             ios_series = nlios1 * nlios2
-            self.assertEqual(len(warnval), 0)
+            self.assertEquals(len(warnval), 1)
+            # when subsystems have the same name, duplicates are
+            # renamed <subsysname_i>
+            self.assertTrue("copy of sys_1.x[0]" in ios_series.state_index.keys())
+            self.assertTrue("copy of sys.x[0]" in ios_series.state_index.keys())
 
         # Duplicate names
         iosys_siso = ct.LinearIOSystem(self.siso_linsys)
