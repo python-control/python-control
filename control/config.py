@@ -166,9 +166,17 @@ def use_legacy_defaults(version):
     Parameters
     ----------
     version : string
-        version number of the defaults desired. Currently only supports `0.8.3`. 
+        version number of the defaults desired. ranges from '0.1' to '0.8.4'. 
     """
-    if version == '0.8.3': 
+    numbers_list = version.split(".")
+    first_digit = int(numbers_list[0])
+    second_digit = int(numbers_list[1].strip('abcdef')) # remove trailing letters
+    if second_digit < 8:
+        # TODO: anything for 0.7 and below if needed
+        pass
+    elif second_digit == 8:
+        if len(version) > 4:
+            third_digit = int(version[4])
         use_numpy_matrix(True) # alternatively: set_defaults('statesp', use_numpy_matrix=True)
     else:
-        raise ValueError('''version number not recognized. Possible values are: ['0.8.3']''') 
+        raise ValueError('''version number not recognized. Possible values range from '0.1' to '0.8.4'.''') 
