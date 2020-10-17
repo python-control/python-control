@@ -1091,7 +1091,17 @@ class TransferFunction(LTI):
                         gain[i][j] = np.nan
         return np.squeeze(gain)
 
-
+    def is_static_gain(self):
+         """returns True if and only if all of the numerator and denominator 
+         polynomials of the (possibly MIMO) transfer function are zeroth order, 
+         that is, if the system has no dynamics. """
+         for list_of_polys in self.num, self.den: 
+             for row in list_of_polys:
+                 for poly in row:
+                     if len(poly) > 1: 
+                         return False
+         return True
+         
 # c2d function contributed by Benjamin White, Oct 2012
 def _c2d_matched(sysC, Ts):
     # Pole-zero match method of continuous to discrete time conversion
