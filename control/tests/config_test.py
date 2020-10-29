@@ -216,6 +216,12 @@ class TestConfig(unittest.TestCase):
         assert(isinstance(ct.ss(0,0,0,1).D, np.matrix))
         ct.reset_defaults()
         assert(isinstance(ct.ss(0,0,0,1).D, np.ndarray))
+        # test that old versions don't raise a problem
+        ct.use_legacy_defaults('0.6c')
+        ct.use_legacy_defaults('0.8.2')
+        ct.use_legacy_defaults('0.1')
+        ct.config.reset_defaults()
+        
     
     def test_change_default_dt(self):
         ct.set_defaults('statesp', default_dt=0)
