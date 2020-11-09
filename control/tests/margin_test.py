@@ -17,6 +17,7 @@ from control.margins import margin, phase_crossover_frequencies, \
                             stability_margins
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
+from control.exception import ControlMIMONotImplemented
 
 
 s = TransferFunction([1, 0], [1])
@@ -108,14 +109,14 @@ def test_phase_crossover_frequencies():
     assert_allclose(omega, [0.], atol=1.5e-3)
     assert_allclose(gain, [1.], atol=1.5e-3)
 
-    # testing MIMO, only (0,0) element is considered
+    # MIMO
     tf = TransferFunction([[[1], [2]],
                            [[3], [4]]],
                           [[[1, 2, 3, 4], [1, 1]],
                            [[1, 1], [1, 1]]])
-    omega, gain = phase_crossover_frequencies(tf)
-    assert_allclose(omega, [1.73205,  0.], atol=1.5e-3)
-    assert_allclose(gain, [-0.5,  0.25], atol=1.5e-3)
+    with pytest.raises(ControlMIMONotImplemented):
+        omega, gain = phase_crossover_frequencies(tf)
+
 
 
 def test_mag_phase_omega():
