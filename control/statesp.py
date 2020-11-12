@@ -70,7 +70,7 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 # Define module default parameter values
 _statesp_defaults = {
-    'statesp.use_numpy_matrix': True,
+    'statesp.use_numpy_matrix': False,
     'statesp.default_dt': None,
     'statesp.remove_useless_states': True,
     }
@@ -98,11 +98,11 @@ def _ssmatrix(data, axis=1):
     # Convert the data into an array or matrix, as configured
     # If data is passed as a string, use (deprecated?) matrix constructor
     if config.defaults['statesp.use_numpy_matrix']:
-        arr = np.matrix(data, dtype=float)
+        arr = np.matrix(data, dtype=complex)
     elif isinstance(data, str):
-        arr = np.array(np.matrix(data, dtype=float))
+        arr = np.array(np.matrix(data, dtype=complex))
     else:
-        arr = np.array(data, dtype=float)
+        arr = np.array(data, dtype=complex)
     ndim = arr.ndim
     shape = arr.shape
 
