@@ -3,7 +3,8 @@
 margin_test.py - test suite for stability margin commands
 
 RMM, 15 Jul 2011
-BG, 30 June 2020 -- convert to pytest, gh-425
+BG, 30 Jun 2020 -- convert to pytest, gh-425
+BG, 16 Nov 2020 -- pick from gh-438 and add discrete test
 """
 from __future__ import print_function
 
@@ -113,26 +114,30 @@ def test_margin_3input(tsys):
     assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
 
-def test_phase_crossover_frequencies():
+@pytest.mark.parametrize(
+    'tfargs, omega_ref, gain_ref',
+    [(([1], [1, 2, 3, 4]), [1.7325, 0.], [-0.5, 0.25]),
+     (([1], [1, 1]), [0.], [1.]),
+     (([2], [1, 3, 3, 1]), [1.732, 0.], [-0.25, 2.]),
+     ((np.array([3, 11, 3]) * 1e-4, [1., -2.7145, 2.4562, -0.7408], .1),
+      [1.6235, 0.], [-0.28598, 1.88889]),
+     ])
+def test_phase_crossover_frequencies(tfargs, omega_ref, gain_ref):
     """Test phase_crossover_frequencies() function"""
-    sys = TransferFunction([1], [1, 2, 3, 4])
+    sys = TransferFunction(*tfargs)
     omega, gain = phase_crossover_frequencies(sys)
-    assert_allclose(omega, [1.73205,  0.], atol=1.5e-3)
-    assert_allclose(gain, [-0.5,  0.25], atol=1.5e-3)
+    assert_allclose(omega, omega_ref, atol=1.5e-3)
+    assert_allclose(gain, gain_ref, atol=1.5e-3)
 
-    tf = TransferFunction([1], [1, 1])
-    omega, gain = phase_crossover_frequencies(tf)
-    assert_allclose(omega, [0.], atol=1.5e-3)
-    assert_allclose(gain, [1.], atol=1.5e-3)
 
-    # MIMO
+def test_phase_crossover_frequencies_mimo():
+    """Test MIMO exception"""
     tf = TransferFunction([[[1], [2]],
                            [[3], [4]]],
                           [[[1, 2, 3, 4], [1, 1]],
                            [[1, 1], [1, 1]]])
     with pytest.raises(ControlMIMONotImplemented):
         omega, gain = phase_crossover_frequencies(tf)
-
 
 
 def test_mag_phase_omega():
@@ -327,3 +332,21 @@ def test_zmore_stability_margins(tsys_zmore):
                        tsys_zmore['result'],
                        atol=tsys_zmore['atol'],
                        rtol=tsys_zmore['rtol'])
+
+
+@pytest.mark.parametrize(
+    'cnum, cden, dt,'
+    'ref,'
+    'rtol',
+    [([2], [1, 3, 2, 0], 1e-2,  # gh-465
+      (2.9558, 32.8170, 0.43584, 1.4037, 0.74953, 0.97079),
+      0.1  # very crude tolerance, because the gradients are not great
+      ),
+     ([2], [1, 3, 3, 1], .1,  # 2/(s+1)**3
+      [3.4927, 69.9996, 0.5763, 1.6283, 0.7631, 1.2019],
+      1e-3)])
+def test_stability_margins_discrete(cnum, cden, dt, ref, rtol):
+    """Test stability_margins with discrete TF input"""
+    tf = TransferFunction(cnum, cden).sample(dt)
+    out = stability_margins(tf)
+    assert_allclose(out, ref, rtol=rtol)
