@@ -145,7 +145,7 @@ def _poly_z_real_crossing(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
     p1 = np.polymul(num, den_inv_zq)
     p2 = np.polymul(num_inv_zp, den)
     if p_q < 0:
-        # Future: numpy >= 1.5.0 defines np.polymulx()
+        # * z**(-p_q)
         x = [1] + [0] * (-p_q)
         p2 = np.polymul(p2, x)
     z = np.roots(np.polysub(p1, p2))
