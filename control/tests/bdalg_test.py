@@ -9,7 +9,7 @@ from numpy import sort
 import control as ctrl
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
-from control.bdalg import feedback
+from control.bdalg import feedback, append, connect
 from control.lti import zero, pole
 
 class TestFeedback(unittest.TestCase):
@@ -23,7 +23,9 @@ class TestFeedback(unittest.TestCase):
         # Two random SISO systems.
         self.sys1 = TransferFunction([1, 2], [1, 2, 3])
         self.sys2 = StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
-            [[1., 0.]], [[0.]])
+            [[1., 0.]], [[0.]]) # 2 states, SISO
+        self.sys3 = StateSpace([[-1.]], [[1.]], [[1.]], [[0.]]) # 1 state, SISO
+
         # Two random scalars.
         self.x1 = 2.5
         self.x2 = -3.
@@ -269,6 +271,13 @@ class TestFeedback(unittest.TestCase):
         frd = ctrl.FRD(h, omega)
         sys = ctrl.feedback(1, frd)
         self.assertTrue(isinstance(sys, ctrl.FRD))
+
+    def testConnect(self):
+        sys = append(self.sys2, self.sys3) # two siso systems
+        
+        # feedback interconnection -3 is out of bounds
+        Q1 = [[1, 2], [2, -3]] 
+        self.assertRaises(IndexError, connect(sys, Q1, [2], [1, 2]))
 
 
 if __name__ == "__main__":
