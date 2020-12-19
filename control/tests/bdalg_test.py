@@ -275,10 +275,43 @@ class TestFeedback(unittest.TestCase):
     def testConnect(self):
         sys = append(self.sys2, self.sys3) # two siso systems
         
-        # feedback interconnection -3 is out of bounds
-        Q1 = [[1, 2], [2, -3]] 
-        self.assertRaises(IndexError, connect(sys, Q1, [2], [1, 2]))
+        # feedback interconnection out of bounds: input too high
+        Q = [[1, 3], [2, -2]] 
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [2], [1, 2])
+        # feedback interconnection out of bounds: input too low
+        Q = [[0, 2], [2, -2]] 
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [2], [1, 2])
 
+        # feedback interconnection out of bounds: output too high
+        Q = [[1, 2], [2, -3]] 
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [2], [1, 2])
+        Q = [[1, 2], [2, 4]] 
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [2], [1, 2])
+        
+        # input/output index testing
+        Q = [[1, 2], [2, -2]] # OK interconnection
+        
+        # input index is out of bounds: too high
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [3], [1, 2])
+        # input index is out of bounds: too low
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [0], [1, 2])
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [-2], [1, 2])
+        # output index is out of bounds: too high
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [2], [1, 3])
+        # output index is out of bounds: too low
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [2], [1, 0])
+        with self.assertRaises(IndexError) as context:
+            connect(sys, Q, [2], [1, -1])
+        
 
 if __name__ == "__main__":
     unittest.main()
