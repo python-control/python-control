@@ -303,10 +303,10 @@ def connect(sys, Q, inputv, outputv):
         System to be connected
     Q : 2D array
         Interconnection matrix. First column gives the input to be connected.
-        The second column gives the index of an output that is to be fed into 
-        that input. Each additional column gives the index of an additional 
+        The second column gives the index of an output that is to be fed into
+        that input. Each additional column gives the index of an additional
         input that may be optionally added to that input. Negative
-        values mean the feedback is negative. A zero value is ignored. Inputs 
+        values mean the feedback is negative. A zero value is ignored. Inputs
         and outputs are indexed starting at 1 to communicate sign information.
     inputv : 1D array
         list of final external inputs, indexed starting at 1
@@ -330,22 +330,22 @@ def connect(sys, Q, inputv, outputv):
     inputv, outputv, Q = np.asarray(inputv), np.asarray(outputv), np.asarray(Q)
     # check indices
     index_errors = (inputv - 1 > sys.inputs) | (inputv < 1)
-    if np.any(index_errors):  
-        raise IndexError( 
-            "inputv index %s out of bounds"%inputv[np.where(index_errors)])
+    if np.any(index_errors):
+        raise IndexError(
+            "inputv index %s out of bounds" % inputv[np.where(index_errors)])
     index_errors = (outputv - 1 > sys.outputs) | (outputv < 1)
-    if np.any(index_errors):  
-        raise IndexError( 
-            "outputv index %s out of bounds"%outputv[np.where(index_errors)])
+    if np.any(index_errors):
+        raise IndexError(
+            "outputv index %s out of bounds" % outputv[np.where(index_errors)])
     index_errors = (Q[:,0:1] - 1 > sys.inputs) | (Q[:,0:1] < 1)
-    if np.any(index_errors):  
-        raise IndexError( 
-            "Q input index %s out of bounds"%Q[np.where(index_errors)])
+    if np.any(index_errors):
+        raise IndexError(
+            "Q input index %s out of bounds" % Q[np.where(index_errors)])
     index_errors = (np.abs(Q[:,1:]) - 1 > sys.outputs)
-    if np.any(index_errors):  
-        raise IndexError( 
-            "Q output index %s out of bounds"%Q[np.where(index_errors)])
-                
+    if np.any(index_errors):
+        raise IndexError(
+            "Q output index %s out of bounds" % Q[np.where(index_errors)])
+
     # first connect
     K = np.zeros((sys.inputs, sys.outputs))
     for r in np.array(Q).astype(int):
