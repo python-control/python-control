@@ -54,6 +54,51 @@ Your contributions are welcome!  Simply fork the `GitHub repository <https://git
 
 .. _pull request: https://github.com/python-control/python-control/pulls
 
+The following details suggested steps for making your own contributions to the project using GitHub
+
+1. Fork on GitHub: login/create an account and click Fork button at the top right corner of https://github.com/python-control/python-control/.
+
+2. Clone to computer (Replace [you] with your Github username)::
+
+    git clone https://github.com/[you]/python-control.git
+    cd python_control
+
+3. Set up remote upstream::
+
+    git remote add upstream https://github.com/python-control/python-control.git
+
+4. Start working on a new issue or feature by first creating a new branch with a descriptive name::
+
+    git checkout -b <my-new-branch-name>
+
+5. Write great code. Suggestion: write the tests you would like your code to satisfy before writing the code itself. This is known as test-driven development.
+
+6. Run tests and fix as necessary until everything passes::
+
+    pytest -v
+
+  (for documentation, run ``make html`` in ``doc`` directory)
+
+7. Commit changes::
+
+    git add <changed files>
+    git commit -m "commit message"
+
+8. Update & sync your local code to the upstream version on Github before submitting (especially if it has been awhile)::
+
+    git checkout master; git fetch --all; git merge upstream/master; git push
+
+  and then bring those changes into your branch::
+
+    git checkout <my-new-branch-name>; git rebase master
+
+9. Push your branch to GitHub::
+
+    git push origin <my-new-branch-name>
+
+10. Issue pull request to submit your code modifications to Github by going to your fork on Github, clicking Pull Request, and entering a description.
+11. Repeat steps 5--9 until feature is complete
+
 .. rubric:: Links
 
 - Issue tracker: https://github.com/python-control/python-control/issues
