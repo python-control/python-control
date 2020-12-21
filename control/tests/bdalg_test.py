@@ -9,7 +9,7 @@ from numpy import sort
 import control as ctrl
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
-from control.bdalg import feedback
+from control.bdalg import feedback, append, connect
 from control.lti import zero, pole
 
 class TestFeedback(unittest.TestCase):
@@ -23,7 +23,9 @@ class TestFeedback(unittest.TestCase):
         # Two random SISO systems.
         self.sys1 = TransferFunction([1, 2], [1, 2, 3])
         self.sys2 = StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
-            [[1., 0.]], [[0.]])
+            [[1., 0.]], [[0.]]) # 2 states, SISO
+        self.sys3 = StateSpace([[-1.]], [[1.]], [[1.]], [[0.]]) # 1 state, SISO
+
         # Two random scalars.
         self.x1 = 2.5
         self.x2 = -3.
@@ -192,50 +194,50 @@ class TestFeedback(unittest.TestCase):
         sys1_2 = ctrl.series(sys1, sys2)
         np.testing.assert_array_almost_equal(sort(pole(sys1_2)), [-4., -2.])
         np.testing.assert_array_almost_equal(sort(zero(sys1_2)), [-3., -1.])
-        
+
         sys1_3 = ctrl.series(sys1, sys2, sys3);
         np.testing.assert_array_almost_equal(sort(pole(sys1_3)),
                                              [-6., -4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_3)), 
+        np.testing.assert_array_almost_equal(sort(zero(sys1_3)),
                                              [-5., -3., -1.])
-        
+
         sys1_4 = ctrl.series(sys1, sys2, sys3, sys4);
         np.testing.assert_array_almost_equal(sort(pole(sys1_4)),
                                              [-8., -6., -4., -2.])
         np.testing.assert_array_almost_equal(sort(zero(sys1_4)),
                                              [-7., -5., -3., -1.])
-        
+
         sys1_5 = ctrl.series(sys1, sys2, sys3, sys4, sys5);
         np.testing.assert_array_almost_equal(sort(pole(sys1_5)),
                                              [-8., -6., -4., -2., -0.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_5)), 
+        np.testing.assert_array_almost_equal(sort(zero(sys1_5)),
                                              [-9., -7., -5., -3., -1.])
 
-        # Parallel 
+        # Parallel
         sys1_2 = ctrl.parallel(sys1, sys2)
         np.testing.assert_array_almost_equal(sort(pole(sys1_2)), [-4., -2.])
         np.testing.assert_array_almost_equal(sort(zero(sys1_2)),
                                              sort(zero(sys1 + sys2)))
-        
+
         sys1_3 = ctrl.parallel(sys1, sys2, sys3);
         np.testing.assert_array_almost_equal(sort(pole(sys1_3)),
                                              [-6., -4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_3)), 
+        np.testing.assert_array_almost_equal(sort(zero(sys1_3)),
                                              sort(zero(sys1 + sys2 + sys3)))
-        
+
         sys1_4 = ctrl.parallel(sys1, sys2, sys3, sys4);
         np.testing.assert_array_almost_equal(sort(pole(sys1_4)),
                                              [-8., -6., -4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_4)), 
-                                             sort(zero(sys1 + sys2 + 
+        np.testing.assert_array_almost_equal(sort(zero(sys1_4)),
+                                             sort(zero(sys1 + sys2 +
                                                        sys3 + sys4)))
 
-        
+
         sys1_5 = ctrl.parallel(sys1, sys2, sys3, sys4, sys5);
         np.testing.assert_array_almost_equal(sort(pole(sys1_5)),
                                              [-8., -6., -4., -2., -0.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_5)), 
-                                             sort(zero(sys1 + sys2 + 
+        np.testing.assert_array_almost_equal(sort(zero(sys1_5)),
+                                             sort(zero(sys1 + sys2 +
                                                        sys3 + sys4 + sys5)))
     def testMimoSeries(self):
         """regression: bdalg.series reverses order of arguments"""
@@ -269,6 +271,56 @@ class TestFeedback(unittest.TestCase):
         frd = ctrl.FRD(h, omega)
         sys = ctrl.feedback(1, frd)
         self.assertTrue(isinstance(sys, ctrl.FRD))
+
+    def testConnect(self):
+        sys = append(self.sys2, self.sys3) # two siso systems
+
+        # should not raise error
+        connect(sys, [[1, 2], [2, -2]], [2], [1, 2])
+        connect(sys, [[1, 2], [2, 0]], [2], [1, 2])
+        connect(sys, [[1, 2, 0], [2, -2, 1]], [2], [1, 2])
+        connect(sys, [[1, 2], [2, -2]], [2, 1], [1])
+        sys3x3 = append(sys, self.sys3) # 3x3 mimo
+        connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [2], [1, 2])
+        connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [1, 2, 3], [3])
+        connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [2, 3], [2, 1])
+
+        # feedback interconnection out of bounds: input too high
+        Q = [[1, 3], [2, -2]]
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [2], [1, 2])
+        # feedback interconnection out of bounds: input too low
+        Q = [[0, 2], [2, -2]]
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [2], [1, 2])
+
+        # feedback interconnection out of bounds: output too high
+        Q = [[1, 2], [2, -3]]
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [2], [1, 2])
+        Q = [[1, 2], [2, 4]]
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [2], [1, 2])
+
+        # input/output index testing
+        Q = [[1, 2], [2, -2]] # OK interconnection
+
+        # input index is out of bounds: too high
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [3], [1, 2])
+        # input index is out of bounds: too low
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [0], [1, 2])
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [-2], [1, 2])
+        # output index is out of bounds: too high
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [2], [1, 3])
+        # output index is out of bounds: too low
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [2], [1, 0])
+        with self.assertRaises(IndexError):
+            connect(sys, Q, [2], [1, -1])
 
 
 if __name__ == "__main__":
