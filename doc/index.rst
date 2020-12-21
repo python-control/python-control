@@ -86,7 +86,8 @@ The following details suggested steps for making your own contributions to the p
 
 8. Update & sync your local code to the upstream version on Github before submitting (especially if it has been awhile)::
 
-    git checkout master; git fetch --all; git merge upstream/master; git push
+    git checkout master; git fetch --all; git merge upstream/master
+    git push
 
   and then bring those changes into your branch::
 
@@ -95,6 +96,10 @@ The following details suggested steps for making your own contributions to the p
 9. Push your branch to GitHub::
 
     git push origin <my-new-branch-name>
+    
+    (The first time you run this command you will need to use the following)::
+    
+      git push --set-upstream origin <my-new-branch-name>
 
 10. Issue pull request to submit your code modifications to Github by going to your fork on Github, clicking Pull Request, and entering a description.
 11. Repeat steps 5--9 until feature is complete
