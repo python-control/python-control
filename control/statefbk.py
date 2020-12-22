@@ -374,9 +374,9 @@ def lqr(*args, **keywords):
 
     Returns
     -------
-    K: 2D array
+    K: 2D array (or matrix)
         State feedback gains
-    S: 2D array
+    S: 2D array (or matrix)
         Solution to Riccati equation
     E: 1D array
         Eigenvalues of the closed loop system
@@ -390,6 +390,12 @@ def lqr(*args, **keywords):
     --------
     lqe
 
+    Notes
+    -----
+    The return type for `K` and `S` depends on the default class set for
+    state space operations.  By default, this is the Numpy `matrix`
+    class in this release, but this can be reconfigured using the
+    :func:`~control.use_numpy_matrix` function.
     """
 
     # Make sure that SLICOT is installed
