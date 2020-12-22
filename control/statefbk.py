@@ -139,12 +139,12 @@ def place_varga(A, B, p, dtime=False, alpha=None):
         The default is dtime=False.
 
     alpha : double scalar
-       If DICO='C', then place_varga will leave the eigenvalues with real real
-       part less than alpha untouched.  If DICO='D', the place_varga will
-       leave eigenvalues with modulus less than alpha untouched.
+        If DICO='C', then place_varga will leave the eigenvalues with real 
+        part less than alpha untouched.  If DICO='D', the place_varga will
+        leave eigenvalues with modulus less than alpha untouched.
 
-       By default (alpha=None), place_varga computes alpha such that all poles
-       will be placed.
+        By default (alpha=None), place_varga computes alpha such that all 
+        poles will be placed.
 
     Returns
     -------
