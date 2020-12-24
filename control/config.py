@@ -154,6 +154,11 @@ def use_numpy_matrix(flag=True, warn=True):
         of the Numpy `matrix` class.  Set `warn` to false to omit display of
         the warning message.
 
+    Notes
+    -----
+    Prior to release 0.9.x, the default type for 2D arrays is the Numpy
+    `matrix` class.  Starting in release 0.9.0, the default type for state
+    space operations is a 2D array.
     """
     if flag and warn:
         warnings.warn("Return type numpy.matrix is soon to be deprecated.",
@@ -179,4 +184,4 @@ def use_legacy_defaults(version):
             third_digit = int(version[4])
         use_numpy_matrix(True) # alternatively: set_defaults('statesp', use_numpy_matrix=True)
     else:
-        raise ValueError('''version number not recognized. Possible values range from '0.1' to '0.8.4'.''') 
+        raise ValueError('''version number not recognized. Possible values range from '0.1' to '0.8.4'.''')
