@@ -302,14 +302,16 @@ def connect(sys, Q, inputv, outputv):
     sys : StateSpace Transferfunction
         System to be connected
     Q : 2D array
-        Interconnection matrix. First column gives the input to be connected
-        second column gives the output to be fed into this input.  Negative
-        values for the second column mean the feedback is negative, 0 means
-        no connection is made.  Inputs and outputs are indexed starting at 1.
+        Interconnection matrix. First column gives the input to be connected.
+        The second column gives the index of an output that is to be fed into
+        that input. Each additional column gives the index of an additional
+        input that may be optionally added to that input. Negative
+        values mean the feedback is negative. A zero value is ignored. Inputs
+        and outputs are indexed starting at 1 to communicate sign information.
     inputv : 1D array
-        list of final external inputs
+        list of final external inputs, indexed starting at 1
     outputv : 1D array
-        list of final external outputs
+        list of final external outputs, indexed starting at 1
 
     Returns
     -------
@@ -325,15 +327,34 @@ def connect(sys, Q, inputv, outputv):
     >>> sysc = connect(sys, Q, [2], [1, 2])
 
     """
+    inputv, outputv, Q = np.asarray(inputv), np.asarray(outputv), np.asarray(Q)
+    # check indices
+    index_errors = (inputv - 1 > sys.inputs) | (inputv < 1)
+    if np.any(index_errors):
+        raise IndexError(
+            "inputv index %s out of bounds" % inputv[np.where(index_errors)])
+    index_errors = (outputv - 1 > sys.outputs) | (outputv < 1)
+    if np.any(index_errors):
+        raise IndexError(
+            "outputv index %s out of bounds" % outputv[np.where(index_errors)])
+    index_errors = (Q[:,0:1] - 1 > sys.inputs) | (Q[:,0:1] < 1)
+    if np.any(index_errors):
+        raise IndexError(
+            "Q input index %s out of bounds" % Q[np.where(index_errors)])
+    index_errors = (np.abs(Q[:,1:]) - 1 > sys.outputs)
+    if np.any(index_errors):
+        raise IndexError(
+            "Q output index %s out of bounds" % Q[np.where(index_errors)])
+
     # first connect
     K = np.zeros((sys.inputs, sys.outputs))
     for r in np.array(Q).astype(int):
         inp = r[0]-1
         for outp in r[1:]:
-            if outp > 0 and outp <= sys.outputs:
-                K[inp,outp-1] = 1.
-            elif outp < 0 and -outp >= -sys.outputs:
+            if outp < 0:
                 K[inp,-outp-1] = -1.
+            elif outp > 0:
+                K[inp,outp-1] = 1.
     sys = sys.feedback(np.array(K), sign=1)
 
     # now trim

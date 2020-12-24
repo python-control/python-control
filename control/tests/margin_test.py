@@ -3,50 +3,66 @@
 margin_test.py - test suite for stability margin commands
 
 RMM, 15 Jul 2011
-BG, 30 Juin 2020 -- convert to pytest, gh-425
+BG, 30 Jun 2020 -- convert to pytest, gh-425
+BG, 16 Nov 2020 -- pick from gh-438 and add discrete test
 """
 from __future__ import print_function
 
 import numpy as np
+import pytest
 from numpy import inf, nan
 from numpy.testing import assert_allclose
-import pytest
 
 from control.frdata import FrequencyResponseData
-from control.margins import margin, phase_crossover_frequencies, \
-                            stability_margins
+from control.margins import (margin, phase_crossover_frequencies,
+                             stability_margins)
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
+from control.exception import ControlMIMONotImplemented
 
+s = TransferFunction.s
 
-s = TransferFunction([1, 0], [1])
-
-# (system, stability_margins(sys), stability_margins(sys, returnall=True))
-tsys = [(TransferFunction([1, 2], [1, 2, 3]),
-         (inf, inf, inf, nan, nan, nan),
-         ([], [], [], [], [], [])),
-        (TransferFunction([1], [1, 2, 3, 4]),
-         (2., inf, 0.4170, 1.7321, nan, 1.6620),
-         ([2.],     [], [1.2500, 0.4170], [1.7321], [], [0.1690, 1.6620])),
-        (StateSpace([[1., 4.], [3., 2.]], [[1.], [-4.]],
-                    [[1., 0.]],           [[0.]]),
-         (inf, 147.0743, inf, nan, 2.5483,   nan),
-         ([], [147.0743], [], [], [2.5483],   [])),
-        ((8.75*(4*s**2+0.4*s+1)) / ((100*s+1)*(s**2+0.22*s+1))
-         / (s**2/(10.**2)+2*0.04*s/10.+1),
-         (2.2716,  97.5941, 0.5591, 10.0053, 0.0850, 9.9918),
-         ([2.2716],  [97.5941, -157.7844, 134.7359], [1.0381, 0.5591],
-          [10.0053], [0.0850,     0.9373,   1.0919], [0.4064, 9.9918])),
-        (1/(1+s),  # no gain/phase crossovers
-         (inf, inf, inf, nan, nan, nan),
-         ([], [], [], [], [], [])),
-        (3*(10+s)/(2+s),  # no gain/phase crossovers
-         (inf, inf, inf, nan, nan, nan),
-         ([], [], [], [], [], [])),
-        (0.01*(10-s)/(2+s)/(1+s),  # no phase crossovers
-         (300.0, inf, 0.9917, 5.6569, nan, 2.3171),
-         ([300.0], [], [0.9917], [5.6569], [], 2.3171))]
-
+@pytest.fixture(params=[
+    # sysfn, args,
+    # stability_margins(sys),
+    # stability_margins(sys, returnall=True)
+    (TransferFunction, ([1, 2], [1, 2, 3]),
+     (inf, inf, inf, nan, nan, nan),
+     ([], [], [], [], [], [])),
+    (TransferFunction, ([1], [1, 2, 3, 4]),
+     (2., inf, 0.4170, 1.7321, nan, 1.6620),
+     ([2.], [], [1.2500, 0.4170], [1.7321], [], [0.1690, 1.6620])),
+    (StateSpace, ([[1., 4.],
+                   [3., 2.]],
+                  [[1.], [-4.]],
+                  [[1., 0.]],
+                  [[0.]]),
+     (inf, 147.0743, inf, nan, 2.5483, nan),
+     ([], [147.0743], [], [], [2.5483], [])),
+    (None, ((8.75 * (4 * s**2 + 0.4 * s + 1))
+            / ((100 * s + 1) * (s**2 + 0.22 * s + 1))
+            / (s**2 / 10.**2 + 2 * 0.04 * s / 10. + 1)),
+     (2.2716, 97.5941, 0.5591, 10.0053, 0.0850, 9.9918),
+     ([2.2716], [97.5941, -157.7844, 134.7359], [1.0381, 0.5591],
+      [10.0053], [0.0850, 0.9373, 1.0919], [0.4064, 9.9918])),
+    (None, (1 / (1 + s)),  # no gain/phase crossovers
+           (inf, inf, inf, nan, nan, nan),
+           ([], [], [], [], [], [])),
+    (None, (3 * (10 + s) / (2 + s)),  # no gain/phase crossovers
+     (inf, inf, inf, nan, nan, nan),
+     ([], [], [], [], [], [])),
+    (None, 0.01 * (10 - s) / (2 + s) / (1 + s),  # no phase crossovers
+     (300.0, inf, 0.9917, 5.6569, nan, 2.3171),
+     ([300.0], [], [0.9917], [5.6569], [], 2.3171)),
+])
+def tsys(request):
+    """Return test systems and reference data"""
+    sysfn, args = request.param[:2]
+    if sysfn:
+        sys = sysfn(*args)
+    else:
+        sys = args
+    return (sys,) + request.param[2:]
 
 def compare_allmargins(actual, desired, **kwargs):
     """Compare all elements of stability_margins(returnall=True) result"""
@@ -55,8 +71,8 @@ def compare_allmargins(actual, desired, **kwargs):
         assert_allclose(a, d, **kwargs)
 
 
-@pytest.mark.parametrize("sys, refout, refoutall", tsys)
-def test_stability_margins(sys, refout, refoutall):
+def test_stability_margins(tsys):
+    sys, refout, refoutall = tsys
     """Test stability_margins() function"""
     out = stability_margins(sys)
     assert_allclose(out, refout, atol=1.5e-2)
@@ -64,16 +80,17 @@ def test_stability_margins(sys, refout, refoutall):
     compare_allmargins(out, refoutall, atol=1.5e-2)
 
 
-@pytest.mark.parametrize("sys, refout, refoutall", tsys)
-def test_stability_margins_omega(sys, refout, refoutall):
+
+def test_stability_margins_omega(tsys):
+    sys, refout, refoutall = tsys
     """Test stability_margins() with interpolated frequencies"""
     omega = np.logspace(-2, 2, 2000)
     out = stability_margins(FrequencyResponseData(sys, omega))
     assert_allclose(out, refout, atol=1.5e-3)
 
 
-@pytest.mark.parametrize("sys, refout, refoutall", tsys)
-def test_stability_margins_3input(sys, refout, refoutall):
+def test_stability_margins_3input(tsys):
+    sys, refout, refoutall = tsys
     """Test stability_margins() function with mag, phase, omega input"""
     omega = np.logspace(-2, 2, 2000)
     mag, phase, omega_ = sys.freqresp(omega)
@@ -81,15 +98,15 @@ def test_stability_margins_3input(sys, refout, refoutall):
     assert_allclose(out, refout, atol=1.5e-3)
 
 
-@pytest.mark.parametrize("sys, refout, refoutall", tsys)
-def test_margin_sys(sys, refout, refoutall):
+def test_margin_sys(tsys):
+    sys, refout, refoutall = tsys
     """Test margin() function with system input"""
     out = margin(sys)
     assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
 
-@pytest.mark.parametrize("sys, refout, refoutall", tsys)
-def test_margin_3input(sys, refout, refoutall):
+def test_margin_3input(tsys):
+    sys, refout, refoutall = tsys
     """Test margin() function with mag, phase, omega input"""
     omega = np.logspace(-2, 2, 2000)
     mag, phase, omega_ = sys.freqresp(omega)
@@ -97,25 +114,30 @@ def test_margin_3input(sys, refout, refoutall):
     assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
 
-def test_phase_crossover_frequencies():
+@pytest.mark.parametrize(
+    'tfargs, omega_ref, gain_ref',
+    [(([1], [1, 2, 3, 4]), [1.7325, 0.], [-0.5, 0.25]),
+     (([1], [1, 1]), [0.], [1.]),
+     (([2], [1, 3, 3, 1]), [1.732, 0.], [-0.25, 2.]),
+     ((np.array([3, 11, 3]) * 1e-4, [1., -2.7145, 2.4562, -0.7408], .1),
+      [1.6235, 0.], [-0.28598, 1.88889]),
+     ])
+def test_phase_crossover_frequencies(tfargs, omega_ref, gain_ref):
     """Test phase_crossover_frequencies() function"""
-    omega, gain = phase_crossover_frequencies(tsys[1][0])
-    assert_allclose(omega, [1.73205,  0.], atol=1.5e-3)
-    assert_allclose(gain, [-0.5,  0.25], atol=1.5e-3)
+    sys = TransferFunction(*tfargs)
+    omega, gain = phase_crossover_frequencies(sys)
+    assert_allclose(omega, omega_ref, atol=1.5e-3)
+    assert_allclose(gain, gain_ref, atol=1.5e-3)
 
-    tf = TransferFunction([1], [1, 1])
-    omega, gain = phase_crossover_frequencies(tf)
-    assert_allclose(omega, [0.], atol=1.5e-3)
-    assert_allclose(gain, [1.], atol=1.5e-3)
 
-    # testing MIMO, only (0,0) element is considered
+def test_phase_crossover_frequencies_mimo():
+    """Test MIMO exception"""
     tf = TransferFunction([[[1], [2]],
                            [[3], [4]]],
                           [[[1, 2, 3, 4], [1, 1]],
                            [[1, 1], [1, 1]]])
-    omega, gain = phase_crossover_frequencies(tf)
-    assert_allclose(omega, [1.73205,  0.], atol=1.5e-3)
-    assert_allclose(gain, [-0.5,  0.25], atol=1.5e-3)
+    with pytest.raises(ControlMIMONotImplemented):
+        omega, gain = phase_crossover_frequencies(tf)
 
 
 def test_mag_phase_omega():
@@ -214,99 +236,117 @@ def test_frd_indexing():
     assert_allclose(ws, [1., 2.], atol=0.01)
 
 
-"""
-NOTE:
-Matlab gives gain margin 0 for system `type2`, python-control gives inf
-Difficult to argue which is right? Special case or different approach?
+@pytest.fixture
+def tsys_zmoresystems():
+    """A cornucopia of tricky systems for phase / gain margin
 
-Edge cases, like `type0` which approaches a gain of 1 for w -> 0, are also not
-identically indicated, Matlab gives phase margin -180, at w = 0. For higher or
-lower gains, results match.
-"""
-tzmore_sys = {
-    'typem1': s/(s+1),
-    'type0': 1/(s+1)**3,
-    'type1': (s + 0.1)/s/(s+1),
-    'type2': (s + 0.1)/s**2/(s+1),
-    'type3': (s + 0.1)*(s+0.1)/s**3/(s+1)}
-tzmore_margin = [
-    dict(sys='typem1', K=2.0, atol=1.5e-3, result=(
-        float('Inf'), -120.0007, float('NaN'), 0.5774)),
-    dict(sys='type0', K=0.8, atol=1.5e-3, result=(
-        10.0014, float('inf'), 1.7322, float('nan'))),
-    dict(sys='type0', K=2.0, atol=1e-2, result=(
-        4.000,  67.6058,  1.7322,   0.7663)),
-    dict(sys='type1', K=1.0, atol=1e-4, result=(
-        float('Inf'), 144.9032, float('NaN'), 0.3162)),
-    dict(sys='type2', K=1.0, atol=1e-4, result=(
-        float('Inf'), 44.4594, float('NaN'), 0.7907)),
-    dict(sys='type3', K=1.0, atol=1.5e-3, result=(
-        0.0626, 37.1748, 0.1119, 0.7951)),
-    ]
-tzmore_stability_margins = []
+    `example*` from "A note on the Gain and Phase Margin Concepts
+    Journal of Control and Systems Engineering, Yazdan Bavafi-Toosi,
+    Dec 2015, vol 3 iss 1, pp 51-59
 
-"""
-from "A note on the Gain and Phase Margin Concepts
-Journal of Control and Systems Engineering, Yazdan Bavafi-Toosi,
-Dec 2015, vol 3 iss 1, pp 51-59
+    TODO: still have to convert more to tests + fix margin to handle
+    also these torture cases
+    """
 
-A cornucopia of tricky systems for phase / gain margin
-TODO: still have to convert more to tests + fix margin to handle
-also these torture cases
-"""
-yazdan = {
-    'example21':
-    0.002*(s+0.02)*(s+0.05)*(s+5)*(s+10)/(
-        (s-0.0005)*(s+0.0001)*(s+0.01)*(s+0.2)*(s+1)*(s+100)**2),
-    'example23':
-    ((s+0.1)**2 + 1)*(s-0.1)/(
-        ((s+0.1)**2+4)*(s+1)),
-    'example25a':
-    s/(s**2+2*s+2)**4,
-    'example26a':
-    ((s-0.1)**2 + 1)/(
-        (s + 0.1)*((s-0.2)**2 + 4)),
-    'example26b': ((s-0.1)**2 + 1)/(
-        (s - 0.3)*((s-0.2)**2 + 4))
-}
-yazdan['example24'] = yazdan['example21']*20000
-yazdan['example25b'] = yazdan['example25a']*100
-yazdan['example22'] = yazdan['example21']*(s**2 - 2*s + 401)
-ymargin = [
-    dict(sys='example21', K=1.0, atol=1e-2,
-         result=(0.0100, -14.5640,  0, 0.0022)),
-    dict(sys='example21', K=1000.0, atol=1e-2,
-         result=(0.1793, 22.5215, 0.0243, 0.0630)),
-    dict(sys='example21', K=5000.0, atol=1.5e-3,
-         result=(4.5596, 21.2101, 0.4385, 0.1868)),
-    ]
-ystability_margins = [
-    dict(sys='example21', K=1.0, rtol=1e-3, atol=1e-3,
-         result=([0.01, 179.2931, 2.2798e+4, 1.5946e+07, 7.2477e+08],
-                 [-14.5640],
-                 [0.2496],
-                 [0, 0.0243, 0.4385, 6.8640, 84.9323],
-                 [0.0022],
-                 [0.0022])),
-    ]
-
-tzmore_sys.update(yazdan)
-tzmore_margin += ymargin
-tzmore_stability_margins += ystability_margins
+    systems = {
+        'typem1': s/(s+1),
+        'type0': 1/(s+1)**3,
+        'type1': (s + 0.1)/s/(s+1),
+        'type2': (s + 0.1)/s**2/(s+1),
+        'type3': (s + 0.1)*(s+0.1)/s**3/(s+1),
+        'example21': 0.002*(s+0.02)*(s+0.05)*(s+5)*(s+10) / (
+                    (s-0.0005)*(s+0.0001)*(s+0.01)*(s+0.2)*(s+1)*(s+100)**2),
+        'example23': ((s+0.1)**2 + 1)*(s-0.1)/(((s+0.1)**2+4)*(s+1)),
+        'example25a': s/(s**2+2*s+2)**4,
+        'example26a': ((s-0.1)**2 + 1)/((s + 0.1)*((s-0.2)**2 + 4)),
+        'example26b': ((s-0.1)**2 + 1)/((s - 0.3)*((s-0.2)**2 + 4))
+    }
+    systems['example24'] = systems['example21'] * 20000
+    systems['example25b'] = systems['example25a'] * 100
+    systems['example22'] = systems['example21'] * (s**2 - 2*s + 401)
+    return systems
 
 
-@pytest.mark.parametrize('tmargin', tzmore_margin)
-def test_zmore_margin(tmargin):
-    """Test margins for more tricky systems"""
-    res = margin(tzmore_sys[tmargin['sys']]*tmargin['K'])
-    assert_allclose(res, tmargin['result'], atol=tmargin['atol'])
+@pytest.fixture
+def tsys_zmore(request, tsys_zmoresystems):
+    tsys = request.param
+    tsys['sys'] = tsys_zmoresystems[tsys['sysname']]
+    return tsys
 
 
-@pytest.mark.parametrize('tmarginall', tzmore_stability_margins)
-def test_zmore_stability_margins(tmarginall):
+@pytest.mark.parametrize(
+    'tsys_zmore',
+    [dict(sysname='typem1', K=2.0, atol=1.5e-3,
+          result=(float('Inf'), -120.0007, float('NaN'), 0.5774)),
+     dict(sysname='type0', K=0.8, atol=1.5e-3,
+          result=(10.0014, float('inf'), 1.7322, float('nan'))),
+     dict(sysname='type0', K=2.0, atol=1e-2,
+          result=(4.000, 67.6058, 1.7322, 0.7663)),
+     dict(sysname='type1', K=1.0, atol=1e-4,
+          result=(float('Inf'), 144.9032, float('NaN'), 0.3162)),
+     dict(sysname='type2', K=1.0, atol=1e-4,
+          result=(float('Inf'), 44.4594, float('NaN'), 0.7907)),
+     dict(sysname='type3', K=1.0, atol=1.5e-3,
+          result=(0.0626, 37.1748, 0.1119, 0.7951)),
+     dict(sysname='example21', K=1.0, atol=1e-2,
+          result=(0.0100, -14.5640, 0, 0.0022)),
+     dict(sysname='example21', K=1000.0, atol=1e-2,
+          result=(0.1793, 22.5215, 0.0243, 0.0630)),
+     dict(sysname='example21', K=5000.0, atol=1.5e-3,
+          result=(4.5596, 21.2101, 0.4385, 0.1868)),
+     ],
+    indirect=True)
+def test_zmore_margin(tsys_zmore):
+    """Test margins for more tricky systems
+
+    Note
+    ----
+    Matlab gives gain margin 0 for system `type2`, python-control gives inf
+    Difficult to argue which is right? Special case or different approach?
+
+    Edge cases, like `type0` which approaches a gain of 1 for w -> 0, are also
+    not identically indicated, Matlab gives phase margin -180, at w = 0. For
+    higher or lower gains, results match.
+    """
+
+    res = margin(tsys_zmore['sys'] * tsys_zmore['K'])
+    assert_allclose(res, tsys_zmore['result'], atol=tsys_zmore['atol'])
+
+
+@pytest.mark.parametrize(
+    'tsys_zmore',
+    [dict(sysname='example21', K=1.0, rtol=1e-3, atol=1e-3,
+          result=([0.01, 179.2931, 2.2798e+4, 1.5946e+07, 7.2477e+08],
+                  [-14.5640],
+                  [0.2496],
+                  [0, 0.0243, 0.4385, 6.8640, 84.9323],
+                  [0.0022],
+                  [0.0022])),
+    ],
+    indirect=True)
+def test_zmore_stability_margins(tsys_zmore):
     """Test stability_margins for more tricky systems with returnall"""
-    res = stability_margins(tzmore_sys[tmarginall['sys']]*tmarginall['K'],
+    res = stability_margins(tsys_zmore['sys'] * tsys_zmore['K'],
                             returnall=True)
-    compare_allmargins(res, tmarginall['result'],
-                       atol=tmarginall['atol'],
-                       rtol=tmarginall['rtol'])
+    compare_allmargins(res,
+                       tsys_zmore['result'],
+                       atol=tsys_zmore['atol'],
+                       rtol=tsys_zmore['rtol'])
+
+
+@pytest.mark.parametrize(
+    'cnum, cden, dt,'
+    'ref,'
+    'rtol',
+    [([2], [1, 3, 2, 0], 1e-2,  # gh-465
+      (2.9558, 32.8170, 0.43584, 1.4037, 0.74953, 0.97079),
+      0.1  # very crude tolerance, because the gradients are not great
+      ),
+     ([2], [1, 3, 3, 1], .1,  # 2/(s+1)**3
+      [3.4927, 69.9996, 0.5763, 1.6283, 0.7631, 1.2019],
+      1e-3)])
+def test_stability_margins_discrete(cnum, cden, dt, ref, rtol):
+    """Test stability_margins with discrete TF input"""
+    tf = TransferFunction(cnum, cden).sample(dt)
+    out = stability_margins(tf)
+    assert_allclose(out, ref, rtol=rtol)
