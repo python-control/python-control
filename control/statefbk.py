@@ -47,7 +47,8 @@ from .mateqn import care
 from .statesp import _ssmatrix
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe', 'acker']
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe',
+           'acker']
 
 
 # Pole placement
@@ -58,18 +59,17 @@ def place(A, B, p):
 
     Parameters
     ----------
-    A : 2-d array
+    A : 2D array
         Dynamics matrix
-    B : 2-d array
+    B : 2D array
         Input matrix
-    p : 1-d list
+    p : 1D list
         Desired eigenvalue locations
 
     Returns
     -------
-    K : 2-d array
+    K : 2D array (or matrix)
         Gain such that A - B K has eigenvalues given in p
-
 
     Notes
     -----
@@ -82,6 +82,9 @@ def place(A, B, p):
     Limitations
         The algorithm will not place poles at the same location more
         than rank(B) times.
+
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     References
     ----------
@@ -98,6 +101,11 @@ def place(A, B, p):
     See Also
     --------
     place_varga, acker
+
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
     """
     from scipy.signal import place_poles
 
@@ -125,11 +133,11 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Required Parameters
     ----------
-    A : 2-d array
+    A : 2D array
         Dynamics matrix
-    B : 2-d array
+    B : 2D array
         Input matrix
-    p : 1-d list
+    p : 1D list
         Desired eigenvalue locations
 
     Optional Parameters
@@ -139,18 +147,18 @@ def place_varga(A, B, p, dtime=False, alpha=None):
         The default is dtime=False.
 
     alpha : double scalar
-        If DICO='C', then place_varga will leave the eigenvalues with real 
-        part less than alpha untouched.  If DICO='D', the place_varga will
-        leave eigenvalues with modulus less than alpha untouched.
+        If `dtime` is false then place_varga will leave the eigenvalues with
+        real part less than alpha untouched.  If `dtime` is true then
+        place_varga will leave eigenvalues with modulus less than alpha
+        untouched.
 
-        By default (alpha=None), place_varga computes alpha such that all 
+        By default (alpha=None), place_varga computes alpha such that all
         poles will be placed.
 
     Returns
     -------
-    K : 2D array
+    K : 2D array (or matrix)
         Gain such that A - B K has eigenvalues given in p.
-
 
     Algorithm
     ---------
@@ -161,6 +169,11 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     [1] Varga A. "A Schur method for pole assignment."  IEEE Trans. Automatic
         Control, Vol. AC-26, pp. 517-519, 1981.
+
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -183,8 +196,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     # Convert the system inputs to NumPy arrays
     A_mat = np.array(A)
     B_mat = np.array(B)
-    if (A_mat.shape[0] != A_mat.shape[1] or
-        A_mat.shape[0] != B_mat.shape[0]):
+    if (A_mat.shape[0] != A_mat.shape[1] or A_mat.shape[0] != B_mat.shape[0]):
         raise ControlDimension("matrix dimensions are incorrect")
 
     # Compute the system eigenvalues and convert poles to numpy array
@@ -216,14 +228,14 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     elif dtime and alpha < 0.0:
         raise ValueError("Discrete time systems require alpha > 0")
 
-
     # Call SLICOT routine to place the eigenvalues
-    A_z,w,nfp,nap,nup,F,Z = \
+    A_z, w, nfp, nap, nup, F, Z = \
         sb01bd(B_mat.shape[0], B_mat.shape[1], len(placed_eigs), alpha,
                A_mat, B_mat, placed_eigs, DICO)
 
     # Return the gain matrix, with MATLAB gain convention
     return _ssmatrix(-F)
+
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def lqe(A, G, C, QN, RN, NN=None):
@@ -246,33 +258,42 @@ def lqe(A, G, C, QN, RN, NN=None):
 
     .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
 
-    produces a state estimate that x_e that minimizes the expected squared error
-    using the sensor measurements y. The noise cross-correlation `NN` is set to
-    zero when omitted.
+    produces a state estimate that x_e that minimizes the expected squared
+    error using the sensor measurements y. The noise cross-correlation `NN`
+    is set to zero when omitted.
 
     Parameters
     ----------
-    A, G: 2-d array
+    A, G : 2D array
         Dynamics and noise input matrices
-    QN, RN: 2-d array
+    QN, RN : 2D array
         Process and sensor noise covariance matrices
-    NN: 2-d array, optional
+    NN : 2D array, optional
         Cross covariance matrix
 
     Returns
     -------
-    L: 2D array
+    L : 2D array (or matrix)
         Kalman estimator gain
-    P: 2D array
+    P : 2D array (or matrix)
         Solution to Riccati equation
 
         .. math::
 
             A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
 
-    E: 1D array
+    E : 2D array (or matrix)
         Eigenvalues of estimator poles eig(A - L C)
 
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
+
+    The return type for `E` differs from the equivalent return values in the
+    :func:`~control.lqr`, :func:`~control.care`, and other similar
+    functions.  The return type will be changed to a 1D array in a future
+    release.
 
     Examples
     --------
@@ -282,18 +303,19 @@ def lqe(A, G, C, QN, RN, NN=None):
     See Also
     --------
     lqr
+
     """
 
     # TODO: incorporate cross-covariance NN, something like this,
     # which doesn't work for some reason
-    #if NN is None:
+    # if NN is None:
     #    NN = np.zeros(QN.size(0),RN.size(1))
-    #NG = G @ NN
+    # NG = G @ NN
 
-    #LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
-    #P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
+    # LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
+    # P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
     A, G, C = np.array(A, ndmin=2), np.array(G, ndmin=2), np.array(C, ndmin=2)
-    QN, RN =  np.array(QN, ndmin=2), np.array(RN, ndmin=2)
+    QN, RN = np.array(QN, ndmin=2), np.array(RN, ndmin=2)
     P, E, LT = care(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
     return _ssmatrix(LT.T), _ssmatrix(P), _ssmatrix(E)
 
@@ -307,16 +329,20 @@ def acker(A, B, poles):
 
     Parameters
     ----------
-    A, B : 2-d arrays
+    A, B : 2D arrays
         State and input matrix of the system
-    poles: 1-d list
+    poles : 1D list
         Desired eigenvalue locations
 
     Returns
     -------
-    K: matrix
+    K : 2D array (or matrix)
         Gains such that A - B K has given eigenvalues
 
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
     """
     # Convert the inputs to matrices
     a = _ssmatrix(A)
@@ -334,12 +360,13 @@ def acker(A, B, poles):
     # TODO: compute pmat using Horner's method (O(n) instead of O(n^2))
     n = np.size(p)
     pmat = p[n-1] * np.linalg.matrix_power(a, 0)
-    for i in np.arange(1,n):
+    for i in np.arange(1, n):
         pmat = pmat + np.dot(p[n-i-1], np.linalg.matrix_power(a, i))
     K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
     return _ssmatrix(K)
+
 
 def lqr(*args, **keywords):
     """lqr(A, B, Q, R[, N])
@@ -363,28 +390,23 @@ def lqr(*args, **keywords):
 
     Parameters
     ----------
-    A, B: 2-d array
+    A, B : 2D array
         Dynamics and input matrices
-    sys: LTI (StateSpace or TransferFunction)
+    sys : LTI (StateSpace or TransferFunction)
         Linear I/O system
-    Q, R: 2-d array
+    Q, R : 2D array
         State and input weight matrices
-    N: 2-d array, optional
+    N : 2D array, optional
         Cross weight matrix
 
     Returns
     -------
-    K: 2D array (or matrix)
+    K : 2D array (or matrix)
         State feedback gains
-    S: 2D array (or matrix)
+    S : 2D array (or matrix)
         Solution to Riccati equation
-    E: 1D array
+    E : 1D array
         Eigenvalues of the closed loop system
-
-    Examples
-    --------
-    >>> K, S, E = lqr(sys, Q, R, [N])
-    >>> K, S, E = lqr(A, B, Q, R, [N])
 
     See Also
     --------
@@ -392,10 +414,13 @@ def lqr(*args, **keywords):
 
     Notes
     -----
-    The return type for `K` and `S` depends on the default class set for
-    state space operations.  By default, this is the Numpy `matrix`
-    class in this release, but this can be reconfigured using the
-    :func:`~control.use_numpy_matrix` function.
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
+
+    Examples
+    --------
+    >>> K, S, E = lqr(sys, Q, R, [N])
+    >>> K, S, E = lqr(A, B, Q, R, [N])
     """
 
     # Make sure that SLICOT is installed
@@ -416,26 +441,26 @@ def lqr(*args, **keywords):
     try:
         # If this works, we were (probably) passed a system as the
         # first argument; extract A and B
-        A = np.array(args[0].A, ndmin=2, dtype=float);
-        B = np.array(args[0].B, ndmin=2, dtype=float);
-        index = 1;
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        B = np.array(args[0].B, ndmin=2, dtype=float)
+        index = 1
     except AttributeError:
         # Arguments should be A and B matrices
-        A = np.array(args[0], ndmin=2, dtype=float);
-        B = np.array(args[1], ndmin=2, dtype=float);
-        index = 2;
+        A = np.array(args[0], ndmin=2, dtype=float)
+        B = np.array(args[1], ndmin=2, dtype=float)
+        index = 2
 
     # Get the weighting matrices (converting to matrices, if needed)
-    Q = np.array(args[index], ndmin=2, dtype=float);
-    R = np.array(args[index+1], ndmin=2, dtype=float);
+    Q = np.array(args[index], ndmin=2, dtype=float)
+    R = np.array(args[index+1], ndmin=2, dtype=float)
     if (len(args) > index + 2):
-        N = np.array(args[index+2], ndmin=2, dtype=float);
+        N = np.array(args[index+2], ndmin=2, dtype=float)
     else:
-        N = np.zeros((Q.shape[0], R.shape[1]));
+        N = np.zeros((Q.shape[0], R.shape[1]))
 
     # Check dimensions for consistency
-    nstates = B.shape[0];
-    ninputs = B.shape[1];
+    nstates = B.shape[0]
+    ninputs = B.shape[1]
     if (A.shape[0] != nstates or A.shape[1] != nstates):
         raise ControlDimension("inconsistent system dimensions")
 
@@ -445,32 +470,38 @@ def lqr(*args, **keywords):
         raise ControlDimension("incorrect weighting matrix dimensions")
 
     # Compute the G matrix required by SB02MD
-    A_b,B_b,Q_b,R_b,L_b,ipiv,oufact,G = \
-        sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N');
+    A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = \
+        sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N')
 
     # Call the SLICOT function
-    X,rcond,w,S,U,A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
+    X, rcond, w, S, U, A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
 
     # Now compute the return value
     # We assume that R is positive definite and, hence, invertible
-    K = np.linalg.solve(R, np.dot(B.T, X) + N.T);
-    S = X;
-    E = w[0:nstates];
+    K = np.linalg.solve(R, np.dot(B.T, X) + N.T)
+    S = X
+    E = w[0:nstates]
 
     return _ssmatrix(K), _ssmatrix(S), E
+
 
 def ctrb(A, B):
     """Controllabilty matrix
 
     Parameters
     ----------
-    A, B: array_like or string
+    A, B : array_like or string
         Dynamics and input matrix of the system
 
     Returns
     -------
-    C: matrix
+    C : 2D array (or matrix)
         Controllability matrix
+
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -484,28 +515,34 @@ def ctrb(A, B):
     n = np.shape(amat)[0]
 
     # Construct the controllability matrix
-    ctrb = np.hstack([bmat] + [np.dot(np.linalg.matrix_power(amat, i), bmat)
-                                      for i in range(1, n)])
+    ctrb = np.hstack(
+        [bmat] + [np.dot(np.linalg.matrix_power(amat, i), bmat)
+                  for i in range(1, n)])
     return _ssmatrix(ctrb)
+
 
 def obsv(A, C):
     """Observability matrix
 
     Parameters
     ----------
-    A, C: array_like or string
+    A, C : array_like or string
         Dynamics and output matrix of the system
 
     Returns
     -------
-    O: matrix
+    O : 2D array (or matrix)
         Observability matrix
+
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
     >>> O = obsv(A, C)
-
-   """
+    """
 
     # Convert input parameters to matrices (if they aren't already)
     amat = _ssmatrix(A)
@@ -517,21 +554,22 @@ def obsv(A, C):
                                for i in range(1, n)])
     return _ssmatrix(obsv)
 
-def gram(sys,type):
+
+def gram(sys, type):
     """Gramian (controllability or observability)
 
     Parameters
     ----------
-    sys: StateSpace
-        State-space system to compute Gramian for
-    type: String
-        Type of desired computation.
-        `type` is either 'c' (controllability) or 'o' (observability). To compute the
-        Cholesky factors of gramians use 'cf' (controllability) or 'of' (observability)
+    sys : StateSpace
+        System description
+    type : String
+        Type of desired computation.  `type` is either 'c' (controllability)
+        or 'o' (observability). To compute the Cholesky factors of Gramians
+        use 'cf' (controllability) or 'of' (observability)
 
     Returns
     -------
-    gram: array
+    gram : 2D array (or matrix)
         Gramian of system
 
     Raises
@@ -545,22 +583,27 @@ def gram(sys,type):
         if slycot routine sb03md cannot be found
         if slycot routine sb03od cannot be found
 
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
+
     Examples
     --------
-    >>> Wc = gram(sys,'c')
-    >>> Wo = gram(sys,'o')
-    >>> Rc = gram(sys,'cf'), where Wc=Rc'*Rc
-    >>> Ro = gram(sys,'of'), where Wo=Ro'*Ro
+    >>> Wc = gram(sys, 'c')
+    >>> Wo = gram(sys, 'o')
+    >>> Rc = gram(sys, 'cf'), where Wc = Rc' * Rc
+    >>> Ro = gram(sys, 'of'), where Wo = Ro' * Ro
 
     """
 
-    #Check for ss system object
-    if not isinstance(sys,statesp.StateSpace):
+    # Check for ss system object
+    if not isinstance(sys, statesp.StateSpace):
         raise ValueError("System must be StateSpace!")
     if type not in ['c', 'o', 'cf', 'of']:
         raise ValueError("That type is not supported!")
 
-    #TODO: Check for continous or discrete, only continuous supported right now
+    # TODO: Check for continous or discrete, only continuous supported for now
         # if isCont():
         #    dico = 'C'
         # elif isDisc():
@@ -568,50 +611,53 @@ def gram(sys,type):
         # else:
     dico = 'C'
 
-    #TODO: Check system is stable, perhaps a utility in ctrlutil.py
-        # or a method of the StateSpace class?
+    # TODO: Check system is stable, perhaps a utility in ctrlutil.py
+    # or a method of the StateSpace class?
     if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
         raise ValueError("Oops, the system is unstable!")
 
-    if type=='c' or type=='o':
-        #Compute Gramian by the Slycot routine sb03md
-        #make sure Slycot is installed
+    if type == 'c' or type == 'o':
+        # Compute Gramian by the Slycot routine sb03md
+        # make sure Slycot is installed
         try:
             from slycot import sb03md
         except ImportError:
             raise ControlSlycot("can't find slycot module 'sb03md'")
-        if type=='c':
+        if type == 'c':
             tra = 'T'
-            C = -np.dot(sys.B,sys.B.transpose())
-        elif type=='o':
+            C = -np.dot(sys.B, sys.B.transpose())
+        elif type == 'o':
             tra = 'N'
-            C = -np.dot(sys.C.transpose(),sys.C)
+            C = -np.dot(sys.C.transpose(), sys.C)
         n = sys.states
-        U = np.zeros((n,n))
+        U = np.zeros((n, n))
         A = np.array(sys.A)         # convert to NumPy array for slycot
-        X,scale,sep,ferr,w = sb03md(n, C, A, U, dico, job='X', fact='N', trana=tra)
+        X, scale, sep, ferr, w = sb03md(
+            n, C, A, U, dico, job='X', fact='N', trana=tra)
         gram = X
         return _ssmatrix(gram)
 
-    elif type=='cf' or type=='of':
-        #Compute cholesky factored gramian from slycot routine sb03od
+    elif type == 'cf' or type == 'of':
+        # Compute cholesky factored gramian from slycot routine sb03od
         try:
             from slycot import sb03od
         except ImportError:
             raise ControlSlycot("can't find slycot module 'sb03od'")
-        tra='N'
+        tra = 'N'
         n = sys.states
-        Q = np.zeros((n,n))
+        Q = np.zeros((n, n))
         A = np.array(sys.A)         # convert to NumPy array for slycot
-        if type=='cf':
+        if type == 'cf':
             m = sys.B.shape[1]
             B = np.zeros_like(A)
-            B[0:m,0:n] = sys.B.transpose()
-            X,scale,w = sb03od(n, m, A.transpose(), Q, B, dico, fact='N', trans=tra)
-        elif type=='of':
+            B[0:m, 0:n] = sys.B.transpose()
+            X, scale, w = sb03od(
+                n, m, A.transpose(), Q, B, dico, fact='N', trans=tra)
+        elif type == 'of':
             m = sys.C.shape[0]
             C = np.zeros_like(A)
-            C[0:n,0:m] = sys.C.transpose()
-            X,scale,w = sb03od(n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
+            C[0:n, 0:m] = sys.C.transpose()
+            X, scale, w = sb03od(
+                n, m, A, Q, C.transpose(), dico, fact='N', trans=tra)
         gram = X
         return _ssmatrix(gram)
