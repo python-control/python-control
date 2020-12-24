@@ -282,18 +282,13 @@ def lqe(A, G, C, QN, RN, NN=None):
 
             A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
 
-    E : 2D array (or matrix)
+    E : 1D array
         Eigenvalues of estimator poles eig(A - L C)
 
     Notes
     -----
     The return type for 2D arrays depends on the default class set for
     state space operations.  See :func:`~control.use_numpy_matrix`.
-
-    The return type for `E` differs from the equivalent return values in the
-    :func:`~control.lqr`, :func:`~control.care`, and other similar
-    functions.  The return type will be changed to a 1D array in a future
-    release.
 
     Examples
     --------
