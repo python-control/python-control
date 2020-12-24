@@ -45,17 +45,20 @@ from __future__ import print_function
 
 # External packages and modules
 import numpy as np
-from .exception import ControlSlycot
+import warnings
+from .exception import ControlSlycot, ControlMIMONotImplemented
 from .lti import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
 
 __all__ = ['hsvd', 'balred', 'modred', 'era', 'markov', 'minreal']
 
+
 # Hankel Singular Value Decomposition
-#   The following returns the Hankel singular values, which are singular values
-#of the matrix formed by multiplying the controllability and observability
-#grammians
+#
+# The following returns the Hankel singular values, which are singular values
+# of the matrix formed by multiplying the controllability and observability
+# Gramians
 def hsvd(sys):
     """Calculate the Hankel singular values.
 
@@ -90,8 +93,8 @@ def hsvd(sys):
     if (isdtime(sys, strict=True)):
         raise NotImplementedError("Function not implemented in discrete time")
 
-    Wc = gram(sys,'c')
-    Wo = gram(sys,'o')
+    Wc = gram(sys, 'c')
+    Wo = gram(sys, 'o')
     WoWc = np.dot(Wo, Wc)
     w, v = np.linalg.eig(WoWc)
 
@@ -100,6 +103,7 @@ def hsvd(sys):
     hsv = np.sort(hsv)
     # Return the Hankel singular values, high to low
     return hsv[::-1]
+
 
 def modred(sys, ELIM, method='matchdc'):
     """
@@ -136,21 +140,20 @@ def modred(sys, ELIM, method='matchdc'):
     >>> rsys = modred(sys, ELIM, method='truncate')
     """
 
-    #Check for ss system object, need a utility for this?
+    # Check for ss system object, need a utility for this?
 
-    #TODO: Check for continous or discrete, only continuous supported right now
-        # if isCont():
-        #    dico = 'C'
-        # elif isDisc():
-        #    dico = 'D'
-        # else:
+    # TODO: Check for continous or discrete, only continuous supported for now
+    #   if isCont():
+    #       dico = 'C'
+    #   elif isDisc():
+    #       dico = 'D'
+    #   else:
     if (isctime(sys)):
         dico = 'C'
     else:
         raise NotImplementedError("Function not implemented in discrete time")
 
-
-    #Check system is stable
+    # Check system is stable
     if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
         raise ValueError("Oops, the system is unstable!")
 
@@ -160,22 +163,22 @@ def modred(sys, ELIM, method='matchdc'):
     # A1 is a matrix of all columns of sys.A not to eliminate
     A1 = sys.A[:, NELIM[0]].reshape(-1, 1)
     for i in NELIM[1:]:
-        A1 = np.hstack((A1, sys.A[:,i].reshape(-1, 1)))
-    A11 = A1[NELIM,:]
-    A21 = A1[ELIM,:]
+        A1 = np.hstack((A1, sys.A[:, i].reshape(-1, 1)))
+    A11 = A1[NELIM, :]
+    A21 = A1[ELIM, :]
     # A2 is a matrix of all columns of sys.A to eliminate
     A2 = sys.A[:, ELIM[0]].reshape(-1, 1)
     for i in ELIM[1:]:
-        A2 = np.hstack((A2, sys.A[:,i].reshape(-1, 1)))
-    A12 = A2[NELIM,:]
-    A22 = A2[ELIM,:]
+        A2 = np.hstack((A2, sys.A[:, i].reshape(-1, 1)))
+    A12 = A2[NELIM, :]
+    A22 = A2[ELIM, :]
 
-    C1 = sys.C[:,NELIM]
-    C2 = sys.C[:,ELIM]
-    B1 = sys.B[NELIM,:]
-    B2 = sys.B[ELIM,:]
+    C1 = sys.C[:, NELIM]
+    C2 = sys.C[:, ELIM]
+    B1 = sys.B[NELIM, :]
+    B2 = sys.B[ELIM, :]
 
-    if method=='matchdc':
+    if method == 'matchdc':
         # if matchdc, residualize
 
         # Check if the matrix A22 is invertible
@@ -195,7 +198,7 @@ def modred(sys, ELIM, method='matchdc'):
         Br = B1 - np.dot(A12, A22I_B2)
         Cr = C1 - np.dot(C2, A22I_A21)
         Dr = sys.D - np.dot(C2, A22I_B2)
-    elif method=='truncate':
+    elif method == 'truncate':
         # if truncate, simply discard state x2
         Ar = A11
         Br = B1
@@ -204,12 +207,12 @@ def modred(sys, ELIM, method='matchdc'):
     else:
         raise ValueError("Oops, method is not supported!")
 
-    rsys = StateSpace(Ar,Br,Cr,Dr)
+    rsys = StateSpace(Ar, Br, Cr, Dr)
     return rsys
 
+
 def balred(sys, orders, method='truncate', alpha=None):
-    """
-    Balanced reduced order model of sys of a given order.
+    """Balanced reduced order model of sys of a given order.
     States are eliminated based on Hankel singular value.
     If sys has unstable modes, they are removed, the
     balanced realization is done on the stable part, then
@@ -229,22 +232,23 @@ def balred(sys, orders, method='truncate', alpha=None):
     method: string
         Method of removing states, either ``'truncate'`` or ``'matchdc'``.
     alpha: float
-        Redefines the stability boundary for eigenvalues of the system matrix A.
-        By default for continuous-time systems, alpha <= 0 defines the stability
-        boundary for the real part of A's eigenvalues and for discrete-time
-        systems, 0 <= alpha <= 1 defines the stability boundary for the modulus
-        of A's eigenvalues. See SLICOT routines AB09MD and AB09ND for more
-        information.
+        Redefines the stability boundary for eigenvalues of the system
+        matrix A.  By default for continuous-time systems, alpha <= 0
+        defines the stability boundary for the real part of A's eigenvalues
+        and for discrete-time systems, 0 <= alpha <= 1 defines the stability
+        boundary for the modulus of A's eigenvalues. See SLICOT routines
+        AB09MD and AB09ND for more information.
 
     Returns
     -------
     rsys: StateSpace
-        A reduced order model or a list of reduced order models if orders is a list
+        A reduced order model or a list of reduced order models if orders is
+        a list.
 
     Raises
     ------
     ValueError
-        * if `method` is not ``'truncate'`` or ``'matchdc'``
+        If `method` is not ``'truncate'`` or ``'matchdc'``
     ImportError
         if slycot routine ab09ad, ab09md, or ab09nd is not found
 
@@ -256,69 +260,77 @@ def balred(sys, orders, method='truncate', alpha=None):
     >>> rsys = balred(sys, orders, method='truncate')
 
     """
-    if method!='truncate' and method!='matchdc':
+    if method != 'truncate' and method != 'matchdc':
         raise ValueError("supported methods are 'truncate' or 'matchdc'")
-    elif method=='truncate':
+    elif method == 'truncate':
         try:
             from slycot import ab09md, ab09ad
         except ImportError:
-            raise ControlSlycot("can't find slycot subroutine ab09md or ab09ad")
-    elif method=='matchdc':
+            raise ControlSlycot(
+                "can't find slycot subroutine ab09md or ab09ad")
+    elif method == 'matchdc':
         try:
             from slycot import ab09nd
         except ImportError:
             raise ControlSlycot("can't find slycot subroutine ab09nd")
 
-    #Check for ss system object, need a utility for this?
+    # Check for ss system object, need a utility for this?
 
-    #TODO: Check for continous or discrete, only continuous supported right now
-        # if isCont():
-        #    dico = 'C'
-        # elif isDisc():
-        #    dico = 'D'
-        # else:
+    # TODO: Check for continous or discrete, only continuous supported for now
+    #   if isCont():
+    #       dico = 'C'
+    #   elif isDisc():
+    #       dico = 'D'
+    #   else:
     dico = 'C'
 
-    job = 'B' # balanced (B) or not (N)
-    equil = 'N'  # scale (S) or not (N)
+    job = 'B'                   # balanced (B) or not (N)
+    equil = 'N'                 # scale (S) or not (N)
     if alpha is None:
         if dico == 'C':
             alpha = 0.
         elif dico == 'D':
             alpha = 1.
 
-    rsys = [] #empty list for reduced systems
+    rsys = []                   # empty list for reduced systems
 
-    #check if orders is a list or a scalar
+    # check if orders is a list or a scalar
     try:
         order = iter(orders)
-    except TypeError: #if orders is a scalar
+    except TypeError:           # if orders is a scalar
         orders = [orders]
 
     for i in orders:
-        n = np.size(sys.A,0)
-        m = np.size(sys.B,1)
-        p = np.size(sys.C,0)
+        n = np.size(sys.A, 0)
+        m = np.size(sys.B, 1)
+        p = np.size(sys.C, 0)
         if method == 'truncate':
-            #check system stability
+            # check system stability
             if np.any(np.linalg.eigvals(sys.A).real >= 0.0):
-                #unstable branch
-                Nr, Ar, Br, Cr, Ns, hsv = ab09md(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,alpha=alpha,nr=i,tol=0.0)
+                # unstable branch
+                Nr, Ar, Br, Cr, Ns, hsv = ab09md(
+                    dico, job, equil, n, m, p, sys.A, sys.B, sys.C,
+                    alpha=alpha, nr=i, tol=0.0)
             else:
-                #stable branch
-                Nr, Ar, Br, Cr, hsv = ab09ad(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,nr=i,tol=0.0)
+                # stable branch
+                Nr, Ar, Br, Cr, hsv = ab09ad(
+                    dico, job, equil, n, m, p, sys.A, sys.B, sys.C,
+                    nr=i, tol=0.0)
             rsys.append(StateSpace(Ar, Br, Cr, sys.D))
 
         elif method == 'matchdc':
-            Nr, Ar, Br, Cr, Dr, Ns, hsv = ab09nd(dico,job,equil,n,m,p,sys.A,sys.B,sys.C,sys.D,alpha=alpha,nr=i,tol1=0.0,tol2=0.0)
+            Nr, Ar, Br, Cr, Dr, Ns, hsv = ab09nd(
+                dico, job, equil, n, m, p, sys.A, sys.B, sys.C, sys.D,
+                alpha=alpha, nr=i, tol1=0.0, tol2=0.0)
             rsys.append(StateSpace(Ar, Br, Cr, Dr))
 
-    #if orders was a scalar, just return the single reduced model, not a list
+    # if orders was a scalar, just return the single reduced model, not a list
     if len(orders) == 1:
         return rsys[0]
-    #if orders was a list/vector, return a list/vector of systems
+    # if orders was a list/vector, return a list/vector of systems
     else:
         return rsys
+
 
 def minreal(sys, tol=None, verbose=True):
     '''
@@ -347,9 +359,10 @@ def minreal(sys, tol=None, verbose=True):
                 nstates=len(sys.pole()) - len(sysr.pole())))
     return sysr
 
+
 def era(YY, m, n, nin, nout, r):
-    """
-    Calculate an ERA model of order `r` based on the impulse-response data `YY`.
+    """Calculate an ERA model of order `r` based on the impulse-response data
+    `YY`.
 
     .. note:: This function is not implemented yet.
 
@@ -376,41 +389,76 @@ def era(YY, m, n, nin, nout, r):
     Examples
     --------
     >>> rsys = era(YY, m, n, nin, nout, r)
+
     """
     raise NotImplementedError('This function is not implemented yet.')
 
-def markov(Y, U, m):
-    """
-    Calculate the first `M` Markov parameters [D CB CAB ...]
+
+def markov(Y, U, m, transpose=None):
+    """Calculate the first `M` Markov parameters [D CB CAB ...]
     from input `U`, output `Y`.
 
     Parameters
     ----------
-    Y: array_like
-        Output data
-    U: array_like
-        Input data
-    m: int
-        Number of Markov parameters to output
+    Y : array_like
+        Output data.  If the array is 1D, the system is assumed to be single
+        input.  If the array is 2D and transpose=False, the columns of `Y`
+        are taken as time points, otherwise the rows of `Y` are taken as
+        time points.
+    U : array_like
+        Input data, arranged in the same way as `Y`.
+    m : int
+        Number of Markov parameters to output.
+    transpose : bool, optional
+        Assume that input data is transposed relative to the standard
+        :ref:`time-series-convention`. The default value is true for
+        backward compatibility with legacy code.
 
     Returns
     -------
-    H: ndarray
+    H : ndarray
         First m Markov parameters
 
     Notes
     -----
-    Currently only works for SISO
+    Currently only works for SISO systems.
+
+    This function does not currently comply with the Python Control Library
+    :ref:`time-series-convention` for representation of time series data.
+    Use `transpose=False` to make use of the standard convention (this
+    will be updated in a future release).
 
     Examples
     --------
-    >>> H = markov(Y, U, m)
-    """
+    >>> T = numpy.linspace(0, 10, 100)
+    >>> U = numpy.ones((1, 100))
+    >>> Y = forced_response(tf([1], [1, 1]), T, U)
+    >>> H = markov(Y, U, m, transpose=False)
 
-    # Convert input parameters to matrices (if they aren't already)
-    Ymat = np.array(Y)
-    Umat = np.array(U)
-    n = np.size(U)
+    """
+    # Check on the specified format of the input
+    if transpose is None:
+        # For backwards compatibility, assume time series in rows but warn user
+        warnings.warn(
+            "Time-series data assumed to be in rows. This will change in a "
+            "future release.  Use `transpose=True` to preserve current "
+            "behavior.")
+        transpose = True
+
+    # Convert input parameters to 2D arrays (if they aren't already)
+    Umat = np.array(U, ndmin=2)
+    Ymat = np.array(Y, ndmin=2)
+
+    # Transpose the data from our normal convention to match algorithm
+    # TODO: rewrite the algorithm to use standard conventions
+    if not transpose:
+        Umat = np.transpose(Umat)
+        Ymat = np.transpose(Ymat)
+
+    # Make sure the system is a SISO system
+    if Umat.shape[1] != 1 or Ymat.shape[1] != 1:
+        raise ControlMIMONotImplemented
+    n = Umat.shape[0]
 
     # Construct a matrix of control inputs to invert
     UU = Umat
@@ -424,6 +472,6 @@ def markov(Y, U, m):
     UU = np.hstack((UU, Ulast))
 
     # Invert and solve for Markov parameters
-    H = np.linalg.lstsq(UU, Y)[0]
+    H = np.linalg.lstsq(UU, Ymat)[0]
 
     return H

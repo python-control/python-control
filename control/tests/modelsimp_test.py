@@ -22,11 +22,19 @@ class TestModelsimp(unittest.TestCase):
         np.testing.assert_array_almost_equal(hsv, hsvtrue)
 
     def testMarkov(self):
-        U = np.matrix("1.; 1.; 1.; 1.; 1.")
+        U = np.matrix("1., 1., 1., 1., 1.")
         Y = U
         M = 3
-        H = markov(Y,U,M)
+        H = markov(Y, U, M, transpose=False)
         Htrue = np.matrix("1.; 0.; 0.")
+        np.testing.assert_array_almost_equal( H, Htrue )
+
+        # Make sure that transposed data also works
+        H = markov(np.transpose(Y), np.transpose(U), M, transpose=True)
+        np.testing.assert_array_almost_equal( H, Htrue )
+
+        # Default (in v0.8.4 and below) should be transpose=True
+        H = markov(np.transpose(Y), np.transpose(U), M)
         np.testing.assert_array_almost_equal( H, Htrue )
 
     def testModredMatchDC(self):

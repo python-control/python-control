@@ -9,7 +9,7 @@ import warnings
 import control
 from control.modelsimp import *
 from control.matlab import *
-from control.exception import slycot_check
+from control.exception import slycot_check, ControlMIMONotImplemented
 
 class TestModelsimp(unittest.TestCase):
     def setUp(self):
@@ -50,12 +50,30 @@ class TestModelsimp(unittest.TestCase):
             control.use_numpy_matrix(False)
 
     def testMarkov(self):
-        U = np.array([[1.], [1.], [1.], [1.], [1.]])
+        U = np.array([[1., 1., 1., 1., 1.]])
         Y = U
         M = 3
-        H = markov(Y,U,M)
+        H = markov(Y, U, M, transpose=False)
         Htrue = np.array([[1.], [0.], [0.]])
         np.testing.assert_array_almost_equal( H, Htrue )
+
+        # Make sure that transposed data also works
+        H = markov(np.transpose(Y), np.transpose(U), M, transpose=True)
+
+        # Test example from docstring
+        T = np.linspace(0, 10, 100)
+        U = np.ones((1, 100))
+        _, Y, _ = control.forced_response(control.tf([1], [1, 1]), T, U)
+        H = markov(Y, U, M, transpose=False)
+
+        # Test example from issue #395
+        inp = np.array([1, 2])
+        outp = np.array([2, 4])
+        mrk = markov(outp, inp, 1, transpose=False)
+
+        # Make sure MIMO generates an error
+        U = np.ones((2, 100))   # 2 inputs (Y unchanged, with 1 output)
+        np.testing.assert_raises(ControlMIMONotImplemented, markov, U, Y, M)
 
     def testModredMatchDC(self):
         #balanced realization computed in matlab for the transfer function:
