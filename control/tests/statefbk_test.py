@@ -302,7 +302,7 @@ class TestStatefbk(unittest.TestCase):
     def check_LQE(self, L, P, poles, G, QN, RN):
         P_expected = np.array(np.sqrt(G*QN*G * RN))
         L_expected = P_expected / RN
-        poles_expected = np.array([-L_expected], ndmin=2)
+        poles_expected = np.array([-L_expected])
         np.testing.assert_array_almost_equal(P, P_expected)
         np.testing.assert_array_almost_equal(L, L_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)

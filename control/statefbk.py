@@ -317,7 +317,7 @@ def lqe(A, G, C, QN, RN, NN=None):
     A, G, C = np.array(A, ndmin=2), np.array(G, ndmin=2), np.array(C, ndmin=2)
     QN, RN = np.array(QN, ndmin=2), np.array(RN, ndmin=2)
     P, E, LT = care(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
-    return _ssmatrix(LT.T), _ssmatrix(P), _ssmatrix(E)
+    return _ssmatrix(LT.T), _ssmatrix(P), E
 
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
