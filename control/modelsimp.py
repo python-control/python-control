@@ -437,7 +437,7 @@ def markov(Y, U, m=None, transpose=None):
     .. [1] J.-N. Juang, M. Phan, L. G.  Horta, and R. W. Longman,
        Identification of observer/Kalman filter Markov parameters - Theory
        and experiments. Journal of Guidance Control and Dynamics, 16(2),
-       320–329, 2012. http://doi.org/10.2514/3.21006
+       320-329, 2012. http://doi.org/10.2514/3.21006
 
     Notes
     -----
@@ -542,7 +542,7 @@ def markov(Y, U, m=None, transpose=None):
     #   J.-N. Juang, M. Phan, L. G. Horta, and R. W. Longman, Identification
     #   of observer/Kalman filter Markov parameters - Theory and
     #   experiments. Journal of Guidance Control and Dynamics, 16(2),
-    #   320–329, 2012. http://doi.org/10.2514/3.21006
+    #   320-329, 2012. http://doi.org/10.2514/3.21006
     #
 
     # Create matrix of (shifted) inputs
