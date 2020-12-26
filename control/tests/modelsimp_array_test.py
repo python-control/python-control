@@ -49,22 +49,41 @@ class TestModelsimp(unittest.TestCase):
             # Go back to using the normal np.array representation
             control.use_numpy_matrix(False)
 
-    def testMarkov(self):
+    def testMarkovSignature(self):
         U = np.array([[1., 1., 1., 1., 1.]])
         Y = U
-        M = 3
-        H = markov(Y, U, M, transpose=False)
-        Htrue = np.array([[1.], [0.], [0.]])
+        m = 3
+        H = markov(Y, U, m, transpose=False)
+        Htrue = np.array([[1., 0., 0.]])
         np.testing.assert_array_almost_equal( H, Htrue )
 
         # Make sure that transposed data also works
-        H = markov(np.transpose(Y), np.transpose(U), M, transpose=True)
+        H = markov(np.transpose(Y), np.transpose(U), m, transpose=True)
+        np.testing.assert_array_almost_equal( H, np.transpose(Htrue) )
+
+        # Default (in v0.8.4 and below) should be transpose=True (w/ warning)
+        import warnings
+        warnings.simplefilter('always', UserWarning)   # don't supress
+        with warnings.catch_warnings(record=True) as w:
+            # Set up warnings filter to only show warnings in control module
+            warnings.filterwarnings("ignore")
+            warnings.filterwarnings("always", module="control")
+
+            # Generate Markov parameters without any arguments
+            H = markov(np.transpose(Y), np.transpose(U), m)
+            np.testing.assert_array_almost_equal( H, np.transpose(Htrue) )
+
+            # Make sure we got a warning
+            self.assertEqual(len(w), 1)
+            self.assertIn("assumed to be in rows", str(w[-1].message))
+            self.assertIn("change in a future release", str(w[-1].message))
 
         # Test example from docstring
         T = np.linspace(0, 10, 100)
         U = np.ones((1, 100))
-        _, Y, _ = control.forced_response(control.tf([1], [1, 1]), T, U)
-        H = markov(Y, U, M, transpose=False)
+        T, Y, _ = control.forced_response(
+            control.tf([1], [1, 0.5], True), T, U)
+        H = markov(Y, U, 3, transpose=False)
 
         # Test example from issue #395
         inp = np.array([1, 2])
@@ -73,7 +92,47 @@ class TestModelsimp(unittest.TestCase):
 
         # Make sure MIMO generates an error
         U = np.ones((2, 100))   # 2 inputs (Y unchanged, with 1 output)
-        np.testing.assert_raises(ControlMIMONotImplemented, markov, U, Y, M)
+        np.testing.assert_raises(ControlMIMONotImplemented, markov, Y, U, m)
+
+    # Make sure markov() returns the right answer
+    def testMarkovResults(self):
+        #
+        # Test over a range of parameters
+        #
+        # k = order of the system
+        # m = number of Markov parameters
+        # n = size of the data vector
+        #
+        # Values should match exactly for n = m, otherewise you get a
+        # close match but errors due to the assumption that C A^k B =
+        # 0 for k > m-2 (see modelsimp.py).
+        #
+        for k, m, n in \
+            ((2, 2, 2), (2, 5, 5), (5, 2, 2), (5, 5, 5), (5, 10, 10)):
+
+            # Generate stable continuous time system
+            Hc = control.rss(k, 1, 1)
+
+            # Choose sampling time based on fastest time constant / 10
+            w, _ = np.linalg.eig(Hc.A)
+            Ts = np.min(-np.real(w)) / 10.
+
+            # Convert to a discrete time system via sampling
+            Hd = control.c2d(Hc, Ts, 'zoh')
+
+            # Compute the Markov parameters from state space
+            Mtrue = np.hstack([Hd.D] + [np.dot(
+                Hd.C, np.dot(np.linalg.matrix_power(Hd.A, i),
+                             Hd.B)) for i in range(m-1)])
+
+            # Generate input/output data
+            T = np.array(range(n)) * Ts
+            U = np.cos(T) + np.sin(T/np.pi)
+            _, Y, _ = control.forced_response(Hd, T, U, squeeze=True)
+            Mcomp = markov(Y, U, m, transpose=False)
+
+            # Compare to results from markov()
+            np.testing.assert_array_almost_equal(Mtrue, Mcomp)
 
     def testModredMatchDC(self):
         #balanced realization computed in matlab for the transfer function:
