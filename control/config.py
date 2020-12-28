@@ -171,17 +171,45 @@ def use_legacy_defaults(version):
     Parameters
     ----------
     version : string
-        version number of the defaults desired. ranges from '0.1' to '0.8.4'. 
+        Version number of the defaults desired. Ranges from '0.1' to '0.8.4'. 
     """
-    numbers_list = version.split(".")
-    first_digit = int(numbers_list[0])
-    second_digit = int(numbers_list[1].strip('abcdef')) # remove trailing letters
-    if second_digit < 8:
-        # TODO: anything for 0.7 and below if needed
-        pass
-    elif second_digit == 8:
-        if len(version) > 4:
-            third_digit = int(version[4])
-        use_numpy_matrix(True) # alternatively: set_defaults('statesp', use_numpy_matrix=True)
-    else:
-        raise ValueError('''version number not recognized. Possible values range from '0.1' to '0.8.4'.''')
+    import re
+    (major, minor, patch) = (None, None, None)  # default values
+
+    # Early release tag format: REL-0.N
+    match = re.match("REL-0.([12])", version)
+    if match: (major, minor, patch) = (0, int(match.group(1)), 0)
+
+    # Early release tag format: control-0.Np
+    match = re.match("control-0.([3-6])([a-d])", version)
+    if match: (major, minor, patch) = \
+       (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
+
+    # Early release tag format: v0.Np
+    match = re.match("[vV]?0.([3-6])([a-d])", version)
+    if match: (major, minor, patch) = \
+       (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
+    
+    # Abbreviated version format: vM.N or M.N
+    match = re.match("([vV]?[0-9]).([0-9])", version)
+    if match: (major, minor, patch) = \
+       (int(match.group(1)), int(match.group(2)), 0)
+
+    # Standard version format: vM.N.P or M.N.P
+    match = re.match("[vV]?([0-9]).([0-9]).([0-9])", version)
+    if match: (major, minor, patch) = \
+        (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+    # Make sure we found match
+    if major is None or minor is None:
+        raise ValueError("Version number not recognized. Try M.N.P format.")
+
+    #
+    # Go backwards through releases and reset defaults
+    #
+
+    # Version 0.9.0: switched to 'array' as default for state space objects
+    if major == 0 and minor < 9:
+        set_defaults('statesp', use_numpy_matrix=True)
+
+    return (major, minor, patch)
