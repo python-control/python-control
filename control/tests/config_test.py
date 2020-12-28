@@ -214,14 +214,28 @@ class TestConfig(unittest.TestCase):
     def test_legacy_defaults(self):
         ct.use_legacy_defaults('0.8.3')
         assert(isinstance(ct.ss(0,0,0,1).D, np.matrix))
+        
         ct.reset_defaults()
         assert(isinstance(ct.ss(0,0,0,1).D, np.ndarray))
+        assert(not isinstance(ct.ss(0,0,0,1).D, np.matrix))
+
+        ct.use_legacy_defaults('0.9.0')
+        assert(isinstance(ct.ss(0,0,0,1).D, np.ndarray))
+        assert(not isinstance(ct.ss(0,0,0,1).D, np.matrix))
+
         # test that old versions don't raise a problem
+        ct.use_legacy_defaults('REL-0.1')
+        ct.use_legacy_defaults('control-0.3a')
         ct.use_legacy_defaults('0.6c')
         ct.use_legacy_defaults('0.8.2')
         ct.use_legacy_defaults('0.1')
+
+        # Make sure that nonsense versions generate an error
+        self.assertRaises(ValueError, ct.use_legacy_defaults, "a.b.c")
+        self.assertRaises(ValueError, ct.use_legacy_defaults, "1.x.3")
+
+        # Leave everything like we found it
         ct.config.reset_defaults()
-        
     
     def test_change_default_dt(self):
         ct.set_defaults('statesp', default_dt=0)
