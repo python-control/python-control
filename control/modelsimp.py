@@ -407,7 +407,7 @@ def markov(Y, U, m=None, transpose=None):
         y[k] &= C x[k] + D u[k]
 
     given data for u and y.  The algorithm assumes that that C A^k B = 0 for
-    k > m-2 (see [1]).  Note that the problem is ill-posed if the length of
+    k > m-2 (see [1]_).  Note that the problem is ill-posed if the length of
     the input data is less than the desired number of Markov parameters (a
     warning message is generated in this case).
 
