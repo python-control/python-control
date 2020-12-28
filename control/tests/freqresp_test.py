@@ -9,6 +9,7 @@ including bode plots.
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.testing import assert_allclose
+import math
 import pytest
 
 import control as ctrl
@@ -173,7 +174,7 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
                     rtol=1e-5)
 
     phase_to_infinity = (np.array([Wcg, Wcg]),
-                         np.array([1e-8, p0]))
+                         np.array([0, p0]))
     assert_allclose(phase_to_infinity, allaxes[1].lines[4].get_data(),
                     rtol=1e-5)
 
@@ -271,3 +272,68 @@ def test_options(editsdefaults):
     # Make sure we got the right number of points
     assert numpoints1 != numpoints3
     assert numpoints3 == 13
+
+@pytest.mark.parametrize(
+    "TF, initial_phase, default_phase, expected_phase",
+    [pytest.param(ctrl.tf([1], [1, 0]),
+                  None, -math.pi/2, -math.pi/2,         id="order1, default"),
+     pytest.param(ctrl.tf([1], [1, 0]),
+                  180, -math.pi/2, 3*math.pi/2,         id="order1, 180"),
+     pytest.param(ctrl.tf([1], [1, 0, 0]),
+                  None, -math.pi, -math.pi,             id="order2, default"),
+     pytest.param(ctrl.tf([1], [1, 0, 0]),
+                  180, -math.pi, math.pi,               id="order2, 180"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0]),
+                  None, -3*math.pi/2, -3*math.pi/2,     id="order2, default"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0]),
+                  180, -3*math.pi/2, math.pi/2,         id="order2, 180"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0]),
+                  None, 0, 0,                           id="order4, default"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0]),
+                  180, 0, 0,                            id="order4, 180"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0]),
+                  -360, 0, -2*math.pi,                  id="order4, -360"),
+     ])
+def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
+    # Check initial phase of standard transfer functions
+    mag, phase, omega = ctrl.bode(TF)
+    assert(abs(phase[0] - default_phase) < 0.1)
+
+    # Now reset the initial phase to +180 and see if things work
+    mag, phase, omega = ctrl.bode(TF, initial_phase=initial_phase)
+    assert(abs(phase[0] - expected_phase) < 0.1)
+
+    # Make sure everything works in rad/sec as well
+    # Turn off plotting since that seems to slow things down a lot (?)
+    if initial_phase:
+        mag, phase, omega = ctrl.bode(
+            TF, initial_phase=initial_phase/180. * math.pi, deg=False,
+            plot=False)
+        assert(abs(phase[0] - expected_phase) < 0.1)
+
+
+@pytest.mark.parametrize(
+    "TF, wrap_phase, min_phase, max_phase",
+    [pytest.param(ctrl.tf([1], [1, 0]),
+                  None, -math.pi/2, 0,              id="order1, default"),
+     pytest.param(ctrl.tf([1], [1, 0]),
+                  True, -math.pi, math.pi,          id="order1, True"),
+     pytest.param(ctrl.tf([1], [1, 0]),
+                  -270, -3*math.pi/2, math.pi/2,    id="order1, -270"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0]),
+                  None, -3*math.pi/2, 0,            id="order3, default"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0]),
+                  True, -math.pi, math.pi,          id="order3, True"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0]),
+                  -270, -3*math.pi/2, math.pi/2,    id="order3, -270"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0, 0]),
+                  True, -3*math.pi/2, 0,            id="order5, default"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0, 0]),
+                  True, -math.pi, math.pi,          id="order5, True"),
+     pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0, 0]),
+                  -270, -3*math.pi/2, math.pi/2,    id="order5, -270"),
+    ])
+def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
+    mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
+    assert(min(phase) >= min_phase)
+    assert(max(phase) <= max_phase)
