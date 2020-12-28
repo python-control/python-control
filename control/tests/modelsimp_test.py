@@ -25,7 +25,7 @@ class TestModelsimp(unittest.TestCase):
         U = np.matrix("1.; 1.; 1.; 1.; 1.")
         Y = U
         M = 3
-        H = markov(Y,U,M)
+        H = markov(Y, U, M)
         Htrue = np.matrix("1.; 0.; 0.")
         np.testing.assert_array_almost_equal( H, Htrue )
 
