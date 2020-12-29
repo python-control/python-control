@@ -120,7 +120,7 @@ def place(A, B, p):
         raise ControlDimension(err_str)
 
     # Convert desired poles to numpy array
-    placed_eigs = np.array(p)
+    placed_eigs = np.atleast_1d(np.squeeze(np.asarray(p)))
 
     result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
     K = result.gain_matrix
@@ -201,7 +201,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     # Compute the system eigenvalues and convert poles to numpy array
     system_eigs = np.linalg.eig(A_mat)[0]
-    placed_eigs = np.array(p)
+    placed_eigs = np.atleast_1d(np.squeeze(np.asarray(p)))
 
     # Need a character parameter for SB01BD
     if dtime:
@@ -292,8 +292,8 @@ def lqe(A, G, C, QN, RN, NN=None):
 
     Examples
     --------
-    >>> K, P, E = lqe(A, G, C, QN, RN)
-    >>> K, P, E = lqe(A, G, C, QN, RN, NN)
+    >>> L, P, E = lqe(A, G, C, QN, RN)
+    >>> L, P, E = lqe(A, G, C, QN, RN, NN)
 
     See Also
     --------
