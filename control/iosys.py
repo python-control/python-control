@@ -494,7 +494,8 @@ class InputOutputSystem(object):
         # Return the newly created system
         return newsys
 
-    def linearize(self, x0, u0, t=0, params={}, eps=1e-6):
+    def linearize(self, x0, u0, t=0, params={}, eps=1e-6,
+                  name=None, copy=False, **kwargs):
         """Linearize an input/output system at a given state and input.
 
         Return the linearization of an input/output system at a given state
@@ -547,8 +548,20 @@ class InputOutputSystem(object):
             D[:, i] = (self._out(t, x0, u0 + du) - H0) / eps
 
         # Create the state space system
-        linsys = StateSpace(A, B, C, D, self.dt, remove_useless=False)
-        return LinearIOSystem(linsys)
+        linsys = LinearIOSystem(
+            StateSpace(A, B, C, D, self.dt, remove_useless=False),
+            name=name, **kwargs)
+
+        # Set the names the system, inputs, outputs, and states
+        if copy:
+            linsys.ninputs, linsys.input_index = self.ninputs, \
+                self.input_index.copy()
+            linsys.noutputs, linsys.output_index = \
+                self.noutputs, self.output_index.copy()
+            linsys.nstates, linsys.state_index = \
+                self.nstates, self.state_index.copy()
+
+        return linsys
 
     def copy(self, newname=None):
         """Make a copy of an input/output system."""
@@ -1759,6 +1772,11 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
+    copy : bool, Optional
+        If `copy` is True, copy the names of the input signals, output signals,
+        and states to the linearized system.
+    name : string, optional
+        Set the name of the linearized system.
 
     Returns
     -------
