@@ -1,117 +1,123 @@
-#!/usr/bin/env python
-#
-# xferfcn_test.py - test TransferFunction class
-# RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
+"""xferfcn_test.py - test TransferFunction class
 
-import unittest
+RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
+"""
+
+import numpy as np
 import pytest
 
-import sys as pysys
-import numpy as np
 from control.statesp import StateSpace, _convertToStateSpace, rss
 from control.xferfcn import TransferFunction, _convert_to_transfer_function, \
     ss2tf
 from control.lti import evalfr
-from control.exception import slycot_check
+from control.tests.conftest import slycotonly, nopython2, matrixfilter
 from control.lti import isctime, isdtime
 from control.dtime import sample_system
 
 
-class TestXferFcn(unittest.TestCase):
-    """These are tests for functionality and correct reporting of the transfer
-    function class.  Throughout these tests, we will give different input
+class TestXferFcn:
+    """Test functionality and correct reporting of the transfer function class.
+
+    Throughout these tests, we will give different input
     formats to the xTranferFunction constructor, to try to break it.  These
-    tests have been verified in MATLAB."""
+    tests have been verified in MATLAB.
+    """
 
     # Tests for raising exceptions.
 
     def test_constructor_bad_input_type(self):
         """Give the constructor invalid input types."""
-
         # MIMO requires lists of lists of vectors (not lists of vectors)
-        self.assertRaises(
-            TypeError,
-            TransferFunction, [[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
-        TransferFunction([[ [0., 1.], [2., 3.] ]], [[ [5., 2.], [3., 0.] ]])
+        with pytest.raises(TypeError):
+            TransferFunction([[0., 1.], [2., 3.]], [[5., 2.], [3., 0.]])
+        # good input
+        TransferFunction([[[0., 1.], [2., 3.]]],
+                         [[[5., 2.], [3., 0.]]])
 
         # Single argument of the wrong type
-        self.assertRaises(TypeError, TransferFunction, [1])
+        with pytest.raises(TypeError):
+            TransferFunction([1])
 
         # Too many arguments
-        self.assertRaises(ValueError, TransferFunction, 1, 2, 3, 4)
+        with pytest.raises(ValueError):
+            TransferFunction(1, 2, 3, 4)
 
         # Different numbers of elements in numerator rows
-        self.assertRaises(
-            ValueError,
-            TransferFunction, [ [[0, 1], [2, 3]],
-                                [[4, 5]] ],
-                              [ [[6, 7], [4, 5]],
-                                [[2, 3], [0, 1]] ])
-        self.assertRaises(
-            ValueError,
-            TransferFunction, [ [[0, 1], [2, 3]],
-                                [[4, 5], [6, 7]] ],
-                              [ [[6, 7], [4, 5]],
-                                [[2, 3]] ])
-        TransferFunction(       # This version is OK
-            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
-            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ])
+        with pytest.raises(ValueError):
+            TransferFunction([[[0, 1], [2, 3]],
+                              [[4, 5]]],
+                             [[[6, 7], [4, 5]],
+                              [[2, 3], [0, 1]]])
+        with pytest.raises(ValueError):
+            TransferFunction([[[0, 1], [2, 3]],
+                              [[4, 5], [6, 7]]],
+                             [[[6, 7], [4, 5]],
+                              [[2, 3]]])
+        # good input
+        TransferFunction([[[0, 1], [2, 3]],
+                          [[4, 5], [6, 7]]],
+                         [[[6, 7], [4, 5]],
+                          [[2, 3], [0, 1]]])
 
     def test_constructor_inconsistent_dimension(self):
         """Give constructor numerators, denominators of different sizes."""
-
-        self.assertRaises(ValueError, TransferFunction,
-            [[[1.]]], [[[1.], [2., 3.]]])
-        self.assertRaises(ValueError, TransferFunction,
-            [[[1.]]], [[[1.]], [[2., 3.]]])
-        self.assertRaises(ValueError, TransferFunction,
-            [[[1.]]], [[[1.], [1., 2.]], [[5., 2.], [2., 3.]]])
+        with pytest.raises(ValueError):
+            TransferFunction([[[1.]]], [[[1.], [2., 3.]]])
+        with pytest.raises(ValueError):
+            TransferFunction([[[1.]]], [[[1.]], [[2., 3.]]])
+        with pytest.raises(ValueError):
+            TransferFunction([[[1.]]],
+                             [[[1.], [1., 2.]], [[5., 2.], [2., 3.]]])
 
     def test_constructor_inconsistent_columns(self):
         """Give the constructor inputs that do not have the same number of
         columns in each row."""
-
-        self.assertRaises(ValueError, TransferFunction,
-                          1., [[[1.]], [[2.], [3.]]])
-        self.assertRaises(ValueError, TransferFunction,
-                          [[[1.]], [[2.], [3.]]], 1.)
+        with pytest.raises(ValueError):
+            TransferFunction(1., [[[1.]], [[2.], [3.]]])
+        with pytest.raises(ValueError):
+            TransferFunction([[[1.]], [[2.], [3.]]], 1.)
 
     def test_constructor_zero_denominator(self):
         """Give the constructor a transfer function with a zero denominator."""
-
-        self.assertRaises(ValueError, TransferFunction, 1., 0.)
-        self.assertRaises(ValueError, TransferFunction,
-                          [[[1.], [2., 3.]], [[-1., 4.], [3., 2.]]],
-                          [[[1., 0.], [0.]], [[0., 0.], [2.]]])
+        with pytest.raises(ValueError):
+            TransferFunction(1., 0.)
+        with pytest.raises(ValueError):
+            TransferFunction([[[1.], [2., 3.]], [[-1., 4.], [3., 2.]]],
+                             [[[1., 0.], [0.]], [[0., 0.], [2.]]])
 
     def test_add_inconsistent_dimension(self):
         """Add two transfer function matrices of different sizes."""
-
         sys1 = TransferFunction([[[1., 2.]]], [[[4., 5.]]])
         sys2 = TransferFunction([[[4., 3.]], [[1., 2.]]],
                                 [[[1., 6.]], [[2., 4.]]])
-        self.assertRaises(ValueError, sys1.__add__, sys2)
-        self.assertRaises(ValueError, sys1.__sub__, sys2)
-        self.assertRaises(ValueError, sys1.__radd__, sys2)
-        self.assertRaises(ValueError, sys1.__rsub__, sys2)
+        with pytest.raises(ValueError):
+            sys1.__add__(sys2)
+        with pytest.raises(ValueError):
+            sys1.__sub__(sys2)
+        with pytest.raises(ValueError):
+            sys1.__radd__(sys2)
+        with pytest.raises(ValueError):
+            sys1.__rsub__(sys2)
 
     def test_mul_inconsistent_dimension(self):
         """Multiply two transfer function matrices of incompatible sizes."""
-
         sys1 = TransferFunction([[[1., 2.], [4., 5.]], [[2., 5.], [4., 3.]]],
                                 [[[6., 2.], [4., 1.]], [[6., 7.], [2., 4.]]])
         sys2 = TransferFunction([[[1.]], [[2.]], [[3.]]],
                                 [[[4.]], [[5.]], [[6.]]])
-        self.assertRaises(ValueError, sys1.__mul__, sys2)
-        self.assertRaises(ValueError, sys2.__mul__, sys1)
-        self.assertRaises(ValueError, sys1.__rmul__, sys2)
-        self.assertRaises(ValueError, sys2.__rmul__, sys1)
+        with pytest.raises(ValueError):
+            sys1.__mul__(sys2)
+        with pytest.raises(ValueError):
+            sys2.__mul__(sys1)
+        with pytest.raises(ValueError):
+            sys1.__rmul__(sys2)
+        with pytest.raises(ValueError):
+            sys2.__rmul__(sys1)
 
     # Tests for TransferFunction._truncatecoeff
 
     def test_truncate_coefficients_non_null_numerator(self):
         """Remove extraneous zeros in polynomial representations."""
-
         sys1 = TransferFunction([0., 0., 1., 2.], [[[0., 0., 0., 3., 2., 1.]]])
 
         np.testing.assert_array_equal(sys1.num, [[[1., 2.]]])
@@ -119,7 +125,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_truncate_coefficients_null_numerator(self):
         """Remove extraneous zeros in polynomial representations."""
-
         sys1 = TransferFunction([0., 0., 0.], 1.)
 
         np.testing.assert_array_equal(sys1.num, [[[0.]]])
@@ -129,7 +134,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_reverse_sign_scalar(self):
         """Negate a direct feedthrough system."""
-
         sys1 = TransferFunction(2., np.array([-3.]))
         sys2 = - sys1
 
@@ -138,17 +142,15 @@ class TestXferFcn(unittest.TestCase):
 
     def test_reverse_sign_siso(self):
         """Negate a SISO system."""
-
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1.])
         sys2 = - sys1
 
         np.testing.assert_array_equal(sys2.num, [[[-1., -3., -5.]]])
         np.testing.assert_array_equal(sys2.den, [[[1., 6., 2., -1.]]])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_reverse_sign_mimo(self):
         """Negate a MIMO system."""
-
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
                 [[1.], [4., 0.], [1., -4., 3.]]]
         num3 = [[[-1., -2.], [0., -3.], [-2., 1.]],
@@ -169,7 +171,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_add_scalar(self):
         """Add two direct feedthrough systems."""
-
         sys1 = TransferFunction(1., [[[1.]]])
         sys2 = TransferFunction(np.array([2.]), [1.])
         sys3 = sys1 + sys2
@@ -179,7 +180,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_add_siso(self):
         """Add two SISO systems."""
-
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
         sys2 = TransferFunction([[np.array([-1., 3.])]], [[[1., 0., -1.]]])
         sys3 = sys1 + sys2
@@ -188,10 +188,9 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys3.num, [[[20., 4., -8]]])
         np.testing.assert_array_equal(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_add_mimo(self):
         """Add two MIMO systems."""
-
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
                 [[1.], [4., 0.], [1., -4., 3.]]]
         den1 = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
@@ -218,7 +217,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_subtract_scalar(self):
         """Subtract two direct feedthrough systems."""
-
         sys1 = TransferFunction(1., [[[1.]]])
         sys2 = TransferFunction(np.array([2.]), [1.])
         sys3 = sys1 - sys2
@@ -228,7 +226,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_subtract_siso(self):
         """Subtract two SISO systems."""
-
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
         sys2 = TransferFunction([[np.array([-1., 3.])]], [[[1., 0., -1.]]])
         sys3 = sys1 - sys2
@@ -239,10 +236,9 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, [[[-2., -6., 12., 10., 2.]]])
         np.testing.assert_array_equal(sys4.den, [[[1., 6., 1., -7., -2., 1.]]])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_subtract_mimo(self):
         """Subtract two MIMO systems."""
-
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
                 [[1.], [4., 0.], [1., -4., 3.]]]
         den1 = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
@@ -269,7 +265,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_multiply_scalar(self):
         """Multiply two direct feedthrough systems."""
-
         sys1 = TransferFunction(2., [1.])
         sys2 = TransferFunction(1., 4.)
         sys3 = sys1 * sys2
@@ -282,7 +277,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_multiply_siso(self):
         """Multiply two SISO systems."""
-
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
         sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]])
         sys3 = sys1 * sys2
@@ -293,10 +287,9 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys3.num, sys4.num)
         np.testing.assert_array_equal(sys3.den, sys4.den)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_multiply_mimo(self):
         """Multiply two MIMO systems."""
-
         num1 = [[[1., 2.], [0., 3.], [2., -1.]],
                 [[1.], [4., 0.], [1., -4., 3.]]]
         den1 = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
@@ -328,7 +321,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_divide_scalar(self):
         """Divide two direct feedthrough systems."""
-
         sys1 = TransferFunction(np.array([3.]), -4.)
         sys2 = TransferFunction(5., 2.)
         sys3 = sys1 / sys2
@@ -338,7 +330,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_divide_siso(self):
         """Divide two SISO systems."""
-
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
         sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]])
         sys3 = sys1 / sys2
@@ -351,91 +342,99 @@ class TestXferFcn(unittest.TestCase):
 
     def test_div(self):
         # Make sure that sampling times work correctly
-        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
+        sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1], None)
         sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]], True)
         sys3 = sys1 / sys2
-        self.assertEqual(sys3.dt, True)
+        assert sys3.dt is True
 
         sys2 = TransferFunction([[[-1., 3.]]], [[[1., 0., -1.]]], 0.5)
         sys3 = sys1 / sys2
-        self.assertEqual(sys3.dt, 0.5)
+        assert sys3.dt == 0.5
 
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1], 0.1)
-        self.assertRaises(ValueError, TransferFunction.__truediv__, sys1, sys2)
+        with pytest.raises(ValueError):
+            TransferFunction.__truediv__(sys1, sys2)
 
         sys1 = sample_system(rss(4, 1, 1), 0.5)
         sys3 = TransferFunction.__rtruediv__(sys2, sys1)
-        self.assertEqual(sys3.dt, 0.5)
+        assert sys3.dt == 0.5
 
     def test_pow(self):
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1])
-        self.assertRaises(ValueError, TransferFunction.__pow__, sys1, 0.5)
+        with pytest.raises(ValueError):
+            TransferFunction.__pow__(sys1, 0.5)
 
     def test_slice(self):
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
             [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ])
         sys1 = sys[1:, 1:]
-        self.assertEqual((sys1.inputs, sys1.outputs), (2, 1))
+        assert (sys1.inputs, sys1.outputs) == (2, 1)
 
         sys2 = sys[:2, :2]
-        self.assertEqual((sys2.inputs, sys2.outputs), (2, 2))
+        assert (sys2.inputs, sys2.outputs) == (2, 2)
 
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
             [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ], 0.5)
         sys1 = sys[1:, 1:]
-        self.assertEqual((sys1.inputs, sys1.outputs), (2, 1))
-        self.assertEqual(sys1.dt, 0.5)
+        assert (sys1.inputs, sys1.outputs) == (2, 1)
+        assert sys1.dt == 0.5
 
-    def test_evalfr_siso(self):
-        """Evaluate the frequency response of a SISO system at one frequency."""
-
+    @pytest.mark.parametrize("omega, resp",
+                             [(1, np.array([[-0.5 - 0.5j]])),
+                              (32, np.array([[0.002819593 - 0.03062847j]]))])
+    @pytest.mark.parametrize("dt", [None, 0, 1e-3])
+    def test_evalfr_siso(self, dt, omega, resp):
+        """Evaluate the frequency response at single frequencies"""
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
 
-        np.testing.assert_array_almost_equal(evalfr(sys, 1j),
-                                             np.array([[-0.5 - 0.5j]]))
-        np.testing.assert_array_almost_equal(
-            evalfr(sys, 32j),
-            np.array([[0.00281959302585077 - 0.030628473607392j]]))
+        if dt:
+            sys = sample_system(sys, dt)
+            s = np.exp(omega * 1j * dt)
+        else:
+            s = omega * 1j
 
-        # Test call version as well
-        np.testing.assert_almost_equal(sys(1.j), -0.5 - 0.5j)
-        np.testing.assert_almost_equal(
-            sys(32.j), 0.00281959302585077 - 0.030628473607392j)
-
-        # Test internal version (with real argument)
-        np.testing.assert_array_almost_equal(
-            sys._evalfr(1.), np.array([[-0.5 - 0.5j]]))
-        np.testing.assert_array_almost_equal(
-            sys._evalfr(32.),
-            np.array([[0.00281959302585077 - 0.030628473607392j]]))
-
-    # This test only works in Python 3 due to a conflict with the same
-    # warning type in other test modules (frd_test.py).  See
-    # https://bugs.python.org/issue4180 for more details
-    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
-    def test_evalfr_deprecated(self):
-        sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
-
+        # Correct versions of the call
+        np.testing.assert_allclose(evalfr(sys, s), resp, atol=1e-3)
+        np.testing.assert_allclose(sys(s), resp, atol=1e-3)
         # Deprecated version of the call (should generate warning)
-        import warnings
-        with warnings.catch_warnings():
-            # Make warnings generate an exception
-            warnings.simplefilter('error')
+        with pytest.deprecated_call():
+            np.testing.assert_allclose(sys.evalfr(omega), resp, atol=1e-3)
 
-            # Make sure that we get a pending deprecation warning
-            self.assertRaises(PendingDeprecationWarning, sys.evalfr, 1.)
+        # call above nyquist frequency
+        if dt:
+            with pytest.warns(UserWarning):
+                np.testing.assert_allclose(sys._evalfr(omega + 2 * np.pi / dt),
+                                           resp,
+                                           atol=1e-3)
 
-    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
-    def test_evalfr_dtime(self):
-        sys = TransferFunction([1., 3., 5], [1., 6., 2., -1], 0.1)
-        np.testing.assert_array_almost_equal(sys(1j), -0.5 - 0.5j)
+    def test_is_static_gain(self):
+        numstatic = 1.1
+        denstatic = 1.2
+        numdynamic = [1, 1]
+        dendynamic = [2, 1]
+        numstaticmimo = [[[1.1,], [1.2,]], [[1.2,], [0.8,]]]
+        denstaticmimo = [[[1.9,], [1.2,]], [[1.2,], [0.8,]]]
+        numdynamicmimo = [[[1.1, 0.9], [1.2]], [[1.2], [0.8]]]
+        dendynamicmimo = [[[1.1, 0.7], [0.2]], [[1.2], [0.8]]]
+        assert TransferFunction(numstatic, denstatic).is_static_gain()
+        assert TransferFunction(numstaticmimo, denstaticmimo).is_static_gain()
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+        assert not TransferFunction(numstatic, dendynamic).is_static_gain()
+        assert not TransferFunction(numdynamic, dendynamic).is_static_gain()
+        assert not TransferFunction(numdynamic, denstatic).is_static_gain()
+        assert not TransferFunction(numstatic, dendynamic).is_static_gain()
+
+        assert not TransferFunction(numstaticmimo,
+                                    dendynamicmimo).is_static_gain()
+        assert not TransferFunction(numdynamicmimo,
+                                    denstaticmimo).is_static_gain()
+
+
+    @slycotonly
     def test_evalfr_mimo(self):
-        """Evaluate the frequency response of a MIMO system at one frequency."""
-
+        """Evaluate the frequency response of a MIMO system at a freq"""
         num = [[[1., 2.], [0., 3.], [2., -1.]],
                [[1.], [4., 0.], [1., -4., 3.]]]
         den = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
@@ -451,9 +450,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys(2.j), resp)
 
     def test_freqresp_siso(self):
-        """Evaluate the magnitude and phase of a SISO system at
-        multiple frequencies."""
-
+        """Evaluate the SISO magnitude and phase at multiple frequencies"""
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1])
 
         truemag = [[[4.63507337473906, 0.707106781186548, 0.0866592803995351]]]
@@ -467,11 +464,9 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(phase, truephase)
         np.testing.assert_array_almost_equal(omega, trueomega)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_freqresp_mimo(self):
-        """Evaluate the magnitude and phase of a MIMO system at
-        multiple frequencies."""
-
+        """Evaluate the MIMO magnitude and phase at multiple frequencies."""
         num = [[[1., 2.], [0., 3.], [2., -1.]],
                [[1.], [4., 0.], [1., -4., 3.]]]
         den = [[[-3., 2., 4.], [1., 0., 0.], [2., -1.]],
@@ -500,7 +495,6 @@ class TestXferFcn(unittest.TestCase):
     # Tests for TransferFunction.pole and TransferFunction.zero.
     def test_common_den(self):
         """ Test the helper function to compute common denomitators."""
-
         # _common_den() computes the common denominator per input/column.
         # The testing columns are:
         # 0: no common poles
@@ -550,7 +544,6 @@ class TestXferFcn(unittest.TestCase):
 
     def test_common_den_nonproper(self):
         """ Test _common_den with order(num)>order(den) """
-
         tf1 = TransferFunction(
                 [[[1., 2., 3.]], [[1., 2.]]],
                 [[[1., -2.]], [[1., -3.]]])
@@ -568,10 +561,9 @@ class TestXferFcn(unittest.TestCase):
         _, den2, _ = tf2._common_den(allow_nonproper=True)
         np.testing.assert_array_almost_equal(den2, common_den_ref)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_pole_mimo(self):
         """Test for correct MIMO poles."""
-
         sys = TransferFunction(
             [[[1.], [1.]], [[1.], [1.]]],
             [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
@@ -596,7 +588,6 @@ class TestXferFcn(unittest.TestCase):
     # Tests for TransferFunction.feedback
     def test_feedback_siso(self):
         """Test for correct SISO transfer function feedback."""
-
         sys1 = TransferFunction([-1., 4.], [1., 3., 5.])
         sys2 = TransferFunction([2., 3., 0.], [1., -3., 4., 0])
 
@@ -608,10 +599,9 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_equal(sys4.num, [[[-1., 7., -16., 16., 0.]]])
         np.testing.assert_array_equal(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_convert_to_transfer_function(self):
         """Test for correct state space to transfer function conversion."""
-
         A = [[1., -2.], [-3., 4.]]
         B = [[6., 5.], [4., 3.]]
         C = [[1., -2.], [3., -4.], [5., -6.]]
@@ -628,8 +618,10 @@ class TestXferFcn(unittest.TestCase):
 
         for i in range(sys.outputs):
             for j in range(sys.inputs):
-                np.testing.assert_array_almost_equal(tfsys.num[i][j], num[i][j])
-                np.testing.assert_array_almost_equal(tfsys.den[i][j], den[i][j])
+                np.testing.assert_array_almost_equal(tfsys.num[i][j],
+                                                     num[i][j])
+                np.testing.assert_array_almost_equal(tfsys.den[i][j],
+                                                     den[i][j])
 
     def test_minreal(self):
         """Try the minreal function, and also test easy entry by creation
@@ -661,7 +653,6 @@ class TestXferFcn(unittest.TestCase):
         g = TransferFunction([1,1],[1,1]).minreal()
         np.testing.assert_array_almost_equal(1.0, g.num[0][0])
         np.testing.assert_array_almost_equal(1.0, g.den[0][0])
-        np.testing.assert_equal(None, g.dt)
 
     def test_minreal_4(self):
         """Check minreal on discrete TFs."""
@@ -673,7 +664,7 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
         np.testing.assert_equal(hr.dt, hm.dt)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_state_space_conversion_mimo(self):
         """Test conversion of a single input, two-output state-space
         system against the same TF"""
@@ -695,8 +686,9 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(H.num[1][0], H2.num[1][0])
         np.testing.assert_array_almost_equal(H.den[1][0], H2.den[1][0])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_indexing(self):
+        """Test TF scalar indexing and slice"""
         tm = ss2tf(rss(5, 3, 3))
 
         # scalar indexing
@@ -715,26 +707,64 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys.num[1][1], tm.num[1][2])
         np.testing.assert_array_almost_equal(sys.den[1][1], tm.den[1][2])
 
-    def test_matrix_multiply(self):
-        """MIMO transfer functions should be multiplyable by constant
-        matrices"""
-        s = TransferFunction([1, 0], [1])
-        b0 = 0.2
-        b1 = 0.1
-        b2 = 0.5
-        a0 = 2.3
-        a1 = 6.3
-        a2 = 3.6
-        a3 = 1.0
-        h = (b0 + b1*s + b2*s**2)/(a0 + a1*s + a2*s**2 + a3*s**3)
-        H = TransferFunction([[h.num[0][0]], [(h*s).num[0][0]]],
-                             [[h.den[0][0]], [h.den[0][0]]])
-        H1 = (np.matrix([[1.0, 0]])*H).minreal()
-        H2 = (np.matrix([[0, 1.0]])*H).minreal()
-        np.testing.assert_array_almost_equal(H.num[0][0], H1.num[0][0])
-        np.testing.assert_array_almost_equal(H.den[0][0], H1.den[0][0])
-        np.testing.assert_array_almost_equal(H.num[1][0], H2.num[0][0])
-        np.testing.assert_array_almost_equal(H.den[1][0], H2.den[0][0])
+    @pytest.mark.parametrize(
+        "matarrayin",
+        [pytest.param(np.array,
+                      id="arrayin",
+                      marks=[nopython2,
+                             pytest.mark.skip(".__matmul__ not implemented")]),
+         pytest.param(np.matrix,
+                      id="matrixin",
+                      marks=matrixfilter)],
+        indirect=True)
+    @pytest.mark.parametrize("X_, ij",
+                             [([[2., 0., ]], 0),
+                              ([[0., 2., ]], 1)])
+    def test_matrix_array_multiply(self, matarrayin, X_, ij):
+        """Test mulitplication of MIMO TF with matrix and matmul with array"""
+        # 2 inputs, 2 outputs with prime zeros so they do not cancel
+        n = 2
+        p = [3, 5, 7, 11, 13, 17, 19, 23]
+        H = TransferFunction(
+            [[np.poly(p[2 * i + j:2 * i + j + 1]) for j in range(n)]
+             for i in range(n)],
+            [[[1, -1]] * n] * n)
+
+        X = matarrayin(X_)
+
+        if matarrayin is np.matrix:
+            XH = X * H
+        else:
+            # XH = X @ H
+            XH = np.matmul(X, H)
+        XH = XH.minreal()
+        assert XH.inputs == n
+        assert XH.outputs == X.shape[0]
+        assert len(XH.num) == XH.outputs
+        assert len(XH.den) == XH.outputs
+        assert len(XH.num[0]) == n
+        assert len(XH.den[0]) == n
+        np.testing.assert_allclose(2. * H.num[ij][0], XH.num[0][0], rtol=1e-4)
+        np.testing.assert_allclose(     H.den[ij][0], XH.den[0][0], rtol=1e-4)
+        np.testing.assert_allclose(2. * H.num[ij][1], XH.num[0][1], rtol=1e-4)
+        np.testing.assert_allclose(     H.den[ij][1], XH.den[0][1], rtol=1e-4)
+
+        if matarrayin is np.matrix:
+            HXt = H * X.T
+        else:
+            # HXt = H @ X.T
+            HXt = np.matmul(H, X.T)
+        HXt = HXt.minreal()
+        assert HXt.inputs == X.T.shape[1]
+        assert HXt.outputs == n
+        assert len(HXt.num) == n
+        assert len(HXt.den) == n
+        assert len(HXt.num[0]) == HXt.inputs
+        assert len(HXt.den[0]) == HXt.inputs
+        np.testing.assert_allclose(2. * H.num[0][ij], HXt.num[0][0], rtol=1e-4)
+        np.testing.assert_allclose(     H.den[0][ij], HXt.den[0][0], rtol=1e-4)
+        np.testing.assert_allclose(2. * H.num[1][ij], HXt.num[1][0], rtol=1e-4)
+        np.testing.assert_allclose(     H.den[1][ij], HXt.den[1][0], rtol=1e-4)
 
     def test_dcgain_cont(self):
         """Test DC gain for continuous-time transfer functions"""
@@ -765,14 +795,15 @@ class TestXferFcn(unittest.TestCase):
 
         # differencer
         sys = TransferFunction(1, [1, -1], True)
-        np.testing.assert_equal(sys.dcgain(), np.inf)
+        with pytest.warns(RuntimeWarning, match="divide by zero"):
+            np.testing.assert_equal(sys.dcgain(), np.inf)
 
         # summer
-        # causes a RuntimeWarning due to the divide by zero
         sys = TransferFunction([1, -1], [1], True)
         np.testing.assert_equal(sys.dcgain(), 0)
 
     def test_ss2tf(self):
+        """Test SISO ss2tf"""
         A = np.array([[-4, -1], [-1, -4]])
         B = np.array([[1], [3]])
         C = np.array([[3, 1]])
@@ -782,79 +813,90 @@ class TestXferFcn(unittest.TestCase):
         np.testing.assert_almost_equal(sys.num, true_sys.num)
         np.testing.assert_almost_equal(sys.den, true_sys.den)
 
-    def test_class_constants(self):
-        # Make sure that the 's' variable is defined properly
+    def test_class_constants_s(self):
+        """Make sure that the 's' variable is defined properly"""
         s = TransferFunction.s
         G = (s + 1)/(s**2 + 2*s + 1)
         np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
         np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
-        self.assertTrue(isctime(G, strict=True))
+        assert isctime(G, strict=True)
 
-        # Make sure that the 'z' variable is defined properly
+    def test_class_constants_z(self):
+        """Make sure that the 'z' variable is defined properly"""
         z = TransferFunction.z
         G = (z + 1)/(z**2 + 2*z + 1)
         np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
         np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
-        self.assertTrue(isdtime(G, strict=True))
+        assert isdtime(G, strict=True)
 
     def test_printing(self):
-        # SISO, continuous time
+        """Print SISO"""
         sys = ss2tf(rss(4, 1, 1))
-        self.assertTrue(isinstance(str(sys), str))
-        self.assertTrue(isinstance(sys._repr_latex_(), str))
+        assert isinstance(str(sys), str)
+        assert isinstance(sys._repr_latex_(), str)
 
         # SISO, discrete time
         sys = sample_system(sys, 1)
-        self.assertTrue(isinstance(str(sys), str))
-        self.assertTrue(isinstance(sys._repr_latex_(), str))
+        assert isinstance(str(sys), str)
+        assert isinstance(sys._repr_latex_(), str)
 
-    def test_printing_polynomial(self):
-        """Cover all _tf_polynomial_to_string code branches"""
-        # Note: the assertions below use plain assert statements instead of
-        # unittest methods so that debugging with pytest is easier
+    @pytest.mark.parametrize(
+        "args, output",
+        [(([0], [1]), "\n0\n-\n1\n"),
+         (([1.0001], [-1.1111]), "\n  1\n------\n-1.111\n"),
+         (([0, 1], [0, 1.]), "\n1\n-\n1\n"),
+         ])
+    def test_printing_polynomial_const(self, args, output):
+        """Test _tf_polynomial_to_string for constant systems"""
+        assert str(TransferFunction(*args)) == output
 
-        assert str(TransferFunction([0], [1])) == "\n0\n-\n1\n"
-        assert str(TransferFunction([1.0001], [-1.1111])) == \
-            "\n  1\n------\n-1.111\n"
-        assert str(TransferFunction([0, 1], [0, 1.])) == "\n1\n-\n1\n"
-        for var, dt, dtstring in zip(["s", "z", "z"],
-                                     [None, True, 1],
-                                     ['', '', '\ndt = 1\n']):
-            assert str(TransferFunction([1, 0], [2, 1], dt)) == \
-                "\n   {var}\n-------\n2 {var} + 1\n{dtstring}".format(
-                    var=var, dtstring=dtstring)
-            assert str(TransferFunction([2, 0, -1], [1, 0, 0, 1.2], dt)) == \
-                "\n2 {var}^2 - 1\n---------\n{var}^3 + 1.2\n{dtstring}".format(
-                    var=var, dtstring=dtstring)
+    @pytest.mark.parametrize(
+        "args, outputfmt",
+        [(([1, 0], [2, 1]),
+          "\n   {var}\n-------\n2 {var} + 1\n{dtstring}"),
+         (([2, 0, -1], [1, 0, 0, 1.2]),
+          "\n2 {var}^2 - 1\n---------\n{var}^3 + 1.2\n{dtstring}")])
+    @pytest.mark.parametrize("var, dt, dtstring",
+                             [("s", None, ''),
+                              ("z", True, ''),
+                              ("z", 1, '\ndt = 1\n')])
+    def test_printing_polynomial(self, args, outputfmt, var, dt, dtstring):
+        """Test _tf_polynomial_to_string for all other code branches"""
+        assert str(TransferFunction(*(args + (dt,)))) == \
+            outputfmt.format(var=var, dtstring=dtstring)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_printing_mimo(self):
-        # MIMO, continuous time
+        """Print MIMO, continuous time"""
         sys = ss2tf(rss(4, 2, 3))
-        self.assertTrue(isinstance(str(sys), str))
-        self.assertTrue(isinstance(sys._repr_latex_(), str))
+        assert isinstance(str(sys), str)
+        assert isinstance(sys._repr_latex_(), str)
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def test_size_mismatch(self):
+        """Test size mismacht"""
         sys1 = ss2tf(rss(2, 2, 2))
 
         # Different number of inputs
         sys2 = ss2tf(rss(3, 1, 2))
-        self.assertRaises(ValueError, TransferFunction.__add__, sys1, sys2)
+        with pytest.raises(ValueError):
+            TransferFunction.__add__(sys1, sys2)
 
         # Different number of outputs
         sys2 = ss2tf(rss(3, 2, 1))
-        self.assertRaises(ValueError, TransferFunction.__add__, sys1, sys2)
+        with pytest.raises(ValueError):
+            TransferFunction.__add__(sys1, sys2)
 
         # Inputs and outputs don't match
-        self.assertRaises(ValueError, TransferFunction.__mul__, sys2, sys1)
+        with pytest.raises(ValueError):
+            TransferFunction.__mul__(sys2, sys1)
 
         # Feedback mismatch (MIMO not implemented)
-        self.assertRaises(NotImplementedError,
-                          TransferFunction.feedback, sys2, sys1)
+        with pytest.raises(NotImplementedError):
+            TransferFunction.feedback(sys2, sys1)
 
     def test_latex_repr(self):
-        """ Test latex printout for TransferFunction """
+        """Test latex printout for TransferFunction"""
         Hc = TransferFunction([1e-5, 2e5, 3e-4],
                               [1.2e34, 2.3e-4, 2.3e-45])
         Hd = TransferFunction([1e-5, 2e5, 3e-4],
@@ -873,67 +915,44 @@ class TestXferFcn(unittest.TestCase):
                    r'+ 0.00023 ' + var + ' '
                    r'+ 2.3 ' + expmul + ' 10^{-45}'
                    r'}' + suffix + '$$')
-            self.assertEqual(H._repr_latex_(), ref)
+            assert H._repr_latex_() == ref
 
-    def test_repr(self):
+    @pytest.mark.parametrize(
+        "Hargs, ref",
+        [(([-1., 4.], [1., 3., 5.]),
+          "TransferFunction(array([-1.,  4.]), array([1., 3., 5.]))"),
+         (([2., 3., 0.], [1., -3., 4., 0], 2.0),
+          "TransferFunction(array([2., 3., 0.]),"
+          " array([ 1., -3.,  4.,  0.]), 2.0)"),
+
+         (([[[0, 1], [2, 3]], [[4, 5], [6, 7]]],
+           [[[6, 7], [4, 5]], [[2, 3], [0, 1]]]),
+          "TransferFunction([[array([1]), array([2, 3])],"
+          " [array([4, 5]), array([6, 7])]],"
+          " [[array([6, 7]), array([4, 5])],"
+          " [array([2, 3]), array([1])]])"),
+         (([[[0, 1], [2, 3]], [[4, 5], [6, 7]]],
+           [[[6, 7], [4, 5]], [[2, 3], [0, 1]]],
+           0.5),
+          "TransferFunction([[array([1]), array([2, 3])],"
+          " [array([4, 5]), array([6, 7])]],"
+          " [[array([6, 7]), array([4, 5])],"
+          " [array([2, 3]), array([1])]], 0.5)")
+         ])
+    def test_repr(self, Hargs, ref):
         """Test __repr__ printout."""
-        Hc = TransferFunction([-1., 4.], [1., 3., 5.])
-        Hd = TransferFunction([2., 3., 0.], [1., -3., 4., 0], 2.0)
-        Hcm = TransferFunction(
-            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
-            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ])
-        Hdm = TransferFunction(
-            [ [[0, 1], [2, 3]], [[4, 5], [6, 7]] ],
-            [ [[6, 7], [4, 5]], [[2, 3], [0, 1]] ], 0.5)
+        H = TransferFunction(*Hargs)
 
-        refs = [
-            "TransferFunction(array([-1.,  4.]), array([1., 3., 5.]))",
-            "TransferFunction(array([2., 3., 0.]),"
-            " array([ 1., -3.,  4.,  0.]), 2.0)",
-            "TransferFunction([[array([1]), array([2, 3])],"
-            " [array([4, 5]), array([6, 7])]],"
-            " [[array([6, 7]), array([4, 5])],"
-            " [array([2, 3]), array([1])]])",
-            "TransferFunction([[array([1]), array([2, 3])],"
-            " [array([4, 5]), array([6, 7])]],"
-            " [[array([6, 7]), array([4, 5])],"
-            " [array([2, 3]), array([1])]], 0.5)" ]
-        self.assertEqual(repr(Hc), refs[0])
-        self.assertEqual(repr(Hd), refs[1])
-        self.assertEqual(repr(Hcm), refs[2])
-        self.assertEqual(repr(Hdm), refs[3])
+        assert repr(H) == ref
 
         # and reading back
-        array = np.array
-        for H in (Hc, Hd, Hcm, Hdm):
-            H2 = eval(H.__repr__())
-            for p in range(len(H.num)):
-                for m in range(len(H.num[0])):
-                    np.testing.assert_array_almost_equal(
-                        H.num[p][m], H2.num[p][m])
-                    np.testing.assert_array_almost_equal(
-                        H.den[p][m], H2.den[p][m])
-            self.assertEqual(H.dt, H2.dt)
-    
-    def test_sample_system_prewarping(self): 
-        """test that prewarping works when converting from cont to discrete time system"""
-        A = np.array([
-            [ 0.00000000e+00,  1.00000000e+00,  0.00000000e+00, 0.00000000e+00],
-            [-3.81097561e+01, -1.12500000e+00,  0.00000000e+00, 0.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00, 1.00000000e+00],
-            [ 0.00000000e+00,  0.00000000e+00, -1.66356135e+04, -1.34748470e+01]])
-        B = np.array([
-            [    0.        ], [   38.1097561 ],[    0.     ],[16635.61352143]])
-        C = np.array([[0.90909091, 0.        , 0.09090909, 0.       ],])
-        wwarp = 50
-        Ts = 0.025
-        plant = StateSpace(A,B,C,0)
-        plant = ss2tf(plant)
-        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
-        np.testing.assert_array_almost_equal(
-            evalfr(plant, wwarp*1j), 
-            evalfr(plant_d_warped, np.exp(wwarp*1j*Ts)), 
-            decimal=4)
+        array = np.array  # noqa
+        H2 = eval(H.__repr__())
+        for p in range(len(H.num)):
+            for m in range(len(H.num[0])):
+                np.testing.assert_array_almost_equal(H.num[p][m], H2.num[p][m])
+                np.testing.assert_array_almost_equal(H.den[p][m], H2.den[p][m])
+            assert H.dt == H2.dt
 
 
 class TestLTIConverter:
@@ -973,7 +992,3 @@ class TestLTIConverter:
             mimotf.returnScipySignalLTI()
         with pytest.raises(ValueError):
             mimotf.returnScipySignalLTI(strict=True)
-
-
-if __name__ == "__main__":
-    unittest.main()
