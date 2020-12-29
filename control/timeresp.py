@@ -846,8 +846,8 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         The system whose time response is to be computed
     is_step : bool
         Scales the dc value by the magnitude of the nonzero mode since
-        integrating the impulse response gives 
-        :math:`\int e^{-\lambda t} = -e^{-\lambda t}/ \lambda`
+        integrating the impulse response gives
+        :math:`\\int e^{-\\lambda t} = -e^{-\\lambda t}/ \\lambda`
         Default is True.
 
     Returns
@@ -900,8 +900,10 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         p_u, p = p[m_u], p[~m_u]
         if p_u.size > 0:
             m_u = (p_u.real < 0) & (np.abs(p_u.imag) < sqrt_eps)
-            t_emp = np.max(log_decay_percent / np.abs(np.log(p_u[~m_u])/dt))
-            tfinal = max(tfinal, t_emp)
+            if np.any(~m_u):
+                t_emp = np.max(
+                    log_decay_percent / np.abs(np.log(p_u[~m_u]) / dt))
+                tfinal = max(tfinal, t_emp)
 
         # zero - negligible effect on tfinal
         m_z = np.abs(p) < sqrt_eps
