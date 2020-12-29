@@ -93,17 +93,26 @@ def _ssmatrix(data, axis=1):
 
     Returns
     -------
-    arr : 2D array, with shape (0, 0) if a is empty
+    arr : real or complex 2D array, with shape (0, 0) if a is empty
 
     """
-    # Convert the data into an array or matrix, as configured
+
     # If data is passed as a string, use (deprecated?) matrix constructor
-    if config.defaults['statesp.use_numpy_matrix']:
-        arr = np.matrix(data, dtype=float)
-    elif isinstance(data, str):
-        arr = np.array(np.matrix(data, dtype=float))
+    if isinstance(data, str):
+        arr = np.asarray(np.matrix(data))
     else:
-        arr = np.array(data, dtype=float)
+        # TODO: Is it okay to use a view here (asarray or copy=False)?
+        arr = np.array(data)
+
+    # find out if we need to cast to float or complex
+    arr_ndtype = np.result_type(np.float64, arr)
+
+    # Get a view of the data as 2D array or matrix, as configured
+    if config.defaults['statesp.use_numpy_matrix']:
+        arr = np.asmatrix(arr, dtype=arr_ndtype)
+    else:
+        arr = np.asarray(arr, dtype=arr_ndtype)
+
     ndim = arr.ndim
     shape = arr.shape
 
@@ -111,20 +120,20 @@ def _ssmatrix(data, axis=1):
     if (ndim > 2):
         raise ValueError("state-space matrix must be 2-dimensional")
 
-    elif (ndim == 2 and shape == (1, 0)) or \
-         (ndim == 1 and shape == (0, )):
-        # Passed an empty matrix or empty vector; change shape to (0, 0)
+    # note: default empty matrix is (1,0)
+    if shape in [(1, 0), (0, )]:
+        # Passed an empty matrix, list or array vector; change shape to (0, 0)
         shape = (0, 0)
 
     elif ndim == 1:
-        # Passed a row or column vector
+        # Passed a non-empty row or column vector
         shape = (1, shape[0]) if axis == 1 else (shape[0], 1)
 
     elif ndim == 0:
         # Passed a constant; turn into a matrix
         shape = (1, 1)
 
-    #  Create the actual object used to store the result
+    # create the correct view of the data
     return arr.reshape(shape)
 
 
