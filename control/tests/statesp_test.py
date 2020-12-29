@@ -80,16 +80,13 @@ class TestStateSpace:
 
     @pytest.mark.parametrize(
         "dt",
-        [(), (None, ), (0, ), (1, ), (0.1, ), (True, )],
+        [(None, ), (0, ), (1, ), (0.1, ), (True, )],
         ids=lambda i: "dt " + ("unspec" if len(i) == 0 else str(i[0])))
     @pytest.mark.parametrize(
         "argfun",
         [pytest.param(
             lambda ABCDdt: (ABCDdt, {}),
             id="A, B, C, D[, dt]"),
-         pytest.param(
-            lambda ABCDdt: (ABCDdt[:4], {'dt': dt_ for dt_ in ABCDdt[4:]}),
-            id="A, B, C, D[, dt=dt]"),
          pytest.param(
              lambda ABCDdt: ((StateSpace(*ABCDdt), ), {}),
              id="sys")
@@ -109,7 +106,7 @@ class TestStateSpace:
     @pytest.mark.parametrize("args, exc, errmsg",
                              [((True, ), TypeError,
                                "(can only take in|sys must be) a StateSpace"),
-                              ((1, 2), ValueError, "1, 4, or 5 arguments"),
+                              ((1, 2), ValueError, "1 or 4 arguments"),
                               ((np.ones((3, 2)), np.ones((3, 2)),
                                 np.ones((2, 2)), np.ones((2, 2))),
                                ValueError, "A must be square"),
@@ -133,16 +130,6 @@ class TestStateSpace:
         with pytest.raises(exc, match=errmsg):
             ss(*args)
 
-    def test_constructor_warns(self, sys322ABCD):
-        """Test ambiguos input to StateSpace() constructor"""
-        with pytest.warns(UserWarning, match="received multiple dt"):
-            sys = StateSpace(*(sys322ABCD + (0.1, )), dt=0.2)
-            np.testing.assert_almost_equal(sys.A, sys322ABCD[0])
-        np.testing.assert_almost_equal(sys.B, sys322ABCD[1])
-        np.testing.assert_almost_equal(sys.C, sys322ABCD[2])
-        np.testing.assert_almost_equal(sys.D, sys322ABCD[3])
-        assert sys.dt == 0.1
-
     def test_copy_constructor(self):
         """Test the copy constructor"""
         # Create a set of matrices for a simple linear system
@@ -163,22 +150,6 @@ class TestStateSpace:
         # Change the A matrix for the original system
         linsys.A[0, 0] = -3
         np.testing.assert_array_equal(cpysys.A, [[-1]])  # original value
-
-    def test_copy_constructor_nodt(self, sys322):
-        """Test the copy constructor when an object without dt is passed
-
-        FIXME: may be obsolete in case gh-431 is updated
-        """
-        sysin = sample_system(sys322, 1.)
-        del sysin.dt
-        sys = StateSpace(sysin)
-        assert sys.dt == defaults['control.default_dt']
-
-        # test for static gain
-        sysin = StateSpace([], [], [], [[1, 2], [3, 4]], 1.)
-        del sysin.dt
-        sys = StateSpace(sysin)
-        assert sys.dt is None
 
     def test_matlab_style_constructor(self):
         """Use (deprecated) matrix-style construction string"""
@@ -382,6 +353,7 @@ class TestStateSpace:
         np.testing.assert_almost_equal(phase, true_phase)
         np.testing.assert_equal(omega, true_omega)
 
+    @pytest.mark.skip("is_static_gain is introduced in gh-431")
     def test_is_static_gain(self):
         A0 = np.zeros((2,2))
         A1 = A0.copy()

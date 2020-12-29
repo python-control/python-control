@@ -409,6 +409,7 @@ class TestXferFcn:
                                            resp,
                                            atol=1e-3)
 
+    @pytest.mark.skip("is_static_gain is introduced in gh-431")
     def test_is_static_gain(self):
         numstatic = 1.1
         denstatic = 1.2

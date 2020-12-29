@@ -244,6 +244,7 @@ class TestConfig:
         #     lambda t, x, u: x, inputs=1, outputs=1)
         # assert nlsys.dt == dt
 
+    @pytest.mark.skip("implemented in gh-431")
     def test_change_default_dt_static(self):
         """Test that static gain systems always have dt=None"""
         ct.set_defaults('control', default_dt=0)
