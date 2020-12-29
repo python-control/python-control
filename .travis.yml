@@ -13,9 +13,11 @@ cache:
     - $HOME/.local
 
 python:
+  - "3.9"
+  - "3.8"
   - "3.7"
   - "3.6"
-  - "2.7"
+
 
 # Test against multiple version of SciPy, with and without slycot
 #
@@ -26,18 +28,11 @@ python:
 env:
   - SCIPY=scipy SLYCOT=conda       # default, with slycot via conda
   - SCIPY=scipy SLYCOT=            # default, w/out slycot
-  - SCIPY="scipy==0.19.1" SLYCOT=  # legacy support, w/out slycot
 
 # Add optional builds that test against latest version of slycot, python
 jobs:
   include:
-    - name: "linux, Python 2.7, slycot=source"
-      os: linux
-      dist: xenial
-      services: xvfb
-      python: "2.7"
-      env: SCIPY=scipy SLYCOT=source
-    - name: "linux, Python 3.7, slycot=source"
+    - name: "linux, Python 3.8, slycot=source"
       os: linux
       dist: xenial
       services: xvfb
@@ -49,31 +44,15 @@ jobs:
       services: xvfb
       python: "3.8"
       env: SCIPY=scipy SLYCOT=source
-    - name: "use numpy matrix"
-      dist: xenial
-      services: xvfb
-      python: "3.8"
-      env: SCIPY=scipy SLYCOT=source PYTHON_CONTROL_STATESPACE_ARRAY=1
-
-  # Exclude combinations that are very unlikely (and don't work)
-  exclude:
-    - python: "3.7"            # python3.7 should use latest scipy
-      env: SCIPY="scipy==0.19.1" SLYCOT=
 
   allow_failures:
-    - name: "linux, Python 2.7, slycot=source"
-      os: linux
-      dist: xenial
-      services: xvfb
-      python: "2.7"
-      env: SCIPY=scipy SLYCOT=source
-    - name: "linux, Python 3.7, slycot=source"
+    - name: "linux, Python 3.9, slycot=source"
       os: linux
       dist: xenial
       services: xvfb
       python: "3.7"
       env: SCIPY=scipy SLYCOT=source
-    - name: "linux, Python 3.8, slycot=source"
+    - name: "linux, Python 3.9, slycot=source"
       os: linux
       dist: xenial
       services: xvfb
