@@ -237,7 +237,7 @@ def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
 #                    for crossover frequencies and enhanced to handle discrete
 #                    systems
 
->>>>>>> Stashed changes
+
 def stability_margins(sysdata, returnall=False, epsw=0.0):
     """Calculate stability margins and associated crossover frequencies.
 
@@ -411,7 +411,8 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             (not SM.shape[0] and float('inf')) or np.amin(SM),
             (not gmidx != -1 and float('nan')) or w_180[gmidx][0],
             (not wc.shape[0] and float('nan')) or wc[pmidx][0],
-            (not wstab.shape[0] and float('nan')) or wstab[SM==np.amin(SM)][0])
+            (not wstab.shape[0] and float('nan')) or
+            wstab[SM == np.amin(SM)][0])
 
 
 # Contributed by Steffen Waldherr <waldherr@ist.uni-stuttgart.de>
@@ -504,6 +505,6 @@ def margin(*args):
         margin = stability_margins(args)
     else:
         raise ValueError("Margin needs 1 or 3 arguments; received %i."
-            % len(args))
+                         % len(args))
 
     return margin[0], margin[1], margin[3], margin[4]
