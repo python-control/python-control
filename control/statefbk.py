@@ -41,7 +41,7 @@
 
 # External packages and modules
 import numpy as np
-import scipy as sp
+
 from . import statesp
 from .mateqn import care
 from .statesp import _ssmatrix
@@ -59,11 +59,11 @@ def place(A, B, p):
 
     Parameters
     ----------
-    A : 2D array
+    A : 2D array_like
         Dynamics matrix
-    B : 2D array
+    B : 2D array_like
         Input matrix
-    p : 1D list
+    p : 1D array_like
         Desired eigenvalue locations
 
     Returns
@@ -120,7 +120,7 @@ def place(A, B, p):
         raise ControlDimension(err_str)
 
     # Convert desired poles to numpy array
-    placed_eigs = np.array(p)
+    placed_eigs = np.atleast_1d(np.squeeze(np.asarray(p)))
 
     result = place_poles(A_mat, B_mat, placed_eigs, method='YT')
     K = result.gain_matrix
@@ -133,11 +133,11 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     Required Parameters
     ----------
-    A : 2D array
+    A : 2D array_like
         Dynamics matrix
-    B : 2D array
+    B : 2D array_like
         Input matrix
-    p : 1D list
+    p : 1D array_like
         Desired eigenvalue locations
 
     Optional Parameters
@@ -201,7 +201,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     # Compute the system eigenvalues and convert poles to numpy array
     system_eigs = np.linalg.eig(A_mat)[0]
-    placed_eigs = np.array(p)
+    placed_eigs = np.atleast_1d(np.squeeze(np.asarray(p)))
 
     # Need a character parameter for SB01BD
     if dtime:
@@ -264,9 +264,9 @@ def lqe(A, G, C, QN, RN, NN=None):
 
     Parameters
     ----------
-    A, G : 2D array
+    A, G : 2D array_like
         Dynamics and noise input matrices
-    QN, RN : 2D array
+    QN, RN : 2D array_like
         Process and sensor noise covariance matrices
     NN : 2D array, optional
         Cross covariance matrix
@@ -292,8 +292,8 @@ def lqe(A, G, C, QN, RN, NN=None):
 
     Examples
     --------
-    >>> K, P, E = lqe(A, G, C, QN, RN)
-    >>> K, P, E = lqe(A, G, C, QN, RN, NN)
+    >>> L, P, E = lqe(A, G, C, QN, RN)
+    >>> L, P, E = lqe(A, G, C, QN, RN, NN)
 
     See Also
     --------
@@ -324,9 +324,9 @@ def acker(A, B, poles):
 
     Parameters
     ----------
-    A, B : 2D arrays
+    A, B : 2D array_like
         State and input matrix of the system
-    poles : 1D list
+    poles : 1D array_like
         Desired eigenvalue locations
 
     Returns
