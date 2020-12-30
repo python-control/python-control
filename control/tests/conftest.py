@@ -28,7 +28,22 @@ matrixerrorfilter = pytest.mark.filterwarnings("error:.*matrix subclass:"
                                                "PendingDeprecationWarning")
 
 
-@pytest.fixture(scope="session", autouse=TEST_MATRIX_AND_ARRAY,
+@pytest.fixture(scope="session", autouse=True)
+def control_defaults():
+    """Make sure the testing session always starts with the defaults.
+
+    This should be the first fixture initialized,
+    so that all other fixtures see the general defaults (unless they set them
+    themselves) even before importing control/__init__. Enforce this by adding
+    it as an argument to all other session scoped fixtures.
+    """
+    control.reset_defaults()
+    the_defaults = control.config.defaults.copy()
+    yield
+    # assert that nothing changed it without reverting
+    assert control.config.defaults == the_defaults
+
+@pytest.fixture(scope="function", autouse=TEST_MATRIX_AND_ARRAY,
                 params=[pytest.param("arrayout", marks=matrixerrorfilter),
                         pytest.param("matrixout", marks=matrixfilter)])
 def matarrayout(request):
@@ -70,7 +85,7 @@ def check_deprecated_matrix():
         yield
 
 
-@pytest.fixture(scope="session",
+@pytest.fixture(scope="function",
                 params=[p for p, usebydefault in
                         [(pytest.param(np.array,
                                        id="arrayin"),
@@ -90,7 +105,7 @@ def editsdefaults():
     """Make sure any changes to the defaults only last during a test"""
     restore = control.config.defaults.copy()
     yield
-    control.config.defaults.update(restore)
+    control.config.defaults = restore.copy()
 
 
 @pytest.fixture(scope="function")

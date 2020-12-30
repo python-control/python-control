@@ -16,7 +16,7 @@ from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import (StateSpace, _convertToStateSpace, drss, rss, ss,
-                             tf2ss)
+                             tf2ss, _statesp_defaults)
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
@@ -826,3 +826,17 @@ class TestLTIConverter:
         with pytest.raises(ValueError):
             mimoss.returnScipySignalLTI(strict=True)
 
+
+class TestStateSpaceConfig:
+    """Test the configuration of the StateSpace module"""
+
+    @pytest.fixture
+    def matarrayout(self):
+        """Override autoused global fixture within this class"""
+        pass
+
+    def test_statespace_defaults(self, matarrayout):
+        """Make sure the tests are run with the configured defaults"""
+        for k, v in _statesp_defaults.items():
+            assert defaults[k] == v, \
+                "{} is {} but expected {}".format(k, defaults[k], v)
