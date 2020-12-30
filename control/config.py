@@ -144,7 +144,7 @@ def use_numpy_matrix(flag=True, warn=True):
     Parameters
     ----------
     flag : bool
-        If flag is `True` (default), use the Numpy (soon to be deprecated)
+        If flag is `True` (default), use the deprecated Numpy
         `matrix` class to represent matrices in the `~control.StateSpace`
         class and functions.  If flat is `False`, then matrices are
         represented by a 2D `ndarray` object.
@@ -161,8 +161,8 @@ def use_numpy_matrix(flag=True, warn=True):
     space operations is a 2D array.
     """
     if flag and warn:
-        warnings.warn("Return type numpy.matrix is soon to be deprecated.",
-                      stacklevel=2)
+        warnings.warn("Return type numpy.matrix is deprecated.",
+                      stacklevel=2, category=DeprecationWarning)
     set_defaults('statesp', use_numpy_matrix=flag)
 
 def use_legacy_defaults(version):
@@ -171,7 +171,7 @@ def use_legacy_defaults(version):
     Parameters
     ----------
     version : string
-        Version number of the defaults desired. Ranges from '0.1' to '0.8.4'. 
+        Version number of the defaults desired. Ranges from '0.1' to '0.8.4'.
     """
     import re
     (major, minor, patch) = (None, None, None)  # default values
@@ -189,7 +189,7 @@ def use_legacy_defaults(version):
     match = re.match("[vV]?0.([3-6])([a-d])", version)
     if match: (major, minor, patch) = \
        (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
-    
+
     # Abbreviated version format: vM.N or M.N
     match = re.match("([vV]?[0-9]).([0-9])", version)
     if match: (major, minor, patch) = \
