@@ -1,11 +1,10 @@
-#!/usr/bin/env python
-#
-# obc_test.py - tests for optimization based control
-# RMM, 17 Apr 2019
-#
-# This test suite checks the functionality for optimization based control.
+"""obc_test.py - tests for optimization based control
 
-import unittest
+RMM, 17 Apr 2019 check the functionality for optimization based control.
+RMM, 30 Dec 2020 convert to pytest
+"""
+
+import pytest
 import warnings
 import numpy as np
 import scipy as sp
@@ -13,7 +12,7 @@ import control as ct
 import control.pwa as pwa
 import polytope as pc
 
-class TestOBC(unittest.TestCase):
+class TestOBC:
     def setUp(self):
         # Turn off numpy matrix warnings
         import warnings
@@ -154,11 +153,3 @@ class TestOBC(unittest.TestCase):
         plot(np.range(Nsim), data.U);
         plot(np.range(Nsim), us*ones(1, Nsim), 'k--')
         title('inputs')
-        
-
-def suite():
-    return unittest.TestLoader().loadTestsFromTestCase(TestTimeresp)
-
-
-if __name__ == '__main__':
-    unittest.main()
