@@ -1,57 +1,55 @@
-#!/usr/bin/env python
-#
-# flatsys_test.py - test flat system module
-# RMM, 29 Jun 2019
-#
-# This test suite checks to make sure that the basic functions supporting
-# differential flat systetms are functioning.  It doesn't do exhaustive
-# testing of operations on flat systems.  Separate unit tests should be
-# created for that purpose.
+"""flatsys_test.py - test flat system module
 
-import unittest
-import numpy as np
-import scipy as sp
-import control as ct
-import control.flatsys as fs
+RMM, 29 Jun 2019
+
+This test suite checks to make sure that the basic functions supporting
+differential flat systetms are functioning.  It doesn't do exhaustive
+testing of operations on flat systems.  Separate unit tests should be
+created for that purpose.
+"""
+
 from distutils.version import StrictVersion
 
+import numpy as np
+import pytest
+import scipy as sp
 
-class TestFlatSys(unittest.TestCase):
-    def setUp(self):
-        ct.use_numpy_matrix(False)
+import control as ct
+import control.flatsys as fs
 
-    def test_double_integrator(self):
+
+class TestFlatSys:
+    """Test differential flat systems"""
+
+    @pytest.mark.parametrize(
+        "xf, uf, Tf",
+        [([1, 0], [0], 2),
+         ([0, 1], [0], 3),
+         ([1, 1], [1], 4)])
+    def test_double_integrator(self, xf, uf, Tf):
         # Define a second order integrator
         sys = ct.StateSpace([[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], 0)
         flatsys = fs.LinearFlatSystem(sys)
 
-        # Define the endpoints of a trajectory
-        x1 = [0, 0]; u1 = [0]; T1 = 1
-        x2 = [1, 0]; u2 = [0]; T2 = 2
-        x3 = [0, 1]; u3 = [0]; T3 = 3
-        x4 = [1, 1]; u4 = [1]; T4 = 4
-
         # Define the basis set
         poly = fs.PolyFamily(6)
 
-        # Plan trajectories for various combinations
-        for x0, u0, xf, uf, Tf in [
-            (x1, u1, x2, u2, T2), (x1, u1, x3, u3, T3), (x1, u1, x4, u4, T4)]:
-            traj = fs.point_to_point(flatsys, x0, u0, xf, uf, Tf, basis=poly)
+        x1, u1, = [0, 0], [0]
+        traj = fs.point_to_point(flatsys, x1, u1, xf, uf, Tf, basis=poly)
 
-            # Verify that the trajectory computation is correct
-            x, u = traj.eval([0, Tf])
-            np.testing.assert_array_almost_equal(x0, x[:, 0])
-            np.testing.assert_array_almost_equal(u0, u[:, 0])
-            np.testing.assert_array_almost_equal(xf, x[:, 1])
-            np.testing.assert_array_almost_equal(uf, u[:, 1])
+        # Verify that the trajectory computation is correct
+        x, u = traj.eval([0, Tf])
+        np.testing.assert_array_almost_equal(x1, x[:, 0])
+        np.testing.assert_array_almost_equal(u1, u[:, 0])
+        np.testing.assert_array_almost_equal(xf, x[:, 1])
+        np.testing.assert_array_almost_equal(uf, u[:, 1])
 
-            # Simulate the system and make sure we stay close to desired traj
-            T = np.linspace(0, Tf, 100)
-            xd, ud = traj.eval(T)
+        # Simulate the system and make sure we stay close to desired traj
+        T = np.linspace(0, Tf, 100)
+        xd, ud = traj.eval(T)
 
-            t, y, x = ct.forced_response(sys, T, ud, x0)
-            np.testing.assert_array_almost_equal(x, xd, decimal=3)
+        t, y, x = ct.forced_response(sys, T, ud, x1)
+        np.testing.assert_array_almost_equal(x, xd, decimal=3)
 
     def test_kinematic_car(self):
         """Differential flatness for a kinematic car"""
@@ -123,9 +121,3 @@ class TestFlatSys(unittest.TestCase):
                 vehicle_flat, T, ud, x0, return_x=True)
             np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
 
-    def tearDown(self):
-        ct.reset_defaults()
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -1,351 +1,383 @@
-#!/usr/bin/env python
-#
-# discrete_test.py - test discrete time classes
-# RMM, 9 Sep 2012
+"""discrete_test.py - test discrete time classes
 
-import unittest
+RMM, 9 Sep 2012
+"""
+
 import numpy as np
+import pytest
+
 from control import StateSpace, TransferFunction, feedback, step_response, \
     isdtime, timebase, isctime, sample_system, bode, impulse_response, \
-    timebaseEqual, forced_response
-from control import matlab
+    evalfr, timebaseEqual, forced_response, rss
 
-class TestDiscrete(unittest.TestCase):
-    """Tests for the DiscreteStateSpace class."""
 
-    def setUp(self):
-        """Set up a SISO and MIMO system to test operations on."""
+class TestDiscrete:
+    """Tests for the system classes with discrete timebase."""
 
+    @pytest.fixture
+    def tsys(self):
+        """Create some systems for testing"""
+        class Tsys:
+            pass
+        T = Tsys()
         # Single input, single output continuous and discrete time systems
-        sys = matlab.rss(3, 1, 1)
-        self.siso_ss1 = StateSpace(sys.A, sys.B, sys.C, sys.D)
-        self.siso_ss1c = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.0)
-        self.siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1)
-        self.siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.2)
-        self.siso_ss3d = StateSpace(sys.A, sys.B, sys.C, sys.D, True)
+        sys = rss(3, 1, 1)
+        T.siso_ss1 = StateSpace(sys.A, sys.B, sys.C, sys.D, None)
+        T.siso_ss1c = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.0)
+        T.siso_ss1d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.1)
+        T.siso_ss2d = StateSpace(sys.A, sys.B, sys.C, sys.D, 0.2)
+        T.siso_ss3d = StateSpace(sys.A, sys.B, sys.C, sys.D, True)
 
         # Two input, two output continuous time system
         A = [[-3., 4., 2.], [-1., -3., 0.], [2., 5., 3.]]
         B = [[1., 4.], [-3., -3.], [-2., 1.]]
         C = [[4., 2., -3.], [1., 4., 3.]]
         D = [[-2., 4.], [0., 1.]]
-        self.mimo_ss1 = StateSpace(A, B, C, D)
-        self.mimo_ss1c = StateSpace(A, B, C, D, 0)
+        T.mimo_ss1 = StateSpace(A, B, C, D, None)
+        T.mimo_ss1c = StateSpace(A, B, C, D, 0)
 
         # Two input, two output discrete time system
-        self.mimo_ss1d = StateSpace(A, B, C, D, 0.1)
+        T.mimo_ss1d = StateSpace(A, B, C, D, 0.1)
 
         # Same system, but with a different sampling time
-        self.mimo_ss2d = StateSpace(A, B, C, D, 0.2)
+        T.mimo_ss2d = StateSpace(A, B, C, D, 0.2)
 
         # Single input, single output continuus and discrete transfer function
-        self.siso_tf1 = TransferFunction([1, 1], [1, 2, 1])
-        self.siso_tf1c = TransferFunction([1, 1], [1, 2, 1], 0)
-        self.siso_tf1d = TransferFunction([1, 1], [1, 2, 1], 0.1)
-        self.siso_tf2d = TransferFunction([1, 1], [1, 2, 1], 0.2)
-        self.siso_tf3d = TransferFunction([1, 1], [1, 2, 1], True)
+        T.siso_tf1 = TransferFunction([1, 1], [1, 2, 1], None)
+        T.siso_tf1c = TransferFunction([1, 1], [1, 2, 1], 0)
+        T.siso_tf1d = TransferFunction([1, 1], [1, 2, 1], 0.1)
+        T.siso_tf2d = TransferFunction([1, 1], [1, 2, 1], 0.2)
+        T.siso_tf3d = TransferFunction([1, 1], [1, 2, 1], True)
 
-    def testTimebaseEqual(self):
-        self.assertEqual(timebaseEqual(self.siso_ss1, self.siso_tf1), True)
-        self.assertEqual(timebaseEqual(self.siso_ss1, self.siso_ss1c), True)
-        self.assertEqual(timebaseEqual(self.siso_ss1, self.siso_ss1d), True)
-        self.assertEqual(timebaseEqual(self.siso_ss1d, self.siso_ss1c), False)
-        self.assertEqual(timebaseEqual(self.siso_ss1d, self.siso_ss2d), False)
-        self.assertEqual(timebaseEqual(self.siso_ss1d, self.siso_ss3d), False)
+        return T
 
-    def testSystemInitialization(self):
+    def testTimebaseEqual(self, tsys):
+        """Test for equal timebases and not so equal ones"""
+        assert timebaseEqual(tsys.siso_ss1, tsys.siso_tf1)
+        assert timebaseEqual(tsys.siso_ss1, tsys.siso_ss1c)
+        assert not timebaseEqual(tsys.siso_ss1d, tsys.siso_ss1c)
+        assert not timebaseEqual(tsys.siso_ss1d, tsys.siso_ss2d)
+        assert not timebaseEqual(tsys.siso_ss1d, tsys.siso_ss3d)
+
+    def testSystemInitialization(self, tsys):
         # Check to make sure systems are discrete time with proper variables
-        self.assertEqual(self.siso_ss1.dt, None)
-        self.assertEqual(self.siso_ss1c.dt, 0)
-        self.assertEqual(self.siso_ss1d.dt, 0.1)
-        self.assertEqual(self.siso_ss2d.dt, 0.2)
-        self.assertEqual(self.siso_ss3d.dt, True)
-        self.assertEqual(self.mimo_ss1c.dt, 0)
-        self.assertEqual(self.mimo_ss1d.dt, 0.1)
-        self.assertEqual(self.mimo_ss2d.dt, 0.2)
-        self.assertEqual(self.siso_tf1.dt, None)
-        self.assertEqual(self.siso_tf1c.dt, 0)
-        self.assertEqual(self.siso_tf1d.dt, 0.1)
-        self.assertEqual(self.siso_tf2d.dt, 0.2)
-        self.assertEqual(self.siso_tf3d.dt, True)
+        assert tsys.siso_ss1.dt is None
+        assert tsys.siso_ss1c.dt == 0
+        assert tsys.siso_ss1d.dt == 0.1
+        assert tsys.siso_ss2d.dt == 0.2
+        assert tsys.siso_ss3d.dt is True
+        assert tsys.mimo_ss1c.dt == 0
+        assert tsys.mimo_ss1d.dt == 0.1
+        assert tsys.mimo_ss2d.dt == 0.2
+        assert tsys.siso_tf1.dt is None
+        assert tsys.siso_tf1c.dt == 0
+        assert tsys.siso_tf1d.dt == 0.1
+        assert tsys.siso_tf2d.dt == 0.2
+        assert tsys.siso_tf3d.dt is True
 
-    def testCopyConstructor(self):
-        for sys in (self.siso_ss1, self.siso_ss1c, self.siso_ss1d):
-            newsys = StateSpace(sys);
-            self.assertEqual(sys.dt, newsys.dt)
-        for sys in (self.siso_tf1, self.siso_tf1c, self.siso_tf1d):
-            newsys = TransferFunction(sys);
-            self.assertEqual(sys.dt, newsys.dt)
+    def testCopyConstructor(self, tsys):
+        for sys in (tsys.siso_ss1, tsys.siso_ss1c, tsys.siso_ss1d):
+            newsys = StateSpace(sys)
+            assert sys.dt == newsys.dt
+        for sys in (tsys.siso_tf1, tsys.siso_tf1c, tsys.siso_tf1d):
+            newsys = TransferFunction(sys)
+            assert sys.dt == newsys.dt
 
-    def test_timebase(self):
-        self.assertEqual(timebase(1), None);
-        self.assertRaises(ValueError, timebase, [1, 2])
-        self.assertEqual(timebase(self.siso_ss1, strict=False), None);
-        self.assertEqual(timebase(self.siso_ss1, strict=True), None);
-        self.assertEqual(timebase(self.siso_ss1c), 0);
-        self.assertEqual(timebase(self.siso_ss1d), 0.1);
-        self.assertEqual(timebase(self.siso_ss2d), 0.2);
-        self.assertEqual(timebase(self.siso_ss3d), True);
-        self.assertEqual(timebase(self.siso_ss3d, strict=False), 1);
-        self.assertEqual(timebase(self.siso_tf1, strict=False), None);
-        self.assertEqual(timebase(self.siso_tf1, strict=True), None);
-        self.assertEqual(timebase(self.siso_tf1c), 0);
-        self.assertEqual(timebase(self.siso_tf1d), 0.1);
-        self.assertEqual(timebase(self.siso_tf2d), 0.2);
-        self.assertEqual(timebase(self.siso_tf3d), True);
-        self.assertEqual(timebase(self.siso_tf3d, strict=False), 1);
+    def test_timebase(self, tsys):
+        assert timebase(1) is None
+        with pytest.raises(ValueError):
+            timebase([1, 2])
+        assert timebase(tsys.siso_ss1, strict=False) is None
+        assert timebase(tsys.siso_ss1, strict=True) is None
+        assert timebase(tsys.siso_ss1c) == 0
+        assert timebase(tsys.siso_ss1d) == 0.1
+        assert timebase(tsys.siso_ss2d) == 0.2
+        assert timebase(tsys.siso_ss3d)
+        assert timebase(tsys.siso_ss3d, strict=False) == 1
+        assert timebase(tsys.siso_tf1, strict=False) is None
+        assert timebase(tsys.siso_tf1, strict=True) is None
+        assert timebase(tsys.siso_tf1c) == 0
+        assert timebase(tsys.siso_tf1d) == 0.1
+        assert timebase(tsys.siso_tf2d) == 0.2
+        assert timebase(tsys.siso_tf3d)
+        assert timebase(tsys.siso_tf3d, strict=False) == 1
 
-    def test_timebase_conversions(self):
+    def test_timebase_conversions(self, tsys):
         '''Check to make sure timebases transfer properly'''
-        tf1 = TransferFunction([1,1],[1,2,3])       # unspecified
-        tf2 = TransferFunction([1,1],[1,2,3], 0)    # cont time
-        tf3 = TransferFunction([1,1],[1,2,3], True) # dtime, unspec 
-        tf4 = TransferFunction([1,1],[1,2,3], 1)    # dtime, dt=1
+        tf1 = TransferFunction([1, 1], [1, 2, 3], None)  # unspecified
+        tf2 = TransferFunction([1, 1], [1, 2, 3], 0)     # cont time
+        tf3 = TransferFunction([1, 1], [1, 2, 3], True)  # dtime, unspec
+        tf4 = TransferFunction([1, 1], [1, 2, 3], .1)    # dtime, dt=.1
 
         # Make sure unspecified timebase is converted correctly
-        self.assertEqual(timebase(tf1*tf1), timebase(tf1))
-        self.assertEqual(timebase(tf1*tf2), timebase(tf2))
-        self.assertEqual(timebase(tf1*tf3), timebase(tf3))
-        self.assertEqual(timebase(tf1*tf4), timebase(tf4))
-        self.assertEqual(timebase(tf2*tf1), timebase(tf2))
-        self.assertEqual(timebase(tf3*tf1), timebase(tf3))
-        self.assertEqual(timebase(tf4*tf1), timebase(tf4))
-        self.assertEqual(timebase(tf1+tf1), timebase(tf1))
-        self.assertEqual(timebase(tf1+tf2), timebase(tf2))
-        self.assertEqual(timebase(tf1+tf3), timebase(tf3))
-        self.assertEqual(timebase(tf1+tf4), timebase(tf4))
-        self.assertEqual(timebase(feedback(tf1, tf1)), timebase(tf1))
-        self.assertEqual(timebase(feedback(tf1, tf2)), timebase(tf2))
-        self.assertEqual(timebase(feedback(tf1, tf3)), timebase(tf3))
-        self.assertEqual(timebase(feedback(tf1, tf4)), timebase(tf4))
+        assert timebase(tf1*tf1) == timebase(tf1)
+        assert timebase(tf1*tf2) == timebase(tf2)
+        assert timebase(tf1*tf3) == timebase(tf3)
+        assert timebase(tf1*tf4) == timebase(tf4)
+        assert timebase(tf2*tf1) == timebase(tf2)
+        assert timebase(tf3*tf1) == timebase(tf3)
+        assert timebase(tf4*tf1) == timebase(tf4)
+        assert timebase(tf1+tf1) == timebase(tf1)
+        assert timebase(tf1+tf2) == timebase(tf2)
+        assert timebase(tf1+tf3) == timebase(tf3)
+        assert timebase(tf1+tf4) == timebase(tf4)
+        assert timebase(feedback(tf1, tf1)) == timebase(tf1)
+        assert timebase(feedback(tf1, tf2)) == timebase(tf2)
+        assert timebase(feedback(tf1, tf3)) == timebase(tf3)
+        assert timebase(feedback(tf1, tf4)) == timebase(tf4)
 
         # Make sure discrete time without sampling is converted correctly
-        self.assertEqual(timebase(tf3*tf3), timebase(tf3))
-        self.assertEqual(timebase(tf3*tf4), timebase(tf4))
-        self.assertEqual(timebase(tf3+tf3), timebase(tf3))
-        self.assertEqual(timebase(tf3+tf3), timebase(tf4))
-        self.assertEqual(timebase(feedback(tf3, tf3)), timebase(tf3))
-        self.assertEqual(timebase(feedback(tf3, tf4)), timebase(tf4))
+        assert timebase(tf3*tf3) == timebase(tf3)
+        assert timebase(tf3+tf3) == timebase(tf3)
+        assert timebase(feedback(tf3, tf3)) == timebase(tf3)
 
         # Make sure all other combinations are errors
-        try:
-            tf2*tf3             # Error; incompatible timebases
-            raise ValueError("incompatible operation allowed")
-        except ValueError:
-            pass
-        try:
-            tf2*tf4             # Error; incompatible timebases
-            raise ValueError("incompatible operation allowed")
-        except ValueError:
-            pass
-        try:
-            tf2+tf3             # Error; incompatible timebases
-            raise ValueError("incompatible operation allowed")
-        except ValueError:
-            pass
-        try:
-            tf2+tf4             # Error; incompatible timebases
-            raise ValueError("incompatible operation allowed")
-        except ValueError:
-            pass
-        try:
-            feedback(tf2, tf3)  # Error; incompatible timebases
-            raise ValueError("incompatible operation allowed")
-        except ValueError:
-            pass
-        try:
-            feedback(tf2, tf4)   # Error; incompatible timebases
-            raise ValueError("incompatible operation allowed")
-        except ValueError:
-            pass
-        
-    def testisdtime(self):
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf2 * tf3
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf3 * tf2
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf2 * tf4
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf4 * tf2
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf2 + tf3
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf3 + tf2
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf2 + tf4
+        with pytest.raises(ValueError, match="different sampling times"):
+            tf4 + tf2
+        with pytest.raises(ValueError, match="different sampling times"):
+            feedback(tf2, tf3)
+        with pytest.raises(ValueError, match="different sampling times"):
+            feedback(tf3, tf2)
+        with pytest.raises(ValueError, match="different sampling times"):
+            feedback(tf2, tf4)
+        with pytest.raises(ValueError, match="different sampling times"):
+            feedback(tf4, tf2)
+
+    def testisdtime(self, tsys):
         # Constant
-        self.assertEqual(isdtime(1), True);
-        self.assertEqual(isdtime(1, strict=True), False);
+        assert isdtime(1)
+        assert not isdtime(1, strict=True)
 
         # State space
-        self.assertEqual(isdtime(self.siso_ss1), True);
-        self.assertEqual(isdtime(self.siso_ss1, strict=True), False);
-        self.assertEqual(isdtime(self.siso_ss1c), False);
-        self.assertEqual(isdtime(self.siso_ss1c, strict=True), False);
-        self.assertEqual(isdtime(self.siso_ss1d), True);
-        self.assertEqual(isdtime(self.siso_ss1d, strict=True), True);
-        self.assertEqual(isdtime(self.siso_ss3d, strict=True), True);
+        assert isdtime(tsys.siso_ss1)
+        assert not isdtime(tsys.siso_ss1, strict=True)
+        assert not isdtime(tsys.siso_ss1c)
+        assert not isdtime(tsys.siso_ss1c, strict=True)
+        assert isdtime(tsys.siso_ss1d)
+        assert isdtime(tsys.siso_ss1d, strict=True)
+        assert isdtime(tsys.siso_ss3d, strict=True)
 
         # Transfer function
-        self.assertEqual(isdtime(self.siso_tf1), True);
-        self.assertEqual(isdtime(self.siso_tf1, strict=True), False);
-        self.assertEqual(isdtime(self.siso_tf1c), False);
-        self.assertEqual(isdtime(self.siso_tf1c, strict=True), False);
-        self.assertEqual(isdtime(self.siso_tf1d), True);
-        self.assertEqual(isdtime(self.siso_tf1d, strict=True), True);
-        self.assertEqual(isdtime(self.siso_tf3d, strict=True), True);
+        assert isdtime(tsys.siso_tf1)
+        assert not isdtime(tsys.siso_tf1, strict=True)
+        assert not isdtime(tsys.siso_tf1c)
+        assert not isdtime(tsys.siso_tf1c, strict=True)
+        assert isdtime(tsys.siso_tf1d)
+        assert isdtime(tsys.siso_tf1d, strict=True)
+        assert isdtime(tsys.siso_tf3d, strict=True)
 
-    def testisctime(self):
+    def testisctime(self, tsys):
         # Constant
-        self.assertEqual(isctime(1), True);
-        self.assertEqual(isctime(1, strict=True), False);
+        assert isctime(1)
+        assert not isctime(1, strict=True)
 
         # State Space
-        self.assertEqual(isctime(self.siso_ss1), True);
-        self.assertEqual(isctime(self.siso_ss1, strict=True), False);
-        self.assertEqual(isctime(self.siso_ss1c), True);
-        self.assertEqual(isctime(self.siso_ss1c, strict=True), True);
-        self.assertEqual(isctime(self.siso_ss1d), False);
-        self.assertEqual(isctime(self.siso_ss1d, strict=True), False);
-        self.assertEqual(isctime(self.siso_ss3d, strict=True), False);
+        assert isctime(tsys.siso_ss1)
+        assert not isctime(tsys.siso_ss1, strict=True)
+        assert isctime(tsys.siso_ss1c)
+        assert isctime(tsys.siso_ss1c, strict=True)
+        assert not isctime(tsys.siso_ss1d)
+        assert not isctime(tsys.siso_ss1d, strict=True)
+        assert not isctime(tsys.siso_ss3d, strict=True)
 
         # Transfer Function
-        self.assertEqual(isctime(self.siso_tf1), True);
-        self.assertEqual(isctime(self.siso_tf1, strict=True), False);
-        self.assertEqual(isctime(self.siso_tf1c), True);
-        self.assertEqual(isctime(self.siso_tf1c, strict=True), True);
-        self.assertEqual(isctime(self.siso_tf1d), False);
-        self.assertEqual(isctime(self.siso_tf1d, strict=True), False);
-        self.assertEqual(isctime(self.siso_tf3d, strict=True), False);
+        assert isctime(tsys.siso_tf1)
+        assert not isctime(tsys.siso_tf1, strict=True)
+        assert isctime(tsys.siso_tf1c)
+        assert isctime(tsys.siso_tf1c, strict=True)
+        assert not isctime(tsys.siso_tf1d)
+        assert not isctime(tsys.siso_tf1d, strict=True)
+        assert not isctime(tsys.siso_tf3d, strict=True)
 
-    def testAddition(self):
+    def testAddition(self, tsys):
         # State space addition
-        sys = self.siso_ss1 + self.siso_ss1d
-        sys = self.siso_ss1 + self.siso_ss1c
-        sys = self.siso_ss1c + self.siso_ss1
-        sys = self.siso_ss1d + self.siso_ss1
-        sys = self.siso_ss1c + self.siso_ss1c
-        sys = self.siso_ss1d + self.siso_ss1d
-        sys = self.siso_ss3d + self.siso_ss3d
-        self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1c,
-                          self.mimo_ss1d)
-        self.assertRaises(ValueError, StateSpace.__add__, self.mimo_ss1d,
-                          self.mimo_ss2d)
-        self.assertRaises(ValueError, StateSpace.__add__, self.siso_ss1d,
-                          self.siso_ss3d)
+        sys = tsys.siso_ss1 + tsys.siso_ss1d
+        sys = tsys.siso_ss1 + tsys.siso_ss1c
+        sys = tsys.siso_ss1c + tsys.siso_ss1
+        sys = tsys.siso_ss1d + tsys.siso_ss1
+        sys = tsys.siso_ss1c + tsys.siso_ss1c
+        sys = tsys.siso_ss1d + tsys.siso_ss1d
+        sys = tsys.siso_ss3d + tsys.siso_ss3d
+
+        with pytest.raises(ValueError):
+            StateSpace.__add__(tsys.mimo_ss1c, tsys.mimo_ss1d)
+        with pytest.raises(ValueError):
+            StateSpace.__add__(tsys.mimo_ss1d, tsys.mimo_ss2d)
+        with pytest.raises(ValueError):
+            StateSpace.__add__(tsys.siso_ss1d, tsys.siso_ss3d)
 
         # Transfer function addition
-        sys = self.siso_tf1 + self.siso_tf1d
-        sys = self.siso_tf1 + self.siso_tf1c
-        sys = self.siso_tf1c + self.siso_tf1
-        sys = self.siso_tf1d + self.siso_tf1
-        sys = self.siso_tf1c + self.siso_tf1c
-        sys = self.siso_tf1d + self.siso_tf1d
-        sys = self.siso_tf2d + self.siso_tf2d
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1c,
-                          self.siso_tf1d)
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d,
-                          self.siso_tf2d)
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1d,
-                          self.siso_tf3d)
+        sys = tsys.siso_tf1 + tsys.siso_tf1d
+        sys = tsys.siso_tf1 + tsys.siso_tf1c
+        sys = tsys.siso_tf1c + tsys.siso_tf1
+        sys = tsys.siso_tf1d + tsys.siso_tf1
+        sys = tsys.siso_tf1c + tsys.siso_tf1c
+        sys = tsys.siso_tf1d + tsys.siso_tf1d
+        sys = tsys.siso_tf2d + tsys.siso_tf2d
+
+        with pytest.raises(ValueError):
+            TransferFunction.__add__(tsys.siso_tf1c, tsys.siso_tf1d)
+        with pytest.raises(ValueError):
+            TransferFunction.__add__(tsys.siso_tf1d, tsys.siso_tf2d)
+        with pytest.raises(ValueError):
+            TransferFunction.__add__(tsys.siso_tf1d, tsys.siso_tf3d)
 
         # State space + transfer function
-        sys = self.siso_ss1c + self.siso_tf1c
-        sys = self.siso_tf1c + self.siso_ss1c
-        sys = self.siso_ss1d + self.siso_tf1d
-        sys = self.siso_tf1d + self.siso_ss1d
-        self.assertRaises(ValueError, TransferFunction.__add__, self.siso_tf1c,
-                          self.siso_ss1d)
+        sys = tsys.siso_ss1c + tsys.siso_tf1c
+        sys = tsys.siso_tf1c + tsys.siso_ss1c
+        sys = tsys.siso_ss1d + tsys.siso_tf1d
+        sys = tsys.siso_tf1d + tsys.siso_ss1d
+        with pytest.raises(ValueError):
+            TransferFunction.__add__(tsys.siso_tf1c, tsys.siso_ss1d)
 
-    def testMultiplication(self):
-        # State space addition
-        sys = self.siso_ss1 * self.siso_ss1d
-        sys = self.siso_ss1 * self.siso_ss1c
-        sys = self.siso_ss1c * self.siso_ss1
-        sys = self.siso_ss1d * self.siso_ss1
-        sys = self.siso_ss1c * self.siso_ss1c
-        sys = self.siso_ss1d * self.siso_ss1d
-        self.assertRaises(ValueError, StateSpace.__mul__, self.mimo_ss1c,
-                          self.mimo_ss1d)
-        self.assertRaises(ValueError, StateSpace.__mul__, self.mimo_ss1d,
-                          self.mimo_ss2d)
-        self.assertRaises(ValueError, StateSpace.__mul__, self.siso_ss1d,
-                          self.siso_ss3d)
+    def testMultiplication(self, tsys):
+        # State space multiplication
+        sys = tsys.siso_ss1 * tsys.siso_ss1d
+        sys = tsys.siso_ss1 * tsys.siso_ss1c
+        sys = tsys.siso_ss1c * tsys.siso_ss1
+        sys = tsys.siso_ss1d * tsys.siso_ss1
+        sys = tsys.siso_ss1c * tsys.siso_ss1c
+        sys = tsys.siso_ss1d * tsys.siso_ss1d
 
-        # Transfer function addition
-        sys = self.siso_tf1 * self.siso_tf1d
-        sys = self.siso_tf1 * self.siso_tf1c
-        sys = self.siso_tf1c * self.siso_tf1
-        sys = self.siso_tf1d * self.siso_tf1
-        sys = self.siso_tf1c * self.siso_tf1c
-        sys = self.siso_tf1d * self.siso_tf1d
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1c,
-                          self.siso_tf1d)
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d,
-                          self.siso_tf2d)
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1d,
-                          self.siso_tf3d)
+        with pytest.raises(ValueError):
+            StateSpace.__mul__(tsys.mimo_ss1c, tsys.mimo_ss1d)
+        with pytest.raises(ValueError):
+            StateSpace.__mul__(tsys.mimo_ss1d, tsys.mimo_ss2d)
+        with pytest.raises(ValueError):
+            StateSpace.__mul__(tsys.siso_ss1d, tsys.siso_ss3d)
+
+        # Transfer function multiplication
+        sys = tsys.siso_tf1 * tsys.siso_tf1d
+        sys = tsys.siso_tf1 * tsys.siso_tf1c
+        sys = tsys.siso_tf1c * tsys.siso_tf1
+        sys = tsys.siso_tf1d * tsys.siso_tf1
+        sys = tsys.siso_tf1c * tsys.siso_tf1c
+        sys = tsys.siso_tf1d * tsys.siso_tf1d
+
+        with pytest.raises(ValueError):
+            TransferFunction.__mul__(tsys.siso_tf1c, tsys.siso_tf1d)
+        with pytest.raises(ValueError):
+            TransferFunction.__mul__(tsys.siso_tf1d, tsys.siso_tf2d)
+        with pytest.raises(ValueError):
+            TransferFunction.__mul__(tsys.siso_tf1d, tsys.siso_tf3d)
 
         # State space * transfer function
-        sys = self.siso_ss1c * self.siso_tf1c
-        sys = self.siso_tf1c * self.siso_ss1c
-        sys = self.siso_ss1d * self.siso_tf1d
-        sys = self.siso_tf1d * self.siso_ss1d
-        self.assertRaises(ValueError, TransferFunction.__mul__, self.siso_tf1c,
-                          self.siso_ss1d)
+        sys = tsys.siso_ss1c * tsys.siso_tf1c
+        sys = tsys.siso_tf1c * tsys.siso_ss1c
+        sys = tsys.siso_ss1d * tsys.siso_tf1d
+        sys = tsys.siso_tf1d * tsys.siso_ss1d
+        with pytest.raises(ValueError):
+            TransferFunction.__mul__(tsys.siso_tf1c,
+                          tsys.siso_ss1d)
 
 
-    def testFeedback(self):
-        # State space addition
-        sys = feedback(self.siso_ss1, self.siso_ss1d)
-        sys = feedback(self.siso_ss1, self.siso_ss1c)
-        sys = feedback(self.siso_ss1c, self.siso_ss1)
-        sys = feedback(self.siso_ss1d, self.siso_ss1)
-        sys = feedback(self.siso_ss1c, self.siso_ss1c)
-        sys = feedback(self.siso_ss1d, self.siso_ss1d)
-        self.assertRaises(ValueError, feedback, self.mimo_ss1c, self.mimo_ss1d)
-        self.assertRaises(ValueError, feedback, self.mimo_ss1d, self.mimo_ss2d)
-        self.assertRaises(ValueError, feedback, self.siso_ss1d, self.siso_ss3d)
+    def testFeedback(self, tsys):
+        # State space feedback
+        sys = feedback(tsys.siso_ss1, tsys.siso_ss1d)
+        sys = feedback(tsys.siso_ss1, tsys.siso_ss1c)
+        sys = feedback(tsys.siso_ss1c, tsys.siso_ss1)
+        sys = feedback(tsys.siso_ss1d, tsys.siso_ss1)
+        sys = feedback(tsys.siso_ss1c, tsys.siso_ss1c)
+        sys = feedback(tsys.siso_ss1d, tsys.siso_ss1d)
 
-        # Transfer function addition
-        sys = feedback(self.siso_tf1, self.siso_tf1d)
-        sys = feedback(self.siso_tf1, self.siso_tf1c)
-        sys = feedback(self.siso_tf1c, self.siso_tf1)
-        sys = feedback(self.siso_tf1d, self.siso_tf1)
-        sys = feedback(self.siso_tf1c, self.siso_tf1c)
-        sys = feedback(self.siso_tf1d, self.siso_tf1d)
-        self.assertRaises(ValueError, feedback, self.siso_tf1c, self.siso_tf1d)
-        self.assertRaises(ValueError, feedback, self.siso_tf1d, self.siso_tf2d)
-        self.assertRaises(ValueError, feedback, self.siso_tf1d, self.siso_tf3d)
+        with pytest.raises(ValueError):
+            feedback(tsys.mimo_ss1c, tsys.mimo_ss1d)
+        with pytest.raises(ValueError):
+            feedback(tsys.mimo_ss1d, tsys.mimo_ss2d)
+        with pytest.raises(ValueError):
+            feedback(tsys.siso_ss1d, tsys.siso_ss3d)
+
+        # Transfer function feedback
+        sys = feedback(tsys.siso_tf1, tsys.siso_tf1d)
+        sys = feedback(tsys.siso_tf1, tsys.siso_tf1c)
+        sys = feedback(tsys.siso_tf1c, tsys.siso_tf1)
+        sys = feedback(tsys.siso_tf1d, tsys.siso_tf1)
+        sys = feedback(tsys.siso_tf1c, tsys.siso_tf1c)
+        sys = feedback(tsys.siso_tf1d, tsys.siso_tf1d)
+
+        with pytest.raises(ValueError):
+            feedback(tsys.siso_tf1c, tsys.siso_tf1d)
+        with pytest.raises(ValueError):
+            feedback(tsys.siso_tf1d, tsys.siso_tf2d)
+        with pytest.raises(ValueError):
+            feedback(tsys.siso_tf1d, tsys.siso_tf3d)
 
         # State space, transfer function
-        sys = feedback(self.siso_ss1c, self.siso_tf1c)
-        sys = feedback(self.siso_tf1c, self.siso_ss1c)
-        sys = feedback(self.siso_ss1d, self.siso_tf1d)
-        sys = feedback(self.siso_tf1d, self.siso_ss1d)
-        self.assertRaises(ValueError, feedback, self.siso_tf1c, self.siso_ss1d)
+        sys = feedback(tsys.siso_ss1c, tsys.siso_tf1c)
+        sys = feedback(tsys.siso_tf1c, tsys.siso_ss1c)
+        sys = feedback(tsys.siso_ss1d, tsys.siso_tf1d)
+        sys = feedback(tsys.siso_tf1d, tsys.siso_ss1d)
+        with pytest.raises(ValueError):
+            feedback(tsys.siso_tf1c, tsys.siso_ss1d)
 
-    def testSimulation(self):
+    def testSimulation(self, tsys):
         T = range(100)
         U = np.sin(T)
 
         # For now, just check calling syntax
         # TODO: add checks on output of simulations
-        tout, yout = step_response(self.siso_ss1d)
-        tout, yout = step_response(self.siso_ss1d, T)
-        tout, yout = impulse_response(self.siso_ss1d, T)
-        tout, yout = impulse_response(self.siso_ss1d)
-        tout, yout, xout = forced_response(self.siso_ss1d, T, U, 0)
-        tout, yout, xout = forced_response(self.siso_ss2d, T, U, 0)
-        tout, yout, xout = forced_response(self.siso_ss3d, T, U, 0)
+        tout, yout = step_response(tsys.siso_ss1d)
+        tout, yout = step_response(tsys.siso_ss1d, T)
+        tout, yout = impulse_response(tsys.siso_ss1d)
+        tout, yout = impulse_response(tsys.siso_ss1d, T)
+        tout, yout, xout = forced_response(tsys.siso_ss1d, T, U, 0)
+        tout, yout, xout = forced_response(tsys.siso_ss2d, T, U, 0)
+        tout, yout, xout = forced_response(tsys.siso_ss3d, T, U, 0)
 
-    def test_sample_system(self):
+    def test_sample_system(self, tsys):
         # Make sure we can convert various types of systems
-        for sysc in (self.siso_tf1, self.siso_tf1c,
-                     self.siso_ss1, self.siso_ss1c,
-                     self.mimo_ss1, self.mimo_ss1c):
+        for sysc in (tsys.siso_tf1, tsys.siso_tf1c,
+                     tsys.siso_ss1, tsys.siso_ss1c,
+                     tsys.mimo_ss1, tsys.mimo_ss1c):
             for method in ("zoh", "bilinear", "euler", "backward_diff"):
                 sysd = sample_system(sysc, 1, method=method)
-                self.assertEqual(sysd.dt, 1)
+                assert sysd.dt == 1
 
         # Check "matched", defined only for SISO transfer functions
-        for sysc in (self.siso_tf1, self.siso_tf1c):
+        for sysc in (tsys.siso_tf1, tsys.siso_tf1c):
             sysd = sample_system(sysc, 1, method="matched")
-            self.assertEqual(sysd.dt, 1)
+            assert sysd.dt == 1
 
+    @pytest.mark.parametrize("plantname",
+                             ["siso_ss1c",
+                              "siso_tf1c"])
+    def test_sample_system_prewarp(self, tsys, plantname):
+        """bilinear approximation with prewarping test"""
+        wwarp = 50
+        Ts = 0.025
+        # test state space version
+        plant = getattr(tsys, plantname)
+        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
+        plant_fr = evalfr(plant, wwarp * 1j)
+        dt = plant_d_warped.dt
+        plant_d_fr = evalfr(plant_d_warped, np.exp(wwarp * 1.j * dt))
+        np.testing.assert_array_almost_equal(plant_fr, plant_d_fr)
+
+    def test_sample_system_errors(self, tsys):
         # Check errors
-        self.assertRaises(ValueError, sample_system, self.siso_ss1d, 1)
-        self.assertRaises(ValueError, sample_system, self.siso_tf1d, 1)
-        self.assertRaises(ValueError, sample_system, self.siso_ss1, 1, 'unknown')
+        with pytest.raises(ValueError):
+            sample_system(tsys.siso_ss1d, 1)
+        with pytest.raises(ValueError):
+            sample_system(tsys.siso_tf1d, 1)
+        with pytest.raises(ValueError):
+            sample_system(tsys.siso_ss1, 1, 'unknown')
 
-    def test_sample_ss(self):
+
+    def test_sample_ss(self, tsys):
         # double integrators, two different ways
         sys1 = StateSpace([[0.,1.],[0.,0.]], [[0.],[1.]], [[1.,0.]], 0.)
         sys2 = StateSpace([[0.,0.],[1.,0.]], [[1.],[0.]], [[0.,1.]], 0.)
@@ -359,22 +391,22 @@ class TestDiscrete(unittest.TestCase):
                 np.testing.assert_array_almost_equal(sysd.B, Bd)
                 np.testing.assert_array_almost_equal(sysd.C, sys.C)
                 np.testing.assert_array_almost_equal(sysd.D, sys.D)
-                self.assertEqual(sysd.dt, h)
+                assert sysd.dt == h
 
-    def test_sample_tf(self):
+    def test_sample_tf(self, tsys):
         # double integrator
         sys = TransferFunction(1, [1,0,0])
         for h in (0.1, 0.5, 1, 2):
             numd_expected = 0.5 * h**2 * np.array([1.,1.])
             dend_expected = np.array([1.,-2.,1.])
             sysd = sample_system(sys, h, method='zoh')
-            self.assertEqual(sysd.dt, h)
+            assert sysd.dt == h
             numd = sysd.num[0][0]
             dend = sysd.den[0][0]
             np.testing.assert_array_almost_equal(numd, numd_expected)
             np.testing.assert_array_almost_equal(dend, dend_expected)
 
-    def test_discrete_bode(self):
+    def test_discrete_bode(self, tsys):
         # Create a simple discrete time system and check the calculation
         sys = TransferFunction([1], [1, 0.5], 1)
         omega = [1, 2, 3]
@@ -383,7 +415,3 @@ class TestDiscrete(unittest.TestCase):
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
-
-
-if __name__ == "__main__":
-    unittest.main()
