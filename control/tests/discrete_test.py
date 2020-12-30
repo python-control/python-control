@@ -6,9 +6,10 @@ RMM, 9 Sep 2012
 import numpy as np
 import pytest
 
-from control import StateSpace, TransferFunction, feedback, step_response, \
-    isdtime, timebase, isctime, sample_system, bode, impulse_response, \
-    evalfr, timebaseEqual, forced_response, rss
+from control import (StateSpace, TransferFunction, bode, common_timebase,
+                     evalfr, feedback, forced_response, impulse_response,
+                     isctime, isdtime, rss, sample_system, step_response,
+                     timebase)
 
 
 class TestDiscrete:
@@ -51,13 +52,21 @@ class TestDiscrete:
 
         return T
 
-    def testTimebaseEqual(self, tsys):
-        """Test for equal timebases and not so equal ones"""
-        assert timebaseEqual(tsys.siso_ss1, tsys.siso_tf1)
-        assert timebaseEqual(tsys.siso_ss1, tsys.siso_ss1c)
-        assert not timebaseEqual(tsys.siso_ss1d, tsys.siso_ss1c)
-        assert not timebaseEqual(tsys.siso_ss1d, tsys.siso_ss2d)
-        assert not timebaseEqual(tsys.siso_ss1d, tsys.siso_ss3d)
+    def testCompatibleTimebases(self, tsys):
+        """test that compatible timebases don't throw errors and vice versa"""
+        common_timebase(tsys.siso_ss1.dt, tsys.siso_tf1.dt)
+        common_timebase(tsys.siso_ss1.dt, tsys.siso_ss1c.dt)
+        common_timebase(tsys.siso_ss1d.dt, tsys.siso_ss1.dt)
+        common_timebase(tsys.siso_ss1.dt, tsys.siso_ss1d.dt)
+        common_timebase(tsys.siso_ss1.dt, tsys.siso_ss1d.dt)
+        common_timebase(tsys.siso_ss1d.dt, tsys.siso_ss3d.dt)
+        common_timebase(tsys.siso_ss3d.dt, tsys.siso_ss1d.dt)
+        with pytest.raises(ValueError):
+            # cont + discrete
+            common_timebase(tsys.siso_ss1d.dt, tsys.siso_ss1c.dt)
+        with pytest.raises(ValueError):
+            # incompatible discrete
+            common_timebase(tsys.siso_ss1d.dt, tsys.siso_ss2d.dt)
 
     def testSystemInitialization(self, tsys):
         # Check to make sure systems are discrete time with proper variables
@@ -74,6 +83,18 @@ class TestDiscrete:
         assert tsys.siso_tf1d.dt == 0.1
         assert tsys.siso_tf2d.dt == 0.2
         assert tsys.siso_tf3d.dt is True
+
+        # keyword argument check
+        # dynamic systems
+        assert TransferFunction(1, [1, 1], dt=0.1).dt == 0.1
+        assert TransferFunction(1, [1, 1], 0.1).dt == 0.1
+        assert StateSpace(1,1,1,1, dt=0.1).dt == 0.1
+        assert StateSpace(1,1,1,1, 0.1).dt == 0.1
+        # static gain system, dt argument should still override default dt
+        assert TransferFunction(1, [1,], dt=0.1).dt == 0.1
+        assert TransferFunction(1, [1,], 0.1).dt == 0.1
+        assert StateSpace(0,0,1,1, dt=0.1).dt == 0.1
+        assert StateSpace(0,0,1,1, 0.1).dt == 0.1
 
     def testCopyConstructor(self, tsys):
         for sys in (tsys.siso_ss1, tsys.siso_ss1c, tsys.siso_ss1d):
@@ -114,6 +135,7 @@ class TestDiscrete:
         assert timebase(tf1*tf2) == timebase(tf2)
         assert timebase(tf1*tf3) == timebase(tf3)
         assert timebase(tf1*tf4) == timebase(tf4)
+        assert timebase(tf3*tf4) == timebase(tf4)
         assert timebase(tf2*tf1) == timebase(tf2)
         assert timebase(tf3*tf1) == timebase(tf3)
         assert timebase(tf4*tf1) == timebase(tf4)
@@ -128,33 +150,36 @@ class TestDiscrete:
 
         # Make sure discrete time without sampling is converted correctly
         assert timebase(tf3*tf3) == timebase(tf3)
+        assert timebase(tf3*tf4) == timebase(tf4)
         assert timebase(tf3+tf3) == timebase(tf3)
+        assert timebase(tf3+tf4) == timebase(tf4)
         assert timebase(feedback(tf3, tf3)) == timebase(tf3)
+        assert timebase(feedback(tf3, tf4)) == timebase(tf4)
 
         # Make sure all other combinations are errors
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf2 * tf3
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf3 * tf2
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf2 * tf4
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf4 * tf2
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf2 + tf3
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf3 + tf2
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf2 + tf4
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             tf4 + tf2
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             feedback(tf2, tf3)
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             feedback(tf3, tf2)
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             feedback(tf2, tf4)
-        with pytest.raises(ValueError, match="different sampling times"):
+        with pytest.raises(ValueError, match="incompatible timebases"):
             feedback(tf4, tf2)
 
     def testisdtime(self, tsys):
@@ -212,6 +237,7 @@ class TestDiscrete:
         sys = tsys.siso_ss1c + tsys.siso_ss1c
         sys = tsys.siso_ss1d + tsys.siso_ss1d
         sys = tsys.siso_ss3d + tsys.siso_ss3d
+        sys = tsys.siso_ss1d + tsys.siso_ss3d
 
         with pytest.raises(ValueError):
             StateSpace.__add__(tsys.mimo_ss1c, tsys.mimo_ss1d)
@@ -228,6 +254,7 @@ class TestDiscrete:
         sys = tsys.siso_tf1c + tsys.siso_tf1c
         sys = tsys.siso_tf1d + tsys.siso_tf1d
         sys = tsys.siso_tf2d + tsys.siso_tf2d
+        sys = tsys.siso_tf1d + tsys.siso_tf3d
 
         with pytest.raises(ValueError):
             TransferFunction.__add__(tsys.siso_tf1c, tsys.siso_tf1d)
@@ -252,6 +279,7 @@ class TestDiscrete:
         sys = tsys.siso_ss1d * tsys.siso_ss1
         sys = tsys.siso_ss1c * tsys.siso_ss1c
         sys = tsys.siso_ss1d * tsys.siso_ss1d
+        sys = tsys.siso_ss1d * tsys.siso_ss3d
 
         with pytest.raises(ValueError):
             StateSpace.__mul__(tsys.mimo_ss1c, tsys.mimo_ss1d)
@@ -267,6 +295,7 @@ class TestDiscrete:
         sys = tsys.siso_tf1d * tsys.siso_tf1
         sys = tsys.siso_tf1c * tsys.siso_tf1c
         sys = tsys.siso_tf1d * tsys.siso_tf1d
+        sys = tsys.siso_tf1d * tsys.siso_tf3d
 
         with pytest.raises(ValueError):
             TransferFunction.__mul__(tsys.siso_tf1c, tsys.siso_tf1d)
@@ -293,6 +322,7 @@ class TestDiscrete:
         sys = feedback(tsys.siso_ss1d, tsys.siso_ss1)
         sys = feedback(tsys.siso_ss1c, tsys.siso_ss1c)
         sys = feedback(tsys.siso_ss1d, tsys.siso_ss1d)
+        sys = feedback(tsys.siso_ss1d, tsys.siso_ss3d)
 
         with pytest.raises(ValueError):
             feedback(tsys.mimo_ss1c, tsys.mimo_ss1d)
@@ -308,6 +338,7 @@ class TestDiscrete:
         sys = feedback(tsys.siso_tf1d, tsys.siso_tf1)
         sys = feedback(tsys.siso_tf1c, tsys.siso_tf1c)
         sys = feedback(tsys.siso_tf1d, tsys.siso_tf1d)
+        sys = feedback(tsys.siso_tf1d, tsys.siso_tf3d)
 
         with pytest.raises(ValueError):
             feedback(tsys.siso_tf1c, tsys.siso_tf1d)
