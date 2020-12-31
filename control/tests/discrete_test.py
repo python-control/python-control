@@ -243,8 +243,6 @@ class TestDiscrete:
             StateSpace.__add__(tsys.mimo_ss1c, tsys.mimo_ss1d)
         with pytest.raises(ValueError):
             StateSpace.__add__(tsys.mimo_ss1d, tsys.mimo_ss2d)
-        with pytest.raises(ValueError):
-            StateSpace.__add__(tsys.siso_ss1d, tsys.siso_ss3d)
 
         # Transfer function addition
         sys = tsys.siso_tf1 + tsys.siso_tf1d
@@ -260,8 +258,6 @@ class TestDiscrete:
             TransferFunction.__add__(tsys.siso_tf1c, tsys.siso_tf1d)
         with pytest.raises(ValueError):
             TransferFunction.__add__(tsys.siso_tf1d, tsys.siso_tf2d)
-        with pytest.raises(ValueError):
-            TransferFunction.__add__(tsys.siso_tf1d, tsys.siso_tf3d)
 
         # State space + transfer function
         sys = tsys.siso_ss1c + tsys.siso_tf1c
@@ -285,8 +281,6 @@ class TestDiscrete:
             StateSpace.__mul__(tsys.mimo_ss1c, tsys.mimo_ss1d)
         with pytest.raises(ValueError):
             StateSpace.__mul__(tsys.mimo_ss1d, tsys.mimo_ss2d)
-        with pytest.raises(ValueError):
-            StateSpace.__mul__(tsys.siso_ss1d, tsys.siso_ss3d)
 
         # Transfer function multiplication
         sys = tsys.siso_tf1 * tsys.siso_tf1d
@@ -301,8 +295,6 @@ class TestDiscrete:
             TransferFunction.__mul__(tsys.siso_tf1c, tsys.siso_tf1d)
         with pytest.raises(ValueError):
             TransferFunction.__mul__(tsys.siso_tf1d, tsys.siso_tf2d)
-        with pytest.raises(ValueError):
-            TransferFunction.__mul__(tsys.siso_tf1d, tsys.siso_tf3d)
 
         # State space * transfer function
         sys = tsys.siso_ss1c * tsys.siso_tf1c
@@ -328,8 +320,6 @@ class TestDiscrete:
             feedback(tsys.mimo_ss1c, tsys.mimo_ss1d)
         with pytest.raises(ValueError):
             feedback(tsys.mimo_ss1d, tsys.mimo_ss2d)
-        with pytest.raises(ValueError):
-            feedback(tsys.siso_ss1d, tsys.siso_ss3d)
 
         # Transfer function feedback
         sys = feedback(tsys.siso_tf1, tsys.siso_tf1d)
@@ -344,8 +334,6 @@ class TestDiscrete:
             feedback(tsys.siso_tf1c, tsys.siso_tf1d)
         with pytest.raises(ValueError):
             feedback(tsys.siso_tf1d, tsys.siso_tf2d)
-        with pytest.raises(ValueError):
-            feedback(tsys.siso_tf1d, tsys.siso_tf3d)
 
         # State space, transfer function
         sys = feedback(tsys.siso_ss1c, tsys.siso_tf1c)

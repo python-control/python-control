@@ -165,10 +165,7 @@ class TestStateSpace:
         np.testing.assert_array_equal(cpysys.A, [[-1]])  # original value
 
     def test_copy_constructor_nodt(self, sys322):
-        """Test the copy constructor when an object without dt is passed
-
-        FIXME: may be obsolete in case gh-431 is updated
-        """
+        """Test the copy constructor when an object without dt is passed"""
         sysin = sample_system(sys322, 1.)
         del sysin.dt
         sys = StateSpace(sysin)

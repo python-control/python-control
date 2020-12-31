@@ -13,6 +13,7 @@ from control.lti import evalfr
 from control.tests.conftest import slycotonly, nopython2, matrixfilter
 from control.lti import isctime, isdtime
 from control.dtime import sample_system
+from control.config import defaults
 
 
 class TestXferFcn:
@@ -84,6 +85,21 @@ class TestXferFcn:
         with pytest.raises(ValueError):
             TransferFunction([[[1.], [2., 3.]], [[-1., 4.], [3., 2.]]],
                              [[[1., 0.], [0.]], [[0., 0.], [2.]]])
+
+    def test_constructor_nodt(self):
+        """Test the constructor when an object without dt is passed"""
+        sysin = TransferFunction([[[0., 1.], [2., 3.]]],
+                                 [[[5., 2.], [3., 0.]]])
+        del sysin.dt
+        sys = TransferFunction(sysin)
+        assert sys.dt == defaults['control.default_dt']
+
+        # test for static gain
+        sysin = TransferFunction([[[2.], [3.]]],
+                                 [[[1.], [.1]]])
+        del sysin.dt
+        sys = TransferFunction(sysin)
+        assert sys.dt is None
 
     def test_add_inconsistent_dimension(self):
         """Add two transfer function matrices of different sizes."""

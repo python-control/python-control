@@ -223,7 +223,7 @@ class TransferFunction(LTI):
             # TODO: not sure this can ever happen since dt is always present
             try:
                 dt = args[0].dt
-            except NameError:   # pragma: no coverage
+            except AttributeError:
                 if self.is_static_gain():
                     dt = None
                 else:

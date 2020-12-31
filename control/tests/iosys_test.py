@@ -1024,7 +1024,7 @@ class TestIOSys:
         # Nonduplicate objects
         nlios1 = nlios.copy()
         nlios2 = nlios.copy()
-        with pytest.warns(UserWarning, match="copy of sys") as record:
+        with pytest.warns(UserWarning, match="Duplicate name"):
             ios_series = nlios1 * nlios2
             assert "copy of sys_1.x[0]" in ios_series.state_index.keys()
             assert "copy of sys.x[0]" in ios_series.state_index.keys()

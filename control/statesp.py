@@ -244,7 +244,7 @@ class StateSpace(LTI):
         elif len(args) == 1:
             try:
                 dt = args[0].dt
-            except NameError:
+            except AttributeError:
                 if self.is_static_gain():
                     dt = None
                 else:
