@@ -29,17 +29,17 @@ class TestIOSys:
         """Return some test systems"""
         # Create a single input/single output linear system
         T.siso_linsys = ct.StateSpace(
-            [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]], 0)
+            [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]])
 
         # Create a multi input/multi output linear system
         T.mimo_linsys1 = ct.StateSpace(
             [[-1, 1], [0, -2]], [[1, 0], [0, 1]],
-            [[1, 0], [0, 1]], np.zeros((2, 2)), 0)
+            [[1, 0], [0, 1]], np.zeros((2, 2)))
 
         # Create a multi input/multi output linear system
         T.mimo_linsys2 = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0, 1], [1, 0]],
-            [[1, 0], [0, 1]], np.zeros((2, 2)), 0)
+            [[1, 0], [0, 1]], np.zeros((2, 2)))
 
         # Create simulation parameters
         T.T = np.linspace(0, 10, 100)
@@ -281,7 +281,7 @@ class TestIOSys:
         linsys = tsys.siso_linsys
         lnios = ios.LinearIOSystem(linsys)
         nlios =  ios.NonlinearIOSystem(None, \
-            lambda t, x, u, params: u*u, inputs=1, outputs=1, dt=0)
+            lambda t, x, u, params: u*u, inputs=1, outputs=1)
         nlios1 = nlios.copy()
         nlios2 = nlios.copy()
 
@@ -310,7 +310,7 @@ class TestIOSys:
         iosys = ios.InterconnectedSystem(
             (lnios, nlios),         # linear system w/ nonlinear feedback
             ((1,),                  # feedback interconnection (sig to 0)
-              (0, (1, 0, -1))),
+             (0, (1, 0, -1))),
             0,                      # input to linear system
             0                       # output from linear system
         )
@@ -331,7 +331,7 @@ class TestIOSys:
 
         # Algebraic loop due to feedthrough term
         linsys = ct.StateSpace(
-            [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[1]], 0)
+            [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[1]])
         lnios = ios.LinearIOSystem(linsys)
         iosys = ios.InterconnectedSystem(
             (nlios, lnios),         # linear system w/ nonlinear feedback
@@ -374,7 +374,7 @@ class TestIOSys:
         # Also creates a nested interconnected system
         ioslin = ios.LinearIOSystem(tsys.siso_linsys)
         nlios =  ios.NonlinearIOSystem(None, \
-            lambda t, x, u, params: u*u, inputs=1, outputs=1, dt=0)
+            lambda t, x, u, params: u*u, inputs=1, outputs=1)
         sys1 = nlios * ioslin
         sys2 = ios.InputOutputSystem.__rmul__(nlios, sys1)
 
@@ -414,7 +414,7 @@ class TestIOSys:
         # Linear system with constant feedback (via "nonlinear" mapping)
         ioslin = ios.LinearIOSystem(tsys.siso_linsys)
         nlios =  ios.NonlinearIOSystem(None, \
-            lambda t, x, u, params: u, inputs=1, outputs=1, dt=0)
+            lambda t, x, u, params: u, inputs=1, outputs=1)
         iosys = ct.feedback(ioslin, nlios)
         linsys = ct.feedback(tsys.siso_linsys, 1)
 
@@ -740,7 +740,7 @@ class TestIOSys:
             inputs = ('u[0]', 'u[1]'),
             outputs = ('y[0]', 'y[1]'),
             states = tsys.mimo_linsys1.states,
-            name = 'sys1', dt=0)
+            name = 'sys1')
         sys2 = ios.LinearIOSystem(tsys.mimo_linsys2,
             inputs = ('u[0]', 'u[1]'),
             outputs = ('y[0]', 'y[1]'),
@@ -1015,7 +1015,7 @@ class TestIOSys:
         nlios = ios.NonlinearIOSystem(lambda t, x, u, params: x,
                                       lambda t, x, u, params: u * u,
                                       inputs=1, outputs=1, states=1,
-                                      name="sys", dt=0)
+                                      name="sys")
 
         # Duplicate objects
         with pytest.warns(UserWarning, match="Duplicate object"):
@@ -1033,10 +1033,10 @@ class TestIOSys:
         iosys_siso = ct.LinearIOSystem(tsys.siso_linsys)
         nlios1 = ios.NonlinearIOSystem(None,
                                        lambda t, x, u, params: u * u,
-                                       inputs=1, outputs=1, name="sys", dt=0)
+                                       inputs=1, outputs=1, name="sys")
         nlios2 = ios.NonlinearIOSystem(None,
                                        lambda t, x, u, params: u * u,
-                                       inputs=1, outputs=1, name="sys", dt=0)
+                                       inputs=1, outputs=1, name="sys")
 
         with pytest.warns(UserWarning, match="Duplicate name"):
             ct.InterconnectedSystem((nlios1, iosys_siso, nlios2),
@@ -1045,10 +1045,10 @@ class TestIOSys:
         # Same system, different names => everything should be OK
         nlios1 = ios.NonlinearIOSystem(None,
                                        lambda t, x, u, params:  u * u,
-                                       inputs=1, outputs=1, name="nlios1", dt=0)
+                                       inputs=1, outputs=1, name="nlios1")
         nlios2 = ios.NonlinearIOSystem(None,
                                        lambda t, x, u, params: u * u,
-                                       inputs=1, outputs=1, name="nlios2", dt=0)
+                                       inputs=1, outputs=1, name="nlios2")
         with pytest.warns(None) as record:
             ct.InterconnectedSystem((nlios1, iosys_siso, nlios2),
                                     inputs=0, outputs=0, states=0)
