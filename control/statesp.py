@@ -970,11 +970,6 @@ class StateSpace(LTI):
         return not np.any(self.A) and not np.any(self.B)
 
 
-    def is_static_gain(self):
-         """True if and only if the system has no dynamics, that is,
-         if A and B are zero. """
-         return not np.any(self.A) and not np.any(self.B)
-
 # TODO: add discrete time check
 def _convertToStateSpace(sys, **kw):
     """Convert a system to state space form (if needed).
