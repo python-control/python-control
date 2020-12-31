@@ -101,6 +101,13 @@ class TestXferFcn:
         sys = TransferFunction(sysin)
         assert sys.dt is None
 
+    def test_constructor_double_dt(self):
+        """Test that providing dt as arg and kwarg prefers arg with warning"""
+        with pytest.warns(UserWarning, match="received multiple dt.*"
+                                             "using positional arg"):
+            sys = TransferFunction(1, [1, 2, 3], 0.1, dt=0.2)
+        assert sys.dt == 0.1
+
     def test_add_inconsistent_dimension(self):
         """Add two transfer function matrices of different sizes."""
         sys1 = TransferFunction([[[1., 2.]]], [[[4., 5.]]])

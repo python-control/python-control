@@ -218,7 +218,8 @@ class TransferFunction(LTI):
         elif len(args) == 3:
             # Discrete time transfer function
             if 'dt' in kwargs:
-                warn('received multiple dt arguments, using positional arg dt=%s'%dt)
+                warn('received multiple dt arguments, '
+                     'using positional arg dt=%s' % dt)
         elif len(args) == 1:
             # TODO: not sure this can ever happen since dt is always present
             try:
