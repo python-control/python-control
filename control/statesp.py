@@ -73,7 +73,9 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 _statesp_defaults = {
     'statesp.use_numpy_matrix': False,  # False is default in 0.9.0 and above
     'statesp.remove_useless_states': True,
-}
+    'statesp.latex_num_format': '.3g',
+    'statesp.latex_repr_type': 'partitioned',
+    }
 
 
 def _ssmatrix(data, axis=1):
@@ -127,6 +129,33 @@ def _ssmatrix(data, axis=1):
     return arr.reshape(shape)
 
 
+def _f2s(f):
+    """Format floating point number f for StateSpace._repr_latex_.
+
+    Numbers are converted to strings with statesp.latex_num_format.
+
+    Inserts column separators, etc., as needed.
+    """
+    fmt = "{:" + config.defaults['statesp.latex_num_format'] + "}"
+    sraw = fmt.format(f)
+    # significand-exponent
+    se = sraw.lower().split('e')
+    # whole-fraction
+    wf = se[0].split('.')
+    s = wf[0]
+    if wf[1:]:
+        s += r'.&\hspace{{-1em}}{frac}'.format(frac=wf[1])
+    else:
+        s += r'\phantom{.}&\hspace{-1em}'
+
+    if se[1:]:
+        s += r'&\hspace{{-1em}}\cdot10^{{{:d}}}'.format(int(se[1]))
+    else:
+        s += r'&\hspace{-1em}\phantom{\cdot}'
+
+    return s
+
+
 class StateSpace(LTI):
     """StateSpace(A, B, C, D[, dt])
 
@@ -164,6 +193,24 @@ class StateSpace(LTI):
     timebase; the result will have the timebase of the latter system.
     The default value of dt can be changed by changing the value of
     ``control.config.defaults['control.default_dt']``.
+
+    StateSpace instances have support for IPython LaTeX output,
+    intended for pretty-printing in Jupyter notebooks.  The LaTeX
+    output can be configured using
+    `control.config.defaults['statesp.latex_num_format']` and
+    `control.config.defaults['statesp.latex_repr_type']`.  The LaTeX output is
+    tailored for MathJax, as used in Jupyter, and may look odd when
+    typeset by non-MathJax LaTeX systems.
+
+    `control.config.defaults['statesp.latex_num_format']` is a format string
+    fragment, specifically the part of the format string after `'{:'`
+    used to convert floating-point numbers to strings.  By default it
+    is `'.3g'`.
+
+    `control.config.defaults['statesp.latex_repr_type']` must either be
+    `'partitioned'` or `'separate'`.  If `'partitioned'`, the A, B, C, D
+    matrices are shown as a single, partitioned matrix; if
+    `'separate'`, the matrices are shown separately.
     """
 
     # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
@@ -328,6 +375,136 @@ class StateSpace(LTI):
             A=asarray(self.A).__repr__(), B=asarray(self.B).__repr__(),
             C=asarray(self.C).__repr__(), D=asarray(self.D).__repr__(),
             dt=(isdtime(self, strict=True) and ", {}".format(self.dt)) or '')
+
+    def _latex_partitioned_stateless(self):
+        """`Partitioned` matrix LaTeX representation for stateless systems
+
+        Model is presented as a matrix, D.  No partition lines are shown.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+        """
+        lines = [
+            r'\[',
+            r'\left(',
+            (r'\begin{array}'
+             + r'{' + 'rll' * self.inputs + '}')
+            ]
+
+        for Di in asarray(self.D):
+            lines.append('&'.join(_f2s(Dij) for Dij in Di)
+                         + '\\\\')
+
+        lines.extend([
+            r'\end{array}'
+            r'\right)',
+            r'\]'])
+
+        return '\n'.join(lines)
+
+    def _latex_partitioned(self):
+        """Partitioned matrix LaTeX representation of state-space model
+
+        Model is presented as a matrix partitioned into A, B, C, and D
+        parts.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+        """
+        if self.states == 0:
+            return self._latex_partitioned_stateless()
+
+        lines = [
+            r'\[',
+            r'\left(',
+            (r'\begin{array}'
+             + r'{' + 'rll' * self.states + '|' + 'rll' * self.inputs + '}')
+            ]
+
+        for Ai, Bi in zip(asarray(self.A), asarray(self.B)):
+            lines.append('&'.join([_f2s(Aij) for Aij in Ai]
+                                  + [_f2s(Bij) for Bij in Bi])
+                         + '\\\\')
+        lines.append(r'\hline')
+        for Ci, Di in zip(asarray(self.C), asarray(self.D)):
+            lines.append('&'.join([_f2s(Cij) for Cij in Ci]
+                                  + [_f2s(Dij) for Dij in Di])
+                         + '\\\\')
+
+        lines.extend([
+            r'\end{array}'
+            r'\right)',
+            r'\]'])
+
+        return '\n'.join(lines)
+
+    def _latex_separate(self):
+        """Separate matrices LaTeX representation of state-space model
+
+        Model is presented as separate, named, A, B, C, and D matrices.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+        """
+        lines = [
+            r'\[',
+            r'\begin{array}{ll}',
+            ]
+
+        def fmt_matrix(matrix, name):
+            matlines = [name
+                        + r' = \left(\begin{array}{'
+                        + 'rll' * matrix.shape[1]
+                        + '}']
+            for row in asarray(matrix):
+                matlines.append('&'.join(_f2s(entry) for entry in row)
+                                + '\\\\')
+            matlines.extend([
+                r'\end{array}'
+                r'\right)'])
+            return matlines
+
+        if self.states > 0:
+            lines.extend(fmt_matrix(self.A, 'A'))
+            lines.append('&')
+            lines.extend(fmt_matrix(self.B, 'B'))
+            lines.append('\\\\')
+
+            lines.extend(fmt_matrix(self.C, 'C'))
+            lines.append('&')
+        lines.extend(fmt_matrix(self.D, 'D'))
+
+        lines.extend([
+            r'\end{array}',
+            r'\]'])
+
+        return '\n'.join(lines)
+
+    def _repr_latex_(self):
+        """LaTeX representation of state-space model
+
+        Output is controlled by config options statesp.latex_repr_type
+        and statesp.latex_num_format.
+
+        The output is primarily intended for Jupyter notebooks, which
+        use MathJax to render the LaTeX, and the results may look odd
+        when processed by a 'conventional' LaTeX system.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+
+        """
+        if config.defaults['statesp.latex_repr_type'] == 'partitioned':
+            return self._latex_partitioned()
+        elif config.defaults['statesp.latex_repr_type'] == 'separate':
+            return self._latex_separate()
+        else:
+            cfg = config.defaults['statesp.latex_repr_type']
+            raise ValueError("Unknown statesp.latex_repr_type '{cfg}'".format(cfg=cfg))
 
     # Negation of a system
     def __neg__(self):

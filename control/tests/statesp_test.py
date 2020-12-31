@@ -16,10 +16,11 @@ from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import (StateSpace, _convertToStateSpace, drss, rss, ss,
-                             tf2ss)
+                             tf2ss, _statesp_defaults)
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
+from .conftest import editsdefaults
 
 class TestStateSpace:
     """Tests for the StateSpace class."""
@@ -850,4 +851,79 @@ class TestLTIConverter:
             mimoss.returnScipySignalLTI()
         with pytest.raises(ValueError):
             mimoss.returnScipySignalLTI(strict=True)
+
+
+class TestStateSpaceConfig:
+    """Test the configuration of the StateSpace module"""
+
+    @pytest.fixture
+    def matarrayout(self):
+        """Override autoused global fixture within this class"""
+        pass
+
+    def test_statespace_defaults(self, matarrayout):
+        """Make sure the tests are run with the configured defaults"""
+        for k, v in _statesp_defaults.items():
+            assert defaults[k] == v, \
+                "{} is {} but expected {}".format(k, defaults[k], v)
+
+
+# test data for test_latex_repr below
+LTX_G1 = StateSpace([[np.pi, 1e100], [-1.23456789, 5e-23]],
+                    [[0], [1]],
+                    [[987654321, 0.001234]],
+                    [[5]])
+
+LTX_G2 = StateSpace([],
+                    [],
+                    [],
+                    [[1.2345, -2e-200], [-1, 0]])
+
+LTX_G1_REF = {
+    'p3_p' : '\\[\n\\left(\n\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+
+    'p5_p' : '\\[\n\\left(\n\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+
+    'p3_s' : '\\[\n\\begin{array}{ll}\nA = \\left(\\begin{array}{rllrll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}\\\\\n\\end{array}\\right)\n&\nB = \\left(\\begin{array}{rll}\n0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\\\\nC = \\left(\\begin{array}{rllrll}\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n&\nD = \\left(\\begin{array}{rll}\n5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n\\]',
+
+    'p5_s' : '\\[\n\\begin{array}{ll}\nA = \\left(\\begin{array}{rllrll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}\\\\\n\\end{array}\\right)\n&\nB = \\left(\\begin{array}{rll}\n0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\\\\nC = \\left(\\begin{array}{rllrll}\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n&\nD = \\left(\\begin{array}{rll}\n5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n\\]',
+}
+
+LTX_G2_REF = {
+    'p3_p' : '\\[\n\\left(\n\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+
+    'p5_p' : '\\[\n\\left(\n\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+
+    'p3_s' : '\\[\n\\begin{array}{ll}\nD = \\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n\\]',
+
+    'p5_s' : '\\[\n\\begin{array}{ll}\nD = \\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n\\]',
+}
+
+refkey_n = {None: 'p3', '.3g': 'p3', '.5g': 'p5'}
+refkey_r = {None: 'p', 'partitioned': 'p', 'separate': 's'}
+
+
+@pytest.mark.parametrize(" g,      ref",
+                         [(LTX_G1, LTX_G1_REF),
+                          (LTX_G2, LTX_G2_REF)])
+@pytest.mark.parametrize("repr_type", [None, "partitioned", "separate"])
+@pytest.mark.parametrize("num_format", [None, ".3g", ".5g"])
+def test_latex_repr(g, ref, repr_type, num_format, editsdefaults):
+    """Test `._latex_repr_` with different config values
+
+    This is a 'gold image' test, so if you change behaviour,
+    you'll need to regenerate the reference results.
+    Try something like:
+        control.reset_defaults()
+        print(f'p3_p : {g1._repr_latex_()!r}')
+    """
+    from control import set_defaults
+    if num_format is not None:
+        set_defaults('statesp', latex_num_format=num_format)
+
+    if repr_type is not None:
+        set_defaults('statesp', latex_repr_type=repr_type)
+
+    refkey = "{}_{}".format(refkey_n[num_format], refkey_r[repr_type])
+    assert g._repr_latex_() == ref[refkey]
 
