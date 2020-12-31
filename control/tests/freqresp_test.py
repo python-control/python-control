@@ -120,39 +120,62 @@ def test_mimo():
     tf(sysMIMO)
 
 
-def test_bode_margin():
+@pytest.mark.parametrize(
+    "Hz, Wcp, Wcg",
+    [pytest.param(False, 6.0782869, 10., id="omega"),
+     pytest.param(True, 0.9673894, 1.591549, id="Hz")])
+@pytest.mark.parametrize(
+    "deg, p0, pm",
+    [pytest.param(False, -np.pi, -2.748266, id="rad"),
+     pytest.param(True, -180, -157.46405841, id="deg")])
+@pytest.mark.parametrize(
+    "dB, maginfty1, maginfty2, gminv",
+    [pytest.param(False, 1, 1e-8, 0.4, id="mag"),
+     pytest.param(True, 0, -1e+5, -7.9588, id="dB")])
+def test_bode_margin(dB, maginfty1, maginfty2, gminv,
+                     deg, p0, pm,
+                     Hz, Wcp, Wcg):
     """Test bode margins"""
     num = [1000]
     den = [1, 25, 100, 0]
     sys = ctrl.tf(num, den)
     plt.figure()
-    ctrl.bode_plot(sys, margins=True, dB=False, deg=True, Hz=False)
+    ctrl.bode_plot(sys, margins=True, dB=dB, deg=deg, Hz=Hz)
     fig = plt.gcf()
     allaxes = fig.get_axes()
 
-    mag_to_infinity = (np.array([6.07828691, 6.07828691]),
-                       np.array([1., 1e-8]))
-    assert_allclose(mag_to_infinity, allaxes[0].lines[2].get_data())
+    mag_to_infinity = (np.array([Wcp, Wcp]),
+                       np.array([maginfty1, maginfty2]))
+    assert_allclose(mag_to_infinity,
+                    allaxes[0].lines[2].get_data(),
+                    rtol=1e-5)
 
-    gm_to_infinty = (np.array([10., 10.]),
-                     np.array([4e-1, 1e-8]))
-    assert_allclose(gm_to_infinty, allaxes[0].lines[3].get_data())
+    gm_to_infinty = (np.array([Wcg, Wcg]),
+                     np.array([gminv, maginfty2]))
+    assert_allclose(gm_to_infinty,
+                    allaxes[0].lines[3].get_data(),
+                    rtol=1e-5)
 
-    one_to_gm = (np.array([10., 10.]),
-                 np.array([1., 0.4]))
-    assert_allclose(one_to_gm, allaxes[0].lines[4].get_data())
+    one_to_gm = (np.array([Wcg, Wcg]),
+                 np.array([maginfty1, gminv]))
+    assert_allclose(one_to_gm, allaxes[0].lines[4].get_data(),
+                    rtol=1e-5)
 
-    pm_to_infinity = (np.array([6.07828691, 6.07828691]),
-                      np.array([100000., -157.46405841]))
-    assert_allclose(pm_to_infinity, allaxes[1].lines[2].get_data())
+    pm_to_infinity = (np.array([Wcp, Wcp]),
+                      np.array([1e5, pm]))
+    assert_allclose(pm_to_infinity,
+                    allaxes[1].lines[2].get_data(),
+                    rtol=1e-5)
 
-    pm_to_phase = (np.array([6.07828691, 6.07828691]),
-                   np.array([-157.46405841, -180.]))
-    assert_allclose(pm_to_phase, allaxes[1].lines[3].get_data())
+    pm_to_phase = (np.array([Wcp, Wcp]),
+                   np.array([pm, p0]))
+    assert_allclose(pm_to_phase, allaxes[1].lines[3].get_data(),
+                    rtol=1e-5)
 
-    phase_to_infinity = (np.array([10., 10.]),
-                         np.array([1e-8, -1.8e2]))
-    assert_allclose(phase_to_infinity, allaxes[1].lines[4].get_data())
+    phase_to_infinity = (np.array([Wcg, Wcg]),
+                         np.array([1e-8, p0]))
+    assert_allclose(phase_to_infinity, allaxes[1].lines[4].get_data(),
+                    rtol=1e-5)
 
 
 @pytest.fixture
