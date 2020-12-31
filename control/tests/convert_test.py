@@ -250,3 +250,16 @@ class TestConvert:
         np.testing.assert_array_almost_equal(np.sort(sys2tf.pole()),
                                              np.sort(sys2ss.pole()))
 
+    def test_tf2ss_nonproper(self):
+        """Unit tests for non-proper transfer functions"""
+        # Easy case: input 2 to output 1 is 's'
+        num =  [ [[0], [1, 0]],  [[1],   [0]] ]
+        den1 = [ [[1], [1]],     [[1,4], [1]] ]
+        with pytest.raises(ValueError):
+            tf2ss(tf(num, den1))
+
+        # Trickier case (make sure that leading zeros in den are handled)
+        num =  [ [[0], [1, 0]],  [[1],   [0]] ]
+        den1 = [ [[1], [0, 1]],  [[1,4], [1]] ]
+        with pytest.raises(ValueError):
+            tf2ss(tf(num, den1))
