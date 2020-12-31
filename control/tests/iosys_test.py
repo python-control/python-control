@@ -18,7 +18,6 @@ import control as ct
 from control import iosys as ios
 from control.tests.conftest import noscipy0
 
-
 class TestIOSys:
 
     @pytest.fixture
@@ -81,6 +80,11 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
+        # Make sure that non-proper transfer functions generate an error
+        tfsys = ct.tf('s')
+        with pytest.raises(ValueError):
+            iosys=ct.tf2io(tfsys)
+            
     def test_ss2io(self, tsys):
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
