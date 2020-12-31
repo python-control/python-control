@@ -38,12 +38,15 @@ from warnings import warn
 
 from .statesp import StateSpace, tf2ss
 from .timeresp import _check_convert_array
-from .lti import isctime, isdtime, _find_timebase
+from .lti import isctime, isdtime, common_timebase
+from . import config
 
 __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
            'InterconnectedSystem', 'input_output_response', 'find_eqpt',
            'linearize', 'ss2io', 'tf2io']
 
+# Define module default parameter values
+_iosys_defaults = {}
 
 class InputOutputSystem(object):
     """A class for representing input/output systems.
@@ -69,9 +72,11 @@ class InputOutputSystem(object):
     states : int, list of str, or None
         Description of the system states.  Same format as `inputs`.
     dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous time, True
-        indicates discrete time with undefined sampling time, positive number
-        is discrete time with specified sampling time.
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either  
+        continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
@@ -87,9 +92,11 @@ class InputOutputSystem(object):
         Dictionary of signal names for the inputs, outputs and states and the
         index of the corresponding array
     dt : None, True or float
-        System timebase.  None (default) indicates continuous time, True
-        indicates discrete time with undefined sampling time, positive number
-        is discrete time with specified sampling time.
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either  
+        continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
@@ -118,7 +125,7 @@ class InputOutputSystem(object):
         return name
 
     def __init__(self, inputs=None, outputs=None, states=None, params={},
-                 dt=None, name=None):
+                 name=None, **kwargs):
         """Create an input/output system.
 
         The InputOutputSystem contructor is used to create an input/output
@@ -143,10 +150,11 @@ class InputOutputSystem(object):
         states : int, list of str, or None
             Description of the system states.  Same format as `inputs`.
         dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
+            System timebase. 0 (default) indicates continuous
+            time, True indicates discrete time with unspecified sampling
             time, positive number is discrete time with specified
-            sampling time.
+            sampling time, None indicates unspecified timebase (either  
+            continuous or discrete time).
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
             functions for the system as default values, overriding internal
@@ -162,9 +170,13 @@ class InputOutputSystem(object):
 
         """
         # Store the input arguments
-        self.params = params.copy()             # default parameters
-        self.dt = dt                            # timebase
-        self.name = self.name_or_default(name)  # system name
+
+        # default parameters
+        self.params = params.copy()
+        # timebase
+        self.dt = kwargs.get('dt', config.defaults['control.default_dt'])
+        # system name
+        self.name = self.name_or_default(name)
 
         # Parse and store the number of inputs, outputs, and states
         self.set_inputs(inputs)
@@ -210,9 +222,7 @@ class InputOutputSystem(object):
                              "inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = _find_timebase(sys1, sys2)
-        if dt is False:
-            raise ValueError("System timebases are not compabile")
+        dt = common_timebase(sys1.dt, sys2.dt)
 
         inplist = [(0,i) for i in range(sys1.ninputs)]
         outlist = [(1,i) for i in range(sys2.noutputs)]
@@ -464,12 +474,11 @@ class InputOutputSystem(object):
                              "inputs and outputs")
 
         # Make sure timebases are compatible
-        dt = _find_timebase(self, other)
-        if dt is False:
-            raise ValueError("System timebases are not compabile")
+        dt = common_timebase(self.dt, other.dt)
 
         inplist = [(0,i) for i in range(self.ninputs)]
         outlist = [(0,i) for i in range(self.noutputs)]
+
         # Return the series interconnection between the systems
         newsys = InterconnectedSystem((self, other), inplist=inplist, outlist=outlist,
                                       params=params, dt=dt)
@@ -580,10 +589,11 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         states : int, list of str, or None, optional
             Description of the system states.  Same format as `inputs`.
         dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
+            System timebase. 0 (default) indicates continuous
+            time, True indicates discrete time with unspecified sampling
             time, positive number is discrete time with specified
-            sampling time.
+            sampling time, None indicates unspecified timebase (either  
+            continuous or discrete time).
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
             functions for the system as default values, overriding internal
@@ -650,7 +660,8 @@ class NonlinearIOSystem(InputOutputSystem):
 
     """
     def __init__(self, updfcn, outfcn=None, inputs=None, outputs=None,
-                 states=None, params={}, dt=None, name=None):
+                 states=None, params={},
+                 name=None, **kwargs):
         """Create a nonlinear I/O system given update and output functions.
 
         Creates an `InputOutputSystem` for a nonlinear system by specifying a
@@ -702,10 +713,10 @@ class NonlinearIOSystem(InputOutputSystem):
             operating in continuous or discrete time.  It can have the
             following values:
 
-            * dt = None       No timebase specified
-            * dt = 0          Continuous time system
-            * dt > 0          Discrete time system with sampling time dt
-            * dt = True       Discrete time with unspecified sampling time
+            * dt = 0: continuous time system (default)
+            * dt > 0: discrete time system with sampling period 'dt'
+            * dt = True: discrete time with unspecified sampling period
+            * dt = None: no timebase specified 
 
         name : string, optional
             System name (used for specifying signals). If unspecified, a generic
@@ -722,6 +733,7 @@ class NonlinearIOSystem(InputOutputSystem):
         self.outfcn = outfcn
 
         # Initialize the rest of the structure
+        dt = kwargs.get('dt', config.defaults['control.default_dt'])
         super(NonlinearIOSystem, self).__init__(
             inputs=inputs, outputs=outputs, states=states,
             params=params, dt=dt, name=name
@@ -871,10 +883,10 @@ class InterconnectedSystem(InputOutputSystem):
             operating in continuous or discrete time.  It can have the
             following values:
 
-            * dt = None       No timebase specified
-            * dt = 0          Continuous time system
-            * dt > 0          Discrete time system with sampling time dt
-            * dt = True       Discrete time with unspecified sampling time
+            * dt = 0: continuous time system (default)
+            * dt > 0: discrete time system with sampling period 'dt'
+            * dt = True: discrete time with unspecified sampling period
+            * dt = None: no timebase specified 
 
         name : string, optional
             System name (used for specifying signals). If unspecified, a generic
@@ -888,7 +900,6 @@ class InterconnectedSystem(InputOutputSystem):
         # Check to make sure all systems are consistent
         self.syslist = syslist
         self.syslist_index = {}
-        dt = None
         nstates = 0; self.state_offset = []
         ninputs = 0; self.input_offset = []
         noutputs = 0; self.output_offset = []
@@ -896,12 +907,7 @@ class InterconnectedSystem(InputOutputSystem):
         sysname_count_dct = {}
         for sysidx, sys in enumerate(syslist):
             # Make sure time bases are consistent
-            # TODO: Use lti._find_timebase() instead?
-            if dt is None and sys.dt is not None:
-                # Timebase was not specified; set to match this system
-                dt = sys.dt
-            elif dt != sys.dt:
-                raise TypeError("System timebases are not compatible")
+            dt = common_timebase(dt, sys.dt)
 
             # Make sure number of inputs, outputs, states is given
             if sys.ninputs is None or sys.noutputs is None or \

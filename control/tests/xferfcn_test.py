@@ -13,6 +13,7 @@ from control.lti import evalfr
 from control.tests.conftest import slycotonly, nopython2, matrixfilter
 from control.lti import isctime, isdtime
 from control.dtime import sample_system
+from control.config import defaults
 
 
 class TestXferFcn:
@@ -84,6 +85,28 @@ class TestXferFcn:
         with pytest.raises(ValueError):
             TransferFunction([[[1.], [2., 3.]], [[-1., 4.], [3., 2.]]],
                              [[[1., 0.], [0.]], [[0., 0.], [2.]]])
+
+    def test_constructor_nodt(self):
+        """Test the constructor when an object without dt is passed"""
+        sysin = TransferFunction([[[0., 1.], [2., 3.]]],
+                                 [[[5., 2.], [3., 0.]]])
+        del sysin.dt
+        sys = TransferFunction(sysin)
+        assert sys.dt == defaults['control.default_dt']
+
+        # test for static gain
+        sysin = TransferFunction([[[2.], [3.]]],
+                                 [[[1.], [.1]]])
+        del sysin.dt
+        sys = TransferFunction(sysin)
+        assert sys.dt is None
+
+    def test_constructor_double_dt(self):
+        """Test that providing dt as arg and kwarg prefers arg with warning"""
+        with pytest.warns(UserWarning, match="received multiple dt.*"
+                                             "using positional arg"):
+            sys = TransferFunction(1, [1, 2, 3], 0.1, dt=0.2)
+        assert sys.dt == 0.1
 
     def test_add_inconsistent_dimension(self):
         """Add two transfer function matrices of different sizes."""
@@ -409,7 +432,6 @@ class TestXferFcn:
                                            resp,
                                            atol=1e-3)
 
-    @pytest.mark.skip("is_static_gain is introduced in gh-431")
     def test_is_static_gain(self):
         numstatic = 1.1
         denstatic = 1.2

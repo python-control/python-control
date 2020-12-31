@@ -62,7 +62,7 @@ import scipy as sp
 from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
-from .lti import LTI, timebase, timebaseEqual, isdtime
+from .lti import LTI, common_timebase, isdtime
 from . import config
 from copy import deepcopy
 
@@ -72,7 +72,6 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 # Define module default parameter values
 _statesp_defaults = {
     'statesp.use_numpy_matrix': False,  # False is default in 0.9.0 and above
-    'statesp.default_dt': None,
     'statesp.remove_useless_states': True,
     'statesp.latex_num_format': '.3g',
     'statesp.latex_repr_type': 'partitioned',
@@ -178,14 +177,22 @@ class StateSpace(LTI):
     `numpy.ndarray` objects.  The :func:`~control.use_numpy_matrix` function
     can be used to set the storage type.
 
-    Discrete-time state space system are implemented by using the 'dt'
-    instance variable and setting it to the sampling period.  If 'dt' is not
-    None, then it must match whenever two state space systems are combined.
-    Setting dt = 0 specifies a continuous system, while leaving dt = None
-    means the system timebase is not specified.  If 'dt' is set to True, the
-    system will be treated as a discrete time system with unspecified sampling
-    time. The default value of 'dt' is None and can be changed by changing the
-    value of ``control.config.defaults['statesp.default_dt']``.
+    A discrete time system is created by specifying a nonzero 'timebase', dt
+    when the system is constructed:
+
+    * dt = 0: continuous time system (default)
+    * dt > 0: discrete time system with sampling period 'dt'
+    * dt = True: discrete time with unspecified sampling period
+    * dt = None: no timebase specified
+
+    Systems must have compatible timebases in order to be combined. A discrete
+    time system with unspecified sampling time (`dt = True`) can be combined
+    with a system having a specified sampling time; the result will be a
+    discrete time system with the sample time of the latter system. Similarly,
+    a system with timebase `None` can be combined with a system having any
+    timebase; the result will have the timebase of the latter system.
+    The default value of dt can be changed by changing the value of
+    ``control.config.defaults['control.default_dt']``.
 
     StateSpace instances have support for IPython LaTeX output,
     intended for pretty-printing in Jupyter notebooks.  The LaTeX
@@ -204,13 +211,12 @@ class StateSpace(LTI):
     `'partitioned'` or `'separate'`.  If `'partitioned'`, the A, B, C, D
     matrices are shown as a single, partitioned matrix; if
     `'separate'`, the matrices are shown separately.
-
     """
 
     # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
     __array_priority__ = 11     # override ndarray and matrix types
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, **kwargs):
         """
         StateSpace(A, B, C, D[, dt])
 
@@ -223,13 +229,13 @@ class StateSpace(LTI):
         call StateSpace(sys), where sys is a StateSpace object.
 
         """
+        # first get A, B, C, D matrices
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
-            dt = config.defaults['statesp.default_dt']
         elif len(args) == 5:
             # Discrete time system
-            (A, B, C, D, dt) = args
+            (A, B, C, D, _) = args
         elif len(args) == 1:
             # Use the copy constructor.
             if not isinstance(args[0], StateSpace):
@@ -240,16 +246,12 @@ class StateSpace(LTI):
             B = args[0].B
             C = args[0].C
             D = args[0].D
-            try:
-                dt = args[0].dt
-            except NameError:
-                dt = config.defaults['statesp.default_dt']
         else:
             raise ValueError(
-                    "Needs 1 or 4 arguments; received %i." % len(args))
+                "Expected 1, 4, or 5 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get(
+        remove_useless = kwargs.get(
             'remove_useless',
             config.defaults['statesp.remove_useless_states'])
 
@@ -270,12 +272,33 @@ class StateSpace(LTI):
         D = _ssmatrix(D)
 
         # TODO: use super here?
-        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
+        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0])
         self.A = A
         self.B = B
         self.C = C
         self.D = D
 
+        # now set dt
+        if len(args) == 4:
+            if 'dt' in kwargs:
+                dt = kwargs['dt']
+            elif self.is_static_gain():
+                dt = None
+            else:
+                dt = config.defaults['control.default_dt']
+        elif len(args) == 5:
+            dt = args[4]
+            if 'dt' in kwargs:
+                warn('received multiple dt arguments, using positional arg dt=%s'%dt)
+        elif len(args) == 1:
+            try:
+                dt = args[0].dt
+            except AttributeError:
+                if self.is_static_gain():
+                    dt = None
+                else:
+                    dt = config.defaults['control.default_dt']
+        self.dt = dt
         self.states = A.shape[1]
 
         if 0 == self.states:
@@ -511,14 +534,7 @@ class StateSpace(LTI):
                     (self.outputs != other.outputs)):
                 raise ValueError("Systems have different shapes.")
 
-            # Figure out the sampling time to use
-            if self.dt is None and other.dt is not None:
-                dt = other.dt       # use dt from second argument
-            elif (other.dt is None and self.dt is not None) or \
-                    (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
-            else:
-                raise ValueError("Systems have different sampling times")
+            dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
             A = concatenate((
@@ -566,16 +582,8 @@ class StateSpace(LTI):
             # Check to make sure the dimensions are OK
             if self.inputs != other.outputs:
                 raise ValueError("C = A * B: A has %i column(s) (input(s)), \
-but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
-
-            # Figure out the sampling time to use
-            if (self.dt is None and other.dt is not None):
-                dt = other.dt       # use dt from second argument
-            elif (other.dt is None and self.dt is not None) or \
-                    (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
-            else:
-                raise ValueError("Systems have different sampling times")
+                    but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
+            dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
             A = concatenate(
@@ -648,9 +656,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """Evaluate a SS system's transfer function at a single frequency"""
         # Figure out the point to evaluate the transfer function
         if isdtime(self, strict=True):
-            dt = timebase(self)
-            s = exp(1.j * omega * dt)
-            if omega * dt > math.pi:
+            s = exp(1.j * omega * self.dt)
+            if omega * self.dt > math.pi:
                 warn("_evalfr: frequency evaluation above Nyquist frequency")
         else:
             s = omega * 1.j
@@ -707,9 +714,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # axis (continuous time) or unit circle (discrete time).
         omega.sort()
         if isdtime(self, strict=True):
-            dt = timebase(self)
-            cmplx_freqs = exp(1.j * omega * dt)
-            if max(np.abs(omega)) * dt > math.pi:
+            cmplx_freqs = exp(1.j * omega * self.dt)
+            if max(np.abs(omega)) * self.dt > math.pi:
                 warn("freqresp: frequency evaluation above Nyquist frequency")
         else:
             cmplx_freqs = omega * 1.j
@@ -812,18 +818,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         # Check to make sure the dimensions are OK
         if (self.inputs != other.outputs) or (self.outputs != other.inputs):
-            raise ValueError(
-                "State space systems don't have compatible inputs/outputs "
-                "for feedback.")
-
-        # Figure out the sampling time to use
-        if self.dt is None and other.dt is not None:
-            dt = other.dt       # use dt from second argument
-        elif other.dt is None and self.dt is not None \
-             or timebaseEqual(self, other):
-            dt = self.dt        # use dt from first argument
-        else:
-            raise ValueError("Systems have different sampling times")
+            raise ValueError("State space systems don't have compatible "
+                             "inputs/outputs for feedback.")
+        dt = common_timebase(self.dt, other.dt)
 
         A1 = self.A
         B1 = self.B
@@ -894,14 +891,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # dimension check
         # TODO
 
-        # Figure out the sampling time to use
-        if (self.dt is None and other.dt is not None):
-            dt = other.dt       # use dt from second argument
-        elif (other.dt is None and self.dt is not None) or \
-                timebaseEqual(self, other):
-            dt = self.dt        # use dt from first argument
-        else:
-            raise ValueError("Systems have different time bases")
+        dt = common_timebase(self.dt, other.dt)
 
         # submatrices
         A = self.A
@@ -1048,8 +1038,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if not isinstance(other, StateSpace):
             other = _convertToStateSpace(other)
 
-        if self.dt != other.dt:
-            raise ValueError("Systems must have the same time step")
+        self.dt = common_timebase(self.dt, other.dt)
 
         n = self.states + other.states
         m = self.inputs + other.inputs
@@ -1497,8 +1486,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
 
     return sys
 
-
-def ss(*args):
+def ss(*args, **kwargs):
     """ss(A, B, C, D[, dt])
 
     Create a state space system.
@@ -1543,8 +1531,7 @@ def ss(*args):
         Output matrix
     D: array_like or string
         Feed forward matrix
-    dt: If present, specifies the sampling period and a discrete time
-        system is created
+    dt: If present, specifies the timebase of the system
 
     Returns
     -------
@@ -1575,7 +1562,7 @@ def ss(*args):
     """
 
     if len(args) == 4 or len(args) == 5:
-        return StateSpace(*args)
+        return StateSpace(*args, **kwargs)
     elif len(args) == 1:
         from .xferfcn import TransferFunction
         sys = args[0]
@@ -1587,7 +1574,7 @@ def ss(*args):
             raise TypeError("ss(sys): sys must be a StateSpace or "
                             "TransferFunction object.  It is %s." % type(sys))
     else:
-        raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
+        raise ValueError("Needs 1, 4, or 5 arguments; received %i." % len(args))
 
 
 def tf2ss(*args):
