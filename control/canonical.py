@@ -1,17 +1,21 @@
 # canonical.py - functions for converting systems to canonical forms
 # RMM, 10 Nov 2012
 
-from .exception import ControlNotImplemented
+from .exception import ControlNotImplemented, ControlSlycot
 from .lti import issiso
-from .statesp import StateSpace
+from .statesp import StateSpace, _convertToStateSpace
 from .statefbk import ctrb, obsv
 
+import numpy as np
+
 from numpy import zeros, zeros_like, shape, poly, iscomplex, vstack, hstack, dot, \
-    transpose, empty
+    transpose, empty, finfo, float64
 from numpy.linalg import solve, matrix_rank, eig
 
+from scipy.linalg import schur
+
 __all__ = ['canonical_form', 'reachable_form', 'observable_form', 'modal_form',
-           'similarity_transform']
+           'similarity_transform', 'bdschur']
 
 def canonical_form(xsys, form='reachable'):
     """Convert a system into canonical form
@@ -149,80 +153,24 @@ def observable_form(xsys):
 
     return zsys, Tzx
 
-def modal_form(xsys):
-    """Convert a system into modal canonical form
+
+def similarity_transform(xsys, T, timescale=1, inverse=False):
+    """Perform a similarity transformation, with option time rescaling.
+
+    Transform a linear state space system to a new state space representation
+    z = T x, or x = T z, where T is an invertible matrix.
 
     Parameters
     ----------
     xsys : StateSpace object
-        System to be transformed, with state `x`
-
-    Returns
-    -------
-    zsys : StateSpace object
-        System in modal canonical form, with state `z`
-    T : matrix
-        Coordinate transformation: z = T * x
-    """
-    # Check to make sure we have a SISO system
-    if not issiso(xsys):
-        raise ControlNotImplemented(
-            "Canonical forms for MIMO systems not yet supported")
-
-    # Create a new system, starting with a copy of the old one
-    zsys = StateSpace(xsys)
-
-    # Calculate eigenvalues and matrix of eigenvectors Tzx,
-    eigval, eigvec = eig(xsys.A)
-
-    # Eigenvalues and corresponding eigenvectors are not sorted,
-    # thus modal transformation is ambiguous
-    # Sort eigenvalues and vectors from largest to smallest eigenvalue
-    idx = eigval.argsort()[::-1]
-    eigval = eigval[idx]
-    eigvec = eigvec[:,idx]
-
-    # If all eigenvalues are real, the matrix of eigenvectors is Tzx directly
-    if not iscomplex(eigval).any():
-        Tzx = eigvec
-    else:
-        # A is an arbitrary semisimple matrix
-
-        # Keep track of complex conjugates (need only one)
-        lst_conjugates = []
-        Tzx = empty((0, xsys.A.shape[0])) # empty zero-height row matrix
-        for val, vec in zip(eigval, eigvec.T):
-            if iscomplex(val):
-                if val not in lst_conjugates:
-                    lst_conjugates.append(val.conjugate())
-                    Tzx = vstack((Tzx, vec.real, vec.imag))
-                else:
-                    # if conjugate has already been seen, skip this eigenvalue
-                    lst_conjugates.remove(val)
-            else:
-                Tzx = vstack((Tzx, vec.real))
-        Tzx = Tzx.T
-
-    # Generate the system matrices for the desired canonical form
-    zsys.A = solve(Tzx, xsys.A).dot(Tzx)
-    zsys.B = solve(Tzx, xsys.B)
-    zsys.C = xsys.C.dot(Tzx)
-
-    return zsys, Tzx
-
-
-def similarity_transform(xsys, T, timescale=1):
-    """Perform a similarity transformation, with option time rescaling.
-
-    Transform a linear state space system to a new state space representation
-    z = T x, where T is an invertible matrix.
-
-    Parameters
-    ----------
+           System to transform
     T : 2D invertible array
         The matrix `T` defines the new set of coordinates z = T x.
     timescale : float
         If present, also rescale the time unit to tau = timescale * t
+    inverse: boolean
+        If True (default), transform so z = T x.  If False, transform
+        so x = T z.
 
     Returns
     -------
@@ -238,8 +186,261 @@ def similarity_transform(xsys, T, timescale=1):
         return transpose(solve(transpose(M), transpose(y)))
 
     # Update the system matrices
-    zsys.A = rsolve(T, dot(T, zsys.A)) / timescale
-    zsys.B = dot(T, zsys.B) / timescale
-    zsys.C = rsolve(T, zsys.C)
+    if not inverse:
+        zsys.A = rsolve(T, dot(T, zsys.A)) / timescale
+        zsys.B = dot(T, zsys.B) / timescale
+        zsys.C = rsolve(T, zsys.C)
+    else:
+        zsys.A = solve(T, zsys.A).dot(T) / timescale
+        zsys.B = solve(T, zsys.B) / timescale
+        zsys.C = zsys.C.dot(T)
 
     return zsys
+
+
+_IM_ZERO_TOL = np.finfo(np.float64).eps ** 0.5
+_PMAX_SEARCH_TOL = 1.001
+
+
+def _bdschur_defective(blksizes, eigvals):
+    """Check  for defective modal decomposition
+
+    Parameters
+    ----------
+    blksizes: size of Schur blocks
+    eigvals: eigenvalues
+
+    Returns
+    -------
+    True iff Schur blocks are defective
+
+    blksizes, eigvals are 3rd and 4th results returned by mb03rd.
+    """
+    if any(blksizes > 2):
+        return True
+
+    if all(blksizes == 1):
+        return False
+
+    # check eigenvalues associated with blocks of size 2
+    init_idxs = np.cumsum(np.hstack([0, blksizes[:-1]]))
+    blk_idx2 = blksizes == 2
+
+    im = eigvals[init_idxs[blk_idx2]].imag
+    re = eigvals[init_idxs[blk_idx2]].real
+
+    if any(abs(im) < _IM_ZERO_TOL * abs(re)):
+        return True
+
+    return False
+
+
+def _bdschur_condmax_search(aschur, tschur, condmax):
+    """Block-diagonal Schur decomposition search up to condmax
+
+    Iterates mb03rd with different pmax values until:
+      - result is non-defective;
+      - or condition number of similarity transform is unchanging despite large pmax;
+      - or condition number of similarity transform is close to condmax.
+
+    Parameters
+    ----------
+    aschur: (n, n) array
+      real Schur-form matrix
+    tschur: (n, n) array
+      orthogonal transformation giving aschur from some initial matrix a
+    condmax: positive scalar >= 1
+      maximum condition number of final transformation
+
+    Returns
+    -------
+    amodal: n, n array
+       block diagonal Schur form
+    tmodal:
+       similarity transformation give amodal from aschur
+    blksizes:
+       Array of Schur block sizes
+    eigvals:
+       Eigenvalues of amodal (and a, etc.)
+
+    Notes
+    -----
+    Outputs as for slycot.mb03rd
+
+    aschur, tschur are as returned by scipy.linalg.schur.
+    """
+    try:
+        from slycot import mb03rd
+    except ImportError:
+        raise ControlSlycot("can't find slycot module 'mb03rd'")
+
+    # see notes on RuntimeError below
+    pmaxlower = None
+
+    # get lower bound; try condmax ** 0.5 first
+    pmaxlower = condmax ** 0.5
+    amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmaxlower)
+    if np.linalg.cond(tmodal) <= condmax:
+        reslower = amodal, tmodal, blksizes, eigvals
+    else:
+        pmaxlower = 1.0
+        amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmaxlower)
+        cond = np.linalg.cond(tmodal)
+        if cond > condmax:
+            msg = 'minimum cond={} > condmax={}; try increasing condmax'.format(cond, condmax)
+            raise RuntimeError(msg)
+
+    pmax = pmaxlower
+
+    # phase 1: search for upper bound on pmax
+    for i in range(50):
+        amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmax)
+        cond = np.linalg.cond(tmodal)
+        if cond < condmax:
+            pmaxlower = pmax
+            reslower = amodal, tmodal, blksizes, eigvals
+        else:
+            # upper bound found; go to phase 2
+            pmaxupper = pmax
+            break
+
+        if _bdschur_defective(blksizes, eigvals):
+            pmax *= 2
+        else:
+            return amodal, tmodal, blksizes, eigvals
+    else:
+        # no upper bound found; return current result
+        return reslower
+
+    # phase 2: bisection search
+    for i in range(50):
+        pmax = (pmaxlower * pmaxupper) ** 0.5
+        amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmax)
+        cond = np.linalg.cond(tmodal)
+
+        if cond < condmax:
+            if not _bdschur_defective(blksizes, eigvals):
+                return amodal, tmodal, blksizes, eigvals
+            pmaxlower = pmax
+            reslower = amodal, tmodal, blksizes, eigvals
+        else:
+            pmaxupper = pmax
+
+        if pmaxupper / pmaxlower < _PMAX_SEARCH_TOL:
+            # hit search limit
+            return reslower
+    else:
+        raise ValueError('bisection failed to converge; pmaxlower={}, pmaxupper={}'.format(pmaxlower, pmaxupper))
+
+
+def bdschur(a, condmax=None, sort=None):
+    """Block-diagonal Schur decomposition
+
+    Parameters
+    ----------
+        a: real (n, n) array
+            Matrix to decompose
+        condmax: real scalar >= 1
+            If None (default), use `1/sqrt(eps)`, which is approximately 2e-8
+        sort: None, 'continuous', or 'discrete'
+            See below
+
+    Returns
+    -------
+        amodal: (n, n) array, dtype `np.double`
+            Block-diagonal Schur decomposition of `a`
+        tmodal: (n, n) array
+            similarity transform relating `a` and `amodal`
+        blksizes:
+            Array of Schur block sizes
+
+    Notes
+    -----
+    If `sort` is None, the blocks are not sorted.
+
+    If `sort` is 'continuous', the blocks are sorted according to
+    associated eigenvalues.  The ordering is first by real part of
+    eigenvalue, in descending order, then by absolute value of
+    imaginary part of eigenvalue, also in decreasing order.
+
+    If `sort` is 'discrete', the blocks are sorted as for
+    'continuous', but applied to log of eigenvalues
+    (continuous-equivalent).
+    """
+    if condmax is None:
+        condmax = np.finfo(np.float64).eps ** -0.5
+
+    if not (np.isscalar(condmax) and condmax >= 1.0):
+        raise ValueError('condmax="{}" must be a scalar >= 1.0'.format(condmax))
+
+    a = np.atleast_2d(a)
+    if a.shape[0] == 0 or a.shape[1] == 0:
+        return a.copy(), np.eye(a.shape[1], a.shape[0]), np.array([])
+
+    aschur, tschur = schur(a)
+    amodal, tmodal, blksizes, eigvals = _bdschur_condmax_search(aschur, tschur, condmax)
+
+    if sort in ('continuous', 'discrete'):
+
+        idxs = np.cumsum(np.hstack([0, blksizes[:-1]]))
+
+        ev_per_blk = [complex(eigvals[i].real, abs(eigvals[i].imag))
+                      for i in idxs]
+
+        if sort == 'discrete':
+            ev_per_blk = np.log(ev_per_blk)
+
+        # put most unstable first
+        sortidx = np.argsort(ev_per_blk)[::-1]
+
+        # block indices
+        blkidxs = [np.arange(i0, i0+ilen)
+                   for i0, ilen in zip(idxs, blksizes)]
+
+        # reordered
+        permidx = np.hstack([blkidxs[i] for i in sortidx])
+        rperm = np.eye(amodal.shape[0])[permidx]
+
+        tmodal = tmodal.dot(rperm)
+        amodal = rperm.dot(amodal).dot(rperm.T)
+        blksizes = blksizes[sortidx]
+
+    elif sort is None:
+        pass
+
+    else:
+        raise ValueError('unknown sort value "{}"'.format(sort))
+
+    return amodal, tmodal, blksizes
+
+
+def modal_form(xsys, condmax=None, sort=False):
+    """Convert a system into modal canonical form
+
+    Parameters
+    ----------
+    xsys : StateSpace object
+        System to be transformed, with state `x`
+    condmax: real scalar >= 1
+        An upper bound on individual transformations.  If None, use `bdschur` default.
+    sort: False (default)
+        If true, Schur blocks will be sorted.  See `bdschur` for sort order.
+
+    Returns
+    -------
+    zsys : StateSpace object
+        System in modal canonical form, with state `z`
+    T : matrix
+        Coordinate transformation: z = T * x
+    """
+
+    if sort:
+        discrete = xsys.dt is not None and xsys.dt > 0
+        bd_sort = 'discrete' if discrete else 'continuous'
+    else:
+        bd_sort = None
+
+    xsys = _convertToStateSpace(xsys)
+    amodal, tmodal, _ = bdschur(xsys.A, condmax=condmax, sort=bd_sort)
+
+    return similarity_transform(xsys, tmodal, inverse=True), tmodal
