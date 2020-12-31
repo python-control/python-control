@@ -37,7 +37,7 @@ class TestConfig:
         assert ct.config._get_param('config', 'test1', None) == 1
         assert ct.config._get_param('config', 'test1', None, 1) == 1
 
-        ct.config.defaults['config.test3'] is None
+        ct.config.defaults['config.test3'] = None
         assert ct.config._get_param('config', 'test3') is None
         assert ct.config._get_param('config', 'test3', 1) == 1
         assert ct.config._get_param('config', 'test3', None, 1) is None
