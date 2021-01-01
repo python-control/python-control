@@ -869,15 +869,15 @@ class TestStateSpaceConfig:
 
 
 # test data for test_latex_repr below
-LTX_G1 = StateSpace([[np.pi, 1e100], [-1.23456789, 5e-23]],
-                    [[0], [1]],
-                    [[987654321, 0.001234]],
-                    [[5]])
+LTX_G1 = ([[np.pi, 1e100], [-1.23456789, 5e-23]],
+          [[0], [1]],
+          [[987654321, 0.001234]],
+          [[5]])
 
-LTX_G2 = StateSpace([],
-                    [],
-                    [],
-                    [[1.2345, -2e-200], [-1, 0]])
+LTX_G2 = ([],
+          [],
+          [],
+          [[1.2345, -2e-200], [-1, 0]])
 
 LTX_G1_REF = {
     'p3_p' : '\\[\n\\left(\n\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
@@ -903,12 +903,12 @@ refkey_n = {None: 'p3', '.3g': 'p3', '.5g': 'p5'}
 refkey_r = {None: 'p', 'partitioned': 'p', 'separate': 's'}
 
 
-@pytest.mark.parametrize(" g,      ref",
+@pytest.mark.parametrize(" gmats,  ref",
                          [(LTX_G1, LTX_G1_REF),
                           (LTX_G2, LTX_G2_REF)])
 @pytest.mark.parametrize("repr_type", [None, "partitioned", "separate"])
 @pytest.mark.parametrize("num_format", [None, ".3g", ".5g"])
-def test_latex_repr(g, ref, repr_type, num_format, editsdefaults):
+def test_latex_repr(gmats, ref, repr_type, num_format, editsdefaults):
     """Test `._latex_repr_` with different config values
 
     This is a 'gold image' test, so if you change behaviour,
@@ -924,6 +924,7 @@ def test_latex_repr(g, ref, repr_type, num_format, editsdefaults):
     if repr_type is not None:
         set_defaults('statesp', latex_repr_type=repr_type)
 
+    g = StateSpace(*gmats)
     refkey = "{}_{}".format(refkey_n[num_format], refkey_r[repr_type])
     assert g._repr_latex_() == ref[refkey]
 
