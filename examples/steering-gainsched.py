@@ -143,13 +143,13 @@ steering = ct.InterconnectedSystem(
 
     # Interconnections between  subsystems
     connections=(
-        ('controller.ex', 'trajgen.xd', '-vehicle.x'),
-        ('controller.ey', 'trajgen.yd', '-vehicle.y'),
-        ('controller.etheta', 'trajgen.thetad', '-vehicle.theta'),
-        ('controller.vd', 'trajgen.vd'),
-        ('controller.phid', 'trajgen.phid'),
-        ('vehicle.v', 'controller.v'),
-        ('vehicle.phi', 'controller.phi')
+        ['controller.ex', 'trajgen.xd', '-vehicle.x'],
+        ['controller.ey', 'trajgen.yd', '-vehicle.y'],
+        ['controller.etheta', 'trajgen.thetad', '-vehicle.theta'],
+        ['controller.vd', 'trajgen.vd'],
+        ['controller.phid', 'trajgen.phid'],
+        ['vehicle.v', 'controller.v'],
+        ['vehicle.phi', 'controller.phi']
     ),
 
     # System inputs

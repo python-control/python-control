@@ -214,7 +214,6 @@ class InputOutputSystem(object):
         elif isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
             # Special case: maintain linear systems structure
             new_ss_sys = StateSpace.__mul__(sys2, sys1)
-            # TODO: set input and output names
             new_io_sys = LinearIOSystem(new_ss_sys)
 
             return new_io_sys
@@ -825,60 +824,70 @@ class InterconnectedSystem(InputOutputSystem):
 
         Parameters
         ----------
-        syslist : array_like of InputOutputSystems
+        syslist : list of InputOutputSystems
             The list of input/output systems to be connected
 
-        connections : list of tuple of connection specifications, optional
-            Description of the internal connections between the subsystems.
+        connections : list of connections, optional
+            Description of the internal connections between the subsystems:
 
                 [connection1, connection2, ...]
 
-            Each connection is a tuple that describes an input to one of the
-            subsystems.  The entries are of the form:
+            Each connection is itself a list that describes an input to one of
+            the subsystems.  The entries are of the form:
 
-                (input-spec, output-spec1, output-spec2, ...)
+                [input-spec, output-spec1, output-spec2, ...]
 
-            The input-spec should be a tuple of the form `(subsys_i, inp_j)`
+            The input-spec can be in a number of different forms.  The lowest
+            level representation is a tuple of the form `(subsys_i, inp_j)`
             where `subsys_i` is the index into `syslist` and `inp_j` is the
             index into the input vector for the subsystem.  If `subsys_i` has
             a single input, then the subsystem index `subsys_i` can be listed
             as the input-spec.  If systems and signals are given names, then
             the form 'sys.sig' or ('sys', 'sig') are also recognized.
 
-            Each output-spec should be a tuple of the form `(subsys_i, out_j,
-            gain)`.  The input will be constructed by summing the listed
-            outputs after multiplying by the gain term.  If the gain term is
-            omitted, it is assumed to be 1.  If the system has a single
-            output, then the subsystem index `subsys_i` can be listed as the
-            input-spec.  If systems and signals are given names, then the form
-            'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also
-            recognized, and the special form '-sys.sig' can be used to specify
-            a signal with gain -1.
+            Similarly, each output-spec should describe an output signal from
+            one of the susystems.  The lowest level representation is a tuple
+            of the form `(subsys_i, out_j, gain)`.  The input will be
+            constructed by summing the listed outputs after multiplying by the
+            gain term.  If the gain term is omitted, it is assumed to be 1.
+            If the system has a single output, then the subsystem index
+            `subsys_i` can be listed as the input-spec.  If systems and
+            signals are given names, then the form 'sys.sig', ('sys', 'sig')
+            or ('sys', 'sig', gain) are also recognized, and the special form
+            '-sys.sig' can be used to specify a signal with gain -1.
 
             If omitted, the connection map (matrix) can be specified using the
             :func:`~control.InterconnectedSystem.set_connect_map` method.
 
-        inplist : List of tuple of input specifications, optional
-            List of specifications for how the inputs for the overall system
+        inplist : list of input connections, optional
+            List of connections for how the inputs for the overall system
             are mapped to the subsystem inputs.  The input specification is
-            similar to the form defined in the connection specification, except
-            that connections do not specify an input-spec, since these are
-            the system inputs. The entries are thus of the form:
+            similar to the form defined in the connection specification,
+            except that connections do not specify an input-spec, since these
+            are the system inputs. The entries for a connection are thus of
+            the form:
 
-                (output-spec1, output-spec2, ...)
+                [input-spec1, input-spec2, ...]
 
             Each system input is added to the input for the listed subsystem.
+            If the system input connects to only one subsystem input, a single
+            input specification can be given (without the inner list).
 
             If omitted, the input map can be specified using the
             `set_input_map` method.
 
-        outlist : tuple of output specifications, optional
-            List of specifications for how the outputs for the subsystems are
-            mapped to overall system outputs.  The output specification is the
-            same as the form defined in the inplist specification
-            (including the optional gain term).  Numbered outputs must be
-            chosen from the list of subsystem outputs, but named outputs can
-            also be contained in the list of subsystem inputs.
+        outlist : list of output connections, optional
+            List of connections for how the outputs from the subsystems are
+            mapped to overall system outputs.  The output connection
+            description is the same as the form defined in the inplist
+            specification (including the optional gain term).  Numbered
+            outputs must be chosen from the list of subsystem outputs, but
+            named outputs can also be contained in the list of subsystem
+            inputs.
+
+            If an output connection contains more than one signal
+            specification, then those signals are added together (multiplying
+            by the any gain term) to form the system output.
 
             If omitted, the output map can be specified using the
             `set_output_map` method.
@@ -896,9 +905,10 @@ class InterconnectedSystem(InputOutputSystem):
             Description of the system outputs.  Same format as `inputs`.
 
         states : int, list of str, or None, optional
-            Description of the system states.  Same format as `inputs`, except
-            the state names will be of the form '<subsys_name>.<state_name>',
-            for each subsys in syslist and each state_name of each subsys.
+            Description of the system states.  Same format as `inputs`. The
+            default is `None`, in which case the states will be given names of
+            the form '<subsys_name>.<state_name>', for each subsys in syslist
+            and each state_name of each subsys.
 
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
@@ -918,6 +928,29 @@ class InterconnectedSystem(InputOutputSystem):
         name : string, optional
             System name (used for specifying signals). If unspecified, a
             generic name <sys[id]> is generated with a unique integer id.
+
+        Example
+        -------
+        P = control.LinearIOSystem(
+            ct.rss(2, 2, 2, strictly_proper=True), name='P')
+        C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
+        S = control.InterconnectedSystem(
+            [P, C],
+            connections = [
+              ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[0]'],
+              ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
+            inplist = ['C.u[0]', 'C.u[1]'],
+            outlist = ['P.y[0]', 'P.y[1]'],
+        )
+
+        Notes
+        -----
+        It is possible to replace lists in most of arguments with tuples
+        instead, but strictly speaking the only use of tuples should be in the
+        specification of an input- or output-signal via the tuple notation
+        `(subsys_i, signal_j, gain)` (where `gain` is optional).  If you get
+        an unexpected error message about a specification being of the wrong
+        type, check your use of tuples.
 
         """
         # Convert input and output names to lists if they aren't already
@@ -1006,24 +1039,40 @@ class InterconnectedSystem(InputOutputSystem):
             input_index = self._parse_input_spec(connection[0])
             for output_spec in connection[1:]:
                 output_index, gain = self._parse_output_spec(output_spec)
-                self.connect_map[input_index, output_index] = gain
+                if self.connect_map[input_index, output_index] != 0:
+                    warn("multiple connections given for input %d" %
+                         input_index + ". Combining with previous entries.")
+                self.connect_map[input_index, output_index] += gain
 
         # Convert the input list to a matrix: maps system to subsystems
         self.input_map = np.zeros((ninputs, self.ninputs))
         for index, inpspec in enumerate(inplist):
             if isinstance(inpspec, (int, str, tuple)):
                 inpspec = [inpspec]
+            if not isinstance(inpspec, list):
+                raise ValueError("specifications in inplist must be of type "
+                                 "int, str, tuple or list.")
             for spec in inpspec:
-                self.input_map[self._parse_input_spec(spec), index] = 1
+                ulist_index = self._parse_input_spec(spec)
+                if self.input_map[ulist_index, index] != 0:
+                    warn("multiple connections given for input %d" %
+                         index + ". Combining with previous entries.")
+                self.input_map[ulist_index, index] += 1
 
         # Convert the output list to a matrix: maps subsystems to system
         self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
         for index, outspec in enumerate(outlist):
             if isinstance(outspec, (int, str, tuple)):
                 outspec = [outspec]
+            if not isinstance(outspec, list):
+                raise ValueError("specifications in outlist must be of type "
+                                 "int, str, tuple or list.")
             for spec in outspec:
                 ylist_index, gain = self._parse_output_spec(spec)
-                self.output_map[index, ylist_index] = gain
+                if self.output_map[index, ylist_index] != 0:
+                    warn("multiple connections given for output %d" %
+                         index + ". Combining with previous entries.")
+                self.output_map[index, ylist_index] += gain
 
         # Save the parameters for the system
         self.params = params.copy()
@@ -1166,7 +1215,9 @@ class InterconnectedSystem(InputOutputSystem):
 
         """
         # Parse the signal that we received
-        subsys_index, input_index = self._parse_signal(spec, 'input')
+        subsys_index, input_index, gain = self._parse_signal(spec, 'input')
+        if gain != 1:
+            raise ValueError("gain not allowed in spec '%s'." % str(spec))
 
         # Return the index into the input vector list (ylist)
         return self.input_offset[subsys_index] + input_index
@@ -1195,27 +1246,18 @@ class InterconnectedSystem(InputOutputSystem):
         the gain to use for that output.
 
         """
-        gain = 1                # Default gain
-
-        # Check for special forms of the input
-        if isinstance(spec, tuple) and len(spec) == 3:
-            gain = spec[2]
-            spec = spec[:2]
-        elif isinstance(spec, str) and spec[0] == '-':
-            gain = -1
-            spec = spec[1:]
-
         # Parse the rest of the spec with standard signal parsing routine
         try:
             # Start by looking in the set of subsystem outputs
-            subsys_index, output_index = self._parse_signal(spec, 'output')
+            subsys_index, output_index, gain = \
+                self._parse_signal(spec, 'output')
 
             # Return the index into the input vector list (ylist)
             return self.output_offset[subsys_index] + output_index, gain
 
         except ValueError:
             # Try looking in the set of subsystem *inputs*
-            subsys_index, input_index = self._parse_signal(
+            subsys_index, input_index, gain = self._parse_signal(
                 spec, 'input or output', dictname='input_index')
 
             # Return the index into the input vector list (ylist)
@@ -1240,17 +1282,27 @@ class InterconnectedSystem(InputOutputSystem):
         """
         import re
 
+        gain = 1                # Default gain
+
+        # Check for special forms of the input
+        if isinstance(spec, tuple) and len(spec) == 3:
+            gain = spec[2]
+            spec = spec[:2]
+        elif isinstance(spec, str) and spec[0] == '-':
+            gain = -1
+            spec = spec[1:]
+
         # Process cases where we are given indices as integers
         if isinstance(spec, int):
-            return spec, 0
+            return spec, 0, gain
 
         elif isinstance(spec, tuple) and len(spec) == 1 \
              and isinstance(spec[0], int):
-            return spec[0], 0
+            return spec[0], 0, gain
 
         elif isinstance(spec, tuple) and len(spec) == 2 \
              and all([isinstance(index, int) for index in spec]):
-            return spec
+            return spec + (gain,)
 
         # Figure out the name of the dictionary to use
         if dictname is None:
@@ -1276,7 +1328,7 @@ class InterconnectedSystem(InputOutputSystem):
                 raise ValueError("Couldn't find %s signal '%s.%s'." %
                                  (signame, namelist[0], namelist[1]))
 
-            return system_index, signal_index
+            return system_index, signal_index, gain
 
         # Handle the ('sys', 'sig'), (i, j), and mixed cases
         elif isinstance(spec, tuple) and len(spec) == 2 and \
@@ -1289,7 +1341,7 @@ class InterconnectedSystem(InputOutputSystem):
             else:
                 system_index = self._find_system(spec[0])
             if system_index is None:
-                raise ValueError("Couldn't find system %s." % spec[0])
+                raise ValueError("Couldn't find system '%s'." % spec[0])
 
             if isinstance(spec[1], int):
                 signal_index = spec[1]
@@ -1302,7 +1354,7 @@ class InterconnectedSystem(InputOutputSystem):
             if signal_index is None:
                 raise ValueError("Couldn't find signal %s.%s." % tuple(spec))
 
-            return system_index, signal_index
+            return system_index, signal_index, gain
 
         else:
             raise ValueError("Couldn't parse signal reference %s." % str(spec))
