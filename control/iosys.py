@@ -48,6 +48,7 @@ __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
 # Define module default parameter values
 _iosys_defaults = {}
 
+
 class InputOutputSystem(object):
     """A class for representing input/output systems.
 
@@ -75,7 +76,7 @@ class InputOutputSystem(object):
         System timebase. 0 (default) indicates continuous
         time, True indicates discrete time with unspecified sampling
         time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either  
+        sampling time, None indicates unspecified timebase (either
         continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
@@ -95,7 +96,7 @@ class InputOutputSystem(object):
         System timebase. 0 (default) indicates continuous
         time, True indicates discrete time with unspecified sampling
         time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either  
+        sampling time, None indicates unspecified timebase (either
         continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
@@ -118,6 +119,7 @@ class InputOutputSystem(object):
     """
 
     idCounter = 0
+
     def name_or_default(self, name=None):
         if name is None:
             name = "sys[{}]".format(InputOutputSystem.idCounter)
@@ -153,15 +155,15 @@ class InputOutputSystem(object):
             System timebase. 0 (default) indicates continuous
             time, True indicates discrete time with unspecified sampling
             time, positive number is discrete time with specified
-            sampling time, None indicates unspecified timebase (either  
+            sampling time, None indicates unspecified timebase (either
             continuous or discrete time).
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
             functions for the system as default values, overriding internal
             defaults.
         name : string, optional
-            System name (used for specifying signals). If unspecified, a generic
-            name <sys[id]> is generated with a unique integer id.
+            System name (used for specifying signals). If unspecified, a
+            generic name <sys[id]> is generated with a unique integer id.
 
         Returns
         -------
@@ -190,11 +192,14 @@ class InputOutputSystem(object):
         """String representation of an input/output system"""
         str = "System: " + (self.name if self.name else "(None)") + "\n"
         str += "Inputs (%s): " % self.ninputs
-        for key in self.input_index: str += key + ", "
+        for key in self.input_index:
+            str += key + ", "
         str += "\nOutputs (%s): " % self.noutputs
-        for key in self.output_index: str += key + ", "
+        for key in self.output_index:
+            str += key + ", "
         str += "\nStates (%s): " % self.nstates
-        for key in self.state_index: str += key + ", "
+        for key in self.state_index:
+            str += key + ", "
         return str
 
     def __mul__(sys2, sys1):
@@ -224,10 +229,11 @@ class InputOutputSystem(object):
         # Make sure timebase are compatible
         dt = common_timebase(sys1.dt, sys2.dt)
 
-        inplist = [(0,i) for i in range(sys1.ninputs)]
-        outlist = [(1,i) for i in range(sys2.noutputs)]
+        inplist = [(0, i) for i in range(sys1.ninputs)]
+        outlist = [(1, i) for i in range(sys2.noutputs)]
         # Return the series interconnection between the systems
-        newsys = InterconnectedSystem((sys1, sys2), inplist=inplist, outlist=outlist)
+        newsys = InterconnectedSystem(
+            (sys1, sys2), inplist=inplist, outlist=outlist)
 
         #  Set up the connection map manually
         newsys.set_connect_map(np.block(
@@ -281,10 +287,11 @@ class InputOutputSystem(object):
         ninputs = sys1.ninputs
         noutputs = sys1.noutputs
 
-        inplist = [[(0,i),(1,i)] for i in range(ninputs)]
-        outlist = [[(0,i),(1,i)] for i in range(noutputs)]
+        inplist = [[(0, i), (1, i)] for i in range(ninputs)]
+        outlist = [[(0, i), (1, i)] for i in range(noutputs)]
         # Create a new system to handle the composition
-        newsys = InterconnectedSystem((sys1, sys2), inplist=inplist, outlist=outlist)
+        newsys = InterconnectedSystem(
+            (sys1, sys2), inplist=inplist, outlist=outlist)
 
         # Return the newly created system
         return newsys
@@ -303,10 +310,11 @@ class InputOutputSystem(object):
         if sys.ninputs is None or sys.noutputs is None:
             raise ValueError("Can't determine number of inputs or outputs")
 
-        inplist = [(0,i) for i in range(sys.ninputs)]
-        outlist = [(0,i,-1) for i in range(sys.noutputs)]
+        inplist = [(0, i) for i in range(sys.ninputs)]
+        outlist = [(0, i, -1) for i in range(sys.noutputs)]
         # Create a new system to hold the negation
-        newsys = InterconnectedSystem((sys,), dt=sys.dt, inplist=inplist, outlist=outlist)
+        newsys = InterconnectedSystem(
+            (sys,), dt=sys.dt, inplist=inplist, outlist=outlist)
 
         # Return the newly created system
         return newsys
@@ -476,12 +484,13 @@ class InputOutputSystem(object):
         # Make sure timebases are compatible
         dt = common_timebase(self.dt, other.dt)
 
-        inplist = [(0,i) for i in range(self.ninputs)]
-        outlist = [(0,i) for i in range(self.noutputs)]
+        inplist = [(0, i) for i in range(self.ninputs)]
+        outlist = [(0, i) for i in range(self.noutputs)]
 
         # Return the series interconnection between the systems
-        newsys = InterconnectedSystem((self, other), inplist=inplist, outlist=outlist,
-                                      params=params, dt=dt)
+        newsys = InterconnectedSystem(
+            (self, other), inplist=inplist, outlist=outlist,
+            params=params, dt=dt)
 
         #  Set up the connecton map manually
         newsys.set_connect_map(np.block(
@@ -514,8 +523,10 @@ class InputOutputSystem(object):
         ninputs = _find_size(self.ninputs, u0)
 
         # Convert x0, u0 to arrays, if needed
-        if np.isscalar(x0): x0 = np.ones((nstates,)) * x0
-        if np.isscalar(u0): u0 = np.ones((ninputs,)) * u0
+        if np.isscalar(x0):
+            x0 = np.ones((nstates,)) * x0
+        if np.isscalar(u0):
+            u0 = np.ones((ninputs,)) * u0
 
         # Compute number of outputs by evaluating the output function
         noutputs = _find_size(self.noutputs, self._out(t, x0, u0))
@@ -566,7 +577,8 @@ class InputOutputSystem(object):
     def copy(self, newname=None):
         """Make a copy of an input/output system."""
         newsys = copy.copy(self)
-        newsys.name = self.name_or_default("copy of " + self.name if not newname else newname)
+        newsys.name = self.name_or_default(
+            "copy of " + self.name if not newname else newname)
         return newsys
 
 
@@ -605,15 +617,15 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             System timebase. 0 (default) indicates continuous
             time, True indicates discrete time with unspecified sampling
             time, positive number is discrete time with specified
-            sampling time, None indicates unspecified timebase (either  
+            sampling time, None indicates unspecified timebase (either
             continuous or discrete time).
         params : dict, optional
             Parameter values for the systems.  Passed to the evaluation
             functions for the system as default values, overriding internal
             defaults.
         name : string, optional
-            System name (used for specifying signals). If unspecified, a generic
-            name <sys[id]> is generated with a unique integer id.
+            System name (used for specifying signals). If unspecified, a
+            generic name <sys[id]> is generated with a unique integer id.
 
         Returns
         -------
@@ -729,11 +741,11 @@ class NonlinearIOSystem(InputOutputSystem):
             * dt = 0: continuous time system (default)
             * dt > 0: discrete time system with sampling period 'dt'
             * dt = True: discrete time with unspecified sampling period
-            * dt = None: no timebase specified 
+            * dt = None: no timebase specified
 
         name : string, optional
-            System name (used for specifying signals). If unspecified, a generic
-            name <sys[id]> is generated with a unique integer id.
+            System name (used for specifying signals). If unspecified, a
+            generic name <sys[id]> is generated with a unique integer id.
 
         Returns
         -------
@@ -899,23 +911,28 @@ class InterconnectedSystem(InputOutputSystem):
             * dt = 0: continuous time system (default)
             * dt > 0: discrete time system with sampling period 'dt'
             * dt = True: discrete time with unspecified sampling period
-            * dt = None: no timebase specified 
+            * dt = None: no timebase specified
 
         name : string, optional
-            System name (used for specifying signals). If unspecified, a generic
-            name <sys[id]> is generated with a unique integer id.
+            System name (used for specifying signals). If unspecified, a
+            generic name <sys[id]> is generated with a unique integer id.
 
         """
         # Convert input and output names to lists if they aren't already
-        if not isinstance(inplist, (list, tuple)): inplist = [inplist]
-        if not isinstance(outlist, (list, tuple)): outlist = [outlist]
+        if not isinstance(inplist, (list, tuple)):
+            inplist = [inplist]
+        if not isinstance(outlist, (list, tuple)):
+            outlist = [outlist]
 
         # Check to make sure all systems are consistent
         self.syslist = syslist
         self.syslist_index = {}
-        nstates = 0; self.state_offset = []
-        ninputs = 0; self.input_offset = []
-        noutputs = 0; self.output_offset = []
+        nstates = 0
+        self.state_offset = []
+        ninputs = 0
+        self.input_offset = []
+        noutputs = 0
+        self.output_offset = []
         sysobj_name_dct = {}
         sysname_count_dct = {}
         for sysidx, sys in enumerate(syslist):
@@ -943,14 +960,16 @@ class InterconnectedSystem(InputOutputSystem):
             # Duplicates are renamed sysname_1, sysname_2, etc.
             if sys in sysobj_name_dct:
                 sys = sys.copy()
-                warn("Duplicate object found in system list: %s. Making a copy" % str(sys))
+                warn("Duplicate object found in system list: %s. "
+                     "Making a copy" % str(sys))
             if sys.name is not None and sys.name in sysname_count_dct:
                 count = sysname_count_dct[sys.name]
                 sysname_count_dct[sys.name] += 1
                 sysname = sys.name + "_" + str(count)
                 sysobj_name_dct[sys] = sysname
                 self.syslist_index[sysname] = sysidx
-                warn("Duplicate name found in system list. Renamed to {}".format(sysname))
+                warn("Duplicate name found in system list. "
+                     "Renamed to {}".format(sysname))
             else:
                 sysname_count_dct[sys.name] = 1
                 sysobj_name_dct[sys] = sys.name
@@ -959,7 +978,8 @@ class InterconnectedSystem(InputOutputSystem):
         if states is None:
             states = []
             for sys, sysname in sysobj_name_dct.items():
-                states += [sysname + '.' + statename for statename in sys.state_index.keys()]
+                states += [sysname + '.' +
+                           statename for statename in sys.state_index.keys()]
 
         # Create the I/O system
         super(InterconnectedSystem, self).__init__(
@@ -989,14 +1009,16 @@ class InterconnectedSystem(InputOutputSystem):
         # Convert the input list to a matrix: maps system to subsystems
         self.input_map = np.zeros((ninputs, self.ninputs))
         for index, inpspec in enumerate(inplist):
-            if isinstance(inpspec, (int, str, tuple)): inpspec = [inpspec]
+            if isinstance(inpspec, (int, str, tuple)):
+                inpspec = [inpspec]
             for spec in inpspec:
                 self.input_map[self._parse_input_spec(spec), index] = 1
 
         # Convert the output list to a matrix: maps subsystems to system
         self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
         for index, outspec in enumerate(outlist):
-            if isinstance(outspec, (int, str, tuple)): outspec = [outspec]
+            if isinstance(outspec, (int, str, tuple)):
+                outspec = [outspec]
             for spec in outspec:
                 ylist_index, gain = self._parse_output_spec(spec)
                 self.output_map[index, ylist_index] = gain
@@ -1041,7 +1063,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         # Go through each system and update the right hand side for that system
         xdot = np.zeros((self.nstates,))        # Array to hold results
-        state_index = 0; input_index = 0        # Start at the beginning
+        state_index, input_index = 0, 0         # Start at the beginning
         for sys in self.syslist:
             # Update the right hand side for this subsystem
             if sys.nstates != 0:
@@ -1084,7 +1106,7 @@ class InterconnectedSystem(InputOutputSystem):
         # TODO (later): see if there is a more efficient way to compute
         cycle_count = len(self.syslist) + 1
         while cycle_count > 0:
-            state_index = 0; input_index = 0; output_index = 0
+            state_index, input_index, output_index = 0, 0, 0
             for sys in self.syslist:
                 # Compute outputs for each system from current state
                 ysys = sys._out(
@@ -1097,8 +1119,8 @@ class InterconnectedSystem(InputOutputSystem):
 
                 # Store the input in the second part of ylist
                 ylist[noutputs + input_index:
-                    noutputs + input_index + sys.ninputs] = \
-                    ulist[input_index:input_index + sys.ninputs]
+                      noutputs + input_index + sys.ninputs] = \
+                          ulist[input_index:input_index + sys.ninputs]
 
                 # Increment the index pointers
                 state_index += sys.nstates
@@ -1229,7 +1251,8 @@ class InterconnectedSystem(InputOutputSystem):
             return spec
 
         # Figure out the name of the dictionary to use
-        if dictname is None: dictname = signame + '_index'
+        if dictname is None:
+            dictname = signame + '_index'
 
         if isinstance(spec, str):
             # If we got a dotted string, break up into pieces
@@ -1415,7 +1438,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        if (squeeze): y = np.squeeze(y)
+        if squeeze:
+            y = np.squeeze(y)
         if return_x:
             return T, y, []
         else:
@@ -1495,7 +1519,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         raise TypeError("Can't determine system type")
 
     # Get rid of extra dimensions in the output, of desired
-    if (squeeze): y = np.squeeze(y)
+    if squeeze:
+        y = np.squeeze(y)
 
     if return_x:
         return soln.t, y, soln.y
@@ -1580,9 +1605,12 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     noutputs = _find_size(sys.noutputs, y0)
 
     # Convert x0, u0, y0 to arrays, if needed
-    if np.isscalar(x0): x0 = np.ones((nstates,)) * x0
-    if np.isscalar(u0): u0 = np.ones((ninputs,)) * u0
-    if np.isscalar(y0): y0 = np.ones((ninputs,)) * y0
+    if np.isscalar(x0):
+        x0 = np.ones((nstates,)) * x0
+    if np.isscalar(u0):
+        u0 = np.ones((ninputs,)) * u0
+    if np.isscalar(y0):
+        y0 = np.ones((ninputs,)) * y0
 
     # Discrete-time not yet supported
     if isdtime(sys, strict=True):
@@ -1718,7 +1746,8 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
 
             # Compute the update and output maps
             dx = sys._rhs(t, x, u) - dx0
-            if dtime: dx -= x           # TODO: check
+            if dtime:
+                dx -= x           # TODO: check
             dy = sys._out(t, x, u) - y0
 
             # Map the results into the constrained variables
@@ -1736,7 +1765,8 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         z = (x, u, sys._out(t, x, u))
 
     # Return the result based on what the user wants and what we found
-    if not return_y: z = z[0:2]     # Strip y from result if not desired
+    if not return_y:
+        z = z[0:2]              # Strip y from result if not desired
     if return_result:
         # Return whatever we got, along with the result dictionary
         return z + (result,)
@@ -1810,7 +1840,8 @@ def _find_size(sysval, vecval):
 
 
 # Convert a state space system into an input/output system (wrapper)
-def ss2io(*args, **kw): return LinearIOSystem(*args, **kw)
+def ss2io(*args, **kw):
+    return LinearIOSystem(*args, **kw)
 ss2io.__doc__ = LinearIOSystem.__init__.__doc__
 
 
