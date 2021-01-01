@@ -551,7 +551,7 @@ class InputOutputSystem(object):
             A[:, i] = (self._rhs(t, x0 + dx, u0) - F0) / eps
             C[:, i] = (self._out(t, x0 + dx, u0) - H0) / eps
 
-            # Perturb each of the input variables and compute linearization
+        # Perturb each of the input variables and compute linearization
         for i in range(ninputs):
             du = np.zeros((ninputs,))
             du[i] = eps
@@ -565,6 +565,8 @@ class InputOutputSystem(object):
 
         # Set the names the system, inputs, outputs, and states
         if copy:
+            if name is None:
+                linsys.name = self.name + "_linearized"
             linsys.ninputs, linsys.input_index = self.ninputs, \
                 self.input_index.copy()
             linsys.noutputs, linsys.output_index = \
@@ -1804,9 +1806,13 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
         for the system as default values, overriding internal defaults.
     copy : bool, Optional
         If `copy` is True, copy the names of the input signals, output signals,
-        and states to the linearized system.
+        and states to the linearized system.  If `name` is not specified,
+        the system name is set to the input system name with the string
+        '_linearized' appended.
     name : string, optional
-        Set the name of the linearized system.
+        Set the name of the linearized system.  If not specified and if `copy`
+        is `False`, a generic name <sys[id]> is generated with a unique
+        integer id.
 
     Returns
     -------

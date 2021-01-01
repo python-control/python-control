@@ -167,7 +167,22 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
-    def test_linearize(self, tsys):
+    @pytest.fixture
+    def kincar(self):
+        # Create a simple nonlinear system to check (kinematic car)
+        def kincar_update(t, x, u, params):
+            return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
+
+        def kincar_output(t, x, u, params):
+            return np.array([x[0], x[1]])
+
+        return ios.NonlinearIOSystem(
+            kincar_update, kincar_output,
+            inputs = ['v', 'phi'],
+            outputs = ['x', 'y'],
+            states = ['x', 'y', 'theta'])
+
+    def test_linearize(self, tsys, kincar):
         # Create a single input/single output linear system
         linsys = tsys.siso_linsys
         iosys = ios.LinearIOSystem(linsys)
@@ -180,13 +195,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(linsys.D, linearized.D)
 
         # Create a simple nonlinear system to check (kinematic car)
-        def kincar_update(t, x, u, params):
-            return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
-
-        def kincar_output(t, x, u, params):
-            return np.array([x[0], x[1]])
-
-        iosys = ios.NonlinearIOSystem(kincar_update, kincar_output)
+        iosys = kincar
         linearized = iosys.linearize([0, 0, 0], [0, 0])
         np.testing.assert_array_almost_equal(linearized.A, np.zeros((3,3)))
         np.testing.assert_array_almost_equal(
@@ -195,6 +204,29 @@ class TestIOSys:
             linearized.C, [[1, 0, 0], [0, 1, 0]])
         np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
+
+    def test_linearize_named_signals(self, kincar):
+        # Full form of the call
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True,
+                                      name='linearized')
+        assert linearized.name == 'linearized'
+        assert linearized.find_input('v') == 0
+        assert linearized.find_input('phi') == 1
+        assert linearized.find_output('x') == 0
+        assert linearized.find_output('y') == 1
+        assert linearized.find_state('x') == 0
+        assert linearized.find_state('y') == 1
+        assert linearized.find_state('theta') == 2
+
+        # If we copy signal names w/out a system name, append '_linearized'
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        assert linearized.name == kincar.name + '_linearized'
+
+        # If copy is False, signal names should not be copied
+        lin_nocopy = kincar.linearize(0, 0, copy=False)
+        assert lin_nocopy.find_input('v') is None
+        assert lin_nocopy.find_output('x') is None
+        assert lin_nocopy.find_state('x') is None
 
     @noscipy0
     def test_connect(self, tsys):
