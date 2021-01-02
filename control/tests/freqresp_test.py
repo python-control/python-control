@@ -304,11 +304,10 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
     assert(abs(phase[0] - expected_phase) < 0.1)
 
     # Make sure everything works in rad/sec as well
-    # Turn off plotting since that seems to slow things down a lot (?)
     if initial_phase:
+        plt.clf()               # clear previous figure (speeds things up)
         mag, phase, omega = ctrl.bode(
-            TF, initial_phase=initial_phase/180. * math.pi, deg=False,
-            plot=False)
+            TF, initial_phase=initial_phase/180. * math.pi, deg=False)
         assert(abs(phase[0] - expected_phase) < 0.1)
 
 
