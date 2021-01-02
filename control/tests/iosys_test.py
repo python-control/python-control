@@ -204,7 +204,6 @@ class TestIOSys:
             linearized.C, [[1, 0, 0], [0, 1, 0]])
         np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
-
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True,
@@ -286,6 +285,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
+    @noscipy0
     @pytest.mark.parametrize(
         "connections, inplist, outlist",
         [pytest.param([[(1, 0), (0, 0, 1)]], [[(0, 0, 1)]], [[(1, 0, 1)]],
@@ -328,6 +328,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
+    @noscipy0
     @pytest.mark.parametrize(
         "connections, inplist, outlist",
         [pytest.param([['sys2.u[0]', 'sys1.y[0]']],
