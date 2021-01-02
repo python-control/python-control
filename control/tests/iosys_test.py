@@ -461,10 +461,11 @@ class TestIOSys:
     def test_summer(self, tsys):
         # Construct a MIMO system for testing
         linsys = tsys.mimo_linsys1
-        linio = ios.LinearIOSystem(linsys)
+        linio1 = ios.LinearIOSystem(linsys)
+        linio2 = ios.LinearIOSystem(linsys)
 
         linsys_parallel = linsys + linsys
-        iosys_parallel = linio + linio
+        iosys_parallel = linio1 + linio2
 
         # Set up parameters for simulation
         T = tsys.T
@@ -948,6 +949,8 @@ class TestIOSys:
         """Enforce generic system names 'sys[i]' to be present when systems are
         created without explicit names."""
 
+        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # get rid of warning messages
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
 
@@ -1001,13 +1004,18 @@ class TestIOSys:
         with pytest.warns(UserWarning):
             unnamedsys1 * unnamedsys1
 
-    def test_signals_naming_convention(self, tsys):
+        ct.config.reset_defaults()              # reset defaults 
+
+    def test_signals_naming_convention_0_8_4(self, tsys):
         """Enforce generic names to be present when systems are created
         without explicit signal names:
         input: 'u[i]'
         state: 'x[i]'
         output: 'y[i]'
         """
+
+        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # get rid of warning messages
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
         for statename in ["x[0]", "x[1]"]:
@@ -1060,6 +1068,8 @@ class TestIOSys:
             assert "sys[1].x[0]" in same_name_series.state_index
             assert "copy of sys[1].x[0]" in same_name_series.state_index
 
+        ct.config.reset_defaults()              # reset defaults 
+
     def test_named_signals_linearize_inconsistent(self, tsys):
         """Mare sure that providing inputs or outputs not consistent with
            updfcn or outfcn fail
@@ -1109,6 +1119,7 @@ class TestIOSys:
     def test_lineariosys_statespace(self, tsys):
         """Make sure that a LinearIOSystem is also a StateSpace object"""
         iosys_siso = ct.LinearIOSystem(tsys.siso_linsys)
+        iosys_siso2 = ct.LinearIOSystem(tsys.siso_linsys)
         assert isinstance(iosys_siso, ct.StateSpace)
 
         # Make sure that state space functions work for LinearIOSystems
@@ -1122,7 +1133,7 @@ class TestIOSys:
         np.testing.assert_array_equal(omega_io, omega_ss)
 
         # LinearIOSystem methods should override StateSpace methods
-        io_mul = iosys_siso * iosys_siso
+        io_mul = iosys_siso * iosys_siso2
         assert isinstance(io_mul, ct.InputOutputSystem)
 
         # But also retain linear structure
@@ -1136,7 +1147,7 @@ class TestIOSys:
         np.testing.assert_array_equal(io_mul.D, ss_series.D)
 
         # Make sure that series does the same thing
-        io_series = ct.series(iosys_siso, iosys_siso)
+        io_series = ct.series(iosys_siso, iosys_siso2)
         assert isinstance(io_series, ct.InputOutputSystem)
         assert isinstance(io_series, ct.StateSpace)
         np.testing.assert_array_equal(io_series.A, ss_series.A)
@@ -1145,7 +1156,7 @@ class TestIOSys:
         np.testing.assert_array_equal(io_series.D, ss_series.D)
 
         # Test out feedback as well
-        io_feedback = ct.feedback(iosys_siso, iosys_siso)
+        io_feedback = ct.feedback(iosys_siso, iosys_siso2)
         assert isinstance(io_series, ct.InputOutputSystem)
 
         # But also retain linear structure
@@ -1157,6 +1168,23 @@ class TestIOSys:
         np.testing.assert_array_equal(io_feedback.B, ss_feedback.B)
         np.testing.assert_array_equal(io_feedback.C, ss_feedback.C)
         np.testing.assert_array_equal(io_feedback.D, ss_feedback.D)
+
+        # Make sure series interconnections are done in the right order
+        ss_sys1 = ct.rss(2, 3, 2)
+        io_sys1 = ct.ss2io(ss_sys1)
+        ss_sys2 = ct.rss(2, 2, 3)
+        io_sys2 = ct.ss2io(ss_sys2)
+        io_series = io_sys2 * io_sys1
+        assert io_series.ninputs == 2
+        assert io_series.noutputs == 2
+        assert io_series.nstates == 4
+
+        # While we are at it, check that the state space matrices match
+        ss_series = ss_sys2 * ss_sys1
+        np.testing.assert_array_equal(io_series.A, ss_series.A)
+        np.testing.assert_array_equal(io_series.B, ss_series.B)
+        np.testing.assert_array_equal(io_series.C, ss_series.C)
+        np.testing.assert_array_equal(io_series.D, ss_series.D)
 
     def test_docstring_example(self):
         P = ct.LinearIOSystem(
@@ -1192,12 +1220,14 @@ class TestIOSys:
             ios_series = nlios * nlios
 
         # Nonduplicate objects
+        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
         nlios1 = nlios.copy()
         nlios2 = nlios.copy()
         with pytest.warns(UserWarning, match="Duplicate name"):
             ios_series = nlios1 * nlios2
             assert "copy of sys_1.x[0]" in ios_series.state_index.keys()
             assert "copy of sys.x[0]" in ios_series.state_index.keys()
+        ct.config.reset_defaults()              # reset defaults 
 
         # Duplicate names
         iosys_siso = ct.LinearIOSystem(tsys.siso_linsys)
@@ -1224,6 +1254,73 @@ class TestIOSys:
                                     inputs=0, outputs=0, states=0)
         if record:
             pytest.fail("Warning not expected: " + record[0].message)
+
+
+def test_linear_interconnection():
+    ss_sys1 = ct.rss(2, 2, 2, strictly_proper=True)
+    ss_sys2 = ct.rss(2, 2, 2)
+    io_sys1 = ios.LinearIOSystem(
+        ss_sys1, inputs = ('u[0]', 'u[1]'),
+        outputs = ('y[0]', 'y[1]'), name = 'sys1')
+    io_sys2 = ios.LinearIOSystem(
+        ss_sys2, inputs = ('u[0]', 'u[1]'),
+        outputs = ('y[0]', 'y[1]'), name = 'sys2')
+    nl_sys2 = ios.NonlinearIOSystem(
+        lambda t, x, u, params: np.array(
+            np.dot(ss_sys2.A, np.reshape(x, (-1, 1))) \
+            + np.dot(ss_sys2.B, np.reshape(u, (-1, 1)))).reshape((-1,)),
+        lambda t, x, u, params: np.array(
+            np.dot(ss_sys2.C, np.reshape(x, (-1, 1))) \
+            + np.dot(ss_sys2.D, np.reshape(u, (-1, 1)))).reshape((-1,)),
+        states = 2,
+        inputs = ('u[0]', 'u[1]'),
+        outputs = ('y[0]', 'y[1]'),
+        name = 'sys2')
+
+    # Create a "regular" InterconnectedSystem
+    nl_connect = ios.interconnect(
+        (io_sys1, nl_sys2),
+        connections=[
+            ['sys1.u[1]', 'sys2.y[0]'],
+            ['sys2.u[0]', 'sys1.y[1]']
+        ],
+        inplist=[
+            ['sys1.u[0]', 'sys1.u[1]'],
+            ['sys2.u[1]']],
+        outlist=[
+            ['sys1.y[0]', '-sys2.y[0]'],
+            ['sys2.y[1]'],
+            ['sys2.u[1]']])
+    assert isinstance(nl_connect, ios.InterconnectedSystem)
+    assert not isinstance(nl_connect, ios.LinearInterconnectedSystem)
+
+    # Now take its linearization
+    ss_connect = nl_connect.linearize(0, 0)
+    assert isinstance(ss_connect, ios.LinearIOSystem)
+
+    io_connect = ios.interconnect(
+        (io_sys1, io_sys2),
+        connections=[
+            ['sys1.u[1]', 'sys2.y[0]'],
+            ['sys2.u[0]', 'sys1.y[1]']
+        ],
+        inplist=[
+            ['sys1.u[0]', 'sys1.u[1]'],
+            ['sys2.u[1]']],
+        outlist=[
+            ['sys1.y[0]', '-sys2.y[0]'],
+            ['sys2.y[1]'],
+            ['sys2.u[1]']])
+    assert isinstance(io_connect, ios.InterconnectedSystem)
+    assert isinstance(io_connect, ios.LinearInterconnectedSystem)
+    assert isinstance(io_connect, ios.LinearIOSystem)
+    assert isinstance(io_connect, ct.StateSpace)
+
+    # Finally compare the linearization with the linear system
+    np.testing.assert_array_almost_equal(io_connect.A, ss_connect.A)
+    np.testing.assert_array_almost_equal(io_connect.B, ss_connect.B)
+    np.testing.assert_array_almost_equal(io_connect.C, ss_connect.C)
+    np.testing.assert_array_almost_equal(io_connect.D, ss_connect.D)
 
 
 def predprey(t, x, u, params={}):

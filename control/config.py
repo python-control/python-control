@@ -215,7 +215,13 @@ def use_legacy_defaults(version):
     if major == 0 and minor < 9:
         # switched to 'array' as default for state space objects
         set_defaults('statesp', use_numpy_matrix=True)
+
         # switched to 0 (=continuous) as default timestep
         set_defaults('control', default_dt=None)
+
+        # changed iosys naming conventions
+        set_defaults('iosys', state_name_delim='.',
+                     duplicate_system_name_prefix='copy of ',
+                     duplicate_system_name_suffix='')
 
     return (major, minor, patch)
