@@ -809,7 +809,7 @@ class TransferFunction(LTI):
                 continuous (0) or discrete (True or > 0).
             False:
                 if `tfobject.dt` is None, continuous time
-                :class:`scipy.signal.lti`objects are returned
+                :class:`scipy.signal.lti` objects are returned
 
         Returns
         -------

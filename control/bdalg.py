@@ -326,6 +326,13 @@ def connect(sys, Q, inputv, outputv):
     >>> Q = [[1, 2], [2, -1]]  # negative feedback interconnection
     >>> sysc = connect(sys, Q, [2], [1, 2])
 
+    Notes
+    -----
+    The :func:`~control.interconnect` function in the
+    :ref:`input/output systems <iosys-module>` module allows the use
+    of named signals and provides an alternative method for
+    interconnecting multiple systems.
+
     """
     inputv, outputv, Q = np.asarray(inputv), np.asarray(outputv), np.asarray(Q)
     # check indices

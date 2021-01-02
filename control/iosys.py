@@ -42,8 +42,8 @@ from .lti import isctime, isdtime, common_timebase
 from . import config
 
 __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
-           'InterconnectedSystem', 'input_output_response', 'find_eqpt',
-           'linearize', 'ss2io', 'tf2io', 'interconnect']
+           'InterconnectedSystem', 'LinearICSystem', 'input_output_response',
+           'find_eqpt', 'linearize', 'ss2io', 'tf2io', 'interconnect']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -110,8 +110,8 @@ class InputOutputSystem(object):
 
     Notes
     -----
-    The `InputOuputSystem` class (and its subclasses) makes use of two special
-    methods for implementing much of the work of the class:
+    The :class:`~control.InputOuputSystem` class (and its subclasses) makes
+    use of two special methods for implementing much of the work of the class:
 
     * _rhs(t, x, u): compute the right hand side of the differential or
       difference equation for the system.  This must be specified by the
@@ -137,8 +137,8 @@ class InputOutputSystem(object):
         The InputOutputSystem contructor is used to create an input/output
         object with the core information required for all input/output
         systems.  Instances of this class are normally created by one of the
-        input/output subclasses: :class:`~control.LinearIOSystem`,
-        :class:`~control.NonlinearIOSystem`,
+        input/output subclasses: :class:`~control.LinearICSystem`,
+        :class:`~control.LinearIOSystem`, :class:`~control.NonlinearIOSystem`,
         :class:`~control.InterconnectedSystem`.
 
         Parameters
@@ -242,10 +242,10 @@ class InputOutputSystem(object):
               np.zeros((sys2.ninputs, sys2.noutputs))]]
         ))
 
-        # If both systems are linear, create LinearInterconnectedSystem
+        # If both systems are linear, create LinearICSystem
         if isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
             ss_sys = StateSpace.__mul__(sys2, sys1)
-            return LinearInterconnectedSystem(newsys, ss_sys)
+            return LinearICSystem(newsys, ss_sys)
 
         # Return the newly created InterconnectedSystem
         return newsys
@@ -294,10 +294,10 @@ class InputOutputSystem(object):
         newsys = InterconnectedSystem(
             (sys1, sys2), inplist=inplist, outlist=outlist)
 
-        # If both systems are linear, create LinearInterconnectedSystem
+        # If both systems are linear, create LinearICSystem
         if isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
             ss_sys = StateSpace.__add__(sys2, sys1)
-            return LinearInterconnectedSystem(newsys, ss_sys)
+            return LinearICSystem(newsys, ss_sys)
 
         # Return the newly created InterconnectedSystem
         return newsys
@@ -315,10 +315,10 @@ class InputOutputSystem(object):
         newsys = InterconnectedSystem(
             (sys,), dt=sys.dt, inplist=inplist, outlist=outlist)
 
-        # If the system is linear, create LinearInterconnectedSystem
+        # If the system is linear, create LinearICSystem
         if isinstance(sys, StateSpace):
             ss_sys = StateSpace.__neg__(sys)
-            return LinearInterconnectedSystem(newsys, ss_sys)
+            return LinearICSystem(newsys, ss_sys)
 
         # Return the newly created system
         return newsys
@@ -502,7 +502,7 @@ class InputOutputSystem(object):
         if isinstance(self, StateSpace) and isinstance(other, StateSpace):
             # Special case: maintain linear systems structure
             ss_sys = StateSpace.feedback(self, other, sign=sign)
-            return LinearInterconnectedSystem(newsys, ss_sys)
+            return LinearICSystem(newsys, ss_sys)
 
         # Return the newly created system
         return newsys
@@ -697,10 +697,10 @@ class NonlinearIOSystem(InputOutputSystem):
                  name=None, **kwargs):
         """Create a nonlinear I/O system given update and output functions.
 
-        Creates an `InputOutputSystem` for a nonlinear system by specifying a
-        state update function and an output function.  The new system can be a
-        continuous or discrete time system (Note: discrete-time systems not
-        yet supported by most function.)
+        Creates an :class:`~control.InputOutputSystem` for a nonlinear system
+        by specifying a state update function and an output function.  The new
+        system can be a continuous or discrete time system (Note:
+        discrete-time systems not yet supported by most function.)
 
         Parameters
         ----------
@@ -1284,15 +1284,16 @@ class InterconnectedSystem(InputOutputSystem):
         self.noutputs = output_map.shape[0]
 
 
-class LinearInterconnectedSystem(InterconnectedSystem, LinearIOSystem):
+class LinearICSystem(InterconnectedSystem, LinearIOSystem):
     """Interconnection of a set of linear input/output systems.
 
     This class is used to implement a system that is an interconnection of
     linear input/output systems.  It has all of the structure of an
-    :class:`InterconnectedSystem`, but also maintains the requirement elements
-    of :class:`LinearIOSystem`, including the :class:`StateSpace` class
-    structure, allowing it to be passed to functions that expect a
-    :class:`StateSpace` system.
+    :class:`~control.InterconnectedSystem`, but also maintains the requirement
+    elements of :class:`~control.LinearIOSystem`, including the
+    :class:`StateSpace` class structure, allowing it to be passed to functions
+    that expect a :class:`StateSpace` system.
+
     """
 
     def __init__(self, io_sys, ss_sys=None):
@@ -1755,7 +1756,7 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
     """Linearize an input/output system at a given state and input.
 
     This function computes the linearization of an input/output system at a
-    given state and input value and returns a :class:`control.StateSpace`
+    given state and input value and returns a :class:`~control.StateSpace`
     object.  The eavaluation point need not be an equilibrium point.
 
     Parameters
@@ -1840,10 +1841,11 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
 
     This function creates a new system that is an interconnection of a set of
     input/output systems.  If all of the input systems are linear I/O systems
-    (type `LinearIOSystem`) then the resulting system will be a linear
-    interconnected I/O system (type `LinearInterconnectedSystem`) with the
-    appropriate inputs, outputs, and states.  Otherwise, an interconnected I/O
-    system (type `InterconnectedSystem`) will be created.
+    (type :class:`~control.LinearIOSystem`) then the resulting system will be
+    a linear interconnected I/O system (type :class:`~control.LinearICSystem`)
+    with the appropriate inputs, outputs, and states.  Otherwise, an
+    interconnected I/O system (type :class:`~control.InterconnectedSystem`)
+    will be created.
 
     Parameters
     ----------
@@ -1895,8 +1897,8 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
         the system input connects to only one subsystem input, a single input
         specification can be given (without the inner list).
 
-        If omitted, the input map can be specified using the `set_input_map`
-        method.
+        If omitted, the input map can be specified using the
+        :func:`~control.InterconnectedSystem.set_input_map` method.
 
     outlist : list of output connections, optional
         List of connections for how the outputs from the subsystems are mapped
@@ -1910,8 +1912,8 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
         then those signals are added together (multiplying by the any gain
         term) to form the system output.
 
-        If omitted, the output map can be specified using the `set_output_map`
-        method.
+        If omitted, the output map can be specified using the
+        :func:`~control.InterconnectedSystem.set_output_map` method.
 
     inputs : int, list of str or None, optional
         Description of the system inputs.  This can be given as an integer
@@ -1951,17 +1953,17 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
 
     Example
     -------
-    P = control.LinearIOSystem(
-        ct.rss(2, 2, 2, strictly_proper=True), name='P')
-    C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
-    S = control.InterconnectedSystem(
-        [P, C],
-        connections = [
-          ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[0]'],
-          ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
-        inplist = ['C.u[0]', 'C.u[1]'],
-        outlist = ['P.y[0]', 'P.y[1]'],
-    )
+    >>> P = control.LinearIOSystem(
+    >>>        ct.rss(2, 2, 2, strictly_proper=True), name='P')
+    >>> C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
+    >>> S = control.InterconnectedSystem(
+    >>>     [P, C],
+    >>>     connections = [
+    >>>       ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[0]'],
+    >>>       ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
+    >>>     inplist = ['C.u[0]', 'C.u[1]'],
+    >>>     outlist = ['P.y[0]', 'P.y[1]'],
+    >>> )
 
     Notes
     -----
@@ -1973,10 +1975,11 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
     check your use of tuples.
 
     In addition to its use for general nonlinear I/O systems, the
-    `interconnect` function allows linear systems to be interconnected using
-    named signals (compared with the `connect` function, which uses signal
-    indicies) and to be treated as both a `StateSpace` system as well as an
-    `InputOutputSystem`.
+    :func:`~control.interconnect` function allows linear systems to be
+    interconnected using named signals (compared with the
+    :func:`~control.connect` function, which uses signal indicies) and to be
+    treated as both a :class:`~control.StateSpace` system as well as an
+    :class:`~control.InputOutputSystem`.
 
     """
     newsys = InterconnectedSystem(
@@ -1986,6 +1989,6 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
 
     # If all subsystems are linear systems, maintain linear structure
     if all([isinstance(sys, LinearIOSystem) for sys in syslist]):
-        return LinearInterconnectedSystem(newsys, None)
+        return LinearICSystem(newsys, None)
 
     return newsys

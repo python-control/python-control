@@ -1293,7 +1293,7 @@ def test_linear_interconnection():
             ['sys2.y[1]'],
             ['sys2.u[1]']])
     assert isinstance(nl_connect, ios.InterconnectedSystem)
-    assert not isinstance(nl_connect, ios.LinearInterconnectedSystem)
+    assert not isinstance(nl_connect, ios.LinearICSystem)
 
     # Now take its linearization
     ss_connect = nl_connect.linearize(0, 0)
@@ -1313,7 +1313,7 @@ def test_linear_interconnection():
             ['sys2.y[1]'],
             ['sys2.u[1]']])
     assert isinstance(io_connect, ios.InterconnectedSystem)
-    assert isinstance(io_connect, ios.LinearInterconnectedSystem)
+    assert isinstance(io_connect, ios.LinearICSystem)
     assert isinstance(io_connect, ios.LinearIOSystem)
     assert isinstance(io_connect, ct.StateSpace)
 

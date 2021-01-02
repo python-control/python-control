@@ -4,10 +4,6 @@
 Input/output systems
 ********************
 
-.. automodule:: control.iosys
-   :no-members:
-   :no-inherited-members:
-
 Module usage
 ============
 
@@ -40,16 +36,16 @@ equation) and and output function (computes the outputs from the state)::
   io_sys = NonlinearIOSystem(updfcn, outfcn, inputs=M, outputs=P, states=N)
 
 More complex input/output systems can be constructed by using the
-:class:`~control.InterconnectedSystem` class, which allows a collection of
-input/output subsystems to be combined with internal connections between the
-subsystems and a set of overall system inputs and outputs that link to the
-subsystems::
+:func:`~control.interconnect` function, which allows a collection of
+input/output subsystems to be combined with internal connections
+between the subsystems and a set of overall system inputs and outputs
+that link to the subsystems::
 
-    steering = ct.InterconnectedSystem(
-        (plant, controller), name='system',
-        connections=(('controller.e', '-plant.y')),
-        inplist=('controller.e'), inputs='r',
-        outlist=('plant.y'), outputs='y')
+    steering = ct.interconnect(
+        [plant, controller], name='system',
+        connections=[['controller.e', '-plant.y']],
+        inplist=['controller.e'], inputs='r',
+        outlist=['plant.y'], outputs='y')
 
 Interconnected systems can also be created using block diagram manipulations
 such as the :func:`~control.series`, :func:`~control.parallel`, and
@@ -160,19 +156,19 @@ The input to the controller is `u`, consisting of the vector of hare and lynx
 populations followed by the desired lynx population.
 
 To connect the controller to the predatory-prey model, we create an
-`InterconnectedSystem`:
+:class:`~control.InterconnectedSystem`:
 
 .. code-block:: python
 
-  io_closed = control.InterconnectedSystem(
-    (io_predprey, io_controller),	# systems
-    connections=(
-      ('predprey.u', 'control.y[0]'),
-      ('control.u1',  'predprey.H'),
-      ('control.u2',  'predprey.L')
-    ),
-    inplist=('control.Ld'),
-    outlist=('predprey.H', 'predprey.L', 'control.y[0]')
+  io_closed = control.interconnect(
+    [io_predprey, io_controller],	# systems
+    connections=[
+      ['predprey.u', 'control.y[0]'],
+      ['control.u1',  'predprey.H'],
+      ['control.u2',  'predprey.L']
+    ],
+    inplist=['control.Ld'],
+    outlist=['predprey.H', 'predprey.L', 'control.y[0]']
   )
        
 Finally, we simulate the closed loop system:
@@ -200,18 +196,20 @@ Input/output system classes
 ---------------------------
 .. autosummary::
    
-   InputOutputSystem
-   InterconnectedSystem
-   LinearIOSystem
-   NonlinearIOSystem
+   ~control.InputOutputSystem
+   ~control.InterconnectedSystem
+   ~control.LinearICSystem
+   ~control.LinearIOSystem
+   ~control.NonlinearIOSystem
 
 Input/output system functions
 -----------------------------
 .. autosummary::
 
-   find_eqpt
-   linearize
-   input_output_response
-   ss2io
-   tf2io
+   ~control.find_eqpt
+   ~control.linearize
+   ~control.input_output_response
+   ~control.interconnect
+   ~control.ss2io
+   ~control.tf2io
 
