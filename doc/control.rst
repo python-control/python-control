@@ -155,6 +155,7 @@ Utility functions and conversions
    :toctree: generated/
 
     augw
+    bdschur
     canonical_form
     damp
     db2mag
@@ -163,6 +164,7 @@ Utility functions and conversions
     issiso
     issys
     mag2db
+    modal_form
     observable_form
     pade
     reachable_form

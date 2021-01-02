@@ -24,7 +24,7 @@ def canonical_form(xsys, form='reachable'):
     ----------
     xsys : StateSpace object
         System to be transformed, with state 'x'
-    form : String
+    form : str
         Canonical form for transformation.  Chosen from:
           * 'reachable' - reachable canonical form
           * 'observable' - observable canonical form
@@ -34,7 +34,7 @@ def canonical_form(xsys, form='reachable'):
     -------
     zsys : StateSpace object
         System in desired canonical form, with state 'z'
-    T : matrix
+    T : (M, M) real ndarray
         Coordinate transformation matrix, z = T * x
     """
 
@@ -63,7 +63,7 @@ def reachable_form(xsys):
     -------
     zsys : StateSpace object
         System in reachable canonical form, with state `z`
-    T : matrix
+    T : (M, M) real ndarray
         Coordinate transformation: z = T * x
     """
     # Check to make sure we have a SISO system
@@ -117,7 +117,7 @@ def observable_form(xsys):
     -------
     zsys : StateSpace object
         System in observable canonical form, with state `z`
-    T : matrix
+    T : (M, M) real ndarray
         Coordinate transformation: z = T * x
     """
     # Check to make sure we have a SISO system
@@ -164,11 +164,11 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     ----------
     xsys : StateSpace object
            System to transform
-    T : 2D invertible array
+    T : (M, M) array_like
         The matrix `T` defines the new set of coordinates z = T x.
-    timescale : float
+    timescale : float, optional
         If present, also rescale the time unit to tau = timescale * t
-    inverse: boolean
+    inverse: boolean, optional
         If True (default), transform so z = T x.  If False, transform
         so x = T z.
 
@@ -180,6 +180,8 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     """
     # Create a new system, starting with a copy of the old one
     zsys = StateSpace(xsys)
+
+    T = np.atleast_2d(T)
 
     # Define a function to compute the right inverse (solve x M = y)
     def rsolve(M, y):
@@ -207,14 +209,16 @@ def _bdschur_defective(blksizes, eigvals):
 
     Parameters
     ----------
-    blksizes: size of Schur blocks
-    eigvals: eigenvalues
+    blksizes: (N,) int ndarray
+       size of Schur blocks
+    eigvals: (M,) real or complex ndarray
+       Eigenvalues
 
     Returns
     -------
-    True iff Schur blocks are defective
+    True iff Schur blocks are defective.
 
-    blksizes, eigvals are 3rd and 4th results returned by mb03rd.
+    blksizes, eigvals are the 3rd and 4th results returned by mb03rd.
     """
     if any(blksizes > 2):
         return True
@@ -245,22 +249,22 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
 
     Parameters
     ----------
-    aschur: (n, n) array
-      real Schur-form matrix
-    tschur: (n, n) array
-      orthogonal transformation giving aschur from some initial matrix a
-    condmax: positive scalar >= 1
-      maximum condition number of final transformation
+    aschur: (N, N) real ndarray
+      Real Schur-form matrix
+    tschur: (N, N) real ndarray
+      Orthogonal transformation giving aschur from some initial matrix a
+    condmax: float
+      Maximum condition number of final transformation.  Must be >= 1.
 
     Returns
     -------
-    amodal: n, n array
+    amodal: (N, N) real ndarray
        block diagonal Schur form
-    tmodal:
+    tmodal: (N, N) real ndarray
        similarity transformation give amodal from aschur
-    blksizes:
+    blksizes: (M,) int ndarray
        Array of Schur block sizes
-    eigvals:
+    eigvals: (N,) real or complex ndarray
        Eigenvalues of amodal (and a, etc.)
 
     Notes
@@ -338,20 +342,20 @@ def bdschur(a, condmax=None, sort=None):
 
     Parameters
     ----------
-        a: real (n, n) array
-            Matrix to decompose
-        condmax: real scalar >= 1
-            If None (default), use `1/sqrt(eps)`, which is approximately 2e-8
-        sort: None, 'continuous', or 'discrete'
-            See below
+        a : (M, M) array_like
+            Real matrix to decompose
+        condmax : None or float, optional
+            If None (default), use 1/sqrt(eps), which is approximately 1e8
+        sort : {None, 'continuous', 'discrete'}
+            Block sorting; see below.
 
     Returns
     -------
-        amodal: (n, n) array, dtype `np.double`
+        amodal : (M, M) real ndarray
             Block-diagonal Schur decomposition of `a`
-        tmodal: (n, n) array
-            similarity transform relating `a` and `amodal`
-        blksizes:
+        tmodal : (M, M) real ndarray
+            Similarity transform relating `a` and `amodal`
+        blksizes : (N,) int ndarray
             Array of Schur block sizes
 
     Notes
@@ -365,7 +369,7 @@ def bdschur(a, condmax=None, sort=None):
 
     If `sort` is 'discrete', the blocks are sorted as for
     'continuous', but applied to log of eigenvalues
-    (continuous-equivalent).
+    (i.e., continuous-equivalent eigenvalues).
     """
     if condmax is None:
         condmax = np.finfo(np.float64).eps ** -0.5
@@ -421,16 +425,16 @@ def modal_form(xsys, condmax=None, sort=False):
     ----------
     xsys : StateSpace object
         System to be transformed, with state `x`
-    condmax: real scalar >= 1
+    condmax : None or float, optional
         An upper bound on individual transformations.  If None, use `bdschur` default.
-    sort: False (default)
-        If true, Schur blocks will be sorted.  See `bdschur` for sort order.
+    sort : bool, optional
+        If False (default), Schur blocks will not be sorted.  See `bdschur` for sort order.
 
     Returns
     -------
     zsys : StateSpace object
         System in modal canonical form, with state `z`
-    T : matrix
+    T : (M, M) ndarray
         Coordinate transformation: z = T * x
     """
 
