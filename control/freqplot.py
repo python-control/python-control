@@ -135,7 +135,8 @@ def bode_plot(syslist, omega=None,
     initial_phase : float
         Set the reference phase to use for the lowest frequency.  If set, the
         initial phase of the Bode plot will be set to the value closest to the
-        value specified.  Default is 180 if wrap_phase is False, 0 if
+        value specified.  Units are in either degrees or radians, depending on
+        the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
         wrap_phase is True.
     wrap_phase : bool or float
         If wrap_phase is `False`, then the phase will be unwrapped so that it
