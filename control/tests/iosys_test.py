@@ -218,8 +218,13 @@ class TestIOSys:
         assert linearized.find_state('theta') == 2
 
         # If we copy signal names w/out a system name, append '_linearized'
+        ct.use_legacy_defaults('0.8.4')
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
         assert linearized.name == kincar.name + '_linearized'
+        ct.use_legacy_defaults('0.9.0')
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        assert linearized.name == kincar.name + '$linearized'
+        ct.reset_defaults()
 
         # If copy is False, signal names should not be copied
         lin_nocopy = kincar.linearize(0, 0, copy=False)

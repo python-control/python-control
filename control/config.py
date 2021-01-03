@@ -222,6 +222,8 @@ def use_legacy_defaults(version):
         # changed iosys naming conventions
         set_defaults('iosys', state_name_delim='.',
                      duplicate_system_name_prefix='copy of ',
-                     duplicate_system_name_suffix='')
+                     duplicate_system_name_suffix='',
+                     linearized_system_name_prefix='',
+                     linearized_system_name_suffix='_linearized')
 
     return (major, minor, patch)

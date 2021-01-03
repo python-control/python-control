@@ -49,7 +49,9 @@ __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
 _iosys_defaults = {
     'iosys.state_name_delim': '_',
     'iosys.duplicate_system_name_prefix': '',
-    'iosys.duplicate_system_name_suffix': '$copy'
+    'iosys.duplicate_system_name_suffix': '$copy',
+    'iosys.linearized_system_name_prefix': '',
+    'iosys.linearized_system_name_suffix': '$linearized'
 }
 
 
@@ -570,7 +572,10 @@ class InputOutputSystem(object):
         # Set the names the system, inputs, outputs, and states
         if copy:
             if name is None:
-                linsys.name = self.name + "_linearized"
+                linsys.name = \
+                    config.defaults['iosys.linearized_system_name_prefix'] + \
+                    self.name + \
+                    config.defaults['iosys.linearized_system_name_suffix']
             linsys.ninputs, linsys.input_index = self.ninputs, \
                 self.input_index.copy()
             linsys.noutputs, linsys.output_index = \
@@ -1781,9 +1786,13 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
         the system name is set to the input system name with the string
         '_linearized' appended.
     name : string, optional
-        Set the name of the linearized system.  If not specified and if `copy`
-        is `False`, a generic name <sys[id]> is generated with a unique
-        integer id.
+        Set the name of the linearized system.  If not specified and
+        if `copy` is `False`, a generic name <sys[id]> is generated
+        with a unique integer id.  If `copy` is `True`, the new system
+        name is determined by adding the prefix and suffix strings in
+        config.defaults['iosys.linearized_system_name_prefix'] and
+        config.defaults['iosys.linearized_system_name_suffix'], with the
+        default being to add the suffix '$linearized'.
 
     Returns
     -------
@@ -1967,6 +1976,13 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
 
     Notes
     -----
+    If a system is duplicated in the list of systems to be connected,
+    a warning is generated a copy of the system is created with the
+    name of the new system determined by adding the prefix and suffix
+    strings in config.defaults['iosys.linearized_system_name_prefix']
+    and config.defaults['iosys.linearized_system_name_suffix'], with the 
+    default being to add the suffix '$copy'$ to the system name.
+
     It is possible to replace lists in most of arguments with tuples instead,
     but strictly speaking the only use of tuples should be in the
     specification of an input- or output-signal via the tuple notation
@@ -1977,7 +1993,7 @@ def interconnect(syslist, connections=[], inplist=[], outlist=[],
     In addition to its use for general nonlinear I/O systems, the
     :func:`~control.interconnect` function allows linear systems to be
     interconnected using named signals (compared with the
-    :func:`~control.connect` function, which uses signal indicies) and to be
+    :func:`~control.connect` function, which uses signal indices) and to be
     treated as both a :class:`~control.StateSpace` system as well as an
     :class:`~control.InputOutputSystem`.
 
