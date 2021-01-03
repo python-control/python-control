@@ -8,7 +8,7 @@ import pytest
 import operator
 
 import control as ct
-from control.statesp import StateSpace, _convertToStateSpace, rss
+from control.statesp import StateSpace, _convert_to_statespace, rss
 from control.xferfcn import TransferFunction, _convert_to_transfer_function, \
     ss2tf
 from control.lti import evalfr
@@ -711,7 +711,7 @@ class TestXferFcn:
         h = (b0 + b1*s + b2*s**2)/(a0 + a1*s + a2*s**2 + a3*s**3)
         H = TransferFunction([[h.num[0][0]], [(h*s).num[0][0]]],
                              [[h.den[0][0]], [h.den[0][0]]])
-        sys = _convertToStateSpace(H)
+        sys = _convert_to_statespace(H)
         H2 = _convert_to_transfer_function(sys)
         np.testing.assert_array_almost_equal(H.num[0][0], H2.num[0][0])
         np.testing.assert_array_almost_equal(H.den[0][0], H2.den[0][0])

@@ -47,7 +47,7 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 """
 
 from .lti import isctime
-from .statesp import StateSpace, _convertToStateSpace
+from .statesp import StateSpace
 
 __all__ = ['sample_system', 'c2d']
 

@@ -9,14 +9,16 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 
 import numpy as np
 import pytest
+import operator
 from numpy.linalg import solve
 from scipy.linalg import block_diag, eigvals
 
+import control as ct
 from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
-from control.statesp import (StateSpace, _convertToStateSpace, drss, rss, ss,
-                             tf2ss, _statesp_defaults)
+from control.statesp import (StateSpace, _convert_to_statespace, drss,
+                             rss, ss, tf2ss, _statesp_defaults)
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
@@ -224,7 +226,7 @@ class TestStateSpace:
 
     def test_zero_empty(self):
         """Test to make sure zero() works with no zeros in system."""
-        sys = _convertToStateSpace(TransferFunction([1], [1, 2, 1]))
+        sys = _convert_to_statespace(TransferFunction([1], [1, 2, 1]))
         np.testing.assert_array_equal(sys.zero(), np.array([]))
 
     @slycotonly
@@ -456,7 +458,7 @@ class TestStateSpace:
         s = TransferFunction([1, 0], [1])
         h = 1 / (s + 1) / (s + 2)
         sys1 = StateSpace(A1, B1, C1, D1)
-        sys2 = _convertToStateSpace(h)
+        sys2 = _convert_to_statespace(h)
         sys3c = sys1.append(sys2)
         np.testing.assert_array_almost_equal(sys1.A, sys3c.A[:3, :3])
         np.testing.assert_array_almost_equal(sys1.B, sys3c.B[:3, :2])
@@ -625,10 +627,10 @@ class TestStateSpace:
         assert 0 == g1.outputs
 
     def test_matrix_to_state_space(self):
-        """_convertToStateSpace(matrix) gives ss([],[],[],D)"""
+        """_convert_to_statespace(matrix) gives ss([],[],[],D)"""
         with pytest.deprecated_call():
             D = np.matrix([[1, 2, 3], [4, 5, 6]])
-        g = _convertToStateSpace(D)
+        g = _convert_to_statespace(D)
 
         np.testing.assert_array_equal(np.empty((0, 0)), g.A)
         np.testing.assert_array_equal(np.empty((0, D.shape[1])), g.B)
@@ -927,3 +929,24 @@ def test_latex_repr(gmats, ref, repr_type, num_format, editsdefaults):
     g = StateSpace(*gmats)
     refkey = "{}_{}".format(refkey_n[num_format], refkey_r[repr_type])
     assert g._repr_latex_() == ref[refkey]
+
+
+@pytest.mark.parametrize(
+    "op",
+    [pytest.param(getattr(operator, s), id=s) for s in ('add', 'sub', 'mul')])
+@pytest.mark.parametrize(
+    "tf, arr",
+    [pytest.param(ct.tf([1], [0.5, 1]), np.array(2.), id="0D scalar"),
+     pytest.param(ct.tf([1], [0.5, 1]), np.array([2.]), id="1D scalar"),
+     pytest.param(ct.tf([1], [0.5, 1]), np.array([[2.]]), id="2D scalar")])
+def test_xferfcn_ndarray_precedence(op, tf, arr):
+    # Apply the operator to the transfer function and array
+    ss = ct.tf2ss(tf)
+    result = op(ss, arr)
+    assert isinstance(result, ct.StateSpace)
+
+    # Apply the operator to the array and transfer function
+    ss = ct.tf2ss(tf)
+    result = op(arr, ss)
+    assert isinstance(result, ct.StateSpace)
+
