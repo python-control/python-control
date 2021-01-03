@@ -219,8 +219,11 @@ class TestIOSys:
 
         # If we copy signal names w/out a system name, append '_linearized'
         ct.use_legacy_defaults('0.8.4')
+        ct.config.use_numpy_matrix(False)       # get rid of warning messages
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
         assert linearized.name == kincar.name + '_linearized'
+
+        ct.reset_defaults()
         ct.use_legacy_defaults('0.9.0')
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
         assert linearized.name == kincar.name + '$linearized'
