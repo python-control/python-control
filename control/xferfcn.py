@@ -114,6 +114,9 @@ class TransferFunction(LTI):
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
     """
 
+    # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
+    __array_priority__ = 11     # override ndarray and matrix types
+
     def __init__(self, *args, **kwargs):
         """TransferFunction(num, den[, dt])
 
