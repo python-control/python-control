@@ -255,7 +255,7 @@ class TestFeedback:
             ctrl.feedback(*args)
 
         # If second argument is not LTI or convertable, generate an exception
-        args = (tsys.sys1, np.array([1]))
+        args = (tsys.sys1, 'hello world')
         with pytest.raises(TypeError):
             ctrl.feedback(*args)
 

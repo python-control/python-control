@@ -1030,8 +1030,8 @@ class TestLTIConverter:
     [pytest.param(getattr(operator, s), id=s) for s in ('add', 'sub', 'mul')])
 @pytest.mark.parametrize(
     "tf, arr",
-    [# pytest.param(ct.tf([1], [0.5, 1]), np.array(2.), id="0D scalar"),
-     # pytest.param(ct.tf([1], [0.5, 1]), np.array([2.]), id="1D scalar"),
+    [pytest.param(ct.tf([1], [0.5, 1]), np.array(2.), id="0D scalar"),
+     pytest.param(ct.tf([1], [0.5, 1]), np.array([2.]), id="1D scalar"),
      pytest.param(ct.tf([1], [0.5, 1]), np.array([[2.]]), id="2D scalar")])
 def test_xferfcn_ndarray_precedence(op, tf, arr):
     # Apply the operator to the transfer function and array

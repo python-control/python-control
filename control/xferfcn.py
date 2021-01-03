@@ -1285,7 +1285,7 @@ def _convert_to_transfer_function(sys, **kw):
 
     # If this is array-like, try to create a constant feedthrough
     try:
-        D = array(sys)
+        D = array(sys, ndmin=2)
         outputs, inputs = D.shape
         num = [[[D[i, j]] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
