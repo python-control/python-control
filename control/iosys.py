@@ -220,7 +220,7 @@ class InputOutputSystem(object):
             raise NotImplemented("Matrix multiplication not yet implemented")
 
         elif not isinstance(sys1, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys1)
+            raise TypeError("Unknown I/O system object ", sys1)
 
         # Make sure systems can be interconnected
         if sys1.noutputs != sys2.ninputs:
@@ -263,7 +263,7 @@ class InputOutputSystem(object):
             raise NotImplemented("Matrix multiplication not yet implemented")
 
         elif not isinstance(sys2, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys1)
+            raise TypeError("Unknown I/O system object ", sys1)
 
         else:
             # Both systems are InputOutputSystems => use __mul__
@@ -281,7 +281,7 @@ class InputOutputSystem(object):
             raise NotImplemented("Matrix addition not yet implemented")
 
         elif not isinstance(sys2, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys2)
+            raise TypeError("Unknown I/O system object ", sys2)
 
         # Make sure number of input and outputs match
         if sys1.ninputs != sys2.ninputs or sys1.noutputs != sys2.noutputs:

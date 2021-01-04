@@ -1281,11 +1281,8 @@ def _convert_to_statespace(sys, **kw):
     try:
         D = _ssmatrix(sys)
         return StateSpace([], [], [], D)
-    except Exception as e:
-        print("Failure to assume argument is matrix-like in"
-              " _convert_to_statespace, result %s" % e)
-
-    raise TypeError("Can't convert given type to StateSpace system.")
+    except:
+        raise TypeError("Can't convert given type to StateSpace system.")
 
 
 # TODO: add discrete time option
