@@ -254,7 +254,11 @@ class InputOutputSystem(object):
 
     def __rmul__(sys1, sys2):
         """Pre-multiply an input/output systems by a scalar/matrix"""
-        if isinstance(sys2, (int, float, np.number)):
+        if isinstance(sys2, InputOutputSystem):
+            # Both systems are InputOutputSystems => use __mul__
+            return InputOutputSystem.__mul__(sys2, sys1)
+
+        elif isinstance(sys2, (int, float, np.number)):
             # TODO: Scale the output
             raise NotImplemented("Scalar multiplication not yet implemented")
 
@@ -262,12 +266,12 @@ class InputOutputSystem(object):
             # TODO: Post-multiply by a matrix
             raise NotImplemented("Matrix multiplication not yet implemented")
 
-        elif not isinstance(sys2, InputOutputSystem):
-            raise TypeError("Unknown I/O system object ", sys1)
+        elif isinstance(sys2, StateSpace):
+            # TODO: Should eventuall preserve LinearIOSystem structure
+            return StateSpace.__mul__(sys2, sys1)
 
         else:
-            # Both systems are InputOutputSystems => use __mul__
-            return InputOutputSystem.__mul__(sys2, sys1)
+            raise TypeError("Unknown I/O system object ", sys1)
 
     def __add__(sys1, sys2):
         """Add two input/output systems (parallel interconnection)"""

@@ -72,7 +72,7 @@ conversion_table = [
     ('sub',     'flt', ['ss',  'tf',  'xrd', 'xio', 'xos', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('mul',     'ss',  ['ss',  'ss',  'xrd', 'xio', 'xos', 'ss',  'ss' ]),
+    ('mul',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'xos', 'ss',  'ss' ]),
     ('mul',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
     ('mul',     'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'frd']),
     ('mul',     'lio', ['xio', 'xio', 'xrd', 'lio', 'ios', 'xio', 'xio']),
