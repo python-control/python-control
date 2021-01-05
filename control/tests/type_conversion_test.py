@@ -149,7 +149,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
 
 type_list = ['ss', 'tf', 'tfx', 'frd', 'lio', 'ios', 'arr', 'flt']
 conversion_table = [
-    # L / R ['ss',  'tf',  'tfx', 'frd', 'lio', 'ios', 'arr', 'flt'] 
+    # L \ R ['ss',  'tf',  'tfx', 'frd', 'lio', 'ios', 'arr', 'flt'] 
     ('ss',  ['ss',  'ss',  'tf'   'frd', 'lio', 'ios', 'ss',  'ss' ]),
     ('tf',  ['tf',  'tf',  'tf'   'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('tfx', ['tf',  'tf',  'tf',  'frd', 'E',   'E',   'tf',  'tf' ]),
