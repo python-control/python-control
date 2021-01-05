@@ -16,7 +16,7 @@ import scipy as sp
 
 import control as ct
 from control import iosys as ios
-from control.tests.conftest import noscipy0
+from control.tests.conftest import noscipy0, matrixfilter
 
 class TestIOSys:
 
@@ -204,6 +204,8 @@ class TestIOSys:
             linearized.C, [[1, 0, 0], [0, 1, 0]])
         np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
+    @pytest.mark.usefixtures("editsdefaults")
+    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True,
@@ -217,17 +219,14 @@ class TestIOSys:
         assert linearized.find_state('y') == 1
         assert linearized.find_state('theta') == 2
 
-        # If we copy signal names w/out a system name, append '_linearized'
-        ct.use_legacy_defaults('0.8.4')
-        ct.config.use_numpy_matrix(False)       # get rid of warning messages
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
-        assert linearized.name == kincar.name + '_linearized'
-
-        ct.reset_defaults()
-        ct.use_legacy_defaults('0.9.0')
+        # If we copy signal names w/out a system name, append '$linearized'
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
         assert linearized.name == kincar.name + '$linearized'
-        ct.reset_defaults()
+
+        # Test legacy version as well
+        ct.use_legacy_defaults('0.8.4')
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        assert linearized.name == kincar.name + '_linearized'
 
         # If copy is False, signal names should not be copied
         lin_nocopy = kincar.linearize(0, 0, copy=False)
@@ -954,12 +953,13 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(ss_feedback.C, lin_feedback.C)
         np.testing.assert_array_almost_equal(ss_feedback.D, lin_feedback.D)
 
+    @pytest.mark.usefixtures("editsdefaults")
+    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_sys_naming_convention(self, tsys):
         """Enforce generic system names 'sys[i]' to be present when systems are
         created without explicit names."""
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
-        ct.config.use_numpy_matrix(False)       # get rid of warning messages
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
 
@@ -1013,8 +1013,8 @@ class TestIOSys:
         with pytest.warns(UserWarning):
             unnamedsys1 * unnamedsys1
 
-        ct.config.reset_defaults()              # reset defaults 
-
+    @pytest.mark.usefixtures("editsdefaults")
+    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_signals_naming_convention_0_8_4(self, tsys):
         """Enforce generic names to be present when systems are created
         without explicit signal names:
@@ -1024,7 +1024,6 @@ class TestIOSys:
         """
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
-        ct.config.use_numpy_matrix(False)       # get rid of warning messages
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
         for statename in ["x[0]", "x[1]"]:
@@ -1076,8 +1075,6 @@ class TestIOSys:
             same_name_series = unnamedsys * unnamedsys
             assert "sys[1].x[0]" in same_name_series.state_index
             assert "copy of sys[1].x[0]" in same_name_series.state_index
-
-        ct.config.reset_defaults()              # reset defaults 
 
     def test_named_signals_linearize_inconsistent(self, tsys):
         """Mare sure that providing inputs or outputs not consistent with
@@ -1218,6 +1215,8 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(io_S.C, ss_S.C)
         np.testing.assert_array_almost_equal(io_S.D, ss_S.D)
 
+    @pytest.mark.usefixtures("editsdefaults")
+    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_duplicates(self, tsys):
         nlios = ios.NonlinearIOSystem(lambda t, x, u, params: x,
                                       lambda t, x, u, params: u * u,
@@ -1236,7 +1235,6 @@ class TestIOSys:
             ios_series = nlios1 * nlios2
             assert "copy of sys_1.x[0]" in ios_series.state_index.keys()
             assert "copy of sys.x[0]" in ios_series.state_index.keys()
-        ct.config.reset_defaults()              # reset defaults 
 
         # Duplicate names
         iosys_siso = ct.LinearIOSystem(tsys.siso_linsys)
