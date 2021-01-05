@@ -1264,7 +1264,7 @@ def _convertToStateSpace(sys, **kw):
 
 
 # TODO: add discrete time option
-def _rss_generate(states, inputs, outputs, type):
+def _rss_generate(states, inputs, outputs, type, strictly_proper=False):
     """Generate a random state space.
 
     This does the actual random state space generation expected from rss and
@@ -1374,7 +1374,7 @@ def _rss_generate(states, inputs, outputs, type):
     # Apply masks.
     B = B * Bmask
     C = C * Cmask
-    D = D * Dmask
+    D = D * Dmask if not strictly_proper else zeros(D.shape)
 
     return StateSpace(A, B, C, D)
 
@@ -1649,7 +1649,7 @@ def tf2ss(*args):
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 
-def rss(states=1, outputs=1, inputs=1):
+def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
     """
     Create a stable *continuous* random state space object.
 
@@ -1661,6 +1661,9 @@ def rss(states=1, outputs=1, inputs=1):
         Number of system inputs
     outputs : integer
         Number of system outputs
+    strictly_proper : bool, optional
+        If set to 'True', returns a proper system (no direct term).  Default
+        value is 'False'.
 
     Returns
     -------
@@ -1684,10 +1687,11 @@ def rss(states=1, outputs=1, inputs=1):
 
     """
 
-    return _rss_generate(states, inputs, outputs, 'c')
+    return _rss_generate(states, inputs, outputs, 'c',
+                         strictly_proper=strictly_proper)
 
 
-def drss(states=1, outputs=1, inputs=1):
+def drss(states=1, outputs=1, inputs=1, strictly_proper=False):
     """
     Create a stable *discrete* random state space object.
 
@@ -1722,7 +1726,8 @@ def drss(states=1, outputs=1, inputs=1):
 
     """
 
-    return _rss_generate(states, inputs, outputs, 'd')
+    return _rss_generate(states, inputs, outputs, 'd',
+                         strictly_proper=strictly_proper)
 
 
 def ssdata(sys):

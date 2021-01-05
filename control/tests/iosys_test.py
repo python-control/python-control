@@ -16,7 +16,7 @@ import scipy as sp
 
 import control as ct
 from control import iosys as ios
-from control.tests.conftest import noscipy0
+from control.tests.conftest import noscipy0, matrixfilter
 
 class TestIOSys:
 
@@ -167,7 +167,22 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
-    def test_linearize(self, tsys):
+    @pytest.fixture
+    def kincar(self):
+        # Create a simple nonlinear system to check (kinematic car)
+        def kincar_update(t, x, u, params):
+            return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
+
+        def kincar_output(t, x, u, params):
+            return np.array([x[0], x[1]])
+
+        return ios.NonlinearIOSystem(
+            kincar_update, kincar_output,
+            inputs = ['v', 'phi'],
+            outputs = ['x', 'y'],
+            states = ['x', 'y', 'theta'])
+
+    def test_linearize(self, tsys, kincar):
         # Create a single input/single output linear system
         linsys = tsys.siso_linsys
         iosys = ios.LinearIOSystem(linsys)
@@ -180,13 +195,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(linsys.D, linearized.D)
 
         # Create a simple nonlinear system to check (kinematic car)
-        def kincar_update(t, x, u, params):
-            return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
-
-        def kincar_output(t, x, u, params):
-            return np.array([x[0], x[1]])
-
-        iosys = ios.NonlinearIOSystem(kincar_update, kincar_output)
+        iosys = kincar
         linearized = iosys.linearize([0, 0, 0], [0, 0])
         np.testing.assert_array_almost_equal(linearized.A, np.zeros((3,3)))
         np.testing.assert_array_almost_equal(
@@ -195,6 +204,35 @@ class TestIOSys:
             linearized.C, [[1, 0, 0], [0, 1, 0]])
         np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
+    @pytest.mark.usefixtures("editsdefaults")
+    def test_linearize_named_signals(self, kincar):
+        # Full form of the call
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True,
+                                      name='linearized')
+        assert linearized.name == 'linearized'
+        assert linearized.find_input('v') == 0
+        assert linearized.find_input('phi') == 1
+        assert linearized.find_output('x') == 0
+        assert linearized.find_output('y') == 1
+        assert linearized.find_state('x') == 0
+        assert linearized.find_state('y') == 1
+        assert linearized.find_state('theta') == 2
+
+        # If we copy signal names w/out a system name, append '$linearized'
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        assert linearized.name == kincar.name + '$linearized'
+
+        # Test legacy version as well
+        ct.use_legacy_defaults('0.8.4')
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        assert linearized.name == kincar.name + '_linearized'
+
+        # If copy is False, signal names should not be copied
+        lin_nocopy = kincar.linearize(0, 0, copy=False)
+        assert lin_nocopy.find_input('v') is None
+        assert lin_nocopy.find_output('x') is None
+        assert lin_nocopy.find_state('x') is None
 
     @noscipy0
     def test_connect(self, tsys):
@@ -207,8 +245,8 @@ class TestIOSys:
         # Connect systems in different ways and compare to StateSpace
         linsys_series = linsys2 * linsys1
         iosys_series = ios.InterconnectedSystem(
-            (iosys1, iosys2),   # systems
-            ((1, 0),),          # interconnection (series)
+            [iosys1, iosys2],   # systems
+            [[1, 0]],           # interconnection (series)
             0,                  # input = first system
             1                   # output = second system
         )
@@ -227,8 +265,8 @@ class TestIOSys:
         linsys2c.dt = 0         # Reset the timebase
         iosys2c = ios.LinearIOSystem(linsys2c)
         iosys_series = ios.InterconnectedSystem(
-            (iosys1, iosys2c),   # systems
-            ((1, 0),),          # interconnection (series)
+            [iosys1, iosys2c],   # systems
+            [[1, 0]],          # interconnection (series)
             0,                  # input = first system
             1                   # output = second system
         )
@@ -242,9 +280,9 @@ class TestIOSys:
         # Feedback interconnection
         linsys_feedback = ct.feedback(linsys1, linsys2)
         iosys_feedback = ios.InterconnectedSystem(
-            (iosys1, iosys2),   # systems
-            ((1, 0),            # input of sys2 = output of sys1
-             (0, (1, 0, -1))),  # input of sys1 = -output of sys2
+            [iosys1, iosys2],   # systems
+            [[1, 0],            # input of sys2 = output of sys1
+             [0, (1, 0, -1)]],  # input of sys1 = -output of sys2
             0,                  # input = first system
             0                   # output = first system
         )
@@ -253,6 +291,85 @@ class TestIOSys:
         lti_t, lti_y, lti_x = ct.forced_response(linsys_feedback, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
+
+    @noscipy0
+    @pytest.mark.parametrize(
+        "connections, inplist, outlist",
+        [pytest.param([[(1, 0), (0, 0, 1)]], [[(0, 0, 1)]], [[(1, 0, 1)]],
+                      id="full, raw tuple"),
+         pytest.param([[(1, 0), (0, 0, -1)]], [[(0, 0)]], [[(1, 0, -1)]],
+                      id="full, raw tuple, canceling gains"),
+         pytest.param([[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]],
+                      id="full, raw tuple, no gain"),
+         pytest.param([[(1, 0), (0, 0)]], [(0, 0)], [(1, 0)],
+                      id="full, raw tuple, no gain, no outer list"),
+         pytest.param([['sys2.u[0]', 'sys1.y[0]']], ['sys1.u[0]'],
+                      ['sys2.y[0]'], id="named, full"),
+         pytest.param([['sys2.u[0]', '-sys1.y[0]']], ['sys1.u[0]'],
+                      ['-sys2.y[0]'], id="named, full, caneling gains"),
+         pytest.param([['sys2.u[0]', 'sys1.y[0]']], 'sys1.u[0]', 'sys2.y[0]',
+                      id="named, full, no list"),
+         pytest.param([['sys2.u[0]', ('sys1', 'y[0]')]], [(0, 0)], [(1,)],
+                      id="mixed"),
+         pytest.param([[1, 0]], 0, 1, id="minimal")])
+    def test_connect_spec_variants(self, tsys, connections, inplist, outlist):
+        # Define a couple of (linear) systems to interconnection
+        linsys1 = tsys.siso_linsys
+        iosys1 = ios.LinearIOSystem(linsys1, name="sys1")
+        linsys2 = tsys.siso_linsys
+        iosys2 = ios.LinearIOSystem(linsys2, name="sys2")
+
+        # Simple series connection
+        linsys_series = linsys2 * linsys1
+
+        # Create a simulation run to compare against
+        T, U = tsys.T, tsys.U
+        X0 = np.concatenate((tsys.X0, tsys.X0))
+        lti_t, lti_y, lti_x = ct.forced_response(linsys_series, T, U, X0)
+
+        # Create the input/output system with different parameter variations
+        iosys_series = ios.InterconnectedSystem(
+            [iosys1, iosys2], connections, inplist, outlist)
+        ios_t, ios_y, ios_x = ios.input_output_response(
+            iosys_series, T, U, X0, return_x=True)
+        np.testing.assert_array_almost_equal(lti_t, ios_t)
+        np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
+
+    @noscipy0
+    @pytest.mark.parametrize(
+        "connections, inplist, outlist",
+        [pytest.param([['sys2.u[0]', 'sys1.y[0]']],
+                      [[('sys1', 'u[0]'), ('sys1', 'u[0]')]],
+                      [('sys2', 'y[0]', 0.5)], id="duplicated input"),
+         pytest.param([['sys2.u[0]', ('sys1', 'y[0]', 0.5)],
+                       ['sys2.u[0]', ('sys1', 'y[0]', 0.5)]],
+                      'sys1.u[0]', 'sys2.y[0]', id="duplicated connection"),
+         pytest.param([['sys2.u[0]', 'sys1.y[0]']], 'sys1.u[0]',
+                      [[('sys2', 'y[0]', 0.5), ('sys2', 'y[0]', 0.5)]],
+                      id="duplicated output")])
+    def test_connect_spec_warnings(self, tsys, connections, inplist, outlist):
+        # Define a couple of (linear) systems to interconnection
+        linsys1 = tsys.siso_linsys
+        iosys1 = ios.LinearIOSystem(linsys1, name="sys1")
+        linsys2 = tsys.siso_linsys
+        iosys2 = ios.LinearIOSystem(linsys2, name="sys2")
+
+        # Simple series connection
+        linsys_series = linsys2 * linsys1
+
+        # Create a simulation run to compare against
+        T, U = tsys.T, tsys.U
+        X0 = np.concatenate((tsys.X0, tsys.X0))
+        lti_t, lti_y, lti_x = ct.forced_response(linsys_series, T, U, X0)
+
+        # Set up multiple gainst and make sure a warning is generated
+        with pytest.warns(UserWarning, match="multiple.*Combining"):
+            iosys_series = ios.InterconnectedSystem(
+                [iosys1, iosys2], connections, inplist, outlist)
+        ios_t, ios_y, ios_x = ios.input_output_response(
+            iosys_series, T, U, X0, return_x=True)
+        np.testing.assert_array_almost_equal(lti_t, ios_t)
+        np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
     @noscipy0
     def test_static_nonlinearity(self, tsys):
@@ -312,9 +429,9 @@ class TestIOSys:
 
         # Nonlinear system in feeback loop with LTI system
         iosys = ios.InterconnectedSystem(
-            (lnios, nlios),         # linear system w/ nonlinear feedback
-            ((1,),                  # feedback interconnection (sig to 0)
-             (0, (1, 0, -1))),
+            [lnios, nlios],         # linear system w/ nonlinear feedback
+            [[1],                   # feedback interconnection (sig to 0)
+             [0, (1, 0, -1)]],
             0,                      # input to linear system
             0                       # output from linear system
         )
@@ -324,9 +441,9 @@ class TestIOSys:
         # Algebraic loop from static nonlinear system in feedback
         # (error will be due to no states)
         iosys = ios.InterconnectedSystem(
-            (nlios1, nlios2),       # two copies of a static nonlinear system
-            ((0, 1),                # feedback interconnection
-             (1, (0, 0, -1))),
+            [nlios1, nlios2],       # two copies of a static nonlinear system
+            [[0, 1],                # feedback interconnection
+             [1, (0, 0, -1)]],
             0, 0
         )
         args = (iosys, T, U)
@@ -338,9 +455,9 @@ class TestIOSys:
             [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[1]])
         lnios = ios.LinearIOSystem(linsys)
         iosys = ios.InterconnectedSystem(
-            (nlios, lnios),         # linear system w/ nonlinear feedback
-            ((0, 1),                # feedback interconnection
-             (1, (0, 0, -1))),
+            [nlios, lnios],         # linear system w/ nonlinear feedback
+            [[0, 1],                # feedback interconnection
+             [1, (0, 0, -1)]],
             0, 0
         )
         args = (iosys, T, U, X0)
@@ -352,10 +469,11 @@ class TestIOSys:
     def test_summer(self, tsys):
         # Construct a MIMO system for testing
         linsys = tsys.mimo_linsys1
-        linio = ios.LinearIOSystem(linsys)
+        linio1 = ios.LinearIOSystem(linsys)
+        linio2 = ios.LinearIOSystem(linsys)
 
         linsys_parallel = linsys + linsys
-        iosys_parallel = linio + linio
+        iosys_parallel = linio1 + linio2
 
         # Set up parameters for simulation
         T = tsys.T
@@ -726,7 +844,6 @@ class TestIOSys:
             ios_t, ios_y = ios.input_output_response(
                 iosys, T, U, X0, params={'something':0})
 
-
         # Check to make sure results are OK
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
@@ -741,13 +858,13 @@ class TestIOSys:
                 np.dot(tsys.mimo_linsys1.C, np.reshape(x, (-1, 1))) \
                 + np.dot(tsys.mimo_linsys1.D, np.reshape(u, (-1, 1)))
             ).reshape(-1,),
-            inputs = ('u[0]', 'u[1]'),
-            outputs = ('y[0]', 'y[1]'),
+            inputs = ['u[0]', 'u[1]'],
+            outputs = ['y[0]', 'y[1]'],
             states = tsys.mimo_linsys1.states,
             name = 'sys1')
         sys2 = ios.LinearIOSystem(tsys.mimo_linsys2,
-            inputs = ('u[0]', 'u[1]'),
-            outputs = ('y[0]', 'y[1]'),
+            inputs = ['u[0]', 'u[1]'],
+            outputs = ['y[0]', 'y[1]'],
             name = 'sys2')
 
         # Series interconnection (sys1 * sys2) using __mul__
@@ -770,13 +887,48 @@ class TestIOSys:
 
         # Series interconnection (sys1 * sys2) using named + mixed signals
         ios_connect = ios.InterconnectedSystem(
+            [sys2, sys1],
+            connections=[
+                [('sys1', 'u[0]'), 'sys2.y[0]'],
+                ['sys1.u[1]', 'sys2.y[1]']
+            ],
+            inplist=['sys2.u[0]', ('sys2', 1)],
+            outlist=[(1, 'y[0]'), 'sys1.y[1]']
+        )
+        lin_series = ct.linearize(ios_connect, 0, 0)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
+
+        # Try the same thing using the interconnect function
+        # Since sys1 is nonlinear, we should get back the same result
+        ios_connect = ios.interconnect(
             (sys2, sys1),
             connections=(
-                (('sys1', 'u[0]'), 'sys2.y[0]'),
-                ('sys1.u[1]', 'sys2.y[1]')
+                [('sys1', 'u[0]'), 'sys2.y[0]'],
+                ['sys1.u[1]', 'sys2.y[1]']
             ),
-            inplist=('sys2.u[0]', ('sys2', 1)),
-            outlist=((1, 'y[0]'), 'sys1.y[1]')
+            inplist=['sys2.u[0]', ('sys2', 1)],
+            outlist=[(1, 'y[0]'), 'sys1.y[1]']
+        )
+        lin_series = ct.linearize(ios_connect, 0, 0)
+        np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
+        np.testing.assert_array_almost_equal(ss_series.B, lin_series.B)
+        np.testing.assert_array_almost_equal(ss_series.C, lin_series.C)
+        np.testing.assert_array_almost_equal(ss_series.D, lin_series.D)
+
+        # Try the same thing using the interconnect function
+        # Since sys1 is nonlinear, we should get back the same result
+        # Note: use a tuple for connections to make sure it works
+        ios_connect = ios.interconnect(
+            (sys2, sys1),
+            connections=(
+                [('sys1', 'u[0]'), 'sys2.y[0]'],
+                ['sys1.u[1]', 'sys2.y[1]']
+            ),
+            inplist=['sys2.u[0]', ('sys2', 1)],
+            outlist=[(1, 'y[0]'), 'sys1.y[1]']
         )
         lin_series = ct.linearize(ios_connect, 0, 0)
         np.testing.assert_array_almost_equal(ss_series.A, lin_series.A)
@@ -786,13 +938,13 @@ class TestIOSys:
 
         # Make sure that we can use input signal names as system outputs
         ios_connect = ios.InterconnectedSystem(
-            (sys1, sys2),
-            connections=(
-                ('sys2.u[0]', 'sys1.y[0]'), ('sys2.u[1]', 'sys1.y[1]'),
-                ('sys1.u[0]', '-sys2.y[0]'), ('sys1.u[1]', '-sys2.y[1]')
-            ),
-            inplist=('sys1.u[0]', 'sys1.u[1]'),
-            outlist=('sys2.u[0]', 'sys2.u[1]')  # = sys1.y[0], sys1.y[1]
+            [sys1, sys2],
+            connections=[
+                ['sys2.u[0]', 'sys1.y[0]'], ['sys2.u[1]', 'sys1.y[1]'],
+                ['sys1.u[0]', '-sys2.y[0]'], ['sys1.u[1]', '-sys2.y[1]']
+            ],
+            inplist=['sys1.u[0]', 'sys1.u[1]'],
+            outlist=['sys2.u[0]', 'sys2.u[1]']  # = sys1.y[0], sys1.y[1]
         )
         ss_feedback = ct.feedback(tsys.mimo_linsys1, tsys.mimo_linsys2)
         lin_feedback = ct.linearize(ios_connect, 0, 0)
@@ -801,10 +953,13 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(ss_feedback.C, lin_feedback.C)
         np.testing.assert_array_almost_equal(ss_feedback.D, lin_feedback.D)
 
+    @pytest.mark.usefixtures("editsdefaults")
     def test_sys_naming_convention(self, tsys):
         """Enforce generic system names 'sys[i]' to be present when systems are
         created without explicit names."""
 
+        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
 
@@ -858,13 +1013,17 @@ class TestIOSys:
         with pytest.warns(UserWarning):
             unnamedsys1 * unnamedsys1
 
-    def test_signals_naming_convention(self, tsys):
+    @pytest.mark.usefixtures("editsdefaults")
+    def test_signals_naming_convention_0_8_4(self, tsys):
         """Enforce generic names to be present when systems are created
         without explicit signal names:
         input: 'u[i]'
         state: 'x[i]'
         output: 'y[i]'
         """
+
+        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
         for statename in ["x[0]", "x[1]"]:
@@ -966,6 +1125,7 @@ class TestIOSys:
     def test_lineariosys_statespace(self, tsys):
         """Make sure that a LinearIOSystem is also a StateSpace object"""
         iosys_siso = ct.LinearIOSystem(tsys.siso_linsys)
+        iosys_siso2 = ct.LinearIOSystem(tsys.siso_linsys)
         assert isinstance(iosys_siso, ct.StateSpace)
 
         # Make sure that state space functions work for LinearIOSystems
@@ -979,7 +1139,7 @@ class TestIOSys:
         np.testing.assert_array_equal(omega_io, omega_ss)
 
         # LinearIOSystem methods should override StateSpace methods
-        io_mul = iosys_siso * iosys_siso
+        io_mul = iosys_siso * iosys_siso2
         assert isinstance(io_mul, ct.InputOutputSystem)
 
         # But also retain linear structure
@@ -993,7 +1153,7 @@ class TestIOSys:
         np.testing.assert_array_equal(io_mul.D, ss_series.D)
 
         # Make sure that series does the same thing
-        io_series = ct.series(iosys_siso, iosys_siso)
+        io_series = ct.series(iosys_siso, iosys_siso2)
         assert isinstance(io_series, ct.InputOutputSystem)
         assert isinstance(io_series, ct.StateSpace)
         np.testing.assert_array_equal(io_series.A, ss_series.A)
@@ -1002,7 +1162,7 @@ class TestIOSys:
         np.testing.assert_array_equal(io_series.D, ss_series.D)
 
         # Test out feedback as well
-        io_feedback = ct.feedback(iosys_siso, iosys_siso)
+        io_feedback = ct.feedback(iosys_siso, iosys_siso2)
         assert isinstance(io_series, ct.InputOutputSystem)
 
         # But also retain linear structure
@@ -1015,6 +1175,47 @@ class TestIOSys:
         np.testing.assert_array_equal(io_feedback.C, ss_feedback.C)
         np.testing.assert_array_equal(io_feedback.D, ss_feedback.D)
 
+        # Make sure series interconnections are done in the right order
+        ss_sys1 = ct.rss(2, 3, 2)
+        io_sys1 = ct.ss2io(ss_sys1)
+        ss_sys2 = ct.rss(2, 2, 3)
+        io_sys2 = ct.ss2io(ss_sys2)
+        io_series = io_sys2 * io_sys1
+        assert io_series.ninputs == 2
+        assert io_series.noutputs == 2
+        assert io_series.nstates == 4
+
+        # While we are at it, check that the state space matrices match
+        ss_series = ss_sys2 * ss_sys1
+        np.testing.assert_array_equal(io_series.A, ss_series.A)
+        np.testing.assert_array_equal(io_series.B, ss_series.B)
+        np.testing.assert_array_equal(io_series.C, ss_series.C)
+        np.testing.assert_array_equal(io_series.D, ss_series.D)
+
+    def test_docstring_example(self):
+        P = ct.LinearIOSystem(
+            ct.rss(2, 2, 2, strictly_proper=True), name='P')
+        C = ct.LinearIOSystem(ct.rss(2, 2, 2), name='C')
+        S = ct.InterconnectedSystem(
+            [C, P],
+            connections = [
+              ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
+              ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
+            inplist = ['C.u[0]', 'C.u[1]'],
+            outlist = ['P.y[0]', 'P.y[1]'],
+        )
+        ss_P = ct.StateSpace(P.linearize(0, 0))
+        ss_C = ct.StateSpace(C.linearize(0, 0))
+        ss_eye = ct.StateSpace(
+            [], np.zeros((0, 2)), np.zeros((2, 0)), np.eye(2))
+        ss_S = ct.feedback(ss_P * ss_C, ss_eye)
+        io_S = S.linearize(0, 0)
+        np.testing.assert_array_almost_equal(io_S.A, ss_S.A)
+        np.testing.assert_array_almost_equal(io_S.B, ss_S.B)
+        np.testing.assert_array_almost_equal(io_S.C, ss_S.C)
+        np.testing.assert_array_almost_equal(io_S.D, ss_S.D)
+
+    @pytest.mark.usefixtures("editsdefaults")
     def test_duplicates(self, tsys):
         nlios = ios.NonlinearIOSystem(lambda t, x, u, params: x,
                                       lambda t, x, u, params: u * u,
@@ -1026,6 +1227,8 @@ class TestIOSys:
             ios_series = nlios * nlios
 
         # Nonduplicate objects
+        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         nlios1 = nlios.copy()
         nlios2 = nlios.copy()
         with pytest.warns(UserWarning, match="Duplicate name"):
@@ -1043,7 +1246,7 @@ class TestIOSys:
                                        inputs=1, outputs=1, name="sys")
 
         with pytest.warns(UserWarning, match="Duplicate name"):
-            ct.InterconnectedSystem((nlios1, iosys_siso, nlios2),
+            ct.InterconnectedSystem([nlios1, iosys_siso, nlios2],
                                     inputs=0, outputs=0, states=0)
 
         # Same system, different names => everything should be OK
@@ -1054,10 +1257,77 @@ class TestIOSys:
                                        lambda t, x, u, params: u * u,
                                        inputs=1, outputs=1, name="nlios2")
         with pytest.warns(None) as record:
-            ct.InterconnectedSystem((nlios1, iosys_siso, nlios2),
+            ct.InterconnectedSystem([nlios1, iosys_siso, nlios2],
                                     inputs=0, outputs=0, states=0)
         if record:
             pytest.fail("Warning not expected: " + record[0].message)
+
+
+def test_linear_interconnection():
+    ss_sys1 = ct.rss(2, 2, 2, strictly_proper=True)
+    ss_sys2 = ct.rss(2, 2, 2)
+    io_sys1 = ios.LinearIOSystem(
+        ss_sys1, inputs = ('u[0]', 'u[1]'),
+        outputs = ('y[0]', 'y[1]'), name = 'sys1')
+    io_sys2 = ios.LinearIOSystem(
+        ss_sys2, inputs = ('u[0]', 'u[1]'),
+        outputs = ('y[0]', 'y[1]'), name = 'sys2')
+    nl_sys2 = ios.NonlinearIOSystem(
+        lambda t, x, u, params: np.array(
+            np.dot(ss_sys2.A, np.reshape(x, (-1, 1))) \
+            + np.dot(ss_sys2.B, np.reshape(u, (-1, 1)))).reshape((-1,)),
+        lambda t, x, u, params: np.array(
+            np.dot(ss_sys2.C, np.reshape(x, (-1, 1))) \
+            + np.dot(ss_sys2.D, np.reshape(u, (-1, 1)))).reshape((-1,)),
+        states = 2,
+        inputs = ('u[0]', 'u[1]'),
+        outputs = ('y[0]', 'y[1]'),
+        name = 'sys2')
+
+    # Create a "regular" InterconnectedSystem
+    nl_connect = ios.interconnect(
+        (io_sys1, nl_sys2),
+        connections=[
+            ['sys1.u[1]', 'sys2.y[0]'],
+            ['sys2.u[0]', 'sys1.y[1]']
+        ],
+        inplist=[
+            ['sys1.u[0]', 'sys1.u[1]'],
+            ['sys2.u[1]']],
+        outlist=[
+            ['sys1.y[0]', '-sys2.y[0]'],
+            ['sys2.y[1]'],
+            ['sys2.u[1]']])
+    assert isinstance(nl_connect, ios.InterconnectedSystem)
+    assert not isinstance(nl_connect, ios.LinearICSystem)
+
+    # Now take its linearization
+    ss_connect = nl_connect.linearize(0, 0)
+    assert isinstance(ss_connect, ios.LinearIOSystem)
+
+    io_connect = ios.interconnect(
+        (io_sys1, io_sys2),
+        connections=[
+            ['sys1.u[1]', 'sys2.y[0]'],
+            ['sys2.u[0]', 'sys1.y[1]']
+        ],
+        inplist=[
+            ['sys1.u[0]', 'sys1.u[1]'],
+            ['sys2.u[1]']],
+        outlist=[
+            ['sys1.y[0]', '-sys2.y[0]'],
+            ['sys2.y[1]'],
+            ['sys2.u[1]']])
+    assert isinstance(io_connect, ios.InterconnectedSystem)
+    assert isinstance(io_connect, ios.LinearICSystem)
+    assert isinstance(io_connect, ios.LinearIOSystem)
+    assert isinstance(io_connect, ct.StateSpace)
+
+    # Finally compare the linearization with the linear system
+    np.testing.assert_array_almost_equal(io_connect.A, ss_connect.A)
+    np.testing.assert_array_almost_equal(io_connect.B, ss_connect.B)
+    np.testing.assert_array_almost_equal(io_connect.C, ss_connect.C)
+    np.testing.assert_array_almost_equal(io_connect.D, ss_connect.D)
 
 
 def predprey(t, x, u, params={}):
@@ -1107,7 +1377,6 @@ def pvtol_full(t, x, u, params={}):
         -g - c/m * x[4] + 1/m * sin(x[2]) * u[0] + 1/m * cos(x[2]) * u[1],
         -l/J * sin(x[2]) + r/J * u[0]
     ])
-
 
 
 def secord_update(t, x, u, params={}):
