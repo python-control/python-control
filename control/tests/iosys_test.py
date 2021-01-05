@@ -205,7 +205,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
     @pytest.mark.usefixtures("editsdefaults")
-    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True,
@@ -225,6 +224,7 @@ class TestIOSys:
 
         # Test legacy version as well
         ct.use_legacy_defaults('0.8.4')
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
         assert linearized.name == kincar.name + '_linearized'
 
@@ -954,12 +954,12 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(ss_feedback.D, lin_feedback.D)
 
     @pytest.mark.usefixtures("editsdefaults")
-    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_sys_naming_convention(self, tsys):
         """Enforce generic system names 'sys[i]' to be present when systems are
         created without explicit names."""
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
 
@@ -1014,7 +1014,6 @@ class TestIOSys:
             unnamedsys1 * unnamedsys1
 
     @pytest.mark.usefixtures("editsdefaults")
-    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_signals_naming_convention_0_8_4(self, tsys):
         """Enforce generic names to be present when systems are created
         without explicit signal names:
@@ -1024,6 +1023,7 @@ class TestIOSys:
         """
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         ct.InputOutputSystem.idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
         for statename in ["x[0]", "x[1]"]:
@@ -1216,7 +1216,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(io_S.D, ss_S.D)
 
     @pytest.mark.usefixtures("editsdefaults")
-    @matrixfilter               # avoid np.matrix warnings in v0.8.4
     def test_duplicates(self, tsys):
         nlios = ios.NonlinearIOSystem(lambda t, x, u, params: x,
                                       lambda t, x, u, params: u * u,
@@ -1229,6 +1228,7 @@ class TestIOSys:
 
         # Nonduplicate objects
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         nlios1 = nlios.copy()
         nlios2 = nlios.copy()
         with pytest.warns(UserWarning, match="Duplicate name"):
