@@ -136,10 +136,8 @@ def test_phase_crossover_frequencies_mimo():
                            [[3], [4]]],
                           [[[1, 2, 3, 4], [1, 1]],
                            [[1, 1], [1, 1]]])
-
-    omega, gain = phase_crossover_frequencies(tf[0,0])
-    assert_allclose(omega, [1.73205,  0.], atol=1.5e-3)
-    assert_allclose(gain, [-0.5,  0.25], atol=1.5e-3)
+    with pytest.raises(ControlMIMONotImplemented):
+        omega, gain = phase_crossover_frequencies(tf)
 
 
 def test_mag_phase_omega():
