@@ -279,7 +279,7 @@ class TransferFunction(LTI):
 
         Parameters
         ----------
-        x : complex array_like or complex
+        x : complex array_like or complex scalar
             Complex frequencies
 
         Returns
