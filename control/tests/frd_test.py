@@ -401,7 +401,8 @@ class TestFRD:
     def test_eval(self):
         sys_tf = ct.tf([1], [1, 2, 1])
         frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
-        np.testing.assert_almost_equal(evalfr(sys_tf, 1J), frd_tf.eval(1))
+        np.testing.assert_almost_equal(sys_tf(1j), frd_tf.eval(1))
+        np.testing.assert_almost_equal(sys_tf(1j), frd_tf(1j))
 
         # Should get an error if we evaluate at an unknown frequency
         with pytest.raises(ValueError):
