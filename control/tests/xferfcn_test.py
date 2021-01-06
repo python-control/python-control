@@ -474,15 +474,8 @@ class TestXferFcn:
     def test_freqresp_deprecated(self):
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1.])
         # Deprecated version of the call (should generate warning)
-        import warnings
-        with warnings.catch_warnings(record=True) as w:
-            # Set up warnings filter to only show warnings in control module
-            warnings.filterwarnings("ignore")
-            warnings.filterwarnings("always", module="control")
-
-            # Make sure that we get a pending deprecation warning
+        with pytest.warns(DeprecationWarning):
             sys.freqresp(1.)
-            assert issubclass(w[-1].category, DeprecationWarning)
 
     def test_frequency_response_siso(self):
         """Evaluate the magnitude and phase of a SISO system at
