@@ -1,3 +1,4 @@
+sphinx>=3.4
 numpy
 scipy
 matplotlib

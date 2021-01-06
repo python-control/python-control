@@ -1,16 +1,20 @@
-import unittest
+"""robust_array_test.py"""
+
 import numpy as np
-import control
-import control.robust
-from control.exception import slycot_check
+import pytest
+
+from control import append, minreal, ss, tf
+from control.robust import augw, h2syn, hinfsyn, mixsyn
+from control.tests.conftest import slycotonly
 
 
-class TestHinf(unittest.TestCase):
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+class TestHinf:
+
+    @slycotonly
     def testHinfsyn(self):
         """Test hinfsyn"""
-        p = control.ss(-1, [1, 1], [[1], [1]], [[0, 1], [1, 0]])
-        k, cl, gam, rcond = control.robust.hinfsyn(p, 1, 1)
+        p = ss(-1, [[1, 1]], [[1], [1]], [[0, 1], [1, 0]])
+        k, cl, gam, rcond = hinfsyn(p, 1, 1)
         # from Octave, which also uses SB10AD:
         #   a= -1; b1= 1; b2= 1; c1= 1; c2= 1; d11= 0; d12= 1; d21= 1; d22= 0;
         #   g = ss(a,[b1,b2],[c1;c2],[d11,d12;d21,d22]);
@@ -26,13 +30,13 @@ class TestHinf(unittest.TestCase):
 
     # TODO: add more interesting examples
 
+class TestH2:
 
-class TestH2(unittest.TestCase):
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testH2syn(self):
         """Test h2syn"""
-        p = control.ss(-1, [1, 1], [[1], [1]], [[0, 1], [1, 0]])
-        k = control.robust.h2syn(p, 1, 1)
+        p = ss(-1, [[1, 1]], [[1], [1]], [[0, 1], [1, 0]])
+        k = h2syn(p, 1, 1)
         # from Octave, which also uses SB10HD for H-2 synthesis:
         #   a= -1; b1= 1; b2= 1; c1= 1; c2= 1; d11= 0; d12= 1; d21= 1; d22= 0;
         #   g = ss(a,[b1,b2],[c1;c2],[d11,d12;d21,d22]);
@@ -44,32 +48,36 @@ class TestH2(unittest.TestCase):
         np.testing.assert_array_almost_equal(k.D, [[0]])
 
 
-class TestAugw(unittest.TestCase):
-    """Test control.robust.augw"""
+class TestAugw:
 
     # tolerance for system equality
     TOL = 1e-8
 
     def siso_almost_equal(self, g, h):
         """siso_almost_equal(g,h) -> None
-        Raises AssertionError if g and h, two SISO LTI objects, are not almost equal"""
-        from control import tf, minreal
+
+        Raises AssertionError if g and h, two SISO LTI objects, are not almost
+        equal
+        """
+        # TODO: use pytest's assertion rewriting feature
         gmh = tf(minreal(g - h, verbose=False))
         if not (gmh.num[0][0] < self.TOL).all():
             maxnum = max(abs(gmh.num[0][0]))
-            raise AssertionError(
-                'systems not approx equal; max num. coeff is {}\nsys 1:\n{}\nsys 2:\n{}'.format(
-                    maxnum, g, h))
+            raise AssertionError("systems not approx equal; "
+                                 "max num. coeff is {}\n"
+                                 "sys 1:\n"
+                                 "{}\n"
+                                 "sys 2:\n"
+                                 "{}".format(maxnum, g, h))
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testSisoW1(self):
         """SISO plant with S weighting"""
-        from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
         w1 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w1)
-        self.assertEqual(2, p.outputs)
-        self.assertEqual(2, p.inputs)
+        assert p.outputs == 2
+        assert p.inputs == 2
         # w->z1 should be w1
         self.siso_almost_equal(w1, p[0, 0])
         # w->v should be 1
@@ -79,15 +87,14 @@ class TestAugw(unittest.TestCase):
         # u->v should be -g
         self.siso_almost_equal(-g, p[1, 1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testSisoW2(self):
         """SISO plant with KS weighting"""
-        from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
         w2 = ss([-2], [1.], [1.], [2.])
         p = augw(g, w2=w2)
-        self.assertEqual(2, p.outputs)
-        self.assertEqual(2, p.inputs)
+        assert p.outputs == 2
+        assert p.inputs == 2
         # w->z2 should be 0
         self.siso_almost_equal(ss([], [], [], 0), p[0, 0])
         # w->v should be 1
@@ -97,15 +104,14 @@ class TestAugw(unittest.TestCase):
         # u->v should be -g
         self.siso_almost_equal(-g, p[1, 1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testSisoW3(self):
         """SISO plant with T weighting"""
-        from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
         w3 = ss([-2], [1.], [1.], [2.])
         p = augw(g, w3=w3)
-        self.assertEqual(2, p.outputs)
-        self.assertEqual(2, p.inputs)
+        assert p.outputs == 2
+        assert p.inputs == 2
         # w->z3 should be 0
         self.siso_almost_equal(ss([], [], [], 0), p[0, 0])
         # w->v should be 1
@@ -115,17 +121,16 @@ class TestAugw(unittest.TestCase):
         # u->v should be -g
         self.siso_almost_equal(-g, p[1, 1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testSisoW123(self):
         """SISO plant with all weights"""
-        from control import augw, ss
         g = ss([-1.], [1.], [1.], [1.])
         w1 = ss([-2.], [2.], [1.], [2.])
         w2 = ss([-3.], [3.], [1.], [3.])
         w3 = ss([-4.], [4.], [1.], [4.])
         p = augw(g, w1, w2, w3)
-        self.assertEqual(4, p.outputs)
-        self.assertEqual(2, p.inputs)
+        assert p.outputs == 4
+        assert p.inputs == 2
         # w->z1 should be w1
         self.siso_almost_equal(w1, p[0, 0])
         # w->z2 should be 0
@@ -143,18 +148,17 @@ class TestAugw(unittest.TestCase):
         # u->v should be -g
         self.siso_almost_equal(-g, p[3, 1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMimoW1(self):
         """MIMO plant with S weighting"""
-        from control import augw, ss
         g = ss([[-1., -2], [-3, -4]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]])
         w1 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w1)
-        self.assertEqual(4, p.outputs)
-        self.assertEqual(4, p.inputs)
+        assert p.outputs == 4
+        assert p.inputs == 4
         # w->z1 should be diag(w1,w1)
         self.siso_almost_equal(w1, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])
@@ -176,18 +180,17 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 0], p[3, 2])
         self.siso_almost_equal(-g[1, 1], p[3, 3])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMimoW2(self):
         """MIMO plant with KS weighting"""
-        from control import augw, ss
         g = ss([[-1., -2], [-3, -4]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]])
         w2 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w2=w2)
-        self.assertEqual(4, p.outputs)
-        self.assertEqual(4, p.inputs)
+        assert p.outputs == 4
+        assert p.inputs == 4
         # w->z2 should be 0
         self.siso_almost_equal(0, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])
@@ -209,18 +212,17 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 0], p[3, 2])
         self.siso_almost_equal(-g[1, 1], p[3, 3])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMimoW3(self):
         """MIMO plant with T weighting"""
-        from control import augw, ss
         g = ss([[-1., -2], [-3, -4]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]])
         w3 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w3=w3)
-        self.assertEqual(4, p.outputs)
-        self.assertEqual(4, p.inputs)
+        assert p.outputs == 4
+        assert p.inputs == 4
         # w->z3 should be 0
         self.siso_almost_equal(0, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])
@@ -242,10 +244,9 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 0], p[3, 2])
         self.siso_almost_equal(-g[1, 1], p[3, 3])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMimoW123(self):
         """MIMO plant with all weights"""
-        from control import augw, ss, append, minreal
         g = ss([[-1., -2], [-3, -4]],
                [[1., 0.], [0., 1.]],
                [[1., 0.], [0., 1.]],
@@ -260,8 +261,8 @@ class TestAugw(unittest.TestCase):
                 [[11., 13.], [17., 19.]],
                 [[23., 29.], [31., 37.]])
         p = augw(g, w1, w2, w3)
-        self.assertEqual(8, p.outputs)
-        self.assertEqual(4, p.inputs)
+        assert p.outputs == 8
+        assert p.inputs == 4
         # w->z1 should be w1
         self.siso_almost_equal(w1, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])
@@ -294,7 +295,7 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(w2[1, 0], p[3, 2])
         self.siso_almost_equal(w2[1, 1], p[3, 3])
         # u->z3 should be w3*g
-        w3g = w3 * g;
+        w3g = w3 * g
         self.siso_almost_equal(w3g[0, 0], minreal(p[4, 2]))
         self.siso_almost_equal(w3g[0, 1], minreal(p[4, 3]))
         self.siso_almost_equal(w3g[1, 0], minreal(p[5, 2]))
@@ -305,29 +306,31 @@ class TestAugw(unittest.TestCase):
         self.siso_almost_equal(-g[1, 0], p[7, 2])
         self.siso_almost_equal(-g[1, 1], p[7, 3])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testErrors(self):
         """Error cases handled"""
         from control import augw, ss
         # no weights
         g1by1 = ss(-1, 1, 1, 0)
         g2by2 = ss(-np.eye(2), np.eye(2), np.eye(2), np.zeros((2, 2)))
-        self.assertRaises(ValueError, augw, g1by1)
+        with pytest.raises(ValueError):
+            augw(g1by1)
         # mismatched size of weight and plant
-        self.assertRaises(ValueError, augw, g1by1, w1=g2by2)
-        self.assertRaises(ValueError, augw, g1by1, w2=g2by2)
-        self.assertRaises(ValueError, augw, g1by1, w3=g2by2)
+        with pytest.raises(ValueError):
+            augw(g1by1, w1=g2by2)
+        with pytest.raises(ValueError):
+            augw(g1by1, w2=g2by2)
+        with pytest.raises(ValueError):
+            augw(g1by1, w3=g2by2)
 
 
-class TestMixsyn(unittest.TestCase):
+class TestMixsyn:
     """Test control.robust.mixsyn"""
 
     # it's a relatively simple wrapper; compare results with augw, hinfsyn
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testSiso(self):
         """mixsyn with SISO system"""
-        from control import tf, augw, hinfsyn, mixsyn
-        from control import ss
         # Skogestad+Postlethwaite, Multivariable Feedback Control, 1st Ed., Example 2.11
         s = tf([1, 0], 1)
         # plant
@@ -362,7 +365,3 @@ class TestMixsyn(unittest.TestCase):
         np.testing.assert_allclose(gam, info[0])
 
         np.testing.assert_allclose(rcond, info[1])
-
-
-if __name__ == "__main__":
-    unittest.main()

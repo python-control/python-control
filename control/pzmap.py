@@ -58,7 +58,7 @@ _pzmap_defaults = {
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, plot=True, grid=False, title='Pole Zero Map', **kwargs):
+def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     """
     Plot a pole/zero map for a linear system.
 
@@ -87,8 +87,8 @@ def pzmap(sys, plot=True, grid=False, title='Pole Zero Map', **kwargs):
         plot = kwargs['Plot']
 
     # Get parameter values
-    plot = config._get_param('rlocus', 'plot', plot, True)
-    grid = config._get_param('rlocus', 'grid', grid, False)
+    plot = config._get_param('pzmap', 'plot', plot, True)
+    grid = config._get_param('pzmap', 'grid', grid, False)
 
     if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')

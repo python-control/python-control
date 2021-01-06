@@ -1,52 +1,55 @@
-#!/usr/bin/env python
-#
-# config_test.py - test config module
-# RMM, 25 may 2019
-#
-# This test suite checks the functionality of the config module
+"""config_test.py - test config module
 
-import unittest
-import numpy as np
-import control as ct
-import matplotlib.pyplot as plt
+RMM, 25 may 2019
+
+This test suite checks the functionality of the config module
+"""
+
 from math import pi, log10
 
+import matplotlib.pyplot as plt
+from matplotlib.testing.decorators import cleanup as mplcleanup
+import numpy as np
+import pytest
 
-class TestConfig(unittest.TestCase):
-    def setUp(self):
-        # Create a simple second order system to use for testing
-        self.sys = ct.tf([10], [1, 2, 1])
+import control as ct
+
+
+@pytest.mark.usefixtures("editsdefaults")  # makes sure to reset the defaults
+                                           # to the test configuration
+class TestConfig:
+
+    # Create a simple second order system to use for testing
+    sys = ct.tf([10], [1, 2, 1])
 
     def test_set_defaults(self):
         ct.config.set_defaults('config', test1=1, test2=2, test3=None)
-        self.assertEqual(ct.config.defaults['config.test1'], 1)
-        self.assertEqual(ct.config.defaults['config.test2'], 2)
-        self.assertEqual(ct.config.defaults['config.test3'], None)
+        assert ct.config.defaults['config.test1'] == 1
+        assert ct.config.defaults['config.test2'] == 2
+        assert ct.config.defaults['config.test3'] is None
 
+    @mplcleanup
     def test_get_param(self):
-        self.assertEqual(
-            ct.config._get_param('bode', 'dB'),
-            ct.config.defaults['bode.dB'])
-        self.assertEqual(ct.config._get_param('bode', 'dB', 1), 1)
+        assert ct.config._get_param('bode', 'dB')\
+            == ct.config.defaults['bode.dB']
+        assert ct.config._get_param('bode', 'dB', 1) == 1
         ct.config.defaults['config.test1'] = 1
-        self.assertEqual(ct.config._get_param('config', 'test1', None), 1)
-        self.assertEqual(ct.config._get_param('config', 'test1', None, 1), 1)
-        
+        assert ct.config._get_param('config', 'test1', None) == 1
+        assert ct.config._get_param('config', 'test1', None, 1) == 1
+
         ct.config.defaults['config.test3'] = None
-        self.assertEqual(ct.config._get_param('config', 'test3'), None)
-        self.assertEqual(ct.config._get_param('config', 'test3', 1), 1)
-        self.assertEqual(
-            ct.config._get_param('config', 'test3', None, 1), None)
-        
-        self.assertEqual(ct.config._get_param('config', 'test4'), None)
-        self.assertEqual(ct.config._get_param('config', 'test4', 1), 1)
-        self.assertEqual(ct.config._get_param('config', 'test4', 2, 1), 2)
-        self.assertEqual(ct.config._get_param('config', 'test4', None, 3), 3)
+        assert ct.config._get_param('config', 'test3') is None
+        assert ct.config._get_param('config', 'test3', 1) == 1
+        assert ct.config._get_param('config', 'test3', None, 1) is None
 
-        self.assertEqual(
-            ct.config._get_param('config', 'test4', {'test4':1}, None), 1)
+        assert ct.config._get_param('config', 'test4') is None
+        assert ct.config._get_param('config', 'test4', 1) == 1
+        assert ct.config._get_param('config', 'test4', 2, 1) == 2
+        assert ct.config._get_param('config', 'test4', None, 3) == 3
 
+        assert ct.config._get_param('config', 'test4', {'test4': 1}, None) == 1
 
+    @mplcleanup
     def test_fbs_bode(self):
         ct.use_fbs_defaults()
 
@@ -91,8 +94,7 @@ class TestConfig(unittest.TestCase):
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
-        ct.reset_defaults()
-        
+    @mplcleanup
     def test_matlab_bode(self):
         ct.use_matlab_defaults()
 
@@ -120,7 +122,7 @@ class TestConfig(unittest.TestCase):
         # Make sure the x-axis is in rad/sec and y-axis is in degrees
         np.testing.assert_almost_equal(phase_x[-1], 1000, decimal=1)
         np.testing.assert_almost_equal(phase_y[-1], -180, decimal=0)
-        
+
         # Override the defaults and make sure that works as well
         plt.figure()
         ct.bode_plot(self.sys, omega, dB=True)
@@ -137,8 +139,7 @@ class TestConfig(unittest.TestCase):
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
-        ct.reset_defaults()
-
+    @mplcleanup
     def test_custom_bode_default(self):
         ct.config.defaults['bode.dB'] = True
         ct.config.defaults['bode.deg'] = True
@@ -160,24 +161,22 @@ class TestConfig(unittest.TestCase):
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
-        ct.reset_defaults()
-
+    @mplcleanup
     def test_bode_number_of_samples(self):
         # Set the number of samples (default is 50, from np.logspace)
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
-        self.assertEqual(len(mag_ret), 87)
+        assert len(mag_ret) == 87
 
         # Change the default number of samples
         ct.config.defaults['freqplot.number_of_samples'] = 76
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys)
-        self.assertEqual(len(mag_ret), 76)
-        
+        assert len(mag_ret) == 76
+
         # Override the default number of samples
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
-        self.assertEqual(len(mag_ret), 87)
+        assert len(mag_ret) == 87
 
-        ct.reset_defaults()
-
+    @mplcleanup
     def test_bode_feature_periphery_decade(self):
         # Generate a sample Bode plot to figure out the range it uses
         ct.reset_defaults()     # Make sure starting state is correct
@@ -198,43 +197,54 @@ class TestConfig(unittest.TestCase):
         np.testing.assert_almost_equal(omega_ret[0], omega_min*10)
         np.testing.assert_almost_equal(omega_ret[-1], omega_max/10)
 
-        ct.reset_defaults()
-
     def test_reset_defaults(self):
         ct.use_matlab_defaults()
         ct.reset_defaults()
-        self.assertEqual(ct.config.defaults['bode.dB'], False)
-        self.assertEqual(ct.config.defaults['bode.deg'], True)
-        self.assertEqual(ct.config.defaults['bode.Hz'], False)
-        self.assertEqual(
-            ct.config.defaults['freqplot.number_of_samples'], None)
-        self.assertEqual(
-            ct.config.defaults['freqplot.feature_periphery_decades'], 1.0)
+        assert not ct.config.defaults['bode.dB']
+        assert ct.config.defaults['bode.deg']
+        assert not ct.config.defaults['bode.Hz']
+        assert ct.config.defaults['freqplot.number_of_samples'] is None
+        assert ct.config.defaults['freqplot.feature_periphery_decades'] == 1.0
 
     def test_legacy_defaults(self):
-        ct.use_legacy_defaults('0.8.3')
-        assert(isinstance(ct.ss(0,0,0,1).D, np.matrix))
+        with pytest.deprecated_call():
+            ct.use_legacy_defaults('0.8.3')
+            assert(isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
         ct.reset_defaults()
-        assert(isinstance(ct.ss(0,0,0,1).D, np.ndarray))
-    
-    def test_change_default_dt(self):
-        ct.set_defaults('statesp', default_dt=0)
-        self.assertEqual(ct.ss(0,0,0,1).dt, 0)
-        ct.set_defaults('statesp', default_dt=None)
-        self.assertEqual(ct.ss(0,0,0,1).dt, None)
-        ct.set_defaults('xferfcn', default_dt=0)
-        self.assertEqual(ct.tf(1, 1).dt, 0)
-        ct.set_defaults('xferfcn', default_dt=None)
-        self.assertEqual(ct.tf(1, 1).dt, None)
-        
+        assert(isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray))
+        assert(not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
 
-    def tearDown(self):
-        # Get rid of any figures that we created
-        plt.close('all')
+        ct.use_legacy_defaults('0.9.0')
+        assert(isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray))
+        assert(not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
 
-        # Reset the configuration defaults
-        ct.config.reset_defaults()
+        # test that old versions don't raise a problem
+        ct.use_legacy_defaults('REL-0.1')
+        ct.use_legacy_defaults('control-0.3a')
+        ct.use_legacy_defaults('0.6c')
+        ct.use_legacy_defaults('0.8.2')
+        ct.use_legacy_defaults('0.1')
 
+        # Make sure that nonsense versions generate an error
+        with pytest.raises(ValueError):
+            ct.use_legacy_defaults("a.b.c")
+        with pytest.raises(ValueError):
+            ct.use_legacy_defaults("1.x.3")
 
-if __name__ == '__main__':
-    unittest.main()
+    @pytest.mark.parametrize("dt", [0, None])
+    def test_change_default_dt(self, dt):
+        """Test that system with dynamics uses correct default dt"""
+        ct.set_defaults('control', default_dt=dt)
+        assert ct.ss(1, 0, 0, 1).dt == dt
+        assert ct.tf(1, [1, 1]).dt == dt
+        nlsys = ct.iosys.NonlinearIOSystem(
+            lambda t, x, u: u * x * x,
+            lambda t, x, u: x, inputs=1, outputs=1)
+        assert nlsys.dt == dt
+
+    def test_change_default_dt_static(self):
+        """Test that static gain systems always have dt=None"""
+        ct.set_defaults('control', default_dt=0)
+        assert ct.tf(1, 1).dt is None
+        assert ct.ss(0, 0, 0, 1).dt is None
+        # TODO: add in test for static gain iosys

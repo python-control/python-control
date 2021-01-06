@@ -9,15 +9,16 @@ LTI.__init__
 isdtime()
 isctime()
 timebase()
-timebaseEqual()
+common_timebase()
 """
 
 import numpy as np
 from numpy import absolute, real, angle, abs
 from warnings import warn
 
-__all__ = ['issiso', 'timebase', 'timebaseEqual', 'isdtime', 'isctime',
-           'pole', 'zero', 'damp', 'evalfr', 'freqresp', 'dcgain']
+__all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
+           'isdtime', 'isctime', 'pole', 'zero', 'damp', 'evalfr',
+           'freqresp', 'dcgain']
 
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
@@ -111,7 +112,7 @@ class LTI:
         return wn, Z, poles
 
     def frequency_response(self, omega, squeeze=True):
-        """Evaluate the linear time-invariant system at an array of angular 
+        """Evaluate the linear time-invariant system at an array of angular
         frequencies.
 
         Reports the frequency response of the system,
@@ -126,10 +127,10 @@ class LTI:
         Parameters
         ----------
         omega : array_like or float
-            A list, tuple, array, or scalar value of frequencies in 
-            radians/sec at which the system will be evaluated. 
+            A list, tuple, array, or scalar value of frequencies in
+            radians/sec at which the system will be evaluated.
         squeeze: bool, optional (default=True)
-            If True and sys is single input, single output (SISO), return a 
+            If True and sys is single input, single output (SISO), return a
             1D array or scalar depending on omega's length.
 
         Returns
@@ -141,8 +142,8 @@ class LTI:
             The wrapped phase in radians of the system frequency response.
         omega : ndarray
             The (sorted) frequencies at which the response was evaluated.
-        
-        """        
+
+        """
         omega = np.sort(np.array(omega, ndmin=1))
         if isdtime(self, strict=True):
             # Convert the frequency to discrete time
@@ -159,6 +160,7 @@ class LTI:
         raise NotImplementedError("dcgain not implemented for %s objects" %
                                   str(self.__class__))
     
+
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
@@ -203,9 +205,59 @@ def timebase(sys, strict=True):
 
     return sys.dt
 
+def common_timebase(dt1, dt2):
+    """
+    Find the common timebase when interconnecting systems
+
+    Parameters
+    ----------
+    dt1, dt2: number or system with a 'dt' attribute (e.g. TransferFunction
+        or StateSpace system)
+
+    Returns
+    -------
+    dt: number
+        The common timebase of dt1 and dt2, as specified in
+        :ref:`conventions-ref`.
+
+    Raises
+    ------
+    ValueError
+        when no compatible time base can be found
+    """
+    # explanation:
+    # if either dt is None, they are compatible with anything
+    # if either dt is True (discrete with unspecified time base),
+    #   use the timebase of the other, if it is also discrete
+    # otherwise both dts must be equal
+    if hasattr(dt1, 'dt'):
+        dt1 = dt1.dt
+    if hasattr(dt2, 'dt'):
+        dt2 = dt2.dt
+
+    if dt1 is None:
+        return dt2
+    elif dt2 is None:
+        return dt1
+    elif dt1 is True:
+        if dt2 > 0:
+            return dt2
+        else:
+            raise ValueError("Systems have incompatible timebases")
+    elif dt2 is True:
+        if dt1 > 0:
+            return dt1
+        else:
+            raise ValueError("Systems have incompatible timebases")
+    elif np.isclose(dt1, dt2):
+        return dt1
+    else:
+        raise ValueError("Systems have incompatible timebases")
+
 # Check to see if two timebases are equal
 def timebaseEqual(sys1, sys2):
-    """Check to see if two systems have the same timebase
+    """
+    Check to see if two systems have the same timebase
 
     timebaseEqual(sys1, sys2)
 
@@ -214,6 +266,9 @@ def timebaseEqual(sys1, sys2):
     discrete or continuous timebase systems.  If two systems have a discrete
     timebase (dt > 0) then their timebases must be equal.
     """
+    warn("timebaseEqual will be deprecated in a future release of "
+         "python-control; use :func:`common_timebase` instead",
+         PendingDeprecationWarning)
 
     if (type(sys1.dt) == bool or type(sys2.dt) == bool):
         # Make sure both are unspecified discrete timebases
@@ -223,27 +278,6 @@ def timebaseEqual(sys1, sys2):
         return True
     else:
         return sys1.dt == sys2.dt
-
-# Find a common timebase between two or more systems
-def _find_timebase(sys1, *sysn):
-    """Find the common timebase between systems, otherwise return False"""
-
-    # Create a list of systems to check
-    syslist = [sys1]
-    syslist.append(*sysn)
-
-    # Look for a common timebase
-    dt = None
-
-    for sys in syslist:
-        # Make sure time bases are consistent
-        if (dt is None and sys.dt is not None) or \
-           (dt is True and isdiscrete(sys)):
-            # Timebase was not specified; set to match this system
-            dt = sys.dt
-        elif dt != sys.dt:
-            return False
-    return dt
 
 
 # Check to see if a system is a discrete time system
@@ -428,28 +462,28 @@ def damp(sys, doprint=True):
 def evalfr(sys, x, squeeze=True):
     """
     Evaluate the transfer function of an LTI system for complex frequency x.
-    
-    Returns the complex frequency response `sys(x)` where `x` is `s` for 
-    continuous-time systems and `z` for discrete-time systems. 
 
-    To evaluate at a frequency omega in radians per second, enter 
-    ``x = omega * 1j`` for continuous-time systems, or 
-    ``x = exp(1j * omega * dt)`` for discrete-time systems, or use 
-    ``freqresp(sys, omega)``. 
+    Returns the complex frequency response `sys(x)` where `x` is `s` for
+    continuous-time systems and `z` for discrete-time systems.
+
+    To evaluate at a frequency omega in radians per second, enter
+    ``x = omega * 1j`` for continuous-time systems, or
+    ``x = exp(1j * omega * dt)`` for discrete-time systems, or use
+    ``freqresp(sys, omega)``.
 
     Parameters
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    x: complex scalar or array_like 
-        Complex frequency(s) 
+    x: complex scalar or array_like
+        Complex frequency(s)
     squeeze: bool, optional (default=True)
-        If True and sys is single input single output (SISO), returns a 
-        1D array or scalar depending on the length of x. 
-        
+        If True and sys is single input single output (SISO), returns a
+        1D array or scalar depending on the length of x.
+
     Returns
     -------
-    fresp : (sys.outputs, sys.inputs, len(x)) or len(x) complex ndarray 
+    fresp : (sys.outputs, sys.inputs, len(x)) or len(x) complex ndarray
         The frequency response of the system. Array is len(x) if and only if
         system is SISO and squeeze=True.
 
@@ -487,12 +521,12 @@ def freqresp(sys, omega, squeeze=True):
         evaluated. The list can be either a python list or a numpy array
         and will be sorted before evaluation.
     squeeze: bool, optional (default=True)
-        If True and sys is single input, single output (SISO), returns  
+        If True and sys is single input, single output (SISO), returns
         1D array or scalar depending on omega's length.
 
     Returns
     -------
-    mag : (sys.outputs, sys.inputs, len(omega)) or len(omega) ndarray 
+    mag : (sys.outputs, sys.inputs, len(omega)) or len(omega) ndarray
         The magnitude (absolute value, not dB or log10) of the system
         frequency response.
     phase : (sys.outputs, sys.inputs, len(omega)) or len(omega) ndarray
@@ -509,7 +543,7 @@ def freqresp(sys, omega, squeeze=True):
     Notes
     -----
     This function is a wrapper for StateSpace.frequency_response and
-    TransferFunction.frequency_response.  
+    TransferFunction.frequency_response.
 
     Examples
     --------

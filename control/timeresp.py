@@ -65,12 +65,18 @@ Modified: Sawyer B. Fuller (minster@uw.edu) to add discrete-time
 capability and better automatic time vector creation
 Date: June 2020
 
+Modified by Ilhan Polat to improve automatic time vector creation
+Date: August 17, 2020
+
 $Id$
 """
 
 # Libraries that we make use of
 import scipy as sp              # SciPy library (used all over)
 import numpy as np              # NumPy library
+from scipy.linalg import eig, eigvals, matrix_balance, norm
+from numpy import (einsum, maximum, minimum,
+                   atleast_1d)
 import warnings
 from .lti import LTI     # base class of StateSpace, TransferFunction
 from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso, ssdata
@@ -84,7 +90,7 @@ __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
     """
-    Helper function for checking array-like parameters.
+    Helper function for checking array_like parameters.
 
     * Check type and shape of ``in_obj``.
     * Convert ``in_obj`` to an array if necessary.
@@ -201,20 +207,20 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     Parameters
     ----------
-    sys: LTI (StateSpace, or TransferFunction)
+    sys: LTI (StateSpace or TransferFunction)
         LTI system to simulate
 
-    T: array-like, optional for discrete LTI `sys`
+    T: array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
 
-    U: array-like or number, optional
+    U: array_like or float, optional
         Input array giving input at each time `T` (default = 0).
 
         If `U` is ``None`` or ``0``, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used
         otherwise.
 
-    X0: array-like or number, optional
+    X0: array_like or float, optional
         Initial condition (default = 0).
 
     transpose: bool, optional (default=False)
@@ -408,8 +414,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             xout = xout[::inc, :]
 
         # Transpose the output and state vectors to match local convention
-        xout = sp.transpose(xout)
-        yout = sp.transpose(yout)
+        xout = np.transpose(xout)
+        yout = np.transpose(yout)
 
     # Get rid of unneeded dimensions
     if squeeze:
@@ -459,20 +465,21 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
+    sys: StateSpace or TransferFunction
         LTI system to simulate
 
-    T: array-like or number, optional
+    T: array_like or float, optional
         Time vector, or simulation time duration if a number. If T is not
         provided, an attempt is made to create it automatically from the
         dynamics of sys. If sys is continuous-time, the time increment dt
         is chosen small enough to show the fastest mode, and the simulation
         time period tfinal long enough to show the slowest mode, excluding
-        poles at the origin. If this results in too many time steps (>5000),
-        dt is reduced. If sys is discrete-time, only tfinal is computed, and
-        tfinal is reduced if it requires too many simulation steps.
+        poles at the origin and pole-zero cancellations. If this results in
+        too many time steps (>5000), dt is reduced. If sys is discrete-time,
+        only tfinal is computed, and final is reduced if it requires too
+        many simulation steps.
 
-    X0: array-like or number, optional
+    X0: array_like or float, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
@@ -484,7 +491,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
 
-    T_num: number, optional
+    T_num: int, optional
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
 
@@ -527,7 +534,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     """
     sys = _get_ss_simo(sys, input, output)
     if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T)
+        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
     U = np.ones_like(T)
 
     T, yout, xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -546,21 +553,21 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
+    sys : StateSpace or TransferFunction
         LTI system to simulate
 
-    T: array-like or number, optional
+    T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given, see :func:`step_response` for more detail)
 
-    T_num: number, optional
+    T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
 
-    SettlingTimeThreshold: float value, optional
+    SettlingTimeThreshold : float value, optional
         Defines the error to compute settling time (default = 0.02)
 
-    RiseTimeLimits: tuple (lower_threshold, upper_theshold)
+    RiseTimeLimits : tuple (lower_threshold, upper_theshold)
         Defines the lower and upper threshold for RiseTime computation
 
     Returns
@@ -587,7 +594,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     '''
     sys = _get_ss_simo(sys)
     if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T)
+        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
 
     T, yout = step_response(sys, T)
 
@@ -636,49 +643,49 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
+    sys : StateSpace or TransferFunction
         LTI system to simulate
 
-    T: array-like or number, optional
+    T :  array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given; see  :func:`step_response` for more detail)
 
-    X0: array-like or number, optional
+    X0 : array_like or float, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
 
-    input: int
+    input : int
         Ignored, has no meaning in initial condition calculation. Parameter
         ensures compatibility with step_response and impulse_response
 
-    output: int
+    output : int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
 
-    T_num: number, optional
+    T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
 
-    transpose: bool
+    transpose : bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
-    return_x: bool
+    return_x : bool
         If True, return the state vector (default = False).
 
-    squeeze: bool, optional (default=True)
+    squeeze : bool, optional (default=True)
         If True, remove single-dimensional entries from the shape of
         the output.  For single output systems, this converts the
         output response to a 1D array.
 
     Returns
     -------
-    T: array
+    T : array
         Time values of the output
-    yout: array
+    yout : array
         Response of the system
-    xout: array
+    xout : array
         Individual response of each x variable
 
     See Also
@@ -699,7 +706,7 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
     if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T)
+        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
     U = np.zeros_like(T)
 
     T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
@@ -726,48 +733,48 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     Parameters
     ----------
-    sys: StateSpace, TransferFunction
+    sys : StateSpace, TransferFunction
         LTI system to simulate
 
-    T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is
+    T : array_like or float, optional
+        Time vector, or simulation time duration if a scalar (time vector is
         autocomputed if not given; see :func:`step_response` for more detail)
 
-    X0: array-like or number, optional
+    X0 : array_like or float, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
 
-    input: int
+    input : int
         Index of the input that will be used in this simulation.
 
-    output: int
+    output : int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
 
-    T_num: number, optional
+    T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
 
-    transpose: bool
+    transpose : bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
-    return_x: bool
+    return_x : bool
         If True, return the state vector (default = False).
 
-    squeeze: bool, optional (default=True)
+    squeeze : bool, optional (default=True)
         If True, remove single-dimensional entries from the shape of
         the output.  For single output systems, this converts the
         output response to a 1D array.
 
     Returns
     -------
-    T: array
+    T : array
         Time values of the output
-    yout: array
+    yout : array
         Response of the system
-    xout: array
+    xout : array
         Individual response of each x variable
 
     See Also
@@ -803,7 +810,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     # Compute T and U, no checks necessary, will be checked in forced_response
     if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T)
+        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
     U = np.zeros_like(T)
 
     # Compute new X0 that contains the impulse
@@ -815,7 +822,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         new_X0 = B + X0
     else:
         new_X0 = X0
-        U[0] = 1.
+        U[0] = 1./sys.dt # unit area impulse
 
     T, yout, _xout = forced_response(sys, T, U, new_X0, transpose=transpose,
                                      squeeze=squeeze)
@@ -826,54 +833,185 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     return T, yout
 
 # utility function to find time period and time increment using pole locations
-def _ideal_tfinal_and_dt(sys):
-    constant = 7.0
-    tolerance = 1e-10
-    A = ssdata(sys)[0]
-    if A.shape == (0,0):
-        # no dynamics
-        tfinal = constant * 1.0
-        dt = sys.dt if isdtime(sys, strict=True) else 1.0
-    else:
-        poles = sp.linalg.eigvals(A)
-        # calculate ideal dt
-        if isdtime(sys, strict=True):
-            # z-poles to s-plane using s=(lnz)/dt, no ln(0)
-            poles = np.log(poles[abs(poles) > 0])/sys.dt
-            dt = sys.dt
-        else:
-            fastest_natural_frequency = max(abs(poles))
-            dt = 1/constant / fastest_natural_frequency
+def _ideal_tfinal_and_dt(sys, is_step=True):
+    """helper function to compute ideal simulation duration tfinal and dt, the
+    time increment. Usually called by _default_time_vector, whose job it is to
+    choose a realistic time vector. Considers both poles and zeros.
 
-        # calculate ideal tfinal
-        poles = poles[abs(poles.real) > tolerance] # ignore poles near im axis
-        if poles.size == 0:
-            slowest_decay_rate = 1.0
-        else:
-            slowest_decay_rate = min(abs(poles.real))
-        tfinal = constant / slowest_decay_rate
+    For discrete-time models, dt is inherent and only tfinal is computed.
+
+    Parameters
+    ----------
+    sys : StateSpace or TransferFunction
+        The system whose time response is to be computed
+    is_step : bool
+        Scales the dc value by the magnitude of the nonzero mode since
+        integrating the impulse response gives
+        :math:`\\int e^{-\\lambda t} = -e^{-\\lambda t}/ \\lambda`
+        Default is True.
+
+    Returns
+    -------
+    tfinal : float
+        The final time instance for which the simulation will be performed.
+    dt : float
+        The estimated sampling period for the simulation.
+
+    Notes
+    -----
+    Just by evaluating the fastest mode for dt and slowest for tfinal often
+    leads to unnecessary, bloated sampling (e.g., Transfer(1,[1,1001,1000]))
+    since dt will be very small and tfinal will be too large though the fast
+    mode hardly ever contributes. Similarly, change the numerator to [1, 2, 0]
+    and the simulation would be unnecessarily long and the plot is virtually
+    an L shape since the decay is so fast.
+
+    Instead, a modal decomposition in time domain hence a truncated ZIR and ZSR
+    can be used such that only the modes that have significant effect on the
+    time response are taken. But the sensitivity of the eigenvalues complicate
+    the matter since dlambda = <w, dA*v> with <w,v> = 1. Hence we can only work
+    with simple poles with this formulation. See Golub, Van Loan Section 7.2.2
+    for simple eigenvalue sensitivity about the nonunity of <w,v>. The size of
+    the response is dependent on the size of the eigenshapes rather than the
+    eigenvalues themselves.
+
+    By Ilhan Polat, with modifications by Sawyer Fuller to integrate into
+    python-control 2020.08.17
+    """
+
+    sqrt_eps = np.sqrt(np.spacing(1.))
+    default_tfinal = 5  # Default simulation horizon
+    default_dt = 0.1
+    total_cycles = 5  # number of cycles for oscillating modes
+    pts_per_cycle = 25  # Number of points divide a period of oscillation
+    log_decay_percent = np.log(100)  # Factor of reduction for real pole decays
+
+    if sys.is_static_gain():
+        tfinal = default_tfinal
+        dt = sys.dt if isdtime(sys, strict=True) else default_dt
+    elif isdtime(sys, strict=True):
+        dt = sys.dt
+        A = _convertToStateSpace(sys).A
+        tfinal = default_tfinal
+        p = eigvals(A)
+        # Array Masks
+        # unstable
+        m_u = (np.abs(p) >= 1 + sqrt_eps)
+        p_u, p = p[m_u], p[~m_u]
+        if p_u.size > 0:
+            m_u = (p_u.real < 0) & (np.abs(p_u.imag) < sqrt_eps)
+            if np.any(~m_u):
+                t_emp = np.max(
+                    log_decay_percent / np.abs(np.log(p_u[~m_u]) / dt))
+                tfinal = max(tfinal, t_emp)
+
+        # zero - negligible effect on tfinal
+        m_z = np.abs(p) < sqrt_eps
+        p = p[~m_z]
+        # Negative reals- treated as oscillary mode
+        m_nr = (p.real < 0) & (np.abs(p.imag) < sqrt_eps)
+        p_nr, p = p[m_nr], p[~m_nr]
+        if p_nr.size > 0:
+            t_emp = np.max(log_decay_percent / np.abs((np.log(p_nr)/dt).real))
+            tfinal = max(tfinal, t_emp)
+        # discrete integrators
+        m_int = (p.real - 1 < sqrt_eps) & (np.abs(p.imag) < sqrt_eps)
+        p_int, p = p[m_int], p[~m_int]
+        # pure oscillatory modes
+        m_w = (np.abs(np.abs(p) - 1) < sqrt_eps)
+        p_w, p = p[m_w], p[~m_w]
+        if p_w.size > 0:
+            t_emp = total_cycles * 2 * np.pi / np.abs(np.log(p_w)/dt).min()
+            tfinal = max(tfinal, t_emp)
+
+        if p.size > 0:
+            t_emp = log_decay_percent / np.abs((np.log(p)/dt).real).min()
+            tfinal = max(tfinal, t_emp)
+
+        if p_int.size > 0:
+            tfinal = tfinal * 5
+    else: # cont time
+        sys_ss = _convertToStateSpace(sys)
+        # Improve conditioning via balancing and zeroing tiny entries
+        # See <w,v> for [[1,2,0], [9,1,0.01], [1,2,10*np.pi]] before/after balance
+        b, (sca, perm) = matrix_balance(sys_ss.A, separate=True)
+        p, l, r = eig(b, left=True, right=True)
+        # Reciprocal of inner product <w,v> for each eigval, (bound the ~infs by 1e12)
+        # G = Transfer([1], [1,0,1]) gives zero sensitivity (bound by 1e-12)
+        eig_sens = np.reciprocal(maximum(1e-12, einsum('ij,ij->j', l, r).real))
+        eig_sens = minimum(1e12, eig_sens)
+        # Tolerances
+        p[np.abs(p) < np.spacing(eig_sens * norm(b, 1))] = 0.
+        # Incorporate balancing to outer factors
+        l[perm, :] *= np.reciprocal(sca)[:, None]
+        r[perm, :] *= sca[:, None]
+        w, v = sys_ss.C.dot(r), l.T.conj().dot(sys_ss.B)
+
+        origin = False
+        # Computing the "size" of the response of each simple mode
+        wn = np.abs(p)
+        if np.any(wn == 0.):
+            origin = True
+
+        dc = np.zeros_like(p, dtype=float)
+        # well-conditioned nonzero poles, np.abs just in case
+        ok = np.abs(eig_sens) <= 1/sqrt_eps
+        # the averaged t->inf response of each simple eigval on each i/o channel
+        # See, A = [[-1, k], [0, -2]], response sizes are k-dependent (that is
+        # R/L eigenvector dependent)
+        dc[ok] = norm(v[ok, :], axis=1)*norm(w[:, ok], axis=0)*eig_sens[ok]
+        dc[wn != 0.] /= wn[wn != 0] if is_step else 1.
+        dc[wn == 0.] = 0.
+        # double the oscillating mode magnitude for the conjugate
+        dc[p.imag != 0.] *= 2
+
+        # Now get rid of noncontributing integrators and simple modes if any
+        relevance = (dc > 0.1*dc.max()) | ~ok
+        psub = p[relevance]
+        wnsub = wn[relevance]
+
+        tfinal, dt = [], []
+        ints = wnsub == 0.
+        iw = (psub.imag != 0.) & (np.abs(psub.real) <= sqrt_eps)
+
+        # Pure imaginary?
+        if np.any(iw):
+            tfinal += (total_cycles * 2 * np.pi / wnsub[iw]).tolist()
+            dt += (2 * np.pi / pts_per_cycle / wnsub[iw]).tolist()
+        # The rest ~ts = log(%ss value) / exp(Re(eigval)t)
+        texp_mode = log_decay_percent / np.abs(psub[~iw & ~ints].real)
+        tfinal += texp_mode.tolist()
+        dt += minimum(texp_mode / 50,
+                    (2 * np.pi / pts_per_cycle / wnsub[~iw & ~ints])).tolist()
+
+        # All integrators?
+        if len(tfinal) == 0:
+            return default_tfinal*5, default_dt*5
+
+        tfinal = np.max(tfinal)*(5 if origin else 1)
+        dt = np.min(dt)
 
     return tfinal, dt
 
-# test below: ct with pole at the origin is 7 seconds, ct with pole at .5 is 14 s long,
-def _default_time_vector(sys, N=None, tfinal=None):
-    """Returns a time vector suitable for observing the response of the
-    both the slowest poles and fastest resonant modes. if system is
-    discrete-time, N is ignored """
+def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
+    """Returns a time vector that has a reasonable number of points.
+    if system is discrete-time, N is ignored """
 
     N_max = 5000
-    N_min_ct = 100
-    N_min_dt = 7 # more common to see just a few samples in discrete-time
+    N_min_ct = 100 # min points for cont time systems
+    N_min_dt = 20 # more common to see just a few samples in discrete-time
 
-    ideal_tfinal, ideal_dt = _ideal_tfinal_and_dt(sys)
+    ideal_tfinal, ideal_dt = _ideal_tfinal_and_dt(sys, is_step=is_step)
 
     if isdtime(sys, strict=True):
+        # only need to use default_tfinal if not given; N is ignored.
         if tfinal is None:
             # for discrete time, change from ideal_tfinal if N too large/small
             N = int(np.clip(ideal_tfinal/sys.dt, N_min_dt, N_max))# [N_min, N_max]
             tfinal = sys.dt * N
         else:
             N = int(tfinal/sys.dt)
+            tfinal = N * sys.dt # make tfinal an integer multiple of sys.dt
     else:
         if tfinal is None:
             # for continuous time, simulate to ideal_tfinal but limit N

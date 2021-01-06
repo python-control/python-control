@@ -19,10 +19,10 @@ License :: OSI Approved :: BSD License
 Programming Language :: Python :: 2
 Programming Language :: Python :: 2.7
 Programming Language :: Python :: 3
-Programming Language :: Python :: 3.5
 Programming Language :: Python :: 3.6
 Programming Language :: Python :: 3.7
 Programming Language :: Python :: 3.8
+Programming Language :: Python :: 3.9
 Topic :: Software Development
 Topic :: Scientific/Engineering
 Operating System :: Microsoft :: Windows
@@ -34,10 +34,10 @@ Operating System :: MacOS
 setup(
     name='control',
     version=version,
-    author='Richard Murray',
-    author_email='murray@cds.caltech.edu',
-    url='http://python-control.sourceforge.net',
-    description='Python control systems library',
+    author='Python Control Developers',
+    author_email='python-control-developers@lists.sourceforge.net',
+    url='http://python-control.org',
+    description='Python Control Systems Library',
     long_description=long_description,
     packages=find_packages(),
     classifiers=[f for f in CLASSIFIERS.split('\n') if f],

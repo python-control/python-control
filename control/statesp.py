@@ -10,7 +10,7 @@ python-control library.
 
 # Python 3 compatibility (needs to go here)
 from __future__ import print_function
-from __future__ import division # for _convertToStateSpace
+from __future__ import division         # for _convertToStateSpace
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -59,9 +59,10 @@ from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
 import scipy as sp
-from scipy.signal import lti, cont2discrete
+from scipy.signal import cont2discrete
+from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
-from .lti import LTI, timebase, timebaseEqual, isdtime
+from .lti import LTI, common_timebase, isdtime
 from . import config
 from copy import deepcopy
 
@@ -70,9 +71,10 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 
 # Define module default parameter values
 _statesp_defaults = {
-    'statesp.use_numpy_matrix': True,
-    'statesp.default_dt': None,
+    'statesp.use_numpy_matrix': False,  # False is default in 0.9.0 and above
     'statesp.remove_useless_states': True,
+    'statesp.latex_num_format': '.3g',
+    'statesp.latex_repr_type': 'partitioned',
     }
 
 
@@ -127,13 +129,40 @@ def _ssmatrix(data, axis=1):
     return arr.reshape(shape)
 
 
+def _f2s(f):
+    """Format floating point number f for StateSpace._repr_latex_.
+
+    Numbers are converted to strings with statesp.latex_num_format.
+
+    Inserts column separators, etc., as needed.
+    """
+    fmt = "{:" + config.defaults['statesp.latex_num_format'] + "}"
+    sraw = fmt.format(f)
+    # significand-exponent
+    se = sraw.lower().split('e')
+    # whole-fraction
+    wf = se[0].split('.')
+    s = wf[0]
+    if wf[1:]:
+        s += r'.&\hspace{{-1em}}{frac}'.format(frac=wf[1])
+    else:
+        s += r'\phantom{.}&\hspace{-1em}'
+
+    if se[1:]:
+        s += r'&\hspace{{-1em}}\cdot10^{{{:d}}}'.format(int(se[1]))
+    else:
+        s += r'&\hspace{-1em}\phantom{\cdot}'
+
+    return s
+
+
 class StateSpace(LTI):
     """StateSpace(A, B, C, D[, dt])
 
     A class for representing state-space models
 
-    The StateSpace class is used to represent state-space realizations of linear
-    time-invariant (LTI) systems:
+    The StateSpace class is used to represent state-space realizations of
+    linear time-invariant (LTI) systems:
 
         dx/dt = A x + B u
             y = C x + D u
@@ -148,22 +177,46 @@ class StateSpace(LTI):
     `numpy.ndarray` objects.  The :func:`~control.use_numpy_matrix` function
     can be used to set the storage type.
 
-    Discrete-time state space system are implemented by using the 'dt'
-    instance variable and setting it to the sampling period.  If 'dt' is not
-    None, then it must match whenever two state space systems are combined.
-    Setting dt = 0 specifies a continuous system, while leaving dt = None
-    means the system timebase is not specified.  If 'dt' is set to True, the
-    system will be treated as a discrete time system with unspecified sampling
-    time. The default value of 'dt' is None and can be changed by changing the
-    value of ``control.config.defaults['statesp.default_dt']``.
+    A discrete time system is created by specifying a nonzero 'timebase', dt
+    when the system is constructed:
 
+    * dt = 0: continuous time system (default)
+    * dt > 0: discrete time system with sampling period 'dt'
+    * dt = True: discrete time with unspecified sampling period
+    * dt = None: no timebase specified
+
+    Systems must have compatible timebases in order to be combined. A discrete
+    time system with unspecified sampling time (`dt = True`) can be combined
+    with a system having a specified sampling time; the result will be a
+    discrete time system with the sample time of the latter system. Similarly,
+    a system with timebase `None` can be combined with a system having any
+    timebase; the result will have the timebase of the latter system.
+    The default value of dt can be changed by changing the value of
+    ``control.config.defaults['control.default_dt']``.
+
+    StateSpace instances have support for IPython LaTeX output,
+    intended for pretty-printing in Jupyter notebooks.  The LaTeX
+    output can be configured using
+    `control.config.defaults['statesp.latex_num_format']` and
+    `control.config.defaults['statesp.latex_repr_type']`.  The LaTeX output is
+    tailored for MathJax, as used in Jupyter, and may look odd when
+    typeset by non-MathJax LaTeX systems.
+
+    `control.config.defaults['statesp.latex_num_format']` is a format string
+    fragment, specifically the part of the format string after `'{:'`
+    used to convert floating-point numbers to strings.  By default it
+    is `'.3g'`.
+
+    `control.config.defaults['statesp.latex_repr_type']` must either be
+    `'partitioned'` or `'separate'`.  If `'partitioned'`, the A, B, C, D
+    matrices are shown as a single, partitioned matrix; if
+    `'separate'`, the matrices are shown separately.
     """
 
     # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
     __array_priority__ = 11     # override ndarray and matrix types
 
-
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, **kwargs):
         """
         StateSpace(A, B, C, D[, dt])
 
@@ -176,32 +229,31 @@ class StateSpace(LTI):
         call StateSpace(sys), where sys is a StateSpace object.
 
         """
+        # first get A, B, C, D matrices
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
-            dt = config.defaults['statesp.default_dt']
         elif len(args) == 5:
             # Discrete time system
-            (A, B, C, D, dt) = args
+            (A, B, C, D, _) = args
         elif len(args) == 1:
             # Use the copy constructor.
             if not isinstance(args[0], StateSpace):
-                raise TypeError("The one-argument constructor can only take in a StateSpace "
-                                "object.  Received %s." % type(args[0]))
+                raise TypeError(
+                    "The one-argument constructor can only take in a "
+                    "StateSpace object. Received %s." % type(args[0]))
             A = args[0].A
             B = args[0].B
             C = args[0].C
             D = args[0].D
-            try:
-                dt = args[0].dt
-            except NameError:
-                dt = config.defaults['statesp.default_dt']
         else:
-            raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
+            raise ValueError(
+                "Expected 1, 4, or 5 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kw.get('remove_useless', 
-                                config.defaults['statesp.remove_useless_states'])
+        remove_useless = kwargs.get(
+            'remove_useless',
+            config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
         A = _ssmatrix(A)
@@ -213,27 +265,48 @@ class StateSpace(LTI):
         if np.asarray(C).ndim == 1 and len(C) == A.shape[0]:
             C = _ssmatrix(C, axis=1)
         else:
-            C = _ssmatrix(C, axis=0) #if this doesn't work, error below
+            C = _ssmatrix(C, axis=0)    # if this doesn't work, error below
         if np.isscalar(D) and D == 0 and B.shape[1] > 0 and C.shape[0] > 0:
             # If D is a scalar zero, broadcast it to the proper size
             D = np.zeros((C.shape[0], B.shape[1]))
         D = _ssmatrix(D)
 
         # TODO: use super here?
-        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0], dt=dt)
+        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0])
         self.A = A
         self.B = B
         self.C = C
         self.D = D
 
+        # now set dt
+        if len(args) == 4:
+            if 'dt' in kwargs:
+                dt = kwargs['dt']
+            elif self.is_static_gain():
+                dt = None
+            else:
+                dt = config.defaults['control.default_dt']
+        elif len(args) == 5:
+            dt = args[4]
+            if 'dt' in kwargs:
+                warn('received multiple dt arguments, using positional arg dt=%s'%dt)
+        elif len(args) == 1:
+            try:
+                dt = args[0].dt
+            except AttributeError:
+                if self.is_static_gain():
+                    dt = None
+                else:
+                    dt = config.defaults['control.default_dt']
+        self.dt = dt
         self.states = A.shape[1]
 
         if 0 == self.states:
             # static gain
             # matrix's default "empty" shape is 1x0
-            A.shape = (0,0)
-            B.shape = (0,self.inputs)
-            C.shape = (self.outputs,0)
+            A.shape = (0, 0)
+            B.shape = (0, self.inputs)
+            C.shape = (self.outputs, 0)
 
         # Check that the matrix sizes are consistent.
         if self.states != A.shape[0]:
@@ -248,14 +321,15 @@ class StateSpace(LTI):
             raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
-        if remove_useless: self._remove_useless_states()
+        if remove_useless:
+            self._remove_useless_states()
 
     def _remove_useless_states(self):
         """Check for states that don't do anything, and remove them.
 
         Scan the A, B, and C matrices for rows or columns of zeros.  If the
-        zeros are such that a particular state has no effect on the input-output
-        dynamics, then remove that state from the A, B, and C matrices.
+        zeros are such that a particular state has no effect on the input-
+        output dynamics, then remove that state from the A, B, and C matrices.
 
         """
 
@@ -305,6 +379,137 @@ class StateSpace(LTI):
             C=asarray(self.C).__repr__(), D=asarray(self.D).__repr__(),
             dt=(isdtime(self, strict=True) and ", {}".format(self.dt)) or '')
 
+    def _latex_partitioned_stateless(self):
+        """`Partitioned` matrix LaTeX representation for stateless systems
+
+        Model is presented as a matrix, D.  No partition lines are shown.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+        """
+        lines = [
+            r'\[',
+            r'\left(',
+            (r'\begin{array}'
+             + r'{' + 'rll' * self.inputs + '}')
+            ]
+
+        for Di in asarray(self.D):
+            lines.append('&'.join(_f2s(Dij) for Dij in Di)
+                         + '\\\\')
+
+        lines.extend([
+            r'\end{array}'
+            r'\right)',
+            r'\]'])
+
+        return '\n'.join(lines)
+
+    def _latex_partitioned(self):
+        """Partitioned matrix LaTeX representation of state-space model
+
+        Model is presented as a matrix partitioned into A, B, C, and D
+        parts.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+        """
+        if self.states == 0:
+            return self._latex_partitioned_stateless()
+
+        lines = [
+            r'\[',
+            r'\left(',
+            (r'\begin{array}'
+             + r'{' + 'rll' * self.states + '|' + 'rll' * self.inputs + '}')
+            ]
+
+        for Ai, Bi in zip(asarray(self.A), asarray(self.B)):
+            lines.append('&'.join([_f2s(Aij) for Aij in Ai]
+                                  + [_f2s(Bij) for Bij in Bi])
+                         + '\\\\')
+        lines.append(r'\hline')
+        for Ci, Di in zip(asarray(self.C), asarray(self.D)):
+            lines.append('&'.join([_f2s(Cij) for Cij in Ci]
+                                  + [_f2s(Dij) for Dij in Di])
+                         + '\\\\')
+
+        lines.extend([
+            r'\end{array}'
+            r'\right)',
+            r'\]'])
+
+        return '\n'.join(lines)
+
+    def _latex_separate(self):
+        """Separate matrices LaTeX representation of state-space model
+
+        Model is presented as separate, named, A, B, C, and D matrices.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+        """
+        lines = [
+            r'\[',
+            r'\begin{array}{ll}',
+            ]
+
+        def fmt_matrix(matrix, name):
+            matlines = [name
+                        + r' = \left(\begin{array}{'
+                        + 'rll' * matrix.shape[1]
+                        + '}']
+            for row in asarray(matrix):
+                matlines.append('&'.join(_f2s(entry) for entry in row)
+                                + '\\\\')
+            matlines.extend([
+                r'\end{array}'
+                r'\right)'])
+            return matlines
+
+        if self.states > 0:
+            lines.extend(fmt_matrix(self.A, 'A'))
+            lines.append('&')
+            lines.extend(fmt_matrix(self.B, 'B'))
+            lines.append('\\\\')
+
+            lines.extend(fmt_matrix(self.C, 'C'))
+            lines.append('&')
+        lines.extend(fmt_matrix(self.D, 'D'))
+
+        lines.extend([
+            r'\end{array}',
+            r'\]'])
+
+        return '\n'.join(lines)
+
+    def _repr_latex_(self):
+        """LaTeX representation of state-space model
+
+        Output is controlled by config options statesp.latex_repr_type
+        and statesp.latex_num_format.
+
+        The output is primarily intended for Jupyter notebooks, which
+        use MathJax to render the LaTeX, and the results may look odd
+        when processed by a 'conventional' LaTeX system.
+
+        Returns
+        -------
+        s : string with LaTeX representation of model
+
+        """
+        if config.defaults['statesp.latex_repr_type'] == 'partitioned':
+            return self._latex_partitioned()
+        elif config.defaults['statesp.latex_repr_type'] == 'separate':
+            return self._latex_separate()
+        else:
+            cfg = config.defaults['statesp.latex_repr_type']
+            raise ValueError(
+                "Unknown statesp.latex_repr_type '{cfg}'".format(cfg=cfg))
+
     # Negation of a system
     def __neg__(self):
         """Negate a state space system."""
@@ -329,22 +534,14 @@ class StateSpace(LTI):
                     (self.outputs != other.outputs)):
                 raise ValueError("Systems have different shapes.")
 
-            # Figure out the sampling time to use
-            if self.dt is None and other.dt is not None:
-                dt = other.dt       # use dt from second argument
-            elif (other.dt is None and self.dt is not None) or \
-                    (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
-            else:
-                raise ValueError("Systems have different sampling times")
+            dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
             A = concatenate((
                 concatenate((self.A, zeros((self.A.shape[0],
-                                           other.A.shape[-1]))),axis=1),
+                                            other.A.shape[-1]))), axis=1),
                 concatenate((zeros((other.A.shape[0], self.A.shape[-1])),
-                                other.A),axis=1)
-                            ),axis=0)
+                             other.A), axis=1)), axis=0)
             B = concatenate((self.B, other.B), axis=0)
             C = concatenate((self.C, other.C), axis=1)
             D = self.D + other.D
@@ -385,16 +582,8 @@ class StateSpace(LTI):
             # Check to make sure the dimensions are OK
             if self.inputs != other.outputs:
                 raise ValueError("C = A * B: A has %i column(s) (input(s)), \
-but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
-
-            # Figure out the sampling time to use
-            if (self.dt == None and other.dt != None):
-                dt = other.dt       # use dt from second argument
-            elif (other.dt == None and self.dt != None) or \
-                    (timebaseEqual(self, other)):
-                dt = self.dt        # use dt from first argument
-            else:
-                raise ValueError("Systems have different sampling times")
+                    but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
+            dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
             A = concatenate(
@@ -404,7 +593,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                  concatenate((np.dot(self.B, other.C), self.A), axis=1)),
                 axis=0)
             B = concatenate((other.B, np.dot(self.B, other.D)), axis=0)
-            C = concatenate((np.dot(self.D, other.C), self.C),axis=1)
+            C = concatenate((np.dot(self.D, other.C), self.C), axis=1)
             D = np.dot(self.D, other.D)
 
         return StateSpace(A, B, C, D, dt)
@@ -448,37 +637,38 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
     def __rdiv__(self, other):
         """Right divide two LTI systems."""
 
-        raise NotImplementedError("StateSpace.__rdiv__ is not implemented yet.")
+        raise NotImplementedError(
+            "StateSpace.__rdiv__ is not implemented yet.")
 
     def __call__(self, x, squeeze=True):
         """Evaluate system's transfer function at complex frequency.
-        
-        Returns the complex frequency response `sys(x)` where `x` is `s` for 
-        continuous-time systems and `z` for discrete-time systems. 
 
-        To evaluate at a frequency omega in radians per second, enter 
-        ``x = omega * 1j``, for continuous-time systems, or 
-        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use 
-        :meth:`StateSpace.frequency_response`. 
+        Returns the complex frequency response `sys(x)` where `x` is `s` for
+        continuous-time systems and `z` for discrete-time systems.
+
+        To evaluate at a frequency omega in radians per second, enter
+        ``x = omega * 1j``, for continuous-time systems, or
+        ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
+        :meth:`StateSpace.frequency_response`.
 
         Parameters
         ----------
-        x: complex or complex array_like 
+        x: complex or complex array_like
             Complex frequencies
         squeeze: bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), returns a 
-            1D array or scalar depending on the length of `x`. 
-            
+            If True and `sys` is single input single output (SISO), returns a
+            1D array or scalar depending on the length of `x`.
+
         Returns
         -------
         fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
-            The frequency response of the system. Array is ``len(x)`` if and 
+            The frequency response of the system. Array is ``len(x)`` if and
             only if system is SISO and ``squeeze=True``.
 
-        """        
+        """
         # Use Slycot if available
         out = self.horner(x)
-        if not hasattr(x, '__len__'): 
+        if not hasattr(x, '__len__'):
             # received a scalar x, squeeze down the array along last dim
             out = np.squeeze(out, axis=2)
         if squeeze and self.issiso():
@@ -491,7 +681,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         using Laub's method from Slycot.
 
         Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
-        for a more user-friendly interface. 
+        for a more user-friendly interface.
 
         Parameters
         ----------
@@ -537,13 +727,13 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
     def horner(self, x):
         """Evaluate system's transfer function at complex frequency
-        using Laub's or Horner's method. 
+        using Laub's or Horner's method.
 
-        Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z` 
-        for discrete-time systems. 
-        
+        Evaluates `sys(x)` where `x` is `s` for continuous-time systems and `z`
+        for discrete-time systems.
+
         Expects inputs and outputs to be formatted correctly. Use ``sys(x)``
-        for a more user-friendly interface. 
+        for a more user-friendly interface.
 
         Parameters
         ----------
@@ -557,38 +747,38 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         Notes
         -----
-        Attempts to use Laub's method from Slycot library, with a 
+        Attempts to use Laub's method from Slycot library, with a
         fall-back to python code.
         """
         try:
             out = self.slycot_laub(x)
-        except (ImportError, Exception):  
-            # Fall back because either Slycot unavailable or cannot handle 
+        except (ImportError, Exception):
+            # Fall back because either Slycot unavailable or cannot handle
             # certain cases.
-            x_arr = np.atleast_1d(x) # force to be an array    
-            # Preallocate 
+            x_arr = np.atleast_1d(x) # force to be an array
+            # Preallocate
             out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
-            
-            #TODO: can this be vectorized? 
+
+            #TODO: can this be vectorized?
             for idx, x_idx in enumerate(x_arr):
                 out[:,:,idx] = \
-                    np.dot(self.C, 
+                    np.dot(self.C,
                         solve(x_idx * eye(self.states) - self.A, self.B)) \
                     + self.D
         return out
 
     def freqresp(self, omega):
-        """(deprecated) Evaluate transfer function at complex frequencies. 
-        
-        .. deprecated::0.9.0 
-            Method has been given the more pythonic name 
-            :meth:`StateSpace.frequency_response`. Or use 
+        """(deprecated) Evaluate transfer function at complex frequencies.
+
+        .. deprecated::0.9.0
+            Method has been given the more pythonic name
+            :meth:`StateSpace.frequency_response`. Or use
             :func:`freqresp` in the MATLAB compatibility module.
         """
         warn("StateSpace.freqresp(omega) will be removed in a "
              "future release of python-control; use "
              "sys.frequency_response(omega), or freqresp(sys, omega) in the "
-             "MATLAB compatibility module instead", DeprecationWarning)        
+             "MATLAB compatibility module instead", DeprecationWarning)
         return self.frequency_response(omega)
 
     # Compute poles and zeros
@@ -614,7 +804,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             if nu == 0:
                 return np.array([])
             else:
-                return sp.linalg.eigvals(out[8][0:nu, 0:nu], out[9][0:nu, 0:nu])
+                return sp.linalg.eigvals(out[8][0:nu, 0:nu],
+                                         out[9][0:nu, 0:nu])
 
         except ImportError:  # Slycot unavailable. Fall back to scipy.
             if self.C.shape[0] != self.D.shape[1]:
@@ -636,7 +827,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
                              concatenate((self.C, self.D), axis=1)), axis=0)
             M = pad(eye(self.A.shape[0]), ((0, self.C.shape[0]),
                                            (0, self.B.shape[1])), "constant")
-            return np.array([x for x in sp.linalg.eigvals(L, M, overwrite_a=True)
+            return np.array([x for x in sp.linalg.eigvals(L, M,
+                                                          overwrite_a=True)
                              if not isinf(x)])
 
     # Feedback around a state space system
@@ -647,16 +839,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         # Check to make sure the dimensions are OK
         if (self.inputs != other.outputs) or (self.outputs != other.inputs):
-                raise ValueError("State space systems don't have compatible inputs/outputs for "
-                                 "feedback.")
-
-        # Figure out the sampling time to use
-        if self.dt is None and other.dt is not None:
-            dt = other.dt       # use dt from second argument
-        elif other.dt is None and self.dt is not None or timebaseEqual(self, other):
-            dt = self.dt        # use dt from first argument
-        else:
-            raise ValueError("Systems have different sampling times")
+            raise ValueError("State space systems don't have compatible "
+                             "inputs/outputs for feedback.")
+        dt = common_timebase(self.dt, other.dt)
 
         A1 = self.A
         B1 = self.B
@@ -669,7 +854,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
 
         F = eye(self.inputs) - sign * np.dot(D2, D1)
         if matrix_rank(F) != self.inputs:
-            raise ValueError("I - sign * D2 * D1 is singular to working precision.")
+            raise ValueError(
+                "I - sign * D2 * D1 is singular to working precision.")
 
         # Precompute F\D2 and F\C2 (E = inv(F))
         # We can solve two linear systems in one pass, since the
@@ -726,14 +912,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # dimension check
         # TODO
 
-        # Figure out the sampling time to use
-        if (self.dt == None and other.dt != None):
-            dt = other.dt       # use dt from second argument
-        elif (other.dt == None and self.dt != None) or \
-                timebaseEqual(self, other):
-            dt = self.dt        # use dt from first argument
-        else:
-            raise ValueError("Systems have different time bases")
+        dt = common_timebase(self.dt, other.dt)
 
         # submatrices
         A = self.A
@@ -765,16 +944,20 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         # solve for the resulting ss by solving for [y, u] using [x,
         # xbar] and [w1, w2].
         TH = np.linalg.solve(F, np.block(
-            [[C2, np.zeros((ny, other.states)), D21, np.zeros((ny, other.inputs - ny))],
-             [np.zeros((nu, self.states)), Cbar1, np.zeros((nu, self.inputs - nu)), Dbar12]]
+            [[C2, np.zeros((ny, other.states)),
+              D21, np.zeros((ny, other.inputs - ny))],
+             [np.zeros((nu, self.states)), Cbar1,
+              np.zeros((nu, self.inputs - nu)), Dbar12]]
         ))
         T11 = TH[:ny, :self.states]
         T12 = TH[:ny, self.states: self.states + other.states]
         T21 = TH[ny:, :self.states]
         T22 = TH[ny:, self.states: self.states + other.states]
-        H11 = TH[:ny, self.states + other.states: self.states + other.states + self.inputs - nu]
+        H11 = TH[:ny, self.states + other.states:self.states +
+                 other.states + self.inputs - nu]
         H12 = TH[:ny, self.states + other.states + self.inputs - nu:]
-        H21 = TH[ny:, self.states + other.states: self.states + other.states + self.inputs - nu]
+        H21 = TH[ny:, self.states + other.states:self.states +
+                 other.states + self.inputs - nu]
         H22 = TH[ny:, self.states + other.states + self.inputs - nu:]
 
         Ares = np.block([
@@ -805,21 +988,19 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             try:
                 from slycot import tb01pd
                 B = empty((self.states, max(self.inputs, self.outputs)))
-                B[:,:self.inputs] = self.B
+                B[:, :self.inputs] = self.B
                 C = empty((max(self.outputs, self.inputs), self.states))
-                C[:self.outputs,:] = self.C
+                C[:self.outputs, :] = self.C
                 A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs,
                                      self.A, B, C, tol=tol)
-                return StateSpace(A[:nr,:nr], B[:nr,:self.inputs],
-                                  C[:self.outputs,:nr], self.D)
+                return StateSpace(A[:nr, :nr], B[:nr, :self.inputs],
+                                  C[:self.outputs, :nr], self.D)
             except ImportError:
                 raise TypeError("minreal requires slycot tb01pd")
         else:
             return StateSpace(self)
 
-
-    # TODO: add discrete time check
-    def returnScipySignalLTI(self):
+    def returnScipySignalLTI(self, strict=True):
         """Return a list of a list of :class:`scipy.signal.lti` objects.
 
         For instance,
@@ -828,15 +1009,45 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         >>> out[3][5]
 
         is a :class:`scipy.signal.lti` object corresponding to the transfer
-        function from the 6th input to the 4th output."""
+        function from the 6th input to the 4th output.
+
+        Parameters
+        ----------
+        strict : bool, optional
+            True (default):
+                The timebase `ssobject.dt` cannot be None; it must
+                be continuous (0) or discrete (True or > 0).
+            False:
+              If `ssobject.dt` is None, continuous time
+              :class:`scipy.signal.lti` objects are returned.
+
+        Returns
+        -------
+        out : list of list of :class:`scipy.signal.StateSpace`
+            continuous time (inheriting from :class:`scipy.signal.lti`)
+            or discrete time (inheriting from :class:`scipy.signal.dlti`)
+            SISO objects
+        """
+        if strict and self.dt is None:
+            raise ValueError("with strict=True, dt cannot be None")
+
+        if self.dt:
+            kwdt = {'dt': self.dt}
+        else:
+            # scipy convention for continuous time lti systems: call without
+            # dt keyword argument
+            kwdt = {}
 
         # Preallocate the output.
         out = [[[] for _ in range(self.inputs)] for _ in range(self.outputs)]
 
         for i in range(self.outputs):
             for j in range(self.inputs):
-                out[i][j] = lti(asarray(self.A), asarray(self.B[:, j]),
-                                asarray(self.C[i, :]), self.D[i, j])
+                out[i][j] = signalStateSpace(asarray(self.A),
+                                             asarray(self.B[:, j:j + 1]),
+                                             asarray(self.C[i:i + 1, :]),
+                                             asarray(self.D[i:i + 1, j:j + 1]),
+                                             **kwdt)
 
         return out
 
@@ -848,8 +1059,7 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         if not isinstance(other, StateSpace):
             other = _convertToStateSpace(other)
 
-        if self.dt != other.dt:
-            raise ValueError("Systems must have the same time step")
+        self.dt = common_timebase(self.dt, other.dt)
 
         n = self.states + other.states
         m = self.inputs + other.inputs
@@ -874,7 +1084,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             raise IOError('must provide indices of length 2 for state space')
         i = indices[0]
         j = indices[1]
-        return StateSpace(self.A, self.B[:, j], self.C[i, :], self.D[i, j], self.dt)
+        return StateSpace(self.A, self.B[:, j], self.C[i, :],
+                          self.D[i, j], self.dt)
 
     def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None):
         """Convert a continuous time system to discrete time
@@ -926,9 +1137,9 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             raise ValueError("System must be continuous time system")
 
         sys = (self.A, self.B, self.C, self.D)
-        if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
+        if (method == 'bilinear' or (method == 'gbt' and alpha == 0.5)) and \
                 prewarp_frequency is not None:
-            Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+            Twarp = 2 * np.tan(prewarp_frequency * Ts/2)/prewarp_frequency
         else:
             Twarp = Ts
         Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
@@ -955,7 +1166,8 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
         """
         try:
             if self.isctime():
-                gain = np.asarray(self.D-self.C.dot(np.linalg.solve(self.A, self.B)))
+                gain = np.asarray(self.D -
+                                  self.C.dot(np.linalg.solve(self.A, self.B)))
             else:
                 gain = np.squeeze(self.horner(1))
         except LinAlgError:
@@ -963,33 +1175,44 @@ but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
             gain = np.tile(np.nan, (self.outputs, self.inputs))
         return np.squeeze(gain)
 
+    def is_static_gain(self):
+        """True if and only if the system has no dynamics, that is,
+        if A and B are zero. """
+        return not np.any(self.A) and not np.any(self.B)
+
 
 # TODO: add discrete time check
 def _convertToStateSpace(sys, **kw):
     """Convert a system to state space form (if needed).
 
-    If sys is already a state space, then it is returned.  If sys is a transfer
-    function object, then it is converted to a state space and returned.  If sys
-    is a scalar, then the number of inputs and outputs can be specified
-    manually, as in:
+    If sys is already a state space, then it is returned.  If sys is a
+    transfer function object, then it is converted to a state space and
+    returned.  If sys is a scalar, then the number of inputs and outputs can
+    be specified manually, as in:
 
     >>> sys = _convertToStateSpace(3.) # Assumes inputs = outputs = 1
     >>> sys = _convertToStateSpace(1., inputs=3, outputs=2)
 
     In the latter example, A = B = C = 0 and D = [[1., 1., 1.]
                                                   [1., 1., 1.]].
-
     """
     from .xferfcn import TransferFunction
     import itertools
+
     if isinstance(sys, StateSpace):
         if len(kw):
-            raise TypeError("If sys is a StateSpace, _convertToStateSpace \
-cannot take keywords.")
+            raise TypeError("If sys is a StateSpace, _convertToStateSpace "
+                            "cannot take keywords.")
 
         # Already a state space system; just return it
         return sys
+
     elif isinstance(sys, TransferFunction):
+        # Make sure the transfer function is proper
+        if any([[len(num) for num in col] for col in sys.num] >
+               [[len(num) for num in col] for col in sys.den]):
+            raise ValueError("Transfer function is non-proper; can't "
+                             "convert to StateSpace system.")
         try:
             from slycot import td04ad
             if len(kw):
@@ -1006,8 +1229,10 @@ cannot take keywords.")
                            denorder, den, num, tol=0)
 
             states = ssout[0]
-            return StateSpace(ssout[1][:states, :states], ssout[2][:states, :sys.inputs],
-                              ssout[3][:sys.outputs, :states], ssout[4], sys.dt)
+            return StateSpace(ssout[1][:states, :states],
+                              ssout[2][:states, :sys.inputs],
+                              ssout[3][:sys.outputs, :states], ssout[4],
+                              sys.dt)
         except ImportError:
             # No Slycot.  Scipy tf->ss can't handle MIMO, but static
             # MIMO is an easy special case we can check for here
@@ -1017,7 +1242,8 @@ cannot take keywords.")
                        for drow in sys.den)
             if 1 == maxn and 1 == maxd:
                 D = empty((sys.outputs, sys.inputs), dtype=float)
-                for i, j in itertools.product(range(sys.outputs), range(sys.inputs)):
+                for i, j in itertools.product(range(sys.outputs),
+                                              range(sys.inputs)):
                     D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
                 return StateSpace([], [], [], D, sys.dt)
             else:
@@ -1027,7 +1253,8 @@ cannot take keywords.")
                 # TODO: do we want to squeeze first and check dimenations?
                 # I think this will fail if num and den aren't 1-D after
                 # the squeeze
-                A, B, C, D = sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
+                A, B, C, D = \
+                    sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
                 return StateSpace(A, B, C, D, sys.dt)
 
     elif isinstance(sys, (int, float, complex, np.number)):
@@ -1044,20 +1271,21 @@ cannot take keywords.")
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))
         return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)),
-            sys * ones((outputs, inputs)))
+                          sys * ones((outputs, inputs)))
 
     # If this is a matrix, try to create a constant feedthrough
     try:
         D = _ssmatrix(sys)
         return StateSpace([], [], [], D)
     except Exception as e:
-        print("Failure to assume argument is matrix-like in" \
-            " _convertToStateSpace, result %s" % e)
+        print("Failure to assume argument is matrix-like in"
+              " _convertToStateSpace, result %s" % e)
 
     raise TypeError("Can't convert given type to StateSpace system.")
 
+
 # TODO: add discrete time option
-def _rss_generate(states, inputs, outputs, type):
+def _rss_generate(states, inputs, outputs, type, strictly_proper=False):
     """Generate a random state space.
 
     This does the actual random state space generation expected from rss and
@@ -1081,13 +1309,13 @@ def _rss_generate(states, inputs, outputs, type):
     # Check for valid input arguments.
     if states < 1 or states % 1:
         raise ValueError("states must be a positive integer.  states = %g." %
-            states)
+                         states)
     if inputs < 1 or inputs % 1:
         raise ValueError("inputs must be a positive integer.  inputs = %g." %
-            inputs)
+                         inputs)
     if outputs < 1 or outputs % 1:
         raise ValueError("outputs must be a positive integer.  outputs = %g." %
-            outputs)
+                         outputs)
 
     # Make some poles for A.  Preallocate a complex array.
     poles = zeros(states) + zeros(states) * 0.j
@@ -1167,7 +1395,7 @@ def _rss_generate(states, inputs, outputs, type):
     # Apply masks.
     B = B * Bmask
     C = C * Cmask
-    D = D * Dmask
+    D = D * Dmask if not strictly_proper else zeros(D.shape)
 
     return StateSpace(A, B, C, D)
 
@@ -1175,7 +1403,7 @@ def _rss_generate(states, inputs, outputs, type):
 # Convert a MIMO system to a SISO system
 # TODO: add discrete time check
 def _mimo2siso(sys, input, output, warn_conversion=False):
-    #pylint: disable=W0622
+    # pylint: disable=W0622
     """
     Convert a MIMO system to a SISO system. (Convert a system with multiple
     inputs and/or outputs, to a system with a single input and output.)
@@ -1215,7 +1443,7 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
                          "Selected output: {sel}, "
                          "number of system outputs: {ext}."
                          .format(sel=output, ext=sys.outputs))
-    #Convert sys to SISO if necessary
+    # Convert sys to SISO if necessary
     if sys.inputs > 1 or sys.outputs > 1:
         if warn_conversion:
             warn("Converting MIMO system to SISO system. "
@@ -1279,8 +1507,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
 
     return sys
 
-
-def ss(*args):
+def ss(*args, **kwargs):
     """ss(A, B, C, D[, dt])
 
     Create a state space system.
@@ -1325,8 +1552,7 @@ def ss(*args):
         Output matrix
     D: array_like or string
         Feed forward matrix
-    dt: If present, specifies the sampling period and a discrete time
-        system is created
+    dt: If present, specifies the timebase of the system
 
     Returns
     -------
@@ -1357,7 +1583,7 @@ def ss(*args):
     """
 
     if len(args) == 4 or len(args) == 5:
-        return StateSpace(*args)
+        return StateSpace(*args, **kwargs)
     elif len(args) == 1:
         from .xferfcn import TransferFunction
         sys = args[0]
@@ -1366,10 +1592,10 @@ def ss(*args):
         elif isinstance(sys, TransferFunction):
             return tf2ss(sys)
         else:
-            raise TypeError("ss(sys): sys must be a StateSpace or \
-TransferFunction object.  It is %s." % type(sys))
+            raise TypeError("ss(sys): sys must be a StateSpace or "
+                            "TransferFunction object.  It is %s." % type(sys))
     else:
-        raise ValueError("Needs 1 or 4 arguments; received %i." % len(args))
+        raise ValueError("Needs 1, 4, or 5 arguments; received %i." % len(args))
 
 
 def tf2ss(*args):
@@ -1391,16 +1617,16 @@ def tf2ss(*args):
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
+    sys : LTI (StateSpace or TransferFunction)
         A linear system
-    num: array_like, or list of list of array_like
+    num : array_like, or list of list of array_like
         Polynomial coefficients of the numerator
-    den: array_like, or list of list of array_like
+    den : array_like, or list of list of array_like
         Polynomial coefficients of the denominator
 
     Returns
     -------
-    out: StateSpace
+    out : StateSpace
         New linear system in state space form
 
     Raises
@@ -1437,14 +1663,14 @@ def tf2ss(*args):
     elif len(args) == 1:
         sys = args[0]
         if not isinstance(sys, TransferFunction):
-            raise TypeError("tf2ss(sys): sys must be a TransferFunction \
-object.")
+            raise TypeError("tf2ss(sys): sys must be a TransferFunction "
+                            "object.")
         return _convertToStateSpace(sys)
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
 
-def rss(states=1, outputs=1, inputs=1):
+def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
     """
     Create a stable *continuous* random state space object.
 
@@ -1456,6 +1682,9 @@ def rss(states=1, outputs=1, inputs=1):
         Number of system inputs
     outputs : integer
         Number of system outputs
+    strictly_proper : bool, optional
+        If set to 'True', returns a proper system (no direct term).  Default
+        value is 'False'.
 
     Returns
     -------
@@ -1479,10 +1708,11 @@ def rss(states=1, outputs=1, inputs=1):
 
     """
 
-    return _rss_generate(states, inputs, outputs, 'c')
+    return _rss_generate(states, inputs, outputs, 'c',
+                         strictly_proper=strictly_proper)
 
 
-def drss(states=1, outputs=1, inputs=1):
+def drss(states=1, outputs=1, inputs=1, strictly_proper=False):
     """
     Create a stable *discrete* random state space object.
 
@@ -1517,7 +1747,8 @@ def drss(states=1, outputs=1, inputs=1):
 
     """
 
-    return _rss_generate(states, inputs, outputs, 'd')
+    return _rss_generate(states, inputs, outputs, 'd',
+                         strictly_proper=strictly_proper)
 
 
 def ssdata(sys):

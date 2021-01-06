@@ -78,6 +78,7 @@ _bode_defaults = {
     'bode.deg': True,           # Plot phase in degrees
     'bode.Hz': False,           # Plot frequency in Hertz
     'bode.grid': True,          # Turn on grid for gain and phase
+    'bode.wrap_phase': False,   # Wrap the phase plot at a given value
 }
 
 
@@ -131,7 +132,19 @@ def bode_plot(syslist, omega=None,
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['bode.grid']`.
-
+    initial_phase : float
+        Set the reference phase to use for the lowest frequency.  If set, the
+        initial phase of the Bode plot will be set to the value closest to the
+        value specified.  Units are in either degrees or radians, depending on
+        the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
+        wrap_phase is True.
+    wrap_phase : bool or float
+        If wrap_phase is `False`, then the phase will be unwrapped so that it
+        is continuously increasing or decreasing.  If wrap_phase is `True` the
+        phase will be restricted to the range [-180, 180) (or [:math:`-\\pi`,
+        :math:`\\pi`) radians). If `wrap_phase` is specified as a float, the
+        phase will be offset by 360 degrees if it falls below the specified
+        value.  Default to `False`, set by config.defaults['bode.wrap_phase'].
 
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
@@ -139,7 +152,7 @@ def bode_plot(syslist, omega=None,
     Notes
     -----
     1. Alternatively, you may use the lower-level methods
-       :meth:`LTI.frequency_response` or ``sys(s)`` or ``sys(z)`` or to 
+       :meth:`LTI.frequency_response` or ``sys(s)`` or ``sys(z)`` or to
        generate the frequency response for a single system.
 
     2. If a discrete time model is given, the frequency response is plotted
@@ -171,6 +184,10 @@ def bode_plot(syslist, omega=None,
     grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
     plot = config._get_param('bode', 'grid', plot, True)
     margins = config._get_param('bode', 'margins', margins, False)
+    wrap_phase = config._get_param(
+        'bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
+    initial_phase = config._get_param(
+        'bode', 'initial_phase', kwargs, None, pop=True)
 
     # If argument was a singleton, turn it into a list
     if not getattr(syslist, '__iter__', False):
@@ -209,11 +226,47 @@ def bode_plot(syslist, omega=None,
                 # TODO: What distance to the Nyquist frequency is appropriate?
             else:
                 nyquistfrq = None
+
             # Get the magnitude and phase of the system
             mag_tmp, phase_tmp, omega_sys = sys.frequency_response(omega_sys)
             mag = np.atleast_1d(np.squeeze(mag_tmp))
             phase = np.atleast_1d(np.squeeze(phase_tmp))
-            phase = unwrap(phase)
+
+            #
+            # Post-process the phase to handle initial value and wrapping
+            #
+
+            if initial_phase is None:
+                # Start phase in the range 0 to -360 w/ initial phase = -180
+                # If wrap_phase is true, use 0 instead (phase \in (-pi, pi])
+                initial_phase = -math.pi if wrap_phase is not True else 0
+            elif isinstance(initial_phase, (int, float)):
+                # Allow the user to override the default calculation
+                if deg:
+                    initial_phase = initial_phase/180. * math.pi
+            else:
+                raise ValueError("initial_phase must be a number.")
+
+            # Shift the phase if needed
+            if abs(phase[0] - initial_phase) > math.pi:
+                phase -= 2*math.pi * \
+                    round((phase[0] - initial_phase) / (2*math.pi))
+
+            # Phase wrapping
+            if wrap_phase is False:
+                phase = unwrap(phase)   # unwrap the phase
+            elif wrap_phase is True:
+                pass                    # default calculation OK
+            elif isinstance(wrap_phase, (int, float)):
+                phase = unwrap(phase)   # unwrap the phase first
+                if deg:
+                    wrap_phase *= math.pi/180.
+
+                # Shift the phase if it is below the wrap_phase
+                phase += 2*math.pi * np.maximum(
+                    0, np.ceil((wrap_phase - phase)/(2*math.pi)))
+            else:
+                raise ValueError("wrap_phase must be bool or float.")
 
             mags.append(mag)
             phases.append(phase)
@@ -270,7 +323,9 @@ def bode_plot(syslist, omega=None,
                                                label='control-bode-phase',
                                                sharex=ax_mag)
 
+                #
                 # Magnitude plot
+                #
                 if dB:
                     pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag),
                                               *args, **kwargs)
@@ -285,19 +340,22 @@ def bode_plot(syslist, omega=None,
                 ax_mag.grid(grid and not margins, which='both')
                 ax_mag.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
 
+                #
                 # Phase plot
-                if deg:
-                    phase_plot = phase * 180. / math.pi
-                else:
-                    phase_plot = phase
+                #
+                phase_plot = phase * 180. / math.pi if deg else phase
+
+                # Plot the data
                 ax_phase.semilogx(omega_plot, phase_plot, *args, **kwargs)
 
                 # Show the phase and gain margins in the plot
                 if margins:
+                    # Compute stability margins for the system
                     margin = stability_margins(sys)
-                    gm, pm, Wcg, Wcp = \
-                        margin[0], margin[1], margin[3], margin[4]
-                    # TODO: add some documentation describing why this is here
+                    gm, pm, Wcg, Wcp = (margin[i] for i in (0, 1, 3, 4))
+
+                    # Figure out sign of the phase at the first gain crossing
+                    # (needed if phase_wrap is True)
                     phase_at_cp = phases[0][(np.abs(omegas[0] - Wcp)).argmin()]
                     if phase_at_cp >= 0.:
                         phase_limit = 180.
@@ -307,6 +365,7 @@ def bode_plot(syslist, omega=None,
                     if Hz:
                         Wcg, Wcp = Wcg/(2*math.pi), Wcp/(2*math.pi)
 
+                    # Draw lines at gain and phase limits
                     ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':',
                                    zorder=-20)
                     ax_phase.axhline(y=phase_limit if deg else
@@ -315,6 +374,7 @@ def bode_plot(syslist, omega=None,
                     mag_ylim = ax_mag.get_ylim()
                     phase_ylim = ax_phase.get_ylim()
 
+                    # Annotate the phase margin (if it exists)
                     if pm != float('inf') and Wcp != float('nan'):
                         if dB:
                             ax_mag.semilogx(
@@ -327,7 +387,7 @@ def bode_plot(syslist, omega=None,
 
                         if deg:
                             ax_phase.semilogx(
-                                [Wcp, Wcp], [1e5, phase_limit+pm],
+                                [Wcp, Wcp], [1e5, phase_limit + pm],
                                 color='k', linestyle=':', zorder=-20)
                             ax_phase.semilogx(
                                 [Wcp, Wcp], [phase_limit + pm, phase_limit],
@@ -343,6 +403,7 @@ def bode_plot(syslist, omega=None,
                                              math.radians(phase_limit)],
                                 color='k', zorder=-20)
 
+                    # Annotate the gain margin (if it exists)
                     if gm != float('inf') and Wcg != float('nan'):
                         if dB:
                             ax_mag.semilogx(
@@ -360,11 +421,11 @@ def bode_plot(syslist, omega=None,
 
                         if deg:
                             ax_phase.semilogx(
-                                [Wcg, Wcg], [1e-8, phase_limit],
+                                [Wcg, Wcg], [0, phase_limit],
                                 color='k', linestyle=':', zorder=-20)
                         else:
                             ax_phase.semilogx(
-                                [Wcg, Wcg], [1e-8, math.radians(phase_limit)],
+                                [Wcg, Wcg], [0, math.radians(phase_limit)],
                                 color='k', linestyle=':', zorder=-20)
 
                     ax_mag.set_ylim(mag_ylim)
