@@ -922,28 +922,3 @@ def test_latex_repr(gmats, ref, repr_type, num_format, editsdefaults):
     g = StateSpace(*gmats)
     refkey = "{}_{}".format(refkey_n[num_format], refkey_r[repr_type])
     assert g._repr_latex_() == ref[refkey]
-
-    def test_pole_static(self):
-        """Regression: pole() of static gain is empty array."""
-        np.testing.assert_array_equal(np.array([]),
-                                      StateSpace([], [], [], [[1]]).pole())
-
-    def test_copy_constructor(self):
-        # Create a set of matrices for a simple linear system
-        A = np.array([[-1]])
-        B = np.array([[1]])
-        C = np.array([[1]])
-        D = np.array([[0]])
-
-        # Create the first linear system and a copy
-        linsys = StateSpace(A, B, C, D)
-        cpysys = StateSpace(linsys)
-
-        # Change the original A matrix
-        A[0, 0] = -2
-        np.testing.assert_array_equal(linsys.A, [[-1]]) # original value
-        np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
-
-        # Change the A matrix for the original system
-        linsys.A[0, 0] = -3
-        np.testing.assert_array_equal(cpysys.A, [[-1]]) # original value
