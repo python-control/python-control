@@ -348,36 +348,21 @@ second has %i." % (self.outputs, other.outputs))
 
         Note that a "normal" FRD only returns values for which there is an
         entry in the omega vector. An interpolating FRD can return
-        intermediate values.     
-        
-        Parameters
-        ----------
-        omega: float or array_like
-            Frequencies in radians per second
-        squeeze: bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), returns a 
-            1D array or scalar depending on the length of `omega` 
-            
-        Returns
-        -------
-        fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
-            The frequency response of the system. Array is ``len(x)`` if and only
-            if system is SISO and ``squeeze=True``.
+        intermediate values.
 
         Parameters
         ----------
-        omega: float or array_like
+        omega : float or array_like
             Frequencies in radians per second
-        squeeze: bool, optional (default=True)
+        squeeze : bool, optional (default=True)
             If True and `sys` is single input single output (SISO), returns a
             1D array or scalar depending on the length of `omega`
 
         Returns
         -------
         fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
-            The frequency response of the system. Array is ``len(x)`` if and
-            only if system is SISO and ``squeeze=True``.
-
+            The frequency response of the system. Array is ``len(x)`` if and only
+            if system is SISO and ``squeeze=True``.
         """
         omega_array = np.array(omega, ndmin=1) # array-like version of omega
         if any(omega_array.imag > 0):
@@ -434,7 +419,6 @@ second has %i." % (self.outputs, other.outputs))
             If `s` is not purely imaginary, because
             :class:`FrequencyDomainData` systems are only defined at imaginary
             frequency values.
-
         """
         if any(abs(np.array(s, ndmin=1).real) > 0):
             raise ValueError("__call__: FRD systems can only accept"

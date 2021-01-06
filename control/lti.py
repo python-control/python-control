@@ -159,7 +159,6 @@ class LTI:
         """Return the zero-frequency gain"""
         raise NotImplementedError("dcgain not implemented for %s objects" %
                                   str(self.__class__))
-    
 
 
 # Test to see if a system is SISO
