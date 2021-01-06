@@ -327,7 +327,7 @@ class TestStateSpace:
                                          [-3.00137118e-01+3.42881660e-03j,
                                           6.32015038e-04-1.21462255e-02j]]))])
     @pytest.mark.parametrize("dt", [None, 0, 1e-3])
-    def test_evalfr(self, dt, omega, resp):
+    def test_call(self, dt, omega, resp):
         """Evaluate the frequency response at single frequencies"""
         A = [[-2, 0.5], [0.5, -0.3]]
         B = [[0.3, -1.3], [0.1, 0.]]
@@ -345,9 +345,9 @@ class TestStateSpace:
         np.testing.assert_allclose(evalfr(sys, s), resp, atol=1e-3)
         np.testing.assert_allclose(sys(s), resp, atol=1e-3)
 
-        # Deprecated version of the call (should generate error)
+        # Deprecated name of the call (should generate error)
         with pytest.raises(AttributeError):
-            np.testing.assert_allclose(sys.evalfr(omega), resp, atol=1e-3)
+            sys.evalfr(omega)
 
 
     @slycotonly
