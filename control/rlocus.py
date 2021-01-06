@@ -476,7 +476,7 @@ def _systopoly1d(sys):
         sys = _convert_to_transfer_function(sys)
 
         # Make sure we have a SISO system
-        if (sys.inputs > 1 or sys.outputs > 1):
+        if not sys.issiso():
             raise ControlMIMONotImplemented()
 
         # Start by extracting the numerator and denominator from system object
@@ -497,7 +497,7 @@ def _RLFindRoots(nump, denp, kvect):
     """Find the roots for the root locus."""
     # Convert numerator and denominator to polynomials if they aren't
     roots = []
-    for k in kvect:
+    for k in np.array(kvect, ndmin=1):
         curpoly = denp + k * nump
         curroots = curpoly.r
         if len(curroots) < denp.order:
@@ -581,10 +581,10 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
     # Catch type error when event click is in the figure but not in an axis
     try:
         s = complex(event.xdata, event.ydata)
-        K = -1. / sys.horner(s)
-        K_xlim = -1. / sys.horner(
+        K = -1. / sys(s)
+        K_xlim = -1. / sys(
             complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
-        K_ylim = -1. / sys.horner(
+        K_ylim = -1. / sys(
             complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
 
     except TypeError:
@@ -625,7 +625,7 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
             ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8,
                            zorder=20, label='gain_point')
 
-        return K.real[0][0]
+        return K.real
 
 
 def _removeLine(label, ax):

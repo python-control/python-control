@@ -18,7 +18,6 @@ from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, rss
 from control.tests.conftest import slycotonly
 
-
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
 
@@ -32,7 +31,7 @@ def test_siso():
     omega = np.linspace(10e-2, 10e2, 1000)
 
     # test frequency response
-    sys.freqresp(omega)
+    sys.frequency_response(omega)
 
     # test bode plot
     bode(sys)
@@ -97,7 +96,7 @@ def test_superimpose():
 def test_doubleint():
     """Test typcast bug with double int
 
-    30 May 2016, RMM: added to replicate typecast bug in freqresp.py
+    30 May 2016, RMM: added to replicate typecast bug in frequency_response.py
     """
     A = np.array([[0, 1], [0, 0]])
     B = np.array([[0], [1]])
@@ -117,7 +116,7 @@ def test_mimo():
     omega = np.linspace(10e-2, 10e2, 1000)
     sysMIMO = ss(A, B, C, D)
 
-    sysMIMO.freqresp(omega)
+    sysMIMO.frequency_response(omega)
     tf(sysMIMO)
 
 
@@ -215,13 +214,13 @@ def test_discrete(dsystem_type):
     omega_ok = np.linspace(10e-4, 0.99, 100) * np.pi / dsys.dt
 
     # Test frequency response
-    dsys.freqresp(omega_ok)
+    dsys.frequency_response(omega_ok)
 
     # Check for warning if frequency is out of range
     with pytest.warns(UserWarning, match="above.*Nyquist"):
         # Look for a warning about sampling above Nyquist frequency
         omega_bad = np.linspace(10e-4, 1.1, 10) * np.pi / dsys.dt
-        dsys.freqresp(omega_bad)
+        dsys.frequency_response(omega_bad)
 
     # Test bode plots (currently only implemented for SISO)
     if (dsys.inputs == 1 and dsys.outputs == 1):
@@ -332,6 +331,7 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
      pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0, 0]),
                   -270, -3*math.pi/2, math.pi/2,    id="order5, -270"),
     ])
+
 def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
     mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
     assert(min(phase) >= min_phase)

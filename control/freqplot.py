@@ -151,14 +151,14 @@ def bode_plot(syslist, omega=None,
 
     Notes
     -----
-    1. Alternatively, you may use the lower-level method
-       ``(mag, phase, freq) = sys.freqresp(freq)`` to generate the frequency
-       response for a system, but it returns a MIMO response.
+    1. Alternatively, you may use the lower-level methods
+       :meth:`LTI.frequency_response` or ``sys(s)`` or ``sys(z)`` or to
+       generate the frequency response for a single system.
 
     2. If a discrete time model is given, the frequency response is plotted
-       along the upper branch of the unit circle, using the mapping z = exp(j
-       \\omega dt) where omega ranges from 0 to pi/dt and dt is the discrete
-       timebase.  If not timebase is specified (dt = True), dt is set to 1.
+       along the upper branch of the unit circle, using the mapping ``z = exp(1j
+       * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt` is the discrete
+       timebase.  If timebase not specified (``dt=True``), `dt` is set to 1.
 
     Examples
     --------
@@ -228,7 +228,7 @@ def bode_plot(syslist, omega=None,
                 nyquistfrq = None
 
             # Get the magnitude and phase of the system
-            mag_tmp, phase_tmp, omega_sys = sys.freqresp(omega_sys)
+            mag_tmp, phase_tmp, omega_sys = sys.frequency_response(omega_sys)
             mag = np.atleast_1d(np.squeeze(mag_tmp))
             phase = np.atleast_1d(np.squeeze(phase_tmp))
 
@@ -588,7 +588,7 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                 "Nyquist is currently only implemented for SISO systems.")
         else:
             # Get the magnitude and phase of the system
-            mag_tmp, phase_tmp, omega = sys.freqresp(omega)
+            mag_tmp, phase_tmp, omega = sys.frequency_response(omega)
             mag = np.squeeze(mag_tmp)
             phase = np.squeeze(phase_tmp)
 
@@ -718,7 +718,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     omega_plot = omega / (2. * math.pi) if Hz else omega
 
     # TODO: Need to add in the mag = 1 lines
-    mag_tmp, phase_tmp, omega = S.freqresp(omega)
+    mag_tmp, phase_tmp, omega = S.frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
         plot_axes['s'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
@@ -728,7 +728,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     plot_axes['s'].tick_params(labelbottom=False)
     plot_axes['s'].grid(grid, which='both')
 
-    mag_tmp, phase_tmp, omega = (P * S).freqresp(omega)
+    mag_tmp, phase_tmp, omega = (P * S).frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
         plot_axes['ps'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
@@ -738,7 +738,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     plot_axes['ps'].set_ylabel("$|PS|$" + " (dB)" if dB else "")
     plot_axes['ps'].grid(grid, which='both')
 
-    mag_tmp, phase_tmp, omega = (C * S).freqresp(omega)
+    mag_tmp, phase_tmp, omega = (C * S).frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
         plot_axes['cs'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
@@ -749,7 +749,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     plot_axes['cs'].set_ylabel("$|CS|$" + " (dB)" if dB else "")
     plot_axes['cs'].grid(grid, which='both')
 
-    mag_tmp, phase_tmp, omega = T.freqresp(omega)
+    mag_tmp, phase_tmp, omega = T.frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
         plot_axes['t'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
