@@ -124,25 +124,30 @@ class LTI:
 
              G(exp(j*omega*dt)) = mag*exp(j*phase).
 
+        In general the system may be multiple input, multiple output (MIMO), where
+        `m = self.inputs` number of inputs and `p = self.outputs` number of
+        outputs.
+
         Parameters
         ----------
-        omega : array_like or float
+        omega : float or array_like
             A list, tuple, array, or scalar value of frequencies in
             radians/sec at which the system will be evaluated.
-        squeeze: bool, optional (default=True)
-            If True and sys is single input, single output (SISO), return a
-            1D array or scalar depending on omega's length.
+        squeeze : bool, optional (default=True)
+            If True and the system is single input single output (SISO), i.e. `m=1`,
+            `p=1`, return a 1D array rather than a 3D array.
 
         Returns
         -------
-        mag : (self.outputs, self.inputs, len(omega)) or len(omega) ndarray
+        mag : (p, m, len(omega)) ndarray or (len(omega),) ndarray 
             The magnitude (absolute value, not dB or log10) of the system
-            frequency response.
-        phase : (self.outputs, self.inputs, len(omega)) or len(omega) ndarray
+            frequency response. Array is ``(len(omega), )`` if
+            and only if system is SISO and ``squeeze=True``.
+        phase : (p, m, len(omega)) ndarray or (len(omega),) ndarray
             The wrapped phase in radians of the system frequency response.
         omega : ndarray
             The (sorted) frequencies at which the response was evaluated.
-
+            
         """
         omega = np.sort(np.array(omega, ndmin=1))
         if isdtime(self, strict=True):
@@ -463,7 +468,9 @@ def evalfr(sys, x, squeeze=True):
     Evaluate the transfer function of an LTI system for complex frequency x.
 
     Returns the complex frequency response `sys(x)` where `x` is `s` for
-    continuous-time systems and `z` for discrete-time systems.
+    continuous-time systems and `z` for discrete-time systems, with
+    `m = sys.inputs` number of inputs and `p = sys.outputs` number of
+    outputs.
 
     To evaluate at a frequency omega in radians per second, enter
     ``x = omega * 1j`` for continuous-time systems, or
@@ -474,17 +481,17 @@ def evalfr(sys, x, squeeze=True):
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    x: complex scalar or array_like
+    x : complex scalar or array_like
         Complex frequency(s)
-    squeeze: bool, optional (default=True)
-        If True and sys is single input single output (SISO), returns a
-        1D array or scalar depending on the length of x.
+    squeeze : bool, optional (default=True)
+        If True and `sys` is single input single output (SISO), i.e. `m=1`,
+        `p=1`, return a 1D array rather than a 3D array.
 
     Returns
     -------
-    fresp : (sys.outputs, sys.inputs, len(x)) or len(x) complex ndarray
-        The frequency response of the system. Array is len(x) if and only if
-        system is SISO and squeeze=True.
+    fresp : (p, m, len(x)) complex ndarray or (len(x),) complex ndarray 
+        The frequency response of the system. Array is ``(len(x), )`` if
+        and only if system is SISO and ``squeeze=True``.
 
     See Also
     --------
@@ -493,8 +500,8 @@ def evalfr(sys, x, squeeze=True):
 
     Notes
     -----
-    This function is a wrapper for StateSpace.__call__ and
-    TransferFunction.__call__.
+    This function is a wrapper for :meth:`StateSpace.__call__` and
+    :meth:`TransferFunction.__call__`.
 
     Examples
     --------
@@ -510,25 +517,31 @@ def evalfr(sys, x, squeeze=True):
 def freqresp(sys, omega, squeeze=True):
     """
     Frequency response of an LTI system at multiple angular frequencies.
+    
+    In general the system may be multiple input, multiple output (MIMO), where
+    `m = sys.inputs` number of inputs and `p = sys.outputs` number of
+    outputs.
 
     Parameters
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    omega: float or array_like
+    omega : float or array_like
         A list of frequencies in radians/sec at which the system should be
         evaluated. The list can be either a python list or a numpy array
         and will be sorted before evaluation.
-    squeeze: bool, optional (default=True)
-        If True and sys is single input, single output (SISO), returns
-        1D array or scalar depending on omega's length.
+    squeeze : bool, optional (default=True)
+        If True and `sys` is single input, single output (SISO), returns
+        1D array rather than a 3D array.
 
     Returns
     -------
-    mag : (sys.outputs, sys.inputs, len(omega)) or len(omega) ndarray
+    mag : (p, m, len(omega)) ndarray or (len(omega),) ndarray 
         The magnitude (absolute value, not dB or log10) of the system
-        frequency response.
-    phase : (sys.outputs, sys.inputs, len(omega)) or len(omega) ndarray
+        frequency response. Array is ``(len(omega), )`` if and only if system 
+        is SISO and ``squeeze=True``.
+
+    phase : (p, m, len(omega)) ndarray or (len(omega),) ndarray 
         The wrapped phase in radians of the system frequency response.
     omega : ndarray
         The list of sorted frequencies at which the response was
@@ -541,8 +554,8 @@ def freqresp(sys, omega, squeeze=True):
 
     Notes
     -----
-    This function is a wrapper for StateSpace.frequency_response and
-    TransferFunction.frequency_response.
+    This function is a wrapper for :meth:`StateSpace.frequency_response` and
+    :meth:`TransferFunction.frequency_response`.
 
     Examples
     --------
