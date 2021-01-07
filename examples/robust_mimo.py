@@ -43,7 +43,7 @@ def triv_sigma(g, w):
     g - LTI object, order n
     w - frequencies, length m
     s - (m,n) array of singular values of g(1j*w)"""
-    m, p, _ = g.freqresp(w)
+    m, p, _ = g.frequency_response(w)
     sjw = (m*np.exp(1j*p)).transpose(2, 0, 1)
     sv = np.linalg.svd(sjw, compute_uv=False)
     return sv
