@@ -376,6 +376,12 @@ class TestStateSpace:
         np.testing.assert_almost_equal(phase, true_phase)
         np.testing.assert_equal(omega, true_omega)
 
+        # Deprecated version of the call (should return warning)
+        with pytest.warns(DeprecationWarning, match="will be removed"):
+            from control import freqresp
+            mag, phase, omega = sys.freqresp(true_omega)
+            np.testing.assert_almost_equal(mag, true_mag)
+
     def test_is_static_gain(self):
         A0 = np.zeros((2,2))
         A1 = A0.copy()

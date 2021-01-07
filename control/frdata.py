@@ -421,7 +421,7 @@ second has %i." % (self.outputs, other.outputs))
             frequency values.
         """
         if any(abs(np.array(s, ndmin=1).real) > 0):
-            raise ValueError("__call__: FRD systems can only accept"
+            raise ValueError("__call__: FRD systems can only accept "
                             "purely imaginary frequencies")
         # need to preserve array or scalar status
         if hasattr(s, '__len__'):
