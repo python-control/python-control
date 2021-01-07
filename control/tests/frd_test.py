@@ -416,6 +416,12 @@ class TestFRD:
         with pytest.raises(ValueError, match="only accept purely imaginary"):
             frd_tf(2)
 
+    def test_freqresp_deprecated(self):
+        sys_tf = ct.tf([1], [1, 2, 1])
+        frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
+        with pytest.warns(DeprecationWarning):
+            frd_tf.freqresp(1.)
+
     def test_repr_str(self):
         # repr printing
         array = np.array

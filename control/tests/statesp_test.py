@@ -378,7 +378,6 @@ class TestStateSpace:
 
         # Deprecated version of the call (should return warning)
         with pytest.warns(DeprecationWarning, match="will be removed"):
-            from control import freqresp
             mag, phase, omega = sys.freqresp(true_omega)
             np.testing.assert_almost_equal(mag, true_mag)
 
