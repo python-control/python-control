@@ -305,7 +305,8 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
 
     # Make sure everything works in rad/sec as well
     if initial_phase:
-        plt.clf()               # clear previous figure (speeds things up)
+        plt.xscale('linear')  # avoids xlim warning on next line
+        plt.clf()  # clear previous figure (speeds things up)
         mag, phase, omega = ctrl.bode(
             TF, initial_phase=initial_phase/180. * math.pi, deg=False)
         assert(abs(phase[0] - expected_phase) < 0.1)
