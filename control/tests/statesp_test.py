@@ -327,7 +327,7 @@ class TestStateSpace:
                                          [-3.00137118e-01+3.42881660e-03j,
                                           6.32015038e-04-1.21462255e-02j]]))])
     @pytest.mark.parametrize("dt", [None, 0, 1e-3])
-    def test_evalfr(self, dt, omega, resp):
+    def test_call(self, dt, omega, resp):
         """Evaluate the frequency response at single frequencies"""
         A = [[-2, 0.5], [0.5, -0.3]]
         B = [[0.3, -1.3], [0.1, 0.]]
@@ -341,18 +341,14 @@ class TestStateSpace:
         else:
             s = omega * 1j
 
-        # Correct version of the call
+        # Correct versions of the call
         np.testing.assert_allclose(evalfr(sys, s), resp, atol=1e-3)
-        # Deprecated version of the call (should generate warning)
-        with pytest.deprecated_call():
-            np.testing.assert_allclose(sys.evalfr(omega), resp, atol=1e-3)
+        np.testing.assert_allclose(sys(s), resp, atol=1e-3)
 
-        # call above nyquist frequency
-        if dt:
-            with pytest.warns(UserWarning):
-                np.testing.assert_allclose(sys._evalfr(omega + 2 * np.pi / dt),
-                                           resp,
-                                           atol=1e-3)
+        # Deprecated name of the call (should generate error)
+        with pytest.raises(AttributeError):
+            sys.evalfr(omega)
+
 
     @slycotonly
     def test_freq_resp(self):
@@ -374,11 +370,16 @@ class TestStateSpace:
                       [-0.438157380501337, -1.40720969147217]]]
         true_omega = [0.1, 10.]
 
-        mag, phase, omega = sys.freqresp(true_omega)
+        mag, phase, omega = sys.frequency_response(true_omega)
 
         np.testing.assert_almost_equal(mag, true_mag)
         np.testing.assert_almost_equal(phase, true_phase)
         np.testing.assert_equal(omega, true_omega)
+
+        # Deprecated version of the call (should return warning)
+        with pytest.warns(DeprecationWarning, match="will be removed"):
+            mag, phase, omega = sys.freqresp(true_omega)
+            np.testing.assert_almost_equal(mag, true_mag)
 
     def test_is_static_gain(self):
         A0 = np.zeros((2,2))
@@ -739,9 +740,9 @@ class TestStateSpace:
         sys322.horner(1. + 1.j)
 
         # Make sure result agrees with frequency response
-        mag, phase, omega = sys322.freqresp([1])
+        mag, phase, omega = sys322.frequency_response([1])
         np.testing.assert_array_almost_equal(
-            sys322.horner(1.j),
+            np.squeeze(sys322.horner(1.j)),
             mag[:, :, 0] * np.exp(1.j * phase[:, :, 0]))
 
 class TestRss:
@@ -902,7 +903,6 @@ LTX_G2_REF = {
 refkey_n = {None: 'p3', '.3g': 'p3', '.5g': 'p5'}
 refkey_r = {None: 'p', 'partitioned': 'p', 'separate': 's'}
 
-
 @pytest.mark.parametrize(" gmats,  ref",
                          [(LTX_G1, LTX_G1_REF),
                           (LTX_G2, LTX_G2_REF)])
@@ -927,4 +927,3 @@ def test_latex_repr(gmats, ref, repr_type, num_format, editsdefaults):
     g = StateSpace(*gmats)
     refkey = "{}_{}".format(refkey_n[num_format], refkey_r[repr_type])
     assert g._repr_latex_() == ref[refkey]
-

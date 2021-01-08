@@ -93,7 +93,7 @@ def test_stability_margins_3input(tsys):
     sys, refout, refoutall = tsys
     """Test stability_margins() function with mag, phase, omega input"""
     omega = np.logspace(-2, 2, 2000)
-    mag, phase, omega_ = sys.freqresp(omega)
+    mag, phase, omega_ = sys.frequency_response(omega)
     out = stability_margins((mag, phase*180/np.pi, omega_))
     assert_allclose(out, refout, atol=1.5e-3)
 
@@ -109,7 +109,7 @@ def test_margin_3input(tsys):
     sys, refout, refoutall = tsys
     """Test margin() function with mag, phase, omega input"""
     omega = np.logspace(-2, 2, 2000)
-    mag, phase, omega_ = sys.freqresp(omega)
+    mag, phase, omega_ = sys.frequency_response(omega)
     out = margin((mag, phase*180/np.pi, omega_))
     assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
@@ -145,7 +145,7 @@ def test_mag_phase_omega():
     sys = TransferFunction(15, [1, 6, 11, 6])
     out = stability_margins(sys)
     omega = np.logspace(-2, 2, 1000)
-    mag, phase, omega = sys.freqresp(omega)
+    mag, phase, omega = sys.frequency_response(omega)
     out2 = stability_margins((mag, phase*180/np.pi, omega))
     ind = [0, 1, 3, 4]   # indices of gm, pm, wg, wp -- ignore sm
     marg1 = np.array(out)[ind]

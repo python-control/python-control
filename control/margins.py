@@ -339,24 +339,24 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         # a bit coarse, have the interpolated frd evaluated again
         def _mod(w):
             """Calculate |G(jw)| - 1"""
-            return np.abs(sys._evalfr(w)[0][0]) - 1
+            return np.abs(sys(1j * w)) - 1
 
         def _arg(w):
             """Calculate the phase angle at -180 deg"""
-            return np.angle(-sys._evalfr(w)[0][0])
+            return np.angle(-sys(1j * w))
 
         def _dstab(w):
             """Calculate the distance from -1 point"""
-            return np.abs(sys._evalfr(w)[0][0] + 1.)
+            return np.abs(sys(1j * w) + 1.)
 
         # find the phase crossings ang(H(jw) == -180
         widx = np.where(np.diff(np.sign(_arg(sys.omega))))[0]
-        widx = widx[np.real(sys._evalfr(sys.omega[widx])[0][0]) <= 0]
+        widx = widx[np.real(sys(1j * sys.omega[widx])) <= 0]
         w_180 = np.array(
             [sp.optimize.brentq(_arg, sys.omega[i], sys.omega[i+1])
              for i in widx])
         # TODO: replace by evalfr(sys, 1J*w) or sys(1J*w), (needs gh-449)
-        w180_resp = sys._evalfr(w_180)[0][0]
+        w180_resp = sys(1j * w_180)
 
         # Find all crossings, note that this depends on omega having
         # a correct range
@@ -364,7 +364,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
         wc = np.array(
             [sp.optimize.brentq(_mod, sys.omega[i], sys.omega[i+1])
              for i in widx])
-        wc_resp = sys._evalfr(wc)[0][0]
+        wc_resp = sys(1j * wc)
 
         # find all stab margins?
         widx, = np.where(np.diff(np.sign(np.diff(_dstab(sys.omega)))) > 0)
@@ -374,7 +374,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
                                          ).x
              for i in widx])
         wstab = wstab[(wstab >= sys.omega[0]) * (wstab <= sys.omega[-1])]
-        ws_resp = sys._evalfr(wstab)[0][0]
+        ws_resp = sys(1j * wstab)
 
     with np.errstate(all='ignore'):  # |G|=0 is okay and yields inf
         GM = 1. / np.abs(w180_resp)

@@ -50,10 +50,10 @@ t2 = feedback(g*k2, 1)
 
 # frequency response
 omega = np.logspace(-2, 2, 101)
-ws1mag, _, _ = ws1.freqresp(omega)
-s1mag, _, _ = s1.freqresp(omega)
-ws2mag, _, _ = ws2.freqresp(omega)
-s2mag, _, _ = s2.freqresp(omega)
+ws1mag, _, _ = ws1.frequency_response(omega)
+s1mag, _, _ = s1.frequency_response(omega)
+ws2mag, _, _ = ws2.frequency_response(omega)
+s2mag, _, _ = s2.frequency_response(omega)
 
 plt.figure(1)
 # text uses log-scaled absolute, but dB are probably more familiar to most control engineers

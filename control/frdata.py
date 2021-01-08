@@ -48,7 +48,7 @@ FRD data.
 from warnings import warn
 import numpy as np
 from numpy import angle, array, empty, ones, \
-    real, imag, absolute, eye, linalg, where, dot
+    real, imag, absolute, eye, linalg, where, dot, sort
 from scipy.interpolate import splprep, splev
 from .lti import LTI
 
@@ -100,6 +100,7 @@ class FrequencyResponseData(LTI):
         object, other than an FRD, call FRD(sys, omega)
 
         """
+        # TODO: discrete-time FRD systems?
         smooth = kwargs.get('smooth', False)
 
         if len(args) == 2:
@@ -107,17 +108,10 @@ class FrequencyResponseData(LTI):
                 # not an FRD, but still a system, second argument should be
                 # the frequency range
                 otherlti = args[0]
-                self.omega = array(args[1], dtype=float)
-                self.omega.sort()
+                self.omega = sort(np.asarray(args[1], dtype=float))
                 numfreq = len(self.omega)
-
                 # calculate frequency response at my points
-                self.fresp = empty(
-                    (otherlti.outputs, otherlti.inputs, numfreq),
-                    dtype=complex)
-                for k, w in enumerate(self.omega):
-                    self.fresp[:, :, k] = otherlti._evalfr(w)
-
+                self.fresp = otherlti(1j * self.omega, squeeze=False)
             else:
                 # The user provided a response and a freq vector
                 self.fresp = array(args[0], dtype=complex)
@@ -141,7 +135,7 @@ class FrequencyResponseData(LTI):
             self.omega = args[0].omega
             self.fresp = args[0].fresp
         else:
-            raise ValueError("Needs 1 or 2 arguments; receivd %i." % len(args))
+            raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
         # create interpolation functions
         if smooth:
@@ -163,7 +157,6 @@ class FrequencyResponseData(LTI):
         mimo = self.inputs > 1 or self.outputs > 1
         outstr = ['Frequency response data']
 
-        mt, pt, wt = self.freqresp(self.omega)
         for i in range(self.inputs):
             for j in range(self.outputs):
                 if mimo:
@@ -171,9 +164,10 @@ class FrequencyResponseData(LTI):
                 outstr.append('Freq [rad/s]  Response')
                 outstr.append('------------  ---------------------')
                 outstr.extend(
-                    ['%12.3f  %10.4g%+10.4gj' % (w, m, p)
-                     for m, p, w in zip(real(self.fresp[j, i, :]),
-                                        imag(self.fresp[j, i, :]), wt)])
+                    ['%12.3f  %10.4g%+10.4gj' % (w, re, im)
+                     for w, re, im in zip(self.omega,
+                                          real(self.fresp[j, i, :]),
+                                          imag(self.fresp[j, i, :]))])
 
         return '\n'.join(outstr)
 
@@ -342,110 +336,116 @@ second has %i." % (self.outputs, other.outputs))
             return (FRD(ones(self.fresp.shape), self.omega) / self) * \
                 (self**(other+1))
 
-    def evalfr(self, omega):
-        """Evaluate a transfer function at a single angular frequency.
-
-        self._evalfr(omega) returns the value of the frequency response
-        at frequency omega.
-
-        Note that a "normal" FRD only returns values for which there is an
-        entry in the omega vector. An interpolating FRD can return
-        intermediate values.
-
-        """
-        warn("FRD.evalfr(omega) will be deprecated in a future release "
-             "of python-control; use sys.eval(omega) instead",
-             PendingDeprecationWarning)         # pragma: no coverage
-        return self._evalfr(omega)
-
     # Define the `eval` function to evaluate an FRD at a given (real)
     # frequency.  Note that we choose to use `eval` instead of `evalfr` to
     # avoid confusion with :func:`evalfr`, which takes a complex number as its
     # argument.  Similarly, we don't use `__call__` to avoid confusion between
     # G(s) for a transfer function and G(omega) for an FRD object.
-    def eval(self, omega):
-        """Evaluate a transfer function at a single angular frequency.
-
-        self.evalfr(omega) returns the value of the frequency response
-        at frequency omega.
+    # update Sawyer B. Fuller 2020.08.14: __call__ added to provide a uniform
+    # interface to systems in general and the lti.frequency_response method
+    def eval(self, omega, squeeze=True):
+        """Evaluate a transfer function at angular frequency omega.
 
         Note that a "normal" FRD only returns values for which there is an
         entry in the omega vector. An interpolating FRD can return
         intermediate values.
 
-        """
-        return self._evalfr(omega)
-
-    # Internal function to evaluate the frequency responses
-    def _evalfr(self, omega):
-        """Evaluate a transfer function at a single angular frequency."""
-        # Preallocate the output.
-        if getattr(omega, '__iter__', False):
-            out = empty((self.outputs, self.inputs, len(omega)), dtype=complex)
-        else:
-            out = empty((self.outputs, self.inputs), dtype=complex)
-
-        if self.ifunc is None:
-            try:
-                out = self.fresp[:, :, where(self.omega == omega)[0][0]]
-            except Exception:
-                raise ValueError(
-                    "Frequency %f not in frequency list, try an interpolating"
-                    " FRD if you want additional points" % omega)
-        else:
-            if getattr(omega, '__iter__', False):
-                for i in range(self.outputs):
-                    for j in range(self.inputs):
-                        for k, w in enumerate(omega):
-                            frraw = splev(w, self.ifunc[i, j], der=0)
-                            out[i, j, k] = frraw[0] + 1.0j * frraw[1]
-            else:
-                for i in range(self.outputs):
-                    for j in range(self.inputs):
-                        frraw = splev(omega, self.ifunc[i, j], der=0)
-                        out[i, j] = frraw[0] + 1.0j * frraw[1]
-
-        return out
-
-    # Method for generating the frequency response of the system
-    def freqresp(self, omega):
-        """Evaluate the frequency response at a list of angular frequencies.
-
-        Reports the value of the magnitude, phase, and angular frequency of
-        the requency response evaluated at omega, where omega is a list of
-        angular frequencies, and is a sorted version of the input omega.
-
         Parameters
         ----------
-        omega : array_like
-            A list of frequencies in radians/sec at which the system should be
-            evaluated. The list can be either a python list or a numpy array
-            and will be sorted before evaluation.
+        omega : float or array_like
+            Frequencies in radians per second
+        squeeze : bool, optional (default=True)
+            If True and `sys` is single input single output (SISO), returns a
+            1D array rather than a 3D array.
 
         Returns
         -------
-        mag : (self.outputs, self.inputs, len(omega)) ndarray
-            The magnitude (absolute value, not dB or log10) of the system
-            frequency response.
-        phase : (self.outputs, self.inputs, len(omega)) ndarray
-            The wrapped phase in radians of the system frequency response.
-        omega : ndarray or list or tuple
-            The list of sorted frequencies at which the response was
-            evaluated.
+        fresp : (self.outputs, self.inputs, len(x)) or (len(x), ) complex ndarray
+            The frequency response of the system. Array is ``len(x)`` if and only
+            if system is SISO and ``squeeze=True``.
         """
-        # Preallocate outputs.
-        numfreq = len(omega)
-        mag = empty((self.outputs, self.inputs, numfreq))
-        phase = empty((self.outputs, self.inputs, numfreq))
+        omega_array = np.array(omega, ndmin=1) # array-like version of omega
+        if any(omega_array.imag > 0):
+            raise ValueError("FRD.eval can only accept real-valued omega")
 
-        omega.sort()
+        if self.ifunc is None:
+            elements = np.isin(self.omega, omega) # binary array
+            if sum(elements) < len(omega_array):
+                raise ValueError(
+                    "not all frequencies omega are in frequency list of FRD "
+                    "system. Try an interpolating FRD for additional points.")
+            else:
+                out = self.fresp[:, :, elements]
+        else:
+            out = empty((self.outputs, self.inputs, len(omega_array)),
+                         dtype=complex)
+            for i in range(self.outputs):
+                for j in range(self.inputs):
+                    for k, w in enumerate(omega_array):
+                        frraw = splev(w, self.ifunc[i, j], der=0)
+                        out[i, j, k] = frraw[0] + 1.0j * frraw[1]
+        if not hasattr(omega, '__len__'):
+            # omega is a scalar, squeeze down array along last dim
+            out = np.squeeze(out, axis=2)
+        if squeeze and self.issiso():
+            out = out[0][0]
+        return out
 
-        for k, w in enumerate(omega):
-            fresp = self._evalfr(w)
-            mag[:, :, k] = abs(fresp)
-            phase[:, :, k] = angle(fresp)
+    def __call__(self, s, squeeze=True):
+        """Evaluate system's transfer function at complex frequencies.
+        
+        Returns the complex frequency response `sys(s)` of system `sys` with
+        `m = sys.inputs` number of inputs and `p = sys.outputs` number of
+        outputs.
 
-        return mag, phase, omega
+        To evaluate at a frequency omega in radians per second, enter
+        ``s = omega * 1j`` or use ``sys.eval(omega)``
+
+        Parameters
+        ----------
+        s : complex scalar or array_like
+            Complex frequencies
+        squeeze : bool, optional (default=True)
+            If True and `sys` is single input single output (SISO), i.e. `m=1`,
+            `p=1`, return a 1D array rather than a 3D array.
+
+        Returns
+        -------
+        fresp : (p, m, len(s)) complex ndarray or (len(s),) complex ndarray 
+            The frequency response of the system. Array is ``(len(s), )`` if
+            and only if system is SISO and ``squeeze=True``.
+
+
+        Raises
+        ------
+        ValueError
+            If `s` is not purely imaginary, because
+            :class:`FrequencyDomainData` systems are only defined at imaginary
+            frequency values.
+        """
+        if any(abs(np.array(s, ndmin=1).real) > 0):
+            raise ValueError("__call__: FRD systems can only accept "
+                            "purely imaginary frequencies")
+        # need to preserve array or scalar status
+        if hasattr(s, '__len__'):
+            return self.eval(np.asarray(s).imag, squeeze=squeeze)
+        else:
+            return self.eval(complex(s).imag, squeeze=squeeze)
+
+    def freqresp(self, omega):
+        """(deprecated) Evaluate transfer function at complex frequencies.
+
+        .. deprecated::0.9.0
+            Method has been given the more pythonic name
+            :meth:`FrequencyResponseData.frequency_response`. Or use
+            :func:`freqresp` in the MATLAB compatibility module.
+        """
+        warn("FrequencyResponseData.freqresp(omega) will be removed in a "
+             "future release of python-control; use "
+             "FrequencyResponseData.frequency_response(omega), or "
+             "freqresp(sys, omega) in the MATLAB compatibility module "
+             "instead", DeprecationWarning)
+        return self.frequency_response(omega)
 
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two FRD objects."""
@@ -515,11 +515,10 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
             "Frequency ranges of FRD do not match, conversion not implemented")
 
     elif isinstance(sys, LTI):
-        omega.sort()
-        fresp = empty((sys.outputs, sys.inputs, len(omega)), dtype=complex)
-        for k, w in enumerate(omega):
-            fresp[:, :, k] = sys._evalfr(w)
-
+        omega = np.sort(omega)
+        fresp = sys(1j * omega)
+        if len(fresp.shape) == 1:
+            fresp = fresp[np.newaxis, np.newaxis, :]
         return FRD(fresp, omega, smooth=True)
 
     elif isinstance(sys, (int, float, complex, np.number)):
