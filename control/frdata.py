@@ -356,11 +356,11 @@ second has %i." % (self.outputs, other.outputs))
             Frequencies in radians per second
         squeeze : bool, optional (default=True)
             If True and `sys` is single input single output (SISO), returns a
-            1D array or scalar depending on the length of `omega`
+            1D array rather than a 3D array.
 
         Returns
         -------
-        fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
+        fresp : (self.outputs, self.inputs, len(x)) or (len(x), ) complex ndarray
             The frequency response of the system. Array is ``len(x)`` if and only
             if system is SISO and ``squeeze=True``.
         """
@@ -393,25 +393,28 @@ second has %i." % (self.outputs, other.outputs))
 
     def __call__(self, s, squeeze=True):
         """Evaluate system's transfer function at complex frequencies.
-
-        Returns the complex frequency response `sys(s)`.
+        
+        Returns the complex frequency response `sys(s)` of system `sys` with
+        `m = sys.inputs` number of inputs and `p = sys.outputs` number of
+        outputs.
 
         To evaluate at a frequency omega in radians per second, enter
-        ``x = omega * 1j`` or use ``sys.eval(omega)``
+        ``s = omega * 1j`` or use ``sys.eval(omega)``
 
         Parameters
         ----------
-        s: complex scalar or array_like
+        s : complex scalar or array_like
             Complex frequencies
-        squeeze: bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), returns a
-            1D array or scalar depending on the length of x`.
+        squeeze : bool, optional (default=True)
+            If True and `sys` is single input single output (SISO), i.e. `m=1`,
+            `p=1`, return a 1D array rather than a 3D array.
 
         Returns
         -------
-        fresp : (self.outputs, self.inputs, len(s)) or len(s) complex ndarray
-            The frequency response of the system. Array is ``len(s)`` if and
-            only if system is SISO and ``squeeze=True``.
+        fresp : (p, m, len(s)) complex ndarray or (len(s),) complex ndarray 
+            The frequency response of the system. Array is ``(len(s), )`` if
+            and only if system is SISO and ``squeeze=True``.
+
 
         Raises
         ------
@@ -421,7 +424,7 @@ second has %i." % (self.outputs, other.outputs))
             frequency values.
         """
         if any(abs(np.array(s, ndmin=1).real) > 0):
-            raise ValueError("__call__: FRD systems can only accept"
+            raise ValueError("__call__: FRD systems can only accept "
                             "purely imaginary frequencies")
         # need to preserve array or scalar status
         if hasattr(s, '__len__'):

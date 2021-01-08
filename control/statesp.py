@@ -645,6 +645,10 @@ class StateSpace(LTI):
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
+        
+        In general the system may be multiple input, multiple output (MIMO), where
+        `m = self.inputs` number of inputs and `p = self.outputs` number of
+        outputs.
 
         To evaluate at a frequency omega in radians per second, enter
         ``x = omega * 1j``, for continuous-time systems, or
@@ -653,15 +657,15 @@ class StateSpace(LTI):
 
         Parameters
         ----------
-        x: complex or complex array_like
+        x : complex or complex array_like
             Complex frequencies
-        squeeze: bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), returns a
-            1D array or scalar depending on the length of `x`.
+        squeeze : bool, optional (default=True)
+            If True and `self` is single input single output (SISO), returns a
+            1D array rather than a 3D array.
 
         Returns
         -------
-        fresp : (self.outputs, self.inputs, len(x)) or len(x) complex ndarray
+        fresp : (p, m, len(x)) complex ndarray or (len(x),) complex ndarray
             The frequency response of the system. Array is ``len(x)`` if and
             only if system is SISO and ``squeeze=True``.
 

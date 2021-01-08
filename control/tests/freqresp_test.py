@@ -21,24 +21,46 @@ from control.tests.conftest import slycotonly
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
 
-def test_siso():
-    """Test SISO frequency response"""
+@pytest.fixture
+def ss_siso():
     A = np.array([[1, 1], [0, 1]])
     B = np.array([[0], [1]])
     C = np.array([[1, 0]])
     D = 0
-    sys = StateSpace(A, B, C, D)
+    return StateSpace(A, B, C, D)
+
+
+@pytest.fixture
+def ss_mimo():
+    A = np.array([[1, 1], [0, 1]])
+    B = np.array([[1, 0], [0, 1]])
+    C = np.array([[1, 0]])
+    D = np.array([[0, 0]])
+    return StateSpace(A, B, C, D)
+
+def test_freqresp_siso(ss_siso):
+    """Test SISO frequency response"""
     omega = np.linspace(10e-2, 10e2, 1000)
 
     # test frequency response
-    sys.frequency_response(omega)
+    ctrl.freqresp(ss_siso, omega)
 
-    # test bode plot
-    bode(sys)
 
-    # Convert to transfer function and test bode
-    systf = tf(sys)
-    bode(systf)
+@slycotonly
+def test_freqresp_mimo(ss_mimo):
+    """Test MIMO frequency response calls"""
+    omega = np.linspace(10e-2, 10e2, 1000)
+    ctrl.freqresp(ss_mimo, omega)
+    tf_mimo = tf(ss_mimo)
+    ctrl.freqresp(tf_mimo, omega)
+
+
+def test_bode_basic(ss_siso):
+    """Test bode plot call (Very basic)"""
+    # TODO: proper test
+    tf_siso = tf(ss_siso)
+    bode(ss_siso)
+    bode(tf_siso)
 
 
 @pytest.mark.filterwarnings("ignore:.*non-positive left xlim:UserWarning")
@@ -104,20 +126,6 @@ def test_doubleint():
     D = 0
     sys = ss(A, B, C, D)
     bode(sys)
-
-
-@slycotonly
-def test_mimo():
-    """Test MIMO frequency response calls"""
-    A = np.array([[1, 1], [0, 1]])
-    B = np.array([[1, 0], [0, 1]])
-    C = np.array([[1, 0]])
-    D = np.array([[0, 0]])
-    omega = np.linspace(10e-2, 10e2, 1000)
-    sysMIMO = ss(A, B, C, D)
-
-    sysMIMO.frequency_response(omega)
-    tf(sysMIMO)
 
 
 @pytest.mark.parametrize(
@@ -304,7 +312,8 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
 
     # Make sure everything works in rad/sec as well
     if initial_phase:
-        plt.clf()               # clear previous figure (speeds things up)
+        plt.xscale('linear')  # avoids xlim warning on next line
+        plt.clf()  # clear previous figure (speeds things up)
         mag, phase, omega = ctrl.bode(
             TF, initial_phase=initial_phase/180. * math.pi, deg=False)
         assert(abs(phase[0] - expected_phase) < 0.1)
