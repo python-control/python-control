@@ -54,6 +54,10 @@ Your contributions are welcome!  Simply fork the `GitHub repository <https://git
 
 .. _pull request: https://github.com/python-control/python-control/pulls
 
+Please see the `Developer's Wiki`_ for detailed instructions.
+
+.. _Developer's Wiki: https://github.com/python-control/python-control/wiki
+
 .. rubric:: Links
 
 - Issue tracker: https://github.com/python-control/python-control/issues
