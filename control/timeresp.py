@@ -79,7 +79,7 @@ from numpy import (einsum, maximum, minimum,
                    atleast_1d)
 import warnings
 from .lti import LTI     # base class of StateSpace, TransferFunction
-from .statesp import _convertToStateSpace, _mimo2simo, _mimo2siso, ssdata
+from .statesp import _convert_to_statespace, _mimo2simo, _mimo2siso, ssdata
 from .lti import isdtime, isctime
 
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
@@ -271,7 +271,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     if not isinstance(sys, LTI):
         raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
                         '(For example ``StateSpace`` or ``TransferFunction``)')
-    sys = _convertToStateSpace(sys)
+    sys = _convert_to_statespace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
         np.asarray(sys.D)
 #    d_type = A.dtype
@@ -436,7 +436,7 @@ def _get_ss_simo(sys, input=None, output=None):
 
     If input is not specified, select first input and issue warning
     """
-    sys_ss = _convertToStateSpace(sys)
+    sys_ss = _convert_to_statespace(sys)
     if sys_ss.issiso():
         return sys_ss
     warn = False
@@ -891,7 +891,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         dt = sys.dt if isdtime(sys, strict=True) else default_dt
     elif isdtime(sys, strict=True):
         dt = sys.dt
-        A = _convertToStateSpace(sys).A
+        A = _convert_to_statespace(sys).A
         tfinal = default_tfinal
         p = eigvals(A)
         # Array Masks
@@ -931,7 +931,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         if p_int.size > 0:
             tfinal = tfinal * 5
     else: # cont time
-        sys_ss = _convertToStateSpace(sys)
+        sys_ss = _convert_to_statespace(sys)
         # Improve conditioning via balancing and zeroing tiny entries
         # See <w,v> for [[1,2,0], [9,1,0.01], [1,2,10*np.pi]] before/after balance
         b, (sca, perm) = matrix_balance(sys_ss.A, separate=True)

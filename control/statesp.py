@@ -10,7 +10,7 @@ python-control library.
 
 # Python 3 compatibility (needs to go here)
 from __future__ import print_function
-from __future__ import division         # for _convertToStateSpace
+from __future__ import division         # for _convert_to_statespace
 
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
@@ -527,7 +527,7 @@ class StateSpace(LTI):
             D = self.D + other
             dt = self.dt
         else:
-            other = _convertToStateSpace(other)
+            other = _convert_to_statespace(other)
 
             # Check to make sure the dimensions are OK
             if ((self.inputs != other.inputs) or
@@ -577,7 +577,7 @@ class StateSpace(LTI):
             D = self.D * other
             dt = self.dt
         else:
-            other = _convertToStateSpace(other)
+            other = _convert_to_statespace(other)
 
             # Check to make sure the dimensions are OK
             if self.inputs != other.outputs:
@@ -614,7 +614,7 @@ class StateSpace(LTI):
 
         # is lti, and convertible?
         if isinstance(other, LTI):
-            return _convertToStateSpace(other) * self
+            return _convert_to_statespace(other) * self
 
         # try to treat this as a matrix
         try:
@@ -839,7 +839,7 @@ class StateSpace(LTI):
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two LTI systems."""
 
-        other = _convertToStateSpace(other)
+        other = _convert_to_statespace(other)
 
         # Check to make sure the dimensions are OK
         if (self.inputs != other.outputs) or (self.outputs != other.inputs):
@@ -907,7 +907,7 @@ class StateSpace(LTI):
             Dimension of (plant) control input.
 
         """
-        other = _convertToStateSpace(other)
+        other = _convert_to_statespace(other)
         # maximal values for nu, ny
         if ny == -1:
             ny = min(other.inputs, self.outputs)
@@ -1061,7 +1061,7 @@ class StateSpace(LTI):
         The second model is converted to state-space if necessary, inputs and
         outputs are appended and their order is preserved"""
         if not isinstance(other, StateSpace):
-            other = _convertToStateSpace(other)
+            other = _convert_to_statespace(other)
 
         self.dt = common_timebase(self.dt, other.dt)
 
@@ -1186,7 +1186,7 @@ class StateSpace(LTI):
 
 
 # TODO: add discrete time check
-def _convertToStateSpace(sys, **kw):
+def _convert_to_statespace(sys, **kw):
     """Convert a system to state space form (if needed).
 
     If sys is already a state space, then it is returned.  If sys is a
@@ -1194,8 +1194,8 @@ def _convertToStateSpace(sys, **kw):
     returned.  If sys is a scalar, then the number of inputs and outputs can
     be specified manually, as in:
 
-    >>> sys = _convertToStateSpace(3.) # Assumes inputs = outputs = 1
-    >>> sys = _convertToStateSpace(1., inputs=3, outputs=2)
+    >>> sys = _convert_to_statespace(3.) # Assumes inputs = outputs = 1
+    >>> sys = _convert_to_statespace(1., inputs=3, outputs=2)
 
     In the latter example, A = B = C = 0 and D = [[1., 1., 1.]
                                                   [1., 1., 1.]].
@@ -1205,7 +1205,7 @@ def _convertToStateSpace(sys, **kw):
 
     if isinstance(sys, StateSpace):
         if len(kw):
-            raise TypeError("If sys is a StateSpace, _convertToStateSpace "
+            raise TypeError("If sys is a StateSpace, _convert_to_statespace "
                             "cannot take keywords.")
 
         # Already a state space system; just return it
@@ -1221,7 +1221,7 @@ def _convertToStateSpace(sys, **kw):
             from slycot import td04ad
             if len(kw):
                 raise TypeError("If sys is a TransferFunction, "
-                                "_convertToStateSpace cannot take keywords.")
+                                "_convert_to_statespace cannot take keywords.")
 
             # Change the numerator and denominator arrays so that the transfer
             # function matrix has a common denominator.
@@ -1281,11 +1281,8 @@ def _convertToStateSpace(sys, **kw):
     try:
         D = _ssmatrix(sys)
         return StateSpace([], [], [], D)
-    except Exception as e:
-        print("Failure to assume argument is matrix-like in"
-              " _convertToStateSpace, result %s" % e)
-
-    raise TypeError("Can't convert given type to StateSpace system.")
+    except:
+        raise TypeError("Can't convert given type to StateSpace system.")
 
 
 # TODO: add discrete time option
@@ -1662,14 +1659,14 @@ def tf2ss(*args):
     from .xferfcn import TransferFunction
     if len(args) == 2 or len(args) == 3:
         # Assume we were given the num, den
-        return _convertToStateSpace(TransferFunction(*args))
+        return _convert_to_statespace(TransferFunction(*args))
 
     elif len(args) == 1:
         sys = args[0]
         if not isinstance(sys, TransferFunction):
             raise TypeError("tf2ss(sys): sys must be a TransferFunction "
                             "object.")
-        return _convertToStateSpace(sys)
+        return _convert_to_statespace(sys)
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
@@ -1769,5 +1766,5 @@ def ssdata(sys):
     (A, B, C, D): list of matrices
         State space data for the system
     """
-    ss = _convertToStateSpace(sys)
+    ss = _convert_to_statespace(sys)
     return ss.A, ss.B, ss.C, ss.D

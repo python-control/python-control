@@ -12,7 +12,7 @@ import pytest
 import control as ct
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from control.frdata import FRD, _convertToFRD, FrequencyResponseData
+from control.frdata import FRD, _convert_to_FRD, FrequencyResponseData
 from control import bdalg, evalfr, freqplot
 from control.tests.conftest import slycotonly
 
@@ -174,9 +174,9 @@ class TestFRD:
 
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
-        f1 = _convertToFRD(1, omega)
-        f2 = _convertToFRD(np.array([[1, 0], [0.1, -1]]), omega)
-        f2 = _convertToFRD([[1, 0], [0.1, -1]], omega)
+        f1 = _convert_to_FRD(1, omega)
+        f2 = _convert_to_FRD(np.array([[1, 0], [0.1, -1]]), omega)
+        f2 = _convert_to_FRD([[1, 0], [0.1, -1]], omega)
         f1, f2  # reference to avoid pyflakes error
 
     def testNyquist(self):

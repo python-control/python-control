@@ -5,8 +5,10 @@ RMM, 30 Mar 2011 (based on TestXferFcn from v0.4a)
 
 import numpy as np
 import pytest
+import operator
 
-from control.statesp import StateSpace, _convertToStateSpace, rss
+import control as ct
+from control.statesp import StateSpace, _convert_to_statespace, rss
 from control.xferfcn import TransferFunction, _convert_to_transfer_function, \
     ss2tf
 from control.lti import evalfr
@@ -709,7 +711,7 @@ class TestXferFcn:
         h = (b0 + b1*s + b2*s**2)/(a0 + a1*s + a2*s**2 + a3*s**3)
         H = TransferFunction([[h.num[0][0]], [(h*s).num[0][0]]],
                              [[h.den[0][0]], [h.den[0][0]]])
-        sys = _convertToStateSpace(H)
+        sys = _convert_to_statespace(H)
         H2 = _convert_to_transfer_function(sys)
         np.testing.assert_array_almost_equal(H.num[0][0], H2.num[0][0])
         np.testing.assert_array_almost_equal(H.den[0][0], H2.den[0][0])
@@ -1022,3 +1024,20 @@ class TestLTIConverter:
             mimotf.returnScipySignalLTI()
         with pytest.raises(ValueError):
             mimotf.returnScipySignalLTI(strict=True)
+
+@pytest.mark.parametrize(
+    "op",
+    [pytest.param(getattr(operator, s), id=s) for s in ('add', 'sub', 'mul')])
+@pytest.mark.parametrize(
+    "tf, arr",
+    [pytest.param(ct.tf([1], [0.5, 1]), np.array(2.), id="0D scalar"),
+     pytest.param(ct.tf([1], [0.5, 1]), np.array([2.]), id="1D scalar"),
+     pytest.param(ct.tf([1], [0.5, 1]), np.array([[2.]]), id="2D scalar")])
+def test_xferfcn_ndarray_precedence(op, tf, arr):
+    # Apply the operator to the transfer function and array
+    result = op(tf, arr)
+    assert isinstance(result, ct.TransferFunction)
+
+    # Apply the operator to the array and transfer function
+    result = op(arr, tf)
+    assert isinstance(result, ct.TransferFunction)

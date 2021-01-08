@@ -197,7 +197,7 @@ class FrequencyResponseData(LTI):
 
         # Convert the second argument to a frequency response function.
         # or re-base the frd to the current omega (if needed)
-        other = _convertToFRD(other, omega=self.omega)
+        other = _convert_to_FRD(other, omega=self.omega)
 
         # Check that the input-output sizes are consistent.
         if self.inputs != other.inputs:
@@ -232,7 +232,7 @@ second has %i." % (self.outputs, other.outputs))
             return FRD(self.fresp * other, self.omega,
                        smooth=(self.ifunc is not None))
         else:
-            other = _convertToFRD(other, omega=self.omega)
+            other = _convert_to_FRD(other, omega=self.omega)
 
         # Check that the input-output sizes are consistent.
         if self.inputs != other.outputs:
@@ -259,7 +259,7 @@ second has %i." % (self.outputs, other.outputs))
             return FRD(self.fresp * other, self.omega,
                        smooth=(self.ifunc is not None))
         else:
-            other = _convertToFRD(other, omega=self.omega)
+            other = _convert_to_FRD(other, omega=self.omega)
 
         # Check that the input-output sizes are consistent.
         if self.outputs != other.inputs:
@@ -287,7 +287,7 @@ second has %i." % (self.outputs, other.outputs))
             return FRD(self.fresp * (1/other), self.omega,
                        smooth=(self.ifunc is not None))
         else:
-            other = _convertToFRD(other, omega=self.omega)
+            other = _convert_to_FRD(other, omega=self.omega)
 
         if (self.inputs > 1 or self.outputs > 1 or
             other.inputs > 1 or other.outputs > 1):
@@ -310,7 +310,7 @@ second has %i." % (self.outputs, other.outputs))
             return FRD(other / self.fresp, self.omega,
                        smooth=(self.ifunc is not None))
         else:
-            other = _convertToFRD(other, omega=self.omega)
+            other = _convert_to_FRD(other, omega=self.omega)
 
         if (self.inputs > 1 or self.outputs > 1 or
             other.inputs > 1 or other.outputs > 1):
@@ -450,7 +450,7 @@ second has %i." % (self.outputs, other.outputs))
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two FRD objects."""
 
-        other = _convertToFRD(other, omega=self.omega)
+        other = _convert_to_FRD(other, omega=self.omega)
 
         if (self.outputs != other.inputs or self.inputs != other.outputs):
             raise ValueError(
@@ -486,7 +486,7 @@ second has %i." % (self.outputs, other.outputs))
 FRD = FrequencyResponseData
 
 
-def _convertToFRD(sys, omega, inputs=1, outputs=1):
+def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
     """Convert a system to frequency response data form (if needed).
 
     If sys is already an frd, and its frequency range matches or
@@ -496,8 +496,8 @@ def _convertToFRD(sys, omega, inputs=1, outputs=1):
     scalar, then the number of inputs and outputs can be specified
     manually, as in:
 
-    >>> frd = _convertToFRD(3., omega) # Assumes inputs = outputs = 1
-    >>> frd = _convertToFRD(1., omegs, inputs=3, outputs=2)
+    >>> frd = _convert_to_FRD(3., omega) # Assumes inputs = outputs = 1
+    >>> frd = _convert_to_FRD(1., omegs, inputs=3, outputs=2)
 
     In the latter example, sys's matrix transfer function is [[1., 1., 1.]
                                                               [1., 1., 1.]].

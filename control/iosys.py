@@ -220,7 +220,7 @@ class InputOutputSystem(object):
             raise NotImplemented("Matrix multiplication not yet implemented")
 
         elif not isinstance(sys1, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys1)
+            raise TypeError("Unknown I/O system object ", sys1)
 
         # Make sure systems can be interconnected
         if sys1.noutputs != sys2.ninputs:
@@ -254,7 +254,11 @@ class InputOutputSystem(object):
 
     def __rmul__(sys1, sys2):
         """Pre-multiply an input/output systems by a scalar/matrix"""
-        if isinstance(sys2, (int, float, np.number)):
+        if isinstance(sys2, InputOutputSystem):
+            # Both systems are InputOutputSystems => use __mul__
+            return InputOutputSystem.__mul__(sys2, sys1)
+
+        elif isinstance(sys2, (int, float, np.number)):
             # TODO: Scale the output
             raise NotImplemented("Scalar multiplication not yet implemented")
 
@@ -262,12 +266,12 @@ class InputOutputSystem(object):
             # TODO: Post-multiply by a matrix
             raise NotImplemented("Matrix multiplication not yet implemented")
 
-        elif not isinstance(sys2, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys1)
+        elif isinstance(sys2, StateSpace):
+            # TODO: Should eventuall preserve LinearIOSystem structure
+            return StateSpace.__mul__(sys2, sys1)
 
         else:
-            # Both systems are InputOutputSystems => use __mul__
-            return InputOutputSystem.__mul__(sys2, sys1)
+            raise TypeError("Unknown I/O system object ", sys1)
 
     def __add__(sys1, sys2):
         """Add two input/output systems (parallel interconnection)"""
@@ -281,7 +285,7 @@ class InputOutputSystem(object):
             raise NotImplemented("Matrix addition not yet implemented")
 
         elif not isinstance(sys2, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys2)
+            raise TypeError("Unknown I/O system object ", sys2)
 
         # Make sure number of input and outputs match
         if sys1.ninputs != sys2.ninputs or sys1.noutputs != sys2.noutputs:
