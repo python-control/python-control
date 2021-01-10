@@ -75,6 +75,10 @@ before_install:
   # Make sure to look in the right place for python libraries (for slycot)
   - export LIBRARY_PATH="$HOME/miniconda/envs/test-environment/lib"
   - conda install pytest
+  # matplotlib.testing.image_compare requires nose in Python 2.7
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      conda install nose;
+    fi
   # coveralls not in conda repos => install via pip instead
   - pip install coveralls
 

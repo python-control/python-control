@@ -16,7 +16,7 @@ import control as ctrl
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, rss
-from control.tests.conftest import slycotonly
+from control.tests.conftest import slycotonly, nopython2
 
 from matplotlib.testing.decorators import image_comparison
 
@@ -365,6 +365,7 @@ def pvtol_inner():
     return (Pi, Ci)
 
 # Regression test for Gang of 4 plots
+@nopython2
 @image_comparison(baseline_images=['gangof4-pvtol'], extensions=['png'])
 def test_gangof4_pvtol(pvtol_inner):
     plt.figure(num=None, figsize=(8, 6), dpi=80)
