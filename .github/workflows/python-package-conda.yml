@@ -1,28 +1,52 @@
-name: Python Package using Conda
+name: Conda-based pytest
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+
     strategy:
       max-parallel: 5
+      matrix:
+        python-version: [2.7, 3.6, 3.9]
+        slycot: ["", "conda"]
+        array-and-matrix: [0]
+        include:
+          - python-version: 3.9
+            slycot: conda
+            array-and-matrix: 1
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python 3.8
+    - name: Set up Python
       uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-    - name: Add conda to system path
+    - name: Set up conda
       run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
+        conda create -q -n test-environment python=${{matrix.python-version}} 
     - name: Install dependencies
       run: |
-        conda install numpy scipy matplotlib pytest
+        source $CONDA/bin/activate test-environment
+        conda install pip coverage pytest
+        conda install numpy matplotlib scipy
+        if [[ '${{matrix.python-version}}' == '2.7' ]]; then
+          # matplotlib for Python 2.7 seems to require X11 to run correctly
+          sudo apt install -y xvfb
+        fi
+    - name: Install slycot via conda (optional)
+      if: ${{ matrix.slycot == 'conda' }}
+      run: |
+        source $CONDA/bin/activate test-environment
         conda install -c conda-forge slycot
     - name: Test with pytest
+      env:
+        PYTHON_CONTROL_ARRAY_AND_MATRIX: ${{ matrix.array-and-matrix }}
       run: |
-        conda install pytest
-        pytest
+        source $CONDA/bin/activate test-environment
+        if [[ '${{matrix.python-version}}' == '2.7' ]]; then
+          # Run within (virtual) X11 environment for Python 2.7/matplotlib
+          xvfb-run pytest control/tests
+        else
+          coverage run -m pytest control/tests
+        fi
