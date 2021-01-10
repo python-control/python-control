@@ -13,6 +13,8 @@ from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
 from control.bdalg import feedback
 
+from control.tests.conftest import X11only
+
 
 class TestRootLocus:
     """These are tests for the feedback function in rlocus.py."""
@@ -48,6 +50,7 @@ class TestRootLocus:
         roots, kvect = root_locus(sys, plot=False)
         self.check_cl_poles(sys, roots, kvect)
 
+    @X11only
     def test_root_locus_zoom(self):
         """Check the zooming functionality of the Root locus plot"""
         system = TransferFunction([1000], [1, 25, 100, 0])

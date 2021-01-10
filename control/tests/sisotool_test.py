@@ -9,6 +9,7 @@ from control.sisotool import sisotool
 from control.rlocus import _RLClickDispatcher
 from control.xferfcn import TransferFunction
 
+from control.tests.conftest import X11only
 
 @pytest.mark.usefixtures("mplcleanup")
 class TestSisotool:
@@ -19,6 +20,7 @@ class TestSisotool:
         """Return a generic SISO transfer function"""
         return TransferFunction([1000], [1, 25, 100, 0])
 
+    @X11only
     def test_sisotool(self, sys):
         sisotool(sys, Hz=False)
         fig = plt.gcf()
