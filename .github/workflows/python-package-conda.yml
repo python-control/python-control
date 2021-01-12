@@ -23,15 +23,15 @@ jobs:
       run: |
         # Set up conda
         echo $CONDA/bin >> $GITHUB_PATH
-        conda create -q -n test-environment python=${{matrix.python-version}} 
+        conda create -q -n test-environment python=${{matrix.python-version}}
         source $CONDA/bin/activate test-environment
 
         # Set up (virtual) X11
         sudo apt install -y xvfb
 
         # Install test tools
-        conda install pip coverage pytest 
-        conda install -c conda-forge pytest-xvfb pytest-cov
+        conda install pip coverage pytest
+        conda install -c conda-forge pytest-cov
 
         # Install python-control dependencies
         conda install numpy matplotlib scipy
@@ -43,4 +43,6 @@ jobs:
         PYTHON_CONTROL_ARRAY_AND_MATRIX: ${{ matrix.array-and-matrix }}
       run: |
         source $CONDA/bin/activate test-environment
+        # Use xvfb-run instead of pytest-xvfb to get proper mpl backend
+        # See https://github.com/python-control/python-control/pull/504
         xvfb-run --auto-servernum pytest control/tests
