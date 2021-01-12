@@ -1,6 +1,7 @@
 [run]
 source = control
 omit = control/tests/*
+relative_files = True
 
 [report]
 exclude_lines =
