@@ -26,8 +26,7 @@ matrixfilter = pytest.mark.filterwarnings("ignore:.*matrix subclass:"
                                           "PendingDeprecationWarning")
 matrixerrorfilter = pytest.mark.filterwarnings("error:.*matrix subclass:"
                                                "PendingDeprecationWarning")
-X11only = pytest.mark.skipif(os.getenv("DISPLAY") is None,
-                             reason="requires X11")
+
 
 @pytest.fixture(scope="session", autouse=True)
 def control_defaults():
