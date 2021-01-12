@@ -1,0 +1,67 @@
+name: Conda-based pytest
+
+on: [push, pull_request]
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+
+    strategy:
+      max-parallel: 5
+      matrix:
+        python-version: [3.6, 3.9]
+        slycot: ["", "conda"]
+        array-and-matrix: [0]
+        include:
+          - python-version: 3.9
+            slycot: conda
+            array-and-matrix: 1
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        # Set up conda
+        echo $CONDA/bin >> $GITHUB_PATH
+        conda create -q -n test-environment python=${{matrix.python-version}}
+        source $CONDA/bin/activate test-environment
+
+        # Set up (virtual) X11
+        sudo apt install -y xvfb
+
+        # Install test tools
+        conda install pip coverage pytest
+        pip install coveralls
+
+        # Install python-control dependencies
+        conda install numpy matplotlib scipy
+        if [[ '${{matrix.slycot}}' == 'conda' ]]; then
+          conda install -c conda-forge slycot
+        fi
+
+    - name: Test with pytest
+      env:
+        PYTHON_CONTROL_ARRAY_AND_MATRIX: ${{ matrix.array-and-matrix }}
+      run: |
+        source $CONDA/bin/activate test-environment
+        # Use xvfb-run instead of pytest-xvfb to get proper mpl backend
+        # Use coverage instead of pytest-cov to get .coverage file
+        # See https://github.com/python-control/python-control/pull/504
+        xvfb-run --auto-servernum coverage run -m pytest control/tests
+
+    - name: Coveralls parallel
+      # https://github.com/coverallsapp/github-action
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel: true
+
+  coveralls:
+    name: coveralls completion
+    needs: test-linux
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel-finished: true
