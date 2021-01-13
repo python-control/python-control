@@ -111,7 +111,7 @@ class LTI:
         Z = -real(splane_poles)/wn
         return wn, Z, poles
 
-    def frequency_response(self, omega, squeeze=True):
+    def frequency_response(self, omega, squeeze=None):
         """Evaluate the linear time-invariant system at an array of angular
         frequencies.
 
@@ -124,18 +124,19 @@ class LTI:
 
              G(exp(j*omega*dt)) = mag*exp(j*phase).
 
-        In general the system may be multiple input, multiple output (MIMO), where
-        `m = self.inputs` number of inputs and `p = self.outputs` number of
-        outputs.
+        In general the system may be multiple input, multiple output (MIMO),
+        where `m = self.inputs` number of inputs and `p = self.outputs` number
+        of outputs.
 
         Parameters
         ----------
         omega : float or array_like
             A list, tuple, array, or scalar value of frequencies in
             radians/sec at which the system will be evaluated.
-        squeeze : bool, optional (default=True)
-            If True and the system is single input single output (SISO), i.e. `m=1`,
-            `p=1`, return a 1D array rather than a 3D array.
+        squeeze : bool, optional
+            If True and the system is single-input single-output (SISO),
+            return a 1D array rather than a 3D array.  Default value (True)
+            set by config.defaults['control.squeeze'].
 
         Returns
         -------
@@ -147,7 +148,7 @@ class LTI:
             The wrapped phase in radians of the system frequency response.
         omega : ndarray
             The (sorted) frequencies at which the response was evaluated.
-            
+
         """
         omega = np.sort(np.array(omega, ndmin=1))
         if isdtime(self, strict=True):
@@ -463,9 +464,8 @@ def damp(sys, doprint=True):
                       (p.real, p.imag, d, w))
     return wn, damping, poles
 
-def evalfr(sys, x, squeeze=True):
-    """
-    Evaluate the transfer function of an LTI system for complex frequency x.
+def evalfr(sys, x, squeeze=None):
+    """Evaluate the transfer function of an LTI system for complex frequency x.
 
     Returns the complex frequency response `sys(x)` where `x` is `s` for
     continuous-time systems and `z` for discrete-time systems, with
@@ -484,8 +484,9 @@ def evalfr(sys, x, squeeze=True):
     x : complex scalar or array_like
         Complex frequency(s)
     squeeze : bool, optional (default=True)
-        If True and `sys` is single input single output (SISO), i.e. `m=1`,
-        `p=1`, return a 1D array rather than a 3D array.
+        If True and the system is single-input single-output (SISO), return a
+        1D array rather than a 3D array.  Default value (True) set by
+        config.defaults['control.squeeze'].
 
     Returns
     -------
@@ -511,12 +512,12 @@ def evalfr(sys, x, squeeze=True):
     >>> # This is the transfer function matrix evaluated at s = i.
 
     .. todo:: Add example with MIMO system
+
     """
     return sys.__call__(x, squeeze=squeeze)
 
-def freqresp(sys, omega, squeeze=True):
-    """
-    Frequency response of an LTI system at multiple angular frequencies.
+def freqresp(sys, omega, squeeze=None):
+    """Frequency response of an LTI system at multiple angular frequencies.
     
     In general the system may be multiple input, multiple output (MIMO), where
     `m = sys.inputs` number of inputs and `p = sys.outputs` number of
@@ -531,8 +532,9 @@ def freqresp(sys, omega, squeeze=True):
         evaluated. The list can be either a python list or a numpy array
         and will be sorted before evaluation.
     squeeze : bool, optional (default=True)
-        If True and `sys` is single input, single output (SISO), returns
-        1D array rather than a 3D array.
+        If True and the system is single-input single-output (SISO), return a
+        1D array rather than a 3D array.  Default value (True) set by
+        config.defaults['control.squeeze'].
 
     Returns
     -------
@@ -579,6 +581,7 @@ def freqresp(sys, omega, squeeze=True):
         #>>> # input to the 1st output, and the phase (in radians) of the
         #>>> # frequency response from the 1st input to the 2nd output, for
         #>>> # s = 0.1i, i, 10i.
+
     """
     return sys.frequency_response(omega, squeeze=squeeze)
 

@@ -234,7 +234,7 @@ class TransferFunction(LTI):
                     dt = config.defaults['control.default_dt']
         self.dt = dt
 
-    def __call__(self, x, squeeze=True):
+    def __call__(self, x, squeeze=None):
         """Evaluate system's transfer function at complex frequencies.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
@@ -254,8 +254,9 @@ class TransferFunction(LTI):
         x : complex array_like or complex
             Complex frequencies
         squeeze : bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), returns a
-            1D array rather than a 3D array.
+            If True and the system is single-input single-output (SISO),
+            return a 1D array rather than a 3D array.  Default value (True)
+            set by config.defaults['control.squeeze'].
 
         Returns
         -------
@@ -264,6 +265,10 @@ class TransferFunction(LTI):
             only if system is SISO and ``squeeze=True``.
 
         """
+        # Set value of squeeze argument if not set
+        if squeeze is None:
+            squeeze = config.defaults['control.squeeze']
+
         out = self.horner(x)
         if not hasattr(x, '__len__'):
             # received a scalar x, squeeze down the array along last dim

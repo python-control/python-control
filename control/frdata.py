@@ -51,6 +51,7 @@ from numpy import angle, array, empty, ones, \
     real, imag, absolute, eye, linalg, where, dot, sort
 from scipy.interpolate import splprep, splev
 from .lti import LTI
+from . import config
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
 
@@ -343,7 +344,7 @@ second has %i." % (self.outputs, other.outputs))
     # G(s) for a transfer function and G(omega) for an FRD object.
     # update Sawyer B. Fuller 2020.08.14: __call__ added to provide a uniform
     # interface to systems in general and the lti.frequency_response method
-    def eval(self, omega, squeeze=True):
+    def eval(self, omega, squeeze=None):
         """Evaluate a transfer function at angular frequency omega.
 
         Note that a "normal" FRD only returns values for which there is an
@@ -355,15 +356,21 @@ second has %i." % (self.outputs, other.outputs))
         omega : float or array_like
             Frequencies in radians per second
         squeeze : bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), returns a
-            1D array rather than a 3D array.
+            If True and the system is single-input single-output (SISO),
+            return a 1D array rather than a 3D array.  Default value (True)
+            set by config.defaults['control.squeeze'].
 
         Returns
         -------
         fresp : (self.outputs, self.inputs, len(x)) or (len(x), ) complex ndarray
-            The frequency response of the system. Array is ``len(x)`` if and only
-            if system is SISO and ``squeeze=True``.
+            The frequency response of the system. Array is ``len(x)``
+            if and only if system is SISO and ``squeeze=True``.
+
         """
+        # Set value of squeeze argument if not set
+        if squeeze is None:
+            squeeze = config.defaults['control.squeeze']
+
         omega_array = np.array(omega, ndmin=1) # array-like version of omega
         if any(omega_array.imag > 0):
             raise ValueError("FRD.eval can only accept real-valued omega")
@@ -406,8 +413,9 @@ second has %i." % (self.outputs, other.outputs))
         s : complex scalar or array_like
             Complex frequencies
         squeeze : bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), i.e. `m=1`,
-            `p=1`, return a 1D array rather than a 3D array.
+            If True and the system is single-input single-output (SISO),
+            return a 1D array rather than a 3D array.  Default value (True)
+            set by config.defaults['control.squeeze'].
 
         Returns
         -------
@@ -423,6 +431,10 @@ second has %i." % (self.outputs, other.outputs))
             :class:`FrequencyDomainData` systems are only defined at imaginary
             frequency values.
         """
+        # Set value of squeeze argument if not set
+        if squeeze is None:
+            squeeze = config.defaults['control.squeeze']
+
         if any(abs(np.array(s, ndmin=1).real) > 0):
             raise ValueError("__call__: FRD systems can only accept "
                             "purely imaginary frequencies")

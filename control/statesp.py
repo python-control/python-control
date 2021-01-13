@@ -640,7 +640,7 @@ class StateSpace(LTI):
         raise NotImplementedError(
             "StateSpace.__rdiv__ is not implemented yet.")
 
-    def __call__(self, x, squeeze=True):
+    def __call__(self, x, squeeze=None):
         """Evaluate system's transfer function at complex frequency.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
@@ -659,9 +659,10 @@ class StateSpace(LTI):
         ----------
         x : complex or complex array_like
             Complex frequencies
-        squeeze : bool, optional (default=True)
-            If True and `self` is single input single output (SISO), returns a
-            1D array rather than a 3D array.
+        squeeze : bool, optional
+            If True and the system is single-input single-output (SISO),
+            return a 1D array rather than a 3D array.  Default value (True)
+            set by config.defaults['control.squeeze'].
 
         Returns
         -------
@@ -670,6 +671,10 @@ class StateSpace(LTI):
             only if system is SISO and ``squeeze=True``.
 
         """
+        # Set value of squeeze argument if not set
+        if squeeze is None:
+            squeeze = config.defaults['control.squeeze']
+
         # Use Slycot if available
         out = self.horner(x)
         if not hasattr(x, '__len__'):
