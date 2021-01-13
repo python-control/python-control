@@ -1,0 +1,39 @@
+name: Slycot from source
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install Python dependencies
+      run: |
+        # Set up conda
+        echo $CONDA/bin >> $GITHUB_PATH
+
+        # Set up (virtual) X11
+        sudo apt install -y xvfb
+
+        # Install test tools
+        conda install pip pytest
+
+        # Install python-control dependencies
+        conda install numpy matplotlib scipy
+
+    - name: Install slycot from source
+      run: |
+        # Install compilers, libraries, and development environment
+        sudo apt-get -y install gfortran cmake --fix-missing
+        sudo apt-get -y install libblas-dev liblapack-dev
+        conda install -c conda-forge scikit-build;
+
+        # Compile and install slycot
+        git clone https://github.com/python-control/Slycot.git slycot
+        cd slycot; python setup.py build_ext install -DBLA_VENDOR=Generic
+
+    - name: Test with pytest
+      run: xvfb-run --auto-servernum pytest control/tests
