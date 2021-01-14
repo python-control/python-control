@@ -222,6 +222,14 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         ax.set_xlabel('Real')
         ax.set_ylabel('Imaginary')
 
+        # Set up the limits for the plot
+        # Note: need to do this before computing grid lines
+        if xlim:
+            ax.set_xlim(xlim)
+        if ylim:
+            ax.set_ylim(ylim)
+
+        # Draw the grid
         if grid and sisotool:
             if isdtime(sys, strict=True):
                 zgrid(ax=ax)
@@ -236,14 +244,9 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             ax.axhline(0., linestyle=':', color='k', zorder=-20)
             ax.axvline(0., linestyle=':', color='k', zorder=-20)
             if isdtime(sys, strict=True):
-                ax.add_patch(plt.Circle((0,0), radius=1.0,
-                     linestyle=':', edgecolor='k', linewidth=1.5,
-                     fill=False, zorder=-20))
-
-        if xlim:
-            ax.set_xlim(xlim)
-        if ylim:
-            ax.set_ylim(ylim)
+                ax.add_patch(plt.Circle(
+                    (0, 0), radius=1.0, linestyle=':', edgecolor='k',
+                    linewidth=1.5, fill=False, zorder=-20))
 
     return mymat, kvect
 
@@ -642,16 +645,21 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
         ax = fig.gca()
     else:
         ax = fig.axes[1]
+
+    # Get locator function for x-axis tick marks
     xlocator = ax.get_xaxis().get_major_locator()
 
+    # Decide on the location for the labels (?)
     ylim = ax.get_ylim()
     ytext_pos_lim = ylim[1] - (ylim[1] - ylim[0]) * 0.03
     xlim = ax.get_xlim()
     xtext_pos_lim = xlim[0] + (xlim[1] - xlim[0]) * 0.0
 
+    # Create a list of damping ratios, if needed
     if zeta is None:
         zeta = _default_zetas(xlim, ylim)
 
+    # Figure out the angles for the different damping ratios
     angles = []
     for z in zeta:
         if (z >= 1e-4) and (z <= 1):
@@ -661,11 +669,8 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
     y_over_x = np.tan(angles)
 
     # zeta-constant lines
-
-    index = 0
-
-    for yp in y_over_x:
-        ax.plot([0, xlocator()[0]], [0, yp*xlocator()[0]], color='gray',
+    for index, yp in enumerate(y_over_x):
+        ax.plot([0, xlocator()[0]], [0, yp * xlocator()[0]], color='gray',
                 linestyle='dashed', linewidth=0.5)
         ax.plot([0, xlocator()[0]], [0, -yp * xlocator()[0]], color='gray',
                 linestyle='dashed', linewidth=0.5)
@@ -679,45 +684,96 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
                 ytext_pos = ytext_pos_lim
             ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos],
                         fontsize=8)
-        index += 1
     ax.plot([0, 0], [ylim[0], ylim[1]],
             color='gray', linestyle='dashed', linewidth=0.5)
 
-    angles = np.linspace(-90, 90, 20)*np.pi/180
+    # omega-constant lines
+    angles = np.linspace(-90, 90, 20) * np.pi/180
     if wn is None:
         wn = _default_wn(xlocator(), ylim)
 
     for om in wn:
         if om < 0:
-            yp = np.sin(angles)*np.abs(om)
-            xp = -np.cos(angles)*np.abs(om)
-            ax.plot(xp, yp, color='gray',
-                    linestyle='dashed', linewidth=0.5)
-            an = "%.2f" % -om
-            ax.annotate(an, textcoords='data', xy=[om, 0], fontsize=8)
+            # Generate the lines for natural frequency curves
+            yp = np.sin(angles) * np.abs(om)
+            xp = -np.cos(angles) * np.abs(om)
+
+            # Plot the natural frequency contours
+            ax.plot(xp, yp, color='gray', linestyle='dashed', linewidth=0.5)
+
+            # Annotate the natural frequencies by listing on x-axis
+            # Note: need to filter values for proper plotting in Jupyter
+            if (om > xlim[0]):
+                an = "%.2f" % -om
+                ax.annotate(an, textcoords='data', xy=[om, 0], fontsize=8)
 
 
 def _default_zetas(xlim, ylim):
-    """Return default list of damping coefficients"""
-    sep1 = -xlim[0]/4
+    """Return default list of damping coefficients
+
+    This function computes a list of damping coefficients based on the limits
+    of the graph.  A set of 4 damping coefficients are computed for the x-axis
+    and a set of three damping coefficients are computed for the y-axis
+    (corresponding to the normal 4:3 plot aspect ratio in `matplotlib`?).
+
+    Parameters
+    ----------
+    xlim : array_like
+        List of x-axis limits [min, max]
+    ylim : array_like
+        List of y-axis limits [min, max]
+
+    Returns
+    -------
+    zeta : list
+        List of default damping coefficients for the plot
+
+    """
+    # Damping coefficient lines that intersect the x-axis
+    sep1 = -xlim[0] / 4
     ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1, 4, 1)]
+
+    # Damping coefficient lines that intersection the y-axis
     sep2 = ylim[1] / 3
     ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1, 3, 1)]
 
+    # Put the lines together and add one at -pi/2 (negative real axis)
     angles = np.concatenate((ang1, ang2))
     angles = np.insert(angles, len(angles), np.pi/2)
+
+    # Return the damping coefficients corresponding to these angles
     zeta = np.sin(angles)
     return zeta.tolist()
 
 
 def _default_wn(xloc, ylim):
-    """Return default wn for root locus plot"""
+    """Return default wn for root locus plot
 
-    wn = xloc
-    sep = xloc[1]-xloc[0]
+    This function computes a list of natural frequencies based on the grid
+    parameters of the graph.
+
+    Parameters
+    ----------
+    xloc : array_like
+        List of x-axis tick values
+    ylim : array_like
+        List of y-axis limits [min, max]
+
+    Returns
+    -------
+    wn : list
+        List of default natural frequencies for the plot
+
+    """
+
+    wn = xloc                   # one frequency per x-axis tick mark
+    sep = xloc[1]-xloc[0]       # separation between ticks
+
+    # Insert additional frequencies to span the y-axis
     while np.abs(wn[0]) < ylim[1]:
         wn = np.insert(wn, 0, wn[0]-sep)
 
+    # If there are too many values, cut them in half
     while len(wn) > 7:
         wn = wn[0:-1:2]
 
