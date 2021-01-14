@@ -44,13 +44,9 @@ class TestModelsimp:
         H = markov(np.transpose(Y), np.transpose(U), m, transpose=True)
         np.testing.assert_array_almost_equal(H, np.transpose(Htrue))
 
-        # Default (in v0.8.4 and below) should be transpose=True (w/ warning)
-        with pytest.warns(UserWarning, match="assumed to be in rows.*"
-                                             "change in a future release"):
-            # Generate Markov parameters without any arguments
-            H = markov(np.transpose(Y), np.transpose(U), m)
-            np.testing.assert_array_almost_equal(H, np.transpose(Htrue))
-
+        # Generate Markov parameters without any arguments
+        H = markov(Y, U, m)
+        np.testing.assert_array_almost_equal(H, Htrue)
 
         # Test example from docstring
         T = np.linspace(0, 10, 100)
@@ -65,9 +61,8 @@ class TestModelsimp:
 
         # Make sure MIMO generates an error
         U = np.ones((2, 100))   # 2 inputs (Y unchanged, with 1 output)
-        with pytest.warns(UserWarning):
-            with pytest.raises(ControlMIMONotImplemented):
-                markov(Y, U, m)
+        with pytest.raises(ControlMIMONotImplemented):
+            markov(Y, U, m)
 
     # Make sure markov() returns the right answer
     @pytest.mark.parametrize("k, m, n",
@@ -108,7 +103,7 @@ class TestModelsimp:
         T = np.array(range(n)) * Ts
         U = np.cos(T) + np.sin(T/np.pi)
         _, Y, _ = forced_response(Hd, T, U, squeeze=True)
-        Mcomp = markov(Y, U, m, transpose=False)
+        Mcomp = markov(Y, U, m)
 
         # Compare to results from markov()
         np.testing.assert_array_almost_equal(Mtrue, Mcomp)

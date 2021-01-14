@@ -395,7 +395,7 @@ def era(YY, m, n, nin, nout, r):
     raise NotImplementedError('This function is not implemented yet.')
 
 
-def markov(Y, U, m=None, transpose=None):
+def markov(Y, U, m=None, transpose=False):
     """Calculate the first `m` Markov parameters [D CB CAB ...]
     from input `U`, output `Y`.
 
@@ -424,8 +424,7 @@ def markov(Y, U, m=None, transpose=None):
         Number of Markov parameters to output.  Defaults to len(U).
     transpose : bool, optional
         Assume that input data is transposed relative to the standard
-        :ref:`time-series-convention`. The default value is true for
-        backward compatibility with legacy code.
+        :ref:`time-series-convention`. Default value is False.
 
     Returns
     -------
@@ -456,15 +455,6 @@ def markov(Y, U, m=None, transpose=None):
     >>> H = markov(Y, U, 3, transpose=False)
 
     """
-    # Check on the specified format of the input
-    if transpose is None:
-        # For backwards compatibility, assume time series in rows but warn user
-        warnings.warn(
-            "Time-series data assumed to be in rows. This will change in a "
-            "future release.  Use `transpose=True` to preserve current "
-            "behavior.")
-        transpose = True
-
     # Convert input parameters to 2D arrays (if they aren't already)
     Umat = np.array(U, ndmin=2)
     Ymat = np.array(Y, ndmin=2)
