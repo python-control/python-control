@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test-linux:
+    name: Python ${{ matrix.python-version }}${{ matrix.slycot && format(' with Slycot from {0}', matrix.slycot) || ' without Slycot' }}${{ matrix.array-and-matrix == 1 && ', array and matrix' || '' }}
     runs-on: ubuntu-latest
 
     strategy:
