@@ -226,4 +226,7 @@ def use_legacy_defaults(version):
                      linearized_system_name_prefix='',
                      linearized_system_name_suffix='_linearized')
 
+        # turned off _remove_useless_states
+        set_defaults('statesp', remove_useless_states=True)
+
     return (major, minor, patch)

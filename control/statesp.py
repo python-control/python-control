@@ -72,7 +72,7 @@ __all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
 # Define module default parameter values
 _statesp_defaults = {
     'statesp.use_numpy_matrix': False,  # False is default in 0.9.0 and above
-    'statesp.remove_useless_states': True,
+    'statesp.remove_useless_states': False,
     'statesp.latex_num_format': '.3g',
     'statesp.latex_repr_type': 'partitioned',
     }
@@ -217,8 +217,7 @@ class StateSpace(LTI):
     __array_priority__ = 11     # override ndarray and matrix types
 
     def __init__(self, *args, **kwargs):
-        """
-        StateSpace(A, B, C, D[, dt])
+        """StateSpace(A, B, C, D[, dt])
 
         Construct a state space object.
 
@@ -227,6 +226,13 @@ class StateSpace(LTI):
         use StateSpace(A, B, C, D, dt) where 'dt' is the sampling time (or
         True for unspecified sampling time).  To call the copy constructor,
         call StateSpace(sys), where sys is a StateSpace object.
+
+        The `remove_useless_states` keyword can be used to scan the A, B, and
+        C matrices for rows or columns of zeros.  If the zeros are such that a
+        particular state has no effect on the input-output dynamics, then that
+        state is removed from the A, B, and C matrices.  If not specified, the
+        value is read from `config.defaults['statesp.remove_useless_states']
+        (default = False).
 
         """
         # first get A, B, C, D matrices
@@ -251,8 +257,8 @@ class StateSpace(LTI):
                 "Expected 1, 4, or 5 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless = kwargs.get(
-            'remove_useless',
+        remove_useless_states = kwargs.get(
+            'remove_useless_states',
             config.defaults['statesp.remove_useless_states'])
 
         # Convert all matrices to standard form
@@ -321,7 +327,7 @@ class StateSpace(LTI):
             raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
-        if remove_useless:
+        if remove_useless_states:
             self._remove_useless_states()
 
     def _remove_useless_states(self):
@@ -1274,7 +1280,7 @@ def _convert_to_statespace(sys, **kw):
         # Generate a simple state space system of the desired dimension
         # The following Doesn't work due to inconsistencies in ltisys:
         #   return StateSpace([[]], [[]], [[]], eye(outputs, inputs))
-        return StateSpace(0., zeros((1, inputs)), zeros((outputs, 1)),
+        return StateSpace([], zeros((0, inputs)), zeros((outputs, 0)),
                           sys * ones((outputs, inputs)))
 
     # If this is a matrix, try to create a constant feedthrough
