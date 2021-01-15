@@ -395,9 +395,7 @@ class TestStateSpace:
         D0 = 0
         D1 = np.ones((2,1))
         assert StateSpace(A0, B0, C1, D1).is_static_gain()
-        # TODO: fix this once remove_useless_states is false by default
-        # should be False when remove_useless is false
-        # print(StateSpace(A1, B0, C1, D1).is_static_gain())
+        assert not StateSpace(A1, B0, C1, D1).is_static_gain()
         assert not StateSpace(A0, B1, C1, D1).is_static_gain()
         assert not StateSpace(A1, B1, C1, D1).is_static_gain()
         assert StateSpace(A0, B0, C0, D0).is_static_gain()
@@ -586,10 +584,9 @@ class TestStateSpace:
 
     def test_remove_useless_states(self):
         """Regression: _remove_useless_states gives correct ABC sizes."""
-        g1 = StateSpace(np.zeros((3, 3)),
-                        np.zeros((3, 4)),
-                        np.zeros((5, 3)),
-                        np.zeros((5, 4)))
+        g1 = StateSpace(np.zeros((3, 3)), np.zeros((3, 4)),
+                        np.zeros((5, 3)), np.zeros((5, 4)),
+                        remove_useless_states=True)
         assert (0, 0) == g1.A.shape
         assert (0, 4) == g1.B.shape
         assert (5, 0) == g1.C.shape
