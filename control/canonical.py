@@ -3,7 +3,7 @@
 
 from .exception import ControlNotImplemented, ControlSlycot
 from .lti import issiso
-from .statesp import StateSpace, _convertToStateSpace
+from .statesp import StateSpace, _convert_to_statespace
 from .statefbk import ctrb, obsv
 
 import numpy as np
@@ -444,7 +444,7 @@ def modal_form(xsys, condmax=None, sort=False):
     else:
         bd_sort = None
 
-    xsys = _convertToStateSpace(xsys)
+    xsys = _convert_to_statespace(xsys)
     amodal, tmodal, _ = bdschur(xsys.A, condmax=condmax, sort=bd_sort)
 
     return similarity_transform(xsys, tmodal, inverse=True), tmodal
