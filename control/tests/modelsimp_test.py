@@ -51,7 +51,7 @@ class TestModelsimp:
         # Test example from docstring
         T = np.linspace(0, 10, 100)
         U = np.ones((1, 100))
-        T, Y, _ = forced_response(tf([1], [1, 0.5], True), T, U)
+        T, Y = forced_response(tf([1], [1, 0.5], True), T, U)
         H = markov(Y, U, 3, transpose=False)
 
         # Test example from issue #395
@@ -102,7 +102,7 @@ class TestModelsimp:
         # Generate input/output data
         T = np.array(range(n)) * Ts
         U = np.cos(T) + np.sin(T/np.pi)
-        _, Y, _ = forced_response(Hd, T, U, squeeze=True)
+        _, Y = forced_response(Hd, T, U, squeeze=True)
         Mcomp = markov(Y, U, m)
 
         # Compare to results from markov()

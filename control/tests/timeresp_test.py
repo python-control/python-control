@@ -16,12 +16,14 @@ import pytest
 import scipy as sp
 
 
+import control as ct
 from control import (StateSpace, TransferFunction, c2d, isctime, isdtime,
                      ss2tf, tf2ss)
 from control.timeresp import (_default_time_vector, _ideal_tfinal_and_dt,
                               forced_response, impulse_response,
                               initial_response, step_info, step_response)
 from control.tests.conftest import slycotonly
+from control.exception import slycot_check
 
 
 class TSys:
@@ -409,7 +411,7 @@ class TestTimeresp:
         u = np.ones_like(t, dtype=np.float)
         yref = tsystem.ystep
 
-        tout, yout, _xout = forced_response(sys, t, u)
+        tout, yout = forced_response(sys, t, u)
         np.testing.assert_array_almost_equal(tout, t)
         np.testing.assert_array_almost_equal(yout, yref, decimal=4)
 
@@ -424,7 +426,7 @@ class TestTimeresp:
         x0 = np.array([[.5], [1.]])
         yref = siso_ss1.yinitial
 
-        tout, yout, _xout = forced_response(sys, t, u, X0=x0)
+        tout, yout = forced_response(sys, t, u, X0=x0)
         np.testing.assert_array_almost_equal(tout, t)
         np.testing.assert_array_almost_equal(yout, yref, decimal=4)
 
@@ -444,10 +446,30 @@ class TestTimeresp:
         yref = np.vstack([tsystem.yinitial, tsystem.ystep])
 
         if useT:
-            _t, yout, _xout = forced_response(sys, t, u, x0)
+            _t, yout = forced_response(sys, t, u, x0)
         else:
-            _t, yout, _xout = forced_response(sys, U=u, X0=x0)
+            _t, yout = forced_response(sys, U=u, X0=x0)
         np.testing.assert_array_almost_equal(yout, yref, decimal=4)
+
+    @pytest.mark.usefixtures("editsdefaults")
+    def test_forced_response_legacy(self):
+        # Define a system for testing
+        sys = ct.rss(2, 1, 1)
+        T = np.linspace(0, 10, 10)
+        U = np.sin(T)
+
+        """Make sure that legacy version of forced_response works"""
+        ct.config.use_legacy_defaults("0.8.4")
+        # forced_response returns x by default
+        t, y = ct.step_response(sys, T)
+        t, y, x = ct.forced_response(sys, T, U)
+
+        ct.config.use_legacy_defaults("0.9.0")
+        # forced_response returns input/output by default
+        t, y = ct.step_response(sys, T)
+        t, y = ct.forced_response(sys, T, U)
+        t, y, x = ct.forced_response(sys, T, U, return_x=True)
+
 
     @pytest.mark.parametrize("u, x0, xtrue",
                              [(np.zeros((10,)),
@@ -475,7 +497,7 @@ class TestTimeresp:
         sys = StateSpace(A, B, C, D)
         t = np.linspace(0, 1, 10)
 
-        _t, yout, xout = forced_response(sys, t, u, x0)
+        _t, yout, xout = forced_response(sys, t, u, x0, return_x=True)
         np.testing.assert_array_almost_equal(xout, xtrue, decimal=6)
         ytrue = np.squeeze(np.asarray(C.dot(xtrue)))
         np.testing.assert_array_almost_equal(yout, ytrue, decimal=6)
@@ -643,8 +665,8 @@ class TestTimeresp:
 
         squeezekw = {} if squeeze is None else {"squeeze": squeeze}
 
-        tout, yout, xout = forced_response(sys, t, u, x0,
-                                           interpolate=True, **squeezekw)
+        tout, yout = forced_response(sys, t, u, x0,
+                                     interpolate=True, **squeezekw)
         if squeeze is False or sys.outputs > 1:
             assert yout.shape[0] == sys.outputs
             assert yout.shape[1] == tout.shape[0]
@@ -700,3 +722,117 @@ class TestTimeresp:
         assert t.ndim == 1
         assert y.ndim == 1  # SISO returns "scalar" output
         assert t.shape == y.shape  # Allows direct plotting of output
+
+    @pytest.mark.usefixtures("editsdefaults")
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
+    @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
+        [1, 1, 1, None, (8,)],
+        [2, 1, 1, True, (8,)],
+        [3, 1, 1, False, (1, 8)],
+#       [4, 1, 1, 'siso', (8,)],        # Use for later 'siso' implementation
+        [1, 2, 1, None, (2, 8)],
+        [2, 2, 1, True, (2, 8)],
+        [3, 2, 1, False, (2, 8)],
+#       [4, 2, 1, 'siso', (2, 8)],      # Use for later 'siso' implementation
+        [1, 1, 2, None, (8,)],
+        [2, 1, 2, True, (8,)],
+        [3, 1, 2, False, (1, 8)],
+#       [4, 1, 2, 'siso', (1, 8)],      # Use for later 'siso' implementation
+        [1, 2, 2, None, (2, 8)],
+        [2, 2, 2, True, (2, 8)],
+        [3, 2, 2, False, (2, 8)],
+#       [4, 2, 2, 'siso', (2, 8)],      # Use for later 'siso' implementation
+    ])
+    def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape):
+        # Figure out if we have SciPy 1+
+        scipy0 = StrictVersion(sp.__version__) < '1.0'
+
+        # Define the system
+        if fcn == ct.tf and (nout > 1 or ninp > 1) and not slycot_check():
+            pytest.skip("Conversion of MIMO systems to transfer functions "
+                        "requires slycot.")
+        else:
+            sys = fcn(ct.rss(nstate, nout, ninp, strictly_proper=True))
+
+        # Keep track of expect users warnings
+        warntype = UserWarning if sys.inputs > 1 else None
+
+        # Generate the time and input vectors
+        tvec = np.linspace(0, 1, 8)
+        uvec = np.dot(
+            np.ones((sys.inputs, 1)),
+            np.reshape(np.sin(tvec), (1, 8)))
+
+        # Pass squeeze argument and make sure the shape is correct
+        with pytest.warns(warntype, match="Converting MIMO system"):
+            _, yvec = ct.impulse_response(sys, tvec, squeeze=squeeze)
+        assert yvec.shape == shape
+
+        _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
+        assert yvec.shape == shape
+
+        with pytest.warns(warntype, match="Converting MIMO system"):
+            _, yvec = ct.step_response(sys, tvec, squeeze=squeeze)
+        assert yvec.shape == shape
+
+        if isinstance(sys, StateSpace):
+            # Check the states as well
+            _, yvec, xvec = ct.forced_response(
+                sys, tvec, uvec, 0, return_x=True, squeeze=squeeze)
+            assert xvec.shape == (sys.states, 8)
+        else:
+            # Just check the input/output response
+            _, yvec = ct.forced_response(sys, tvec, uvec, 0, squeeze=squeeze)
+        assert yvec.shape == shape
+
+        # Test cases where we choose a subset of inputs and outputs
+        _, yvec = ct.step_response(
+            sys, tvec, input=ninp-1, output=nout-1, squeeze=squeeze)
+        # Possible code if we implemenet a squeeze='siso' option
+        # if squeeze is False or (squeeze == 'siso' and not sys.issiso()):
+        if squeeze is False:
+            # Shape should be unsqueezed
+            assert yvec.shape == (1, 8)
+        else:
+            # Shape should be squeezed
+            assert yvec.shape == (8, )
+
+        # For InputOutputSystems, also test input_output_response
+        if isinstance(sys, ct.InputOutputSystem) and not scipy0:
+            _, yvec = ct.input_output_response(sys, tvec, uvec, squeeze=squeeze)
+            assert yvec.shape == shape
+
+        #
+        # Changing config.default to False should return 3D frequency response
+        #
+        ct.config.set_defaults('control', squeeze_time_response=False)
+
+        with pytest.warns(warntype, match="Converting MIMO system"):
+            _, yvec = ct.impulse_response(sys, tvec)
+        assert yvec.shape == (sys.outputs, 8)
+
+        _, yvec = ct.initial_response(sys, tvec, 1)
+        assert yvec.shape == (sys.outputs, 8)
+
+        with pytest.warns(warntype, match="Converting MIMO system"):
+            _, yvec = ct.step_response(sys, tvec)
+        assert yvec.shape == (sys.outputs, 8)
+
+        _, yvec, xvec = ct.forced_response(
+            sys, tvec, uvec, 0, return_x=True)
+        assert yvec.shape == (sys.outputs, 8)
+        if isinstance(sys, ct.StateSpace):
+            assert xvec.shape == (sys.states, 8)
+        else:
+            assert xvec.shape[1] == 8
+
+        # For InputOutputSystems, also test input_output_response
+        if isinstance(sys, ct.InputOutputSystem) and not scipy0:
+            _, yvec = ct.input_output_response(sys, tvec, uvec)
+            assert yvec.shape == (sys.noutputs, 8)
+
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
+    def test_squeeze_exception(self, fcn):
+        sys = fcn(ct.rss(2, 1, 1))
+        with pytest.raises(ValueError, match="unknown squeeze value"):
+            step_response(sys, squeeze=1)

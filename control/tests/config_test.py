@@ -211,12 +211,15 @@ class TestConfig:
             ct.use_legacy_defaults('0.8.3')
             assert(isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
         ct.reset_defaults()
-        assert(isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray))
-        assert(not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
+        assert isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray)
+        assert not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix)
+
+        ct.use_legacy_defaults('0.8.4')
+        assert ct.config.defaults['forced_response.return_x'] is True
 
         ct.use_legacy_defaults('0.9.0')
-        assert(isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray))
-        assert(not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
+        assert isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray)
+        assert not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix)
 
         # test that old versions don't raise a problem
         ct.use_legacy_defaults('REL-0.1')

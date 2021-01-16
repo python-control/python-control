@@ -79,8 +79,10 @@ from numpy import (einsum, maximum, minimum,
                    atleast_1d)
 import warnings
 from .lti import LTI     # base class of StateSpace, TransferFunction
+from .xferfcn import TransferFunction
 from .statesp import _convert_to_statespace, _mimo2simo, _mimo2siso, ssdata
 from .lti import isdtime, isctime
+from . import config
 
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
            'impulse_response']
@@ -102,10 +104,10 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
     Parameters
     ----------
-    in_obj: array like object
+    in_obj : array like object
         The array or matrix which is checked.
 
-    legal_shapes: list of tuple
+    legal_shapes : list of tuple
         A list of shapes that in_obj can legally have.
         The special value "any" means that there can be any
         number of elements in a certain dimension.
@@ -114,25 +116,26 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
         * ``(2, "any")`` describes an array with 2 rows and any number of
           columns
 
-    err_msg_start: str
+    err_msg_start : str
         String that is prepended to the error messages, when this function
         raises an exception. It should be used to identify the argument which
         is currently checked.
 
-    squeeze: bool
+    squeeze : bool
         If True, all dimensions with only one element are removed from the
         array. If False the array's shape is unmodified.
 
         For example:
         ``array([[1,2,3]])`` is converted to ``array([1, 2, 3])``
 
-   transpose: bool
+   transpose : bool
         If True, assume that input arrays are transposed for the standard
         format.  Used to convert MATLAB-style inputs to our format.
 
-    Returns:
+    Returns
+    -------
 
-    out_array: array
+    out_array : array
         The checked and converted contents of ``in_obj``.
     """
     # convert nearly everything to an array.
@@ -195,7 +198,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 # Forced response of a linear system
 def forced_response(sys, T=None, U=0., X0=0., transpose=False,
-                    interpolate=False, squeeze=True):
+                    interpolate=False, return_x=None, squeeze=None):
     """Simulate the output of a linear system.
 
     As a convenience for parameters `U`, `X0`:
@@ -207,45 +210,50 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
+    sys : LTI (StateSpace or TransferFunction)
         LTI system to simulate
 
-    T: array_like, optional for discrete LTI `sys`
+    T : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
 
-    U: array_like or float, optional
+    U : array_like or float, optional
         Input array giving input at each time `T` (default = 0).
 
         If `U` is ``None`` or ``0``, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used
         otherwise.
 
-    X0: array_like or float, optional
+    X0 : array_like or float, optional
         Initial condition (default = 0).
 
-    transpose: bool, optional (default=False)
+    transpose : bool, optional (default=False)
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
-    interpolate: bool, optional (default=False)
+    interpolate : bool, optional (default=False)
         If True and system is a discrete time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
         time simulations (default = False).
 
-    squeeze: bool, optional (default=True)
-        If True, remove single-dimensional entries from the shape of
-        the output.  For single output systems, this converts the
-        output response to a 1D array.
+    return_x : bool, optional
+        If True (default), return the the state vector.  Set to False to
+        return only the time and output vectors.
+
+    squeeze : bool, optional
+        If True (default), remove single-dimensional entries from the shape
+        of the output.  For single output systems, this converts the output
+        response to a 1D array.  The default value can be set using
+        config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
-    T: array
+    T : array
         Time values of the output.
-    yout: array
+    yout : array
         Response of the system.
-    xout: array
+    xout : array
         Time evolution of the state vector.
 
     See Also
@@ -271,6 +279,17 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     if not isinstance(sys, LTI):
         raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
                         '(For example ``StateSpace`` or ``TransferFunction``)')
+
+    # If return_x was not specified, figure out the default
+    if return_x is None:
+        return_x = config.defaults['forced_response.return_x']
+
+    # If return_x is used for TransferFunction, issue a warning
+    if return_x and not isinstance(sys, TransferFunction):
+        warnings.warn(
+            "return_x specified for a transfer function system. Internal "
+            "conversation to state space used; results may meaningless.")
+
     sys = _convert_to_statespace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
         np.asarray(sys.D)
@@ -323,6 +342,13 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: ', squeeze=True)
+
+    # If we are passed a transfer function and X0 is non-zero, warn the user
+    if isinstance(sys, TransferFunction) and np.any(X0 != 0):
+        warnings.warn(
+            "Non-zero initial condition given for transfer function system. "
+            "Internal conversation to state space used; may not be consistent "
+            "with given X0.")
 
     xout = np.zeros((n_states, n_steps))
     xout[:, 0] = X0
@@ -417,10 +443,28 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         xout = np.transpose(xout)
         yout = np.transpose(yout)
 
-    # Get rid of unneeded dimensions
-    if squeeze:
+    return _process_time_response(sys, tout, yout, xout, transpose=transpose,
+                                  return_x=return_x, squeeze=squeeze)
+
+
+# Process time responses in a uniform way
+def _process_time_response(sys, tout, yout, xout, transpose=None,
+                           return_x=False, squeeze=None):
+    # If squeeze was not specified, figure out the default
+    if squeeze is None:
+        squeeze = config.defaults['control.squeeze_time_response']
+
+    # Figure out whether and now to squeeze output data
+    if squeeze is True:         # squeeze all dimensions
         yout = np.squeeze(yout)
-        xout = np.squeeze(xout)
+    elif squeeze is False:      # squeeze no dimensions
+        pass
+    # Possible code if we implement a squeeze='siso' option
+    # elif squeeze == 'siso':     # squeeze signals if SISO
+    #     yout = yout[0] if sys.issiso() else yout
+    else:
+        # In preparation for more complicated values for squeeze
+        raise ValueError("unknown squeeze value")
 
     # See if we need to transpose the data back into MATLAB form
     if transpose:
@@ -428,30 +472,37 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         yout = np.transpose(yout)
         xout = np.transpose(xout)
 
-    return tout, yout, xout
+    # Return time, output, and (optionally) state
+    return (tout, yout, xout) if return_x else (tout, yout)
 
 
-def _get_ss_simo(sys, input=None, output=None):
+def _get_ss_simo(sys, input=None, output=None, squeeze=None):
     """Return a SISO or SIMO state-space version of sys
 
     If input is not specified, select first input and issue warning
     """
     sys_ss = _convert_to_statespace(sys)
     if sys_ss.issiso():
-        return sys_ss
+        return squeeze, sys_ss
+    # Possible code if we implement a squeeze='siso' option
+    # elif squeeze == 'siso':
+    #     # Don't squeeze outputs if resulting system turns out to be siso
+    #     squeeze = False
+
     warn = False
     if input is None:
         # issue warning if input is not given
         warn = True
         input = 0
+
     if output is None:
-        return _mimo2simo(sys_ss, input, warn_conversion=warn)
+        return squeeze, _mimo2simo(sys_ss, input, warn_conversion=warn)
     else:
-        return _mimo2siso(sys_ss, input, output, warn_conversion=warn)
+        return squeeze, _mimo2siso(sys_ss, input, output, warn_conversion=warn)
 
 
 def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
-                  transpose=False, return_x=False, squeeze=True):
+                  transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Step response of a linear system
 
@@ -465,10 +516,10 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
+    sys : StateSpace or TransferFunction
         LTI system to simulate
 
-    T: array_like or float, optional
+    T : array_like or float, optional
         Time vector, or simulation time duration if a number. If T is not
         provided, an attempt is made to create it automatically from the
         dynamics of sys. If sys is continuous-time, the time increment dt
@@ -479,44 +530,45 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         only tfinal is computed, and final is reduced if it requires too
         many simulation steps.
 
-    X0: array_like or float, optional
+    X0 : array_like or float, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
 
-    input: int
-        Index of the input that will be used in this simulation.
+    input : int
+        Index of the input that will be used in this simulation.  Default = 0.
 
-    output: int
+    output : int
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
 
-    T_num: int, optional
+    T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
 
-    transpose: bool
+    transpose : bool
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
-    return_x: bool
+    return_x : bool
         If True, return the state vector (default = False).
 
-    squeeze: bool, optional (default=True)
-        If True, remove single-dimensional entries from the shape of
-        the output.  For single output systems, this converts the
-        output response to a 1D array.
+    squeeze : bool, optional
+        If True (default), remove single-dimensional entries from the shape
+        of the output.  For single output systems, this converts the output
+        response to a 1D array.  The default value can be set using
+        config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
-    T: array
+    T : array
         Time values of the output
 
-    yout: array
+    yout : array
         Response of the system
 
-    xout: array
-        Individual response of each x variable
+    xout : array, optional
+        Individual response of each x variable (if return_x is True)
 
     See Also
     --------
@@ -532,18 +584,13 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     >>> T, yout = step_response(sys, T, X0)
 
     """
-    sys = _get_ss_simo(sys, input, output)
+    squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
     U = np.ones_like(T)
 
-    T, yout, xout = forced_response(sys, T, U, X0, transpose=transpose,
-                                    squeeze=squeeze)
-
-    if return_x:
-        return T, yout, xout
-
-    return T, yout
+    return forced_response(sys, T, U, X0, transpose=transpose,
+                           return_x=return_x, squeeze=squeeze)
 
 
 def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
@@ -592,7 +639,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     --------
     >>> info = step_info(sys, T)
     '''
-    sys = _get_ss_simo(sys)
+    _, sys = _get_ss_simo(sys)
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
 
@@ -630,7 +677,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
 
 def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
-                     transpose=False, return_x=False, squeeze=True):
+                     transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Initial condition response of a linear system
 
@@ -651,33 +698,34 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         autocomputed if not given; see  :func:`step_response` for more detail)
 
     X0 : array_like or float, optional
-        Initial condition (default = 0)
-
-        Numbers are converted to constant arrays with the correct shape.
+        Initial condition (default = 0).  Numbers are converted to constant
+        arrays with the correct shape.
 
     input : int
         Ignored, has no meaning in initial condition calculation. Parameter
-        ensures compatibility with step_response and impulse_response
+        ensures compatibility with step_response and impulse_response.
 
     output : int
         Index of the output that will be used in this simulation. Set to None
-        to not trim outputs
+        to not trim outputs.
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
 
-    transpose : bool
+    transpose : bool, optional
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`)
+        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
+        value is False.
 
-    return_x : bool
+    return_x : bool, optional
         If True, return the state vector (default = False).
 
-    squeeze : bool, optional (default=True)
-        If True, remove single-dimensional entries from the shape of
-        the output.  For single output systems, this converts the
-        output response to a 1D array.
+    squeeze : bool, optional
+        If True (default), remove single-dimensional entries from the shape
+        of the output.  For single output systems, this converts the output
+        response to a 1D array.  The default value can be set using
+        config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
@@ -685,8 +733,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         Time values of the output
     yout : array
         Response of the system
-    xout : array
-        Individual response of each x variable
+    xout : array, optional
+        Individual response of each x variable (if return_x is True)
 
     See Also
     --------
@@ -700,8 +748,9 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     Examples
     --------
     >>> T, yout = initial_response(sys, T, X0)
+
     """
-    sys = _get_ss_simo(sys, input, output)
+    squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
 
     # Create time and input vectors; checking is done in forced_response(...)
     # The initial vector X0 is created in forced_response(...) if necessary
@@ -709,17 +758,12 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
     U = np.zeros_like(T)
 
-    T, yout, _xout = forced_response(sys, T, U, X0, transpose=transpose,
-                                     squeeze=squeeze)
-
-    if return_x:
-        return T, yout, _xout
-
-    return T, yout
+    return forced_response(sys, T, U, X0, transpose=transpose,
+                           return_x=return_x, squeeze=squeeze)
 
 
-def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
-                     transpose=False, return_x=False, squeeze=True):
+def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
+                     transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Impulse response of a linear system
 
@@ -746,7 +790,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         Numbers are converted to constant arrays with the correct shape.
 
     input : int
-        Index of the input that will be used in this simulation.
+        Index of the input that will be used in this simulation.  Default = 0.
 
     output : int
         Index of the output that will be used in this simulation. Set to None
@@ -763,10 +807,11 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     return_x : bool
         If True, return the state vector (default = False).
 
-    squeeze : bool, optional (default=True)
-        If True, remove single-dimensional entries from the shape of
-        the output.  For single output systems, this converts the
-        output response to a 1D array.
+    squeeze : bool, optional
+        If True (default), remove single-dimensional entries from the shape
+        of the output.  For single output systems, this converts the output
+        response to a 1D array.  The default value can be set using
+        config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
@@ -774,8 +819,8 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         Time values of the output
     yout : array
         Response of the system
-    xout : array
-        Individual response of each x variable
+    xout : array, optional
+        Individual response of each x variable (if return_x is True)
 
     See Also
     --------
@@ -792,7 +837,7 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     >>> T, yout = impulse_response(sys, T, X0)
 
     """
-    sys = _get_ss_simo(sys, input, output)
+    squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
 
     # if system has direct feedthrough, can't simulate impulse response
     # numerically
@@ -824,13 +869,9 @@ def impulse_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         new_X0 = X0
         U[0] = 1./sys.dt # unit area impulse
 
-    T, yout, _xout = forced_response(sys, T, U, new_X0, transpose=transpose,
-                                     squeeze=squeeze)
+    return forced_response(sys, T, U, new_X0, transpose=transpose,
+                           return_x=return_x, squeeze=squeeze)
 
-    if return_x:
-        return T, yout, _xout
-
-    return T, yout
 
 # utility function to find time period and time increment using pole locations
 def _ideal_tfinal_and_dt(sys, is_step=True):

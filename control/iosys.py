@@ -37,7 +37,7 @@ import copy
 from warnings import warn
 
 from .statesp import StateSpace, tf2ss
-from .timeresp import _check_convert_array
+from .timeresp import _check_convert_array, _process_time_response
 from .lti import isctime, isdtime, common_timebase
 from . import config
 
@@ -1353,7 +1353,7 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
 
 
 def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
-                          return_x=False, squeeze=True):
+                          transpose=False, return_x=False, squeeze=None):
 
     """Compute the output response of a system to a given input.
 
@@ -1373,9 +1373,9 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     return_x : bool, optional
         If True, return the values of the state at each time (default = False).
     squeeze : bool, optional
-        If True (default), squeeze unused dimensions out of the output
-        response.  In particular, for a single output system, return a
-        vector of shape (nsteps) instead of (nsteps, 1).
+        If True and if the system has a single output, return the
+        system output as a 1D array rather than a 2D array.  Default
+        value (True) set by config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
@@ -1420,12 +1420,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        if squeeze:
-            y = np.squeeze(y)
-        if return_x:
-            return T, y, []
-        else:
-            return T, y
+        return _process_time_response(sys, T, y, [], transpose=transpose,
+                                      return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],
@@ -1500,14 +1496,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     else:                       # Neither ctime or dtime??
         raise TypeError("Can't determine system type")
 
-    # Get rid of extra dimensions in the output, of desired
-    if squeeze:
-        y = np.squeeze(y)
-
-    if return_x:
-        return soln.t, y, soln.y
-    else:
-        return soln.t, y
+    return _process_time_response(sys, soln.t, y, soln.y, transpose=transpose,
+                                  return_x=return_x, squeeze=squeeze)
 
 
 def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},

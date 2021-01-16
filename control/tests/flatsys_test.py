@@ -48,7 +48,7 @@ class TestFlatSys:
         T = np.linspace(0, Tf, 100)
         xd, ud = traj.eval(T)
 
-        t, y, x = ct.forced_response(sys, T, ud, x1)
+        t, y, x = ct.forced_response(sys, T, ud, x1, return_x=True)
         np.testing.assert_array_almost_equal(x, xd, decimal=3)
 
     def test_kinematic_car(self):
