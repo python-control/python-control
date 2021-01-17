@@ -242,19 +242,27 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         return only the time and output vectors.
 
     squeeze : bool, optional
-        If True (default), remove single-dimensional entries from the shape
-        of the output.  For single output systems, this converts the output
-        response to a 1D array.  The default value can be set using
+        By default, if a system is single-input, single-output (SISO) then
+        the output response is returned as a 1D array (indexed by time).  If
+        squeeze=True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If squeeze=False, keep
+        the output as a 2D array (indexed by the output number and time)
+        even if the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
     T : array
         Time values of the output.
+
     yout : array
-        Response of the system.
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is 2D (indexed by the output number and
+        time).
+
     xout : array
-        Time evolution of the state vector.
+        Time evolution of the state vector. Not affected by squeeze.
 
     See Also
     --------
@@ -459,11 +467,9 @@ def _process_time_response(sys, tout, yout, xout, transpose=None,
         yout = np.squeeze(yout)
     elif squeeze is False:      # squeeze no dimensions
         pass
-    # Possible code if we implement a squeeze='siso' option
-    # elif squeeze == 'siso':     # squeeze signals if SISO
-    #     yout = yout[0] if sys.issiso() else yout
+    elif squeeze is None:       # squeeze signals if SISO
+        yout = yout[0] if sys.issiso() else yout
     else:
-        # In preparation for more complicated values for squeeze
         raise ValueError("unknown squeeze value")
 
     # See if we need to transpose the data back into MATLAB form
@@ -481,13 +487,17 @@ def _get_ss_simo(sys, input=None, output=None, squeeze=None):
 
     If input is not specified, select first input and issue warning
     """
+    # If squeeze was not specified, figure out the default
+    if squeeze is None:
+        squeeze = config.defaults['control.squeeze_time_response']
+
     sys_ss = _convert_to_statespace(sys)
     if sys_ss.issiso():
         return squeeze, sys_ss
-    # Possible code if we implement a squeeze='siso' option
-    # elif squeeze == 'siso':
-    #     # Don't squeeze outputs if resulting system turns out to be siso
-    #     squeeze = False
+    elif squeeze == None and (input is None or output is None):
+        # Don't squeeze outputs if resulting system turns out to be siso
+        # Note: if we expand input to allow a tuple, need to update this check
+        squeeze = False
 
     warn = False
     if input is None:
@@ -531,14 +541,13 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         many simulation steps.
 
     X0 : array_like or float, optional
-        Initial condition (default = 0)
+        Initial condition (default = 0). Numbers are converted to constant
+        arrays with the correct shape.
 
-        Numbers are converted to constant arrays with the correct shape.
-
-    input : int
+    input : int, optional
         Index of the input that will be used in this simulation.  Default = 0.
 
-    output : int
+    output : int, optional
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
 
@@ -546,17 +555,20 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         Number of time steps to use in simulation if T is not provided as an
         array (autocomputed if not given); ignored if sys is discrete-time.
 
-    transpose : bool
+    transpose : bool, optional
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
-    return_x : bool
+    return_x : bool, optional
         If True, return the state vector (default = False).
 
     squeeze : bool, optional
-        If True (default), remove single-dimensional entries from the shape
-        of the output.  For single output systems, this converts the output
-        response to a 1D array.  The default value can be set using
+        By default, if a system is single-input, single-output (SISO) then the
+        output response is returned as a 1D array (indexed by time).  If
+        squeeze=True, remove single-dimensional entries from the shape of the
+        output even if the system is not SISO. If squeeze=False, keep the
+        output as a 2D array (indexed by the output number and time) even if
+        the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
 
     Returns
@@ -565,10 +577,13 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         Time values of the output
 
     yout : array
-        Response of the system
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is 2D (indexed by the output number and
+        time).
 
     xout : array, optional
-        Individual response of each x variable (if return_x is True)
+        Individual response of each x variable (if return_x is True).
 
     See Also
     --------
@@ -722,19 +737,27 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         If True, return the state vector (default = False).
 
     squeeze : bool, optional
-        If True (default), remove single-dimensional entries from the shape
-        of the output.  For single output systems, this converts the output
-        response to a 1D array.  The default value can be set using
+        By default, if a system is single-input, single-output (SISO) then the
+        output response is returned as a 1D array (indexed by time).  If
+        squeeze=True, remove single-dimensional entries from the shape of the
+        output even if the system is not SISO. If squeeze=False, keep the
+        output as a 2D array (indexed by the output number and time) even if
+        the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
     T : array
         Time values of the output
+
     yout : array
-        Response of the system
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is 2D (indexed by the output number and
+        time).
+
     xout : array, optional
-        Individual response of each x variable (if return_x is True)
+        Individual response of each x variable (if return_x is True).
 
     See Also
     --------
@@ -789,10 +812,10 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
         Numbers are converted to constant arrays with the correct shape.
 
-    input : int
+    input : int, optional
         Index of the input that will be used in this simulation.  Default = 0.
 
-    output : int
+    output : int, optional
         Index of the output that will be used in this simulation. Set to None
         to not trim outputs
 
@@ -804,23 +827,31 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`)
 
-    return_x : bool
+    return_x : bool, optional
         If True, return the state vector (default = False).
 
     squeeze : bool, optional
-        If True (default), remove single-dimensional entries from the shape
-        of the output.  For single output systems, this converts the output
-        response to a 1D array.  The default value can be set using
+        By default, if a system is single-input, single-output (SISO) then the
+        output response is returned as a 1D array (indexed by time).  If
+        squeeze=True, remove single-dimensional entries from the shape of the
+        output even if the system is not SISO. If squeeze=False, keep the
+        output as a 2D array (indexed by the output number and time) even if
+        the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
     T : array
         Time values of the output
+
     yout : array
-        Response of the system
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is 2D (indexed by the output number and
+        time).
+
     xout : array, optional
-        Individual response of each x variable (if return_x is True)
+        Individual response of each x variable (if return_x is True).
 
     See Also
     --------

@@ -158,7 +158,7 @@ class TestIOSys:
         nlout = lambda t, x, u, params: \
             np.reshape(np.dot(linsys.C, np.reshape(x, (-1, 1)))
                        + np.dot(linsys.D, u), (-1,))
-        nlsys = ios.NonlinearIOSystem(nlupd, nlout)
+        nlsys = ios.NonlinearIOSystem(nlupd, nlout, inputs=1, outputs=1)
 
         # Make sure that simulations also line up
         T, U, X0 = tsys.T, tsys.U, tsys.X0

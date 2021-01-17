@@ -723,26 +723,22 @@ class TestTimeresp:
         assert y.ndim == 1  # SISO returns "scalar" output
         assert t.shape == y.shape  # Allows direct plotting of output
 
+    @pytest.mark.usefixtures("editsdefaults")
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
     @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
         [1, 1, 1, None, (8,)],
         [2, 1, 1, True, (8,)],
         [3, 1, 1, False, (1, 8)],
-#       [4, 1, 1, 'siso', (8,)],        # Use for later 'siso' implementation
         [3, 2, 1, None, (2, 8)],
         [4, 2, 1, True, (2, 8)],
         [5, 2, 1, False, (2, 8)],
-#       [6, 2, 1, 'siso', (2, 8)],      # Use for later 'siso' implementation
-        [3, 1, 2, None, (8,)],
+        [3, 1, 2, None, (1, 8)],
         [4, 1, 2, True, (8,)],
         [5, 1, 2, False, (1, 8)],
-#       [6, 1, 2, 'siso', (1, 8)],      # Use for later 'siso' implementation
         [4, 2, 2, None, (2, 8)],
         [5, 2, 2, True, (2, 8)],
         [6, 2, 2, False, (2, 8)],
-#       [7, 2, 2, 'siso', (2, 8)],      # Use for later 'siso' implementation
     ])
-    @pytest.mark.usefixtures("editsdefaults")
     def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape):
         # Figure out if we have SciPy 1+
         scipy0 = StrictVersion(sp.__version__) < '1.0'
@@ -789,7 +785,6 @@ class TestTimeresp:
         _, yvec = ct.step_response(
             sys, tvec, input=ninp-1, output=nout-1, squeeze=squeeze)
         # Possible code if we implemenet a squeeze='siso' option
-        # if squeeze is False or (squeeze == 'siso' and not sys.issiso()):
         if squeeze is False:
             # Shape should be unsqueezed
             assert yvec.shape == (1, 8)
@@ -836,3 +831,33 @@ class TestTimeresp:
         sys = fcn(ct.rss(2, 1, 1))
         with pytest.raises(ValueError, match="unknown squeeze value"):
             step_response(sys, squeeze=1)
+
+    @pytest.mark.usefixtures("editsdefaults")
+    @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
+        [1, 1, 1, None, (8,)],
+        [2, 1, 1, True, (8,)],
+        [3, 1, 1, False, (1, 8)],
+        [1, 2, 1, None, (2, 8)],
+        [2, 2, 1, True, (2, 8)],
+        [3, 2, 1, False, (2, 8)],
+        [1, 1, 2, None, (8,)],
+        [2, 1, 2, True, (8,)],
+        [3, 1, 2, False, (1, 8)],
+        [1, 2, 2, None, (2, 8)],
+        [2, 2, 2, True, (2, 8)],
+        [3, 2, 2, False, (2, 8)],
+    ])
+    def test_squeeze_0_8_4(self, nstate, nout, ninp, squeeze, shape):
+        # Set defaults to match release 0.8.4
+        ct.config.use_legacy_defaults('0.8.4')
+        ct.config.use_numpy_matrix(False)
+
+        # Generate system, time, and input vectors
+        sys = ct.rss(nstate, nout, ninp, strictly_proper=True)
+        tvec = np.linspace(0, 1, 8)
+        uvec = np.dot(
+            np.ones((sys.inputs, 1)),
+            np.reshape(np.sin(tvec), (1, 8)))
+
+        _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
+        assert yvec.shape == shape

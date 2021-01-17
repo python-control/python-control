@@ -450,6 +450,10 @@ class InputOutputSystem(object):
         """Find the index for a state given its name (`None` if not found)"""
         return self.state_index.get(name, None)
 
+    def issiso(self):
+        """Check to see if a system is single input, single output"""
+        return self.ninputs == 1 and self.noutputs == 1
+
     def feedback(self, other=1, sign=-1, params={}):
         """Feedback interconnection between two input/output systems
 
@@ -1373,18 +1377,22 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     return_x : bool, optional
         If True, return the values of the state at each time (default = False).
     squeeze : bool, optional
-        If True and if the system has a single output, return the
-        system output as a 1D array rather than a 2D array.  Default
-        value (True) set by config.defaults['control.squeeze_time_response'].
+        If True and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If False, return the
+        system output as a 2D array even if the system is SISO.  Default value
+        set by config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
     T : array
         Time values of the output.
     yout : array
-        Response of the system.
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is 2D (indexed by the output number and
+        time).
     xout : array
-        Time evolution of the state vector (if return_x=True)
+        Time evolution of the state vector (if return_x=True).
 
     Raises
     ------

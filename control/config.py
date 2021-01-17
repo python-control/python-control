@@ -18,6 +18,7 @@ _control_defaults = {
     'control.default_dt': 0,
     'control.squeeze_frequency_response': None,
     'control.squeeze_time_response': True,
+    'control.squeeze_time_response': None,
     'forced_response.return_x': False,
 }
 defaults = dict(_control_defaults)
@@ -235,5 +236,8 @@ def use_legacy_defaults(version):
 
         # forced_response no longer returns x by default
         set_defaults('forced_response', return_x=True)
+
+        # time responses are only squeezed if SISO
+        set_defaults('control', squeeze_time_response=True)
 
     return (major, minor, patch)
