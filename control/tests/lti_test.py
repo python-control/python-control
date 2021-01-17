@@ -158,44 +158,95 @@ class TestLTI:
 
     @pytest.mark.usefixtures("editsdefaults")
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.ss2io])
-    @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
-        [1, 1, 1, None, (8,)],                          # SISO
-        [2, 1, 1, True, (8,)],
-        [3, 1, 1, False, (1, 1, 8)],
-        [1, 2, 1, None, (2, 1, 8)],                     # SIMO
-        [2, 2, 1, True, (2, 1, 8)],
-        [3, 2, 1, False, (2, 1, 8)],
-        [1, 1, 2, None, (1, 2, 8)],                     # MISO
-        [2, 1, 2, True, (1, 2, 8)],
-        [3, 1, 2, False, (1, 2, 8)],
-        [1, 2, 2, None, (2, 2, 8)],                     # MIMO
-        [2, 2, 2, True, (2, 2, 8)],
-        [3, 2, 2, False, (2, 2, 8)]
+    @pytest.mark.parametrize("nstate, nout, ninp, omega, squeeze, shape", [
+        [1, 1, 1, 0.1,          None,  ()],             # SISO
+        [1, 1, 1, [0.1],        None,  (1,)],
+        [1, 1, 1, [0.1, 1, 10], None,  (3,)],
+        [2, 1, 1, 0.1,          True,  ()],
+        [2, 1, 1, [0.1],        True,  ()],
+        [2, 1, 1, [0.1, 1, 10], True,  (3,)],
+        [3, 1, 1, 0.1,          False, (1, 1)],
+        [3, 1, 1, [0.1],        False, (1, 1, 1)],
+        [3, 1, 1, [0.1, 1, 10], False, (1, 1, 3)],
+        [1, 2, 1, 0.1,          None,  (2, 1)],         # SIMO
+        [1, 2, 1, [0.1],        None,  (2, 1, 1)],
+        [1, 2, 1, [0.1, 1, 10], None,  (2, 1, 3)],
+        [2, 2, 1, 0.1,          True,  (2,)],
+        [2, 2, 1, [0.1],        True,  (2,)],
+        [3, 2, 1, 0.1,          False, (2, 1)],
+        [3, 2, 1, [0.1],        False, (2, 1, 1)],
+        [3, 2, 1, [0.1, 1, 10], False, (2, 1, 3)],
+        [1, 1, 2, [0.1, 1, 10], None, (1, 2, 3)],       # MISO
+        [2, 1, 2, [0.1, 1, 10], True, (2, 3)],
+        [3, 1, 2, [0.1, 1, 10], False, (1, 2, 3)],
+        [1, 2, 2, [0.1, 1, 10], None, (2, 2, 3)],       # MIMO
+        [2, 2, 2, [0.1, 1, 10], True, (2, 2, 3)],
+        [3, 2, 2, [0.1, 1, 10], False, (2, 2, 3)]
     ])
-    def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape):
-        # Compute the length of the frequency array
-        omega = np.logspace(-2, 2, 8)
-
+    def test_squeeze(self, fcn, nstate, nout, ninp, omega, squeeze, shape):
         # Create the system to be tested
         if fcn == ct.frd:
-            sys = fcn(ct.rss(nstate, nout, ninp), omega)
+            sys = fcn(ct.rss(nstate, nout, ninp), [1e-2, 1e-1, 1, 1e1, 1e2])
         elif fcn == ct.tf and (nout > 1 or ninp > 1) and not slycot_check():
             pytest.skip("Conversion of MIMO systems to transfer functions "
                         "requires slycot.")
         else:
             sys = fcn(ct.rss(nstate, nout, ninp))
 
-        # Pass squeeze argument and make sure the shape is correct
-        mag, phase, _ = sys.frequency_response(omega, squeeze=squeeze)
-        assert mag.shape == shape
-        assert phase.shape == shape
+        # Convert the frequency list to an array for easy of use
+        isscalar = not hasattr(omega, '__len__')
+        omega = np.array(omega)
+
+        # Call the transfer function directly and make sure shape is correct
         assert sys(omega * 1j, squeeze=squeeze).shape == shape
+
+        # Make sure that evalfr also works as expected
         assert ct.evalfr(sys, omega * 1j, squeeze=squeeze).shape == shape
+
+        # Check frequency response
+        mag, phase, _ = sys.frequency_response(omega, squeeze=squeeze)
+        if isscalar and squeeze is not True:
+            # sys.frequency_response() expects a list as an argument
+            # Add the shape of the input to the expected shape
+            assert mag.shape == shape + (1,)
+            assert phase.shape == shape + (1,)
+        else:
+            assert mag.shape == shape
+            assert phase.shape == shape
+
+        # Make sure the default shape lines up with squeeze=None case
+        if squeeze is None:
+            assert sys(omega * 1j).shape == shape
 
         # Changing config.default to False should return 3D frequency response
         ct.config.set_defaults('control', squeeze_frequency_response=False)
         mag, phase, _ = sys.frequency_response(omega)
-        assert mag.shape == (sys.outputs, sys.inputs, 8)
-        assert phase.shape == (sys.outputs, sys.inputs, 8)
-        assert sys(omega * 1j).shape == (sys.outputs, sys.inputs, 8)
-        assert ct.evalfr(sys, omega * 1j).shape == (sys.outputs, sys.inputs, 8)
+        if isscalar:
+            assert mag.shape == (sys.outputs, sys.inputs, 1)
+            assert phase.shape == (sys.outputs, sys.inputs, 1)
+            assert sys(omega * 1j).shape == (sys.outputs, sys.inputs)
+            assert ct.evalfr(sys, omega * 1j).shape == (sys.outputs, sys.inputs)
+        else:
+            assert mag.shape == (sys.outputs, sys.inputs, len(omega))
+            assert phase.shape == (sys.outputs, sys.inputs, len(omega))
+            assert sys(omega * 1j).shape == \
+                (sys.outputs, sys.inputs, len(omega))
+            assert ct.evalfr(sys, omega * 1j).shape == \
+                (sys.outputs, sys.inputs, len(omega))
+
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.ss2io])
+    def test_squeeze_exceptions(self, fcn):
+        if fcn == ct.frd:
+            sys = fcn(ct.rss(2, 1, 1), [1e-2, 1e-1, 1, 1e1, 1e2])
+        else:
+            sys = fcn(ct.rss(2, 1, 1))
+
+        with pytest.raises(ValueError, match="unknown squeeze value"):
+            sys.frequency_response([1], squeeze=1)
+            sys([1], squeeze='siso')
+            evalfr(sys, [1], squeeze='siso')
+
+        with pytest.raises(ValueError, match="must be 1D"):
+            sys.frequency_response([[0.1, 1], [1, 10]])
+            sys([[0.1, 1], [1, 10]])
+            evalfr(sys, [[0.1, 1], [1, 10]])

@@ -131,21 +131,26 @@ class LTI:
 
         Parameters
         ----------
-        omega : float or array_like
+        omega : float or 1D array_like
             A list, tuple, array, or scalar value of frequencies in
             radians/sec at which the system will be evaluated.
         squeeze : bool, optional
-            If True and the system is single-input single-output (SISO),
-            return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze_frequency_response'].
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep all indices (output, input and, if omega is array_like,
+            frequency) even if the system is SISO. The default value can be
+            set using config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
-        mag : (p, m, len(omega)) ndarray or (len(omega),) ndarray 
+        mag : ndarray
             The magnitude (absolute value, not dB or log10) of the system
-            frequency response. Array is ``(len(omega), )`` if
-            and only if system is SISO and ``squeeze=True``.
-        phase : (p, m, len(omega)) ndarray or (len(omega),) ndarray
+            frequency response.  If the system is SISO and squeeze is not
+            True, the array is 1D, indexed by frequency.  If the system is not
+            SISO or squeeze is False, the array is 3D, indexed by the output,
+            input, and frequency.  If ``squeeze`` is True then
+            single-dimensional axes are removed.
+        phase : ndarray
             The wrapped phase in radians of the system frequency response.
         omega : ndarray
             The (sorted) frequencies at which the response was evaluated.
@@ -482,18 +487,24 @@ def evalfr(sys, x, squeeze=None):
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    x : complex scalar or array_like
+    x : complex scalar or 1D array_like
         Complex frequency(s)
     squeeze : bool, optional (default=True)
-        If True and the system is single-input single-output (SISO), return a
-        1D array rather than a 3D array.  Default value (True) set by
+        If squeeze=True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If squeeze=False, keep all
+        indices (output, input and, if omega is array_like, frequency) even if
+        the system is SISO. The default value can be set using
         config.defaults['control.squeeze_frequency_response'].
 
     Returns
     -------
-    fresp : (p, m, len(x)) complex ndarray or (len(x),) complex ndarray 
-        The frequency response of the system. Array is ``(len(x), )`` if
-        and only if system is SISO and ``squeeze=True``.
+    fresp : complex ndarray
+        The frequency response of the system.  If the system is SISO and
+        squeeze is not True, the shape of the array matches the shape of
+        omega.  If the system is not SISO or squeeze is False, the first two
+        dimensions of the array are indices for the output and input and the
+        remaining dimensions match omega.  If ``squeeze`` is True then
+        single-dimensional axes are removed.
 
     See Also
     --------
@@ -519,7 +530,7 @@ def evalfr(sys, x, squeeze=None):
 
 def freqresp(sys, omega, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
-    
+
     In general the system may be multiple input, multiple output (MIMO), where
     `m = sys.inputs` number of inputs and `p = sys.outputs` number of
     outputs.
@@ -528,23 +539,27 @@ def freqresp(sys, omega, squeeze=None):
     ----------
     sys: StateSpace or TransferFunction
         Linear system
-    omega : float or array_like
+    omega : float or 1D array_like
         A list of frequencies in radians/sec at which the system should be
         evaluated. The list can be either a python list or a numpy array
         and will be sorted before evaluation.
-    squeeze : bool, optional (default=True)
-        If True and the system is single-input single-output (SISO), return a
-        1D array rather than a 3D array.  Default value (True) set by
+    squeeze : bool, optional
+        If squeeze=True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If squeeze=False, keep all
+        indices (output, input and, if omega is array_like, frequency) even if
+        the system is SISO. The default value can be set using
         config.defaults['control.squeeze_frequency_response'].
 
     Returns
     -------
-    mag : (p, m, len(omega)) ndarray or (len(omega),) ndarray 
+    mag : ndarray
         The magnitude (absolute value, not dB or log10) of the system
-        frequency response. Array is ``(len(omega), )`` if and only if system 
-        is SISO and ``squeeze=True``.
-
-    phase : (p, m, len(omega)) ndarray or (len(omega),) ndarray 
+        frequency response.  If the system is SISO and squeeze is not True,
+        the array is 1D, indexed by frequency.  If the system is not SISO or
+        squeeze is False, the array is 3D, indexed by the output, input, and
+        frequency.  If ``squeeze`` is True then single-dimensional axes are
+        removed.
+    phase : ndarray
         The wrapped phase in radians of the system frequency response.
     omega : ndarray
         The list of sorted frequencies at which the response was
@@ -601,14 +616,30 @@ def dcgain(sys):
 
 # Process frequency responses in a uniform way
 def _process_frequency_response(sys, omega, out, squeeze=None):
+    # Set value of squeeze argument if not set
+    if squeeze is None:
+        squeeze = config.defaults['control.squeeze_frequency_response']
+
     if not hasattr(omega, '__len__'):
         # received a scalar x, squeeze down the array along last dim
         out = np.squeeze(out, axis=2)
 
+    #
     # Get rid of unneeded dimensions
-    if squeeze is None:
-        squeeze = config.defaults['control.squeeze_frequency_response']
-    if squeeze and sys.issiso():
+    #
+    # There are three possible values for the squeeze keyword at this point:
+    #
+    #   squeeze=None: squeeze input/output axes iff SISO
+    #   squeeze=True: squeeze all single dimensional axes (ala numpy)
+    #   squeeze-False: don't squeeze any axes
+    #
+    if squeeze is True:
+        # Squeeze everything that we can if that's what the user wants
+        return np.squeeze(out)
+    elif squeeze is None and sys.issiso():
+        # SISO system output squeezed unless explicitly specified otherwise
         return out[0][0]
-    else:
+    elif squeeze is False or squeeze is None:
         return out
+    else:
+        raise ValueError("unknown squeeze value")

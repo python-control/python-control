@@ -353,25 +353,33 @@ second has %i." % (self.outputs, other.outputs))
 
         Parameters
         ----------
-        omega : float or array_like
+        omega : float or 1D array_like
             Frequencies in radians per second
-        squeeze : bool, optional (default=True)
-            If True and the system is single-input single-output (SISO),
-            return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze_frequency_response'].
+        squeeze : bool, optional
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep all indices (output, input and, if omega is array_like,
+            frequency) even if the system is SISO. The default value can be
+            set using config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
-        fresp : (self.outputs, self.inputs, len(x)) or (len(x), ) complex ndarray
-            The frequency response of the system. Array is ``len(x)``
-            if and only if system is SISO and ``squeeze=True``.
+        fresp : complex ndarray
+            The frequency response of the system.  If the system is SISO and
+            squeeze is not True, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is False, the first
+            two dimensions of the array are indices for the output and input
+            and the remaining dimensions match omega.  If ``squeeze`` is True
+            then single-dimensional axes are removed.
 
         """
-        # Set value of squeeze argument if not set
-        if squeeze is None:
-            squeeze = config.defaults['control.squeeze_frequency_response']
-
         omega_array = np.array(omega, ndmin=1) # array-like version of omega
+
+        # Make sure that we are operating on a simple list
+        if len(omega_array.shape) > 1:
+            raise ValueError("input list must be 1D")
+
+        # Make sure that frequencies are all real-valued
         if any(omega_array.imag > 0):
             raise ValueError("FRD.eval can only accept real-valued omega")
 
@@ -396,7 +404,7 @@ second has %i." % (self.outputs, other.outputs))
 
     def __call__(self, s, squeeze=None):
         """Evaluate system's transfer function at complex frequencies.
-        
+
         Returns the complex frequency response `sys(s)` of system `sys` with
         `m = sys.inputs` number of inputs and `p = sys.outputs` number of
         outputs.
@@ -406,19 +414,24 @@ second has %i." % (self.outputs, other.outputs))
 
         Parameters
         ----------
-        s : complex scalar or array_like
+        s : complex scalar or 1D array_like
             Complex frequencies
         squeeze : bool, optional (default=True)
-            If True and the system is single-input single-output (SISO),
-            return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze_frequency_response'].
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep all indices (output, input and, if omega is array_like,
+            frequency) even if the system is SISO. The default value can be
+            set using config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
-        fresp : (p, m, len(s)) complex ndarray or (len(s),) complex ndarray 
-            The frequency response of the system. Array is ``(len(s), )`` if
-            and only if system is SISO and ``squeeze=True``.
-
+        fresp : complex ndarray
+            The frequency response of the system.  If the system is SISO and
+            squeeze is not True, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is False, the first
+            two dimensions of the array are indices for the output and input
+            and the remaining dimensions match omega.  If ``squeeze`` is True
+            then single-dimensional axes are removed.
 
         Raises
         ------
@@ -427,13 +440,14 @@ second has %i." % (self.outputs, other.outputs))
             :class:`FrequencyDomainData` systems are only defined at imaginary
             frequency values.
         """
-        # Set value of squeeze argument if not set
-        if squeeze is None:
-            squeeze = config.defaults['control.squeeze_frequency_response']
+        # Make sure that we are operating on a simple list
+        if len(np.array(s, ndmin=1).shape) > 1:
+            raise ValueError("input list must be 1D")
 
         if any(abs(np.array(s, ndmin=1).real) > 0):
             raise ValueError("__call__: FRD systems can only accept "
                             "purely imaginary frequencies")
+
         # need to preserve array or scalar status
         if hasattr(s, '__len__'):
             return self.eval(np.asarray(s).imag, squeeze=squeeze)

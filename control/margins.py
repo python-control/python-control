@@ -294,25 +294,25 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             # frequency for gain margin: phase crosses -180 degrees
             w_180 = _poly_iw_real_crossing(num_iw, den_iw, epsw)
             with np.errstate(all='ignore'):  # den=0 is okay
-                w180_resp = evalfr(sys, 1J * w_180, squeeze=True)
+                w180_resp = evalfr(sys, 1J * w_180)
 
             # frequency for phase margin : gain crosses magnitude 1
             wc = _poly_iw_mag1_crossing(num_iw, den_iw, epsw)
-            wc_resp = evalfr(sys, 1J * wc, squeeze=True)
+            wc_resp = evalfr(sys, 1J * wc)
 
             # stability margin
             wstab = _poly_iw_wstab(num_iw, den_iw, epsw)
-            ws_resp = evalfr(sys, 1J * wstab, squeeze=True)
+            ws_resp = evalfr(sys, 1J * wstab)
 
         else:  # Discrete Time
             zargs = _poly_z_invz(sys)
             # gain margin
             z, w_180 = _poly_z_real_crossing(*zargs, epsw=epsw)
-            w180_resp = evalfr(sys, z, squeeze=True)
+            w180_resp = evalfr(sys, z)
 
             # phase margin
             z, wc = _poly_z_mag1_crossing(*zargs, epsw=epsw)
-            wc_resp = evalfr(sys, z, squeeze=True)
+            wc_resp = evalfr(sys, z)
 
             # stability margin
             z, wstab = _poly_z_wstab(*zargs, epsw=epsw)
@@ -437,11 +437,11 @@ def phase_crossover_frequencies(sys):
         omega = _poly_iw_real_crossing(num_iw, den_iw, 0.)
 
         # using real() to avoid rounding errors and results like 1+0j
-        gain = np.real(evalfr(sys, 1J * omega, squeeze=True))
+        gain = np.real(evalfr(sys, 1J * omega))
     else:
         zargs = _poly_z_invz(sys)
         z, omega = _poly_z_real_crossing(*zargs, epsw=0.)
-        gain = np.real(evalfr(sys, z, squeeze=True))
+        gain = np.real(evalfr(sys, z))
 
     return omega, gain
 

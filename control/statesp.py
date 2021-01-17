@@ -645,7 +645,7 @@ class StateSpace(LTI):
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
-        
+
         In general the system may be multiple input, multiple output
         (MIMO), where `m = self.inputs` number of inputs and `p =
         self.outputs` number of outputs.
@@ -657,18 +657,24 @@ class StateSpace(LTI):
 
         Parameters
         ----------
-        x : complex or complex array_like
+        x : complex or complex 1D array_like
             Complex frequencies
         squeeze : bool, optional
-            If True and the system is single-input single-output (SISO),
-            return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze_frequency_response'].
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep all indices (output, input and, if omega is array_like,
+            frequency) even if the system is SISO. The default value can be
+            set using config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
-        fresp : (p, m, len(x)) complex ndarray or (len(x),) complex ndarray
-            The frequency response of the system. Array is ``len(x)`` if and
-            only if system is SISO and ``squeeze=True``.
+        fresp : complex ndarray
+            The frequency response of the system.  If the system is SISO and
+            squeeze is not True, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is False, the first
+            two dimensions of the array are indices for the output and input
+            and the remaining dimensions match omega.  If ``squeeze`` is True
+            then single-dimensional axes are removed.
 
         """
         # Use Slycot if available
@@ -693,9 +699,13 @@ class StateSpace(LTI):
             Frequency response
         """
         from slycot import tb05ad
+        x_arr = np.atleast_1d(x) # array-like version of x
+
+        # Make sure that we are operating on a simple list
+        if len(x_arr.shape) > 1:
+            raise ValueError("input list must be 1D")
 
         # preallocate
-        x_arr = np.atleast_1d(x) # array-like version of x
         n = self.states
         m = self.inputs
         p = self.outputs
@@ -755,6 +765,11 @@ class StateSpace(LTI):
             # Fall back because either Slycot unavailable or cannot handle
             # certain cases.
             x_arr = np.atleast_1d(x) # force to be an array
+
+            # Make sure that we are operating on a simple list
+            if len(x_arr.shape) > 1:
+                raise ValueError("input list must be 1D")
+
             # Preallocate
             out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
 
