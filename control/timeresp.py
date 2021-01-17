@@ -285,10 +285,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         return_x = config.defaults['forced_response.return_x']
 
     # If return_x is used for TransferFunction, issue a warning
-    if return_x and not isinstance(sys, TransferFunction):
+    if return_x and isinstance(sys, TransferFunction):
         warnings.warn(
             "return_x specified for a transfer function system. Internal "
-            "conversation to state space used; results may meaningless.")
+            "conversion to state space used; results may meaningless.")
 
     sys = _convert_to_statespace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \

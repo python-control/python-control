@@ -723,26 +723,26 @@ class TestTimeresp:
         assert y.ndim == 1  # SISO returns "scalar" output
         assert t.shape == y.shape  # Allows direct plotting of output
 
-    @pytest.mark.usefixtures("editsdefaults")
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
     @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
         [1, 1, 1, None, (8,)],
         [2, 1, 1, True, (8,)],
         [3, 1, 1, False, (1, 8)],
 #       [4, 1, 1, 'siso', (8,)],        # Use for later 'siso' implementation
-        [1, 2, 1, None, (2, 8)],
-        [2, 2, 1, True, (2, 8)],
-        [3, 2, 1, False, (2, 8)],
-#       [4, 2, 1, 'siso', (2, 8)],      # Use for later 'siso' implementation
-        [1, 1, 2, None, (8,)],
-        [2, 1, 2, True, (8,)],
-        [3, 1, 2, False, (1, 8)],
-#       [4, 1, 2, 'siso', (1, 8)],      # Use for later 'siso' implementation
-        [1, 2, 2, None, (2, 8)],
-        [2, 2, 2, True, (2, 8)],
-        [3, 2, 2, False, (2, 8)],
-#       [4, 2, 2, 'siso', (2, 8)],      # Use for later 'siso' implementation
+        [3, 2, 1, None, (2, 8)],
+        [4, 2, 1, True, (2, 8)],
+        [5, 2, 1, False, (2, 8)],
+#       [6, 2, 1, 'siso', (2, 8)],      # Use for later 'siso' implementation
+        [3, 1, 2, None, (8,)],
+        [4, 1, 2, True, (8,)],
+        [5, 1, 2, False, (1, 8)],
+#       [6, 1, 2, 'siso', (1, 8)],      # Use for later 'siso' implementation
+        [4, 2, 2, None, (2, 8)],
+        [5, 2, 2, True, (2, 8)],
+        [6, 2, 2, False, (2, 8)],
+#       [7, 2, 2, 'siso', (2, 8)],      # Use for later 'siso' implementation
     ])
+    @pytest.mark.usefixtures("editsdefaults")
     def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape):
         # Figure out if we have SciPy 1+
         scipy0 = StrictVersion(sp.__version__) < '1.0'
@@ -818,13 +818,13 @@ class TestTimeresp:
             _, yvec = ct.step_response(sys, tvec)
         assert yvec.shape == (sys.outputs, 8)
 
-        _, yvec, xvec = ct.forced_response(
-            sys, tvec, uvec, 0, return_x=True)
-        assert yvec.shape == (sys.outputs, 8)
         if isinstance(sys, ct.StateSpace):
+            _, yvec, xvec = ct.forced_response(
+                sys, tvec, uvec, 0, return_x=True)
             assert xvec.shape == (sys.states, 8)
         else:
-            assert xvec.shape[1] == 8
+            _, yvec = ct.forced_response(sys, tvec, uvec, 0)
+        assert yvec.shape == (sys.outputs, 8)
 
         # For InputOutputSystems, also test input_output_response
         if isinstance(sys, ct.InputOutputSystem) and not scipy0:
