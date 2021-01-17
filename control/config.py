@@ -16,7 +16,7 @@ __all__ = ['defaults', 'set_defaults', 'reset_defaults',
 # Package level default values
 _control_defaults = {
     'control.default_dt': 0,
-    'control.squeeze': True
+    'control.squeeze_frequency_response': True
 }
 defaults = dict(_control_defaults)
 

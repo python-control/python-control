@@ -157,7 +157,7 @@ class TestLTI:
         assert isctime(obj, strict=True) == strictref
 
     @pytest.mark.usefixtures("editsdefaults")
-    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd])
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.ss2io])
     @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
         [1, 1, 1, None, (8,)],                          # SISO
         [2, 1, 1, True, (8,)],
@@ -193,7 +193,7 @@ class TestLTI:
         assert ct.evalfr(sys, omega * 1j, squeeze=squeeze).shape == shape
 
         # Changing config.default to False should return 3D frequency response
-        ct.config.set_defaults('control', squeeze=False)
+        ct.config.set_defaults('control', squeeze_frequency_response=False)
         mag, phase, _ = sys.frequency_response(omega)
         assert mag.shape == (sys.outputs, sys.inputs, 8)
         assert phase.shape == (sys.outputs, sys.inputs, 8)

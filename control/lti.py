@@ -137,7 +137,7 @@ class LTI:
         squeeze : bool, optional
             If True and the system is single-input single-output (SISO),
             return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze'].
+            set by config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
@@ -487,7 +487,7 @@ def evalfr(sys, x, squeeze=None):
     squeeze : bool, optional (default=True)
         If True and the system is single-input single-output (SISO), return a
         1D array rather than a 3D array.  Default value (True) set by
-        config.defaults['control.squeeze'].
+        config.defaults['control.squeeze_frequency_response'].
 
     Returns
     -------
@@ -535,7 +535,7 @@ def freqresp(sys, omega, squeeze=None):
     squeeze : bool, optional (default=True)
         If True and the system is single-input single-output (SISO), return a
         1D array rather than a 3D array.  Default value (True) set by
-        config.defaults['control.squeeze'].
+        config.defaults['control.squeeze_frequency_response'].
 
     Returns
     -------
@@ -607,7 +607,7 @@ def _process_frequency_response(sys, omega, out, squeeze=None):
 
     # Get rid of unneeded dimensions
     if squeeze is None:
-        squeeze = config.defaults['control.squeeze']
+        squeeze = config.defaults['control.squeeze_frequency_response']
     if squeeze and sys.issiso():
         return out[0][0]
     else:

@@ -358,7 +358,7 @@ second has %i." % (self.outputs, other.outputs))
         squeeze : bool, optional (default=True)
             If True and the system is single-input single-output (SISO),
             return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze'].
+            set by config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
@@ -369,7 +369,7 @@ second has %i." % (self.outputs, other.outputs))
         """
         # Set value of squeeze argument if not set
         if squeeze is None:
-            squeeze = config.defaults['control.squeeze']
+            squeeze = config.defaults['control.squeeze_frequency_response']
 
         omega_array = np.array(omega, ndmin=1) # array-like version of omega
         if any(omega_array.imag > 0):
@@ -411,7 +411,7 @@ second has %i." % (self.outputs, other.outputs))
         squeeze : bool, optional (default=True)
             If True and the system is single-input single-output (SISO),
             return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze'].
+            set by config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
@@ -429,7 +429,7 @@ second has %i." % (self.outputs, other.outputs))
         """
         # Set value of squeeze argument if not set
         if squeeze is None:
-            squeeze = config.defaults['control.squeeze']
+            squeeze = config.defaults['control.squeeze_frequency_response']
 
         if any(abs(np.array(s, ndmin=1).real) > 0):
             raise ValueError("__call__: FRD systems can only accept "

@@ -256,7 +256,7 @@ class TransferFunction(LTI):
         squeeze : bool, optional (default=True)
             If True and the system is single-input single-output (SISO),
             return a 1D array rather than a 3D array.  Default value (True)
-            set by config.defaults['control.squeeze'].
+            set by config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
