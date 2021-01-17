@@ -63,7 +63,7 @@ from copy import deepcopy
 from warnings import warn
 from itertools import chain
 from re import sub
-from .lti import LTI, common_timebase, isdtime
+from .lti import LTI, common_timebase, isdtime, _process_frequency_response
 from . import config
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -265,19 +265,8 @@ class TransferFunction(LTI):
             only if system is SISO and ``squeeze=True``.
 
         """
-        # Set value of squeeze argument if not set
-        if squeeze is None:
-            squeeze = config.defaults['control.squeeze']
-
         out = self.horner(x)
-        if not hasattr(x, '__len__'):
-            # received a scalar x, squeeze down the array along last dim
-            out = np.squeeze(out, axis=2)
-        if squeeze and self.issiso():
-            # return a scalar/1d array of outputs
-            return out[0][0]
-        else:
-            return out
+        return _process_frequency_response(self, x, out, squeeze=squeeze)
 
     def horner(self, x):
         """Evaluate system's transfer function at complex frequency

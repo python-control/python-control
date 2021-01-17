@@ -2,12 +2,14 @@
 
 import numpy as np
 import pytest
+from .conftest import editsdefaults
 
+import control as ct
 from control import c2d, tf, tf2ss, NonlinearIOSystem
 from control.lti import (LTI, common_timebase, damp, dcgain, isctime, isdtime,
                          issiso, pole, timebaseEqual, zero)
 from control.tests.conftest import slycotonly
-
+from control.exception import slycot_check
 
 class TestLTI:
 
@@ -153,3 +155,47 @@ class TestLTI:
             strictref = not strictref
         assert isctime(obj) == ref
         assert isctime(obj, strict=True) == strictref
+
+    @pytest.mark.usefixtures("editsdefaults")
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd])
+    @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
+        [1, 1, 1, None, (8,)],                          # SISO
+        [2, 1, 1, True, (8,)],
+        [3, 1, 1, False, (1, 1, 8)],
+        [1, 2, 1, None, (2, 1, 8)],                     # SIMO
+        [2, 2, 1, True, (2, 1, 8)],
+        [3, 2, 1, False, (2, 1, 8)],
+        [1, 1, 2, None, (1, 2, 8)],                     # MISO
+        [2, 1, 2, True, (1, 2, 8)],
+        [3, 1, 2, False, (1, 2, 8)],
+        [1, 2, 2, None, (2, 2, 8)],                     # MIMO
+        [2, 2, 2, True, (2, 2, 8)],
+        [3, 2, 2, False, (2, 2, 8)]
+    ])
+    def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape):
+        # Compute the length of the frequency array
+        omega = np.logspace(-2, 2, 8)
+
+        # Create the system to be tested
+        if fcn == ct.frd:
+            sys = fcn(ct.rss(nstate, nout, ninp), omega)
+        elif fcn == ct.tf and (nout > 1 or ninp > 1) and not slycot_check():
+            pytest.skip("Conversion of MIMO systems to transfer functions "
+                        "requires slycot.")
+        else:
+            sys = fcn(ct.rss(nstate, nout, ninp))
+
+        # Pass squeeze argument and make sure the shape is correct
+        mag, phase, _ = sys.frequency_response(omega, squeeze=squeeze)
+        assert mag.shape == shape
+        assert phase.shape == shape
+        assert sys(omega * 1j, squeeze=squeeze).shape == shape
+        assert ct.evalfr(sys, omega * 1j, squeeze=squeeze).shape == shape
+
+        # Changing config.default to False should return 3D frequency response
+        ct.config.set_defaults('control', squeeze=False)
+        mag, phase, _ = sys.frequency_response(omega)
+        assert mag.shape == (sys.outputs, sys.inputs, 8)
+        assert phase.shape == (sys.outputs, sys.inputs, 8)
+        assert sys(omega * 1j).shape == (sys.outputs, sys.inputs, 8)
+        assert ct.evalfr(sys, omega * 1j).shape == (sys.outputs, sys.inputs, 8)

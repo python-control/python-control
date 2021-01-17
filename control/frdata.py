@@ -50,7 +50,7 @@ import numpy as np
 from numpy import angle, array, empty, ones, \
     real, imag, absolute, eye, linalg, where, dot, sort
 from scipy.interpolate import splprep, splev
-from .lti import LTI
+from .lti import LTI, _process_frequency_response
 from . import config
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -391,14 +391,10 @@ second has %i." % (self.outputs, other.outputs))
                     for k, w in enumerate(omega_array):
                         frraw = splev(w, self.ifunc[i, j], der=0)
                         out[i, j, k] = frraw[0] + 1.0j * frraw[1]
-        if not hasattr(omega, '__len__'):
-            # omega is a scalar, squeeze down array along last dim
-            out = np.squeeze(out, axis=2)
-        if squeeze and self.issiso():
-            out = out[0][0]
-        return out
 
-    def __call__(self, s, squeeze=True):
+        return _process_frequency_response(self, omega, out, squeeze=squeeze)
+
+    def __call__(self, s, squeeze=None):
         """Evaluate system's transfer function at complex frequencies.
         
         Returns the complex frequency response `sys(s)` of system `sys` with

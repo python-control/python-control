@@ -15,6 +15,7 @@ common_timebase()
 import numpy as np
 from numpy import absolute, real, angle, abs
 from warnings import warn
+from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
            'isdtime', 'isctime', 'pole', 'zero', 'damp', 'evalfr',
@@ -596,3 +597,18 @@ def dcgain(sys):
         at the origin
     """
     return sys.dcgain()
+
+
+# Process frequency responses in a uniform way
+def _process_frequency_response(sys, omega, out, squeeze=None):
+    if not hasattr(omega, '__len__'):
+        # received a scalar x, squeeze down the array along last dim
+        out = np.squeeze(out, axis=2)
+
+    # Get rid of unneeded dimensions
+    if squeeze is None:
+        squeeze = config.defaults['control.squeeze']
+    if squeeze and sys.issiso():
+        return out[0][0]
+    else:
+        return out

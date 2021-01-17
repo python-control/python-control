@@ -62,7 +62,7 @@ import scipy as sp
 from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
-from .lti import LTI, common_timebase, isdtime
+from .lti import LTI, common_timebase, isdtime, _process_frequency_response
 from . import config
 from copy import deepcopy
 
@@ -646,9 +646,9 @@ class StateSpace(LTI):
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
         
-        In general the system may be multiple input, multiple output (MIMO), where
-        `m = self.inputs` number of inputs and `p = self.outputs` number of
-        outputs.
+        In general the system may be multiple input, multiple output
+        (MIMO), where `m = self.inputs` number of inputs and `p =
+        self.outputs` number of outputs.
 
         To evaluate at a frequency omega in radians per second, enter
         ``x = omega * 1j``, for continuous-time systems, or
@@ -671,19 +671,9 @@ class StateSpace(LTI):
             only if system is SISO and ``squeeze=True``.
 
         """
-        # Set value of squeeze argument if not set
-        if squeeze is None:
-            squeeze = config.defaults['control.squeeze']
-
         # Use Slycot if available
         out = self.horner(x)
-        if not hasattr(x, '__len__'):
-            # received a scalar x, squeeze down the array along last dim
-            out = np.squeeze(out, axis=2)
-        if squeeze and self.issiso():
-            return out[0][0]
-        else:
-            return out
+        return _process_frequency_response(self, x, out, squeeze=squeeze)
 
     def slycot_laub(self, x):
         """Evaluate system's transfer function at complex frequency
