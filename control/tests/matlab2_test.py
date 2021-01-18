@@ -121,25 +121,25 @@ class TestControlMatlab:
         #print("gain:", dcgain(sys))
 
         subplot2grid(plot_shape, (0, 0))
-        t, y = step(sys)
+        y, t = step(sys)
         plot(t, y)
 
         subplot2grid(plot_shape, (0, 1))
         T = linspace(0, 2, 100)
         X0 = array([1, 1])
-        t, y = step(sys, T, X0)
+        y, t = step(sys, T, X0)
         plot(t, y)
 
         # Test output of state vector
-        t, y, x = step(sys, return_x=True)
+        y, t, x = step(sys, return_x=True)
 
         #Test MIMO system
         A, B, C, D = MIMO_mats
         sys = ss(A, B, C, D)
 
         subplot2grid(plot_shape, (0, 2))
-        t, y = step(sys)
-        plot(t, y)
+        y, t = step(sys)
+        plot(t, y[:, 0, 0])
 
     def test_impulse(self, SISO_mats, mplcleanup):
         A, B, C, D = SISO_mats
@@ -168,8 +168,8 @@ class TestControlMatlab:
         #Test MIMO system
         A, B, C, D = MIMO_mats
         sys = ss(A, B, C, D)
-        t, y = impulse(sys)
-        plot(t, y, label='MIMO System')
+        y, t = impulse(sys)
+        plot(t, y[:, :, 0], label='MIMO System')
 
         legend(loc='best')
         #show()

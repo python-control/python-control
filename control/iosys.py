@@ -1428,8 +1428,9 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        return _process_time_response(sys, T, y, [], transpose=transpose,
-                                      return_x=return_x, squeeze=squeeze)
+        return _process_time_response(
+            sys, T, y, np.array((0, 0, np.asarray(T).size)),
+            transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],

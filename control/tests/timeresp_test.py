@@ -347,7 +347,7 @@ class TestTimeresp:
         yref_notrim = np.zeros((2, len(t)))
         yref_notrim[:1, :] = yref
         _t, yy = impulse_response(sys, T=t, input=0)
-        np.testing.assert_array_almost_equal(yy, yref_notrim, decimal=4)
+        np.testing.assert_array_almost_equal(yy[:,0,:], yref_notrim, decimal=4)
 
     @pytest.mark.skipif(StrictVersion(sp.__version__) < "1.3",
                         reason="requires SciPy 1.3 or greater")
@@ -770,7 +770,7 @@ class TestTimeresp:
             # Check the states as well
             _, yvec, xvec = ct.impulse_response(
                 sys, tvec, squeeze=squeeze, return_x=True)
-            if sys.issiso() and squeeze is not False:
+            if sys.issiso():
                 assert xvec.shape == (sys.states, 8)
             else:
                 assert xvec.shape == (sys.states, sys.inputs, 8)
@@ -783,7 +783,7 @@ class TestTimeresp:
             # Check the states as well
             _, yvec, xvec = ct.step_response(
                 sys, tvec, squeeze=squeeze, return_x=True)
-            if sys.issiso() and squeeze is not False:
+            if sys.issiso():
                 assert xvec.shape == (sys.states, 8)
             else:
                 assert xvec.shape == (sys.states, sys.inputs, 8)
@@ -894,3 +894,37 @@ class TestTimeresp:
 
         _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
         assert yvec.shape == shape
+
+    @pytest.mark.parametrize(
+        "nstate, nout, ninp, squeeze, ysh_in, ysh_no, xsh_in", [
+        [4,    1,    1,  None,   (8,),       (8,),    (8, 4)],
+        [4,    1,    1,  True,   (8,),       (8,),    (8, 4)],
+        [4,    1,    1,  False,  (8, 1, 1),  (8, 1),  (8, 4)],
+        [4,    2,    1,  None,   (8, 2, 1),  (8, 2),  (8, 4, 1)],
+        [4,    2,    1,  True,   (8, 2),     (8, 2),  (8, 4, 1)],
+        [4,    2,    1,  False,  (8, 2, 1),  (8, 2),  (8, 4, 1)],
+        [4,    1,    2,  None,   (8, 1, 2),  (8, 1),  (8, 4, 2)],
+        [4,    1,    2,  True,   (8, 2),     (8,),    (8, 4, 2)],
+        [4,    1,    2,  False,  (8, 1, 2),  (8, 1),  (8, 4, 2)],
+        [4,    2,    2,  None,   (8, 2, 2),  (8, 2),  (8, 4, 2)],
+        [4,    2,    2,  True,   (8, 2, 2),  (8, 2),  (8, 4, 2)],
+        [4,    2,    2,  False,  (8, 2, 2),  (8, 2),  (8, 4, 2)],
+    ])
+    def test_response_transpose(
+            self, nstate, nout, ninp, squeeze, ysh_in, ysh_no, xsh_in):
+        sys = ct.rss(nstate, nout, ninp)
+        T = np.linspace(0, 1, 8)
+
+        # Step response - input indexed
+        t, y, x = ct.step_response(
+            sys, T, transpose=True, return_x=True, squeeze=squeeze)
+        assert t.shape == (T.size, )
+        assert y.shape == ysh_in
+        assert x.shape == xsh_in
+
+        # Initial response - no input indexing
+        t, y, x = ct.initial_response(
+            sys, T, 1, transpose=True, return_x=True, squeeze=squeeze)
+        assert t.shape == (T.size, )
+        assert y.shape == ysh_no
+        assert x.shape == (T.size, sys.states)
