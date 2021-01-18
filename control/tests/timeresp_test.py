@@ -639,9 +639,10 @@ class TestTimeresp:
         if hasattr(tsystem, 't'):
             # tout should always match t, which has shape (n, )
             np.testing.assert_allclose(tout, tsystem.t)
-        if squeeze is False or sys.outputs > 1:
+
+        if squeeze is False or not sys.issiso():
             assert yout.shape[0] == sys.outputs
-            assert yout.shape[1] == tout.shape[0]
+            assert yout.shape[-1] == tout.shape[0]
         else:
             assert yout.shape == tout.shape
 
@@ -725,21 +726,22 @@ class TestTimeresp:
 
     @pytest.mark.usefixtures("editsdefaults")
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
-    @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape", [
-        [1, 1, 1, None, (8,)],
-        [2, 1, 1, True, (8,)],
-        [3, 1, 1, False, (1, 8)],
-        [3, 2, 1, None, (2, 8)],
-        [4, 2, 1, True, (2, 8)],
-        [5, 2, 1, False, (2, 8)],
-        [3, 1, 2, None, (1, 8)],
-        [4, 1, 2, True, (8,)],
-        [5, 1, 2, False, (1, 8)],
-        [4, 2, 2, None, (2, 8)],
-        [5, 2, 2, True, (2, 8)],
-        [6, 2, 2, False, (2, 8)],
+    @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape1, shape2", [
+    #  state  out   in   squeeze  in/out      out-only
+        [1,    1,    1,  None,   (8,),       (8,)],
+        [2,    1,    1,  True,   (8,),       (8,)],
+        [3,    1,    1,  False,  (1, 1, 8),  (1, 8)],
+        [3,    2,    1,  None,   (2, 1, 8),  (2, 8)],
+        [4,    2,    1,  True,   (2, 8),     (2, 8)],
+        [5,    2,    1,  False,  (2, 1, 8),  (2, 8)],
+        [3,    1,    2,  None,   (1, 2, 8),  (1, 8)],
+        [4,    1,    2,  True,   (2, 8),     (8,)],
+        [5,    1,    2,  False,  (1, 2, 8),  (1, 8)],
+        [4,    2,    2,  None,   (2, 2, 8),  (2, 8)],
+        [5,    2,    2,  True,   (2, 2, 8),  (2, 8)],
+        [6,    2,    2,  False,  (2, 2, 8),  (2, 8)],
     ])
-    def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape):
+    def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape1, shape2):
         # Figure out if we have SciPy 1+
         scipy0 = StrictVersion(sp.__version__) < '1.0'
 
@@ -750,27 +752,56 @@ class TestTimeresp:
         else:
             sys = fcn(ct.rss(nstate, nout, ninp, strictly_proper=True))
 
-        # Keep track of expect users warnings
-        warntype = UserWarning if sys.inputs > 1 else None
-
         # Generate the time and input vectors
         tvec = np.linspace(0, 1, 8)
         uvec = np.dot(
             np.ones((sys.inputs, 1)),
             np.reshape(np.sin(tvec), (1, 8)))
 
+        #
         # Pass squeeze argument and make sure the shape is correct
-        with pytest.warns(warntype, match="Converting MIMO system"):
+        #
+        # For responses that are indexed by the input, check against shape1
+        # For responses that have no/fixed input, check against shape2
+        #
+
+        # Impulse response
+        if isinstance(sys, StateSpace):
+            # Check the states as well
+            _, yvec, xvec = ct.impulse_response(
+                sys, tvec, squeeze=squeeze, return_x=True)
+            if sys.issiso() and squeeze is not False:
+                assert xvec.shape == (sys.states, 8)
+            else:
+                assert xvec.shape == (sys.states, sys.inputs, 8)
+        else:
             _, yvec = ct.impulse_response(sys, tvec, squeeze=squeeze)
-        assert yvec.shape == shape
+        assert yvec.shape == shape1
 
-        _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
-        assert yvec.shape == shape
-
-        with pytest.warns(warntype, match="Converting MIMO system"):
+        # Step response
+        if isinstance(sys, StateSpace):
+            # Check the states as well
+            _, yvec, xvec = ct.step_response(
+                sys, tvec, squeeze=squeeze, return_x=True)
+            if sys.issiso() and squeeze is not False:
+                assert xvec.shape == (sys.states, 8)
+            else:
+                assert xvec.shape == (sys.states, sys.inputs, 8)
+        else:
             _, yvec = ct.step_response(sys, tvec, squeeze=squeeze)
-        assert yvec.shape == shape
+        assert yvec.shape == shape1
 
+        # Initial response (only indexed by output)
+        if isinstance(sys, StateSpace):
+            # Check the states as well
+            _, yvec, xvec = ct.initial_response(
+                sys, tvec, 1, squeeze=squeeze, return_x=True)
+            assert xvec.shape == (sys.states, 8)
+        else:
+            _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
+        assert yvec.shape == shape2
+
+        # Forced response (only indexed by output)
         if isinstance(sys, StateSpace):
             # Check the states as well
             _, yvec, xvec = ct.forced_response(
@@ -779,39 +810,39 @@ class TestTimeresp:
         else:
             # Just check the input/output response
             _, yvec = ct.forced_response(sys, tvec, uvec, 0, squeeze=squeeze)
-        assert yvec.shape == shape
+        assert yvec.shape == shape2
 
         # Test cases where we choose a subset of inputs and outputs
         _, yvec = ct.step_response(
             sys, tvec, input=ninp-1, output=nout-1, squeeze=squeeze)
-        # Possible code if we implemenet a squeeze='siso' option
         if squeeze is False:
             # Shape should be unsqueezed
-            assert yvec.shape == (1, 8)
+            assert yvec.shape == (1, 1, 8)
         else:
             # Shape should be squeezed
             assert yvec.shape == (8, )
 
-        # For InputOutputSystems, also test input_output_response
+        # For InputOutputSystems, also test input/output response
         if isinstance(sys, ct.InputOutputSystem) and not scipy0:
             _, yvec = ct.input_output_response(sys, tvec, uvec, squeeze=squeeze)
-            assert yvec.shape == shape
+            assert yvec.shape == shape2
 
         #
         # Changing config.default to False should return 3D frequency response
         #
         ct.config.set_defaults('control', squeeze_time_response=False)
 
-        with pytest.warns(warntype, match="Converting MIMO system"):
-            _, yvec = ct.impulse_response(sys, tvec)
-        assert yvec.shape == (sys.outputs, 8)
+        _, yvec = ct.impulse_response(sys, tvec)
+        if squeeze is not True or sys.inputs > 1 or sys.outputs > 1:
+            assert yvec.shape == (sys.outputs, sys.inputs, 8)
+
+        _, yvec = ct.step_response(sys, tvec)
+        if squeeze is not True or sys.inputs > 1 or sys.outputs > 1:
+            assert yvec.shape == (sys.outputs, sys.inputs, 8)
 
         _, yvec = ct.initial_response(sys, tvec, 1)
-        assert yvec.shape == (sys.outputs, 8)
-
-        with pytest.warns(warntype, match="Converting MIMO system"):
-            _, yvec = ct.step_response(sys, tvec)
-        assert yvec.shape == (sys.outputs, 8)
+        if squeeze is not True or sys.outputs > 1:
+            assert yvec.shape == (sys.outputs, 8)
 
         if isinstance(sys, ct.StateSpace):
             _, yvec, xvec = ct.forced_response(
@@ -819,12 +850,14 @@ class TestTimeresp:
             assert xvec.shape == (sys.states, 8)
         else:
             _, yvec = ct.forced_response(sys, tvec, uvec, 0)
-        assert yvec.shape == (sys.outputs, 8)
+        if squeeze is not True or sys.outputs > 1:
+            assert yvec.shape == (sys.outputs, 8)
 
         # For InputOutputSystems, also test input_output_response
         if isinstance(sys, ct.InputOutputSystem) and not scipy0:
             _, yvec = ct.input_output_response(sys, tvec, uvec)
-            assert yvec.shape == (sys.noutputs, 8)
+            if squeeze is not True or sys.outputs > 1:
+                assert yvec.shape == (sys.outputs, 8)
 
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
     def test_squeeze_exception(self, fcn):

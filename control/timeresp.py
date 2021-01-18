@@ -514,12 +514,13 @@ def _get_ss_simo(sys, input=None, output=None, squeeze=None):
 def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
                   transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
-    """Step response of a linear system
+    """Compute the step response for a linear system.
 
-    If the system has multiple inputs or outputs (MIMO), one input has
-    to be selected for the simulation. Optionally, one output may be
-    selected. The parameters `input` and `output` do this. All other
-    inputs are set to 0, all other outputs are ignored.
+    If the system has multiple inputs and/or multiple outputs, the step
+    response is computed for each input/output pair, with all other inputs set
+    to zero.  Optionally, a single input and/or single output can be selected,
+    in which case all other inputs are set to 0 and all other outputs are
+    ignored.
 
     For information on the **shape** of parameters `T`, `X0` and
     return values `T`, `yout`, see :ref:`time-series-convention`.
@@ -545,11 +546,12 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         arrays with the correct shape.
 
     input : int, optional
-        Index of the input that will be used in this simulation.  Default = 0.
+        Only compute the step response for the listed input.  If not
+        specified, the step responses for each independent input are computed.
 
     output : int, optional
-        Index of the output that will be used in this simulation. Set to None
-        to not trim outputs
+        Only report the step response for the listed output.  If not
+        specified, all outputs are reported.
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
@@ -567,23 +569,27 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         output response is returned as a 1D array (indexed by time).  If
         squeeze=True, remove single-dimensional entries from the shape of the
         output even if the system is not SISO. If squeeze=False, keep the
-        output as a 2D array (indexed by the output number and time) even if
+        output as a 3D array (indexed by the output, input, and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
-    T : array
+    T : 1D array
         Time values of the output
 
-    yout : array
+    yout : ndarray
         Response of the system.  If the system is SISO and squeeze is not
         True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
+        squeeze is False, the array is 3D (indexed by the input, output, and
         time).
 
     xout : array, optional
-        Individual response of each x variable (if return_x is True).
+        Individual response of each x variable (if return_x is True). For a
+        SISO system (or if a single input is specified), xout is a 2D array
+        indexed by the state index and time.  For a non-SISO system, xout is a
+        3D array indexed by the state, the input, and time.  The shape of xout
+        is not affected by the ``squeeze`` keyword.
 
     See Also
     --------
@@ -599,13 +605,52 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     >>> T, yout = step_response(sys, T, X0)
 
     """
-    squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
+    # Convert to state space so that we can simulate
+    sys = _convert_to_statespace(sys)
+
+    # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
     U = np.ones_like(T)
 
-    return forced_response(sys, T, U, X0, transpose=transpose,
-                           return_x=return_x, squeeze=squeeze)
+    # If squeeze was not specified, figure out the default
+    if squeeze is None:
+        squeeze = config.defaults['control.squeeze_time_response']
+
+    # Figure out what type of step response to compute (SISO, SIMO, MIMO)
+    if squeeze is False:
+        # Drop through to MIMO case
+        pass
+    elif sys.issiso() or isinstance(input, int) or isinstance(output, int):
+        # Get the system we need to simulate
+        squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
+        return forced_response(sys, T, U, X0, transpose=transpose,
+                               return_x=return_x, squeeze=squeeze)
+    elif input is not None or output is not None:
+        raise ValueError("input and output must either be integers or None")
+
+    # Simulate the response for each input
+    ninputs = sys.inputs if input is None else 1
+    noutputs = sys.outputs if output is None else 1
+    yout = np.empty((noutputs, ninputs, len(T)))
+    xout = np.empty((sys.states, ninputs, len(T)))
+    for i in range(sys.inputs):
+        # If input keyword was specified, only handle that case
+        if isinstance(input, int) and i != input:
+            continue
+
+        # Create a set of single inputs system for simulation
+        squeeze, simo = _get_ss_simo(sys, i, output, squeeze=squeeze)
+
+        out = forced_response(simo, T, U, X0, transpose=False,
+                              return_x=return_x, squeeze=True)
+        inpidx = i if input is None else 0
+        yout[:, inpidx, :] = out[1]
+        if return_x:
+            xout[:, i, :] = out[2]
+
+    return _process_time_response(sys, out[0], yout, xout, transpose=transpose,
+                                  return_x=return_x, squeeze=squeeze)
 
 
 def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
@@ -788,12 +833,13 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
-    """Impulse response of a linear system
+    """Compute the impulse response for a linear system.
 
-    If the system has multiple inputs or outputs (MIMO), one input has
-    to be selected for the simulation. Optionally, one output may be
-    selected. The parameters `input` and `output` do this. All other
-    inputs are set to 0, all other outputs are ignored.
+    If the system has multiple inputs and/or multiple outputs, the impulse
+    response is computed for each input/output pair, with all other inputs set
+    to zero.  Optionally, a single input and/or single output can be selected,
+    in which case all other inputs are set to 0 and all other outputs are
+    ignored.
 
     For information on the **shape** of parameters `T`, `X0` and
     return values `T`, `yout`, see :ref:`time-series-convention`.
@@ -813,11 +859,13 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         Numbers are converted to constant arrays with the correct shape.
 
     input : int, optional
-        Index of the input that will be used in this simulation.  Default = 0.
+        Only compute the impulse response for the listed input.  If not
+        specified, the impulse responses for each independent input are
+        computed.
 
     output : int, optional
-        Index of the output that will be used in this simulation. Set to None
-        to not trim outputs
+        Only report the step response for the listed output.  If not
+        specified, all outputs are reported.
 
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
@@ -851,7 +899,11 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         time).
 
     xout : array, optional
-        Individual response of each x variable (if return_x is True).
+        Individual response of each x variable (if return_x is True). For a
+        SISO system (or if a single input is specified), xout is a 2D array
+        indexed by the state index and time.  For a non-SISO system, xout is a
+        3D array indexed by the state, the input, and time.  The shape of xout
+        is not affected by the ``squeeze`` keyword.
 
     See Also
     --------
@@ -868,10 +920,12 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     >>> T, yout = impulse_response(sys, T, X0)
 
     """
-    squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
-
     # if system has direct feedthrough, can't simulate impulse response
     # numerically
+    # Convert to state space so that we can simulate
+    sys = _convert_to_statespace(sys)
+
+    # Check to make sure there is not a direct term
     if np.any(sys.D != 0) and isctime(sys):
         warnings.warn("System has direct feedthrough: ``D != 0``. The "
                       "infinite impulse at ``t=0`` does not appear in the "
@@ -889,19 +943,71 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
     U = np.zeros_like(T)
 
-    # Compute new X0 that contains the impulse
-    # We can't put the impulse into U because there is no numerical
-    # representation for it (infinitesimally short, infinitely high).
-    # See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
-    if isctime(sys):
-        B = np.asarray(sys.B).squeeze()
-        new_X0 = B + X0
-    else:
-        new_X0 = X0
-        U[0] = 1./sys.dt # unit area impulse
+    # If squeeze was not specified, figure out the default
+    if squeeze is None:
+        squeeze = config.defaults['control.squeeze_time_response']
 
-    return forced_response(sys, T, U, new_X0, transpose=transpose,
-                           return_x=return_x, squeeze=squeeze)
+    # Figure out what type of step response to compute (SISO, SIMO, MIMO)
+    if squeeze is False:
+        # Drop through to MIMO case
+        pass
+    elif sys.issiso() or isinstance(input, int) or isinstance(output, int):
+        # Get the system we need to simulate
+        squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
+
+        #
+        # Compute new X0 that contains the impulse
+        #
+        # We can't put the impulse into U because there is no numerical
+        # representation for it (infinitesimally short, infinitely high).
+        # See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
+        #
+        if isctime(sys):
+            B = np.asarray(sys.B).squeeze()
+            new_X0 = B + X0
+        else:
+            new_X0 = X0
+            U[0] = 1./sys.dt # unit area impulse
+
+        return forced_response(sys, T, U, new_X0, transpose=transpose,
+                               return_x=return_x, squeeze=squeeze)
+    elif input is not None or output is not None:
+        raise ValueError("input and output must either be integers or None")
+
+    # Simulate the response for each input
+    ninputs = sys.inputs if input is None else 1
+    noutputs = sys.outputs if output is None else 1
+    yout = np.empty((noutputs, ninputs, len(T)))
+    xout = np.empty((sys.states, ninputs, len(T)))
+    for i in range(sys.inputs):
+        # If input keyword was specified, only handle that case
+        if isinstance(input, int) and i != input:
+            continue
+
+        # Get the system we need to simulate
+        squeeze, simo = _get_ss_simo(sys, i, output, squeeze=squeeze)
+
+        # Compute new X0 that contains the impulse
+        if isctime(simo):
+            B = np.asarray(simo.B).squeeze()
+            new_X0 = B + X0
+        else:
+            new_X0 = X0
+            U[0] = 1./simo.dt # unit area impulse
+
+        # Simulate the impulse response fo this input
+        out = forced_response(simo, T, U, new_X0, transpose=transpose,
+                              return_x=return_x, squeeze=squeeze)
+
+        # Store the output (and states)
+        inpidx = i if input is None else 0
+        yout[:, inpidx, :] = out[1]
+        if return_x:
+            xout[:, i, :] = out[2]
+
+    return _process_time_response(sys, out[0], yout, xout, transpose=transpose,
+                                  return_x=return_x, squeeze=squeeze)
+
 
 
 # utility function to find time period and time increment using pole locations
