@@ -646,10 +646,6 @@ class StateSpace(LTI):
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
 
-        In general the system may be multiple input, multiple output
-        (MIMO), where `m = self.inputs` number of inputs and `p =
-        self.outputs` number of outputs.
-
         To evaluate at a frequency omega in radians per second, enter
         ``x = omega * 1j``, for continuous-time systems, or
         ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use

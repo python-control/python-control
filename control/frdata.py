@@ -441,10 +441,10 @@ second has %i." % (self.outputs, other.outputs))
             frequency values.
         """
         # Make sure that we are operating on a simple list
-        if len(np.array(s, ndmin=1).shape) > 1:
+        if len(np.atleast_1d(s).shape) > 1:
             raise ValueError("input list must be 1D")
 
-        if any(abs(np.array(s, ndmin=1).real) > 0):
+        if any(abs(np.atleast_1d(s).real) > 0):
             raise ValueError("__call__: FRD systems can only accept "
                             "purely imaginary frequencies")
 
