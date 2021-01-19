@@ -16,7 +16,10 @@ __all__ = ['defaults', 'set_defaults', 'reset_defaults',
 # Package level default values
 _control_defaults = {
     'control.default_dt': 0,
-    'control.squeeze_frequency_response': None
+    'control.squeeze_frequency_response': None,
+    'control.squeeze_time_response': True,
+    'control.squeeze_time_response': None,
+    'forced_response.return_x': False,
 }
 defaults = dict(_control_defaults)
 
@@ -211,6 +214,7 @@ def use_legacy_defaults(version):
     #
     # Go backwards through releases and reset defaults
     #
+    reset_defaults()            # start from a clean slate
 
     # Version 0.9.0:
     if major == 0 and minor < 9:
@@ -229,5 +233,11 @@ def use_legacy_defaults(version):
 
         # turned off _remove_useless_states
         set_defaults('statesp', remove_useless_states=True)
+
+        # forced_response no longer returns x by default
+        set_defaults('forced_response', return_x=True)
+
+        # time responses are only squeezed if SISO
+        set_defaults('control', squeeze_time_response=True)
 
     return (major, minor, patch)

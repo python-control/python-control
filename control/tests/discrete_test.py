@@ -353,9 +353,11 @@ class TestDiscrete:
         tout, yout = step_response(tsys.siso_ss1d, T)
         tout, yout = impulse_response(tsys.siso_ss1d)
         tout, yout = impulse_response(tsys.siso_ss1d, T)
-        tout, yout, xout = forced_response(tsys.siso_ss1d, T, U, 0)
-        tout, yout, xout = forced_response(tsys.siso_ss2d, T, U, 0)
-        tout, yout, xout = forced_response(tsys.siso_ss3d, T, U, 0)
+        tout, yout = forced_response(tsys.siso_ss1d, T, U, 0)
+        tout, yout = forced_response(tsys.siso_ss2d, T, U, 0)
+        tout, yout = forced_response(tsys.siso_ss3d, T, U, 0)
+        tout, yout, xout = forced_response(tsys.siso_ss1d, T, U, 0,
+                                           return_x=True)
 
     def test_sample_system(self, tsys):
         # Make sure we can convert various types of systems

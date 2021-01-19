@@ -321,7 +321,8 @@ class TestMatlab:
         yout, tout, _xout = lsim(siso.ss1, u, t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
-        yout, _t, _xout = lsim(siso.tf3, u, t)
+        with pytest.warns(UserWarning, match="Internal conversion"):
+            yout, _t, _xout = lsim(siso.tf3, u, t)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
         # test with initial value and special algorithm for ``U=0``

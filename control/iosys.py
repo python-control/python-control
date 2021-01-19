@@ -37,7 +37,7 @@ import copy
 from warnings import warn
 
 from .statesp import StateSpace, tf2ss
-from .timeresp import _check_convert_array
+from .timeresp import _check_convert_array, _process_time_response
 from .lti import isctime, isdtime, common_timebase
 from . import config
 
@@ -449,6 +449,10 @@ class InputOutputSystem(object):
     def find_state(self, name):
         """Find the index for a state given its name (`None` if not found)"""
         return self.state_index.get(name, None)
+
+    def issiso(self):
+        """Check to see if a system is single input, single output"""
+        return self.ninputs == 1 and self.noutputs == 1
 
     def feedback(self, other=1, sign=-1, params={}):
         """Feedback interconnection between two input/output systems
@@ -1353,7 +1357,7 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
 
 
 def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
-                          return_x=False, squeeze=True):
+                          transpose=False, return_x=False, squeeze=None):
 
     """Compute the output response of a system to a given input.
 
@@ -1373,18 +1377,22 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     return_x : bool, optional
         If True, return the values of the state at each time (default = False).
     squeeze : bool, optional
-        If True (default), squeeze unused dimensions out of the output
-        response.  In particular, for a single output system, return a
-        vector of shape (nsteps) instead of (nsteps, 1).
+        If True and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If False, return the
+        system output as a 2D array even if the system is SISO.  Default value
+        set by config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
     T : array
         Time values of the output.
     yout : array
-        Response of the system.
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is 2D (indexed by the output number and
+        time).
     xout : array
-        Time evolution of the state vector (if return_x=True)
+        Time evolution of the state vector (if return_x=True).
 
     Raises
     ------
@@ -1420,12 +1428,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        if squeeze:
-            y = np.squeeze(y)
-        if return_x:
-            return T, y, []
-        else:
-            return T, y
+        return _process_time_response(sys, T, y, [], transpose=transpose,
+                                      return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],
@@ -1500,14 +1504,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     else:                       # Neither ctime or dtime??
         raise TypeError("Can't determine system type")
 
-    # Get rid of extra dimensions in the output, of desired
-    if squeeze:
-        y = np.squeeze(y)
-
-    if return_x:
-        return soln.t, y, soln.y
-    else:
-        return soln.t, y
+    return _process_time_response(sys, soln.t, y, soln.y, transpose=transpose,
+                                  return_x=return_x, squeeze=squeeze)
 
 
 def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
