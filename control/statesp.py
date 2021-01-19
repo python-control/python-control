@@ -62,7 +62,7 @@ import scipy as sp
 from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
-from .lti import LTI, common_timebase, isdtime
+from .lti import LTI, common_timebase, isdtime, _process_frequency_response
 from . import config
 from copy import deepcopy
 
@@ -646,15 +646,11 @@ class StateSpace(LTI):
         raise NotImplementedError(
             "StateSpace.__rdiv__ is not implemented yet.")
 
-    def __call__(self, x, squeeze=True):
+    def __call__(self, x, squeeze=None):
         """Evaluate system's transfer function at complex frequency.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
-        
-        In general the system may be multiple input, multiple output (MIMO), where
-        `m = self.inputs` number of inputs and `p = self.outputs` number of
-        outputs.
 
         To evaluate at a frequency omega in radians per second, enter
         ``x = omega * 1j``, for continuous-time systems, or
@@ -663,28 +659,29 @@ class StateSpace(LTI):
 
         Parameters
         ----------
-        x : complex or complex array_like
+        x : complex or complex 1D array_like
             Complex frequencies
-        squeeze : bool, optional (default=True)
-            If True and `self` is single input single output (SISO), returns a
-            1D array rather than a 3D array.
+        squeeze : bool, optional
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep all indices (output, input and, if omega is array_like,
+            frequency) even if the system is SISO. The default value can be
+            set using config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
-        fresp : (p, m, len(x)) complex ndarray or (len(x),) complex ndarray
-            The frequency response of the system. Array is ``len(x)`` if and
-            only if system is SISO and ``squeeze=True``.
+        fresp : complex ndarray
+            The frequency response of the system.  If the system is SISO and
+            squeeze is not True, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is False, the first
+            two dimensions of the array are indices for the output and input
+            and the remaining dimensions match omega.  If ``squeeze`` is True
+            then single-dimensional axes are removed.
 
         """
         # Use Slycot if available
         out = self.horner(x)
-        if not hasattr(x, '__len__'):
-            # received a scalar x, squeeze down the array along last dim
-            out = np.squeeze(out, axis=2)
-        if squeeze and self.issiso():
-            return out[0][0]
-        else:
-            return out
+        return _process_frequency_response(self, x, out, squeeze=squeeze)
 
     def slycot_laub(self, x):
         """Evaluate system's transfer function at complex frequency
@@ -704,9 +701,13 @@ class StateSpace(LTI):
             Frequency response
         """
         from slycot import tb05ad
+        x_arr = np.atleast_1d(x) # array-like version of x
+
+        # Make sure that we are operating on a simple list
+        if len(x_arr.shape) > 1:
+            raise ValueError("input list must be 1D")
 
         # preallocate
-        x_arr = np.atleast_1d(x) # array-like version of x
         n = self.states
         m = self.inputs
         p = self.outputs
@@ -766,6 +767,11 @@ class StateSpace(LTI):
             # Fall back because either Slycot unavailable or cannot handle
             # certain cases.
             x_arr = np.atleast_1d(x) # force to be an array
+
+            # Make sure that we are operating on a simple list
+            if len(x_arr.shape) > 1:
+                raise ValueError("input list must be 1D")
+
             # Preallocate
             out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
 

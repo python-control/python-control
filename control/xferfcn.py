@@ -63,7 +63,7 @@ from copy import deepcopy
 from warnings import warn
 from itertools import chain
 from re import sub
-from .lti import LTI, common_timebase, isdtime
+from .lti import LTI, common_timebase, isdtime, _process_frequency_response
 from . import config
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -234,16 +234,16 @@ class TransferFunction(LTI):
                     dt = config.defaults['control.default_dt']
         self.dt = dt
 
-    def __call__(self, x, squeeze=True):
+    def __call__(self, x, squeeze=None):
         """Evaluate system's transfer function at complex frequencies.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
 
-        In general the system may be multiple input, multiple output (MIMO), where
-        `m = self.inputs` number of inputs and `p = self.outputs` number of
-        outputs.
-        
+        In general the system may be multiple input, multiple output
+        (MIMO), where `m = self.inputs` number of inputs and `p =
+        self.outputs` number of outputs.
+
         To evaluate at a frequency omega in radians per second, enter
         ``x = omega * 1j``, for continuous-time systems, or
         ``x = exp(1j * omega * dt)`` for discrete-time systems. Or use
@@ -251,28 +251,31 @@ class TransferFunction(LTI):
 
         Parameters
         ----------
-        x : complex array_like or complex
+        x : complex or complex 1D array_like
             Complex frequencies
-        squeeze : bool, optional (default=True)
-            If True and `sys` is single input single output (SISO), returns a
-            1D array rather than a 3D array.
+        squeeze : bool, optional
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep all indices (output, input and, if omega is array_like,
+            frequency) even if the system is SISO. The default value can be
+            set using config.defaults['control.squeeze_frequency_response'].
+            If True and the system is single-input single-output (SISO),
+            return a 1D array rather than a 3D array.  Default value (True)
+            set by config.defaults['control.squeeze_frequency_response'].
 
         Returns
         -------
-        fresp : (p, m, len(x)) complex ndarray or or (len(x), ) complex ndarray
-            The frequency response of the system. Array is `len(x)` if and
-            only if system is SISO and ``squeeze=True``.
+        fresp : complex ndarray
+            The frequency response of the system.  If the system is SISO and
+            squeeze is not True, the shape of the array matches the shape of
+            omega.  If the system is not SISO or squeeze is False, the first
+            two dimensions of the array are indices for the output and input
+            and the remaining dimensions match omega.  If ``squeeze`` is True
+            then single-dimensional axes are removed.
 
         """
         out = self.horner(x)
-        if not hasattr(x, '__len__'):
-            # received a scalar x, squeeze down the array along last dim
-            out = np.squeeze(out, axis=2)
-        if squeeze and self.issiso():
-            # return a scalar/1d array of outputs
-            return out[0][0]
-        else:
-            return out
+        return _process_frequency_response(self, x, out, squeeze=squeeze)
 
     def horner(self, x):
         """Evaluate system's transfer function at complex frequency
@@ -295,7 +298,12 @@ class TransferFunction(LTI):
             Frequency response
 
         """
-        x_arr = np.atleast_1d(x) # force to be an array
+        x_arr = np.atleast_1d(x)        # force to be an array
+
+        # Make sure that we are operating on a simple list
+        if len(x_arr.shape) > 1:
+            raise ValueError("input list must be 1D")
+
         out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
         for i in range(self.outputs):
             for j in range(self.inputs):
