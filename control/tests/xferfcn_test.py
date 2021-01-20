@@ -187,8 +187,8 @@ class TestXferFcn:
         sys2 = - sys1
         sys3 = TransferFunction(num3, den1)
 
-        for i in range(sys3.outputs):
-            for j in range(sys3.inputs):
+        for i in range(sys3.noutputs):
+            for j in range(sys3.ninputs):
                 np.testing.assert_array_equal(sys2.num[i][j], sys3.num[i][j])
                 np.testing.assert_array_equal(sys2.den[i][j], sys3.den[i][j])
 
@@ -233,8 +233,8 @@ class TestXferFcn:
         sys2 = TransferFunction(num2, den2)
         sys3 = sys1 + sys2
 
-        for i in range(sys3.outputs):
-            for j in range(sys3.inputs):
+        for i in range(sys3.noutputs):
+            for j in range(sys3.ninputs):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
 
@@ -281,8 +281,8 @@ class TestXferFcn:
         sys2 = TransferFunction(num2, den2)
         sys3 = sys1 - sys2
 
-        for i in range(sys3.outputs):
-            for j in range(sys3.inputs):
+        for i in range(sys3.noutputs):
+            for j in range(sys3.ninputs):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
 
@@ -337,8 +337,8 @@ class TestXferFcn:
         sys2 = TransferFunction(num2, den2)
         sys3 = sys1 * sys2
 
-        for i in range(sys3.outputs):
-            for j in range(sys3.inputs):
+        for i in range(sys3.noutputs):
+            for j in range(sys3.ninputs):
                 np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
                 np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
 
@@ -394,16 +394,16 @@ class TestXferFcn:
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
             [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ])
         sys1 = sys[1:, 1:]
-        assert (sys1.inputs, sys1.outputs) == (2, 1)
+        assert (sys1.ninputs, sys1.noutputs) == (2, 1)
 
         sys2 = sys[:2, :2]
-        assert (sys2.inputs, sys2.outputs) == (2, 2)
+        assert (sys2.ninputs, sys2.noutputs) == (2, 2)
 
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
             [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ], 0.5)
         sys1 = sys[1:, 1:]
-        assert (sys1.inputs, sys1.outputs) == (2, 1)
+        assert (sys1.ninputs, sys1.noutputs) == (2, 1)
         assert sys1.dt == 0.5
 
     def test_is_static_gain(self):
@@ -645,11 +645,11 @@ class TestXferFcn:
         num = [[np.array([1., -7., 10.]), np.array([-1., 10.])],
                [np.array([2., -8.]), np.array([1., -2., -8.])],
                [np.array([1., 1., -30.]), np.array([7., -22.])]]
-        den = [[np.array([1., -5., -2.]) for _ in range(sys.inputs)]
-               for _ in range(sys.outputs)]
+        den = [[np.array([1., -5., -2.]) for _ in range(sys.ninputs)]
+               for _ in range(sys.noutputs)]
 
-        for i in range(sys.outputs):
-            for j in range(sys.inputs):
+        for i in range(sys.noutputs):
+            for j in range(sys.ninputs):
                 np.testing.assert_array_almost_equal(tfsys.num[i][j],
                                                      num[i][j])
                 np.testing.assert_array_almost_equal(tfsys.den[i][j],
@@ -770,10 +770,10 @@ class TestXferFcn:
             # XH = X @ H
             XH = np.matmul(X, H)
         XH = XH.minreal()
-        assert XH.inputs == n
-        assert XH.outputs == X.shape[0]
-        assert len(XH.num) == XH.outputs
-        assert len(XH.den) == XH.outputs
+        assert XH.ninputs == n
+        assert XH.noutputs == X.shape[0]
+        assert len(XH.num) == XH.noutputs
+        assert len(XH.den) == XH.noutputs
         assert len(XH.num[0]) == n
         assert len(XH.den[0]) == n
         np.testing.assert_allclose(2. * H.num[ij][0], XH.num[0][0], rtol=1e-4)
@@ -787,12 +787,12 @@ class TestXferFcn:
             # HXt = H @ X.T
             HXt = np.matmul(H, X.T)
         HXt = HXt.minreal()
-        assert HXt.inputs == X.T.shape[1]
-        assert HXt.outputs == n
+        assert HXt.ninputs == X.T.shape[1]
+        assert HXt.noutputs == n
         assert len(HXt.num) == n
         assert len(HXt.den) == n
-        assert len(HXt.num[0]) == HXt.inputs
-        assert len(HXt.den[0]) == HXt.inputs
+        assert len(HXt.num[0]) == HXt.ninputs
+        assert len(HXt.den[0]) == HXt.ninputs
         np.testing.assert_allclose(2. * H.num[0][ij], HXt.num[0][0], rtol=1e-4)
         np.testing.assert_allclose(     H.den[0][ij], HXt.den[0][0], rtol=1e-4)
         np.testing.assert_allclose(2. * H.num[1][ij], HXt.num[1][0], rtol=1e-4)

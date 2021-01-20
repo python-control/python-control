@@ -46,7 +46,7 @@ class TestMinreal:
         for n, m, p in permutations(range(1,6), 3):
             s = rss(n, p, m)
             sr = s.minreal()
-            if s.states > sr.states:
+            if s.nstates > sr.nstates:
                 nreductions += 1
             else:
                 # Check to make sure that poles and zeros match
@@ -98,9 +98,9 @@ class TestMinreal:
 
         sys = StateSpace(A, B, C, D)
         sysr = sys.minreal()
-        assert sysr.states == 2
-        assert sysr.inputs == sys.inputs
-        assert sysr.outputs == sys.outputs
+        assert sysr.nstates == 2
+        assert sysr.ninputs == sys.ninputs
+        assert sysr.noutputs == sys.noutputs
         np.testing.assert_array_almost_equal(
             eigvals(sysr.A), [-2.136154, -0.1638459])
 

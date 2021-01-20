@@ -85,9 +85,9 @@ class TestConvert:
             self.printSys(tfTransformed, 4)
 
         # Check to see if the state space systems have same dim
-        if (ssOriginal.states != ssTransformed.states) and verbose:
+        if (ssOriginal.nstates != ssTransformed.nstates) and verbose:
             print("WARNING: state space dimension mismatch: %d versus %d" %
-                  (ssOriginal.states, ssTransformed.states))
+                  (ssOriginal.nstates, ssTransformed.nstates))
 
         # Now make sure the frequency responses match
         # Since bode() only handles SISO, go through each I/O pair
@@ -181,9 +181,9 @@ class TestConvert:
     def testTf2ssStaticSiso(self):
         """Regression: tf2ss for SISO static gain"""
         gsiso = tf2ss(tf(23, 46))
-        assert 0 == gsiso.states
-        assert 1 == gsiso.inputs
-        assert 1 == gsiso.outputs
+        assert 0 == gsiso.nstates
+        assert 1 == gsiso.ninputs
+        assert 1 == gsiso.noutputs
         # in all cases ratios are exactly representable, so assert_array_equal
         # is fine
         np.testing.assert_array_equal([[0.5]], gsiso.D)
@@ -194,9 +194,9 @@ class TestConvert:
         gmimo = tf2ss(tf(
                 [[ [23],   [3],  [5] ], [ [-1],  [0.125],  [101.3] ]],
                 [[ [46], [0.1], [80] ], [  [2],   [-0.1],      [1] ]]))
-        assert 0 == gmimo.states
-        assert 3 == gmimo.inputs
-        assert 2 == gmimo.outputs
+        assert 0 == gmimo.nstates
+        assert 3 == gmimo.ninputs
+        assert 2 == gmimo.noutputs
         d = np.array([[0.5, 30, 0.0625], [-0.5, -1.25, 101.3]])
         np.testing.assert_array_equal(d, gmimo.D)
 

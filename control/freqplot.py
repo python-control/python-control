@@ -214,7 +214,7 @@ def bode_plot(syslist, omega=None,
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
-        if sys.inputs > 1 or sys.outputs > 1:
+        if sys.ninputs > 1 or sys.noutputs > 1:
             # TODO: Add MIMO bode plots.
             raise NotImplementedError(
                 "Bode is currently only implemented for SISO systems.")
@@ -582,7 +582,7 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                             num=50, endpoint=True, base=10.0)
 
     for sys in syslist:
-        if sys.inputs > 1 or sys.outputs > 1:
+        if sys.ninputs > 1 or sys.noutputs > 1:
             # TODO: Add MIMO nyquist plots.
             raise NotImplementedError(
                 "Nyquist is currently only implemented for SISO systems.")
@@ -672,7 +672,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     -------
     None
     """
-    if P.inputs > 1 or P.outputs > 1 or C.inputs > 1 or C.outputs > 1:
+    if P.ninputs > 1 or P.noutputs > 1 or C.ninputs > 1 or C.noutputs > 1:
         # TODO: Add MIMO go4 plots.
         raise NotImplementedError(
             "Gang of four is currently only implemented for SISO systems.")

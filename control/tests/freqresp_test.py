@@ -231,7 +231,7 @@ def test_discrete(dsystem_type):
         dsys.frequency_response(omega_bad)
 
     # Test bode plots (currently only implemented for SISO)
-    if (dsys.inputs == 1 and dsys.outputs == 1):
+    if (dsys.ninputs == 1 and dsys.noutputs == 1):
         # Generic call (frequency range calculated automatically)
         bode(dsys)
 

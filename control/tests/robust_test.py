@@ -76,8 +76,8 @@ class TestAugw:
         g = ss([-1.], [1.], [1.], [1.])
         w1 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w1)
-        assert p.outputs == 2
-        assert p.inputs == 2
+        assert p.noutputs == 2
+        assert p.ninputs == 2
         # w->z1 should be w1
         self.siso_almost_equal(w1, p[0, 0])
         # w->v should be 1
@@ -93,8 +93,8 @@ class TestAugw:
         g = ss([-1.], [1.], [1.], [1.])
         w2 = ss([-2], [1.], [1.], [2.])
         p = augw(g, w2=w2)
-        assert p.outputs == 2
-        assert p.inputs == 2
+        assert p.noutputs == 2
+        assert p.ninputs == 2
         # w->z2 should be 0
         self.siso_almost_equal(ss([], [], [], 0), p[0, 0])
         # w->v should be 1
@@ -110,8 +110,8 @@ class TestAugw:
         g = ss([-1.], [1.], [1.], [1.])
         w3 = ss([-2], [1.], [1.], [2.])
         p = augw(g, w3=w3)
-        assert p.outputs == 2
-        assert p.inputs == 2
+        assert p.noutputs == 2
+        assert p.ninputs == 2
         # w->z3 should be 0
         self.siso_almost_equal(ss([], [], [], 0), p[0, 0])
         # w->v should be 1
@@ -129,8 +129,8 @@ class TestAugw:
         w2 = ss([-3.], [3.], [1.], [3.])
         w3 = ss([-4.], [4.], [1.], [4.])
         p = augw(g, w1, w2, w3)
-        assert p.outputs == 4
-        assert p.inputs == 2
+        assert p.noutputs == 4
+        assert p.ninputs == 2
         # w->z1 should be w1
         self.siso_almost_equal(w1, p[0, 0])
         # w->z2 should be 0
@@ -157,8 +157,8 @@ class TestAugw:
                [[1., 0.], [0., 1.]])
         w1 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w1)
-        assert p.outputs == 4
-        assert p.inputs == 4
+        assert p.noutputs == 4
+        assert p.ninputs == 4
         # w->z1 should be diag(w1,w1)
         self.siso_almost_equal(w1, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])
@@ -189,8 +189,8 @@ class TestAugw:
                [[1., 0.], [0., 1.]])
         w2 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w2=w2)
-        assert p.outputs == 4
-        assert p.inputs == 4
+        assert p.noutputs == 4
+        assert p.ninputs == 4
         # w->z2 should be 0
         self.siso_almost_equal(0, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])
@@ -221,8 +221,8 @@ class TestAugw:
                [[1., 0.], [0., 1.]])
         w3 = ss([-2], [2.], [1.], [2.])
         p = augw(g, w3=w3)
-        assert p.outputs == 4
-        assert p.inputs == 4
+        assert p.noutputs == 4
+        assert p.ninputs == 4
         # w->z3 should be 0
         self.siso_almost_equal(0, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])
@@ -261,8 +261,8 @@ class TestAugw:
                 [[11., 13.], [17., 19.]],
                 [[23., 29.], [31., 37.]])
         p = augw(g, w1, w2, w3)
-        assert p.outputs == 8
-        assert p.inputs == 4
+        assert p.noutputs == 8
+        assert p.ninputs == 4
         # w->z1 should be w1
         self.siso_almost_equal(w1, p[0, 0])
         self.siso_almost_equal(0, p[0, 1])

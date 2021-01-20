@@ -863,7 +863,7 @@ class TestIOSys:
             ).reshape(-1,),
             inputs = ['u[0]', 'u[1]'],
             outputs = ['y[0]', 'y[1]'],
-            states = tsys.mimo_linsys1.states,
+            states = tsys.mimo_linsys1.nstates,
             name = 'sys1')
         sys2 = ios.LinearIOSystem(tsys.mimo_linsys2,
             inputs = ['u[0]', 'u[1]'],
@@ -974,7 +974,7 @@ class TestIOSys:
             outfcn=lambda t, x, u, params: u,
             inputs=('u[0]', 'u[1]'),
             outputs=('y[0]', 'y[1]'),
-            states=tsys.mimo_linsys1.states,
+            states=tsys.mimo_linsys1.nstates,
             name='namedsys')
         unnamedsys1 = ct.NonlinearIOSystem(
             lambda t, x, u, params: x, inputs=2, outputs=2, states=2
@@ -1107,7 +1107,7 @@ class TestIOSys:
                                          outfcn=outfcn,
                                          inputs=inputs,
                                          outputs=outputs,
-                                         states=tsys.mimo_linsys1.states,
+                                         states=tsys.mimo_linsys1.nstates,
                                          name='sys1')
             with pytest.raises(ValueError):
                 sys1.linearize([0, 0], [0, 0])
@@ -1116,7 +1116,7 @@ class TestIOSys:
                                      outfcn=outfcn,
                                      inputs=('u[0]', 'u[1]'),
                                      outputs=('y[0]', 'y[1]'),
-                                     states=tsys.mimo_linsys1.states,
+                                     states=tsys.mimo_linsys1.nstates,
                                      name='sys1')
         for x0, u0 in [([0], [0, 0]),
                        ([0, 0, 0], [0, 0]),

@@ -697,9 +697,9 @@ class TestMatlab:
 
         sys = ss(A, B, C, D)
         sysr = minreal(sys, verbose=verbose)
-        assert sysr.states == 2
-        assert sysr.inputs == sys.inputs
-        assert sysr.outputs == sys.outputs
+        assert sysr.nstates == 2
+        assert sysr.ninputs == sys.ninputs
+        assert sysr.noutputs == sys.noutputs
         np.testing.assert_array_almost_equal(
             eigvals(sysr.A), [-2.136154, -0.1638459])
 

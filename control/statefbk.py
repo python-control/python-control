@@ -624,7 +624,7 @@ def gram(sys, type):
         elif type == 'o':
             tra = 'N'
             C = -np.dot(sys.C.transpose(), sys.C)
-        n = sys.states
+        n = sys.nstates
         U = np.zeros((n, n))
         A = np.array(sys.A)         # convert to NumPy array for slycot
         X, scale, sep, ferr, w = sb03md(
@@ -639,7 +639,7 @@ def gram(sys, type):
         except ImportError:
             raise ControlSlycot("can't find slycot module 'sb03od'")
         tra = 'N'
-        n = sys.states
+        n = sys.nstates
         Q = np.zeros((n, n))
         A = np.array(sys.A)         # convert to NumPy array for slycot
         if type == 'cf':

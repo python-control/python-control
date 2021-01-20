@@ -659,8 +659,8 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
         # Create the I/O system object
         super(LinearIOSystem, self).__init__(
-            inputs=linsys.inputs, outputs=linsys.outputs,
-            states=linsys.states, params={}, dt=linsys.dt, name=name)
+            inputs=linsys.ninputs, outputs=linsys.noutputs,
+            states=linsys.nstates, params={}, dt=linsys.dt, name=name)
 
         # Initalize additional state space variables
         StateSpace.__init__(self, linsys, remove_useless=False)
@@ -668,16 +668,16 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         # Process input, output, state lists, if given
         # Make sure they match the size of the linear system
         ninputs, self.input_index = self._process_signal_list(
-            inputs if inputs is not None else linsys.inputs, prefix='u')
-        if ninputs is not None and linsys.inputs != ninputs:
+            inputs if inputs is not None else linsys.ninputs, prefix='u')
+        if ninputs is not None and linsys.ninputs != ninputs:
             raise ValueError("Wrong number/type of inputs given.")
         noutputs, self.output_index = self._process_signal_list(
-            outputs if outputs is not None else linsys.outputs, prefix='y')
-        if noutputs is not None and linsys.outputs != noutputs:
+            outputs if outputs is not None else linsys.noutputs, prefix='y')
+        if noutputs is not None and linsys.noutputs != noutputs:
             raise ValueError("Wrong number/type of outputs given.")
         nstates, self.state_index = self._process_signal_list(
-            states if states is not None else linsys.states, prefix='x')
-        if nstates is not None and linsys.states != nstates:
+            states if states is not None else linsys.nstates, prefix='x')
+        if nstates is not None and linsys.nstates != nstates:
             raise ValueError("Wrong number/type of states given.")
 
     def _update_params(self, params={}, warning=True):
@@ -1345,9 +1345,9 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
         # Initialize the state space attributes
         if isinstance(ss_sys, StateSpace):
             # Make sure the dimension match
-            if io_sys.ninputs != ss_sys.inputs or \
-               io_sys.noutputs != ss_sys.outputs or \
-               io_sys.nstates != ss_sys.states:
+            if io_sys.ninputs != ss_sys.ninputs or \
+               io_sys.noutputs != ss_sys.noutputs or \
+               io_sys.nstates != ss_sys.nstates:
                 raise ValueError("System dimensions for first and second "
                                  "arguments must match.")
             StateSpace.__init__(self, ss_sys, remove_useless=False)

@@ -241,8 +241,8 @@ class TransferFunction(LTI):
         continuous-time systems and `z` for discrete-time systems.
 
         In general the system may be multiple input, multiple output
-        (MIMO), where `m = self.inputs` number of inputs and `p =
-        self.outputs` number of outputs.
+        (MIMO), where `m = self.ninputs` number of inputs and `p =
+        self.noutputs` number of outputs.
 
         To evaluate at a frequency omega in radians per second, enter
         ``x = omega * 1j``, for continuous-time systems, or
@@ -294,7 +294,7 @@ class TransferFunction(LTI):
 
         Returns
         -------
-        output : (self.outputs, self.inputs, len(x)) complex ndarray
+        output : (self.noutputs, self.ninputs, len(x)) complex ndarray
             Frequency response
 
         """
@@ -304,9 +304,9 @@ class TransferFunction(LTI):
         if len(x_arr.shape) > 1:
             raise ValueError("input list must be 1D")
 
-        out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        out = empty((self.noutputs, self.ninputs, len(x_arr)), dtype=complex)
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
                 out[i][j] = (polyval(self.num[i][j], x) /
                              polyval(self.den[i][j], x))
         return out
@@ -323,8 +323,8 @@ class TransferFunction(LTI):
         # Beware: this is a shallow copy.  This should be okay.
         data = [self.num, self.den]
         for p in range(len(data)):
-            for i in range(self.outputs):
-                for j in range(self.inputs):
+            for i in range(self.noutputs):
+                for j in range(self.ninputs):
                     # Find the first nontrivial coefficient.
                     nonzero = None
                     for k in range(data[p][i][j].size):
@@ -343,14 +343,14 @@ class TransferFunction(LTI):
     def __str__(self, var=None):
         """String representation of the transfer function."""
 
-        mimo = self.inputs > 1 or self.outputs > 1
+        mimo = self.ninputs > 1 or self.noutputs > 1
         if var is None:
             # TODO: replace with standard calls to lti functions
             var = 's' if self.dt is None or self.dt == 0 else 'z'
         outstr = ""
 
-        for i in range(self.inputs):
-            for j in range(self.outputs):
+        for i in range(self.ninputs):
+            for j in range(self.noutputs):
                 if mimo:
                     outstr += "\nInput %i to output %i:" % (i + 1, j + 1)
 
@@ -392,7 +392,7 @@ class TransferFunction(LTI):
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook"""
 
-        mimo = self.inputs > 1 or self.outputs > 1
+        mimo = self.ninputs > 1 or self.noutputs > 1
 
         if var is None:
             # ! TODO: replace with standard calls to lti functions
@@ -403,8 +403,8 @@ class TransferFunction(LTI):
         if mimo:
             out.append(r"\begin{bmatrix}")
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
                 # Convert the numerator and denominator polynomials to strings.
                 numstr = _tf_polynomial_to_string(self.num[i][j], var=var)
                 denstr = _tf_polynomial_to_string(self.den[i][j], var=var)
@@ -414,7 +414,7 @@ class TransferFunction(LTI):
 
                 out += [r"\frac{", numstr, "}{", denstr, "}"]
 
-                if mimo and j < self.outputs - 1:
+                if mimo and j < self.noutputs - 1:
                     out.append("&")
 
             if mimo:
@@ -435,8 +435,8 @@ class TransferFunction(LTI):
         """Negate a transfer function."""
 
         num = deepcopy(self.num)
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
                 num[i][j] *= -1
 
         return TransferFunction(num, self.den, self.dt)
@@ -449,27 +449,27 @@ class TransferFunction(LTI):
         if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
         elif not isinstance(other, TransferFunction):
-            other = _convert_to_transfer_function(other, inputs=self.inputs,
-                                                  outputs=self.outputs)
+            other = _convert_to_transfer_function(other, inputs=self.ninputs,
+                                                  outputs=self.noutputs)
 
         # Check that the input-output sizes are consistent.
-        if self.inputs != other.inputs:
+        if self.ninputs != other.ninputs:
             raise ValueError(
                 "The first summand has %i input(s), but the second has %i."
-                % (self.inputs, other.inputs))
-        if self.outputs != other.outputs:
+                % (self.ninputs, other.ninputs))
+        if self.noutputs != other.noutputs:
             raise ValueError(
                 "The first summand has %i output(s), but the second has %i."
-                % (self.outputs, other.outputs))
+                % (self.noutputs, other.noutputs))
 
         dt = common_timebase(self.dt, other.dt)
 
         # Preallocate the numerator and denominator of the sum.
-        num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
-        den = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+        num = [[[] for j in range(self.ninputs)] for i in range(self.noutputs)]
+        den = [[[] for j in range(self.ninputs)] for i in range(self.noutputs)]
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
                 num[i][j], den[i][j] = _add_siso(
                     self.num[i][j], self.den[i][j],
                     other.num[i][j], other.den[i][j])
@@ -492,19 +492,19 @@ class TransferFunction(LTI):
         """Multiply two LTI objects (serial connection)."""
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(other, inputs=self.inputs,
-                                                  outputs=self.inputs)
+            other = _convert_to_transfer_function(other, inputs=self.ninputs,
+                                                  outputs=self.ninputs)
         else:
             other = _convert_to_transfer_function(other)
 
         # Check that the input-output sizes are consistent.
-        if self.inputs != other.outputs:
+        if self.ninputs != other.noutputs:
             raise ValueError(
                 "C = A * B: A has %i column(s) (input(s)), but B has %i "
-                "row(s)\n(output(s))." % (self.inputs, other.outputs))
+                "row(s)\n(output(s))." % (self.ninputs, other.noutputs))
 
-        inputs = other.inputs
-        outputs = self.outputs
+        inputs = other.ninputs
+        outputs = self.noutputs
 
         dt = common_timebase(self.dt, other.dt)
 
@@ -514,13 +514,13 @@ class TransferFunction(LTI):
 
         # Temporary storage for the summands needed to find the (i, j)th
         # element of the product.
-        num_summand = [[] for k in range(self.inputs)]
-        den_summand = [[] for k in range(self.inputs)]
+        num_summand = [[] for k in range(self.ninputs)]
+        den_summand = [[] for k in range(self.ninputs)]
 
         # Multiply & add.
         for row in range(outputs):
             for col in range(inputs):
-                for k in range(self.inputs):
+                for k in range(self.ninputs):
                     num_summand[k] = polymul(
                         self.num[row][k], other.num[k][col])
                     den_summand[k] = polymul(
@@ -536,19 +536,19 @@ class TransferFunction(LTI):
 
         # Convert the second argument to a transfer function.
         if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(other, inputs=self.inputs,
-                                                  outputs=self.inputs)
+            other = _convert_to_transfer_function(other, inputs=self.ninputs,
+                                                  outputs=self.ninputs)
         else:
             other = _convert_to_transfer_function(other)
 
         # Check that the input-output sizes are consistent.
-        if other.inputs != self.outputs:
+        if other.ninputs != self.noutputs:
             raise ValueError(
                 "C = A * B: A has %i column(s) (input(s)), but B has %i "
-                "row(s)\n(output(s))." % (other.inputs, self.outputs))
+                "row(s)\n(output(s))." % (other.ninputs, self.noutputs))
 
-        inputs = self.inputs
-        outputs = other.outputs
+        inputs = self.ninputs
+        outputs = other.noutputs
 
         dt = common_timebase(self.dt, other.dt)
 
@@ -559,12 +559,12 @@ class TransferFunction(LTI):
         # Temporary storage for the summands needed to find the
         # (i, j)th element
         # of the product.
-        num_summand = [[] for k in range(other.inputs)]
-        den_summand = [[] for k in range(other.inputs)]
+        num_summand = [[] for k in range(other.ninputs)]
+        den_summand = [[] for k in range(other.ninputs)]
 
         for i in range(outputs):  # Iterate through rows of product.
             for j in range(inputs):  # Iterate through columns of product.
-                for k in range(other.inputs):  # Multiply & add.
+                for k in range(other.ninputs):  # Multiply & add.
                     num_summand[k] = polymul(other.num[i][k], self.num[k][j])
                     den_summand[k] = polymul(other.den[i][k], self.den[k][j])
                     num[i][j], den[i][j] = _add_siso(
@@ -579,13 +579,13 @@ class TransferFunction(LTI):
 
         if isinstance(other, (int, float, complex, np.number)):
             other = _convert_to_transfer_function(
-                other, inputs=self.inputs,
-                outputs=self.inputs)
+                other, inputs=self.ninputs,
+                outputs=self.ninputs)
         else:
             other = _convert_to_transfer_function(other)
 
-        if (self.inputs > 1 or self.outputs > 1 or
-                other.inputs > 1 or other.outputs > 1):
+        if (self.ninputs > 1 or self.noutputs > 1 or
+                other.ninputs > 1 or other.noutputs > 1):
             raise NotImplementedError(
                 "TransferFunction.__truediv__ is currently \
                 implemented only for SISO systems.")
@@ -606,13 +606,13 @@ class TransferFunction(LTI):
         """Right divide two LTI objects."""
         if isinstance(other, (int, float, complex, np.number)):
             other = _convert_to_transfer_function(
-                other, inputs=self.inputs,
-                outputs=self.inputs)
+                other, inputs=self.ninputs,
+                outputs=self.ninputs)
         else:
             other = _convert_to_transfer_function(other)
 
-        if (self.inputs > 1 or self.outputs > 1 or
-                other.inputs > 1 or other.outputs > 1):
+        if (self.ninputs > 1 or self.noutputs > 1 or
+                other.ninputs > 1 or other.noutputs > 1):
             raise NotImplementedError(
                 "TransferFunction.__rtruediv__ is currently implemented only "
                 "for SISO systems.")
@@ -697,7 +697,7 @@ class TransferFunction(LTI):
 
     def zero(self):
         """Compute the zeros of a transfer function."""
-        if self.inputs > 1 or self.outputs > 1:
+        if self.ninputs > 1 or self.noutputs > 1:
             raise NotImplementedError(
                 "TransferFunction.zero is currently only implemented "
                 "for SISO systems.")
@@ -709,8 +709,8 @@ class TransferFunction(LTI):
         """Feedback interconnection between two LTI objects."""
         other = _convert_to_transfer_function(other)
 
-        if (self.inputs > 1 or self.outputs > 1 or
-                other.inputs > 1 or other.outputs > 1):
+        if (self.ninputs > 1 or self.noutputs > 1 or
+                other.ninputs > 1 or other.noutputs > 1):
             # TODO: MIMO feedback
             raise NotImplementedError(
                 "TransferFunction.feedback is currently only implemented "
@@ -741,11 +741,11 @@ class TransferFunction(LTI):
         sqrt_eps = sqrt(float_info.epsilon)
 
         # pre-allocate arrays
-        num = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
-        den = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+        num = [[[] for j in range(self.ninputs)] for i in range(self.noutputs)]
+        den = [[[] for j in range(self.ninputs)] for i in range(self.noutputs)]
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
 
                 # split up in zeros, poles and gain
                 newzeros = []
@@ -811,10 +811,10 @@ class TransferFunction(LTI):
             kwdt = {}
 
         # Preallocate the output.
-        out = [[[] for j in range(self.inputs)] for i in range(self.outputs)]
+        out = [[[] for j in range(self.ninputs)] for i in range(self.noutputs)]
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
                 out[i][j] = signalTransferFunction(self.num[i][j],
                                                    self.den[i][j],
                                                    **kwdt)
@@ -843,7 +843,7 @@ class TransferFunction(LTI):
         Returns
         -------
         num: array
-            n by n by kd where n = max(sys.outputs,sys.inputs)
+            n by n by kd where n = max(sys.noutputs,sys.ninputs)
                               kd = max(denorder)+1
             Multi-dimensional array of numerator coefficients. num[i,j]
             gives the numerator coefficient array for the ith output and jth
@@ -853,7 +853,7 @@ class TransferFunction(LTI):
             order of the common denominator, num will be returned as None
 
         den: array
-            sys.inputs by kd
+            sys.ninputs by kd
             Multi-dimensional array of coefficients for common denominator
             polynomial, one row per input. The array is prepared for use in
             slycot td04ad, the first element is the highest-order polynomial
@@ -872,7 +872,7 @@ class TransferFunction(LTI):
 
         # Machine precision for floats.
         eps = finfo(float).eps
-        real_tol = sqrt(eps * self.inputs * self.outputs)
+        real_tol = sqrt(eps * self.ninputs * self.noutputs)
 
         # The tolerance to use in deciding if a pole is complex
         if (imag_tol is None):
@@ -880,7 +880,7 @@ class TransferFunction(LTI):
 
         # A list to keep track of cumulative poles found as we scan
         # self.den[..][..]
-        poles = [[] for j in range(self.inputs)]
+        poles = [[] for j in range(self.ninputs)]
 
         # RvP, new implementation 180526, issue #194
         # BG, modification, issue #343, PR #354
@@ -891,9 +891,9 @@ class TransferFunction(LTI):
 
         # do not calculate minreal. Rory's hint .minreal()
         poleset = []
-        for i in range(self.outputs):
+        for i in range(self.noutputs):
             poleset.append([])
-            for j in range(self.inputs):
+            for j in range(self.ninputs):
                 if abs(self.num[i][j]).max() <= eps:
                     poleset[-1].append([array([], dtype=float),
                                         roots(self.den[i][j]), 0.0, [], 0])
@@ -902,8 +902,8 @@ class TransferFunction(LTI):
                     poleset[-1].append([z, p, k, [], 0])
 
         # collect all individual poles
-        for j in range(self.inputs):
-            for i in range(self.outputs):
+        for j in range(self.ninputs):
+            for i in range(self.noutputs):
                 currentpoles = poleset[i][j][1]
                 nothave = ones(currentpoles.shape, dtype=bool)
                 for ip, p in enumerate(poles[j]):
@@ -928,20 +928,20 @@ class TransferFunction(LTI):
 
         # figure out maximum number of poles, for sizing the den
         maxindex = max([len(p) for p in poles])
-        den = zeros((self.inputs, maxindex + 1), dtype=float)
-        num = zeros((max(1, self.outputs, self.inputs),
-                     max(1, self.outputs, self.inputs),
+        den = zeros((self.ninputs, maxindex + 1), dtype=float)
+        num = zeros((max(1, self.noutputs, self.ninputs),
+                     max(1, self.noutputs, self.ninputs),
                      maxindex + 1),
                     dtype=float)
-        denorder = zeros((self.inputs,), dtype=int)
+        denorder = zeros((self.ninputs,), dtype=int)
 
         havenonproper = False
 
-        for j in range(self.inputs):
+        for j in range(self.ninputs):
             if not len(poles[j]):
                 # no poles matching this input; only one or more gains
                 den[j, 0] = 1.0
-                for i in range(self.outputs):
+                for i in range(self.noutputs):
                     num[i, j, 0] = poleset[i][j][2]
             else:
                 # create the denominator matching this input
@@ -951,7 +951,7 @@ class TransferFunction(LTI):
                 denorder[j] = maxindex
 
                 # now create the numerator, also padded on the right
-                for i in range(self.outputs):
+                for i in range(self.noutputs):
                     # start with the current set of zeros for this output
                     nwzeros = list(poleset[i][j][0])
                     # add all poles not found in the original denominator,
@@ -1068,9 +1068,9 @@ class TransferFunction(LTI):
         """_dcgain_cont() -> DC gain as matrix or scalar
 
         Special cased evaluation at 0 for continuous-time systems."""
-        gain = np.empty((self.outputs, self.inputs), dtype=float)
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        gain = np.empty((self.noutputs, self.ninputs), dtype=float)
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
                 num = self.num[i][j][-1]
                 den = self.den[i][j][-1]
                 if den:
@@ -1228,14 +1228,14 @@ def _convert_to_transfer_function(sys, **kw):
         return sys
     elif isinstance(sys, StateSpace):
 
-        if 0 == sys.states:
+        if 0 == sys.nstates:
             # Slycot doesn't like static SS->TF conversion, so handle
             # it first.  Can't join this with the no-Slycot branch,
             # since that doesn't handle general MIMO systems
-            num = [[[sys.D[i, j]] for j in range(sys.inputs)]
-                   for i in range(sys.outputs)]
-            den = [[[1.] for j in range(sys.inputs)]
-                   for i in range(sys.outputs)]
+            num = [[[sys.D[i, j]] for j in range(sys.ninputs)]
+                   for i in range(sys.noutputs)]
+            den = [[[1.] for j in range(sys.ninputs)]
+                   for i in range(sys.noutputs)]
         else:
             try:
                 from slycot import tb04ad
@@ -1247,17 +1247,17 @@ def _convert_to_transfer_function(sys, **kw):
                 # Use Slycot to make the transformation
                 # Make sure to convert system matrices to numpy arrays
                 tfout = tb04ad(
-                    sys.states, sys.inputs, sys.outputs, array(sys.A),
+                    sys.nstates, sys.ninputs, sys.noutputs, array(sys.A),
                     array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
 
                 # Preallocate outputs.
-                num = [[[] for j in range(sys.inputs)]
-                       for i in range(sys.outputs)]
-                den = [[[] for j in range(sys.inputs)]
-                       for i in range(sys.outputs)]
+                num = [[[] for j in range(sys.ninputs)]
+                       for i in range(sys.noutputs)]
+                den = [[[] for j in range(sys.ninputs)]
+                       for i in range(sys.noutputs)]
 
-                for i in range(sys.outputs):
-                    for j in range(sys.inputs):
+                for i in range(sys.noutputs):
+                    for j in range(sys.ninputs):
                         num[i][j] = list(tfout[6][i, j, :])
                         # Each transfer function matrix row
                         # has a common denominator.
@@ -1265,7 +1265,7 @@ def _convert_to_transfer_function(sys, **kw):
 
             except ImportError:
                 # If slycot is not available, use signal.lti (SISO only)
-                if sys.inputs != 1 or sys.outputs != 1:
+                if sys.ninputs != 1 or sys.noutputs != 1:
                     raise TypeError("No support for MIMO without slycot.")
 
                 # Do the conversion using sp.signal.ss2tf
