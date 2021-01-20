@@ -17,7 +17,6 @@ __all__ = ['defaults', 'set_defaults', 'reset_defaults',
 _control_defaults = {
     'control.default_dt': 0,
     'control.squeeze_frequency_response': None,
-    'control.squeeze_time_response': True,
     'control.squeeze_time_response': None,
     'forced_response.return_x': False,
 }
