@@ -500,10 +500,10 @@ def _process_time_response(
         config.defaults['control.squeeze_time_response'].
 
     input : int, optional
-        If present, the response represents ony the listed input.
+        If present, the response represents only the listed input.
 
     output : int, optional
-        If present, the response represents ony the listed input.
+        If present, the response represents only the listed output.
 
     Returns
     -------
