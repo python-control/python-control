@@ -333,9 +333,9 @@ class StateSpace(LTI):
     #
     # Getter and setter functions for legacy state attributes
     #
-    # For this iteration, generate a warning whenever the getter/setter is
-    # called.  For a future iteration, turn it iinto a pending deprecation and
-    # then deprecation warning (commented out for now).
+    # For this iteration, generate a pending deprecation warning whenever
+    # the getter/setter is called.  For a future iteration, turn it into a
+    # deprecation warning.
     #
 
     @property
