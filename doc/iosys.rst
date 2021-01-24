@@ -156,7 +156,8 @@ The input to the controller is `u`, consisting of the vector of hare and lynx
 populations followed by the desired lynx population.
 
 To connect the controller to the predatory-prey model, we create an
-:class:`~control.InterconnectedSystem`:
+:class:`~control.InterconnectedSystem` using the :func:`~control.interconnect`
+function:
 
 .. code-block:: python
 
@@ -189,13 +190,83 @@ Finally, we simulate the closed loop system:
   plt.legend(['input'])
   plt.show(block=False)
 
+Additional features
+===================
+
+The I/O systems module has a number of other features that can be used to
+simplify the creation of interconnected input/output systems.
+
+Summing junction
+----------------
+
+The :func:`~control.summing_junction` function can be used to create an
+input/output system that takes the sum of an arbitrary number of inputs.  For
+ezample, to create an input/output system that takes the sum of three inputs,
+use the command
+
+.. code-block:: python
+
+  sumblk = ct.summing_junction(3)
+
+By default, the name of the inputs will be of the form ``u[i]`` and the output
+will be ``y``.  This can be changed by giving an explicit list of names::
+
+  sumblk = ct.summing_junction(inputs=['a', 'b', 'c'], output='d')
+
+A more typical usage would be to define an input/output system that compares a
+reference signal to the output of the process and computes the error::
+
+  sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
+
+Note the use of the minus sign as a means of setting the sign of the input 'y'
+to be negative instead of positive.
+
+It is also possible to define "vector" summing blocks that take
+multi-dimensional inputs and produce a multi-dimensional output.  For example,
+the command
+
+.. code-block:: python
+
+  sumblk = ct.summing_junction(inputs=['r', '-y'], output='e', dimension=2)
+
+will produce an input/output block that implements ``e[0] = r[0] - y[0]`` and
+``e[1] = r[1] - y[1]``.
+
+Automatic connections using signal names
+----------------------------------------
+
+The :func:`~control.interconnect` function allows the interconnection of
+multiple systems by using signal names of the form ``sys.signal``.  In many
+situations, it can be cumbersome to explicitly connect all of the appropriate
+inputs and outputs.  As an alternative, if the ``connections`` keyword is
+omitted, the :func:`~control.interconnect` function will connect all signals
+of the same name to each other.  This can allow for simplified methods of
+interconnecting systems, especially when combined with the
+:func:`~control.summing_junction` function.  For example, the following code
+will create a unity gain, negative feedback system::
+
+  P = control.tf2io(control.tf(1, [1, 0]), inputs='u', outputs='y')
+  C = control.tf2io(control.tf(10, [1, 1]), inputs='e', outputs='u')
+  sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
+  T = control.interconnect([P, C, sumblk], inplist='r', outlist='y')
+
+If a signal name appears in multiple outputs then that signal will be summed
+when it is interconnected.  Similarly, if a signal name appears in multiple
+inputs then all systems using that signal name will receive the same input.
+The :func:`~control.interconnect` function will generate an error if an signal
+listed in ``inplist`` or ``outlist`` (corresponding to the inputs and outputs
+of the interconnected system) is not found, but inputs and outputs of
+individual systems that are not connected to other systems are left
+unconnected (so be careful!).
+
+
 Module classes and functions
 ============================
 
 Input/output system classes
 ---------------------------
 .. autosummary::
-   
+
    ~control.InputOutputSystem
    ~control.InterconnectedSystem
    ~control.LinearICSystem
@@ -211,5 +282,5 @@ Input/output system functions
    ~control.input_output_response
    ~control.interconnect
    ~control.ss2io
+   ~control.summing_junction
    ~control.tf2io
-

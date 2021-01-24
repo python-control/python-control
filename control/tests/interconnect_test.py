@@ -30,10 +30,10 @@ import control as ct
     ['u',          'y',     2,    [[1, 0], [0, 1]] ],
     [['r', '-y'],  ['e'],   2,    [[1, 0, -1, 0], [0, 1, 0, -1]] ],
 ])
-def test_summation_block(inputs, output, dimension, D):
+def test_summing_junction(inputs, output, dimension, D):
     ninputs = 1 if isinstance(inputs, str) else \
         inputs if isinstance(inputs, int) else len(inputs)
-    sum = ct.summation_block(
+    sum = ct.summing_junction(
         inputs=inputs, output=output, dimension=dimension)
     dim = 1 if dimension is None else dimension
     np.testing.assert_array_equal(sum.A, np.ndarray((0, 0)))
@@ -45,15 +45,15 @@ def test_summation_block(inputs, output, dimension, D):
 def test_summation_exceptions():
     # Bad input description
     with pytest.raises(ValueError, match="could not parse input"):
-        sumblk = ct.summation_block(None, 'y')
+        sumblk = ct.summing_junction(None, 'y')
 
     # Bad output description
     with pytest.raises(ValueError, match="could not parse output"):
-        sumblk = ct.summation_block('u', None)
+        sumblk = ct.summing_junction('u', None)
 
     # Bad input dimension
     with pytest.raises(ValueError, match="unrecognized dimension"):
-        sumblk = ct.summation_block('u', 'y', dimension=False)
+        sumblk = ct.summing_junction('u', 'y', dimension=False)
 
 
 def test_interconnect_implicit():
@@ -83,8 +83,8 @@ def test_interconnect_implicit():
     np.testing.assert_almost_equal(Tio_exp.C, Tss.C)
     np.testing.assert_almost_equal(Tio_exp.D, Tss.D)
 
-    # Construct the interconnection via a summation block
-    sumblk = ct.summation_block(inputs=['r', '-y'], output='e', name="sum")
+    # Construct the interconnection via a summing junction
+    sumblk = ct.summing_junction(inputs=['r', '-y'], output='e', name="sum")
     Tio_sum = ct.interconnect(
         (C, P, sumblk), inplist=['r'], outlist=['y'])
 
@@ -108,6 +108,17 @@ def test_interconnect_implicit():
     np.testing.assert_almost_equal(Tio_sum.C, Tss.C)
     np.testing.assert_almost_equal(Tio_sum.D, Tss.D)
 
+    # TODO: interconnect a MIMO system using implicit connections
+    # P = control.ss2io(
+    #     control.rss(2, 2, 2, strictly_proper=True),
+    #     input_prefix='u', output_prefix='y', name='P')
+    # C = control.ss2io(
+    #     control.rss(2, 2, 2),
+    #     input_prefix='e', output_prefix='u', name='C')
+    # sumblk = control.summing_junction(
+    #     inputs=['r', '-y'], output='e', dimension=2)
+    # S = control.interconnect([P, C, sumblk], inplist='r', outlist='y')
+
     # Make sure that repeated inplist/outlist names generate an error
     # Input not unique
     Cbad = ct.tf2io(ct.tf(10, [1, 1]), inputs='r', outputs='x', name='C')
@@ -129,3 +140,35 @@ def test_interconnect_implicit():
     with pytest.raises(ValueError, match="could not find"):
         Tio_sum = ct.interconnect(
             (C, P, sumblk), inplist=['r'], outlist=['x'])
+
+def test_interconnect_docstring():
+    """Test the examples from the interconnect() docstring"""
+
+    # MIMO interconnection (note: use [C, P] instead of [P, C] for state order)
+    P = ct.LinearIOSystem(
+           ct.rss(2, 2, 2, strictly_proper=True), name='P')
+    C = ct.LinearIOSystem(ct.rss(2, 2, 2), name='C')
+    T = ct.interconnect(
+        [C, P],
+        connections = [
+          ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
+          ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
+        inplist = ['C.u[0]', 'C.u[1]'],
+        outlist = ['P.y[0]', 'P.y[1]'],
+    )
+    T_ss = ct.feedback(P * C, ct.ss([], [], [], np.eye(2)))
+    np.testing.assert_almost_equal(T.A, T_ss.A)
+    np.testing.assert_almost_equal(T.B, T_ss.B)
+    np.testing.assert_almost_equal(T.C, T_ss.C)
+    np.testing.assert_almost_equal(T.D, T_ss.D)
+
+    # Implicit interconnection (note: use [C, P, sumblk] for proper state order)
+    P = ct.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
+    C = ct.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
+    sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
+    T = ct.interconnect([C, P, sumblk], inplist='r', outlist='y')
+    T_ss = ct.feedback(P * C, 1)
+    np.testing.assert_almost_equal(T.A, T_ss.A)
+    np.testing.assert_almost_equal(T.B, T_ss.B)
+    np.testing.assert_almost_equal(T.C, T_ss.C)
+    np.testing.assert_almost_equal(T.D, T_ss.D)

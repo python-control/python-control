@@ -3,16 +3,11 @@
 # RMM, 28 April 2019
 #
 # Additional features to add
-#   * Improve support for signal names, specially in operator overloads
-#       - Figure out how to handle "nested" names (icsys.sys[1].x[1])
-#       - Use this to implement signal names for operators?
 #   * Allow constant inputs for MIMO input_output_response (w/out ones)
 #   * Add support for constants/matrices as part of operators (1 + P)
 #   * Add unit tests (and example?) for time-varying systems
 #   * Allow time vector for discrete time simulations to be multiples of dt
 #   * Check the way initial outputs for discrete time systems are handled
-#   * Rename 'connections' as 'conlist' to match 'inplist' and 'outlist'?
-#   * Allow signal summation in InterconnectedSystem diagrams (via new output?)
 #
 
 """The :mod:`~control.iosys` module contains the
@@ -44,7 +39,7 @@ from . import config
 __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
            'InterconnectedSystem', 'LinearICSystem', 'input_output_response',
            'find_eqpt', 'linearize', 'ss2io', 'tf2io', 'interconnect',
-           'summation_block']
+           'summing_junction']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -1982,16 +1977,25 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
     Example
     -------
     >>> P = control.LinearIOSystem(
-    >>>        ct.rss(2, 2, 2, strictly_proper=True), name='P')
+    >>>        control.rss(2, 2, 2, strictly_proper=True), name='P')
     >>> C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
-    >>> S = control.InterconnectedSystem(
+    >>> T = control.interconnect(
     >>>     [P, C],
     >>>     connections = [
-    >>>       ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[0]'],
+    >>>       ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
     >>>       ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
     >>>     inplist = ['C.u[0]', 'C.u[1]'],
     >>>     outlist = ['P.y[0]', 'P.y[1]'],
     >>> )
+
+    For a SISO system, this example can be simplified by using the
+    :func:`~control.summing_block` function and the ability to automatically
+    interconnect signals with the same names:
+
+    >>> P = control.tf2io(control.tf(1, [1, 0]), inputs='u', outputs='y')
+    >>> C = control.tf2io(control.tf(10, [1, 1]), inputs='e', outputs='u')
+    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = control.interconnect([P, C, sumblk], inplist='r', outlist='y')
 
     Notes
     -----
@@ -2101,9 +2105,9 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
     return newsys
 
 
-# Summation block
-def summation_block(inputs, output='y', dimension=None, name=None, prefix='u'):
-    """Create a summation block as an input/output system.
+# Summing junction
+def summing_junction(inputs, output='y', dimension=None, name=None, prefix='u'):
+    """Create a summing junction as an input/output system.
 
     This function creates a static input/output system that outputs the sum of
     the inputs, potentially with a change in sign for each individual input.
@@ -2113,15 +2117,15 @@ def summation_block(inputs, output='y', dimension=None, name=None, prefix='u'):
     Parameters
     ----------
     inputs : int, string or list of strings
-        Description of the inputs to the summation block.  This can be given
+        Description of the inputs to the summing junction.  This can be given
         as an integer count, a string, or a list of strings. If an integer
         count is specified, the names of the input signals will be of the form
         `u[i]`.
     output : string, optional
         Name of the system output.  If not specified, the output will be 'y'.
     dimension : int, optional
-        The dimension of the summing block.  If the dimension is set to a
-        positive integer, a multi-input, multi-output summation block will be
+        The dimension of the summing junction.  If the dimension is set to a
+        positive integer, a multi-input, multi-output summing junction will be
         created.  The input and output signal names will be of the form
         `<signal>[i]` where `signal` is the input/output signal name specified
         by the `inputs` and `output` keywords.  Default value is `None`.
@@ -2137,7 +2141,14 @@ def summation_block(inputs, output='y', dimension=None, name=None, prefix='u'):
     -------
     sys : static LinearIOSystem
         Linear input/output system object with no states and only a direct
-        term that implements the summation block.
+        term that implements the summing junction.
+
+    Example
+    -------
+    >>> P = control.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
+    >>> C = control.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
+    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = control.interconnect((P, C, sumblk), inplist='r', outlist='y')
 
     """
     # Utility function to parse input and output signal lists
