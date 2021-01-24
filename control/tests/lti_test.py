@@ -222,17 +222,17 @@ class TestLTI:
         ct.config.set_defaults('control', squeeze_frequency_response=False)
         mag, phase, _ = sys.frequency_response(omega)
         if isscalar:
-            assert mag.shape == (sys.outputs, sys.inputs, 1)
-            assert phase.shape == (sys.outputs, sys.inputs, 1)
-            assert sys(omega * 1j).shape == (sys.outputs, sys.inputs)
-            assert ct.evalfr(sys, omega * 1j).shape == (sys.outputs, sys.inputs)
+            assert mag.shape == (sys.noutputs, sys.ninputs, 1)
+            assert phase.shape == (sys.noutputs, sys.ninputs, 1)
+            assert sys(omega * 1j).shape == (sys.noutputs, sys.ninputs)
+            assert ct.evalfr(sys, omega * 1j).shape == (sys.noutputs, sys.ninputs)
         else:
-            assert mag.shape == (sys.outputs, sys.inputs, len(omega))
-            assert phase.shape == (sys.outputs, sys.inputs, len(omega))
+            assert mag.shape == (sys.noutputs, sys.ninputs, len(omega))
+            assert phase.shape == (sys.noutputs, sys.ninputs, len(omega))
             assert sys(omega * 1j).shape == \
-                (sys.outputs, sys.inputs, len(omega))
+                (sys.noutputs, sys.ninputs, len(omega))
             assert ct.evalfr(sys, omega * 1j).shape == \
-                (sys.outputs, sys.inputs, len(omega))
+                (sys.noutputs, sys.ninputs, len(omega))
 
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.ss2io])
     def test_squeeze_exceptions(self, fcn):
@@ -250,3 +250,17 @@ class TestLTI:
             sys.frequency_response([[0.1, 1], [1, 10]])
             sys([[0.1, 1], [1, 10]])
             evalfr(sys, [[0.1, 1], [1, 10]])
+
+        with pytest.warns(DeprecationWarning, match="LTI `inputs`"):
+            ninputs = sys.inputs
+        assert ninputs == sys.ninputs
+
+        with pytest.warns(DeprecationWarning, match="LTI `outputs`"):
+            noutputs = sys.outputs
+        assert noutputs == sys.noutputs
+
+        if isinstance(sys, ct.StateSpace):
+            with pytest.warns(
+                    DeprecationWarning, match="StateSpace `states`"):
+                nstates = sys.states
+            assert nstates == sys.nstates

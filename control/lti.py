@@ -47,9 +47,45 @@ class LTI:
         """Assign the LTI object's numbers of inputs and ouputs."""
 
         # Data members common to StateSpace and TransferFunction.
-        self.inputs = inputs
-        self.outputs = outputs
+        self.ninputs = inputs
+        self.noutputs = outputs
         self.dt = dt
+
+    #
+    # Getter and setter functions for legacy state attributes
+    #
+    # For this iteration, generate a deprecation warning whenever the
+    # getter/setter is called.  For a future iteration, turn it into a
+    # future warning, so that users will see it.
+    #
+
+    @property
+    def inputs(self):
+        warn("The LTI `inputs` attribute will be deprecated in a future "
+             "release.  Use `ninputs` instead.",
+             DeprecationWarning, stacklevel=2)
+        return self.ninputs
+
+    @inputs.setter
+    def inputs(self, value):
+        warn("The LTI `inputs` attribute will be deprecated in a future "
+             "release.  Use `ninputs` instead.",
+             DeprecationWarning, stacklevel=2)
+        self.ninputs = value
+
+    @property
+    def outputs(self):
+        warn("The LTI `outputs` attribute will be deprecated in a future "
+             "release.  Use `noutputs` instead.",
+             DeprecationWarning, stacklevel=2)
+        return self.noutputs
+
+    @outputs.setter
+    def outputs(self, value):
+        warn("The LTI `outputs` attribute will be deprecated in a future "
+             "release.  Use `noutputs` instead.",
+             DeprecationWarning, stacklevel=2)
+        self.noutputs = value
 
     def isdtime(self, strict=False):
         """
@@ -88,7 +124,7 @@ class LTI:
 
     def issiso(self):
         '''Check to see if a system is single input, single output'''
-        return self.inputs == 1 and self.outputs == 1
+        return self.ninputs == 1 and self.noutputs == 1
 
     def damp(self):
         '''Natural frequency, damping ratio of system poles
@@ -126,7 +162,7 @@ class LTI:
              G(exp(j*omega*dt)) = mag*exp(j*phase).
 
         In general the system may be multiple input, multiple output (MIMO),
-        where `m = self.inputs` number of inputs and `p = self.outputs` number
+        where `m = self.ninputs` number of inputs and `p = self.noutputs` number
         of outputs.
 
         Parameters
@@ -475,7 +511,7 @@ def evalfr(sys, x, squeeze=None):
 
     Returns the complex frequency response `sys(x)` where `x` is `s` for
     continuous-time systems and `z` for discrete-time systems, with
-    `m = sys.inputs` number of inputs and `p = sys.outputs` number of
+    `m = sys.ninputs` number of inputs and `p = sys.noutputs` number of
     outputs.
 
     To evaluate at a frequency omega in radians per second, enter
@@ -532,7 +568,7 @@ def freqresp(sys, omega, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
 
     In general the system may be multiple input, multiple output (MIMO), where
-    `m = sys.inputs` number of inputs and `p = sys.outputs` number of
+    `m = sys.ninputs` number of inputs and `p = sys.noutputs` number of
     outputs.
 
     Parameters

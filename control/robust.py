@@ -206,12 +206,12 @@ def _size_as_needed(w, wname, n):
     if w is not None:
         if not isinstance(w, StateSpace):
             w = ss(w)
-        if 1 == w.inputs and 1 == w.outputs:
+        if 1 == w.ninputs and 1 == w.noutputs:
             w = append(*(w,) * n)
         else:
-            if w.inputs != n:
+            if w.ninputs != n:
                 msg = ("{}: weighting function has {} inputs, expected {}".
-                       format(wname, w.inputs, n))
+                       format(wname, w.ninputs, n))
                 raise ValueError(msg)
     else:
         w = ss([], [], [], [])
@@ -253,8 +253,8 @@ def augw(g, w1=None, w2=None, w3=None):
 
     if w1 is None and w2 is None and w3 is None:
         raise ValueError("At least one weighting must not be None")
-    ny = g.outputs
-    nu = g.inputs
+    ny = g.noutputs
+    nu = g.ninputs
 
     w1, w2, w3 = [_size_as_needed(w, wname, n)
                   for w, wname, n in zip((w1, w2, w3),
@@ -278,13 +278,13 @@ def augw(g, w1=None, w2=None, w3=None):
 
     sysall = append(w1, w2, w3, Ie, g, Iu)
 
-    niw1 = w1.inputs
-    niw2 = w2.inputs
-    niw3 = w3.inputs
+    niw1 = w1.ninputs
+    niw2 = w2.ninputs
+    niw3 = w3.ninputs
 
-    now1 = w1.outputs
-    now2 = w2.outputs
-    now3 = w3.outputs
+    now1 = w1.noutputs
+    now2 = w2.noutputs
+    now3 = w3.noutputs
 
     q = np.zeros((niw1 + niw2 + niw3 + ny + nu, 2))
     q[:, 0] = np.arange(1, q.shape[0] + 1)
@@ -358,8 +358,8 @@ def mixsyn(g, w1=None, w2=None, w3=None):
     --------
     hinfsyn, augw
     """
-    nmeas = g.outputs
-    ncon = g.inputs
+    nmeas = g.noutputs
+    ncon = g.ninputs
     p = augw(g, w1, w2, w3)
 
     k, cl, gamma, rcond = hinfsyn(p, nmeas, ncon)

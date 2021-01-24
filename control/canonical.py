@@ -79,16 +79,16 @@ def reachable_form(xsys):
     zsys.B[0, 0] = 1.0
     zsys.A = zeros_like(xsys.A)
     Apoly = poly(xsys.A)                # characteristic polynomial
-    for i in range(0, xsys.states):
+    for i in range(0, xsys.nstates):
         zsys.A[0, i] = -Apoly[i+1] / Apoly[0]
-        if (i+1 < xsys.states):
+        if (i+1 < xsys.nstates):
             zsys.A[i+1, i] = 1.0
 
     # Compute the reachability matrices for each set of states
     Wrx = ctrb(xsys.A, xsys.B)
     Wrz = ctrb(zsys.A, zsys.B)
 
-    if matrix_rank(Wrx) != xsys.states:
+    if matrix_rank(Wrx) != xsys.nstates:
         raise ValueError("System not controllable to working precision.")
 
     # Transformation from one form to another
@@ -96,7 +96,7 @@ def reachable_form(xsys):
 
     # Check to make sure inversion was OK.  Note that since we are inverting
     # Wrx and we already checked its rank, this exception should never occur
-    if matrix_rank(Tzx) != xsys.states:         # pragma: no cover
+    if matrix_rank(Tzx) != xsys.nstates:         # pragma: no cover
         raise ValueError("Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
@@ -133,9 +133,9 @@ def observable_form(xsys):
     zsys.C[0, 0] = 1
     zsys.A = zeros_like(xsys.A)
     Apoly = poly(xsys.A)                # characteristic polynomial
-    for i in range(0, xsys.states):
+    for i in range(0, xsys.nstates):
         zsys.A[i, 0] = -Apoly[i+1] / Apoly[0]
-        if (i+1 < xsys.states):
+        if (i+1 < xsys.nstates):
             zsys.A[i, i+1] = 1
 
     # Compute the observability matrices for each set of states
@@ -145,7 +145,7 @@ def observable_form(xsys):
     # Transformation from one form to another
     Tzx = solve(Wrz, Wrx)  # matrix left division, Tzx = inv(Wrz) * Wrx
 
-    if matrix_rank(Tzx) != xsys.states:
+    if matrix_rank(Tzx) != xsys.nstates:
         raise ValueError("Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix

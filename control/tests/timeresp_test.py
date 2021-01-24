@@ -622,12 +622,12 @@ class TestTimeresp:
             t = tsystem.t
             kw['T'] = t
             if fun == forced_response:
-                kw['U'] = np.vstack([np.sin(t) for i in range(sys.inputs)])
+                kw['U'] = np.vstack([np.sin(t) for i in range(sys.ninputs)])
         elif fun == forced_response and isctime(sys):
             pytest.skip("No continuous forced_response without time vector.")
-        if hasattr(tsystem.sys, "states"):
-            kw['X0'] = np.arange(sys.states) + 1
-        if sys.inputs > 1 and fun in [step_response, impulse_response]:
+        if hasattr(tsystem.sys, "nstates"):
+            kw['X0'] = np.arange(sys.nstates) + 1
+        if sys.ninputs > 1 and fun in [step_response, impulse_response]:
             kw['input'] = 1
         if squeeze is not None:
             kw['squeeze'] = squeeze
@@ -641,7 +641,7 @@ class TestTimeresp:
             np.testing.assert_allclose(tout, tsystem.t)
 
         if squeeze is False or not sys.issiso():
-            assert yout.shape[0] == sys.outputs
+            assert yout.shape[0] == sys.noutputs
             assert yout.shape[-1] == tout.shape[0]
         else:
             assert yout.shape == tout.shape
@@ -668,8 +668,8 @@ class TestTimeresp:
 
         tout, yout = forced_response(sys, t, u, x0,
                                      interpolate=True, **squeezekw)
-        if squeeze is False or sys.outputs > 1:
-            assert yout.shape[0] == sys.outputs
+        if squeeze is False or sys.noutputs > 1:
+            assert yout.shape[0] == sys.noutputs
             assert yout.shape[1] == tout.shape[0]
         else:
             assert yout.shape == tout.shape
@@ -755,7 +755,7 @@ class TestTimeresp:
         # Generate the time and input vectors
         tvec = np.linspace(0, 1, 8)
         uvec = np.dot(
-            np.ones((sys.inputs, 1)),
+            np.ones((sys.ninputs, 1)),
             np.reshape(np.sin(tvec), (1, 8)))
 
         #
@@ -771,9 +771,9 @@ class TestTimeresp:
             _, yvec, xvec = ct.impulse_response(
                 sys, tvec, squeeze=squeeze, return_x=True)
             if sys.issiso():
-                assert xvec.shape == (sys.states, 8)
+                assert xvec.shape == (sys.nstates, 8)
             else:
-                assert xvec.shape == (sys.states, sys.inputs, 8)
+                assert xvec.shape == (sys.nstates, sys.ninputs, 8)
         else:
             _, yvec = ct.impulse_response(sys, tvec, squeeze=squeeze)
         assert yvec.shape == shape1
@@ -784,9 +784,9 @@ class TestTimeresp:
             _, yvec, xvec = ct.step_response(
                 sys, tvec, squeeze=squeeze, return_x=True)
             if sys.issiso():
-                assert xvec.shape == (sys.states, 8)
+                assert xvec.shape == (sys.nstates, 8)
             else:
-                assert xvec.shape == (sys.states, sys.inputs, 8)
+                assert xvec.shape == (sys.nstates, sys.ninputs, 8)
         else:
             _, yvec = ct.step_response(sys, tvec, squeeze=squeeze)
         assert yvec.shape == shape1
@@ -796,7 +796,7 @@ class TestTimeresp:
             # Check the states as well
             _, yvec, xvec = ct.initial_response(
                 sys, tvec, 1, squeeze=squeeze, return_x=True)
-            assert xvec.shape == (sys.states, 8)
+            assert xvec.shape == (sys.nstates, 8)
         else:
             _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
         assert yvec.shape == shape2
@@ -806,7 +806,7 @@ class TestTimeresp:
             # Check the states as well
             _, yvec, xvec = ct.forced_response(
                 sys, tvec, uvec, 0, return_x=True, squeeze=squeeze)
-            assert xvec.shape == (sys.states, 8)
+            assert xvec.shape == (sys.nstates, 8)
         else:
             # Just check the input/output response
             _, yvec = ct.forced_response(sys, tvec, uvec, 0, squeeze=squeeze)
@@ -833,31 +833,31 @@ class TestTimeresp:
         ct.config.set_defaults('control', squeeze_time_response=False)
 
         _, yvec = ct.impulse_response(sys, tvec)
-        if squeeze is not True or sys.inputs > 1 or sys.outputs > 1:
-            assert yvec.shape == (sys.outputs, sys.inputs, 8)
+        if squeeze is not True or sys.ninputs > 1 or sys.noutputs > 1:
+            assert yvec.shape == (sys.noutputs, sys.ninputs, 8)
 
         _, yvec = ct.step_response(sys, tvec)
-        if squeeze is not True or sys.inputs > 1 or sys.outputs > 1:
-            assert yvec.shape == (sys.outputs, sys.inputs, 8)
+        if squeeze is not True or sys.ninputs > 1 or sys.noutputs > 1:
+            assert yvec.shape == (sys.noutputs, sys.ninputs, 8)
 
         _, yvec = ct.initial_response(sys, tvec, 1)
-        if squeeze is not True or sys.outputs > 1:
-            assert yvec.shape == (sys.outputs, 8)
+        if squeeze is not True or sys.noutputs > 1:
+            assert yvec.shape == (sys.noutputs, 8)
 
         if isinstance(sys, ct.StateSpace):
             _, yvec, xvec = ct.forced_response(
                 sys, tvec, uvec, 0, return_x=True)
-            assert xvec.shape == (sys.states, 8)
+            assert xvec.shape == (sys.nstates, 8)
         else:
             _, yvec = ct.forced_response(sys, tvec, uvec, 0)
-        if squeeze is not True or sys.outputs > 1:
-            assert yvec.shape == (sys.outputs, 8)
+        if squeeze is not True or sys.noutputs > 1:
+            assert yvec.shape == (sys.noutputs, 8)
 
         # For InputOutputSystems, also test input_output_response
         if isinstance(sys, ct.InputOutputSystem) and not scipy0:
             _, yvec = ct.input_output_response(sys, tvec, uvec)
-            if squeeze is not True or sys.outputs > 1:
-                assert yvec.shape == (sys.outputs, 8)
+            if squeeze is not True or sys.noutputs > 1:
+                assert yvec.shape == (sys.noutputs, 8)
 
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
     def test_squeeze_exception(self, fcn):
@@ -889,7 +889,7 @@ class TestTimeresp:
         sys = ct.rss(nstate, nout, ninp, strictly_proper=True)
         tvec = np.linspace(0, 1, 8)
         uvec = np.dot(
-            np.ones((sys.inputs, 1)),
+            np.ones((sys.ninputs, 1)),
             np.reshape(np.sin(tvec), (1, 8)))
 
         _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
@@ -927,4 +927,4 @@ class TestTimeresp:
             sys, T, 1, transpose=True, return_x=True, squeeze=squeeze)
         assert t.shape == (T.size, )
         assert y.shape == ysh_no
-        assert x.shape == (T.size, sys.states)
+        assert x.shape == (T.size, sys.nstates)

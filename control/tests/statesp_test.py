@@ -417,9 +417,9 @@ class TestStateSpace:
 
         sys = StateSpace(A, B, C, D)
         sysr = sys.minreal()
-        assert sysr.states == 2
-        assert sysr.inputs == sys.inputs
-        assert sysr.outputs == sys.outputs
+        assert sysr.nstates == 2
+        assert sysr.ninputs == sys.ninputs
+        assert sysr.noutputs == sys.noutputs
         np.testing.assert_array_almost_equal(
             eigvals(sysr.A), [-2.136154, -0.1638459])
 
@@ -591,7 +591,7 @@ class TestStateSpace:
         assert (0, 4) == g1.B.shape
         assert (5, 0) == g1.C.shape
         assert (5, 4) == g1.D.shape
-        assert 0 == g1.states
+        assert 0 == g1.nstates
 
     @pytest.mark.parametrize("A, B, C, D",
                              [([1], [], [], [1]),
@@ -619,9 +619,9 @@ class TestStateSpace:
     def test_empty(self):
         """Regression: can we create an empty StateSpace object?"""
         g1 = StateSpace([], [], [], [])
-        assert 0 == g1.states
-        assert 0 == g1.inputs
-        assert 0 == g1.outputs
+        assert 0 == g1.nstates
+        assert 0 == g1.ninputs
+        assert 0 == g1.noutputs
 
     def test_matrix_to_state_space(self):
         """_convert_to_statespace(matrix) gives ss([],[],[],D)"""
@@ -758,9 +758,9 @@ class TestRss:
     def test_shape(self, states, outputs, inputs):
         """Test that rss outputs have the right state, input, and output size."""
         sys = rss(states, outputs, inputs)
-        assert sys.states == states
-        assert sys.inputs == inputs
-        assert sys.outputs == outputs
+        assert sys.nstates == states
+        assert sys.ninputs == inputs
+        assert sys.noutputs == outputs
 
     @pytest.mark.parametrize('states', range(1, maxStates))
     @pytest.mark.parametrize('outputs', range(1, maxIO))
@@ -787,9 +787,9 @@ class TestDrss:
     def test_shape(self, states, outputs, inputs):
         """Test that drss outputs have the right state, input, and output size."""
         sys = drss(states, outputs, inputs)
-        assert sys.states == states
-        assert sys.inputs == inputs
-        assert sys.outputs == outputs
+        assert sys.nstates == states
+        assert sys.ninputs == inputs
+        assert sys.noutputs == outputs
 
     @pytest.mark.parametrize('states', range(1, maxStates))
     @pytest.mark.parametrize('outputs', range(1, maxIO))
@@ -830,8 +830,8 @@ class TestLTIConverter:
     def test_returnScipySignalLTI(self, mimoss):
         """Test returnScipySignalLTI method with strict=False"""
         sslti = mimoss.returnScipySignalLTI(strict=False)
-        for i in range(mimoss.outputs):
-            for j in range(mimoss.inputs):
+        for i in range(mimoss.noutputs):
+            for j in range(mimoss.ninputs):
                 np.testing.assert_allclose(sslti[i][j].A, mimoss.A)
                 np.testing.assert_allclose(sslti[i][j].B, mimoss.B[:,
                                                                    j:j + 1])

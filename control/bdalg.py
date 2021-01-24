@@ -76,7 +76,7 @@ def series(sys1, *sysn):
     Raises
     ------
     ValueError
-        if `sys2.inputs` does not equal `sys1.outputs`
+        if `sys2.ninputs` does not equal `sys1.noutputs`
         if `sys1.dt` is not compatible with `sys2.dt`
 
     See Also
@@ -336,25 +336,25 @@ def connect(sys, Q, inputv, outputv):
     """
     inputv, outputv, Q = np.asarray(inputv), np.asarray(outputv), np.asarray(Q)
     # check indices
-    index_errors = (inputv - 1 > sys.inputs) | (inputv < 1)
+    index_errors = (inputv - 1 > sys.ninputs) | (inputv < 1)
     if np.any(index_errors):
         raise IndexError(
             "inputv index %s out of bounds" % inputv[np.where(index_errors)])
-    index_errors = (outputv - 1 > sys.outputs) | (outputv < 1)
+    index_errors = (outputv - 1 > sys.noutputs) | (outputv < 1)
     if np.any(index_errors):
         raise IndexError(
             "outputv index %s out of bounds" % outputv[np.where(index_errors)])
-    index_errors = (Q[:,0:1] - 1 > sys.inputs) | (Q[:,0:1] < 1)
+    index_errors = (Q[:,0:1] - 1 > sys.ninputs) | (Q[:,0:1] < 1)
     if np.any(index_errors):
         raise IndexError(
             "Q input index %s out of bounds" % Q[np.where(index_errors)])
-    index_errors = (np.abs(Q[:,1:]) - 1 > sys.outputs)
+    index_errors = (np.abs(Q[:,1:]) - 1 > sys.noutputs)
     if np.any(index_errors):
         raise IndexError(
             "Q output index %s out of bounds" % Q[np.where(index_errors)])
 
     # first connect
-    K = np.zeros((sys.inputs, sys.outputs))
+    K = np.zeros((sys.ninputs, sys.noutputs))
     for r in np.array(Q).astype(int):
         inp = r[0]-1
         for outp in r[1:]:
@@ -365,8 +365,8 @@ def connect(sys, Q, inputv, outputv):
     sys = sys.feedback(np.array(K), sign=1)
 
     # now trim
-    Ytrim = np.zeros((len(outputv), sys.outputs))
-    Utrim = np.zeros((sys.inputs, len(inputv)))
+    Ytrim = np.zeros((len(outputv), sys.noutputs))
+    Utrim = np.zeros((sys.ninputs, len(inputv)))
     for i,u in enumerate(inputv):
         Utrim[u-1,i] = 1.
     for i,y in enumerate(outputv):

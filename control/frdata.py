@@ -155,11 +155,11 @@ class FrequencyResponseData(LTI):
     def __str__(self):
         """String representation of the transfer function."""
 
-        mimo = self.inputs > 1 or self.outputs > 1
+        mimo = self.ninputs > 1 or self.noutputs > 1
         outstr = ['Frequency response data']
 
-        for i in range(self.inputs):
-            for j in range(self.outputs):
+        for i in range(self.ninputs):
+            for j in range(self.noutputs):
                 if mimo:
                     outstr.append("Input %i to output %i:" % (i + 1, j + 1))
                 outstr.append('Freq [rad/s]  Response')
@@ -201,12 +201,12 @@ class FrequencyResponseData(LTI):
         other = _convert_to_FRD(other, omega=self.omega)
 
         # Check that the input-output sizes are consistent.
-        if self.inputs != other.inputs:
+        if self.ninputs != other.ninputs:
             raise ValueError("The first summand has %i input(s), but the \
-second has %i." % (self.inputs, other.inputs))
-        if self.outputs != other.outputs:
+second has %i." % (self.ninputs, other.ninputs))
+        if self.noutputs != other.noutputs:
             raise ValueError("The first summand has %i output(s), but the \
-second has %i." % (self.outputs, other.outputs))
+second has %i." % (self.noutputs, other.noutputs))
 
         return FRD(self.fresp + other.fresp, other.omega)
 
@@ -236,14 +236,14 @@ second has %i." % (self.outputs, other.outputs))
             other = _convert_to_FRD(other, omega=self.omega)
 
         # Check that the input-output sizes are consistent.
-        if self.inputs != other.outputs:
+        if self.ninputs != other.noutputs:
             raise ValueError(
                 "H = G1*G2: input-output size mismatch: "
                 "G1 has %i input(s), G2 has %i output(s)." %
-                (self.inputs, other.outputs))
+                (self.ninputs, other.noutputs))
 
-        inputs = other.inputs
-        outputs = self.outputs
+        inputs = other.ninputs
+        outputs = self.noutputs
         fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
         for i in range(len(self.omega)):
@@ -263,14 +263,14 @@ second has %i." % (self.outputs, other.outputs))
             other = _convert_to_FRD(other, omega=self.omega)
 
         # Check that the input-output sizes are consistent.
-        if self.outputs != other.inputs:
+        if self.noutputs != other.ninputs:
             raise ValueError(
                 "H = G1*G2: input-output size mismatch: "
                 "G1 has %i input(s), G2 has %i output(s)." %
-                (other.inputs, self.outputs))
+                (other.ninputs, self.noutputs))
 
-        inputs = self.inputs
-        outputs = other.outputs
+        inputs = self.ninputs
+        outputs = other.noutputs
 
         fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
@@ -290,8 +290,8 @@ second has %i." % (self.outputs, other.outputs))
         else:
             other = _convert_to_FRD(other, omega=self.omega)
 
-        if (self.inputs > 1 or self.outputs > 1 or
-            other.inputs > 1 or other.outputs > 1):
+        if (self.ninputs > 1 or self.noutputs > 1 or
+            other.ninputs > 1 or other.noutputs > 1):
             raise NotImplementedError(
                 "FRD.__truediv__ is currently only implemented for SISO "
                 "systems.")
@@ -313,8 +313,8 @@ second has %i." % (self.outputs, other.outputs))
         else:
             other = _convert_to_FRD(other, omega=self.omega)
 
-        if (self.inputs > 1 or self.outputs > 1 or
-            other.inputs > 1 or other.outputs > 1):
+        if (self.ninputs > 1 or self.noutputs > 1 or
+            other.ninputs > 1 or other.noutputs > 1):
             raise NotImplementedError(
                 "FRD.__rtruediv__ is currently only implemented for "
                 "SISO systems.")
@@ -392,10 +392,10 @@ second has %i." % (self.outputs, other.outputs))
             else:
                 out = self.fresp[:, :, elements]
         else:
-            out = empty((self.outputs, self.inputs, len(omega_array)),
+            out = empty((self.noutputs, self.ninputs, len(omega_array)),
                          dtype=complex)
-            for i in range(self.outputs):
-                for j in range(self.inputs):
+            for i in range(self.noutputs):
+                for j in range(self.ninputs):
                     for k, w in enumerate(omega_array):
                         frraw = splev(w, self.ifunc[i, j], der=0)
                         out[i, j, k] = frraw[0] + 1.0j * frraw[1]
@@ -406,7 +406,7 @@ second has %i." % (self.outputs, other.outputs))
         """Evaluate system's transfer function at complex frequencies.
 
         Returns the complex frequency response `sys(s)` of system `sys` with
-        `m = sys.inputs` number of inputs and `p = sys.outputs` number of
+        `m = sys.ninputs` number of inputs and `p = sys.noutputs` number of
         outputs.
 
         To evaluate at a frequency omega in radians per second, enter
@@ -474,10 +474,10 @@ second has %i." % (self.outputs, other.outputs))
 
         other = _convert_to_FRD(other, omega=self.omega)
 
-        if (self.outputs != other.inputs or self.inputs != other.outputs):
+        if (self.noutputs != other.ninputs or self.ninputs != other.noutputs):
             raise ValueError(
                 "FRD.feedback, inputs/outputs mismatch")
-        fresp = empty((self.outputs, self.inputs, len(other.omega)),
+        fresp = empty((self.noutputs, self.ninputs, len(other.omega)),
                       dtype=complex)
         # TODO: vectorize this
         # TODO: handle omega re-mapping
@@ -487,9 +487,9 @@ second has %i." % (self.outputs, other.outputs))
             fresp[:, :, k] = np.dot(
                 self.fresp[:, :, k],
                 linalg.solve(
-                    eye(self.inputs)
+                    eye(self.ninputs)
                     + np.dot(other.fresp[:, :, k], self.fresp[:, :, k]),
-                    eye(self.inputs))
+                    eye(self.ninputs))
             )
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))

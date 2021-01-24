@@ -305,30 +305,52 @@ class StateSpace(LTI):
                 else:
                     dt = config.defaults['control.default_dt']
         self.dt = dt
-        self.states = A.shape[1]
+        self.nstates = A.shape[1]
 
-        if 0 == self.states:
+        if 0 == self.nstates:
             # static gain
             # matrix's default "empty" shape is 1x0
             A.shape = (0, 0)
-            B.shape = (0, self.inputs)
-            C.shape = (self.outputs, 0)
+            B.shape = (0, self.ninputs)
+            C.shape = (self.noutputs, 0)
 
         # Check that the matrix sizes are consistent.
-        if self.states != A.shape[0]:
+        if self.nstates != A.shape[0]:
             raise ValueError("A must be square.")
-        if self.states != B.shape[0]:
+        if self.nstates != B.shape[0]:
             raise ValueError("A and B must have the same number of rows.")
-        if self.states != C.shape[1]:
+        if self.nstates != C.shape[1]:
             raise ValueError("A and C must have the same number of columns.")
-        if self.inputs != B.shape[1]:
+        if self.ninputs != B.shape[1]:
             raise ValueError("B and D must have the same number of columns.")
-        if self.outputs != C.shape[0]:
+        if self.noutputs != C.shape[0]:
             raise ValueError("C and D must have the same number of rows.")
 
         # Check for states that don't do anything, and remove them.
         if remove_useless_states:
             self._remove_useless_states()
+
+    #
+    # Getter and setter functions for legacy state attributes
+    #
+    # For this iteration, generate a deprecation warning whenever the
+    # getter/setter is called.  For a future iteration, turn it into a
+    # future warning, so that users will see it.
+    #
+
+    @property
+    def states(self):
+        warn("The StateSpace `states` attribute will be deprecated in a "
+             "future release.  Use `nstates` instead.",
+             DeprecationWarning, stacklevel=2)
+        return self.nstates
+
+    @states.setter
+    def states(self, value):
+        warn("The StateSpace `states` attribute will be deprecated in a "
+             "future release.  Use `nstates` instead.",
+             DeprecationWarning, stacklevel=2)
+        self.nstates = value
 
     def _remove_useless_states(self):
         """Check for states that don't do anything, and remove them.
@@ -358,9 +380,9 @@ class StateSpace(LTI):
         self.B = delete(self.B, useless, 0)
         self.C = delete(self.C, useless, 1)
 
-        self.states = self.A.shape[0]
-        self.inputs = self.B.shape[1]
-        self.outputs = self.C.shape[0]
+        self.nstates = self.A.shape[0]
+        self.ninputs = self.B.shape[1]
+        self.noutputs = self.C.shape[0]
 
     def __str__(self):
         """Return string representation of the state space system."""
@@ -398,7 +420,7 @@ class StateSpace(LTI):
             r'\[',
             r'\left(',
             (r'\begin{array}'
-             + r'{' + 'rll' * self.inputs + '}')
+             + r'{' + 'rll' * self.ninputs + '}')
             ]
 
         for Di in asarray(self.D):
@@ -422,14 +444,14 @@ class StateSpace(LTI):
         -------
         s : string with LaTeX representation of model
         """
-        if self.states == 0:
+        if self.nstates == 0:
             return self._latex_partitioned_stateless()
 
         lines = [
             r'\[',
             r'\left(',
             (r'\begin{array}'
-             + r'{' + 'rll' * self.states + '|' + 'rll' * self.inputs + '}')
+             + r'{' + 'rll' * self.nstates + '|' + 'rll' * self.ninputs + '}')
             ]
 
         for Ai, Bi in zip(asarray(self.A), asarray(self.B)):
@@ -476,7 +498,7 @@ class StateSpace(LTI):
                 r'\right)'])
             return matlines
 
-        if self.states > 0:
+        if self.nstates > 0:
             lines.extend(fmt_matrix(self.A, 'A'))
             lines.append('&')
             lines.extend(fmt_matrix(self.B, 'B'))
@@ -536,8 +558,8 @@ class StateSpace(LTI):
             other = _convert_to_statespace(other)
 
             # Check to make sure the dimensions are OK
-            if ((self.inputs != other.inputs) or
-                    (self.outputs != other.outputs)):
+            if ((self.ninputs != other.ninputs) or
+                    (self.noutputs != other.noutputs)):
                 raise ValueError("Systems have different shapes.")
 
             dt = common_timebase(self.dt, other.dt)
@@ -586,9 +608,9 @@ class StateSpace(LTI):
             other = _convert_to_statespace(other)
 
             # Check to make sure the dimensions are OK
-            if self.inputs != other.outputs:
+            if self.ninputs != other.noutputs:
                 raise ValueError("C = A * B: A has %i column(s) (input(s)), \
-                    but B has %i row(s)\n(output(s))." % (self.inputs, other.outputs))
+                    but B has %i row(s)\n(output(s))." % (self.ninputs, other.noutputs))
             dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
@@ -708,9 +730,9 @@ class StateSpace(LTI):
             raise ValueError("input list must be 1D")
 
         # preallocate
-        n = self.states
-        m = self.inputs
-        p = self.outputs
+        n = self.nstates
+        m = self.ninputs
+        p = self.noutputs
         out = np.empty((p, m, len(x_arr)), dtype=complex)
         # The first call both evaluates C(sI-A)^-1 B and also returns
         # Hessenberg transformed matrices at, bt, ct.
@@ -753,7 +775,7 @@ class StateSpace(LTI):
 
         Returns
         -------
-        output : (self.outputs, self.inputs, len(x)) complex ndarray
+        output : (self.noutputs, self.ninputs, len(x)) complex ndarray
             Frequency response
 
         Notes
@@ -773,13 +795,13 @@ class StateSpace(LTI):
                 raise ValueError("input list must be 1D")
 
             # Preallocate
-            out = empty((self.outputs, self.inputs, len(x_arr)), dtype=complex)
+            out = empty((self.noutputs, self.ninputs, len(x_arr)), dtype=complex)
 
             #TODO: can this be vectorized?
             for idx, x_idx in enumerate(x_arr):
                 out[:,:,idx] = \
                     np.dot(self.C,
-                        solve(x_idx * eye(self.states) - self.A, self.B)) \
+                        solve(x_idx * eye(self.nstates) - self.A, self.B)) \
                     + self.D
         return out
 
@@ -801,12 +823,12 @@ class StateSpace(LTI):
     def pole(self):
         """Compute the poles of a state space system."""
 
-        return eigvals(self.A) if self.states else np.array([])
+        return eigvals(self.A) if self.nstates else np.array([])
 
     def zero(self):
         """Compute the zeros of a state space system."""
 
-        if not self.states:
+        if not self.nstates:
             return np.array([])
 
         # Use AB08ND from Slycot if it's available, otherwise use
@@ -854,7 +876,7 @@ class StateSpace(LTI):
         other = _convert_to_statespace(other)
 
         # Check to make sure the dimensions are OK
-        if (self.inputs != other.outputs) or (self.outputs != other.inputs):
+        if (self.ninputs != other.noutputs) or (self.noutputs != other.ninputs):
             raise ValueError("State space systems don't have compatible "
                              "inputs/outputs for feedback.")
         dt = common_timebase(self.dt, other.dt)
@@ -868,8 +890,8 @@ class StateSpace(LTI):
         C2 = other.C
         D2 = other.D
 
-        F = eye(self.inputs) - sign * np.dot(D2, D1)
-        if matrix_rank(F) != self.inputs:
+        F = eye(self.ninputs) - sign * np.dot(D2, D1)
+        if matrix_rank(F) != self.ninputs:
             raise ValueError(
                 "I - sign * D2 * D1 is singular to working precision.")
 
@@ -879,11 +901,11 @@ class StateSpace(LTI):
         # decomposition (cubic runtime complexity) of F only once!
         # The remaining back substitutions are only quadratic in runtime.
         E_D2_C2 = solve(F, concatenate((D2, C2), axis=1))
-        E_D2 = E_D2_C2[:, :other.inputs]
-        E_C2 = E_D2_C2[:, other.inputs:]
+        E_D2 = E_D2_C2[:, :other.ninputs]
+        E_C2 = E_D2_C2[:, other.ninputs:]
 
-        T1 = eye(self.outputs) + sign * np.dot(D1, E_D2)
-        T2 = eye(self.inputs) + sign * np.dot(E_D2, D1)
+        T1 = eye(self.noutputs) + sign * np.dot(D1, E_D2)
+        T2 = eye(self.ninputs) + sign * np.dot(E_D2, D1)
 
         A = concatenate(
             (concatenate(
@@ -922,9 +944,9 @@ class StateSpace(LTI):
         other = _convert_to_statespace(other)
         # maximal values for nu, ny
         if ny == -1:
-            ny = min(other.inputs, self.outputs)
+            ny = min(other.ninputs, self.noutputs)
         if nu == -1:
-            nu = min(other.outputs, self.inputs)
+            nu = min(other.noutputs, self.ninputs)
         # dimension check
         # TODO
 
@@ -932,14 +954,14 @@ class StateSpace(LTI):
 
         # submatrices
         A = self.A
-        B1 = self.B[:, :self.inputs - nu]
-        B2 = self.B[:, self.inputs - nu:]
-        C1 = self.C[:self.outputs - ny, :]
-        C2 = self.C[self.outputs - ny:, :]
-        D11 = self.D[:self.outputs - ny, :self.inputs - nu]
-        D12 = self.D[:self.outputs - ny, self.inputs - nu:]
-        D21 = self.D[self.outputs - ny:, :self.inputs - nu]
-        D22 = self.D[self.outputs - ny:, self.inputs - nu:]
+        B1 = self.B[:, :self.ninputs - nu]
+        B2 = self.B[:, self.ninputs - nu:]
+        C1 = self.C[:self.noutputs - ny, :]
+        C2 = self.C[self.noutputs - ny:, :]
+        D11 = self.D[:self.noutputs - ny, :self.ninputs - nu]
+        D12 = self.D[:self.noutputs - ny, self.ninputs - nu:]
+        D21 = self.D[self.noutputs - ny:, :self.ninputs - nu]
+        D22 = self.D[self.noutputs - ny:, self.ninputs - nu:]
 
         # submatrices
         Abar = other.A
@@ -960,21 +982,21 @@ class StateSpace(LTI):
         # solve for the resulting ss by solving for [y, u] using [x,
         # xbar] and [w1, w2].
         TH = np.linalg.solve(F, np.block(
-            [[C2, np.zeros((ny, other.states)),
-              D21, np.zeros((ny, other.inputs - ny))],
-             [np.zeros((nu, self.states)), Cbar1,
-              np.zeros((nu, self.inputs - nu)), Dbar12]]
+            [[C2, np.zeros((ny, other.nstates)),
+              D21, np.zeros((ny, other.ninputs - ny))],
+             [np.zeros((nu, self.nstates)), Cbar1,
+              np.zeros((nu, self.ninputs - nu)), Dbar12]]
         ))
-        T11 = TH[:ny, :self.states]
-        T12 = TH[:ny, self.states: self.states + other.states]
-        T21 = TH[ny:, :self.states]
-        T22 = TH[ny:, self.states: self.states + other.states]
-        H11 = TH[:ny, self.states + other.states:self.states +
-                 other.states + self.inputs - nu]
-        H12 = TH[:ny, self.states + other.states + self.inputs - nu:]
-        H21 = TH[ny:, self.states + other.states:self.states +
-                 other.states + self.inputs - nu]
-        H22 = TH[ny:, self.states + other.states + self.inputs - nu:]
+        T11 = TH[:ny, :self.nstates]
+        T12 = TH[:ny, self.nstates: self.nstates + other.nstates]
+        T21 = TH[ny:, :self.nstates]
+        T22 = TH[ny:, self.nstates: self.nstates + other.nstates]
+        H11 = TH[:ny, self.nstates + other.nstates:self.nstates +
+                 other.nstates + self.ninputs - nu]
+        H12 = TH[:ny, self.nstates + other.nstates + self.ninputs - nu:]
+        H21 = TH[ny:, self.nstates + other.nstates:self.nstates +
+                 other.nstates + self.ninputs - nu]
+        H22 = TH[ny:, self.nstates + other.nstates + self.ninputs - nu:]
 
         Ares = np.block([
             [A + B2.dot(T21), B2.dot(T22)],
@@ -1000,17 +1022,17 @@ class StateSpace(LTI):
     def minreal(self, tol=0.0):
         """Calculate a minimal realization, removes unobservable and
         uncontrollable states"""
-        if self.states:
+        if self.nstates:
             try:
                 from slycot import tb01pd
-                B = empty((self.states, max(self.inputs, self.outputs)))
-                B[:, :self.inputs] = self.B
-                C = empty((max(self.outputs, self.inputs), self.states))
-                C[:self.outputs, :] = self.C
-                A, B, C, nr = tb01pd(self.states, self.inputs, self.outputs,
+                B = empty((self.nstates, max(self.ninputs, self.noutputs)))
+                B[:, :self.ninputs] = self.B
+                C = empty((max(self.noutputs, self.ninputs), self.nstates))
+                C[:self.noutputs, :] = self.C
+                A, B, C, nr = tb01pd(self.nstates, self.ninputs, self.noutputs,
                                      self.A, B, C, tol=tol)
-                return StateSpace(A[:nr, :nr], B[:nr, :self.inputs],
-                                  C[:self.outputs, :nr], self.D)
+                return StateSpace(A[:nr, :nr], B[:nr, :self.ninputs],
+                                  C[:self.noutputs, :nr], self.D)
             except ImportError:
                 raise TypeError("minreal requires slycot tb01pd")
         else:
@@ -1055,10 +1077,10 @@ class StateSpace(LTI):
             kwdt = {}
 
         # Preallocate the output.
-        out = [[[] for _ in range(self.inputs)] for _ in range(self.outputs)]
+        out = [[[] for _ in range(self.ninputs)] for _ in range(self.noutputs)]
 
-        for i in range(self.outputs):
-            for j in range(self.inputs):
+        for i in range(self.noutputs):
+            for j in range(self.ninputs):
                 out[i][j] = signalStateSpace(asarray(self.A),
                                              asarray(self.B[:, j:j + 1]),
                                              asarray(self.C[i:i + 1, :]),
@@ -1077,21 +1099,21 @@ class StateSpace(LTI):
 
         self.dt = common_timebase(self.dt, other.dt)
 
-        n = self.states + other.states
-        m = self.inputs + other.inputs
-        p = self.outputs + other.outputs
+        n = self.nstates + other.nstates
+        m = self.ninputs + other.ninputs
+        p = self.noutputs + other.noutputs
         A = zeros((n, n))
         B = zeros((n, m))
         C = zeros((p, n))
         D = zeros((p, m))
-        A[:self.states, :self.states] = self.A
-        A[self.states:, self.states:] = other.A
-        B[:self.states, :self.inputs] = self.B
-        B[self.states:, self.inputs:] = other.B
-        C[:self.outputs, :self.states] = self.C
-        C[self.outputs:, self.states:] = other.C
-        D[:self.outputs, :self.inputs] = self.D
-        D[self.outputs:, self.inputs:] = other.D
+        A[:self.nstates, :self.nstates] = self.A
+        A[self.nstates:, self.nstates:] = other.A
+        B[:self.nstates, :self.ninputs] = self.B
+        B[self.nstates:, self.ninputs:] = other.B
+        C[:self.noutputs, :self.nstates] = self.C
+        C[self.noutputs:, self.nstates:] = other.C
+        D[:self.noutputs, :self.ninputs] = self.D
+        D[self.noutputs:, self.ninputs:] = other.D
         return StateSpace(A, B, C, D, self.dt)
 
     def __getitem__(self, indices):
@@ -1188,7 +1210,7 @@ class StateSpace(LTI):
                 gain = np.squeeze(self.horner(1))
         except LinAlgError:
             # eigenvalue at DC
-            gain = np.tile(np.nan, (self.outputs, self.inputs))
+            gain = np.tile(np.nan, (self.noutputs, self.ninputs))
         return np.squeeze(gain)
 
     def is_static_gain(self):
@@ -1241,13 +1263,13 @@ def _convert_to_statespace(sys, **kw):
             num, den, denorder = sys.minreal()._common_den()
 
             # transfer function to state space conversion now should work!
-            ssout = td04ad('C', sys.inputs, sys.outputs,
+            ssout = td04ad('C', sys.ninputs, sys.noutputs,
                            denorder, den, num, tol=0)
 
             states = ssout[0]
             return StateSpace(ssout[1][:states, :states],
-                              ssout[2][:states, :sys.inputs],
-                              ssout[3][:sys.outputs, :states], ssout[4],
+                              ssout[2][:states, :sys.ninputs],
+                              ssout[3][:sys.noutputs, :states], ssout[4],
                               sys.dt)
         except ImportError:
             # No Slycot.  Scipy tf->ss can't handle MIMO, but static
@@ -1257,13 +1279,13 @@ def _convert_to_statespace(sys, **kw):
             maxd = max(max(len(d) for d in drow)
                        for drow in sys.den)
             if 1 == maxn and 1 == maxd:
-                D = empty((sys.outputs, sys.inputs), dtype=float)
-                for i, j in itertools.product(range(sys.outputs),
-                                              range(sys.inputs)):
+                D = empty((sys.noutputs, sys.ninputs), dtype=float)
+                for i, j in itertools.product(range(sys.noutputs),
+                                              range(sys.ninputs)):
                     D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
                 return StateSpace([], [], [], D, sys.dt)
             else:
-                if sys.inputs != 1 or sys.outputs != 1:
+                if sys.ninputs != 1 or sys.noutputs != 1:
                     raise TypeError("No support for MIMO without slycot")
 
                 # TODO: do we want to squeeze first and check dimenations?
@@ -1446,18 +1468,18 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
     if not (isinstance(input, int) and isinstance(output, int)):
         raise TypeError("Parameters ``input`` and ``output`` must both "
                         "be integer numbers.")
-    if not (0 <= input < sys.inputs):
+    if not (0 <= input < sys.ninputs):
         raise ValueError("Selected input does not exist. "
                          "Selected input: {sel}, "
                          "number of system inputs: {ext}."
-                         .format(sel=input, ext=sys.inputs))
-    if not (0 <= output < sys.outputs):
+                         .format(sel=input, ext=sys.ninputs))
+    if not (0 <= output < sys.noutputs):
         raise ValueError("Selected output does not exist. "
                          "Selected output: {sel}, "
                          "number of system outputs: {ext}."
-                         .format(sel=output, ext=sys.outputs))
+                         .format(sel=output, ext=sys.noutputs))
     # Convert sys to SISO if necessary
-    if sys.inputs > 1 or sys.outputs > 1:
+    if sys.ninputs > 1 or sys.noutputs > 1:
         if warn_conversion:
             warn("Converting MIMO system to SISO system. "
                  "Only input {i} and output {o} are used."
@@ -1502,13 +1524,13 @@ def _mimo2simo(sys, input, warn_conversion=False):
     """
     if not (isinstance(input, int)):
         raise TypeError("Parameter ``input`` be an integer number.")
-    if not (0 <= input < sys.inputs):
+    if not (0 <= input < sys.ninputs):
         raise ValueError("Selected input does not exist. "
                          "Selected input: {sel}, "
                          "number of system inputs: {ext}."
-                         .format(sel=input, ext=sys.inputs))
+                         .format(sel=input, ext=sys.ninputs))
     # Convert sys to SISO if necessary
-    if sys.inputs > 1:
+    if sys.ninputs > 1:
         if warn_conversion:
             warn("Converting MIMO system to SIMO system. "
                  "Only input {i} is used." .format(i=input))

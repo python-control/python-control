@@ -709,13 +709,13 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     sys = _convert_to_statespace(sys)
 
     # Set up arrays to handle the output
-    ninputs = sys.inputs if input is None else 1
-    noutputs = sys.outputs if output is None else 1
+    ninputs = sys.ninputs if input is None else 1
+    noutputs = sys.noutputs if output is None else 1
     yout = np.empty((noutputs, ninputs, np.asarray(T).size))
-    xout = np.empty((sys.states, ninputs, np.asarray(T).size))
+    xout = np.empty((sys.nstates, ninputs, np.asarray(T).size))
 
     # Simulate the response for each input
-    for i in range(sys.inputs):
+    for i in range(sys.ninputs):
         # If input keyword was specified, only simulate for that input
         if isinstance(input, int) and i != input:
             continue
@@ -1025,13 +1025,13 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     U = np.zeros_like(T)
 
     # Set up arrays to handle the output
-    ninputs = sys.inputs if input is None else 1
-    noutputs = sys.outputs if output is None else 1
+    ninputs = sys.ninputs if input is None else 1
+    noutputs = sys.noutputs if output is None else 1
     yout = np.empty((noutputs, ninputs, np.asarray(T).size))
-    xout = np.empty((sys.states, ninputs, np.asarray(T).size))
+    xout = np.empty((sys.nstates, ninputs, np.asarray(T).size))
 
     # Simulate the response for each input
-    for i in range(sys.inputs):
+    for i in range(sys.ninputs):
         # If input keyword was specified, only handle that case
         if isinstance(input, int) and i != input:
             continue
