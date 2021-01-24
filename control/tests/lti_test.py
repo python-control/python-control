@@ -251,13 +251,16 @@ class TestLTI:
             sys([[0.1, 1], [1, 10]])
             evalfr(sys, [[0.1, 1], [1, 10]])
 
-        with pytest.raises(PendingDeprecationWarning, match="LTI `inputs`"):
-            assert sys.inputs == sys.ninputs
+        with pytest.warns(DeprecationWarning, match="LTI `inputs`"):
+            ninputs = sys.inputs
+        assert ninputs == sys.ninputs
 
-        with pytest.raises(PendingDeprecationWarning, match="LTI `outputs`"):
-            assert sys.outputs == sys.noutputs
+        with pytest.warns(DeprecationWarning, match="LTI `outputs`"):
+            noutputs = sys.outputs
+        assert noutputs == sys.noutputs
 
         if isinstance(sys, ct.StateSpace):
-            with pytest.raises(
-                    PendingDeprecationWarning, match="StateSpace `states`"):
-                assert sys.states == sys.nstates
+            with pytest.warns(
+                    DeprecationWarning, match="StateSpace `states`"):
+                nstates = sys.states
+            assert nstates == sys.nstates

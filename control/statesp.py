@@ -333,24 +333,23 @@ class StateSpace(LTI):
     #
     # Getter and setter functions for legacy state attributes
     #
-    # For this iteration, generate a pending deprecation warning whenever
-    # the getter/setter is called.  For a future iteration, turn it into a
-    # deprecation warning.
+    # For this iteration, generate a deprecation warning whenever the
+    # getter/setter is called.  For a future iteration, turn it into a
+    # future warning, so that users will see it.
     #
 
     @property
     def states(self):
-        raise PendingDeprecationWarning(
-            "The StateSpace `states` attribute will be deprecated in a future "
-            "release.  Use `nstates` instead.")
+        warn("The StateSpace `states` attribute will be deprecated in a "
+             "future release.  Use `nstates` instead.",
+             DeprecationWarning, stacklevel=2)
         return self.nstates
 
     @states.setter
     def states(self, value):
-        raise PendingDeprecationWarning(
-            "The StateSpace `states` attribute will be deprecated in a future "
-            "release.  Use `nstates` instead.")
-        # raise PendingDeprecationWarning(
+        warn("The StateSpace `states` attribute will be deprecated in a "
+             "future release.  Use `nstates` instead.",
+             DeprecationWarning, stacklevel=2)
         self.nstates = value
 
     def _remove_useless_states(self):

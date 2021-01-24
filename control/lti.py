@@ -52,40 +52,39 @@ class LTI:
         self.dt = dt
 
     #
-    # Getter and setter functions for legacy input/output attributes
+    # Getter and setter functions for legacy state attributes
     #
-    # For this iteration, generate a pending deprecation warning whenever
-    # the getter/setter is called.  For a future iteration, turn it into a
-    # deprecation warning.
+    # For this iteration, generate a deprecation warning whenever the
+    # getter/setter is called.  For a future iteration, turn it into a
+    # future warning, so that users will see it.
     #
 
     @property
     def inputs(self):
-        raise PendingDeprecationWarning(
-            "The LTI `inputs` attribute will be deprecated in a future "
-            "release.  Use `ninputs` instead.")
+        warn("The LTI `inputs` attribute will be deprecated in a future "
+             "release.  Use `ninputs` instead.",
+             DeprecationWarning, stacklevel=2)
         return self.ninputs
 
     @inputs.setter
     def inputs(self, value):
-        raise PendingDeprecationWarning(
-            "The LTI `inputs` attribute will be deprecated in a future "
-            "release.  Use `ninputs` instead.")
-    
+        warn("The LTI `inputs` attribute will be deprecated in a future "
+             "release.  Use `ninputs` instead.",
+             DeprecationWarning, stacklevel=2)
         self.ninputs = value
 
     @property
     def outputs(self):
-        raise PendingDeprecationWarning(
-            "The LTI `outputs` attribute will be deprecated in a future "
-            "release.  Use `noutputs` instead.")
+        warn("The LTI `outputs` attribute will be deprecated in a future "
+             "release.  Use `noutputs` instead.",
+             DeprecationWarning, stacklevel=2)
         return self.noutputs
 
     @outputs.setter
     def outputs(self, value):
-        raise PendingDeprecationWarning(
-            "The LTI `outputs` attribute will be deprecated in a future "
-            "release.  Use `noutputs` instead.")
+        warn("The LTI `outputs` attribute will be deprecated in a future "
+             "release.  Use `noutputs` instead.",
+             DeprecationWarning, stacklevel=2)
         self.noutputs = value
 
     def isdtime(self, strict=False):
