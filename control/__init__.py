@@ -55,6 +55,7 @@ from .margins import *
 from .mateqn import *
 from .modelsimp import *
 from .nichols import *
+from .nltools import *
 from .phaseplot import *
 from .pzmap import *
 from .rlocus import *

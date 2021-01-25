@@ -450,6 +450,10 @@ class InputOutputSystem(object):
         """Check to see if a system is single input, single output"""
         return self.ninputs == 1 and self.noutputs == 1
 
+    def isstatic(self):
+        """Check to see if a system is a static system (no states)"""
+        return self.nstates == 0
+
     def feedback(self, other=1, sign=-1, params={}):
         """Feedback interconnection between two input/output systems
 
@@ -806,6 +810,23 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Initialize current parameters to default parameters
         self._current_params = params.copy()
+
+    # Return the value of a static nonlinear system
+    def __call__(sys, u, squeeze=None, params=None):
+        # Make sure the call makes sense
+        if not sys.isstatic():
+            raise TypeError(
+                "function evaluation is only supported for static "
+                "input/output systems")
+
+        # If we received any parameters, update them before calling _out()
+        if params is not None:
+            sys._update_params(params)
+            
+        # Evaluate the function on the argument
+        out = sys._out(0, np.array((0,)), np.asarray(u))
+        _, out = _process_time_response(sys, [], out, [], squeeze=squeeze)
+        return out
 
     def _update_params(self, params, warning=False):
         # Update the current parameter values
