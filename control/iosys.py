@@ -1894,8 +1894,8 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         and the special form '-sys.sig' can be used to specify a signal with
         gain -1.
 
-        If omitted, all the `interconnect` function will attempt to create the
-        interconneciton map by connecting all signals with the same base names
+        If omitted, the `interconnect` function will attempt to create the
+        interconnection map by connecting all signals with the same base names
         (ignoring the system name).  Specifically, for each input signal name
         in the list of systems, if that signal name corresponds to the output
         signal in any of the systems, it will be connected to that input (with
