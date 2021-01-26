@@ -144,6 +144,7 @@ Nonlinear system support
    linearize
    input_output_response
    ss2io
+   summing_junction
    tf2io
    flatsys.point_to_point
 

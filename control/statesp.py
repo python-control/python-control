@@ -223,7 +223,7 @@ class StateSpace(LTI):
 
         The default constructor is StateSpace(A, B, C, D), where A, B, C, D
         are matrices or equivalent objects.  To create a discrete time system,
-        use StateSpace(A, B, C, D, dt) where 'dt' is the sampling time (or
+        use StateSpace(A, B, C, D, dt) where `dt` is the sampling time (or
         True for unspecified sampling time).  To call the copy constructor,
         call StateSpace(sys), where sys is a StateSpace object.
 
@@ -231,7 +231,7 @@ class StateSpace(LTI):
         C matrices for rows or columns of zeros.  If the zeros are such that a
         particular state has no effect on the input-output dynamics, then that
         state is removed from the A, B, and C matrices.  If not specified, the
-        value is read from `config.defaults['statesp.remove_useless_states']
+        value is read from `config.defaults['statesp.remove_useless_states']`
         (default = False).
 
         """
