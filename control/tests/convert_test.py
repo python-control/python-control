@@ -155,7 +155,7 @@ class TestConvert:
     def testConvertMIMO(self):
         """Test state space to transfer function conversion.
 
-        Do a MIMO conversation and make sure that it is processed
+        Do a MIMO conversion and make sure that it is processed
         correctly both with and without slycot
 
         Example from issue gh-120, jgoppert

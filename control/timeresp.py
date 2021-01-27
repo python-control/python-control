@@ -356,7 +356,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     if isinstance(sys, TransferFunction) and np.any(X0 != 0):
         warnings.warn(
             "Non-zero initial condition given for transfer function system. "
-            "Internal conversation to state space used; may not be consistent "
+            "Internal conversion to state space used; may not be consistent "
             "with given X0.")
 
     xout = np.zeros((n_states, n_steps))
@@ -702,7 +702,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     if isinstance(sys, TransferFunction) and np.any(X0 != 0):
         warnings.warn(
             "Non-zero initial condition given for transfer function system. "
-            "Internal conversation to state space used; may not be consistent "
+            "Internal conversion to state space used; may not be consistent "
             "with given X0.")
 
     # Convert to state space so that we can simulate

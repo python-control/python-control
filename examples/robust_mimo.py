@@ -54,11 +54,8 @@ def analysis():
     g = plant()
 
     t = np.linspace(0, 10, 101)
-    _, yu1 = step_response(g, t, input=0)
-    _, yu2 = step_response(g, t, input=1)
-
-    yu1 = yu1
-    yu2 = yu2
+    _, yu1 = step_response(g, t, input=0, squeeze=True)
+    _, yu2 = step_response(g, t, input=1, squeeze=True)
 
     # linear system, so scale and sum previous results to get the
     # [1,-1] response
@@ -112,8 +109,8 @@ def synth(wb1, wb2):
 
 def step_opposite(g, t):
     """reponse to step of [-1,1]"""
-    _, yu1 = step_response(g, t, input=0)
-    _, yu2 = step_response(g, t, input=1)
+    _, yu1 = step_response(g, t, input=0, squeeze=True)
+    _, yu2 = step_response(g, t, input=1, squeeze=True)
     return yu1 - yu2
 
 
