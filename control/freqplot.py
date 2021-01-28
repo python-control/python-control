@@ -50,6 +50,7 @@ import numpy as np
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
+from .exception import ControlMIMONotImplemented
 from . import config
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
@@ -214,9 +215,9 @@ def bode_plot(syslist, omega=None,
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
-        if sys.ninputs > 1 or sys.noutputs > 1:
+        if not sys.issiso():
             # TODO: Add MIMO bode plots.
-            raise NotImplementedError(
+            raise ControlMIMONotImplemented(
                 "Bode is currently only implemented for SISO systems.")
         else:
             omega_sys = np.array(omega)
@@ -582,9 +583,9 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                             num=50, endpoint=True, base=10.0)
 
     for sys in syslist:
-        if sys.ninputs > 1 or sys.noutputs > 1:
+        if not sys.issiso():
             # TODO: Add MIMO nyquist plots.
-            raise NotImplementedError(
+            raise ControlMIMONotImplemented(
                 "Nyquist is currently only implemented for SISO systems.")
         else:
             # Get the magnitude and phase of the system
@@ -672,9 +673,9 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     -------
     None
     """
-    if P.ninputs > 1 or P.noutputs > 1 or C.ninputs > 1 or C.noutputs > 1:
+    if not P.issiso() or not C.issiso():
         # TODO: Add MIMO go4 plots.
-        raise NotImplementedError(
+        raise ControlMIMONotImplemented(
             "Gang of four is currently only implemented for SISO systems.")
 
     # Get the default parameter values
