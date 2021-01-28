@@ -88,13 +88,13 @@ def test_saturation_describing_function(satsys):
     np.testing.assert_almost_equal(df_arr, df_anal, decimal=3)
 
 from control.nltools import saturation_nonlinearity, backlash_nonlinearity, \
-    hysteresis_deadzone_nonlinearity
+    relay_hysteresis_nonlinearity
 
 
 @pytest.mark.parametrize("fcn, amin, amax", [
     [saturation_nonlinearity(1), 0, 10],
     [backlash_nonlinearity(2), 1, 10],
-    [hysteresis_deadzone_nonlinearity(1, 1, 1), 3, 10],
+    [relay_hysteresis_nonlinearity(1, 1), 3, 10],
     ])
 def test_describing_function(fcn, amin, amax):
     # Store the analytic describing function for comparison
@@ -102,5 +102,42 @@ def test_describing_function(fcn, amin, amax):
     df_anal = [fcn.describing_function(a) for a in amprange]
     
     # Compute describing function on an array of values
-    df_arr = ct.describing_function(fcn, amprange, zero_check=False)
+    df_arr = ct.describing_function(
+        fcn, amprange, zero_check=False, try_method=False)
     np.testing.assert_almost_equal(df_arr, df_anal, decimal=1)
+
+    # Make sure the describing function method also works
+    df_meth = ct.describing_function(fcn, amprange, zero_check=False)
+    np.testing.assert_almost_equal(df_meth, df_anal, decimal=1)
+
+def test_describing_function_plot():
+    # Simple linear system with at most 1 intersection
+    H_simple = ct.tf([1], [1, 2, 2, 1])
+    omega = np.logspace(-1, 2, 100)
+
+    # Saturation nonlinearity
+    F_saturation = ct.nltools.saturation_nonlinearity(1)
+    amp = np.linspace(1, 4, 10)
+
+    # No intersection
+    xsects = ct.describing_function_plot(H_simple, F_saturation, amp, omega)
+    assert xsects == []
+
+    # One intersection
+    H_larger = H_simple * 8
+    xsects = ct.describing_function_plot(H_larger, F_saturation, amp, omega)
+    for a, w in xsects:
+        np.testing.assert_almost_equal(
+            H_larger(1j*w),
+            -1/ct.describing_function(F_saturation, a), decimal=5)
+
+    # Multiple intersections
+    H_multiple = H_simple * ct.tf(*ct.pade(5, 4)) * 4
+    omega = np.logspace(-1, 3, 50)
+    F_backlash = ct.nltools.backlash_nonlinearity(1)
+    amp = np.linspace(0.6, 5, 50)
+    xsects = ct.describing_function_plot(H_multiple, F_backlash, amp, omega)
+    for a, w in xsects:
+        np.testing.assert_almost_equal(
+            -1/ct.describing_function(F_backlash, a),
+            H_multiple(1j*w), decimal=5)

@@ -17,6 +17,7 @@ analysis.
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy
 from numpy import where, dstack, diff, meshgrid
 from warnings import warn
 
@@ -28,7 +29,8 @@ def sector_bounds(fcn):
     raise NotImplementedError("function not currently implemented")
 
 
-def describing_function(fcn, amp, num_points=100, zero_check=True):
+def describing_function(
+        fcn, amp, num_points=100, zero_check=True, try_method=True):
     """Numerical compute the describing function of a nonlinear function
 
     The describing function of a static nonlinear function is given by
@@ -47,6 +49,18 @@ def describing_function(fcn, amp, num_points=100, zero_check=True):
     amp : float or array
         The amplitude(s) at which the describing function should be calculated.
 
+    zero_check : bool, optional
+        If `True` (default) then `amp` is zero, the function will be evaluated
+        and checked to make sure it is zero.  If not, a `TypeError` exception
+        is raised.  If zero_check is `False`, no check is made on the value of
+        the function at zero.
+
+    try_method : bool, optional
+        If `True` (default), check the `fcn` argument to see if it is an
+        object with a `describing_function` method and use this to compute the
+        describing function.  See the :class:`NonlienarFunction` class for
+        more information on the `describing_function` method.
+
     Returns
     -------
     df : complex or array of complex
@@ -58,6 +72,14 @@ def describing_function(fcn, amp, num_points=100, zero_check=True):
         If amp < 0 or if amp = 0 and the function fcn(0) is non-zero.
 
     """
+    # If there is an analytical solution, trying using that first
+    if try_method and hasattr(fcn, 'describing_function'):
+        # Go through all of the amplitudes we were given
+        df = []
+        for a in np.atleast_1d(amp):
+            df.append(fcn.describing_function(a))
+        return np.array(df).reshape(np.shape(amp))
+
     #
     # The describing function of a nonlinear function F() can be computed by
     # evaluating the nonlinearity over a sinusoid.  The Fourier series for a
@@ -83,7 +105,7 @@ def describing_function(fcn, amp, num_points=100, zero_check=True):
     #
     # From these we can compute M1 and \phi.
     #
-    
+
     # Evaluate over a full range of angles
     theta = np.linspace(0, 2*np.pi, num_points)
     dtheta = theta[1] - theta[0]
@@ -122,7 +144,8 @@ def describing_function(fcn, amp, num_points=100, zero_check=True):
     return np.array(df).reshape(np.shape(amp))
 
 
-def describing_function_plot(H, F, a, omega=None):
+def describing_function_plot(
+        H, F, a, omega=None, refine=True, label="%5.2g @ %-5.2g", **kwargs):
     """Plot a Nyquist plot with a describing function for a nonlinear system.
 
     This function generates a Nyquist plot for a closed loop system consisting
@@ -133,7 +156,7 @@ def describing_function_plot(H, F, a, omega=None):
     H : LTI system
         Linear time-invariant (LTI) system (state space, transfer function, or
         FRD)
-    F : static nonlinear function 
+    F : static nonlinear function
         A static nonlinearity, either a scalar function or a single-input,
         single-output, static input/output system.
     a : list
@@ -141,16 +164,90 @@ def describing_function_plot(H, F, a, omega=None):
     omega : list, optional
         List of frequences to be used for the linear system Nyquist curve.
 
+    Returns
+    -------
+    intersection_list : 1D array of 2-tuples
+        A list of all amplitudes and frequencies in which :math:`H(j\\omega)
+        N(a) = -1`, where :math:`N(a)` is the describing function associated
+        with `F`, or `None` if there are no such points.  Each pair represents
+        a potential limit cycle for the closed loop system.
+
     """
     # Start by drawing a Nyquist curve
-    H_real, H_imag, H_omega = nyquist_plot(H, omega, plot=True)
+    H_real, H_imag, H_omega = nyquist_plot(H, omega, plot=True, **kwargs)
+    H_vals = H_real + 1j * H_imag
 
     # Compute the describing function
     df = describing_function(F, a)
-    dfinv = -1/df
+    N_vals = -1/df
 
-    # Now add on the describing function
-    plt.plot(dfinv.real, dfinv.imag)
+    # Now add the describing function curve to the plot
+    plt.plot(N_vals.real, N_vals.imag)
+
+    # Look for intersection points
+    intersections = []
+    for i in range(N_vals.size - 1):
+        for j in range(H_vals.size - 1):
+            intersect = _find_intersection(
+                N_vals[i], N_vals[i+1], H_vals[j], H_vals[j+1])
+            if intersect == None:
+                continue
+
+            # Found an intersection, compute a and omega
+            s_amp, s_omega = intersect
+            a_guess = (1 - s_amp) * a[i] + s_amp * a[i+1]
+            omega_guess = (1 - s_omega) * H_omega[j] + s_omega * H_omega[j+1]
+
+            # Refine the coarse estimate to get better intersection point
+            a_final, omega_final = a_guess, omega_guess
+            if refine:
+                # Refine the answer to get more accuracy
+                def _cost(x):
+                    return abs(1 + H(1j * x[1]) *
+                               describing_function(F, x[0]))**2
+                res = scipy.optimize.minimize(_cost, [a_guess, omega_guess])
+
+                if not res.success:
+                    warn("not able to refine result; returning estimate")
+                else:
+                    a_final, omega_final = res.x[0], res.x[1]
+
+            # Add labels to the intersection points
+            if label:
+                pos = H(1j * omega_final)
+                plt.text(pos.real, pos.imag, label % (a_final, omega_final))
+
+            # Save the final estimate
+            intersections.append((a_final, omega_final))
+
+    return intersections
+
+# Figure out whether two line segments intersection
+def _find_intersection(L1a, L1b, L2a, L2b):
+    # Compute the tangents for the segments
+    L1t = L1b - L1a
+    L2t = L2b - L2a
+
+    # Set up components of the solution: b = M s
+    b = L1a - L2a
+    detM = L1t.imag * L2t.real - L1t.real * L2t.imag
+    if abs(detM) < 1e-8:        # TODO: fix magic number
+        return None
+
+    # Solve for the intersection points on each line segment
+    s1 = (L2t.imag * b.real - L2t.real * b.imag) / detM
+    if s1 < 0 or s1 > 1:
+        return None
+
+    s2 = (L1t.imag * b.real - L1t.real * b.imag) / detM
+    if s2 < 0 or s2 > 1:
+        return None
+
+    # Debugging test
+    np.testing.assert_almost_equal(L1a + s1 * L1t, L2a + s2 * L2t)
+
+    # Intersection is within segments; return proportional distance
+    return (s1, s2)
 
 
 # Class for nonlinear functions
@@ -195,49 +292,38 @@ class saturation_nonlinearity(NonlinearFunction):
             return (math.sin(alpha + beta) * math.cos(alpha - beta) +
                     (alpha + beta)) / math.pi
 
-        
-# Hysteresis w/ deadzone (#40 in Gelb and Vander Velde, 1968)
-class hysteresis_deadzone_nonlinearity(NonlinearFunction):
-    def __init__(self, delta, D, m):
+
+# Relay with hysteresis (FBS2e, Example 10.12)
+class relay_hysteresis_nonlinearity(NonlinearFunction):
+    def __init__(self, b, c):
         # Initialize the state to bottom branch
         self.branch = -1        # lower branch
-        self.delta = delta
-        self.D = D
-        self.m = m
+        self.b = b
+        self.c = c
 
     def __call__(self, x):
-        if x > self.delta + self.D / self.m:
-            y = self.m * (x - self.delta)
+        if x > self.c:
+            y = self.b
             self.branch = 1
-        elif x < -self.delta - self.D/self.m:
-            y = self.m * (x + self.delta)
+        elif x < -self.c:
+            y = -self.b
             self.branch = -1
-        elif self.branch == -1 and \
-             x > -self.delta - self.D / self.m and \
-             x < self.delta - self.D / self.m:
-            y = -self.D
-        elif self.branch == -1 and x >= self.delta - self.D / self.m:
-            y = self.m * (x - self.delta)
-        elif self.branch == 1 and \
-             x > -self.delta + self.D / self.m and \
-             x < self.delta + self.D / self.m:
-            y = self.D
-        elif self.branch == 1 and x <= -self.delta + self.D / self.m:
-            y = self.m * (x + self.delta)
+        elif self.branch == -1:
+            y = -self.b
+        elif self.branch == 1:
+            y = self.b
         return y
 
-    def describing_function(self, A):
+    def describing_function(self, a):
         def f(x):
             return math.copysign(1, x) if abs(x) > 1 else \
                 (math.asin(x) + x * math.sqrt(1 - x**2)) * 2 / math.pi
 
-        if A < self.delta + self.D/self.m:
+        if a < self.c:
             return np.nan
-            
-        df_real = self.m/2 * \
-            (2 - self._f((self.D/self.m + self.delta)/A) +
-             self._f((self.D/self.m - self.delta)/A))
-        df_imag = -4 * self.D * self.delta / (math.pi * A**2)
+
+        df_real = 4 * self.b * math.sqrt(1 - (self.c/a)**2) / (a * math.pi)
+        df_imag = -4 * self.b * self.c / (math.pi * a**2)
         return df_real + 1j * df_imag
 
 
@@ -248,17 +334,23 @@ class backlash_nonlinearity(NonlinearFunction):
         self.center = 0         # current center position
 
     def __call__(self, x):
-        # If we are outside the backlash, move and shift the center
-        if x - self.center > self.b/2:
-            self.center = x - self.b/2
-        elif x - self.center < -self.b/2:
-            self.center = x + self.b/2
-        return self.center
+        # Convert input to an array
+        x_array = np.array(x)
+
+        y = []
+        for x in np.atleast_1d(x_array):
+            # If we are outside the backlash, move and shift the center
+            if x - self.center > self.b/2:
+                self.center = x - self.b/2
+            elif x - self.center < -self.b/2:
+                self.center = x + self.b/2
+            y.append(self.center)
+        return(np.array(y).reshape(x_array.shape))
 
     def describing_function(self, A):
-        if A < self.b/2:
+        if A <= self.b/2:
             return 0
-            
+
         df_real = (1 + self._f(1 - self.b/A)) / 2
         df_imag = -(2 * self.b/A - (self.b/A)**2) / math.pi
         return df_real + 1j * df_imag
