@@ -220,18 +220,17 @@ def bode_plot(syslist, omega=None,
             raise ControlMIMONotImplemented(
                 "Bode is currently only implemented for SISO systems.")
         else:
-            omega_sys = np.array(omega)
-            if sys.isdtime(True):
+            omega_sys = np.asarray(omega)
+            if sys.isdtime(strict=True):
                 nyquistfrq = 2. * math.pi * 1. / sys.dt / 2.
                 omega_sys = omega_sys[omega_sys < nyquistfrq]
                 # TODO: What distance to the Nyquist frequency is appropriate?
             else:
                 nyquistfrq = None
 
-            # Get the magnitude and phase of the system
-            mag_tmp, phase_tmp, omega_sys = sys.frequency_response(omega_sys)
-            mag = np.atleast_1d(np.squeeze(mag_tmp))
-            phase = np.atleast_1d(np.squeeze(phase_tmp))
+            mag, phase, omega_sys = sys.frequency_response(omega_sys)
+            mag = np.atleast_1d(mag)
+            phase = np.atleast_1d(phase)
 
             #
             # Post-process the phase to handle initial value and wrapping
@@ -352,8 +351,7 @@ def bode_plot(syslist, omega=None,
                 # Show the phase and gain margins in the plot
                 if margins:
                     # Compute stability margins for the system
-                    margin = stability_margins(sys)
-                    gm, pm, Wcg, Wcp = (margin[i] for i in (0, 1, 3, 4))
+                    gm, pm, Wcg, Wcp = stability_margins(sys)[0:4]
 
                     # Figure out sign of the phase at the first gain crossing
                     # (needed if phase_wrap is True)
