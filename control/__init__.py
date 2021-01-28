@@ -48,6 +48,7 @@ for analyzing and designing feedback control systems.
 # Note: the functions we use are specified as __all__ variables in the modules
 from .bdalg import *
 from .delay import *
+from .descfcn import *
 from .dtime import *
 from .freqplot import *
 from .lti import *
@@ -55,7 +56,6 @@ from .margins import *
 from .mateqn import *
 from .modelsimp import *
 from .nichols import *
-from .nltools import *
 from .phaseplot import *
 from .pzmap import *
 from .rlocus import *

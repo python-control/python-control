@@ -8,6 +8,7 @@ implements basic operations for analysis and design of feedback control systems.
 .. rubric:: Features
 
 - Linear input/output systems in state-space and frequency domain
+- Nonlinear input/output system modeling, simulation, and analysis
 - Block diagram algebra: serial, parallel, and feedback interconnections
 - Time response: initial, step, impulse
 - Frequency response: Bode and Nyquist plots

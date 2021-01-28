@@ -1,8 +1,8 @@
-"""nltools_test.py - test static nonlinear feedback functionality
+"""descfcn_test.py - test describing functions and related capabilities
 
 RMM, 23 Jan 2021
 
-This set of unit tests covers the various operatons of the nltools module, as
+This set of unit tests covers the various operatons of the descfcn module, as
 well as some of the support functions associated with static nonlinearities.
 
 """
@@ -87,7 +87,7 @@ def test_saturation_describing_function(satsys):
     df_arr = ct.describing_function(satsys, amprange)
     np.testing.assert_almost_equal(df_arr, df_anal, decimal=3)
 
-from control.nltools import saturation_nonlinearity, backlash_nonlinearity, \
+from control.descfcn import saturation_nonlinearity, backlash_nonlinearity, \
     relay_hysteresis_nonlinearity
 
 
@@ -116,7 +116,7 @@ def test_describing_function_plot():
     omega = np.logspace(-1, 2, 100)
 
     # Saturation nonlinearity
-    F_saturation = ct.nltools.saturation_nonlinearity(1)
+    F_saturation = ct.descfcn.saturation_nonlinearity(1)
     amp = np.linspace(1, 4, 10)
 
     # No intersection
@@ -134,7 +134,7 @@ def test_describing_function_plot():
     # Multiple intersections
     H_multiple = H_simple * ct.tf(*ct.pade(5, 4)) * 4
     omega = np.logspace(-1, 3, 50)
-    F_backlash = ct.nltools.backlash_nonlinearity(1)
+    F_backlash = ct.descfcn.backlash_nonlinearity(1)
     amp = np.linspace(0.6, 5, 50)
     xsects = ct.describing_function_plot(H_multiple, F_backlash, amp, omega)
     for a, w in xsects:

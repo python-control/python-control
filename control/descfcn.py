@@ -1,16 +1,14 @@
-# nltools.py - nonlinear feedback analysis
+# descfcn.py - describing function analysis
 #
 # RMM, 23 Jan 2021
 #
 # This module adds functions for carrying out analysis of systems with
-# static nonlinear feedback functions using the circle criterion and
-# describing functions.
+# static nonlinear feedback functions using describing functions.
 #
 
-"""The :mod:~control.nltools` module contains function for performing closed
-loop analysis of systems with static nonlinearities.  It is built around the
-basic structure required to apply the circle criterion and describing function
-analysis.
+"""The :mod:~control.descfcn` module contains function for performing
+closed loop analysis of systems with static nonlinearities using
+describing function analysis.
 
 """
 
@@ -18,78 +16,124 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
-from numpy import where, dstack, diff, meshgrid
 from warnings import warn
 
 from .freqplot import nyquist_plot
 
-__all__ = ['describing_function', 'describing_function_plot', 'sector_bounds']
+__all__ = ['describing_function', 'describing_function_plot',
+           'DescribingFunctionNonlinearity']
 
-def sector_bounds(fcn):
-    raise NotImplementedError("function not currently implemented")
+# Class for nonlinearities with a built-in describing function
+class DescribingFunctionNonlinearity():
+    """Base class for nonlinear functions with a describing function
+
+    This class is intended to be used as a base class for nonlinear functions
+    that have a analytically defined describing function (accessed via the
+    :meth:`describing_function` method).  Objects using this class should also
+    implement a `call` method that evaluates the nonlinearity at a given point
+    and an `isstatic` method that is `True` if the nonlinearity has no
+    internal state.
+
+    """
+    def __init__(self):
+        """Initailize a describing function nonlinearity"""
+        pass
+
+    def __call__(self, A):
+        raise NotImplementedError(
+            "__call__() not implemented for this function (internal error)")
+
+    def describing_function(self, A):
+        """Return the describing function for a nonlinearity
+
+        This method is used to allow analytical representations of the
+        describing function for a nonlinearity.  It turns the (complex) value
+        of the describing function for sinusoidal input of amplitude `A`.
+
+        """
+        raise NotImplementedError(
+            "describing function not implemented for this function")
+
+    def isstatic(self):
+        """Return True if the function has not internal state"""
+        raise NotImplementedError(
+            "isstatic() not implemented for this function (internal error)")
+
+    # Utility function used to compute common describing functions
+    def _f(self, x):
+        return math.copysign(1, x) if abs(x) > 1 else \
+            (math.asin(x) + x * math.sqrt(1 - x**2)) * 2 / math.pi
 
 
 def describing_function(
-        fcn, amp, num_points=100, zero_check=True, try_method=True):
+        F, A, num_points=100, zero_check=True, try_method=True):
     """Numerical compute the describing function of a nonlinear function
 
     The describing function of a static nonlinear function is given by
     magnitude and phase of the first harmonic of the function when evaluated
     along a sinusoidal input :math:`a \\sin \\omega t`.  This function returns
-    the magnitude and phase of the describing function at amplitude :math:`a`.
+    the magnitude and phase of the describing function at amplitude :math:`A`.
 
     Parameters
     ----------
-    fcn : callable
-        The function fcn() should accept a scalar number as an argument and
+    F : callable
+        The function F() should accept a scalar number as an argument and
         return a scalar number.  For compatibility with (static) nonlinear
         input/output systems, the output can also return a 1D array with a
         single element.
 
-    amp : float or array
+        If the function is an object with a method `describing_function`
+        then this method will be used to computing the describing function
+        instead of a nonlinear computation.  Some common nonlinearities
+        use the :class:`~control.DescribingFunctionNonlinearity` class,
+        which provides this functionality.
+
+    A : float or array_like
         The amplitude(s) at which the describing function should be calculated.
 
     zero_check : bool, optional
-        If `True` (default) then `amp` is zero, the function will be evaluated
+        If `True` (default) then `A` is zero, the function will be evaluated
         and checked to make sure it is zero.  If not, a `TypeError` exception
         is raised.  If zero_check is `False`, no check is made on the value of
         the function at zero.
 
     try_method : bool, optional
-        If `True` (default), check the `fcn` argument to see if it is an
-        object with a `describing_function` method and use this to compute the
-        describing function.  See the :class:`NonlienarFunction` class for
-        more information on the `describing_function` method.
+        If `True` (default), check the `F` argument to see if it is an object
+        with a `describing_function` method and use this to compute the
+        describing function.  More information in the `describing_function`
+        method for the :class:`~control.DescribingFunctionNonlinearity` class.
 
     Returns
     -------
     df : complex or array of complex
-        The (complex) value of the describing fuction at the given amplitude.
+        The (complex) value of the describing function at the given amplitude.
+        If the `A` parameter is an array of amplitudes, then an array of
+        corresponding describing function values is returned.
 
     Raises
     ------
     TypeError
-        If amp < 0 or if amp = 0 and the function fcn(0) is non-zero.
+        If A < 0 or if A = 0 and the function F(0) is non-zero.
 
     """
     # If there is an analytical solution, trying using that first
-    if try_method and hasattr(fcn, 'describing_function'):
+    if try_method and hasattr(F, 'describing_function'):
         # Go through all of the amplitudes we were given
         df = []
-        for a in np.atleast_1d(amp):
-            df.append(fcn.describing_function(a))
-        return np.array(df).reshape(np.shape(amp))
+        for a in np.atleast_1d(A):
+            df.append(F.describing_function(a))
+        return np.array(df).reshape(np.shape(A))
 
     #
     # The describing function of a nonlinear function F() can be computed by
     # evaluating the nonlinearity over a sinusoid.  The Fourier series for a
-    # static noninear function evaluated on a sinusoid can be written as
+    # static nonlinear function evaluated on a sinusoid can be written as
     #
-    # F(a\sin\omega t) = \sum_{k=1}^\infty M_k(a) \sin(k\omega t + \phi_k(a))
+    # F(A\sin\omega t) = \sum_{k=1}^\infty M_k(A) \sin(k\omega t + \phi_k(A))
     #
     # The describing function is given by the complex number
     #
-    #    N(a) = M_1(a) e^{j \phi_1(a)} / a
+    #    N(A) = M_1(A) e^{j \phi_1(A)} / A
     #
     # To compute this, we compute F(\theta) for \theta between 0 and 2 \pi,
     # use the identities
@@ -98,7 +142,7 @@ def describing_function(
     #   \int_0^{2\pi} \sin^2 \theta d\theta = \pi
     #   \int_0^{2\pi} \cos^2 \theta d\theta = \pi
     #
-    # and then integate the product against \sin\theta and \cos\theta to obtain
+    # and then integrate the product against \sin\theta and \cos\theta to obtain
     #
     #   \int_0^{2\pi} F(a\sin\theta) \sin\theta d\theta = M_1 \pi \cos\phi
     #   \int_0^{2\pi} F(a\sin\theta) \cos\theta d\theta = M_1 \pi \sin\phi
@@ -112,40 +156,42 @@ def describing_function(
     sin_theta = np.sin(theta)
     cos_theta = np.cos(theta)
 
-    # Initialize any internal state by going through an initial cycle
-    [fcn(x) for x in np.atleast_1d(amp).min() * sin_theta]
+    # See if this is a static nonlinearity (assume not, just in case)
+    if not hasattr(F, 'isstatic') or not F.isstatic():
+        # Initialize any internal state by going through an initial cycle
+        [F(x) for x in np.atleast_1d(A).min() * sin_theta]
 
     # Go through all of the amplitudes we were given
     df = []
-    for a in np.atleast_1d(amp):
+    for a in np.atleast_1d(A):
         # Make sure we got a valid argument
         if a == 0:
             # Check to make sure the function has zero output with zero input
-            if zero_check and np.squeeze(fcn(0.)) != 0:
+            if zero_check and np.squeeze(F(0.)) != 0:
                 raise ValueError("function must evaluate to zero at zero")
             df.append(1.)
             continue
         elif a < 0:
-            raise ValueError("cannot evaluate describing function for amp < 0")
+            raise ValueError("cannot evaluate describing function for A < 0")
 
         # Save the scaling factor for to make the formulas simpler
         scale = dtheta / np.pi / a
 
         # Evaluate the function (twice) along a sinusoid (for internal state)
-        fcn_eval = np.array([fcn(x) for x in a*sin_theta]).squeeze()
+        F_eval = np.array([F(x) for x in a*sin_theta]).squeeze()
 
         # Compute the prjections onto sine and cosine
-        df_real = (fcn_eval @ sin_theta) * scale     # = M_1 \cos\phi / a
-        df_imag = (fcn_eval @ cos_theta) * scale     # = M_1 \sin\phi / a
+        df_real = (F_eval @ sin_theta) * scale     # = M_1 \cos\phi / a
+        df_imag = (F_eval @ cos_theta) * scale     # = M_1 \sin\phi / a
 
         df.append(df_real + 1j * df_imag)
 
     # Return the values in the same shape as they were requested
-    return np.array(df).reshape(np.shape(amp))
+    return np.array(df).reshape(np.shape(A))
 
 
 def describing_function_plot(
-        H, F, a, omega=None, refine=True, label="%5.2g @ %-5.2g", **kwargs):
+        H, F, A, omega=None, refine=True, label="%5.2g @ %-5.2g", **kwargs):
     """Plot a Nyquist plot with a describing function for a nonlinear system.
 
     This function generates a Nyquist plot for a closed loop system consisting
@@ -159,18 +205,23 @@ def describing_function_plot(
     F : static nonlinear function
         A static nonlinearity, either a scalar function or a single-input,
         single-output, static input/output system.
-    a : list
+    A : list
         List of amplitudes to be used for the describing function plot.
     omega : list, optional
-        List of frequences to be used for the linear system Nyquist curve.
+        List of frequencies to be used for the linear system Nyquist curve.
+    label : str, optional
+        Formatting string used to label intersection points on the Nyquist
+        plot.  Defaults to "%5.2g @ %-5.2g".  Set to `None` to omit labels.
 
     Returns
     -------
-    intersection_list : 1D array of 2-tuples
+    intersections : 1D array of 2-tuples or None
         A list of all amplitudes and frequencies in which :math:`H(j\\omega)
         N(a) = -1`, where :math:`N(a)` is the describing function associated
         with `F`, or `None` if there are no such points.  Each pair represents
-        a potential limit cycle for the closed loop system.
+        a potential limit cycle for the closed loop system with amplitude
+        given by the first value of the tuple and frequency given by the
+        second value.
 
     """
     # Start by drawing a Nyquist curve
@@ -178,7 +229,7 @@ def describing_function_plot(
     H_vals = H_real + 1j * H_imag
 
     # Compute the describing function
-    df = describing_function(F, a)
+    df = describing_function(F, A)
     N_vals = -1/df
 
     # Now add the describing function curve to the plot
@@ -195,7 +246,7 @@ def describing_function_plot(
 
             # Found an intersection, compute a and omega
             s_amp, s_omega = intersect
-            a_guess = (1 - s_amp) * a[i] + s_amp * a[i+1]
+            a_guess = (1 - s_amp) * A[i] + s_amp * A[i+1]
             omega_guess = (1 - s_omega) * H_omega[j] + s_omega * H_omega[j+1]
 
             # Refine the coarse estimate to get better intersection point
@@ -213,16 +264,19 @@ def describing_function_plot(
                     a_final, omega_final = res.x[0], res.x[1]
 
             # Add labels to the intersection points
-            if label:
+            if isinstance(label, str):
                 pos = H(1j * omega_final)
                 plt.text(pos.real, pos.imag, label % (a_final, omega_final))
+            elif label is not None or label is not False:
+                raise ValueError("label must be formatting string or None")
 
             # Save the final estimate
             intersections.append((a_final, omega_final))
 
     return intersections
 
-# Figure out whether two line segments intersection
+
+# Utility function to figure out whether two line segments intersection
 def _find_intersection(L1a, L1b, L2a, L2b):
     # Compute the tangents for the segments
     L1t = L1b - L1a
@@ -244,37 +298,36 @@ def _find_intersection(L1a, L1b, L2a, L2b):
         return None
 
     # Debugging test
-    np.testing.assert_almost_equal(L1a + s1 * L1t, L2a + s2 * L2t)
+    # np.testing.assert_almost_equal(L1a + s1 * L1t, L2a + s2 * L2t)
 
     # Intersection is within segments; return proportional distance
     return (s1, s2)
 
 
-# Class for nonlinear functions
-class NonlinearFunction():
-    def sector_bounds(self, lb, ub):
-        raise NotImplementedError(
-            "sector bounds not implemented for this function")
-
-    def describing_function(self, amp):
-        raise NotImplementedError(
-            "describing function not implemented for this function")
-
-    # Function to compute the describing function
-    def _f(self, x):
-        return math.copysign(1, x) if abs(x) > 1 else \
-            (math.asin(x) + x * math.sqrt(1 - x**2)) * 2 / math.pi
-
-
 # Saturation nonlinearity
-class saturation_nonlinearity(NonlinearFunction):
+class saturation_nonlinearity(DescribingFunctionNonlinearity):
+    """Create a saturation nonlinearity for use in describing function analysis
+
+    This class creates a nonlinear function representing a saturation with
+    given upper and lower bounds, including the describing function for the
+    nonlinearity.  The following call creates a nonlinear function suitable
+    for describing function analysis:
+
+        F = saturation_nonlinearity(ub[, lb])
+
+    By default, the lower bound is set to the negative of the upper bound.
+    Asymmetric saturation functions can be created, but note that these
+    functions will not have zero bias and hence care must be taken in using
+    the nonlinearity for analysis.
+
+    """
     def __init__(self, ub=1, lb=None):
         # Process arguments
         if lb == None:
             # Only received one argument; assume symmetric around zero
             lb, ub = -abs(ub), abs(ub)
 
-        # Make sure the bounds are sensity
+        # Make sure the bounds are sensible
         if lb > 0 or ub < 0 or lb + ub != 0:
             warn("asymmetric saturation; ignoring non-zero bias term")
 
@@ -283,6 +336,9 @@ class saturation_nonlinearity(NonlinearFunction):
 
     def __call__(self, x):
         return np.maximum(self.lb, np.minimum(x, self.ub))
+
+    def isstatic(self):
+        return True
 
     def describing_function(self, A):
         if self.lb <= A and A <= self.ub:
@@ -294,12 +350,28 @@ class saturation_nonlinearity(NonlinearFunction):
 
 
 # Relay with hysteresis (FBS2e, Example 10.12)
-class relay_hysteresis_nonlinearity(NonlinearFunction):
+class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
+    """Relay w/ hysteresis nonlinearity for use in describing function analysis
+
+    This class creates a nonlinear function representing a a relay with
+    symmetric upper and lower bounds of magnitude `b` and a hysteretic region
+    of width `c` (using the notation from [FBS2e](https://fbsbook.org),
+    Example 10.12,including the describing function for the nonlinearity.  The
+    following call creates a nonlinear function suitable for describing
+    function analysis:
+
+        F = relay_hysteresis_nonlinearity(b, c)
+
+    The output of this function is `b` if `x > c` and `-b` if `x < -c`.  For
+    `-c <= x <= c`, the value depends on the branch of the hysteresis loop (as
+    illustrated in Figure 10.20 of FBS2e).
+
+    """
     def __init__(self, b, c):
         # Initialize the state to bottom branch
         self.branch = -1        # lower branch
-        self.b = b
-        self.c = c
+        self.b = b              # relay output value
+        self.c = c              # size of hysteresis region
 
     def __call__(self, x):
         if x > self.c:
@@ -313,6 +385,9 @@ class relay_hysteresis_nonlinearity(NonlinearFunction):
         elif self.branch == 1:
             y = self.b
         return y
+
+    def isstatic(self):
+        return False
 
     def describing_function(self, a):
         def f(x):
@@ -328,7 +403,23 @@ class relay_hysteresis_nonlinearity(NonlinearFunction):
 
 
 # Backlash nonlinearity (#48 in Gelb and Vander Velde, 1968)
-class backlash_nonlinearity(NonlinearFunction):
+class backlash_nonlinearity(DescribingFunctionNonlinearity):
+    """Backlash nonlinearity for use in describing function analysis
+
+    This class creates a nonlinear function representing a backlash
+    nonlinearity ,including the describing function for the nonlinearity.  The
+    following call creates a nonlinear function suitable for describing
+    function analysis:
+
+        F = backlash_nonlinearity(b)
+
+    This function maintains an internal state representing the 'center' of a
+    mechanism with backlash.  If the new input is within `b/2` of the current
+    center, the output is unchanged.  Otherwise, the output is given by the
+    input shifted by `b/2`.
+
+    """
+
     def __init__(self, b):
         self.b = b              # backlash distance
         self.center = 0         # current center position
@@ -346,6 +437,9 @@ class backlash_nonlinearity(NonlinearFunction):
                 self.center = x + self.b/2
             y.append(self.center)
         return(np.array(y).reshape(x_array.shape))
+
+    def isstatic(self):
+        return False
 
     def describing_function(self, A):
         if A <= self.b/2:

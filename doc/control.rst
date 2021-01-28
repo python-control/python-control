@@ -42,6 +42,7 @@ Frequency domain plotting
    :toctree: generated/
 
     bode_plot
+    describing_function_plot
     nyquist_plot
     gangof4_plot
     nichols_plot
@@ -85,6 +86,7 @@ Control system analysis
    :toctree: generated/
 
     dcgain
+    describing_function
     evalfr
     freqresp
     margin
@@ -139,14 +141,15 @@ Nonlinear system support
 .. autosummary::
    :toctree: generated/
 
-   find_eqpt
-   interconnect
-   linearize
-   input_output_response
-   ss2io
-   summing_junction
-   tf2io
-   flatsys.point_to_point
+    describing_function
+    find_eqpt
+    interconnect
+    linearize
+    input_output_response
+    ss2io
+    summing_junction
+    tf2io
+    flatsys.point_to_point
 
 .. _utility-and-conversions:
 
