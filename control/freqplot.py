@@ -59,7 +59,7 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 # Default values for module parameter variables
 _freqplot_defaults = {
     'freqplot.feature_periphery_decades': 1,
-    'freqplot.number_of_samples': None,
+    'freqplot.number_of_samples': 1000,
 }
 
 #
@@ -94,7 +94,7 @@ def bode_plot(syslist, omega=None,
     ----------
     syslist : linsys
         List of linear input/output systems (single system is OK)
-    omega : list
+    omega : array_like
         List of frequencies in rad/sec to be used for frequency response
     dB : bool
         If True, plot result in dB.  Default is false.
@@ -106,10 +106,10 @@ def bode_plot(syslist, omega=None,
         config.defaults['bode.deg']
     plot : bool
         If True (default), plot magnitude and phase
-    omega_limits: tuple, list, ... of two values
+    omega_limits : array_like of two values
         Limits of the to generate frequency vector.
         If Hz=True the limits are in Hz otherwise in rad/s.
-    omega_num: int
+    omega_num : int
         Number of samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
     margins : bool
@@ -200,18 +200,18 @@ def bode_plot(syslist, omega=None,
             omega = default_frequency_range(syslist, Hz=Hz,
                                             number_of_samples=omega_num)
         else:
-            omega_limits = np.array(omega_limits)
+            omega_limits = np.asarray(omega_limits)
+            if len(omega_limits) != 2:
+                raise ValueError("len(omega_limits) must be 2")
             if Hz:
                 omega_limits *= 2. * math.pi
             if omega_num:
-                omega = np.logspace(np.log10(omega_limits[0]),
-                                    np.log10(omega_limits[1]),
-                                    num=omega_num,
-                                    endpoint=True)
+                num = omega_num
             else:
-                omega = np.logspace(np.log10(omega_limits[0]),
-                                    np.log10(omega_limits[1]),
-                                    endpoint=True)
+                num = config.defaults['freqplot.number_of_samples']
+            omega = np.logspace(np.log10(omega_limits[0]),
+                                np.log10(omega_limits[1]), num=num,
+                                endpoint=True)
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
@@ -507,9 +507,9 @@ def bode_plot(syslist, omega=None,
 # Nyquist plot
 #
 
-def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
-                 arrowhead_length=0.1, arrowhead_width=0.1,
-                 color=None, *args, **kwargs):
+def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
+                 omega_num=None, label_freq=0, arrowhead_length=0.1,
+                 arrowhead_width=0.1, color=None, *args, **kwargs):
     """
     Nyquist plot for a system
 
@@ -519,16 +519,23 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
-    omega : freq_range
-        Range of frequencies (list or bounds) in rad/sec
-    Plot : boolean
+    plot : boolean
         If True, plot magnitude
+    omega : array_like
+        Range of frequencies in rad/sec
+    omega_limits : array_like of two values
+        Limits of the to generate frequency vector.
+    omega_num : int
+        Number of samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
     color : string
-        Used to specify the color of the plot
+        Used to specify the color of the line and arrowhead
     label_freq : int
         Label every nth frequency on the plot
-    arrowhead_width : arrow head width
-    arrowhead_length : arrow head length
+    arrowhead_width : float
+        Arrow head width
+    arrowhead_length : float
+        Arrow head length
     *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
@@ -536,12 +543,12 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
 
     Returns
     -------
-    real : array
+    real : ndarray
         real part of the frequency response array
-    imag : array
+    imag : ndarray
         imaginary part of the frequency response array
-    freq : array
-        frequencies
+    freq : ndarray
+        frequencies in rad/s
 
     Examples
     --------
@@ -571,7 +578,21 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
 
     # Select a default range if none is provided
     if omega is None:
-        omega = default_frequency_range(syslist)
+        if omega_limits is None:
+            # Select a default range if none is provided
+            omega = default_frequency_range(syslist, Hz=False,
+                                            number_of_samples=omega_num)
+        else:
+            omega_limits = np.asarray(omega_limits)
+            if len(omega_limits) != 2:
+                raise ValueError("len(omega_limits) must be 2")
+            if omega_num:
+                num = omega_num
+            else:
+                num = config.defaults['freqplot.number_of_samples']
+            omega = np.logspace(np.log10(omega_limits[0]),
+                                np.log10(omega_limits[1]), num=num,
+                                endpoint=True)
 
     # Interpolate between wmin and wmax if a tuple or list are provided
     elif isinstance(omega, list) or isinstance(omega, tuple):
@@ -580,65 +601,61 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
             raise ValueError("Supported frequency arguments are (wmin,wmax)"
                              "tuple or list, or frequency vector. ")
         omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
-                            num=50, endpoint=True, base=10.0)
+                            num=500, endpoint=True, base=10.0)
 
     for sys in syslist:
         if not sys.issiso():
             # TODO: Add MIMO nyquist plots.
             raise ControlMIMONotImplemented(
                 "Nyquist is currently only implemented for SISO systems.")
-        else:
-            # Get the magnitude and phase of the system
-            mag_tmp, phase_tmp, omega = sys.frequency_response(omega)
-            mag = np.squeeze(mag_tmp)
-            phase = np.squeeze(phase_tmp)
 
-            # Compute the primary curve
-            x = np.multiply(mag, np.cos(phase))
-            y = np.multiply(mag, np.sin(phase))
+        # Get the magnitude and phase of the system
+        mag, phase, omega = sys.frequency_response(omega)
 
-            if plot:
-                # Plot the primary curve and mirror image
-                p = plt.plot(x, y, '-', color=color, *args, **kwargs)
-                c = p[0].get_color()
-                ax = plt.gca()
-                # Plot arrow to indicate Nyquist encirclement orientation
-                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
-                         head_width=arrowhead_width,
-                         head_length=arrowhead_length)
+        # Compute the primary curve
+        x = mag * np.cos(phase)
+        y = mag * np.sin(phase)
 
-                plt.plot(x, -y, '-', color=c, *args, **kwargs)
-                ax.arrow(
-                    x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                    fc=c, ec=c, head_width=arrowhead_width,
-                    head_length=arrowhead_length)
+        if plot:
+            # Plot the primary curve and mirror image
+            p = plt.plot(np.hstack((x,x)), np.hstack((y,-y)),
+                '-', color=color, *args, **kwargs)
+            c = p[0].get_color()
+            ax = plt.gca()
+            # Plot arrow to indicate Nyquist encirclement orientation
+            ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2,
+                     fc=c, ec=c, head_width=arrowhead_width,
+                     head_length=arrowhead_length, label=None)
+            ax.arrow(x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
+                     fc=c, ec=c, head_width=arrowhead_width,
+                     head_length=arrowhead_length, label=None)
 
-                # Mark the -1 point
-                plt.plot([-1], [0], 'r+')
+            # Mark the -1 point
+            plt.plot([-1], [0], 'r+')
 
-            # Label the frequencies of the points
-            if label_freq:
-                ind = slice(None, None, label_freq)
-                for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
-                    # Convert to Hz
-                    f = omegapt / (2 * np.pi)
+        # Label the frequencies of the points
+        if label_freq:
+            ind = slice(None, None, label_freq)
+            for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
+                # Convert to Hz
+                f = omegapt / (2 * np.pi)
 
-                    # Factor out multiples of 1000 and limit the
-                    # result to the range [-8, 8].
-                    pow1000 = max(min(get_pow1000(f), 8), -8)
+                # Factor out multiples of 1000 and limit the
+                # result to the range [-8, 8].
+                pow1000 = max(min(get_pow1000(f), 8), -8)
 
-                    # Get the SI prefix.
-                    prefix = gen_prefix(pow1000)
+                # Get the SI prefix.
+                prefix = gen_prefix(pow1000)
 
-                    # Apply the text. (Use a space before the text to
-                    # prevent overlap with the data.)
-                    #
-                    # np.round() is used because 0.99... appears
-                    # instead of 1.0, and this would otherwise be
-                    # truncated to 0.
-                    plt.text(xpt, ypt, ' ' +
-                             str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
-                             prefix + 'Hz')
+                # Apply the text. (Use a space before the text to
+                # prevent overlap with the data.)
+                #
+                # np.round() is used because 0.99... appears
+                # instead of 1.0, and this would otherwise be
+                # truncated to 0.
+                plt.text(xpt, ypt, ' ' +
+                            str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
+                            prefix + 'Hz')
 
     if plot:
         ax = plt.gca()
