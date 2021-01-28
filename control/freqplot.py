@@ -351,7 +351,8 @@ def bode_plot(syslist, omega=None,
                 # Show the phase and gain margins in the plot
                 if margins:
                     # Compute stability margins for the system
-                    gm, pm, Wcg, Wcp = stability_margins(sys)[0:4]
+                    margin = stability_margins(sys)
+                    gm, pm, Wcg, Wcp = (margin[i] for i in (0, 1, 3, 4))
 
                     # Figure out sign of the phase at the first gain crossing
                     # (needed if phase_wrap is True)
