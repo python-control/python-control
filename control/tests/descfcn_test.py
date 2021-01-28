@@ -12,8 +12,12 @@ import pytest
 import numpy as np
 import control as ct
 import math
+from control.descfcn import saturation_nonlinearity, backlash_nonlinearity, \
+    relay_hysteresis_nonlinearity
 
-class saturation():
+
+# Static function via a class
+class saturation_class():
     # Static nonlinear saturation function
     def __call__(self, x, lb=-1, ub=1):
         return np.maximum(lb, np.minimum(x, ub))
@@ -27,10 +31,15 @@ class saturation():
             return 2/math.pi * (math.asin(b) + b * math.sqrt(1 - b**2))
 
 
+# Static function without a class
+def saturation(x):
+    return np.maximum(-1, np.minimum(x, 1))
+
+
 # Static nonlinear system implementing saturation
 @pytest.fixture
 def satsys():
-    satfcn = saturation()
+    satfcn = saturation_class()
     def _satfcn(t, x, u, params):
         return satfcn(u)
     return ct.NonlinearIOSystem(None, outfcn=_satfcn, input=1, output=1)
@@ -65,16 +74,16 @@ def test_static_nonlinear_call(satsys):
     np.testing.assert_array_equal(miso_sys([0, 0]), [0])
     np.testing.assert_array_equal(miso_sys([0, 0]), [0])
     np.testing.assert_array_equal(miso_sys([0, 0], squeeze=True), [0])
-    
+
 
 # Test saturation describing function in multiple ways
 def test_saturation_describing_function(satsys):
-    satfcn = saturation()
-    
+    satfcn = saturation_class()
+
     # Store the analytic describing function for comparison
     amprange = np.linspace(0, 10, 100)
     df_anal = [satfcn.describing_function(a) for a in amprange]
-    
+
     # Compute describing function for a static function
     df_fcn = [ct.describing_function(satfcn, a) for a in amprange]
     np.testing.assert_almost_equal(df_fcn, df_anal, decimal=3)
@@ -87,8 +96,9 @@ def test_saturation_describing_function(satsys):
     df_arr = ct.describing_function(satsys, amprange)
     np.testing.assert_almost_equal(df_arr, df_anal, decimal=3)
 
-from control.descfcn import saturation_nonlinearity, backlash_nonlinearity, \
-    relay_hysteresis_nonlinearity
+    # Evaluate static function at a negative amplitude
+    with pytest.raises(ValueError, match="cannot evaluate"):
+        ct.describing_function(saturation, -1)
 
 
 @pytest.mark.parametrize("fcn, amin, amax", [
@@ -100,7 +110,7 @@ def test_describing_function(fcn, amin, amax):
     # Store the analytic describing function for comparison
     amprange = np.linspace(amin, amax, 100)
     df_anal = [fcn.describing_function(a) for a in amprange]
-    
+
     # Compute describing function on an array of values
     df_arr = ct.describing_function(
         fcn, amprange, zero_check=False, try_method=False)
@@ -109,6 +119,11 @@ def test_describing_function(fcn, amin, amax):
     # Make sure the describing function method also works
     df_meth = ct.describing_function(fcn, amprange, zero_check=False)
     np.testing.assert_almost_equal(df_meth, df_anal, decimal=1)
+
+    # Make sure that evaluation at negative amplitude generates an exception
+    with pytest.raises(ValueError, match="cannot evaluate"):
+        ct.describing_function(fcn, -1)
+
 
 def test_describing_function_plot():
     # Simple linear system with at most 1 intersection
@@ -141,3 +156,29 @@ def test_describing_function_plot():
         np.testing.assert_almost_equal(
             -1/ct.describing_function(F_backlash, a),
             H_multiple(1j*w), decimal=5)
+
+def test_describing_function_exceptions():
+    # Describing function with non-zero bias
+    with pytest.warns(UserWarning, match="asymmetric"):
+        saturation = ct.descfcn.saturation_nonlinearity(lb=-1, ub=2)
+        assert saturation(-3) == -1
+        assert saturation(3) == 2
+
+    # Turn off the bias check
+    bias = ct.describing_function(saturation, 0, zero_check=False)
+
+    # Function should evaluate to zero at zero amplitude
+    f = lambda x: x + 0.5
+    with pytest.raises(ValueError, match="must evaluate to zero"):
+        bias = ct.describing_function(f, 0, zero_check=True)
+
+    # Evaluate at a negative amplitude
+    with pytest.raises(ValueError, match="cannot evaluate"):
+        ct.describing_function(saturation, -1)
+
+    # Describing function with bad label
+    H_simple = ct.tf([8], [1, 2, 2, 1])
+    F_saturation = ct.descfcn.saturation_nonlinearity(1)
+    amp = np.linspace(1, 4, 10)
+    with pytest.raises(ValueError, match="formatting string"):
+        ct.describing_function_plot(H_simple, F_saturation, amp, label=1)

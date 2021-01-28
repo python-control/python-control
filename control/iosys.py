@@ -822,7 +822,7 @@ class NonlinearIOSystem(InputOutputSystem):
         # If we received any parameters, update them before calling _out()
         if params is not None:
             sys._update_params(params)
-            
+
         # Evaluate the function on the argument
         out = sys._out(0, np.array((0,)), np.asarray(u))
         _, out = _process_time_response(sys, [], out, [], squeeze=squeeze)

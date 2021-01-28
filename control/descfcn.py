@@ -254,9 +254,15 @@ def describing_function_plot(
             if refine:
                 # Refine the answer to get more accuracy
                 def _cost(x):
+                    # If arguments are invalid, return a "large" value
+                    # Note: imposing bounds messed up the optimization (?)
+                    if x[0] < 0 or x[1] < 0:
+                        return 1
                     return abs(1 + H(1j * x[1]) *
                                describing_function(F, x[0]))**2
-                res = scipy.optimize.minimize(_cost, [a_guess, omega_guess])
+                res = scipy.optimize.minimize(
+                    _cost, [a_guess, omega_guess])
+                # bounds=[(A[i], A[i+1]), (H_omega[j], H_omega[j+1])])
 
                 if not res.success:
                     warn("not able to refine result; returning estimate")
@@ -322,6 +328,9 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
 
     """
     def __init__(self, ub=1, lb=None):
+        # Create the describing function nonlinearity object
+        super(saturation_nonlinearity, self).__init__()
+
         # Process arguments
         if lb == None:
             # Only received one argument; assume symmetric around zero
@@ -341,6 +350,10 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
         return True
 
     def describing_function(self, A):
+        # Check to make sure the amplitude is positive
+        if A < 0:
+            raise ValueError("cannot evaluate describing function for A < 0")
+
         if self.lb <= A and A <= self.ub:
             return 1.
         else:
@@ -368,6 +381,9 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
 
     """
     def __init__(self, b, c):
+        # Create the describing function nonlinearity object
+        super(relay_hysteresis_nonlinearity, self).__init__()
+
         # Initialize the state to bottom branch
         self.branch = -1        # lower branch
         self.b = b              # relay output value
@@ -389,16 +405,16 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
     def isstatic(self):
         return False
 
-    def describing_function(self, a):
-        def f(x):
-            return math.copysign(1, x) if abs(x) > 1 else \
-                (math.asin(x) + x * math.sqrt(1 - x**2)) * 2 / math.pi
+    def describing_function(self, A):
+        # Check to make sure the amplitude is positive
+        if A < 0:
+            raise ValueError("cannot evaluate describing function for A < 0")
 
-        if a < self.c:
+        if A < self.c:
             return np.nan
 
-        df_real = 4 * self.b * math.sqrt(1 - (self.c/a)**2) / (a * math.pi)
-        df_imag = -4 * self.b * self.c / (math.pi * a**2)
+        df_real = 4 * self.b * math.sqrt(1 - (self.c/A)**2) / (A * math.pi)
+        df_imag = -4 * self.b * self.c / (math.pi * A**2)
         return df_real + 1j * df_imag
 
 
@@ -421,6 +437,9 @@ class backlash_nonlinearity(DescribingFunctionNonlinearity):
     """
 
     def __init__(self, b):
+        # Create the describing function nonlinearity object
+        super(backlash_nonlinearity, self).__init__()
+
         self.b = b              # backlash distance
         self.center = 0         # current center position
 
@@ -442,6 +461,10 @@ class backlash_nonlinearity(DescribingFunctionNonlinearity):
         return False
 
     def describing_function(self, A):
+        # Check to make sure the amplitude is positive
+        if A < 0:
+            raise ValueError("cannot evaluate describing function for A < 0")
+
         if A <= self.b/2:
             return 0
 
