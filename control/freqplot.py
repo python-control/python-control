@@ -593,66 +593,59 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                                 np.log10(omega_limits[1]), num=num,
                                 endpoint=True)
 
-    # Interpolate between wmin and wmax if a tuple or list are provided
-    elif isinstance(omega, list) or isinstance(omega, tuple):
-        # Only accept tuple or list of length 2
-        if len(omega) != 2:
-            raise ValueError("Supported frequency arguments are (wmin,wmax)"
-                             "tuple or list, or frequency vector. ")
-        omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
-                            num=500, endpoint=True, base=10.0)
 
     for sys in syslist:
         if not sys.issiso():
             # TODO: Add MIMO nyquist plots.
             raise ControlMIMONotImplemented(
                 "Nyquist is currently only implemented for SISO systems.")
+        else:
+            # Get the magnitude and phase of the system
+            mag, phase, omega = sys.frequency_response(omega)
 
-        # Get the magnitude and phase of the system
-        mag, phase, omega = sys.frequency_response(omega)
+            # Compute the primary curve
+            x = mag * np.cos(phase)
+            y = mag * np.sin(phase)
 
-        # Compute the primary curve
-        x = mag * np.cos(phase)
-        y = mag * np.sin(phase)
+            if plot:
+                # Plot the primary curve and mirror image
+                p = plt.plot(x, y, '-', color=color, *args, **kwargs)
+                c = p[0].get_color()
+                ax = plt.gca()
+                # Plot arrow to indicate Nyquist encirclement orientation
+                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
+                         head_width=arrowhead_width,
+                         head_length=arrowhead_length)
 
-        if plot:
-            # Plot the primary curve and mirror image
-            p = plt.plot(np.hstack((x,x)), np.hstack((y,-y)),
-                '-', color=color, *args, **kwargs)
-            c = p[0].get_color()
-            ax = plt.gca()
-            # Plot arrow to indicate Nyquist encirclement orientation
-            ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2,
-                     fc=c, ec=c, head_width=arrowhead_width,
-                     head_length=arrowhead_length, label=None)
-            ax.arrow(x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                     fc=c, ec=c, head_width=arrowhead_width,
-                     head_length=arrowhead_length, label=None)
+                plt.plot(x, -y, '-', color=c, *args, **kwargs)
+                ax.arrow(
+                    x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
+                    fc=c, ec=c, head_width=arrowhead_width,
+                    head_length=arrowhead_length)
+                # Mark the -1 point
+                plt.plot([-1], [0], 'r+')
 
-            # Mark the -1 point
-            plt.plot([-1], [0], 'r+')
+            # Label the frequencies of the points
+            if label_freq:
+                ind = slice(None, None, label_freq)
+                for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
+                    # Convert to Hz
+                    f = omegapt / (2 * np.pi)
 
-        # Label the frequencies of the points
-        if label_freq:
-            ind = slice(None, None, label_freq)
-            for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
-                # Convert to Hz
-                f = omegapt / (2 * np.pi)
+                    # Factor out multiples of 1000 and limit the
+                    # result to the range [-8, 8].
+                    pow1000 = max(min(get_pow1000(f), 8), -8)
 
-                # Factor out multiples of 1000 and limit the
-                # result to the range [-8, 8].
-                pow1000 = max(min(get_pow1000(f), 8), -8)
+                    # Get the SI prefix.
+                    prefix = gen_prefix(pow1000)
 
-                # Get the SI prefix.
-                prefix = gen_prefix(pow1000)
-
-                # Apply the text. (Use a space before the text to
-                # prevent overlap with the data.)
-                #
-                # np.round() is used because 0.99... appears
-                # instead of 1.0, and this would otherwise be
-                # truncated to 0.
-                plt.text(xpt, ypt, ' ' +
+                    # Apply the text. (Use a space before the text to
+                    # prevent overlap with the data.)
+                    #
+                    # np.round() is used because 0.99... appears
+                    # instead of 1.0, and this would otherwise be
+                    # truncated to 0.
+                    plt.text(xpt, ypt, ' ' +
                             str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
                             prefix + 'Hz')
 
