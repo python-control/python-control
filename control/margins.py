@@ -207,7 +207,7 @@ def _poly_z_wstab(num, den, num_inv, den_inv, p_q, dt, epsw):
 
 
 # Took the framework for the old function by
-# Sawyer B. Fuller <minster@caltech.edu>, removed a lot of the innards
+# Sawyer B. Fuller <minster@uw.edu>, removed a lot of the innards
 # and replaced with analytical polynomial functions for LTI systems.
 #
 # idea for the frequency data solution copied/adapted from
@@ -294,29 +294,29 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             # frequency for gain margin: phase crosses -180 degrees
             w_180 = _poly_iw_real_crossing(num_iw, den_iw, epsw)
             with np.errstate(all='ignore'):  # den=0 is okay
-                w180_resp = evalfr(sys, 1J * w_180)
+                w180_resp = sys(1J * w_180)
 
             # frequency for phase margin : gain crosses magnitude 1
             wc = _poly_iw_mag1_crossing(num_iw, den_iw, epsw)
-            wc_resp = evalfr(sys, 1J * wc)
+            wc_resp = sys(1J * wc)
 
             # stability margin
             wstab = _poly_iw_wstab(num_iw, den_iw, epsw)
-            ws_resp = evalfr(sys, 1J * wstab)
+            ws_resp = sys(1J * wstab)
 
         else:  # Discrete Time
             zargs = _poly_z_invz(sys)
             # gain margin
             z, w_180 = _poly_z_real_crossing(*zargs, epsw=epsw)
-            w180_resp = evalfr(sys, z)
+            w180_resp = sys(z)
 
             # phase margin
             z, wc = _poly_z_mag1_crossing(*zargs, epsw=epsw)
-            wc_resp = evalfr(sys, z)
+            wc_resp = sys(z)
 
             # stability margin
             z, wstab = _poly_z_wstab(*zargs, epsw=epsw)
-            ws_resp = evalfr(sys, z)
+            ws_resp = sys(z)
 
         # only keep frequencies where the negative real axis is crossed
         w_180 = w_180[w180_resp <= 0.]
