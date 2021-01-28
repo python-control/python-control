@@ -457,7 +457,7 @@ def bode_plot(syslist, omega=None,
                             "Gm = %.2f %s(at %.2f %s), "
                             "Pm = %.2f %s (at %.2f %s)" %
                             (20*np.log10(gm) if dB else gm,
-                             'dB ' if dB else '\b',
+                             'dB ' if dB else '',
                              Wcg, 'Hz' if Hz else 'rad/s',
                              pm if deg else math.radians(pm),
                              'deg' if deg else 'rad',
