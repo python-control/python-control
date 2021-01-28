@@ -54,6 +54,7 @@ $Id$
 """
 
 import numpy as np
+from scipy.signal.ltisys import StateSpace
 from . import xferfcn as tf
 from . import statesp as ss
 from . import frdata as frd
@@ -280,7 +281,10 @@ def append(*sys):
     >>> sys = append(sys1, sys2)
 
     """
-    s1 = sys[0]
+    if not isinstance(sys[0], StateSpace):
+        s1 = ss._convert_to_statespace(sys[0])
+    else:
+        s1 = sys[0]
     for s in sys[1:]:
         s1 = s1.append(s)
     return s1
