@@ -194,28 +194,25 @@ def bode_plot(syslist, omega=None,
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
+    # decide whether to go above nyquist. freq
+    omega_range_given = True if omega is not None else False
 
     if omega is None:
-        omega_was_given = False # used do decide whether to include nyq. freq
+        omega_num = config._get_param('freqplot','number_of_samples', omega_num)
         if omega_limits is None:
             # Select a default range if none is provided
-            omega = _default_frequency_range(syslist, Hz=Hz,
-                                            number_of_samples=omega_num)
+            omega = _default_frequency_range(syslist,
+                                             number_of_samples=omega_num)
         else:
+            omega_range_given = True
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
                 raise ValueError("len(omega_limits) must be 2")
             if Hz:
                 omega_limits *= 2. * math.pi
-            if omega_num:
-                num = omega_num
-            else:
-                num = config.defaults['freqplot.number_of_samples']
             omega = np.logspace(np.log10(omega_limits[0]),
-                                np.log10(omega_limits[1]), num=num,
+                                np.log10(omega_limits[1]), num=omega_num,
                                 endpoint=True)
-    else:
-        omega_was_given = True
 
     if plot:
         # Set up the axes with labels so that multiple calls to
@@ -264,12 +261,11 @@ def bode_plot(syslist, omega=None,
         else:
             omega_sys = np.asarray(omega)
             if sys.isdtime(strict=True):
-                nyquistfrq = 2. * math.pi * 1. / sys.dt / 2.
-                if not omega_was_given:
-                    # include nyquist frequency
+                nyquistfrq = math.pi / sys.dt
+                if not omega_range_given:
+                    # limit up to and including nyquist frequency
                     omega_sys = np.hstack((
-                        omega_sys[omega_sys < nyquistfrq],
-                        nyquistfrq))
+                        omega_sys[omega_sys < nyquistfrq], nyquistfrq))
             else:
                 nyquistfrq = None
 
@@ -332,21 +328,27 @@ def bode_plot(syslist, omega=None,
                         nyquistfrq_plot = nyquistfrq
                 phase_plot = phase * 180. / math.pi if deg else phase
                 mag_plot = mag
+
+                if nyquistfrq_plot:
+                    # append data for vertical nyquist freq indicator line.
+                    # if this extra nyquist lime is is plotted in a single plot
+                    # command then line order is preserved when
+                    # creating a legend eg. legend(('sys1', 'sys2'))
+                    omega_nyq_line = np.array((np.nan, nyquistfrq, nyquistfrq))
+                    omega_plot = np.hstack((omega_plot, omega_nyq_line))
+                    mag_nyq_line = np.array((
+                        np.nan, 0.7*min(mag_plot), 1.3*max(mag_plot)))
+                    mag_plot = np.hstack((mag_plot, mag_nyq_line))
+                    phase_range = max(phase_plot) - min(phase_plot)
+                    phase_nyq_line = np.array((np.nan,
+                        min(phase_plot) - 0.2 * phase_range,
+                        max(phase_plot) + 0.2 * phase_range))
+                    phase_plot = np.hstack((phase_plot, phase_nyq_line))
+
                 #
                 # Magnitude plot
                 #
 
-                if nyquistfrq_plot:
-                    # add data for vertical nyquist freq indicator line
-                    # so it is a single plot action. This preserves line
-                    # order when creating legend eg. legend('sys1', 'sys2)
-                    omega_plot = np.hstack((omega_plot, nyquistfrq,nyquistfrq))
-                    mag_plot = np.hstack((mag_plot,
-                        0.7*min(mag_plot),1.3*max(mag_plot)))
-                    phase_range = max(phase_plot) - min(phase_plot)
-                    phase_plot = np.hstack((phase_plot,
-                        min(phase_plot) - 0.2 * phase_range,
-                        max(phase_plot) + 0.2 * phase_range))
                 if dB:
                     ax_mag.semilogx(omega_plot, 20 * np.log10(mag_plot),
                                               *args, **kwargs)
@@ -535,8 +537,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     omega : array_like
         Set of frequencies to be evaluated in rad/sec.
     omega_limits : array_like of two values
-        Limits to the range of frequencies. Ignored if omega 
-        is provided, and auto-generated if omitted. 
+        Limits to the range of frequencies. Ignored if omega
+        is provided, and auto-generated if omitted.
     omega_num : int
         Number of samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
@@ -588,25 +590,35 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # Select a default range if none is provided
+    # decide whether to go above nyquist. freq
+    omega_range_given = True if omega is not None else False
+
     if omega is None:
+        omega_num = config._get_param('freqplot','number_of_samples',omega_num)
         if omega_limits is None:
             # Select a default range if none is provided
-            omega = _default_frequency_range(syslist, Hz=False,
-                                            number_of_samples=omega_num)
+            omega = _default_frequency_range(syslist,
+                                             number_of_samples=omega_num)
         else:
+            omega_range_given = True
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
                 raise ValueError("len(omega_limits) must be 2")
-            num = \
-                ct.config._get_param('freqplot','number_of_samples', omega_num)
             omega = np.logspace(np.log10(omega_limits[0]),
-                                np.log10(omega_limits[1]), num=num,
+                                np.log10(omega_limits[1]), num=omega_num,
                                 endpoint=True)
 
     xs, ys, omegas = [], [], []
     for sys in syslist:
-        mag, phase, omega = sys.frequency_response(omega)
+        omega_sys = np.asarray(omega)
+        if sys.isdtime(strict=True):
+            nyquistfrq = math.pi / sys.dt
+            if not omega_range_given:
+                # limit up to and including nyquist frequency
+                omega_sys = np.hstack((
+                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+
+        mag, phase, omega_sys = sys.frequency_response(omega_sys)
 
         # Compute the primary curve
         x = mag * np.cos(phase)
@@ -614,7 +626,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
         xs.append(x)
         ys.append(y)
-        omegas.append(omega)
+        omegas.append(omega_sys)
 
         if plot:
             if not sys.issiso():
@@ -642,7 +654,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             # Label the frequencies of the points
             if label_freq:
                 ind = slice(None, None, label_freq)
-                for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
+                for xpt, ypt, omegapt in zip(x[ind], y[ind], omega_sys[ind]):
                     # Convert to Hz
                     f = omegapt / (2 * np.pi)
 
