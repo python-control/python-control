@@ -199,7 +199,7 @@ def bode_plot(syslist, omega=None,
         omega_was_given = False # used do decide whether to include nyq. freq
         if omega_limits is None:
             # Select a default range if none is provided
-            omega = default_frequency_range(syslist, Hz=Hz,
+            omega = _default_frequency_range(syslist, Hz=Hz,
                                             number_of_samples=omega_num)
         else:
             omega_limits = np.asarray(omega_limits)
@@ -591,16 +591,14 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     if omega is None:
         if omega_limits is None:
             # Select a default range if none is provided
-            omega = default_frequency_range(syslist, Hz=False,
+            omega = _default_frequency_range(syslist, Hz=False,
                                             number_of_samples=omega_num)
         else:
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
                 raise ValueError("len(omega_limits) must be 2")
-            if omega_num:
-                num = omega_num
-            else:
-                num = config.defaults['freqplot.number_of_samples']
+            num = \
+                ct.config._get_param('freqplot','number_of_samples', omega_num)
             omega = np.logspace(np.log10(omega_limits[0]),
                                 np.log10(omega_limits[1]), num=num,
                                 endpoint=True)
@@ -717,7 +715,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     # Select a default range if none is provided
     # TODO: This needs to be made more intelligent
     if omega is None:
-        omega = default_frequency_range((P, C, S))
+        omega = _default_frequency_range((P, C, S))
 
     # Set up the axes with labels so that multiple calls to
     # gangof4_plot will superimpose the data.  See details in bode_plot.
@@ -798,7 +796,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 #
 
 # Compute reasonable defaults for axes
-def default_frequency_range(syslist, Hz=None, number_of_samples=None,
+def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                             feature_periphery_decades=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
@@ -832,7 +830,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
     --------
     >>> from matlab import ss
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> omega = default_frequency_range(sys)
+    >>> omega = _default_frequency_range(sys)
 
     """
     # This code looks at the poles and zeros of all of the systems that

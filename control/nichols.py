@@ -52,7 +52,7 @@ nichols.nichols_grid
 import numpy as np
 import matplotlib.pyplot as plt
 from .ctrlutil import unwrap
-from .freqplot import default_frequency_range
+from .freqplot import _default_frequency_range
 from . import config
 
 __all__ = ['nichols_plot', 'nichols', 'nichols_grid']
@@ -91,7 +91,7 @@ def nichols_plot(sys_list, omega=None, grid=None):
 
     # Select a default range if none is provided
     if omega is None:
-        omega = default_frequency_range(sys_list)
+        omega = _default_frequency_range(sys_list)
 
     for sys in sys_list:
         # Get the magnitude and phase of the system
