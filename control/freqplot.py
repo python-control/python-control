@@ -194,7 +194,9 @@ def bode_plot(syslist, omega=None,
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
+
     if omega is None:
+        omega_was_given = False # used do decide whether to include nyq. freq
         if omega_limits is None:
             # Select a default range if none is provided
             omega = default_frequency_range(syslist, Hz=Hz,
@@ -212,6 +214,46 @@ def bode_plot(syslist, omega=None,
             omega = np.logspace(np.log10(omega_limits[0]),
                                 np.log10(omega_limits[1]), num=num,
                                 endpoint=True)
+    else:
+        omega_was_given = True
+
+    if plot:
+        # Set up the axes with labels so that multiple calls to
+        # bode_plot will superimpose the data.  This was implicit
+        # before matplotlib 2.1, but changed after that (See
+        # https://github.com/matplotlib/matplotlib/issues/9024).
+        # The code below should work on all cases.
+
+        # Get the current figure
+
+        if 'sisotool' in kwargs:
+            fig = kwargs['fig']
+            ax_mag = fig.axes[0]
+            ax_phase = fig.axes[2]
+            sisotool = kwargs['sisotool']
+            del kwargs['fig']
+            del kwargs['sisotool']
+        else:
+            fig = plt.gcf()
+            ax_mag = None
+            ax_phase = None
+            sisotool = False
+
+            # Get the current axes if they already exist
+            for ax in fig.axes:
+                if ax.get_label() == 'control-bode-magnitude':
+                    ax_mag = ax
+                elif ax.get_label() == 'control-bode-phase':
+                    ax_phase = ax
+
+            # If no axes present, create them from scratch
+            if ax_mag is None or ax_phase is None:
+                plt.clf()
+                ax_mag = plt.subplot(211,
+                                        label='control-bode-magnitude')
+                ax_phase = plt.subplot(212,
+                                        label='control-bode-phase',
+                                        sharex=ax_mag)
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
@@ -223,8 +265,11 @@ def bode_plot(syslist, omega=None,
             omega_sys = np.asarray(omega)
             if sys.isdtime(strict=True):
                 nyquistfrq = 2. * math.pi * 1. / sys.dt / 2.
-                omega_sys = omega_sys[omega_sys < nyquistfrq]
-                # TODO: What distance to the Nyquist frequency is appropriate?
+                if not omega_was_given:
+                    # include nyquist frequency
+                    omega_sys = np.hstack((
+                        omega_sys[omega_sys < nyquistfrq],
+                        nyquistfrq))
             else:
                 nyquistfrq = None
 
@@ -285,56 +330,28 @@ def bode_plot(syslist, omega=None,
                     omega_plot = omega_sys
                     if nyquistfrq:
                         nyquistfrq_plot = nyquistfrq
-
-                # Set up the axes with labels so that multiple calls to
-                # bode_plot will superimpose the data.  This was implicit
-                # before matplotlib 2.1, but changed after that (See
-                # https://github.com/matplotlib/matplotlib/issues/9024).
-                # The code below should work on all cases.
-
-                # Get the current figure
-
-                if 'sisotool' in kwargs:
-                    fig = kwargs['fig']
-                    ax_mag = fig.axes[0]
-                    ax_phase = fig.axes[2]
-                    sisotool = kwargs['sisotool']
-                    del kwargs['fig']
-                    del kwargs['sisotool']
-                else:
-                    fig = plt.gcf()
-                    ax_mag = None
-                    ax_phase = None
-                    sisotool = False
-
-                    # Get the current axes if they already exist
-                    for ax in fig.axes:
-                        if ax.get_label() == 'control-bode-magnitude':
-                            ax_mag = ax
-                        elif ax.get_label() == 'control-bode-phase':
-                            ax_phase = ax
-
-                    # If no axes present, create them from scratch
-                    if ax_mag is None or ax_phase is None:
-                        plt.clf()
-                        ax_mag = plt.subplot(211,
-                                             label='control-bode-magnitude')
-                        ax_phase = plt.subplot(212,
-                                               label='control-bode-phase',
-                                               sharex=ax_mag)
-
+                phase_plot = phase * 180. / math.pi if deg else phase
+                mag_plot = mag
                 #
                 # Magnitude plot
                 #
-                if dB:
-                    pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag),
-                                              *args, **kwargs)
-                else:
-                    pltline = ax_mag.loglog(omega_plot, mag, *args, **kwargs)
 
                 if nyquistfrq_plot:
-                    ax_mag.axvline(nyquistfrq_plot,
-                                   color=pltline[0].get_color())
+                    # add data for vertical nyquist freq indicator line
+                    # so it is a single plot action. This preserves line
+                    # order when creating legend eg. legend('sys1', 'sys2)
+                    omega_plot = np.hstack((omega_plot, nyquistfrq,nyquistfrq))
+                    mag_plot = np.hstack((mag_plot,
+                        0.7*min(mag_plot),1.3*max(mag_plot)))
+                    phase_range = max(phase_plot) - min(phase_plot)
+                    phase_plot = np.hstack((phase_plot,
+                        min(phase_plot) - 0.2 * phase_range,
+                        max(phase_plot) + 0.2 * phase_range))
+                if dB:
+                    ax_mag.semilogx(omega_plot, 20 * np.log10(mag_plot),
+                                              *args, **kwargs)
+                else:
+                    ax_mag.loglog(omega_plot, mag_plot, *args, **kwargs)
 
                 # Add a grid to the plot + labeling
                 ax_mag.grid(grid and not margins, which='both')
@@ -343,7 +360,6 @@ def bode_plot(syslist, omega=None,
                 #
                 # Phase plot
                 #
-                phase_plot = phase * 180. / math.pi if deg else phase
 
                 # Plot the data
                 ax_phase.semilogx(omega_plot, phase_plot, *args, **kwargs)
@@ -462,10 +478,6 @@ def bode_plot(syslist, omega=None,
                              pm if deg else math.radians(pm),
                              'deg' if deg else 'rad',
                              Wcp, 'Hz' if Hz else 'rad/s'))
-
-                if nyquistfrq_plot:
-                    ax_phase.axvline(
-                        nyquistfrq_plot, color=pltline[0].get_color())
 
                 # Add a grid to the plot + labeling
                 ax_phase.set_ylabel("Phase (deg)" if deg else "Phase (rad)")
