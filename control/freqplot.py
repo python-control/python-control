@@ -121,11 +121,11 @@ def bode_plot(syslist, omega=None,
 
     Returns
     -------
-    mag : array (list if len(syslist) > 1)
+    mag : ndarray (or list of ndarray if len(syslist) > 1))
         magnitude
-    phase : array (list if len(syslist) > 1)
+    phase : ndarray (or list of ndarray if len(syslist) > 1))
         phase in radians
-    omega : array (list if len(syslist) > 1)
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
         frequency in rad/sec
 
     Other Parameters
@@ -190,8 +190,8 @@ def bode_plot(syslist, omega=None,
     initial_phase = config._get_param(
         'bode', 'initial_phase', kwargs, None, pop=True)
 
-    # If argument was a singleton, turn it into a list
-    if not getattr(syslist, '__iter__', False):
+    # If argument was a singleton, turn it into a tuple
+    if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
     if omega is None:
@@ -542,11 +542,11 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
     Returns
     -------
-    real : ndarray
+    real : ndarray (or list of ndarray if len(syslist) > 1))
         real part of the frequency response array
-    imag : ndarray
+    imag : ndarray (or list of ndarray if len(syslist) > 1))
         imaginary part of the frequency response array
-    freq : ndarray
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
         frequencies in rad/s
 
     Examples
@@ -572,7 +572,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         label_freq = kwargs.pop('labelFreq')
 
     # If argument was a singleton, turn it into a list
-    if not getattr(syslist, '__iter__', False):
+    if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
     # Select a default range if none is provided
@@ -593,37 +593,40 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                                 np.log10(omega_limits[1]), num=num,
                                 endpoint=True)
 
-
+    xs, ys, omegas = [], [], []
     for sys in syslist:
-        if not sys.issiso():
-            # TODO: Add MIMO nyquist plots.
-            raise ControlMIMONotImplemented(
-                "Nyquist is currently only implemented for SISO systems.")
-        else:
-            # Get the magnitude and phase of the system
-            mag, phase, omega = sys.frequency_response(omega)
+        mag, phase, omega = sys.frequency_response(omega)
 
-            # Compute the primary curve
-            x = mag * np.cos(phase)
-            y = mag * np.sin(phase)
+        # Compute the primary curve
+        x = mag * np.cos(phase)
+        y = mag * np.sin(phase)
 
-            if plot:
-                # Plot the primary curve and mirror image
-                p = plt.plot(x, y, '-', color=color, *args, **kwargs)
-                c = p[0].get_color()
-                ax = plt.gca()
-                # Plot arrow to indicate Nyquist encirclement orientation
-                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
-                         head_width=arrowhead_width,
-                         head_length=arrowhead_length)
+        xs.append(x)
+        ys.append(y)
+        omegas.append(omega)
 
-                plt.plot(x, -y, '-', color=c, *args, **kwargs)
-                ax.arrow(
-                    x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                    fc=c, ec=c, head_width=arrowhead_width,
-                    head_length=arrowhead_length)
-                # Mark the -1 point
-                plt.plot([-1], [0], 'r+')
+        if plot:
+            if not sys.issiso():
+                # TODO: Add MIMO nyquist plots.
+                raise ControlMIMONotImplemented(
+                    "Nyquist plot currently supports SISO systems.")
+
+            # Plot the primary curve and mirror image
+            p = plt.plot(x, y, '-', color=color, *args, **kwargs)
+            c = p[0].get_color()
+            ax = plt.gca()
+            # Plot arrow to indicate Nyquist encirclement orientation
+            ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
+                        head_width=arrowhead_width,
+                        head_length=arrowhead_length)
+
+            plt.plot(x, -y, '-', color=c, *args, **kwargs)
+            ax.arrow(
+                x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
+                fc=c, ec=c, head_width=arrowhead_width,
+                head_length=arrowhead_length)
+            # Mark the -1 point
+            plt.plot([-1], [0], 'r+')
 
             # Label the frequencies of the points
             if label_freq:
@@ -655,8 +658,10 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         ax.set_ylabel("Imaginary axis")
         ax.grid(color="lightgray")
 
-    return x, y, omega
-
+    if len(syslist) == 1:
+        return xs[0], ys[0], omegas[0]
+    else:
+        return xs, ys, omegas
 
 #
 # Gang of Four plot
