@@ -16,6 +16,7 @@ import control as ctrl
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, rss
+from control.freqplot import bode_plot, nyquist_plot
 from control.tests.conftest import slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
@@ -61,6 +62,24 @@ def test_bode_basic(ss_siso):
     tf_siso = tf(ss_siso)
     bode(ss_siso)
     bode(tf_siso)
+    assert len(bode_plot(tf_siso, plot=False, omega_num=20)[0] == 20)
+    omega = bode_plot(tf_siso, plot=False, omega_limits=(1, 100))[2]
+    assert_allclose(omega[0], 1)
+    assert_allclose(omega[-1], 100)
+    assert len(bode_plot(tf_siso, plot=False, omega=np.logspace(-1,1,10))[0])\
+         == 10
+
+def test_nyquist_basic(ss_siso):
+    """Test nyquist plot call (Very basic)"""
+    # TODO: proper test
+    tf_siso = tf(ss_siso)
+    nyquist_plot(ss_siso)
+    nyquist_plot(tf_siso)
+    assert len(nyquist_plot(tf_siso, plot=False, omega_num=20)[0] == 20)
+    omega = nyquist_plot(tf_siso, plot=False, omega_limits=(1, 100))[2]
+    assert_allclose(omega[0], 1)
+    assert_allclose(omega[-1], 100)
+    assert len(nyquist_plot(tf_siso, plot=False, omega=np.logspace(-1, 1, 10))[0])==10
 
 
 @pytest.mark.filterwarnings("ignore:.*non-positive left xlim:UserWarning")
