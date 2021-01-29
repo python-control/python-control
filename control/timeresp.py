@@ -1122,7 +1122,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
     pts_per_cycle = 25  # Number of points divide a period of oscillation
     log_decay_percent = np.log(100)  # Factor of reduction for real pole decays
 
-    if sys.is_static_gain():
+    if sys._isstatic():
         tfinal = default_tfinal
         dt = sys.dt if isdtime(sys, strict=True) else default_dt
     elif isdtime(sys, strict=True):

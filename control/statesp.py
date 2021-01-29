@@ -288,7 +288,7 @@ class StateSpace(LTI):
         if len(args) == 4:
             if 'dt' in kwargs:
                 dt = kwargs['dt']
-            elif self.is_static_gain():
+            elif self._isstatic():
                 dt = None
             else:
                 dt = config.defaults['control.default_dt']
@@ -300,7 +300,7 @@ class StateSpace(LTI):
             try:
                 dt = args[0].dt
             except AttributeError:
-                if self.is_static_gain():
+                if self._isstatic():
                     dt = None
                 else:
                     dt = config.defaults['control.default_dt']
@@ -1213,7 +1213,7 @@ class StateSpace(LTI):
             gain = np.tile(np.nan, (self.noutputs, self.ninputs))
         return np.squeeze(gain)
 
-    def is_static_gain(self):
+    def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
         if A and B are zero. """
         return not np.any(self.A) and not np.any(self.B)
