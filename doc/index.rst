@@ -29,6 +29,7 @@ implements basic operations for analysis and design of feedback control systems.
    matlab
    flatsys
    iosys
+   descfcn
    examples
 
 * :ref:`genindex`

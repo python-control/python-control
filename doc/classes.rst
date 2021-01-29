@@ -30,12 +30,3 @@ that allow for linear, nonlinear, and interconnected elements:
    LinearICSystem
    LinearIOSystem
    NonlinearIOSystem
-
-Additional classes
-==================
-
-.. autosummary::
-   :toctree: generated/
-
-   DescribingFunctionNonlinearity
-

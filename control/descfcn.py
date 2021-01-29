@@ -21,7 +21,8 @@ from warnings import warn
 from .freqplot import nyquist_plot
 
 __all__ = ['describing_function', 'describing_function_plot',
-           'DescribingFunctionNonlinearity']
+           'DescribingFunctionNonlinearity', 'backlash_nonlinearity',
+           'relay_hysteresis_nonlinearity', 'saturation_nonlinearity']
 
 # Class for nonlinearities with a built-in describing function
 class DescribingFunctionNonlinearity():
@@ -31,7 +32,7 @@ class DescribingFunctionNonlinearity():
     that have a analytically defined describing function (accessed via the
     :meth:`describing_function` method).  Objects using this class should also
     implement a `call` method that evaluates the nonlinearity at a given point
-    and an `isstatic` method that is `True` if the nonlinearity has no
+    and an `_isstatic` method that is `True` if the nonlinearity has no
     internal state.
 
     """
@@ -54,10 +55,10 @@ class DescribingFunctionNonlinearity():
         raise NotImplementedError(
             "describing function not implemented for this function")
 
-    def isstatic(self):
+    def _isstatic(self):
         """Return True if the function has not internal state"""
         raise NotImplementedError(
-            "isstatic() not implemented for this function (internal error)")
+            "_isstatic() not implemented for this function (internal error)")
 
     # Utility function used to compute common describing functions
     def _f(self, x):
@@ -157,7 +158,7 @@ def describing_function(
     cos_theta = np.cos(theta)
 
     # See if this is a static nonlinearity (assume not, just in case)
-    if not hasattr(F, 'isstatic') or not F.isstatic():
+    if not hasattr(F, '_isstatic') or not F._isstatic():
         # Initialize any internal state by going through an initial cycle
         [F(x) for x in np.atleast_1d(A).min() * sin_theta]
 
@@ -222,6 +223,14 @@ def describing_function_plot(
         a potential limit cycle for the closed loop system with amplitude
         given by the first value of the tuple and frequency given by the
         second value.
+
+    Example
+    -------
+    >>> H_simple = ct.tf([8], [1, 2, 2, 1])
+    >>> F_saturation = ct.descfcn.saturation_nonlinearity(1)
+    >>> amp = np.linspace(1, 4, 10)
+    >>> ct.describing_function_plot(H_simple, F_saturation, amp)
+    [(3.344008947853124, 1.414213099755523)]
 
     """
     # Start by drawing a Nyquist curve
@@ -346,7 +355,7 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
     def __call__(self, x):
         return np.maximum(self.lb, np.minimum(x, self.ub))
 
-    def isstatic(self):
+    def _isstatic(self):
         return True
 
     def describing_function(self, A):
@@ -369,8 +378,8 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
     This class creates a nonlinear function representing a a relay with
     symmetric upper and lower bounds of magnitude `b` and a hysteretic region
     of width `c` (using the notation from [FBS2e](https://fbsbook.org),
-    Example 10.12,including the describing function for the nonlinearity.  The
-    following call creates a nonlinear function suitable for describing
+    Example 10.12, including the describing function for the nonlinearity.
+    The following call creates a nonlinear function suitable for describing
     function analysis:
 
         F = relay_hysteresis_nonlinearity(b, c)
@@ -402,7 +411,7 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
             y = self.b
         return y
 
-    def isstatic(self):
+    def _isstatic(self):
         return False
 
     def describing_function(self, A):
@@ -457,7 +466,7 @@ class backlash_nonlinearity(DescribingFunctionNonlinearity):
             y.append(self.center)
         return(np.array(y).reshape(x_array.shape))
 
-    def isstatic(self):
+    def _isstatic(self):
         return False
 
     def describing_function(self, A):
