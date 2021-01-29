@@ -383,7 +383,7 @@ class TestStateSpace:
             mag, phase, omega = sys.freqresp(true_omega)
             np.testing.assert_almost_equal(mag, true_mag)
 
-    def test_is_static_gain(self):
+    def test__isstatic(self):
         A0 = np.zeros((2,2))
         A1 = A0.copy()
         A1[0,1] = 1.1
@@ -394,13 +394,13 @@ class TestStateSpace:
         C1 = np.eye(2)
         D0 = 0
         D1 = np.ones((2,1))
-        assert StateSpace(A0, B0, C1, D1).is_static_gain()
-        assert not StateSpace(A1, B0, C1, D1).is_static_gain()
-        assert not StateSpace(A0, B1, C1, D1).is_static_gain()
-        assert not StateSpace(A1, B1, C1, D1).is_static_gain()
-        assert StateSpace(A0, B0, C0, D0).is_static_gain()
-        assert StateSpace(A0, B0, C0, D1).is_static_gain()
-        assert StateSpace(A0, B0, C1, D0).is_static_gain()
+        assert StateSpace(A0, B0, C1, D1)._isstatic()
+        assert not StateSpace(A1, B0, C1, D1)._isstatic()
+        assert not StateSpace(A0, B1, C1, D1)._isstatic()
+        assert not StateSpace(A1, B1, C1, D1)._isstatic()
+        assert StateSpace(A0, B0, C0, D0)._isstatic()
+        assert StateSpace(A0, B0, C0, D1)._isstatic()
+        assert StateSpace(A0, B0, C1, D0)._isstatic()
 
     @slycotonly
     def test_minreal(self):

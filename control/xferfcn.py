@@ -214,7 +214,7 @@ class TransferFunction(LTI):
             # no dt given in positional arguments
             if 'dt' in kwargs:
                 dt = kwargs['dt']
-            elif self.is_static_gain():
+            elif self._isstatic():
                 dt = None
             else:
                 dt = config.defaults['control.default_dt']
@@ -228,7 +228,7 @@ class TransferFunction(LTI):
             try:
                 dt = args[0].dt
             except AttributeError:
-                if self.is_static_gain():
+                if self._isstatic():
                     dt = None
                 else:
                     dt = config.defaults['control.default_dt']
@@ -1084,7 +1084,7 @@ class TransferFunction(LTI):
                         gain[i][j] = np.nan
         return np.squeeze(gain)
 
-    def is_static_gain(self):
+    def _isstatic(self):
          """returns True if and only if all of the numerator and denominator
          polynomials of the (possibly MIMO) transfer function are zeroth order,
          that is, if the system has no dynamics. """

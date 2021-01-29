@@ -406,7 +406,7 @@ class TestXferFcn:
         assert (sys1.ninputs, sys1.noutputs) == (2, 1)
         assert sys1.dt == 0.5
 
-    def test_is_static_gain(self):
+    def test__isstatic(self):
         numstatic = 1.1
         denstatic = 1.2
         numdynamic = [1, 1]
@@ -415,18 +415,18 @@ class TestXferFcn:
         denstaticmimo = [[[1.9,], [1.2,]], [[1.2,], [0.8,]]]
         numdynamicmimo = [[[1.1, 0.9], [1.2]], [[1.2], [0.8]]]
         dendynamicmimo = [[[1.1, 0.7], [0.2]], [[1.2], [0.8]]]
-        assert TransferFunction(numstatic, denstatic).is_static_gain()
-        assert TransferFunction(numstaticmimo, denstaticmimo).is_static_gain()
+        assert TransferFunction(numstatic, denstatic)._isstatic()
+        assert TransferFunction(numstaticmimo, denstaticmimo)._isstatic()
 
-        assert not TransferFunction(numstatic, dendynamic).is_static_gain()
-        assert not TransferFunction(numdynamic, dendynamic).is_static_gain()
-        assert not TransferFunction(numdynamic, denstatic).is_static_gain()
-        assert not TransferFunction(numstatic, dendynamic).is_static_gain()
+        assert not TransferFunction(numstatic, dendynamic)._isstatic()
+        assert not TransferFunction(numdynamic, dendynamic)._isstatic()
+        assert not TransferFunction(numdynamic, denstatic)._isstatic()
+        assert not TransferFunction(numstatic, dendynamic)._isstatic()
 
         assert not TransferFunction(numstaticmimo,
-                                    dendynamicmimo).is_static_gain()
+                                    dendynamicmimo)._isstatic()
         assert not TransferFunction(numdynamicmimo,
-                                    denstaticmimo).is_static_gain()
+                                    denstaticmimo)._isstatic()
 
     @pytest.mark.parametrize("omega, resp",
                              [(1, np.array([[-0.5 - 0.5j]])),
