@@ -533,7 +533,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     plot : boolean
         If True, plot magnitude
     omega : array_like
-        Range of frequencies in rad/sec
+        Set of frequencies to be evaluated in rad/sec.
     omega_limits : array_like of two values
         Limits of the to generate frequency vector.
     omega_num : int
