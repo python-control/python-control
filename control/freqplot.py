@@ -533,9 +533,10 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     plot : boolean
         If True, plot magnitude
     omega : array_like
-        Range of frequencies in rad/sec
+        Set of frequencies to be evaluated in rad/sec.
     omega_limits : array_like of two values
-        Limits of the to generate frequency vector.
+        Limits to the range of frequencies. Ignored if omega 
+        is provided, and auto-generated if omitted. 
     omega_num : int
         Number of samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
