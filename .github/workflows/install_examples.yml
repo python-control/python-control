@@ -1,0 +1,35 @@
+name: setup.py, examples
+
+on: [push, pull_request]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install Python dependencies
+      run: |
+        # Set up conda
+        echo $CONDA/bin >> $GITHUB_PATH
+
+        # Set up (virtual) X11
+        sudo apt install -y xvfb
+
+        # Install test tools
+        conda install pip pytest
+
+        # Install python-control dependencies
+        conda install numpy matplotlib scipy jupyter
+        conda install -c conda-forge slycot pmw
+
+    - name: Install with setup.py
+      run: python setup.py install
+
+    - name: Run examples
+      run: |
+        cd examples
+        ./run_examples.sh
+        ./run_notebooks.sh
