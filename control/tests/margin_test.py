@@ -336,17 +336,19 @@ def test_zmore_stability_margins(tsys_zmore):
 
 @pytest.mark.parametrize(
     'cnum, cden, dt,'
-    'ref,'
-    'rtol',
-    [([2], [1, 3, 2, 0], 1e-2,  # gh-465
-      (2.9558, 32.8170, 0.43584, 1.4037, 0.74953, 0.97079),
-      0.1  # very crude tolerance, because the gradients are not great
-      ),
-     ([2], [1, 3, 3, 1], .1,  # 2/(s+1)**3
-      [3.4927, 69.9996, 0.5763, 1.6283, 0.7631, 1.2019],
-      1e-3)])
-def test_stability_margins_discrete(cnum, cden, dt, ref, rtol):
+    'ref,',
+    [( # gh-465
+      [2], [1, 3, 2, 0], 1e-2,  
+      (2.9558, 32.390, 0.43584, 1.4037, 0.74951, 0.97079)),
+     ( # 2/(s+1)**3
+      [2], [1, 3, 3, 1], .1,  
+      [3.4927, 65.4212, 0.5763, 1.6283, 0.76625, 1.2019]),
+     ( # gh-523
+      [1.1 * 4 * np.pi**2], [1, 2 * 0.2 * 2 * np.pi,  4 * np.pi**2], .05,
+      [2.3842, 18.161, 0.26953, 11.712, 8.7478, 9.1504]),
+     ])
+def test_stability_margins_discrete(cnum, cden, dt, ref):
     """Test stability_margins with discrete TF input"""
     tf = TransferFunction(cnum, cden).sample(dt)
     out = stability_margins(tf)
-    assert_allclose(out, ref, rtol=rtol)
+    assert_allclose(out, ref, rtol=1e-4)

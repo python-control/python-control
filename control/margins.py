@@ -156,13 +156,14 @@ def _poly_z_real_crossing(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
     return z, w
 
 
-def _poly_z_mag1_crossing(num, den, num_inv, den_inv, p_q, dt, epsw):
+def _poly_z_mag1_crossing(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
     # |H(z)| = 1, H(z)*H(1/z)=1, num(z)*num(1/z) == den(z)*den(1/z)
-    p1 = np.polymul(num, num_inv)
-    p2 = np.polymul(den, den_inv)
+    p1 = np.polymul(num, num_inv_zp)
+    p2 = np.polymul(den, den_inv_zq)
     if p_q < 0:
+        # * z**(-p_q)
         x = [1] + [0] * (-p_q)
-        p2 = np.polymul(p2, x)
+        p1 = np.polymul(p1, x)
     z = np.roots(np.polysub(p1, p2))
     eps = np.finfo(float).eps**(1 / len(p2))
     z, w = _z_filter(z, dt, eps)
@@ -171,7 +172,7 @@ def _poly_z_mag1_crossing(num, den, num_inv, den_inv, p_q, dt, epsw):
     return z, w
 
 
-def _poly_z_wstab(num, den, num_inv, den_inv, p_q, dt, epsw):
+def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
     # Stability margin: Minimum distance to -1
 
     # TODO: Find a way to solve for z or omega analytically with given
