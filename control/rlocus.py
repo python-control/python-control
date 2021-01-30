@@ -646,8 +646,9 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
     else:
         ax = fig.axes[1]
 
-    # Get locator function for x-axis tick marks
+    # Get locator function for x-axis, y-axis tick marks
     xlocator = ax.get_xaxis().get_major_locator()
+    ylocator = ax.get_yaxis().get_major_locator()
 
     # Decide on the location for the labels (?)
     ylim = ax.get_ylim()
@@ -690,7 +691,7 @@ def _sgrid_func(fig=None, zeta=None, wn=None):
     # omega-constant lines
     angles = np.linspace(-90, 90, 20) * np.pi/180
     if wn is None:
-        wn = _default_wn(xlocator(), ylim)
+        wn = _default_wn(xlocator(), ylocator())
 
     for om in wn:
         if om < 0:
@@ -746,7 +747,7 @@ def _default_zetas(xlim, ylim):
     return zeta.tolist()
 
 
-def _default_wn(xloc, ylim):
+def _default_wn(xloc, yloc, max_lines=7):
     """Return default wn for root locus plot
 
     This function computes a list of natural frequencies based on the grid
@@ -758,6 +759,8 @@ def _default_wn(xloc, ylim):
         List of x-axis tick values
     ylim : array_like
         List of y-axis limits [min, max]
+    max_lines : int, optional
+        Maximum number of frequencies to generate (default = 7)
 
     Returns
     -------
@@ -765,16 +768,21 @@ def _default_wn(xloc, ylim):
         List of default natural frequencies for the plot
 
     """
+    sep = xloc[1]-xloc[0]       # separation between x-ticks
+    
+    # Decide whether to use the x or y axis for determining wn
+    if yloc[-1] / sep > max_lines*10:
+        # y-axis scale >> x-axis scale
+        wn = yloc                   # one frequency per y-axis tick mark
+    else:
+        wn = xloc                   # one frequency per x-axis tick mark
 
-    wn = xloc                   # one frequency per x-axis tick mark
-    sep = xloc[1]-xloc[0]       # separation between ticks
-
-    # Insert additional frequencies to span the y-axis
-    while np.abs(wn[0]) < ylim[1]:
-        wn = np.insert(wn, 0, wn[0]-sep)
+        # Insert additional frequencies to span the y-axis
+        while np.abs(wn[0]) < yloc[-1]:
+            wn = np.insert(wn, 0, wn[0]-sep)
 
     # If there are too many values, cut them in half
-    while len(wn) > 7:
+    while len(wn) > max_lines:
         wn = wn[0:-1:2]
 
     return wn
