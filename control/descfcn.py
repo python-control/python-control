@@ -21,7 +21,7 @@ from warnings import warn
 from .freqplot import nyquist_plot
 
 __all__ = ['describing_function', 'describing_function_plot',
-           'DescribingFunctionNonlinearity', 'backlash_nonlinearity',
+           'DescribingFunctionNonlinearity', 'friction_backlash_nonlinearity',
            'relay_hysteresis_nonlinearity', 'saturation_nonlinearity']
 
 # Class for nonlinearities with a built-in describing function
@@ -95,7 +95,7 @@ def describing_function(
         use the :class:`~control.DescribingFunctionNonlinearity` class,
         which provides this functionality.
 
-    A : float or array_like
+    A : array_like
         The amplitude(s) at which the describing function should be calculated.
 
     zero_check : bool, optional
@@ -112,25 +112,19 @@ def describing_function(
 
     Returns
     -------
-    df : complex or array of complex
-        The (complex) value of the describing function at the given amplitude.
-        If the `A` parameter is an array of amplitudes, then an array of
-        corresponding describing function values is returned.
+    df : array of complex
+        The (complex) value of the describing function at the given amplitudes.
 
     Raises
     ------
     TypeError
-        If A < 0 or if A = 0 and the function F(0) is non-zero.
+        If A[i] < 0 or if A[i] = 0 and the function F(0) is non-zero.
 
     """
     # If there is an analytical solution, trying using that first
     if try_method and hasattr(F, 'describing_function'):
         try:
-            # Go through all of the amplitudes we were given
-            df = []
-            for a in np.atleast_1d(A):
-                df.append(F.describing_function(a))
-            return np.array(df).reshape(np.shape(A))
+            return np.vectorize(F.describing_function, otypes=[complex])(A)
         except NotImplementedError:
             # Drop through and do the numerical computation
             pass
@@ -170,17 +164,20 @@ def describing_function(
     # See if this is a static nonlinearity (assume not, just in case)
     if not hasattr(F, '_isstatic') or not F._isstatic():
         # Initialize any internal state by going through an initial cycle
-        [F(x) for x in np.atleast_1d(A).min() * sin_theta]
+        for x in np.atleast_1d(A).min() * sin_theta:
+            F(x)                # ignore the result
 
     # Go through all of the amplitudes we were given
-    df = []
-    for a in np.atleast_1d(A):
+    retdf = np.empty(np.shape(A), dtype=complex)
+    df = retdf                  # Access to the return array
+    df.shape = (-1, )           # as a 1D array
+    for i, a in enumerate(np.atleast_1d(A)):
         # Make sure we got a valid argument
         if a == 0:
             # Check to make sure the function has zero output with zero input
             if zero_check and np.squeeze(F(0.)) != 0:
                 raise ValueError("function must evaluate to zero at zero")
-            df.append(1.)
+            df[i] = 1.
             continue
         elif a < 0:
             raise ValueError("cannot evaluate describing function for A < 0")
@@ -195,10 +192,10 @@ def describing_function(
         df_real = (F_eval @ sin_theta) * scale     # = M_1 \cos\phi / a
         df_imag = (F_eval @ cos_theta) * scale     # = M_1 \sin\phi / a
 
-        df.append(df_real + 1j * df_imag)
+        df[i] = df_real + 1j * df_imag
 
     # Return the values in the same shape as they were requested
-    return np.array(df).reshape(np.shape(A))
+    return retdf
 
 
 def describing_function_plot(
@@ -437,16 +434,16 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
         return df_real + 1j * df_imag
 
 
-# Backlash nonlinearity (#48 in Gelb and Vander Velde, 1968)
-class backlash_nonlinearity(DescribingFunctionNonlinearity):
+# Friction-dominated backlash nonlinearity (#48 in Gelb and Vander Velde, 1968)
+class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
     """Backlash nonlinearity for use in describing function analysis
 
-    This class creates a nonlinear function representing a backlash
-    nonlinearity ,including the describing function for the nonlinearity.  The
-    following call creates a nonlinear function suitable for describing
-    function analysis:
+    This class creates a nonlinear function representing a friction-dominated
+    backlash nonlinearity ,including the describing function for the
+    nonlinearity.  The following call creates a nonlinear function suitable
+    for describing function analysis:
 
-        F = backlash_nonlinearity(b)
+        F = friction_backlash_nonlinearity(b)
 
     This function maintains an internal state representing the 'center' of a
     mechanism with backlash.  If the new input is within `b/2` of the current
@@ -457,7 +454,7 @@ class backlash_nonlinearity(DescribingFunctionNonlinearity):
 
     def __init__(self, b):
         # Create the describing function nonlinearity object
-        super(backlash_nonlinearity, self).__init__()
+        super(friction_backlash_nonlinearity, self).__init__()
 
         self.b = b              # backlash distance
         self.center = 0         # current center position

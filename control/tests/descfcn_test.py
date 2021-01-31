@@ -12,8 +12,8 @@ import pytest
 import numpy as np
 import control as ct
 import math
-from control.descfcn import saturation_nonlinearity, backlash_nonlinearity, \
-    relay_hysteresis_nonlinearity
+from control.descfcn import saturation_nonlinearity, \
+    friction_backlash_nonlinearity, relay_hysteresis_nonlinearity
 
 
 # Static function via a class
@@ -84,15 +84,15 @@ def test_saturation_describing_function(satsys):
     df_anal = [satfcn.describing_function(a) for a in amprange]
 
     # Compute describing function for a static function
-    df_fcn = [ct.describing_function(saturation, a) for a in amprange]
+    df_fcn = ct.describing_function(saturation, amprange)
     np.testing.assert_almost_equal(df_fcn, df_anal, decimal=3)
 
     # Compute describing function for a describing function nonlinearity
-    df_fcn = [ct.describing_function(satfcn, a) for a in amprange]
+    df_fcn = ct.describing_function(satfcn, amprange)
     np.testing.assert_almost_equal(df_fcn, df_anal, decimal=3)
 
     # Compute describing function for a static I/O system
-    df_sys = [ct.describing_function(satsys, a) for a in amprange]
+    df_sys = ct.describing_function(satsys, amprange)
     np.testing.assert_almost_equal(df_sys, df_anal, decimal=3)
 
     # Compute describing function on an array of values
@@ -109,13 +109,13 @@ def test_saturation_describing_function(satsys):
         def __call__(self, x):
             return saturation(x)
     satfcn_nometh = my_saturation()
-    df_nometh = [ct.describing_function(satfcn_nometh, a) for a in amprange]
+    df_nometh = ct.describing_function(satfcn_nometh, amprange)
     np.testing.assert_almost_equal(df_nometh, df_anal, decimal=3)
 
 
 @pytest.mark.parametrize("fcn, amin, amax", [
     [saturation_nonlinearity(1), 0, 10],
-    [backlash_nonlinearity(2), 1, 10],
+    [friction_backlash_nonlinearity(2), 1, 10],
     [relay_hysteresis_nonlinearity(1, 1), 3, 10],
     ])
 def test_describing_function(fcn, amin, amax):
@@ -161,7 +161,7 @@ def test_describing_function_plot():
     # Multiple intersections
     H_multiple = H_simple * ct.tf(*ct.pade(5, 4)) * 4
     omega = np.logspace(-1, 3, 50)
-    F_backlash = ct.descfcn.backlash_nonlinearity(1)
+    F_backlash = ct.descfcn.friction_backlash_nonlinearity(1)
     amp = np.linspace(0.6, 5, 50)
     xsects = ct.describing_function_plot(H_multiple, F_backlash, amp, omega)
     for a, w in xsects:
