@@ -3,11 +3,11 @@
 # RMM, 23 Jan 2021
 #
 # This module adds functions for carrying out analysis of systems with
-# static nonlinear feedback functions using describing functions.
+# memoryless nonlinear feedback functions using describing functions.
 #
 
 """The :mod:~control.descfcn` module contains function for performing
-closed loop analysis of systems with static nonlinearities using
+closed loop analysis of systems with memoryless nonlinearities using
 describing function analysis.
 
 """
@@ -26,21 +26,21 @@ __all__ = ['describing_function', 'describing_function_plot',
 
 # Class for nonlinearities with a built-in describing function
 class DescribingFunctionNonlinearity():
-    """Base class for nonlinear functions with a describing function
+    """Base class for nonlinear systems with a describing function
 
     This class is intended to be used as a base class for nonlinear functions
-    that have a analytically defined describing function (accessed via the
-    :meth:`describing_function` method).  Objects using this class should also
-    implement a `call` method that evaluates the nonlinearity at a given point
-    and an `_isstatic` method that is `True` if the nonlinearity has no
-    internal state.
+    that have an analytically defined describing function.  Subclasses should
+    override the `__call__` and `describing_function` methods and (optionally)
+    the `_isstatic` method (should be `False` if `__call__` updates the
+    instance state).
 
     """
     def __init__(self):
-        """Initailize a describing function nonlinearity"""
+        """Initailize a describing function nonlinearity (optional)"""
         pass
 
     def __call__(self, A):
+        """Evaluate the nonlinearity at a (scalar) input value"""
         raise NotImplementedError(
             "__call__() not implemented for this function (internal error)")
 
@@ -56,9 +56,15 @@ class DescribingFunctionNonlinearity():
             "describing function not implemented for this function")
 
     def _isstatic(self):
-        """Return True if the function has not internal state"""
-        raise NotImplementedError(
-            "_isstatic() not implemented for this function (internal error)")
+        """Return True if the function has no internal state (memoryless)
+
+        This internal function is used to optimize numerical computation of
+        the describing function.  It can be set to `True` if the instance
+        maintains no internal memory of the instance state.  Assumed False by
+        default.
+
+        """
+        return False
 
     # Utility function used to compute common describing functions
     def _f(self, x):
@@ -70,10 +76,10 @@ def describing_function(
         F, A, num_points=100, zero_check=True, try_method=True):
     """Numerical compute the describing function of a nonlinear function
 
-    The describing function of a static nonlinear function is given by
-    magnitude and phase of the first harmonic of the function when evaluated
-    along a sinusoidal input :math:`a \\sin \\omega t`.  This function returns
-    the magnitude and phase of the describing function at amplitude :math:`A`.
+    The describing function of a nonlinearity is given by magnitude and phase
+    of the first harmonic of the function when evaluated along a sinusoidal
+    input :math:`A \\sin \\omega t`.  This function returns the magnitude and
+    phase of the describing function at amplitude :math:`A`.
 
     Parameters
     ----------
@@ -119,11 +125,15 @@ def describing_function(
     """
     # If there is an analytical solution, trying using that first
     if try_method and hasattr(F, 'describing_function'):
-        # Go through all of the amplitudes we were given
-        df = []
-        for a in np.atleast_1d(A):
-            df.append(F.describing_function(a))
-        return np.array(df).reshape(np.shape(A))
+        try:
+            # Go through all of the amplitudes we were given
+            df = []
+            for a in np.atleast_1d(A):
+                df.append(F.describing_function(a))
+            return np.array(df).reshape(np.shape(A))
+        except NotImplementedError:
+            # Drop through and do the numerical computation
+            pass
 
     #
     # The describing function of a nonlinear function F() can be computed by
@@ -136,8 +146,8 @@ def describing_function(
     #
     #    N(A) = M_1(A) e^{j \phi_1(A)} / A
     #
-    # To compute this, we compute F(\theta) for \theta between 0 and 2 \pi,
-    # use the identities
+    # To compute this, we compute F(A \sin\theta) for \theta between 0 and 2
+    # \pi, use the identities
     #
     #   \sin(\theta + \phi) = \sin\theta \cos\phi + \cos\theta \sin\phi
     #   \int_0^{2\pi} \sin^2 \theta d\theta = \pi
@@ -145,15 +155,15 @@ def describing_function(
     #
     # and then integrate the product against \sin\theta and \cos\theta to obtain
     #
-    #   \int_0^{2\pi} F(a\sin\theta) \sin\theta d\theta = M_1 \pi \cos\phi
-    #   \int_0^{2\pi} F(a\sin\theta) \cos\theta d\theta = M_1 \pi \sin\phi
+    #   \int_0^{2\pi} F(A\sin\theta) \sin\theta d\theta = M_1 \pi \cos\phi
+    #   \int_0^{2\pi} F(A\sin\theta) \cos\theta d\theta = M_1 \pi \sin\phi
     #
     # From these we can compute M1 and \phi.
     #
 
-    # Evaluate over a full range of angles
-    theta = np.linspace(0, 2*np.pi, num_points)
-    dtheta = theta[1] - theta[0]
+    # Evaluate over a full range of angles (leave off endpoint a la DFT)
+    theta, dtheta = np.linspace(
+        0, 2*np.pi, num_points, endpoint=False, retstep=True)
     sin_theta = np.sin(theta)
     cos_theta = np.cos(theta)
 
@@ -175,10 +185,10 @@ def describing_function(
         elif a < 0:
             raise ValueError("cannot evaluate describing function for A < 0")
 
-        # Save the scaling factor for to make the formulas simpler
+        # Save the scaling factor to make the formulas simpler
         scale = dtheta / np.pi / a
 
-        # Evaluate the function (twice) along a sinusoid (for internal state)
+        # Evaluate the function along a sinusoid
         F_eval = np.array([F(x) for x in a*sin_theta]).squeeze()
 
         # Compute the prjections onto sine and cosine
@@ -353,7 +363,7 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
         self.ub = ub
 
     def __call__(self, x):
-        return np.maximum(self.lb, np.minimum(x, self.ub))
+        return np.clip(x, self.lb, self.ub)
 
     def _isstatic(self):
         return True
@@ -453,18 +463,12 @@ class backlash_nonlinearity(DescribingFunctionNonlinearity):
         self.center = 0         # current center position
 
     def __call__(self, x):
-        # Convert input to an array
-        x_array = np.array(x)
-
-        y = []
-        for x in np.atleast_1d(x_array):
-            # If we are outside the backlash, move and shift the center
-            if x - self.center > self.b/2:
-                self.center = x - self.b/2
-            elif x - self.center < -self.b/2:
-                self.center = x + self.b/2
-            y.append(self.center)
-        return(np.array(y).reshape(x_array.shape))
+        # If we are outside the backlash, move and shift the center
+        if x - self.center > self.b/2:
+            self.center = x - self.b/2
+        elif x - self.center < -self.b/2:
+            self.center = x + self.b/2
+        return self.center
 
     def _isstatic(self):
         return False

@@ -8,8 +8,8 @@ For nonlinear systems consisting of a feedback connection between a
 linear system and a static nonlinearity, it is possible to obtain a
 generalization of Nyquist's stability criterion based on the idea of
 describing functions.  The basic concept involves approximating the
-response of a static nonlinearity to an input :math:`u = A e^{\omega
-t}` as an output :math:`y = N(A) (A e^{\omega t})`, where :math:`N(A)
+response of a static nonlinearity to an input :math:`u = A e^{j \omega
+t}` as an output :math:`y = N(A) (A e^{j \omega t})`, where :math:`N(A)
 \in \mathbb{C}` represents the (amplitude-dependent) gain and phase
 associated with the nonlinearity.
 

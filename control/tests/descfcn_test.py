@@ -17,10 +17,10 @@ from control.descfcn import saturation_nonlinearity, backlash_nonlinearity, \
 
 
 # Static function via a class
-class saturation_class():
+class saturation_class:
     # Static nonlinear saturation function
     def __call__(self, x, lb=-1, ub=1):
-        return np.maximum(lb, np.minimum(x, ub))
+        return np.clip(x, lb, ub)
 
     # Describing function for a saturation function
     def describing_function(self, a):
@@ -33,7 +33,7 @@ class saturation_class():
 
 # Static function without a class
 def saturation(x):
-    return np.maximum(-1, np.minimum(x, 1))
+    return np.clip(x, -1, 1)
 
 
 # Static nonlinear system implementing saturation
@@ -47,7 +47,7 @@ def satsys():
 
 def test_static_nonlinear_call(satsys):
     # Make sure that the saturation system is a static nonlinearity
-    assert satsys.isstatic()
+    assert satsys._isstatic()
 
     # Make sure the saturation function is doing the right computation
     input = [-2, -1, -0.5, 0, 0.5, 1, 2]
@@ -61,7 +61,7 @@ def test_static_nonlinear_call(satsys):
     np.testing.assert_array_equal(satsys([0.]), [0.])
 
     # Test SIMO nonlinearity
-    def _simofcn(t, x, u, params={}):
+    def _simofcn(t, x, u, params):
         return np.array([np.cos(u), np.sin(u)])
     simo_sys = ct.NonlinearIOSystem(None, outfcn=_simofcn, input=1, output=2)
     np.testing.assert_array_equal(simo_sys([0.]), [1, 0])
@@ -71,7 +71,6 @@ def test_static_nonlinear_call(satsys):
     def _misofcn(t, x, u, params={}):
         return np.array([np.sin(u[0]) * np.cos(u[1])])
     miso_sys = ct.NonlinearIOSystem(None, outfcn=_misofcn, input=2, output=1)
-    np.testing.assert_array_equal(miso_sys([0, 0]), [0])
     np.testing.assert_array_equal(miso_sys([0, 0]), [0])
     np.testing.assert_array_equal(miso_sys([0, 0], squeeze=True), [0])
 
@@ -85,6 +84,10 @@ def test_saturation_describing_function(satsys):
     df_anal = [satfcn.describing_function(a) for a in amprange]
 
     # Compute describing function for a static function
+    df_fcn = [ct.describing_function(saturation, a) for a in amprange]
+    np.testing.assert_almost_equal(df_fcn, df_anal, decimal=3)
+
+    # Compute describing function for a describing function nonlinearity
     df_fcn = [ct.describing_function(satfcn, a) for a in amprange]
     np.testing.assert_almost_equal(df_fcn, df_anal, decimal=3)
 
@@ -99,6 +102,15 @@ def test_saturation_describing_function(satsys):
     # Evaluate static function at a negative amplitude
     with pytest.raises(ValueError, match="cannot evaluate"):
         ct.describing_function(saturation, -1)
+
+    # Create describing function nonlinearity w/out describing_function method
+    # and make sure it drops through to the underlying computation
+    class my_saturation(ct.DescribingFunctionNonlinearity):
+        def __call__(self, x):
+            return saturation(x)
+    satfcn_nometh = my_saturation()
+    df_nometh = [ct.describing_function(satfcn_nometh, a) for a in amprange]
+    np.testing.assert_almost_equal(df_nometh, df_anal, decimal=3)
 
 
 @pytest.mark.parametrize("fcn, amin, amax", [
@@ -118,7 +130,7 @@ def test_describing_function(fcn, amin, amax):
 
     # Make sure the describing function method also works
     df_meth = ct.describing_function(fcn, amprange, zero_check=False)
-    np.testing.assert_almost_equal(df_meth, df_anal, decimal=1)
+    np.testing.assert_almost_equal(df_meth, df_anal)
 
     # Make sure that evaluation at negative amplitude generates an exception
     with pytest.raises(ValueError, match="cannot evaluate"):
