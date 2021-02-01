@@ -203,7 +203,7 @@ class TestConfig:
         assert not ct.config.defaults['bode.dB']
         assert ct.config.defaults['bode.deg']
         assert not ct.config.defaults['bode.Hz']
-        assert ct.config.defaults['freqplot.number_of_samples'] is None
+        assert ct.config.defaults['freqplot.number_of_samples'] == 1000
         assert ct.config.defaults['freqplot.feature_periphery_decades'] == 1.0
 
     def test_legacy_defaults(self):

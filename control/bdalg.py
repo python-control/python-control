@@ -174,7 +174,7 @@ def negate(sys):
     >>> sys2 = negate(sys1) # Same as sys2 = -sys1.
 
     """
-    return -sys;
+    return -sys
 
 #! TODO: expand to allow sys2 default to work in MIMO case?
 def feedback(sys1, sys2=1, sign=-1):
@@ -280,7 +280,7 @@ def append(*sys):
     >>> sys = append(sys1, sys2)
 
     """
-    s1 = sys[0]
+    s1 = ss._convert_to_statespace(sys[0])
     for s in sys[1:]:
         s1 = s1.append(s)
     return s1

@@ -50,6 +50,7 @@ import numpy as np
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
+from .exception import ControlMIMONotImplemented
 from . import config
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
@@ -58,7 +59,7 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
 # Default values for module parameter variables
 _freqplot_defaults = {
     'freqplot.feature_periphery_decades': 1,
-    'freqplot.number_of_samples': None,
+    'freqplot.number_of_samples': 1000,
 }
 
 #
@@ -93,7 +94,7 @@ def bode_plot(syslist, omega=None,
     ----------
     syslist : linsys
         List of linear input/output systems (single system is OK)
-    omega : list
+    omega : array_like
         List of frequencies in rad/sec to be used for frequency response
     dB : bool
         If True, plot result in dB.  Default is false.
@@ -105,10 +106,10 @@ def bode_plot(syslist, omega=None,
         config.defaults['bode.deg']
     plot : bool
         If True (default), plot magnitude and phase
-    omega_limits: tuple, list, ... of two values
+    omega_limits : array_like of two values
         Limits of the to generate frequency vector.
         If Hz=True the limits are in Hz otherwise in rad/s.
-    omega_num: int
+    omega_num : int
         Number of samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
     margins : bool
@@ -120,11 +121,11 @@ def bode_plot(syslist, omega=None,
 
     Returns
     -------
-    mag : array (list if len(syslist) > 1)
+    mag : ndarray (or list of ndarray if len(syslist) > 1))
         magnitude
-    phase : array (list if len(syslist) > 1)
+    phase : ndarray (or list of ndarray if len(syslist) > 1))
         phase in radians
-    omega : array (list if len(syslist) > 1)
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
         frequency in rad/sec
 
     Other Parameters
@@ -189,48 +190,88 @@ def bode_plot(syslist, omega=None,
     initial_phase = config._get_param(
         'bode', 'initial_phase', kwargs, None, pop=True)
 
-    # If argument was a singleton, turn it into a list
-    if not getattr(syslist, '__iter__', False):
+    # If argument was a singleton, turn it into a tuple
+    if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
+    # decide whether to go above nyquist. freq
+    omega_range_given = True if omega is not None else False
+
     if omega is None:
+        omega_num = config._get_param('freqplot','number_of_samples', omega_num)
         if omega_limits is None:
             # Select a default range if none is provided
-            omega = default_frequency_range(syslist, Hz=Hz,
-                                            number_of_samples=omega_num)
+            omega = _default_frequency_range(syslist,
+                                             number_of_samples=omega_num)
         else:
-            omega_limits = np.array(omega_limits)
+            omega_range_given = True
+            omega_limits = np.asarray(omega_limits)
+            if len(omega_limits) != 2:
+                raise ValueError("len(omega_limits) must be 2")
             if Hz:
                 omega_limits *= 2. * math.pi
-            if omega_num:
-                omega = np.logspace(np.log10(omega_limits[0]),
-                                    np.log10(omega_limits[1]),
-                                    num=omega_num,
-                                    endpoint=True)
-            else:
-                omega = np.logspace(np.log10(omega_limits[0]),
-                                    np.log10(omega_limits[1]),
-                                    endpoint=True)
+            omega = np.logspace(np.log10(omega_limits[0]),
+                                np.log10(omega_limits[1]), num=omega_num,
+                                endpoint=True)
+
+    if plot:
+        # Set up the axes with labels so that multiple calls to
+        # bode_plot will superimpose the data.  This was implicit
+        # before matplotlib 2.1, but changed after that (See
+        # https://github.com/matplotlib/matplotlib/issues/9024).
+        # The code below should work on all cases.
+
+        # Get the current figure
+
+        if 'sisotool' in kwargs:
+            fig = kwargs['fig']
+            ax_mag = fig.axes[0]
+            ax_phase = fig.axes[2]
+            sisotool = kwargs['sisotool']
+            del kwargs['fig']
+            del kwargs['sisotool']
+        else:
+            fig = plt.gcf()
+            ax_mag = None
+            ax_phase = None
+            sisotool = False
+
+            # Get the current axes if they already exist
+            for ax in fig.axes:
+                if ax.get_label() == 'control-bode-magnitude':
+                    ax_mag = ax
+                elif ax.get_label() == 'control-bode-phase':
+                    ax_phase = ax
+
+            # If no axes present, create them from scratch
+            if ax_mag is None or ax_phase is None:
+                plt.clf()
+                ax_mag = plt.subplot(211,
+                                        label='control-bode-magnitude')
+                ax_phase = plt.subplot(212,
+                                        label='control-bode-phase',
+                                        sharex=ax_mag)
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
-        if sys.ninputs > 1 or sys.noutputs > 1:
+        if not sys.issiso():
             # TODO: Add MIMO bode plots.
-            raise NotImplementedError(
+            raise ControlMIMONotImplemented(
                 "Bode is currently only implemented for SISO systems.")
         else:
-            omega_sys = np.array(omega)
-            if sys.isdtime(True):
-                nyquistfrq = 2. * math.pi * 1. / sys.dt / 2.
-                omega_sys = omega_sys[omega_sys < nyquistfrq]
-                # TODO: What distance to the Nyquist frequency is appropriate?
+            omega_sys = np.asarray(omega)
+            if sys.isdtime(strict=True):
+                nyquistfrq = math.pi / sys.dt
+                if not omega_range_given:
+                    # limit up to and including nyquist frequency
+                    omega_sys = np.hstack((
+                        omega_sys[omega_sys < nyquistfrq], nyquistfrq))
             else:
                 nyquistfrq = None
 
-            # Get the magnitude and phase of the system
-            mag_tmp, phase_tmp, omega_sys = sys.frequency_response(omega_sys)
-            mag = np.atleast_1d(np.squeeze(mag_tmp))
-            phase = np.atleast_1d(np.squeeze(phase_tmp))
+            mag, phase, omega_sys = sys.frequency_response(omega_sys)
+            mag = np.atleast_1d(mag)
+            phase = np.atleast_1d(phase)
 
             #
             # Post-process the phase to handle initial value and wrapping
@@ -285,56 +326,34 @@ def bode_plot(syslist, omega=None,
                     omega_plot = omega_sys
                     if nyquistfrq:
                         nyquistfrq_plot = nyquistfrq
+                phase_plot = phase * 180. / math.pi if deg else phase
+                mag_plot = mag
 
-                # Set up the axes with labels so that multiple calls to
-                # bode_plot will superimpose the data.  This was implicit
-                # before matplotlib 2.1, but changed after that (See
-                # https://github.com/matplotlib/matplotlib/issues/9024).
-                # The code below should work on all cases.
-
-                # Get the current figure
-
-                if 'sisotool' in kwargs:
-                    fig = kwargs['fig']
-                    ax_mag = fig.axes[0]
-                    ax_phase = fig.axes[2]
-                    sisotool = kwargs['sisotool']
-                    del kwargs['fig']
-                    del kwargs['sisotool']
-                else:
-                    fig = plt.gcf()
-                    ax_mag = None
-                    ax_phase = None
-                    sisotool = False
-
-                    # Get the current axes if they already exist
-                    for ax in fig.axes:
-                        if ax.get_label() == 'control-bode-magnitude':
-                            ax_mag = ax
-                        elif ax.get_label() == 'control-bode-phase':
-                            ax_phase = ax
-
-                    # If no axes present, create them from scratch
-                    if ax_mag is None or ax_phase is None:
-                        plt.clf()
-                        ax_mag = plt.subplot(211,
-                                             label='control-bode-magnitude')
-                        ax_phase = plt.subplot(212,
-                                               label='control-bode-phase',
-                                               sharex=ax_mag)
+                if nyquistfrq_plot:
+                    # append data for vertical nyquist freq indicator line.
+                    # if this extra nyquist lime is is plotted in a single plot
+                    # command then line order is preserved when
+                    # creating a legend eg. legend(('sys1', 'sys2'))
+                    omega_nyq_line = np.array((np.nan, nyquistfrq, nyquistfrq))
+                    omega_plot = np.hstack((omega_plot, omega_nyq_line))
+                    mag_nyq_line = np.array((
+                        np.nan, 0.7*min(mag_plot), 1.3*max(mag_plot)))
+                    mag_plot = np.hstack((mag_plot, mag_nyq_line))
+                    phase_range = max(phase_plot) - min(phase_plot)
+                    phase_nyq_line = np.array((np.nan,
+                        min(phase_plot) - 0.2 * phase_range,
+                        max(phase_plot) + 0.2 * phase_range))
+                    phase_plot = np.hstack((phase_plot, phase_nyq_line))
 
                 #
                 # Magnitude plot
                 #
+
                 if dB:
-                    pltline = ax_mag.semilogx(omega_plot, 20 * np.log10(mag),
+                    ax_mag.semilogx(omega_plot, 20 * np.log10(mag_plot),
                                               *args, **kwargs)
                 else:
-                    pltline = ax_mag.loglog(omega_plot, mag, *args, **kwargs)
-
-                if nyquistfrq_plot:
-                    ax_mag.axvline(nyquistfrq_plot,
-                                   color=pltline[0].get_color())
+                    ax_mag.loglog(omega_plot, mag_plot, *args, **kwargs)
 
                 # Add a grid to the plot + labeling
                 ax_mag.grid(grid and not margins, which='both')
@@ -343,7 +362,6 @@ def bode_plot(syslist, omega=None,
                 #
                 # Phase plot
                 #
-                phase_plot = phase * 180. / math.pi if deg else phase
 
                 # Plot the data
                 ax_phase.semilogx(omega_plot, phase_plot, *args, **kwargs)
@@ -457,15 +475,11 @@ def bode_plot(syslist, omega=None,
                             "Gm = %.2f %s(at %.2f %s), "
                             "Pm = %.2f %s (at %.2f %s)" %
                             (20*np.log10(gm) if dB else gm,
-                             'dB ' if dB else '\b',
+                             'dB ' if dB else '',
                              Wcg, 'Hz' if Hz else 'rad/s',
                              pm if deg else math.radians(pm),
                              'deg' if deg else 'rad',
                              Wcp, 'Hz' if Hz else 'rad/s'))
-
-                if nyquistfrq_plot:
-                    ax_phase.axvline(
-                        nyquistfrq_plot, color=pltline[0].get_color())
 
                 # Add a grid to the plot + labeling
                 ax_phase.set_ylabel("Phase (deg)" if deg else "Phase (rad)")
@@ -506,9 +520,9 @@ def bode_plot(syslist, omega=None,
 # Nyquist plot
 #
 
-def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
-                 arrowhead_length=0.1, arrowhead_width=0.1,
-                 color=None, *args, **kwargs):
+def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
+                 omega_num=None, label_freq=0, arrowhead_length=0.1,
+                 arrowhead_width=0.1, color=None, *args, **kwargs):
     """
     Nyquist plot for a system
 
@@ -518,16 +532,24 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
-    omega : freq_range
-        Range of frequencies (list or bounds) in rad/sec
-    Plot : boolean
+    plot : boolean
         If True, plot magnitude
+    omega : array_like
+        Set of frequencies to be evaluated in rad/sec.
+    omega_limits : array_like of two values
+        Limits to the range of frequencies. Ignored if omega
+        is provided, and auto-generated if omitted.
+    omega_num : int
+        Number of samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
     color : string
-        Used to specify the color of the plot
+        Used to specify the color of the line and arrowhead
     label_freq : int
         Label every nth frequency on the plot
-    arrowhead_width : arrow head width
-    arrowhead_length : arrow head length
+    arrowhead_width : float
+        Arrow head width
+    arrowhead_length : float
+        Arrow head length
     *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
@@ -535,12 +557,12 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
 
     Returns
     -------
-    real : array
+    real : ndarray (or list of ndarray if len(syslist) > 1))
         real part of the frequency response array
-    imag : array
+    imag : ndarray (or list of ndarray if len(syslist) > 1))
         imaginary part of the frequency response array
-    freq : array
-        frequencies
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
+        frequencies in rad/s
 
     Examples
     --------
@@ -565,60 +587,74 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
         label_freq = kwargs.pop('labelFreq')
 
     # If argument was a singleton, turn it into a list
-    if not getattr(syslist, '__iter__', False):
+    if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # Select a default range if none is provided
+    # decide whether to go above nyquist. freq
+    omega_range_given = True if omega is not None else False
+
     if omega is None:
-        omega = default_frequency_range(syslist)
-
-    # Interpolate between wmin and wmax if a tuple or list are provided
-    elif isinstance(omega, list) or isinstance(omega, tuple):
-        # Only accept tuple or list of length 2
-        if len(omega) != 2:
-            raise ValueError("Supported frequency arguments are (wmin,wmax)"
-                             "tuple or list, or frequency vector. ")
-        omega = np.logspace(np.log10(omega[0]), np.log10(omega[1]),
-                            num=50, endpoint=True, base=10.0)
-
-    for sys in syslist:
-        if sys.ninputs > 1 or sys.noutputs > 1:
-            # TODO: Add MIMO nyquist plots.
-            raise NotImplementedError(
-                "Nyquist is currently only implemented for SISO systems.")
+        omega_num = config._get_param('freqplot','number_of_samples',omega_num)
+        if omega_limits is None:
+            # Select a default range if none is provided
+            omega = _default_frequency_range(syslist,
+                                             number_of_samples=omega_num)
         else:
-            # Get the magnitude and phase of the system
-            mag_tmp, phase_tmp, omega = sys.frequency_response(omega)
-            mag = np.squeeze(mag_tmp)
-            phase = np.squeeze(phase_tmp)
+            omega_range_given = True
+            omega_limits = np.asarray(omega_limits)
+            if len(omega_limits) != 2:
+                raise ValueError("len(omega_limits) must be 2")
+            omega = np.logspace(np.log10(omega_limits[0]),
+                                np.log10(omega_limits[1]), num=omega_num,
+                                endpoint=True)
 
-            # Compute the primary curve
-            x = np.multiply(mag, np.cos(phase))
-            y = np.multiply(mag, np.sin(phase))
+    xs, ys, omegas = [], [], []
+    for sys in syslist:
+        omega_sys = np.asarray(omega)
+        if sys.isdtime(strict=True):
+            nyquistfrq = math.pi / sys.dt
+            if not omega_range_given:
+                # limit up to and including nyquist frequency
+                omega_sys = np.hstack((
+                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
 
-            if plot:
-                # Plot the primary curve and mirror image
-                p = plt.plot(x, y, '-', color=color, *args, **kwargs)
-                c = p[0].get_color()
-                ax = plt.gca()
-                # Plot arrow to indicate Nyquist encirclement orientation
-                ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
-                         head_width=arrowhead_width,
-                         head_length=arrowhead_length)
+        mag, phase, omega_sys = sys.frequency_response(omega_sys)
 
-                plt.plot(x, -y, '-', color=c, *args, **kwargs)
-                ax.arrow(
-                    x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                    fc=c, ec=c, head_width=arrowhead_width,
-                    head_length=arrowhead_length)
+        # Compute the primary curve
+        x = mag * np.cos(phase)
+        y = mag * np.sin(phase)
 
-                # Mark the -1 point
-                plt.plot([-1], [0], 'r+')
+        xs.append(x)
+        ys.append(y)
+        omegas.append(omega_sys)
+
+        if plot:
+            if not sys.issiso():
+                # TODO: Add MIMO nyquist plots.
+                raise ControlMIMONotImplemented(
+                    "Nyquist plot currently supports SISO systems.")
+
+            # Plot the primary curve and mirror image
+            p = plt.plot(x, y, '-', color=color, *args, **kwargs)
+            c = p[0].get_color()
+            ax = plt.gca()
+            # Plot arrow to indicate Nyquist encirclement orientation
+            ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
+                        head_width=arrowhead_width,
+                        head_length=arrowhead_length)
+
+            plt.plot(x, -y, '-', color=c, *args, **kwargs)
+            ax.arrow(
+                x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
+                fc=c, ec=c, head_width=arrowhead_width,
+                head_length=arrowhead_length)
+            # Mark the -1 point
+            plt.plot([-1], [0], 'r+')
 
             # Label the frequencies of the points
             if label_freq:
                 ind = slice(None, None, label_freq)
-                for xpt, ypt, omegapt in zip(x[ind], y[ind], omega[ind]):
+                for xpt, ypt, omegapt in zip(x[ind], y[ind], omega_sys[ind]):
                     # Convert to Hz
                     f = omegapt / (2 * np.pi)
 
@@ -636,8 +672,8 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
                     # instead of 1.0, and this would otherwise be
                     # truncated to 0.
                     plt.text(xpt, ypt, ' ' +
-                             str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
-                             prefix + 'Hz')
+                            str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
+                            prefix + 'Hz')
 
     if plot:
         ax = plt.gca()
@@ -645,8 +681,10 @@ def nyquist_plot(syslist, omega=None, plot=True, label_freq=0,
         ax.set_ylabel("Imaginary axis")
         ax.grid(color="lightgray")
 
-    return x, y, omega
-
+    if len(syslist) == 1:
+        return xs[0], ys[0], omegas[0]
+    else:
+        return xs, ys, omegas
 
 #
 # Gang of Four plot
@@ -672,9 +710,9 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     -------
     None
     """
-    if P.ninputs > 1 or P.noutputs > 1 or C.ninputs > 1 or C.noutputs > 1:
+    if not P.issiso() or not C.issiso():
         # TODO: Add MIMO go4 plots.
-        raise NotImplementedError(
+        raise ControlMIMONotImplemented(
             "Gang of four is currently only implemented for SISO systems.")
 
     # Get the default parameter values
@@ -690,7 +728,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     # Select a default range if none is provided
     # TODO: This needs to be made more intelligent
     if omega is None:
-        omega = default_frequency_range((P, C, S))
+        omega = _default_frequency_range((P, C, S))
 
     # Set up the axes with labels so that multiple calls to
     # gangof4_plot will superimpose the data.  See details in bode_plot.
@@ -771,7 +809,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 #
 
 # Compute reasonable defaults for axes
-def default_frequency_range(syslist, Hz=None, number_of_samples=None,
+def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                             feature_periphery_decades=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
@@ -805,7 +843,7 @@ def default_frequency_range(syslist, Hz=None, number_of_samples=None,
     --------
     >>> from matlab import ss
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> omega = default_frequency_range(sys)
+    >>> omega = _default_frequency_range(sys)
 
     """
     # This code looks at the poles and zeros of all of the systems that
