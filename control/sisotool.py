@@ -1,8 +1,11 @@
 __all__ = ['sisotool']
 
+from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
 from .timeresp import step_response
 from .lti import issiso, isdtime
+from .xferfcn import TransferFunction
+from .bdalg import append, connect
 import matplotlib
 import matplotlib.pyplot as plt
 import warnings
@@ -22,7 +25,11 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
     Parameters
     ----------
     sys : LTI object
-        Linear input/output systems (SISO only)
+        Linear input/output systems. If sys is SISO, use the same
+        system for the root locus and step response. If sys is
+        two-input, two-output, insert the selected gain between the
+        first output and first input and use the second input and output
+        for computing the step response.
     kvect : list or ndarray, optional
         List of gains to use for plotting root locus
     xlim_rlocus : tuple or list, optional
@@ -60,8 +67,14 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
     """
     from .rlocus import root_locus
 
-    # Check if it is a single SISO system
-    issiso(sys,strict=True)
+    # sys as loop transfer function if SISO
+    if sys.issiso():
+        sys_loop = sys
+    else:
+        if not sys.ninputs == 2 and sys.noutputs == 2:
+            raise ControlMIMONotImplemented(
+                'sys must be SISO or 2-input, 2-output')
+        sys_loop = sys[0,0]
 
     # Setup sisotool figure or superimpose if one is already present
     fig = plt.gcf()
@@ -84,12 +97,15 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
     }
 
     # First time call to setup the bode and step response plots
-    _SisotoolUpdate(sys, fig,1 if kvect is None else kvect[0],bode_plot_params)
+    _SisotoolUpdate(sys, fig,
+        1 if kvect is None else kvect[0], bode_plot_params)
 
     # Setup the root-locus plot window
-    root_locus(sys,kvect=kvect,xlim=xlim_rlocus,ylim = ylim_rlocus,plotstr=plotstr_rlocus,grid = rlocus_grid,fig=fig,bode_plot_params=bode_plot_params,tvect=tvect,sisotool=True)
+    root_locus(sys_loop, kvect=kvect, xlim=xlim_rlocus,
+        ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
+        fig=fig, bode_plot_params=bode_plot_params, tvect=tvect, sisotool=True)
 
-def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
+def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
 
     if int(matplotlib.__version__[0]) == 1:
         title_font_size = 12
@@ -99,49 +115,60 @@ def _SisotoolUpdate(sys,fig,K,bode_plot_params,tvect=None):
         label_font_size = 8
 
     # Get the subaxes and clear them
-    ax_mag,ax_rlocus,ax_phase,ax_step = fig.axes[0],fig.axes[1],fig.axes[2],fig.axes[3]
+    ax_mag, ax_rlocus, ax_phase, ax_step = \
+        fig.axes[0], fig.axes[1], fig.axes[2], fig.axes[3]
 
     # Catch matplotlib 2.1.x and higher userwarnings when clearing a log axis
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         ax_step.clear(), ax_mag.clear(), ax_phase.clear()
 
+    sys_loop = sys if sys.issiso() else sys[0,0]
+
     # Update the bodeplot
-    bode_plot_params['syslist'] = sys*K.real
+    bode_plot_params['syslist'] = sys_loop*K.real
     bode_plot(**bode_plot_params)
 
     # Set the titles and labels
     ax_mag.set_title('Bode magnitude',fontsize = title_font_size)
     ax_mag.set_ylabel(ax_mag.get_ylabel(), fontsize=label_font_size)
+    ax_mag.tick_params(axis='both', which='major', labelsize=label_font_size)
 
     ax_phase.set_title('Bode phase',fontsize=title_font_size)
     ax_phase.set_xlabel(ax_phase.get_xlabel(),fontsize=label_font_size)
     ax_phase.set_ylabel(ax_phase.get_ylabel(),fontsize=label_font_size)
     ax_phase.get_xaxis().set_label_coords(0.5, -0.15)
     ax_phase.get_shared_x_axes().join(ax_phase, ax_mag)
+    ax_phase.tick_params(axis='both', which='major', labelsize=label_font_size)
 
     ax_step.set_title('Step response',fontsize = title_font_size)
     ax_step.set_xlabel('Time (seconds)',fontsize=label_font_size)
     ax_step.set_ylabel('Amplitude',fontsize=label_font_size)
     ax_step.get_xaxis().set_label_coords(0.5, -0.15)
     ax_step.get_yaxis().set_label_coords(-0.15, 0.5)
+    ax_step.tick_params(axis='both', which='major', labelsize=label_font_size)
 
     ax_rlocus.set_title('Root locus',fontsize = title_font_size)
     ax_rlocus.set_ylabel('Imag', fontsize=label_font_size)
     ax_rlocus.set_xlabel('Real', fontsize=label_font_size)
     ax_rlocus.get_xaxis().set_label_coords(0.5, -0.15)
     ax_rlocus.get_yaxis().set_label_coords(-0.15, 0.5)
-
-
+    ax_rlocus.tick_params(axis='both', which='major',labelsize=label_font_size)
 
     # Generate the step response and plot it
-    sys_closed = (K*sys).feedback(1)
+    if sys.issiso():
+        sys_closed = (K*sys).feedback(1)
+    else:
+        sys_closed = append(sys, K)
+        connects = [[1, 3],
+                    [3, 1]]
+        sys_closed = connect(sys_closed, connects, (2,), (2,))
     if tvect is None:
         tvect, yout = step_response(sys_closed, T_num=100)
     else:
-        tvect, yout = step_response(sys_closed,tvect)
+        tvect, yout = step_response(sys_closed, tvect)
     if isdtime(sys_closed, strict=True):
-        ax_step.plot(tvect, yout, 'o')
+        ax_step.plot(tvect, yout, '.')
     else:
         ax_step.plot(tvect, yout)
     ax_step.axhline(1.,linestyle=':',color='k',zorder=-20)

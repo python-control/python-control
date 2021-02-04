@@ -241,12 +241,12 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             else:
                 _sgrid_func()
         else:
-            ax.axhline(0., linestyle=':', color='k', zorder=-20)
-            ax.axvline(0., linestyle=':', color='k', zorder=-20)
+            ax.axhline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
+            ax.axvline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
             if isdtime(sys, strict=True):
                 ax.add_patch(plt.Circle(
                     (0, 0), radius=1.0, linestyle=':', edgecolor='k',
-                    linewidth=1.5, fill=False, zorder=-20))
+                    linewidth=0.75, fill=False, zorder=-20))
 
     return mymat, kvect
 
