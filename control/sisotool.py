@@ -68,13 +68,10 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
     from .rlocus import root_locus
 
     # sys as loop transfer function if SISO
-    if sys.issiso():
-        sys_loop = sys
-    else:
+    if not sys.issiso():
         if not sys.ninputs == 2 and sys.noutputs == 2:
             raise ControlMIMONotImplemented(
                 'sys must be SISO or 2-input, 2-output')
-        sys_loop = sys[0,0]
 
     # Setup sisotool figure or superimpose if one is already present
     fig = plt.gcf()
@@ -101,7 +98,7 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
         1 if kvect is None else kvect[0], bode_plot_params)
 
     # Setup the root-locus plot window
-    root_locus(sys_loop, kvect=kvect, xlim=xlim_rlocus,
+    root_locus(sys, kvect=kvect, xlim=xlim_rlocus,
         ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
         fig=fig, bode_plot_params=bode_plot_params, tvect=tvect, sisotool=True)
 
@@ -159,10 +156,10 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
     if sys.issiso():
         sys_closed = (K*sys).feedback(1)
     else:
-        sys_closed = append(sys, K)
+        sys_closed = append(sys, -K)
         connects = [[1, 3],
                     [3, 1]]
-        sys_closed = connect(sys_closed, connects, (2,), (2,))
+        sys_closed = connect(sys_closed, connects, 2, 2)
     if tvect is None:
         tvect, yout = step_response(sys_closed, T_num=100)
     else:
