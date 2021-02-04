@@ -27,9 +27,11 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
     sys : LTI object
         Linear input/output systems. If sys is SISO, use the same
         system for the root locus and step response. If sys is
-        two-input, two-output, insert the selected gain between the
-        first output and first input and use the second input and output
-        for computing the step response.
+        two-input, two-output, insert the negative of the selected gain
+        between the first output and first input and use the second input
+        and output for computing the step response. This allows you to see
+        the step responses of more complex systems while using sisotool,
+        for example, systems with a feedforward path into the plant.
     kvect : list or ndarray, optional
         List of gains to use for plotting root locus
     xlim_rlocus : tuple or list, optional
@@ -39,21 +41,23 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
         control of y-axis range
     plotstr_rlocus : :func:`matplotlib.pyplot.plot` format string, optional
         plotting style for the root locus plot(color, linestyle, etc)
-    rlocus_grid: boolean (default = False)
-        If True plot s-plane grid.
-    omega : freq_range
-        Range of frequencies in rad/sec for the bode plot
+    rlocus_grid : boolean (default = False)
+        If True plot s- or z-plane grid.
+    omega : array_like
+        List of frequencies in rad/sec to be used for bode plot
     dB : boolean
         If True, plot result in dB for the bode plot
     Hz : boolean
         If True, plot frequency in Hz for the bode plot (omega must be provided in rad/sec)
     deg : boolean
         If True, plot phase in degrees for the bode plot (else radians)
-    omega_limits: tuple, list, ... of two values
+    omega_limits : array_like of two values
         Limits of the to generate frequency vector.
-        If Hz=True the limits are in Hz otherwise in rad/s.
-    omega_num: int
-        number of samples
+        If Hz=True the limits are in Hz otherwise in rad/s. Ignored if omega
+        is provided, and auto-generated if omitted.
+    omega_num : int
+        Number of samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
     margins_bode : boolean
         If True, plot gain and phase margin in the bode plot
     tvect : list or ndarray, optional
@@ -69,7 +73,7 @@ def sisotool(sys, kvect = None, xlim_rlocus = None, ylim_rlocus = None,
 
     # sys as loop transfer function if SISO
     if not sys.issiso():
-        if not sys.ninputs == 2 and sys.noutputs == 2:
+        if not (sys.ninputs == 2 and sys.noutputs == 2):
             raise ControlMIMONotImplemented(
                 'sys must be SISO or 2-input, 2-output')
 

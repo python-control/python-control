@@ -1,5 +1,6 @@
 """sisotool_test.py"""
 
+from control.exception import ControlMIMONotImplemented
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.testing import assert_array_almost_equal
@@ -8,6 +9,7 @@ import pytest
 from control.sisotool import sisotool
 from control.rlocus import _RLClickDispatcher
 from control.xferfcn import TransferFunction
+from control.statesp import StateSpace
 
 
 @pytest.mark.usefixtures("mplcleanup")
@@ -19,7 +21,31 @@ class TestSisotool:
         """Return a generic SISO transfer function"""
         return TransferFunction([1000], [1, 25, 100, 0])
 
-    def test_sisotool(self, sys):
+    @pytest.fixture
+    def sys222(self):
+        """2-states square system (2 inputs x 2 outputs)"""
+        A222 = [[4., 1.],
+                [2., -3]]
+        B222 = [[5., 2.],
+                [-3., -3.]]
+        C222 = [[2., -4],
+                [0., 1.]]
+        D222 = [[3., 2.],
+                [1., -1.]]
+        return StateSpace(A222, B222, C222, D222)
+
+    @pytest.fixture
+    def sys221(self):
+        """2-states, 2 inputs x 1 output"""
+        A222 = [[4., 1.],
+                [2., -3]]
+        B222 = [[5., 2.],
+                [-3., -3.]]
+        C221 = [[0., 1.]]
+        D221 = [[1., -1.]]
+        return StateSpace(A222, B222, C221, D221)
+
+    def test_sisotool(self, sys, sys222, sys221):
         sisotool(sys, Hz=False)
         fig = plt.gcf()
         ax_mag, ax_rlocus, ax_phase, ax_step = fig.axes[:4]
@@ -27,7 +53,7 @@ class TestSisotool:
         # Check the initial root locus plot points
         initial_point_0 = (np.array([-22.53155977]), np.array([0.]))
         initial_point_1 = (np.array([-1.23422011]), np.array([-6.54667031]))
-        initial_point_2 = (np.array([-1.23422011]), np.array([06.54667031]))
+        initial_point_2 = (np.array([-1.23422011]), np.array([6.54667031]))
         assert_array_almost_equal(ax_rlocus.lines[0].get_data(),
                                   initial_point_0, 4)
         assert_array_almost_equal(ax_rlocus.lines[1].get_data(),
@@ -92,3 +118,11 @@ class TestSisotool:
         #             1.9121, 2.2989, 2.4686, 2.353])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
+
+        # test MIMO compatibility
+        # sys must be siso or 2 input, 2 output
+        with pytest.raises(ControlMIMONotImplemented):
+            sisotool(sys221)
+        # does not raise an error:
+        sisotool(sys222)
+
