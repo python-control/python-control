@@ -577,8 +577,8 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
 
     xlim = ax_rlocus.get_xlim()
     ylim = ax_rlocus.get_ylim()
-    x_tolerance = 0.05 * abs((xlim[1] - xlim[0]))
-    y_tolerance = 0.05 * abs((ylim[1] - ylim[0]))
+    x_tolerance = 0.1 * abs((xlim[1] - xlim[0]))
+    y_tolerance = 0.1 * abs((ylim[1] - ylim[0]))
     gain_tolerance = np.mean([x_tolerance, y_tolerance])*0.1
 
     # Catch type error when event click is in the figure but not in an axis
