@@ -22,6 +22,11 @@ class TestSisotool:
         return TransferFunction([1000], [1, 25, 100, 0])
 
     @pytest.fixture
+    def sysdt(self):
+        """Return a generic SISO transfer function"""
+        return TransferFunction([1000], [1, 25, 100, 0], True)
+
+    @pytest.fixture
     def sys222(self):
         """2-states square system (2 inputs x 2 outputs)"""
         A222 = [[4., 1.],
@@ -45,7 +50,7 @@ class TestSisotool:
         D221 = [[1., -1.]]
         return StateSpace(A222, B222, C221, D221)
 
-    def test_sisotool(self, sys, sys222, sys221):
+    def test_sisotool(self, sys, sysdt, sys222, sys221):
         sisotool(sys, Hz=False)
         fig = plt.gcf()
         ax_mag, ax_rlocus, ax_phase, ax_step = fig.axes[:4]
@@ -114,10 +119,14 @@ class TestSisotool:
         step_response_moved = np.array(
             [0., 0.0072, 0.0516, 0.1554, 0.3281, 0.5681, 0.8646, 1.1987,
              1.5452, 1.875])
-        # old: array([0., 0.0239, 0.161 , 0.4547, 0.8903, 1.407,
-        #             1.9121, 2.2989, 2.4686, 2.353])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
+
+        # test supply tvect
+        sisotool(sys, tvect=np.arange(0, 1, .1))
+
+        # test discrete-time
+        sisotool(sysdt, tvect=5)
 
         # test MIMO compatibility
         # sys must be siso or 2 input, 2 output
@@ -125,4 +134,6 @@ class TestSisotool:
             sisotool(sys221)
         # does not raise an error:
         sisotool(sys222)
+
+
 
