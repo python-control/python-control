@@ -50,7 +50,7 @@ class TestSisotool:
         D221 = [[1., -1.]]
         return StateSpace(A222, B222, C221, D221)
 
-    def test_sisotool(self, sys, sysdt, sys222, sys221):
+    def test_sisotool(self, sys):
         sisotool(sys, Hz=False)
         fig = plt.gcf()
         ax_mag, ax_rlocus, ax_phase, ax_step = fig.axes[:4]
@@ -122,18 +122,46 @@ class TestSisotool:
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
 
+    def test_sisotool_tvect(self, sys):
         # test supply tvect
-        sisotool(sys, tvect=np.arange(0, 1, .1))
+        tvect = np.linspace(0, 1, 10)
+        sisotool(sys, tvect=tvect)
+        fig = plt.gcf()
+        ax_rlocus, ax_step = fig.axes[1], fig.axes[3]
 
-        # test discrete-time
-        sisotool(sysdt, tvect=5)
+        # Move the rootlocus to another point and confirm same tvect
+        event = type('test', (object,), {'xdata': 2.31206868287,
+                                         'ydata': 15.5983051046,
+                                         'inaxes': ax_rlocus.axes})()
+        _RLClickDispatcher(event=event, sys=sys, fig=fig,
+                           ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
+                           bode_plot_params=dict(), tvect=tvect)
+        assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 
-        # test MIMO compatibility
-        # sys must be siso or 2 input, 2 output
+    def test_sisotool_tvect_dt(self, sysdt):
+        # test supply tvect
+        tvect = np.linspace(0, 1, 10)
+        sisotool(sysdt, tvect=tvect)
+        fig = plt.gcf()
+        ax_rlocus, ax_step = fig.axes[1], fig.axes[3]
+
+        # Move the rootlocus to another point and confirm same tvect
+        event = type('test', (object,), {'xdata': 2.31206868287,
+                                         'ydata': 15.5983051046,
+                                         'inaxes': ax_rlocus.axes})()
+        _RLClickDispatcher(event=event, sys=sysdt, fig=fig,
+                           ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
+                           bode_plot_params=dict(), tvect=tvect)
+        assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
+
+    def test_sisotool_mimo(self,  sys222, sys221):
+        # a 2x2 should not raise an error:
+        sisotool(sys222)
+
+        # but 2 input, 1 output should
         with pytest.raises(ControlMIMONotImplemented):
             sisotool(sys221)
-        # does not raise an error:
-        sisotool(sys222)
+
 
 
 
