@@ -43,9 +43,10 @@ def reset_defaults():
     # System level defaults
     defaults.update(_control_defaults)
 
-    from .freqplot import _bode_defaults, _freqplot_defaults
+    from .freqplot import _bode_defaults, _freqplot_defaults, _nyquist_defaults
     defaults.update(_bode_defaults)
     defaults.update(_freqplot_defaults)
+    defaults.update(_nyquist_defaults)
 
     from .nichols import _nichols_defaults
     defaults.update(_nichols_defaults)
@@ -138,9 +139,11 @@ def use_fbs_defaults():
     The following conventions are used:
         * Bode plots plot gain in powers of ten, phase in degrees,
           frequency in rad/sec, no grid
+        * Nyquist plots use dashed lines for mirror image of Nyquist curve
 
     """
     set_defaults('bode', dB=False, deg=True, Hz=False, grid=False)
+    set_defaults('nyquist', mirror_style='--')
 
 
 # Decide whether to use numpy.matrix for state space operations
@@ -238,5 +241,8 @@ def use_legacy_defaults(version):
 
         # time responses are only squeezed if SISO
         set_defaults('control', squeeze_time_response=True)
+
+        # switched mirror_style of nyquist from '-' to '--'
+        set_defaults('nyqist', mirror_style='-')
 
     return (major, minor, patch)

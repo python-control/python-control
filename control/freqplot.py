@@ -520,11 +520,16 @@ def bode_plot(syslist, omega=None,
 # Nyquist plot
 #
 
-def nyquist_plot(
-        syslist, omega=None, plot=True, omega_limits=None, omega_num=None,
-        label_freq=0, color=None, mirror='--', arrowhead_length=0.1,
-        arrowhead_width=0.1, *args, **kwargs):
-    """Nyquist plot for a system
+# Default values for module parameter variables
+_nyquist_defaults = {
+    'nyquist.mirror_style': '--',
+}
+
+def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
+                 omega_num=None, label_freq=0, arrowhead_length=0.1,
+                 arrowhead_width=0.1, color=None, *args, **kwargs):
+    """
+    Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
@@ -532,26 +537,41 @@ def nyquist_plot(
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
+
     plot : boolean
         If True, plot magnitude
+
     omega : array_like
         Set of frequencies to be evaluated in rad/sec.
+
     omega_limits : array_like of two values
         Limits to the range of frequencies. Ignored if omega
         is provided, and auto-generated if omitted.
+
     omega_num : int
         Number of samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
+
     color : string
         Used to specify the color of the line and arrowhead
+
+    mirror_style : string or False
+        Linestyle for mirror image of the Nyquist curve.  If `False` then
+        omit completely.  Default linestyle ('--') is determined by
+        config.defaults['nyquist.mirror_style'].
+
     label_freq : int
         Label every nth frequency on the plot
+
     arrowhead_width : float
         Arrow head width
+
     arrowhead_length : float
         Arrow head length
+
     *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
+
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
@@ -559,8 +579,10 @@ def nyquist_plot(
     -------
     real : ndarray (or list of ndarray if len(syslist) > 1))
         real part of the frequency response array
+
     imag : ndarray (or list of ndarray if len(syslist) > 1))
         imaginary part of the frequency response array
+
     omega : ndarray (or list of ndarray if len(syslist) > 1))
         frequencies in rad/s
 
@@ -585,6 +607,10 @@ def nyquist_plot(
                       "use 'label_freq'", FutureWarning)
         # Map 'labelFreq' keyword to 'label_freq' keyword
         label_freq = kwargs.pop('labelFreq')
+
+    # Get values for params (and pop from list to allow keyword use in plot)
+    mirror_style = config._get_param(
+        'nyquist', 'mirror_style', kwargs, _nyquist_defaults, pop=True)
 
     # If argument was a singleton, turn it into a list
     if not hasattr(syslist, '__iter__'):
@@ -634,17 +660,19 @@ def nyquist_plot(
                 raise ControlMIMONotImplemented(
                     "Nyquist plot currently supports SISO systems.")
 
-            # Plot the primary curve and mirror image
+            # Plot the primary curve
             p = plt.plot(x, y, '-', color=color, *args, **kwargs)
             c = p[0].get_color()
             ax = plt.gca()
+
             # Plot arrow to indicate Nyquist encirclement orientation
             ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
                         head_width=arrowhead_width,
                         head_length=arrowhead_length)
 
-            if mirror is not False:
-                plt.plot(x, -y, mirror, color=c, *args, **kwargs)
+            # Plot the mirror image
+            if mirror_style is not False:
+                plt.plot(x, -y, mirror_style, color=c, *args, **kwargs)
                 ax.arrow(
                     x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
                     fc=c, ec=c, head_width=arrowhead_width,
