@@ -119,18 +119,14 @@ def test_interconnect_implicit():
     #     inputs=['r', '-y'], output='e', dimension=2)
     # S = control.interconnect([P, C, sumblk], inplist='r', outlist='y')
 
-    # Make sure that repeated inplist/outlist names generate an error
-    # Input not unique
-    Cbad = ct.tf2io(ct.tf(10, [1, 1]), inputs='r', outputs='x', name='C')
-    with pytest.raises(ValueError, match="not unique"):
-        Tio_sum = ct.interconnect(
-            (Cbad, P, sumblk), inplist=['r'], outlist=['y'])
-
-    # Output not unique
-    Cbad = ct.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='y', name='C')
-    with pytest.raises(ValueError, match="not unique"):
-        Tio_sum = ct.interconnect(
-            (Cbad, P, sumblk), inplist=['r'], outlist=['y'])
+    # Make sure that repeated inplist/outlist names work
+    pi_io = ct.interconnect(
+        (kp_io, ki_io), inplist=['e'], outlist=['u'])
+    pi_ss = ct.tf2ss(kp + ki)
+    np.testing.assert_almost_equal(pi_io.A, pi_ss.A)
+    np.testing.assert_almost_equal(pi_io.B, pi_ss.B)
+    np.testing.assert_almost_equal(pi_io.C, pi_ss.C)
+    np.testing.assert_almost_equal(pi_io.D, pi_ss.D)
 
     # Signal not found
     with pytest.raises(ValueError, match="could not find"):

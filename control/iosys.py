@@ -2042,6 +2042,9 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         inplist = [inplist]
     new_inplist = []
     for signal in inplist:
+        # Create an empty connection and append to inplist
+        connection = []
+
         # Check for signal names without a system name
         if isinstance(signal, str) and len(signal.split('.')) == 1:
             # Get the signal name
@@ -2049,18 +2052,15 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
             sign = '-' if signal[0] == '-' else ""
 
             # Look for the signal name as a system input
-            new_name = None
             for sys in syslist:
                 if name in sys.input_index.keys():
-                    if new_name is not None:
-                        raise ValueError("signal %s is not unique" % name)
-                    new_name = sign + sys.name + "." + name
+                    connection.append(sign + sys.name + "." + name)
 
             # Make sure we found the name
-            if new_name is None:
+            if len(connection) == 0:
                 raise ValueError("could not find signal %s" % name)
             else:
-                new_inplist.append(new_name)
+                new_inplist.append(connection)
         else:
             new_inplist.append(signal)
     inplist = new_inplist
@@ -2070,6 +2070,9 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         outlist = [outlist]
     new_outlist = []
     for signal in outlist:
+        # Create an empty connection and append to inplist
+        connection = []
+
         # Check for signal names without a system name
         if isinstance(signal, str) and len(signal.split('.')) == 1:
             # Get the signal name
@@ -2077,18 +2080,15 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
             sign = '-' if signal[0] == '-' else ""
 
             # Look for the signal name as a system output
-            new_name = None
             for sys in syslist:
                 if name in sys.output_index.keys():
-                    if new_name is not None:
-                        raise ValueError("signal %s is not unique" % name)
-                    new_name = sign + sys.name + "." + name
+                    connection.append(sign + sys.name + "." + name)
 
             # Make sure we found the name
-            if new_name is None:
+            if len(connection) == 0:
                 raise ValueError("could not find signal %s" % name)
             else:
-                new_outlist.append(new_name)
+                new_outlist.append(connection)
         else:
             new_outlist.append(signal)
     outlist = new_outlist
