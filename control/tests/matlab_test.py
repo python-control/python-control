@@ -27,7 +27,7 @@ from control.matlab import lqr, ctrb, obsv, gram
 from control.matlab import pade
 from control.matlab import unwrap, c2d, isctime, isdtime
 from control.matlab import connect, append
-
+from control.exception import ControlArgument
 
 from control.frdata import FRD
 from control.tests.conftest import slycotonly
@@ -801,6 +801,28 @@ class TestMatlab:
         np.testing.assert_array_almost_equal(G.num, [[[1, 1]]])
         np.testing.assert_array_almost_equal(G.den, [[[1, 2, 1]]])
         assert isdtime(G, strict=True)
+
+    def test_matlab_wrapper_exceptions(self):
+        """Test out exceptions in matlab/wrappers.py"""
+        sys = tf([1], [1, 2, 1])
+
+        # Extra arguments in bode
+        with pytest.raises(ControlArgument, match="not all arguments"):
+            bode(sys, 'r-', [1e-2, 1e2], 5.0)
+
+        # Multiple plot styles
+        with pytest.warns(UserWarning, match="plot styles not implemented"):
+            bode(sys, 'r-', sys, 'b--', [1e-2, 1e2])
+
+        # Incorrect number of arguments to dcgain
+        with pytest.raises(ValueError, match="needs either 1, 2, 3 or 4"):
+            dcgain(1, 2, 3, 4, 5)
+
+    def test_matlab_freqplot_passthru(self):
+        """Test nyquist and bode to make sure the pass arguments through"""
+        sys = tf([1], [1, 2, 1])
+        bode((sys,))            # Passing tuple will call bode_plot
+        nyquist((sys,))         # Passing tuple will call nyquist_plot
 
 
 #! TODO: not yet implemented

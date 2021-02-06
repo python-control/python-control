@@ -70,7 +70,7 @@ from ..exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
 from ..ctrlutil import *
-from ..freqplot import nyquist, gangof4
+from ..freqplot import gangof4
 from ..nichols import nichols
 from ..bdalg import *
 from ..pzmap import *
