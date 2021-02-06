@@ -22,7 +22,7 @@ def _P(sys, indent='right'):
     if indent == 'right':
         return (sys.pole().real > 0).sum()
     elif indent == 'left':
-        return (sys.pole().real < 0).sum()
+        return (sys.pole().real >= 0).sum()
     elif indent == 'none':
         if any(sys.pole().real == 0):
             raise ValueError("indent must be left or right for imaginary pole")
@@ -209,16 +209,33 @@ def test_nyquist_indent():
     assert _Z(sys) == count + _P(sys)
 
     plt.figure();
-    count = ct.nyquist_plot(sys, indent_direction='right')
+    count = ct.nyquist_plot(sys, indent_direction='left')
     plt.title(
-        "Pole at origin; indent_direction='right'; encirclements = %d" % count)
+        "Pole at origin; indent_direction='left'; encirclements = %d" % count)
+    assert _Z(sys) == count + _P(sys, indent='left')
+
+    # System with poles on the imaginary axis
+    sys = ct.tf([1, 1], [1, 0, 1])
+
+    # Imaginary poles with standard indentation
+    plt.figure();
+    count = ct.nyquist_plot(sys)
+    plt.title("Imaginary poles; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
 
+    # Imaginary poles with indentation to the left
+    plt.figure();
+    count = ct.nyquist_plot(sys, indent_direction='left', label_freq=300)
+    plt.title(
+        "Imaginary poles; indent_direction='left'; encirclements = %d" % count)
+    assert _Z(sys) == count + _P(sys, indent='left')
+
+    # Imaginary poles with no indentation
     plt.figure();
     count = ct.nyquist_plot(
-        sys, omega_limits=[1e-2, 1e-3], indent_direction='none')
+        sys, np.linspace(0, 1e3, 1000), indent_direction='none')
     plt.title(
-        "Pole at origin; indent_direction='none'; encirclements = %d" % count)
+        "Imaginary poles; indent_direction='none'; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
 
 
@@ -269,8 +286,7 @@ test_nyquist_indent()
 
 print("Unusual Nyquist plot")
 sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-print(sys)
-print("Poles:", sys.pole())
 plt.figure()
+plt.title("Poles: %s" % np.array2string(sys.pole(), precision=2, separator=','))
 count = ct.nyquist_plot(sys)
 assert _Z(sys) == count + _P(sys)

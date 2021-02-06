@@ -742,7 +742,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         else:
             contour = 1j * omega_sys
 
-        # Bend the contour around any poles on/near the imaginary access
+        # Bend the contour around any poles on/near the imaginary axis
         if isinstance(sys, (StateSpace, TransferFunction)) and \
             sys.isctime() and indent_direction != 'none':
             poles = sys.pole()
