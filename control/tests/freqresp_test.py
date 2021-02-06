@@ -75,11 +75,18 @@ def test_nyquist_basic(ss_siso):
     tf_siso = tf(ss_siso)
     nyquist_plot(ss_siso)
     nyquist_plot(tf_siso)
-    assert len(nyquist_plot(tf_siso, plot=False, omega_num=20)[0] == 20)
-    omega = nyquist_plot(tf_siso, plot=False, omega_limits=(1, 100))[2]
-    assert_allclose(omega[0], 1)
-    assert_allclose(omega[-1], 100)
-    assert len(nyquist_plot(tf_siso, plot=False, omega=np.logspace(-1, 1, 10))[0])==10
+    count, contour = nyquist_plot(
+        tf_siso, plot=False, return_contour=True, omega_num=20)
+    assert len(contour) == 20
+
+    count, contour = nyquist_plot(
+        tf_siso, plot=False, omega_limits=(1, 100), return_contour=True)
+    assert_allclose(contour[0], 1j)
+    assert_allclose(contour[-1], 100j)
+
+    count, contour = nyquist_plot(
+        tf_siso, plot=False, omega=np.logspace(-1, 1, 10), return_contour=True)
+    assert len(contour) == 10
 
 
 @pytest.mark.filterwarnings("ignore:.*non-positive left xlim:UserWarning")

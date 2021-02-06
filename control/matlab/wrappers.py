@@ -105,7 +105,13 @@ def nyquist(*args, **kwargs):
     kwargs.update(other)
 
     # Call the nyquist command
-    return nyquist_plot(syslist, omega, *args, **kwargs)
+    kwargs['return_contour'] = True
+    _, contour = nyquist_plot(syslist, omega, *args, **kwargs)
+
+    # Create the MATLAB output arguments
+    freqresp = syslist(contour)
+    real, imag = freqresp.real, freqresp.imag
+    return real, imag, contour.imag
 
 
 def _parse_freqplot_args(*args):
