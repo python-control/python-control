@@ -668,7 +668,7 @@ class StateSpace(LTI):
         raise NotImplementedError(
             "StateSpace.__rdiv__ is not implemented yet.")
 
-    def __call__(self, x, squeeze=None):
+    def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's transfer function at complex frequency.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
@@ -689,6 +689,8 @@ class StateSpace(LTI):
             keep all indices (output, input and, if omega is array_like,
             frequency) even if the system is SISO. The default value can be
             set using config.defaults['control.squeeze_frequency_response'].
+        warn_infinite : bool, optional
+            If set to `False`, don't warn if frequency response is infinite.
 
         Returns
         -------
@@ -702,7 +704,7 @@ class StateSpace(LTI):
 
         """
         # Use Slycot if available
-        out = self.horner(x)
+        out = self.horner(x, warn_infinite=warn_infinite)
         return _process_frequency_response(self, x, out, squeeze=squeeze)
 
     def slycot_laub(self, x):
@@ -758,7 +760,7 @@ class StateSpace(LTI):
             out[:, :, kk+1] = result[0] + self.D
         return out
 
-    def horner(self, x):
+    def horner(self, x, warn_infinite=True):
         """Evaluate system's transfer function at complex frequency
         using Laub's or Horner's method.
 
@@ -795,14 +797,22 @@ class StateSpace(LTI):
                 raise ValueError("input list must be 1D")
 
             # Preallocate
-            out = empty((self.noutputs, self.ninputs, len(x_arr)), dtype=complex)
+            out = empty((self.noutputs, self.ninputs, len(x_arr)),
+                        dtype=complex)
 
             #TODO: can this be vectorized?
             for idx, x_idx in enumerate(x_arr):
-                out[:,:,idx] = \
-                    np.dot(self.C,
+                try:
+                    out[:,:,idx] = np.dot(
+                        self.C,
                         solve(x_idx * eye(self.nstates) - self.A, self.B)) \
-                    + self.D
+                        + self.D
+                except LinAlgError:
+                    if warn_infinite:
+                        warn("frequency response is not finite",
+                             RuntimeWarning)
+                    # TODO: check for nan cases
+                    out[:,:,idx] = np.inf
         return out
 
     def freqresp(self, omega):
@@ -1200,7 +1210,7 @@ class StateSpace(LTI):
         gain : ndarray
             An array of shape (outputs,inputs); the array will either
             be the zero-frequency (or DC) gain, or, if the frequency
-            response is singular, the array will be filled with np.nan.
+            response is singular, the array will be filled with np.inf.
         """
         try:
             if self.isctime():
@@ -1210,7 +1220,7 @@ class StateSpace(LTI):
                 gain = np.squeeze(self.horner(1))
         except LinAlgError:
             # eigenvalue at DC
-            gain = np.tile(np.nan, (self.noutputs, self.ninputs))
+            gain = np.tile(np.inf, (self.noutputs, self.ninputs))
         return np.squeeze(gain)
 
     def _isstatic(self):

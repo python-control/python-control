@@ -234,7 +234,7 @@ class TransferFunction(LTI):
                     dt = config.defaults['control.default_dt']
         self.dt = dt
 
-    def __call__(self, x, squeeze=None):
+    def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's transfer function at complex frequencies.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
@@ -262,6 +262,8 @@ class TransferFunction(LTI):
             If True and the system is single-input single-output (SISO),
             return a 1D array rather than a 3D array.  Default value (True)
             set by config.defaults['control.squeeze_frequency_response'].
+        warn_infinite : bool, optional
+            If set to `False`, turn off divide by zero warning.
 
         Returns
         -------
@@ -274,10 +276,10 @@ class TransferFunction(LTI):
             then single-dimensional axes are removed.
 
         """
-        out = self.horner(x)
+        out = self.horner(x, warn_infinite=warn_infinite)
         return _process_frequency_response(self, x, out, squeeze=squeeze)
 
-    def horner(self, x):
+    def horner(self, x, warn_infinite=True):
         """Evaluate system's transfer function at complex frequency
         using Horner's method.
 
@@ -307,8 +309,9 @@ class TransferFunction(LTI):
         out = empty((self.noutputs, self.ninputs, len(x_arr)), dtype=complex)
         for i in range(self.noutputs):
             for j in range(self.ninputs):
-                out[i][j] = (polyval(self.num[i][j], x) /
-                             polyval(self.den[i][j], x))
+                with np.errstate(divide='warn' if warn_infinite else 'ignore'):
+                    out[i][j] = (polyval(self.num[i][j], x) /
+                                 polyval(self.den[i][j], x))
         return out
 
     def _truncatecoeff(self):
