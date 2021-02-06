@@ -523,7 +523,8 @@ def bode_plot(syslist, omega=None,
 def nyquist_plot(
         syslist, omega=None, plot=True, omega_limits=None, omega_num=None,
         label_freq=0, color=None, mirror='--', arrowhead_length=0.1,
-        arrowhead_width=0.1, *args, **kwargs): """Nyquist plot for a system
+        arrowhead_width=0.1, *args, **kwargs):
+    """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
