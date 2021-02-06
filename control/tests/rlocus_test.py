@@ -95,11 +95,17 @@ class TestRootLocus:
             [-1e-2, 1-1e7j, 1+1e7j], [0, -1e7j, 1e7j], 1))
 
         # Set up a timer to catch execution time
-        def signal_handler(signum, frame):
-            raise Exception("rlocus took too long to complete")
-        signal.signal(signal.SIGALRM, signal_handler)
+        try:
+            def signal_handler(signum, frame):
+                raise Exception("rlocus took too long to complete")
+            signal.signal(signal.SIGALRM, signal_handler)
 
-        # Run the command and reset the alarm
-        signal.alarm(2)         # 2 second timeout
-        ct.root_locus(sys)
-        signal.alarm(0)         # reset the alarm
+            # Run the command and reset the alarm
+            signal.alarm(2)         # 2 second timeout
+            ct.root_locus(sys)
+            signal.alarm(0)         # reset the alarm
+            
+        except AttributeError:
+            # If no SIGALRM (eg, on Windows), then skip this test
+            pass
+
