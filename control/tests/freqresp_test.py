@@ -364,3 +364,73 @@ def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
     mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
     assert(min(phase) >= min_phase)
     assert(max(phase) <= max_phase)
+
+
+def test_freqresp_warn_infinite():
+    """Test evaluation of transfer functions at the origin"""
+    sys_finite = ctrl.tf([1], [1, 0.01])
+    sys_infinite = ctrl.tf([1], [1, 0.01, 0])
+
+    # Transfer function with finite zero frequency gain
+    np.testing.assert_almost_equal(sys_finite(0), 100)
+    np.testing.assert_almost_equal(sys_finite(0, warn_infinite=False), 100)
+    np.testing.assert_almost_equal(sys_finite(0, warn_infinite=True), 100)
+
+    # Transfer function with infinite zero frequency gain
+    with pytest.warns(RuntimeWarning, match="divide by zero"):
+        np.testing.assert_almost_equal(sys_infinite(0), np.inf)
+    with pytest.warns(RuntimeWarning, match="divide by zero"):
+        np.testing.assert_almost_equal(
+            sys_infinite(0, warn_infinite=True), np.inf)
+    np.testing.assert_almost_equal(sys_infinite(0, warn_infinite=False), np.inf)
+
+    # Switch to state space
+    sys_finite = ctrl.tf2ss(sys_finite)
+    sys_infinite = ctrl.tf2ss(sys_infinite)
+
+    # State space system with finite zero frequency gain
+    np.testing.assert_almost_equal(sys_finite(0), 100)
+    np.testing.assert_almost_equal(sys_finite(0, warn_infinite=False), 100)
+    np.testing.assert_almost_equal(sys_finite(0, warn_infinite=True), 100)
+
+    # State space system with infinite zero frequency gain
+    with pytest.warns(RuntimeWarning, match="not finite"):
+        np.testing.assert_almost_equal(sys_infinite(0), np.inf)
+    with pytest.warns(RuntimeWarning, match="not finite"):
+        np.testing.assert_almost_equal(sys_infinite(0), np.inf)
+    np.testing.assert_almost_equal(sys_infinite(0, warn_infinite=True), np.inf)
+    np.testing.assert_almost_equal(sys_infinite(0, warn_infinite=False), np.inf)
+    
+
+def test_dcgain_consistency():
+    """Test to make sure that DC gain is consistently evaluated"""
+    # Set up transfer function with pole at the origin
+    sys_tf = ctrl.tf([1], [1, 0])
+    assert 0 in sys_tf.pole()
+
+    # Set up state space system with pole at the origin
+    sys_ss = ctrl.tf2ss(sys_tf)
+    assert 0 in sys_ss.pole()
+
+    # Evaluation
+    np.testing.assert_equal(sys_tf(0), np.inf + 0j)
+    np.testing.assert_equal(sys_ss(0), np.inf + 0j)
+    np.testing.assert_equal(sys_tf.dcgain(), np.inf + 0j)
+    np.testing.assert_equal(sys_ss.dcgain(), np.inf + 0j)
+
+    # Set up transfer function with pole, zero at the origin
+    sys_tf = ctrl.tf([1, 0], [1, 0])
+    assert 0 in sys_tf.pole()
+    assert 0 in sys_tf.zero()
+    
+    sys_ss = ctrl.tf2ss(ctrl.tf([1, 0], [1, 1])) * \
+        ctrl.tf2ss(ctrl.tf([1], [1, 0]))
+    assert 0 in sys_ss.pole()
+    assert 0 in sys_ss.zero()
+
+    # Pole and zero at the origin should give nan for the response
+    np.testing.assert_equal(sys_tf(0), np.nan)
+    np.testing.assert_equal(sys_tf.dcgain(), np.nan)
+    # TODO: state space cases not yet working
+    # np.testing.assert_equal(sys_ss(0), np.nan)
+    # np.testing.assert_equal(sys_ss.dcgain(), np.nan)

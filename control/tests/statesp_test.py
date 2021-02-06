@@ -523,7 +523,7 @@ class TestStateSpace:
     @pytest.mark.parametrize("dt", [None, 0, 1, True],
                              ids=["dtNone", "c", "dt1", "dtTrue"])
     def test_dc_gain_integrator(self, outputs, inputs, dt):
-        """DC gain when eigenvalue at DC returns appropriately sized array of nan.
+        """DC gain w/ pole at origin returns appropriately sized array of inf.
 
         the SISO case is also tested in test_dc_gain_{cont,discr}
         time systems (dt=0)

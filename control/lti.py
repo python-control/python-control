@@ -644,8 +644,9 @@ def dcgain(sys):
     Returns
     -------
     gain : ndarray
-        The zero-frequency gain, or np.nan if the system has a pole
-        at the origin
+        The zero-frequency gain, or np.inf if the system has a pole at the
+        origin, np.nan if there is a pole/zero cancellation at the origin.
+
     """
     return sys.dcgain()
 
