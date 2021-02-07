@@ -45,11 +45,11 @@ def test_summing_junction(inputs, output, dimension, D):
 def test_summation_exceptions():
     # Bad input description
     with pytest.raises(ValueError, match="could not parse input"):
-        sumblk = ct.summing_junction(None, 'y')
+        sumblk = ct.summing_junction(np.pi, 'y')
 
     # Bad output description
     with pytest.raises(ValueError, match="could not parse output"):
-        sumblk = ct.summing_junction('u', None)
+        sumblk = ct.summing_junction('u', np.pi)
 
     # Bad input dimension
     with pytest.raises(ValueError, match="unrecognized dimension"):
@@ -128,6 +128,14 @@ def test_interconnect_implicit():
     np.testing.assert_almost_equal(pi_io.C, pi_ss.C)
     np.testing.assert_almost_equal(pi_io.D, pi_ss.D)
 
+    # Default input and output lists, along with singular versions
+    Tio_sum = ct.interconnect(
+        (kp_io, ki_io, P, sumblk), input='r', output='y')
+    np.testing.assert_almost_equal(Tio_sum.A, Tss.A)
+    np.testing.assert_almost_equal(Tio_sum.B, Tss.B)
+    np.testing.assert_almost_equal(Tio_sum.C, Tss.C)
+    np.testing.assert_almost_equal(Tio_sum.D, Tss.D)
+
     # Signal not found
     with pytest.raises(ValueError, match="could not find"):
         Tio_sum = ct.interconnect(
@@ -168,3 +176,37 @@ def test_interconnect_docstring():
     np.testing.assert_almost_equal(T.B, T_ss.B)
     np.testing.assert_almost_equal(T.C, T_ss.C)
     np.testing.assert_almost_equal(T.D, T_ss.D)
+
+
+def test_interconnect_exceptions():
+    # First make sure the docstring example works
+    P = ct.tf2io(ct.tf(1, [1, 0]), input='u', output='y')
+    C = ct.tf2io(ct.tf(10, [1, 1]), input='e', output='u')
+    sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
+    T = ct.interconnect((P, C, sumblk), input='r', output='y')
+    assert (T.ninputs, T.noutputs, T.nstates) == (1, 1, 2)
+
+    # Unrecognized arguments
+    # LinearIOSystem
+    with pytest.raises(TypeError, match="unknown parameter"):
+        P = ct.LinearIOSystem(ct.rss(2, 1, 1), output_name='y')
+
+    # Interconnect
+    with pytest.raises(TypeError, match="unknown parameter"):
+        T = ct.interconnect((P, C, sumblk), input_name='r', output='y')
+
+    # Interconnected system
+    with pytest.raises(TypeError, match="unknown parameter"):
+        T = ct.InterconnectedSystem((P, C, sumblk), input_name='r', output='y')
+
+    # NonlinearIOSytem
+    with pytest.raises(TypeError, match="unknown parameter"):
+        nlios =  ct.NonlinearIOSystem(
+            None, lambda t, x, u, params: u*u, input_count=1, output_count=1)
+
+    # Summing junction
+    with pytest.raises(TypeError, match="input specification is required"):
+        sumblk = ct.summing_junction()
+
+    with pytest.raises(TypeError, match="unknown parameter"):
+        sumblk = ct.summing_junction(input_count=2, output_count=2)
