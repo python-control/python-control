@@ -325,6 +325,10 @@ class InputOutputSystem(object):
         # Return the newly created system
         return newsys
 
+    def _isstatic(self):
+        """Check to see if a system is a static system (no states)"""
+        return self.nstates == 0
+
     # Utility function to parse a list of signals
     def _process_signal_list(self, signals, prefix='s'):
         if signals is None:
@@ -806,6 +810,42 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Initialize current parameters to default parameters
         self._current_params = params.copy()
+
+    # Return the value of a static nonlinear system
+    def __call__(sys, u, params=None, squeeze=None):
+        """Evaluate a (static) nonlinearity at a given input value
+
+        If a nonlinear I/O system has not internal state, then evaluating the
+        system at an input `u` gives the output `y = F(u)`, determined by the
+        output function.
+
+        Parameters
+        ----------
+        params : dict, optional
+            Parameter values for the system. Passed to the evaluation function
+            for the system as default values, overriding internal defaults.
+        squeeze : bool, optional
+            If True and if the system has a single output, return the system
+            output as a 1D array rather than a 2D array.  If False, return the
+            system output as a 2D array even if the system is SISO.  Default
+            value set by config.defaults['control.squeeze_time_response'].
+
+        """
+
+        # Make sure the call makes sense
+        if not sys._isstatic():
+            raise TypeError(
+                "function evaluation is only supported for static "
+                "input/output systems")
+
+        # If we received any parameters, update them before calling _out()
+        if params is not None:
+            sys._update_params(params)
+
+        # Evaluate the function on the argument
+        out = sys._out(0, np.array((0,)), np.asarray(u))
+        _, out = _process_time_response(sys, [], out, [], squeeze=squeeze)
+        return out
 
     def _update_params(self, params, warning=False):
         # Update the current parameter values

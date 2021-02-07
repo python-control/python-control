@@ -520,11 +520,11 @@ def bode_plot(syslist, omega=None,
 # Nyquist plot
 #
 
-def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
-                 omega_num=None, label_freq=0, arrowhead_length=0.1,
-                 arrowhead_width=0.1, color=None, *args, **kwargs):
-    """
-    Nyquist plot for a system
+def nyquist_plot(
+        syslist, omega=None, plot=True, omega_limits=None, omega_num=None,
+        label_freq=0, color=None, mirror='--', arrowhead_length=0.1,
+        arrowhead_width=0.1, *args, **kwargs):
+    """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
@@ -643,11 +643,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                         head_width=arrowhead_width,
                         head_length=arrowhead_length)
 
-            plt.plot(x, -y, '-', color=c, *args, **kwargs)
-            ax.arrow(
-                x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                fc=c, ec=c, head_width=arrowhead_width,
-                head_length=arrowhead_length)
+            if mirror is not False:
+                plt.plot(x, -y, mirror, color=c, *args, **kwargs)
+                ax.arrow(
+                    x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
+                    fc=c, ec=c, head_width=arrowhead_width,
+                    head_length=arrowhead_length)
+
             # Mark the -1 point
             plt.plot([-1], [0], 'r+')
 
