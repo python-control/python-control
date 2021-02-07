@@ -76,6 +76,7 @@ class TestRootLocus:
         assert_array_almost_equal(zoom_x, zoom_x_valid)
         assert_array_almost_equal(zoom_y, zoom_y_valid)
 
+    @pytest.mark.timeout(2)
     def test_rlocus_default_wn(self):
         """Check that default wn calculation works properly"""
         #
@@ -94,12 +95,5 @@ class TestRootLocus:
         sys = ct.tf(*sp.signal.zpk2tf(
             [-1e-2, 1-1e7j, 1+1e7j], [0, -1e7j, 1e7j], 1))
 
-        # Set up a timer to catch execution time
-        def signal_handler(signum, frame):
-            raise Exception("rlocus took too long to complete")
-        signal.signal(signal.SIGALRM, signal_handler)
-
-        # Run the command and reset the alarm
-        signal.alarm(2)         # 2 second timeout
         ct.root_locus(sys)
-        signal.alarm(0)         # reset the alarm
+

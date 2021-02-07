@@ -19,7 +19,7 @@ jobs:
         sudo apt install -y xvfb
 
         # Install test tools
-        conda install pip pytest
+        conda install pip pytest pytest-timeout
 
         # Install python-control dependencies
         conda install numpy matplotlib scipy

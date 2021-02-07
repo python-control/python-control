@@ -44,4 +44,7 @@ setup(
     install_requires=['numpy',
                       'scipy',
                       'matplotlib'],
+    extras_require={
+       'test': ['pytest', 'pytest-timeout'],
+    }
 )
