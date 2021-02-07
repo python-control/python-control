@@ -1,5 +1,6 @@
 """sisotool_test.py"""
 
+from control.exception import ControlMIMONotImplemented
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.testing import assert_array_almost_equal
@@ -8,6 +9,7 @@ import pytest
 from control.sisotool import sisotool
 from control.rlocus import _RLClickDispatcher
 from control.xferfcn import TransferFunction
+from control.statesp import StateSpace
 
 
 @pytest.mark.usefixtures("mplcleanup")
@@ -19,6 +21,35 @@ class TestSisotool:
         """Return a generic SISO transfer function"""
         return TransferFunction([1000], [1, 25, 100, 0])
 
+    @pytest.fixture
+    def sysdt(self):
+        """Return a generic SISO transfer function"""
+        return TransferFunction([1000], [1, 25, 100, 0], True)
+
+    @pytest.fixture
+    def sys222(self):
+        """2-states square system (2 inputs x 2 outputs)"""
+        A222 = [[4., 1.],
+                [2., -3]]
+        B222 = [[5., 2.],
+                [-3., -3.]]
+        C222 = [[2., -4],
+                [0., 1.]]
+        D222 = [[3., 2.],
+                [1., -1.]]
+        return StateSpace(A222, B222, C222, D222)
+
+    @pytest.fixture
+    def sys221(self):
+        """2-states, 2 inputs x 1 output"""
+        A222 = [[4., 1.],
+                [2., -3]]
+        B222 = [[5., 2.],
+                [-3., -3.]]
+        C221 = [[0., 1.]]
+        D221 = [[1., -1.]]
+        return StateSpace(A222, B222, C221, D221)
+
     def test_sisotool(self, sys):
         sisotool(sys, Hz=False)
         fig = plt.gcf()
@@ -27,7 +58,7 @@ class TestSisotool:
         # Check the initial root locus plot points
         initial_point_0 = (np.array([-22.53155977]), np.array([0.]))
         initial_point_1 = (np.array([-1.23422011]), np.array([-6.54667031]))
-        initial_point_2 = (np.array([-1.23422011]), np.array([06.54667031]))
+        initial_point_2 = (np.array([-1.23422011]), np.array([6.54667031]))
         assert_array_almost_equal(ax_rlocus.lines[0].get_data(),
                                   initial_point_0, 4)
         assert_array_almost_equal(ax_rlocus.lines[1].get_data(),
@@ -88,7 +119,49 @@ class TestSisotool:
         step_response_moved = np.array(
             [0., 0.0072, 0.0516, 0.1554, 0.3281, 0.5681, 0.8646, 1.1987,
              1.5452, 1.875])
-        # old: array([0., 0.0239, 0.161 , 0.4547, 0.8903, 1.407,
-        #             1.9121, 2.2989, 2.4686, 2.353])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
+
+    def test_sisotool_tvect(self, sys):
+        # test supply tvect
+        tvect = np.linspace(0, 1, 10)
+        sisotool(sys, tvect=tvect)
+        fig = plt.gcf()
+        ax_rlocus, ax_step = fig.axes[1], fig.axes[3]
+
+        # Move the rootlocus to another point and confirm same tvect
+        event = type('test', (object,), {'xdata': 2.31206868287,
+                                         'ydata': 15.5983051046,
+                                         'inaxes': ax_rlocus.axes})()
+        _RLClickDispatcher(event=event, sys=sys, fig=fig,
+                           ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
+                           bode_plot_params=dict(), tvect=tvect)
+        assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
+
+    def test_sisotool_tvect_dt(self, sysdt):
+        # test supply tvect
+        tvect = np.linspace(0, 1, 10)
+        sisotool(sysdt, tvect=tvect)
+        fig = plt.gcf()
+        ax_rlocus, ax_step = fig.axes[1], fig.axes[3]
+
+        # Move the rootlocus to another point and confirm same tvect
+        event = type('test', (object,), {'xdata': 2.31206868287,
+                                         'ydata': 15.5983051046,
+                                         'inaxes': ax_rlocus.axes})()
+        _RLClickDispatcher(event=event, sys=sysdt, fig=fig,
+                           ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
+                           bode_plot_params=dict(), tvect=tvect)
+        assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
+
+    def test_sisotool_mimo(self,  sys222, sys221):
+        # a 2x2 should not raise an error:
+        sisotool(sys222)
+
+        # but 2 input, 1 output should
+        with pytest.raises(ControlMIMONotImplemented):
+            sisotool(sys221)
+
+
+
+

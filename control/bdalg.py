@@ -334,7 +334,8 @@ def connect(sys, Q, inputv, outputv):
     interconnecting multiple systems.
 
     """
-    inputv, outputv, Q = np.asarray(inputv), np.asarray(outputv), np.asarray(Q)
+    inputv, outputv, Q = \
+        np.atleast_1d(inputv), np.atleast_1d(outputv), np.atleast_1d(Q)
     # check indices
     index_errors = (inputv - 1 > sys.ninputs) | (inputv < 1)
     if np.any(index_errors):

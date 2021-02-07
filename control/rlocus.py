@@ -137,8 +137,10 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     print_gain = config._get_param(
         'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
+    sys_loop = sys if sys.issiso() else sys[0,0]
+
     # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(sys)
+    (nump, denp) = _systopoly1d(sys_loop)
 
     # if discrete-time system and if xlim and ylim are not given,
     #  that we a view of the unit circle
@@ -241,12 +243,12 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             else:
                 _sgrid_func()
         else:
-            ax.axhline(0., linestyle=':', color='k', zorder=-20)
-            ax.axvline(0., linestyle=':', color='k', zorder=-20)
+            ax.axhline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
+            ax.axvline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
             if isdtime(sys, strict=True):
                 ax.add_patch(plt.Circle(
                     (0, 0), radius=1.0, linestyle=':', edgecolor='k',
-                    linewidth=1.5, fill=False, zorder=-20))
+                    linewidth=0.75, fill=False, zorder=-20))
 
     return mymat, kvect
 
@@ -540,8 +542,9 @@ def _RLSortRoots(mymat):
 
 def _RLZoomDispatcher(event, sys, ax_rlocus, plotstr):
     """Rootlocus plot zoom dispatcher"""
+    sys_loop = sys if sys.issiso() else sys[0,0]
 
-    nump, denp = _systopoly1d(sys)
+    nump, denp = _systopoly1d(sys_loop)
     xlim, ylim = ax_rlocus.get_xlim(), ax_rlocus.get_ylim()
 
     kvect, mymat, xlim, ylim = _default_gains(
@@ -573,21 +576,23 @@ def _RLClickDispatcher(event, sys, fig, ax_rlocus, plotstr, sisotool=False,
 
 def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
     """Display root-locus gain feedback point for clicks on root-locus plot"""
-    (nump, denp) = _systopoly1d(sys)
+    sys_loop = sys if sys.issiso() else sys[0,0]
+
+    (nump, denp) = _systopoly1d(sys_loop)
 
     xlim = ax_rlocus.get_xlim()
     ylim = ax_rlocus.get_ylim()
-    x_tolerance = 0.05 * abs((xlim[1] - xlim[0]))
-    y_tolerance = 0.05 * abs((ylim[1] - ylim[0]))
+    x_tolerance = 0.1 * abs((xlim[1] - xlim[0]))
+    y_tolerance = 0.1 * abs((ylim[1] - ylim[0]))
     gain_tolerance = np.mean([x_tolerance, y_tolerance])*0.1
 
     # Catch type error when event click is in the figure but not in an axis
     try:
         s = complex(event.xdata, event.ydata)
-        K = -1. / sys(s)
-        K_xlim = -1. / sys(
+        K = -1. / sys_loop(s)
+        K_xlim = -1. / sys_loop(
             complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
-        K_ylim = -1. / sys(
+        K_ylim = -1. / sys_loop(
             complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
 
     except TypeError:
