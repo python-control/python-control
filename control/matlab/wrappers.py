@@ -59,7 +59,7 @@ def bode(*args, **kwargs):
     from ..freqplot import bode_plot
 
     # If first argument is a list, assume python-control calling format
-    if (getattr(args[0], '__iter__', False)):
+    if hasattr(args[0], '__iter__'):
         return bode_plot(*args, **kwargs)
 
     # Parse input arguments
@@ -97,7 +97,7 @@ def nyquist(*args, **kwargs):
     from ..freqplot import nyquist_plot
 
     # If first argument is a list, assume python-control calling format
-    if (getattr(args[0], '__iter__', False)):
+    if hasattr(args[0], '__iter__'):
         return nyquist_plot(*args, **kwargs)
 
     # Parse arguments

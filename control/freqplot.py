@@ -688,8 +688,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         'nyquist', 'indent_direction', kwargs, _nyquist_defaults, pop=True)
 
     # If argument was a singleton, turn it into a list
-    isscalar = not hasattr(syslist, '__iter__')
-    if isscalar:
+    if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
     # Decide whether to go above Nyquist frequency
@@ -844,11 +843,12 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         ax.set_ylabel("Imaginary axis")
         ax.grid(color="lightgray")
 
+    # "Squeeze" the results
+    if len(syslist) == 1:
+        counts, contours = counts[0], contours[0]
+
     # Return counts and (optionally) the contour we used
-    if return_contour:
-        return (counts[0], contours[0]) if isscalar else (counts, contours)
-    else:
-        return counts[0] if isscalar else counts
+    return (counts, contours) if return_contour else counts
 
 
 # Internal function to add arrows to a curve
@@ -1101,7 +1101,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
     freq_interesting = []
 
     # detect if single sys passed by checking if it is sequence-like
-    if not getattr(syslist, '__iter__', False):
+    if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
     for sys in syslist:
