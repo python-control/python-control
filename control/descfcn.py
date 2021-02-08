@@ -241,8 +241,9 @@ def describing_function_plot(
 
     """
     # Start by drawing a Nyquist curve
-    H_real, H_imag, H_omega = nyquist_plot(H, omega, plot=True, **kwargs)
-    H_vals = H_real + 1j * H_imag
+    count, contour = nyquist_plot(
+        H, omega, plot=True, return_contour=True, **kwargs)
+    H_omega, H_vals = contour.imag, H(contour)
 
     # Compute the describing function
     df = describing_function(F, A)
