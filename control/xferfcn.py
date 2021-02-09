@@ -1559,7 +1559,7 @@ def _clean_part(data):
     for i in range(len(data)):
         for j in range(len(data[i])):
             for k in range(len(data[i][j])):
-                if isinstance(data[i][j][k], (int, np.int)):
+                if isinstance(data[i][j][k], (int, np.int32, np.int64)):
                     data[i][j][k] = float(data[i][j][k])
 
     return data
