@@ -616,7 +616,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
     """
     def __init__(self, linsys, inputs=None, outputs=None, states=None,
-                 name=None):
+                 name=None, **kwargs):
         """Create an I/O system from a state space linear system.
 
         Converts a :class:`~control.StateSpace` system into an
@@ -661,6 +661,10 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         """
         if not isinstance(linsys, StateSpace):
             raise TypeError("Linear I/O system must be a state space object")
+
+        # Look for 'input' and 'output' parameter name variants
+        inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+        outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
 
         # Create the I/O system object
         super(LinearIOSystem, self).__init__(
@@ -711,8 +715,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
     """
     def __init__(self, updfcn, outfcn=None, inputs=None, outputs=None,
-                 states=None, params={},
-                 name=None, **kwargs):
+                 states=None, params={}, name=None, **kwargs):
         """Create a nonlinear I/O system given update and output functions.
 
         Creates an :class:`~control.InputOutputSystem` for a nonlinear system
@@ -779,16 +782,24 @@ class NonlinearIOSystem(InputOutputSystem):
             Nonlinear system represented as an input/output system.
 
         """
+        # Look for 'input' and 'output' parameter name variants
+        inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+        outputs =  _parse_signal_parameter(outputs, 'output', kwargs)
+
         # Store the update and output functions
         self.updfcn = updfcn
         self.outfcn = outfcn
 
         # Initialize the rest of the structure
-        dt = kwargs.get('dt', config.defaults['control.default_dt'])
+        dt = kwargs.pop('dt', config.defaults['control.default_dt'])
         super(NonlinearIOSystem, self).__init__(
             inputs=inputs, outputs=outputs, states=states,
             params=params, dt=dt, name=name
         )
+
+        # Make sure all input arguments got parsed
+        if kwargs:
+            raise TypeError("unknown parameters %s" % kwargs)
 
         # Check to make sure arguments are consistent
         if updfcn is None:
@@ -874,7 +885,7 @@ class InterconnectedSystem(InputOutputSystem):
     """
     def __init__(self, syslist, connections=[], inplist=[], outlist=[],
                  inputs=None, outputs=None, states=None,
-                 params={}, dt=None, name=None):
+                 params={}, dt=None, name=None, **kwargs):
         """Create an I/O system from a list of systems + connection info.
 
         The InterconnectedSystem class is used to represent an input/output
@@ -886,6 +897,10 @@ class InterconnectedSystem(InputOutputSystem):
         See :func:`~control.interconnect` for a list of parameters.
 
         """
+        # Look for 'input' and 'output' parameter name variants
+        inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+        outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+
         # Convert input and output names to lists if they aren't already
         if not isinstance(inplist, (list, tuple)):
             inplist = [inplist]
@@ -1850,6 +1865,15 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
     return sys.linearize(xeq, ueq, t=t, params=params, **kw)
 
 
+# Utility function to parse a signal parameter
+def _parse_signal_parameter(value, name, kwargs, end=False):
+    if value is None and name in kwargs:
+        value = list(kwargs.pop(name))
+    if end and kwargs:
+        raise TypeError("unknown parameters %s" % kwargs)
+    return value
+
+
 def _find_size(sysval, vecval):
     """Utility function to find the size of a system parameter
 
@@ -1889,7 +1913,7 @@ def tf2io(*args, **kwargs):
 # Function to create an interconnected system
 def interconnect(syslist, connections=None, inplist=[], outlist=[],
                  inputs=None, outputs=None, states=None,
-                 params={}, dt=None, name=None):
+                 params={}, dt=None, name=None, **kwargs):
     """Interconnect a set of input/output systems.
 
     This function creates a new system that is an interconnection of a set of
@@ -2035,7 +2059,7 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
     >>> P = control.tf2io(control.tf(1, [1, 0]), inputs='u', outputs='y')
     >>> C = control.tf2io(control.tf(10, [1, 1]), inputs='e', outputs='u')
     >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
-    >>> T = control.interconnect([P, C, sumblk], inplist='r', outlist='y')
+    >>> T = control.interconnect([P, C, sumblk], input='r', output='y')
 
     Notes
     -----
@@ -2060,7 +2084,14 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
     treated as both a :class:`~control.StateSpace` system as well as an
     :class:`~control.InputOutputSystem`.
 
+    The `input` and `output` keywords can be used instead of `inputs` and
+    `outputs`, for more natural naming of SISO systems.
+
     """
+    # Look for 'input' and 'output' parameter name variants
+    inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+    outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+
     # If connections was not specified, set up default connection list
     if connections is None:
         # For each system input, look for outputs with the same name
@@ -2077,11 +2108,20 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         # Use an empty connections list
         connections = []
 
+    # If inplist/outlist is not present, try using inputs/outputs instead
+    if not inplist and inputs is not None:
+        inplist = list(inputs)
+    if not outlist and outputs is not None:
+        outlist = list(outputs)
+
     # Process input list
     if not isinstance(inplist, (list, tuple)):
         inplist = [inplist]
     new_inplist = []
     for signal in inplist:
+        # Create an empty connection and append to inplist
+        connection = []
+
         # Check for signal names without a system name
         if isinstance(signal, str) and len(signal.split('.')) == 1:
             # Get the signal name
@@ -2089,18 +2129,15 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
             sign = '-' if signal[0] == '-' else ""
 
             # Look for the signal name as a system input
-            new_name = None
             for sys in syslist:
                 if name in sys.input_index.keys():
-                    if new_name is not None:
-                        raise ValueError("signal %s is not unique" % name)
-                    new_name = sign + sys.name + "." + name
+                    connection.append(sign + sys.name + "." + name)
 
             # Make sure we found the name
-            if new_name is None:
+            if len(connection) == 0:
                 raise ValueError("could not find signal %s" % name)
             else:
-                new_inplist.append(new_name)
+                new_inplist.append(connection)
         else:
             new_inplist.append(signal)
     inplist = new_inplist
@@ -2110,6 +2147,9 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         outlist = [outlist]
     new_outlist = []
     for signal in outlist:
+        # Create an empty connection and append to inplist
+        connection = []
+
         # Check for signal names without a system name
         if isinstance(signal, str) and len(signal.split('.')) == 1:
             # Get the signal name
@@ -2117,18 +2157,15 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
             sign = '-' if signal[0] == '-' else ""
 
             # Look for the signal name as a system output
-            new_name = None
             for sys in syslist:
                 if name in sys.output_index.keys():
-                    if new_name is not None:
-                        raise ValueError("signal %s is not unique" % name)
-                    new_name = sign + sys.name + "." + name
+                    connection.append(sign + sys.name + "." + name)
 
             # Make sure we found the name
-            if new_name is None:
+            if len(connection) == 0:
                 raise ValueError("could not find signal %s" % name)
             else:
-                new_outlist.append(new_name)
+                new_outlist.append(connection)
         else:
             new_outlist.append(signal)
     outlist = new_outlist
@@ -2146,7 +2183,9 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
 
 
 # Summing junction
-def summing_junction(inputs, output='y', dimension=None, name=None, prefix='u'):
+def summing_junction(
+        inputs=None, output=None, dimension=None, name=None,
+        prefix='u', **kwargs):
     """Create a summing junction as an input/output system.
 
     This function creates a static input/output system that outputs the sum of
@@ -2185,10 +2224,10 @@ def summing_junction(inputs, output='y', dimension=None, name=None, prefix='u'):
 
     Example
     -------
-    >>> P = control.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
-    >>> C = control.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
+    >>> P = control.tf2io(ct.tf(1, [1, 0]), input='u', output='y')
+    >>> C = control.tf2io(ct.tf(10, [1, 1]), input='e', output='u')
     >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
-    >>> T = control.interconnect((P, C, sumblk), inplist='r', outlist='y')
+    >>> T = control.interconnect((P, C, sumblk), input='r', output='y')
 
     """
     # Utility function to parse input and output signal lists
@@ -2220,6 +2259,16 @@ def summing_junction(inputs, output='y', dimension=None, name=None, prefix='u'):
 
         # Return the parsed list
         return nsignals, names, gains
+
+    # Look for 'input' and 'output' parameter name variants
+    inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+    output =  _parse_signal_parameter(output, 'outputs', kwargs, end=True)
+
+    # Default values for inputs and output
+    if inputs is None:
+        raise TypeError("input specification is required")
+    if output is None:
+        output = 'y'
 
     # Read the input list
     ninputs, input_names, input_gains = _parse_list(
