@@ -435,11 +435,6 @@ def test_dcgain_consistency():
     assert 0 in sys_tf.pole()
     assert 0 in sys_tf.zero()
 
-    sys_ss = ctrl.tf2ss(ctrl.tf([1, 0], [1, 1])) * \
-        ctrl.tf2ss(ctrl.tf([1], [1, 0]))
-    assert 0 in sys_ss.pole()
-    assert 0 in sys_ss.zero()
-
     # Pole and zero at the origin should give nan + nanj for the response
     np.testing.assert_equal(
         sys_tf(0, warn_infinite=False), complex(np.nan, np.nan))
@@ -447,12 +442,31 @@ def test_dcgain_consistency():
         sys_tf(0j, warn_infinite=False), complex(np.nan, np.nan))
     np.testing.assert_equal(
         sys_tf.dcgain(warn_infinite=False), complex(np.nan, np.nan))
-    np.testing.assert_equal(
-        sys_ss(0, warn_infinite=False), complex(np.nan, np.nan))
-    np.testing.assert_equal(
-        sys_ss(0j, warn_infinite=False), complex(np.nan, np.nan))
-    np.testing.assert_equal(
-        sys_ss.dcgain(warn_infinite=False), complex(np.nan, np.nan))
+
+    # Set up state space version
+    sys_ss = ctrl.tf2ss(ctrl.tf([1, 0], [1, 1])) * \
+        ctrl.tf2ss(ctrl.tf([1], [1, 0]))
+
+    # Different systems give different representations => test accordingly
+    if 0 in sys_ss.pole() and 0 in sys_ss.zero():
+        # Pole and zero at the origin => should get (nan + nanj)
+        np.testing.assert_equal(
+            sys_ss(0, warn_infinite=False), complex(np.nan, np.nan))
+        np.testing.assert_equal(
+            sys_ss(0j, warn_infinite=False), complex(np.nan, np.nan))
+        np.testing.assert_equal(
+            sys_ss.dcgain(warn_infinite=False), complex(np.nan, np.nan))
+    elif 0 in sys_ss.pole():
+        # Pole at the origin, but zero elsewhere => should get (inf + nanj)
+        np.testing.assert_equal(
+            sys_ss(0, warn_infinite=False), complex(np.inf, np.nan))
+        np.testing.assert_equal(
+            sys_ss(0j, warn_infinite=False), complex(np.inf, np.nan))
+        np.testing.assert_equal(
+            sys_ss.dcgain(warn_infinite=False), complex(np.inf, np.nan))
+    else:
+        # Near pole/zero cancellation => nothing sensible to check
+        pass
 
     # Pole with non-zero, complex numerator => inf + infj
     s = ctrl.tf('s')
