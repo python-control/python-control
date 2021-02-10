@@ -725,7 +725,9 @@ class StateSpace(LTI):
             Frequency response
         """
         from slycot import tb05ad
-        x_arr = np.atleast_1d(x) # array-like version of x
+
+        # Make sure the argument is a 1D array of complex numbers
+        x_arr = np.atleast_1d(x).astype(complex, copy=False)
 
         # Make sure that we are operating on a simple list
         if len(x_arr.shape) > 1:
@@ -790,7 +792,9 @@ class StateSpace(LTI):
         except (ImportError, Exception):
             # Fall back because either Slycot unavailable or cannot handle
             # certain cases.
-            x_arr = np.atleast_1d(x) # force to be an array
+
+            # Make sure the argument is a 1D array of complex numbers
+            x_arr = np.atleast_1d(x).astype(complex, copy=False)
 
             # Make sure that we are operating on a simple list
             if len(x_arr.shape) > 1:
@@ -808,11 +812,18 @@ class StateSpace(LTI):
                         solve(x_idx * eye(self.nstates) - self.A, self.B)) \
                         + self.D
                 except LinAlgError:
+                    # Issue a warning messsage, for consistency with xferfcn
                     if warn_infinite:
-                        warn("frequency response is not finite",
+                        warn("singular matrix in frequency response",
                              RuntimeWarning)
-                    # TODO: check for nan cases
-                    out[:,:,idx] = np.inf
+
+                    # Evaluating at a pole.  Return value depends if there
+                    # is a zero at the same point or not.
+                    if x_idx in self.zero():
+                        out[:,:,idx] = complex(np.nan, np.nan)
+                    else:
+                        out[:,:,idx] = complex(np.inf, np.nan)
+
         return out
 
     def freqresp(self, omega):
@@ -1193,7 +1204,7 @@ class StateSpace(LTI):
         Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
         return StateSpace(Ad, Bd, C, D, Ts)
 
-    def dcgain(self):
+    def dcgain(self, warn_infinite=False):
         """Return the zero-frequency gain
 
         The zero-frequency gain of a continuous-time state-space
@@ -1212,16 +1223,8 @@ class StateSpace(LTI):
             be the zero-frequency (or DC) gain, or, if the frequency
             response is singular, the array will be filled with np.inf.
         """
-        try:
-            if self.isctime():
-                gain = np.asarray(self.D -
-                                  self.C.dot(np.linalg.solve(self.A, self.B)))
-            else:
-                gain = np.squeeze(self.horner(1))
-        except LinAlgError:
-            # eigenvalue at DC
-            gain = np.tile(np.inf, (self.noutputs, self.ninputs))
-        return np.squeeze(gain)
+        return self(0, warn_infinite=warn_infinite) if self.isctime() \
+            else self(1, warn_infinite=warn_infinite)
 
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,

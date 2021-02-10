@@ -300,18 +300,22 @@ class TransferFunction(LTI):
             Frequency response
 
         """
-        x_arr = np.atleast_1d(x)        # force to be an array
+        # Make sure the argument is a 1D array of complex numbers
+        x_arr = np.atleast_1d(x).astype(complex, copy=False)
 
         # Make sure that we are operating on a simple list
         if len(x_arr.shape) > 1:
             raise ValueError("input list must be 1D")
 
+        # Initialize the output matrix in the proper shape
         out = empty((self.noutputs, self.ninputs, len(x_arr)), dtype=complex)
-        for i in range(self.noutputs):
-            for j in range(self.ninputs):
-                with np.errstate(divide='warn' if warn_infinite else 'ignore'):
-                    out[i][j] = (polyval(self.num[i][j], x) /
-                                 polyval(self.den[i][j], x))
+
+        # Set up error processing based on warn_infinite flag
+        with np.errstate(all='warn' if warn_infinite else 'ignore'):
+            for i in range(self.noutputs):
+                for j in range(self.ninputs):
+                    out[i][j] = (polyval(self.num[i][j], x_arr) /
+                                 polyval(self.den[i][j], x_arr))
         return out
 
     def _truncatecoeff(self):
@@ -1051,41 +1055,27 @@ class TransferFunction(LTI):
         numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
         return TransferFunction(numd[0, :], dend, Ts)
 
-    def dcgain(self):
+    def dcgain(self, warn_infinite=False):
         """Return the zero-frequency (or DC) gain
 
         For a continous-time transfer function G(s), the DC gain is G(0)
         For a discrete-time transfer function G(z), the DC gain is G(1)
 
+        Parameters
+        ----------
+        warn_infinite : bool, optional
+            By default, don't issue a warning message if the zero-frequency
+            gain is infinite.  Setting `warn_infinite` to generate the warning
+            message.
+
         Returns
         -------
         gain : ndarray
             The zero-frequency gain
+
         """
-        if self.isctime():
-            return self._dcgain_cont()
-        else:
-            return self(1)
-
-    def _dcgain_cont(self):
-        """_dcgain_cont() -> DC gain as matrix or scalar
-
-        Special cased evaluation at 0 for continuous-time systems."""
-        gain = np.empty((self.noutputs, self.ninputs), dtype=float)
-        for i in range(self.noutputs):
-            for j in range(self.ninputs):
-                num = self.num[i][j][-1]
-                den = self.den[i][j][-1]
-                if den:
-                    gain[i][j] = num / den
-                else:
-                    if num:
-                        # numerator nonzero: infinite gain
-                        gain[i][j] = np.inf
-                    else:
-                        # numerator is zero too: give up
-                        gain[i][j] = np.nan
-        return np.squeeze(gain)
+        return self(0, warn_infinite=warn_infinite) if self.isctime() \
+            else self(1, warn_infinite=warn_infinite)
 
     def _isstatic(self):
          """returns True if and only if all of the numerator and denominator

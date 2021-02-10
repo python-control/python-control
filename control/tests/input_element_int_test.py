@@ -23,7 +23,7 @@ class TestTfInputIntElement:
 
         sys = tf(num, den)
 
-        np.testing.assert_array_max_ulp(1., dcgain(sys))
+        np.testing.assert_almost_equal(1., dcgain(sys))
 
     def test_tf_num_with_numpy_int_element(self):
         num = np.convolve([1], [1, 1])
@@ -31,7 +31,7 @@ class TestTfInputIntElement:
 
         sys = tf(num, den)
 
-        np.testing.assert_array_max_ulp(1., dcgain(sys))
+        np.testing.assert_almost_equal(1., dcgain(sys))
 
     # currently these pass
     def test_tf_input_with_int_element(self):
@@ -40,7 +40,7 @@ class TestTfInputIntElement:
 
         sys = tf(num, den)
 
-        np.testing.assert_array_max_ulp(1., dcgain(sys))
+        np.testing.assert_almost_equal(1., dcgain(sys))
 
     def test_ss_input_with_int_element(self):
         a = np.array([[0, 1],
@@ -52,7 +52,7 @@ class TestTfInputIntElement:
 
         sys = ss(a, b, c, d)
         sys2 = tf(sys)
-        np.testing.assert_array_max_ulp(dcgain(sys), dcgain(sys2))
+        np.testing.assert_almost_equal(dcgain(sys), dcgain(sys2))
 
     def test_ss_input_with_0int_dcgain(self):
         a = np.array([[0, 1],

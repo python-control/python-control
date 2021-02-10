@@ -21,6 +21,7 @@ from control.statesp import (StateSpace, _convert_to_statespace, drss,
                              rss, ss, tf2ss, _statesp_defaults)
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
+from control.exception import ControlSlycot
 
 from .conftest import editsdefaults
 
@@ -498,7 +499,7 @@ class TestStateSpace:
         np.testing.assert_allclose(sys2.dcgain(), expected)
 
         sys3 = StateSpace(0., 1., 1., 0.)
-        np.testing.assert_equal(sys3.dcgain(), np.inf)
+        np.testing.assert_equal(sys3.dcgain(), complex(np.inf, np.nan))
 
     def test_dc_gain_discr(self):
         """Test DC gain for discrete-time state-space systems."""
@@ -516,7 +517,7 @@ class TestStateSpace:
 
         # summer
         sys = StateSpace(1, 1, 1, 0, True)
-        np.testing.assert_equal(sys.dcgain(), np.inf)
+        np.testing.assert_equal(sys.dcgain(), complex(np.inf, np.nan))
 
     @pytest.mark.parametrize("outputs", range(1, 6))
     @pytest.mark.parametrize("inputs", range(1, 6))
@@ -539,8 +540,15 @@ class TestStateSpace:
         c = np.eye(max(outputs, states))[:outputs, :states]
         d = np.zeros((outputs, inputs))
         sys = StateSpace(a, b, c, d, dt)
-        dc = np.squeeze(np.full_like(d, np.inf))
-        np.testing.assert_array_equal(dc, sys.dcgain())
+        dc = np.full_like(d, complex(np.inf, np.nan), dtype=complex)
+        if sys.issiso():
+            dc = dc.squeeze()
+
+        try:
+            np.testing.assert_array_equal(dc, sys.dcgain())
+        except NotImplementedError:
+            # Skip MIMO tests if there is no slycot
+            pytest.skip("slycot required for MIMO dcgain")
 
     def test_scalar_static_gain(self):
         """Regression: can we create a scalar static gain?

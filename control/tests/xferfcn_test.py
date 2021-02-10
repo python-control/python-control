@@ -807,7 +807,7 @@ class TestXferFcn:
         np.testing.assert_equal(sys2.dcgain(), 2)
 
         sys3 = TransferFunction(6, [1, 0])
-        np.testing.assert_equal(sys3.dcgain(), np.inf)
+        np.testing.assert_equal(sys3.dcgain(), complex(np.inf, np.nan))
 
         num = [[[15], [21], [33]], [[10], [14], [22]]]
         den = [[[1, 3], [2, 3], [3, 3]], [[1, 5], [2, 7], [3, 11]]]
@@ -827,8 +827,13 @@ class TestXferFcn:
 
         # differencer
         sys = TransferFunction(1, [1, -1], True)
+        np.testing.assert_equal(sys.dcgain(), complex(np.inf, np.nan))
+
+        # differencer, with warning
+        sys = TransferFunction(1, [1, -1], True)
         with pytest.warns(RuntimeWarning, match="divide by zero"):
-            np.testing.assert_equal(sys.dcgain(), np.inf)
+            np.testing.assert_equal(
+                sys.dcgain(warn_infinite=True), complex(np.inf, np.nan))
 
         # summer
         sys = TransferFunction([1, -1], [1], True)

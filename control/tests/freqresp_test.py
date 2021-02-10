@@ -367,7 +367,7 @@ def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
 
 
 def test_freqresp_warn_infinite():
-    """Test evaluation of transfer functions at the origin"""
+    """Test evaluation warnings for transfer functions w/ pole at the origin"""
     sys_finite = ctrl.tf([1], [1, 0.01])
     sys_infinite = ctrl.tf([1], [1, 0.01, 0])
 
@@ -378,11 +378,13 @@ def test_freqresp_warn_infinite():
 
     # Transfer function with infinite zero frequency gain
     with pytest.warns(RuntimeWarning, match="divide by zero"):
-        np.testing.assert_almost_equal(sys_infinite(0), np.inf)
+        np.testing.assert_almost_equal(
+            sys_infinite(0), complex(np.inf, np.nan))
     with pytest.warns(RuntimeWarning, match="divide by zero"):
         np.testing.assert_almost_equal(
-            sys_infinite(0, warn_infinite=True), np.inf)
-    np.testing.assert_almost_equal(sys_infinite(0, warn_infinite=False), np.inf)
+            sys_infinite(0, warn_infinite=True), complex(np.inf, np.nan))
+    np.testing.assert_almost_equal(
+        sys_infinite(0, warn_infinite=False), complex(np.inf, np.nan))
 
     # Switch to state space
     sys_finite = ctrl.tf2ss(sys_finite)
@@ -394,13 +396,15 @@ def test_freqresp_warn_infinite():
     np.testing.assert_almost_equal(sys_finite(0, warn_infinite=True), 100)
 
     # State space system with infinite zero frequency gain
-    with pytest.warns(RuntimeWarning, match="not finite"):
-        np.testing.assert_almost_equal(sys_infinite(0), np.inf)
-    with pytest.warns(RuntimeWarning, match="not finite"):
-        np.testing.assert_almost_equal(sys_infinite(0), np.inf)
-    np.testing.assert_almost_equal(sys_infinite(0, warn_infinite=True), np.inf)
-    np.testing.assert_almost_equal(sys_infinite(0, warn_infinite=False), np.inf)
-    
+    with pytest.warns(RuntimeWarning, match="singular matrix"):
+        np.testing.assert_almost_equal(
+            sys_infinite(0), complex(np.inf, np.nan))
+    with pytest.warns(RuntimeWarning, match="singular matrix"):
+        np.testing.assert_almost_equal(
+            sys_infinite(0, warn_infinite=True), complex(np.inf, np.nan))
+    np.testing.assert_almost_equal(sys_infinite(
+        0, warn_infinite=False), complex(np.inf, np.nan))
+
 
 def test_dcgain_consistency():
     """Test to make sure that DC gain is consistently evaluated"""
@@ -412,25 +416,74 @@ def test_dcgain_consistency():
     sys_ss = ctrl.tf2ss(sys_tf)
     assert 0 in sys_ss.pole()
 
-    # Evaluation
-    np.testing.assert_equal(sys_tf(0), np.inf + 0j)
-    np.testing.assert_equal(sys_ss(0), np.inf + 0j)
-    np.testing.assert_equal(sys_tf.dcgain(), np.inf + 0j)
-    np.testing.assert_equal(sys_ss.dcgain(), np.inf + 0j)
+    # Finite (real) numerator over 0 denominator => inf + nanj
+    np.testing.assert_equal(
+        sys_tf(0, warn_infinite=False), complex(np.inf, np.nan))
+    np.testing.assert_equal(
+        sys_ss(0, warn_infinite=False), complex(np.inf, np.nan))
+    np.testing.assert_equal(
+        sys_tf(0j, warn_infinite=False), complex(np.inf, np.nan))
+    np.testing.assert_equal(
+        sys_ss(0j, warn_infinite=False), complex(np.inf, np.nan))
+    np.testing.assert_equal(
+        sys_tf.dcgain(warn_infinite=False), complex(np.inf, np.nan))
+    np.testing.assert_equal(
+        sys_ss.dcgain(warn_infinite=False), complex(np.inf, np.nan))
 
     # Set up transfer function with pole, zero at the origin
     sys_tf = ctrl.tf([1, 0], [1, 0])
     assert 0 in sys_tf.pole()
     assert 0 in sys_tf.zero()
-    
+
     sys_ss = ctrl.tf2ss(ctrl.tf([1, 0], [1, 1])) * \
         ctrl.tf2ss(ctrl.tf([1], [1, 0]))
     assert 0 in sys_ss.pole()
     assert 0 in sys_ss.zero()
 
-    # Pole and zero at the origin should give nan for the response
-    np.testing.assert_equal(sys_tf(0), np.nan)
-    np.testing.assert_equal(sys_tf.dcgain(), np.nan)
-    # TODO: state space cases not yet working
-    # np.testing.assert_equal(sys_ss(0), np.nan)
-    # np.testing.assert_equal(sys_ss.dcgain(), np.nan)
+    # Pole and zero at the origin should give nan + nanj for the response
+    np.testing.assert_equal(
+        sys_tf(0, warn_infinite=False), complex(np.nan, np.nan))
+    np.testing.assert_equal(
+        sys_tf(0j, warn_infinite=False), complex(np.nan, np.nan))
+    np.testing.assert_equal(
+        sys_tf.dcgain(warn_infinite=False), complex(np.nan, np.nan))
+    np.testing.assert_equal(
+        sys_ss(0, warn_infinite=False), complex(np.nan, np.nan))
+    np.testing.assert_equal(
+        sys_ss(0j, warn_infinite=False), complex(np.nan, np.nan))
+    np.testing.assert_equal(
+        sys_ss.dcgain(warn_infinite=False), complex(np.nan, np.nan))
+
+    # Pole with non-zero, complex numerator => inf + infj
+    s = ctrl.tf('s')
+    sys_tf = (s + 1) / (s**2 + 1)
+    assert 1j in sys_tf.pole()
+
+    # Set up state space system with pole on imaginary axis
+    sys_ss = ctrl.tf2ss(sys_tf)
+    assert 1j in sys_tf.pole()
+
+    # Make sure we get correct response if evaluated at the pole
+    np.testing.assert_equal(
+        sys_tf(1j, warn_infinite=False), complex(np.inf, np.inf))
+
+    # For state space, numerical errors come into play
+    resp_ss = sys_ss(1j, warn_infinite=False)
+    if np.isfinite(resp_ss):
+        assert abs(resp_ss) > 1e15
+    else:
+        if resp_ss != complex(np.inf, np.inf):
+            pytest.xfail("statesp evaluation at poles not fully implemented")
+        else:
+            np.testing.assert_equal(resp_ss, complex(np.inf, np.inf))
+
+    # DC gain is finite
+    np.testing.assert_almost_equal(sys_tf.dcgain(), 1.)
+    np.testing.assert_almost_equal(sys_ss.dcgain(), 1.)
+
+    # Make sure that we get the *signed* DC gain
+    sys_tf = -1 / (s + 1)
+    np.testing.assert_almost_equal(sys_tf.dcgain(), -1)
+
+    sys_ss = ctrl.tf2ss(sys_tf)
+    np.testing.assert_almost_equal(sys_ss.dcgain(), -1)
