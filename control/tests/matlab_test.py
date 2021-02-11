@@ -818,7 +818,7 @@ class TestMatlab:
         with pytest.raises(ValueError, match="needs either 1, 2, 3 or 4"):
             dcgain(1, 2, 3, 4, 5)
 
-    def test_matlab_freqplot_passthru(self):
+    def test_matlab_freqplot_passthru(self, mplcleanup):
         """Test nyquist and bode to make sure the pass arguments through"""
         sys = tf([1], [1, 2, 1])
         bode((sys,))            # Passing tuple will call bode_plot
