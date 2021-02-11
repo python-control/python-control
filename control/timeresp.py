@@ -467,8 +467,11 @@ def _process_time_response(
 
     Parameters
     ----------
+    sys : LTI or InputOutputSystem
+        System that generated the data (used to check if SISO/MIMO).
+
     T : 1D array
-        Time values of the output
+        Time values of the output.  Ignored if None.
 
     yout : ndarray
         Response of the system.  This can either be a 1D array indexed by time
@@ -478,9 +481,9 @@ def _process_time_response(
 
     xout : array, optional
         Individual response of each x variable (if return_x is True). For a
-        SISO system (or if a single input is specified), This should be a 2D
+        SISO system (or if a single input is specified), this should be a 2D
         array indexed by the state index and time (for single input systems)
-        or a 3D array indexed by state, input, and time.
+        or a 3D array indexed by state, input, and time. Ignored if None.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
@@ -545,7 +548,7 @@ def _process_time_response(
         raise ValueError("unknown squeeze value")
 
     # Figure out whether and how to squeeze the state data
-    if issiso and len(xout.shape) > 2:
+    if issiso and xout is not None and len(xout.shape) > 2:
         xout = xout[:, 0, :]            # remove input
 
     # See if we need to transpose the data back into MATLAB form
@@ -555,7 +558,8 @@ def _process_time_response(
 
         # For signals, put the last index (time) into the first slot
         yout = np.transpose(yout, np.roll(range(yout.ndim), 1))
-        xout = np.transpose(xout, np.roll(range(xout.ndim), 1))
+        if xout is not None:
+            xout = np.transpose(xout, np.roll(range(xout.ndim), 1))
 
     # Return time, output, and (optionally) state
     return (tout, yout, xout) if return_x else (tout, yout)
