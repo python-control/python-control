@@ -855,7 +855,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Evaluate the function on the argument
         out = sys._out(0, np.array((0,)), np.asarray(u))
-        _, out = _process_time_response(sys, [], out, [], squeeze=squeeze)
+        _, out = _process_time_response(sys, None, out, None, squeeze=squeeze)
         return out
 
     def _update_params(self, params, warning=False):
@@ -1867,8 +1867,10 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
 
 # Utility function to parse a signal parameter
 def _parse_signal_parameter(value, name, kwargs, end=False):
+    # Check kwargs for a variant of the parameter name
     if value is None and name in kwargs:
-        value = list(kwargs.pop(name))
+        value = kwargs.pop(name)
+
     if end and kwargs:
         raise TypeError("unknown parameters %s" % kwargs)
     return value
