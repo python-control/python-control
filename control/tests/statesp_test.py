@@ -21,7 +21,6 @@ from control.statesp import (StateSpace, _convert_to_statespace, drss,
                              rss, ss, tf2ss, _statesp_defaults)
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
-from control.exception import ControlSlycot
 
 from .conftest import editsdefaults
 

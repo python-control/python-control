@@ -1219,9 +1219,10 @@ class StateSpace(LTI):
         Returns
         -------
         gain : ndarray
-            An array of shape (outputs,inputs); the array will either
-            be the zero-frequency (or DC) gain, or, if the frequency
-            response is singular, the array will be filled with np.inf.
+            An array of shape (outputs,inputs); the array will either be the
+            zero-frequency (or DC) gain, or, if the frequency response is
+            singular, the array will be filled with (inf + nanj).
+
         """
         return self(0, warn_infinite=warn_infinite) if self.isctime() \
             else self(1, warn_infinite=warn_infinite)
