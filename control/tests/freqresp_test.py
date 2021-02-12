@@ -220,7 +220,7 @@ def dsystem_dt(request):
     dt = request.param
     systems = {'sssiso': StateSpace(sys.A, sys.B, sys.C, sys.D, dt),
                'ssmimo': StateSpace(A, B, C, D, dt),
-               'tf': TransferFunction([1, 1], [1, 2, 1], dt)}
+               'tf': TransferFunction([2, 1], [2, 1, 1], dt)}
     return systems
 
 
