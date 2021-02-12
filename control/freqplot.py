@@ -46,11 +46,14 @@ import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import warnings
 
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
 from .exception import ControlMIMONotImplemented
+from .statesp import StateSpace
+from .xferfcn import TransferFunction
 from . import config
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
@@ -157,9 +160,10 @@ def bode_plot(syslist, omega=None,
        generate the frequency response for a single system.
 
     2. If a discrete time model is given, the frequency response is plotted
-       along the upper branch of the unit circle, using the mapping ``z = exp(1j
-       * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt` is the discrete
-       timebase.  If timebase not specified (``dt=True``), `dt` is set to 1.
+       along the upper branch of the unit circle, using the mapping ``z =
+       exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
+       is the discrete timebase.  If timebase not specified (``dt=True``),
+       `dt` is set to 1.
 
     Examples
     --------
@@ -194,11 +198,12 @@ def bode_plot(syslist, omega=None,
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # decide whether to go above nyquist. freq
+    # Decide whether to go above Nyquist frequency
     omega_range_given = True if omega is not None else False
 
     if omega is None:
-        omega_num = config._get_param('freqplot','number_of_samples', omega_num)
+        omega_num = config._get_param(
+            'freqplot', 'number_of_samples', omega_num)
         if omega_limits is None:
             # Select a default range if none is provided
             omega = _default_frequency_range(syslist,
@@ -246,11 +251,9 @@ def bode_plot(syslist, omega=None,
             # If no axes present, create them from scratch
             if ax_mag is None or ax_phase is None:
                 plt.clf()
-                ax_mag = plt.subplot(211,
-                                        label='control-bode-magnitude')
-                ax_phase = plt.subplot(212,
-                                        label='control-bode-phase',
-                                        sharex=ax_mag)
+                ax_mag = plt.subplot(211, label='control-bode-magnitude')
+                ax_phase = plt.subplot(
+                    212, label='control-bode-phase', sharex=ax_mag)
 
     mags, phases, omegas, nyquistfrqs = [], [], [], []
     for sys in syslist:
@@ -340,9 +343,10 @@ def bode_plot(syslist, omega=None,
                         np.nan, 0.7*min(mag_plot), 1.3*max(mag_plot)))
                     mag_plot = np.hstack((mag_plot, mag_nyq_line))
                     phase_range = max(phase_plot) - min(phase_plot)
-                    phase_nyq_line = np.array((np.nan,
-                        min(phase_plot) - 0.2 * phase_range,
-                        max(phase_plot) + 0.2 * phase_range))
+                    phase_nyq_line = np.array(
+                        (np.nan,
+                         min(phase_plot) - 0.2 * phase_range,
+                         max(phase_plot) + 0.2 * phase_range))
                     phase_plot = np.hstack((phase_plot, phase_nyq_line))
 
                 #
@@ -351,7 +355,7 @@ def bode_plot(syslist, omega=None,
 
                 if dB:
                     ax_mag.semilogx(omega_plot, 20 * np.log10(mag_plot),
-                                              *args, **kwargs)
+                                    *args, **kwargs)
                 else:
                     ax_mag.loglog(omega_plot, mag_plot, *args, **kwargs)
 
@@ -520,59 +524,133 @@ def bode_plot(syslist, omega=None,
 # Nyquist plot
 #
 
-def nyquist_plot(
-        syslist, omega=None, plot=True, omega_limits=None, omega_num=None,
-        label_freq=0, color=None, mirror='--', arrowhead_length=0.1,
-        arrowhead_width=0.1, *args, **kwargs):
+# Default values for module parameter variables
+_nyquist_defaults = {
+    'nyquist.mirror_style': '--',
+    'nyquist.arrows': 2,
+    'nyquist.arrow_size': 8,
+    'nyquist.indent_radius': 1e-1,
+    'nyquist.indent_direction': 'right',
+}
+
+
+def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
+                 omega_num=None, label_freq=0, color=None,
+                 return_contour=False, warn_nyquist=True, *args, **kwargs):
     """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
+    The curve is computed by evaluating the Nyqist segment along the positive
+    imaginary axis, with a mirror image generated to reflect the negative
+    imaginary axis.  Poles on or near the imaginary axis are avoided using a
+    small indentation.  The portion of the Nyquist contour at infinity is not
+    explicitly computed (since it maps to a constant value for any system with
+    a proper transfer function).
 
     Parameters
     ----------
     syslist : list of LTI
-        List of linear input/output systems (single system is OK)
+        List of linear input/output systems (single system is OK). Nyquist
+        curves for each system are plotted on the same graph.
+
     plot : boolean
         If True, plot magnitude
+
     omega : array_like
-        Set of frequencies to be evaluated in rad/sec.
+        Set of frequencies to be evaluated, in rad/sec.
+
     omega_limits : array_like of two values
-        Limits to the range of frequencies. Ignored if omega
-        is provided, and auto-generated if omitted.
+        Limits to the range of frequencies. Ignored if omega is provided, and
+        auto-generated if omitted.
+
     omega_num : int
-        Number of samples to plot.  Defaults to
+        Number of frequency samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
+
     color : string
-        Used to specify the color of the line and arrowhead
+        Used to specify the color of the line and arrowhead.
+
+    mirror_style : string or False
+        Linestyle for mirror image of the Nyquist curve.  If `False` then
+        omit completely.  Default linestyle ('--') is determined by
+        config.defaults['nyquist.mirror_style'].
+
+    return_contour : bool
+        If 'True', return the contour used to evaluate the Nyquist plot.
+
     label_freq : int
-        Label every nth frequency on the plot
-    arrowhead_width : float
-        Arrow head width
-    arrowhead_length : float
-        Arrow head length
+        Label every nth frequency on the plot.  If not specified, no labels
+        are generated.
+
+    arrows : int or 1D/2D array of floats
+        Specify the number of arrows to plot on the Nyquist curve.  If an
+        integer is passed. that number of equally spaced arrows will be
+        plotted on each of the primary segment and the mirror image.  If a 1D
+        array is passed, it should consist of a sorted list of floats between
+        0 and 1, indicating the location along the curve to plot an arrow.  If
+        a 2D array is passed, the first row will be used to specify arrow
+        locations for the primary curve and the second row will be used for
+        the mirror image.
+
+    arrow_size : float
+        Arrowhead width and length (in display coordinates).  Default value is
+        8 and can be set using config.defaults['nyquist.arrow_size'].
+
+    arrow_style : matplotlib.patches.ArrowStyle
+        Define style used for Nyquist curve arrows (overrides `arrow_size`).
+
+    indent_radius : float
+        Amount to indent the Nyquist contour around poles that are at or near
+        the imaginary axis.
+
+    indent_direction : str
+        For poles on the imaginary axis, set the direction of indentation to
+        be 'right' (default), 'left', or 'none'.
+
+    warn_nyquist : bool, optional
+        If set to `False', turn off warnings about frequencies above Nyquist.
+
     *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
+
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns
     -------
-    real : ndarray (or list of ndarray if len(syslist) > 1))
-        real part of the frequency response array
-    imag : ndarray (or list of ndarray if len(syslist) > 1))
-        imaginary part of the frequency response array
-    omega : ndarray (or list of ndarray if len(syslist) > 1))
-        frequencies in rad/s
+    count : int (or list of int if len(syslist) > 1)
+        Number of encirclements of the point -1 by the Nyquist curve.  If
+        multiple systems are given, an array of counts is returned.
+
+    contour : ndarray (or list of ndarray if len(syslist) > 1)), optional
+        The contour used to create the primary Nyquist curve segment.  To
+        obtain the Nyquist curve values, evaluate system(s) along contour.
+
+    Notes
+    -----
+    1. If a discrete time model is given, the frequency response is computed
+       along the upper branch of the unit circle, using the mapping ``z =
+       exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
+       is the discrete timebase.  If timebase not specified (``dt=True``),
+       `dt` is set to 1.
+
+    2. If a continuous-time system contains poles on or near the imaginary
+       axis, a small indentation will be used to avoid the pole.  The radius
+       of the indentation is given by `indent_radius` and it is taken the the
+       right of stable poles and the left of unstable poles.  If a pole is
+       exactly on the imaginary axis, the `indent_direction` parameter can be
+       used to set the direction of indentation.  Setting `indent_direction`
+       to `none` will turn off indentation.  If `return_contour` is True, the
+       exact contour used for evaluation is returned.
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> real, imag, freq = nyquist_plot(sys)
+    >>> sys = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> count = nyquist_plot(sys)
 
     """
     # Check to see if legacy 'Plot' keyword was used
     if 'Plot' in kwargs:
-        import warnings
         warnings.warn("'Plot' keyword is deprecated in nyquist_plot; "
                       "use 'plot'", FutureWarning)
         # Map 'Plot' keyword to 'plot' keyword
@@ -580,25 +658,51 @@ def nyquist_plot(
 
     # Check to see if legacy 'labelFreq' keyword was used
     if 'labelFreq' in kwargs:
-        import warnings
         warnings.warn("'labelFreq' keyword is deprecated in nyquist_plot; "
                       "use 'label_freq'", FutureWarning)
         # Map 'labelFreq' keyword to 'label_freq' keyword
         label_freq = kwargs.pop('labelFreq')
 
+    # Check to see if legacy 'arrow_width' or 'arrow_length' were used
+    if 'arrow_width' in kwargs or 'arrow_length' in kwargs:
+        warnings.warn(
+            "'arrow_width' and 'arrow_length' keywords are deprecated in "
+            "nyquist_plot; use `arrow_size` instead", FutureWarning)
+        kwargs['arrow_size'] = \
+            (kwargs.get('arrow_width', 0) + kwargs.get('arrow_length', 0)) / 2
+        kwargs.pop('arrow_width', False)
+        kwargs.pop('arrow_length', False)
+
+    # Get values for params (and pop from list to allow keyword use in plot)
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+    mirror_style = config._get_param(
+        'nyquist', 'mirror_style', kwargs, _nyquist_defaults, pop=True)
+    arrows = config._get_param(
+        'nyquist', 'arrows', kwargs, _nyquist_defaults, pop=True)
+    arrow_size = config._get_param(
+        'nyquist', 'arrow_size', kwargs, _nyquist_defaults, pop=True)
+    arrow_style = config._get_param('nyquist', 'arrow_style', kwargs, None)
+    indent_radius = config._get_param(
+        'nyquist', 'indent_radius', kwargs, _nyquist_defaults, pop=True)
+    indent_direction = config._get_param(
+        'nyquist', 'indent_direction', kwargs, _nyquist_defaults, pop=True)
+
     # If argument was a singleton, turn it into a list
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # decide whether to go above nyquist. freq
+    # Decide whether to go above Nyquist frequency
     omega_range_given = True if omega is not None else False
 
+    # Figure out the frequency limits
     if omega is None:
-        omega_num = config._get_param('freqplot','number_of_samples',omega_num)
         if omega_limits is None:
             # Select a default range if none is provided
-            omega = _default_frequency_range(syslist,
-                                             number_of_samples=omega_num)
+            omega = _default_frequency_range(
+                syslist, number_of_samples=omega_num)
+
+            # Replace first point with the origin
+            omega[0] = 0
         else:
             omega_range_given = True
             omega_limits = np.asarray(omega_limits)
@@ -608,47 +712,103 @@ def nyquist_plot(
                                 np.log10(omega_limits[1]), num=omega_num,
                                 endpoint=True)
 
-    xs, ys, omegas = [], [], []
+    # Go through each system and keep track of the results
+    counts, contours = [], []
     for sys in syslist:
+        if not sys.issiso():
+            # TODO: Add MIMO nyquist plots.
+            raise ControlMIMONotImplemented(
+                "Nyquist plot currently only supports SISO systems.")
+
+        # Figure out the frequency range
         omega_sys = np.asarray(omega)
+
+        # Determine the contour used to evaluate the Nyquist curve
         if sys.isdtime(strict=True):
+            # Transform frequencies in for discrete-time systems
             nyquistfrq = math.pi / sys.dt
             if not omega_range_given:
                 # limit up to and including nyquist frequency
                 omega_sys = np.hstack((
                     omega_sys[omega_sys < nyquistfrq], nyquistfrq))
 
-        mag, phase, omega_sys = sys.frequency_response(omega_sys)
+            # Issue a warning if we are sampling above Nyquist
+            if np.any(omega_sys * sys.dt > np.pi) and warn_nyquist:
+                warnings.warn("evaluation above Nyquist frequency")
+
+            # Transform frequencies to continuous domain
+            contour = np.exp(1j * omega * sys.dt)
+        else:
+            contour = 1j * omega_sys
+
+        # Bend the contour around any poles on/near the imaginary axis
+        if isinstance(sys, (StateSpace, TransferFunction)) and \
+            sys.isctime() and indent_direction != 'none':
+            poles = sys.pole()
+            for i, s in enumerate(contour):
+                # Find the nearest pole
+                p = poles[(np.abs(poles - s)).argmin()]
+
+                # See if we need to indent around it
+                if abs(s - p) < indent_radius:
+                    if p.real < 0 or \
+                       (p.real == 0 and indent_direction == 'right'):
+                        # Indent to the right
+                        contour[i] += \
+                            np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
+                    elif p.real > 0 or \
+                         (p.real == 0 and indent_direction == 'left'):
+                        # Indent to the left
+                        contour[i] -= \
+                            np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
+                    else:
+                        ValueError("unknown value for indent_direction")
+
+            # TODO: add code to indent around discrete poles on unit circle
 
         # Compute the primary curve
-        x = mag * np.cos(phase)
-        y = mag * np.sin(phase)
+        resp = sys(contour)
 
-        xs.append(x)
-        ys.append(y)
-        omegas.append(omega_sys)
+        # Compute CW encirclements of -1 by integrating the (unwrapped) angle
+        phase = -unwrap(np.angle(resp + 1))
+        count = int(np.round(np.sum(np.diff(phase)) / np.pi, 0))
+
+        counts.append(count)
+        contours.append(contour)
 
         if plot:
-            if not sys.issiso():
-                # TODO: Add MIMO nyquist plots.
-                raise ControlMIMONotImplemented(
-                    "Nyquist plot currently supports SISO systems.")
+            # Parse the arrows keyword
+            if isinstance(arrows, int):
+                N = arrows
+                # Space arrows out, starting midway along each "region"
+                arrow_pos = np.linspace(0.5/N, 1 + 0.5/N, N, endpoint=False)
+            elif isinstance(arrows, (list, np.ndarray)):
+                arrow_pos = np.sort(np.atleast_1d(arrows))
+            elif not arrows:
+                arrow_pos = []
+            else:
+                raise ValueError("unknown or unsupported arrow location")
 
-            # Plot the primary curve and mirror image
+            # Set the arrow style
+            if arrow_style is None:
+                arrow_style = mpl.patches.ArrowStyle(
+                    'simple', head_width=arrow_size, head_length=arrow_size)
+
+            # Save the components of the response
+            x, y = resp.real, resp.imag
+
+            # Plot the primary curve
             p = plt.plot(x, y, '-', color=color, *args, **kwargs)
             c = p[0].get_color()
             ax = plt.gca()
-            # Plot arrow to indicate Nyquist encirclement orientation
-            ax.arrow(x[0], y[0], (x[1]-x[0])/2, (y[1]-y[0])/2, fc=c, ec=c,
-                        head_width=arrowhead_width,
-                        head_length=arrowhead_length)
+            _add_arrows_to_line2D(
+                ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
 
-            if mirror is not False:
-                plt.plot(x, -y, mirror, color=c, *args, **kwargs)
-                ax.arrow(
-                    x[-1], -y[-1], (x[-1]-x[-2])/2, (y[-1]-y[-2])/2,
-                    fc=c, ec=c, head_width=arrowhead_width,
-                    head_length=arrowhead_length)
+            # Plot the mirror image
+            if mirror_style is not False:
+                p = plt.plot(x, -y, mirror_style, color=c, *args, **kwargs)
+                _add_arrows_to_line2D(
+                    ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
 
             # Mark the -1 point
             plt.plot([-1], [0], 'r+')
@@ -674,8 +834,8 @@ def nyquist_plot(
                     # instead of 1.0, and this would otherwise be
                     # truncated to 0.
                     plt.text(xpt, ypt, ' ' +
-                            str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
-                            prefix + 'Hz')
+                             str(int(np.round(f / 1000 ** pow1000, 0))) + ' ' +
+                             prefix + 'Hz')
 
     if plot:
         ax = plt.gca()
@@ -683,10 +843,86 @@ def nyquist_plot(
         ax.set_ylabel("Imaginary axis")
         ax.grid(color="lightgray")
 
+    # "Squeeze" the results
     if len(syslist) == 1:
-        return xs[0], ys[0], omegas[0]
+        counts, contours = counts[0], contours[0]
+
+    # Return counts and (optionally) the contour we used
+    return (counts, contours) if return_contour else counts
+
+
+# Internal function to add arrows to a curve
+def _add_arrows_to_line2D(
+        axes, line, arrow_locs=[0.2, 0.4, 0.6, 0.8],
+        arrowstyle='-|>', arrowsize=1, dir=1, transform=None):
+    """
+    Add arrows to a matplotlib.lines.Line2D at selected locations.
+
+    Parameters:
+    -----------
+    axes: Axes object as returned by axes command (or gca)
+    line: Line2D object as returned by plot command
+    arrow_locs: list of locations where to insert arrows, % of total length
+    arrowstyle: style of the arrow
+    arrowsize: size of the arrow
+    transform: a matplotlib transform instance, default to data coordinates
+
+    Returns:
+    --------
+    arrows: list of arrows
+
+    Based on https://stackoverflow.com/questions/26911898/
+
+    """
+    if not isinstance(line, mpl.lines.Line2D):
+        raise ValueError("expected a matplotlib.lines.Line2D object")
+    x, y = line.get_xdata(), line.get_ydata()
+
+    arrow_kw = {
+        "arrowstyle": arrowstyle,
+    }
+
+    color = line.get_color()
+    use_multicolor_lines = isinstance(color, np.ndarray)
+    if use_multicolor_lines:
+        raise NotImplementedError("multicolor lines not supported")
     else:
-        return xs, ys, omegas
+        arrow_kw['color'] = color
+
+    linewidth = line.get_linewidth()
+    if isinstance(linewidth, np.ndarray):
+        raise NotImplementedError("multiwidth lines not supported")
+    else:
+        arrow_kw['linewidth'] = linewidth
+
+    if transform is None:
+        transform = axes.transData
+
+    # Compute the arc length along the curve
+    s = np.cumsum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2))
+
+    arrows = []
+    for loc in arrow_locs:
+        n = np.searchsorted(s, s[-1] * loc)
+
+        # Figure out what direction to paint the arrow
+        if dir == 1:
+            arrow_tail = (x[n], y[n])
+            arrow_head = (np.mean(x[n:n + 2]), np.mean(y[n:n + 2]))
+        elif dir == -1:
+            # Orient the arrow in the other direction on the segment
+            arrow_tail = (x[n + 1], y[n + 1])
+            arrow_head = (np.mean(x[n:n + 2]), np.mean(y[n:n + 2]))
+        else:
+            raise ValueError("unknown value for keyword 'dir'")
+
+        p = mpl.patches.FancyArrowPatch(
+            arrow_tail, arrow_head, transform=transform, lw=0,
+            **arrow_kw)
+        axes.add_patch(p)
+        arrows.append(p)
+    return arrows
+
 
 #
 # Gang of Four plot
@@ -812,7 +1048,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 
 # Compute reasonable defaults for axes
 def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
-                            feature_periphery_decades=None):
+                             feature_periphery_decades=None):
     """Compute a reasonable default frequency range for frequency
     domain plots.
 
@@ -865,7 +1101,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
     freq_interesting = []
 
     # detect if single sys passed by checking if it is sequence-like
-    if not getattr(syslist, '__iter__', False):
+    if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
     for sys in syslist:

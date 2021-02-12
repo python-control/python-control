@@ -1,15 +1,18 @@
 """
-Wrappers for the Matlab compatibility module
+Wrappers for the MATLAB compatibility module
 """
 
 import numpy as np
 from ..statesp import ss
 from ..xferfcn import tf
+from ..ctrlutil import issys
+from ..exception import ControlArgument
 from scipy.signal import zpk2tf
+from warnings import warn
 
-__all__ = ['bode', 'ngrid', 'dcgain']
+__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain']
 
-def bode(*args, **keywords):
+def bode(*args, **kwargs):
     """bode(syslist[, omega, dB, Hz, deg, ...])
 
     Bode plot of the frequency response
@@ -36,7 +39,7 @@ def bode(*args, **keywords):
         If True, plot frequency in Hz (omega must be provided in rad/sec)
     deg : boolean
         If True, return phase in degrees (else radians)
-    Plot : boolean
+    plot : boolean
         If True, plot magnitude and phase
 
     Examples
@@ -53,19 +56,71 @@ def bode(*args, **keywords):
         * >>> bode(sys1, sys2, ..., sysN, w)
         * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')
     """
+    from ..freqplot import bode_plot
 
-    # If the first argument is a list, then assume python-control calling format
-    from ..freqplot import bode as bode_orig
-    if (getattr(args[0], '__iter__', False)):
-        return bode_orig(*args, **keywords)
+    # If first argument is a list, assume python-control calling format
+    if hasattr(args[0], '__iter__'):
+        return bode_plot(*args, **kwargs)
 
-    # Otherwise, run through the arguments and collect up arguments
-    syslist = []; plotstyle=[]; omega=None;
+    # Parse input arguments
+    syslist, omega, args, other = _parse_freqplot_args(*args)
+    kwargs.update(other)
+
+    # Call the bode command
+    return bode_plot(syslist, omega, *args, **kwargs)
+
+
+def nyquist(*args, **kwargs):
+    """nyquist(syslist[, omega])
+
+    Nyquist plot of the frequency response
+
+    Plots a Nyquist plot for the system over a (optional) frequency range.
+
+    Parameters
+    ----------
+    sys1, ..., sysn : list of LTI
+        List of linear input/output systems (single system is OK).
+    omega : array_like
+        Set of frequencies to be evaluated, in rad/sec.
+
+    Returns
+    -------
+    real : ndarray (or list of ndarray if len(syslist) > 1))
+        real part of the frequency response array
+    imag : ndarray (or list of ndarray if len(syslist) > 1))
+        imaginary part of the frequency response array
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
+        frequencies in rad/s
+
+    """
+    from ..freqplot import nyquist_plot
+
+    # If first argument is a list, assume python-control calling format
+    if hasattr(args[0], '__iter__'):
+        return nyquist_plot(*args, **kwargs)
+
+    # Parse arguments
+    syslist, omega, args, other = _parse_freqplot_args(*args)
+    kwargs.update(other)
+
+    # Call the nyquist command
+    kwargs['return_contour'] = True
+    _, contour = nyquist_plot(syslist, omega, *args, **kwargs)
+
+    # Create the MATLAB output arguments
+    freqresp = syslist(contour)
+    real, imag = freqresp.real, freqresp.imag
+    return real, imag, contour.imag
+
+
+def _parse_freqplot_args(*args):
+    """Parse arguments to frequency plot routines (bode, nyquist)"""
+    syslist, plotstyle, omega, other = [], [], None, {}
     i = 0;
     while i < len(args):
         # Check to see if this is a system of some sort
-        from ..ctrlutil import issys
-        if (issys(args[i])):
+        if issys(args[i]):
             # Append the system to our list of systems
             syslist.append(args[i])
             i += 1
@@ -79,10 +134,15 @@ def bode(*args, **keywords):
             continue
 
         # See if this is a frequency list
-        elif (isinstance(args[i], (list, np.ndarray))):
+        elif isinstance(args[i], (list, np.ndarray)):
             omega = args[i]
             i += 1
             break
+
+        # See if this is a frequency range
+        elif isinstance(args[i], tuple) and len(args[i]) == 2:
+            other['omega_limits'] = args[i]
+            i += 1
 
         else:
             raise ControlArgument("unrecognized argument type")
@@ -93,21 +153,29 @@ def bode(*args, **keywords):
 
     # Check to make sure we got the same number of plotstyles as systems
     if (len(plotstyle) != 0 and len(syslist) != len(plotstyle)):
-        raise ControlArgument("number of systems and plotstyles should be equal")
+        raise ControlArgument(
+            "number of systems and plotstyles should be equal")
 
     # Warn about unimplemented plotstyles
     #! TODO: remove this when plot styles are implemented in bode()
     #! TODO: uncomment unit test code that tests this out
     if (len(plotstyle) != 0):
-        print("Warning (matlab.bode): plot styles not implemented");
+        warn("Warning (matlab.bode): plot styles not implemented");
 
-    # Call the bode command
-    return bode_orig(syslist, omega, **keywords)
+    if len(syslist) == 0:
+        raise ControlArgument("no systems specified")
+    elif len(syslist) == 1:
+    # If only one system given, retun just that system (not a list)
+        syslist = syslist[0]
+
+    return syslist, omega, plotstyle, other
+
 
 from ..nichols import nichols_grid
 def ngrid():
     return nichols_grid()
 ngrid.__doc__ = nichols_grid.__doc__
+
 
 def dcgain(*args):
     '''

@@ -341,12 +341,12 @@ class Analysis:
         
         self.f_bode.clf()
         plt.figure(self.f_bode.number)
-        control.matlab.bode(self.sys, logspace(-2, 2))
+        control.matlab.bode(self.sys, logspace(-2, 2, 1000))
         plt.suptitle('Bode Diagram')
 
         self.f_nyquist.clf()
         plt.figure(self.f_nyquist.number)
-        control.matlab.nyquist(self.sys, logspace(-2, 2))
+        control.matlab.nyquist(self.sys, logspace(-2, 2, 1000))
         plt.suptitle('Nyquist Diagram')
 
         self.f_step.clf()
@@ -354,7 +354,7 @@ class Analysis:
         try:
             # Step seems to get intro trouble
             # with purely imaginary poles
-            tvec, yvec = control.matlab.step(self.sys)
+            yvec, tvec = control.matlab.step(self.sys)
             plt.plot(tvec.T, yvec)
         except:
             print("Error plotting step response")

@@ -29,7 +29,7 @@ plt.show(block=False)
 
 # Nyquist plot for the system
 plt.figure(3)
-nyquist(sys, logspace(-2, 2))
+nyquist(sys)
 plt.show(block=False)
 
 # Root lcous plot for the system

@@ -133,17 +133,15 @@ plt.ylabel('Phase [deg]')
 plt.figure(7)
 plt.clf()
 nyquist(L, (0.0001, 1000))
-plt.axis([-700, 5300, -3000, 3000])
 
 # Add a box in the region we are going to expand
-plt.plot([-400, -400, 200, 200, -400], [-100, 100, 100, -100, -100], 'r-')
+plt.plot([-2, -2, 1, 1, -2], [-4, 4, 4, -4, -4], 'r-')
 
 # Expanded region  
 plt.figure(8)
 plt.clf()
-plt.subplot(231)
 nyquist(L)
-plt.axis([-10, 5, -20, 20])
+plt.axis([-2, 1, -4, 4])
 
 # set up the color
 color = 'b'
