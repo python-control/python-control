@@ -32,7 +32,8 @@ def test_finite_horizon_mpc_simple():
 
     # Create a model predictive controller system
     time = np.arange(0, 5, 1)
-    mpc = obc.ModelPredictiveController(sys, time, cost, constraints)
+    optctrl = obc.OptimalControlProblem(sys, time, cost, constraints)
+    mpc = optctrl.mpc
 
     # Optimal control input for a given value of the initial state
     x0 = [4, 0]
@@ -40,12 +41,12 @@ def test_finite_horizon_mpc_simple():
     np.testing.assert_almost_equal(u, -1)
 
     # Retrieve the full open-loop predictions
-    t, u_openloop = mpc.compute_trajectory(x0, squeeze=True)
+    t, u_openloop = optctrl.compute_trajectory(x0, squeeze=True)
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=4)
 
     # Convert controller to an explicit form (not implemented yet)
-    # mpc_explicit = mpc.explicit();
+    # mpc_explicit = obc.explicit_mpc();
 
     # Test explicit controller 
     # u_explicit = mpc_explicit(x0)
@@ -64,7 +65,7 @@ def test_finite_horizon_mpc_oscillator():
 
     # state and input constraints
     trajectory_constraints = [
-        obc.state_poly_constraint(sys, pc.box2poly([[-10, 10]])),
+        obc.output_poly_constraint(sys, pc.box2poly([[-10, 10]])),
         obc.input_poly_constraint(sys, pc.box2poly([[-1, 1]]))
     ]
 
@@ -78,8 +79,9 @@ def test_finite_horizon_mpc_oscillator():
     terminal_cost = obc.quadratic_cost(sys, S, 0)
 
     # Formulate finite horizon MPC problem
-    time = np.arange(0, 5, 5)
-    mpc = obc.ModelPredictiveController(
+    time = np.arange(0, 5, 1)
+    optctrl = obc.OptimalControlProblem(
         sys, time, integral_cost, trajectory_constraints, terminal_cost)
 
     # Add tests to make sure everything works
+    t, u_openloop = optctrl.compute_trajectory([1, 1])
