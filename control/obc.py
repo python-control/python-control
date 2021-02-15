@@ -76,28 +76,46 @@ class OptimalControlProblem():
         # is consistent with the `constraint_function` that is used at
         # evaluation time.
         #
-        constraint_lb, constraint_ub = [], []
+        constraint_lb, constraint_ub, eqconst_value = [], [], []
 
         # Go through each time point and stack the bounds
         for time in self.time_vector:
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
-                constraint_lb.append(lb)
-                constraint_ub.append(ub)
+                if np.all(lb == ub):
+                    # Equality constraint
+                    eqconst_value.append(lb)
+                else:
+                    # Inequality constraint
+                    constraint_lb.append(lb)
+                    constraint_ub.append(ub)
 
         # Add on the terminal constraints
         for constraint in self.terminal_constraints:
             type, fun, lb, ub = constraint
-            constraint_lb.append(lb)
-            constraint_ub.append(ub)
+            if np.all(lb == ub):
+                # Equality constraint
+                eqconst_value.append(lb)
+            else:
+                # Inequality constraint
+                constraint_lb.append(lb)
+                constraint_ub.append(ub)
 
         # Turn constraint vectors into 1D arrays
-        self.constraint_lb = np.hstack(constraint_lb)
-        self.constraint_ub = np.hstack(constraint_ub)
+        self.constraint_lb = np.hstack(constraint_lb) if constraint_lb else []
+        self.constraint_ub = np.hstack(constraint_ub) if constraint_ub else []
+        self.eqconst_value = np.hstack(eqconst_value) if eqconst_value else []
 
-        # Create the new constraint
-        self.constraints = sp.optimize.NonlinearConstraint(
-            self.constraint_function, self.constraint_lb, self.constraint_ub)
+        # Create the constraints (inequality and equality)
+        self.constraints = []
+        if len(self.constraint_lb) != 0:
+            self.constraints.append(sp.optimize.NonlinearConstraint(
+                self.constraint_function, self.constraint_lb,
+                self.constraint_ub))
+        if len(self.eqconst_value) != 0:
+            self.constraints.append(sp.optimize.NonlinearConstraint(
+                self.eqconst_function, self.eqconst_value,
+                self.eqconst_value))
 
         #
         # Initial guess
@@ -109,6 +127,10 @@ class OptimalControlProblem():
         self.initial_guess = np.zeros(
             self.system.ninputs * self.time_vector.size)
 
+        # Store states, input to minimize re-computation
+        self.last_x = np.full(self.system.nstates, np.nan)
+        self.last_inputs = np.full(self.initial_guess.shape, np.nan)
+
     #
     # Cost function
     #
@@ -117,7 +139,7 @@ class OptimalControlProblem():
     # simulate the system to get the state trajectory X = [x[0], ...,
     # x[N]] and then compute the cost at each point:
     #
-    #   Cost = sum_k integral_cost(x[k], u[k]) + terminal_cost(x[N], u[N])
+    #   cost = sum_k integral_cost(x[k], u[k]) + terminal_cost(x[N], u[N])
     #
     # The initial state is for generating the simulation is store in the class
     # parameter `x` prior to calling the optimization algorithm.
@@ -128,9 +150,17 @@ class OptimalControlProblem():
         inputs = inputs.reshape(
             (self.system.ninputs, self.time_vector.size))
 
-        # Simulate the system to get the state
-        _, _, states = ct.input_output_response(
-            self.system, self.time_vector, inputs, x, return_x=True)
+        # See if we already have a simulation for this condition
+        if np.array_equal(x, self.last_x) and \
+           np.array_equal(inputs, self.last_inputs):
+            states = self.last_states
+        else:
+            # Simulate the system to get the state
+            _, _, states = ct.input_output_response(
+                self.system, self.time_vector, inputs, x, return_x=True)
+            self.last_x = x
+            self.last_inputs = inputs
+            self.last_states = states
 
         # Trajectory cost
         # TODO: vectorize
@@ -160,10 +190,16 @@ class OptimalControlProblem():
     # * For nonlinear constraints (NonlinearConstraint), a user-specific
     #   constraint function having the form
     #
-    #      constraint_fun(x, u)
+    #      constraint_fun(x, u)         TODO: convert from [x, u] to (x, u)
     #
     #   is called at each point along the trajectory and compared against the
     #   upper and lower bounds.
+    #
+    # * If the upper and lower bound for the constraint is identical, then we
+    #   separate out the evaluation into two different constraints, which
+    #   allows the SciPy optimizers to be more efficient (and stops them from
+    #   generating a warning about mixed constraints).  This is handled
+    #   through the use of the `eqconst_function` and `eqconst_value` members.
     #
     # In both cases, the constraint is specified at a single point, but we
     # extend this to apply to each point in the trajectory.  This means
@@ -189,22 +225,32 @@ class OptimalControlProblem():
         inputs = inputs.reshape(
             (self.system.ninputs, self.time_vector.size))
 
-        # Simulate the system to get the state
-        _, _, states = ct.input_output_response(
-            self.system, self.time_vector, inputs, x, return_x=True)
+        # See if we already have a simulation for this condition
+        if np.array_equal(x, self.last_x) and \
+           np.array_equal(inputs, self.last_inputs):
+            states = self.last_states
+        else:
+            # Simulate the system to get the state
+            _, _, states = ct.input_output_response(
+                self.system, self.time_vector, inputs, x, return_x=True)
+            self.last_x = x
+            self.last_inputs = inputs
+            self.last_states = states
 
         # Evaluate the constraint function along the trajectory
         value = []
         for i, time in enumerate(self.time_vector):
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
-                if type == opt.LinearConstraint:
+                if np.all(lb == ub):
+                    # Skip equality constraints
+                    continue
+                elif type == opt.LinearConstraint:
                     # `fun` is the A matrix associated with the polytope...
                     value.append(
                         np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
                 elif type == opt.NonlinearConstraint:
-                    value.append(
-                        fun(np.hstack([states[:,i], inputs[:,i]])))
+                    value.append(fun(states[:,i], inputs[:,i]))
                 else:
                     raise TypeError("unknown constraint type %s" %
                                     constraint[0])
@@ -212,18 +258,75 @@ class OptimalControlProblem():
         # Evaluate the terminal constraint functions
         for constraint in self.terminal_constraints:
             type, fun, lb, ub = constraint
-            if type == opt.LinearConstraint:
+            if np.all(lb == ub):
+                # Skip equality constraints
+                continue
+            elif type == opt.LinearConstraint:
                 value.append(
                     np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
             elif type == opt.NonlinearConstraint:
-                value.append(
-                    fun(np.hstack([states[:,i], inputs[:,i]])))
+                value.append(fun(states[:,i], inputs[:,i]))
             else:
                 raise TypeError("unknown constraint type %s" %
                                 constraint[0])
 
         # Return the value of the constraint function
         return np.hstack(value)
+
+    def eqconst_function(self, inputs):
+        # Retrieve the initial state and reshape the input vector
+        x = self.x
+        inputs = inputs.reshape(
+            (self.system.ninputs, self.time_vector.size))
+
+        # See if we already have a simulation for this condition
+        if np.array_equal(x, self.last_x) and \
+           np.array_equal(inputs, self.last_inputs):
+            states = self.last_states
+        else:
+            # Simulate the system to get the state
+            _, _, states = ct.input_output_response(
+                self.system, self.time_vector, inputs, x, return_x=True)
+            self.last_x = x
+            self.last_inputs = inputs
+            self.last_states = states
+
+        # Evaluate the constraint function along the trajectory
+        value = []
+        for i, time in enumerate(self.time_vector):
+            for constraint in self.trajectory_constraints:
+                type, fun, lb, ub = constraint
+                if np.any(lb != ub):
+                    # Skip iniquality constraints
+                    continue
+                elif type == opt.LinearConstraint:
+                    # `fun` is the A matrix associated with the polytope...
+                    value.append(
+                        np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
+                elif type == opt.NonlinearConstraint:
+                    value.append(fun(states[:,i], inputs[:,i]))
+                else:
+                    raise TypeError("unknown constraint type %s" %
+                                    constraint[0])
+
+        # Evaluate the terminal constraint functions
+        for constraint in self.terminal_constraints:
+            type, fun, lb, ub = constraint
+            if np.any(lb != ub):
+                # Skip inequality constraints
+                continue
+            elif type == opt.LinearConstraint:
+                value.append(
+                    np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
+            elif type == opt.NonlinearConstraint:
+                value.append(fun(states[:,i], inputs[:,i]))
+            else:
+                raise TypeError("unknown constraint type %s" %
+                                constraint[0])
+
+        # Return the value of the constraint function
+        return np.hstack(value)
+
 
     # Allow optctrl(x) as a replacement for optctrl.mpc(x)
     def __call__(self, x, squeeze=None):
@@ -250,7 +353,9 @@ class OptimalControlProblem():
 
         # See if we got an answer
         if not res.success:
-            warnings.warn(res.message)
+            warnings.warn(
+                "unable to solve optimal control problem\n"
+                "scipy.optimize.minimize returned " + res.message, UserWarning)
             return None
 
         # Reshape the input vector
@@ -309,7 +414,7 @@ def state_poly_constraint(sys, A, b):
     # Return a linear constraint object based on the polynomial
     return (opt.LinearConstraint,
             np.hstack([A, np.zeros((A.shape[0], sys.ninputs))]),
-            np.full(A.shape[0], -np.inf), polytope.b)
+            np.full(A.shape[0], -np.inf), b)
 
 
 def state_range_constraint(sys, lb, ub):

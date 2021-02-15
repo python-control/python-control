@@ -12,6 +12,7 @@ import control as ct
 import control.obc as obc
 from control.tests.conftest import slycotonly
 
+
 def test_finite_horizon_mpc_simple():
     # Define a linear system with constraints
     # Source: https://www.mpt3.org/UI/RegulationProblem
@@ -139,3 +140,109 @@ def test_mpc_iosystem():
 
     # Make sure the system converged to the desired state
     np.testing.assert_almost_equal(xout[0:sys.nstates, -1], xd, decimal=1)
+
+
+# Test various constraint combinations; need to use a somewhat convoluted
+# parametrization due to the need to define sys instead the test function
+@pytest.mark.parametrize("constraint_list", [
+    [(sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1],)],
+    [(obc.state_range_constraint, [-5, -5], [5, 5]),
+      (obc.input_range_constraint, [-1], [1])],
+    [(obc.state_range_constraint, [-5, -5], [5, 5]),
+      (obc.input_poly_constraint, np.array([[1], [-1]]), [1, 1])],
+    [(obc.state_poly_constraint,
+      np.array([[1, 0], [0, 1], [-1, 0], [0, -1]]), [5, 5, 5, 5]),
+     (obc.input_poly_constraint, np.array([[1], [-1]]), [1, 1])],
+    [(sp.optimize.NonlinearConstraint,
+     lambda x, u: np.array([abs(x[0]), x[1], u[0]**2]),
+      [-np.inf, -5, -1e-12], [5, 5, 1],)],       # -1e-12 for SciPy bug?
+])
+def test_constraint_specification(constraint_list):
+    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+
+    """Test out different forms of constraints on a simple problem"""
+    # Parse out the constraint
+    constraints = []
+    for constraint_setup in constraint_list:
+        if constraint_setup[0] in \
+           (sp.optimize.LinearConstraint, sp.optimize.NonlinearConstraint):
+            # No processing required
+            constraints.append(constraint_setup)
+        else:
+            # Call the function in the first argument to set up the constraint
+            constraints.append(constraint_setup[0](sys, *constraint_setup[1:]))
+
+    # Quadratic state and input penalty
+    Q = [[1, 0], [0, 1]]
+    R = [[1]]
+    cost = obc.quadratic_cost(sys, Q, R)
+
+    # Create a model predictive controller system
+    time = np.arange(0, 5, 1)
+    optctrl = obc.OptimalControlProblem(sys, time, cost, constraints)
+
+    # Compute optimal control and compare against MPT3 solution
+    x0 = [4, 0]
+    t, u_openloop = optctrl.compute_trajectory(x0, squeeze=True)
+    np.testing.assert_almost_equal(
+        u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=3)
+
+
+def test_terminal_constraints():
+    """Test out the ability to handle terminal constraints"""
+    # Discrete time "integrator" with 2 states, 2 inputs
+    sys = ct.ss2io(ct.ss([[1, 0], [0, 1]], np.eye(2), np.eye(2), 0, True))
+
+    # Shortest path to a point is a line
+    Q = np.zeros((2, 2))
+    R = np.eye(2)
+    cost = obc.quadratic_cost(sys, Q, R)
+
+    # Set up the terminal constraint to be the origin
+    final_point = [obc.state_range_constraint(sys, [0, 0], [0, 0])]
+
+    # Create the optimal control problem
+    time = np.arange(0, 5, 1)
+    optctrl = obc.OptimalControlProblem(
+        sys, time, cost, terminal_constraints=final_point)
+
+    # Find a path to the origin
+    x0 = np.array([4, 3])
+    t, u1, x1 = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    np.testing.assert_almost_equal(x1[:,-1], 0)
+
+    # Make sure it is a straight line
+    np.testing.assert_almost_equal(
+        x1, np.kron(x0.reshape((2, 1)), time[::-1]/4))
+
+    # Impose some cost on the state, which should change the path
+    Q = np.eye(2)
+    R = np.eye(2) * 0.1
+    cost = obc.quadratic_cost(sys, Q, R)
+    optctrl = obc.OptimalControlProblem(
+        sys, time, cost, terminal_constraints=final_point)
+
+    # Find a path to the origin
+    t, u2, x2 = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    np.testing.assert_almost_equal(x2[:,-1], 0)
+
+    # Make sure that it is *not* a straight line path
+    assert np.any(np.abs(x2 - x1) > 0.1)
+    assert np.any(np.abs(u2) > 1)       # To make sure next test is useful
+
+    # Add some bounds on the inputs
+    constraints = [obc.input_range_constraint(sys, [-1, -1], [1, 1])]
+    optctrl = obc.OptimalControlProblem(
+        sys, time, cost, constraints, terminal_constraints=final_point)
+    t, u3, x3 = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    np.testing.assert_almost_equal(x2[:,-1], 0)
+
+    # Make sure we got a new path and didn't violate the constraints
+    assert np.any(np.abs(x3 - x1) > 0.1)
+    np.testing.assert_array_less(np.abs(u3), 1 + 1e-12)
+
+    # Make sure that infeasible problems are handled sensibly
+    x0 = np.array([10, 3])
+    with pytest.warns(UserWarning, match="unable to solve"):
+        res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+        assert res == None
