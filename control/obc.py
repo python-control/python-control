@@ -103,9 +103,8 @@ class OptimalControlProblem():
         # Initial guess
         #
         # We store an initial guess (zero input) in case it is not specified
-        # later.
-        #
-        # TODO: add the ability to overwride this when calling the optimizer.
+        # later.  Note that create_mpc_iosystem() will reset the initial guess
+        # based on the current state of the MPC controller.
         #
         self.initial_guess = np.zeros(
             self.system.ninputs * self.time_vector.size)
@@ -128,23 +127,24 @@ class OptimalControlProblem():
         x = self.x
         inputs = inputs.reshape(
             (self.system.ninputs, self.time_vector.size))
-        
+
         # Simulate the system to get the state
         _, _, states = ct.input_output_response(
             self.system, self.time_vector, inputs, x, return_x=True)
-        
+
         # Trajectory cost
         # TODO: vectorize
         cost = 0
         for i, time in enumerate(self.time_vector):
-            cost += self.integral_cost(states[:,i], inputs[:,i]) 
-            
+            cost += self.integral_cost(states[:,i], inputs[:,i])
+
         # Terminal cost
         if self.terminal_cost is not None:
             cost += self.terminal_cost(states[:,-1], inputs[:,-1])
-            
+
         # Return the total cost for this input sequence
         return cost
+
 
     #
     # Constraints
@@ -188,7 +188,7 @@ class OptimalControlProblem():
         x = self.x
         inputs = inputs.reshape(
             (self.system.ninputs, self.time_vector.size))
-            
+
         # Simulate the system to get the state
         _, _, states = ct.input_output_response(
             self.system, self.time_vector, inputs, x, return_x=True)
@@ -234,7 +234,7 @@ class OptimalControlProblem():
     def mpc(self, x, squeeze=None):
         """Compute the optimal input at state x"""
         _, inputs = self.compute_trajectory(x, squeeze=squeeze)
-        return None if inputs is None else inputs.transpose()[0]
+        return None if inputs is None else inputs[:,0]
 
     # Compute the optimal trajectory from the current state
     def compute_trajectory(
@@ -242,7 +242,7 @@ class OptimalControlProblem():
         """Compute the optimal input at state x"""
         # Store the initial state (for use in constraint_function)
         self.x = x
-        
+
         # Call ScipPy optimizer
         res = sp.optimize.minimize(
             self.cost_function, self.initial_guess,
@@ -263,14 +263,33 @@ class OptimalControlProblem():
                 self.system, self.time_vector, inputs, x, return_x=True)
         else:
             states=None
-            
+
         return _process_time_response(
             self.system, self.time_vector, inputs, states,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
+    # Create an input/output system implementing an MPC controller
+    def create_mpc_iosystem(self, dt=True):
+        def _update(t, x, u, params={}):
+            inputs = x.reshape((self.system.ninputs, self.time_vector.size))
+            self.initial_guess = np.hstack(
+                [inputs[:,1:], inputs[:,-1:]]).reshape(-1)
+            _, inputs = self.compute_trajectory(u)
+            return inputs.reshape(-1)
+
+        def _output(t, x, u, params={}):
+            inputs = x.reshape((self.system.ninputs, self.time_vector.size))
+            return inputs[:,0]
+
+        return ct.NonlinearIOSystem(
+            _update, _output, dt=dt,
+            inputs=self.system.nstates,
+            outputs=self.system.ninputs,
+            states=self.system.ninputs * self.time_vector.size)
+
 
 #
-# Create a polytope constraint on the system state
+# Create a polytope constraint on the system state: A x <= b
 #
 # As in the cost function evaluation, the main "trick" in creating a constrain
 # on the state or input is to properly evaluate the constraint on the stacked
@@ -283,26 +302,48 @@ class OptimalControlProblem():
 # optimization methods LinearConstraint and NonlinearConstraint as "types" to
 # keep things consistent with the terminology in scipy.optimize.
 #
-def state_poly_constraint(sys, polytope):
+def state_poly_constraint(sys, A, b):
+    """Create state constraint from polytope"""
+    # TODO: make sure the system and constraints are compatible
+
+    # Return a linear constraint object based on the polynomial
+    return (opt.LinearConstraint,
+            np.hstack([A, np.zeros((A.shape[0], sys.ninputs))]),
+            np.full(A.shape[0], -np.inf), polytope.b)
+
+
+def state_range_constraint(sys, lb, ub):
     """Create state constraint from polytope"""
     # TODO: make sure the system and constraints are compatible
 
     # Return a linear constraint object based on the polynomial
     return (opt.LinearConstraint,
             np.hstack(
-                [polytope.A, np.zeros((polytope.A.shape[0], sys.ninputs))]),
-            np.full(polytope.A.shape[0], -np.inf), polytope.b)
+                [np.eye(sys.nstates), np.zeros((sys.nstates, sys.ninputs))]),
+            np.array(lb), np.array(ub))
+
 
 # Create a constraint polytope on the system input
-def input_poly_constraint(sys, polytope):
+def input_poly_constraint(sys, A, b):
     """Create input constraint from polytope"""
     # TODO: make sure the system and constraints are compatible
 
     # Return a linear constraint object based on the polynomial
     return (opt.LinearConstraint,
             np.hstack(
-                [np.zeros((polytope.A.shape[0], sys.nstates)), polytope.A]),
-            np.full(polytope.A.shape[0], -np.inf), polytope.b)
+                [np.zeros((A.shape[0], sys.nstates)), A]),
+            np.full(A.shape[0], -np.inf), b)
+
+
+def input_range_constraint(sys, lb, ub):
+    """Create input constraint from polytope"""
+    # TODO: make sure the system and constraints are compatible
+
+    # Return a linear constraint object based on the polynomial
+    return (opt.LinearConstraint,
+            np.hstack(
+                [np.zeros((sys.ninputs, sys.nstates)), np.eye(sys.ninputs)]),
+            np.array(lb), np.array(ub))
 
 
 #
@@ -316,9 +357,9 @@ def input_poly_constraint(sys, polytope):
 # imposing a linear constraint:
 #
 #     np.hstack(
-#         [polytope.A @ sys.C, np.zeros((polytope.A.shape[0], sys.ninputs))])
+#         [A @ sys.C, np.zeros((A.shape[0], sys.ninputs))])
 #
-def output_poly_constraint(sys, polytope):
+def output_poly_constraint(sys, A, b):
     """Create output constraint from polytope"""
     # TODO: make sure the system and constraints are compatible
 
@@ -329,12 +370,12 @@ def output_poly_constraint(sys, polytope):
         states = x[:sys.nstates]
         inputs = x[sys.nstates:]
         outputs = sys._out(0, states, inputs)
-        return polytope.A @ outputs
+        return A @ outputs
 
     # Return a nonlinear constraint object based on the polynomial
     return (opt.NonlinearConstraint,
             _evaluate_output_constraint,
-            np.full(polytope.A.shape[0], -np.inf), polytope.b)
+            np.full(A.shape[0], -np.inf), b)
 
 
 #
@@ -345,8 +386,8 @@ def output_poly_constraint(sys, polytope):
 # evaluates to associted quadratic cost.  This is compatible with the way that
 # the `cost_function` evaluates the cost at each point in the trajectory.
 #
-def quadratic_cost(sys, Q, R):
+def quadratic_cost(sys, Q, R, x0=0, u0=0):
     """Create quadratic cost function"""
     Q = np.atleast_2d(Q)
     R = np.atleast_2d(R)
-    return lambda x, u: x @ Q @ x + u @ R @ u
+    return lambda x, u: ((x-x0) @ Q @ (x-x0) + (u-u0) @ R @ (u-u0)).item()

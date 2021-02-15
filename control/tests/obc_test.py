@@ -10,7 +10,7 @@ import numpy as np
 import scipy as sp
 import control as ct
 import control.obc as obc
-import polytope as pc
+from control.tests.conftest import slycotonly
 
 def test_finite_horizon_mpc_simple():
     # Define a linear system with constraints
@@ -21,8 +21,7 @@ def test_finite_horizon_mpc_simple():
 
     # State and input constraints
     constraints = [
-        obc.state_poly_constraint(sys, pc.box2poly([[-5, 5], [-5, 5]])),
-        obc.input_poly_constraint(sys, pc.box2poly([[-1, 1]])),
+        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
     ]
 
     # Quadratic state and input penalty
@@ -48,10 +47,12 @@ def test_finite_horizon_mpc_simple():
     # Convert controller to an explicit form (not implemented yet)
     # mpc_explicit = obc.explicit_mpc();
 
-    # Test explicit controller 
+    # Test explicit controller
     # u_explicit = mpc_explicit(x0)
     # np.testing.assert_array_almost_equal(u_openloop, u_explicit)
 
+
+@slycotonly
 def test_finite_horizon_mpc_oscillator():
     # oscillator model defined in 2D
     # Source: https://www.mpt3.org/UI/RegulationProblem
@@ -65,8 +66,7 @@ def test_finite_horizon_mpc_oscillator():
 
     # state and input constraints
     trajectory_constraints = [
-        obc.output_poly_constraint(sys, pc.box2poly([[-10, 10]])),
-        obc.input_poly_constraint(sys, pc.box2poly([[-1, 1]]))
+        (sp.optimize.LinearConstraint, np.eye(3), [-10, -10, -1], [10, 10, 1]),
     ]
 
     # Include weights on states/inputs
@@ -85,3 +85,57 @@ def test_finite_horizon_mpc_oscillator():
 
     # Add tests to make sure everything works
     t, u_openloop = optctrl.compute_trajectory([1, 1])
+
+
+def test_mpc_iosystem():
+    # model of an aircraft discretized with 0.2s sampling time
+    # Source: https://www.mpt3.org/UI/RegulationProblem
+    A = [[0.99, 0.01, 0.18, -0.09,   0],
+         [   0, 0.94,    0,  0.29,   0],
+         [   0, 0.14, 0.81,  -0.9,   0],
+         [   0, -0.2,    0,  0.95,   0],
+         [   0, 0.09,    0,     0, 0.9]]
+    B = [[ 0.01, -0.02],
+         [-0.14,     0],
+         [ 0.05,  -0.2],
+         [ 0.02,     0],
+         [-0.01, 0]]
+    C = [[0, 1, 0, 0, -1],
+         [0, 0, 1, 0,  0],
+         [0, 0, 0, 1,  0],
+         [1, 0, 0, 0,  0]]
+    model = ct.ss2io(ct.ss(A, B, C, 0, 0.2))
+
+    # For the simulation we need the full state output
+    sys = ct.ss2io(ct.ss(A, B, np.eye(5), 0, 0.2))
+
+    # compute the steady state values for a particular value of the input
+    ud = np.array([0.8, -0.3])
+    xd = np.linalg.inv(np.eye(5) - A) @ B @ ud
+    yd = C @ xd
+
+    # provide constraints on the system signals
+    constraints = [obc.input_range_constraint(sys, [-5, -6], [5, 6])]
+
+    # provide penalties on the system signals
+    Q = model.C.transpose() @ np.diag([10, 10, 10, 10]) @ model.C
+    R = np.diag([3, 2])
+    cost = obc.quadratic_cost(model, Q, R, x0=xd, u0=ud)
+
+    # online MPC controller object is constructed with a horizon 6
+    optctrl = obc.OptimalControlProblem(
+        model, np.arange(0, 6) * 0.2, cost, constraints)
+
+    # Define an I/O system implementing model predictive control
+    ctrl = optctrl.create_mpc_iosystem()
+    loop = ct.feedback(sys, ctrl, 1)
+
+    # Choose a nearby initial condition to speed up computation
+    X0 = np.hstack([xd, np.kron(ud, np.ones(6))]) * 0.99
+
+    Nsim = 10
+    tout, xout = ct.input_output_response(
+        loop, np.arange(0, Nsim) * 0.2, 0, X0)
+
+    # Make sure the system converged to the desired state
+    np.testing.assert_almost_equal(xout[0:sys.nstates, -1], xd, decimal=1)
