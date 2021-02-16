@@ -115,7 +115,7 @@ class InputOutputSystem(object):
       difference equation for the system.  This must be specified by the
       subclass for the system.
 
-    * _out(t, x, u): compute the output for the current state of the system.
+    * output(t, x, u): compute the output for the current state of the system.
       The default is to return the entire system state.
 
     """
@@ -392,7 +392,7 @@ class InputOutputSystem(object):
         NotImplemented("Dynamics not implemented for system of type ",
                        type(self))
 
-    def _out(self, t, x, u, params={}):
+    def output(self, t, x, u, params={}):
         """Compute the output of the system
 
         Given time `t`, input `u` and state `x`, returns the output of the
@@ -574,7 +574,7 @@ class InputOutputSystem(object):
         """
         #
         # If the linearization is not defined by the subclass, perform a
-        # numerical linearization use the `dynamics()` and `_out()` member
+        # numerical linearization use the `dynamics()` and `output()` member
         # functions.
         #
 
@@ -589,14 +589,14 @@ class InputOutputSystem(object):
             u0 = np.ones((ninputs,)) * u0
 
         # Compute number of outputs by evaluating the output function
-        noutputs = _find_size(self.noutputs, self._out(t, x0, u0))
+        noutputs = _find_size(self.noutputs, self.output(t, x0, u0))
 
         # Update the current parameters
         self._update_params(params)
 
         # Compute the nominal value of the update law and output
         F0 = self.dynamics(t, x0, u0)
-        H0 = self._out(t, x0, u0)
+        H0 = self.output(t, x0, u0)
 
         # Create empty matrices that we can fill up with linearizations
         A = np.zeros((nstates, nstates))        # Dynamics matrix
@@ -609,14 +609,14 @@ class InputOutputSystem(object):
             dx = np.zeros((nstates,))
             dx[i] = eps
             A[:, i] = (self.dynamics(t, x0 + dx, u0) - F0) / eps
-            C[:, i] = (self._out(t, x0 + dx, u0) - H0) / eps
+            C[:, i] = (self.output(t, x0 + dx, u0) - H0) / eps
 
         # Perturb each of the input variables and compute linearization
         for i in range(ninputs):
             du = np.zeros((ninputs,))
             du[i] = eps
             B[:, i] = (self.dynamics(t, x0, u0 + du) - F0) / eps
-            D[:, i] = (self._out(t, x0, u0 + du) - H0) / eps
+            D[:, i] = (self.output(t, x0, u0 + du) - H0) / eps
 
         # Create the state space system
         linsys = LinearIOSystem(
@@ -741,7 +741,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             + np.dot(self.B, np.reshape(u, (-1, 1)))
         return np.array(xdot).reshape((-1,))
 
-    def _out(self, t, x, u):
+    def output(self, t, x, u):
         # Convert input to column vector and then change output to 1D array
         y = np.dot(self.C, np.reshape(x, (-1, 1))) \
             + np.dot(self.D, np.reshape(u, (-1, 1)))
@@ -890,12 +890,12 @@ class NonlinearIOSystem(InputOutputSystem):
                 "function evaluation is only supported for static "
                 "input/output systems")
 
-        # If we received any parameters, update them before calling _out()
+        # If we received any parameters, update them before calling output()
         if params is not None:
             sys._update_params(params)
 
         # Evaluate the function on the argument
-        out = sys._out(0, np.array((0,)), np.asarray(u))
+        out = sys.output(0, np.array((0,)), np.asarray(u))
         _, out = _process_time_response(sys, None, out, None, squeeze=squeeze)
         return out
 
@@ -909,7 +909,7 @@ class NonlinearIOSystem(InputOutputSystem):
             if self.updfcn is not None else []
         return np.array(xdot).reshape((-1,))
 
-    def _out(self, t, x, u):
+    def output(self, t, x, u):
         y = self.outfcn(t, x, u, self._current_params) \
             if self.outfcn is not None else x
         return np.array(y).reshape((-1,))
@@ -1098,7 +1098,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         return xdot
 
-    def _out(self, t, x, u):
+    def output(self, t, x, u):
         # Make sure state and input are vectors
         x = np.array(x, ndmin=1)
         u = np.array(u, ndmin=1)
@@ -1130,7 +1130,7 @@ class InterconnectedSystem(InputOutputSystem):
             state_index, input_index, output_index = 0, 0, 0
             for sys in self.syslist:
                 # Compute outputs for each system from current state
-                ysys = sys._out(
+                ysys = sys.output(
                     t, x[state_index:state_index + sys.nstates],
                     ulist[input_index:input_index + sys.ninputs])
 
@@ -1521,10 +1521,10 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     if nstates == 0:
         # No states => map input to output
         u = U[0] if len(U.shape) == 1 else U[:, 0]
-        y = np.zeros((np.shape(sys._out(T[0], X0, u))[0], len(T)))
+        y = np.zeros((np.shape(sys.output(T[0], X0, u))[0], len(T)))
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
-            y[:, i] = sys._out(T[i], [], u)
+            y[:, i] = sys.output(T[i], [], u)
         return _process_time_response(
             sys, T, y, np.array((0, 0, np.asarray(T).size)),
             transpose=transpose, return_x=return_x, squeeze=squeeze)
@@ -1551,10 +1551,10 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         # Compute the output associated with the state (and use sys.out to
         # figure out the number of outputs just in case it wasn't specified)
         u = U[0] if len(U.shape) == 1 else U[:, 0]
-        y = np.zeros((np.shape(sys._out(T[0], X0, u))[0], len(T)))
+        y = np.zeros((np.shape(sys.output(T[0], X0, u))[0], len(T)))
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
-            y[:, i] = sys._out(T[i], soln.y[:, i], u)
+            y[:, i] = sys.output(T[i], soln.y[:, i], u)
 
     elif isdtime(sys):
         # Make sure the time vector is uniformly spaced
@@ -1587,7 +1587,7 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             # Store the current state and output
             soln.y.append(x)
-            y.append(sys._out(T[i], x, u(T[i])))
+            y.append(sys.output(T[i], x, u(T[i])))
 
             # Update the state for the next iteration
             x = sys.dynamics(T[i], x, u(T[i]))
@@ -1713,7 +1713,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
             # TODO: update to allow discrete time systems
             def ode_dynamics(z): return sys.dynamics(t, z, u0)
             result = root(ode_dynamics, x0, **kw)
-            z = (result.x, u0, sys._out(t, result.x, u0))
+            z = (result.x, u0, sys.output(t, result.x, u0))
         else:
             # Take y0 as fixed and minimize over x and u
             def rootfun(z):
@@ -1721,11 +1721,11 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
                 x, u = np.split(z, [nstates])
                 # TODO: update to allow discrete time systems
                 return np.concatenate(
-                    (sys.dynamics(t, x, u), sys._out(t, x, u) - y0), axis=0)
+                    (sys.dynamics(t, x, u), sys.output(t, x, u) - y0), axis=0)
             z0 = np.concatenate((x0, u0), axis=0)   # Put variables together
             result = root(rootfun, z0, **kw)        # Find the eq point
             x, u = np.split(result.x, [nstates])    # Split result back in two
-            z = (x, u, sys._out(t, x, u))
+            z = (x, u, sys.output(t, x, u))
 
     else:
         # General case: figure out what variables to constrain
@@ -1826,7 +1826,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
             dx = sys.dynamics(t, x, u) - dx0
             if dtime:
                 dx -= x           # TODO: check
-            dy = sys._out(t, x, u) - y0
+            dy = sys.output(t, x, u) - y0
 
             # Map the results into the constrained variables
             return np.concatenate((dx[deriv_vars], dy[output_vars]), axis=0)
@@ -1840,7 +1840,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         # Extract out the results and insert into x and u
         x[state_vars] = result.x[:nstate_vars]
         u[input_vars] = result.x[nstate_vars:]
-        z = (x, u, sys._out(t, x, u))
+        z = (x, u, sys.output(t, x, u))
 
     # Return the result based on what the user wants and what we found
     if not return_y:

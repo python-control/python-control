@@ -713,7 +713,7 @@ class TestIOSys:
             y0=[0.1, 0.1], return_result=True)
         assert result.success
         np.testing.assert_array_almost_equal(
-            nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
+            nlsys.output(0, xeq, ueq), [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
             nlsys.dynamics(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
@@ -723,7 +723,7 @@ class TestIOSys:
             iy = [0, 1], return_result=True)
         assert result.success
         np.testing.assert_array_almost_equal(
-            nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
+            nlsys.output(0, xeq, ueq), [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
             nlsys.dynamics(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
@@ -731,7 +731,7 @@ class TestIOSys:
         xeq, ueq = ios.find_eqpt(
             nlsys, [0, 0, 0, 0], [0.01, 4*9.8], y0=[0.1, 0.1], iu = [])
         np.testing.assert_array_almost_equal(
-            nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
+            nlsys.output(0, xeq, ueq), [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
             nlsys.dynamics(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
@@ -744,7 +744,7 @@ class TestIOSys:
             idx=[2, 3, 4, 5], ix=[0, 1], return_result=True)
         assert result.success
         np.testing.assert_array_almost_equal(
-            nlsys_full._out(0, xeq, ueq)[[2, 3]], [0.1, 0.1], decimal=5)
+            nlsys_full.output(0, xeq, ueq)[[2, 3]], [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
             nlsys_full.dynamics(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
 
@@ -757,7 +757,7 @@ class TestIOSys:
         assert result.success
         np.testing.assert_almost_equal(ueq[1], 4*9.8, decimal=5)
         np.testing.assert_array_almost_equal(
-            nlsys_full._out(0, xeq, ueq)[[3]], [0.1], decimal=5)
+            nlsys_full.output(0, xeq, ueq)[[3]], [0.1], decimal=5)
         np.testing.assert_array_almost_equal(
             nlsys_full.dynamics(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
 
@@ -769,7 +769,7 @@ class TestIOSys:
             ix=[0, 1], return_result=True)
         assert result.success
         np.testing.assert_array_almost_equal(
-            nlsys_full._out(0, xeq, ueq)[-3:], [0.1, 0, 0], decimal=5)
+            nlsys_full.output(0, xeq, ueq)[-3:], [0.1, 0, 0], decimal=5)
         np.testing.assert_array_almost_equal(
             nlsys_full.dynamics(0, xeq, ueq)[-5:], np.zeros((5,)), decimal=5)
 

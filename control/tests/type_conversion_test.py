@@ -19,7 +19,7 @@ def sys_dict():
     sdict['frd'] = ct.frd([10+0j, 9 + 1j, 8 + 2j], [1,2,3])
     sdict['lio'] = ct.LinearIOSystem(ct.ss([[-1]], [[5]], [[5]], [[0]]))
     sdict['ios'] = ct.NonlinearIOSystem(
-        sdict['lio'].dynamics, sdict['lio']._out, 1, 1, 1)
+        sdict['lio'].dynamics, sdict['lio'].output, 1, 1, 1)
     sdict['arr'] = np.array([[2.0]])
     sdict['flt'] = 3.
     return sdict
