@@ -8,6 +8,7 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 """
 
 import numpy as np
+from numpy.testing import assert_allclose, assert_array_almost_equal
 import pytest
 import operator
 from numpy.linalg import solve
@@ -42,14 +43,26 @@ class TestStateSpace:
                 [0., 1.]]
         return (A322, B322, C322, D322)
 
+
+    @pytest.fixture
+    def sys121(self):
+        """2 state, 1 input, 1 output (siso)  system"""
+        A121 = [[4., 1.],
+                [2., -3]]
+        B121 = [[5.],
+                [-3.]]
+        C121 = [[2., -4]]
+        D121 = [[3.]]
+        return StateSpace(A121, B121, C121, D121)
+
     @pytest.fixture
     def sys322(self, sys322ABCD):
-        """3-states square system (2 inputs x 2 outputs)"""
+        """3-state square system (2 inputs x 2 outputs)"""
         return StateSpace(*sys322ABCD)
 
     @pytest.fixture
     def sys222(self):
-        """2-states square system (2 inputs x 2 outputs)"""
+        """2-state square system (2 inputs x 2 outputs)"""
         A222 = [[4., 1.],
                 [2., -3]]
         B222 = [[5., 2.],
@@ -743,6 +756,45 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(
             np.squeeze(sys322.horner(1.j)),
             mag[:, :, 0] * np.exp(1.j * phase[:, :, 0]))
+
+    @pytest.mark.parametrize('x', [[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    @pytest.mark.parametrize('u', [None, 0, 1, np.atleast_1d(2)])
+    def test_dynamics_output_siso(self, x, u, sys121):
+        assert_array_almost_equal(
+            sys121.dynamics(x, u),
+            sys121.A.dot(x) + (0 if u is None else sys121.B.dot(u)))
+        assert_array_almost_equal(
+            sys121.output(x, u),
+            sys121.C.dot(x) + (0 if u is None else sys121.D.dot(u)))
+
+    # too few and too many states and inputs
+    @pytest.mark.parametrize('x', [0, 1, [], [1, 2, 3], np.atleast_1d(2)])
+    @pytest.mark.parametrize('u', [None, [1, 1], np.atleast_1d((2, 2))])
+    def test_dynamics_output_siso_fails(self, x, u, sys121):
+        with pytest.raises(ValueError):
+            sys121.dynamics(x, u)
+        with pytest.raises(ValueError):
+            sys121.output(x, u)
+
+    @pytest.mark.parametrize('x',[[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    @pytest.mark.parametrize('u',
+        [None, [1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    def test_dynamics_output_mimo(self, x, u, sys222):
+        assert_array_almost_equal(
+            sys222.dynamics(x, u),
+            sys222.A.dot(x) + (0 if u is None else sys222.B.dot(u)))
+        assert_array_almost_equal(
+            sys222.output(x, u),
+            sys222.C.dot(x) + (0 if u is None else sys222.D.dot(u)))
+
+    # too few and too many states and inputs
+    @pytest.mark.parametrize('x', [0, 1, [1, 1, 1]])
+    @pytest.mark.parametrize('u', [None, 0, 1, [1, 1, 1]])
+    def test_dynamics_mimo_fails(self, x, u, sys222):
+        with pytest.raises(ValueError):
+            sys222.dynamics(x, u)
+        with pytest.raises(ValueError):
+            sys222.output(x, u)
 
 class TestRss:
     """These are tests for the proper functionality of statesp.rss."""

@@ -1215,8 +1215,76 @@ class StateSpace(LTI):
 
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
-        if A and B are zero. """
+        if `self.A` and `self.B` are zero.
+        """
         return not np.any(self.A) and not np.any(self.B)
+
+    def dynamics(self, x, u=None):
+        """Compute the dynamics of the system
+
+        Given input `u` and state `x`, returns the dynamics of the state-space
+        system. If the system is continuous, returns the time derivative dx/dt
+
+            dx/dt = A x + B u
+
+        where A and B are the state-space matrices of the system. If the
+        system is discrete-time, returns the next value of `x`:
+
+            x[k+1] = A x[k] + B u[k]
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        x : array_like
+            current state
+        u : array_like
+            input (optional)
+
+        Returns
+        -------
+        dx/dt or x[k+1] : ndarray
+        """
+
+        if len(np.atleast_1d(x)) != self.nstates:
+            raise ValueError("len(x) must be equal to number of states")
+        if u is not None:
+            if len(np.atleast_1d(u)) != self.ninputs:
+                raise ValueError("len(u) must be equal to number of inputs")
+
+        return self.A.dot(x) if u is None else self.A.dot(x) + self.B.dot(u)
+
+    def output(self, x, u=None):
+        """Compute the output of the system
+
+        Given input `u` and state `x`, returns the output `y` of the
+        state-space system:
+
+            y = C x + D u
+
+        where A and B are the state-space matrices of the system. The inputs
+        `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        x : array_like
+            current state
+        u : array_like
+            input (optional)
+
+        Returns
+        -------
+        y : ndarray
+        """
+        if len(np.atleast_1d(x)) != self.nstates:
+            raise ValueError("len(x) must be equal to number of states")
+        if u is not None:
+            if len(np.atleast_1d(u)) != self.ninputs:
+                raise ValueError("len(u) must be equal to number of inputs")
+
+        return self.C.dot(x) if u is None else self.C.dot(x) + self.D.dot(u)
+
+
 
 
 # TODO: add discrete time check
