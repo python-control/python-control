@@ -608,7 +608,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         be 'right' (default), 'left', or 'none'.
 
     warn_nyquist : bool, optional
-        If set to `False', turn off warnings about frequencies above Nyquist.
+        If set to 'False', turn off warnings about frequencies above Nyquist.
 
     *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
