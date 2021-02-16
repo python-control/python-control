@@ -13,7 +13,7 @@ import control.obc as obc
 from control.tests.conftest import slycotonly
 
 
-def test_finite_horizon_mpc_simple():
+def test_finite_horizon_simple():
     # Define a linear system with constraints
     # Source: https://www.mpt3.org/UI/RegulationProblem
 
@@ -30,18 +30,13 @@ def test_finite_horizon_mpc_simple():
     R = [[1]]
     cost = obc.quadratic_cost(sys, Q, R)
 
-    # Create a model predictive controller system
+    # Set up the optimal control problem
     time = np.arange(0, 5, 1)
-    optctrl = obc.OptimalControlProblem(sys, time, cost, constraints)
-    mpc = optctrl.mpc
-
-    # Optimal control input for a given value of the initial state
     x0 = [4, 0]
-    u = mpc(x0)
-    np.testing.assert_almost_equal(u, -1)
 
     # Retrieve the full open-loop predictions
-    t, u_openloop = optctrl.compute_trajectory(x0, squeeze=True)
+    t, u_openloop = obc.compute_optimal_input(
+        sys, time, x0, cost, constraints, squeeze=True)
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=4)
 
@@ -54,7 +49,7 @@ def test_finite_horizon_mpc_simple():
 
 
 @slycotonly
-def test_finite_horizon_mpc_oscillator():
+def test_class_interface():
     # oscillator model defined in 2D
     # Source: https://www.mpt3.org/UI/RegulationProblem
     A = [[0.5403, -0.8415], [0.8415, 0.5403]]
@@ -124,11 +119,10 @@ def test_mpc_iosystem():
     cost = obc.quadratic_cost(model, Q, R, x0=xd, u0=ud)
 
     # online MPC controller object is constructed with a horizon 6
-    optctrl = obc.OptimalControlProblem(
+    ctrl = obc.create_mpc_iosystem(
         model, np.arange(0, 6) * 0.2, cost, constraints)
 
     # Define an I/O system implementing model predictive control
-    ctrl = optctrl.create_mpc_iosystem()
     loop = ct.feedback(sys, ctrl, 1)
 
     # Choose a nearby initial condition to speed up computation

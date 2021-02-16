@@ -30,3 +30,14 @@ that allow for linear, nonlinear, and interconnected elements:
    LinearICSystem
    LinearIOSystem
    NonlinearIOSystem
+
+Additional classes
+==================
+.. autosummary::
+
+   flatsys.BasisFamily
+   flatsys.FlatSystem
+   flatsys.LinearFlatSystem
+   flatsys.PolyFamily
+   flatsys.SystemTrajectory
+   obc.OptimalControlProblem
