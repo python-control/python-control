@@ -29,8 +29,8 @@ Input/output systems can be created from state space LTI systems by using the
   io_sys = LinearIOSystem(ss_sys)
 
 Nonlinear input/output systems can be created using the
-:class:`~control.NonlinearIOSystem` class, which requires the definition of an
-update function (for the right hand side of the differential or different
+:class:`~control.NonlinearIOSystem` class, which requires the definition of a
+dynamics function (the right hand side of the differential or difference
 equation) and and output function (computes the outputs from the state)::
 
   io_sys = NonlinearIOSystem(updfcn, outfcn, inputs=M, outputs=P, states=N)
@@ -68,7 +68,7 @@ We begin by defining the dynamics of the system
   import numpy as np
   import matplotlib.pyplot as plt
 
-  def predprey_rhs(t, x, u, params):
+  def predprey_dynamics(t, x, u, params):
       # Parameter setup
       a = params.get('a', 3.2)
       b = params.get('b', 0.6)
@@ -76,18 +76,18 @@ We begin by defining the dynamics of the system
       d = params.get('d', 0.56)
       k = params.get('k', 125)
       r = params.get('r', 1.6)
-      
+
       # Map the states into local variable names
       H = x[0]
       L = x[1]
 
       # Compute the control action (only allow addition of food)
       u_0 = u if u > 0 else 0
-  
+
       # Compute the discrete updates
       dH = (r + u_0) * H * (1 - H/k) - (a * H * L)/(c + H)
       dL = b * (a * H *  L)/(c + H) - d * L
-  
+
       return [dH, dL]
 
 We now create an input/output system using these dynamics:
@@ -95,7 +95,7 @@ We now create an input/output system using these dynamics:
 .. code-block:: python
 
   io_predprey = control.NonlinearIOSystem(
-      predprey_rhs, None, inputs=('u'), outputs=('H', 'L'),
+      predprey_dynamics, None, inputs=('u'), outputs=('H', 'L'),
       states=('H', 'L'), name='predprey')
 
 Note that since we have not specified an output function, the entire state
@@ -108,10 +108,10 @@ of the system:
 
   X0 = [25, 20]                 # Initial H, L
   T = np.linspace(0, 70, 500)   # Simulation 70 years of time
-  
+
   # Simulate the system
   t, y = control.input_output_response(io_predprey, T, 0, X0)
-  
+
   # Plot the response
   plt.figure(1)
   plt.plot(t, y[0])
@@ -171,14 +171,14 @@ function:
     inplist=['control.Ld'],
     outlist=['predprey.H', 'predprey.L', 'control.y[0]']
   )
-       
+
 Finally, we simulate the closed loop system:
 
 .. code-block:: python
 
   # Simulate the system
   t, y = control.input_output_response(io_closed, T, 30, [15, 20])
-  
+
   # Plot the response
   plt.figure(2)
   plt.subplot(2, 1, 1)

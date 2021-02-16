@@ -111,7 +111,7 @@ class InputOutputSystem(object):
     The :class:`~control.InputOuputSystem` class (and its subclasses) makes
     use of two special methods for implementing much of the work of the class:
 
-    * _rhs(t, x, u): compute the right hand side of the differential or
+    * dynamics(t, x, u): compute the right hand side of the differential or
       difference equation for the system.  This must be specified by the
       subclass for the system.
 
@@ -353,28 +353,69 @@ class InputOutputSystem(object):
     # Find a signal by name
     def _find_signal(self, name, sigdict): return sigdict.get(name, None)
 
-    # Update parameters used for _rhs, _out (used by subclasses)
+    # Update parameters used for dynamics, _out (used by subclasses)
     def _update_params(self, params, warning=False):
         if (warning):
             warn("Parameters passed to InputOutputSystem ignored.")
 
-    def _rhs(self, t, x, u):
-        """Evaluate right hand side of a differential or difference equation.
+    def dynamics(self, t, x, u):
+        """Compute the dynamics of a differential or difference equation.
 
-        Private function used to compute the right hand side of an
-        input/output system model.
+        Given time `t`, input `u` and state `x`, returns the dynamics of the
+        system. If the system is continuous, returns the time derivative
 
+            ``dx/dt = f(t, x, u)``
+
+        where `f` is the system's (possibly nonlinear) dynamics function.
+        If the system is discrete-time, returns the next value of `x`:
+
+            ``x[t+dt] = f(t, x[t], u[t])``
+
+        Where `t` is a scalar.
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        `dx/dt` or `x[t+dt]` : ndarray
         """
-        NotImplemented("Evaluation not implemented for system of type ",
+
+        NotImplemented("Dynamics not implemented for system of type ",
                        type(self))
 
     def _out(self, t, x, u, params={}):
-        """Evaluate the output of a system at a given state, input, and time
+        """Compute the output of the system
 
-        Private function used to compute the output of of an input/output
-        system model given the state, input, parameters, and time.
+        Given time `t`, input `u` and state `x`, returns the output of the
+        system:
 
+            ``y = g(t, x, u)``
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        y : ndarray
         """
+
         # If no output function was defined in subclass, return state
         return x
 
@@ -533,7 +574,7 @@ class InputOutputSystem(object):
         """
         #
         # If the linearization is not defined by the subclass, perform a
-        # numerical linearization use the `_rhs()` and `_out()` member
+        # numerical linearization use the `dynamics()` and `_out()` member
         # functions.
         #
 
@@ -554,7 +595,7 @@ class InputOutputSystem(object):
         self._update_params(params)
 
         # Compute the nominal value of the update law and output
-        F0 = self._rhs(t, x0, u0)
+        F0 = self.dynamics(t, x0, u0)
         H0 = self._out(t, x0, u0)
 
         # Create empty matrices that we can fill up with linearizations
@@ -567,14 +608,14 @@ class InputOutputSystem(object):
         for i in range(nstates):
             dx = np.zeros((nstates,))
             dx[i] = eps
-            A[:, i] = (self._rhs(t, x0 + dx, u0) - F0) / eps
+            A[:, i] = (self.dynamics(t, x0 + dx, u0) - F0) / eps
             C[:, i] = (self._out(t, x0 + dx, u0) - H0) / eps
 
         # Perturb each of the input variables and compute linearization
         for i in range(ninputs):
             du = np.zeros((ninputs,))
             du[i] = eps
-            B[:, i] = (self._rhs(t, x0, u0 + du) - F0) / eps
+            B[:, i] = (self.dynamics(t, x0, u0 + du) - F0) / eps
             D[:, i] = (self._out(t, x0, u0 + du) - H0) / eps
 
         # Create the state space system
@@ -694,7 +735,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         if params and warning:
             warn("Parameters passed to LinearIOSystems are ignored.")
 
-    def _rhs(self, t, x, u):
+    def dynamics(self, t, x, u):
         # Convert input to column vector and then change output to 1D array
         xdot = np.dot(self.A, np.reshape(x, (-1, 1))) \
             + np.dot(self.B, np.reshape(u, (-1, 1)))
@@ -863,7 +904,7 @@ class NonlinearIOSystem(InputOutputSystem):
         self._current_params = self.params.copy()
         self._current_params.update(params)
 
-    def _rhs(self, t, x, u):
+    def dynamics(self, t, x, u):
         xdot = self.updfcn(t, x, u, self._current_params) \
             if self.updfcn is not None else []
         return np.array(xdot).reshape((-1,))
@@ -1033,7 +1074,7 @@ class InterconnectedSystem(InputOutputSystem):
             local.update(params)        # update with locally passed parameters
             sys._update_params(local, warning=warning)
 
-    def _rhs(self, t, x, u):
+    def dynamics(self, t, x, u):
         # Make sure state and input are vectors
         x = np.array(x, ndmin=1)
         u = np.array(u, ndmin=1)
@@ -1047,7 +1088,7 @@ class InterconnectedSystem(InputOutputSystem):
         for sys in self.syslist:
             # Update the right hand side for this subsystem
             if sys.nstates != 0:
-                xdot[state_index:state_index + sys.nstates] = sys._rhs(
+                xdot[state_index:state_index + sys.nstates] = sys.dynamics(
                     t, x[state_index:state_index + sys.nstates],
                     ulist[input_index:input_index + sys.ninputs])
 
@@ -1497,14 +1538,14 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
 
     # Create a lambda function for the right hand side
     u = sp.interpolate.interp1d(T, U, fill_value="extrapolate")
-    def ivp_rhs(t, x): return sys._rhs(t, x, u(t))
+    def ivp_dynamics(t, x): return sys.dynamics(t, x, u(t))
 
     # Perform the simulation
     if isctime(sys):
         if not hasattr(sp.integrate, 'solve_ivp'):
             raise NameError("scipy.integrate.solve_ivp not found; "
                             "use SciPy 1.0 or greater")
-        soln = sp.integrate.solve_ivp(ivp_rhs, (T0, Tf), X0, t_eval=T,
+        soln = sp.integrate.solve_ivp(ivp_dynamics, (T0, Tf), X0, t_eval=T,
                                       method=method, vectorized=False)
 
         # Compute the output associated with the state (and use sys.out to
@@ -1549,7 +1590,7 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
             y.append(sys._out(T[i], x, u(T[i])))
 
             # Update the state for the next iteration
-            x = sys._rhs(T[i], x, u(T[i]))
+            x = sys.dynamics(T[i], x, u(T[i]))
 
         # Convert output to numpy arrays
         soln.y = np.transpose(np.array(soln.y))
@@ -1670,8 +1711,8 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         if y0 is None:
             # Take u0 as fixed and minimize over x
             # TODO: update to allow discrete time systems
-            def ode_rhs(z): return sys._rhs(t, z, u0)
-            result = root(ode_rhs, x0, **kw)
+            def ode_dynamics(z): return sys.dynamics(t, z, u0)
+            result = root(ode_dynamics, x0, **kw)
             z = (result.x, u0, sys._out(t, result.x, u0))
         else:
             # Take y0 as fixed and minimize over x and u
@@ -1680,7 +1721,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
                 x, u = np.split(z, [nstates])
                 # TODO: update to allow discrete time systems
                 return np.concatenate(
-                    (sys._rhs(t, x, u), sys._out(t, x, u) - y0), axis=0)
+                    (sys.dynamics(t, x, u), sys._out(t, x, u) - y0), axis=0)
             z0 = np.concatenate((x0, u0), axis=0)   # Put variables together
             result = root(rootfun, z0, **kw)        # Find the eq point
             x, u = np.split(result.x, [nstates])    # Split result back in two
@@ -1782,7 +1823,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
             u[input_vars] = z[nstate_vars:]
 
             # Compute the update and output maps
-            dx = sys._rhs(t, x, u) - dx0
+            dx = sys.dynamics(t, x, u) - dx0
             if dtime:
                 dx -= x           # TODO: check
             dy = sys._out(t, x, u) - y0

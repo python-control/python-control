@@ -56,7 +56,7 @@ class TestIOSys:
         # Make sure that the right hand side matches linear system
         for x, u in (([0, 0], 0), ([1, 0], 0), ([0, 1], 0), ([0, 0], 1)):
             np.testing.assert_array_almost_equal(
-                np.reshape(iosys._rhs(0, x, u), (-1, 1)),
+                np.reshape(iosys.dynamics(0, x, u), (-1, 1)),
                 np.dot(linsys.A, np.reshape(x, (-1, 1))) + np.dot(linsys.B, u))
 
         # Make sure that simulations also line up
@@ -687,7 +687,7 @@ class TestIOSys:
         assert result.success
         np.testing.assert_array_almost_equal(xeq, [1.64705879, 1.17923874])
         np.testing.assert_array_almost_equal(
-            nlsys._rhs(0, xeq, ueq), np.zeros((2,)))
+            nlsys.dynamics(0, xeq, ueq), np.zeros((2,)))
 
         # Ducted fan dynamics with output = velocity
         nlsys = ios.NonlinearIOSystem(pvtol, lambda t, x, u, params: x[0:2])
@@ -697,7 +697,7 @@ class TestIOSys:
             nlsys, [0, 0, 0, 0], [0, 4*9.8], return_result=True)
         assert result.success
         np.testing.assert_array_almost_equal(
-            nlsys._rhs(0, xeq, ueq), np.zeros((4,)))
+            nlsys.dynamics(0, xeq, ueq), np.zeros((4,)))
         np.testing.assert_array_almost_equal(xeq, [0, 0, 0, 0])
 
         # Use a small lateral force to cause motion
@@ -705,7 +705,7 @@ class TestIOSys:
             nlsys, [0, 0, 0, 0], [0.01, 4*9.8], return_result=True)
         assert result.success
         np.testing.assert_array_almost_equal(
-            nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
+            nlsys.dynamics(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
         # Equilibrium point with fixed output
         xeq, ueq, result = ios.find_eqpt(
@@ -715,7 +715,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
-            nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
+            nlsys.dynamics(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
         # Specify outputs to constrain (replicate previous)
         xeq, ueq, result = ios.find_eqpt(
@@ -725,7 +725,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
-            nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
+            nlsys.dynamics(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
         # Specify inputs to constrain (replicate previous), w/ no result
         xeq, ueq = ios.find_eqpt(
@@ -733,7 +733,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys._out(0, xeq, ueq), [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
-            nlsys._rhs(0, xeq, ueq), np.zeros((4,)), decimal=5)
+            nlsys.dynamics(0, xeq, ueq), np.zeros((4,)), decimal=5)
 
         # Now solve the problem with the original PVTOL variables
         # Constrain the output angle and x velocity
@@ -746,7 +746,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys_full._out(0, xeq, ueq)[[2, 3]], [0.1, 0.1], decimal=5)
         np.testing.assert_array_almost_equal(
-            nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
+            nlsys_full.dynamics(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
 
         # Fix one input and vary the other
         nlsys_full = ios.NonlinearIOSystem(pvtol_full, None)
@@ -759,7 +759,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys_full._out(0, xeq, ueq)[[3]], [0.1], decimal=5)
         np.testing.assert_array_almost_equal(
-            nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
+            nlsys_full.dynamics(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
 
         # PVTOL with output = y velocity
         xeq, ueq, result = ios.find_eqpt(
@@ -771,7 +771,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys_full._out(0, xeq, ueq)[-3:], [0.1, 0, 0], decimal=5)
         np.testing.assert_array_almost_equal(
-            nlsys_full._rhs(0, xeq, ueq)[-5:], np.zeros((5,)), decimal=5)
+            nlsys_full.dynamics(0, xeq, ueq)[-5:], np.zeros((5,)), decimal=5)
 
         # Unobservable system
         linsys = ct.StateSpace(

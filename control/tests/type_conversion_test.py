@@ -19,7 +19,7 @@ def sys_dict():
     sdict['frd'] = ct.frd([10+0j, 9 + 1j, 8 + 2j], [1,2,3])
     sdict['lio'] = ct.LinearIOSystem(ct.ss([[-1]], [[5]], [[5]], [[0]]))
     sdict['ios'] = ct.NonlinearIOSystem(
-        sdict['lio']._rhs, sdict['lio']._out, 1, 1, 1)
+        sdict['lio'].dynamics, sdict['lio']._out, 1, 1, 1)
     sdict['arr'] = np.array([[2.0]])
     sdict['flt'] = 3.
     return sdict
@@ -66,7 +66,7 @@ conversion_table = [
     ('add',     'ios', ['xos', 'xos', 'E',   'ios', 'ios', 'xos', 'xos']),
     ('add',     'arr', ['ss',  'tf',  'xrd', 'xio', 'xos', 'arr', 'arr']),
     ('add',     'flt', ['ss',  'tf',  'xrd', 'xio', 'xos', 'arr', 'flt']),
-    
+
     # op        left     ss     tf    frd    lio    ios    arr    flt
     ('sub',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'xos', 'ss',  'ss' ]),
     ('sub',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
@@ -75,7 +75,7 @@ conversion_table = [
     ('sub',     'ios', ['xos', 'xio', 'E',   'ios', 'xos'  'xos', 'xos']),
     ('sub',     'arr', ['ss',  'tf',  'xrd', 'xio', 'xos', 'arr', 'arr']),
     ('sub',     'flt', ['ss',  'tf',  'xrd', 'xio', 'xos', 'arr', 'flt']),
-    
+
     # op        left     ss     tf    frd    lio    ios    arr    flt
     ('mul',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'xos', 'ss',  'ss' ]),
     ('mul',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
@@ -84,7 +84,7 @@ conversion_table = [
     ('mul',     'ios', ['xos', 'xos', 'E',   'ios', 'ios', 'xos', 'xos']),
     ('mul',     'arr', ['ss',  'tf',  'xrd', 'xio', 'xos', 'arr', 'arr']),
     ('mul',     'flt', ['ss',  'tf',  'frd', 'xio', 'xos', 'arr', 'flt']),
-    
+
     # op        left     ss     tf    frd    lio    ios    arr    flt
     ('truediv', 'ss',  ['xs',  'tf',  'xrd', 'xio', 'xos', 'xs',  'xs' ]),
     ('truediv', 'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
@@ -100,7 +100,7 @@ for i, (opname, ltype, expected_list) in enumerate(conversion_table):
     for rtype, expected in zip(rtype_list, expected_list):
         # Add this to the list of tests to run
         test_matrix.append([opname, ltype, rtype, expected])
-    
+
 @pytest.mark.parametrize("opname, ltype, rtype, expected", test_matrix)
 def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
     op = getattr(operator, opname)
@@ -110,7 +110,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
     # Get rid of warnings for InputOutputSystem objects by making a copy
     if isinstance(leftsys, ct.InputOutputSystem) and leftsys == rightsys:
         rightsys = leftsys.copy()
-            
+
     # Make sure we get the right result
     if expected == 'E' or expected[0] == 'x':
         # Exception expected
@@ -119,7 +119,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
     else:
         # Operation should work and return the given type
         result = op(leftsys, rightsys)
-                
+
         # Print out what we are testing in case something goes wrong
         assert isinstance(result, type_dict[expected])
 
@@ -138,7 +138,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
 #
 #   * For IOS/LTI, convert to IOS.  In the case of a linear I/O system (LIO),
 #     this will preserve the linear structure since the LTI system will
-#     be converted to state space.  
+#     be converted to state space.
 #
 #   * When combining state space or transfer with linear I/O systems, the
 #   * output should be of type Linear IO system, since that maintains the
@@ -149,7 +149,7 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
 
 type_list = ['ss', 'tf', 'tfx', 'frd', 'lio', 'ios', 'arr', 'flt']
 conversion_table = [
-    # L \ R ['ss',  'tf',  'tfx', 'frd', 'lio', 'ios', 'arr', 'flt'] 
+    # L \ R ['ss',  'tf',  'tfx', 'frd', 'lio', 'ios', 'arr', 'flt']
     ('ss',  ['ss',  'ss',  'tf'   'frd', 'lio', 'ios', 'ss',  'ss' ]),
     ('tf',  ['tf',  'tf',  'tf'   'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('tfx', ['tf',  'tf',  'tf',  'frd', 'E',   'E',   'tf',  'tf' ]),

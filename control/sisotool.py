@@ -101,7 +101,7 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
 
     # First time call to setup the bode and step response plots
     _SisotoolUpdate(sys, fig,
-        1 if kvect is None else kvect[0], bode_plot_params)
+        1 if kvect is None else kvect[0], bode_plot_params, tvect=tvect)
 
     # Setup the root-locus plot window
     root_locus(sys, kvect=kvect, xlim=xlim_rlocus,
