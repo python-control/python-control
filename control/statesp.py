@@ -1219,7 +1219,7 @@ class StateSpace(LTI):
         """
         return not np.any(self.A) and not np.any(self.B)
 
-    def dynamics(self, x, u=None):
+    def dynamics(self, t=None, x=None, u=None):
         """Compute the dynamics of the system
 
         Given input `u` and state `x`, returns the dynamics of the state-space
@@ -1230,31 +1230,40 @@ class StateSpace(LTI):
         where A and B are the state-space matrices of the system. If the
         system is discrete-time, returns the next value of `x`:
 
-            x[k+1] = A x[k] + B u[k]
+            x[t+dt] = A x[t] + B u[t]
 
-        The inputs `x` and `u` must be of the correct length.
+        The inputs `x` and `u` must be of the correct length. The argument
+        `t` is included for consistency with :class:`IOSystem` systems, but
+        is ignored in :class:`StateSpace` systems, which are time-invariant.
 
         Parameters
         ----------
-        x : array_like
-            current state
-        u : array_like
-            input (optional)
+        t : float (ignored)
+            time
+        x : array_like (optional)
+            current state, zero if omitted
+        u : array_like (optional)
+            input, zero if omitted
 
         Returns
         -------
-        dx/dt or x[k+1] : ndarray
+        dx/dt or x[t+dt] : ndarray of shape (self.nstates,)
         """
 
-        if len(np.atleast_1d(x)) != self.nstates:
-            raise ValueError("len(x) must be equal to number of states")
+        out = np.zeros((self.nstates, 1))
+        if x is not None:
+            if np.size(x) != self.nstates:
+                raise ValueError("len(x) must be equal to number of states")
+            x = np.reshape(x, (-1, 1)) # x must be column vector
+            out = out + self.A.dot(x)
         if u is not None:
-            if len(np.atleast_1d(u)) != self.ninputs:
+            if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
+            u = np.reshape(u, (-1, 1)) # u as column vector
+            out = out + self.B.dot(u)
+        return out.reshape((-1,)) # return as row vector
 
-        return self.A.dot(x) if u is None else self.A.dot(x) + self.B.dot(u)
-
-    def output(self, x, u=None):
+    def output(self, t=None, x=None, u=None):
         """Compute the output of the system
 
         Given input `u` and state `x`, returns the output `y` of the
@@ -1263,27 +1272,35 @@ class StateSpace(LTI):
             y = C x + D u
 
         where A and B are the state-space matrices of the system. The inputs
-        `x` and `u` must be of the correct length.
+        `x` and `u` must be of the correct length. The argument `t` is
+        included for consistency with :class:`IOSystem` systems, but is
+        ignored in :class:`StateSpace` systems, which are time-invariant.
 
         Parameters
         ----------
-        x : array_like
-            current state
-        u : array_like
-            input (optional)
+        t : float (ignored)
+            time
+        x : array_like (optional)
+            current state (zero if omitted)
+        u : array_like (optional)
+            input (zero if omitted)
 
         Returns
         -------
-        y : ndarray
+        y : ndarray of shape (self.noutputs,)
         """
-        if len(np.atleast_1d(x)) != self.nstates:
-            raise ValueError("len(x) must be equal to number of states")
+        y = np.zeros((self.noutputs,1))
+        if x is not None:
+            if np.size(x) != self.nstates:
+                raise ValueError("len(x) must be equal to number of states")
+            x = np.reshape(x, (-1, 1)) # force x to be column vector
+            y = y + self.C.dot(x)
         if u is not None:
-            if len(np.atleast_1d(u)) != self.ninputs:
+            if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-
-        return self.C.dot(x) if u is None else self.C.dot(x) + self.D.dot(u)
-
+            u = np.reshape(u, (-1, 1)) # force u to be column vector
+            y = y + self.D.dot(u)
+        return y.reshape((-1,)) # return as row vector
 
 
 

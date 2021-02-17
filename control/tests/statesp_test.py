@@ -757,44 +757,65 @@ class TestStateSpace:
             np.squeeze(sys322.horner(1.j)),
             mag[:, :, 0] * np.exp(1.j * phase[:, :, 0]))
 
-    @pytest.mark.parametrize('x', [[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    @pytest.mark.parametrize('x',
+        [None, [1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
     @pytest.mark.parametrize('u', [None, 0, 1, np.atleast_1d(2)])
     def test_dynamics_output_siso(self, x, u, sys121):
         assert_array_almost_equal(
-            sys121.dynamics(x, u),
-            sys121.A.dot(x) + (0 if u is None else sys121.B.dot(u)))
+            sys121.dynamics(0, x, u),
+            np.zeros(2) + \
+            (0 if x is None else sys121.A.dot(x).reshape((-1,))) + \
+            (0 if u is None else sys121.B.dot(u).reshape((-1,))))
         assert_array_almost_equal(
-            sys121.output(x, u),
-            sys121.C.dot(x) + (0 if u is None else sys121.D.dot(u)))
+            sys121.output(0, x, u),
+            np.zeros(1) + \
+            (0 if x is None else sys121.C.dot(x).reshape((-1,))) + \
+            (0 if u is None else sys121.D.dot(u).reshape((-1,))))
 
     # too few and too many states and inputs
     @pytest.mark.parametrize('x', [0, 1, [], [1, 2, 3], np.atleast_1d(2)])
-    @pytest.mark.parametrize('u', [None, [1, 1], np.atleast_1d((2, 2))])
-    def test_dynamics_output_siso_fails(self, x, u, sys121):
+    def test_error_x_dynamics_output_siso(self, x, sys121):
         with pytest.raises(ValueError):
-            sys121.dynamics(x, u)
+            sys121.dynamics(0, x, None)
         with pytest.raises(ValueError):
-            sys121.output(x, u)
+            sys121.output(0, x, None)
+    @pytest.mark.parametrize('u', [[1, 1], np.atleast_1d((2, 2))])
+    def test_error_u_dynamics_output_siso(self, u, sys121):
+        with pytest.raises(ValueError):
+            sys121.dynamics(0, None, u)
+        with pytest.raises(ValueError):
+            sys121.output(0, None, u)
 
-    @pytest.mark.parametrize('x',[[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    @pytest.mark.parametrize('x',
+        [None, [1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
     @pytest.mark.parametrize('u',
         [None, [1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
     def test_dynamics_output_mimo(self, x, u, sys222):
         assert_array_almost_equal(
-            sys222.dynamics(x, u),
-            sys222.A.dot(x) + (0 if u is None else sys222.B.dot(u)))
+            sys222.dynamics(0, x, u),
+            np.zeros(2) + \
+            (0 if x is None else sys222.A.dot(x).reshape((-1,))) + \
+            (0 if u is None else sys222.B.dot(u).reshape((-1,))))
         assert_array_almost_equal(
-            sys222.output(x, u),
-            sys222.C.dot(x) + (0 if u is None else sys222.D.dot(u)))
+            sys222.output(0, x, u),
+            np.zeros(2) + \
+            (0 if x is None else sys222.C.dot(x).reshape((-1,))) + \
+            (0 if u is None else sys222.D.dot(u).reshape((-1,))))
+            #sys222.C.dot(x) + (0 if u is None else sys222.D.dot(u)))
 
     # too few and too many states and inputs
     @pytest.mark.parametrize('x', [0, 1, [1, 1, 1]])
-    @pytest.mark.parametrize('u', [None, 0, 1, [1, 1, 1]])
-    def test_dynamics_mimo_fails(self, x, u, sys222):
+    def test_error_x_dynamics_mimo(self, x, sys222):
         with pytest.raises(ValueError):
-            sys222.dynamics(x, u)
+            sys222.dynamics(0, x)
         with pytest.raises(ValueError):
-            sys222.output(x, u)
+            sys222.output(0, x)
+    @pytest.mark.parametrize('u', [0, 1, [1, 1, 1]])
+    def test_error_u_dynamics_mimo(self, u, sys222):
+        with pytest.raises(ValueError):
+            sys222.dynamics(0, None, u)
+        with pytest.raises(ValueError):
+            sys222.output(0, None, u)
 
 class TestRss:
     """These are tests for the proper functionality of statesp.rss."""

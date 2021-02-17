@@ -736,10 +736,11 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             warn("Parameters passed to LinearIOSystems are ignored.")
 
     def dynamics(self, t, x, u):
-        # Convert input to column vector and then change output to 1D array
-        xdot = np.dot(self.A, np.reshape(x, (-1, 1))) \
-            + np.dot(self.B, np.reshape(u, (-1, 1)))
-        return np.array(xdot).reshape((-1,))
+        return StateSpace.dynamics(self, t, x, u)
+#        # Convert input to column vector and then change output to 1D array
+#        xdot = np.dot(self.A, np.reshape(x, (-1, 1))) \
+#            + np.dot(self.B, np.reshape(u, (-1, 1)))
+#        return np.array(xdot).reshape((-1,))
 
     def output(self, t, x, u):
         # Convert input to column vector and then change output to 1D array
