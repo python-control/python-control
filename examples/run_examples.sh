@@ -18,6 +18,10 @@ for example in *.py; do
     fi
 done
     
+# Get rid of the output files
+rm *.log
+
+# List any files that generated errors
 if [ -n "${example_errors}" ]; then
     echo These examples had errors:
     echo "${example_errors}"

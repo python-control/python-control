@@ -13,6 +13,8 @@ import scipy as sp
 import scipy.optimize as opt
 import control as ct
 import warnings
+import logging
+import time
 
 from .timeresp import _process_time_response
 
@@ -52,7 +54,8 @@ class OptimalControlProblem():
     """
     def __init__(
             self, sys, time_vector, integral_cost, trajectory_constraints=[],
-            terminal_cost=None, terminal_constraints=[]):
+            terminal_cost=None, terminal_constraints=[], initial_guess=None,
+            log=False, options={}):
         """Set up an optimal control problem
 
         To describe an optimal control problem we need an input/output system,
@@ -77,9 +80,18 @@ class OptimalControlProblem():
            elements of the tuple are the arguments that would be passed to
            those functions.  The constrains will be applied at each point
            along the trajectory.
-        terminal_cost : callable
+        terminal_cost : callable, optional
             Function that returns the terminal cost given the current state
             and input.  Called as terminal_cost(x, u).
+        initial_guess : 1D or 2D array_like
+            Initial inputs to use as a guess for the optimal input.  The
+            inputs should either be a 2D vector of shape (ninputs, horizon)
+            or a 1D input of shape (ninputs,) that will be broadcast by
+            extension of the time axis.
+        log : bool, optional
+            If `True`, turn on logging messages (using Python logging module).
+        options : dict, optional
+            Solver options (passed to :func:`scipy.optimal.minimize`).
 
         Returns
         -------
@@ -95,6 +107,7 @@ class OptimalControlProblem():
         self.trajectory_constraints = trajectory_constraints
         self.terminal_cost = terminal_cost
         self.terminal_constraints = terminal_constraints
+        self.options = options
 
         #
         # Compute and store constraints
@@ -112,7 +125,7 @@ class OptimalControlProblem():
         constraint_lb, constraint_ub, eqconst_value = [], [], []
 
         # Go through each time point and stack the bounds
-        for time in self.time_vector:
+        for t in self.time_vector:
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
                 if np.all(lb == ub):
@@ -153,16 +166,41 @@ class OptimalControlProblem():
         #
         # Initial guess
         #
-        # We store an initial guess (zero input) in case it is not specified
-        # later.  Note that create_mpc_iosystem() will reset the initial guess
-        # based on the current state of the MPC controller.
+        # We store an initial guess in case it is not specified later.  Note
+        # that create_mpc_iosystem() will reset the initial guess based on
+        # the current state of the MPC controller.
         #
-        self.initial_guess = np.zeros(
-            self.system.ninputs * self.time_vector.size)
+        if initial_guess is not None:
+            # Convert to a 1D array (or higher)
+            initial_guess = np.atleast_1d(initial_guess)
 
-        # Store states, input to minimize re-computation
+            # See whether we got entire guess or just first time point
+            if len(initial_guess.shape) == 1:
+                # Broadcast inputs to entire time vector
+                initial_guess = np.broadcast_to(
+                    initial_guess.reshape(-1, 1),
+                    (self.system.ninputs, self.time_vector.size))
+            elif len(initial_guess.shape) != 2:
+                raise ValueError("initial guess is the wrong shape")
+
+            # Reshape for use by scipy.optimize.minimize()
+            self.initial_guess = initial_guess.reshape(-1)
+
+        else:
+            self.initial_guess = np.zeros(
+                self.system.ninputs * self.time_vector.size)
+
+        # Store states, input, used later to minimize re-computation
         self.last_x = np.full(self.system.nstates, np.nan)
         self.last_inputs = np.full(self.initial_guess.shape, np.nan)
+
+        # Reset run-time statistics
+        self._reset_statistics(log)
+
+        # Log information
+        if log:
+            logging.info("New optimal control problem initailized")
+
 
     #
     # Cost function
@@ -178,6 +216,10 @@ class OptimalControlProblem():
     # parameter `x` prior to calling the optimization algorithm.
     #
     def _cost_function(self, inputs):
+        if self.log:
+            start_time = time.process_time()
+            logging.info("_cost_function called at: %g", start_time)
+
         # Retrieve the initial state and reshape the input vector
         x = self.x
         inputs = inputs.reshape(
@@ -188,22 +230,41 @@ class OptimalControlProblem():
            np.array_equal(inputs, self.last_inputs):
             states = self.last_states
         else:
+            if self.log:
+                logging.debug("calling input_output_response from state\n"
+                          + str(x))
+                logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
+
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
                 self.system, self.time_vector, inputs, x, return_x=True)
+            self.system_simulations += 1
             self.last_x = x
             self.last_inputs = inputs
             self.last_states = states
 
+            if self.log:
+                logging.debug("input_output_response returned states\n"
+                          + str(states))
+
         # Trajectory cost
         # TODO: vectorize
         cost = 0
-        for i, time in enumerate(self.time_vector):
+        for i, t in enumerate(self.time_vector):
             cost += self.integral_cost(states[:,i], inputs[:,i])
 
         # Terminal cost
         if self.terminal_cost is not None:
             cost += self.terminal_cost(states[:,-1], inputs[:,-1])
+
+        # Update statistics
+        self.cost_evaluations += 1
+        if self.log:
+            stop_time = time.process_time()
+            self.cost_process_time += stop_time - start_time
+            logging.info(
+                "_cost_function returning %g; elapsed time: %g",
+                cost, stop_time - start_time)
 
         # Return the total cost for this input sequence
         return cost
@@ -253,6 +314,10 @@ class OptimalControlProblem():
     # state prior to optimization and retrieve it here.
     #
     def _constraint_function(self, inputs):
+        if self.log:
+            start_time = time.process_time()
+            logging.info("_constraint_function called at: %g", start_time)
+
         # Retrieve the initial state and reshape the input vector
         x = self.x
         inputs = inputs.reshape(
@@ -263,16 +328,22 @@ class OptimalControlProblem():
            np.array_equal(inputs, self.last_inputs):
             states = self.last_states
         else:
+            if self.log:
+                logging.debug("calling input_output_response from state\n"
+                          + str(x))
+                logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
+
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
                 self.system, self.time_vector, inputs, x, return_x=True)
+            self.system_simulations += 1
             self.last_x = x
             self.last_inputs = inputs
             self.last_states = states
 
         # Evaluate the constraint function along the trajectory
         value = []
-        for i, time in enumerate(self.time_vector):
+        for i, t in enumerate(self.time_vector):
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
                 if np.all(lb == ub):
@@ -303,10 +374,30 @@ class OptimalControlProblem():
                 raise TypeError("unknown constraint type %s" %
                                 constraint[0])
 
+        # Update statistics
+        self.constraint_evaluations += 1
+        if self.log:
+            stop_time = time.process_time()
+            self.constraint_process_time += stop_time - start_time
+            logging.info(
+                "_constraint_function elapsed time: %g",
+                stop_time - start_time)
+
+        # Debugging information
+        if self.log:
+            logging.debug(
+                "constraint values\n" + str(value) + "\n" +
+                "lb, ub =\n" + str(self.constraint_lb) + "\n" +
+                str(self.constraint_ub))
+
         # Return the value of the constraint function
         return np.hstack(value)
 
     def _eqconst_function(self, inputs):
+        if self.log:
+            start_time = time.process_time()
+            logging.info("_eqconst_function called at: %g", start_time)
+
         # Retrieve the initial state and reshape the input vector
         x = self.x
         inputs = inputs.reshape(
@@ -317,16 +408,26 @@ class OptimalControlProblem():
            np.array_equal(inputs, self.last_inputs):
             states = self.last_states
         else:
+            if self.log:
+                logging.debug("calling input_output_response from state\n"
+                          + str(x))
+                logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
+
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
                 self.system, self.time_vector, inputs, x, return_x=True)
+            self.system_simulations += 1
             self.last_x = x
             self.last_inputs = inputs
             self.last_states = states
 
+            if self.log:
+                logging.debug("input_output_response returned states\n"
+                          + str(states))
+
         # Evaluate the constraint function along the trajectory
         value = []
-        for i, time in enumerate(self.time_vector):
+        for i, t in enumerate(self.time_vector):
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
                 if np.any(lb != ub):
@@ -357,8 +458,58 @@ class OptimalControlProblem():
                 raise TypeError("unknown constraint type %s" %
                                 constraint[0])
 
+        # Update statistics
+        self.eqconst_evaluations += 1
+        if self.log:
+            stop_time = time.process_time()
+            self.eqconst_process_time += stop_time - start_time
+            logging.info(
+                "_eqconst_function elapsed time: %g", stop_time - start_time)
+
+        # Debugging information
+        if self.log:
+            logging.debug(
+                "constraint values\n" + str(value) + "\n" +
+                "lb, ub =\n" + str(self.constraint_lb) + "\n" +
+                str(self.constraint_ub))
+
         # Return the value of the constraint function
         return np.hstack(value)
+
+    #
+    # Log and statistics
+    #
+    # To allow some insight into where time is being spent, we keep track of
+    # the number of times that various functions are called and (optionally)
+    # how long we spent inside each function.
+    #
+    def _reset_statistics(self, log=False):
+        """Reset counters for keeping track of statistics"""
+        self.log=log
+        self.cost_evaluations, self.cost_process_time = 0, 0
+        self.constraint_evaluations, self.constraint_process_time = 0, 0
+        self.eqconst_evaluations, self.eqconst_process_time = 0, 0
+        self.system_simulations = 0
+
+    def _print_statistics(self, reset=True):
+        """Print out summary statistics from last run"""
+        print("Summary statistics:")
+        print("* Cost function calls:", self.cost_evaluations)
+        if self.log:
+            print("* Cost function process time:", self.cost_process_time)
+        if self.constraint_evaluations:
+            print("* Constraint calls:", self.constraint_evaluations)
+            if self.log:
+                print(
+                    "* Constraint process time:", self.constraint_process_time)
+        if self.eqconst_evaluations:
+            print("* Eqconst calls:", self.eqconst_evaluations)
+            if self.log:
+                print(
+                    "* Eqconst process time:", self.eqconst_process_time)
+        print("* System simulations:", self.system_simulations)
+        if reset:
+            self._reset_statistics(self.log)
 
     # Create an input/output system implementing an MPC controller
     def _create_mpc_iosystem(self, dt=True):
@@ -367,8 +518,8 @@ class OptimalControlProblem():
             inputs = x.reshape((self.system.ninputs, self.time_vector.size))
             self.initial_guess = np.hstack(
                 [inputs[:,1:], inputs[:,-1:]]).reshape(-1)
-            _, inputs = self.compute_trajectory(u)
-            return inputs.reshape(-1)
+            result = self.compute_trajectory(u)
+            return result.inputs.reshape(-1)
 
         def _output(t, x, u, params={}):
             inputs = x.reshape((self.system.ninputs, self.time_vector.size))
@@ -382,12 +533,13 @@ class OptimalControlProblem():
 
     # Compute the optimal trajectory from the current state
     def compute_trajectory(
-            self, x, squeeze=None, transpose=None, return_x=None):
+            self, x, squeeze=None, transpose=None, return_x=None,
+            print_summary=True):
         """Compute the optimal input at state x
 
         Parameters
         ----------
-        x: array-like or number, optional
+        x : array-like or number, optional
             Initial state for the system.
         return_x : bool, optional
             If True, return the values of the state at each time (default =
@@ -421,29 +573,12 @@ class OptimalControlProblem():
         # Call ScipPy optimizer
         res = sp.optimize.minimize(
             self._cost_function, self.initial_guess,
-            constraints=self.constraints)
+            constraints=self.constraints, options=self.options)
 
-        # See if we got an answer
-        if not res.success:
-            warnings.warn(
-                "unable to solve optimal control problem\n"
-                "scipy.optimize.minimize returned " + res.message, UserWarning)
-            return None
-
-        # Reshape the input vector
-        inputs = res.x.reshape(
-            (self.system.ninputs, self.time_vector.size))
-
-        if return_x:
-            # Simulate the system if we need the state back
-            _, _, states = ct.input_output_response(
-                self.system, self.time_vector, inputs, x, return_x=True)
-        else:
-            states=None
-
-        return _process_time_response(
-            self.system, self.time_vector, inputs, states,
-            transpose=transpose, return_x=return_x, squeeze=squeeze)
+        # Process and return the results
+        return OptimalControlResult(
+            self, res, transpose=transpose, return_x=return_x,
+            squeeze=squeeze, print_summary=print_summary)
 
     # Compute the current input to apply from the current state (MPC style)
     def compute_mpc(self, x, squeeze=None):
@@ -468,17 +603,81 @@ class OptimalControlProblem():
             Optimal input for the system at the current time.  If the system
             is SISO and squeeze is not True, the array is 1D (indexed by
             time).  If the system is not SISO or squeeze is False, the array
-            is 2D (indexed by the output number and time).
+            is 2D (indexed by the output number and time).  Set to `None`
+            if the optimization failed.
 
         """
-        _, inputs = self.compute_trajectory(x, squeeze=squeeze)
-        return None if inputs is None else inputs[:,0]
+        results = self.compute_trajectory(x, squeeze=squeeze)
+        return inputs[:, 0] if results.success else None
+
+
+# Optimal control result
+class OptimalControlResult(sp.optimize.OptimizeResult):
+    """Represents the optimal control result
+
+    This class is a subclass of :class:`sp.optimize.OptimizeResult` with
+    additional attributes associated with solving optimal control problems.
+
+    Attributes
+    ----------
+    inputs : ndarray
+        The optimal inputs associated with the optimal control problem.
+    states : ndarray
+        If `return_states` was set to true, stores the state trajectory
+        associated with the optimal input.
+    success : bool
+        Whether or not the optimizer exited successful.
+    problem : OptimalControlProblem
+        Optimal control problem that generated this solution.
+
+    """
+    def __init__(
+            self, ocp, res, return_x=False, print_summary=False,
+            transpose=None, squeeze=None):
+        # Copy all of the fields we were sent by sp.optimize.minimize()
+        for key, val in res.items():
+            setattr(self, key, val)
+
+        # Remember the optimal control problem that we solved
+        self.problem = ocp
+
+        # Reshape and process the input vector
+        inputs = res.x.reshape(
+            (ocp.system.ninputs, ocp.time_vector.size))
+
+        # See if we got an answer
+        if not res.success:
+            warnings.warn(
+                "unable to solve optimal control problem\n"
+                "scipy.optimize.minimize returned " + res.message, UserWarning)
+
+        # Optionally print summary information
+        if print_summary:
+            ocp._print_statistics()
+
+        if return_x and res.success:
+            # Simulate the system if we need the state back
+            _, _, states = ct.input_output_response(
+                ocp.system, ocp.time_vector, inputs, ocp.x, return_x=True)
+            ocp.system_simulations += 1
+        else:
+            states = None
+
+        retval = _process_time_response(
+            ocp.system, ocp.time_vector, inputs, states,
+            transpose=transpose, return_x=return_x, squeeze=squeeze)
+
+        self.time = retval[0]
+        self.inputs = retval[1]
+        self.states = None if states is None else retval[2]
 
 
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def compute_optimal_input(
         sys, horizon, X0, cost, constraints=[], terminal_cost=None,
-        terminal_constraints=[], squeeze=None, transpose=None, return_x=None):
+        terminal_constraints=[], initial_guess=None, squeeze=None,
+        transpose=None, return_x=None, log=False, options={}):
+
     """Compute the solution to an optimal control problem
 
     Parameters
@@ -522,6 +721,15 @@ def compute_optimal_input(
         List of constraints that should hold at the end of the trajectory.
         Same format as `constraints`.
 
+    initial_guess : 1D or 2D array_like
+        Initial inputs to use as a guess for the optimal input.  The inputs
+        should either be a 2D vector of shape (ninputs, horizon) or a 1D
+        input of shape (ninputs,) that will be broadcast by extension of the
+        time axis.
+
+    log : bool, optional
+        If `True`, turn on logging messages (using Python logging module).
+
     return_x : bool, optional
         If True, return the values of the state at each time (default = False).
 
@@ -535,10 +743,13 @@ def compute_optimal_input(
         If True, assume that 2D input arrays are transposed from the standard
         format.  Used to convert MATLAB-style inputs to our format.
 
+    options : dict, optional
+        Solver options (passed to :func:`scipy.optimal.minimize`).
+
     Returns
     -------
     time : array
-        Time values of the input.
+        Time values of the input or `None` if the optimimation fails.
     inputs : array
         Optimal inputs for the system.  If the system is SISO and squeeze is not
         True, the array is 1D (indexed by time).  If the system is not SISO or
@@ -551,7 +762,8 @@ def compute_optimal_input(
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
         sys, horizon, cost, trajectory_constraints=constraints,
-        terminal_cost=terminal_cost, terminal_constraints=terminal_constraints)
+        terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
+        initial_guess=initial_guess, log=log, options=options)
 
     # Solve for the optimal input from the current state
     return ocp.compute_trajectory(
@@ -561,7 +773,7 @@ def compute_optimal_input(
 # Create a model predictive controller for an optimal control problem
 def create_mpc_iosystem(
         sys, horizon, cost, constraints=[], terminal_cost=None,
-        terminal_constraints=[], dt=True):
+        terminal_constraints=[], dt=True, log=False, options={}):
     """Create a model predictive I/O control system
 
     This function creates an input/output system that implements a model
@@ -593,6 +805,9 @@ def create_mpc_iosystem(
         List of constraints that should hold at the end of the trajectory.
         Same format as `constraints`.
 
+    options : dict, optional
+        Solver options (passed to :func:`scipy.optimal.minimize`).
+
     Returns
     -------
     ctrl : InputOutputSystem
@@ -605,7 +820,8 @@ def create_mpc_iosystem(
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
         sys, horizon, cost, trajectory_constraints=constraints,
-        terminal_cost=terminal_cost, terminal_constraints=terminal_constraints)
+        terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
+        log=log, options=options)
 
     # Return an I/O system implementing the model predictive controller
     return ocp._create_mpc_iosystem(dt=dt)

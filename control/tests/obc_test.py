@@ -11,7 +11,7 @@ import scipy as sp
 import control as ct
 import control.obc as obc
 from control.tests.conftest import slycotonly
-
+from numpy.lib import NumpyVersion
 
 def test_finite_horizon_simple():
     # Define a linear system with constraints
@@ -35,8 +35,9 @@ def test_finite_horizon_simple():
     x0 = [4, 0]
 
     # Retrieve the full open-loop predictions
-    t, u_openloop = obc.compute_optimal_input(
+    results = obc.compute_optimal_input(
         sys, time, x0, cost, constraints, squeeze=True)
+    t, u_openloop = results.time, results.inputs
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=4)
 
@@ -80,7 +81,7 @@ def test_class_interface():
         sys, time, integral_cost, trajectory_constraints, terminal_cost)
 
     # Add tests to make sure everything works
-    t, u_openloop = optctrl.compute_trajectory([1, 1])
+    results = optctrl.compute_trajectory([1, 1])
 
 
 def test_mpc_iosystem():
@@ -128,12 +129,13 @@ def test_mpc_iosystem():
     # Choose a nearby initial condition to speed up computation
     X0 = np.hstack([xd, np.kron(ud, np.ones(6))]) * 0.99
 
-    Nsim = 10
+    Nsim = 12
     tout, xout = ct.input_output_response(
         loop, np.arange(0, Nsim) * 0.2, 0, X0)
 
     # Make sure the system converged to the desired state
-    np.testing.assert_almost_equal(xout[0:sys.nstates, -1], xd, decimal=1)
+    np.testing.assert_allclose(
+        xout[0:sys.nstates, -1], xd, atol=0.1, rtol=0.01)
 
 
 # Test various constraint combinations; need to use a somewhat convoluted
@@ -148,8 +150,7 @@ def test_mpc_iosystem():
       np.array([[1, 0], [0, 1], [-1, 0], [0, -1]]), [5, 5, 5, 5]),
      (obc.input_poly_constraint, np.array([[1], [-1]]), [1, 1])],
     [(sp.optimize.NonlinearConstraint,
-     lambda x, u: np.array([abs(x[0]), x[1], u[0]**2]),
-      [-np.inf, -5, -1e-12], [5, 5, 1],)],       # -1e-12 for SciPy bug?
+      lambda x, u: np.array([x[0], x[1], u[0]]), [-5, -5, -1], [5, 5, 1])],
 ])
 def test_constraint_specification(constraint_list):
     sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
@@ -177,7 +178,8 @@ def test_constraint_specification(constraint_list):
 
     # Compute optimal control and compare against MPT3 solution
     x0 = [4, 0]
-    t, u_openloop = optctrl.compute_trajectory(x0, squeeze=True)
+    results = optctrl.compute_trajectory(x0, squeeze=True)
+    t, u_openloop = results.time, results.inputs
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=3)
 
@@ -202,7 +204,13 @@ def test_terminal_constraints():
 
     # Find a path to the origin
     x0 = np.array([4, 3])
-    t, u1, x1 = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    result = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    t, u1, x1 = result.time, result.inputs, result.states
+
+    # Bug prior to SciPy 1.6 will result in incorrect results
+    if NumpyVersion(sp.__version__) < '1.6.0':
+        pytest.xfail("SciPy 1.6 or higher required")
+
     np.testing.assert_almost_equal(x1[:,-1], 0)
 
     # Make sure it is a straight line
@@ -217,7 +225,8 @@ def test_terminal_constraints():
         sys, time, cost, terminal_constraints=final_point)
 
     # Find a path to the origin
-    t, u2, x2 = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    results = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    t, u2, x2 = results.time, results.inputs, results.states
     np.testing.assert_almost_equal(x2[:,-1], 0)
 
     # Make sure that it is *not* a straight line path
@@ -228,7 +237,8 @@ def test_terminal_constraints():
     constraints = [obc.input_range_constraint(sys, [-1, -1], [1, 1])]
     optctrl = obc.OptimalControlProblem(
         sys, time, cost, constraints, terminal_constraints=final_point)
-    t, u3, x3 = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    results = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    t, u3, x3 = results.time, results.inputs, results.states
     np.testing.assert_almost_equal(x2[:,-1], 0)
 
     # Make sure we got a new path and didn't violate the constraints
@@ -239,4 +249,4 @@ def test_terminal_constraints():
     x0 = np.array([10, 3])
     with pytest.warns(UserWarning, match="unable to solve"):
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
-        assert res == None
+        assert not res.success

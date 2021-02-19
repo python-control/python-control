@@ -106,23 +106,152 @@ state and/or input, either along the trajectory and at the terminal time.
 The `obc` module operates by converting the optimal control problem into a
 standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
-by using the `~control.obc.compute_optimal_input` function:
+by using the `~control.obc.compute_optimal_input` function::
 
-  import control.obc as obc
-  inputs = obc.compute_optimal_inputs(sys, horizon, X0, cost, constraints)
+  inputs = obc.compute_optimal_input(sys, horizon, X0, cost, constraints)
 
 The `sys` parameter should be a :class:`~control.InputOutputSystem` and the
 `horizon` parameter should represent a time vector that gives the list of
-times at which the `cost` and `constraints` should be evaluated. By default,
-`constraints` are taken to be trajectory constraints holding at all points
-on the trajectory.  The `terminal_constraint` parameter can be used to
-specify a constraint that only holds at the final point of the trajectory
-and the `terminal_cost` paramter can be used to specify a terminal cost
-function.
+times at which the `cost` and `constraints` should be evaluated.
 
+The `cost` function has call signature `cost(t, x, u)` and should return the
+(incremental) cost at the given time, state, and input.  It will be
+evaluated at each point in the `horizon` vector.  The `terminal_cost`
+parameter can be used to specify a cost function for the final point in the
+trajectory.
+
+The `constraints` parameter is a list of constraints similar to that used by
+the :func:`scipy.optimize.minimize` function.  Each constraint is a tuple of
+one of the following forms::
+
+  (LinearConstraint, A, lb, ub)
+  (NonlinearConstraint, f, lb, ub)
+
+For a linear constraint, the 2D array `A` is multiplied by a vector
+consisting of the current state `x` and current input `u` stacked
+vertically, then compared with the upper and lower bound.  This constrain is
+satisfied if
+
+.. code:: python
+
+   lb <= A @ np.hstack([x, u]) <= ub
+
+A nonlinear constraint is satisfied if
+
+.. code:: python
+
+   lb <= f(x, u) <= ub
+
+By default, `constraints` are taken to be trajectory constraints holding at
+all points on the trajectory.  The `terminal_constraint` parameter can be
+used to specify a constraint that only holds at the final point of the
+trajectory.
+
+To simplify the specification of cost functions and constraints, the
+:mod:`~control.ios` module defines a number of utility functions:
+
+.. autosummary::
+
+   ~control.obc.quadratic_cost
+   ~control.obc.input_poly_constraint
+   ~control.obc.input_rank_constraint
+   ~control.obc.output_poly_constraint
+   ~control.obc.output_rank_constraint
+   ~control.obc.state_poly_constraint
+   ~control.obc.state_rank_constraint
 
 Example
 =======
+
+Consider the vehicle steering example described in FBS2e.  The dynamics of
+the system can be defined as a nonlinear input/output system using the
+following code::
+
+  import numpy as np
+  import control as ct
+  import control.obc as obc
+  import matplotlib.pyplot as plt
+
+  def vehicle_update(t, x, u, params):
+      # Get the parameters for the model
+      l = params.get('wheelbase', 3.)         # vehicle wheelbase
+      phimax = params.get('maxsteer', 0.5)    # max steering angle (rad)
+
+      # Saturate the steering input
+      phi = np.clip(u[1], -phimax, phimax)
+
+      # Return the derivative of the state
+      return np.array([
+          np.cos(x[2]) * u[0],            # xdot = cos(theta) v
+          np.sin(x[2]) * u[0],            # ydot = sin(theta) v
+          (u[0] / l) * np.tan(phi)        # thdot = v/l tan(phi)
+      ])
+
+  def vehicle_output(t, x, u, params):
+      return x                            # return x, y, theta (full state)
+
+  # Define the vehicle steering dynamics as an input/output system
+  vehicle = ct.NonlinearIOSystem(
+      vehicle_update, vehicle_output, states=3, name='vehicle',
+      inputs=('v', 'phi'), outputs=('x', 'y', 'theta'))
+
+We consider an optimal control problem that consists of "changing lanes" by
+moving from the point x = 0m, y = -2 m, :math:`\theta` = 0 to the point x =
+100m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and with a
+with a starting and ending velocity of 10 m/s::
+
+  x0 = [0., -2., 0.]; u0 = [10., 0.]
+  xf = [100., 2., 0.]; uf = [10., 0.]
+  Tf = 10
+
+To set up the optimal control problem we design a cost function that
+penalizes the state and input using quadratic cost functions::
+
+  Q = np.diag([10, 10, 1])
+  R = np.eye(2) * 0.1
+  cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+
+We also constraint the maximum turning rate to 0.1 radians (about 6 degees)
+and constrain the velocity to be in the range of 9 m/s to 11 m/s::
+
+  constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+  terminal = [ obc.state_range_constraint(vehicle, xf, xf) ]
+
+Finally, we solve for the optimal inputs and plot the results::
+
+  horizon = np.linspace(0, Tf, 20, endpoint=True)
+  straight = [10, 0]		# straight trajectory
+  bend_left = [10, 0.01]	# slight left veer
+  t, u = obc.compute_optimal_input(
+      # vehicle, horizon, x0, cost, constraints,
+      # initial_guess=straight, logging=True)
+      vehicle, horizon, x0, cost, constraints,
+      terminal_constraints=terminal, initial_guess=straight)
+  t, y = ct.input_output_response(vehicle, horizon, u, x0)
+
+  plt.subplot(3, 1, 1)
+  plt.plot(y[0], y[1])
+  plt.xlabel("x [m]")
+  plt.ylabel("y [m]")
+
+  plt.subplot(3, 1, 2)
+  plt.plot(t, u[0])
+  plt.xlabel("t [sec]")
+  plt.ylabel("u1 [m/s]")
+
+  plt.subplot(3, 1, 3)
+  plt.plot(t, u[1])
+  plt.xlabel("t [sec]")
+  plt.ylabel("u2 [rad/s]")
+
+  plt.suptitle("Lane change manuever")
+  plt.tight_layout()
+  plt.show()
+
+which yields
+
+.. image:: steer-optimal.png
+
 
 Module classes and functions
 ============================
