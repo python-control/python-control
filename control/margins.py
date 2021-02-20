@@ -222,16 +222,15 @@ def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
 #                    frd data. Correct to return smallest phase
 #                    margin, smallest gain margin and their frequencies
 #
-# RvP, Jun 10, 2017, modified the inclusion of roots found for phase
-#                    crossing to include all >= 0, made subsequent
-#                    calc insensitive to div by 0.  Also changed the
-#                    selection of which crossings to return on basis
-#                    of "A note on the Gain and Phase Margin Concepts"
-#                    Journal of Control and Systems Engineering,
-#                    Yazdan Bavafi-Toosi, Dec 2015, vol 3 issue 1, pp
-#                    51-59, closer to Matlab behavior, but not
-#                    completely identical in edge cases, which don't
-#                    cross but touch gain=1.
+# RvP, Jun 10, 2017, modified the inclusion of roots found for phase crossing
+#                    to include all >= 0, made subsequent calc insensitive to
+#                    div by 0.  Also changed the selection of which crossings
+#                    to return on basis of "A note on the Gain and Phase
+#                    Margin Concepts" Journal of Control and Systems
+#                    Engineering, Yazdan Bavafi-Toosi, Dec 2015, vol 3 issue
+#                    1, pp 51-59, closer to Matlab behavior, but not
+#                    completely identical in edge cases, which don't cross but
+#                    touch gain=1.
 #
 # BG, Nov 9, 2020,   removed duplicate implementations of the same code
 #                    for crossover frequencies and enhanced to handle discrete
@@ -260,17 +259,17 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
 
     Returns
     -------
-    gm: float or array_like
+    gm : float or array_like
         Gain margin
-    pm: float or array_loke
+    pm : float or array_loke
         Phase margin
-    sm: float or array_like
+    sm : float or array_like
         Stability margin, the minimum distance from the Nyquist plot to -1
-    wpc: float or array_like
+    wpc : float or array_like
         Phase crossover frequency (where phase crosses -180 degrees)
-    wgc: float or array_like
+    wgc : float or array_like
         Gain crossover frequency (where gain crosses 1)
-    wms: float or array_like
+    wms : float or array_like
         Stability margin frequency (where Nyquist plot is closest to -1)
 
     Note that the gain margin is determined by the gain of the loop
@@ -480,17 +479,16 @@ def margin(*args):
         Gain margin
     pm : float
         Phase margin (in degrees)
-    wg: float
-        Frequency for gain margin (at phase crossover, phase = -180 degrees)
-    wp: float
-        Frequency for phase margin (at gain crossover, gain = 1)
+    wpc : float or array_like
+        Phase crossover frequency (where phase crosses -180 degrees)
+    wgc : float or array_like
+        Gain crossover frequency (where gain crosses 1)
 
     Margins are calculated for a SISO open-loop system.
 
-    If there is more than one gain crossover, the one at the smallest
-    margin (deviation from gain = 1), in absolute sense, is
-    returned. Likewise the smallest phase margin (in absolute sense)
-    is returned.
+    If there is more than one gain crossover, the one at the smallest margin
+    (deviation from gain = 1), in absolute sense, is returned. Likewise the
+    smallest phase margin (in absolute sense) is returned.
 
     Examples
     --------
