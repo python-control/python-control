@@ -55,7 +55,7 @@ class OptimalControlProblem():
     def __init__(
             self, sys, time_vector, integral_cost, trajectory_constraints=[],
             terminal_cost=None, terminal_constraints=[], initial_guess=None,
-            log=False, options={}):
+            log=False, **kwargs):
         """Set up an optimal control problem
 
         To describe an optimal control problem we need an input/output system,
@@ -90,8 +90,8 @@ class OptimalControlProblem():
             extension of the time axis.
         log : bool, optional
             If `True`, turn on logging messages (using Python logging module).
-        options : dict, optional
-            Solver options (passed to :func:`scipy.optimal.minimize`).
+        kwargs : dict, optional
+            Additional parameters (passed to :func:`scipy.optimal.minimize`).
 
         Returns
         -------
@@ -107,7 +107,7 @@ class OptimalControlProblem():
         self.trajectory_constraints = trajectory_constraints
         self.terminal_cost = terminal_cost
         self.terminal_constraints = terminal_constraints
-        self.options = options
+        self.kwargs = kwargs
 
         #
         # Compute and store constraints
@@ -251,7 +251,15 @@ class OptimalControlProblem():
         # TODO: vectorize
         cost = 0
         for i, t in enumerate(self.time_vector):
-            cost += self.integral_cost(states[:,i], inputs[:,i])
+            if ct.isctime(self.system):
+                # Approximate the integral using trapezoidal rule
+                if i > 0:
+                    cost += 0.5 * (
+                        self.integral_cost(states[:, i-1], inputs[:, i-1]) +
+                        self.integral_cost(states[:, i], inputs[:, i])) * (
+                            self.time_vector[i] - self.time_vector[i-1])
+            else:
+                cost += self.integral_cost(states[:,i], inputs[:,i])
 
         # Terminal cost
         if self.terminal_cost is not None:
@@ -573,7 +581,7 @@ class OptimalControlProblem():
         # Call ScipPy optimizer
         res = sp.optimize.minimize(
             self._cost_function, self.initial_guess,
-            constraints=self.constraints, options=self.options)
+            constraints=self.constraints, **self.kwargs)
 
         # Process and return the results
         return OptimalControlResult(
@@ -676,7 +684,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 def compute_optimal_input(
         sys, horizon, X0, cost, constraints=[], terminal_cost=None,
         terminal_constraints=[], initial_guess=None, squeeze=None,
-        transpose=None, return_x=None, log=False, options={}):
+        transpose=None, return_x=None, log=False, **kwargs):
 
     """Compute the solution to an optimal control problem
 
@@ -743,8 +751,8 @@ def compute_optimal_input(
         If True, assume that 2D input arrays are transposed from the standard
         format.  Used to convert MATLAB-style inputs to our format.
 
-    options : dict, optional
-        Solver options (passed to :func:`scipy.optimal.minimize`).
+    kwargs : dict, optional
+        Additional parameters (passed to :func:`scipy.optimal.minimize`).
 
     Returns
     -------
@@ -763,7 +771,7 @@ def compute_optimal_input(
     ocp = OptimalControlProblem(
         sys, horizon, cost, trajectory_constraints=constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
-        initial_guess=initial_guess, log=log, options=options)
+        initial_guess=initial_guess, log=log, **kwargs)
 
     # Solve for the optimal input from the current state
     return ocp.compute_trajectory(
@@ -773,7 +781,7 @@ def compute_optimal_input(
 # Create a model predictive controller for an optimal control problem
 def create_mpc_iosystem(
         sys, horizon, cost, constraints=[], terminal_cost=None,
-        terminal_constraints=[], dt=True, log=False, options={}):
+        terminal_constraints=[], dt=True, log=False, **kwargs):
     """Create a model predictive I/O control system
 
     This function creates an input/output system that implements a model
@@ -805,8 +813,8 @@ def create_mpc_iosystem(
         List of constraints that should hold at the end of the trajectory.
         Same format as `constraints`.
 
-    options : dict, optional
-        Solver options (passed to :func:`scipy.optimal.minimize`).
+    kwargs : dict, optional
+        Additional parameters (passed to :func:`scipy.optimal.minimize`).
 
     Returns
     -------
@@ -821,7 +829,7 @@ def create_mpc_iosystem(
     ocp = OptimalControlProblem(
         sys, horizon, cost, trajectory_constraints=constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
-        log=log, options=options)
+        log=log, **kwargs)
 
     # Return an I/O system implementing the model predictive controller
     return ocp._create_mpc_iosystem(dt=dt)
@@ -863,8 +871,28 @@ def quadratic_cost(sys, Q, R, x0=0, u0=0):
         input.  The call signature of the function is cost_fun(x, u).
 
     """
-    Q = np.atleast_2d(Q)
-    R = np.atleast_2d(R)
+    # Process the input arguments
+    if Q is not None:
+        Q = np.atleast_2d(Q)
+        if Q.size == 1:         # allow scalar weights
+            Q = np.eye(sys.nstates) * Q.item()
+        elif Q.shape != (sys.nstates, sys.nstates):
+            raise ValueError("Q matrix is the wrong shape")
+
+    if R is not None:
+        R = np.atleast_2d(R)
+        if R.size == 1:         # allow scalar weights
+            R = np.eye(sys.ninputs) * R.item()
+        elif R.shape != (sys.ninputs, sys.ninputs):
+            raise ValueError("R matrix is the wrong shape")
+
+    if Q is None:
+        return lambda x, u: ((u-u0) @ R @ (u-u0)).item()
+
+    if R is None:
+        return lambda x, u: ((x-x0) @ Q @ (x-x0)).item()
+
+    # Received both Q and R matrices
     return lambda x, u: ((x-x0) @ Q @ (x-x0) + (u-u0) @ R @ (u-u0)).item()
 
 

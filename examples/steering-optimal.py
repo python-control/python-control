@@ -92,60 +92,101 @@ x0 = [0., -2., 0.]; u0 = [10., 0.]
 xf = [100., 2., 0.]; uf = [10., 0.]
 Tf = 10
 
+#
+# Approach 1: standard quadratic cost
+#
+# We can set up the optimal control problem as trying to minimize the
+# distance form the desired final point while at the same time as not
+# exerting too much control effort to achieve our goal.
+#
+# Note: depending on what version of SciPy you are using, you might get a
+# warning message about precision loss, but the solution is pretty good.
+#
+
 # Set up the cost functions
-Q = np.diag([0.1, 1, 0.1])      # keep lateral error low
-R = np.eye(2)                   # minimize applied inputs
-cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+Q = np.diag([1, 10, 1])     # keep lateral error low
+R = np.diag([1, 1])         # minimize applied inputs
+cost1 = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
 
-#
-# Set up different types of constraints to demonstrate
-#
-
-# Input constraints
-constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
-
-# Terminal constraints (optional)
-terminal = [ obc.state_range_constraint(vehicle, xf, xf) ]
-
-# Time horizon and possible initial guessses
+# Define the time horizon (and spacing) for the optimization
 horizon = np.linspace(0, Tf, 10, endpoint=True)
-straight = [10, 0]              # straight trajectory
+
+# Provide an intial guess (will be extended to entire horizon)
 bend_left = [10, 0.01]          # slight left veer
 
-#
-# Solve the optimal control problem in dififerent ways
-#
-
-# Basic setup: quadratic cost, no terminal constraint, straight initial path
+# Turn on debug level logging so that we can see what the optimizer is doing
 logging.basicConfig(
-    level=logging.DEBUG, filename="steering-straight.log",
+    level=logging.DEBUG, filename="steering-integral_cost.log",
     filemode='w', force=True)
-result = obc.compute_optimal_input(
-    vehicle, horizon, x0, cost, initial_guess=straight,
-    log=True, options={'eps': 0.01})
-t1, u1 = result.time, result.inputs
+
+# Compute the optimal control, setting step size for gradient calculation (eps)
+result1 = obc.compute_optimal_input(
+    vehicle, horizon, x0, cost1, initial_guess=bend_left, log=True,
+    options={'eps': 0.01})
+
+# Extract and plot the results (+ state trajectory)
+t1, u1 = result1.time, result1.inputs
 t1, y1 = ct.input_output_response(vehicle, horizon, u1, x0)
 plot_results(t1, y1, u1, figure=1, yf=xf[0:2])
 
-# Add constraint on the input to avoid high steering angles
+#
+# Approach 2: input cost, input constraints, terminal cost
+#
+# The previous solution integrates the position error for the entire
+# horizon, and so the car changes lanes very quickly (at the cost of larger
+# inputs).  Instead, we can penalize the final state and impose a higher
+# cost on the inputs, resuling in a more graduate lane change.
+#
+# We also set the solver explicitly (its actually the default one, but shows
+# how to do this).
+#
+
+# Add input constraint, input cost, terminal cost
+constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+traj_cost = obc.quadratic_cost(vehicle, None, np.diag([0.1, 1]), u0=uf)
+term_cost = obc.quadratic_cost(vehicle, np.diag([1, 10, 10]), None, x0=xf)
+
+# Change logging to keep less information
 logging.basicConfig(
-    level=logging.INFO, filename="./steering-bendleft.log",
+    level=logging.INFO, filename="./steering-terminal_cost.log",
     filemode='w', force=True)
-result = obc.compute_optimal_input(
-    vehicle, horizon, x0, cost, constraints, initial_guess=bend_left,
-    log=True, options={'eps': 0.01})
-t2, u2 = result.time, result.inputs
+
+# Compute the optimal control
+result2 = obc.compute_optimal_input(
+    vehicle, horizon, x0, traj_cost, constraints, terminal_cost=term_cost,
+    initial_guess=bend_left, log=True,
+    method='SLSQP', options={'eps': 0.01})
+
+# Extract and plot the results (+ state trajectory)
+t2, u2 = result2.time, result2.inputs
 t2, y2 = ct.input_output_response(vehicle, horizon, u2, x0)
 plot_results(t2, y2, u2, figure=2, yf=xf[0:2])
 
-# Resolve with a terminal constraint (starting with previous result)
-logging.basicConfig(
-    level=logging.WARN, filename="./steering-terminal.log",
-    filemode='w', force=True)
-result = obc.compute_optimal_input(
-    vehicle, horizon, x0, cost, constraints,
-    terminal_constraints=terminal, initial_guess=u2,
-    log=True, options={'eps': 0.01})
-t3, u3 = result.time, result.inputs
+#
+# Approach 3: terminal constraints and new solver
+#
+# As a final example, we can remove the cost function on the state and
+# replace it with a terminal *constraint* on the state.  If a solution is
+# found, it guarantees we get to exactly the final state.
+#
+# To speeds things up a bit, we initalize the problem using the previous
+# optimal controller (which didn't quite hit the final value).
+#
+
+# Input cost and terminal constraints
+cost3 = obc.quadratic_cost(vehicle, np.zeros((3,3)), R, u0=uf)
+terminal = [ obc.state_range_constraint(vehicle, xf, xf) ]
+
+# Reset logging to its default values
+logging.basicConfig(level=logging.WARN, force=True)
+
+# Compute the optimal control
+result3 = obc.compute_optimal_input(
+    vehicle, horizon, x0, cost3, constraints,
+    terminal_constraints=terminal, initial_guess=u2, log=True,
+    options={'eps': 0.01})
+
+# Extract and plot the results (+ state trajectory)
+t3, u3 = result3.time, result3.inputs
 t3, y3 = ct.input_output_response(vehicle, horizon, u3, x0)
 plot_results(t3, y3, u3, figure=3, yf=xf[0:2])
