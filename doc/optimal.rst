@@ -1,17 +1,17 @@
-.. _obc-module:
+.. _optimal-module:
 
-**************************
-Optimization-based control
-**************************
+***************
+Optimal control
+***************
 
-.. automodule:: control.obc
+.. automodule:: control.optimal
    :no-members:
    :no-inherited-members:
 
-Optimal control problem setup
-=============================
+Problem setup
+=============
 
-Consider now the *optimal control problem*:
+Consider the *optimal control problem*:
 
 .. math::
 
@@ -29,7 +29,7 @@ Abstractly, this is a constrained optimization problem where we seek a
 
 .. math::
 
-  J(x, u) = \int_0^T L(x,u)\, dt + V \bigl( x(T) \bigr).
+  J(x, u) = \int_0^T L(x, u)\, dt + V \bigl( x(T) \bigr).
 
 More formally, this problem is equivalent to the "standard" problem of
 minimizing a cost function :math:`J(x, u)` where :math:`(x, u) \in L_2[0,T]`
@@ -94,25 +94,25 @@ Control <https://fbswiki.org/wiki/index.php/OBC>`_.
 Module usage
 ============
 
-The `obc` module provides a means of computing optimal trajectories for
-nonlinear systems and implementing optimization-based controllers, including
-model predictive control.  It follows the basic problem setup described
-above, but carries out all computations in *discrete time* (so that
-integrals become sums) and over a *finite horizon*.
+The optimal control module provides a means of computing optimal
+trajectories for nonlinear systems and implementing optimization-based
+controllers, including model predictive control.  It follows the basic
+problem setup described above, but carries out all computations in *discrete
+time* (so that integrals become sums) and over a *finite horizon*.
 
 To describe an optimal control problem we need an input/output system, a
 time horizon, a cost function, and (optionally) a set of constraints on the
 state and/or input, either along the trajectory and at the terminal time.
-The `obc` module operates by converting the optimal control problem into a
-standard optimization problem that can be solved by
+The optimal control module operates by converting the optimal control
+problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
-by using the `~control.obc.compute_optimal_input` function::
+by using the :func:`~control.obc.solve_ocp` function::
 
-  inputs = obc.compute_optimal_input(sys, horizon, X0, cost, constraints)
+  res = obc.solve_ocp(sys, horizon, X0, cost, constraints)
 
-The `sys` parameter should be a :class:`~control.InputOutputSystem` and the
+The `sys` parameter should be an :class:`~control.InputOutputSystem` and the
 `horizon` parameter should represent a time vector that gives the list of
-times at which the `cost` and `constraints` should be evaluated.
+times at which the cost and constraints should be evaluated.
 
 The `cost` function has call signature `cost(t, x, u)` and should return the
 (incremental) cost at the given time, state, and input.  It will be
@@ -147,18 +147,29 @@ all points on the trajectory.  The `terminal_constraint` parameter can be
 used to specify a constraint that only holds at the final point of the
 trajectory.
 
+The return value for :func:`~control.optimal.solve_ocp` is a bundle object
+that has the following elements:
+
+  * `res.success`: `True` if the optimization was successfully solved
+  * `res.inputs`: optimal input
+  * `res.states`: state trajectory (if `return_x` was `True`)
+  * `res.time`: copy of the time horizon vector
+
+In addition, the results from :func:`scipy.optimize.minimize` are also
+available.
+
 To simplify the specification of cost functions and constraints, the
 :mod:`~control.ios` module defines a number of utility functions:
 
 .. autosummary::
 
-   ~control.obc.quadratic_cost
-   ~control.obc.input_poly_constraint
-   ~control.obc.input_rank_constraint
-   ~control.obc.output_poly_constraint
-   ~control.obc.output_rank_constraint
-   ~control.obc.state_poly_constraint
-   ~control.obc.state_rank_constraint
+   ~control.optimal.quadratic_cost
+   ~control.optimal.input_poly_constraint
+   ~control.optimal.input_range_constraint
+   ~control.optimal.output_poly_constraint
+   ~control.optimal.output_range_constraint
+   ~control.optimal.state_poly_constraint
+   ~control.optimal.state_range_constraint
 
 Example
 =======
@@ -169,7 +180,7 @@ following code::
 
   import numpy as np
   import control as ct
-  import control.obc as obc
+  import control.optimal as opt
   import matplotlib.pyplot as plt
 
   def vehicle_update(t, x, u, params):
@@ -196,8 +207,8 @@ following code::
       inputs=('v', 'phi'), outputs=('x', 'y', 'theta'))
 
 We consider an optimal control problem that consists of "changing lanes" by
-moving from the point x = 0m, y = -2 m, :math:`\theta` = 0 to the point x =
-100m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and with a
+moving from the point x = 0 m, y = -2 m, :math:`\theta` = 0 to the point x =
+100 m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and with a
 with a starting and ending velocity of 10 m/s::
 
   x0 = [0., -2., 0.]; u0 = [10., 0.]
@@ -207,40 +218,48 @@ with a starting and ending velocity of 10 m/s::
 To set up the optimal control problem we design a cost function that
 penalizes the state and input using quadratic cost functions::
 
-  Q = np.diag([10, 10, 1])
+  Q = np.diag([0.1, 10, .1])    # keep lateral error low
   R = np.eye(2) * 0.1
-  cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+  cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
 
 We also constraint the maximum turning rate to 0.1 radians (about 6 degees)
 and constrain the velocity to be in the range of 9 m/s to 11 m/s::
 
-  constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
-  terminal = [ obc.state_range_constraint(vehicle, xf, xf) ]
+  constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
 
-Finally, we solve for the optimal inputs and plot the results::
+Finally, we solve for the optimal inputs::
 
   horizon = np.linspace(0, Tf, 20, endpoint=True)
-  straight = [10, 0]		# straight trajectory
   bend_left = [10, 0.01]	# slight left veer
-  t, u = obc.compute_optimal_input(
-      # vehicle, horizon, x0, cost, constraints,
-      # initial_guess=straight, logging=True)
-      vehicle, horizon, x0, cost, constraints,
-      terminal_constraints=terminal, initial_guess=straight)
+
+  result = opt.solve_ocp(
+      vehicle, horizon, x0, cost, constraints, initial_guess=bend_left,
+      options={'eps': 0.01})    # set step size for gradient calculation
+
+  # Extract the results
+  u = result.inputs
   t, y = ct.input_output_response(vehicle, horizon, u, x0)
 
+Plotting the results::
+
+  # Plot the results
   plt.subplot(3, 1, 1)
   plt.plot(y[0], y[1])
+  plt.plot(x0[0], x0[1], 'ro', xf[0], xf[1], 'ro')
   plt.xlabel("x [m]")
   plt.ylabel("y [m]")
 
   plt.subplot(3, 1, 2)
   plt.plot(t, u[0])
+  plt.axis([0, 10, 8.5, 11.5])
+  plt.plot([0, 10], [9, 9], 'k--', [0, 10], [11, 11], 'k--')
   plt.xlabel("t [sec]")
   plt.ylabel("u1 [m/s]")
 
   plt.subplot(3, 1, 3)
   plt.plot(t, u[1])
+  plt.axis([0, 10, -0.15, 0.15])
+  plt.plot([0, 10], [-0.1, -0.1], 'k--', [0, 10], [0.1, 0.1], 'k--')
   plt.xlabel("t [sec]")
   plt.ylabel("u2 [rad/s]")
 
@@ -248,9 +267,9 @@ Finally, we solve for the optimal inputs and plot the results::
   plt.tight_layout()
   plt.show()
 
-which yields
+yields
 
-.. image:: steer-optimal.png
+.. image:: steering-optimal.png
 
 
 Module classes and functions
@@ -258,12 +277,12 @@ Module classes and functions
 .. autosummary::
    :toctree: generated/
 
-   ~control.obc.OptimalControlProblem
-   ~control.obc.compute_optimal_input
-   ~control.obc.create_mpc_iosystem
-   ~control.obc.input_poly_constraint
-   ~control.obc.input_range_constraint
-   ~control.obc.output_poly_constraint
-   ~control.obc.output_range_constraint
-   ~control.obc.state_poly_constraint
-   ~control.obc.state_range_constraint
+   ~control.optimal.OptimalControlProblem
+   ~control.optimal.solve_ocp
+   ~control.optimal.create_mpc_iosystem
+   ~control.optimal.input_poly_constraint
+   ~control.optimal.input_range_constraint
+   ~control.optimal.output_poly_constraint
+   ~control.optimal.output_range_constraint
+   ~control.optimal.state_poly_constraint
+   ~control.optimal.state_range_constraint

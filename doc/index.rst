@@ -30,7 +30,7 @@ implements basic operations for analysis and design of feedback control systems.
    flatsys
    iosys
    descfcn
-   obc
+   optimal
    examples
 
 * :ref:`genindex`

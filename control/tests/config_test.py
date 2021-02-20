@@ -251,3 +251,14 @@ class TestConfig:
         assert ct.tf(1, 1).dt is None
         assert ct.ss(0, 0, 0, 1).dt is None
         # TODO: add in test for static gain iosys
+
+    def test_get_param_last(self):
+        """Test _get_param last keyword"""
+        kwargs = {'first': 1, 'second': 2}
+
+        with pytest.raises(TypeError, match="unrecognized keyword.*second"):
+            assert ct.config._get_param(
+                'config', 'first', kwargs, pop=True, last=True) == 1
+
+        assert ct.config._get_param(
+            'config', 'second', kwargs, pop=True, last=True) == 2

@@ -1,9 +1,9 @@
-# obc.py - optimization based control module
+# optimal.py - optimization based control module
 #
 # RMM, 11 Feb 2021
 #
 
-"""The :mod:`~control.obc` module provides support for optimization-based
+"""The :mod:`~control.optimal` module provides support for optimization-based
 controllers for nonlinear systems with state and input constraints.
 
 """
@@ -249,17 +249,26 @@ class OptimalControlProblem():
 
         # Trajectory cost
         # TODO: vectorize
-        cost = 0
-        for i, t in enumerate(self.time_vector):
-            if ct.isctime(self.system):
+        if ct.isctime(self.system):
+            # Evaluate the costs
+            costs = [self.integral_cost(states[:, i], inputs[:, i]) for
+                     i in range(self.time_vector.size)]
+
+            # Compute the time intervals
+            dt = np.diff(self.time_vector)
+
+            # Integrate the cost
+            cost = 0
+            for i in range(self.time_vector.size-1):
                 # Approximate the integral using trapezoidal rule
-                if i > 0:
-                    cost += 0.5 * (
-                        self.integral_cost(states[:, i-1], inputs[:, i-1]) +
-                        self.integral_cost(states[:, i], inputs[:, i])) * (
-                            self.time_vector[i] - self.time_vector[i-1])
-            else:
-                cost += self.integral_cost(states[:,i], inputs[:,i])
+                cost += 0.5 * (costs[i] + costs[i+1]) * dt[i]
+
+        else:
+            # Sum the integral cost over the time (second) indices
+            # cost += self.integral_cost(states[:,i], inputs[:,i])
+            cost = sum(map(
+                self.integral_cost, np.transpose(states),
+                np.transpose(inputs)))
 
         # Terminal cost
         if self.terminal_cost is not None:
@@ -526,8 +535,8 @@ class OptimalControlProblem():
             inputs = x.reshape((self.system.ninputs, self.time_vector.size))
             self.initial_guess = np.hstack(
                 [inputs[:,1:], inputs[:,-1:]]).reshape(-1)
-            result = self.compute_trajectory(u)
-            return result.inputs.reshape(-1)
+            res = self.compute_trajectory(u, print_summary=False)
+            return res.inputs.reshape(-1)
 
         def _output(t, x, u, params={}):
             inputs = x.reshape((self.system.ninputs, self.time_vector.size))
@@ -541,15 +550,15 @@ class OptimalControlProblem():
 
     # Compute the optimal trajectory from the current state
     def compute_trajectory(
-            self, x, squeeze=None, transpose=None, return_x=None,
-            print_summary=True):
+            self, x, squeeze=None, transpose=None, return_states=None,
+            print_summary=True, **kwargs):
         """Compute the optimal input at state x
 
         Parameters
         ----------
         x : array-like or number, optional
             Initial state for the system.
-        return_x : bool, optional
+        return_states : bool, optional
             If True, return the values of the state at each time (default =
             False).
         squeeze : bool, optional
@@ -564,17 +573,25 @@ class OptimalControlProblem():
 
         Returns
         -------
-        time : array
+        res : OptimalControlResult
+            Bundle object with the results of the optimal control problem.
+        res.success: bool
+            Boolean flag indicating whether the optimization was successful.
+        res.time : array
             Time values of the input.
-        inputs : array
+        res.inputs : array
             Optimal inputs for the system.  If the system is SISO and squeeze
             is not True, the array is 1D (indexed by time).  If the system is
             not SISO or squeeze is False, the array is 2D (indexed by the
             output number and time).
-        states : array
-            Time evolution of the state vector (if return_x=True).
+        res.states : array
+            Time evolution of the state vector (if return_states=True).
 
         """
+        # Allow 'return_x` as a synonym for 'return_states'
+        return_states = ct.config._get_param(
+            'optimal', 'return_x', kwargs, return_states, pop=True)
+
         # Store the initial state (for use in _constraint_function)
         self.x = x
 
@@ -585,7 +602,7 @@ class OptimalControlProblem():
 
         # Process and return the results
         return OptimalControlResult(
-            self, res, transpose=transpose, return_x=return_x,
+            self, res, transpose=transpose, return_states=return_states,
             squeeze=squeeze, print_summary=print_summary)
 
     # Compute the current input to apply from the current state (MPC style)
@@ -615,8 +632,8 @@ class OptimalControlProblem():
             if the optimization failed.
 
         """
-        results = self.compute_trajectory(x, squeeze=squeeze)
-        return inputs[:, 0] if results.success else None
+        res = self.compute_trajectory(x, squeeze=squeeze)
+        return inputs[:, 0] if res.success else None
 
 
 # Optimal control result
@@ -640,8 +657,10 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
     """
     def __init__(
-            self, ocp, res, return_x=False, print_summary=False,
+            self, ocp, res, return_states=False, print_summary=False,
             transpose=None, squeeze=None):
+        """Create a OptimalControlResult object"""
+
         # Copy all of the fields we were sent by sp.optimize.minimize()
         for key, val in res.items():
             setattr(self, key, val)
@@ -663,7 +682,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         if print_summary:
             ocp._print_statistics()
 
-        if return_x and res.success:
+        if return_states and res.success:
             # Simulate the system if we need the state back
             _, _, states = ct.input_output_response(
                 ocp.system, ocp.time_vector, inputs, ocp.x, return_x=True)
@@ -673,7 +692,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
         retval = _process_time_response(
             ocp.system, ocp.time_vector, inputs, states,
-            transpose=transpose, return_x=return_x, squeeze=squeeze)
+            transpose=transpose, return_x=return_states, squeeze=squeeze)
 
         self.time = retval[0]
         self.inputs = retval[1]
@@ -681,10 +700,10 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
 
 # Compute the input for a nonlinear, (constrained) optimal control problem
-def compute_optimal_input(
+def solve_ocp(
         sys, horizon, X0, cost, constraints=[], terminal_cost=None,
         terminal_constraints=[], initial_guess=None, squeeze=None,
-        transpose=None, return_x=None, log=False, **kwargs):
+        transpose=None, return_states=None, log=False, **kwargs):
 
     """Compute the solution to an optimal control problem
 
@@ -738,7 +757,7 @@ def compute_optimal_input(
     log : bool, optional
         If `True`, turn on logging messages (using Python logging module).
 
-    return_x : bool, optional
+    return_states : bool, optional
         If True, return the values of the state at each time (default = False).
 
     squeeze : bool, optional
@@ -756,15 +775,23 @@ def compute_optimal_input(
 
     Returns
     -------
-    time : array
-        Time values of the input or `None` if the optimimation fails.
-    inputs : array
-        Optimal inputs for the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
-        time).
-    states : array
-        Time evolution of the state vector (if return_x=True).
+    res : OptimalControlResult
+        Bundle object with the results of the optimal control problem.
+
+    res.success: bool
+        Boolean flag indicating whether the optimization was successful.
+
+    res.time : array
+        Time values of the input.
+
+    res.inputs : array
+        Optimal inputs for the system.  If the system is SISO and squeeze is
+        not True, the array is 1D (indexed by time).  If the system is not
+        SISO or squeeze is False, the array is 2D (indexed by the output
+        number and time).
+
+    res.states : array
+        Time evolution of the state vector (if return_states=True).
 
     """
     # Set up the optimal control problem
@@ -775,7 +802,7 @@ def compute_optimal_input(
 
     # Solve for the optimal input from the current state
     return ocp.compute_trajectory(
-        X0, squeeze=squeeze, transpose=None, return_x=None)
+        X0, squeeze=squeeze, transpose=None, return_states=None)
 
 
 # Create a model predictive controller for an optimal control problem
@@ -803,7 +830,7 @@ def create_mpc_iosystem(
 
     constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.
-        See :func:`~control.obc.compute_optimal_input` for more details.
+        See :func:`~control.optimal.solve_ocp` for more details.
 
     terminal_cost : callable, optional
         Function that returns the terminal cost given the current state

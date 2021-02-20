@@ -40,4 +40,4 @@ Additional classes
    flatsys.LinearFlatSystem
    flatsys.PolyFamily
    flatsys.SystemTrajectory
-   obc.OptimalControlProblem
+   optimal.OptimalControlProblem
