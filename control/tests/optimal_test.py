@@ -230,7 +230,7 @@ def test_terminal_constraints(sys_args):
     final_point = [opt.state_range_constraint(sys, [0, 0], [0, 0])]
 
     # Create the optimal control problem
-    time = np.arange(0, 5, 1)
+    time = np.arange(0, 3, 1)
     optctrl = opt.OptimalControlProblem(
         sys, time, cost, terminal_constraints=final_point)
 
@@ -302,3 +302,25 @@ def test_terminal_constraints(sys_args):
     with pytest.warns(UserWarning, match="unable to solve"):
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
         assert not res.success
+
+def test_optimal_logging(capsys):
+    """Test logging functions (mainly for code coverage)"""
+    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+
+    # Set up the optimal control problem
+    cost = opt.quadratic_cost(sys, 1, 1)
+    state_constraint = opt.state_range_constraint(
+        sys, [-np.inf, -10], [10, np.inf])
+    input_constraint = opt.input_range_constraint(sys, -100, 100)
+    time = np.arange(0, 3, 1)
+    x0 = [-1, 1]
+
+    # Solve it, with logging turned on
+    res = opt.solve_ocp(
+        sys, time, x0, cost, input_constraint, terminal_cost=cost,
+        terminal_constraints=state_constraint, log=True)
+
+    # Make sure the output has info available only with logging turned on
+    captured = capsys.readouterr()
+    assert captured.out.find("process time") != -1
+

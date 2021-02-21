@@ -104,10 +104,26 @@ class OptimalControlProblem():
         self.system = sys
         self.time_vector = time_vector
         self.integral_cost = integral_cost
-        self.trajectory_constraints = trajectory_constraints
         self.terminal_cost = terminal_cost
         self.terminal_constraints = terminal_constraints
         self.kwargs = kwargs
+
+        # Process trajectory constraints
+        if isinstance(trajectory_constraints, tuple):
+            self.trajectory_constraints = [trajectory_constraints]
+        elif not isinstance(trajectory_constraints, list):
+            raise TypeError("trajectory constraints must be a list")
+        else:
+            self.trajectory_constraints = trajectory_constraints
+
+        # Process terminal constraints
+        if isinstance(terminal_constraints, tuple):
+            self.terminal_constraints = [terminal_constraints]
+        elif not isinstance(terminal_constraints, list):
+            raise TypeError("terminal constraints must be a list")
+        else:
+            self.terminal_constraints = terminal_constraints
+
 
         #
         # Compute and store constraints
