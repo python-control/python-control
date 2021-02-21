@@ -20,6 +20,7 @@ from .timeresp import _process_time_response
 
 __all__ = ['find_optimal_input']
 
+
 class OptimalControlProblem():
     """Description of a finite horizon, optimal control problem
 
@@ -124,7 +125,6 @@ class OptimalControlProblem():
         else:
             self.terminal_constraints = terminal_constraints
 
-
         #
         # Compute and store constraints
         #
@@ -197,7 +197,7 @@ class OptimalControlProblem():
                     initial_guess = np.broadcast_to(
                         initial_guess.reshape(-1, 1),
                         (self.system.ninputs, self.time_vector.size))
-                except:
+                except ValueError:
                     raise ValueError("initial guess is the wrong shape")
 
             elif initial_guess.shape != \
@@ -221,7 +221,6 @@ class OptimalControlProblem():
         # Log information
         if log:
             logging.info("New optimal control problem initailized")
-
 
     #
     # Cost function
@@ -253,7 +252,7 @@ class OptimalControlProblem():
         else:
             if self.log:
                 logging.debug("calling input_output_response from state\n"
-                          + str(x))
+                              + str(x))
                 logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
 
             # Simulate the system to get the state
@@ -266,7 +265,7 @@ class OptimalControlProblem():
 
             if self.log:
                 logging.debug("input_output_response returned states\n"
-                          + str(states))
+                              + str(states))
 
         # Trajectory cost
         # TODO: vectorize
@@ -293,7 +292,7 @@ class OptimalControlProblem():
 
         # Terminal cost
         if self.terminal_cost is not None:
-            cost += self.terminal_cost(states[:,-1], inputs[:,-1])
+            cost += self.terminal_cost(states[:, -1], inputs[:, -1])
 
         # Update statistics
         self.cost_evaluations += 1
@@ -306,7 +305,6 @@ class OptimalControlProblem():
 
         # Return the total cost for this input sequence
         return cost
-
 
     #
     # Constraints
@@ -368,7 +366,7 @@ class OptimalControlProblem():
         else:
             if self.log:
                 logging.debug("calling input_output_response from state\n"
-                          + str(x))
+                              + str(x))
                 logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
 
             # Simulate the system to get the state
@@ -390,9 +388,9 @@ class OptimalControlProblem():
                 elif type == opt.LinearConstraint:
                     # `fun` is the A matrix associated with the polytope...
                     value.append(
-                        np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
+                        np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
                 elif type == opt.NonlinearConstraint:
-                    value.append(fun(states[:,i], inputs[:,i]))
+                    value.append(fun(states[:, i], inputs[:, i]))
                 else:
                     raise TypeError("unknown constraint type %s" %
                                     constraint[0])
@@ -405,9 +403,9 @@ class OptimalControlProblem():
                 continue
             elif type == opt.LinearConstraint:
                 value.append(
-                    np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
+                    np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
             elif type == opt.NonlinearConstraint:
-                value.append(fun(states[:,i], inputs[:,i]))
+                value.append(fun(states[:, i], inputs[:, i]))
             else:
                 raise TypeError("unknown constraint type %s" %
                                 constraint[0])
@@ -448,7 +446,7 @@ class OptimalControlProblem():
         else:
             if self.log:
                 logging.debug("calling input_output_response from state\n"
-                          + str(x))
+                              + str(x))
                 logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
 
             # Simulate the system to get the state
@@ -461,7 +459,7 @@ class OptimalControlProblem():
 
             if self.log:
                 logging.debug("input_output_response returned states\n"
-                          + str(states))
+                              + str(states))
 
         # Evaluate the constraint function along the trajectory
         value = []
@@ -474,9 +472,9 @@ class OptimalControlProblem():
                 elif type == opt.LinearConstraint:
                     # `fun` is the A matrix associated with the polytope...
                     value.append(
-                        np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
+                        np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
                 elif type == opt.NonlinearConstraint:
-                    value.append(fun(states[:,i], inputs[:,i]))
+                    value.append(fun(states[:, i], inputs[:, i]))
                 else:
                     raise TypeError("unknown constraint type %s" %
                                     constraint[0])
@@ -489,9 +487,9 @@ class OptimalControlProblem():
                 continue
             elif type == opt.LinearConstraint:
                 value.append(
-                    np.dot(fun, np.hstack([states[:,i], inputs[:,i]])))
+                    np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
             elif type == opt.NonlinearConstraint:
-                value.append(fun(states[:,i], inputs[:,i]))
+                value.append(fun(states[:, i], inputs[:, i]))
             else:
                 raise TypeError("unknown constraint type %s" %
                                 constraint[0])
@@ -523,7 +521,7 @@ class OptimalControlProblem():
     #
     def _reset_statistics(self, log=False):
         """Reset counters for keeping track of statistics"""
-        self.log=log
+        self.log = log
         self.cost_evaluations, self.cost_process_time = 0, 0
         self.constraint_evaluations, self.constraint_process_time = 0, 0
         self.eqconst_evaluations, self.eqconst_process_time = 0, 0
@@ -555,13 +553,13 @@ class OptimalControlProblem():
         def _update(t, x, u, params={}):
             inputs = x.reshape((self.system.ninputs, self.time_vector.size))
             self.initial_guess = np.hstack(
-                [inputs[:,1:], inputs[:,-1:]]).reshape(-1)
+                [inputs[:, 1:], inputs[:, -1:]]).reshape(-1)
             res = self.compute_trajectory(u, print_summary=False)
             return res.inputs.reshape(-1)
 
         def _output(t, x, u, params={}):
             inputs = x.reshape((self.system.ninputs, self.time_vector.size))
-            return inputs[:,0]
+            return inputs[:, 0]
 
         return ct.NonlinearIOSystem(
             _update, _output, dt=dt,
