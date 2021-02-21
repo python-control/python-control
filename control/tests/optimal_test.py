@@ -77,7 +77,7 @@ def test_discrete_lqr():
 
     # Compute the integral and terminal cost
     integral_cost = opt.quadratic_cost(sys, Q, R)
-    terminal_cost = opt.quadratic_cost(sys, S, 0)
+    terminal_cost = opt.quadratic_cost(sys, S, None)
 
     # Formulate finite horizon MPC problem
     time = np.arange(0, 5, 1)
@@ -171,6 +171,11 @@ def test_mpc_iosystem():
     [(opt.state_poly_constraint,
       np.array([[1, 0], [0, 1], [-1, 0], [0, -1]]), [5, 5, 5, 5]),
      (opt.input_poly_constraint, np.array([[1], [-1]]), [1, 1])],
+    [(opt.output_range_constraint, [-5, -5], [5, 5]),
+      (opt.input_poly_constraint, np.array([[1], [-1]]), [1, 1])],
+    [(opt.output_poly_constraint,
+      np.array([[1, 0], [0, 1], [-1, 0], [0, -1]]), [5, 5, 5, 5]),
+     (opt.input_poly_constraint, np.array([[1], [-1]]), [1, 1])],
     [(sp.optimize.NonlinearConstraint,
       lambda x, u: np.array([x[0], x[1], u[0]]), [-5, -5, -1], [5, 5, 1])],
 ])
@@ -258,6 +263,10 @@ def test_terminal_constraints(sys_args):
     np.testing.assert_allclose(
         x1, np.kron(x0.reshape((2, 1)), time[::-1]/Tf), atol=0.1, rtol=0.01)
 
+    # Re-run using initial guess = optional and make sure nothing chnages
+    res = optctrl.compute_trajectory(x0, initial_guess=u1)
+    np.testing.assert_almost_equal(res.inputs, u1)
+
     # Impose some cost on the state, which should change the path
     Q = np.eye(2)
     R = np.eye(2) * 0.1
@@ -305,22 +314,101 @@ def test_terminal_constraints(sys_args):
 
 def test_optimal_logging(capsys):
     """Test logging functions (mainly for code coverage)"""
-    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+    sys = ct.ss2io(ct.ss(np.eye(2), np.eye(2), np.eye(2), 0, 1))
 
     # Set up the optimal control problem
     cost = opt.quadratic_cost(sys, 1, 1)
     state_constraint = opt.state_range_constraint(
-        sys, [-np.inf, -10], [10, np.inf])
-    input_constraint = opt.input_range_constraint(sys, -100, 100)
+        sys, [-np.inf, 1], [10, 1])
+    input_constraint = opt.input_range_constraint(sys, [-100, -100], [100, 100])
     time = np.arange(0, 3, 1)
     x0 = [-1, 1]
 
-    # Solve it, with logging turned on
-    res = opt.solve_ocp(
-        sys, time, x0, cost, input_constraint, terminal_cost=cost,
-        terminal_constraints=state_constraint, log=True)
+    # Solve it, with logging turned on (with warning due to mixed constraints)
+    with pytest.warns(sp.optimize.optimize.OptimizeWarning,
+                        match="Equality and inequality .* same element"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, input_constraint, terminal_cost=cost,
+            terminal_constraints=state_constraint, log=True)
 
     # Make sure the output has info available only with logging turned on
     captured = capsys.readouterr()
     assert captured.out.find("process time") != -1
 
+
+@pytest.mark.parametrize("fun, args, exception, match", [
+    [opt.quadratic_cost, (np.zeros((2, 3)), np.eye(2)), ValueError,
+     "Q matrix is the wrong shape"],
+    [opt.quadratic_cost, (np.eye(2), 1), ValueError,
+     "R matrix is the wrong shape"],
+])
+def test_constraint_constructor_errors(fun, args, exception, match):
+    """Test various error conditions for constraint constructors"""
+    sys = ct.ss2io(ct.rss(2, 2, 2))
+    with pytest.raises(exception, match=match):
+        fun(sys, *args)
+
+
+@pytest.mark.parametrize("fun, args, exception, match", [
+    [opt.input_poly_constraint, (np.zeros((2, 3)), [0, 0]), ValueError,
+     "polytope matrix must match number of inputs"],
+    [opt.output_poly_constraint, (np.zeros((2, 3)), [0, 0]), ValueError,
+     "polytope matrix must match number of outputs"],
+    [opt.state_poly_constraint, (np.zeros((2, 3)), [0, 0]), ValueError,
+     "polytope matrix must match number of states"],
+    [opt.input_poly_constraint, (np.zeros((2, 2)), [0, 0, 0]), ValueError,
+     "number of bounds must match number of constraints"],
+    [opt.output_poly_constraint, (np.zeros((2, 2)), [0, 0, 0]), ValueError,
+     "number of bounds must match number of constraints"],
+    [opt.state_poly_constraint, (np.zeros((2, 2)), [0, 0, 0]), ValueError,
+     "number of bounds must match number of constraints"],
+    [opt.input_poly_constraint, (np.zeros((2, 2)), [[0, 0, 0]]), ValueError,
+     "number of bounds must match number of constraints"],
+    [opt.output_poly_constraint, (np.zeros((2, 2)), [[0, 0, 0]]), ValueError,
+     "number of bounds must match number of constraints"],
+    [opt.state_poly_constraint, (np.zeros((2, 2)), 0), ValueError,
+     "number of bounds must match number of constraints"],
+    [opt.input_range_constraint, ([1, 2, 3], [0, 0]), ValueError,
+     "input bounds must match"],
+    [opt.output_range_constraint, ([2, 3], [0, 0, 0]), ValueError,
+     "output bounds must match"],
+    [opt.state_range_constraint, ([1, 2, 3], [0, 0, 0]), ValueError,
+     "state bounds must match"],
+])
+def test_constraint_constructor_errors(fun, args, exception, match):
+    """Test various error conditions for constraint constructors"""
+    sys = ct.ss2io(ct.rss(2, 2, 2))
+    with pytest.raises(exception, match=match):
+        fun(sys, *args)
+
+
+def test_ocp_argument_errors():
+    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+
+    # State and input constraints
+    constraints = [
+        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+    ]
+
+    # Quadratic state and input penalty
+    Q = [[1, 0], [0, 1]]
+    R = [[1]]
+    cost = opt.quadratic_cost(sys, Q, R)
+
+    # Set up the optimal control problem
+    time = np.arange(0, 5, 1)
+    x0 = [4, 0]
+
+    # Trajectory constraints not in the right form
+    with pytest.raises(TypeError, match="constraints must be a list"):
+        res = opt.solve_ocp(sys, time, x0, cost, np.eye(2))
+
+    # Terminal constraints not in the right form
+    with pytest.raises(TypeError, match="constraints must be a list"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, constraints, terminal_constraints=np.eye(2))
+
+    # Initial guess in the wrong shape
+    with pytest.raises(ValueError, match="initial guess is the wrong shape"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, constraints, initial_guess=np.zeros((4,1,1)))

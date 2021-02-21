@@ -193,10 +193,15 @@ class OptimalControlProblem():
             # See whether we got entire guess or just first time point
             if len(initial_guess.shape) == 1:
                 # Broadcast inputs to entire time vector
-                initial_guess = np.broadcast_to(
-                    initial_guess.reshape(-1, 1),
-                    (self.system.ninputs, self.time_vector.size))
-            elif len(initial_guess.shape) != 2:
+                try:
+                    initial_guess = np.broadcast_to(
+                        initial_guess.reshape(-1, 1),
+                        (self.system.ninputs, self.time_vector.size))
+                except:
+                    raise ValueError("initial guess is the wrong shape")
+
+            elif initial_guess.shape != \
+                 (self.system.ninputs, self.time_vector.size):
                 raise ValueError("initial guess is the wrong shape")
 
             # Reshape for use by scipy.optimize.minimize()
@@ -975,7 +980,13 @@ def state_poly_constraint(sys, A, b):
         A tuple consisting of the constraint type and parameter values.
 
     """
-    # TODO: make sure the system and constraints are compatible
+    # Convert arguments to arrays and make sure dimensions are right
+    A = np.atleast_2d(A)
+    b = np.atleast_1d(b)
+    if len(A.shape) != 2 or A.shape[1] != sys.nstates:
+        raise ValueError("polytope matrix must match number of states")
+    elif len(b.shape) != 1 or A.shape[0] != b.shape[0]:
+        raise ValueError("number of bounds must match number of constraints")
 
     # Return a linear constraint object based on the polynomial
     return (opt.LinearConstraint,
@@ -1006,7 +1017,11 @@ def state_range_constraint(sys, lb, ub):
         A tuple consisting of the constraint type and parameter values.
 
     """
-    # TODO: make sure the system and constraints are compatible
+    # Convert bounds to lists and make sure they are the right dimension
+    lb = np.atleast_1d(lb)
+    ub = np.atleast_1d(ub)
+    if lb.shape != (sys.nstates,) or ub.shape != (sys.nstates,):
+        raise ValueError("state bounds must match number of states")
 
     # Return a linear constraint object based on the polynomial
     return (opt.LinearConstraint,
@@ -1037,7 +1052,13 @@ def input_poly_constraint(sys, A, b):
         A tuple consisting of the constraint type and parameter values.
 
     """
-    # TODO: make sure the system and constraints are compatible
+    # Convert arguments to arrays and make sure dimensions are right
+    A = np.atleast_2d(A)
+    b = np.atleast_1d(b)
+    if len(A.shape) != 2 or A.shape[1] != sys.ninputs:
+        raise ValueError("polytope matrix must match number of inputs")
+    elif len(b.shape) != 1 or A.shape[0] != b.shape[0]:
+        raise ValueError("number of bounds must match number of constraints")
 
     # Return a linear constraint object based on the polynomial
     return (opt.LinearConstraint,
@@ -1069,13 +1090,17 @@ def input_range_constraint(sys, lb, ub):
         A tuple consisting of the constraint type and parameter values.
 
     """
-    # TODO: make sure the system and constraints are compatible
+    # Convert bounds to lists and make sure they are the right dimension
+    lb = np.atleast_1d(lb)
+    ub = np.atleast_1d(ub)
+    if lb.shape != (sys.ninputs,) or ub.shape != (sys.ninputs,):
+        raise ValueError("input bounds must match number of inputs")
 
     # Return a linear constraint object based on the polynomial
     return (opt.LinearConstraint,
             np.hstack(
                 [np.zeros((sys.ninputs, sys.nstates)), np.eye(sys.ninputs)]),
-            np.array(lb), np.array(ub))
+            lb, ub)
 
 
 #
@@ -1112,15 +1137,17 @@ def output_poly_constraint(sys, A, b):
         A tuple consisting of the constraint type and parameter values.
 
     """
-    # TODO: make sure the system and constraints are compatible
+    # Convert arguments to arrays and make sure dimensions are right
+    A = np.atleast_2d(A)
+    b = np.atleast_1d(b)
+    if len(A.shape) != 2 or A.shape[1] != sys.noutputs:
+        raise ValueError("polytope matrix must match number of outputs")
+    elif len(b.shape) != 1 or A.shape[0] != b.shape[0]:
+        raise ValueError("number of bounds must match number of constraints")
 
     # Function to create the output
-    def _evaluate_output_poly_constraint(x):
-        # Separate the constraint into states and inputs
-        states = x[:sys.nstates]
-        inputs = x[sys.nstates:]
-        outputs = sys._out(0, states, inputs)
-        return A @ outputs
+    def _evaluate_output_poly_constraint(x, u):
+        return A @ sys._out(0, x, u)
 
     # Return a nonlinear constraint object based on the polynomial
     return (opt.NonlinearConstraint,
@@ -1151,14 +1178,16 @@ def output_range_constraint(sys, lb, ub):
         A tuple consisting of the constraint type and parameter values.
 
     """
-    # TODO: make sure the system and constraints are compatible
+    # Convert bounds to lists and make sure they are the right dimension
+    lb = np.atleast_1d(lb)
+    ub = np.atleast_1d(ub)
+    if lb.shape != (sys.noutputs,) or ub.shape != (sys.noutputs,):
+        raise ValueError("output bounds must match number of outputs")
 
     # Function to create the output
-    def _evaluate_output_range_constraint(x):
+    def _evaluate_output_range_constraint(x, u):
         # Separate the constraint into states and inputs
-        states = x[:sys.nstates]
-        inputs = x[sys.nstates:]
-        outputs = sys._out(0, states, inputs)
+        return sys._out(0, x, u)
 
     # Return a nonlinear constraint object based on the polynomial
     return (opt.NonlinearConstraint, _evaluate_output_range_constraint, lb, ub)
