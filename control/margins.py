@@ -294,8 +294,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
             num_iw, den_iw = _poly_iw(sys)
             # frequency for gain margin: phase crosses -180 degrees
             w_180 = _poly_iw_real_crossing(num_iw, den_iw, epsw)
-            with np.errstate(all='ignore'):  # den=0 is okay
-                w180_resp = sys(1J * w_180)
+            w180_resp = sys(1J * w_180, warn_infinite=False)  # den=0 is okay
 
             # frequency for phase margin : gain crosses magnitude 1
             wc = _poly_iw_mag1_crossing(num_iw, den_iw, epsw)
