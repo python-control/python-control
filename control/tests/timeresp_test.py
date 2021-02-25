@@ -408,7 +408,7 @@ class TestTimeresp:
         """Test forced response of SISO systems as step response"""
         sys = tsystem.sys
         t = tsystem.t
-        u = np.ones_like(t, dtype=np.float)
+        u = np.ones_like(t, dtype=float)
         yref = tsystem.ystep
 
         tout, yout = forced_response(sys, t, u)
@@ -416,7 +416,7 @@ class TestTimeresp:
         np.testing.assert_array_almost_equal(yout, yref, decimal=4)
 
     @pytest.mark.parametrize("u",
-                             [np.zeros((10,), dtype=np.float),
+                             [np.zeros((10,), dtype=float),
                               0]  # special algorithm
                              )
     def test_forced_response_initial(self, siso_ss1, u):

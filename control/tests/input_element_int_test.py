@@ -63,4 +63,4 @@ class TestTfInputIntElement:
         d = 0
         sys = ss(a, b, c, d)
         np.testing.assert_allclose(dcgain(sys), 0,
-                                   atol=np.finfo(np.float).epsneg)
+                                   atol=np.finfo(float).epsneg)
