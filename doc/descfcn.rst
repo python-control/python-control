@@ -59,7 +59,7 @@ nonlinearity constructors are predefined:
 
 .. code:: python
 
-  backlash_nonlinearity(b)		# backlash nonlinearity with width b
+  friction_backlash_nonlinearity(b)	# backlash nonlinearity with width b
   relay_hysteresis_nonlinearity(b, c)   # relay output of amplitude b with
 					# hysteresis of half-width c
   saturation_nonlinearity(ub[, lb])	# saturation nonlinearity with upper
@@ -81,6 +81,6 @@ Module classes and functions
    :toctree: generated/
 
    ~control.DescribingFunctionNonlinearity
-   ~control.backlash_nonlinearity
+   ~control.friction_backlash_nonlinearity
    ~control.relay_hysteresis_nonlinearity
    ~control.saturation_nonlinearity
