@@ -34,8 +34,8 @@ def vehicle_update(t, x, u, params):
     l = params.get('wheelbase', 3.)         # vehicle wheelbase
     phimax = params.get('maxsteer', 0.5)    # max steering angle (rad)
 
-    # Saturate the steering input
-    phi = np.clip(u[1], -phimax, phimax)
+    # Saturate the steering input (use min/max instead of clip for speed)
+    phi = max(-phimax, min(u[1], phimax))
 
     # Return the derivative of the state
     return np.array([
@@ -127,8 +127,16 @@ start_time = time.process_time()
 result1 = opt.solve_ocp(
     vehicle, horizon, x0, quad_cost, initial_guess=bend_left, log=True,
     # solve_ivp_kwargs={'atol': 1e-2, 'rtol': 1e-2},
-    minimize_options={'eps': 0.01})
+    # solve_ivp_kwargs={'method': 'RK23', 'atol': 1e-2, 'rtol': 1e-2},
+    minimize_method='trust-constr',
+    minimize_options={'finite_diff_rel_step': 0.01},
+    # minimize_options={'eps': 0.01}
+)
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
+
+# If we are running CI tests, make sure we succeeded
+if 'PYCONTROL_TEST_EXAMPLES' in os.environ:
+    assert result1.success
 
 # Extract and plot the results (+ state trajectory)
 t1, u1 = result1.time, result1.inputs
@@ -167,6 +175,10 @@ result2 = opt.solve_ocp(
     minimize_method='SLSQP', minimize_options={'eps': 0.01})
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
+# If we are running CI tests, make sure we succeeded
+if 'PYCONTROL_TEST_EXAMPLES' in os.environ:
+    assert result2.success
+
 # Extract and plot the results (+ state trajectory)
 t2, u2 = result2.time, result2.inputs
 t2, y2 = ct.input_output_response(vehicle, horizon, u2, x0)
@@ -189,17 +201,23 @@ cost3 = opt.quadratic_cost(vehicle, np.zeros((3,3)), R, u0=uf)
 terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
 
 # Reset logging to its default values
-logging.basicConfig(level=logging.WARN, force=True)
+logging.basicConfig(
+    level=logging.DEBUG, filename="./steering-terminal_constraint.log",
+    filemode='w', force=True)
 
 # Compute the optimal control
 start_time = time.process_time()
 result3 = opt.solve_ocp(
     vehicle, horizon, x0, cost3, constraints,
-    terminal_constraints=terminal, initial_guess=u2, log=False,
+    terminal_constraints=terminal, initial_guess=u2, log=True,
     # solve_ivp_kwargs={'atol': 1e-3, 'rtol': 1e-2},
-    solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
+    solve_ivp_kwargs={'method': 'RK23', 'atol': 1e-4, 'rtol': 1e-2},
     minimize_options={'eps': 0.01})
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
+
+# If we are running CI tests, make sure we succeeded
+if 'PYCONTROL_TEST_EXAMPLES' in os.environ:
+    assert result3.success
 
 # Extract and plot the results (+ state trajectory)
 t3, u3 = result3.time, result3.inputs
@@ -225,16 +243,21 @@ result4 = opt.solve_ocp(
     terminal_constraints=terminal,
     initial_guess=u3,
     basis=flat.BezierFamily(4, T=Tf),
+    solve_ivp_kwargs={'method': 'RK45', 'atol': 1e-2, 'rtol': 1e-2},
     minimize_method='trust-constr', minimize_options={'disp': True},
     # method='SLSQP', options={'eps': 0.01}
-    solve_ivp_kwargs={'atol': 1e-2, 'rtol': 1e-2},
 )
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
+
+# If we are running CI tests, make sure we succeeded
+if 'PYCONTROL_TEST_EXAMPLES' in os.environ:
+    assert result4.success
 
 # Extract and plot the results (+ state trajectory)
 t4, u4 = result4.time, result4.inputs
 t4, y4 = ct.input_output_response(vehicle, horizon, u4, x0)
 plot_results(t4, y4, u4, figure=4, yf=xf[0:2])
 
+# If we are not running CI tests, display the results
 if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
     plt.show()

@@ -265,7 +265,7 @@ def test_terminal_constraints(sys_args):
     np.testing.assert_allclose(
         x1, np.kron(x0.reshape((2, 1)), time[::-1]/Tf), atol=0.1, rtol=0.01)
 
-    # Re-run using initial guess = optional and make sure nothing chnages
+    # Re-run using initial guess = optional and make sure nothing changes
     res = optctrl.compute_trajectory(x0, initial_guess=u1)
     np.testing.assert_almost_equal(res.inputs, u1)
 
@@ -422,65 +422,27 @@ def test_ocp_argument_errors():
 
 
 def test_optimal_basis_simple():
-    pass
+    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
 
+    # State and input constraints
+    constraints = [
+        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+    ]
 
-def test_optimal_basis_vehicle():
-    # Define a nonlinear system to use (kinematic car)
-    def vehicle_update(t, x, u, params):
-        phi = np.clip(u[1], -0.5, 0.5)
-        return np.array([
-            math.cos(x[2]) * u[0],          # xdot = cos(theta) v
-            math.sin(x[2]) * u[0],          # ydot = sin(theta) v
-            (u[0] / 3) * math.tan(phi)      # thdot = v/l tan(phi)
-        ])
-
-    def vehicle_output(t, x, u, params):
-        return x                            # return x, y, theta (full state)
-
-    # Define the vehicle steering dynamics as an input/output system
-    vehicle = ct.NonlinearIOSystem(
-        vehicle_update, vehicle_output, states=3, inputs=2, outputs=3)
-
-    # Initial and final conditions
-    x0 = [0., -2., 0.]; u0 = [10., 0.]
-    xf = [100., 2., 0.]; uf = [10., 0.]
-    Tf = 10
-
-    # Set up costs and constriants
-    Q = np.diag([.1, 10, .1])           # keep lateral error low
-    R = np.diag([1, 1])                 # minimize applied inputs
-    cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
-    constraints = [ opt.input_range_constraint(vehicle, [0, -0.1], [20, 0.1]) ]
-    terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
-    bend_left = [10, 0.05]              # slight left veer
-    near_optimal = [
-        [ 1.15073736e+01,  1.16838616e+01,  1.15413395e+01,
-          1.11585544e+01,  1.06142537e+01,  9.98718468e+00,
-          9.35609454e+00,  8.79973057e+00,  8.39684004e+00,
-          8.22617023e+00],
-        [ -9.99830506e-02,  8.98139594e-03,  5.26385615e-02,
-          4.96635954e-02,  1.87316470e-02, -2.14821345e-02,
-          -5.23025996e-02, -5.50545990e-02, -1.10629834e-02,
-          9.83473965e-02] ]
-
-    # Set up horizon
-    horizon = np.linspace(0, Tf, 10, endpoint=True)
+    # Quadratic state and input penalty
+    Q = [[1, 0], [0, 1]]
+    R = [[1]]
+    cost = opt.quadratic_cost(sys, Q, R)
 
     # Set up the optimal control problem
-    res = opt.solve_ocp(
-        vehicle, horizon, x0, cost,
-        constraints,
-        terminal_constraints=terminal,
-        initial_guess=near_optimal,
-        basis=flat.BezierFamily(4, T=Tf),
-        minimize_method='trust-constr', minimize_options={'disp': True},
-        # minimize_method='SLSQP', minimize_options={'eps': 0.01},
-        solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
-        return_states=True
-    )
-    t, u, x = res.time, res.inputs, res.states
+    time = np.arange(0, 5, 1)
+    x0 = [4, 0]
 
-    # Make sure we found a valid solution
+    # Basic optimal control problem
+    res = opt.solve_ocp(sys, time, x0, cost, constraints, return_x=True)
     assert res.success
-    np.testing.assert_almost_equal(x[:, -1], xf, decimal=4)
+
+    # Make sure the constraints were satisfied
+    np.testing.assert_array_less(np.abs(res.states[0]), 5 + 1e-6)
+    np.testing.assert_array_less(np.abs(res.states[1]), 5 + 1e-6)
+    np.testing.assert_array_less(np.abs(res.inputs[0]), 1 + 1e-6)

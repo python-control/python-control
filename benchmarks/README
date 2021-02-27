@@ -1,0 +1,39 @@
+This directory contains various scripts that can be used to measure the
+performance of the python-control package.  The scripts are intended to be
+used with the airspeed velocity package (https://pypi.org/project/asv/) and
+are mainly intended for use by developers in identfying potential
+improvements to their code.
+
+Running benchmarks
+------------------
+To run the benchmarks listed here against the current (uncommitted) code,
+you can use the following command from the root directory of the repository:
+
+  PYTHONPATH=`pwd` asv run --python=python
+
+You can also run benchmarks against specific commits usuing
+
+  asv run <range>
+
+where <range> is a range of commits to benchmark.  To check against the HEAD
+of the branch that is currently checked out, use
+
+  asv run HEAD^!
+
+Code profiling
+--------------
+You can also use the benchmarks to profile code and look for bottlenecks.
+To profile a given test against the current (uncommitted) code use
+
+   PYTHONPATH=`pwd` asv profile --python=python <file>.<test>
+
+where <file> is the name of one of the files in the benchmark/ subdirectory
+and <test> is the name of a test function in that file.
+
+If you have the `snakeviz` profiling visualization package installed, the
+following command will profile a test against the HEAD of the current branch
+and open a graphical representation of the profiled code:
+
+  asv profile --gui snakeviz <file>.<test> HEAD
+
+RMM, 27 Feb 2021
