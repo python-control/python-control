@@ -52,11 +52,16 @@ class OptimalControlProblem():
     constraint upper and lower bounds.  The constraint function is processed
     in the class initializer, so that it only needs to be computed once.
 
+    If `basis` is specified, then the optimization is done over coefficients
+    of the basis elements.  Otherwise, the optimization is performed over the
+    values of the input at the specified times (using linear interpolation for
+    continuous systems).
+
     """
     def __init__(
             self, sys, time_vector, integral_cost, trajectory_constraints=[],
             terminal_cost=None, terminal_constraints=[], initial_guess=None,
-            log=False, **kwargs):
+            basis=None, log=False, **kwargs):
         """Set up an optimal control problem
 
         To describe an optimal control problem we need an input/output system,
@@ -100,6 +105,19 @@ class OptimalControlProblem():
             Optimal control problem object, to be used in computing optimal
             controllers.
 
+        Additional parameters
+        ---------------------
+        solve_ivp_method : str, optional
+            Set the method used by :func:`scipy.integrate.solve_ivp`.
+        solve_ivp_kwargs : str, optional
+            Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+        minimize_method : str, optional
+            Set the method used by :func:`scipy.optimize.minimize`.
+        minimize_options : str, optional
+            Set the options keyword used by :func:`scipy.optimize.minimize`.
+        minimize_kwargs : str, optional
+            Pass additional keywords to :func:`scipy.optimize.minimize`.
+
         """
         # Save the basic information for use later
         self.system = sys
@@ -107,7 +125,17 @@ class OptimalControlProblem():
         self.integral_cost = integral_cost
         self.terminal_cost = terminal_cost
         self.terminal_constraints = terminal_constraints
-        self.kwargs = kwargs
+        self.basis = basis
+
+        # Process keyword arguments
+        self.solve_ivp_kwargs = {}
+        self.solve_ivp_kwargs['method'] = kwargs.pop('solve_ivp_method', None)
+        self.solve_ivp_kwargs.update(kwargs.pop('solve_ivp_kwargs', {}))
+
+        self.minimize_kwargs = {}
+        self.minimize_kwargs['method'] = kwargs.pop('minimize_method', None)
+        self.minimize_kwargs['options'] = kwargs.pop('minimize_options', {})
+        self.minimize_kwargs.update(kwargs.pop('minimize_kwargs', {}))
 
         # Process trajectory constraints
         if isinstance(trajectory_constraints, tuple):
@@ -179,41 +207,12 @@ class OptimalControlProblem():
                 self._eqconst_function, self.eqconst_value,
                 self.eqconst_value))
 
-        #
-        # Initial guess
-        #
-        # We store an initial guess in case it is not specified later.  Note
-        # that create_mpc_iosystem() will reset the initial guess based on
-        # the current state of the MPC controller.
-        #
-        if initial_guess is not None:
-            # Convert to a 1D array (or higher)
-            initial_guess = np.atleast_1d(initial_guess)
-
-            # See whether we got entire guess or just first time point
-            if len(initial_guess.shape) == 1:
-                # Broadcast inputs to entire time vector
-                try:
-                    initial_guess = np.broadcast_to(
-                        initial_guess.reshape(-1, 1),
-                        (self.system.ninputs, self.time_vector.size))
-                except ValueError:
-                    raise ValueError("initial guess is the wrong shape")
-
-            elif initial_guess.shape != \
-                 (self.system.ninputs, self.time_vector.size):
-                raise ValueError("initial guess is the wrong shape")
-
-            # Reshape for use by scipy.optimize.minimize()
-            self.initial_guess = initial_guess.reshape(-1)
-
-        else:
-            self.initial_guess = np.zeros(
-                self.system.ninputs * self.time_vector.size)
+        # Process the initial guess
+        self.initial_guess = self._process_initial_guess(initial_guess)
 
         # Store states, input, used later to minimize re-computation
         self.last_x = np.full(self.system.nstates, np.nan)
-        self.last_inputs = np.full(self.initial_guess.shape, np.nan)
+        self.last_coeffs = np.full(self.initial_guess.shape, np.nan)
 
         # Reset run-time statistics
         self._reset_statistics(log)
@@ -232,22 +231,29 @@ class OptimalControlProblem():
     #
     #   cost = sum_k integral_cost(x[k], u[k]) + terminal_cost(x[N], u[N])
     #
-    # The initial state is for generating the simulation is store in the class
-    # parameter `x` prior to calling the optimization algorithm.
+    # The initial state used for generating the simulation is stored in the
+    # class parameter `x` prior to calling the optimization algorithm.
     #
-    def _cost_function(self, inputs):
+    def _cost_function(self, coeffs):
         if self.log:
             start_time = time.process_time()
             logging.info("_cost_function called at: %g", start_time)
 
         # Retrieve the initial state and reshape the input vector
         x = self.x
-        inputs = inputs.reshape(
-            (self.system.ninputs, self.time_vector.size))
+        coeffs = coeffs.reshape((self.system.ninputs, -1))
+
+        # Compute time points (if basis present)
+        if self.basis:
+            if self.log:
+                logging.debug("coefficients = " + str(coeffs))
+            inputs = self._coeffs_to_inputs(coeffs)
+        else:
+            inputs = coeffs
 
         # See if we already have a simulation for this condition
-        if np.array_equal(x, self.last_x) and \
-           np.array_equal(inputs, self.last_inputs):
+        if np.array_equal(coeffs, self.last_coeffs) and \
+           np.array_equal(x, self.last_x):
             states = self.last_states
         else:
             if self.log:
@@ -257,10 +263,11 @@ class OptimalControlProblem():
 
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
-                self.system, self.time_vector, inputs, x, return_x=True)
+                self.system, self.time_vector, inputs, x, return_x=True,
+                solve_ivp_kwargs=self.solve_ivp_kwargs)
             self.system_simulations += 1
             self.last_x = x
-            self.last_inputs = inputs
+            self.last_coeffs = coeffs
             self.last_states = states
 
             if self.log:
@@ -349,19 +356,24 @@ class OptimalControlProblem():
     # pass arguments to the constraint function, we have to store the initial
     # state prior to optimization and retrieve it here.
     #
-    def _constraint_function(self, inputs):
+    def _constraint_function(self, coeffs):
         if self.log:
             start_time = time.process_time()
             logging.info("_constraint_function called at: %g", start_time)
 
         # Retrieve the initial state and reshape the input vector
         x = self.x
-        inputs = inputs.reshape(
-            (self.system.ninputs, self.time_vector.size))
+        coeffs = coeffs.reshape((self.system.ninputs, -1))
+
+        # Compute time points (if basis present)
+        if self.basis:
+            inputs = self._coeffs_to_inputs(coeffs)
+        else:
+            inputs = coeffs
 
         # See if we already have a simulation for this condition
-        if np.array_equal(x, self.last_x) and \
-           np.array_equal(inputs, self.last_inputs):
+        if np.array_equal(coeffs, self.last_coeffs) \
+           and np.array_equal(x, self.last_x):
             states = self.last_states
         else:
             if self.log:
@@ -371,10 +383,11 @@ class OptimalControlProblem():
 
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
-                self.system, self.time_vector, inputs, x, return_x=True)
+                self.system, self.time_vector, inputs, x, return_x=True,
+                solve_ivp_kwargs=self.solve_ivp_kwargs)
             self.system_simulations += 1
             self.last_x = x
-            self.last_inputs = inputs
+            self.last_coeffs = coeffs
             self.last_states = states
 
         # Evaluate the constraint function along the trajectory
@@ -429,19 +442,24 @@ class OptimalControlProblem():
         # Return the value of the constraint function
         return np.hstack(value)
 
-    def _eqconst_function(self, inputs):
+    def _eqconst_function(self, coeffs):
         if self.log:
             start_time = time.process_time()
             logging.info("_eqconst_function called at: %g", start_time)
 
         # Retrieve the initial state and reshape the input vector
         x = self.x
-        inputs = inputs.reshape(
-            (self.system.ninputs, self.time_vector.size))
+        coeffs = coeffs.reshape((self.system.ninputs, -1))
+
+        # Compute time points (if basis present)
+        if self.basis:
+            inputs = self._coeffs_to_inputs(coeffs)
+        else:
+            inputs = coeffs
 
         # See if we already have a simulation for this condition
-        if np.array_equal(x, self.last_x) and \
-           np.array_equal(inputs, self.last_inputs):
+        if np.array_equal(coeffs, self.last_coeffs) and \
+           np.array_equal(x, self.last_x):
             states = self.last_states
         else:
             if self.log:
@@ -451,10 +469,11 @@ class OptimalControlProblem():
 
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
-                self.system, self.time_vector, inputs, x, return_x=True)
+                self.system, self.time_vector, inputs, x, return_x=True,
+                solve_ivp_kwargs=self.solve_ivp_kwargs)
             self.system_simulations += 1
             self.last_x = x
-            self.last_inputs = inputs
+            self.last_coeffs = coeffs
             self.last_states = states
 
             if self.log:
@@ -467,7 +486,7 @@ class OptimalControlProblem():
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
                 if np.any(lb != ub):
-                    # Skip iniquality constraints
+                    # Skip inequality constraints
                     continue
                 elif type == opt.LinearConstraint:
                     # `fun` is the A matrix associated with the polytope...
@@ -505,12 +524,98 @@ class OptimalControlProblem():
         # Debugging information
         if self.log:
             logging.debug(
-                "constraint values\n" + str(value) + "\n" +
-                "lb, ub =\n" + str(self.constraint_lb) + "\n" +
-                str(self.constraint_ub))
+                "eqconst values\n" + str(value) + "\n" +
+                "desired =\n" + str(self.eqconst_value))
 
         # Return the value of the constraint function
         return np.hstack(value)
+
+    #
+    # Initial guess
+    #
+    # We store an initial guess in case it is not specified later.  Note
+    # that create_mpc_iosystem() will reset the initial guess based on
+    # the current state of the MPC controller.
+    #
+    # Note: the initial guess is passed as the inputs at the given time
+    # vector.  If a basis is specified, this is converted to coefficient
+    # values (which are generally of smaller dimension).
+    #
+    def _process_initial_guess(self, initial_guess):
+        if initial_guess is not None:
+            # Convert to a 1D array (or higher)
+            initial_guess = np.atleast_1d(initial_guess)
+
+            # See whether we got entire guess or just first time point
+            if len(initial_guess.shape) == 1:
+                # Broadcast inputs to entire time vector
+                try:
+                    initial_guess = np.broadcast_to(
+                        initial_guess.reshape(-1, 1),
+                        (self.system.ninputs, self.time_vector.size))
+                except ValueError:
+                    raise ValueError("initial guess is the wrong shape")
+
+            elif initial_guess.shape != \
+                 (self.system.ninputs, self.time_vector.size):
+                raise ValueError("initial guess is the wrong shape")
+
+            # If we were given a basis, project onto the basis elements
+            if self.basis is not None:
+                initial_guess = self._inputs_to_coeffs(initial_guess)
+
+            # Reshape for use by scipy.optimize.minimize()
+            return initial_guess.reshape(-1)
+
+        # Default is zero
+        return np.zeros(
+            self.system.ninputs *
+            (self.time_vector.size if self.basis is None else self.basis.N))
+
+    #
+    # Utility function to convert input vector to coefficient vector
+    #
+    # Initially guesses from the user are passed as input vectors as a
+    # function of time, but internally we store the guess in terms of the
+    # basis coefficients.  We do this by solving a least squares probelm to
+    # find coefficients that match the input functions at the time points (as
+    # much as possible, if the problem is under-determined).
+    #
+    def _inputs_to_coeffs(self, inputs):
+        # If there is no basis function, just return inputs as coeffs
+        if self.basis is None:
+            return inputs
+
+        # Solve least squares problems (M x = b) for coeffs on each input
+        coeffs = np.zeros((self.system.ninputs, self.basis.N))
+        for i in range(self.system.ninputs):
+            # Set up the matrices to get inputs
+            M = np.zeros((self.time_vector.size, self.basis.N))
+            b = np.zeros(self.time_vector.size)
+
+            # Evaluate at each time point and for each basis function
+            # TODO: vectorize
+            for j, t in enumerate(self.time_vector):
+                for k in range(self.basis.N):
+                    M[j, k] = self.basis(k, t)
+                    b[j] = inputs[i, j]
+
+            # Solve a least squares problem for the coefficients
+            alpha, residuals, rank, s = np.linalg.lstsq(M, b, rcond=None)
+            coeffs[i, :] = alpha
+
+        return coeffs
+
+    # Utility function to convert coefficient vector to input vector
+    def _coeffs_to_inputs(self, coeffs):
+        # TODO: vectorize
+        inputs = np.zeros((self.system.ninputs, self.time_vector.size))
+        for i, t in enumerate(self.time_vector):
+            for k in range(self.basis.N):
+                phi_k = self.basis(k, t)
+                for inp in range(self.system.ninputs):
+                    inputs[inp, i] += coeffs[inp, k] * phi_k
+        return inputs
 
     #
     # Log and statistics
@@ -551,26 +656,36 @@ class OptimalControlProblem():
     def _create_mpc_iosystem(self, dt=True):
         """Create an I/O system implementing an MPC controller"""
         def _update(t, x, u, params={}):
-            inputs = x.reshape((self.system.ninputs, self.time_vector.size))
-            self.initial_guess = np.hstack(
-                [inputs[:, 1:], inputs[:, -1:]]).reshape(-1)
+            coeffs = x.reshape((self.system.ninputs, -1))
+            if self.basis:
+                # Keep the coeffecients unchanged
+                # TODO: could compute input vector, shift, and re-project (?)
+                self.initial_guess = coeffs
+            else:
+                # Shift the basis elements by one time step
+                self.initial_guess = np.hstack(
+                    [coeffs[:, 1:], coeffs[:, -1:]]).reshape(-1)
             res = self.compute_trajectory(u, print_summary=False)
             return res.inputs.reshape(-1)
 
         def _output(t, x, u, params={}):
-            inputs = x.reshape((self.system.ninputs, self.time_vector.size))
+            if self.basis:
+                # TODO: compute inputs from basis elements
+                raise NotImplementedError("basis elements not implemented")
+            else:
+                inputs = x.reshape((self.system.ninputs, -1))
             return inputs[:, 0]
 
         return ct.NonlinearIOSystem(
             _update, _output, dt=dt,
-            inputs=self.system.nstates,
-            outputs=self.system.ninputs,
-            states=self.system.ninputs * self.time_vector.size)
+            inputs=self.system.nstates, outputs=self.system.ninputs,
+            states=self.system.ninputs *
+            (self.time_vector.size if self.basis is None else self.basis.N))
 
     # Compute the optimal trajectory from the current state
     def compute_trajectory(
             self, x, squeeze=None, transpose=None, return_states=None,
-            print_summary=True, **kwargs):
+            initial_guess=None, print_summary=True, **kwargs):
         """Compute the optimal input at state x
 
         Parameters
@@ -609,15 +724,21 @@ class OptimalControlProblem():
         """
         # Allow 'return_x` as a synonym for 'return_states'
         return_states = ct.config._get_param(
-            'optimal', 'return_x', kwargs, return_states, pop=True)
+            'optimal', 'return_x', kwargs, return_states, pop=True, last=True)
 
         # Store the initial state (for use in _constraint_function)
         self.x = x
 
+        # Allow the initial guess to be overriden
+        if initial_guess is None:
+            initial_guess = self.initial_guess
+        else:
+            initial_guess = self._process_initial_guess(initial_guess)
+
         # Call ScipPy optimizer
         res = sp.optimize.minimize(
-            self._cost_function, self.initial_guess,
-            constraints=self.constraints, **self.kwargs)
+            self._cost_function, initial_guess,
+            constraints=self.constraints, **self.minimize_kwargs)
 
         # Process and return the results
         return OptimalControlResult(
@@ -688,8 +809,13 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         self.problem = ocp
 
         # Reshape and process the input vector
-        inputs = res.x.reshape(
-            (ocp.system.ninputs, ocp.time_vector.size))
+        coeffs = res.x.reshape((ocp.system.ninputs, -1))
+
+        # Compute time points (if basis present)
+        if ocp.basis:
+            inputs = ocp._coeffs_to_inputs(coeffs)
+        else:
+            inputs = coeffs
 
         # See if we got an answer
         if not res.success:
@@ -701,10 +827,11 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         if print_summary:
             ocp._print_statistics()
 
-        if return_states and res.success:
+        if return_states and inputs.shape[1] == ocp.time_vector.shape[0]:
             # Simulate the system if we need the state back
             _, _, states = ct.input_output_response(
-                ocp.system, ocp.time_vector, inputs, ocp.x, return_x=True)
+                ocp.system, ocp.time_vector, inputs, ocp.x, return_x=True,
+                solve_ivp_kwargs=ocp.solve_ivp_kwargs)
             ocp.system_simulations += 1
         else:
             states = None
@@ -721,8 +848,8 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def solve_ocp(
         sys, horizon, X0, cost, constraints=[], terminal_cost=None,
-        terminal_constraints=[], initial_guess=None, squeeze=None,
-        transpose=None, return_states=None, log=False, **kwargs):
+        terminal_constraints=[], initial_guess=None, basis=None, squeeze=None,
+        transpose=None, return_states=False, log=False, **kwargs):
 
     """Compute the solution to an optimal control problem
 
@@ -812,16 +939,26 @@ def solve_ocp(
     res.states : array
         Time evolution of the state vector (if return_states=True).
 
+    Notes
+    -----
+    Additional keyword parameters can be used to fine tune the behavior of
+    the underlying optimization and integrations functions.  See
+    :func:`OptimalControlProblem` for more information.
+
     """
+    # Allow 'return_x` as a synonym for 'return_states'
+    return_states = ct.config._get_param(
+        'optimal', 'return_x', kwargs, return_states, pop=True)
+
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
         sys, horizon, cost, trajectory_constraints=constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
-        initial_guess=initial_guess, log=log, **kwargs)
+        initial_guess=initial_guess, basis=basis, log=log, **kwargs)
 
     # Solve for the optimal input from the current state
     return ocp.compute_trajectory(
-        X0, squeeze=squeeze, transpose=None, return_states=None)
+        X0, squeeze=squeeze, transpose=transpose, return_states=return_states)
 
 
 # Create a model predictive controller for an optimal control problem
@@ -868,6 +1005,12 @@ def create_mpc_iosystem(
         An I/O system taking the currrent state of the model system and
         returning the current input to be applied that minimizes the cost
         function while satisfying the constraints.
+
+    Notes
+    -----
+    Additional keyword parameters can be used to fine tune the behavior of
+    the underlying optimization and integrations functions.  See
+    :func:`OptimalControlProblem` for more information.
 
     """
 

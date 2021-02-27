@@ -1412,9 +1412,10 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
             raise TypeError("Second argument must be a state space system.")
 
 
-def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
-                          transpose=False, return_x=False, squeeze=None):
-
+def input_output_response(
+        sys, T, U=0., X0=0, params={},
+        transpose=False, return_x=False, squeeze=None,
+        solve_ivp_kwargs={}, **kwargs):
     """Compute the output response of a system to a given input.
 
     Simulate a dynamical system with a given input and return its output
@@ -1457,7 +1458,33 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     ValueError
         If time step does not match sampling time (for discrete time systems)
 
+    Additional parameters
+    ---------------------
+    solve_ivp_method : str, optional
+        Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
+        to 'RK45'.
+    solve_ivp_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+
     """
+    #
+    # Process keyword arguments
+    #
+
+    # Allow method as an alternative to solve_ivp_method
+    if kwargs.get('method', None):
+        solve_ivp_kwargs['method'] = kwargs.pop('method')
+
+    # Figure out the method to be used
+    if kwargs.get('solve_ivp_method', None):
+        if kwargs.get('method', None):
+            raise ValueError("ivp_method specified more than once")
+        solve_ivp_kwargs['method'] = kwargs['solve_ivp_method']
+
+    # Set the default method to 'RK45'
+    if solve_ivp_kwargs.get('method', None) is None:
+        solve_ivp_kwargs['method'] = 'RK45'
+
     # Sanity checking on the input
     if not isinstance(sys, InputOutputSystem):
         raise TypeError("System of type ", type(sys), " not valid")
@@ -1504,8 +1531,9 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         if not hasattr(sp.integrate, 'solve_ivp'):
             raise NameError("scipy.integrate.solve_ivp not found; "
                             "use SciPy 1.0 or greater")
-        soln = sp.integrate.solve_ivp(ivp_rhs, (T0, Tf), X0, t_eval=T,
-                                      method=method, vectorized=False)
+        soln = sp.integrate.solve_ivp(
+            ivp_rhs, (T0, Tf), X0, t_eval=T,
+            vectorized=False, **solve_ivp_kwargs)
 
         # Compute the output associated with the state (and use sys.out to
         # figure out the number of outputs just in case it wasn't specified)

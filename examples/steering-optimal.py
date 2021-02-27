@@ -6,11 +6,13 @@
 # optimal control module (control.optimal) in the python-control package.
 
 import numpy as np
+import math
 import control as ct
 import control.optimal as opt
 import matplotlib.pyplot as plt
 import logging
 import time
+import os
 
 #
 # Vehicle steering dynamics
@@ -37,9 +39,9 @@ def vehicle_update(t, x, u, params):
 
     # Return the derivative of the state
     return np.array([
-        np.cos(x[2]) * u[0],            # xdot = cos(theta) v
-        np.sin(x[2]) * u[0],            # ydot = sin(theta) v
-        (u[0] / l) * np.tan(phi)        # thdot = v/l tan(phi)
+        math.cos(x[2]) * u[0],            # xdot = cos(theta) v
+        math.sin(x[2]) * u[0],            # ydot = sin(theta) v
+        (u[0] / l) * math.tan(phi)        # thdot = v/l tan(phi)
     ])
 
 
@@ -107,7 +109,7 @@ print("Approach 1: standard quadratic cost")
 # Set up the cost functions
 Q = np.diag([.1, 10, .1])     # keep lateral error low
 R = np.diag([.1, 1])          # minimize applied inputs
-cost1 = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+quad_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
 
 # Define the time horizon (and spacing) for the optimization
 horizon = np.linspace(0, Tf, 10, endpoint=True)
@@ -123,8 +125,9 @@ logging.basicConfig(
 # Compute the optimal control, setting step size for gradient calculation (eps)
 start_time = time.process_time()
 result1 = opt.solve_ocp(
-    vehicle, horizon, x0, cost1, initial_guess=bend_left, log=True,
-    options={'eps': 0.01})
+    vehicle, horizon, x0, quad_cost, initial_guess=bend_left, log=True,
+    # solve_ivp_kwargs={'atol': 1e-2, 'rtol': 1e-2},
+    minimize_options={'eps': 0.01})
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
 # Extract and plot the results (+ state trajectory)
@@ -160,7 +163,8 @@ start_time = time.process_time()
 result2 = opt.solve_ocp(
     vehicle, horizon, x0, traj_cost, constraints, terminal_cost=term_cost,
     initial_guess=bend_left, log=True,
-    method='SLSQP', options={'eps': 0.01})
+    # solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
+    minimize_method='SLSQP', minimize_options={'eps': 0.01})
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
 # Extract and plot the results (+ state trajectory)
@@ -171,9 +175,9 @@ plot_results(t2, y2, u2, figure=2, yf=xf[0:2])
 #
 # Approach 3: terminal constraints
 #
-# As a final example, we can remove the cost function on the state and
-# replace it with a terminal *constraint* on the state.  If a solution is
-# found, it guarantees we get to exactly the final state.
+# We can also remove the cost function on the state and replace it
+# with a terminal *constraint* on the state.  If a solution is found,
+# it guarantees we get to exactly the final state.
 #
 # To speeds things up a bit, we initalize the problem using the previous
 # optimal controller (which didn't quite hit the final value).
@@ -192,10 +196,45 @@ start_time = time.process_time()
 result3 = opt.solve_ocp(
     vehicle, horizon, x0, cost3, constraints,
     terminal_constraints=terminal, initial_guess=u2, log=False,
-    options={'eps': 0.01})
+    # solve_ivp_kwargs={'atol': 1e-3, 'rtol': 1e-2},
+    solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
+    minimize_options={'eps': 0.01})
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
 # Extract and plot the results (+ state trajectory)
 t3, u3 = result3.time, result3.inputs
 t3, y3 = ct.input_output_response(vehicle, horizon, u3, x0)
 plot_results(t3, y3, u3, figure=3, yf=xf[0:2])
+
+#
+# Approach 4: terminal constraints w/ basis functions
+#
+# As a final example, we can use a basis function to reduce the size
+# of the problem and get faster answers with more temporal resolution.
+# Here we parameterize the input by a set of 4 Bezier curves but solve
+# for a much more time resolved set of inputs.
+
+print("Approach 4: Bezier basis")
+import control.flatsys as flat
+
+# Compute the optimal control
+start_time = time.process_time()
+result4 = opt.solve_ocp(
+    vehicle, horizon, x0, quad_cost,
+    constraints,
+    terminal_constraints=terminal,
+    initial_guess=u3,
+    basis=flat.BezierFamily(4, T=Tf),
+    minimize_method='trust-constr', minimize_options={'disp': True},
+    # method='SLSQP', options={'eps': 0.01}
+    solve_ivp_kwargs={'atol': 1e-2, 'rtol': 1e-2},
+)
+print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
+
+# Extract and plot the results (+ state trajectory)
+t4, u4 = result4.time, result4.inputs
+t4, y4 = ct.input_output_response(vehicle, horizon, u4, x0)
+plot_results(t4, y4, u4, figure=4, yf=xf[0:2])
+
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    plt.show()
