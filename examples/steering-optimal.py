@@ -101,9 +101,6 @@ Tf = 10
 # distance form the desired final point while at the same time as not
 # exerting too much control effort to achieve our goal.
 #
-# Note: depending on what version of SciPy you are using, you might get a
-# warning message about precision loss, but the solution is pretty good.
-#
 print("Approach 1: standard quadratic cost")
 
 # Set up the cost functions
@@ -126,11 +123,8 @@ logging.basicConfig(
 start_time = time.process_time()
 result1 = opt.solve_ocp(
     vehicle, horizon, x0, quad_cost, initial_guess=bend_left, log=True,
-    # solve_ivp_kwargs={'atol': 1e-2, 'rtol': 1e-2},
-    # solve_ivp_kwargs={'method': 'RK23', 'atol': 1e-2, 'rtol': 1e-2},
     minimize_method='trust-constr',
     minimize_options={'finite_diff_rel_step': 0.01},
-    # minimize_options={'eps': 0.01}
 )
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
@@ -171,7 +165,6 @@ start_time = time.process_time()
 result2 = opt.solve_ocp(
     vehicle, horizon, x0, traj_cost, constraints, terminal_cost=term_cost,
     initial_guess=bend_left, log=True,
-    # solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
     minimize_method='SLSQP', minimize_options={'eps': 0.01})
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
@@ -191,13 +184,13 @@ plot_results(t2, y2, u2, figure=2, yf=xf[0:2])
 # with a terminal *constraint* on the state.  If a solution is found,
 # it guarantees we get to exactly the final state.
 #
-# To speeds things up a bit, we initalize the problem using the previous
-# optimal controller (which didn't quite hit the final value).
-#
 print("Approach 3: terminal constraints")
 
 # Input cost and terminal constraints
+R = np.diag([1, 1])                 # minimize applied inputs
 cost3 = opt.quadratic_cost(vehicle, np.zeros((3,3)), R, u0=uf)
+constraints = [
+    opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
 terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
 
 # Reset logging to its default values
@@ -209,10 +202,10 @@ logging.basicConfig(
 start_time = time.process_time()
 result3 = opt.solve_ocp(
     vehicle, horizon, x0, cost3, constraints,
-    terminal_constraints=terminal, initial_guess=u2, log=False,
-    solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
-    # solve_ivp_kwargs={'method': 'RK23', 'atol': 1e-4, 'rtol': 1e-2},
-    minimize_options={'eps': 0.01})
+    terminal_constraints=terminal, initial_guess=bend_left, log=False,
+    solve_ivp_kwargs={'atol': 1e-3, 'rtol': 1e-2},
+    minimize_method='trust-constr',
+)
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
 # If we are running CI tests, make sure we succeeded
@@ -241,12 +234,12 @@ result4 = opt.solve_ocp(
     vehicle, horizon, x0, quad_cost,
     constraints,
     terminal_constraints=terminal,
-    initial_guess=u3,
+    initial_guess=bend_left,
     basis=flat.BezierFamily(4, T=Tf),
-    solve_ivp_kwargs={'method': 'RK45', 'atol': 1e-2, 'rtol': 1e-2},
+    # solve_ivp_kwargs={'method': 'RK45', 'atol': 1e-2, 'rtol': 1e-2},
+    solve_ivp_kwargs={'atol': 1e-3, 'rtol': 1e-2},
     minimize_method='trust-constr', minimize_options={'disp': True},
-    # method='SLSQP', options={'eps': 0.01}
-    log=True
+    log=False
 )
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
