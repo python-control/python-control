@@ -15,6 +15,7 @@ import control.flatsys as flat
 from control.tests.conftest import slycotonly
 from numpy.lib import NumpyVersion
 
+
 def test_finite_horizon_simple():
     # Define a linear system with constraints
     # Source: https://www.mpt3.org/UI/RegulationProblem
@@ -107,6 +108,7 @@ def test_discrete_lqr():
 
     # Make sure we got a different solution
     assert np.any(np.abs(res1.inputs - res2.inputs) > 0.1)
+
 
 def test_mpc_iosystem():
     # model of an aircraft discretized with 0.2s sampling time
@@ -211,6 +213,7 @@ def test_constraint_specification(constraint_list):
     t, u_openloop = res.time, res.inputs
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=3)
+
 
 @pytest.mark.parametrize("sys_args", [
     pytest.param(
@@ -318,6 +321,7 @@ def test_terminal_constraints(sys_args):
     with pytest.warns(UserWarning, match="unable to solve"):
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
         assert not res.success
+
 
 def test_optimal_logging(capsys):
     """Test logging functions (mainly for code coverage)"""
@@ -435,14 +439,31 @@ def test_optimal_basis_simple():
     cost = opt.quadratic_cost(sys, Q, R)
 
     # Set up the optimal control problem
-    time = np.arange(0, 5, 1)
+    Tf = 5
+    time = np.arange(0, Tf, 1)
     x0 = [4, 0]
 
     # Basic optimal control problem
-    res = opt.solve_ocp(sys, time, x0, cost, constraints, return_x=True)
-    assert res.success
+    res1 = opt.solve_ocp(
+        sys, time, x0, cost, constraints,
+        basis=flat.BezierFamily(4, Tf), return_x=True)
+    assert res1.success
 
     # Make sure the constraints were satisfied
-    np.testing.assert_array_less(np.abs(res.states[0]), 5 + 1e-6)
-    np.testing.assert_array_less(np.abs(res.states[1]), 5 + 1e-6)
-    np.testing.assert_array_less(np.abs(res.inputs[0]), 1 + 1e-6)
+    np.testing.assert_array_less(np.abs(res1.states[0]), 5 + 1e-6)
+    np.testing.assert_array_less(np.abs(res1.states[1]), 5 + 1e-6)
+    np.testing.assert_array_less(np.abs(res1.inputs[0]), 1 + 1e-6)
+
+    # Pass an initial guess and rerun
+    res2 = opt.solve_ocp(
+        sys, time, x0, cost, constraints, initial_guess=0.99*res1.inputs,
+        basis=flat.BezierFamily(4, Tf), return_x=True)
+    assert res2.success
+    np.testing.assert_almost_equal(res2.inputs, res1.inputs, decimal=3)
+
+    # Run with logging turned on for code coverage
+    res3 = opt.solve_ocp(
+        sys, time, x0, cost, constraints,
+        basis=flat.BezierFamily(4, Tf), return_x=True, log=True)
+    assert res3.success
+    np.testing.assert_almost_equal(res3.inputs, res1.inputs, decimal=3)

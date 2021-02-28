@@ -107,8 +107,8 @@ Tf = 10
 print("Approach 1: standard quadratic cost")
 
 # Set up the cost functions
-Q = np.diag([.1, 10, .1])     # keep lateral error low
-R = np.diag([.1, 1])          # minimize applied inputs
+Q = np.diag([.1, 10, .1])       # keep lateral error low
+R = np.diag([.1, 1])            # minimize applied inputs
 quad_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
 
 # Define the time horizon (and spacing) for the optimization
@@ -209,9 +209,9 @@ logging.basicConfig(
 start_time = time.process_time()
 result3 = opt.solve_ocp(
     vehicle, horizon, x0, cost3, constraints,
-    terminal_constraints=terminal, initial_guess=u2, log=True,
-    # solve_ivp_kwargs={'atol': 1e-3, 'rtol': 1e-2},
-    solve_ivp_kwargs={'method': 'RK23', 'atol': 1e-4, 'rtol': 1e-2},
+    terminal_constraints=terminal, initial_guess=u2, log=False,
+    solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
+    # solve_ivp_kwargs={'method': 'RK23', 'atol': 1e-4, 'rtol': 1e-2},
     minimize_options={'eps': 0.01})
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
@@ -246,6 +246,7 @@ result4 = opt.solve_ocp(
     solve_ivp_kwargs={'method': 'RK45', 'atol': 1e-2, 'rtol': 1e-2},
     minimize_method='trust-constr', minimize_options={'disp': True},
     # method='SLSQP', options={'eps': 0.01}
+    log=True
 )
 print("* Total time = %5g seconds\n" % (time.process_time() - start_time))
 
