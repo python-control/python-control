@@ -15,21 +15,7 @@ import logging
 import time
 import os
 
-#
 # Vehicle steering dynamics
-#
-# The vehicle dynamics are given by a simple bicycle model.  We take the state
-# of the system as (x, y, theta) where (x, y) is the position of the vehicle
-# in the plane and theta is the angle of the vehicle with respect to
-# horizontal.  The vehicle input is given by (v, phi) where v is the forward
-# velocity of the vehicle and phi is the angle of the steering wheel.  The
-# model includes saturation of the vehicle steering angle.
-#
-# System state: x, y, theta
-# System input: v, phi
-# System output: x, y
-# System parameters: wheelbase, maxsteer
-#
 def vehicle_update(t, x, u, params):
     # Get the parameters for the model
     l = params.get('wheelbase', 3.)         # vehicle wheelbase
@@ -45,7 +31,6 @@ def vehicle_update(t, x, u, params):
         (u[0] / l) * math.tan(phi)        # thdot = v/l tan(phi)
     ])
 
-
 def vehicle_output(t, x, u, params):
     return x                            # return x, y, theta (full state)
 
@@ -53,6 +38,7 @@ vehicle = ct.NonlinearIOSystem(
     vehicle_update, vehicle_output, states=3, name='vehicle',
     inputs=('v', 'phi'), outputs=('x', 'y', 'theta'))
 
+# Initial and final conditions
 x0 = [0., -2., 0.]; u0 = [10., 0.]
 xf = [100., 2., 0.]; uf = [10., 0.]
 Tf = 10
@@ -63,7 +49,7 @@ horizon = np.linspace(0, Tf, 10, endpoint=True)
 # Provide an intial guess (will be extended to entire horizon)
 bend_left = [10, 0.01]          # slight left veer
 
-def time_integrated_cost():
+def time_steering_integrated_cost():
     # Set up the cost functions
     Q = np.diag([.1, 10, .1])     # keep lateral error low
     R = np.diag([.1, 1])          # minimize applied inputs
@@ -81,7 +67,7 @@ def time_integrated_cost():
     # Only count this as a benchmark if we converged
     assert res.success
 
-def time_terminal_cost():
+def time_steering_terminal_cost():
     # Define cost and constraints
     traj_cost = opt.quadratic_cost(
         vehicle, None, np.diag([0.1, 1]), u0=uf)
@@ -93,14 +79,35 @@ def time_terminal_cost():
     res = opt.solve_ocp(
         vehicle, horizon, x0, traj_cost, constraints,
         terminal_cost=term_cost, initial_guess=bend_left, print_summary=False,
-        # solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
-        minimize_method='SLSQP', minimize_options={'eps': 0.01}
+        solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
+        # minimize_method='SLSQP', minimize_options={'eps': 0.01}
+        minimize_method='trust-constr',
+        minimize_options={'finite_diff_rel_step': 0.01},
     )
-
     # Only count this as a benchmark if we converged
     assert res.success
 
-def time_terminal_constraint():
+# Define integrator and minimizer methods and options/keywords
+integrator_table = {
+    'RK23_default': ('RK23', {'atol': 1e-4, 'rtol': 1e-2}),
+    'RK23_sloppy': ('RK23', {}),
+    'RK45_default': ('RK45', {}),
+    'RK45_sloppy': ('RK45', {'atol': 1e-4, 'rtol': 1e-2}),
+}
+
+minimizer_table = {
+    'trust_default': ('trust-constr', {}),
+    'trust_bigstep': ('trust-constr', {'finite_diff_rel_step': 0.01}),
+    'SLSQP_default': ('SLSQP', {}),
+    'SLSQP_bigstep': ('SLSQP', {'eps': 0.01}),
+}
+
+
+def time_steering_terminal_constraint(integrator_name, minimizer_name):
+    # Get the integrator and minimizer parameters to use
+    integrator = integrator_table[integrator_name]
+    minimizer = minimizer_table[minimizer_name]
+
     # Input cost and terminal constraints
     R = np.diag([1, 1])                 # minimize applied inputs
     cost = opt.quadratic_cost(vehicle, np.zeros((3,3)), R, u0=uf)
@@ -111,58 +118,59 @@ def time_terminal_constraint():
     res = opt.solve_ocp(
         vehicle, horizon, x0, cost, constraints,
         terminal_constraints=terminal, initial_guess=bend_left, log=False,
-        solve_ivp_kwargs={'atol': 1e-3, 'rtol': 1e-2},
-        # solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
-        minimize_method='trust-constr',
-        # minimize_method='SLSQP', minimize_options={'eps': 0.01}
+        solve_ivp_method=integrator[0], solve_ivp_kwargs=integrator[1],
+        minimize_method=minimizer[0], minimize_options=minimizer[1],
     )
-
     # Only count this as a benchmark if we converged
     assert res.success
 
 # Reset the timeout value to allow for longer runs
-time_terminal_constraint.timeout = 120
+time_steering_terminal_constraint.timeout = 120
 
-def time_optimal_basis_vehicle():
+# Parameterize the test against different choices of integrator and minimizer
+time_steering_terminal_constraint.param_names = ['integrator', 'minimizer']
+time_steering_terminal_constraint.params = (
+    ['RK23_default', 'RK23_sloppy', 'RK45_default', 'RK45_sloppy'],
+    ['trust_default', 'trust_bigstep', 'SLSQP_default', 'SLSQP_bigstep']
+)
+
+def time_steering_bezier_basis(nbasis, ntimes):
     # Set up costs and constriants
     Q = np.diag([.1, 10, .1])           # keep lateral error low
     R = np.diag([1, 1])                 # minimize applied inputs
     cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
     constraints = [ opt.input_range_constraint(vehicle, [0, -0.1], [20, 0.1]) ]
     terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
-    bend_left = [10, 0.05]              # slight left veer
-    near_optimal = [
-        [ 1.15073736e+01,  1.16838616e+01,  1.15413395e+01,
-          1.11585544e+01,  1.06142537e+01,  9.98718468e+00,
-          9.35609454e+00,  8.79973057e+00,  8.39684004e+00,
-          8.22617023e+00],
-        [ -9.99830506e-02,  8.98139594e-03,  5.26385615e-02,
-          4.96635954e-02,  1.87316470e-02, -2.14821345e-02,
-          -5.23025996e-02, -5.50545990e-02, -1.10629834e-02,
-          9.83473965e-02] ]
 
     # Set up horizon
-    horizon = np.linspace(0, Tf, 10, endpoint=True)
+    horizon = np.linspace(0, Tf, ntimes, endpoint=True)
 
     # Set up the optimal control problem
     res = opt.solve_ocp(
         vehicle, horizon, x0, cost,
         constraints,
         terminal_constraints=terminal,
-        initial_guess=near_optimal,
-        basis=flat.BezierFamily(4, T=Tf),
+        initial_guess=bend_left,
+        basis=flat.BezierFamily(nbasis, T=Tf),
+        # solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
         minimize_method='trust-constr',
+        minimize_options={'finite_diff_rel_step': 0.01},
         # minimize_method='SLSQP', minimize_options={'eps': 0.01},
-        solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
         return_states=True, print_summary=False
     )
     t, u, x = res.time, res.inputs, res.states
 
     # Make sure we found a valid solution
     assert res.success
-    np.testing.assert_almost_equal(x[:, -1], xf, decimal=4)
 
-def time_mpc_iosystem():
+# Reset the timeout value to allow for longer runs
+time_steering_bezier_basis.timeout = 120
+
+# Set the parameter values for the number of times and basis vectors
+time_steering_bezier_basis.param_names = ['nbasis', 'ntimes']
+time_steering_bezier_basis.params = ([2, 4, 6], [5, 10, 20])
+
+def time_aircraft_mpc():
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
     A = [[0.99, 0.01, 0.18, -0.09,   0],

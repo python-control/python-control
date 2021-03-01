@@ -145,8 +145,7 @@ plot_results(t1, y1, u1, figure=1, yf=xf[0:2])
 # inputs).  Instead, we can penalize the final state and impose a higher
 # cost on the inputs, resuling in a more graduate lane change.
 #
-# We also set the solver explicitly (its actually the default one, but shows
-# how to do this).
+# We also set the solver explicitly.
 #
 print("Approach 2: input cost and constraints plus terminal cost")
 

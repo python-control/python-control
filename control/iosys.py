@@ -1522,9 +1522,27 @@ def input_output_response(
     # Update the parameter values
     sys._update_params(params)
 
+    #
+    # Define a function to evaluate the input at an arbitrary time
+    #
+    # This is equivalent to the function
+    #
+    #   ufun = sp.interpolate.interp1d(T, U, fill_value='extrapolate')
+    #
+    # but has a lot less overhead => simulation runs much faster
+    def ufun(t):
+        # Find the value of the index using linear interpolation
+        idx = np.searchsorted(T, t, side='left')
+        if idx == 0:
+            # For consistency in return type, multiple by a float
+            return U[..., 0] * 1.
+        else:
+            dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
+            return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
+
     # Create a lambda function for the right hand side
-    u = sp.interpolate.interp1d(T, U, fill_value="extrapolate")
-    def ivp_rhs(t, x): return sys._rhs(t, x, u(t))
+    def ivp_rhs(t, x):
+        return sys._rhs(t, x, ufun(t))
 
     # Perform the simulation
     if isctime(sys):
@@ -1574,10 +1592,10 @@ def input_output_response(
         for i in range(len(T)):
             # Store the current state and output
             soln.y.append(x)
-            y.append(sys._out(T[i], x, u(T[i])))
+            y.append(sys._out(T[i], x, ufun(T[i])))
 
             # Update the state for the next iteration
-            x = sys._rhs(T[i], x, u(T[i]))
+            x = sys._rhs(T[i], x, ufun(T[i]))
 
         # Convert output to numpy arrays
         soln.y = np.transpose(np.array(soln.y))
