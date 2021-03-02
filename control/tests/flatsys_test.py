@@ -51,7 +51,8 @@ class TestFlatSys:
         t, y, x = ct.forced_response(sys, T, ud, x1, return_x=True)
         np.testing.assert_array_almost_equal(x, xd, decimal=3)
 
-    def test_kinematic_car(self):
+    @pytest.mark.parametrize("poly", [fs.PolyFamily(6), fs.BezierFamily(6)])
+    def test_kinematic_car(self, poly):
         """Differential flatness for a kinematic car"""
         def vehicle_flat_forward(x, u, params={}):
             b = params.get('wheelbase', 3.)             # get parameter values
@@ -98,9 +99,6 @@ class TestFlatSys:
         xf = [100., 2., 0.]; uf = [10., 0.]
         Tf = 10
 
-        # Define a set of basis functions to use for the trajectories
-        poly = fs.PolyFamily(6)
-
         # Find trajectory between initial and final conditions
         traj = fs.point_to_point(vehicle_flat, x0, u0, xf, uf, Tf, basis=poly)
 
@@ -121,3 +119,36 @@ class TestFlatSys:
                 vehicle_flat, T, ud, x0, return_x=True)
             np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
 
+    def test_bezier_basis(self):
+        bezier = fs.BezierFamily(4)
+        time = np.linspace(0, 1, 100)
+
+        # Sum of the Bezier curves should be one
+        np.testing.assert_almost_equal(
+            1, sum([bezier(i, time) for i in range(4)]))
+
+        # Sum of derivatives should be zero
+        for k in range(1, 5):
+            np.testing.assert_almost_equal(
+                0, sum([bezier.eval_deriv(i, k, time) for i in range(4)]))
+
+        # Compare derivatives to formulas
+        np.testing.assert_almost_equal(
+            bezier.eval_deriv(1, 0, time), 3 * time - 6 * time**2 + 3 * time**3)
+        np.testing.assert_almost_equal(
+            bezier.eval_deriv(1, 1, time), 3 - 12 * time + 9 * time**2)
+        np.testing.assert_almost_equal(
+            bezier.eval_deriv(1, 2, time), -12 + 18 * time)
+
+        # Make sure that the second derivative integrates to the first
+        time = np.linspace(0, 1, 1000)
+        dt = np.diff(time)
+        for i in range(4):
+            for j in (2, 3, 4):
+                np.testing.assert_almost_equal(
+                    np.diff(bezier.eval_deriv(i, j-1, time)) / dt,
+                    bezier.eval_deriv(i, j, time)[0:-1], decimal=2)
+
+        # Exception check
+        with pytest.raises(ValueError, match="index too high"):
+            bezier.eval_deriv(4, 0, time)
