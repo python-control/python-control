@@ -1412,9 +1412,10 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
             raise TypeError("Second argument must be a state space system.")
 
 
-def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
-                          transpose=False, return_x=False, squeeze=None):
-
+def input_output_response(
+        sys, T, U=0., X0=0, params={},
+        transpose=False, return_x=False, squeeze=None,
+        solve_ivp_kwargs={}, **kwargs):
     """Compute the output response of a system to a given input.
 
     Simulate a dynamical system with a given input and return its output
@@ -1457,7 +1458,33 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     ValueError
         If time step does not match sampling time (for discrete time systems)
 
+    Additional parameters
+    ---------------------
+    solve_ivp_method : str, optional
+        Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
+        to 'RK45'.
+    solve_ivp_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+
     """
+    #
+    # Process keyword arguments
+    #
+
+    # Allow method as an alternative to solve_ivp_method
+    if kwargs.get('method', None):
+        solve_ivp_kwargs['method'] = kwargs.pop('method')
+
+    # Figure out the method to be used
+    if kwargs.get('solve_ivp_method', None):
+        if kwargs.get('method', None):
+            raise ValueError("ivp_method specified more than once")
+        solve_ivp_kwargs['method'] = kwargs['solve_ivp_method']
+
+    # Set the default method to 'RK45'
+    if solve_ivp_kwargs.get('method', None) is None:
+        solve_ivp_kwargs['method'] = 'RK45'
+
     # Sanity checking on the input
     if not isinstance(sys, InputOutputSystem):
         raise TypeError("System of type ", type(sys), " not valid")
@@ -1495,17 +1522,36 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     # Update the parameter values
     sys._update_params(params)
 
+    #
+    # Define a function to evaluate the input at an arbitrary time
+    #
+    # This is equivalent to the function
+    #
+    #   ufun = sp.interpolate.interp1d(T, U, fill_value='extrapolate')
+    #
+    # but has a lot less overhead => simulation runs much faster
+    def ufun(t):
+        # Find the value of the index using linear interpolation
+        idx = np.searchsorted(T, t, side='left')
+        if idx == 0:
+            # For consistency in return type, multiple by a float
+            return U[..., 0] * 1.
+        else:
+            dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
+            return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
+
     # Create a lambda function for the right hand side
-    u = sp.interpolate.interp1d(T, U, fill_value="extrapolate")
-    def ivp_rhs(t, x): return sys._rhs(t, x, u(t))
+    def ivp_rhs(t, x):
+        return sys._rhs(t, x, ufun(t))
 
     # Perform the simulation
     if isctime(sys):
         if not hasattr(sp.integrate, 'solve_ivp'):
             raise NameError("scipy.integrate.solve_ivp not found; "
                             "use SciPy 1.0 or greater")
-        soln = sp.integrate.solve_ivp(ivp_rhs, (T0, Tf), X0, t_eval=T,
-                                      method=method, vectorized=False)
+        soln = sp.integrate.solve_ivp(
+            ivp_rhs, (T0, Tf), X0, t_eval=T,
+            vectorized=False, **solve_ivp_kwargs)
 
         # Compute the output associated with the state (and use sys.out to
         # figure out the number of outputs just in case it wasn't specified)
@@ -1546,10 +1592,10 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             # Store the current state and output
             soln.y.append(x)
-            y.append(sys._out(T[i], x, u(T[i])))
+            y.append(sys._out(T[i], x, ufun(T[i])))
 
             # Update the state for the next iteration
-            x = sys._rhs(T[i], x, u(T[i]))
+            x = sys._rhs(T[i], x, ufun(T[i]))
 
         # Convert output to numpy arrays
         soln.y = np.transpose(np.array(soln.y))

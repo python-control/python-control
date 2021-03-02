@@ -67,7 +67,7 @@ def reset_defaults():
     defaults.update(_iosys_defaults)
 
 
-def _get_param(module, param, argval=None, defval=None, pop=False):
+def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     """Return the default value for a configuration option.
 
     The _get_param() function is a utility function used to get the value of a
@@ -91,11 +91,13 @@ def _get_param(module, param, argval=None, defval=None, pop=False):
         `config.defaults` dictionary.  If a dictionary is provided, then
         `module.param` is used to determine the default value.  Defaults to
         None.
-    pop : bool
+    pop : bool, optional
         If True and if argval is a dict, then pop the remove the parameter
         entry from the argval dict after retreiving it.  This allows the use
         of a keyword argument list to be passed through to other functions
         internal to the function being called.
+    last : bool, optional
+        If True, check to make sure dictionary is empy after processing.
 
     """
 
@@ -108,7 +110,10 @@ def _get_param(module, param, argval=None, defval=None, pop=False):
 
     # If we were passed a dict for the argval, get the param value from there
     if isinstance(argval, dict):
-        argval = argval.pop(param, None) if pop else argval.get(param, None)
+        val = argval.pop(param, None) if pop else argval.get(param, None)
+        if last and argval:
+            raise TypeError("unrecognized keywords: " + str(argval))
+        argval = val
 
     # If we were passed a dict for the defval, get the param value from there
     if isinstance(defval, dict):

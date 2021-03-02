@@ -1,6 +1,12 @@
-# flatsys/__init__.py: flat systems package initialization file
+# bezier.m - 1D Bezier curve basis functions
+# RMM, 24 Feb 2021
 #
-# Copyright (c) 2019 by California Institute of Technology
+# This class implements a set of basis functions based on Bezier curves:
+#
+#   \phi_i(t) = \sum_{i=0}^n {n \choose i} (T - t)^{n-i} t^i
+#
+
+# Copyright (c) 2012 by California Institute of Technology
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,34 +37,33 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
-#
-# Author: Richard M. Murray
-# Date: 1 Jul 2019
 
-r"""The :mod:`control.flatsys` package contains a set of classes and functions
-that can be used to compute trajectories for differentially flat systems.
-
-A differentially flat system is defined by creating an object using the
-:class:`~control.flatsys.FlatSystem` class, which has member functions for
-mapping the system state and input into and out of flat coordinates.  The
-:func:`~control.flatsys.point_to_point` function can be used to create a
-trajectory between two endpoints, written in terms of a set of basis functions
-defined using the :class:`~control.flatsys.BasisFamily` class.  The resulting
-trajectory is return as a :class:`~control.flatsys.SystemTrajectory` object
-and can be evaluated using the :func:`~control.flatsys.SystemTrajectory.eval`
-member function.
-
-"""
-
-# Basis function families
+import numpy as np
+from scipy.special import binom
 from .basis import BasisFamily
-from .poly import PolyFamily
-from .bezier import BezierFamily
 
-# Classes
-from .systraj import SystemTrajectory
-from .flatsys import FlatSystem
-from .linflat import LinearFlatSystem
+class BezierFamily(BasisFamily):
+    r"""Polynomial basis functions.
 
-# Package functions
-from .flatsys import point_to_point
+    This class represents the family of polynomials of the form
+
+    .. math::
+         \phi_i(t) = \sum_{i=0}^n {n \choose i} (T - t)^{n-i} t^i
+
+    """
+    def __init__(self, N, T=1):
+        """Create a polynomial basis of order N."""
+        self.N = N                      # save number of basis functions
+        self.T = T                      # save end of time interval
+
+    # Compute the kth derivative of the ith basis function at time t
+    def eval_deriv(self, i, k, t):
+        """Evaluate the kth derivative of the ith basis function at time t."""
+        if k > 0:
+            raise NotImplementedError("Bezier derivatives not yet available")
+        elif i > self.N:
+            raise ValueError("Basis function index too high")
+
+        # Return the Bezier basis function (note N = # basis functions)
+        return binom(self.N - 1, i) * \
+            (t/self.T)**i * (1 - t/self.T)**(self.N - i - 1)
