@@ -792,7 +792,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     T, yout = step_response(sys, T)
 
     # Steady state value
-    InfValue = yout[-1]
+    InfValue = sys.dcgain()
 
     # RiseTime
     tr_lower_index = (np.where(yout >= RiseTimeLimits[0] * InfValue)[0])[0]
@@ -1124,7 +1124,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
     default_dt = 0.1
     total_cycles = 5  # number of cycles for oscillating modes
     pts_per_cycle = 25  # Number of points divide a period of oscillation
-    log_decay_percent = np.log(5000)  # Factor of reduction for real pole decays
+    log_decay_percent = np.log(1000)  # Factor of reduction for real pole decays
 
     if sys._isstatic():
         tfinal = default_tfinal

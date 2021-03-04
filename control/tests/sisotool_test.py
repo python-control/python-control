@@ -68,8 +68,8 @@ class TestSisotool:
 
         # Check the step response before moving the point
         step_response_original = np.array(
-            [0.    , 0.0366, 0.2032, 0.4857, 0.82  , 1.1358, 1.3762, 1.507 ,
-             1.5206, 1.4326])
+            [0.    , 0.021 , 0.124 , 0.3146, 0.5653, 0.8385, 1.0969, 1.3095,
+             1.4549, 1.5231])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_original, 4)
 
@@ -113,8 +113,8 @@ class TestSisotool:
 
         # Check if the step response has changed
         step_response_moved = np.array(
-            [0.    , 0.0415, 0.2687, 0.7248, 1.3367, 1.9505, 2.3765, 2.4469,
-             2.0738, 1.2926])
+            [0.    , 0.023 , 0.1554, 0.4401, 0.8646, 1.3722, 1.875 , 2.2709,
+              2.4633, 2.3827])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
 
