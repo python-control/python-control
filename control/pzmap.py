@@ -74,7 +74,7 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
 
     Returns
     -------
-    pole: array
+    poles: array
         The systems poles
     zeros: array
         The system's zeros.
