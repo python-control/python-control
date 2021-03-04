@@ -814,7 +814,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
         'SettlingTime': SettlingTime,
         'SettlingMin': yout[tr_upper_index:].min(),
         'SettlingMax': yout.max(),
-        'Overshoot': 100. * (yout.max() - InfValue) / (InfValue - yout[0]),
+        'Overshoot': 100. * (yout.max() - InfValue) / InfValue,
         'Undershoot': yout.min(), # not very confident about this
         'Peak': yout[PeakIndex],
         'PeakTime':  T[PeakIndex],
@@ -1124,7 +1124,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
     default_dt = 0.1
     total_cycles = 5  # number of cycles for oscillating modes
     pts_per_cycle = 25  # Number of points divide a period of oscillation
-    log_decay_percent = np.log(100)  # Factor of reduction for real pole decays
+    log_decay_percent = np.log(5000)  # Factor of reduction for real pole decays
 
     if sys._isstatic():
         tfinal = default_tfinal

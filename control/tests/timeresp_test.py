@@ -522,7 +522,7 @@ class TestTimeresp:
 
     @pytest.mark.parametrize(
         "tfsys, tfinal",
-        [(TransferFunction(1, [1, .5]), 9.21034),        #  pole at 0.5
+        [(TransferFunction(1, [1, .5]), 17.034386),        #  pole at 0.5
          (TransferFunction(1, [1, .5]).sample(.1), 25),  # discrete pole at 0.5
          (TransferFunction(1, [1, .5, 0]), 25)])         # poles at 0.5 and 0
     def test_auto_generated_time_vector_tfinal(self, tfsys, tfinal):
