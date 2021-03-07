@@ -38,7 +38,10 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+import itertools
 import numpy as np
+import scipy as sp
+import scipy.optimize
 from .poly import PolyFamily
 from .systraj import SystemTrajectory
 from ..iosys import NonlinearIOSystem
@@ -176,7 +179,7 @@ class FlatSystem(NonlinearIOSystem):
             output and its first :math:`q_i` derivatives.
 
         """
-        pass
+        raise NotImplementedError("internal error; forward method not defined")
 
     def reverse(self, zflag, params={}):
         """Compute the states and input given the flat flag.
@@ -200,7 +203,7 @@ class FlatSystem(NonlinearIOSystem):
             The input to the system corresponding to the flat flag.
 
         """
-        pass
+        raise NotImplementedError("internal error; reverse method not defined")
 
     def _flat_updfcn(self, t, x, u, params={}):
         # TODO: implement state space update using flat coordinates
@@ -212,8 +215,10 @@ class FlatSystem(NonlinearIOSystem):
         return np.array(zflag[:][0])
 
 
-# Solve a point to point trajectory generation problem for a linear system
-def point_to_point(sys, x0, u0, xf, uf, Tf, T0=0, basis=None, cost=None):
+# Solve a point to point trajectory generation problem for a flat system
+def point_to_point(
+        sys, timepts, x0, u0, xf, uf, T0=0, basis=None, cost=None,
+        constraints=None, initial_guess=None, minimize_kwargs={}):
     """Compute trajectory between an initial and final conditions.
 
     Compute a feasible trajectory for a differentially flat system between an
@@ -223,34 +228,61 @@ def point_to_point(sys, x0, u0, xf, uf, Tf, T0=0, basis=None, cost=None):
     ----------
     flatsys : FlatSystem object
         Description of the differentially flat system.  This object must
-        define a function flatsys.forward() that takes the system state and
-        produceds the flag of flat outputs and a system flatsys.reverse()
+        define a function `flatsys.forward()` that takes the system state and
+        produceds the flag of flat outputs and a system `flatsys.reverse()`
         that takes the flag of the flat output and prodes the state and
         input.
+
+    timepts : float or 1D array_like
+        The list of points for evaluating cost and constraints, as well as
+        the time horizon.  If given as a float, indicates the final time for
+        the trajectory (corresponding to xf)
 
     x0, u0, xf, uf : 1D arrays
         Define the desired initial and final conditions for the system.  If
         any of the values are given as None, they are replaced by a vector of
         zeros of the appropriate dimension.
 
-    Tf : float
-        The final time for the trajectory (corresponding to xf)
-
-    T0 : float (optional)
+    T0 : float, optional
         The initial time for the trajectory (corresponding to x0).  If not
         specified, its value is taken to be zero.
 
-    basis : BasisFamily object (optional)
+    basis : :class:`~control.flat.BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
-        specified, the PolyFamily basis family will be used, with the minimal
-        number of elements required to find a feasible trajectory (twice
-        the number of system states)
+        specified, the :class:`~control.flat.PolyFamily` basis family will be
+        used, with the minimal number of elements required to find a feasible
+        trajectory (twice the number of system states)
+
+    cost : callable
+        Function that returns the integral cost given the current state
+        and input.  Called as `cost(x, u)`.
+
+    constraints : list of tuples, optional
+        List of constraints that should hold at each point in the time vector.
+        Each element of the list should consist of a tuple with first element
+        given by :meth:`scipy.optimize.LinearConstraint` or
+        :meth:`scipy.optimize.NonlinearConstraint` and the remaining
+        elements of the tuple are the arguments that would be passed to those
+        functions.  The following tuples are supported:
+
+        * (LinearConstraint, A, lb, ub): The matrix A is multiplied by stacked
+          vector of the state and input at each point on the trajectory for
+          comparison against the upper and lower bounds.
+
+        * (NonlinearConstraint, fun, lb, ub): a user-specific constraint
+          function `fun(x, u)` is called at each point along the trajectory
+          and compared against the upper and lower bounds.
+
+        The constraints are applied at each time point along the trajectory.
+
+    minimize_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.optimize.minimize`.
 
     Returns
     -------
-    traj : SystemTrajectory object
+    traj : :class:`~control.flat.SystemTrajectory` object
         The system trajectory is returned as an object that implements the
-        eval() function, we can be used to compute the value of the state
+        `eval()` function, we can be used to compute the value of the state
         and input and a given time t.
 
     """
@@ -264,15 +296,21 @@ def point_to_point(sys, x0, u0, xf, uf, Tf, T0=0, basis=None, cost=None):
     if xf is None: xf = np.zeros(sys.nstates)
     if uf is None: uf = np.zeros(sys.ninputs)
 
+    # Process final time
+    timepts = np.atleast_1d(timepts)
+    Tf = timepts[-1]
+    T0 = timepts[0] if len(timepts) > 1 else T0
+
     #
     # Determine the basis function set to use and make sure it is big enough
     #
 
     # If no basis set was specified, use a polynomial basis (poor choice...)
-    if (basis is None): basis = PolyFamily(2*sys.nstates, Tf)
+    if basis is None:
+        basis = PolyFamily(2*sys.nstates)
 
     # Make sure we have enough basis functions to solve the problem
-    if (basis.N * sys.ninputs < 2 * (sys.nstates + sys.ninputs)):
+    if basis.N * sys.ninputs < 2 * (sys.nstates + sys.ninputs):
         raise ValueError("basis set is too small")
 
     #
@@ -301,8 +339,10 @@ def point_to_point(sys, x0, u0, xf, uf, Tf, T0=0, basis=None, cost=None):
     M = np.zeros((2 * flag_tot, basis.N * sys.ninputs))
 
     # Now fill in the rows for the initial and final states
+    # TODO: vectorize
     flag_off = 0
     coeff_off = 0
+
     for i in range(sys.ninputs):
         flag_len = len(zflag_T0[i])
         for j in range(basis.N):
@@ -335,12 +375,119 @@ def point_to_point(sys, x0, u0, xf, uf, Tf, T0=0, basis=None, cost=None):
     # [zflag_T0; zflag_tf].  Since everything is linear, just compute the
     # least squares solution for now.
     #
-    # TODO: need to allow cost and constraints...
-    alpha, residuals, rank, s = np.linalg.lstsq(M, Z, rcond=None)
+
+
+    # Look to see if we have costs, constraints, or both
+    if cost is None and constraints is None:
+        # Unconstrained => solve a least squares problem
+        alpha, residuals, rank, s = np.linalg.lstsq(M, Z, rcond=None)
+
+    else:
+        # Define a function to evaluate the cost along a trajectory
+        def traj_cost(coeffs):
+            # Evaluate the costs at the listed time points
+            costval = 0
+            for t in timepts:
+                M_t = np.zeros((flag_tot, basis.N * sys.ninputs))
+                flag_off = 0
+                coeff_off = 0
+                for i in range(sys.ninputs):
+                    flag_len = len(zflag_T0[i])
+                    for j, k in itertools.product(
+                            range(basis.N), range(flag_len)):
+                        M_t[flag_off + k, coeff_off + j] = \
+                            basis.eval_deriv(j, k, t)
+                    flag_off += flag_len
+                    coeff_off += basis.N
+
+                # Compute flag at this time point
+                zflag = (M_t @ coeffs).reshape(sys.ninputs, -1)
+
+                # Find states and inputs at the time points
+                x, u = sys.reverse(zflag)
+
+                # Evaluate the cost at this time point
+                costval += cost(x, u)
+            return costval
+
+        # If not cost given, override with magnitude of the coefficients
+        if cost is None:
+            traj_cost = lambda coeffs: coeffs @ coeffs
+
+        # Process the constraints we were given
+        if constraints is None:
+            constraints = []
+        elif isinstance(constraints, tuple):
+            constraints = [constraints]
+        elif not isinstance(constraints, list):
+            raise TypeError("trajectory constraints must be a list")
+
+        # Process constraints
+        if len(constraints) > 0:
+            # Set up a nonlinear function to evaluate the constraints
+            def traj_const(coeffs):
+                # Evaluate the constraints at the listed time points
+                values = []
+                for t in timepts:
+                    # Calculate the states and inputs for the flat output
+                    M_t = np.zeros((flag_tot, basis.N * sys.ninputs))
+                    flag_off = 0
+                    coeff_off = 0
+                    for i in range(sys.ninputs):
+                        flag_len = len(zflag_T0[i])
+                        for j, k in itertools.product(
+                                range(basis.N), range(flag_len)):
+                            M_t[flag_off + k, coeff_off + j] = \
+                                basis.eval_deriv(j, k, t)
+                            flag_off += flag_len
+                            coeff_off += basis.N
+
+                    # Compute flag at this time point
+                    zflag = (M_t @ coeffs).reshape(sys.ninputs, -1)
+
+                    # Find states and inputs at the time points
+                    x, u = sys.reverse(zflag)
+
+                    # Evaluate the constraints at this time point
+                    for constraint in constraints:
+                        values.append(constraint[0](x, u))
+                        lb.append(constraint[1])
+                        ub.append(constraint[2])
+                return values
+
+            # Store upper and lower bounds
+            lb, ub = [], [], []
+            for constraint in constraints:
+                lb.append(constraint[1])
+                ub.append(constraint[2])
+
+            # Store the constraint as a nonlinear constraint
+            constraints = [
+                sp.optimize.NonlinearConstraint(traj_cost, lb, ub)]
+
+        # Add initial and terminal constraints
+        constraints += [sp.optimize.LinearConstraint(M, Z, Z)]
+
+        # Process the initial condition
+        if initial_guess is None:
+            initial_guess = np.zeros(basis.N * sys.ninputs)
+        else:
+            raise NotImplementedError("initial_guess not yet available")
+
+        # Find the optimal solution
+        res = sp.optimize.minimize(
+            traj_cost, initial_guess, constraints=constraints,
+            **minimize_kwargs)
+        if res.success:
+            alpha = res.x
+        else:
+            raise RuntimeError("Can't solve optimization problem")
 
     #
     # Transform the trajectory from flat outputs to states and inputs
     #
+
+    # Createa  trajectory object to store the resul
     systraj = SystemTrajectory(sys, basis)
 
     # Store the flag lengths and coefficients

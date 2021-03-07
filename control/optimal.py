@@ -59,7 +59,7 @@ class OptimalControlProblem():
 
     """
     def __init__(
-            self, sys, time_vector, integral_cost, trajectory_constraints=[],
+            self, sys, timepts, integral_cost, trajectory_constraints=[],
             terminal_cost=None, terminal_constraints=[], initial_guess=None,
             basis=None, log=False, **kwargs):
         """Set up an optimal control problem
@@ -73,7 +73,7 @@ class OptimalControlProblem():
         ----------
         sys : InputOutputSystem
             I/O system for which the optimal input will be computed.
-        time_vector : 1D array_like
+        timepts : 1D array_like
             List of times at which the optimal input should be computed.
         integral_cost : callable
             Function that returns the integral cost given the current state
@@ -84,8 +84,8 @@ class OptimalControlProblem():
            first element given by :meth:`~scipy.optimize.LinearConstraint` or
            :meth:`~scipy.optimize.NonlinearConstraint` and the remaining
            elements of the tuple are the arguments that would be passed to
-           those functions.  The constrains will be applied at each point
-           along the trajectory.
+           those functions.  The constraints will be applied at each time
+           point along the trajectory.
         terminal_cost : callable, optional
             Function that returns the terminal cost given the current state
             and input.  Called as terminal_cost(x, u).
@@ -121,7 +121,7 @@ class OptimalControlProblem():
         """
         # Save the basic information for use later
         self.system = sys
-        self.time_vector = time_vector
+        self.timepts = timepts
         self.integral_cost = integral_cost
         self.terminal_cost = terminal_cost
         self.terminal_constraints = terminal_constraints
@@ -169,7 +169,7 @@ class OptimalControlProblem():
         constraint_lb, constraint_ub, eqconst_value = [], [], []
 
         # Go through each time point and stack the bounds
-        for t in self.time_vector:
+        for t in self.timepts:
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
                 if np.all(lb == ub):
@@ -263,7 +263,7 @@ class OptimalControlProblem():
 
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
-                self.system, self.time_vector, inputs, x, return_x=True,
+                self.system, self.timepts, inputs, x, return_x=True,
                 solve_ivp_kwargs=self.solve_ivp_kwargs)
             self.system_simulations += 1
             self.last_x = x
@@ -279,14 +279,14 @@ class OptimalControlProblem():
         if ct.isctime(self.system):
             # Evaluate the costs
             costs = [self.integral_cost(states[:, i], inputs[:, i]) for
-                     i in range(self.time_vector.size)]
+                     i in range(self.timepts.size)]
 
             # Compute the time intervals
-            dt = np.diff(self.time_vector)
+            dt = np.diff(self.timepts)
 
             # Integrate the cost
             cost = 0
-            for i in range(self.time_vector.size-1):
+            for i in range(self.timepts.size-1):
                 # Approximate the integral using trapezoidal rule
                 cost += 0.5 * (costs[i] + costs[i+1]) * dt[i]
 
@@ -383,7 +383,7 @@ class OptimalControlProblem():
 
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
-                self.system, self.time_vector, inputs, x, return_x=True,
+                self.system, self.timepts, inputs, x, return_x=True,
                 solve_ivp_kwargs=self.solve_ivp_kwargs)
             self.system_simulations += 1
             self.last_x = x
@@ -392,7 +392,7 @@ class OptimalControlProblem():
 
         # Evaluate the constraint function along the trajectory
         value = []
-        for i, t in enumerate(self.time_vector):
+        for i, t in enumerate(self.timepts):
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
                 if np.all(lb == ub):
@@ -469,7 +469,7 @@ class OptimalControlProblem():
 
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
-                self.system, self.time_vector, inputs, x, return_x=True,
+                self.system, self.timepts, inputs, x, return_x=True,
                 solve_ivp_kwargs=self.solve_ivp_kwargs)
             self.system_simulations += 1
             self.last_x = x
@@ -482,7 +482,7 @@ class OptimalControlProblem():
 
         # Evaluate the constraint function along the trajectory
         value = []
-        for i, t in enumerate(self.time_vector):
+        for i, t in enumerate(self.timepts):
             for constraint in self.trajectory_constraints:
                 type, fun, lb, ub = constraint
                 if np.any(lb != ub):
@@ -552,12 +552,12 @@ class OptimalControlProblem():
                 try:
                     initial_guess = np.broadcast_to(
                         initial_guess.reshape(-1, 1),
-                        (self.system.ninputs, self.time_vector.size))
+                        (self.system.ninputs, self.timepts.size))
                 except ValueError:
                     raise ValueError("initial guess is the wrong shape")
 
             elif initial_guess.shape != \
-                 (self.system.ninputs, self.time_vector.size):
+                 (self.system.ninputs, self.timepts.size):
                 raise ValueError("initial guess is the wrong shape")
 
             # If we were given a basis, project onto the basis elements
@@ -570,7 +570,7 @@ class OptimalControlProblem():
         # Default is zero
         return np.zeros(
             self.system.ninputs *
-            (self.time_vector.size if self.basis is None else self.basis.N))
+            (self.timepts.size if self.basis is None else self.basis.N))
 
     #
     # Utility function to convert input vector to coefficient vector
@@ -590,12 +590,12 @@ class OptimalControlProblem():
         coeffs = np.zeros((self.system.ninputs, self.basis.N))
         for i in range(self.system.ninputs):
             # Set up the matrices to get inputs
-            M = np.zeros((self.time_vector.size, self.basis.N))
-            b = np.zeros(self.time_vector.size)
+            M = np.zeros((self.timepts.size, self.basis.N))
+            b = np.zeros(self.timepts.size)
 
             # Evaluate at each time point and for each basis function
             # TODO: vectorize
-            for j, t in enumerate(self.time_vector):
+            for j, t in enumerate(self.timepts):
                 for k in range(self.basis.N):
                     M[j, k] = self.basis(k, t)
                     b[j] = inputs[i, j]
@@ -609,8 +609,8 @@ class OptimalControlProblem():
     # Utility function to convert coefficient vector to input vector
     def _coeffs_to_inputs(self, coeffs):
         # TODO: vectorize
-        inputs = np.zeros((self.system.ninputs, self.time_vector.size))
-        for i, t in enumerate(self.time_vector):
+        inputs = np.zeros((self.system.ninputs, self.timepts.size))
+        for i, t in enumerate(self.timepts):
             for k in range(self.basis.N):
                 phi_k = self.basis(k, t)
                 for inp in range(self.system.ninputs):
@@ -680,7 +680,7 @@ class OptimalControlProblem():
             _update, _output, dt=dt,
             inputs=self.system.nstates, outputs=self.system.ninputs,
             states=self.system.ninputs *
-            (self.time_vector.size if self.basis is None else self.basis.N))
+            (self.timepts.size if self.basis is None else self.basis.N))
 
     # Compute the optimal trajectory from the current state
     def compute_trajectory(
@@ -827,17 +827,17 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         if print_summary:
             ocp._print_statistics()
 
-        if return_states and inputs.shape[1] == ocp.time_vector.shape[0]:
+        if return_states and inputs.shape[1] == ocp.timepts.shape[0]:
             # Simulate the system if we need the state back
             _, _, states = ct.input_output_response(
-                ocp.system, ocp.time_vector, inputs, ocp.x, return_x=True,
+                ocp.system, ocp.timepts, inputs, ocp.x, return_x=True,
                 solve_ivp_kwargs=ocp.solve_ivp_kwargs)
             ocp.system_simulations += 1
         else:
             states = None
 
         retval = _process_time_response(
-            ocp.system, ocp.time_vector, inputs, states,
+            ocp.system, ocp.timepts, inputs, states,
             transpose=transpose, return_x=return_states, squeeze=squeeze)
 
         self.time = retval[0]
@@ -866,7 +866,7 @@ def solve_ocp(
 
     cost : callable
         Function that returns the integral cost given the current state
-        and input.  Called as cost(x, u).
+        and input.  Called as `cost(x, u)`.
 
     constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.
@@ -884,7 +884,7 @@ def solve_ocp(
           function `fun(x, u)` is called at each point along the trajectory
           and compared against the upper and lower bounds.
 
-        The constraints are applied at each point along the trajectory.
+        The constraints are applied at each time point along the trajectory.
 
     terminal_cost : callable, optional
         Function that returns the terminal cost given the current state

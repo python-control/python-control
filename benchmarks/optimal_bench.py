@@ -1,5 +1,5 @@
 # optimal_bench.py - benchmarks for optimal control package
-# RMM, 27 Feb 2020
+# RMM, 27 Feb 2021
 #
 # This benchmark tests the timing for the optimal control module
 # (control.optimal) and is intended to be used for helping tune the
@@ -10,10 +10,6 @@ import math
 import control as ct
 import control.flatsys as flat
 import control.optimal as opt
-import matplotlib.pyplot as plt
-import logging
-import time
-import os
 
 # Vehicle steering dynamics
 def vehicle_update(t, x, u, params):

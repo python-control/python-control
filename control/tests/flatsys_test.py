@@ -16,7 +16,7 @@ import scipy as sp
 
 import control as ct
 import control.flatsys as fs
-
+import control.optimal as opt
 
 class TestFlatSys:
     """Test differential flat systems"""
@@ -35,7 +35,7 @@ class TestFlatSys:
         poly = fs.PolyFamily(6)
 
         x1, u1, = [0, 0], [0]
-        traj = fs.point_to_point(flatsys, x1, u1, xf, uf, Tf, basis=poly)
+        traj = fs.point_to_point(flatsys, Tf, x1, u1, xf, uf, basis=poly)
 
         # Verify that the trajectory computation is correct
         x, u = traj.eval([0, Tf])
@@ -100,7 +100,7 @@ class TestFlatSys:
         Tf = 10
 
         # Find trajectory between initial and final conditions
-        traj = fs.point_to_point(vehicle_flat, x0, u0, xf, uf, Tf, basis=poly)
+        traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
 
         # Verify that the trajectory computation is correct
         x, u = traj.eval([0, Tf])
@@ -118,6 +118,27 @@ class TestFlatSys:
             t, y, x = ct.input_output_response(
                 vehicle_flat, T, ud, x0, return_x=True)
             np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
+
+        # Resolve with a cost function
+        timepts = np.linspace(0, Tf, 10)
+        traj_cost = opt.quadratic_cost(
+            vehicle_flat, None, np.diag([0.1, 1]), u0=uf)
+        constraints = [
+            opt.input_range_constraint(vehicle_flat, [8, -0.1], [12, 0.1]) ]
+
+        traj_cost = fs.point_to_point(
+            vehicle_flat, timepts, x0, u0, xf, uf, cost=traj_cost
+        )
+
+        # Verify that the trajectory computation is correct
+        x_cost, u_cost = traj.eval(T)
+        np.testing.assert_array_almost_equal(x0, x_cost[:, 0])
+        np.testing.assert_array_almost_equal(u0, u_cost[:, 0])
+        np.testing.assert_array_almost_equal(xf, x_cost[:, -1])
+        np.testing.assert_array_almost_equal(uf, u_cost[:, -1])
+
+        # Make sure that we got a different answer than before
+        assert np.any(np.abs(x, x_cost) > 0.1)
 
     def test_bezier_basis(self):
         bezier = fs.BezierFamily(4)
@@ -143,11 +164,14 @@ class TestFlatSys:
         # Make sure that the second derivative integrates to the first
         time = np.linspace(0, 1, 1000)
         dt = np.diff(time)
-        for i in range(4):
-            for j in (2, 3, 4):
-                np.testing.assert_almost_equal(
-                    np.diff(bezier.eval_deriv(i, j-1, time)) / dt,
-                    bezier.eval_deriv(i, j, time)[0:-1], decimal=2)
+        for N in range(5):
+            bezier = fs.BezierFamily(N)
+            for i in range(N):
+                for j in range(1, N+1):
+                    np.testing.assert_allclose(
+                        np.diff(bezier.eval_deriv(i, j-1, time)) / dt,
+                        bezier.eval_deriv(i, j, time)[0:-1],
+                        atol=0.01, rtol=0.01)
 
         # Exception check
         with pytest.raises(ValueError, match="index too high"):
