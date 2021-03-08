@@ -310,6 +310,10 @@ class TestTimeresp:
         step_info_no_cancellation = step_info(no_pole_cancellation)
         step_info_cancellation = step_info(pole_cancellation)
         for key in step_info_no_cancellation:
+            if key == 'Overshoot':
+                # skip this test because these systems have no overshoot
+                # =>  very sensitive to parameters
+                continue
             np.testing.assert_allclose(step_info_no_cancellation[key],
                                        step_info_cancellation[key], rtol=1e-4)
 
@@ -522,7 +526,7 @@ class TestTimeresp:
 
     @pytest.mark.parametrize(
         "tfsys, tfinal",
-        [(TransferFunction(1, [1, .5]), 9.21034),        #  pole at 0.5
+        [(TransferFunction(1, [1, .5]), 13.81551),        #  pole at 0.5
          (TransferFunction(1, [1, .5]).sample(.1), 25),  # discrete pole at 0.5
          (TransferFunction(1, [1, .5, 0]), 25)])         # poles at 0.5 and 0
     def test_auto_generated_time_vector_tfinal(self, tfsys, tfinal):

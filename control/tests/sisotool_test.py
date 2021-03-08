@@ -67,12 +67,9 @@ class TestSisotool:
                                   initial_point_2, 4)
 
         # Check the step response before moving the point
-        # new array needed because change in compute step response default time
         step_response_original = np.array(
-            [0.    , 0.0069, 0.0448, 0.124 , 0.2427, 0.3933, 0.5653, 0.7473,
-             0.928 , 1.0969])
-        #old: np.array([0., 0.0217, 0.1281, 0.3237, 0.5797, 0.8566, 1.116,
-            # 1.3261, 1.4659, 1.526])
+            [0.    , 0.021 , 0.124 , 0.3146, 0.5653, 0.8385, 1.0969, 1.3095,
+             1.4549, 1.5231])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_original, 4)
 
@@ -115,10 +112,9 @@ class TestSisotool:
                                   bode_mag_moved, 4)
 
         # Check if the step response has changed
-        # new array needed because change in compute step response default time
         step_response_moved = np.array(
-            [0., 0.0072, 0.0516, 0.1554, 0.3281, 0.5681, 0.8646, 1.1987,
-             1.5452, 1.875])
+            [0.    , 0.023 , 0.1554, 0.4401, 0.8646, 1.3722, 1.875 , 2.2709,
+              2.4633, 2.3827])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
 
