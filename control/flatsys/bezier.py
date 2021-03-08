@@ -48,7 +48,9 @@ class BezierFamily(BasisFamily):
     This class represents the family of polynomials of the form
 
     .. math::
-         \phi_i(t) = \sum_{i=0}^n {n \choose i} (T - t)^{n-i} t^i
+         \phi_i(t) = \sum_{i=0}^n {n \choose i}
+             \left( \frac{t}{T_\text{f}} - t \right)^{n-i}
+             \left( \frac{t}{T_f} \right)^i
 
     """
     def __init__(self, N, T=1):

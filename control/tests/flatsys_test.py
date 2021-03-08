@@ -51,8 +51,8 @@ class TestFlatSys:
         t, y, x = ct.forced_response(sys, T, ud, x1, return_x=True)
         np.testing.assert_array_almost_equal(x, xd, decimal=3)
 
-    @pytest.mark.parametrize("poly", [fs.PolyFamily(6), fs.BezierFamily(6)])
-    def test_kinematic_car(self, poly):
+    @pytest.fixture
+    def vehicle_flat(self):
         """Differential flatness for a kinematic car"""
         def vehicle_flat_forward(x, u, params={}):
             b = params.get('wheelbase', 3.)             # get parameter values
@@ -89,11 +89,14 @@ class TestFlatSys:
         def vehicle_output(t, x, u, params): return x
 
         # Create differentially flat input/output system
-        vehicle_flat = fs.FlatSystem(
+        return fs.FlatSystem(
             vehicle_flat_forward, vehicle_flat_reverse, vehicle_update,
             vehicle_output, inputs=('v', 'delta'), outputs=('x', 'y', 'theta'),
             states=('x', 'y', 'theta'))
 
+    @pytest.mark.parametrize("poly", [
+        fs.PolyFamily(6), fs.PolyFamily(8), fs.BezierFamily(6)])
+    def test_kinematic_car(self, vehicle_flat, poly):
         # Define the endpoints of the trajectory
         x0 = [0., -2., 0.]; u0 = [10., 0.]
         xf = [100., 2., 0.]; uf = [10., 0.]
@@ -119,26 +122,70 @@ class TestFlatSys:
                 vehicle_flat, T, ud, x0, return_x=True)
             np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
 
-        # Resolve with a cost function
+    def test_kinematic_car_cost_constr(self, vehicle_flat):
+        # Define the endpoints of the trajectory
+        x0 = [0., -2., 0.]; u0 = [10., 0.]
+        xf = [100., 2., 0.]; uf = [10., 0.]
+        Tf = 10
+        T = np.linspace(0, Tf, 500)
+
+        # Find trajectory between initial and final conditions
+        traj = fs.point_to_point(
+            vehicle_flat, Tf, x0, u0, xf, uf, basis=fs.PolyFamily(6))
+        x, u = traj.eval(T)
+
+        np.testing.assert_array_almost_equal(x0, x[:, 0])
+        np.testing.assert_array_almost_equal(u0, u[:, 0])
+        np.testing.assert_array_almost_equal(xf, x[:, -1])
+        np.testing.assert_array_almost_equal(uf, u[:, -1])
+
+        # Solve with a cost function
         timepts = np.linspace(0, Tf, 10)
-        traj_cost = opt.quadratic_cost(
-            vehicle_flat, None, np.diag([0.1, 1]), u0=uf)
-        constraints = [
-            opt.input_range_constraint(vehicle_flat, [8, -0.1], [12, 0.1]) ]
+        cost_fcn = opt.quadratic_cost(
+            vehicle_flat, np.diag([0, 0.1, 0]), np.diag([0.1, 1]), x0=xf, u0=uf)
 
         traj_cost = fs.point_to_point(
-            vehicle_flat, timepts, x0, u0, xf, uf, cost=traj_cost
+            vehicle_flat, timepts, x0, u0, xf, uf, cost=cost_fcn,
+            basis=fs.PolyFamily(8)
         )
 
         # Verify that the trajectory computation is correct
-        x_cost, u_cost = traj.eval(T)
+        x_cost, u_cost = traj_cost.eval(T)
         np.testing.assert_array_almost_equal(x0, x_cost[:, 0])
         np.testing.assert_array_almost_equal(u0, u_cost[:, 0])
         np.testing.assert_array_almost_equal(xf, x_cost[:, -1])
         np.testing.assert_array_almost_equal(uf, u_cost[:, -1])
 
         # Make sure that we got a different answer than before
-        assert np.any(np.abs(x, x_cost) > 0.1)
+        assert np.any(np.abs(x - x_cost) > 0.1)
+
+        # Make sure that the previous computation had large y deviation
+        assert np.any(x_cost[1, :] > 2.6)
+
+        # Re-solve with constraint on the y deviation
+        # timepts = np.array([0, 0.5*Tf, 0.8*Tf, Tf])
+        constraints = (
+            sp.optimize.LinearConstraint,
+            np.array([[0, 1, 0, 0, 0]]), -2.6, 2.6)
+        traj_const = fs.point_to_point(
+            vehicle_flat, timepts, x0, u0, xf, uf, cost=cost_fcn,
+            constraints=constraints, basis=fs.PolyFamily(8),
+            # minimize_kwargs={
+            #     'method': 'trust-constr',
+            #     'options': {'finite_diff_rel_step': 0.01},
+            #     # 'hess': lambda x: np.zeros((x.size, x.size))
+            # }
+        )
+
+        # Verify that the trajectory computation is correct
+        x_const, u_const = traj_const.eval(T)
+        np.testing.assert_array_almost_equal(x0, x_const[:, 0])
+        np.testing.assert_array_almost_equal(u0, u_const[:, 0])
+        np.testing.assert_array_almost_equal(xf, x_const[:, -1])
+        np.testing.assert_array_almost_equal(uf, u_const[:, -1])
+
+        # Make sure that the solution respects the bounds
+        assert np.any(x_const[:, 1] < 2.6)
 
     def test_bezier_basis(self):
         bezier = fs.BezierFamily(4)

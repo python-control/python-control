@@ -247,9 +247,9 @@ def point_to_point(
         The initial time for the trajectory (corresponding to x0).  If not
         specified, its value is taken to be zero.
 
-    basis : :class:`~control.flat.BasisFamily` object, optional
+    basis : :class:`~control.flatsys.BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
-        specified, the :class:`~control.flat.PolyFamily` basis family will be
+        specified, the :class:`~control.flatsys.PolyFamily` basis family will be
         used, with the minimal number of elements required to find a feasible
         trajectory (twice the number of system states)
 
@@ -260,8 +260,8 @@ def point_to_point(
     constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.
         Each element of the list should consist of a tuple with first element
-        given by :meth:`scipy.optimize.LinearConstraint` or
-        :meth:`scipy.optimize.NonlinearConstraint` and the remaining
+        given by :class:`scipy.optimize.LinearConstraint` or
+        :class:`scipy.optimize.NonlinearConstraint` and the remaining
         elements of the tuple are the arguments that would be passed to those
         functions.  The following tuples are supported:
 
@@ -280,7 +280,7 @@ def point_to_point(
 
     Returns
     -------
-    traj : :class:`~control.flat.SystemTrajectory` object
+    traj : :class:`~control.flatsys.SystemTrajectory` object
         The system trajectory is returned as an object that implements the
         `eval()` function, we can be used to compute the value of the state
         and input and a given time t.
@@ -372,10 +372,13 @@ def point_to_point(
     #
     # At this point, we need to solve the equation M alpha = zflag, where M
     # is the matrix constrains for initial and final conditions and zflag =
-    # [zflag_T0; zflag_tf].  Since everything is linear, just compute the
-    # least squares solution for now.
+    # [zflag_T0; zflag_tf].
     #
-
+    # If there are no constraints, then we just need to solve a linear
+    # system of equations => use least squares.  Otherwise, we have a
+    # nonlinear optimal control problem with equality constraints => use
+    # scipy.optimize.minimize().
+    #
 
     # Look to see if we have costs, constraints, or both
     if cost is None and constraints is None:
@@ -410,25 +413,26 @@ def point_to_point(
                 costval += cost(x, u)
             return costval
 
-        # If not cost given, override with magnitude of the coefficients
+        # If no cost given, override with magnitude of the coefficients
         if cost is None:
             traj_cost = lambda coeffs: coeffs @ coeffs
 
         # Process the constraints we were given
         if constraints is None:
-            constraints = []
+            traj_constraints = []
         elif isinstance(constraints, tuple):
-            constraints = [constraints]
+            traj_constraints = [constraints]
         elif not isinstance(constraints, list):
             raise TypeError("trajectory constraints must be a list")
 
         # Process constraints
-        if len(constraints) > 0:
+        minimize_constraints = []
+        if len(traj_constraints) > 0:
             # Set up a nonlinear function to evaluate the constraints
             def traj_const(coeffs):
                 # Evaluate the constraints at the listed time points
                 values = []
-                for t in timepts:
+                for i, t in enumerate(timepts):
                     # Calculate the states and inputs for the flat output
                     M_t = np.zeros((flag_tot, basis.N * sys.ninputs))
                     flag_off = 0
@@ -439,44 +443,53 @@ def point_to_point(
                                 range(basis.N), range(flag_len)):
                             M_t[flag_off + k, coeff_off + j] = \
                                 basis.eval_deriv(j, k, t)
-                            flag_off += flag_len
-                            coeff_off += basis.N
+                        flag_off += flag_len
+                        coeff_off += basis.N
 
                     # Compute flag at this time point
                     zflag = (M_t @ coeffs).reshape(sys.ninputs, -1)
 
                     # Find states and inputs at the time points
-                    x, u = sys.reverse(zflag)
+                    states, inputs = sys.reverse(zflag)
 
-                    # Evaluate the constraints at this time point
-                    for constraint in constraints:
-                        values.append(constraint[0](x, u))
-                        lb.append(constraint[1])
-                        ub.append(constraint[2])
-                return values
+                    # Evaluate the constraint function along the trajectory
+                    for type, fun, lb, ub in traj_constraints:
+                        if type == sp.optimize.LinearConstraint:
+                            # `fun` is A matrix associated with polytope...
+                            values.append(
+                                np.dot(fun, np.hstack([states, inputs])))
+                        elif type == sp.optimize.NonlinearConstraint:
+                            values.append(fun(states, inputs))
+                        else:
+                            raise TypeError("unknown constraint type %s" %
+                                                constraint[0])
+                return np.array(values).flatten()
 
             # Store upper and lower bounds
-            lb, ub = [], [], []
-            for constraint in constraints:
-                lb.append(constraint[1])
-                ub.append(constraint[2])
+            const_lb, const_ub = [], []
+            for t in timepts:
+                for type, fun, lb, ub in traj_constraints:
+                    const_lb.append(lb)
+                    const_ub.append(ub)
+            const_lb = np.array(const_lb).flatten()
+            const_ub = np.array(const_ub).flatten()
 
             # Store the constraint as a nonlinear constraint
-            constraints = [
-                sp.optimize.NonlinearConstraint(traj_cost, lb, ub)]
+            minimize_constraints = [sp.optimize.NonlinearConstraint(
+                traj_const, const_lb, const_ub)]
 
         # Add initial and terminal constraints
-        constraints += [sp.optimize.LinearConstraint(M, Z, Z)]
+        minimize_constraints += [sp.optimize.LinearConstraint(M, Z, Z)]
 
         # Process the initial condition
         if initial_guess is None:
             initial_guess = np.zeros(basis.N * sys.ninputs)
         else:
-            raise NotImplementedError("initial_guess not yet available")
+            raise NotImplementedError("Initial guess not yet implemented.")
 
         # Find the optimal solution
         res = sp.optimize.minimize(
-            traj_cost, initial_guess, constraints=constraints,
+            traj_cost, initial_guess, constraints=minimize_constraints,
             **minimize_kwargs)
         if res.success:
             alpha = res.x

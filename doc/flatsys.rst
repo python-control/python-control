@@ -1,4 +1,4 @@
-.. _flatsys-module:
+. _flatsys-module:
 
 ***************************
 Differentially flat systems
@@ -132,11 +132,11 @@ and their derivatives up to order :math:`q_i`:
 The number of flat outputs must match the number of system inputs.
 
 For a linear system, a flat system representation can be generated using the
-:class:`~control.flatsys.LinearFlatSystem` class:
+:class:`~control.flatsys.LinearFlatSystem` class::
 
     sys = control.flatsys.LinearFlatSystem(linsys)
 
-For more general systems, the `FlatSystem` object must be created manually
+For more general systems, the `FlatSystem` object must be created manually::
 
     sys = control.flatsys.FlatSystem(nstate, ninputs, forward, reverse)
 
@@ -144,20 +144,20 @@ In addition to the flat system description, a set of basis functions
 :math:`\phi_i(t)` must be chosen.  The `FlatBasis` class is used to represent
 the basis functions.  A polynomial basis function of the form 1, :math:`t`,
 :math:`t^2`, ... can be computed using the `PolyBasis` class, which is
-initialized by passing the desired order of the polynomial basis set:
+initialized by passing the desired order of the polynomial basis set::
 
     polybasis = control.flatsys.PolyBasis(N)
 
 Once the system and basis function have been defined, the
 :func:`~control.flatsys.point_to_point` function can be used to compute a
-trajectory between initial and final states and inputs:
+trajectory between initial and final states and inputs::
 
     traj = control.flatsys.point_to_point(
         sys, Tf, x0, u0, xf, uf, basis=polybasis)
 
 The returned object has class :class:`~control.flatsys.SystemTrajectory` and
 can be used to compute the state and input trajectory between the initial and
-final condition:
+final condition::
 
     xd, ud = traj.eval(T)
 
@@ -261,6 +261,7 @@ Flat systems classes
    :toctree: generated/
 
    BasisFamily
+   BezierFamily
    FlatSystem
    LinearFlatSystem
    PolyFamily

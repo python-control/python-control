@@ -170,8 +170,7 @@ class OptimalControlProblem():
 
         # Go through each time point and stack the bounds
         for t in self.timepts:
-            for constraint in self.trajectory_constraints:
-                type, fun, lb, ub = constraint
+            for type, fun, lb, ub in self.trajectory_constraints:
                 if np.all(lb == ub):
                     # Equality constraint
                     eqconst_value.append(lb)
@@ -181,8 +180,7 @@ class OptimalControlProblem():
                     constraint_ub.append(ub)
 
         # Add on the terminal constraints
-        for constraint in self.terminal_constraints:
-            type, fun, lb, ub = constraint
+        for type, fun, lb, ub in self.terminal_constraints:
             if np.all(lb == ub):
                 # Equality constraint
                 eqconst_value.append(lb)
@@ -320,19 +318,19 @@ class OptimalControlProblem():
     # constraints, which each take inputs [x, u] and evaluate the
     # constraint.  How we handle these depends on the type of constraint:
     #
-    # * For linear constraints (LinearConstraint), a combined vector of the
-    #   state and input is multiplied by the polytope A matrix for
-    #   comparison against the upper and lower bounds.
+    # * For linear constraints (LinearConstraint), a combined (hstack'd)
+    #   vector of the state and input is multiplied by the polytope A matrix
+    #   for comparison against the upper and lower bounds.
     #
     # * For nonlinear constraints (NonlinearConstraint), a user-specific
     #   constraint function having the form
     #
-    #      constraint_fun(x, u)         TODO: convert from [x, u] to (x, u)
+    #      constraint_fun(x, u)
     #
     #   is called at each point along the trajectory and compared against the
     #   upper and lower bounds.
     #
-    # * If the upper and lower bound for the constraint is identical, then we
+    # * If the upper and lower bound for the constraint are identical, then we
     #   separate out the evaluation into two different constraints, which
     #   allows the SciPy optimizers to be more efficient (and stops them from
     #   generating a warning about mixed constraints).  This is handled
@@ -393,8 +391,7 @@ class OptimalControlProblem():
         # Evaluate the constraint function along the trajectory
         value = []
         for i, t in enumerate(self.timepts):
-            for constraint in self.trajectory_constraints:
-                type, fun, lb, ub = constraint
+            for type, fun, lb, ub in self.trajectory_constraints:
                 if np.all(lb == ub):
                     # Skip equality constraints
                     continue
@@ -409,8 +406,7 @@ class OptimalControlProblem():
                                     constraint[0])
 
         # Evaluate the terminal constraint functions
-        for constraint in self.terminal_constraints:
-            type, fun, lb, ub = constraint
+        for type, fun, lb, ub in self.terminal_constraints:
             if np.all(lb == ub):
                 # Skip equality constraints
                 continue
@@ -483,8 +479,7 @@ class OptimalControlProblem():
         # Evaluate the constraint function along the trajectory
         value = []
         for i, t in enumerate(self.timepts):
-            for constraint in self.trajectory_constraints:
-                type, fun, lb, ub = constraint
+            for type, fun, lb, ub in self.trajectory_constraints:
                 if np.any(lb != ub):
                     # Skip inequality constraints
                     continue
@@ -499,8 +494,7 @@ class OptimalControlProblem():
                                     constraint[0])
 
         # Evaluate the terminal constraint functions
-        for constraint in self.terminal_constraints:
-            type, fun, lb, ub = constraint
+        for type, fun, lb, ub in self.terminal_constraints:
             if np.any(lb != ub):
                 # Skip inequality constraints
                 continue

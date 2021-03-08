@@ -1423,13 +1423,13 @@ def input_output_response(
 
     Parameters
     ----------
-    sys: InputOutputSystem
+    sys : InputOutputSystem
         Input/output system to simulate.
-    T: array-like
+    T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
-    U: array-like or number, optional
+    U : array-like or number, optional
         Input array giving input at each time `T` (default = 0).
-    X0: array-like or number, optional
+    X0 : array-like or number, optional
         Initial condition (default = 0).
     return_x : bool, optional
         If True, return the values of the state at each time (default = False).
@@ -1451,20 +1451,20 @@ def input_output_response(
     xout : array
         Time evolution of the state vector (if return_x=True).
 
-    Raises
-    ------
-    TypeError
-        If the system is not an input/output system.
-    ValueError
-        If time step does not match sampling time (for discrete time systems)
-
-    Additional parameters
-    ---------------------
+    Other parameters
+    ----------------
     solve_ivp_method : str, optional
         Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
         to 'RK45'.
     solve_ivp_kwargs : str, optional
         Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+
+    Raises
+    ------
+    TypeError
+        If the system is not an input/output system.
+    ValueError
+        If time step does not match sampling time (for discrete time systems).
 
     """
     #
