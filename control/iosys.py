@@ -362,7 +362,9 @@ class InputOutputSystem(object):
         """Evaluate right hand side of a differential or difference equation.
 
         Private function used to compute the right hand side of an
-        input/output system model.
+        input/output system model. Intended for fast
+        evaluation; for a more user-friendly interface
+        you may want to use :meth:`dynamics`.
 
         """
         NotImplemented("Evaluation not implemented for system of type ",
@@ -405,7 +407,9 @@ class InputOutputSystem(object):
         """Evaluate the output of a system at a given state, input, and time
 
         Private function used to compute the output of of an input/output
-        system model given the state, input, parameters, and time.
+        system model given the state, input, parameters. Intended for fast
+        evaluation; for a more user-friendly interface you may want to use
+        :meth:`output`.
 
         """
         # If no output function was defined in subclass, return state
