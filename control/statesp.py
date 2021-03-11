@@ -1262,16 +1262,20 @@ class StateSpace(LTI):
         dx/dt or x[t+dt] : ndarray
         """
         if len(args) not in (2, 3):
-            raise ValueError("received"+len(args)+"args, expected 2 or 3")
-        if np.size(args[1]) != self.nstates:
+            raise ValueError("received" + len(args) + "args, expected 2 or 3")
+
+        x = np.reshape(args[1], (-1, 1)) # force to a column in case matrix
+        if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
+
         if len(args) == 2: # received t and x, ignore t
-            return self.A.dot(args[1]).reshape((-1,)) # return as row vector
+            return self.A.dot(x).reshape((-1,)) # return as row vector
         else: # received t, x, and u, ignore t
-            if np.size(args[2]) != self.ninputs:
+            u = np.reshape(args[2], (-1, 1)) # force to a column in case matrix
+            if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-            return self.A.dot(args[1]).reshape((-1,)) \
-                 + self.B.dot(args[2]).reshape((-1,)) # return as row vector
+            return self.A.dot(x).reshape((-1,)) \
+                 + self.B.dot(u).reshape((-1,)) # return as row vector
 
     def output(self, *args):
         """Compute the output of the system
@@ -1306,15 +1310,19 @@ class StateSpace(LTI):
         """
         if len(args) not in (2, 3):
             raise ValueError("received"+len(args)+"args, expected 2 or 3")
-        if np.size(args[1]) != self.nstates:
+
+        x = np.reshape(args[1], (-1, 1)) # force to a column in case matrix
+        if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
+
         if len(args) == 2: # received t and x, ignore t
-            return self.C.dot(args[1]).reshape((-1,)) # return as row vector
+            return self.C.dot(x).reshape((-1,)) # return as row vector
         else: # received t, x, and u, ignore t
-            if np.size(args[2]) != self.ninputs:
+            u = np.reshape(args[2], (-1, 1)) # force to a column in case matrix
+            if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-            return self.C.dot(args[1]).reshape((-1,)) \
-                 + self.D.dot(args[2]).reshape((-1,)) # return as row vector
+            return self.C.dot(x).reshape((-1,)) \
+                 + self.D.dot(u).reshape((-1,)) # return as row vector
 
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
