@@ -358,7 +358,7 @@ class InputOutputSystem(object):
         if (warning):
             warn("Parameters passed to InputOutputSystem ignored.")
 
-    def _rhs(self, t, x, u):
+    def _rhs(self, t, x, u, params={}):
         """Evaluate right hand side of a differential or difference equation.
 
         Private function used to compute the right hand side of an
@@ -367,6 +367,39 @@ class InputOutputSystem(object):
         """
         NotImplemented("Evaluation not implemented for system of type ",
                        type(self))
+
+    def dynamics(self, t, x, u, params={}):
+        """Compute the dynamics of a differential or difference equation.
+
+        Given time `t`, input `u` and state `x`, returns the value of the
+        right hand side of the dynamical system. If the system is continuous,
+        returns the time derivative
+
+            dx/dt = f(t, x, u)
+
+        where `f` is the system's (possibly nonlinear) dynamics function.
+        If the system is discrete-time, returns the next value of `x`:
+
+            x[t+dt] = f(t, x[t], u[t])
+
+        Where `t` is a scalar.
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        dx/dt or x[t+dt] : ndarray
+        """
+        return self._rhs(t, x, u, params)
 
     def _out(self, t, x, u, params={}):
         """Evaluate the output of a system at a given state, input, and time
@@ -377,6 +410,31 @@ class InputOutputSystem(object):
         """
         # If no output function was defined in subclass, return state
         return x
+
+    def output(self, t, x, u, params={}):
+        """Compute the output of the system
+
+        Given time `t`, input `u` and state `x`, returns the output of the
+        system:
+
+            y = g(t, x, u)
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        y : ndarray
+        """
+        return self._out(t, x, u, params)
 
     def set_inputs(self, inputs, prefix='u'):
         """Set the number/names of the system inputs.
@@ -694,18 +752,8 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         if params and warning:
             warn("Parameters passed to LinearIOSystems are ignored.")
 
-    def _rhs(self, t, x, u):
-        # Convert input to column vector and then change output to 1D array
-        xdot = np.dot(self.A, np.reshape(x, (-1, 1))) \
-            + np.dot(self.B, np.reshape(u, (-1, 1)))
-        return np.array(xdot).reshape((-1,))
-
-    def _out(self, t, x, u):
-        # Convert input to column vector and then change output to 1D array
-        y = np.dot(self.C, np.reshape(x, (-1, 1))) \
-            + np.dot(self.D, np.reshape(u, (-1, 1)))
-        return np.array(y).reshape((-1,))
-
+    _rhs = StateSpace.dynamics
+    _out = StateSpace.output
 
 class NonlinearIOSystem(InputOutputSystem):
     """Nonlinear I/O system.

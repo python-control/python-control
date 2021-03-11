@@ -1227,10 +1227,100 @@ class StateSpace(LTI):
         return self(0, warn_infinite=warn_infinite) if self.isctime() \
             else self(1, warn_infinite=warn_infinite)
 
+    def dynamics(self, *args):
+        """Compute the dynamics of the system
+
+        Given input `u` and state `x`, returns the dynamics of the state-space
+        system. If the system is continuous, returns the time derivative dx/dt
+
+            dx/dt = A x + B u
+
+        where A and B are the state-space matrices of the system. If the
+        system is discrete-time, returns the next value of `x`:
+
+            x[t+dt] = A x[t] + B u[t]
+
+        The inputs `x` and `u` must be of the correct length for the system.
+
+        The calling signature is ``out = sys.dynamics(t, x[, u])``
+        The first argument `t` is ignored because :class:`StateSpace` systems
+        are time-invariant. It is included so that the dynamics can be passed
+        to most numerical integrators, such as scipy's `integrate.solve_ivp` and
+        for consistency with :class:`IOSystem` systems.
+
+        Parameters
+        ----------
+        t : float (ignored)
+            time
+        x : array_like
+            current state
+        u : array_like (optional)
+            input, zero if omitted
+
+        Returns
+        -------
+        dx/dt or x[t+dt] : ndarray
+        """
+        if len(args) not in (2, 3):
+            raise ValueError("received"+len(args)+"args, expected 2 or 3")
+        if np.size(args[1]) != self.nstates:
+            raise ValueError("len(x) must be equal to number of states")
+        if len(args) == 2: # received t and x, ignore t
+            return self.A.dot(args[1]).reshape((-1,)) # return as row vector
+        else: # received t, x, and u, ignore t
+            if np.size(args[2]) != self.ninputs:
+                raise ValueError("len(u) must be equal to number of inputs")
+            return self.A.dot(args[1]).reshape((-1,)) \
+                 + self.B.dot(args[2]).reshape((-1,)) # return as row vector
+
+    def output(self, *args):
+        """Compute the output of the system
+
+        Given input `u` and state `x`, returns the output `y` of the
+        state-space system:
+
+            y = C x + D u
+
+        where A and B are the state-space matrices of the system.
+
+        The calling signature is ``y = sys.output(t, x[, u])``
+        The first argument `t` is ignored because :class:`StateSpace` systems
+        are time-invariant. It is included so that the dynamics can be passed
+        to most numerical integrators, such as scipy's `integrate.solve_ivp` and
+        for consistency with :class:`IOSystem` systems.
+
+        The inputs `x` and `u` must be of the correct length for the system.
+
+        Parameters
+        ----------
+        t : float (ignored)
+            time
+        x : array_like
+            current state
+        u : array_like (optional)
+            input (zero if omitted)
+
+        Returns
+        -------
+        y : ndarray
+        """
+        if len(args) not in (2, 3):
+            raise ValueError("received"+len(args)+"args, expected 2 or 3")
+        if np.size(args[1]) != self.nstates:
+            raise ValueError("len(x) must be equal to number of states")
+        if len(args) == 2: # received t and x, ignore t
+            return self.C.dot(args[1]).reshape((-1,)) # return as row vector
+        else: # received t, x, and u, ignore t
+            if np.size(args[2]) != self.ninputs:
+                raise ValueError("len(u) must be equal to number of inputs")
+            return self.C.dot(args[1]).reshape((-1,)) \
+                 + self.D.dot(args[2]).reshape((-1,)) # return as row vector
+
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
         if A and B are zero. """
         return not np.any(self.A) and not np.any(self.B)
+
 
 
 # TODO: add discrete time check
