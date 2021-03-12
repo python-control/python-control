@@ -370,7 +370,7 @@ class InputOutputSystem(object):
         NotImplemented("Evaluation not implemented for system of type ",
                        type(self))
 
-    def dynamics(self, t, x, u, params={}):
+    def dynamics(self, t, x, u):
         """Compute the dynamics of a differential or difference equation.
 
         Given time `t`, input `u` and state `x`, returns the value of the
@@ -401,7 +401,7 @@ class InputOutputSystem(object):
         -------
         dx/dt or x[t+dt] : ndarray
         """
-        return self._rhs(t, x, u, params)
+        return self._rhs(t, x, u)
 
     def _out(self, t, x, u, params={}):
         """Evaluate the output of a system at a given state, input, and time
@@ -415,7 +415,7 @@ class InputOutputSystem(object):
         # If no output function was defined in subclass, return state
         return x
 
-    def output(self, t, x, u, params={}):
+    def output(self, t, x, u):
         """Compute the output of the system
 
         Given time `t`, input `u` and state `x`, returns the output of the
@@ -438,7 +438,7 @@ class InputOutputSystem(object):
         -------
         y : ndarray
         """
-        return self._out(t, x, u, params)
+        return self._out(t, x, u)
 
     def set_inputs(self, inputs, prefix='u'):
         """Set the number/names of the system inputs.
@@ -767,6 +767,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         y = np.dot(self.C, np.reshape(x, (-1, 1))) \
             + np.dot(self.D, np.reshape(u, (-1, 1)))
         return np.array(y).reshape((-1,))
+
 
 class NonlinearIOSystem(InputOutputSystem):
     """Nonlinear I/O system.

@@ -1227,7 +1227,7 @@ class StateSpace(LTI):
         return self(0, warn_infinite=warn_infinite) if self.isctime() \
             else self(1, warn_infinite=warn_infinite)
 
-    def dynamics(self, *args):
+    def dynamics(self, t, x, u=0):
         """Compute the dynamics of the system
 
         Given input `u` and state `x`, returns the dynamics of the state-space
@@ -1242,11 +1242,10 @@ class StateSpace(LTI):
 
         The inputs `x` and `u` must be of the correct length for the system.
 
-        The calling signature is ``out = sys.dynamics(t, x[, u])``
         The first argument `t` is ignored because :class:`StateSpace` systems
         are time-invariant. It is included so that the dynamics can be passed
-        to most numerical integrators, such as scipy's `integrate.solve_ivp` and
-        for consistency with :class:`IOSystem` systems.
+        to most numerical integrators, such as :func:`scipy.integrate.solve_ivp`
+        and for consistency with :class:`IOSystem` systems.
 
         Parameters
         ----------
@@ -1261,23 +1260,19 @@ class StateSpace(LTI):
         -------
         dx/dt or x[t+dt] : ndarray
         """
-        if len(args) not in (2, 3):
-            raise ValueError("received" + len(args) + "args, expected 2 or 3")
-
-        x = np.reshape(args[1], (-1, 1)) # force to a column in case matrix
+        x = np.reshape(x, (-1, 1)) # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
-
-        if len(args) == 2: # received t and x, ignore t
+        if u is 0:
             return self.A.dot(x).reshape((-1,)) # return as row vector
         else: # received t, x, and u, ignore t
-            u = np.reshape(args[2], (-1, 1)) # force to a column in case matrix
+            u = np.reshape(u, (-1, 1)) # force to a column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
             return self.A.dot(x).reshape((-1,)) \
                  + self.B.dot(u).reshape((-1,)) # return as row vector
 
-    def output(self, *args):
+    def output(self, t, x, u=0):
         """Compute the output of the system
 
         Given input `u` and state `x`, returns the output `y` of the
@@ -1287,7 +1282,6 @@ class StateSpace(LTI):
 
         where A and B are the state-space matrices of the system.
 
-        The calling signature is ``y = sys.output(t, x[, u])``
         The first argument `t` is ignored because :class:`StateSpace` systems
         are time-invariant. It is included so that the dynamics can be passed
         to most numerical integrators, such as scipy's `integrate.solve_ivp` and
@@ -1308,17 +1302,14 @@ class StateSpace(LTI):
         -------
         y : ndarray
         """
-        if len(args) not in (2, 3):
-            raise ValueError("received"+len(args)+"args, expected 2 or 3")
-
-        x = np.reshape(args[1], (-1, 1)) # force to a column in case matrix
+        x = np.reshape(x, (-1, 1)) # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
 
-        if len(args) == 2: # received t and x, ignore t
+        if u is 0:
             return self.C.dot(x).reshape((-1,)) # return as row vector
         else: # received t, x, and u, ignore t
-            u = np.reshape(args[2], (-1, 1)) # force to a column in case matrix
+            u = np.reshape(u, (-1, 1)) # force to a column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
             return self.C.dot(x).reshape((-1,)) \

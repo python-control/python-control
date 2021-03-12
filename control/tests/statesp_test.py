@@ -773,6 +773,12 @@ class TestStateSpace:
         assert_array_almost_equal(
             sys121.output(0, x, u),
             sys121.C.dot(x).reshape((-1,)) + sys121.D.dot(u).reshape((-1,)))
+        assert_array_almost_equal(
+            sys121.dynamics(0, x),
+            sys121.A.dot(x).reshape((-1,)))
+        assert_array_almost_equal(
+            sys121.output(0, x),
+            sys121.C.dot(x).reshape((-1,)))
 
     # too few and too many states and inputs
     @pytest.mark.parametrize('x', [0, 1, [], [1, 2, 3], np.atleast_1d(2)])
@@ -799,6 +805,12 @@ class TestStateSpace:
         assert_array_almost_equal(
             sys222.output(0, x, u),
             sys222.C.dot(x).reshape((-1,)) + sys222.D.dot(u).reshape((-1,)))
+        assert_array_almost_equal(
+            sys222.dynamics(0, x),
+            sys222.A.dot(x).reshape((-1,)))
+        assert_array_almost_equal(
+            sys222.output(0, x),
+            sys222.C.dot(x).reshape((-1,)))
 
     # too few and too many states and inputs
     @pytest.mark.parametrize('x', [0, 1, [1, 1, 1]])
@@ -807,7 +819,7 @@ class TestStateSpace:
             sys222.dynamics(0, x)
         with pytest.raises(ValueError):
             sys222.output(0, x)
-    @pytest.mark.parametrize('u', [0, 1, [1, 1, 1]])
+    @pytest.mark.parametrize('u', [1, [1, 1, 1]])
     def test_error_u_dynamics_mimo(self, u, sys222):
         with pytest.raises(ValueError):
             sys222.dynamics(0, (1, 1), u)
