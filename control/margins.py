@@ -330,16 +330,14 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
                 sys = frdata.FRD(sys, omega_sys)
             else:
                 omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
-                sys = frdata.FRD(sys(np.exp(1j*sys.dt*omega_sys)), omega_sys,
-                                    smooth=True)
+                sys = frdata.FRD(sys, omega_sys, smooth=True)
     elif method == 'best':
         # convert to FRD if anticipated numerical issues
         if isinstance(sys, xferfcn.TransferFunction) and not sys.isctime():
             if _numerical_inaccuracy(sys):
                 omega_sys = freqplot._default_frequency_range(sys)
                 omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
-                sys = frdata.FRD(sys(np.exp(1j*sys.dt*omega_sys)), omega_sys,
-                                    smooth=True)
+                sys = frdata.FRD(sys, omega_sys, smooth=True)
     elif method != 'poly':
         raise ValueError("method " + method + " unknown")
 
