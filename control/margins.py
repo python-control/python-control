@@ -300,6 +300,7 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
     determined by the frequency of maximum sensitivity (given by the
     magnitude of 1/(1+L)).
     """
+    # TODO: FRD method for cont-time systems doesn't work
     try:
         if isinstance(sysdata, frdata.FRD):
             sys = frdata.FRD(sysdata, smooth=True)
@@ -408,7 +409,6 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         w_180 = np.array(
             [sp.optimize.brentq(_arg, sys.omega[i], sys.omega[i+1])
              for i in widx])
-        # TODO: replace by evalfr(sys, 1J*w) or sys(1J*w), (needs gh-449)
         w180_resp = sys(1j * w_180)
 
         # Find all crossings, note that this depends on omega having
