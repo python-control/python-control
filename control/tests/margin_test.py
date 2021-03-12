@@ -369,10 +369,7 @@ def test_stability_margins_methods():
     sysd = sys.sample(0.001, 'zoh')
     """Test stability_margins() function with different methods"""
     out = stability_margins(sysd, method='best')
-    assert_allclose(
-        (18.876634845228644, 11.244969911924102, 0.40684128014454546,
-         9.763585543509473, 4.351735617240803, 2.559873290031937),
-        stability_margins(sysd, method='poly'))
+    # confirm getting reasonable results using FRD method
     assert_allclose(
         (18.876634740386308, 26.356358386241055, 0.40684127995261044,
          9.763585494645046, 2.3293357226374805, 2.55985695034263),
