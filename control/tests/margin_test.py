@@ -373,4 +373,4 @@ def test_stability_margins_methods():
     assert_allclose(
         (18.876634740386308, 26.356358386241055, 0.40684127995261044,
          9.763585494645046, 2.3293357226374805, 2.55985695034263),
-        stability_margins(sysd, method='frd'))
+        stability_margins(sysd, method='frd'), rtol=1e-5)
