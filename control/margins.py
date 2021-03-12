@@ -56,6 +56,7 @@ import scipy as sp
 from . import xferfcn
 from .lti import issiso, evalfr
 from . import frdata
+from . import freqplot
 from .exception import ControlMIMONotImplemented
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
@@ -206,6 +207,17 @@ def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
 
     return z, w
 
+def _numerical_inaccuracy(sys):
+    # crude, conservative check for if
+    # num(z)*num(1/z) << den(z)*den(1/z) for DT systems
+    num, den, num_inv_zp, den_inv_zq, p_q, dt = _poly_z_invz(sys)
+    p1 = np.polymul(num, num_inv_zp)
+    p2 = np.polymul(den, den_inv_zq)
+    if p_q < 0:
+        # * z**(-p_q)
+        x = [1] + [0] * (-p_q)
+        p1 = np.polymul(p1, x)
+    return np.linalg.norm(p1) < 1e-3 * np.linalg.norm(p2)
 
 # Took the framework for the old function by
 # Sawyer B. Fuller <minster@uw.edu>, removed a lot of the innards
@@ -237,25 +249,34 @@ def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
 #                    systems
 
 
-def stability_margins(sysdata, returnall=False, epsw=0.0):
+def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
     """Calculate stability margins and associated crossover frequencies.
 
     Parameters
     ----------
-    sysdata: LTI system or (mag, phase, omega) sequence
+    sysdata : LTI system or (mag, phase, omega) sequence
         sys : LTI system
             Linear SISO system representing the loop transfer function
         mag, phase, omega : sequence of array_like
             Arrays of magnitudes (absolute values, not dB), phases (degrees),
             and corresponding frequencies. Crossover frequencies returned are
             in the same units as those in `omega` (e.g., rad/sec or Hz).
-    returnall: bool, optional
+    returnall : bool, optional
         If true, return all margins found. If False (default), return only the
         minimum stability margins. For frequency data or FRD systems, only
         margins in the given frequency region can be found and returned.
-    epsw: float, optional
+    epsw : float, optional
         Frequencies below this value (default 0.0) are considered static gain,
         and not returned as margin.
+    method : string, optional
+        Method to use (default is 'best'):
+        'poly': use polynomial method if passed a :class:`LTI` system.
+        'frd': calculate crossover frequencies using numerical interpolation
+        of a :class:`FrequencyResponseData` representation of the system if
+        passed a :class:`LTI` system.
+        'best': use the 'poly' method if possible, reverting to 'frd' if it is
+        detected that numerical inaccuracy is likey to arise in the 'poly'
+        method for for discrete-time systems.
 
     Returns
     -------
@@ -299,6 +320,27 @@ def stability_margins(sysdata, returnall=False, epsw=0.0):
     if not issiso(sys):
         raise ControlMIMONotImplemented(
             "Can only do margins for SISO system")
+
+    if method == 'frd':
+        # convert to FRD if we got a transfer function
+        if isinstance(sys, xferfcn.TransferFunction):
+            omega_sys = freqplot._default_frequency_range(sys)
+            if sys.isctime():
+                sys = frdata.FRD(sys, omega_sys)
+            else:
+                omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
+                sys = frdata.FRD(sys(np.exp(1j*sys.dt*omega_sys)), omega_sys,
+                                    smooth=True)
+    elif method == 'best':
+        # convert to FRD if anticipated numerical issues
+        if isinstance(sys, xferfcn.TransferFunction) and not sys.isctime():
+            if _numerical_inaccuracy(sys):
+                omega_sys = freqplot._default_frequency_range(sys)
+                omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
+                sys = frdata.FRD(sys(np.exp(1j*sys.dt*omega_sys)), omega_sys,
+                                    smooth=True)
+    elif method != 'poly':
+        raise ValueError("method " + method + " unknown")
 
     if isinstance(sys, xferfcn.TransferFunction):
         if sys.isctime():

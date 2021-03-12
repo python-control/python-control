@@ -88,7 +88,7 @@ _bode_defaults = {
 
 def bode_plot(syslist, omega=None,
               plot=True, omega_limits=None, omega_num=None,
-              margins=None, *args, **kwargs):
+              margins=None, method='best', *args, **kwargs):
     """Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
@@ -117,6 +117,7 @@ def bode_plot(syslist, omega=None,
         config.defaults['freqplot.number_of_samples'].
     margins : bool
         If True, plot gain and phase margin.
+    method : method to use in computing margins (see :func:`stability_margins`)
     *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
@@ -373,7 +374,7 @@ def bode_plot(syslist, omega=None,
                 # Show the phase and gain margins in the plot
                 if margins:
                     # Compute stability margins for the system
-                    margin = stability_margins(sys)
+                    margin = stability_margins(sys, method=method)
                     gm, pm, Wcg, Wcp = (margin[i] for i in (0, 1, 3, 4))
 
                     # Figure out sign of the phase at the first gain crossing
