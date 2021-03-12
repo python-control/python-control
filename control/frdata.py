@@ -110,9 +110,14 @@ class FrequencyResponseData(LTI):
                 # the frequency range
                 otherlti = args[0]
                 self.omega = sort(np.asarray(args[1], dtype=float))
-                numfreq = len(self.omega)
                 # calculate frequency response at my points
-                self.fresp = otherlti(1j * self.omega, squeeze=False)
+                if otherlti.isctime():
+                    s = 1j * self.omega
+                    self.fresp = otherlti(s, squeeze=False)
+                else:
+                    z = np.exp(1j * self.omega * otherlti.dt)
+                    self.fresp = otherlti(z, squeeze=False)
+
             else:
                 # The user provided a response and a freq vector
                 self.fresp = array(args[0], dtype=complex)
@@ -538,7 +543,10 @@ def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
 
     elif isinstance(sys, LTI):
         omega = np.sort(omega)
-        fresp = sys(1j * omega)
+        if sys.isctime():
+            fresp = sys(1j * omega)
+        else:
+            fresp = sys(np.exp(1j * omega * sys.dt))
         if len(fresp.shape) == 1:
             fresp = fresp[np.newaxis, np.newaxis, :]
         return FRD(fresp, omega, smooth=True)
