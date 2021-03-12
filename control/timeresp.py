@@ -794,33 +794,66 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     # Steady state value
     InfValue = sys.dcgain()
 
-    # RiseTime
-    tr_lower_index = (np.where(yout >= RiseTimeLimits[0] * InfValue)[0])[0]
-    tr_upper_index = (np.where(yout >= RiseTimeLimits[1] * InfValue)[0])[0]
-    RiseTime = T[tr_upper_index] - T[tr_lower_index]
+     # TODO: this could be a function step_info4data(t,y,yfinal)
+    rise_time: float = np.NaN
+    settling_time: float = np.NaN
+    settling_min: float = np.NaN
+    settling_max: float = np.NaN
+    peak_value: float = np.Inf
+    peak_time: float = np.Inf
+    undershoot: float = np.NaN
+    overshoot: float = np.NaN
 
-    # SettlingTime
-    sup_margin = (1. + SettlingTimeThreshold) * InfValue
-    inf_margin = (1. - SettlingTimeThreshold) * InfValue
-    # find Steady State looking for the first point out of specified limits
-    for i in reversed(range(T.size)):
-        if((yout[i] <= inf_margin) | (yout[i] >= sup_margin)):
-            SettlingTime = T[i + 1]
-            break
+    if not np.isnan(InfValue) and not np.isinf(InfValue):
+        # Peak
+        peak_index = np.abs(yout).argmax()
+        peak_value = np.abs(yout[peak_index])
+        peak_time = T[peak_index]
 
-    PeakIndex = np.abs(yout).argmax()
+        sup_margin = (1. + SettlingTimeThreshold) * InfValue
+        inf_margin = (1. - SettlingTimeThreshold) * InfValue
+
+        if InfValue < 0.0:
+            # RiseTime
+            tr_lower_index = (np.where(yout <= RiseTimeLimits[0] * InfValue)[0])[0]
+            tr_upper_index = (np.where(yout <= RiseTimeLimits[1] * InfValue)[0])[0]
+            # SettlingTime
+            for i in reversed(range(T.size - 1)):
+                if (-yout[i] <= np.abs(inf_margin)) | (-yout[i] >= np.abs(sup_margin)):
+                    settling_time = T[i + 1]
+                    break
+            # Overshoot and Undershoot
+            overshoot = np.abs(100. * ((-yout).max() - np.abs(InfValue)) / np.abs(InfValue))
+            undershoot = np.abs(100. * (-yout).min() / np.abs(InfValue))
+        else:
+            tr_lower_index = (np.where(yout >= RiseTimeLimits[0] * InfValue)[0])[0]
+            tr_upper_index = (np.where(yout >= RiseTimeLimits[1] * InfValue)[0])[0]
+            # SettlingTime
+            for i in reversed(range(T.size - 1)):
+                if (yout[i] <= inf_margin) | (yout[i] >= sup_margin):
+                    settling_time = T[i + 1]
+                    break
+            # Overshoot and Undershoot
+            overshoot = np.abs(100. * (yout.max() - InfValue) / InfValue)
+            undershoot = np.abs(100. * yout.min() / InfValue)
+
+        # RiseTime
+        rise_time = T[tr_upper_index] - T[tr_lower_index]
+
+        settling_max = (yout[tr_upper_index:]).max()
+        settling_min = (yout[tr_upper_index:]).min()
+
     return {
-        'RiseTime': RiseTime,
-        'SettlingTime': SettlingTime,
-        'SettlingMin': yout[tr_upper_index:].min(),
-        'SettlingMax': yout.max(),
-        'Overshoot': 100. * (yout.max() - InfValue) / InfValue,
-        'Undershoot': yout.min(), # not very confident about this
-        'Peak': yout[PeakIndex],
-        'PeakTime':  T[PeakIndex],
+        'RiseTime': rise_time,
+        'SettlingTime': settling_time,
+        'SettlingMin': settling_min,
+        'SettlingMax': settling_max,
+        'Overshoot': overshoot,
+        'Undershoot': undershoot,
+        'Peak': peak_value,
+        'PeakTime': peak_time,
         'SteadyStateValue': InfValue
         }
-
 
 def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):
