@@ -155,6 +155,8 @@ class FlatSystem(NonlinearIOSystem):
         if forward is not None: self.forward = forward
         if reverse is not None: self.reverse = reverse
 
+        # Save the length of the flat flag
+
     def forward(self, x, u, params={}):
         """Compute the flat flag given the states and input.
 
@@ -217,10 +219,33 @@ class FlatSystem(NonlinearIOSystem):
         return np.array(zflag[:][0])
 
 
+# Utility function to compute flag matrix given a basis
+def _basis_flag_matrix(sys, basis, flag, t, params={}):
+    """Compute the matrix of basis functions and their derivatives
+
+    This function computes the matrix ``M`` that is used to solve for the
+    coefficients of the basis functions given the state and input.  Each
+    column of the matrix corresponds to a basis function and each row is a
+    derivative, with the derivatives (flag) for each output stacked on top
+    of each other.
+
+    """
+    flagshape = [len(f) for f in flag]
+    M = np.zeros((sum(flagshape), basis.N * sys.ninputs))
+    flag_off = 0
+    coeff_off = 0
+    for i, flag_len in enumerate(flagshape):
+        for j, k in itertools.product(range(basis.N), range(flag_len)):
+            M[flag_off + k, coeff_off + j] = basis.eval_deriv(j, k, t)
+        flag_off += flag_len
+        coeff_off += basis.N
+    return M
+
+
 # Solve a point to point trajectory generation problem for a flat system
 def point_to_point(
         sys, timepts, x0=0, u0=0, xf=0, uf=0, T0=0, basis=None, cost=None,
-        constraints=None, initial_guess=None, minimize_kwargs={}):
+        constraints=None, initial_guess=None, minimize_kwargs={}, **kwargs):
     """Compute trajectory between an initial and final conditions.
 
     Compute a feasible trajectory for a differentially flat system between an
@@ -251,9 +276,9 @@ def point_to_point(
 
     basis : :class:`~control.flatsys.BasisFamily` object, optional
         The basis functions to use for generating the trajectory.  If not
-        specified, the :class:`~control.flatsys.PolyFamily` basis family will be
-        used, with the minimal number of elements required to find a feasible
-        trajectory (twice the number of system states)
+        specified, the :class:`~control.flatsys.PolyFamily` basis family
+        will be used, with the minimal number of elements required to find a
+        feasible trajectory (twice the number of system states)
 
     cost : callable
         Function that returns the integral cost given the current state
@@ -287,6 +312,12 @@ def point_to_point(
         `eval()` function, we can be used to compute the value of the state
         and input and a given time t.
 
+    Notes
+    -----
+    Additional keyword parameters can be used to fine tune the behavior of
+    the underlying optimization function.  See `minimize_*` keywords in
+    :func:`OptimalControlProblem` for more information.
+
     """
     #
     # Make sure the problem is one that we can handle
@@ -296,7 +327,7 @@ def point_to_point(
     u0 = _check_convert_array(u0, [(sys.ninputs,), (sys.ninputs, 1)],
                               'Initial input: ', squeeze=True)
     xf = _check_convert_array(xf, [(sys.nstates,), (sys.nstates, 1)],
-                              'Final state: ' , squeeze=True)
+                              'Final state: ', squeeze=True)
     uf = _check_convert_array(uf, [(sys.ninputs,), (sys.ninputs, 1)],
                               'Final input: ', squeeze=True)
 
@@ -304,6 +335,12 @@ def point_to_point(
     timepts = np.atleast_1d(timepts)
     Tf = timepts[-1]
     T0 = timepts[0] if len(timepts) > 1 else T0
+
+    # Process keyword arguments
+    minimize_kwargs['method'] = kwargs.pop('minimize_method', None)
+    minimize_kwargs['options'] = kwargs.pop('minimize_options', {})
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
 
     #
     # Determine the basis function set to use and make sure it is big enough
@@ -328,8 +365,7 @@ def point_to_point(
     # We need to compute the output "flag": [z(t), z'(t), z''(t), ...]
     # and then evaluate this at the initial and final condition.
     #
-    # TODO: should be able to represent flag variables as 1D arrays
-    # TODO: need inputs to fully define the flag
+
     zflag_T0 = sys.forward(x0, u0)
     zflag_Tf = sys.forward(xf, uf)
 
@@ -340,41 +376,13 @@ def point_to_point(
     # essentially amounts to evaluating the basis functions and their
     # derivatives at the initial and final conditions.
 
-    # Figure out the size of the problem we are solving
-    flag_tot = np.sum([len(zflag_T0[i]) for i in range(sys.ninputs)])
+    # Compute the flags for the initial and final states
+    M_T0 = _basis_flag_matrix(sys, basis, zflag_T0, T0)
+    M_Tf = _basis_flag_matrix(sys, basis, zflag_Tf, Tf)
 
-    # Start by creating an empty matrix that we can fill up
-    # TODO: allow a different number of basis elements for each flat output
-    M = np.zeros((2 * flag_tot, basis.N * sys.ninputs))
-
-    # Now fill in the rows for the initial and final states
-    # TODO: vectorize
-    flag_off = 0
-    coeff_off = 0
-
-    for i in range(sys.ninputs):
-        flag_len = len(zflag_T0[i])
-        for j in range(basis.N):
-            for k in range(flag_len):
-                M[flag_off + k, coeff_off + j] = basis.eval_deriv(j, k, T0)
-                M[flag_tot + flag_off + k, coeff_off + j] = \
-                    basis.eval_deriv(j, k, Tf)
-        flag_off += flag_len
-        coeff_off += basis.N
-
-    # Create an empty matrix that we can fill up
-    Z = np.zeros(2 * flag_tot)
-
-    # Compute the flag vector to use for the right hand side by
-    # stacking up the flags for each input
-    # TODO: make this more pythonic
-    flag_off = 0
-    for i in range(sys.ninputs):
-        flag_len = len(zflag_T0[i])
-        for j in range(flag_len):
-            Z[flag_off + j] = zflag_T0[i][j]
-            Z[flag_tot + flag_off + j] = zflag_Tf[i][j]
-        flag_off += flag_len
+    # Stack the initial and final matrix/flag for the point to point problem
+    M = np.vstack([M_T0, M_Tf])
+    Z = np.hstack([np.hstack(zflag_T0), np.hstack(zflag_Tf)])
 
     #
     # Solve for the coefficients of the flat outputs
@@ -404,17 +412,7 @@ def point_to_point(
             # Evaluate the costs at the listed time points
             costval = 0
             for t in timepts:
-                M_t = np.zeros((flag_tot, basis.N * sys.ninputs))
-                flag_off = 0
-                coeff_off = 0
-                for i in range(sys.ninputs):
-                    flag_len = len(zflag_T0[i])
-                    for j, k in itertools.product(
-                            range(basis.N), range(flag_len)):
-                        M_t[flag_off + k, coeff_off + j] = \
-                            basis.eval_deriv(j, k, t)
-                    flag_off += flag_len
-                    coeff_off += basis.N
+                M_t = _basis_flag_matrix(sys, basis, zflag_T0, t)
 
                 # Compute flag at this time point
                 zflag = (M_t @ coeffs).reshape(sys.ninputs, -1)
@@ -452,17 +450,7 @@ def point_to_point(
                 values = []
                 for i, t in enumerate(timepts):
                     # Calculate the states and inputs for the flat output
-                    M_t = np.zeros((flag_tot, basis.N * sys.ninputs))
-                    flag_off = 0
-                    coeff_off = 0
-                    for i in range(sys.ninputs):
-                        flag_len = len(zflag_T0[i])
-                        for j, k in itertools.product(
-                                range(basis.N), range(flag_len)):
-                            M_t[flag_off + k, coeff_off + j] = \
-                                basis.eval_deriv(j, k, t)
-                        flag_off += flag_len
-                        coeff_off += basis.N
+                    M_t = _basis_flag_matrix(sys, basis, zflag_T0, t)
 
                     # Compute flag at this time point
                     zflag = (M_t @ coeffs).reshape(sys.ninputs, -1)
@@ -501,7 +489,7 @@ def point_to_point(
 
         # Process the initial condition
         if initial_guess is None:
-            initial_guess = np.zeros(basis.N * sys.ninputs - 2 * flag_tot)
+            initial_guess = np.zeros(M.shape[1] - M.shape[0])
         else:
             raise NotImplementedError("Initial guess not yet implemented.")
 
@@ -514,7 +502,7 @@ def point_to_point(
         else:
             raise RuntimeError(
                 "Unable to solve optimal control problem\n" +
-                "scipy.optimize.minimize returned "  + res.message)
+                "scipy.optimize.minimize returned " + res.message)
 
     #
     # Transform the trajectory from flat outputs to states and inputs

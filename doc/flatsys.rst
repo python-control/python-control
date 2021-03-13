@@ -1,4 +1,4 @@
-. _flatsys-module:
+.. _flatsys-module:
 
 ***************************
 Differentially flat systems

@@ -331,3 +331,18 @@ class TestFlatSys:
             traj = fs.point_to_point(
                 flat_sys, timepts, x0, u0, xf, uf, constraints=constraint,
                 basis=fs.PolyFamily(8))
+
+        # Method arguments, parameters
+        traj_method = fs.point_to_point(
+            flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
+            basis=fs.PolyFamily(8), minimize_method='slsqp')
+        traj_kwarg = fs.point_to_point(
+            flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
+            basis=fs.PolyFamily(8), minimize_kwargs={'method': 'slsqp'})
+        np.testing.assert_almost_equal(
+            traj_method.eval(timepts)[0], traj_kwarg.eval(timepts)[0])
+
+        # Unrecognized keywords
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            traj_method = fs.point_to_point(
+                flat_sys, timepts, x0, u0, xf, uf, solve_ivp_method=None)
