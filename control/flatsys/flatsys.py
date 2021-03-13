@@ -42,9 +42,11 @@ import itertools
 import numpy as np
 import scipy as sp
 import scipy.optimize
+import warnings
 from .poly import PolyFamily
 from .systraj import SystemTrajectory
 from ..iosys import NonlinearIOSystem
+from ..timeresp import _check_convert_array
 
 
 # Flat system class (for use as a base class)
@@ -217,7 +219,7 @@ class FlatSystem(NonlinearIOSystem):
 
 # Solve a point to point trajectory generation problem for a flat system
 def point_to_point(
-        sys, timepts, x0, u0, xf, uf, T0=0, basis=None, cost=None,
+        sys, timepts, x0=0, u0=0, xf=0, uf=0, T0=0, basis=None, cost=None,
         constraints=None, initial_guess=None, minimize_kwargs={}):
     """Compute trajectory between an initial and final conditions.
 
@@ -289,12 +291,14 @@ def point_to_point(
     #
     # Make sure the problem is one that we can handle
     #
-    # TODO: put in tests for flat system input
-    # TODO: process initial and final conditions to allow x0 or (x0, u0)
-    if x0 is None: x0 = np.zeros(sys.nstates)
-    if u0 is None: u0 = np.zeros(sys.ninputs)
-    if xf is None: xf = np.zeros(sys.nstates)
-    if uf is None: uf = np.zeros(sys.ninputs)
+    x0 = _check_convert_array(x0, [(sys.nstates,), (sys.nstates, 1)],
+                              'Initial state: ', squeeze=True)
+    u0 = _check_convert_array(u0, [(sys.ninputs,), (sys.ninputs, 1)],
+                              'Initial input: ', squeeze=True)
+    xf = _check_convert_array(xf, [(sys.nstates,), (sys.nstates, 1)],
+                              'Final state: ' , squeeze=True)
+    uf = _check_convert_array(uf, [(sys.ninputs,), (sys.ninputs, 1)],
+                              'Final input: ', squeeze=True)
 
     # Process final time
     timepts = np.atleast_1d(timepts)
@@ -307,11 +311,16 @@ def point_to_point(
 
     # If no basis set was specified, use a polynomial basis (poor choice...)
     if basis is None:
-        basis = PolyFamily(2*sys.nstates)
+        basis = PolyFamily(2 * (sys.nstates + sys.ninputs))
 
     # Make sure we have enough basis functions to solve the problem
     if basis.N * sys.ninputs < 2 * (sys.nstates + sys.ninputs):
         raise ValueError("basis set is too small")
+    elif (cost is not None or constraints is not None) and \
+         basis.N * sys.ninputs == 2 * (sys.nstates + sys.ninputs):
+        warnings.warn("minimal basis specified; optimization not possible")
+        cost = None
+        constraints = None
 
     #
     # Map the initial and final conditions to flat output conditions
@@ -380,14 +389,18 @@ def point_to_point(
     # scipy.optimize.minimize().
     #
 
-    # Look to see if we have costs, constraints, or both
-    if cost is None and constraints is None:
-        # Unconstrained => solve a least squares problem
-        alpha, residuals, rank, s = np.linalg.lstsq(M, Z, rcond=None)
+    # Start by solving the least squares problem
+    alpha, residuals, rank, s = np.linalg.lstsq(M, Z, rcond=None)
 
-    else:
+    if cost is not None or constraints is not None:
+        # Search over the null space to minimize cost/satisfy constraints
+        N = sp.linalg.null_space(M)
+
         # Define a function to evaluate the cost along a trajectory
-        def traj_cost(coeffs):
+        def traj_cost(null_coeffs):
+            # Add this to the existing solution
+            coeffs = alpha + N @ null_coeffs
+
             # Evaluate the costs at the listed time points
             costval = 0
             for t in timepts:
@@ -418,9 +431,11 @@ def point_to_point(
             traj_cost = lambda coeffs: coeffs @ coeffs
 
         # Process the constraints we were given
+        traj_constraints = constraints
         if constraints is None:
             traj_constraints = []
         elif isinstance(constraints, tuple):
+            # TODO: Check to make sure this is really a constraint
             traj_constraints = [constraints]
         elif not isinstance(constraints, list):
             raise TypeError("trajectory constraints must be a list")
@@ -429,7 +444,10 @@ def point_to_point(
         minimize_constraints = []
         if len(traj_constraints) > 0:
             # Set up a nonlinear function to evaluate the constraints
-            def traj_const(coeffs):
+            def traj_const(null_coeffs):
+                # Add this to the existing solution
+                coeffs = alpha + N @ null_coeffs
+
                 # Evaluate the constraints at the listed time points
                 values = []
                 for i, t in enumerate(timepts):
@@ -479,11 +497,11 @@ def point_to_point(
                 traj_const, const_lb, const_ub)]
 
         # Add initial and terminal constraints
-        minimize_constraints += [sp.optimize.LinearConstraint(M, Z, Z)]
+        # minimize_constraints += [sp.optimize.LinearConstraint(M, Z, Z)]
 
         # Process the initial condition
         if initial_guess is None:
-            initial_guess = np.zeros(basis.N * sys.ninputs)
+            initial_guess = np.zeros(basis.N * sys.ninputs - 2 * flag_tot)
         else:
             raise NotImplementedError("Initial guess not yet implemented.")
 
@@ -492,9 +510,11 @@ def point_to_point(
             traj_cost, initial_guess, constraints=minimize_constraints,
             **minimize_kwargs)
         if res.success:
-            alpha = res.x
+            alpha += N @ res.x
         else:
-            raise RuntimeError("Can't solve optimization problem")
+            raise RuntimeError(
+                "Unable to solve optimal control problem\n" +
+                "scipy.optimize.minimize returned "  + res.message)
 
     #
     # Transform the trajectory from flat outputs to states and inputs

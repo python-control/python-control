@@ -122,16 +122,20 @@ class TestFlatSys:
                 vehicle_flat, T, ud, x0, return_x=True)
             np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
 
-    def test_kinematic_car_cost_constr(self, vehicle_flat):
+    def test_flat_cost_constr(self):
+        # Double integrator system
+        sys = ct.ss([[0, 1], [0, 0]], [[0], [1]], [[1, 0]], 0)
+        flat_sys = fs.LinearFlatSystem(sys)
+
         # Define the endpoints of the trajectory
-        x0 = [0., -2., 0.]; u0 = [10., 0.]
-        xf = [100., 2., 0.]; uf = [10., 0.]
+        x0 = [1, 0]; u0 = [0]
+        xf = [0, 0]; uf = [0]
         Tf = 10
         T = np.linspace(0, Tf, 500)
 
         # Find trajectory between initial and final conditions
         traj = fs.point_to_point(
-            vehicle_flat, Tf, x0, u0, xf, uf, basis=fs.PolyFamily(6))
+            flat_sys, Tf, x0, u0, xf, uf, basis=fs.PolyFamily(8))
         x, u = traj.eval(T)
 
         np.testing.assert_array_almost_equal(x0, x[:, 0])
@@ -142,11 +146,13 @@ class TestFlatSys:
         # Solve with a cost function
         timepts = np.linspace(0, Tf, 10)
         cost_fcn = opt.quadratic_cost(
-            vehicle_flat, np.diag([0, 0.1, 0]), np.diag([0.1, 1]), x0=xf, u0=uf)
+            flat_sys, np.diag([0, 0]), 1, x0=xf, u0=uf)
 
         traj_cost = fs.point_to_point(
-            vehicle_flat, timepts, x0, u0, xf, uf, cost=cost_fcn,
-            basis=fs.PolyFamily(8)
+            flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
+            basis=fs.PolyFamily(8),
+            # initial_guess='lstsq',
+            # minimize_kwargs={'method': 'trust-constr'}
         )
 
         # Verify that the trajectory computation is correct
@@ -159,22 +165,18 @@ class TestFlatSys:
         # Make sure that we got a different answer than before
         assert np.any(np.abs(x - x_cost) > 0.1)
 
-        # Make sure that the previous computation had large y deviation
-        assert np.any(x_cost[1, :] > 2.6)
-
         # Re-solve with constraint on the y deviation
-        # timepts = np.array([0, 0.5*Tf, 0.8*Tf, Tf])
-        constraints = (
-            sp.optimize.LinearConstraint,
-            np.array([[0, 1, 0, 0, 0]]), -2.6, 2.6)
+        lb, ub = [-2, -0.1], [2, 0]
+        lb, ub = [-2, np.min(x_cost[1])*0.95], [2, 1]
+        constraints = [opt.state_range_constraint(flat_sys, lb, ub)]
+
+        # Make sure that the previous solution violated at least one constraint
+        assert np.any(x_cost[0, :] < lb[0]) or np.any(x_cost[0, :] > ub[0]) \
+            or np.any(x_cost[1, :] < lb[1]) or np.any(x_cost[1, :] > ub[1])
+
         traj_const = fs.point_to_point(
-            vehicle_flat, timepts, x0, u0, xf, uf, cost=cost_fcn,
+            flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
             constraints=constraints, basis=fs.PolyFamily(8),
-            # minimize_kwargs={
-            #     'method': 'trust-constr',
-            #     'options': {'finite_diff_rel_step': 0.01},
-            #     # 'hess': lambda x: np.zeros((x.size, x.size))
-            # }
         )
 
         # Verify that the trajectory computation is correct
@@ -184,8 +186,10 @@ class TestFlatSys:
         np.testing.assert_array_almost_equal(xf, x_const[:, -1])
         np.testing.assert_array_almost_equal(uf, u_const[:, -1])
 
-        # Make sure that the solution respects the bounds
-        assert np.any(x_const[:, 1] < 2.6)
+        # Make sure that the solution respects the bounds (with some slop)
+        for i in range(x_const.shape[0]):
+            assert np.all(x_const[i] >= lb[i] * 1.02)
+            assert np.all(x_const[i] <= ub[i] * 1.02)
 
     def test_bezier_basis(self):
         bezier = fs.BezierFamily(4)
@@ -223,3 +227,43 @@ class TestFlatSys:
         # Exception check
         with pytest.raises(ValueError, match="index too high"):
             bezier.eval_deriv(4, 0, time)
+
+    def test_point_to_point_errors(self):
+        """Test error and warning conditions in point_to_point()"""
+        # Double integrator system
+        sys = ct.ss([[0, 1], [0, 0]], [[0], [1]], [[1, 0]], 0)
+        flat_sys = fs.LinearFlatSystem(sys)
+
+        # Define the endpoints of the trajectory
+        x0 = [1, 0]; u0 = [0]
+        xf = [0, 0]; uf = [0]
+        Tf = 10
+        T = np.linspace(0, Tf, 500)
+
+        # Cost function
+        timepts = np.linspace(0, Tf, 10)
+        cost_fcn = opt.quadratic_cost(
+            flat_sys, np.diag([1, 1]), 1, x0=xf, u0=uf)
+
+        # Try to optimize with insufficient degrees of freedom
+        with pytest.warns(UserWarning, match="optimization not possible"):
+            traj = fs.point_to_point(
+                flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
+                basis=fs.PolyFamily(6))
+
+        # Make sure we still solved the problem
+        x, u = traj.eval(timepts)
+        np.testing.assert_array_almost_equal(x0, x[:, 0])
+        np.testing.assert_array_almost_equal(u0, u[:, 0])
+        np.testing.assert_array_almost_equal(xf, x[:, -1])
+        np.testing.assert_array_almost_equal(uf, u[:, -1])
+
+        # Solve with the errors in the various input arguments
+        with pytest.raises(ValueError, match="Initial state: Wrong shape"):
+            traj = fs.point_to_point(flat_sys, timepts, np.zeros(3), u0, xf, uf)
+        with pytest.raises(ValueError, match="Initial input: Wrong shape"):
+            traj = fs.point_to_point(flat_sys, timepts, x0, np.zeros(3), xf, uf)
+        with pytest.raises(ValueError, match="Final state: Wrong shape"):
+            traj = fs.point_to_point(flat_sys, timepts, x0, u0, np.zeros(3), uf)
+        with pytest.raises(ValueError, match="Final input: Wrong shape"):
+            traj = fs.point_to_point(flat_sys, timepts, x0, u0, xf, np.zeros(3))

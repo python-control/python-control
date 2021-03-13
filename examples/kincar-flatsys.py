@@ -12,6 +12,9 @@ import control as ct
 import control.flatsys as fs
 import control.optimal as opt
 
+#
+# System model and utility functions
+#
 
 # Function to take states, inputs and return the flat flag
 def vehicle_flat_forward(x, u, params={}):
@@ -60,7 +63,6 @@ def vehicle_flat_reverse(zflag, params={}):
 
     return x, u
 
-
 # Function to compute the RHS of the system dynamics
 def vehicle_update(t, x, u, params):
     b = params.get('wheelbase', 3.)             # get parameter values
@@ -70,36 +72,6 @@ def vehicle_update(t, x, u, params):
         (u[0]/b) * np.tan(u[1])
     ])
     return dx
-
-
-# Create differentially flat input/output system
-vehicle_flat = fs.FlatSystem(
-    vehicle_flat_forward, vehicle_flat_reverse, vehicle_update,
-    inputs=('v', 'delta'), outputs=('x', 'y', 'theta'),
-    states=('x', 'y', 'theta'))
-
-# Define the endpoints of the trajectory
-x0 = [0., -2., 0.]; u0 = [10., 0.]
-xf = [40., 2., 0.]; uf = [10., 0.]
-Tf = 4
-
-# Define a set of basis functions to use for the trajectories
-poly = fs.PolyFamily(6)
-
-# Find a trajectory between the initial condition and the final condition
-traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
-
-# Create the desired trajectory between the initial and final condition
-T = np.linspace(0, Tf, 500)
-xd, ud = traj.eval(T)
-
-# Simulation the open system dynamics with the full input
-t, y, x = ct.input_output_response(
-    vehicle_flat, T, ud, x0, return_x=True)
-
-# Plot the open loop system dynamics
-plt.figure(1)
-plt.suptitle("Open loop trajectory for kinematic car lane change")
 
 # Plot the trajectory in xy coordinates
 def plot_results(t, x, ud):
@@ -129,25 +101,81 @@ def plot_results(t, x, ud):
     plt.xlabel('Ttime t [sec]')
     plt.ylabel('$\delta$ [rad]')
     plt.tight_layout()
+
+#
+# Approach 1: point to point solution, no cost or constraints
+#
+
+# Create differentially flat input/output system
+vehicle_flat = fs.FlatSystem(
+    vehicle_flat_forward, vehicle_flat_reverse, vehicle_update,
+    inputs=('v', 'delta'), outputs=('x', 'y', 'theta'),
+    states=('x', 'y', 'theta'))
+
+# Define the endpoints of the trajectory
+x0 = [0., -2., 0.]; u0 = [10., 0.]
+xf = [40., 2., 0.]; uf = [10., 0.]
+Tf = 4
+
+# Define a set of basis functions to use for the trajectories
+poly = fs.PolyFamily(6)
+
+# Find a trajectory between the initial condition and the final condition
+traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
+
+# Create the desired trajectory between the initial and final condition
+T = np.linspace(0, Tf, 500)
+xd, ud = traj.eval(T)
+
+# Simulation the open system dynamics with the full input
+t, y, x = ct.input_output_response(
+    vehicle_flat, T, ud, x0, return_x=True)
+
+# Plot the open loop system dynamics
+plt.figure(1)
+plt.suptitle("Open loop trajectory for kinematic car lane change")
 plot_results(t, x, ud)
 
-# Resolve using a different basis and a cost function
+#
+# Approach #2: add cost function to make lane change quicker
+#
 
-# Define cost and constraints
+# Define timepoints for evaluation plus basis function to use
 timepts = np.linspace(0, Tf, 10)
-bezier = fs.BezierFamily(8)
-traj_cost = opt.quadratic_cost(
-    vehicle_flat, None, np.diag([0.1, 1]), u0=uf)
-constraints = [
-    opt.input_range_constraint(vehicle_flat, [8, -0.1], [12, 0.1]) ]
+basis = fs.PolyFamily(8)
 
+# Define the cost function (penalize lateral error and steering)
+traj_cost = opt.quadratic_cost(
+    vehicle_flat, np.diag([0, 0.1, 0]), np.diag([0.1, 1]), x0=xf, u0=uf)
+
+# Solve for an optimal solution
 traj = fs.point_to_point(
-    vehicle_flat, timepts, x0, u0, xf, uf, cost=traj_cost, basis=bezier,
+    vehicle_flat, timepts, x0, u0, xf, uf, cost=traj_cost, basis=basis,
 )
 xd, ud = traj.eval(T)
 
 plt.figure(2)
-plt.suptitle("Open loop trajectory for lane change with input penalty")
+plt.suptitle("Lane change with lateral error + steering penalties")
+plot_results(T, xd, ud)
+
+#
+# Approach #3: optimal cost with trajectory constraints
+#
+# Resolve the problem with constraints on the inputs
+#
+
+constraints = [
+    opt.input_range_constraint(vehicle_flat, [8, -0.1], [12, 0.1]) ]
+
+# Solve for an optimal solution
+traj = fs.point_to_point(
+    vehicle_flat, timepts, x0, u0, xf, uf, cost=traj_cost,
+    constraints=constraints, basis=basis,
+)
+xd, ud = traj.eval(T)
+
+plt.figure(3)
+plt.suptitle("Lane change with penalty + steering constraints")
 plot_results(T, xd, ud)
 
 # Show the results unless we are running in batch mode

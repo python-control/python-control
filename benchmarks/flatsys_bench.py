@@ -94,7 +94,8 @@ def time_steering_cost():
         opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
 
     traj = flat.point_to_point(
-        vehicle, timepts, x0, u0, xf, uf, cost=traj_cost
+        vehicle, timepts, x0, u0, xf, uf,
+        cost=traj_cost, constraints=constraints, basis=flat.PolyFamily(8)
     )
 
     # Verify that the trajectory computation is correct
@@ -103,40 +104,4 @@ def time_steering_cost():
     np.testing.assert_array_almost_equal(u0, u[:, 0])
     np.testing.assert_array_almost_equal(xf, x[:, 1])
     np.testing.assert_array_almost_equal(uf, u[:, 1])
-
-def skip_steering_bezier_basis(nbasis, ntimes):
-    # Set up costs and constriants
-    Q = np.diag([.1, 10, .1])           # keep lateral error low
-    R = np.diag([1, 1])                 # minimize applied inputs
-    cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
-    constraints = [ opt.input_range_constraint(vehicle, [0, -0.1], [20, 0.1]) ]
-    terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
-
-    # Set up horizon
-    horizon = np.linspace(0, Tf, ntimes, endpoint=True)
-
-    # Set up the optimal control problem
-    res = opt.solve_ocp(
-        vehicle, horizon, x0, cost,
-        constraints,
-        terminal_constraints=terminal,
-        initial_guess=bend_left,
-        basis=flat.BezierFamily(nbasis, T=Tf),
-        # solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
-        minimize_method='trust-constr',
-        minimize_options={'finite_diff_rel_step': 0.01},
-        # minimize_method='SLSQP', minimize_options={'eps': 0.01},
-        return_states=True, print_summary=False
-    )
-    t, u, x = res.time, res.inputs, res.states
-
-    # Make sure we found a valid solution
-    assert res.success
-
-# Reset the timeout value to allow for longer runs
-skip_steering_bezier_basis.timeout = 120
-
-# Set the parameter values for the number of times and basis vectors
-skip_steering_bezier_basis.param_names = ['nbasis', 'ntimes']
-skip_steering_bezier_basis.params = ([2, 4, 6], [5, 10, 20])
 

@@ -459,7 +459,7 @@ def test_optimal_basis_simple():
         sys, time, x0, cost, constraints, initial_guess=0.99*res1.inputs,
         basis=flat.BezierFamily(4, Tf), return_x=True)
     assert res2.success
-    np.testing.assert_almost_equal(res2.inputs, res1.inputs, decimal=3)
+    np.testing.assert_allclose(res2.inputs, res1.inputs, atol=0.01, rtol=0.01)
 
     # Run with logging turned on for code coverage
     res3 = opt.solve_ocp(
