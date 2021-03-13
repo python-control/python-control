@@ -191,6 +191,17 @@ class TestFlatSys:
             assert np.all(x_const[i] >= lb[i] * 1.02)
             assert np.all(x_const[i] <= ub[i] * 1.02)
 
+        # Solve the same problem with a nonlinear constraint type
+        nl_constraints = [
+            (sp.optimize.NonlinearConstraint, lambda x, u: x, lb, ub)]
+        traj_nlconst = fs.point_to_point(
+            flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
+            constraints=nl_constraints, basis=fs.PolyFamily(8),
+        )
+        x_nlconst, u_nlconst = traj_nlconst.eval(T)
+        np.testing.assert_almost_equal(x_const, x_nlconst)
+        np.testing.assert_almost_equal(u_const, u_nlconst)
+
     def test_bezier_basis(self):
         bezier = fs.BezierFamily(4)
         time = np.linspace(0, 1, 100)
@@ -245,6 +256,26 @@ class TestFlatSys:
         cost_fcn = opt.quadratic_cost(
             flat_sys, np.diag([1, 1]), 1, x0=xf, u0=uf)
 
+        # Solving without basis specified should be OK
+        traj = fs.point_to_point(flat_sys, timepts, x0, u0, xf, uf)
+        x, u = traj.eval(timepts)
+        np.testing.assert_array_almost_equal(x0, x[:, 0])
+        np.testing.assert_array_almost_equal(u0, u[:, 0])
+        np.testing.assert_array_almost_equal(xf, x[:, -1])
+        np.testing.assert_array_almost_equal(uf, u[:, -1])
+
+        # Adding a cost function generates a warning
+        with pytest.warns(UserWarning, match="optimization not possible"):
+            traj = fs.point_to_point(
+                flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn)
+
+        # Make sure we still solved the problem
+        x, u = traj.eval(timepts)
+        np.testing.assert_array_almost_equal(x0, x[:, 0])
+        np.testing.assert_array_almost_equal(u0, u[:, 0])
+        np.testing.assert_array_almost_equal(xf, x[:, -1])
+        np.testing.assert_array_almost_equal(uf, u[:, -1])
+
         # Try to optimize with insufficient degrees of freedom
         with pytest.warns(UserWarning, match="optimization not possible"):
             traj = fs.point_to_point(
@@ -267,3 +298,36 @@ class TestFlatSys:
             traj = fs.point_to_point(flat_sys, timepts, x0, u0, np.zeros(3), uf)
         with pytest.raises(ValueError, match="Final input: Wrong shape"):
             traj = fs.point_to_point(flat_sys, timepts, x0, u0, xf, np.zeros(3))
+
+        # Different ways of describing constraints
+        constraint =  opt.input_range_constraint(flat_sys, -100, 100)
+
+        with pytest.warns(UserWarning, match="optimization not possible"):
+            traj = fs.point_to_point(
+                flat_sys, timepts, x0, u0, xf, uf, constraints=constraint,
+                basis=fs.PolyFamily(6))
+
+        x, u = traj.eval(timepts)
+        np.testing.assert_array_almost_equal(x0, x[:, 0])
+        np.testing.assert_array_almost_equal(u0, u[:, 0])
+        np.testing.assert_array_almost_equal(xf, x[:, -1])
+        np.testing.assert_array_almost_equal(uf, u[:, -1])
+
+        # Constraint that isn't a constraint
+        with pytest.raises(TypeError, match="must be a list"):
+            traj = fs.point_to_point(
+                flat_sys, timepts, x0, u0, xf, uf, constraints=np.eye(2),
+                basis=fs.PolyFamily(8))
+
+        # Unknown constraint type
+        with pytest.raises(TypeError, match="unknown constraint type"):
+            traj = fs.point_to_point(
+                flat_sys, timepts, x0, u0, xf, uf,
+                constraints=[(None, 0, 0, 0)], basis=fs.PolyFamily(8))
+
+        # Unsolvable optimization
+        constraint = [opt.input_range_constraint(flat_sys, -0.01, 0.01)]
+        with pytest.raises(RuntimeError, match="Unable to solve optimal"):
+            traj = fs.point_to_point(
+                flat_sys, timepts, x0, u0, xf, uf, constraints=constraint,
+                basis=fs.PolyFamily(8))

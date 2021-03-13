@@ -479,8 +479,8 @@ def point_to_point(
                         elif type == sp.optimize.NonlinearConstraint:
                             values.append(fun(states, inputs))
                         else:
-                            raise TypeError("unknown constraint type %s" %
-                                                constraint[0])
+                            raise TypeError(
+                                "unknown constraint type %s" % type)
                 return np.array(values).flatten()
 
             # Store upper and lower bounds
