@@ -51,6 +51,7 @@ $Id$
 """
 
 import math
+from warnings import warn
 import numpy as np
 import scipy as sp
 from . import xferfcn
@@ -207,7 +208,7 @@ def _poly_z_wstab(num, den, num_inv_zp, den_inv_zq, p_q, dt, epsw):
 
     return z, w
 
-def _numerical_inaccuracy(sys):
+def _likely_numerical_inaccuracy(sys):
     # crude, conservative check for if
     # num(z)*num(1/z) << den(z)*den(1/z) for DT systems
     num, den, num_inv_zp, den_inv_zq, p_q, dt = _poly_z_invz(sys)
@@ -334,7 +335,9 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
     elif method == 'best':
         # convert to FRD if anticipated numerical issues
         if isinstance(sys, xferfcn.TransferFunction) and not sys.isctime():
-            if _numerical_inaccuracy(sys):
+            if _likely_numerical_inaccuracy(sys):
+                warn("stability_margins: Falling back to 'frd' method "
+                "because of chance of numerical inaccuracy in 'poly' method.")
                 omega_sys = freqplot._default_frequency_range(sys)
                 omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
                 sys = frdata.FRD(sys, omega_sys, smooth=True)
