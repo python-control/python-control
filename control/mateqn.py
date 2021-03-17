@@ -5,9 +5,6 @@
 #
 # Author: Bjorn Olofsson
 
-# Python 3 compatibility (needs to go here)
-from __future__ import print_function
-
 # Copyright (c) 2011, All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -43,6 +40,34 @@ from numpy import shape, size, asarray, copy, zeros, eye, dot, \
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
 from .statesp import _ssmatrix
+
+# Make sure we have access to the right slycot routines
+try:
+    from slycot import sb03md57
+    # wrap without the deprecation warning
+    def sb03md(n, C, A, U, dico, job='X',fact='N',trana='N',ldwork=None):
+        ret = sb03md57(A, U, C, dico, job, fact, trana, ldwork)
+        return ret[2:]
+except ImportError:
+    try:
+        from slycot import sb03md
+    except ImportError:
+        sb03md = None
+
+try:
+    from slycot import sb04md
+except ImportError:
+    sb04md = None
+
+try:
+    from slycot import sb04qd
+except ImportError:
+    sb0qmd = None
+
+try:
+    from slycot import sg03ad
+except ImportError:
+    sb04ad = None
 
 __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
@@ -93,16 +118,11 @@ def lyap(A, Q, C=None, E=None):
     state space operations.  See :func:`~control.use_numpy_matrix`.
     """
 
-    # Make sure we have access to the right slycot routines
-    try:
-        from slycot import sb03md
-    except ImportError:
+    if sb03md is None:
         raise ControlSlycot("can't find slycot module 'sb03md'")
-
-    try:
-        from slycot import sb04md
-    except ImportError:
+    if sb04md is None:
         raise ControlSlycot("can't find slycot module 'sb04md'")
+
 
     # Reshape 1-d arrays
     if len(shape(A)) == 1:
@@ -279,19 +299,11 @@ def dlyap(A, Q, C=None, E=None):
     of the same dimension. """
 
     # Make sure we have access to the right slycot routines
-    try:
-        from slycot import sb03md
-    except ImportError:
+    if sb03md is None:
         raise ControlSlycot("can't find slycot module 'sb03md'")
-
-    try:
-        from slycot import sb04qd
-    except ImportError:
+    if sb04qd is None:
         raise ControlSlycot("can't find slycot module 'sb04qd'")
-
-    try:
-        from slycot import sg03ad
-    except ImportError:
+    if sg03ad is None:
         raise ControlSlycot("can't find slycot module 'sg03ad'")
 
     # Reshape 1-d arrays
