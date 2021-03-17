@@ -104,7 +104,6 @@ def test_margin_sys(tsys):
     out = margin(sys)
     assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
-
 def test_margin_3input(tsys):
     sys, refout, refoutall = tsys
     """Test margin() function with mag, phase, omega input"""
@@ -339,11 +338,11 @@ def test_zmore_stability_margins(tsys_zmore):
     'ref,'
     'rtol',
     [( # gh-465
-      [2], [1, 3, 2, 0], 1e-2,  
+      [2], [1, 3, 2, 0], 1e-2,
       [2.9558, 32.390, 0.43584, 1.4037, 0.74951, 0.97079],
       2e-3), # the gradient of the function reduces numerical precision
      ( # 2/(s+1)**3
-      [2], [1, 3, 3, 1], .1,  
+      [2], [1, 3, 3, 1], .1,
       [3.4927, 65.4212, 0.5763, 1.6283, 0.76625, 1.2019],
       1e-4),
      ( # gh-523
@@ -354,5 +353,24 @@ def test_zmore_stability_margins(tsys_zmore):
 def test_stability_margins_discrete(cnum, cden, dt, ref, rtol):
     """Test stability_margins with discrete TF input"""
     tf = TransferFunction(cnum, cden).sample(dt)
-    out = stability_margins(tf)
+    out = stability_margins(tf, method='poly')
     assert_allclose(out, ref, rtol=rtol)
+
+
+def test_stability_margins_methods():
+    # the following system gives slightly inaccurate result for DT systems
+    # because of numerical issues
+    omegan = 1
+    zeta = 0.5
+    resonance = TransferFunction(omegan**2, [1, 2*zeta*omegan, omegan**2])
+    omegan2 = 100
+    resonance2 = TransferFunction(omegan2**2, [1, 2*zeta*omegan2, omegan2**2])
+    sys = 5 * resonance * resonance2
+    sysd = sys.sample(0.001, 'zoh')
+    """Test stability_margins() function with different methods"""
+    out = stability_margins(sysd, method='best')
+    # confirm getting reasonable results using FRD method
+    assert_allclose(
+        (18.876634740386308, 26.356358386241055, 0.40684127995261044,
+         9.763585494645046, 2.3293357226374805, 2.55985695034263),
+        stability_margins(sysd, method='frd'), rtol=1e-5)
