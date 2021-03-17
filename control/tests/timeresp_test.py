@@ -193,7 +193,7 @@ class TestTimeresp:
     def no_pole_cancellation(self):
         return TransferFunction([1.881e+06],
                                 [188.1, 1.881e+06])
-    
+
     @pytest.fixture
     def siso_tf_type1(self):
         # System Type 1 - Step response not stationary:  G(s)=1/s(s+1)
@@ -309,36 +309,6 @@ class TestTimeresp:
         t, y = step_response(sys)
         np.testing.assert_array_equal(y, np.ones(len(t)))
 
-    def test_step_info(self):
-        # From matlab docs:
-        sys = TransferFunction([1, 5, 5], [1, 1.65, 5, 6.5, 2])
-        Strue = {
-            'RiseTime': 3.8456,
-            'SettlingTime': 27.9762,
-            'SettlingMin': 2.0689,
-            'SettlingMax': 2.6873,
-            'Overshoot': 7.4915,
-            'Undershoot': 0,
-            'Peak': 2.6873,
-            'PeakTime': 8.0530,
-            'SteadyStateValue': 2.50
-        }
-
-        S = step_info(sys)
-
-        Sk = sorted(S.keys())
-        Sktrue = sorted(Strue.keys())
-        assert Sk == Sktrue
-        # Very arbitrary tolerance because I don't know if the
-        # response from the MATLAB is really that accurate.
-        # maybe it is a good idea to change the Strue to match
-        # but I didn't do it because I don't know if it is
-        # accurate either...
-        rtol = 2e-2
-        np.testing.assert_allclose([S[k] for k in Sk],
-                                   [Strue[k] for k in Sktrue],
-                                   rtol=rtol)
-
     # tolerance for all parameters could be wrong for some systems
     # discrete systems time parameters tolerance could be +/-dt
     @pytest.mark.parametrize(
@@ -394,17 +364,21 @@ class TestTimeresp:
              'SteadyStateValue': np.NaN}, 2e-2)],
         indirect=["tsystem"])
     def test_step_info(self, tsystem, info_true, tolerance):
-        """  """
+        """Test step info for SISO systems"""
         info = step_info(tsystem)
 
         info_true_sorted = sorted(info_true.keys())
         info_sorted = sorted(info.keys())
-
         assert info_sorted == info_true_sorted
 
-        np.testing.assert_allclose([info_true[k] for k in info_true_sorted],
-                                   [info[k] for k in info_sorted],
-                                   rtol=tolerance)
+        for k in info:
+            np.testing.assert_allclose(info[k], info_true[k], rtol=tolerance,
+                                       err_msg=f"key {k} does not match")
+
+    def test_step_info_mimo(self, tsystem, info_true, tolearance):
+        """Test step info for MIMO systems"""
+        # TODO: implement
+        pass
 
     def test_step_pole_cancellation(self, pole_cancellation,
                                     no_pole_cancellation):
