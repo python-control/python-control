@@ -339,8 +339,8 @@ class TestTimeresp:
                                    [Strue[k] for k in Sktrue],
                                    rtol=rtol)
 
- # tolerance for all parameters could be wrong for some systems ej: discrete systems time parameters tolerance
-    # could be +/-dt
+    # tolerance for all parameters could be wrong for some systems
+    # discrete systems time parameters tolerance could be +/-dt
     @pytest.mark.parametrize(
         "tsystem, info_true, tolerance",
         [("tf1_matlab_help", {
