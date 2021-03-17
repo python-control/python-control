@@ -193,6 +193,35 @@ class TestTimeresp:
     def no_pole_cancellation(self):
         return TransferFunction([1.881e+06],
                                 [188.1, 1.881e+06])
+    
+    @pytest.fixture
+    def siso_tf_type1(self):
+        # System Type 1 - Step response not stationary:  G(s)=1/s(s+1)
+        return TransferFunction(1, [1, 1, 0])
+
+    @pytest.fixture
+    def siso_tf_kpos(self):
+        # SISO under shoot response and positive final value G(s)=(-s+1)/(s²+s+1)
+        return TransferFunction([-1, 1], [1, 1, 1])
+
+    @pytest.fixture
+    def siso_tf_kneg(self):
+        # SISO under shoot response and negative final value k=-1 G(s)=-(-s+1)/(s²+s+1)
+        return TransferFunction([1, -1], [1, 1, 1])
+
+    @pytest.fixture
+    def tf1_matlab_help(self):
+        # example from matlab online help https://www.mathworks.com/help/control/ref/stepinfo.html
+        return TransferFunction([1, 5, 5], [1, 1.65, 5, 6.5, 2])
+
+    @pytest.fixture
+    def tf2_matlab_help(self):
+        A = [[0.68, - 0.34], [0.34, 0.68]]
+        B = [[0.18], [0.04]]
+        C = [-1.12, - 1.10]
+        D = [0.06]
+        sys = StateSpace(A, B, C, D, 0.2)
+        return sys
 
     @pytest.fixture
     def tsystem(self,
@@ -202,7 +231,9 @@ class TestTimeresp:
                 siso_dtf0, siso_dtf1, siso_dtf2,
                 siso_dss1, siso_dss2,
                 mimo_dss1, mimo_dss2, mimo_dtf1,
-                pole_cancellation, no_pole_cancellation):
+                pole_cancellation, no_pole_cancellation, siso_tf_type1,
+                siso_tf_kpos, siso_tf_kneg, tf1_matlab_help,
+                tf2_matlab_help):
         systems = {"siso_ss1": siso_ss1,
                    "siso_ss2": siso_ss2,
                    "siso_tf1": siso_tf1,
@@ -220,6 +251,11 @@ class TestTimeresp:
                    "mimo_dtf1": mimo_dtf1,
                    "pole_cancellation": pole_cancellation,
                    "no_pole_cancellation": no_pole_cancellation,
+                   "siso_tf_type1": siso_tf_type1,
+                   "siso_tf_kpos": siso_tf_kpos,
+                   "siso_tf_kneg": siso_tf_kneg,
+                   "tf1_matlab_help": tf1_matlab_help,
+                   "tf2_matlab_help": tf2_matlab_help,
                    }
         return systems[request.param]
 
@@ -302,6 +338,73 @@ class TestTimeresp:
         np.testing.assert_allclose([S[k] for k in Sk],
                                    [Strue[k] for k in Sktrue],
                                    rtol=rtol)
+
+    # tolerance for all parameters could be wrong for some systems
+    # discrete systems time parameters tolerance could be +/-dt
+    @pytest.mark.parametrize(
+        "tsystem, info_true, tolerance",
+        [("tf1_matlab_help", {
+            'RiseTime': 3.8456,
+            'SettlingTime': 27.9762,
+            'SettlingMin': 2.0689,
+            'SettlingMax': 2.6873,
+            'Overshoot': 7.4915,
+            'Undershoot': 0,
+            'Peak': 2.6873,
+            'PeakTime': 8.0530,
+            'SteadyStateValue': 2.5}, 2e-2),
+         ("tf2_matlab_help", {
+             'RiseTime': 0.4000,
+             'SettlingTime': 2.8000,
+             'SettlingMin': -0.6724,
+             'SettlingMax': -0.5188,
+             'Overshoot': 24.6476,
+             'Undershoot': 11.1224,
+             'Peak': 0.6724,
+             'PeakTime': 1,
+             'SteadyStateValue': -0.5394}, .2),
+         ("siso_tf_kpos", {
+             'RiseTime': 1.242,
+             'SettlingTime': 9.110,
+             'SettlingMin': 0.950,
+             'SettlingMax': 1.208,
+             'Overshoot': 20.840,
+             'Undershoot': 27.840,
+             'Peak': 1.208,
+             'PeakTime': 4.282,
+             'SteadyStateValue': 1.0}, 2e-2),
+         ("siso_tf_kneg", {
+             'RiseTime': 1.242,
+             'SettlingTime': 9.110,
+             'SettlingMin': -1.208,
+             'SettlingMax': -0.950,
+             'Overshoot': 20.840,
+             'Undershoot': 27.840,
+             'Peak': 1.208,
+             'PeakTime': 4.282,
+             'SteadyStateValue': -1.0}, 2e-2),
+         ("siso_tf_type1", {'RiseTime': np.NaN,
+             'SettlingTime': np.NaN,
+             'SettlingMin': np.NaN,
+             'SettlingMax': np.NaN,
+             'Overshoot': np.NaN,
+             'Undershoot': np.NaN,
+             'Peak': np.Inf,
+             'PeakTime': np.Inf,
+             'SteadyStateValue': np.NaN}, 2e-2)],
+        indirect=["tsystem"])
+    def test_step_info(self, tsystem, info_true, tolerance):
+        """  """
+        info = step_info(tsystem)
+
+        info_true_sorted = sorted(info_true.keys())
+        info_sorted = sorted(info.keys())
+
+        assert info_sorted == info_true_sorted
+
+        np.testing.assert_allclose([info_true[k] for k in info_true_sorted],
+                                   [info[k] for k in info_sorted],
+                                   rtol=tolerance)
 
     def test_step_pole_cancellation(self, pole_cancellation,
                                     no_pole_cancellation):
