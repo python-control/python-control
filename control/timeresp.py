@@ -793,16 +793,17 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     --------
     >>> info = step_info(sys, T)
     '''
-
-
-    if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
-
-    ret = [[None] * sys.ninputs] * sys.noutputs
+    ret = []
     for i in range(sys.noutputs):
+        retrow = []
         for j in range(sys.ninputs):
             sys_siso = sys[i, j]
-            T, yout = step_response(sys_siso, T)
+            if T is None or np.asarray(T).size == 1:
+                Ti = _default_time_vector(sys_siso, N=T_num, tfinal=T,
+                                          is_step=True)
+            else:
+                Ti = T
+            Ti, yout = step_response(sys_siso, Ti)
 
             # Steady state value
             InfValue = sys_siso.dcgain()
@@ -826,12 +827,12 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
                 tr_upper_index = np.where(
                     sgnInf * (yout - RiseTimeLimits[1] * InfValue) >= 0
                     )[0][0]
-                rise_time = T[tr_upper_index] - T[tr_lower_index]
+                rise_time = Ti[tr_upper_index] - Ti[tr_lower_index]
 
                 # SettlingTime
                 settling_th = np.abs(SettlingTimeThreshold * InfValue)
                 not_settled = np.where(np.abs(yout - InfValue) >= settling_th)
-                settling_time = T[not_settled[0][-1] + 1]
+                settling_time = Ti[not_settled[0][-1] + 1]
 
                 settling_min = (yout[tr_upper_index:]).min()
                 settling_max = (yout[tr_upper_index:]).max()
@@ -855,12 +856,12 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
                 # Peak
                 peak_index = np.abs(yout).argmax()
                 peak_value = np.abs(yout[peak_index])
-                peak_time = T[peak_index]
+                peak_time = Ti[peak_index]
 
                 # SteadyStateValue
                 steady_state_value = InfValue
 
-            ret[i][j] = {
+            retij = {
                 'RiseTime': rise_time,
                 'SettlingTime': settling_time,
                 'SettlingMin': settling_min,
@@ -871,6 +872,9 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
                 'PeakTime': peak_time,
                 'SteadyStateValue': steady_state_value
                 }
+            retrow.append(retij)
+
+        ret.append(retrow)
 
     return ret[0][0] if sys.issiso() else ret
 
