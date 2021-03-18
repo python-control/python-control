@@ -706,20 +706,23 @@ class TestTimeresp:
          (TransferFunction(1, [1, .5, 0]), 25)])         # poles at 0.5 and 0
     def test_auto_generated_time_vector_tfinal(self, tfsys, tfinal):
         """Confirm a TF with a pole at p simulates for tfinal seconds"""
-        np.testing.assert_almost_equal(
-            _ideal_tfinal_and_dt(tfsys)[0], tfinal, decimal=4)
+        ideal_tfinal, ideal_dt = _ideal_tfinal_and_dt(tfsys)
+        np.testing.assert_allclose(ideal_tfinal, tfinal, rtol=1e-4)
+        T = _default_time_vector(tfsys)
+        np.testing.assert_allclose(T[-1], tfinal, atol=0.5*ideal_dt)
 
     @pytest.mark.parametrize("wn, zeta", [(10, 0), (100, 0), (100, .1)])
-    def test_auto_generated_time_vector_dt_cont(self, wn, zeta):
+    def test_auto_generated_time_vector_dt_cont1(self, wn, zeta):
         """Confirm a TF with a natural frequency of wn rad/s gets a
         dt of 1/(ratio*wn)"""
 
         dtref = 0.25133 / wn
 
         tfsys = TransferFunction(1, [1, 2*zeta*wn, wn**2])
-        np.testing.assert_almost_equal(_ideal_tfinal_and_dt(tfsys)[1], dtref)
+        np.testing.assert_almost_equal(_ideal_tfinal_and_dt(tfsys)[1], dtref,
+                                       decimal=5)
 
-    def test_auto_generated_time_vector_dt_cont(self):
+    def test_auto_generated_time_vector_dt_cont2(self):
         """A sampled tf keeps its dt"""
         wn = 100
         zeta = .1
@@ -746,21 +749,23 @@ class TestTimeresp:
     def test_default_timevector_functions_c(self, fun):
         """Test that functions can calculate the time vector automatically"""
         sys = TransferFunction(1, [1, .5, 0])
+        _tfinal, _dt = _ideal_tfinal_and_dt(sys)
 
         # test impose number of time steps
         tout, _ = fun(sys, T_num=10)
         assert len(tout) == 10
 
         # test impose final time
-        tout, _ = fun(sys, 100)
-        np.testing.assert_allclose(tout[-1], 100., atol=0.5)
+        tout, _ = fun(sys, T=100.)
+        np.testing.assert_allclose(tout[-1], 100., atol=0.5*_dt)
 
     @pytest.mark.parametrize("fun", [step_response,
                                      impulse_response,
                                      initial_response])
-    def test_default_timevector_functions_d(self, fun):
+    @pytest.mark.parametrize("dt", [0.1, 0.112])
+    def test_default_timevector_functions_d(self, fun, dt):
         """Test that functions can calculate the time vector automatically"""
-        sys = TransferFunction(1, [1, .5, 0], 0.1)
+        sys = TransferFunction(1, [1, .5, 0], dt)
 
         # test impose number of time steps is ignored with dt given
         tout, _ = fun(sys, T_num=15)
@@ -768,7 +773,7 @@ class TestTimeresp:
 
         # test impose final time
         tout, _ = fun(sys, 100)
-        np.testing.assert_allclose(tout[-1], 100., atol=0.5)
+        np.testing.assert_allclose(tout[-1], 100., atol=0.5*dt)
 
 
     @pytest.mark.parametrize("tsystem",
