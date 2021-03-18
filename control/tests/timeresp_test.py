@@ -469,7 +469,7 @@ class TestTimeresp:
     @pytest.mark.parametrize(
         "tsystem",
         ['mimo_ss_step_matlab',
-         'mimo_tf_step'],
+         pytest.param('mimo_tf_step', marks=slycotonly)],
         indirect=["tsystem"])
     def test_step_info_mimo(self, tsystem):
         """Test step info for MIMO systems"""
