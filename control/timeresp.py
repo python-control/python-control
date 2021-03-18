@@ -1303,16 +1303,18 @@ def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
         # only need to use default_tfinal if not given; N is ignored.
         if tfinal is None:
             # for discrete time, change from ideal_tfinal if N too large/small
-            N = int(np.clip(ideal_tfinal/sys.dt, N_min_dt, N_max))# [N_min, N_max]
-            tfinal = sys.dt * N
+            # [N_min, N_max]
+            N = int(np.clip(np.ceil(ideal_tfinal/sys.dt)+1, N_min_dt, N_max))
+            tfinal = sys.dt * (N-1)
         else:
-            N = int(tfinal/sys.dt)
-            tfinal = N * sys.dt # make tfinal an integer multiple of sys.dt
+            N = int(np.ceil(tfinal/sys.dt)) + 1
+            tfinal = sys.dt * (N-1) # make tfinal an integer multiple of sys.dt
     else:
         if tfinal is None:
             # for continuous time, simulate to ideal_tfinal but limit N
             tfinal = ideal_tfinal
         if N is None:
-            N = int(np.clip(tfinal/ideal_dt, N_min_ct, N_max)) # N<-[N_min, N_max]
+            # [N_min, N_max]
+            N = int(np.clip(np.ceil(tfinal/ideal_dt)+1, N_min_ct, N_max))
 
-    return np.linspace(0, tfinal, N, endpoint=False)
+    return np.linspace(0, tfinal, N, endpoint=True)

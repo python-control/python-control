@@ -68,8 +68,8 @@ class TestSisotool:
 
         # Check the step response before moving the point
         step_response_original = np.array(
-            [0.    , 0.021 , 0.124 , 0.3146, 0.5653, 0.8385, 1.0969, 1.3095,
-             1.4549, 1.5231])
+            [0.    , 0.0216, 0.1271, 0.3215, 0.5762, 0.8522, 1.1114, 1.3221,
+             1.4633, 1.5254])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_original, 4)
 
@@ -113,8 +113,8 @@ class TestSisotool:
 
         # Check if the step response has changed
         step_response_moved = np.array(
-            [0.    , 0.023 , 0.1554, 0.4401, 0.8646, 1.3722, 1.875 , 2.2709,
-              2.4633, 2.3827])
+            [0.    , 0.0237, 0.1596, 0.4511, 0.884 , 1.3985, 1.9031, 2.2922,
+             2.4676, 2.3606])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
 
@@ -157,7 +157,3 @@ class TestSisotool:
         # but 2 input, 1 output should
         with pytest.raises(ControlMIMONotImplemented):
             sisotool(sys221)
-
-
-
-
