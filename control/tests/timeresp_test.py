@@ -222,6 +222,15 @@ class TestTimeresp:
         D = [0.06]
         sys = StateSpace(A, B, C, D, 0.2)
         return sys
+    
+    @pytest.fixture
+    def mimo_matlab_help(self):
+        A = [[0.68, -0.34], [0.34, 0.68]];
+        B = [[0.18, -0.05], [0.04, 0.11]];
+        C = [[0, -1.53], [-1.12, -1.10]];
+        D = [[0, 0], [0.06, -0.37]];
+        sys = StateSpace(A,B,C,D,0.2);
+        return sys
 
     @pytest.fixture
     def tsystem(self,
@@ -233,7 +242,7 @@ class TestTimeresp:
                 mimo_dss1, mimo_dss2, mimo_dtf1,
                 pole_cancellation, no_pole_cancellation, siso_tf_type1,
                 siso_tf_kpos, siso_tf_kneg, tf1_matlab_help,
-                tf2_matlab_help):
+                tf2_matlab_help, mimo_matlab_help):
         systems = {"siso_ss1": siso_ss1,
                    "siso_ss2": siso_ss2,
                    "siso_tf1": siso_tf1,
@@ -256,6 +265,7 @@ class TestTimeresp:
                    "siso_tf_kneg": siso_tf_kneg,
                    "tf1_matlab_help": tf1_matlab_help,
                    "tf2_matlab_help": tf2_matlab_help,
+                   "mimo_matlab_help":mimo_matlab_help,
                    }
         return systems[request.param]
 
@@ -341,6 +351,116 @@ class TestTimeresp:
 
     # tolerance for all parameters could be wrong for some systems
     # discrete systems time parameters tolerance could be +/-dt
+    def test_step_info(self):
+        # From matlab docs:
+        sys = TransferFunction([1, 5, 5], [1, 1.65, 5, 6.5, 2])
+        Strue = {
+            'RiseTime': 3.8456,
+            'SettlingTime': 27.9762,
+            'SettlingMin': 2.0689,
+            'SettlingMax': 2.6873,
+            'Overshoot': 7.4915,
+            'Undershoot': 0,
+            'Peak': 2.6873,
+            'PeakTime': 8.0530,
+            'SteadyStateValue': 2.50
+        }
+
+        S = step_info(sys)
+
+        Sk = sorted(S.keys())
+        Sktrue = sorted(Strue.keys())
+        assert Sk == Sktrue
+        # Very arbitrary tolerance because I don't know if the
+        # response from the MATLAB is really that accurate.
+        # maybe it is a good idea to change the Strue to match
+        # but I didn't do it because I don't know if it is
+        # accurate either...
+        rtol = 2e-2
+        np.testing.assert_allclose([S[k] for k in Sk],
+                                   [Strue[k] for k in Sktrue],
+                                   rtol=rtol)
+
+    def test_step_info_mimo(self):
+        # From matlab docs:
+        A = [[0.68, -0.34], [0.34, 0.68]];
+        B = [[0.18, -0.05], [0.04, 0.11]];
+        C = [[0, -1.53], [-1.12, -1.10]];
+        D = [[0, 0], [0.06, -0.37]];
+        sys = StateSpace(A,B,C,D,0.2);
+
+        Strue = [[{'RiseTime': 0.6000,
+                    'SettlingTime': 3.0,
+                    'SettlingMin': -0.5999,
+                    'SettlingMax': -0.4689,
+                    'Overshoot': 15.5072,
+                    'Undershoot': 0,
+                    'Peak': 0.5999,
+                    'PeakTime': 1.4000,
+                    'SteadyStateValue': -0.51935},
+                    {'RiseTime': 0.0,
+                    'SettlingTime': 3.6000,
+                    'SettlingMin': -0.2797,
+                    'SettlingMax': -0.1043,
+                    'Overshoot': 118.9918,
+                    'Undershoot': 0,
+                    'Peak': 0.2797,
+                    'PeakTime': 0.60000,
+                    'SteadyStateValue': -0.1277}],
+                    [{'RiseTime': 0.40000,
+                    'SettlingTime': 2.8,
+                    'SettlingMin': -0.6724,
+                    'SettlingMax': -0.5188,
+                    'Overshoot': 24.6476,
+                    'Undershoot': 11.1224,
+                    'Peak': 0.6724,
+                    'PeakTime': 1.0,
+                    'SteadyStateValue': -0.5394},
+                    {'RiseTime': 0.0,
+                    'SettlingTime': 3.4,
+                    'SettlingMin': -0.435, #this value is not a result of step_info
+                    'SettlingMax': -0.1485,
+                    'Overshoot': 132.0170,
+                    'Undershoot': 0,
+                    'Peak': 0.4350,
+                    'PeakTime': 0.2,
+                    'SteadyStateValue': -0.18748}]]
+
+        S = step_info(sys)
+
+        S1k = sorted(S[0][0].keys())
+        S1ktrue = sorted(Strue[0][0].keys())
+        assert S1k == S1ktrue
+
+        S2k = sorted(S[0][1].keys())
+        S2ktrue = sorted(Strue[0][1].keys())
+        assert S2k == S2ktrue
+        
+        S3k = sorted(S[1][0].keys())
+        S3ktrue = sorted(Strue[1][0].keys())
+        assert S3k == S3ktrue
+        
+        S4k = sorted(S[1][1].keys())
+        S4ktrue = sorted(Strue[1][1].keys())
+        assert S4k == S4ktrue
+
+        rtol = 0.2 # tolerance could be better was chosen to meet the discret times parameters
+        np.testing.assert_allclose([S[0][0][k] for k in S1k],
+                                   [Strue[0][0][k] for k in S1ktrue],
+                                   rtol=rtol)
+        np.testing.assert_allclose([S[0][1][k] for k in S2k],
+                                   [Strue[0][1][k] for k in S2ktrue],
+                                   rtol=rtol)
+        np.testing.assert_allclose([S[1][0][k] for k in S3k],
+                                   [Strue[1][0][k] for k in S3ktrue],
+                                   rtol=rtol)
+        np.testing.assert_allclose([S[1][1][k] for k in S4k],
+                                   [Strue[1][1][k] for k in S4ktrue],
+                                   rtol=rtol)
+
+    # Tolerance for all parameters could be wrong for some systems
+    # discrete systems time parameters tolerance
+    # could be +/-dt
     @pytest.mark.parametrize(
         "tsystem, info_true, tolerance",
         [("tf1_matlab_help", {
