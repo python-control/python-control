@@ -26,8 +26,9 @@ from control.timeresp import (_default_time_vector, _ideal_tfinal_and_dt,
 
 class TSys:
     """Struct of test system"""
-    def __init__(self, sys=None):
+    def __init__(self, sys=None, call_kwargs=None):
         self.sys = sys
+        self.kwargs = call_kwargs if call_kwargs else {}
 
     def __repr__(self):
         """Show system when debugging"""
@@ -210,15 +211,16 @@ class TestTimeresp:
 
     @pytest.fixture
     def siso_tf_kpos(self):
-        # SISO under shoot response and positive final value G(s)=(-s+1)/(s²+s+1)
+        # SISO under shoot response and positive final value
+        # G(s)=(-s+1)/(s²+s+1)
         T = TSys(TransferFunction([-1, 1], [1, 1, 1]))
         T.step_info = {
              'RiseTime': 1.242,
              'SettlingTime': 9.110,
-             'SettlingMin': 0.950,
+             'SettlingMin': 0.90,
              'SettlingMax': 1.208,
              'Overshoot': 20.840,
-             'Undershoot': 27.840,
+             'Undershoot': 28.0,
              'Peak': 1.208,
              'PeakTime': 4.282,
              'SteadyStateValue': 1.0}
@@ -226,23 +228,25 @@ class TestTimeresp:
 
     @pytest.fixture
     def siso_tf_kneg(self):
-        # SISO under shoot response and negative final value k=-1 G(s)=-(-s+1)/(s²+s+1)
+        # SISO under shoot response and negative final value
+        # k=-1 G(s)=-(-s+1)/(s²+s+1)
         T = TSys(TransferFunction([1, -1], [1, 1, 1]))
         T.step_info = {
              'RiseTime': 1.242,
              'SettlingTime': 9.110,
              'SettlingMin': -1.208,
-             'SettlingMax': -0.950,
+             'SettlingMax': -0.90,
              'Overshoot': 20.840,
-             'Undershoot': 27.840,
+             'Undershoot': 28.0,
              'Peak': 1.208,
              'PeakTime': 4.282,
              'SteadyStateValue': -1.0}
         return T
 
     @pytest.fixture
-    def tf1_matlab_help(self):
-        # example from matlab online help https://www.mathworks.com/help/control/ref/stepinfo.html
+    def siso_tf_step_matlab(self):
+        # example from matlab online help
+        # https://www.mathworks.com/help/control/ref/stepinfo.html
         T = TSys(TransferFunction([1, 5, 5], [1, 1.65, 5, 6.5, 2]))
         T.step_info = {
             'RiseTime': 3.8456,
@@ -257,36 +261,81 @@ class TestTimeresp:
         return T
 
     @pytest.fixture
-    def ss2_matlab_help(self):
-        A = [[0.68, - 0.34], [0.34, 0.68]]
-        B = [[0.18], [0.04]]
-        C = [-1.12, - 1.10]
-        D = [0.06]
+    def mimo_ss_step_matlab(self):
+        A = [[0.68, -0.34],
+             [0.34, 0.68]]
+        B = [[0.18, -0.05],
+             [0.04, 0.11]]
+        C = [[0, -1.53],
+             [-1.12, -1.10]]
+        D = [[0, 0],
+             [0.06, -0.37]]
         T = TSys(StateSpace(A, B, C, D, 0.2))
-        T.step_info = {
-             'RiseTime': 0.4000,
-             'SettlingTime': 2.8000,
-             'SettlingMin': -0.6724,
-             'SettlingMax': -0.5188,
-             'Overshoot': 24.6476,
-             'Undershoot': 11.1224,
-             'Peak': 0.6724,
-             'PeakTime': 1,
-             'SteadyStateValue': -0.5394}
+        T.kwargs['step_info'] = {'T': 4.6}
+        T.step_info = [[{'RiseTime': 0.6000,
+                         'SettlingTime': 3.0000,
+                         'SettlingMin': -0.5999,
+                         'SettlingMax': -0.4689,
+                         'Overshoot': 15.5072,
+                         'Undershoot': 0.,
+                         'Peak': 0.5999,
+                         'PeakTime': 1.4000,
+                         'SteadyStateValue': -0.5193},
+                        {'RiseTime': 0.,
+                         'SettlingTime': 3.6000,
+                         'SettlingMin': -0.2797,
+                         'SettlingMax': -0.1043,
+                         'Overshoot': 118.9918,
+                         'Undershoot': 0,
+                         'Peak': 0.2797,
+                         'PeakTime': .6000,
+                         'SteadyStateValue': -0.1277}],
+                       [{'RiseTime': 0.4000,
+                         'SettlingTime': 2.8000,
+                         'SettlingMin': -0.6724,
+                         'SettlingMax': -0.5188,
+                         'Overshoot': 24.6476,
+                         'Undershoot': 11.1224,
+                         'Peak': 0.6724,
+                         'PeakTime': 1,
+                         'SteadyStateValue': -0.5394},
+                         {'RiseTime': 0.0000, # (*)
+                         'SettlingTime': 3.4000,
+                         'SettlingMin': -0.1034,
+                         'SettlingMax': -0.1485,
+                         'Overshoot': 132.0170,
+                         'Undershoot': 79.222, # 0. in MATLAB
+                         'Peak': 0.4350,
+                         'PeakTime': .2,
+                         'SteadyStateValue': -0.1875}]]
+                         # (*): MATLAB gives 0.4 here, but it is unclear what
+                         # 10% and 90% of the steady state response mean, when
+                         # the step for this channel does not start a 0 for
+                         # 0 initial conditions
         return T
 
     @pytest.fixture
-    def mimo_tf_step(self, tf1_matlab_help,
-                           siso_tf_kpos,
-                           siso_tf_kneg,
-                           siso_tf_type1):
-        Ta = [[tf1_matlab_help, tf1_matlab_help, siso_tf_kpos],
-              [siso_tf_kneg, siso_tf_type1, siso_tf_type1]]
+    def siso_ss_step_matlab(self, mimo_ss_step_matlab):
+        T = copy(mimo_ss_step_matlab)
+        T.sys = T.sys[1, 0]
+        T.step_info = T.step_info[1][0]
+        return T
+
+    @pytest.fixture
+    def mimo_tf_step_info(self,
+                          siso_tf_kpos, siso_tf_kneg,
+                          siso_tf_step_matlab):
+        Ta = [[siso_tf_kpos, siso_tf_kneg, siso_tf_step_matlab],
+               [siso_tf_step_matlab, siso_tf_kpos, siso_tf_kneg]]
         T = TSys(TransferFunction(
             [[Ti.sys.num[0][0] for Ti in Tr] for Tr in Ta],
             [[Ti.sys.den[0][0] for Ti in Tr] for Tr in Ta]))
         T.step_info = [[Ti.step_info for Ti in Tr] for Tr in Ta]
+        # enforce enough sample points for all channels (they have different
+        # characteristics)
+        T.kwargs['step_info'] = {'T_num': 2000}
         return T
+
 
     @pytest.fixture
     def tsystem(self,
@@ -297,8 +346,9 @@ class TestTimeresp:
                 siso_dss1, siso_dss2,
                 mimo_dss1, mimo_dss2, mimo_dtf1,
                 pole_cancellation, no_pole_cancellation, siso_tf_type1,
-                siso_tf_kpos, siso_tf_kneg, tf1_matlab_help,
-                ss2_matlab_help, mimo_tf_step):
+                siso_tf_kpos, siso_tf_kneg,
+                siso_tf_step_matlab, siso_ss_step_matlab,
+                mimo_ss_step_matlab, mimo_tf_step_info):
         systems = {"siso_ss1": siso_ss1,
                    "siso_ss2": siso_ss2,
                    "siso_tf1": siso_tf1,
@@ -319,9 +369,10 @@ class TestTimeresp:
                    "siso_tf_type1": siso_tf_type1,
                    "siso_tf_kpos": siso_tf_kpos,
                    "siso_tf_kneg": siso_tf_kneg,
-                   "tf1_matlab_help": tf1_matlab_help,
-                   "ss2_matlab_help": ss2_matlab_help,
-                   "mimo_tf_step": mimo_tf_step,
+                   "siso_tf_step_matlab": siso_tf_step_matlab,
+                   "siso_ss_step_matlab": siso_ss_step_matlab,
+                   "mimo_ss_step_matlab": mimo_ss_step_matlab,
+                   "mimo_tf_step": mimo_tf_step_info,
                    }
         return systems[request.param]
 
@@ -375,46 +426,60 @@ class TestTimeresp:
         t, y = step_response(sys)
         np.testing.assert_array_equal(y, np.ones(len(t)))
 
-    # tolerance for all parameters could be wrong for some systems
-    # discrete systems time parameters tolerance could be +/-dt
-    @pytest.mark.parametrize(
-        "tsystem, tolerance",
-        [("tf1_matlab_help", 2e-2),
-         ("ss2_matlab_help", .2),
-         ("siso_tf_kpos", 2e-2),
-         ("siso_tf_kneg", 2e-2),
-         ("siso_tf_type1", 2e-2)],
-        indirect=["tsystem"])
-    def test_step_info(self, tsystem, tolerance):
-        """Test step info for SISO systems"""
-        info = step_info(tsystem.sys)
+    def assert_step_info_match(self, sys, info, info_ref):
+        """Assert reasonable step_info accuracy"""
 
-        info_true_sorted = sorted(tsystem.step_info.keys())
-        info_sorted = sorted(info.keys())
-        assert info_sorted == info_true_sorted
+        if sys.isdtime(strict=True):
+            dt = sys.dt
+        else:
+            _, dt = _ideal_tfinal_and_dt(sys, is_step=True)
 
-        for k in info:
-            np.testing.assert_allclose(info[k], tsystem.step_info[k],
-                                       rtol=tolerance,
+        for k in ['RiseTime', 'SettlingTime', 'PeakTime']:
+            np.testing.assert_allclose(info[k], info_ref[k], atol=dt,
+                                       err_msg=f"{k} does not match")
+        for k in ['Overshoot', 'Undershoot', 'Peak', 'SteadyStateValue']:
+            np.testing.assert_allclose(info[k], info_ref[k], rtol=5e-3,
                                        err_msg=f"{k} does not match")
 
+        # steep gradient right after RiseTime
+        absrefinf = np.abs(info_ref['SteadyStateValue'])
+        if info_ref['RiseTime'] > 0:
+            y_next_sample_max = 0.8*absrefinf/info_ref['RiseTime']*dt
+        else:
+            y_next_sample_max = 0
+        for k in ['SettlingMin', 'SettlingMax']:
+            if (np.abs(info_ref[k]) - 0.9 * absrefinf) > y_next_sample_max:
+                # local min/max peak well after signal has risen
+                np.testing.assert_allclose(info[k], info_ref[k], rtol=1e-3)
+
     @pytest.mark.parametrize(
-        "tsystem, tolerance",
-        [('mimo_tf_step', 2e-2)],
+        "tsystem",
+        ["siso_tf_step_matlab",
+         "siso_ss_step_matlab",
+         "siso_tf_kpos",
+         "siso_tf_kneg",
+         "siso_tf_type1"],
         indirect=["tsystem"])
-    def test_step_info_mimo(self, tsystem, tolerance):
+    def test_step_info(self, tsystem):
+        """Test step info for SISO systems"""
+        step_info_kwargs = tsystem.kwargs.get('step_info',{})
+        info = step_info(tsystem.sys, **step_info_kwargs)
+        self.assert_step_info_match(tsystem.sys, info, tsystem.step_info)
+
+    @pytest.mark.parametrize(
+        "tsystem",
+        ['mimo_ss_step_matlab',
+         'mimo_tf_step'],
+        indirect=["tsystem"])
+    def test_step_info_mimo(self, tsystem):
         """Test step info for MIMO systems"""
-        info_dict = step_info(tsystem.sys)
-        from pprint import pprint
-        pprint(info_dict)
+        step_info_kwargs = tsystem.kwargs.get('step_info',{})
+        info_dict = step_info(tsystem.sys, **step_info_kwargs)
         for i, row in enumerate(info_dict):
             for j, info in enumerate(row):
                 for k in info:
-                    np.testing.assert_allclose(
-                        info[k], tsystem.step_info[i][j][k],
-                        rtol=tolerance,
-                        err_msg=f"{k} for input {j} to output {i} "
-                                 "does not match")
+                    self.assert_step_info_match(tsystem.sys,
+                                                info, tsystem.step_info[i][j])
 
     def test_step_pole_cancellation(self, pole_cancellation,
                                     no_pole_cancellation):
@@ -422,13 +487,10 @@ class TestTimeresp:
         # https://github.com/python-control/python-control/issues/440
         step_info_no_cancellation = step_info(no_pole_cancellation)
         step_info_cancellation = step_info(pole_cancellation)
-        for key in step_info_no_cancellation:
-            if key == 'Overshoot':
-                # skip this test because these systems have no overshoot
-                # =>  very sensitive to parameters
-                continue
-            np.testing.assert_allclose(step_info_no_cancellation[key],
-                                       step_info_cancellation[key], rtol=1e-4)
+        self.assert_step_info_match(no_pole_cancellation,
+                                    step_info_no_cancellation,
+                                    step_info_cancellation)
+
 
     @pytest.mark.parametrize(
         "tsystem, kwargs",

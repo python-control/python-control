@@ -792,20 +792,18 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     --------
     >>> info = step_info(sys, T)
     '''
+    if T is None or np.asarray(T).size == 1:
+        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
+    T, Yout = step_response(sys, T, squeeze=False)
+
     ret = []
     for i in range(sys.noutputs):
         retrow = []
         for j in range(sys.ninputs):
-            sys_siso = sys[i, j]
-            if T is None or np.asarray(T).size == 1:
-                Ti = _default_time_vector(sys_siso, N=T_num, tfinal=T,
-                                          is_step=True)
-            else:
-                Ti = T
-            Ti, yout = step_response(sys_siso, Ti)
+            yout = Yout[i, j, :]
 
             # Steady state value
-            InfValue = sys_siso.dcgain()
+            InfValue = sys.dcgain() if sys.issiso() else sys.dcgain()[i, j]
             sgnInf = np.sign(InfValue.real)
 
             rise_time: float = np.NaN
@@ -826,12 +824,15 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
                 tr_upper_index = np.where(
                     sgnInf * (yout - RiseTimeLimits[1] * InfValue) >= 0
                     )[0][0]
-                rise_time = Ti[tr_upper_index] - Ti[tr_lower_index]
+                rise_time = T[tr_upper_index] - T[tr_lower_index]
 
                 # SettlingTime
-                settling_th = np.abs(SettlingTimeThreshold * InfValue)
-                not_settled = np.where(np.abs(yout - InfValue) >= settling_th)
-                settling_time = Ti[not_settled[0][-1] + 1]
+                settled = np.where(
+                    np.abs(yout/InfValue -1) >= SettlingTimeThreshold)[0][-1]+1
+                # MIMO systems can have unsettled channels without infinite
+                # InfValue
+                if settled < len(T):
+                    settling_time = T[settled]
 
                 settling_min = (yout[tr_upper_index:]).min()
                 settling_max = (yout[tr_upper_index:]).max()
@@ -855,10 +856,10 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
                 # Peak
                 peak_index = np.abs(yout).argmax()
                 peak_value = np.abs(yout[peak_index])
-                peak_time = Ti[peak_index]
+                peak_time = T[peak_index]
 
                 # SteadyStateValue
-                steady_state_value = InfValue
+                steady_state_value = InfValue.real
 
             retij = {
                 'RiseTime': rise_time,
