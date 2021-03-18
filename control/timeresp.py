@@ -71,18 +71,17 @@ Date: August 17, 2020
 $Id$
 """
 
-# Libraries that we make use of
-import scipy as sp              # SciPy library (used all over)
-import numpy as np              # NumPy library
-from scipy.linalg import eig, eigvals, matrix_balance, norm
-from numpy import (einsum, maximum, minimum,
-                   atleast_1d)
 import warnings
-from .lti import LTI     # base class of StateSpace, TransferFunction
-from .xferfcn import TransferFunction
-from .statesp import _convert_to_statespace, _mimo2simo, _mimo2siso, ssdata
-from .lti import isdtime, isctime
+
+import numpy as np
+import scipy as sp
+from numpy import atleast_1d, einsum, maximum, minimum
+from scipy.linalg import eig, eigvals, matrix_balance, norm
+
 from . import config
+from .lti import (LTI, isctime, isdtime)
+from .statesp import _convert_to_statespace, _mimo2simo, _mimo2siso, ssdata
+from .xferfcn import TransferFunction
 
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
            'impulse_response']

@@ -15,15 +15,13 @@ import numpy as np
 import pytest
 import scipy as sp
 
-
 import control as ct
-from control import (StateSpace, TransferFunction, c2d, isctime, isdtime,
-                     ss2tf, tf2ss)
+from control import StateSpace, TransferFunction, c2d, isctime, ss2tf, tf2ss
+from control.exception import slycot_check
+from control.tests.conftest import slycotonly
 from control.timeresp import (_default_time_vector, _ideal_tfinal_and_dt,
                               forced_response, impulse_response,
                               initial_response, step_info, step_response)
-from control.tests.conftest import slycotonly
-from control.exception import slycot_check
 
 
 class TSys:
