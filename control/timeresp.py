@@ -746,7 +746,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
     Parameters
     ----------
-    sys : SISO dynamic system model. Dynamic systems that you can use include:
+    sys : SISO or MIMO dynamic system model. Dynamic systems that you can use include:
         StateSpace or TransferFunction
         LTI system to simulate
 
@@ -766,25 +766,41 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
     Returns
     -------
-    S: a dictionary containing:
-        RiseTime: Time from 10% to 90% of the steady-state value.
+    S: a dictionary for SISO systems or a list of Ny-by-Nu of dictionaries
+     for MIMO systems, each dictionary containing:
+
+        RiseTime: Rise time (by default time from 10% to 90% of the steady-state value).
         SettlingTime: Time to enter inside a default error of 2%
-        SettlingMin: Minimum value after RiseTime
-        SettlingMax: Maximum value after RiseTime
+        SettlingMin: Minimum value of `y(t)` after RiseTime
+        SettlingMax: Maximum value of `y(t)` after RiseTime
         Overshoot: Percentage of the Peak relative to steady value
-        Undershoot: Percentage of undershoot
-        Peak: Absolute peak value
-        PeakTime: time of the Peak
+        Undershoot: Percentage of undershoot 
+        Peak: Peak absolute value of `y(t)`
+        PeakTime: Time of the peak value
         SteadyStateValue: Steady-state value
 
 
     See Also
     --------
-    step, lsim, initial, impulse
+    step_response, initial_response, impulse_response, forced_response
+
 
     Examples
     --------
-    >>> info = step_info(sys, T)
+    >>> from control import tf, step_info
+    >>> sys = tf([3.32, 0, -162.8],[1, 24.56, 186.5, 457.8, 116.2])
+    >>> step_info(sys)
+    >>> 
+    >>> {'RiseTime': 7.70245002940221,
+    >>> 'SettlingTime': 14.13151114265325,
+    >>> 'SettlingMin': -1.3994264225116284,
+    >>> 'SettlingMax': -1.2612640212267976,
+    >>> 'Overshoot': 0,
+    >>> 'Undershoot': 0.6864433321178778,
+    >>> 'Peak': 1.3994264225116284,
+    >>> 'PeakTime': 24.13227287437709,
+    >>> 'SteadyStateValue': -1.4010327022375215}
+    
     '''
     
     if T is None:
