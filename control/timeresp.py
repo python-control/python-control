@@ -746,18 +746,18 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
         TransferFunction), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given, see :func:`step_response` for more detail)
+        autocomputed if not given, see :func:`step_response` for more detail).
         Required, if sysdata is a time series of response data.
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
         array; autocomputed if not given; ignored if sysdata is a
         discrete-time system or a time series or response data.
-    yfinal: scalar or array_like, optional
+    yfinal : scalar or array_like, optional
         Steady-state response. If not given, sysdata.dcgain() is used for
         systems to simulate and the last value of the the response data is
         used for a given time series of response data. Scalar for SISO,
         (noutputs, ninputs) array_like for MIMO systems.
-    SettlingTimeThreshold : float value, optional
+    SettlingTimeThreshold : float, optional
         Defines the error to compute settling time (default = 0.02)
     RiseTimeLimits : tuple (lower_threshold, upper_theshold)
         Defines the lower and upper threshold for RiseTime computation

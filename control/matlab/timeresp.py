@@ -64,38 +64,59 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
                         transpose=True, return_x=return_x)
     return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
-def stepinfo(sys, T=None, SettlingTimeThreshold=0.02,
+
+def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
              RiseTimeLimits=(0.1, 0.9)):
-    '''
+    """
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
-        LTI system to simulate
-
-    T: array-like or number, optional
+    sysdata : StateSpace or TransferFunction or array_like
+        The system data. Either LTI system to similate (StateSpace,
+        TransferFunction), or a time series of step response data.
+    T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given)
-
-    SettlingTimeThreshold: float value, optional
+        autocomputed if not given).
+        Required, if sysdata is a time series of response data.
+    yfinal : scalar or array_like, optional
+        Steady-state response. If not given, sysdata.dcgain() is used for
+        systems to simulate and the last value of the the response data is
+        used for a given time series of response data. Scalar for SISO,
+        (noutputs, ninputs) array_like for MIMO systems.
+    SettlingTimeThreshold : float, optional
         Defines the error to compute settling time (default = 0.02)
-
-    RiseTimeLimits: tuple (lower_threshold, upper_theshold)
+    RiseTimeLimits : tuple (lower_threshold, upper_theshold)
         Defines the lower and upper threshold for RiseTime computation
 
     Returns
     -------
-    S: a dictionary containing:
-        RiseTime: Time from 10% to 90% of the steady-state value.
-        SettlingTime: Time to enter inside a default error of 2%
-        SettlingMin: Minimum value after RiseTime
-        SettlingMax: Maximum value after RiseTime
-        Overshoot: Percentage of the Peak relative to steady value
-        Undershoot: Percentage of undershoot
-        Peak: Absolute peak value
-        PeakTime: time of the Peak
-        SteadyStateValue: Steady-state value
+    S : dict or list of list of dict
+        If `sysdata` corresponds to a SISO system, S is a dictionary
+        containing:
+
+        RiseTime:
+            Time from 10% to 90% of the steady-state value.
+        SettlingTime:
+            Time to enter inside a default error of 2%
+        SettlingMin:
+            Minimum value after RiseTime
+        SettlingMax:
+            Maximum value after RiseTime
+        Overshoot:
+            Percentage of the Peak relative to steady value
+        Undershoot:
+            Percentage of undershoot
+        Peak:
+            Absolute peak value
+        PeakTime:
+            time of the Peak
+        SteadyStateValue:
+            Steady-state value
+
+        If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
+        To get the step response characteristics from the j-th input to the
+        i-th output, access ``S[i][j]``
 
 
     See Also
@@ -105,11 +126,13 @@ def stepinfo(sys, T=None, SettlingTimeThreshold=0.02,
     Examples
     --------
     >>> S = stepinfo(sys, T)
-    '''
+    """
     from ..timeresp import step_info
 
     # Call step_info with MATLAB defaults
-    S = step_info(sys, T, None, SettlingTimeThreshold, RiseTimeLimits)
+    S = step_info(sysdata, T=T, T_num=None, yfinal=yfinal,
+                  SettlingTimeThreshold=SettlingTimeThreshold,
+                  RiseTimeLimits=RiseTimeLimits)
 
     return S
 
