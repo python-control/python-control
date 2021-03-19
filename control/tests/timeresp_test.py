@@ -452,6 +452,15 @@ class TestTimeresp:
                 np.testing.assert_allclose(info[k], info_ref[k], rtol=1e-3)
 
     @pytest.mark.parametrize(
+        "yfinal", [True, False], ids=["yfinal", "no yfinal"])
+    @pytest.mark.parametrize(
+        "systype, time_2d",
+        [("ltisys", False),
+         ("time response", False),
+         ("time response", True),
+         ],
+        ids=["ltisys", "time response (n,)", "time response (1,n)"])
+    @pytest.mark.parametrize(
         "tsystem",
         ["siso_tf_step_matlab",
          "siso_ss_step_matlab",
@@ -459,16 +468,10 @@ class TestTimeresp:
          "siso_tf_kneg",
          "siso_tf_type1"],
         indirect=["tsystem"])
-    @pytest.mark.parametrize(
-        "systype, time_2d",
-        [("lti", False),
-         ("time response data", False),
-         ("time response data", True),
-         ])
-    def test_step_info(self, tsystem, systype, time_2d):
+    def test_step_info(self, tsystem, systype, time_2d, yfinal):
         """Test step info for SISO systems."""
         step_info_kwargs = tsystem.kwargs.get('step_info', {})
-        if systype == "time response data":
+        if systype == "time response":
             # simulate long enough for steady state value
             tfinal = 3 * tsystem.step_info['SettlingTime']
             if np.isnan(tfinal):
@@ -478,22 +481,26 @@ class TestTimeresp:
             step_info_kwargs['T'] = t[np.newaxis, :] if time_2d else t
         else:
             sysdata = tsystem.sys
+        if yfinal:
+            step_info_kwargs['yfinal'] = tsystem.step_info['SteadyStateValue']
 
         info = step_info(sysdata, **step_info_kwargs)
 
         self.assert_step_info_match(tsystem.sys, info, tsystem.step_info)
 
     @pytest.mark.parametrize(
+        "yfinal", [True, False], ids=["yfinal", "no_yfinal"])
+    @pytest.mark.parametrize(
+        "systype", ["ltisys", "time response"])
+    @pytest.mark.parametrize(
         "tsystem",
         ['mimo_ss_step_matlab',
          pytest.param('mimo_tf_step', marks=slycotonly)],
         indirect=["tsystem"])
-    @pytest.mark.parametrize(
-        "systype", ["lti", "time response data"])
-    def test_step_info_mimo(self, tsystem, systype):
+    def test_step_info_mimo(self, tsystem, systype, yfinal):
         """Test step info for MIMO systems."""
         step_info_kwargs = tsystem.kwargs.get('step_info', {})
-        if systype == "time response data":
+        if systype == "time response":
             tfinal = 3 * max([S['SettlingTime']
                               for Srow in tsystem.step_info for S in Srow])
             t, y = step_response(tsystem.sys, T=tfinal, T_num=5000)
@@ -501,6 +508,10 @@ class TestTimeresp:
             step_info_kwargs['T'] = t
         else:
             sysdata = tsystem.sys
+        if yfinal:
+            step_info_kwargs['yfinal'] = [[S['SteadyStateValue']
+                                           for S in Srow]
+                                          for Srow in tsystem.step_info]
 
         info_dict = step_info(sysdata, **step_info_kwargs)
 

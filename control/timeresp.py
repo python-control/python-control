@@ -734,8 +734,8 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         squeeze=squeeze, input=input, output=output)
 
 
-def step_info(sysdata, T=None, T_num=None, SettlingTimeThreshold=0.02,
-              RiseTimeLimits=(0.1, 0.9)):
+def step_info(sysdata, T=None, T_num=None, yfinal=None,
+              SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9)):
     """
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
@@ -752,6 +752,11 @@ def step_info(sysdata, T=None, T_num=None, SettlingTimeThreshold=0.02,
         Number of time steps to use in simulation if T is not provided as an
         array; autocomputed if not given; ignored if sysdata is a
         discrete-time system or a time series or response data.
+    yfinal: scalar or array_like, optional
+        Steady-state response. If not given, sysdata.dcgain() is used for
+        systems to simulate and the last value of the the response data is
+        used for a given time series of response data. Scalar for SISO,
+        (noutputs, ninputs) array_like for MIMO systems.
     SettlingTimeThreshold : float value, optional
         Defines the error to compute settling time (default = 0.02)
     RiseTimeLimits : tuple (lower_threshold, upper_theshold)
@@ -838,7 +843,10 @@ def step_info(sysdata, T=None, T_num=None, SettlingTimeThreshold=0.02,
         if T is None or np.asarray(T).size == 1:
             T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=True)
         T, Yout = step_response(sysdata, T, squeeze=False)
-        InfValues = np.atleast_2d(sysdata.dcgain())
+        if yfinal:
+            InfValues = np.atleast_2d(yfinal)
+        else:
+            InfValues = np.atleast_2d(sysdata.dcgain())
         retsiso = sysdata.issiso()
         noutputs = sysdata.noutputs
         ninputs = sysdata.ninputs
@@ -864,7 +872,7 @@ def step_info(sysdata, T=None, T_num=None, SettlingTimeThreshold=0.02,
         T = np.squeeze(T)
         noutputs = Yout.shape[0]
         ninputs = Yout.shape[1]
-        InfValues = Yout[:, :, -1]
+        InfValues = np.atleast_2d(yfinal) if yfinal else Yout[:, :, -1]
 
     ret = []
     for i in range(noutputs):
