@@ -26,3 +26,6 @@ TAGS
 
 # Files created by or for asv (airspeed velocity)
 .asv/
+
+# Files created by Spyder
+.spyproject/

@@ -97,13 +97,14 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
             name=name)
 
         # Find the transformation to chain of integrators form
+        # Note: store all array as ndarray, not matrix
         zsys, Tr = control.reachable_form(linsys)
-        Tr = Tr[::-1, ::]               # flip rows
+        Tr = np.array(Tr[::-1, ::])     # flip rows
 
         # Extract the information that we need
-        self.F = zsys.A[0, ::-1]        # input function coeffs
-        self.T = Tr                     # state space transformation
-        self.Tinv = np.linalg.inv(Tr)   # compute inverse once
+        self.F = np.array(zsys.A[0, ::-1])      # input function coeffs
+        self.T = Tr                             # state space transformation
+        self.Tinv = np.linalg.inv(Tr)           # compute inverse once
 
         # Compute the flat output variable z = C x
         Cfz = np.zeros(np.shape(linsys.C)); Cfz[0, 0] = 1

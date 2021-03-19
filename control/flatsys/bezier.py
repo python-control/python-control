@@ -39,7 +39,7 @@
 # SUCH DAMAGE.
 
 import numpy as np
-from scipy.special import binom
+from scipy.special import binom, factorial
 from .basis import BasisFamily
 
 class BezierFamily(BasisFamily):
@@ -48,7 +48,9 @@ class BezierFamily(BasisFamily):
     This class represents the family of polynomials of the form
 
     .. math::
-         \phi_i(t) = \sum_{i=0}^n {n \choose i} (T - t)^{n-i} t^i
+         \phi_i(t) = \sum_{i=0}^n {n \choose i}
+             \left( \frac{t}{T_\text{f}} - t \right)^{n-i}
+             \left( \frac{t}{T_f} \right)^i
 
     """
     def __init__(self, N, T=1):
@@ -59,11 +61,23 @@ class BezierFamily(BasisFamily):
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t):
         """Evaluate the kth derivative of the ith basis function at time t."""
-        if k > 0:
-            raise NotImplementedError("Bezier derivatives not yet available")
-        elif i > self.N:
+        if i >= self.N:
             raise ValueError("Basis function index too high")
+        elif k >= self.N:
+            # Higher order derivatives are zero
+            return np.zeros(t.shape)
 
-        # Return the Bezier basis function (note N = # basis functions)
-        return binom(self.N - 1, i) * \
-            (t/self.T)**i * (1 - t/self.T)**(self.N - i - 1)
+        # Compute the variables used in Bezier curve formulas
+        n = self.N - 1
+        u = t/self.T
+
+        if k == 0:
+            # No derivative => avoid expansion for speed
+            return binom(n, i) * u**i * (1-u)**(n-i)
+
+        # Return the kth derivative of the ith Bezier basis function
+        return binom(n, i) * sum([
+            (-1)**(j-i) *
+            binom(n-i, j-i) * factorial(j)/factorial(j-k) * np.power(u, j-k)
+            for j in range(max(i, k), n+1)
+        ])
