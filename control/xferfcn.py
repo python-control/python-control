@@ -1070,12 +1070,19 @@ class TransferFunction(LTI):
 
         Returns
         -------
-        gain : ndarray
-            The zero-frequency gain
+        gain : (outputs, inputs) ndarray or scalar
+            Array or scalar value for SISO systems, depending on
+            config.defaults['control.squeeze_frequency_response'].
+            The value of the array elements or the scalar is either the
+            zero-frequency (or DC) gain, or `inf`, if the frequency response
+            is singular.
+
+            For real valued systems, the empty imaginary part of the
+            complex zero-frequency response is discarded and a real array or
+            scalar is returned.
 
         """
-        return self(0, warn_infinite=warn_infinite) if self.isctime() \
-            else self(1, warn_infinite=warn_infinite)
+        return self._dcgain(warn_infinite)
 
     def _isstatic(self):
          """returns True if and only if all of the numerator and denominator

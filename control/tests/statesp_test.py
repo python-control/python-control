@@ -498,7 +498,7 @@ class TestStateSpace:
         np.testing.assert_allclose(sys2.dcgain(), expected)
 
         sys3 = StateSpace(0., 1., 1., 0.)
-        np.testing.assert_equal(sys3.dcgain(), complex(np.inf, np.nan))
+        np.testing.assert_equal(sys3.dcgain(), np.inf)
 
     def test_dc_gain_discr(self):
         """Test DC gain for discrete-time state-space systems."""
@@ -516,7 +516,7 @@ class TestStateSpace:
 
         # summer
         sys = StateSpace(1, 1, 1, 0, True)
-        np.testing.assert_equal(sys.dcgain(), complex(np.inf, np.nan))
+        np.testing.assert_equal(sys.dcgain(), np.inf)
 
     @pytest.mark.parametrize("outputs", range(1, 6))
     @pytest.mark.parametrize("inputs", range(1, 6))
@@ -539,7 +539,7 @@ class TestStateSpace:
         c = np.eye(max(outputs, states))[:outputs, :states]
         d = np.zeros((outputs, inputs))
         sys = StateSpace(a, b, c, d, dt)
-        dc = np.full_like(d, complex(np.inf, np.nan), dtype=complex)
+        dc = np.full_like(d, np.inf, dtype=float)
         if sys.issiso():
             dc = dc.squeeze()
 
@@ -953,4 +953,3 @@ def test_xferfcn_ndarray_precedence(op, tf, arr):
     ss = ct.tf2ss(tf)
     result = op(arr, ss)
     assert isinstance(result, ct.StateSpace)
-

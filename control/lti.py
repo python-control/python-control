@@ -208,6 +208,13 @@ class LTI:
         raise NotImplementedError("dcgain not implemented for %s objects" %
                                   str(self.__class__))
 
+    def _dcgain(self, warn_infinite):
+        zeroresp = self(0 if self.isctime() else 1,
+                        warn_infinite=warn_infinite)
+        if np.all(np.logical_or(np.isreal(zeroresp), np.isnan(zeroresp.imag))):
+            return zeroresp.real
+        else:
+            return zeroresp
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
