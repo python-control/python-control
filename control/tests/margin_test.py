@@ -336,41 +336,41 @@ def test_zmore_stability_margins(tsys_zmore):
 @pytest.mark.parametrize(
     'cnum, cden, dt,'
     'ref,'
-    'rtol',
+    'rtol, poly_is_inaccurate',
     [( # gh-465
       [2], [1, 3, 2, 0], 1e-2,
-      [2.9558, 32.390, 0.43584, 1.4037, 0.74951, 0.97079],
-      2e-3), # the gradient of the function reduces numerical precision
+      [ 2.955761, 32.398492,  0.429535,  1.403725,  0.749367,  0.923898],
+      1e-5, True),
      ( # 2/(s+1)**3
       [2], [1, 3, 3, 1], .1,
       [3.4927, 65.4212, 0.5763, 1.6283, 0.76625, 1.2019],
-      1e-4),
-     ( # gh-523
+      1e-4, True),
+     ( # gh-523 a
       [1.1 * 4 * np.pi**2], [1, 2 * 0.2 * 2 * np.pi,  4 * np.pi**2], .05,
       [2.3842, 18.161, 0.26953, 11.712, 8.7478, 9.1504],
-      1e-4),
+      1e-4, False),
+     ( # gh-523 b
+       # H1 = w1**2 / (z**2 + 2*zt*w1 * z + w1**2)
+       # H2 = w2**2 / (z**2 + 2*zt*w2 * z + w2**2)
+       # H = H1 * H2
+       # w1 = 1, w2 = 100, zt = 0.5
+      [5e4], [1., 101., 10101., 10100., 10000.], 1e-3,
+      [18.8766, 26.3564, 0.406841, 9.76358, 2.32933, 2.55986],
+      1e-5, True),
      ])
-def test_stability_margins_discrete(cnum, cden, dt, ref, rtol):
+@pytest.mark.filterwarnings("error")
+def test_stability_margins_discrete(cnum, cden, dt,
+                                    ref,
+                                    rtol, poly_is_inaccurate):
     """Test stability_margins with discrete TF input"""
     tf = TransferFunction(cnum, cden).sample(dt)
-    out = stability_margins(tf, method='poly')
+    if poly_is_inaccurate:
+        with pytest.warns(UserWarning, match="numerical inaccuracy in 'poly'"):
+            out = stability_margins(tf)
+        # cover the explicit frd branch and make sure it yields the same
+        # results as the fallback mechanism
+        out_frd = stability_margins(tf, method='frd')
+        assert_allclose(out, out_frd)
+    else:
+        out = stability_margins(tf)
     assert_allclose(out, ref, rtol=rtol)
-
-
-def test_stability_margins_methods():
-    # the following system gives slightly inaccurate result for DT systems
-    # because of numerical issues
-    omegan = 1
-    zeta = 0.5
-    resonance = TransferFunction(omegan**2, [1, 2*zeta*omegan, omegan**2])
-    omegan2 = 100
-    resonance2 = TransferFunction(omegan2**2, [1, 2*zeta*omegan2, omegan2**2])
-    sys = 5 * resonance * resonance2
-    sysd = sys.sample(0.001, 'zoh')
-    """Test stability_margins() function with different methods"""
-    out = stability_margins(sysd, method='best')
-    # confirm getting reasonable results using FRD method
-    assert_allclose(
-        (18.876634740386308, 26.356358386241055, 0.40684127995261044,
-         9.763585494645046, 2.3293357226374805, 2.55985695034263),
-        stability_margins(sysd, method='frd'), rtol=1e-5)

@@ -218,7 +218,7 @@ def _likely_numerical_inaccuracy(sys):
         # * z**(-p_q)
         x = [1] + [0] * (-p_q)
         p1 = np.polymul(p1, x)
-    return np.linalg.norm(p1) < 1e-3 * np.linalg.norm(p2)
+    return np.linalg.norm(p1) < 1e-4 * np.linalg.norm(p2)
 
 # Took the framework for the old function by
 # Sawyer B. Fuller <minster@uw.edu>, removed a lot of the innards
@@ -337,7 +337,8 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
         if isinstance(sys, xferfcn.TransferFunction) and not sys.isctime():
             if _likely_numerical_inaccuracy(sys):
                 warn("stability_margins: Falling back to 'frd' method "
-                "because of chance of numerical inaccuracy in 'poly' method.")
+                "because of chance of numerical inaccuracy in 'poly' method.",
+                stacklevel=2)
                 omega_sys = freqplot._default_frequency_range(sys)
                 omega_sys = omega_sys[omega_sys < np.pi / sys.dt]
                 sys = frdata.FRD(sys, omega_sys, smooth=True)
