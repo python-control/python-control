@@ -1,9 +1,7 @@
-# timeresp.py - time-domain simulation routines
-#
-# This file contains a collection of functions that calculate time
-# responses for linear systems.
+"""
+timeresp.py - time-domain simulation routines.
 
-"""The :mod:`~control.timeresp` module contains a collection of
+The :mod:`~control.timeresp` module contains a collection of
 functions that are used to compute time-domain simulations of LTI
 systems.
 
@@ -21,9 +19,7 @@ evaluated, `U` is a vector of inputs (one for each time point) and
 See :ref:`time-series-convention` for more information on how time
 series data are represented.
 
-"""
-
-"""Copyright (c) 2011 by California Institute of Technology
+Copyright (c) 2011 by California Institute of Technology
 All rights reserved.
 
 Copyright (c) 2011 by Eike Welk
@@ -75,12 +71,12 @@ import warnings
 
 import numpy as np
 import scipy as sp
-from numpy import atleast_1d, einsum, maximum, minimum
+from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
 
 from . import config
-from .lti import (LTI, isctime, isdtime)
-from .statesp import _convert_to_statespace, _mimo2simo, _mimo2siso, ssdata
+from .lti import isctime, isdtime
+from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
 from .xferfcn import TransferFunction
 
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
@@ -209,7 +205,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : StateSpace or TransferFunction
         LTI system to simulate
 
     T : array_like, optional for discrete LTI `sys`
@@ -284,9 +280,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     See :ref:`time-series-convention`.
 
     """
-    if not isinstance(sys, LTI):
-        raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
-                        '(For example ``StateSpace`` or ``TransferFunction``)')
+    if not isinstance(sys, (StateSpace, TransferFunction)):
+        raise TypeError('Parameter ``sys``: must be a ``StateSpace`` or'
+                        ' ``TransferFunction``)')
 
     # If return_x was not specified, figure out the default
     if return_x is None:
@@ -738,20 +734,24 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         squeeze=squeeze, input=input, output=output)
 
 
-def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
+def step_info(sysdata, T=None, T_num=None, SettlingTimeThreshold=0.02,
               RiseTimeLimits=(0.1, 0.9)):
     """
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
     Parameters
     ----------
-    sys : LTI system
+    sysdata : StateSpace or TransferFunction or array_like
+        The system data. Either LTI system to similate (StateSpace,
+        TransferFunction), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given, see :func:`step_response` for more detail)
+        Required, if sysdata is a time series of response data.
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete-time.
+        array; autocomputed if not given; ignored if sysdata is a
+        discrete-time system or a time series or response data.
     SettlingTimeThreshold : float value, optional
         Defines the error to compute settling time (default = 0.02)
     RiseTimeLimits : tuple (lower_threshold, upper_theshold)
@@ -760,7 +760,8 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     Returns
     -------
     S : dict or list of list of dict
-        If `sys` is a SISO system, S is a dictionary containing:
+        If `sysdata` corresponds to a SISO system, S is a dictionary
+        containing:
 
         RiseTime:
             Time from 10% to 90% of the steady-state value.
@@ -781,9 +782,9 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
         SteadyStateValue:
             Steady-state value
 
-        If `sys` is a MIMO system, `S` is a 2D list of dicts. To get the
-        step response characteristics from the j-th input to the i-th output,
-        access ``S[i][j]``
+        If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
+        To get the step response characteristics from the j-th input to the
+        i-th output, access ``S[i][j]``
 
 
     See Also
@@ -833,18 +834,46 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
     PeakTime: 4.242
     SteadyStateValue: -1.0
     """
-    if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
-    T, Yout = step_response(sys, T, squeeze=False)
+    if isinstance(sysdata, (StateSpace, TransferFunction)):
+        if T is None or np.asarray(T).size == 1:
+            T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=True)
+        T, Yout = step_response(sysdata, T, squeeze=False)
+        InfValues = np.atleast_2d(sysdata.dcgain())
+        retsiso = sysdata.issiso()
+        noutputs = sysdata.noutputs
+        ninputs = sysdata.ninputs
+    else:
+        # Time series of response data
+        errmsg = ("`sys` must be a LTI system, or time response data"
+                  " with a shape following the python-control"
+                  " time series data convention.")
+        try:
+            Yout = np.array(sysdata, dtype=float)
+        except ValueError:
+            raise ValueError(errmsg)
+        if Yout.ndim == 1 or (Yout.ndim == 2 and Yout.shape[0] == 1):
+            Yout = Yout[np.newaxis, np.newaxis, :]
+            retsiso = True
+        elif Yout.ndim == 3:
+            retsiso = False
+        else:
+            raise ValueError(errmsg)
+        if T is None or Yout.shape[2] != len(np.squeeze(T)):
+            raise ValueError("For time response data, a matching time vector"
+                             " must be given")
+        T = np.squeeze(T)
+        noutputs = Yout.shape[0]
+        ninputs = Yout.shape[1]
+        InfValues = Yout[:, :, -1]
 
     ret = []
-    for i in range(sys.noutputs):
+    for i in range(noutputs):
         retrow = []
-        for j in range(sys.ninputs):
+        for j in range(ninputs):
             yout = Yout[i, j, :]
 
             # Steady state value
-            InfValue = sys.dcgain() if sys.issiso() else sys.dcgain()[i, j]
+            InfValue = InfValues[i, j]
             sgnInf = np.sign(InfValue.real)
 
             rise_time: float = np.NaN
@@ -869,7 +898,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
                 # SettlingTime
                 settled = np.where(
-                    np.abs(yout/InfValue -1) >= SettlingTimeThreshold)[0][-1]+1
+                    np.abs(yout/InfValue-1) >= SettlingTimeThreshold)[0][-1]+1
                 # MIMO systems can have unsettled channels without infinite
                 # InfValue
                 if settled < len(T):
@@ -917,7 +946,7 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
         ret.append(retrow)
 
-    return ret[0][0] if sys.issiso() else ret
+    return ret[0][0] if retsiso else ret
 
 def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):

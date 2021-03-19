@@ -427,8 +427,7 @@ class TestTimeresp:
         np.testing.assert_array_equal(y, np.ones(len(t)))
 
     def assert_step_info_match(self, sys, info, info_ref):
-        """Assert reasonable step_info accuracy"""
-
+        """Assert reasonable step_info accuracy."""
         if sys.isdtime(strict=True):
             dt = sys.dt
         else:
@@ -460,10 +459,28 @@ class TestTimeresp:
          "siso_tf_kneg",
          "siso_tf_type1"],
         indirect=["tsystem"])
-    def test_step_info(self, tsystem):
-        """Test step info for SISO systems"""
-        step_info_kwargs = tsystem.kwargs.get('step_info',{})
-        info = step_info(tsystem.sys, **step_info_kwargs)
+    @pytest.mark.parametrize(
+        "systype, time_2d",
+        [("lti", False),
+         ("time response data", False),
+         ("time response data", True),
+         ])
+    def test_step_info(self, tsystem, systype, time_2d):
+        """Test step info for SISO systems."""
+        step_info_kwargs = tsystem.kwargs.get('step_info', {})
+        if systype == "time response data":
+            # simulate long enough for steady state value
+            tfinal = 3 * tsystem.step_info['SettlingTime']
+            if np.isnan(tfinal):
+                pytest.skip("test system does not settle")
+            t, y = step_response(tsystem.sys, T=tfinal, T_num=5000)
+            sysdata = y
+            step_info_kwargs['T'] = t[np.newaxis, :] if time_2d else t
+        else:
+            sysdata = tsystem.sys
+
+        info = step_info(sysdata, **step_info_kwargs)
+
         self.assert_step_info_match(tsystem.sys, info, tsystem.step_info)
 
     @pytest.mark.parametrize(
@@ -471,15 +488,37 @@ class TestTimeresp:
         ['mimo_ss_step_matlab',
          pytest.param('mimo_tf_step', marks=slycotonly)],
         indirect=["tsystem"])
-    def test_step_info_mimo(self, tsystem):
-        """Test step info for MIMO systems"""
-        step_info_kwargs = tsystem.kwargs.get('step_info',{})
-        info_dict = step_info(tsystem.sys, **step_info_kwargs)
+    @pytest.mark.parametrize(
+        "systype", ["lti", "time response data"])
+    def test_step_info_mimo(self, tsystem, systype):
+        """Test step info for MIMO systems."""
+        step_info_kwargs = tsystem.kwargs.get('step_info', {})
+        if systype == "time response data":
+            tfinal = 3 * max([S['SettlingTime']
+                              for Srow in tsystem.step_info for S in Srow])
+            t, y = step_response(tsystem.sys, T=tfinal, T_num=5000)
+            sysdata = y
+            step_info_kwargs['T'] = t
+        else:
+            sysdata = tsystem.sys
+
+        info_dict = step_info(sysdata, **step_info_kwargs)
+
         for i, row in enumerate(info_dict):
             for j, info in enumerate(row):
-                for k in info:
-                    self.assert_step_info_match(tsystem.sys,
-                                                info, tsystem.step_info[i][j])
+                self.assert_step_info_match(tsystem.sys,
+                                            info, tsystem.step_info[i][j])
+
+    def test_step_info_invalid(self):
+        """Call step_info with invalid parameters."""
+        with pytest.raises(ValueError, match="time series data convention"):
+            step_info(["not numeric data"])
+        with pytest.raises(ValueError, match="time series data convention"):
+            step_info(np.ones((10, 15)))                     # invalid shape
+        with pytest.raises(ValueError, match="matching time vector"):
+            step_info(np.ones(15), T=np.linspace(0, 1, 20))  # time too long
+        with pytest.raises(ValueError, match="matching time vector"):
+            step_info(np.ones((2, 2, 15)))                   # no time vector
 
     def test_step_pole_cancellation(self, pole_cancellation,
                                     no_pole_cancellation):
@@ -490,7 +529,6 @@ class TestTimeresp:
         self.assert_step_info_match(no_pole_cancellation,
                                     step_info_no_cancellation,
                                     step_info_cancellation)
-
 
     @pytest.mark.parametrize(
         "tsystem, kwargs",
