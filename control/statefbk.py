@@ -47,6 +47,25 @@ from .mateqn import care
 from .statesp import _ssmatrix
 from .exception import ControlSlycot, ControlArgument, ControlDimension
 
+# Make sure we have access to the right slycot routines
+try:
+    from slycot import sb03md57
+    # wrap without the deprecation warning
+    def sb03md(n, C, A, U, dico, job='X',fact='N',trana='N',ldwork=None):
+        ret = sb03md57(A, U, C, dico, job, fact, trana, ldwork)
+        return ret[2:]
+except ImportError:
+    try:
+        from slycot import sb03md
+    except ImportError:
+        sb03md = None
+
+try:
+    from slycot import sb03od
+except ImportError:
+    sb03od = None
+
+
 __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe',
            'acker']
 
@@ -574,7 +593,7 @@ def gram(sys, type):
         * if `type` is not 'c', 'o', 'cf' or 'of'
         * if system is unstable (sys.A has eigenvalues not in left half plane)
 
-    ImportError
+    ControlSlycot
         if slycot routine sb03md cannot be found
         if slycot routine sb03od cannot be found
 
@@ -614,9 +633,7 @@ def gram(sys, type):
     if type == 'c' or type == 'o':
         # Compute Gramian by the Slycot routine sb03md
         # make sure Slycot is installed
-        try:
-            from slycot import sb03md
-        except ImportError:
+        if sb03md is None:
             raise ControlSlycot("can't find slycot module 'sb03md'")
         if type == 'c':
             tra = 'T'
@@ -634,9 +651,7 @@ def gram(sys, type):
 
     elif type == 'cf' or type == 'of':
         # Compute cholesky factored gramian from slycot routine sb03od
-        try:
-            from slycot import sb03od
-        except ImportError:
+        if sb03od is None:
             raise ControlSlycot("can't find slycot module 'sb03od'")
         tra = 'N'
         n = sys.nstates
