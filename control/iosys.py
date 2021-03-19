@@ -358,25 +358,87 @@ class InputOutputSystem(object):
         if (warning):
             warn("Parameters passed to InputOutputSystem ignored.")
 
-    def _rhs(self, t, x, u):
+    def _rhs(self, t, x, u, params={}):
         """Evaluate right hand side of a differential or difference equation.
 
         Private function used to compute the right hand side of an
-        input/output system model.
+        input/output system model. Intended for fast
+        evaluation; for a more user-friendly interface
+        you may want to use :meth:`dynamics`.
 
         """
         NotImplemented("Evaluation not implemented for system of type ",
                        type(self))
 
+    def dynamics(self, t, x, u):
+        """Compute the dynamics of a differential or difference equation.
+
+        Given time `t`, input `u` and state `x`, returns the value of the
+        right hand side of the dynamical system. If the system is continuous,
+        returns the time derivative
+
+            dx/dt = f(t, x, u)
+
+        where `f` is the system's (possibly nonlinear) dynamics function.
+        If the system is discrete-time, returns the next value of `x`:
+
+            x[t+dt] = f(t, x[t], u[t])
+
+        Where `t` is a scalar.
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        dx/dt or x[t+dt] : ndarray
+        """
+        return self._rhs(t, x, u)
+
     def _out(self, t, x, u, params={}):
         """Evaluate the output of a system at a given state, input, and time
 
         Private function used to compute the output of of an input/output
-        system model given the state, input, parameters, and time.
+        system model given the state, input, parameters. Intended for fast
+        evaluation; for a more user-friendly interface you may want to use
+        :meth:`output`.
 
         """
         # If no output function was defined in subclass, return state
         return x
+
+    def output(self, t, x, u):
+        """Compute the output of the system
+
+        Given time `t`, input `u` and state `x`, returns the output of the
+        system:
+
+            y = g(t, x, u)
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        y : ndarray
+        """
+        return self._out(t, x, u)
 
     def set_inputs(self, inputs, prefix='u'):
         """Set the number/names of the system inputs.

@@ -8,6 +8,7 @@ BG,  26 Jul 2020 merge statesp_array_test.py differences into statesp_test.py
 """
 
 import numpy as np
+from numpy.testing import assert_array_almost_equal
 import pytest
 import operator
 from numpy.linalg import solve
@@ -46,6 +47,17 @@ class TestStateSpace:
     def sys322(self, sys322ABCD):
         """3-states square system (2 inputs x 2 outputs)"""
         return StateSpace(*sys322ABCD)
+
+    @pytest.fixture
+    def sys121(self):
+        """2 state, 1 input, 1 output (siso)  system"""
+        A121 = [[4., 1.],
+                [2., -3]]
+        B121 = [[5.],
+                [-3.]]
+        C121 = [[2., -4]]
+        D121 = [[3.]]
+        return StateSpace(A121, B121, C121, D121)
 
     @pytest.fixture
     def sys222(self):
@@ -750,6 +762,70 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(
             np.squeeze(sys322.horner(1.j)),
             mag[:, :, 0] * np.exp(1.j * phase[:, :, 0]))
+
+    @pytest.mark.parametrize('x',
+        [[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    @pytest.mark.parametrize('u', [0, 1, np.atleast_1d(2)])
+    def test_dynamics_and_output_siso(self, x, u, sys121):
+        assert_array_almost_equal(
+            sys121.dynamics(0, x, u),
+            sys121.A.dot(x).reshape((-1,)) + sys121.B.dot(u).reshape((-1,)))
+        assert_array_almost_equal(
+            sys121.output(0, x, u),
+            sys121.C.dot(x).reshape((-1,)) + sys121.D.dot(u).reshape((-1,)))
+        assert_array_almost_equal(
+            sys121.dynamics(0, x),
+            sys121.A.dot(x).reshape((-1,)))
+        assert_array_almost_equal(
+            sys121.output(0, x),
+            sys121.C.dot(x).reshape((-1,)))
+
+    # too few and too many states and inputs
+    @pytest.mark.parametrize('x', [0, 1, [], [1, 2, 3], np.atleast_1d(2)])
+    def test_error_x_dynamics_and_output_siso(self, x, sys121):
+        with pytest.raises(ValueError):
+            sys121.dynamics(0, x)
+        with pytest.raises(ValueError):
+            sys121.output(0, x)
+    @pytest.mark.parametrize('u', [[1, 1], np.atleast_1d((2, 2))])
+    def test_error_u_dynamics_output_siso(self, u, sys121):
+        with pytest.raises(ValueError):
+            sys121.dynamics(0, 1, u)
+        with pytest.raises(ValueError):
+            sys121.output(0, 1, u)
+
+    @pytest.mark.parametrize('x',
+        [[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    @pytest.mark.parametrize('u',
+        [[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
+    def test_dynamics_and_output_mimo(self, x, u, sys222):
+        assert_array_almost_equal(
+            sys222.dynamics(0, x, u),
+            sys222.A.dot(x).reshape((-1,)) + sys222.B.dot(u).reshape((-1,)))
+        assert_array_almost_equal(
+            sys222.output(0, x, u),
+            sys222.C.dot(x).reshape((-1,)) + sys222.D.dot(u).reshape((-1,)))
+        assert_array_almost_equal(
+            sys222.dynamics(0, x),
+            sys222.A.dot(x).reshape((-1,)))
+        assert_array_almost_equal(
+            sys222.output(0, x),
+            sys222.C.dot(x).reshape((-1,)))
+
+    # too few and too many states and inputs
+    @pytest.mark.parametrize('x', [0, 1, [1, 1, 1]])
+    def test_error_x_dynamics_mimo(self, x, sys222):
+        with pytest.raises(ValueError):
+            sys222.dynamics(0, x)
+        with pytest.raises(ValueError):
+            sys222.output(0, x)
+    @pytest.mark.parametrize('u', [1, [1, 1, 1]])
+    def test_error_u_dynamics_mimo(self, u, sys222):
+        with pytest.raises(ValueError):
+            sys222.dynamics(0, (1, 1), u)
+        with pytest.raises(ValueError):
+            sys222.output(0, (1, 1), u)
+
 
 class TestRss:
     """These are tests for the proper functionality of statesp.rss."""
