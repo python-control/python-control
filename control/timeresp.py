@@ -740,7 +740,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
 def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
               RiseTimeLimits=(0.1, 0.9)):
-    '''
+    """
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
     Parameters
@@ -781,7 +781,9 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
         SteadyStateValue:
             Steady-state value
 
-        If `sys` is a MIMO system, S is a 2D-List of dicts.
+        If `sys` is a MIMO system, `S` is a 2D list of dicts. To get the
+        step response characteristics from the j-th input to the i-th output,
+        access ``S[i][j]``
 
 
     See Also
@@ -790,8 +792,47 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
     Examples
     --------
-    >>> info = step_info(sys, T)
-    '''
+    >>> from control import step_info, TransferFunction
+    >>> sys = TransferFunction([-1, 1], [1, 1, 1])
+    >>> S = step_info(sys)
+    >>> for k in S:
+    ...     print(f"{k}: {S[k]:3.4}")
+    ...
+    RiseTime: 1.256
+    SettlingTime: 9.071
+    SettlingMin: 0.9011
+    SettlingMax: 1.208
+    Overshoot: 20.85
+    Undershoot: 27.88
+    Peak: 1.208
+    PeakTime: 4.187
+    SteadyStateValue: 1.0
+
+    MIMO System: Simulate until a final time of 10. Get the step response
+    characteristics for the second input and specify a 5% error until the
+    signal is considered settled.
+
+    >>> from numpy import sqrt
+    >>> from control import step_info, StateSpace
+    >>> sys = StateSpace([[-1., -1.],
+    ...                   [1., 0.]],
+    ...                  [[-1./sqrt(2.), 1./sqrt(2.)],
+    ...                   [0, 0]],
+    ...                  [[sqrt(2.), -sqrt(2.)]],
+    ...                  [[0, 0]])
+    >>> S = step_info(sys, T=10., SettlingTimeThreshold=0.05)
+    >>> for k, v in S[0][1].items():
+    ...     print(f"{k}: {float(v):3.4}")
+    RiseTime: 1.212
+    SettlingTime: 6.061
+    SettlingMin: -1.209
+    SettlingMax: -0.9184
+    Overshoot: 20.87
+    Undershoot: 28.02
+    Peak: 1.209
+    PeakTime: 4.242
+    SteadyStateValue: -1.0
+    """
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
     T, Yout = step_response(sys, T, squeeze=False)
