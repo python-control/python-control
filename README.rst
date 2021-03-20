@@ -1,6 +1,19 @@
-.. image:: https://travis-ci.org/python-control/python-control.svg?branch=master
-   :target: https://travis-ci.org/python-control/python-control
-.. image:: https://coveralls.io/repos/python-control/python-control/badge.png
+.. image:: https://anaconda.org/conda-forge/control/badges/version.svg
+   :target: https://anaconda.org/conda-forge/control
+
+.. image:: https://img.shields.io/pypi/v/control.svg
+   :target: https://pypi.org/project/control/
+
+.. image:: https://github.com/python-control/python-control/actions/workflows/python-package-conda.yml/badge.svg
+   :target: https://github.com/python-control/python-control/actions/workflows/python-package-conda.yml
+
+.. image:: https://github.com/python-control/python-control/actions/workflows/install_examples.yml/badge.svg
+   :target: https://github.com/python-control/python-control/actions/workflows/install_examples.yml
+
+.. image:: https://github.com/python-control/python-control/actions/workflows/control-slycot-src.yml/badge.svg
+   :target: https://github.com/python-control/python-control/actions/workflows/control-slycot-src.yml
+
+.. image:: https://coveralls.io/repos/python-control/python-control/badge.svg
    :target: https://coveralls.io/r/python-control/python-control
 
 Python Control Systems Library
