@@ -1216,16 +1216,27 @@ class StateSpace(LTI):
 
         .. math: G(1) = C (I - A)^{-1} B + D
 
+        Parameters
+        ----------
+        warn_infinite : bool, optional
+            By default, don't issue a warning message if the zero-frequency
+            gain is infinite.  Setting `warn_infinite` to generate the warning
+            message.
+
         Returns
         -------
-        gain : ndarray
-            An array of shape (outputs,inputs); the array will either be the
-            zero-frequency (or DC) gain, or, if the frequency response is
-            singular, the array will be filled with (inf + nanj).
+        gain : (outputs, inputs) ndarray or scalar
+            Array or scalar value for SISO systems, depending on
+            config.defaults['control.squeeze_frequency_response'].
+            The value of the array elements or the scalar is either the
+            zero-frequency (or DC) gain, or `inf`, if the frequency response
+            is singular.
 
+            For real valued systems, the empty imaginary part of the
+            complex zero-frequency response is discarded and a real array or
+            scalar is returned.
         """
-        return self(0, warn_infinite=warn_infinite) if self.isctime() \
-            else self(1, warn_infinite=warn_infinite)
+        return self._dcgain(warn_infinite)
 
     def dynamics(self, t, x, u=0):
         """Compute the dynamics of the system

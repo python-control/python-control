@@ -433,9 +433,9 @@ def test_dcgain_consistency():
     np.testing.assert_equal(
         sys_ss(0j, warn_infinite=False), complex(np.inf, np.nan))
     np.testing.assert_equal(
-        sys_tf.dcgain(warn_infinite=False), complex(np.inf, np.nan))
+        sys_tf.dcgain(), np.inf)
     np.testing.assert_equal(
-        sys_ss.dcgain(warn_infinite=False), complex(np.inf, np.nan))
+        sys_ss.dcgain(), np.inf)
 
     # Set up transfer function with pole, zero at the origin
     sys_tf = ctrl.tf([1, 0], [1, 0])
@@ -448,7 +448,7 @@ def test_dcgain_consistency():
     np.testing.assert_equal(
         sys_tf(0j, warn_infinite=False), complex(np.nan, np.nan))
     np.testing.assert_equal(
-        sys_tf.dcgain(warn_infinite=False), complex(np.nan, np.nan))
+        sys_tf.dcgain(), np.nan)
 
     # Set up state space version
     sys_ss = ctrl.tf2ss(ctrl.tf([1, 0], [1, 1])) * \
@@ -462,7 +462,7 @@ def test_dcgain_consistency():
         np.testing.assert_equal(
             sys_ss(0j, warn_infinite=False), complex(np.nan, np.nan))
         np.testing.assert_equal(
-            sys_ss.dcgain(warn_infinite=False), complex(np.nan, np.nan))
+            sys_ss.dcgain(), np.nan)
     elif 0 in sys_ss.pole():
         # Pole at the origin, but zero elsewhere => should get (inf + nanj)
         np.testing.assert_equal(
@@ -470,7 +470,7 @@ def test_dcgain_consistency():
         np.testing.assert_equal(
             sys_ss(0j, warn_infinite=False), complex(np.inf, np.nan))
         np.testing.assert_equal(
-            sys_ss.dcgain(warn_infinite=False), complex(np.inf, np.nan))
+            sys_ss.dcgain(), np.inf)
     else:
         # Near pole/zero cancellation => nothing sensible to check
         pass
