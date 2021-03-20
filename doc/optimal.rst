@@ -66,7 +66,7 @@ intended to hold at all instants in time along the trajectory.
 
 A common use of optimization-based control techniques is the implementation
 of model predictive control (also called receding horizon control).  In
-model predict control, a finite horizon optimal control problem is solved,
+model predictive control, a finite horizon optimal control problem is solved,
 generating open-loop state and control trajectories.  The resulting control
 trajectory is applied to the system for a fraction of the horizon
 length. This process is then repeated, resulting in a sampled data feedback
