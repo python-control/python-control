@@ -1,9 +1,7 @@
-# timeresp.py - time-domain simulation routines
-#
-# This file contains a collection of functions that calculate time
-# responses for linear systems.
+"""
+timeresp.py - time-domain simulation routines.
 
-"""The :mod:`~control.timeresp` module contains a collection of
+The :mod:`~control.timeresp` module contains a collection of
 functions that are used to compute time-domain simulations of LTI
 systems.
 
@@ -21,9 +19,7 @@ evaluated, `U` is a vector of inputs (one for each time point) and
 See :ref:`time-series-convention` for more information on how time
 series data are represented.
 
-"""
-
-"""Copyright (c) 2011 by California Institute of Technology
+Copyright (c) 2011 by California Institute of Technology
 All rights reserved.
 
 Copyright (c) 2011 by Eike Welk
@@ -71,18 +67,17 @@ Date: August 17, 2020
 $Id$
 """
 
-# Libraries that we make use of
-import scipy as sp              # SciPy library (used all over)
-import numpy as np              # NumPy library
-from scipy.linalg import eig, eigvals, matrix_balance, norm
-from numpy import (einsum, maximum, minimum,
-                   atleast_1d)
 import warnings
-from .lti import LTI     # base class of StateSpace, TransferFunction
-from .xferfcn import TransferFunction
-from .statesp import _convert_to_statespace, _mimo2simo, _mimo2siso, ssdata
-from .lti import isdtime, isctime
+
+import numpy as np
+import scipy as sp
+from numpy import einsum, maximum, minimum
+from scipy.linalg import eig, eigvals, matrix_balance, norm
+
 from . import config
+from .lti import isctime, isdtime
+from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
+from .xferfcn import TransferFunction
 
 __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
            'impulse_response']
@@ -210,7 +205,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     Parameters
     ----------
-    sys : LTI (StateSpace or TransferFunction)
+    sys : StateSpace or TransferFunction
         LTI system to simulate
 
     T : array_like, optional for discrete LTI `sys`
@@ -285,9 +280,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     See :ref:`time-series-convention`.
 
     """
-    if not isinstance(sys, LTI):
-        raise TypeError('Parameter ``sys``: must be a ``LTI`` object. '
-                        '(For example ``StateSpace`` or ``TransferFunction``)')
+    if not isinstance(sys, (StateSpace, TransferFunction)):
+        raise TypeError('Parameter ``sys``: must be a ``StateSpace`` or'
+                        ' ``TransferFunction``)')
 
     # If return_x was not specified, figure out the default
     if return_x is None:
@@ -739,43 +734,62 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         squeeze=squeeze, input=input, output=output)
 
 
-def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
-              RiseTimeLimits=(0.1, 0.9)):
-    '''
+def step_info(sysdata, T=None, T_num=None, yfinal=None,
+              SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1, 0.9)):
+    """
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
     Parameters
     ----------
-    sys : SISO dynamic system model. Dynamic systems that you can use include:
-        StateSpace or TransferFunction
-        LTI system to simulate
-
+    sysdata : StateSpace or TransferFunction or array_like
+        The system data. Either LTI system to similate (StateSpace,
+        TransferFunction), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
-        autocomputed if not given, see :func:`step_response` for more detail)
-
+        autocomputed if not given, see :func:`step_response` for more detail).
+        Required, if sysdata is a time series of response data.
     T_num : int, optional
         Number of time steps to use in simulation if T is not provided as an
-        array (autocomputed if not given); ignored if sys is discrete-time.
-
-    SettlingTimeThreshold : float value, optional
+        array; autocomputed if not given; ignored if sysdata is a
+        discrete-time system or a time series or response data.
+    yfinal : scalar or array_like, optional
+        Steady-state response. If not given, sysdata.dcgain() is used for
+        systems to simulate and the last value of the the response data is
+        used for a given time series of response data. Scalar for SISO,
+        (noutputs, ninputs) array_like for MIMO systems.
+    SettlingTimeThreshold : float, optional
         Defines the error to compute settling time (default = 0.02)
-
     RiseTimeLimits : tuple (lower_threshold, upper_theshold)
         Defines the lower and upper threshold for RiseTime computation
 
     Returns
     -------
-    S: a dictionary containing:
-        RiseTime: Time from 10% to 90% of the steady-state value.
-        SettlingTime: Time to enter inside a default error of 2%
-        SettlingMin: Minimum value after RiseTime
-        SettlingMax: Maximum value after RiseTime
-        Overshoot: Percentage of the Peak relative to steady value
-        Undershoot: Percentage of undershoot
-        Peak: Absolute peak value
-        PeakTime: time of the Peak
-        SteadyStateValue: Steady-state value
+    S : dict or list of list of dict
+        If `sysdata` corresponds to a SISO system, S is a dictionary
+        containing:
+
+        RiseTime:
+            Time from 10% to 90% of the steady-state value.
+        SettlingTime:
+            Time to enter inside a default error of 2%
+        SettlingMin:
+            Minimum value after RiseTime
+        SettlingMax:
+            Maximum value after RiseTime
+        Overshoot:
+            Percentage of the Peak relative to steady value
+        Undershoot:
+            Percentage of undershoot
+        Peak:
+            Absolute peak value
+        PeakTime:
+            time of the Peak
+        SteadyStateValue:
+            Steady-state value
+
+        If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
+        To get the step response characteristics from the j-th input to the
+        i-th output, access ``S[i][j]``
 
 
     See Also
@@ -784,83 +798,163 @@ def step_info(sys, T=None, T_num=None, SettlingTimeThreshold=0.02,
 
     Examples
     --------
-    >>> info = step_info(sys, T)
-    '''
-    
-    if not sys.issiso():
-        sys = _mimo2siso(sys,0,0)
-        warnings.warn(" Internal conversion from a MIMO system to a SISO system,"
-                      " the first input and the first output were used (u1 -> y1);"
-                      " it may not be the result you are looking for")
+    >>> from control import step_info, TransferFunction
+    >>> sys = TransferFunction([-1, 1], [1, 1, 1])
+    >>> S = step_info(sys)
+    >>> for k in S:
+    ...     print(f"{k}: {S[k]:3.4}")
+    ...
+    RiseTime: 1.256
+    SettlingTime: 9.071
+    SettlingMin: 0.9011
+    SettlingMax: 1.208
+    Overshoot: 20.85
+    Undershoot: 27.88
+    Peak: 1.208
+    PeakTime: 4.187
+    SteadyStateValue: 1.0
 
-    if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
+    MIMO System: Simulate until a final time of 10. Get the step response
+    characteristics for the second input and specify a 5% error until the
+    signal is considered settled.
 
-    T, yout = step_response(sys, T)
-
-    # Steady state value
-    InfValue = sys.dcgain().real
-
-     # TODO: this could be a function step_info4data(t,y,yfinal)
-    rise_time: float = np.NaN
-    settling_time: float = np.NaN
-    settling_min: float = np.NaN
-    settling_max: float = np.NaN
-    peak_value: float = np.Inf
-    peak_time: float = np.Inf
-    undershoot: float = np.NaN
-    overshoot: float = np.NaN
-    steady_state_value: float = np.NaN
- 
-    if not np.isnan(InfValue) and not np.isinf(InfValue):
-        # SteadyStateValue
-        steady_state_value = InfValue
-        # Peak
-        peak_index = np.abs(yout).argmax()
-        peak_value = np.abs(yout[peak_index])
-        peak_time = T[peak_index]
-
-        sup_margin = (1. + SettlingTimeThreshold) * InfValue
-        inf_margin = (1. - SettlingTimeThreshold) * InfValue
-
-        # RiseTime
-        tr_lower_index = (np.where(np.sign(InfValue.real) * (yout- RiseTimeLimits[0] * InfValue) >= 0 )[0])[0]
-        tr_upper_index = (np.where(np.sign(InfValue.real) * yout >= np.sign(InfValue.real) * RiseTimeLimits[1] * InfValue)[0])[0]
-
-        # SettlingTime
-        settling_time = T[np.where(np.abs(yout-InfValue) >= np.abs(SettlingTimeThreshold*InfValue))[0][-1]+1]
-        # Overshoot and Undershoot
-        y_os = (np.sign(InfValue.real)*yout).max()
-        dy_os = np.abs(y_os) - np.abs(InfValue)
-        if dy_os > 0:
-            overshoot = np.abs(100. * dy_os / InfValue)
+    >>> from numpy import sqrt
+    >>> from control import step_info, StateSpace
+    >>> sys = StateSpace([[-1., -1.],
+    ...                   [1., 0.]],
+    ...                  [[-1./sqrt(2.), 1./sqrt(2.)],
+    ...                   [0, 0]],
+    ...                  [[sqrt(2.), -sqrt(2.)]],
+    ...                  [[0, 0]])
+    >>> S = step_info(sys, T=10., SettlingTimeThreshold=0.05)
+    >>> for k, v in S[0][1].items():
+    ...     print(f"{k}: {float(v):3.4}")
+    RiseTime: 1.212
+    SettlingTime: 6.061
+    SettlingMin: -1.209
+    SettlingMax: -0.9184
+    Overshoot: 20.87
+    Undershoot: 28.02
+    Peak: 1.209
+    PeakTime: 4.242
+    SteadyStateValue: -1.0
+    """
+    if isinstance(sysdata, (StateSpace, TransferFunction)):
+        if T is None or np.asarray(T).size == 1:
+            T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=True)
+        T, Yout = step_response(sysdata, T, squeeze=False)
+        if yfinal:
+            InfValues = np.atleast_2d(yfinal)
         else:
-            overshoot = 0
-
-        y_us = (np.sign(InfValue.real)*yout).min()
-        dy_us = np.abs(y_us)
-        if dy_us > 0:
-            undershoot = np.abs(100. * dy_us / InfValue)
+            InfValues = np.atleast_2d(sysdata.dcgain())
+        retsiso = sysdata.issiso()
+        noutputs = sysdata.noutputs
+        ninputs = sysdata.ninputs
+    else:
+        # Time series of response data
+        errmsg = ("`sys` must be a LTI system, or time response data"
+                  " with a shape following the python-control"
+                  " time series data convention.")
+        try:
+            Yout = np.array(sysdata, dtype=float)
+        except ValueError:
+            raise ValueError(errmsg)
+        if Yout.ndim == 1 or (Yout.ndim == 2 and Yout.shape[0] == 1):
+            Yout = Yout[np.newaxis, np.newaxis, :]
+            retsiso = True
+        elif Yout.ndim == 3:
+            retsiso = False
         else:
-            undershoot = 0
+            raise ValueError(errmsg)
+        if T is None or Yout.shape[2] != len(np.squeeze(T)):
+            raise ValueError("For time response data, a matching time vector"
+                             " must be given")
+        T = np.squeeze(T)
+        noutputs = Yout.shape[0]
+        ninputs = Yout.shape[1]
+        InfValues = np.atleast_2d(yfinal) if yfinal else Yout[:, :, -1]
 
-        # RiseTime
-        rise_time = T[tr_upper_index] - T[tr_lower_index]
+    ret = []
+    for i in range(noutputs):
+        retrow = []
+        for j in range(ninputs):
+            yout = Yout[i, j, :]
 
-        settling_max = (yout[tr_upper_index:]).max()
-        settling_min = (yout[tr_upper_index:]).min()
+            # Steady state value
+            InfValue = InfValues[i, j]
+            sgnInf = np.sign(InfValue.real)
 
-    return {
-        'RiseTime': rise_time,
-        'SettlingTime': settling_time,
-        'SettlingMin': settling_min,
-        'SettlingMax': settling_max,
-        'Overshoot': overshoot,
-        'Undershoot': undershoot,
-        'Peak': peak_value,
-        'PeakTime': peak_time,
-        'SteadyStateValue': steady_state_value
-        }
+            rise_time: float = np.NaN
+            settling_time: float = np.NaN
+            settling_min: float = np.NaN
+            settling_max: float = np.NaN
+            peak_value: float = np.Inf
+            peak_time: float = np.Inf
+            undershoot: float = np.NaN
+            overshoot: float = np.NaN
+            steady_state_value: complex = np.NaN
+
+            if not np.isnan(InfValue) and not np.isinf(InfValue):
+                # RiseTime
+                tr_lower_index = np.where(
+                    sgnInf * (yout - RiseTimeLimits[0] * InfValue) >= 0
+                    )[0][0]
+                tr_upper_index = np.where(
+                    sgnInf * (yout - RiseTimeLimits[1] * InfValue) >= 0
+                    )[0][0]
+                rise_time = T[tr_upper_index] - T[tr_lower_index]
+
+                # SettlingTime
+                settled = np.where(
+                    np.abs(yout/InfValue-1) >= SettlingTimeThreshold)[0][-1]+1
+                # MIMO systems can have unsettled channels without infinite
+                # InfValue
+                if settled < len(T):
+                    settling_time = T[settled]
+
+                settling_min = (yout[tr_upper_index:]).min()
+                settling_max = (yout[tr_upper_index:]).max()
+
+                # Overshoot
+                y_os = (sgnInf * yout).max()
+                dy_os = np.abs(y_os) - np.abs(InfValue)
+                if dy_os > 0:
+                    overshoot = np.abs(100. * dy_os / InfValue)
+                else:
+                    overshoot = 0
+
+                # Undershoot
+                y_us = (sgnInf * yout).min()
+                dy_us = np.abs(y_us)
+                if dy_us > 0:
+                    undershoot = np.abs(100. * dy_us / InfValue)
+                else:
+                    undershoot = 0
+
+                # Peak
+                peak_index = np.abs(yout).argmax()
+                peak_value = np.abs(yout[peak_index])
+                peak_time = T[peak_index]
+
+                # SteadyStateValue
+                steady_state_value = InfValue.real
+
+            retij = {
+                'RiseTime': rise_time,
+                'SettlingTime': settling_time,
+                'SettlingMin': settling_min,
+                'SettlingMax': settling_max,
+                'Overshoot': overshoot,
+                'Undershoot': undershoot,
+                'Peak': peak_value,
+                'PeakTime': peak_time,
+                'SteadyStateValue': steady_state_value
+                }
+            retrow.append(retij)
+
+        ret.append(retrow)
+
+    return ret[0][0] if retsiso else ret
 
 def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):
@@ -1287,16 +1381,18 @@ def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
         # only need to use default_tfinal if not given; N is ignored.
         if tfinal is None:
             # for discrete time, change from ideal_tfinal if N too large/small
-            N = int(np.clip(ideal_tfinal/sys.dt, N_min_dt, N_max))# [N_min, N_max]
-            tfinal = sys.dt * N
+            # [N_min, N_max]
+            N = int(np.clip(np.ceil(ideal_tfinal/sys.dt)+1, N_min_dt, N_max))
+            tfinal = sys.dt * (N-1)
         else:
-            N = int(tfinal/sys.dt)
-            tfinal = N * sys.dt # make tfinal an integer multiple of sys.dt
+            N = int(np.ceil(tfinal/sys.dt)) + 1
+            tfinal = sys.dt * (N-1) # make tfinal an integer multiple of sys.dt
     else:
         if tfinal is None:
             # for continuous time, simulate to ideal_tfinal but limit N
             tfinal = ideal_tfinal
         if N is None:
-            N = int(np.clip(tfinal/ideal_dt, N_min_ct, N_max)) # N<-[N_min, N_max]
+            # [N_min, N_max]
+            N = int(np.clip(np.ceil(tfinal/ideal_dt)+1, N_min_ct, N_max))
 
-    return np.linspace(0, tfinal, N, endpoint=False)
+    return np.linspace(0, tfinal, N, endpoint=True)
