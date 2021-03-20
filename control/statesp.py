@@ -1238,7 +1238,7 @@ class StateSpace(LTI):
         """
         return self._dcgain(warn_infinite)
 
-    def dynamics(self, t, x, u=0):
+    def dynamics(self, t, x, u=None):
         """Compute the dynamics of the system
 
         Given input `u` and state `x`, returns the dynamics of the state-space
@@ -1274,7 +1274,7 @@ class StateSpace(LTI):
         x = np.reshape(x, (-1, 1)) # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
-        if u is 0:
+        if u is None:
             return self.A.dot(x).reshape((-1,)) # return as row vector
         else: # received t, x, and u, ignore t
             u = np.reshape(u, (-1, 1)) # force to a column in case matrix
@@ -1283,7 +1283,7 @@ class StateSpace(LTI):
             return self.A.dot(x).reshape((-1,)) \
                  + self.B.dot(u).reshape((-1,)) # return as row vector
 
-    def output(self, t, x, u=0):
+    def output(self, t, x, u=None):
         """Compute the output of the system
 
         Given input `u` and state `x`, returns the output `y` of the
@@ -1317,7 +1317,7 @@ class StateSpace(LTI):
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
 
-        if u is 0:
+        if u is None:
             return self.C.dot(x).reshape((-1,)) # return as row vector
         else: # received t, x, and u, ignore t
             u = np.reshape(u, (-1, 1)) # force to a column in case matrix
