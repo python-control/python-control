@@ -937,7 +937,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
                 peak_time = T[peak_index]
 
                 # SteadyStateValue
-                steady_state_value = InfValue.real
+                steady_state_value = InfValue
 
             retij = {
                 'RiseTime': rise_time,
