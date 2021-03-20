@@ -1225,7 +1225,7 @@ class StateSpace(LTI):
 
         Returns
         -------
-        gain : (outputs, inputs) ndarray or scalar
+        gain : (noutputs, ninputs) ndarray or scalar
             Array or scalar value for SISO systems, depending on
             config.defaults['control.squeeze_frequency_response'].
             The value of the array elements or the scalar is either the

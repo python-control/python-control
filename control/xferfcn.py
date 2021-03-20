@@ -1070,7 +1070,7 @@ class TransferFunction(LTI):
 
         Returns
         -------
-        gain : (outputs, inputs) ndarray or scalar
+        gain : (noutputs, ninputs) ndarray or scalar
             Array or scalar value for SISO systems, depending on
             config.defaults['control.squeeze_frequency_response'].
             The value of the array elements or the scalar is either the
@@ -1080,7 +1080,6 @@ class TransferFunction(LTI):
             For real valued systems, the empty imaginary part of the
             complex zero-frequency response is discarded and a real array or
             scalar is returned.
-
         """
         return self._dcgain(warn_infinite)
 
