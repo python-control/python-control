@@ -39,7 +39,7 @@ setup(
     url='http://python-control.org',
     description='Python Control Systems Library',
     long_description=long_description,
-    packages=find_packages(),
+    packages=find_packages(exclude=['benchmarks']),
     classifiers=[f for f in CLASSIFIERS.split('\n') if f],
     install_requires=['numpy',
                       'scipy',
