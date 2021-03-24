@@ -210,6 +210,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     T : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
+        If None, `U` must be given and and `len(U)` time steps of sys.dt are
+        simulated. If sys.dt is None or True (undetermined time step), a dt
+        of 1.0 is assumed.
 
     U : array_like or float, optional
         Input array giving input at each time `T`
@@ -245,7 +248,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         squeeze=True, remove single-dimensional entries from the shape of
         the output even if the system is not SISO. If squeeze=False, keep
         the output as a 2D array (indexed by the output number and time)
-        even if the system is SISO. The default value can be overruled by
+        even if the system is SISO. The default value can be overridden by
         config.defaults['control.squeeze_time_response'].
 
     Returns
@@ -310,10 +313,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     if U is not None:
         U = np.asarray(U)
     if T is not None:
+        # T must be array-like
         T = np.asarray(T)
 
     # Set and/or check time vector in discrete time case
-    if isdtime(sys, strict=True):
+    if isdtime(sys):
         if T is None:
             if U is None:
                 raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
@@ -323,7 +327,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                 n_steps = U.shape[0]
             else:
                 n_steps = U.shape[1]
-            T = np.array(range(n_steps)) * (1 if sys.dt is True else sys.dt)
+            dt = 1. if sys.dt in [True, None] else sys.dt
+            T = np.array(range(n_steps)) * dt
         else:
             # Make sure the input vector and time vector have same length
             # TODO: allow interpolation of the input vector
@@ -331,21 +336,19 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                     (U.ndim > 1 and U.shape[1] != T.shape[0]):
                 ValueError('Pamameter ``T`` must have same elements as'
                            ' the number of columns in input array ``U``')
+    else:
+        if T is None:
+            raise ValueError('Parameter ``T`` is mandatory for continuous '
+                             'time systems.')
 
     # Test if T has shape (n,) or (1, n);
-    # T must be array-like and values must be increasing.
-    # The length of T determines the length of the input vector.
-    if T is None:
-        if not isdtime(sys, strict=True):
-            errmsg_ctime = 'is mandatory for continuous time systems, '
-        raise ValueError('Parameter ``T`` ' + errmsg_ctime + 'must be '
-                         'array-like, and contain (strictly monotonic) '
-                         'increasing numbers.')
     T = _check_convert_array(T, [('any',), (1, 'any')],
                              'Parameter ``T``: ', squeeze=True,
                              transpose=transpose)
+
+    # equally spaced also implies strictly monotonic increase
     dt = T[1] - T[0]
-    if not np.allclose(T[1:] - T[:-1], dt):
+    if not np.allclose(np.diff(T), np.full_like(T[:-1], dt)):
         raise ValueError("Parameter ``T``: time values must be "
                          "equally spaced.")
     n_steps = T.shape[0]            # number of simulation steps
