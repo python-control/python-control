@@ -212,30 +212,32 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         Time steps at which the input is defined; values must be evenly spaced.
 
     U : array_like or float, optional
-        Input array giving input at each time `T` (default = 0).
+        Input array giving input at each time `T`
 
         If `U` is ``None`` or ``0``, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used
         otherwise.
 
     X0 : array_like or float, optional
-        Initial condition (default = 0).
+        Initial condition.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
-        value is False.
+        compatibility with MATLAB and :func:`scipy.signal.lsim`).
 
-    interpolate : bool, optional (default=False)
+    interpolate : bool, optional
         If True and system is a discrete time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
-        time simulations (default = False).
+        time simulations.
 
     return_x : bool, optional
-        If True (default), return the the state vector.  Set to False to
-        return only the time and output vectors.
+        - If False, return only the time and output vectors.
+        - If True, also return the the state vector.
+        - If None, determine the returned variables by
+          config.defaults['forced_response.return_x'], which was True
+          before version 0.9 and is False since then.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
@@ -243,7 +245,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         squeeze=True, remove single-dimensional entries from the shape of
         the output even if the system is not SISO. If squeeze=False, keep
         the output as a 2D array (indexed by the output number and time)
-        even if the system is SISO. The default value can be set using
+        even if the system is SISO. The default value can be overruled by
         config.defaults['control.squeeze_time_response'].
 
     Returns
@@ -252,13 +254,15 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         Time values of the output.
 
     yout : array
-        Response of the system.  If the system is SISO and squeeze is not
+        Response of the system.  If the system is SISO and `squeeze` is not
         True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
+        `squeeze` is False, the array is 2D (indexed by the output number and
         time).
 
     xout : array
-        Time evolution of the state vector. Not affected by squeeze.
+        Time evolution of the state vector. Not affected by squeeze. Only
+        returned if `return_x` is True, or `return_x` is None and
+        config.defaults['forced_response.return_x'] is True.
 
     See Also
     --------
@@ -297,7 +301,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     sys = _convert_to_statespace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
         np.asarray(sys.D)
-#    d_type = A.dtype
+    # d_type = A.dtype
     n_states = A.shape[0]
     n_inputs = B.shape[1]
     n_outputs = C.shape[0]
@@ -332,8 +336,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     # T must be array-like and values must be increasing.
     # The length of T determines the length of the input vector.
     if T is None:
-        raise ValueError('Parameter ``T``: must be array-like, and contain '
-                         '(strictly monotonic) increasing numbers.')
+        if not isdtime(sys, strict=True):
+            errmsg_ctime = 'is mandatory for continuous time systems, '
+        raise ValueError('Parameter ``T`` ' + errmsg_ctime + 'must be '
+                         'array-like, and contain (strictly monotonic) '
+                         'increasing numbers.')
     T = _check_convert_array(T, [('any',), (1, 'any')],
                              'Parameter ``T``: ', squeeze=True,
                              transpose=transpose)

@@ -1,12 +1,4 @@
-"""timeresp_test.py - test time response functions
-
-RMM, 17 Jun 2011 (based on TestMatlab from v0.4c)
-
-This test suite just goes through and calls all of the MATLAB
-functions using different systems and arguments to make sure that
-nothing crashes.  It doesn't test actual functionality; the module
-specific unit tests will do that.
-"""
+"""timeresp_test.py - test time response functions"""
 
 from copy import copy
 from distutils.version import StrictVersion
