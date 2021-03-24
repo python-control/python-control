@@ -19,7 +19,7 @@ from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import (StateSpace, _convert_to_statespace, drss,
-                             rss, ss, tf2ss, _statesp_defaults)
+                             rss, ss, tf2ss, _statesp_defaults, _rss_generate)
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
@@ -865,6 +865,17 @@ class TestRss:
             if np.all(sys.D == 0.) == strictly_proper:
                 break
         assert np.all(sys.D == 0.) == strictly_proper
+
+    @pytest.mark.parametrize('par, errmatch',
+                             [((-1, 1, 1, 'c'), 'states must be'),
+                              ((1, -1, 1, 'c'), 'inputs must be'),
+                              ((1, 1, -1, 'c'), 'outputs must be'),
+                              ((1, 1, 1, 'x'), 'cdtype must be'),
+                              ])
+    def test_rss_invalid(self, par, errmatch):
+        """Test invalid inputs for rss() and drss()."""
+        with pytest.raises(ValueError, match=errmatch):
+            _rss_generate(*par)
 
 
 class TestDrss:

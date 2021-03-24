@@ -1465,7 +1465,7 @@ def _rss_generate(states, inputs, outputs, cdtype, strictly_proper=False):
     if outputs < 1 or outputs % 1:
         raise ValueError("outputs must be a positive integer.  outputs = %g." %
                          outputs)
-    if cdtype not in ['c', 'd']:   # pragma: no cover
+    if cdtype not in ['c', 'd']:
         raise ValueError("cdtype must be `c` or `d`")
 
     # Make some poles for A.  Preallocate a complex array.
@@ -1835,7 +1835,7 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
         Number of state variables
     inputs : int
         Number of system inputs
-    outputs : inte
+    outputs : int
         Number of system outputs
     strictly_proper : bool, optional
         If set to 'True', returns a proper system (no direct term).
