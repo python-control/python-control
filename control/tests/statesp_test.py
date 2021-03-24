@@ -884,6 +884,7 @@ class TestDrss:
         assert sys.nstates == states
         assert sys.ninputs == inputs
         assert sys.noutputs == outputs
+        assert sys.dt is True
 
     @pytest.mark.parametrize('states', range(1, maxStates))
     @pytest.mark.parametrize('outputs', range(1, maxIO))
