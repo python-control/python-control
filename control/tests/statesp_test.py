@@ -855,6 +855,17 @@ class TestRss:
         for z in p:
             assert z.real < 0
 
+    @pytest.mark.parametrize('strictly_proper', [True, False])
+    def test_strictly_proper(self, strictly_proper):
+        """Test that the strictly_proper argument returns a correct D."""
+        for i in range(100):
+            # The probability that drss(..., strictly_proper=False) returns an
+            # all zero D 100 times in a row is 0.5**100 = 7.89e-31
+            sys = rss(1, 1, 1, strictly_proper=strictly_proper)
+            if np.all(sys.D == 0.) == strictly_proper:
+                break
+        assert np.all(sys.D == 0.) == strictly_proper
+
 
 class TestDrss:
     """These are tests for the proper functionality of statesp.drss."""
@@ -883,6 +894,17 @@ class TestDrss:
         p = sys.pole()
         for z in p:
             assert abs(z) < 1
+
+    @pytest.mark.parametrize('strictly_proper', [True, False])
+    def test_strictly_proper(self, strictly_proper):
+        """Test that the strictly_proper argument returns a correct D."""
+        for i in range(100):
+            # The probability that drss(..., strictly_proper=False) returns an
+            # all zero D 100 times in a row is 0.5**100 = 7.89e-31
+            sys = drss(1, 1, 1, strictly_proper=strictly_proper)
+            if np.all(sys.D == 0.) == strictly_proper:
+                break
+        assert np.all(sys.D == 0.) == strictly_proper
 
 
 class TestLTIConverter:
