@@ -301,10 +301,10 @@ class TestTimeresp:
                          'SteadyStateValue': -0.5394},
                          {'RiseTime': 0.0000, # (*)
                          'SettlingTime': 3.4000,
-                         'SettlingMin': -0.1034,
+                         'SettlingMin': -0.4350,# -0.1935 in MATLAB. (is wrong) 
                          'SettlingMax': -0.1485,
                          'Overshoot': 132.0170,
-                         'Undershoot': 79.222, # 0. in MATLAB
+                         'Undershoot': 0, # 0. in MATLAB (is correct)
                          'Peak': 0.4350,
                          'PeakTime': .2,
                          'SteadyStateValue': -0.1875}]]

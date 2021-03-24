@@ -882,6 +882,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
 
             # Steady state value
             InfValue = InfValues[i, j]
+            InfValue_sign = np.sign(InfValue)
             sgnInf = np.sign(InfValue.real)
 
             rise_time: float = np.NaN
@@ -923,11 +924,11 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
                 else:
                     overshoot = 0
 
-                # Undershoot
-                y_us = (sgnInf * yout).min()
-                dy_us = np.abs(y_us)
-                if dy_us > 0:
-                    undershoot = np.abs(100. * dy_us / InfValue)
+                # Undershoot 
+                y_us = (InfValue_sign*yout).min()
+                y_us_index = (InfValue_sign*yout).argmin()
+                if (InfValue_sign * yout[y_us_index]) < 0: # must have oposite sign
+                    undershoot = np.abs(100. * np.abs(y_us) / InfValue)
                 else:
                     undershoot = 0
 
