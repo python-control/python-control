@@ -19,7 +19,7 @@ from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import (StateSpace, _convert_to_statespace, drss,
-                             rss, ss, tf2ss, _statesp_defaults)
+                             rss, ss, tf2ss, _statesp_defaults, _rss_generate)
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
@@ -855,6 +855,28 @@ class TestRss:
         for z in p:
             assert z.real < 0
 
+    @pytest.mark.parametrize('strictly_proper', [True, False])
+    def test_strictly_proper(self, strictly_proper):
+        """Test that the strictly_proper argument returns a correct D."""
+        for i in range(100):
+            # The probability that drss(..., strictly_proper=False) returns an
+            # all zero D 100 times in a row is 0.5**100 = 7.89e-31
+            sys = rss(1, 1, 1, strictly_proper=strictly_proper)
+            if np.all(sys.D == 0.) == strictly_proper:
+                break
+        assert np.all(sys.D == 0.) == strictly_proper
+
+    @pytest.mark.parametrize('par, errmatch',
+                             [((-1, 1, 1, 'c'), 'states must be'),
+                              ((1, -1, 1, 'c'), 'inputs must be'),
+                              ((1, 1, -1, 'c'), 'outputs must be'),
+                              ((1, 1, 1, 'x'), 'cdtype must be'),
+                              ])
+    def test_rss_invalid(self, par, errmatch):
+        """Test invalid inputs for rss() and drss()."""
+        with pytest.raises(ValueError, match=errmatch):
+            _rss_generate(*par)
+
 
 class TestDrss:
     """These are tests for the proper functionality of statesp.drss."""
@@ -873,6 +895,7 @@ class TestDrss:
         assert sys.nstates == states
         assert sys.ninputs == inputs
         assert sys.noutputs == outputs
+        assert sys.dt is True
 
     @pytest.mark.parametrize('states', range(1, maxStates))
     @pytest.mark.parametrize('outputs', range(1, maxIO))
@@ -883,6 +906,17 @@ class TestDrss:
         p = sys.pole()
         for z in p:
             assert abs(z) < 1
+
+    @pytest.mark.parametrize('strictly_proper', [True, False])
+    def test_strictly_proper(self, strictly_proper):
+        """Test that the strictly_proper argument returns a correct D."""
+        for i in range(100):
+            # The probability that drss(..., strictly_proper=False) returns an
+            # all zero D 100 times in a row is 0.5**100 = 7.89e-31
+            sys = drss(1, 1, 1, strictly_proper=strictly_proper)
+            if np.all(sys.D == 0.) == strictly_proper:
+                break
+        assert np.all(sys.D == 0.) == strictly_proper
 
 
 class TestLTIConverter:

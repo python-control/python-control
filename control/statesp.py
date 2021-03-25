@@ -1434,11 +1434,11 @@ def _convert_to_statespace(sys, **kw):
 
 
 # TODO: add discrete time option
-def _rss_generate(states, inputs, outputs, type, strictly_proper=False):
+def _rss_generate(states, inputs, outputs, cdtype, strictly_proper=False):
     """Generate a random state space.
 
     This does the actual random state space generation expected from rss and
-    drss.  type is 'c' for continuous systems and 'd' for discrete systems.
+    drss.  cdtype is 'c' for continuous systems and 'd' for discrete systems.
 
     """
 
@@ -1465,6 +1465,8 @@ def _rss_generate(states, inputs, outputs, type, strictly_proper=False):
     if outputs < 1 or outputs % 1:
         raise ValueError("outputs must be a positive integer.  outputs = %g." %
                          outputs)
+    if cdtype not in ['c', 'd']:
+        raise ValueError("cdtype must be `c` or `d`")
 
     # Make some poles for A.  Preallocate a complex array.
     poles = zeros(states) + zeros(states) * 0.j
@@ -1484,16 +1486,16 @@ def _rss_generate(states, inputs, outputs, type, strictly_proper=False):
                 i += 2
         elif rand() < pReal or i == states - 1:
             # No-oscillation pole.
-            if type == 'c':
+            if cdtype == 'c':
                 poles[i] = -exp(randn()) + 0.j
-            elif type == 'd':
+            else:
                 poles[i] = 2. * rand() - 1.
             i += 1
         else:
             # Complex conjugate pair of oscillating poles.
-            if type == 'c':
+            if cdtype == 'c':
                 poles[i] = complex(-exp(randn()), 3. * exp(randn()))
-            elif type == 'd':
+            else:
                 mag = rand()
                 phase = 2. * math.pi * rand()
                 poles[i] = complex(mag * cos(phase), mag * sin(phase))
@@ -1546,7 +1548,11 @@ def _rss_generate(states, inputs, outputs, type, strictly_proper=False):
     C = C * Cmask
     D = D * Dmask if not strictly_proper else zeros(D.shape)
 
-    return StateSpace(A, B, C, D)
+    if cdtype == 'c':
+        ss_args = (A, B, C, D)
+    else:
+        ss_args = (A, B, C, D, True)
+    return StateSpace(*ss_args)
 
 
 # Convert a MIMO system to a SISO system
@@ -1825,15 +1831,14 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
 
     Parameters
     ----------
-    states : integer
+    states : int
         Number of state variables
-    inputs : integer
+    inputs : int
         Number of system inputs
-    outputs : integer
+    outputs : int
         Number of system outputs
     strictly_proper : bool, optional
-        If set to 'True', returns a proper system (no direct term).  Default
-        value is 'False'.
+        If set to 'True', returns a proper system (no direct term).
 
     Returns
     -------
@@ -1867,12 +1872,15 @@ def drss(states=1, outputs=1, inputs=1, strictly_proper=False):
 
     Parameters
     ----------
-    states : integer
+    states : int
         Number of state variables
     inputs : integer
         Number of system inputs
-    outputs : integer
+    outputs : int
         Number of system outputs
+    strictly_proper: bool, optional
+        If set to 'True', returns a proper system (no direct term).
+
 
     Returns
     -------
