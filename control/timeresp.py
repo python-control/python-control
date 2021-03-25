@@ -926,7 +926,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
                 # Undershoot 
                 y_us = (sgnInf*yout).min()
                 y_us_index = (sgnInf*yout).argmin()
-                if (sgnInf * yout[y_us_index]) < 0: # must have oposite sign
+                if (sgnInf * yout[y_us_index]) < 0:  # InfValue and undershoot must have opposite sign
                     undershoot = np.abs(100. * np.abs(y_us) / InfValue)
                 else:
                     undershoot = 0
