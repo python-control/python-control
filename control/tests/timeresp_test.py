@@ -301,17 +301,17 @@ class TestTimeresp:
                          'SteadyStateValue': -0.5394},
                          {'RiseTime': 0.0000, # (*)
                          'SettlingTime': 3.4000,
-                         'SettlingMin': -0.1034,
+                         'SettlingMin': -0.4350,  # (*)
                          'SettlingMax': -0.1485,
                          'Overshoot': 132.0170,
-                         'Undershoot': 79.222, # 0. in MATLAB
+                         'Undershoot': 0.,
                          'Peak': 0.4350,
                          'PeakTime': .2,
                          'SteadyStateValue': -0.1875}]]
-                         # (*): MATLAB gives 0.4 here, but it is unclear what
-                         # 10% and 90% of the steady state response mean, when
-                         # the step for this channel does not start a 0 for
-                         # 0 initial conditions
+                         # (*): MATLAB gives 0.4 for RiseTime and -0.1034 for
+                         # SettlingMin, but it is unclear what 10% and 90% of
+                         # the steady state response mean, when the step for
+                         # this channel does not start a 0.
         return T
 
     @pytest.fixture
