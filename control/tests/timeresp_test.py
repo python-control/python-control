@@ -61,6 +61,14 @@ class TestTimeresp:
         return T
 
     @pytest.fixture
+    def siso_ss2_dtnone(self, siso_ss2):
+        """System with unspecified timebase"""
+        ss2 = siso_ss2.sys
+        T = TSys(StateSpace(ss2.A, ss2.B, ss2.C, 0, None))
+        T.t = np.arange(0, 10, 1.)
+        return T
+
+    @pytest.fixture
     def siso_tf1(self):
         # Create some transfer functions
         return TSys(TransferFunction([1], [1, 2, 1], 0))
@@ -349,7 +357,7 @@ class TestTimeresp:
     @pytest.fixture
     def tsystem(self,
                 request,
-                siso_ss1, siso_ss2, siso_tf1, siso_tf2,
+                siso_ss1, siso_ss2, siso_ss2_dtnone, siso_tf1, siso_tf2,
                 mimo_ss1, mimo_ss2, mimo_tf2,
                 siso_dtf0, siso_dtf1, siso_dtf2,
                 siso_dss1, siso_dss2,
@@ -361,6 +369,7 @@ class TestTimeresp:
                 siso_tf_asymptotic_from_neg1):
         systems = {"siso_ss1": siso_ss1,
                    "siso_ss2": siso_ss2,
+                   "siso_ss2_dtnone": siso_ss2_dtnone,
                    "siso_tf1": siso_tf1,
                    "siso_tf2": siso_tf2,
                    "mimo_ss1": mimo_ss1,
@@ -840,10 +849,11 @@ class TestTimeresp:
     @pytest.mark.parametrize("tsystem",
                              ["siso_ss2",   # continuous
                               "siso_tf1",
-                              "siso_dss1",  # no timebase
+                              "siso_dss1",  # unspecified sampling time
                               "siso_dtf1",
                               "siso_dss2",  # matching timebase
                               "siso_dtf2",
+                              "siso_ss2_dtnone",  # undetermined timebase
                               "mimo_ss2",   # MIMO
                               pytest.param("mimo_tf2", marks=slycotonly),
                               "mimo_dss1",
@@ -868,9 +878,9 @@ class TestTimeresp:
             kw['T'] = t
             if fun == forced_response:
                 kw['U'] = np.vstack([np.sin(t) for i in range(sys.ninputs)])
-        elif fun == forced_response and isctime(sys):
+        elif fun == forced_response and isctime(sys, strict=True):
             pytest.skip("No continuous forced_response without time vector.")
-        if hasattr(tsystem.sys, "nstates"):
+        if hasattr(sys, "nstates"):
             kw['X0'] = np.arange(sys.nstates) + 1
         if sys.ninputs > 1 and fun in [step_response, impulse_response]:
             kw['input'] = 1
@@ -884,6 +894,9 @@ class TestTimeresp:
         if hasattr(tsystem, 't'):
             # tout should always match t, which has shape (n, )
             np.testing.assert_allclose(tout, tsystem.t)
+        elif fun == forced_response and sys.dt in [None, True]:
+            np.testing.assert_allclose(
+                np.diff(tout), np.full_like(tout[:-1], 1.))
 
         if squeeze is False or not sys.issiso():
             assert yout.shape[0] == sys.noutputs
@@ -891,7 +904,8 @@ class TestTimeresp:
         else:
             assert yout.shape == tout.shape
 
-        if sys.dt > 0 and sys.dt is not True and not np.isclose(sys.dt, 0.5):
+        if sys.isdtime(strict=True) and sys.dt is not True and not \
+                np.isclose(sys.dt, 0.5):
             kw['T'] = np.arange(0, 5, 0.5)  # incompatible timebase
             with pytest.raises(ValueError):
                 fun(sys, **kw)
