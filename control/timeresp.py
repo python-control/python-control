@@ -210,32 +210,32 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     T : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
-        If None, `U` must be given and and `len(U)` time steps of sys.dt are
-        simulated. If sys.dt is None or True (undetermined time step), a dt
-        of 1.0 is assumed.
+        If None, `U` must be given and `len(U)` time steps of sys.dt are
+        simulated. If sys.dt is None or True (undetermined time step), a time
+        step of 1.0 is assumed.
 
     U : array_like or float, optional
-        Input array giving input at each time `T`
+        Input array giving input at each time `T`.
+        If `U` is None or 0, `T` must be given, even for discrete
+        time systems. In this case, for continuous time systems, a direct
+        calculation of the matrix exponential is used, which is faster than the
+        general interpolating algorithm used otherwise.
 
-        If `U` is ``None`` or ``0``, a special algorithm is used. This special
-        algorithm is faster than the general algorithm, which is used
-        otherwise.
-
-    X0 : array_like or float, optional
+    X0 : array_like or float, default=0.
         Initial condition.
 
-    transpose : bool, optional
+    transpose : bool, default=False
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`).
 
-    interpolate : bool, optional
+    interpolate : bool, default=False
         If True and system is a discrete time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
         time simulations.
 
-    return_x : bool, optional
+    return_x : bool, default=None
         - If False, return only the time and output vectors.
         - If True, also return the the state vector.
         - If None, determine the returned variables by
@@ -245,10 +245,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).  If
-        squeeze=True, remove single-dimensional entries from the shape of
-        the output even if the system is not SISO. If squeeze=False, keep
+        `squeeze` is True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If `squeeze` is False, keep
         the output as a 2D array (indexed by the output number and time)
-        even if the system is SISO. The default value can be overridden by
+        even if the system is SISO. The default behavior can be overridden by
         config.defaults['control.squeeze_time_response'].
 
     Returns
@@ -263,7 +263,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         time).
 
     xout : array
-        Time evolution of the state vector. Not affected by squeeze. Only
+        Time evolution of the state vector. Not affected by `squeeze`. Only
         returned if `return_x` is True, or `return_x` is None and
         config.defaults['forced_response.return_x'] is True.
 
@@ -284,7 +284,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     --------
     >>> T, yout, xout = forced_response(sys, T, u, X0)
 
-    See :ref:`time-series-convention`.
+    See :ref:`time-series-convention` and
+    :ref:`package-configuration-parameters`.
 
     """
     if not isinstance(sys, (StateSpace, TransferFunction)):
@@ -300,6 +301,13 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         warnings.warn(
             "return_x specified for a transfer function system. Internal "
             "conversion to state space used; results may meaningless.")
+
+    # If we are passed a transfer function and X0 is non-zero, warn the user
+    if isinstance(sys, TransferFunction) and np.any(X0 != 0):
+        warnings.warn(
+            "Non-zero initial condition given for transfer function system. "
+            "Internal conversion to state space used; may not be consistent "
+            "with given X0.")
 
     sys = _convert_to_statespace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
@@ -348,7 +356,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     # equally spaced also implies strictly monotonic increase
     dt = T[1] - T[0]
-    if not np.allclose(np.diff(T), np.full_like(T[:-1], dt)):
+    if not np.allclose(np.diff(T), dt):
         raise ValueError("Parameter ``T``: time values must be "
                          "equally spaced.")
     n_steps = T.shape[0]            # number of simulation steps
@@ -356,13 +364,6 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: ', squeeze=True)
-
-    # If we are passed a transfer function and X0 is non-zero, warn the user
-    if isinstance(sys, TransferFunction) and np.any(X0 != 0):
-        warnings.warn(
-            "Non-zero initial condition given for transfer function system. "
-            "Internal conversion to state space used; may not be consistent "
-            "with given X0.")
 
     xout = np.zeros((n_states, n_steps))
     xout[:, 0] = X0

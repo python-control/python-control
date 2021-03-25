@@ -895,8 +895,7 @@ class TestTimeresp:
             # tout should always match t, which has shape (n, )
             np.testing.assert_allclose(tout, tsystem.t)
         elif fun == forced_response and sys.dt in [None, True]:
-            np.testing.assert_allclose(
-                np.diff(tout), np.full_like(tout[:-1], 1.))
+            np.testing.assert_allclose(np.diff(tout), 1.)
 
         if squeeze is False or not sys.issiso():
             assert yout.shape[0] == sys.noutputs
