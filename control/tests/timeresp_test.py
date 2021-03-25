@@ -66,6 +66,8 @@ class TestTimeresp:
         ss2 = siso_ss2.sys
         T = TSys(StateSpace(ss2.A, ss2.B, ss2.C, 0, None))
         T.t = np.arange(0, 10, 1.)
+        T.ystep = np.array([    0.,    86.,   -72.,   230.,  -360.,   806.,
+                            -1512.,  3110., -6120., 12326.])
         return T
 
     @pytest.fixture
@@ -128,12 +130,18 @@ class TestTimeresp:
     def siso_dtf1(self):
         T =  TSys(TransferFunction([1], [1, 1, 0.25], True))
         T.t = np.arange(0, 5, 1)
+        T.ystep = np.array([0.  , 0.  , 1.  , 0.  , 0.75])
         return T
 
     @pytest.fixture
     def siso_dtf2(self):
         T = TSys(TransferFunction([1], [1, 1, 0.25], 0.2))
         T.t = np.arange(0, 5, 0.2)
+        T.ystep =np.array([0.    , 0.    , 1.    , 0.    , 0.75  , 0.25  ,
+                           0.5625, 0.375 , 0.4844, 0.4219, 0.457 , 0.4375,
+                           0.4482, 0.4424, 0.4456, 0.4438, 0.4448, 0.4443,
+                           0.4445, 0.4444, 0.4445, 0.4444, 0.4445, 0.4444,
+                           0.4444])
         return T
 
     @pytest.fixture
@@ -718,6 +726,58 @@ class TestTimeresp:
         t, y = ct.step_response(sys, T)
         t, y = ct.forced_response(sys, T, U)
         t, y, x = ct.forced_response(sys, T, U, return_x=True)
+
+    @pytest.mark.parametrize(
+        "tsystem, fr_kwargs, refattr",
+        [pytest.param("siso_ss1",
+                      {'X0': [0.5, 1], 'T':  np.linspace(0, 1, 10)},
+                      'yinitial',
+                      id="ctime no T"),
+         pytest.param("siso_dtf1",
+                      {'U': np.ones(5,)}, 'ystep',
+                      id="dt=True, no U"),
+         pytest.param("siso_dtf2",
+                      {'U': np.ones(25,)}, 'ystep',
+                      id="dt=0.2, no U"),
+         pytest.param("siso_ss2_dtnone",
+                      {'U': np.ones(10,)}, 'ystep',
+                      id="dt=None, no U")],
+        indirect=["tsystem"])
+    def test_forced_response_T_U(self, tsystem, fr_kwargs, refattr):
+        """Test documented forced_response behavior for parameters T and U."""
+        t, y = forced_response(tsystem.sys, **fr_kwargs)
+        np.testing.assert_allclose(t, tsystem.t)
+        np.testing.assert_allclose(y, getattr(tsystem, refattr), rtol=1e-3)
+
+    def test_forced_response_invalid(self, siso_ss1, siso_dss2):
+        """Test invalid parameters."""
+        with pytest.raises(TypeError,
+                           match="StateSpace.*or.*TransferFunction"):
+            forced_response("not a system")
+
+        # ctime
+        with pytest.raises(ValueError, match="T.*is mandatory for continuous"):
+            forced_response(siso_ss1.sys)
+        with pytest.raises(ValueError, match="time values must be equally "
+                                             "spaced"):
+            forced_response(siso_ss1.sys, [0, 0.1, 0.12, 0.4])
+
+        # dtime with sys.dt > 0
+        with pytest.raises(ValueError, match="can't both be zero"):
+            forced_response(siso_dss2.sys)
+        with pytest.raises(ValueError, match="must have same elements"):
+            forced_response(siso_dss2.sys,
+                            T=siso_dss2.t, U=np.random.randn(1, 12))
+        with pytest.raises(ValueError, match="must have same elements"):
+            forced_response(siso_dss2.sys,
+                            T=siso_dss2.t, U=np.random.randn(12))
+        with pytest.raises(ValueError, match="must match sampling time"):
+            forced_response(siso_dss2.sys, T=siso_dss2.t*0.9)
+        with pytest.raises(ValueError, match="must be multiples of "
+                                             "sampling time"):
+            forced_response(siso_dss2.sys, T=siso_dss2.t*1.1)
+        # but this is ok
+        forced_response(siso_dss2.sys, T=siso_dss2.t*2)
 
 
     @pytest.mark.parametrize("u, x0, xtrue",

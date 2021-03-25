@@ -327,8 +327,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     # Set and/or check time vector in discrete time case
     if isdtime(sys):
         if T is None:
-            if U is None:
-                raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
+            if U is None or (U.ndim == 0 and U == 0.):
+                raise ValueError('Parameters ``T`` and ``U`` can\'t both be '
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
             if U.ndim == 1:
@@ -339,11 +339,12 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             T = np.array(range(n_steps)) * dt
         else:
             # Make sure the input vector and time vector have same length
-            # TODO: allow interpolation of the input vector
             if (U.ndim == 1 and U.shape[0] != T.shape[0]) or \
                     (U.ndim > 1 and U.shape[1] != T.shape[0]):
-                ValueError('Pamameter ``T`` must have same elements as'
-                           ' the number of columns in input array ``U``')
+                raise ValueError('Pamameter ``T`` must have same elements as'
+                                 ' the number of columns in input array ``U``')
+            if U.ndim == 0:
+                U = np.full((n_inputs, T.shape[0]), U)
     else:
         if T is None:
             raise ValueError('Parameter ``T`` is mandatory for continuous '
@@ -370,7 +371,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     yout = np.zeros((n_outputs, n_steps))
 
     # Separate out the discrete and continuous time cases
-    if isctime(sys):
+    if isctime(sys, strict=True):
         # Solve the differential equation, copied from scipy.signal.ltisys.
         dot = np.dot  # Faster and shorter code
 
@@ -421,7 +422,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     else:
         # Discrete type system => use SciPy signal processing toolbox
-        if sys.dt is not True:
+        if sys.dt is not True and sys.dt is not None:
             # Make sure that the time increment is a multiple of sampling time
 
             # First make sure that time increment is bigger than sampling time
