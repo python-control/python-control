@@ -43,6 +43,7 @@ class TestTimeresp:
         siso_ss1.ystep = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234,
                                    39.1165, 42.3227, 44.9694, 47.1599,
                                    48.9776])
+        # X0 = [0.5, 1]
         siso_ss1.yinitial = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118,
                                       1.9092, 1.1508, 0.5833, 0.1645, -0.1391])
         ss1 = siso_ss1.sys
@@ -127,6 +128,7 @@ class TestTimeresp:
 
         siso_dss1 = copy(siso_dtf1)
         siso_dss1.sys = tf2ss(siso_dtf1.sys)
+        siso_dss1.yinitial = np.array([-1., -0.5, 0.75, -0.625, 0.4375])
 
         siso_dss2 = copy(siso_dtf2)
         siso_dss2.sys = tf2ss(siso_dtf2.sys)
@@ -641,19 +643,23 @@ class TestTimeresp:
         [pytest.param("siso_ss1",
                       {'X0': [0.5, 1], 'T':  np.linspace(0, 1, 10)},
                       'yinitial',
-                      id="ctime no T"),
+                      id="ctime no U"),
+         pytest.param("siso_dss1",
+                      {'T': np.arange(0, 5, 1,),
+                       'X0': [0.5, 1]}, 'yinitial',
+                      id="dt=True, no U"),
          pytest.param("siso_dtf1",
                       {'U': np.ones(5,)}, 'ystep',
-                      id="dt=True, no U"),
+                      id="dt=True, no T"),
          pytest.param("siso_dtf2",
                       {'U': np.ones(25,)}, 'ystep',
-                      id="dt=0.2, no U"),
+                      id="dt=0.2, no T"),
          pytest.param("siso_ss2_dtnone",
                       {'U': np.ones(10,)}, 'ystep',
-                      id="dt=None, no U"),
+                      id="dt=None, no T"),
          pytest.param("siso_dtf3",
                       {'U': np.ones(10,)}, 'ystep',
-                      id="dt with rounding error"),
+                      id="dt with rounding error, no T"),
          ],
         indirect=["tsystem"])
     def test_forced_response_T_U(self, tsystem, fr_kwargs, refattr):
@@ -668,13 +674,13 @@ class TestTimeresp:
         with pytest.raises(TypeError,
                            match="StateSpace.*or.*TransferFunction"):
             forced_response("not a system")
-
-        # ctime
         with pytest.raises(ValueError, match="T.*is mandatory for continuous"):
             forced_response(tsystem.sys)
         with pytest.raises(ValueError, match="time values must be equally "
                                              "spaced"):
             forced_response(tsystem.sys, [0, 0.1, 0.12, 0.4])
+        with pytest.raises(ValueError, match="must start with 0"):
+            forced_response(tsystem.sys, [1, 1.1, 1.2, 1.3])
 
     @pytest.mark.parametrize("tsystem", ["siso_dss2"], indirect=True)
     def test_forced_response_invalid_d(self, tsystem):

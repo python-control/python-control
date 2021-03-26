@@ -379,7 +379,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         dot = np.dot  # Faster and shorter code
 
         # Faster algorithm if U is zero
-        if U is None or (isinstance(U, (int, float)) and U == 0):
+        # (if not None, it was converted to array above)
+        if U is None or np.all(U == 0):
             # Solve using matrix exponential
             expAdt = sp.linalg.expm(A * dt)
             for i in range(1, n_steps):
