@@ -54,9 +54,10 @@ from .margins import stability_margins
 from .exception import ControlMIMONotImplemented
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
+from .lti import evalfr
 from . import config
 
-__all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
+__all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot', 'singular_values_plot',
            'bode', 'nyquist', 'gangof4']
 
 # Default values for module parameter variables
@@ -172,7 +173,7 @@ def bode_plot(syslist, omega=None,
     >>> mag, phase, omega = bode(sys)
 
     """
-    # Make a copy of the kwargs dictonary since we will modify it
+    # Make a copy of the kwargs dictionary since we will modify it
     kwargs = dict(kwargs)
 
     # Check to see if legacy 'Plot' keyword was used
@@ -1039,13 +1040,172 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 
     plt.tight_layout()
 
+#
+# Singular value plot
+#
 
+
+def singular_values_plot(syslist, omega=None,
+                         plot=True, omega_limits=None, omega_num=None,
+                         *args, **kwargs):
+    """Singular value plot for a system
+
+    Plots a Singular Value plot for the system over a (optional) frequency range.
+
+    Parameters
+    ----------
+    syslist : linsys
+        List of linear systems (single system is OK)
+    omega : array_like
+        List of frequencies in rad/sec to be used for frequency response
+    plot : bool
+        If True (default), plot magnitude and phase
+    omega_limits : array_like of two values
+        Limits of the to generate frequency vector.
+        If Hz=True the limits are in Hz otherwise in rad/s.
+    omega_num : int
+        Number of samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
+
+    Returns
+    -------
+    sigma : ndarray (or list of ndarray if len(syslist) > 1))
+        singular values
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
+        frequency in rad/sec
+
+    Other Parameters
+    ----------------
+    grid : bool
+        If True, plot grid lines on gain and phase plots.  Default is set by
+        `config.defaults['bode.grid']`.
+
+    Examples
+    --------
+    >>> den = [75, 1]
+    >>> sys = ct.tf([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
+    >>> omega = np.logspace(-4, 1, 1000)
+    >>> sigma, omega = singular_values_plot(sys)
+
+    """
+    # Make a copy of the kwargs dictionary since we will modify it
+    kwargs = dict(kwargs)
+
+    # Check to see if legacy 'Plot' keyword was used
+    if 'Plot' in kwargs:
+        import warnings
+        warnings.warn("'Plot' keyword is deprecated in bode_plot; use 'plot'",
+                      FutureWarning)
+        # Map 'Plot' keyword to 'plot' keyword
+        plot = kwargs.pop('Plot')
+
+    # Get values for params (and pop from list to allow keyword use in plot)
+    dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
+    Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
+    grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
+    plot = config._get_param('bode', 'grid', plot, True)
+
+    # If argument was a singleton, turn it into a tuple
+    if not hasattr(syslist, '__iter__'):
+        syslist = (syslist,)
+
+    # Decide whether to go above Nyquist frequency
+    omega_range_given = True if omega is not None else False
+
+    if omega is None:
+        omega_num = config._get_param(
+            'freqplot', 'number_of_samples', omega_num)
+        if omega_limits is None:
+            # Select a default range if none is provided
+            omega = _default_frequency_range(syslist, number_of_samples=omega_num)
+        else:
+            omega_range_given = True
+            omega_limits = np.asarray(omega_limits)
+            if len(omega_limits) != 2:
+                raise ValueError("len(omega_limits) must be 2")
+            if Hz:
+                omega_limits *= 2. * math.pi
+            omega = np.logspace(np.log10(omega_limits[0]),
+                                np.log10(omega_limits[1]), num=omega_num,
+                                endpoint=True)
+
+    if plot:
+        fig = plt.gcf()
+        ax_sigma = None
+
+        # Get the current axes if they already exist
+        for ax in fig.axes:
+            if ax.get_label() == 'control-sigma':
+                ax_sigma = ax
+
+        # If no axes present, create them from scratch
+        if ax_sigma is None:
+            plt.clf()
+            ax_sigma = plt.subplot(111, label='control-sigma')
+
+        color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    sigmas, omegas, nyquistfrqs = [], [], []
+    for idx_sys, sys in enumerate(syslist):
+        omega_sys = np.asarray(omega)
+        if sys.isdtime(strict=True):
+            nyquistfrq = math.pi / sys.dt
+            if not omega_range_given:
+                # limit up to and including nyquist frequency
+                omega_sys = np.hstack((
+                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+        else:
+            nyquistfrq = None
+
+        mag, phase, omega = sys.frequency_response(omega)
+        fresp = mag * np.exp(1j * phase)
+        #fresp = evalfr(sys, 1j * omega_sys)
+
+        fresp = fresp.transpose((2, 0, 1))
+        sigma = np.linalg.svd(fresp, compute_uv=False)
+
+        sigmas.append(sigma)
+        omegas.append(omega_sys)
+        nyquistfrqs.append(nyquistfrq)
+
+        if plot:
+            color = color_cycle[idx_sys % len(color_cycle)]
+
+            nyquistfrq_plot = None
+            if Hz:
+                omega_plot = omega_sys / (2. * math.pi)
+                if nyquistfrq:
+                    nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+            else:
+                omega_plot = omega_sys
+                if nyquistfrq:
+                    nyquistfrq_plot = nyquistfrq
+            sigma_plot = sigma
+
+            if dB:
+                ax_sigma.semilogx(omega_plot, 20 * np.log10(sigma_plot), color=color, *args, **kwargs)
+            else:
+                ax_sigma.loglog(omega_plot, sigma_plot, color=color, *args, **kwargs)
+
+            if nyquistfrq_plot is not None:
+                ax_sigma.axvline(x=nyquistfrq_plot, color=color)
+
+    # Add a grid to the plot + labeling
+    ax_sigma.grid(grid, which='both')
+    ax_sigma.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
+    ax_sigma.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+
+    if len(syslist) == 1:
+        return sigmas[0], omegas[0]
+    else:
+        return sigmas, omegas
 #
 # Utility functions
 #
 # This section of the code contains some utility functions for
 # generating frequency domain plots
 #
+
 
 # Compute reasonable defaults for axes
 def _default_frequency_range(syslist, Hz=None, number_of_samples=None,

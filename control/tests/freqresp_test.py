@@ -16,7 +16,7 @@ import control as ctrl
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, rss
-from control.freqplot import bode_plot, nyquist_plot
+from control.freqplot import bode_plot, nyquist_plot, singular_values_plot
 from control.tests.conftest import slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
@@ -38,6 +38,7 @@ def ss_mimo():
     C = np.array([[1, 0]])
     D = np.array([[0, 0]])
     return StateSpace(A, B, C, D)
+
 
 def test_freqresp_siso(ss_siso):
     """Test SISO frequency response"""
@@ -508,3 +509,17 @@ def test_dcgain_consistency():
 
     sys_ss = ctrl.tf2ss(sys_tf)
     np.testing.assert_almost_equal(sys_ss.dcgain(), -1)
+
+
+def test_singular_values_plot():
+    den = [75, 1]
+    sys = tf([[[87.8], [-86.4]],
+              [[108.2], [-109.6]]],
+             [[den, den],
+              [den, den]])
+    sigma, omega = singular_values_plot(sys, 0.0)
+    sys_dc = np.array([[87.8, -86.4],
+                       [108.2, -109.6]])
+
+    u, s, v = np.linalg.svd(sys_dc)
+    np.testing.assert_almost_equal(sigma.ravel(), s.ravel())
