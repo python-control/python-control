@@ -685,8 +685,6 @@ class TestTimeresp:
         with pytest.raises(ValueError, match="time values must be equally "
                                              "spaced"):
             forced_response(tsystem.sys, [0, 0.1, 0.12, 0.4])
-        with pytest.raises(ValueError, match="must start with 0"):
-            forced_response(tsystem.sys, [1, 1.1, 1.2, 1.3])
 
     @pytest.mark.parametrize("tsystem", ["siso_dss2"], indirect=True)
     def test_forced_response_invalid_d(self, tsystem):

@@ -209,8 +209,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         LTI system to simulate
 
     T : array_like, optional for discrete LTI `sys`
-        Time steps at which the input is defined; values must be evenly spaced
-        and start with 0.
+        Time steps at which the input is defined; values must be evenly spaced.
 
         If None, `U` must be given and `len(U)` time steps of sys.dt are
         simulated. If sys.dt is None or True (undetermined time step), a time
@@ -360,10 +359,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     n_steps = T.shape[0]            # number of simulation steps
 
     # equally spaced also implies strictly monotonic increase,
-    dt = T[-1] / (n_steps - 1)
+    dt = (T[-1] - T[0]) / (n_steps - 1)
     if not np.allclose(np.diff(T), dt):
-        raise ValueError("Parameter ``T`` must start with 0 and time values "
-                         "must be equally spaced.")
+        raise ValueError("Parameter ``T``: time values must be equally "
+                         "spaced.")
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
@@ -426,6 +425,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     else:
         # Discrete type system => use SciPy signal processing toolbox
+
+        # sp.signal.dlsim assumes T[0] == 0
+        spT = T - T[0]
+
         if sys.dt is not True and sys.dt is not None:
             # Make sure that the time increment is a multiple of sampling time
 
@@ -446,10 +449,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             # T[-1] - T[0] < sys_dt * decimation * (n_steps - 1)
             # due to rounding errors.
             # https://github.com/scipyscipy/blob/v1.6.1/scipy/signal/ltisys.py#L3462
-            scipy_out_samples = int(np.floor(T[-1] / sys_dt)) + 1
+            scipy_out_samples = int(np.floor(spT[-1] / sys_dt)) + 1
             if scipy_out_samples < n_steps:
                 # parantheses: order of evaluation is important
-                T[-1] = T[-1] * (n_steps / (T[-1] / sys_dt + 1))
+                spT[-1] = spT[-1] * (n_steps / (spT[-1] / sys_dt + 1))
 
         else:
             sys_dt = dt         # For unspecified sampling time, use time incr
@@ -459,7 +462,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
         # Use signal processing toolbox for the discrete time simulation
         # Transpose the input to match toolbox convention
-        tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), T, X0)
+        tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), spT, X0)
+        tout = tout + T[0]
 
         if not interpolate:
             # If dt is different from sys.dt, resample the output
@@ -472,8 +476,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         xout = np.transpose(xout)
         yout = np.transpose(yout)
 
-    return _process_time_response(sys, tout[:n_steps], yout[:, :n_steps],
-                                  xout[:, :n_steps], transpose=transpose,
+    return _process_time_response(sys, tout, yout, xout, transpose=transpose,
                                   return_x=return_x, squeeze=squeeze)
 
 
