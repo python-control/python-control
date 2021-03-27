@@ -126,9 +126,18 @@ class TestTimeresp:
             [ 0.    , -0.1097, -0.1902, -0.2438, -0.2729,
              -0.2799, -0.2674, -0.2377, -0.1934, -0.1368])
 
+        """dtf1 converted statically, because Slycot and Scipy produce
+        different realizations, wich means different initial condtions,"""
         siso_dss1 = copy(siso_dtf1)
-        siso_dss1.sys = tf2ss(siso_dtf1.sys)
-        siso_dss1.yinitial = np.array([-1., -0.5, 0.75, -0.625, 0.4375])
+        siso_dss1.sys = StateSpace([[-1., -0.25],
+                                    [ 1.,  0.]],
+                                   [[1.],
+                                    [0.]],
+                                   [[0., 1.]],
+                                   [[0.]],
+                                   True)
+        siso_dss1.X0 = [0.5, 1.]
+        siso_dss1.yinitial = np.array([1., 0.5, -0.75, 0.625, -0.4375])
 
         siso_dss2 = copy(siso_dtf2)
         siso_dss2.sys = tf2ss(siso_dtf2.sys)
@@ -647,12 +656,10 @@ class TestTimeresp:
     @pytest.mark.parametrize(
         "tsystem, fr_kwargs, refattr",
         [pytest.param("siso_ss1",
-                      {'X0': [0.5, 1], 'T':  np.linspace(0, 1, 10)},
-                      'yinitial',
+                      {'T':  np.linspace(0, 1, 10)}, 'yinitial',
                       id="ctime no U"),
          pytest.param("siso_dss1",
-                      {'T': np.arange(0, 5, 1,),
-                       'X0': [0.5, 1]}, 'yinitial',
+                      {'T': np.arange(0, 5, 1,)}, 'yinitial',
                       id="dt=True, no U"),
          pytest.param("siso_dtf1",
                       {'U': np.ones(5,)}, 'ystep',
@@ -670,6 +677,8 @@ class TestTimeresp:
         indirect=["tsystem"])
     def test_forced_response_T_U(self, tsystem, fr_kwargs, refattr):
         """Test documented forced_response behavior for parameters T and U."""
+        if refattr == 'yinitial':
+            fr_kwargs['X0'] = tsystem.X0
         t, y = forced_response(tsystem.sys, **fr_kwargs)
         np.testing.assert_allclose(t, tsystem.t)
         np.testing.assert_allclose(y, getattr(tsystem, refattr), rtol=1e-3)
