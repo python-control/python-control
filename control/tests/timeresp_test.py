@@ -43,7 +43,7 @@ class TestTimeresp:
         siso_ss1.ystep = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234,
                                    39.1165, 42.3227, 44.9694, 47.1599,
                                    48.9776])
-        # X0 = [0.5, 1]
+        siso_ss1.X0 = np.array([[.5], [1.]])
         siso_ss1.yinitial = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118,
                                       1.9092, 1.1508, 0.5833, 0.1645, -0.1391])
         ss1 = siso_ss1.sys
@@ -586,17 +586,23 @@ class TestTimeresp:
                              [np.zeros((10,), dtype=float),
                               0]  # special algorithm
                              )
-    @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
+    @pytest.mark.parametrize("tsystem", ["siso_ss1", "siso_tf2"],
+                             indirect=True)
     def test_forced_response_initial(self, tsystem, u):
-        """Test forced response of SISO system as intitial response"""
+        """Test forced response of SISO system as intitial response."""
         sys = tsystem.sys
         t = tsystem.t
-        x0 = np.array([[.5], [1.]])
+        x0 = tsystem.X0
         yref = tsystem.yinitial
 
-        tout, yout = forced_response(sys, t, u, X0=x0)
-        np.testing.assert_array_almost_equal(tout, t)
-        np.testing.assert_array_almost_equal(yout, yref, decimal=4)
+        if isinstance(sys, StateSpace):
+            tout, yout = forced_response(sys, t, u, X0=x0)
+            np.testing.assert_array_almost_equal(tout, t)
+            np.testing.assert_array_almost_equal(yout, yref, decimal=4)
+        else:
+            with pytest.warns(UserWarning, match="Non-zero initial condition "
+                              "given for transfer function"):
+                tout, yout = forced_response(sys, t, u, X0=x0)
 
     @pytest.mark.parametrize("tsystem, useT",
                              [("mimo_ss1", True),
