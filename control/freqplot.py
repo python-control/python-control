@@ -1160,7 +1160,7 @@ def singular_values_plot(syslist, omega=None,
         else:
             nyquistfrq = None
 
-        fresp = sys(1j*omega if sys.isctime() else np.exp(1j * omega * sys.dt))
+        fresp = sys(1j*omega if sys.isctime() else np.exp(1j * omega * sys.dt)).reshape(sys.noutputs, sys.ninputs, len(omega))
 
         fresp = fresp.transpose((2, 0, 1))
         sigma = np.linalg.svd(fresp, compute_uv=False)
@@ -1192,9 +1192,10 @@ def singular_values_plot(syslist, omega=None,
                 ax_sigma.axvline(x=nyquistfrq_plot, color=color)
 
     # Add a grid to the plot + labeling
-    ax_sigma.grid(grid, which='both')
-    ax_sigma.set_ylabel("Singular Values (dB)" if dB else "Singular Values")
-    ax_sigma.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+    if plot:
+        ax_sigma.grid(grid, which='both')
+        ax_sigma.set_ylabel("Singular Values (dB)" if dB else "Singular Values")
+        ax_sigma.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
 
     if len(syslist) == 1:
         return sigmas[0], omegas[0]
