@@ -1045,6 +1045,15 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 #
 
 
+# Default values for Bode plot configuration variables
+_singular_values_plot_default = {
+    'singular_values_plot.dB': False,           # Plot singular values in dB
+    'singular_values_plot.deg': True,           # Plot phase in degrees
+    'singular_values_plot.Hz': False,           # Plot frequency in Hertz
+    'singular_values_plot.grid': True,          # Turn on grid for gain and phase
+}
+
+
 def singular_values_plot(syslist, omega=None,
                          plot=True, omega_limits=None, omega_num=None,
                          *args, **kwargs):
@@ -1078,7 +1087,7 @@ def singular_values_plot(syslist, omega=None,
     ----------------
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
-        `config.defaults['bode.grid']`.
+        `config.defaults['singular_values_plot.grid']`.
 
     Examples
     --------
@@ -1092,10 +1101,10 @@ def singular_values_plot(syslist, omega=None,
     kwargs = dict(kwargs)
 
     # Get values for params (and pop from list to allow keyword use in plot)
-    dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
-    Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
-    grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
-    plot = config._get_param('bode', 'grid', plot, True)
+    dB = config._get_param('singular_values_plot', 'dB', kwargs, singular_values_plot, pop=True)
+    Hz = config._get_param('singular_values_plot', 'Hz', kwargs, _bode_defaults, pop=True)
+    grid = config._get_param('singular_values_plot', 'grid', kwargs, _bode_defaults, pop=True)
+    plot = config._get_param('singular_values_plot', 'grid', plot, True)
 
     # If argument was a singleton, turn it into a tuple
     if not hasattr(syslist, '__iter__'):
@@ -1182,7 +1191,7 @@ def singular_values_plot(syslist, omega=None,
 
     # Add a grid to the plot + labeling
     ax_sigma.grid(grid, which='both')
-    ax_sigma.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
+    ax_sigma.set_ylabel("Singular Values (dB)" if dB else "Singular Values")
     ax_sigma.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
 
     if len(syslist) == 1:
