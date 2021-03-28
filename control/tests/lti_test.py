@@ -6,8 +6,8 @@ from .conftest import editsdefaults
 
 import control as ct
 from control import c2d, tf, tf2ss, NonlinearIOSystem
-from control.lti import (LTI, common_timebase, damp, dcgain, isctime, isdtime,
-                         issiso, pole, timebaseEqual, zero)
+from control.lti import (LTI, common_timebase, evalfr, damp, dcgain, isctime,
+                         isdtime, issiso, pole, timebaseEqual, zero)
 from control.tests.conftest import slycotonly
 from control.exception import slycot_check
 
@@ -243,13 +243,17 @@ class TestLTI:
 
         with pytest.raises(ValueError, match="unknown squeeze value"):
             sys.frequency_response([1], squeeze=1)
-            sys([1], squeeze='siso')
-            evalfr(sys, [1], squeeze='siso')
+        with pytest.raises(ValueError, match="unknown squeeze value"):
+            sys([1j], squeeze='siso')
+        with pytest.raises(ValueError, match="unknown squeeze value"):
+            evalfr(sys, [1j], squeeze='siso')
 
         with pytest.raises(ValueError, match="must be 1D"):
             sys.frequency_response([[0.1, 1], [1, 10]])
-            sys([[0.1, 1], [1, 10]])
-            evalfr(sys, [[0.1, 1], [1, 10]])
+        with pytest.raises(ValueError, match="must be 1D"):
+            sys([[0.1j, 1j], [1j, 10j]])
+        with pytest.raises(ValueError, match="must be 1D"):
+            evalfr(sys, [[0.1j, 1j], [1j, 10j]])
 
         with pytest.warns(DeprecationWarning, match="LTI `inputs`"):
             ninputs = sys.inputs
