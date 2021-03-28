@@ -179,11 +179,20 @@ class TestLTI:
         [1, 1, 2, [0.1, 1, 10], None, (1, 2, 3)],       # MISO
         [2, 1, 2, [0.1, 1, 10], True, (2, 3)],
         [3, 1, 2, [0.1, 1, 10], False, (1, 2, 3)],
+        [1, 1, 2, 0.1,          None, (1, 2)],
+        [1, 1, 2, 0.1,          True, (2,)],
+        [1, 1, 2, 0.1,          False, (1, 2)],
         [1, 2, 2, [0.1, 1, 10], None, (2, 2, 3)],       # MIMO
         [2, 2, 2, [0.1, 1, 10], True, (2, 2, 3)],
-        [3, 2, 2, [0.1, 1, 10], False, (2, 2, 3)]
+        [3, 2, 2, [0.1, 1, 10], False, (2, 2, 3)],
+        [1, 2, 2, 0.1, None, (2, 2)],
+        [2, 2, 2, 0.1, True, (2, 2)],
+        [3, 2, 2, 0.1, False, (2, 2)],
     ])
-    def test_squeeze(self, fcn, nstate, nout, ninp, omega, squeeze, shape):
+    @pytest.mark.parametrize("omega_type", ["numpy", "native"])
+    def test_squeeze(self, fcn, nstate, nout, ninp, omega, squeeze, shape,
+                     omega_type):
+        """Test correct behavior of frequencey response squeeze parameter."""
         # Create the system to be tested
         if fcn == ct.frd:
             sys = fcn(ct.rss(nstate, nout, ninp), [1e-2, 1e-1, 1, 1e1, 1e2])
@@ -193,15 +202,23 @@ class TestLTI:
         else:
             sys = fcn(ct.rss(nstate, nout, ninp))
 
-        # Convert the frequency list to an array for easy of use
-        isscalar = not hasattr(omega, '__len__')
-        omega = np.array(omega)
+        if omega_type == "numpy":
+            omega = np.asarray(omega)
+            isscalar = omega.ndim == 0
+            # keep the ndarray type even for scalars
+            s = np.asarray(omega * 1j)
+        else:
+            isscalar = not hasattr(omega, '__len__')
+            if isscalar:
+                s = omega*1J
+            else:
+                s = [w*1J for w in omega]
 
         # Call the transfer function directly and make sure shape is correct
-        assert sys(omega * 1j, squeeze=squeeze).shape == shape
+        assert sys(s, squeeze=squeeze).shape == shape
 
         # Make sure that evalfr also works as expected
-        assert ct.evalfr(sys, omega * 1j, squeeze=squeeze).shape == shape
+        assert ct.evalfr(sys, s, squeeze=squeeze).shape == shape
 
         # Check frequency response
         mag, phase, _ = sys.frequency_response(omega, squeeze=squeeze)
@@ -216,7 +233,7 @@ class TestLTI:
 
         # Make sure the default shape lines up with squeeze=None case
         if squeeze is None:
-            assert sys(omega * 1j).shape == shape
+            assert sys(s).shape == shape
 
         # Changing config.default to False should return 3D frequency response
         ct.config.set_defaults('control', squeeze_frequency_response=False)
@@ -224,14 +241,14 @@ class TestLTI:
         if isscalar:
             assert mag.shape == (sys.noutputs, sys.ninputs, 1)
             assert phase.shape == (sys.noutputs, sys.ninputs, 1)
-            assert sys(omega * 1j).shape == (sys.noutputs, sys.ninputs)
-            assert ct.evalfr(sys, omega * 1j).shape == (sys.noutputs, sys.ninputs)
+            assert sys(s).shape == (sys.noutputs, sys.ninputs)
+            assert ct.evalfr(sys, s).shape == (sys.noutputs, sys.ninputs)
         else:
             assert mag.shape == (sys.noutputs, sys.ninputs, len(omega))
             assert phase.shape == (sys.noutputs, sys.ninputs, len(omega))
-            assert sys(omega * 1j).shape == \
+            assert sys(s).shape == \
                 (sys.noutputs, sys.ninputs, len(omega))
-            assert ct.evalfr(sys, omega * 1j).shape == \
+            assert ct.evalfr(sys, s).shape == \
                 (sys.noutputs, sys.ninputs, len(omega))
 
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.ss2io])
