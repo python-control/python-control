@@ -1061,7 +1061,7 @@ def singular_values_plot(syslist, omega=None,
     plot : bool
         If True (default), plot magnitude and phase
     omega_limits : array_like of two values
-        Limits of the to generate frequency vector.
+        Limits of the frequency vector to generate.
         If Hz=True the limits are in Hz otherwise in rad/s.
     omega_num : int
         Number of samples to plot.  Defaults to
