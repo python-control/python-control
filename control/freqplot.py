@@ -1129,6 +1129,8 @@ def singular_values_plot(syslist, omega=None,
             omega = np.logspace(np.log10(omega_limits[0]),
                                 np.log10(omega_limits[1]), num=omega_num,
                                 endpoint=True)
+    else:
+        omega = np.atleast_1d(omega)
 
     if plot:
         fig = plt.gcf()
