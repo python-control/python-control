@@ -1149,9 +1149,7 @@ def singular_values_plot(syslist, omega=None,
         else:
             nyquistfrq = None
 
-        mag, phase, omega = sys.frequency_response(omega)
-        fresp = mag * np.exp(1j * phase)
-        #fresp = evalfr(sys, 1j * omega_sys)
+        fresp = sys(1j*omega if sys.isctime() else np.exp(1j * omega * sys.dt))
 
         fresp = fresp.transpose((2, 0, 1))
         sigma = np.linalg.svd(fresp, compute_uv=False)
