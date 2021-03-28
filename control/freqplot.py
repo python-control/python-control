@@ -1059,7 +1059,7 @@ def singular_values_plot(syslist, omega=None,
     omega : array_like
         List of frequencies in rad/sec to be used for frequency response
     plot : bool
-        If True (default), plot magnitude and phase
+        If True (default), generate the singular values plot
     omega_limits : array_like of two values
         Limits of the frequency vector to generate.
         If Hz=True the limits are in Hz otherwise in rad/s.
@@ -1090,14 +1090,6 @@ def singular_values_plot(syslist, omega=None,
     """
     # Make a copy of the kwargs dictionary since we will modify it
     kwargs = dict(kwargs)
-
-    # Check to see if legacy 'Plot' keyword was used
-    if 'Plot' in kwargs:
-        import warnings
-        warnings.warn("'Plot' keyword is deprecated in bode_plot; use 'plot'",
-                      FutureWarning)
-        # Map 'Plot' keyword to 'plot' keyword
-        plot = kwargs.pop('Plot')
 
     # Get values for params (and pop from list to allow keyword use in plot)
     dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
