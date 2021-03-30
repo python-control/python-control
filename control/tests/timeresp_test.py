@@ -257,7 +257,7 @@ class TestTimeresp:
             'Peak': 1.0,
             'PeakTime': 0.0,
             'SteadyStateValue': 1.0}
-        T.kwargs = {'T': np.arange(0, 5, 1e-3)}
+        T.kwargs = {'step_info': {'T': np.arange(0, 5, 1e-3)}}
         return T
 
     @pytest.fixture
