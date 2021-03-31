@@ -1063,17 +1063,23 @@ def singular_values_plot(syslist, omega=None,
     Parameters
     ----------
     syslist : linsys
-        List of linear systems (single system is OK)
+        List of linear systems (single system is OK).
     omega : array_like
-        List of frequencies in rad/sec to be used for frequency response
+        List of frequencies in rad/sec to be used for frequency response.
     plot : bool
-        If True (default), generate the singular values plot
+        If True (default), generate the singular values plot.
     omega_limits : array_like of two values
         Limits of the frequency vector to generate.
         If Hz=True the limits are in Hz otherwise in rad/s.
     omega_num : int
-        Number of samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
+        Number of samples to plot.
+        Default value (1000) set by config.defaults['freqplot.number_of_samples'].
+    dB : bool
+        If True, plot result in dB.
+        Default value (False) set by config.defaults['singular_values_plot.dB'].
+    Hz : bool
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
+        Default value (False) set by config.defaults['singular_values_plot.Hz']
 
     Returns
     -------
