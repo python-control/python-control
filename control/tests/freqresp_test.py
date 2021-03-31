@@ -573,12 +573,12 @@ def ss_siso_t():
 
 
 @pytest.fixture
-def tsystem(request, ss_mimo_t, ss_miso_t, ss_simo_t):
+def tsystem(request, ss_mimo_t, ss_miso_t, ss_simo_t, ss_siso_t):
 
     systems = {"ss_mimo": ss_mimo_t,
                "ss_miso": ss_miso_t,
                "ss_simo": ss_simo_t,
-               "ss_siso": ss_simo_t
+               "ss_siso": ss_siso_t
                }
     return systems[request.param]
 

@@ -54,7 +54,6 @@ from .margins import stability_margins
 from .exception import ControlMIMONotImplemented
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
-from .lti import evalfr
 from . import config
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot', 'singular_values_plot',
@@ -1157,10 +1156,12 @@ def singular_values_plot(syslist, omega=None,
                 # limit up to and including nyquist frequency
                 omega_sys = np.hstack((
                     omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+            omega_complex = np.exp(1j * omega * sys.dt)
         else:
             nyquistfrq = None
+            omega_complex = 1j*omega
 
-        fresp = sys(1j*omega if sys.isctime() else np.exp(1j * omega * sys.dt), squeeze=False)
+        fresp = sys(omega_complex, squeeze=False)
 
         fresp = fresp.transpose((2, 0, 1))
         sigma = np.linalg.svd(fresp, compute_uv=False)
