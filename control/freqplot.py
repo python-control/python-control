@@ -1172,7 +1172,7 @@ def singular_values_plot(syslist, omega=None,
         fresp = fresp.transpose((2, 0, 1))
         sigma = np.linalg.svd(fresp, compute_uv=False)
 
-        sigmas.append(sigma)
+        sigmas.append(sigma.transpose())  # return shape is "channel first"
         omegas.append(omega_sys)
         nyquistfrqs.append(nyquistfrq)
 

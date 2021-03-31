@@ -532,7 +532,7 @@ def ss_mimo_t():
     D = np.zeros((2, 2))
     T = TSys(ss(A, B, C, D))
     T.omega = 0.0
-    T.sigma = np.array([[197.20868123, 1.39141948]])
+    T.sigma = np.array([[197.20868123], [1.39141948]])
     return T
 
 
