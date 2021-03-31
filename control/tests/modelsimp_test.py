@@ -65,6 +65,8 @@ class TestModelsimp:
             markov(Y, U, m)
 
     # Make sure markov() returns the right answer
+    # forced response can return wrong shape until gh-488 is merged
+    @pytest.mark.xfail
     @pytest.mark.parametrize("k, m, n",
                              [(2, 2, 2),
                               (2, 5, 5),
