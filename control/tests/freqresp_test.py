@@ -524,69 +524,91 @@ class TSys:
 
 
 @pytest.fixture
-def ss_mimo_t():
+def ss_mimo_ct():
     A = np.diag([-1/75.0, -1/75.0])
     B = np.array([[87.8, -86.4],
                   [108.2, -109.6]])/75.0
     C = np.eye(2)
     D = np.zeros((2, 2))
     T = TSys(ss(A, B, C, D))
-    T.omega = 0.0
-    T.sigma = np.array([[197.20868123], [1.39141948]])
+    T.omegas = [0.0, [0.0], np.array([0.0, 0.01])]
+    T.sigmas = [np.array([[197.20868123], [1.39141948]]),
+                np.array([[197.20868123], [1.39141948]]),
+                np.array([[197.20868123, 157.76694498], [1.39141948, 1.11313558]])
+    ]
     return T
 
 
 @pytest.fixture
-def ss_miso_t():
+def ss_miso_ct():
     A = np.diag([-1 / 75.0])
     B = np.array([[87.8, -86.4]]) / 75.0
     C = np.array([[1]])
     D = np.zeros((1, 2))
     T = TSys(ss(A, B, C, D))
-    T.omega = 0.0
-    T.sigma = np.array([[123.1819792]])
+    T.omegas = [0.0, np.array([0.0, 0.01])]
+    T.sigmas = [np.array([[123.1819792]]),
+                np.array([[123.1819792, 98.54558336]])]
     return T
 
 
 @pytest.fixture
-def ss_simo_t():
+def ss_simo_ct():
     A = np.diag([-1 / 75.0])
     B = np.array([[1.0]]) / 75.0
     C = np.array([[87.8], [108.2]])
     D = np.zeros((2, 1))
     T = TSys(ss(A, B, C, D))
-    T.omega = 0.0
-    T.sigma = np.array([[139.34159465]])
+    T.omegas = [0.0, np.array([0.0, 0.01])]
+    T.sigmas = [np.array([[139.34159465]]),
+                np.array([[139.34159465, 111.47327572]])]
     return T
 
 
 @pytest.fixture
-def ss_siso_t():
+def ss_siso_ct():
     A = np.diag([-1 / 75.0])
     B = np.array([[1.0]]) / 75.0
     C = np.array([[87.8]])
     D = np.zeros((1, 1))
     T = TSys(ss(A, B, C, D))
-    T.omega = 0.0
-    T.sigma = np.array([[87.8]])
+    T.omegas = [0.0]
+    T.sigmas = [np.array([[87.8]]),
+                np.array([[87.8, 70.24]])]
     return T
 
 
 @pytest.fixture
-def tsystem(request, ss_mimo_t, ss_miso_t, ss_simo_t, ss_siso_t):
+def ss_mimo_dt():
+    A = np.array([[0.98675516, 0.],
+                  [0., 0.98675516]])
+    B = np.array([[1.16289679, -1.14435402],
+                  [1.43309149, -1.45163427]])
+    C = np.eye(2)
+    D = np.zeros((2, 2))
+    T = TSys(ss(A, B, C, D, dt=1.0))
+    T.omegas = [0.0, np.array([0.0, 0.001, 0.01])]
+    T.sigmas = [np.array([[197.20865428], [1.39141936]]),
+                np.array([[197.20865428, 196.6563423, 157.76758858],
+                         [1.39141936, 1.38752248, 1.11314018]])]
+    return T
 
-    systems = {"ss_mimo": ss_mimo_t,
-               "ss_miso": ss_miso_t,
-               "ss_simo": ss_simo_t,
-               "ss_siso": ss_siso_t
+@pytest.fixture
+def tsystem(request, ss_mimo_ct, ss_miso_ct, ss_simo_ct, ss_siso_ct, ss_mimo_dt):
+
+    systems = {"ss_mimo_ct": ss_mimo_ct,
+               "ss_miso_ct": ss_miso_ct,
+               "ss_simo_ct": ss_simo_ct,
+               "ss_siso_ct": ss_siso_ct,
+               "ss_mimo_dt": ss_mimo_dt
                }
     return systems[request.param]
 
 
-@pytest.mark.parametrize("tsystem", ["ss_mimo", "ss_miso", "ss_simo", "ss_siso"], indirect=["tsystem"])
+@pytest.mark.parametrize("tsystem",
+                         ["ss_mimo_ct", "ss_miso_ct", "ss_simo_ct", "ss_siso_ct", "ss_mimo_dt"], indirect=["tsystem"])
 def test_singular_values_plot(tsystem):
     sys = tsystem.sys
-    omega = tsystem.omega
-    sigma_check = tsystem.sigma
-    sigma, omega = singular_values_plot(sys, omega, plot=False)
-    np.testing.assert_almost_equal(sigma, sigma_check)
+    for omega_ref, sigma_ref in zip(tsystem.omegas, tsystem.sigmas):
+        sigma, _ = singular_values_plot(sys, omega_ref, plot=False)
+        np.testing.assert_almost_equal(sigma, sigma_ref)
