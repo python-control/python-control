@@ -1160,12 +1160,11 @@ def singular_values_plot(syslist, omega=None,
             nyquistfrq = math.pi / sys.dt
             if not omega_range_given:
                 # limit up to and including nyquist frequency
-                omega_sys = np.hstack((
-                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
-            omega_complex = np.exp(1j * omega * sys.dt)
+                omega_sys = np.hstack((omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+            omega_complex = np.exp(1j * omega_sys * sys.dt)
         else:
             nyquistfrq = None
-            omega_complex = 1j*omega
+            omega_complex = 1j*omega_sys
 
         fresp = sys(omega_complex, squeeze=False)
 
