@@ -1160,7 +1160,7 @@ def singular_values_plot(syslist, omega=None,
         else:
             nyquistfrq = None
 
-        fresp = sys(1j*omega if sys.isctime() else np.exp(1j * omega * sys.dt)).reshape(sys.noutputs, sys.ninputs, len(omega))
+        fresp = sys(1j*omega if sys.isctime() else np.exp(1j * omega * sys.dt), squeeze=False)
 
         fresp = fresp.transpose((2, 0, 1))
         sigma = np.linalg.svd(fresp, compute_uv=False)
