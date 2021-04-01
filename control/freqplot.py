@@ -190,35 +190,15 @@ def bode_plot(syslist, omega=None,
     grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
     plot = config._get_param('bode', 'grid', plot, True)
     margins = config._get_param('bode', 'margins', margins, False)
-    wrap_phase = config._get_param(
-        'bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
-    initial_phase = config._get_param(
-        'bode', 'initial_phase', kwargs, None, pop=True)
+    wrap_phase = config._get_param('bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
+    initial_phase = config._get_param('bode', 'initial_phase', kwargs, None, pop=True)
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
 
     # If argument was a singleton, turn it into a tuple
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # Decide whether to go above Nyquist frequency
-    omega_range_given = True if omega is not None else False
-
-    if omega is None:
-        omega_num = config._get_param(
-            'freqplot', 'number_of_samples', omega_num)
-        if omega_limits is None:
-            # Select a default range if none is provided
-            omega = _default_frequency_range(syslist,
-                                             number_of_samples=omega_num)
-        else:
-            omega_range_given = True
-            omega_limits = np.asarray(omega_limits)
-            if len(omega_limits) != 2:
-                raise ValueError("len(omega_limits) must be 2")
-            if Hz:
-                omega_limits *= 2. * math.pi
-            omega = np.logspace(np.log10(omega_limits[0]),
-                                np.log10(omega_limits[1]), num=omega_num,
-                                endpoint=True)
+    omega, omega_range_given = _determine_frequency_range(syslist, omega, omega_limits, omega_num, Hz)
 
     if plot:
         # Set up the axes with labels so that multiple calls to
@@ -1110,32 +1090,14 @@ def singular_values_plot(syslist, omega=None,
     Hz = config._get_param('singular_values_plot', 'Hz', kwargs, _bode_defaults, pop=True)
     grid = config._get_param('singular_values_plot', 'grid', kwargs, _bode_defaults, pop=True)
     plot = config._get_param('singular_values_plot', 'grid', plot, True)
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
 
     # If argument was a singleton, turn it into a tuple
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # Decide whether to go above Nyquist frequency
-    omega_range_given = True if omega is not None else False
-
-    if omega is None:
-        omega_num = config._get_param(
-            'freqplot', 'number_of_samples', omega_num)
-        if omega_limits is None:
-            # Select a default range if none is provided
-            omega = _default_frequency_range(syslist, number_of_samples=omega_num)
-        else:
-            omega_range_given = True
-            omega_limits = np.asarray(omega_limits)
-            if len(omega_limits) != 2:
-                raise ValueError("len(omega_limits) must be 2")
-            if Hz:
-                omega_limits *= 2. * math.pi
-            omega = np.logspace(np.log10(omega_limits[0]),
-                                np.log10(omega_limits[1]), num=omega_num,
-                                endpoint=True)
-    else:
-        omega = np.atleast_1d(omega)
+    omega, omega_range_given = _determine_frequency_range(syslist, omega, omega_limits, omega_num, Hz)
+    omega = np.atleast_1d(omega)
 
     if plot:
         fig = plt.gcf()
@@ -1213,6 +1175,61 @@ def singular_values_plot(syslist, omega=None,
 # This section of the code contains some utility functions for
 # generating frequency domain plots
 #
+
+
+# Determine the frequency range to be used
+def _determine_frequency_range(syslist, omega_in, omega_limits, omega_num, Hz):
+    """Determine the frequency range to be used for a frequency-domain plot according to a standard logic.
+
+    If omega_in and omega_limits are both None, then omega_out is computed on omega_num points
+    according to a default logic defined by _default_frequency_range and tailored for the list of systems syslist, and
+    omega_range_given is set to False.
+    If omega_in is None but omega_limits is an array-like of 2 elements, then omega_out is computed with the function
+    np.logspace on omega_num points within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
+    omega_range_given is set to True.
+    If omega_in is not None, then omega_out is set to omega_in, and omega_range_given is set to True
+
+    Parameters
+    ----------
+    syslist : list of LTI
+        List of linear input/output systems (single system is OK)
+    omega_in : 1D array_like or None
+        Frequency range specified by the user
+    omega_limits : 1D array_like or None
+        Frequency limits specified by the user
+    omega_num : int
+        Number of points to be used for the frequency range (if not user-specified)
+
+    Returns
+    -------
+    omega_out : 1D array
+        Frequency range to be used
+    omega_range_given : bool
+        True if the frequency range was specified by the user, either through omega_in or through omega_limits.
+        False if both omega_in and omega_limits are None.
+    """
+
+    # Decide whether to go above Nyquist frequency
+    omega_range_given = True if omega_in is not None else False
+
+    if omega_in is None:
+        if omega_limits is None:
+            # Select a default range if none is provided
+            omega_out = _default_frequency_range(syslist,
+                                                number_of_samples=omega_num)
+        else:
+            omega_range_given = True
+            omega_limits = np.asarray(omega_limits)
+            if len(omega_limits) != 2:
+                raise ValueError("len(omega_limits) must be 2")
+            if Hz:
+                omega_limits *= 2. * math.pi
+            omega_out = np.logspace(np.log10(omega_limits[0]),
+                                   np.log10(omega_limits[1]), num=omega_num, endpoint=True)
+    else:
+        omega_out = omega_in
+
+    return omega_out, omega_range_given
 
 
 # Compute reasonable defaults for axes
