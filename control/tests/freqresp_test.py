@@ -511,7 +511,7 @@ def test_dcgain_consistency():
     np.testing.assert_almost_equal(sys_ss.dcgain(), -1)
 
 
-# Testing of the singular_value_plot_function
+# Testing of the singular_value_plot function
 class TSys:
     """Struct of test system"""
     def __init__(self, sys=None, call_kwargs=None):
@@ -593,6 +593,7 @@ def ss_mimo_dt():
                          [1.39141936, 1.38752248, 1.11314018]])]
     return T
 
+
 @pytest.fixture
 def tsystem(request, ss_mimo_ct, ss_miso_ct, ss_simo_ct, ss_siso_ct, ss_mimo_dt):
 
@@ -612,3 +613,20 @@ def test_singular_values_plot(tsystem):
     for omega_ref, sigma_ref in zip(tsystem.omegas, tsystem.sigmas):
         sigma, _ = singular_values_plot(sys, omega_ref, plot=False)
         np.testing.assert_almost_equal(sigma, sigma_ref)
+
+
+def test_singular_values_plot_mpl(ss_mimo_ct):
+    sys = ss_mimo_ct.sys
+    plt.figure()
+    omega_all = np.logspace(-3, 2, 1000)
+    singular_values_plot(sys, omega_all, plot=True)
+    fig = plt.gcf()
+    allaxes = fig.get_axes()
+    assert(len(allaxes) == 1)
+    assert(allaxes[0].get_label() == 'control-sigma')
+    plt.figure()
+    singular_values_plot(sys, plot=True, Hz=True, dB=True, grid=False)  # non-default settings
+    fig = plt.gcf()
+    allaxes = fig.get_axes()
+    assert(len(allaxes) == 1)
+    assert(allaxes[0].get_label() == 'control-sigma')
