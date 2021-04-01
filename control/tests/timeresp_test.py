@@ -244,6 +244,23 @@ class TestTimeresp:
         return T
 
     @pytest.fixture
+    def siso_tf_asymptotic_from_neg1(self):
+        # Peak_value = Undershoot = y_final(y(t=inf))
+        T = TSys(TransferFunction([-1, 1], [1, 1]))
+        T.step_info = {
+            'RiseTime': 2.197,
+            'SettlingTime': 4.605,
+            'SettlingMin': 0.9,
+            'SettlingMax': 1.0,
+            'Overshoot': 0,
+            'Undershoot': 100.0,
+            'Peak': 1.0,
+            'PeakTime': 0.0,
+            'SteadyStateValue': 1.0}
+        T.kwargs = {'step_info': {'T': np.arange(0, 5, 1e-3)}}
+        return T
+
+    @pytest.fixture
     def siso_tf_step_matlab(self):
         # example from matlab online help
         # https://www.mathworks.com/help/control/ref/stepinfo.html
@@ -348,7 +365,8 @@ class TestTimeresp:
                 pole_cancellation, no_pole_cancellation, siso_tf_type1,
                 siso_tf_kpos, siso_tf_kneg,
                 siso_tf_step_matlab, siso_ss_step_matlab,
-                mimo_ss_step_matlab, mimo_tf_step_info):
+                mimo_ss_step_matlab, mimo_tf_step_info,
+                siso_tf_asymptotic_from_neg1):
         systems = {"siso_ss1": siso_ss1,
                    "siso_ss2": siso_ss2,
                    "siso_tf1": siso_tf1,
@@ -373,6 +391,7 @@ class TestTimeresp:
                    "siso_ss_step_matlab": siso_ss_step_matlab,
                    "mimo_ss_step_matlab": mimo_ss_step_matlab,
                    "mimo_tf_step": mimo_tf_step_info,
+                   "siso_tf_asymptotic_from_neg1": siso_tf_asymptotic_from_neg1,
                    }
         return systems[request.param]
 
@@ -466,7 +485,8 @@ class TestTimeresp:
          "siso_ss_step_matlab",
          "siso_tf_kpos",
          "siso_tf_kneg",
-         "siso_tf_type1"],
+         "siso_tf_type1",
+         "siso_tf_asymptotic_from_neg1"],
         indirect=["tsystem"])
     def test_step_info(self, tsystem, systype, time_2d, yfinal):
         """Test step info for SISO systems."""

@@ -912,8 +912,8 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
                 if settled < len(T):
                     settling_time = T[settled]
 
-                settling_min = (yout[tr_upper_index:]).min()
-                settling_max = (yout[tr_upper_index:]).max()
+                settling_min = min((yout[tr_upper_index:]).min(), InfValue)
+                settling_max = max((yout[tr_upper_index:]).max(), InfValue)
 
                 # Overshoot
                 y_os = (sgnInf * yout).max()
