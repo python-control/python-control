@@ -619,8 +619,7 @@ def test_singular_values_plot_mpl_base(ss_mimo_ct, ss_mimo_dt):
     sys_ct = ss_mimo_ct.sys
     sys_dt = ss_mimo_dt.sys
     plt.figure()
-    omega_all = np.logspace(-3, 2, 1000)
-    singular_values_plot(sys_ct, omega_all, plot=True)
+    singular_values_plot(sys_ct, plot=True)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)
@@ -636,9 +635,11 @@ def test_singular_values_plot_mpl_base(ss_mimo_ct, ss_mimo_dt):
 def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
     sys_ct = ss_mimo_ct.sys
     sys_dt = ss_mimo_dt.sys
+    omega_all = np.logspace(-3, 2, 1000)
     plt.figure()
-    singular_values_plot(sys_ct, plot=True)
-    singular_values_plot(sys_dt, plot=True)
+    singular_values_plot(sys_ct, omega_all, plot=True)
+    with pytest.warns(UserWarning):
+        singular_values_plot(sys_dt, omega_all, plot=True)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)

@@ -1133,8 +1133,8 @@ def singular_values_plot(syslist, omega=None,
                 omega_sys = np.hstack((
                     omega_sys[omega_sys < nyquistfrq], nyquistfrq))
             else:
-                if np.max(omega_sys) >= nyquistfrq:
-                    warnings.warn("Specified frequency range is above Nyquist limit!")
+                if np.max(omega_sys) > nyquistfrq:
+                    warnings.warn("evaluation above Nyquist frequency")
 
             omega_complex = np.exp(1j * omega_sys * sys.dt)
         else:
