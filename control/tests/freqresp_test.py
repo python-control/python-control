@@ -572,7 +572,7 @@ def ss_siso_ct():
     C = np.array([[87.8]])
     D = np.zeros((1, 1))
     T = TSys(ss(A, B, C, D))
-    T.omegas = [0.0]
+    T.omegas = [0.0, np.array([0.0, 0.01])]
     T.sigmas = [np.array([[87.8]]),
                 np.array([[87.8, 70.24]])]
     return T
