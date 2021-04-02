@@ -63,7 +63,7 @@ For users with the Anaconda distribution of Python, the following
 commands can be used::
 
   conda install numpy scipy matplotlib    # if not yet installed
-  conda install -c conda-forge control
+  conda install -c conda-forge control slycot
 
 This installs `slycot` and `python-control` from conda-forge, including the
 `openblas` package.
