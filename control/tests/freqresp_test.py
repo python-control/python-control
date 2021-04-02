@@ -615,18 +615,35 @@ def test_singular_values_plot(tsystem):
         np.testing.assert_almost_equal(sigma, sigma_ref)
 
 
-def test_singular_values_plot_mpl(ss_mimo_ct):
-    sys = ss_mimo_ct.sys
+def test_singular_values_plot_mpl_base(ss_mimo_ct, ss_mimo_dt):
+    sys_ct = ss_mimo_ct.sys
+    sys_dt = ss_mimo_dt.sys
     plt.figure()
     omega_all = np.logspace(-3, 2, 1000)
-    singular_values_plot(sys, omega_all, plot=True)
+    singular_values_plot(sys_ct, omega_all, plot=True)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)
     assert(allaxes[0].get_label() == 'control-sigma')
     plt.figure()
-    singular_values_plot(sys, plot=True, Hz=True, dB=True, grid=False)  # non-default settings
+    singular_values_plot([sys_ct, sys_dt], plot=True, Hz=True, dB=True, grid=False)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)
     assert(allaxes[0].get_label() == 'control-sigma')
+
+
+def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
+    sys_ct = ss_mimo_ct.sys
+    sys_dt = ss_mimo_dt.sys
+    plt.figure()
+    singular_values_plot(sys_ct, plot=True)
+    singular_values_plot(sys_dt, plot=True)
+    fig = plt.gcf()
+    allaxes = fig.get_axes()
+    assert(len(allaxes) == 1)
+    assert (allaxes[0].get_label() == 'control-sigma')
+    nyquist_line = allaxes[0].lines[-1].get_data()
+    assert(len(nyquist_line[0]) == 2)
+    assert(nyquist_line[0][0] == nyquist_line[0][1])
+    assert(nyquist_line[0][0] == np.pi/sys_dt.dt)

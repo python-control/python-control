@@ -190,15 +190,17 @@ def bode_plot(syslist, omega=None,
     grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
     plot = config._get_param('bode', 'grid', plot, True)
     margins = config._get_param('bode', 'margins', margins, False)
-    wrap_phase = config._get_param('bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
-    initial_phase = config._get_param('bode', 'initial_phase', kwargs, None, pop=True)
+    wrap_phase = config._get_param(
+        'bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
+    initial_phase = config._get_param(
+        'bode', 'initial_phase', kwargs, None, pop=True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
-
     # If argument was a singleton, turn it into a tuple
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    omega, omega_range_given = _determine_frequency_range(syslist, omega, omega_limits, omega_num, Hz)
+    omega, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num, Hz)
 
     if plot:
         # Set up the axes with labels so that multiple calls to
@@ -1086,17 +1088,23 @@ def singular_values_plot(syslist, omega=None,
     kwargs = dict(kwargs)
 
     # Get values for params (and pop from list to allow keyword use in plot)
-    dB = config._get_param('singular_values_plot', 'dB', kwargs, singular_values_plot, pop=True)
-    Hz = config._get_param('singular_values_plot', 'Hz', kwargs, _bode_defaults, pop=True)
-    grid = config._get_param('singular_values_plot', 'grid', kwargs, _bode_defaults, pop=True)
-    plot = config._get_param('singular_values_plot', 'grid', plot, True)
+    dB = config._get_param(
+        'singular_values_plot', 'dB', kwargs, _singular_values_plot_default, pop=True)
+    Hz = config._get_param(
+        'singular_values_plot', 'Hz', kwargs, _singular_values_plot_default, pop=True)
+    grid = config._get_param(
+        'singular_values_plot', 'grid', kwargs, _singular_values_plot_default, pop=True)
+    plot = config._get_param(
+        'singular_values_plot', 'grid', plot, True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
 
     # If argument was a singleton, turn it into a tuple
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    omega, omega_range_given = _determine_frequency_range(syslist, omega, omega_limits, omega_num, Hz)
+    omega, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num, Hz)
+
     omega = np.atleast_1d(omega)
 
     if plot:
@@ -1122,7 +1130,12 @@ def singular_values_plot(syslist, omega=None,
             nyquistfrq = math.pi / sys.dt
             if not omega_range_given:
                 # limit up to and including nyquist frequency
-                omega_sys = np.hstack((omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+                omega_sys = np.hstack((
+                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+            else:
+                if np.max(omega_sys) >= nyquistfrq:
+                    warnings.warn("Specified frequency range is above Nyquist limit!")
+
             omega_complex = np.exp(1j * omega_sys * sys.dt)
         else:
             nyquistfrq = None
@@ -1152,9 +1165,11 @@ def singular_values_plot(syslist, omega=None,
             sigma_plot = sigma
 
             if dB:
-                ax_sigma.semilogx(omega_plot, 20 * np.log10(sigma_plot), color=color, *args, **kwargs)
+                ax_sigma.semilogx(omega_plot, 20 * np.log10(sigma_plot),
+                                  color=color, *args, **kwargs)
             else:
-                ax_sigma.loglog(omega_plot, sigma_plot, color=color, *args, **kwargs)
+                ax_sigma.loglog(omega_plot, sigma_plot,
+                                color=color, *args, **kwargs)
 
             if nyquistfrq_plot is not None:
                 ax_sigma.axvline(x=nyquistfrq_plot, color=color)
@@ -1178,16 +1193,20 @@ def singular_values_plot(syslist, omega=None,
 
 
 # Determine the frequency range to be used
-def _determine_frequency_range(syslist, omega_in, omega_limits, omega_num, Hz):
-    """Determine the frequency range to be used for a frequency-domain plot according to a standard logic.
+def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num, Hz):
+    """Determine the frequency range for a frequency-domain plot
+    according to a standard logic.
 
-    If omega_in and omega_limits are both None, then omega_out is computed on omega_num points
-    according to a default logic defined by _default_frequency_range and tailored for the list of systems syslist, and
+    If omega_in and omega_limits are both None, then omega_out is computed
+    on omega_num points according to a default logic defined by
+    _default_frequency_range and tailored for the list of systems syslist, and
     omega_range_given is set to False.
-    If omega_in is None but omega_limits is an array-like of 2 elements, then omega_out is computed with the function
-    np.logspace on omega_num points within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
+    If omega_in is None but omega_limits is an array-like of 2 elements, then
+    omega_out is computed with the function np.logspace on omega_num points
+    within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
     omega_range_given is set to True.
-    If omega_in is not None, then omega_out is set to omega_in, and omega_range_given is set to True
+    If omega_in is not None, then omega_out is set to omega_in,
+    and omega_range_given is set to True
 
     Parameters
     ----------
@@ -1198,15 +1217,17 @@ def _determine_frequency_range(syslist, omega_in, omega_limits, omega_num, Hz):
     omega_limits : 1D array_like or None
         Frequency limits specified by the user
     omega_num : int
-        Number of points to be used for the frequency range (if not user-specified)
+        Number of points to be used for the frequency
+        range (if the frequency range is not user-specified)
 
     Returns
     -------
     omega_out : 1D array
         Frequency range to be used
     omega_range_given : bool
-        True if the frequency range was specified by the user, either through omega_in or through omega_limits.
-        False if both omega_in and omega_limits are None.
+        True if the frequency range was specified by the user, either through
+        omega_in or through omega_limits. False if both omega_in
+        and omega_limits are None.
     """
 
     # Decide whether to go above Nyquist frequency
@@ -1216,7 +1237,7 @@ def _determine_frequency_range(syslist, omega_in, omega_limits, omega_num, Hz):
         if omega_limits is None:
             # Select a default range if none is provided
             omega_out = _default_frequency_range(syslist,
-                                                number_of_samples=omega_num)
+                                                 number_of_samples=omega_num)
         else:
             omega_range_given = True
             omega_limits = np.asarray(omega_limits)
@@ -1225,7 +1246,8 @@ def _determine_frequency_range(syslist, omega_in, omega_limits, omega_num, Hz):
             if Hz:
                 omega_limits *= 2. * math.pi
             omega_out = np.logspace(np.log10(omega_limits[0]),
-                                   np.log10(omega_limits[1]), num=omega_num, endpoint=True)
+                                    np.log10(omega_limits[1]),
+                                    num=omega_num, endpoint=True)
     else:
         omega_out = omega_in
 
