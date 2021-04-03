@@ -188,7 +188,7 @@ def bode_plot(syslist, omega=None,
     deg = config._get_param('bode', 'deg', kwargs, _bode_defaults, pop=True)
     Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
     grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
-    plot = config._get_param('bode', 'grid', plot, True)
+    plot = config._get_param('bode', 'plot', plot, True)
     margins = config._get_param('bode', 'margins', margins, False)
     wrap_phase = config._get_param(
         'bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
@@ -1095,7 +1095,7 @@ def singular_values_plot(syslist, omega=None,
     grid = config._get_param(
         'singular_values_plot', 'grid', kwargs, _singular_values_plot_default, pop=True)
     plot = config._get_param(
-        'singular_values_plot', 'grid', plot, True)
+        'singular_values_plot', 'plot', plot, True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
 
     # If argument was a singleton, turn it into a tuple
@@ -1249,8 +1249,9 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num, Hz):
                                     np.log10(omega_limits[1]),
                                     num=omega_num, endpoint=True)
     else:
-        omega_out = omega_in
-
+        omega_out = np.asarray(omega_in)
+        if Hz:
+            omega_out *= 2. * math.pi
     return omega_out, omega_range_given
 
 
