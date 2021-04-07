@@ -1030,15 +1030,6 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 #
 
 
-# Default values for Bode plot configuration variables
-_singular_values_plot_default = {
-    'singular_values_plot.dB': False,           # Plot singular values in dB
-    'singular_values_plot.deg': True,           # Plot phase in degrees
-    'singular_values_plot.Hz': False,           # Plot frequency in Hertz
-    'singular_values_plot.grid': True,          # Turn on grid for gain and phase
-}
-
-
 def singular_values_plot(syslist, omega=None,
                          plot=True, omega_limits=None, omega_num=None,
                          *args, **kwargs):
@@ -1062,10 +1053,10 @@ def singular_values_plot(syslist, omega=None,
         Default value (1000) set by config.defaults['freqplot.number_of_samples'].
     dB : bool
         If True, plot result in dB.
-        Default value (False) set by config.defaults['singular_values_plot.dB'].
+        Default value (False) set by config.defaults['freqplot.dB'].
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
-        Default value (False) set by config.defaults['singular_values_plot.Hz']
+        Default value (False) set by config.defaults['freqplot.Hz']
 
     Returns
     -------
@@ -1078,7 +1069,7 @@ def singular_values_plot(syslist, omega=None,
     ----------------
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
-        `config.defaults['singular_values_plot.grid']`.
+        `config.defaults['freqplot.number_of_samples']`.
 
     Examples
     --------
@@ -1098,13 +1089,13 @@ def singular_values_plot(syslist, omega=None,
 
     # Get values for params (and pop from list to allow keyword use in plot)
     dB = config._get_param(
-        'freqplot', 'dB', kwargs, _singular_values_plot_default, pop=True)
+        'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
     Hz = config._get_param(
-        'freqplot', 'Hz', kwargs, _singular_values_plot_default, pop=True)
+        'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
-        'freqplot', 'grid', kwargs, _singular_values_plot_default, pop=True)
+        'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
     plot = config._get_param(
-        'singular_values_plot', 'plot', plot, True)
+        'freqplot', 'plot', plot, True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
 
     # If argument was a singleton, turn it into a tuple
