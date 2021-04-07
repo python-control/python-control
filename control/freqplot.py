@@ -1026,7 +1026,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     plt.tight_layout()
 
 #
-# Singular value plot
+# Singular values plot
 #
 
 
