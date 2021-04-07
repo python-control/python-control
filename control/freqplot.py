@@ -63,6 +63,11 @@ __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot', 'singular_values_plot',
 _freqplot_defaults = {
     'freqplot.feature_periphery_decades': 1,
     'freqplot.number_of_samples': 1000,
+    'freqplot.dB': False,  # Plot gain in dB
+    'freqplot.deg': True,  # Plot phase in degrees
+    'freqplot.Hz': False,  # Plot frequency in Hertz
+    'freqplot.grid': True,  # Turn on grid for gain and phase
+    'freqplot.wrap_phase': False,  # Wrap the phase plot at a given value
 }
 
 #
@@ -75,15 +80,6 @@ _freqplot_defaults = {
 #
 # Bode plot
 #
-
-# Default values for Bode plot configuration variables
-_bode_defaults = {
-    'bode.dB': False,           # Plot gain in dB
-    'bode.deg': True,           # Plot phase in degrees
-    'bode.Hz': False,           # Plot frequency in Hertz
-    'bode.grid': True,          # Turn on grid for gain and phase
-    'bode.wrap_phase': False,   # Wrap the phase plot at a given value
-}
 
 
 def bode_plot(syslist, omega=None,
@@ -103,10 +99,10 @@ def bode_plot(syslist, omega=None,
         If True, plot result in dB.  Default is false.
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
-        Default value (False) set by config.defaults['bode.Hz']
+        Default value (False) set by config.defaults['freqplot.Hz']
     deg : bool
         If True, plot phase in degrees (else radians).  Default value (True)
-        config.defaults['bode.deg']
+        config.defaults['freqplot.deg']
     plot : bool
         If True (default), plot magnitude and phase
     omega_limits : array_like of two values
@@ -184,16 +180,21 @@ def bode_plot(syslist, omega=None,
         plot = kwargs.pop('Plot')
 
     # Get values for params (and pop from list to allow keyword use in plot)
-    dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
-    deg = config._get_param('bode', 'deg', kwargs, _bode_defaults, pop=True)
-    Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
-    grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
-    plot = config._get_param('bode', 'plot', plot, True)
-    margins = config._get_param('bode', 'margins', margins, False)
+    dB = config._get_param(
+        'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
+    deg = config._get_param(
+        'freqplot', 'deg', kwargs, _freqplot_defaults, pop=True)
+    Hz = config._get_param(
+        'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
+    grid = config._get_param(
+        'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
+    plot = config._get_param('freqplot', 'plot', plot, True)
+    margins = config._get_param(
+        'freqplot', 'margins', margins, False)
     wrap_phase = config._get_param(
-        'bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
+        'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
-        'bode', 'initial_phase', kwargs, None, pop=True)
+        'freqplot', 'initial_phase', kwargs, None, pop=True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     # If argument was a singleton, turn it into a tuple
     if not hasattr(syslist, '__iter__'):
@@ -937,9 +938,12 @@ def gangof4_plot(P, C, omega=None, **kwargs):
             "Gang of four is currently only implemented for SISO systems.")
 
     # Get the default parameter values
-    dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
-    Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
-    grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
+    dB = config._get_param(
+        'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
+    Hz = config._get_param(
+        'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
+    grid = config._get_param(
+        'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
 
     # Compute the senstivity functions
     L = P * C
@@ -1094,11 +1098,11 @@ def singular_values_plot(syslist, omega=None,
 
     # Get values for params (and pop from list to allow keyword use in plot)
     dB = config._get_param(
-        'singular_values_plot', 'dB', kwargs, _singular_values_plot_default, pop=True)
+        'freqplot', 'dB', kwargs, _singular_values_plot_default, pop=True)
     Hz = config._get_param(
-        'singular_values_plot', 'Hz', kwargs, _singular_values_plot_default, pop=True)
+        'freqplot', 'Hz', kwargs, _singular_values_plot_default, pop=True)
     grid = config._get_param(
-        'singular_values_plot', 'grid', kwargs, _singular_values_plot_default, pop=True)
+        'freqplot', 'grid', kwargs, _singular_values_plot_default, pop=True)
     plot = config._get_param(
         'singular_values_plot', 'plot', plot, True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
@@ -1262,7 +1266,7 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num, Hz):
                                     np.log10(omega_limits[1]),
                                     num=omega_num, endpoint=True)
     else:
-        omega_out = np.asarray(omega_in)
+        omega_out = np.copy(omega_in)
         if Hz:
             omega_out *= 2. * math.pi
     return omega_out, omega_range_given

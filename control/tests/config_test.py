@@ -30,9 +30,9 @@ class TestConfig:
 
     @mplcleanup
     def test_get_param(self):
-        assert ct.config._get_param('bode', 'dB')\
-            == ct.config.defaults['bode.dB']
-        assert ct.config._get_param('bode', 'dB', 1) == 1
+        assert ct.config._get_param('freqplot', 'dB')\
+            == ct.config.defaults['freqplot.dB']
+        assert ct.config._get_param('freqplot', 'dB', 1) == 1
         ct.config.defaults['config.test1'] = 1
         assert ct.config._get_param('config', 'test1', None) == 1
         assert ct.config._get_param('config', 'test1', None, 1) == 1
@@ -85,7 +85,7 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
 
         plt.figure()
-        ct.bode_plot(self.sys, omega, Hz=True)
+        ct.bode_plot(self.sys, omega/2./pi, Hz=True)
         mag_x, mag_y = (((plt.gcf().axes[0]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(mag_x[0], 0.001 / (2*pi), decimal=6)
 
@@ -130,7 +130,7 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
 
         plt.figure()
-        ct.bode_plot(self.sys, omega, Hz=True)
+        ct.bode_plot(self.sys, omega/2./pi, Hz=True)
         mag_x, mag_y = (((plt.gcf().axes[0]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(mag_x[0], 0.001 / (2*pi), decimal=6)
 
@@ -141,9 +141,9 @@ class TestConfig:
 
     @mplcleanup
     def test_custom_bode_default(self):
-        ct.config.defaults['bode.dB'] = True
-        ct.config.defaults['bode.deg'] = True
-        ct.config.defaults['bode.Hz'] = True
+        ct.config.defaults['freqplot.dB'] = True
+        ct.config.defaults['freqplot.deg'] = True
+        ct.config.defaults['freqplot.Hz'] = True
 
         # Generate a Bode plot
         plt.figure()
@@ -154,7 +154,7 @@ class TestConfig:
 
         # Override defaults
         plt.figure()
-        ct.bode_plot(self.sys, omega, Hz=True, deg=False, dB=True)
+        ct.bode_plot(self.sys, omega/2./pi, Hz=True, deg=False, dB=True)
         mag_x, mag_y = (((plt.gcf().axes[0]).get_lines())[0]).get_data()
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(mag_x[0], 0.001 / (2*pi), decimal=6)
@@ -200,9 +200,9 @@ class TestConfig:
     def test_reset_defaults(self):
         ct.use_matlab_defaults()
         ct.reset_defaults()
-        assert not ct.config.defaults['bode.dB']
-        assert ct.config.defaults['bode.deg']
-        assert not ct.config.defaults['bode.Hz']
+        assert not ct.config.defaults['freqplot.dB']
+        assert ct.config.defaults['freqplot.deg']
+        assert not ct.config.defaults['freqplot.Hz']
         assert ct.config.defaults['freqplot.number_of_samples'] == 1000
         assert ct.config.defaults['freqplot.feature_periphery_decades'] == 1.0
 
