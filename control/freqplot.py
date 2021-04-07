@@ -1081,9 +1081,14 @@ def singular_values_plot(syslist, omega=None,
     >>> den = [75, 1]
     >>> sys = ct.tf([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
     >>> omega = np.logspace(-4, 1, 1000)
-    >>> sigma, omega = singular_values_plot(sys)
+    >>> sigma, omega = singular_values_plot(sys, plot=True)
+    >>> singular_values_plot(sys, 0.0, plot=False)
+    (array([[197.20868123],
+        [  1.39141948]]),
+     array([0.]))
 
     """
+
     # Make a copy of the kwargs dictionary since we will modify it
     kwargs = dict(kwargs)
 
@@ -1121,7 +1126,14 @@ def singular_values_plot(syslist, omega=None,
             plt.clf()
             ax_sigma = plt.subplot(111, label='control-sigma')
 
+        # color cycle handled manually as all singular values
+        # of the same systems are expected to be of the same color
         color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        color_offset = 0
+        if len(ax_sigma.lines) > 0:
+            last_color = ax_sigma.lines[-1].get_color()
+            if last_color in color_cycle:
+                color_offset = color_cycle.index(last_color) + 1
 
     sigmas, omegas, nyquistfrqs = [], [], []
     for idx_sys, sys in enumerate(syslist):
@@ -1151,7 +1163,8 @@ def singular_values_plot(syslist, omega=None,
         nyquistfrqs.append(nyquistfrq)
 
         if plot:
-            color = color_cycle[idx_sys % len(color_cycle)]
+            color = color_cycle[(idx_sys + color_offset) % len(color_cycle)]
+            color = kwargs.pop('color', color)
 
             nyquistfrq_plot = None
             if Hz:
