@@ -132,7 +132,7 @@ def bode_plot(syslist, omega=None,
     ----------------
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
-        `config.defaults['bode.grid']`.
+        `config.defaults['freqplot.grid']`.
     initial_phase : float
         Set the reference phase to use for the lowest frequency.  If set, the
         initial phase of the Bode plot will be set to the value closest to the
@@ -145,7 +145,7 @@ def bode_plot(syslist, omega=None,
         phase will be restricted to the range [-180, 180) (or [:math:`-\\pi`,
         :math:`\\pi`) radians). If `wrap_phase` is specified as a float, the
         phase will be offset by 360 degrees if it falls below the specified
-        value.  Default to `False`, set by config.defaults['bode.wrap_phase'].
+        value. Default to `False`, set by config.defaults['freqplot.wrap_phase'].
 
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
