@@ -1069,7 +1069,7 @@ def singular_values_plot(syslist, omega=None,
     ----------------
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
-        `config.defaults['freqplot.number_of_samples']`.
+        `config.defaults['freqplot.grid']`.
 
     Examples
     --------
