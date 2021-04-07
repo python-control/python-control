@@ -70,6 +70,7 @@ def test_bode_basic(ss_siso):
     assert len(bode_plot(tf_siso, plot=False, omega=np.logspace(-1,1,10))[0])\
          == 10
 
+
 def test_nyquist_basic(ss_siso):
     """Test nyquist plot call (Very basic)"""
     # TODO: proper test
@@ -367,7 +368,6 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
      pytest.param(ctrl.tf([1], [1, 0, 0, 0, 0, 0]),
                   -270, -3*math.pi/2, math.pi/2,    id="order5, -270"),
     ])
-
 def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
     mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
     assert(min(phase) >= min_phase)
@@ -638,8 +638,7 @@ def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
     omega_all = np.logspace(-3, 2, 1000)
     plt.figure()
     singular_values_plot(sys_ct, omega_all, plot=True)
-    with pytest.warns(UserWarning):
-        singular_values_plot(sys_dt, omega_all, plot=True)
+    singular_values_plot(sys_dt, omega_all, plot=True)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)
