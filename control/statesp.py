@@ -391,11 +391,11 @@ class StateSpace(LTI):
                                "\n    ".join(str(M).splitlines()))
             for Mvar, M in zip(["A", "B", "C", "D"],
                                [self.A, self.B, self.C, self.D])])
-        # TODO: replace with standard calls to lti functions
-        if (type(self.dt) == bool and self.dt is True):
-            string += "\ndt unspecified\n"
-        elif (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
-            string += "\ndt = " + self.dt.__str__() + "\n"
+        if self.isdtime(strict=True):
+            if self.dt is True:
+                string += "\ndt unspecified\n"
+            else:
+                string += f"\ndt = {self.dt}\n"
         return string
 
     # represent to implement a re-loadable version

@@ -745,7 +745,7 @@ class TestStateSpace:
         tsysdtunspec = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, True)
         assert str(tsysdtunspec) == tref + "\ndt unspecified\n"
         sysdt1 = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, 1.)
-        assert str(sysdt1) == tref + "\ndt = 1.0\n"
+        assert str(sysdt1) == tref + "\ndt = {}\n".format(1.)
 
     def test_pole_static(self):
         """Regression: pole() of static gain is empty array."""
