@@ -743,7 +743,7 @@ class TestStateSpace:
                 "     [ 0.  1.]]\n")
         assert str(tsys) == tref
         tsysdtunspec = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, True)
-        assert str(tsysdtunspec) == tref + "\ndt unspecified\n"
+        assert str(tsysdtunspec) == tref + "\ndt = True\n"
         sysdt1 = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, 1.)
         assert str(sysdt1) == tref + "\ndt = {}\n".format(1.)
 
@@ -1025,7 +1025,7 @@ refkey_r = {None: 'p', 'partitioned': 'p', 'separate': 's'}
 @pytest.mark.parametrize("dt, dtref",
                          [(0, ""),
                           (None, ""),
-                          (True, r"~,~dt~\mathrm{{unspecified}}"),
+                          (True, r"~,~dt=~\mathrm{{True}}"),
                           (0.1, r"~,~dt={dt:{fmt}}")])
 @pytest.mark.parametrize("repr_type", [None, "partitioned", "separate"])
 @pytest.mark.parametrize("num_format", [None, ".3g", ".5g"])

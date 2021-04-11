@@ -392,10 +392,7 @@ class StateSpace(LTI):
             for Mvar, M in zip(["A", "B", "C", "D"],
                                [self.A, self.B, self.C, self.D])])
         if self.isdtime(strict=True):
-            if self.dt is True:
-                string += "\ndt unspecified\n"
-            else:
-                string += f"\ndt = {self.dt}\n"
+            string += f"\ndt = {self.dt}\n"
         return string
 
     # represent to implement a re-loadable version
@@ -520,7 +517,7 @@ class StateSpace(LTI):
     def _latex_dt(self):
         if self.isdtime(strict=True):
             if self.dt is True:
-                return r"~,~dt~\mathrm{unspecified}"
+                return r"~,~dt=~\mathrm{True}"
             else:
                 fmt = config.defaults['statesp.latex_num_format']
                 return f"~,~dt={self.dt:{fmt}}"
