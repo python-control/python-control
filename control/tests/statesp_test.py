@@ -997,9 +997,9 @@ LTX_G2 = ([],
           [[1.2345, -2e-200], [-1, 0]])
 
 LTX_G1_REF = {
-    'p3_p' : '\\[\n\\left(\n\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+    'p3_p' : '\\[\n\\left(\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
 
-    'p5_p' : '\\[\n\\left(\n\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+    'p5_p' : '\\[\n\\left(\\begin{array}{rllrll|rll}\n3.&\\hspace{-1em}1416&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n-1.&\\hspace{-1em}2346&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\hline\n9.&\\hspace{-1em}8765&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}001234&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
 
     'p3_s' : '\\[\n\\begin{array}{ll}\nA = \\left(\\begin{array}{rllrll}\n3.&\\hspace{-1em}14&\\hspace{-1em}\\phantom{\\cdot}&1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{100}\\\\\n-1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-23}\\\\\n\\end{array}\\right)\n&\nB = \\left(\\begin{array}{rll}\n0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\\\\nC = \\left(\\begin{array}{rllrll}\n9.&\\hspace{-1em}88&\\hspace{-1em}\\cdot10^{8}&0.&\\hspace{-1em}00123&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n&\nD = \\left(\\begin{array}{rll}\n5\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n\\]',
 
@@ -1007,9 +1007,9 @@ LTX_G1_REF = {
 }
 
 LTX_G2_REF = {
-    'p3_p' : '\\[\n\\left(\n\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+    'p3_p' : '\\[\n\\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
 
-    'p5_p' : '\\[\n\\left(\n\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
+    'p5_p' : '\\[\n\\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}2345&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\]',
 
     'p3_s' : '\\[\n\\begin{array}{ll}\nD = \\left(\\begin{array}{rllrll}\n1.&\\hspace{-1em}23&\\hspace{-1em}\\phantom{\\cdot}&-2\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\cdot10^{-200}\\\\\n-1\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}&0\\phantom{.}&\\hspace{-1em}&\\hspace{-1em}\\phantom{\\cdot}\\\\\n\\end{array}\\right)\n\\end{array}\n\\]',
 
@@ -1022,9 +1022,14 @@ refkey_r = {None: 'p', 'partitioned': 'p', 'separate': 's'}
 @pytest.mark.parametrize(" gmats,  ref",
                          [(LTX_G1, LTX_G1_REF),
                           (LTX_G2, LTX_G2_REF)])
+@pytest.mark.parametrize("dt, dtref",
+                         [(0, ""),
+                          (None, ""),
+                          (True, r"~,~dt~\mathrm{{unspecified}}"),
+                          (0.1, r"~,~dt={dt:{fmt}}")])
 @pytest.mark.parametrize("repr_type", [None, "partitioned", "separate"])
 @pytest.mark.parametrize("num_format", [None, ".3g", ".5g"])
-def test_latex_repr(gmats, ref, repr_type, num_format, editsdefaults):
+def test_latex_repr(gmats, ref, dt, dtref, repr_type, num_format, editsdefaults):
     """Test `._latex_repr_` with different config values
 
     This is a 'gold image' test, so if you change behaviour,
@@ -1040,9 +1045,11 @@ def test_latex_repr(gmats, ref, repr_type, num_format, editsdefaults):
     if repr_type is not None:
         set_defaults('statesp', latex_repr_type=repr_type)
 
-    g = StateSpace(*gmats)
+    g = StateSpace(*(gmats+(dt,)))
     refkey = "{}_{}".format(refkey_n[num_format], refkey_r[repr_type])
-    assert g._repr_latex_() == ref[refkey]
+    dt_latex = dtref.format(dt=dt, fmt=defaults['statesp.latex_num_format'])
+    ref_latex = ref[refkey][:-3] + dt_latex + ref[refkey][-3:]
+    assert g._repr_latex_() == ref_latex
 
 
 @pytest.mark.parametrize(

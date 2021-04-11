@@ -418,8 +418,8 @@ class StateSpace(LTI):
         """
         lines = [
             r'\[',
-            r'\left(',
-            (r'\begin{array}'
+            (r'\left('
+             + r'\begin{array}'
              + r'{' + 'rll' * self.ninputs + '}')
             ]
 
@@ -429,7 +429,8 @@ class StateSpace(LTI):
 
         lines.extend([
             r'\end{array}'
-            r'\right)',
+            r'\right)'
+            + self._latex_dt(),
             r'\]'])
 
         return '\n'.join(lines)
@@ -449,8 +450,8 @@ class StateSpace(LTI):
 
         lines = [
             r'\[',
-            r'\left(',
-            (r'\begin{array}'
+            (r'\left('
+             + r'\begin{array}'
              + r'{' + 'rll' * self.nstates + '|' + 'rll' * self.ninputs + '}')
             ]
 
@@ -466,7 +467,8 @@ class StateSpace(LTI):
 
         lines.extend([
             r'\end{array}'
-            r'\right)',
+            + r'\right)'
+            + self._latex_dt(),
             r'\]'])
 
         return '\n'.join(lines)
@@ -509,10 +511,20 @@ class StateSpace(LTI):
         lines.extend(fmt_matrix(self.D, 'D'))
 
         lines.extend([
-            r'\end{array}',
+            r'\end{array}'
+            + self._latex_dt(),
             r'\]'])
 
         return '\n'.join(lines)
+
+    def _latex_dt(self):
+        if self.isdtime(strict=True):
+            if self.dt is True:
+                return r"~,~dt~\mathrm{unspecified}"
+            else:
+                fmt = config.defaults['statesp.latex_num_format']
+                return f"~,~dt={self.dt:{fmt}}"
+        return ""
 
     def _repr_latex_(self):
         """LaTeX representation of state-space model
@@ -534,9 +546,9 @@ class StateSpace(LTI):
         elif config.defaults['statesp.latex_repr_type'] == 'separate':
             return self._latex_separate()
         else:
-            cfg = config.defaults['statesp.latex_repr_type']
             raise ValueError(
-                "Unknown statesp.latex_repr_type '{cfg}'".format(cfg=cfg))
+                "Unknown statesp.latex_repr_type '{cfg}'".format(
+                    cfg=config.defaults['statesp.latex_repr_type']))
 
     # Negation of a system
     def __neg__(self):
