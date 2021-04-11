@@ -1063,3 +1063,29 @@ def test_xferfcn_ndarray_precedence(op, tf, arr):
     ss = ct.tf2ss(tf)
     result = op(arr, ss)
     assert isinstance(result, ct.StateSpace)
+
+
+def test_latex_repr_testsize(editsdefaults):
+    # _repr_latex_ returns None when size > maxsize
+    from control import set_defaults
+
+    maxsize = defaults['statesp.latex_maxsize']
+    nstates = maxsize // 2
+    ninputs = maxsize - nstates
+    noutputs = ninputs
+
+    assert nstates > 0
+    assert ninputs > 0
+
+    g = rss(nstates, ninputs, noutputs)
+    assert isinstance(g._repr_latex_(), str)
+
+    set_defaults('statesp', latex_maxsize=maxsize - 1)
+    assert g._repr_latex_() is None
+
+    set_defaults('statesp', latex_maxsize=-1)
+    assert g._repr_latex_() is None
+
+    gstatic = ss([], [], [], 1)
+    assert gstatic._repr_latex_() is None
+

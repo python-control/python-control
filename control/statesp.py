@@ -75,6 +75,7 @@ _statesp_defaults = {
     'statesp.remove_useless_states': False,
     'statesp.latex_num_format': '.3g',
     'statesp.latex_repr_type': 'partitioned',
+    'statesp.latex_maxsize': 10,
     }
 
 
@@ -517,19 +518,26 @@ class StateSpace(LTI):
     def _repr_latex_(self):
         """LaTeX representation of state-space model
 
-        Output is controlled by config options statesp.latex_repr_type
-        and statesp.latex_num_format.
+        Output is controlled by config options statesp.latex_repr_type,
+        statesp.latex_num_format, and statesp.latex_maxsize.
 
         The output is primarily intended for Jupyter notebooks, which
         use MathJax to render the LaTeX, and the results may look odd
         when processed by a 'conventional' LaTeX system.
 
+
         Returns
         -------
-        s : string with LaTeX representation of model
+
+        s : string with LaTeX representation of model, or None if
+            either matrix dimension is greater than
+            statesp.latex_maxsize
 
         """
-        if config.defaults['statesp.latex_repr_type'] == 'partitioned':
+        syssize = self.nstates + max(self.noutputs, self.ninputs)
+        if syssize > config.defaults['statesp.latex_maxsize']:
+            return None
+        elif config.defaults['statesp.latex_repr_type'] == 'partitioned':
             return self._latex_partitioned()
         elif config.defaults['statesp.latex_repr_type'] == 'separate':
             return self._latex_separate()
