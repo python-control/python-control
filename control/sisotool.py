@@ -81,10 +81,10 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
 
     # Setup sisotool figure or superimpose if one is already present
     fig = plt.gcf()
-    if fig.canvas.get_window_title() != 'Sisotool':
+    if fig.canvas.manager.get_window_title() != 'Sisotool':
         plt.close(fig)
         fig,axes = plt.subplots(2, 2)
-        fig.canvas.set_window_title('Sisotool')
+        fig.canvas.manager.set_window_title('Sisotool')
 
     # Extract bode plot parameters
     bode_plot_params = {

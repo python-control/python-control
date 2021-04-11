@@ -180,7 +180,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             fig.axes[1].plot(
                 [root.real for root in start_mat],
                 [root.imag for root in start_mat],
-                'm.', marker='s', markersize=8, zorder=20, label='gain_point')
+                marker='s', markersize=8, zorder=20, label='gain_point')
             s = start_mat[0][0]
             if isdtime(sys, strict=True):
                 zeta = -np.cos(np.angle(np.log(s)))
@@ -628,7 +628,7 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
             ax_rlocus.plot(
                 [root.real for root in mymat],
                 [root.imag for root in mymat],
-                'm.', marker='s', markersize=8, zorder=20, label='gain_point')
+                marker='s', markersize=8, zorder=20, label='gain_point')
         else:
             ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8,
                            zorder=20, label='gain_point')
