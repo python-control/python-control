@@ -391,11 +391,8 @@ class StateSpace(LTI):
                                "\n    ".join(str(M).splitlines()))
             for Mvar, M in zip(["A", "B", "C", "D"],
                                [self.A, self.B, self.C, self.D])])
-        # TODO: replace with standard calls to lti functions
-        if (type(self.dt) == bool and self.dt is True):
-            string += "\ndt unspecified\n"
-        elif (not (self.dt is None) and type(self.dt) != bool and self.dt > 0):
-            string += "\ndt = " + self.dt.__str__() + "\n"
+        if self.isdtime(strict=True):
+            string += f"\ndt = {self.dt}\n"
         return string
 
     # represent to implement a re-loadable version
@@ -418,8 +415,8 @@ class StateSpace(LTI):
         """
         lines = [
             r'\[',
-            r'\left(',
-            (r'\begin{array}'
+            (r'\left('
+             + r'\begin{array}'
              + r'{' + 'rll' * self.ninputs + '}')
             ]
 
@@ -429,7 +426,8 @@ class StateSpace(LTI):
 
         lines.extend([
             r'\end{array}'
-            r'\right)',
+            r'\right)'
+            + self._latex_dt(),
             r'\]'])
 
         return '\n'.join(lines)
@@ -449,8 +447,8 @@ class StateSpace(LTI):
 
         lines = [
             r'\[',
-            r'\left(',
-            (r'\begin{array}'
+            (r'\left('
+             + r'\begin{array}'
              + r'{' + 'rll' * self.nstates + '|' + 'rll' * self.ninputs + '}')
             ]
 
@@ -466,7 +464,8 @@ class StateSpace(LTI):
 
         lines.extend([
             r'\end{array}'
-            r'\right)',
+            + r'\right)'
+            + self._latex_dt(),
             r'\]'])
 
         return '\n'.join(lines)
@@ -509,10 +508,20 @@ class StateSpace(LTI):
         lines.extend(fmt_matrix(self.D, 'D'))
 
         lines.extend([
-            r'\end{array}',
+            r'\end{array}'
+            + self._latex_dt(),
             r'\]'])
 
         return '\n'.join(lines)
+
+    def _latex_dt(self):
+        if self.isdtime(strict=True):
+            if self.dt is True:
+                return r"~,~dt=~\mathrm{True}"
+            else:
+                fmt = config.defaults['statesp.latex_num_format']
+                return f"~,~dt={self.dt:{fmt}}"
+        return ""
 
     def _repr_latex_(self):
         """LaTeX representation of state-space model
@@ -534,9 +543,9 @@ class StateSpace(LTI):
         elif config.defaults['statesp.latex_repr_type'] == 'separate':
             return self._latex_separate()
         else:
-            cfg = config.defaults['statesp.latex_repr_type']
             raise ValueError(
-                "Unknown statesp.latex_repr_type '{cfg}'".format(cfg=cfg))
+                "Unknown statesp.latex_repr_type '{cfg}'".format(
+                    cfg=config.defaults['statesp.latex_repr_type']))
 
     # Negation of a system
     def __neg__(self):
