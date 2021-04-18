@@ -85,7 +85,7 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
 
         plt.figure()
-        ct.bode_plot(self.sys, omega/2./pi, Hz=True)
+        ct.bode_plot(self.sys, omega, Hz=True)
         mag_x, mag_y = (((plt.gcf().axes[0]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(mag_x[0], 0.001 / (2*pi), decimal=6)
 
@@ -130,7 +130,7 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
 
         plt.figure()
-        ct.bode_plot(self.sys, omega/2./pi, Hz=True)
+        ct.bode_plot(self.sys, omega, Hz=True)
         mag_x, mag_y = (((plt.gcf().axes[0]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(mag_x[0], 0.001 / (2*pi), decimal=6)
 
@@ -154,7 +154,7 @@ class TestConfig:
 
         # Override defaults
         plt.figure()
-        ct.bode_plot(self.sys, omega/2./pi, Hz=True, deg=False, dB=True)
+        ct.bode_plot(self.sys, omega, Hz=True, deg=False, dB=True)
         mag_x, mag_y = (((plt.gcf().axes[0]).get_lines())[0]).get_data()
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(mag_x[0], 0.001 / (2*pi), decimal=6)

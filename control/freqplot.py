@@ -201,7 +201,7 @@ def bode_plot(syslist, omega=None,
         syslist = (syslist,)
 
     omega, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num, Hz)
+        syslist, omega, omega_limits, omega_num)
 
     if plot:
         # Set up the axes with labels so that multiple calls to
@@ -1103,7 +1103,7 @@ def singular_values_plot(syslist, omega=None,
         syslist = (syslist,)
 
     omega, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num, Hz)
+        syslist, omega, omega_limits, omega_num)
 
     omega = np.atleast_1d(omega)
 
@@ -1198,7 +1198,7 @@ def singular_values_plot(syslist, omega=None,
 
 
 # Determine the frequency range to be used
-def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num, Hz):
+def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
     """Determine the frequency range for a frequency-domain plot
     according to a standard logic.
 
@@ -1248,15 +1248,11 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num, Hz):
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
                 raise ValueError("len(omega_limits) must be 2")
-            if Hz:
-                omega_limits *= 2. * math.pi
             omega_out = np.logspace(np.log10(omega_limits[0]),
                                     np.log10(omega_limits[1]),
                                     num=omega_num, endpoint=True)
     else:
         omega_out = np.copy(omega_in)
-        if Hz:
-            omega_out *= 2. * math.pi
     return omega_out, omega_range_given
 
 
