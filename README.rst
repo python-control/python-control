@@ -51,8 +51,7 @@ The package requires numpy, scipy, and matplotlib.  In addition, some routines
 use a module called slycot, that is a Python wrapper around some FORTRAN
 routines.  Many parts of python-control will work without slycot, but some
 functionality is limited or absent, and installation of slycot is recommended
-(see below).  Note that in order to install slycot, you will need a FORTRAN
-compiler on your machine.  The Slycot wrapper can be found at:
+(see below). The Slycot wrapper can be found at:
 
 https://github.com/python-control/Slycot
 

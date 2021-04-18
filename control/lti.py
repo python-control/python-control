@@ -665,7 +665,7 @@ def _process_frequency_response(sys, omega, out, squeeze=None):
     if squeeze is None:
         squeeze = config.defaults['control.squeeze_frequency_response']
 
-    if not hasattr(omega, '__len__'):
+    if np.asarray(omega).ndim < 1:
         # received a scalar x, squeeze down the array along last dim
         out = np.squeeze(out, axis=2)
 

@@ -79,7 +79,7 @@ class TestModelsimp:
         # m = number of Markov parameters
         # n = size of the data vector
         #
-        # Values should match exactly for n = m, otherewise you get a
+        # Values *should* match exactly for n = m, otherewise you get a
         # close match but errors due to the assumption that C A^k B =
         # 0 for k > m-2 (see modelsimp.py).
         #
@@ -106,7 +106,10 @@ class TestModelsimp:
         Mcomp = markov(Y, U, m)
 
         # Compare to results from markov()
-        np.testing.assert_array_almost_equal(Mtrue, Mcomp)
+        # experimentally determined probability to get non matching results
+        # with rtot=1e-6 and atol=1e-8 due to numerical errors
+        # for k=5, m=n=10: 0.015 %
+        np.testing.assert_allclose(Mtrue, Mcomp, rtol=1e-6, atol=1e-8)
 
     def testModredMatchDC(self, matarrayin):
         #balanced realization computed in matlab for the transfer function:
@@ -217,4 +220,3 @@ class TestModelsimp:
         np.testing.assert_array_almost_equal(rsys.B, Brtrue, decimal=4)
         np.testing.assert_array_almost_equal(rsys.C, Crtrue, decimal=4)
         np.testing.assert_array_almost_equal(rsys.D, Drtrue, decimal=4)
-

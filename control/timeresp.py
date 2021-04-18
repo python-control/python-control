@@ -211,39 +211,45 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     T : array_like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
 
+        If None, `U` must be given and `len(U)` time steps of sys.dt are
+        simulated. If sys.dt is None or True (undetermined time step), a time
+        step of 1.0 is assumed.
+
     U : array_like or float, optional
-        Input array giving input at each time `T` (default = 0).
+        Input array giving input at each time `T`.
+        If `U` is None or 0, `T` must be given, even for discrete
+        time systems. In this case, for continuous time systems, a direct
+        calculation of the matrix exponential is used, which is faster than the
+        general interpolating algorithm used otherwise.
 
-        If `U` is ``None`` or ``0``, a special algorithm is used. This special
-        algorithm is faster than the general algorithm, which is used
-        otherwise.
+    X0 : array_like or float, default=0.
+        Initial condition.
 
-    X0 : array_like or float, optional
-        Initial condition (default = 0).
-
-    transpose : bool, optional
+    transpose : bool, default=False
         If True, transpose all input and output arrays (for backward
-        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
-        value is False.
+        compatibility with MATLAB and :func:`scipy.signal.lsim`).
 
-    interpolate : bool, optional (default=False)
+    interpolate : bool, default=False
         If True and system is a discrete time system, the input will
         be interpolated between the given time steps and the output
         will be given at system sampling rate.  Otherwise, only return
         the output at the times given in `T`.  No effect on continuous
-        time simulations (default = False).
+        time simulations.
 
-    return_x : bool, optional
-        If True (default), return the the state vector.  Set to False to
-        return only the time and output vectors.
+    return_x : bool, default=None
+        - If False, return only the time and output vectors.
+        - If True, also return the the state vector.
+        - If None, determine the returned variables by
+          config.defaults['forced_response.return_x'], which was True
+          before version 0.9 and is False since then.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
         the output response is returned as a 1D array (indexed by time).  If
-        squeeze=True, remove single-dimensional entries from the shape of
-        the output even if the system is not SISO. If squeeze=False, keep
+        `squeeze` is True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If `squeeze` is False, keep
         the output as a 2D array (indexed by the output number and time)
-        even if the system is SISO. The default value can be set using
+        even if the system is SISO. The default behavior can be overridden by
         config.defaults['control.squeeze_time_response'].
 
     Returns
@@ -252,13 +258,15 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         Time values of the output.
 
     yout : array
-        Response of the system.  If the system is SISO and squeeze is not
+        Response of the system.  If the system is SISO and `squeeze` is not
         True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
+        `squeeze` is False, the array is 2D (indexed by the output number and
         time).
 
     xout : array
-        Time evolution of the state vector. Not affected by squeeze.
+        Time evolution of the state vector. Not affected by `squeeze`. Only
+        returned if `return_x` is True, or `return_x` is None and
+        config.defaults['forced_response.return_x'] is True.
 
     See Also
     --------
@@ -277,7 +285,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     --------
     >>> T, yout, xout = forced_response(sys, T, u, X0)
 
-    See :ref:`time-series-convention`.
+    See :ref:`time-series-convention` and
+    :ref:`package-configuration-parameters`.
 
     """
     if not isinstance(sys, (StateSpace, TransferFunction)):
@@ -294,10 +303,17 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             "return_x specified for a transfer function system. Internal "
             "conversion to state space used; results may meaningless.")
 
+    # If we are passed a transfer function and X0 is non-zero, warn the user
+    if isinstance(sys, TransferFunction) and np.any(X0 != 0):
+        warnings.warn(
+            "Non-zero initial condition given for transfer function system. "
+            "Internal conversion to state space used; may not be consistent "
+            "with given X0.")
+
     sys = _convert_to_statespace(sys)
     A, B, C, D = np.asarray(sys.A), np.asarray(sys.B), np.asarray(sys.C), \
         np.asarray(sys.D)
-#    d_type = A.dtype
+    # d_type = A.dtype
     n_states = A.shape[0]
     n_inputs = B.shape[1]
     n_outputs = C.shape[0]
@@ -306,65 +322,64 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     if U is not None:
         U = np.asarray(U)
     if T is not None:
+        # T must be array-like
         T = np.asarray(T)
 
     # Set and/or check time vector in discrete time case
-    if isdtime(sys, strict=True):
+    if isdtime(sys):
         if T is None:
-            if U is None:
-                raise ValueError('Parameters ``T`` and ``U`` can\'t both be'
+            if U is None or (U.ndim == 0 and U == 0.):
+                raise ValueError('Parameters ``T`` and ``U`` can\'t both be '
                                  'zero for discrete-time simulation')
             # Set T to equally spaced samples with same length as U
             if U.ndim == 1:
                 n_steps = U.shape[0]
             else:
                 n_steps = U.shape[1]
-            T = np.array(range(n_steps)) * (1 if sys.dt is True else sys.dt)
+            dt = 1. if sys.dt in [True, None] else sys.dt
+            T = np.array(range(n_steps)) * dt
         else:
             # Make sure the input vector and time vector have same length
-            # TODO: allow interpolation of the input vector
             if (U.ndim == 1 and U.shape[0] != T.shape[0]) or \
                     (U.ndim > 1 and U.shape[1] != T.shape[0]):
-                ValueError('Pamameter ``T`` must have same elements as'
-                           ' the number of columns in input array ``U``')
+                raise ValueError('Pamameter ``T`` must have same elements as'
+                                 ' the number of columns in input array ``U``')
+            if U.ndim == 0:
+                U = np.full((n_inputs, T.shape[0]), U)
+    else:
+        if T is None:
+            raise ValueError('Parameter ``T`` is mandatory for continuous '
+                             'time systems.')
 
     # Test if T has shape (n,) or (1, n);
-    # T must be array-like and values must be increasing.
-    # The length of T determines the length of the input vector.
-    if T is None:
-        raise ValueError('Parameter ``T``: must be array-like, and contain '
-                         '(strictly monotonic) increasing numbers.')
     T = _check_convert_array(T, [('any',), (1, 'any')],
                              'Parameter ``T``: ', squeeze=True,
                              transpose=transpose)
-    dt = T[1] - T[0]
-    if not np.allclose(T[1:] - T[:-1], dt):
-        raise ValueError("Parameter ``T``: time values must be "
-                         "equally spaced.")
+
     n_steps = T.shape[0]            # number of simulation steps
+
+    # equally spaced also implies strictly monotonic increase,
+    dt = (T[-1] - T[0]) / (n_steps - 1)
+    if not np.allclose(np.diff(T), dt):
+        raise ValueError("Parameter ``T``: time values must be equally "
+                         "spaced.")
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: ', squeeze=True)
-
-    # If we are passed a transfer function and X0 is non-zero, warn the user
-    if isinstance(sys, TransferFunction) and np.any(X0 != 0):
-        warnings.warn(
-            "Non-zero initial condition given for transfer function system. "
-            "Internal conversion to state space used; may not be consistent "
-            "with given X0.")
 
     xout = np.zeros((n_states, n_steps))
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
 
     # Separate out the discrete and continuous time cases
-    if isctime(sys):
+    if isctime(sys, strict=True):
         # Solve the differential equation, copied from scipy.signal.ltisys.
         dot = np.dot  # Faster and shorter code
 
         # Faster algorithm if U is zero
-        if U is None or (isinstance(U, (int, float)) and U == 0):
+        # (if not None, it was converted to array above)
+        if U is None or np.all(U == 0):
             # Solve using matrix exponential
             expAdt = sp.linalg.expm(A * dt)
             for i in range(1, n_steps):
@@ -410,7 +425,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     else:
         # Discrete type system => use SciPy signal processing toolbox
-        if sys.dt is not True:
+
+        # sp.signal.dlsim assumes T[0] == 0
+        spT = T - T[0]
+
+        if sys.dt is not True and sys.dt is not None:
             # Make sure that the time increment is a multiple of sampling time
 
             # First make sure that time increment is bigger than sampling time
@@ -420,11 +439,20 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
             # Now check to make sure it is a multiple (with check against
             # sys.dt because floating point mod can have small errors
-            elif not (np.isclose(dt % sys.dt, 0) or
-                      np.isclose(dt % sys.dt, sys.dt)):
+            if not (np.isclose(dt % sys.dt, 0) or
+                    np.isclose(dt % sys.dt, sys.dt)):
                 raise ValueError("Time steps ``T`` must be multiples of "
                                  "sampling time")
             sys_dt = sys.dt
+
+            # sp.signal.dlsim returns not enough samples if
+            # T[-1] - T[0] < sys_dt * decimation * (n_steps - 1)
+            # due to rounding errors.
+            # https://github.com/scipyscipy/blob/v1.6.1/scipy/signal/ltisys.py#L3462
+            scipy_out_samples = int(np.floor(spT[-1] / sys_dt)) + 1
+            if scipy_out_samples < n_steps:
+                # parantheses: order of evaluation is important
+                spT[-1] = spT[-1] * (n_steps / (spT[-1] / sys_dt + 1))
 
         else:
             sys_dt = dt         # For unspecified sampling time, use time incr
@@ -434,7 +462,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
         # Use signal processing toolbox for the discrete time simulation
         # Transpose the input to match toolbox convention
-        tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), T, X0)
+        tout, yout, xout = sp.signal.dlsim(dsys, np.transpose(U), spT, X0)
+        tout = tout + T[0]
 
         if not interpolate:
             # If dt is different from sys.dt, resample the output
@@ -912,8 +941,8 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
                 if settled < len(T):
                     settling_time = T[settled]
 
-                settling_min = (yout[tr_upper_index:]).min()
-                settling_max = (yout[tr_upper_index:]).max()
+                settling_min = min((yout[tr_upper_index:]).min(), InfValue)
+                settling_max = max((yout[tr_upper_index:]).max(), InfValue)
 
                 # Overshoot
                 y_os = (sgnInf * yout).max()

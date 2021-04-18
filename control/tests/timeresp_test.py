@@ -1,12 +1,4 @@
-"""timeresp_test.py - test time response functions
-
-RMM, 17 Jun 2011 (based on TestMatlab from v0.4c)
-
-This test suite just goes through and calls all of the MATLAB
-functions using different systems and arguments to make sure that
-nothing crashes.  It doesn't test actual functionality; the module
-specific unit tests will do that.
-"""
+"""timeresp_test.py - test time response functions"""
 
 from copy import copy
 from distutils.version import StrictVersion
@@ -38,50 +30,46 @@ class TSys:
 class TestTimeresp:
 
     @pytest.fixture
-    def siso_ss1(self):
+    def tsystem(self, request):
+        """Define some test systems"""
 
+        """continuous"""
         A = np.array([[1., -2.], [3., -4.]])
         B = np.array([[5.], [7.]])
         C = np.array([[6., 8.]])
         D = np.array([[9.]])
-        T = TSys(StateSpace(A, B, C, D, 0))
-
-        T.t = np.linspace(0, 1, 10)
-        T.ystep = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234,
-                            39.1165, 42.3227, 44.9694, 47.1599, 48.9776])
-
-        T.yinitial = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118,
-                               1.9092, 1.1508, 0.5833, 0.1645, -0.1391])
-
-        return T
-
-    @pytest.fixture
-    def siso_ss2(self, siso_ss1):
-        """System siso_ss2 with D=0"""
+        siso_ss1 = TSys(StateSpace(A, B, C, D, 0))
+        siso_ss1.t = np.linspace(0, 1, 10)
+        siso_ss1.ystep = np.array([9., 17.6457, 24.7072, 30.4855, 35.2234,
+                                   39.1165, 42.3227, 44.9694, 47.1599,
+                                   48.9776])
+        siso_ss1.X0 = np.array([[.5], [1.]])
+        siso_ss1.yinitial = np.array([11., 8.1494, 5.9361, 4.2258, 2.9118,
+                                      1.9092, 1.1508, 0.5833, 0.1645, -0.1391])
         ss1 = siso_ss1.sys
-        T = TSys(StateSpace(ss1.A, ss1.B, ss1.C, 0, 0))
-        T.t = siso_ss1.t
-        T.ystep = siso_ss1.ystep - 9
-        T.initial = siso_ss1.yinitial - 9
-        T.yimpulse = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766,
-                               31.7344, 26.1668, 21.6292, 17.9245, 14.8945])
 
-        return T
+        """D=0, continuous"""
+        siso_ss2 = TSys(StateSpace(ss1.A, ss1.B, ss1.C, 0, 0))
+        siso_ss2.t = siso_ss1.t
+        siso_ss2.ystep = siso_ss1.ystep - 9
+        siso_ss2.initial = siso_ss1.yinitial - 9
+        siso_ss2.yimpulse = np.array([86., 70.1808, 57.3753, 46.9975, 38.5766,
+                                      31.7344, 26.1668, 21.6292, 17.9245,
+                                      14.8945])
 
-    @pytest.fixture
-    def siso_tf1(self):
-        # Create some transfer functions
-        return TSys(TransferFunction([1], [1, 2, 1], 0))
+        """System with unspecified timebase"""
+        siso_ss2_dtnone = TSys(StateSpace(ss1.A, ss1.B, ss1.C, 0, None))
+        siso_ss2_dtnone.t = np.arange(0, 10, 1.)
+        siso_ss2_dtnone.ystep = np.array([0., 86., -72., 230., -360.,  806.,
+                                          -1512.,  3110., -6120., 12326.])
 
-    @pytest.fixture
-    def siso_tf2(self, siso_ss1):
-        T = copy(siso_ss1)
-        T.sys = ss2tf(siso_ss1.sys)
-        return T
+        siso_tf1 = TSys(TransferFunction([1], [1, 2, 1], 0))
 
-    @pytest.fixture
-    def mimo_ss1(self, siso_ss1):
-        # Create MIMO system, contains ``siso_ss1`` twice
+        siso_tf2 = copy(siso_ss1)
+        siso_tf2.sys = ss2tf(siso_ss1.sys)
+
+        """MIMO system, contains ``siso_ss1`` twice"""
+        mimo_ss1 = copy(siso_ss1)
         A = np.zeros((4, 4))
         A[:2, :2] = siso_ss1.sys.A
         A[2:, 2:] = siso_ss1.sys.A
@@ -94,13 +82,10 @@ class TestTimeresp:
         D = np.zeros((2, 2))
         D[:1, :1] = siso_ss1.sys.D
         D[1:, 1:] = siso_ss1.sys.D
-        T = copy(siso_ss1)
-        T.sys = StateSpace(A, B, C, D)
-        return T
+        mimo_ss1.sys = StateSpace(A, B, C, D)
 
-    @pytest.fixture
-    def mimo_ss2(self, siso_ss2):
-        # Create MIMO system, contains ``siso_ss2`` twice
+        """MIMO system, contains ``siso_ss2`` twice"""
+        mimo_ss2 = copy(siso_ss2)
         A = np.zeros((4, 4))
         A[:2, :2] = siso_ss2.sys.A
         A[2:, 2:] = siso_ss2.sys.A
@@ -111,93 +96,84 @@ class TestTimeresp:
         C[:1, :2] = siso_ss2.sys.C
         C[1:, 2:] = siso_ss2.sys.C
         D = np.zeros((2, 2))
-        T = copy(siso_ss2)
-        T.sys = StateSpace(A, B, C, D, 0)
-        return T
+        mimo_ss2.sys = StateSpace(A, B, C, D, 0)
 
-    # Create discrete time systems
+        """discrete"""
+        siso_dtf0 = TSys(TransferFunction([1.], [1., 0.], 1.))
+        siso_dtf0.t = np.arange(4)
+        siso_dtf0.yimpulse = [0., 1., 0., 0.]
 
-    @pytest.fixture
-    def siso_dtf0(self):
-        T = TSys(TransferFunction([1.], [1., 0.], 1.))
-        T.t = np.arange(4)
-        T.yimpulse = [0., 1., 0., 0.]
-        return T
+        siso_dtf1 =  TSys(TransferFunction([1], [1, 1, 0.25], True))
+        siso_dtf1.t = np.arange(0, 5, 1)
+        siso_dtf1.ystep = np.array([0.  , 0.  , 1.  , 0.  , 0.75])
 
-    @pytest.fixture
-    def siso_dtf1(self):
-        T =  TSys(TransferFunction([1], [1, 1, 0.25], True))
-        T.t = np.arange(0, 5, 1)
-        return T
+        siso_dtf2 = TSys(TransferFunction([1], [1, 1, 0.25], 0.2))
+        siso_dtf2.t = np.arange(0, 5, 0.2)
+        siso_dtf2.ystep = np.array(
+            [0.    , 0.    , 1.    , 0.    , 0.75  , 0.25  ,
+             0.5625, 0.375 , 0.4844, 0.4219, 0.457 , 0.4375,
+             0.4482, 0.4424, 0.4456, 0.4438, 0.4448, 0.4443,
+             0.4445, 0.4444, 0.4445, 0.4444, 0.4445, 0.4444,
+             0.4444])
 
-    @pytest.fixture
-    def siso_dtf2(self):
-        T = TSys(TransferFunction([1], [1, 1, 0.25], 0.2))
-        T.t = np.arange(0, 5, 0.2)
-        return T
+        """Time step which leads to rounding errors for time vector length"""
+        num = [-0.10966442, 0.12431949]
+        den = [1., -1.86789511, 0.88255018]
+        dt = 0.12493963338370018
+        siso_dtf3 = TSys(TransferFunction(num, den, dt))
+        siso_dtf3.t = np.linspace(0, 9*dt, 10)
+        siso_dtf3.ystep = np.array(
+            [ 0.    , -0.1097, -0.1902, -0.2438, -0.2729,
+             -0.2799, -0.2674, -0.2377, -0.1934, -0.1368])
 
-    @pytest.fixture
-    def siso_dss1(self, siso_dtf1):
-        T = copy(siso_dtf1)
-        T.sys = tf2ss(siso_dtf1.sys)
-        return T
+        """dtf1 converted statically, because Slycot and Scipy produce
+        different realizations, wich means different initial condtions,"""
+        siso_dss1 = copy(siso_dtf1)
+        siso_dss1.sys = StateSpace([[-1., -0.25],
+                                    [ 1.,  0.]],
+                                   [[1.],
+                                    [0.]],
+                                   [[0., 1.]],
+                                   [[0.]],
+                                   True)
+        siso_dss1.X0 = [0.5, 1.]
+        siso_dss1.yinitial = np.array([1., 0.5, -0.75, 0.625, -0.4375])
 
-    @pytest.fixture
-    def siso_dss2(self, siso_dtf2):
-        T = copy(siso_dtf2)
-        T.sys = tf2ss(siso_dtf2.sys)
-        return T
+        siso_dss2 = copy(siso_dtf2)
+        siso_dss2.sys = tf2ss(siso_dtf2.sys)
 
-    @pytest.fixture
-    def mimo_dss1(self, mimo_ss1):
-        ss1 = mimo_ss1.sys
-        T = TSys(
-            StateSpace(ss1.A, ss1.B, ss1.C, ss1.D, True))
-        T.t = np.arange(0, 5, 0.2)
-        return T
+        mimo_dss1 = TSys(StateSpace(ss1.A, ss1.B, ss1.C, ss1.D, True))
+        mimo_dss1.t = np.arange(0, 5, 0.2)
 
-    @pytest.fixture
-    def mimo_dss2(self, mimo_ss1):
-        T = copy(mimo_ss1)
-        T.sys = c2d(mimo_ss1.sys, T.t[1]-T.t[0])
-        return T
+        mimo_dss2 = copy(mimo_ss1)
+        mimo_dss2.sys = c2d(mimo_ss1.sys, mimo_ss1.t[1]-mimo_ss1.t[0])
 
-    @pytest.fixture
-    def mimo_tf2(self, siso_ss2, mimo_ss2):
-        T = copy(mimo_ss2)
-        # construct from siso to avoid slycot during fixture setup
+        mimo_tf2 = copy(mimo_ss2)
         tf_ = ss2tf(siso_ss2.sys)
-        T.sys = TransferFunction([[tf_.num[0][0], [0]], [[0], tf_.num[0][0]]],
-                                 [[tf_.den[0][0], [1]], [[1], tf_.den[0][0]]],
-                                 0)
-        return T
+        mimo_tf2.sys = TransferFunction(
+            [[tf_.num[0][0], [0]], [[0], tf_.num[0][0]]],
+            [[tf_.den[0][0], [1]], [[1], tf_.den[0][0]]],
+            0)
 
-    @pytest.fixture
-    def mimo_dtf1(self, siso_dtf1):
-        T = copy(siso_dtf1)
-        # construct from siso to avoid slycot during fixture setup
+        mimo_dtf1 = copy(siso_dtf1)
         tf_ = siso_dtf1.sys
-        T.sys = TransferFunction([[tf_.num[0][0], [0]], [[0], tf_.num[0][0]]],
-                                 [[tf_.den[0][0], [1]], [[1], tf_.den[0][0]]],
-                                 True)
-        return T
+        mimo_dtf1.sys = TransferFunction(
+            [[tf_.num[0][0], [0]], [[0], tf_.num[0][0]]],
+            [[tf_.den[0][0], [1]], [[1], tf_.den[0][0]]],
+            True)
 
-    @pytest.fixture
-    def pole_cancellation(self):
         # for pole cancellation tests
-        return TransferFunction([1.067e+05, 5.791e+04],
-                                [10.67, 1.067e+05, 5.791e+04])
+        pole_cancellation = TSys(TransferFunction(
+            [1.067e+05, 5.791e+04],
+            [10.67, 1.067e+05, 5.791e+04]))
 
-    @pytest.fixture
-    def no_pole_cancellation(self):
-        return TransferFunction([1.881e+06],
-                                [188.1, 1.881e+06])
+        no_pole_cancellation = TSys(TransferFunction(
+            [1.881e+06],
+            [188.1, 1.881e+06]))
 
-    @pytest.fixture
-    def siso_tf_type1(self):
         # System Type 1 - Step response not stationary:  G(s)=1/s(s+1)
-        T = TSys(TransferFunction(1, [1, 1, 0]))
-        T.step_info = {
+        siso_tf_type1 = TSys(TransferFunction(1, [1, 1, 0]))
+        siso_tf_type1.step_info = {
              'RiseTime': np.NaN,
              'SettlingTime': np.NaN,
              'SettlingMin': np.NaN,
@@ -207,14 +183,11 @@ class TestTimeresp:
              'Peak': np.Inf,
              'PeakTime': np.Inf,
              'SteadyStateValue': np.NaN}
-        return T
 
-    @pytest.fixture
-    def siso_tf_kpos(self):
         # SISO under shoot response and positive final value
         # G(s)=(-s+1)/(s²+s+1)
-        T = TSys(TransferFunction([-1, 1], [1, 1, 1]))
-        T.step_info = {
+        siso_tf_kpos = TSys(TransferFunction([-1, 1], [1, 1, 1]))
+        siso_tf_kpos.step_info = {
              'RiseTime': 1.242,
              'SettlingTime': 9.110,
              'SettlingMin': 0.90,
@@ -224,14 +197,11 @@ class TestTimeresp:
              'Peak': 1.208,
              'PeakTime': 4.282,
              'SteadyStateValue': 1.0}
-        return T
 
-    @pytest.fixture
-    def siso_tf_kneg(self):
         # SISO under shoot response and negative final value
         # k=-1 G(s)=-(-s+1)/(s²+s+1)
-        T = TSys(TransferFunction([1, -1], [1, 1, 1]))
-        T.step_info = {
+        siso_tf_kneg = TSys(TransferFunction([1, -1], [1, 1, 1]))
+        siso_tf_kneg.step_info = {
              'RiseTime': 1.242,
              'SettlingTime': 9.110,
              'SettlingMin': -1.208,
@@ -241,14 +211,26 @@ class TestTimeresp:
              'Peak': 1.208,
              'PeakTime': 4.282,
              'SteadyStateValue': -1.0}
-        return T
 
-    @pytest.fixture
-    def siso_tf_step_matlab(self):
+        siso_tf_asymptotic_from_neg1 = TSys(TransferFunction([-1, 1], [1, 1]))
+        siso_tf_asymptotic_from_neg1.step_info = {
+            'RiseTime': 2.197,
+            'SettlingTime': 4.605,
+            'SettlingMin': 0.9,
+            'SettlingMax': 1.0,
+            'Overshoot': 0,
+            'Undershoot': 100.0,
+            'Peak': 1.0,
+            'PeakTime': 0.0,
+            'SteadyStateValue': 1.0}
+        siso_tf_asymptotic_from_neg1.kwargs = {
+            'step_info': {'T': np.arange(0, 5, 1e-3)}}
+
         # example from matlab online help
         # https://www.mathworks.com/help/control/ref/stepinfo.html
-        T = TSys(TransferFunction([1, 5, 5], [1, 1.65, 5, 6.5, 2]))
-        T.step_info = {
+        siso_tf_step_matlab = TSys(TransferFunction([1, 5, 5],
+                                                    [1, 1.65, 5, 6.5, 2]))
+        siso_tf_step_matlab.step_info = {
             'RiseTime': 3.8456,
             'SettlingTime': 27.9762,
             'SettlingMin': 2.0689,
@@ -258,10 +240,7 @@ class TestTimeresp:
             'Peak': 2.6873,
             'PeakTime': 8.0530,
             'SteadyStateValue': 2.5}
-        return T
 
-    @pytest.fixture
-    def mimo_ss_step_matlab(self):
         A = [[0.68, -0.34],
              [0.34, 0.68]]
         B = [[0.18, -0.05],
@@ -270,111 +249,70 @@ class TestTimeresp:
              [-1.12, -1.10]]
         D = [[0, 0],
              [0.06, -0.37]]
-        T = TSys(StateSpace(A, B, C, D, 0.2))
-        T.kwargs['step_info'] = {'T': 4.6}
-        T.step_info = [[{'RiseTime': 0.6000,
-                         'SettlingTime': 3.0000,
-                         'SettlingMin': -0.5999,
-                         'SettlingMax': -0.4689,
-                         'Overshoot': 15.5072,
-                         'Undershoot': 0.,
-                         'Peak': 0.5999,
-                         'PeakTime': 1.4000,
-                         'SteadyStateValue': -0.5193},
-                        {'RiseTime': 0.,
-                         'SettlingTime': 3.6000,
-                         'SettlingMin': -0.2797,
-                         'SettlingMax': -0.1043,
-                         'Overshoot': 118.9918,
-                         'Undershoot': 0,
-                         'Peak': 0.2797,
-                         'PeakTime': .6000,
-                         'SteadyStateValue': -0.1277}],
-                       [{'RiseTime': 0.4000,
-                         'SettlingTime': 2.8000,
-                         'SettlingMin': -0.6724,
-                         'SettlingMax': -0.5188,
-                         'Overshoot': 24.6476,
-                         'Undershoot': 11.1224,
-                         'Peak': 0.6724,
-                         'PeakTime': 1,
-                         'SteadyStateValue': -0.5394},
-                         {'RiseTime': 0.0000, # (*)
-                         'SettlingTime': 3.4000,
-                         'SettlingMin': -0.4350,  # (*)
-                         'SettlingMax': -0.1485,
-                         'Overshoot': 132.0170,
-                         'Undershoot': 0.,
-                         'Peak': 0.4350,
-                         'PeakTime': .2,
-                         'SteadyStateValue': -0.1875}]]
-                         # (*): MATLAB gives 0.4 for RiseTime and -0.1034 for
-                         # SettlingMin, but it is unclear what 10% and 90% of
-                         # the steady state response mean, when the step for
-                         # this channel does not start a 0.
-        return T
+        mimo_ss_step_matlab = TSys(StateSpace(A, B, C, D, 0.2))
+        mimo_ss_step_matlab.kwargs['step_info'] = {'T': 4.6}
+        mimo_ss_step_matlab.step_info = [[
+             {'RiseTime': 0.6000,
+              'SettlingTime': 3.0000,
+              'SettlingMin': -0.5999,
+              'SettlingMax': -0.4689,
+              'Overshoot': 15.5072,
+              'Undershoot': 0.,
+              'Peak': 0.5999,
+              'PeakTime': 1.4000,
+              'SteadyStateValue': -0.5193},
+             {'RiseTime': 0.,
+              'SettlingTime': 3.6000,
+              'SettlingMin': -0.2797,
+              'SettlingMax': -0.1043,
+              'Overshoot': 118.9918,
+              'Undershoot': 0,
+              'Peak': 0.2797,
+              'PeakTime': .6000,
+              'SteadyStateValue': -0.1277}],
+            [{'RiseTime': 0.4000,
+              'SettlingTime': 2.8000,
+              'SettlingMin': -0.6724,
+              'SettlingMax': -0.5188,
+              'Overshoot': 24.6476,
+              'Undershoot': 11.1224,
+              'Peak': 0.6724,
+              'PeakTime': 1,
+              'SteadyStateValue': -0.5394},
+              {'RiseTime': 0.0000, # (*)
+              'SettlingTime': 3.4000,
+              'SettlingMin': -0.4350,  # (*)
+              'SettlingMax': -0.1485,
+              'Overshoot': 132.0170,
+              'Undershoot': 0.,
+              'Peak': 0.4350,
+              'PeakTime': .2,
+              'SteadyStateValue': -0.1875}]]
+              # (*): MATLAB gives 0.4 for RiseTime and -0.1034 for
+              # SettlingMin, but it is unclear what 10% and 90% of
+              # the steady state response mean, when the step for
+              # this channel does not start a 0.
 
-    @pytest.fixture
-    def siso_ss_step_matlab(self, mimo_ss_step_matlab):
-        T = copy(mimo_ss_step_matlab)
-        T.sys = T.sys[1, 0]
-        T.step_info = T.step_info[1][0]
-        return T
+        siso_ss_step_matlab = copy(mimo_ss_step_matlab)
+        siso_ss_step_matlab.sys = siso_ss_step_matlab.sys[1, 0]
+        siso_ss_step_matlab.step_info = siso_ss_step_matlab.step_info[1][0]
 
-    @pytest.fixture
-    def mimo_tf_step_info(self,
-                          siso_tf_kpos, siso_tf_kneg,
-                          siso_tf_step_matlab):
         Ta = [[siso_tf_kpos, siso_tf_kneg, siso_tf_step_matlab],
-               [siso_tf_step_matlab, siso_tf_kpos, siso_tf_kneg]]
-        T = TSys(TransferFunction(
+              [siso_tf_step_matlab, siso_tf_kpos, siso_tf_kneg]]
+        mimo_tf_step_info = TSys(TransferFunction(
             [[Ti.sys.num[0][0] for Ti in Tr] for Tr in Ta],
             [[Ti.sys.den[0][0] for Ti in Tr] for Tr in Ta]))
-        T.step_info = [[Ti.step_info for Ti in Tr] for Tr in Ta]
+        mimo_tf_step_info.step_info = [[Ti.step_info for Ti in Tr]
+                                       for Tr in Ta]
         # enforce enough sample points for all channels (they have different
         # characteristics)
-        T.kwargs['step_info'] = {'T_num': 2000}
-        return T
+        mimo_tf_step_info.kwargs['step_info'] = {'T_num': 2000}
 
-
-    @pytest.fixture
-    def tsystem(self,
-                request,
-                siso_ss1, siso_ss2, siso_tf1, siso_tf2,
-                mimo_ss1, mimo_ss2, mimo_tf2,
-                siso_dtf0, siso_dtf1, siso_dtf2,
-                siso_dss1, siso_dss2,
-                mimo_dss1, mimo_dss2, mimo_dtf1,
-                pole_cancellation, no_pole_cancellation, siso_tf_type1,
-                siso_tf_kpos, siso_tf_kneg,
-                siso_tf_step_matlab, siso_ss_step_matlab,
-                mimo_ss_step_matlab, mimo_tf_step_info):
-        systems = {"siso_ss1": siso_ss1,
-                   "siso_ss2": siso_ss2,
-                   "siso_tf1": siso_tf1,
-                   "siso_tf2": siso_tf2,
-                   "mimo_ss1": mimo_ss1,
-                   "mimo_ss2": mimo_ss2,
-                   "mimo_tf2": mimo_tf2,
-                   "siso_dtf0": siso_dtf0,
-                   "siso_dtf1": siso_dtf1,
-                   "siso_dtf2": siso_dtf2,
-                   "siso_dss1": siso_dss1,
-                   "siso_dss2": siso_dss2,
-                   "mimo_dss1": mimo_dss1,
-                   "mimo_dss2": mimo_dss2,
-                   "mimo_dtf1": mimo_dtf1,
-                   "pole_cancellation": pole_cancellation,
-                   "no_pole_cancellation": no_pole_cancellation,
-                   "siso_tf_type1": siso_tf_type1,
-                   "siso_tf_kpos": siso_tf_kpos,
-                   "siso_tf_kneg": siso_tf_kneg,
-                   "siso_tf_step_matlab": siso_tf_step_matlab,
-                   "siso_ss_step_matlab": siso_ss_step_matlab,
-                   "mimo_ss_step_matlab": mimo_ss_step_matlab,
-                   "mimo_tf_step": mimo_tf_step_info,
-                   }
-        return systems[request.param]
+        systems = locals()
+        if isinstance(request.param, str):
+            return systems[request.param]
+        else:
+            return [systems[sys] for sys in request.param]
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -383,11 +321,12 @@ class TestTimeresp:
          {'X0': np.array([0, 0])},
          {'X0': 0, 'return_x': True},
          ])
-    def test_step_response_siso(self, siso_ss1, kwargs):
+    @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
+    def test_step_response_siso(self, tsystem, kwargs):
         """Test SISO system step response"""
-        sys = siso_ss1.sys
-        t = siso_ss1.t
-        yref = siso_ss1.ystep
+        sys = tsystem.sys
+        t = tsystem.t
+        yref = tsystem.ystep
         # SISO call
         out = step_response(sys, T=t, **kwargs)
         tout, yout = out[:2]
@@ -395,19 +334,21 @@ class TestTimeresp:
         np.testing.assert_array_almost_equal(tout, t)
         np.testing.assert_array_almost_equal(yout, yref, decimal=4)
 
-    def test_step_response_mimo(self, mimo_ss1):
-        """Test MIMO system, which contains ``siso_ss1`` twice"""
-        sys = mimo_ss1.sys
-        t = mimo_ss1.t
-        yref = mimo_ss1.ystep
+    @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
+    def test_step_response_mimo(self, tsystem):
+        """Test MIMO system, which contains ``siso_ss1`` twice."""
+        sys = tsystem.sys
+        t = tsystem.t
+        yref = tsystem.ystep
         _t, y_00 = step_response(sys, T=t, input=0, output=0)
         _t, y_11 = step_response(sys, T=t, input=1, output=1)
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
 
-    def test_step_response_return(self, mimo_ss1):
-        """Verify continuous and discrete time use same return conventions"""
-        sysc = mimo_ss1.sys
+    @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
+    def test_step_response_return(self, tsystem):
+        """Verify continuous and discrete time use same return conventions."""
+        sysc = tsystem.sys
         sysd = c2d(sysc, 1)            # discrete time system
         Tvec = np.linspace(0, 10, 11)  # make sure to use integer times 0..10
         Tc, youtc = step_response(sysc, Tvec, input=0)
@@ -415,10 +356,9 @@ class TestTimeresp:
         np.testing.assert_array_equal(Tc.shape, Td.shape)
         np.testing.assert_array_equal(youtc.shape, youtd.shape)
 
-
     @pytest.mark.parametrize("dt", [0, 1], ids=["continuous", "discrete"])
     def test_step_nostates(self, dt):
-        """Constant system, continuous and discrete time
+        """Constant system, continuous and discrete time.
 
         gh-374 "Bug in step_response()"
         """
@@ -466,7 +406,8 @@ class TestTimeresp:
          "siso_ss_step_matlab",
          "siso_tf_kpos",
          "siso_tf_kneg",
-         "siso_tf_type1"],
+         "siso_tf_type1",
+         "siso_tf_asymptotic_from_neg1"],
         indirect=["tsystem"])
     def test_step_info(self, tsystem, systype, time_2d, yfinal):
         """Test step info for SISO systems."""
@@ -495,7 +436,7 @@ class TestTimeresp:
     @pytest.mark.parametrize(
         "tsystem",
         ['mimo_ss_step_matlab',
-         pytest.param('mimo_tf_step', marks=slycotonly)],
+         pytest.param('mimo_tf_step_info', marks=slycotonly)],
         indirect=["tsystem"])
     def test_step_info_mimo(self, tsystem, systype, yfinal):
         """Test step info for MIMO systems."""
@@ -531,13 +472,15 @@ class TestTimeresp:
         with pytest.raises(ValueError, match="matching time vector"):
             step_info(np.ones((2, 2, 15)))                   # no time vector
 
-    def test_step_pole_cancellation(self, pole_cancellation,
-                                    no_pole_cancellation):
+    @pytest.mark.parametrize("tsystem",
+                             [("no_pole_cancellation", "pole_cancellation")],
+                             indirect=True)
+    def test_step_pole_cancellation(self, tsystem):
         # confirm that pole-zero cancellation doesn't perturb results
         # https://github.com/python-control/python-control/issues/440
-        step_info_no_cancellation = step_info(no_pole_cancellation)
-        step_info_cancellation = step_info(pole_cancellation)
-        self.assert_step_info_match(no_pole_cancellation,
+        step_info_no_cancellation = step_info(tsystem[0].sys)
+        step_info_cancellation = step_info(tsystem[1].sys)
+        self.assert_step_info_match(tsystem[0].sys,
                                     step_info_no_cancellation,
                                     step_info_cancellation)
 
@@ -550,7 +493,7 @@ class TestTimeresp:
          ("siso_dtf0", {})],
         indirect=["tsystem"])
     def test_impulse_response_siso(self, tsystem, kwargs):
-        """Test impulse response of SISO systems"""
+        """Test impulse response of SISO systems."""
         sys = tsystem.sys
         t = tsystem.t
         yref = tsystem.yimpulse
@@ -561,12 +504,13 @@ class TestTimeresp:
         np.testing.assert_array_almost_equal(tout, t)
         np.testing.assert_array_almost_equal(yout, yref, decimal=4)
 
-    def test_impulse_response_mimo(self, mimo_ss2):
-        """"Test impulse response of MIMO systems"""
-        sys = mimo_ss2.sys
-        t = mimo_ss2.t
+    @pytest.mark.parametrize("tsystem", ["mimo_ss2"], indirect=True)
+    def test_impulse_response_mimo(self, tsystem):
+        """"Test impulse response of MIMO systems."""
+        sys = tsystem.sys
+        t = tsystem.t
 
-        yref = mimo_ss2.yimpulse
+        yref = tsystem.yimpulse
         _t, y_00 = impulse_response(sys, T=t, input=0, output=0)
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
         _t, y_11 = impulse_response(sys, T=t, input=1, output=1)
@@ -579,19 +523,21 @@ class TestTimeresp:
 
     @pytest.mark.skipif(StrictVersion(sp.__version__) < "1.3",
                         reason="requires SciPy 1.3 or greater")
-    def test_discrete_time_impulse(self, siso_tf1):
+    @pytest.mark.parametrize("tsystem", ["siso_tf1"], indirect=True)
+    def test_discrete_time_impulse(self, tsystem):
         # discrete time impulse sampled version should match cont time
         dt = 0.1
         t = np.arange(0, 3, dt)
-        sys = siso_tf1.sys
+        sys = tsystem.sys
         sysdt = sys.sample(dt, 'impulse')
         np.testing.assert_array_almost_equal(impulse_response(sys, t)[1],
                                              impulse_response(sysdt, t)[1])
 
-    def test_impulse_response_warnD(self, siso_ss1):
+    @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
+    def test_impulse_response_warnD(self, tsystem):
         """Test warning about direct feedthrough"""
         with pytest.warns(UserWarning, match="System has direct feedthrough"):
-            _ = impulse_response(siso_ss1.sys, siso_ss1.t)
+            _ = impulse_response(tsystem.sys, tsystem.t)
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -601,12 +547,13 @@ class TestTimeresp:
          {'X0': np.array([[0.5], [1]])},
          {'X0': np.array([0.5, 1]), 'return_x': True},
          ])
-    def test_initial_response(self, siso_ss1, kwargs):
+    @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
+    def test_initial_response(self, tsystem, kwargs):
         """Test initial response of SISO system"""
-        sys = siso_ss1.sys
-        t = siso_ss1.t
+        sys = tsystem.sys
+        t = tsystem.t
         x0 = kwargs.get('X0', 0)
-        yref = siso_ss1.yinitial if np.any(x0) else np.zeros_like(t)
+        yref = tsystem.yinitial if np.any(x0) else np.zeros_like(t)
 
         out = initial_response(sys, T=t, **kwargs)
         tout, yout = out[:2]
@@ -614,12 +561,13 @@ class TestTimeresp:
         np.testing.assert_array_almost_equal(tout, t)
         np.testing.assert_array_almost_equal(yout, yref, decimal=4)
 
-    def test_initial_response_mimo(self, mimo_ss1):
+    @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
+    def test_initial_response_mimo(self, tsystem):
         """Test initial response of MIMO system"""
-        sys = mimo_ss1.sys
-        t = mimo_ss1.t
+        sys = tsystem.sys
+        t = tsystem.t
         x0 = np.array([[.5], [1.], [.5], [1.]])
-        yref = mimo_ss1.yinitial
+        yref = tsystem.yinitial
         yref_notrim = np.broadcast_to(yref, (2, len(t)))
 
         _t, y_00 = initial_response(sys, T=t, X0=x0, input=0, output=0)
@@ -647,16 +595,23 @@ class TestTimeresp:
                              [np.zeros((10,), dtype=float),
                               0]  # special algorithm
                              )
-    def test_forced_response_initial(self, siso_ss1, u):
-        """Test forced response of SISO system as intitial response"""
-        sys = siso_ss1.sys
-        t = siso_ss1.t
-        x0 = np.array([[.5], [1.]])
-        yref = siso_ss1.yinitial
+    @pytest.mark.parametrize("tsystem", ["siso_ss1", "siso_tf2"],
+                             indirect=True)
+    def test_forced_response_initial(self, tsystem, u):
+        """Test forced response of SISO system as intitial response."""
+        sys = tsystem.sys
+        t = tsystem.t
+        x0 = tsystem.X0
+        yref = tsystem.yinitial
 
-        tout, yout = forced_response(sys, t, u, X0=x0)
-        np.testing.assert_array_almost_equal(tout, t)
-        np.testing.assert_array_almost_equal(yout, yref, decimal=4)
+        if isinstance(sys, StateSpace):
+            tout, yout = forced_response(sys, t, u, X0=x0)
+            np.testing.assert_array_almost_equal(tout, t)
+            np.testing.assert_array_almost_equal(yout, yref, decimal=4)
+        else:
+            with pytest.warns(UserWarning, match="Non-zero initial condition "
+                              "given for transfer function"):
+                tout, yout = forced_response(sys, t, u, X0=x0)
 
     @pytest.mark.parametrize("tsystem, useT",
                              [("mimo_ss1", True),
@@ -698,6 +653,66 @@ class TestTimeresp:
         t, y = ct.forced_response(sys, T, U)
         t, y, x = ct.forced_response(sys, T, U, return_x=True)
 
+    @pytest.mark.parametrize(
+        "tsystem, fr_kwargs, refattr",
+        [pytest.param("siso_ss1",
+                      {'T':  np.linspace(0, 1, 10)}, 'yinitial',
+                      id="ctime no U"),
+         pytest.param("siso_dss1",
+                      {'T': np.arange(0, 5, 1,)}, 'yinitial',
+                      id="dt=True, no U"),
+         pytest.param("siso_dtf1",
+                      {'U': np.ones(5,)}, 'ystep',
+                      id="dt=True, no T"),
+         pytest.param("siso_dtf2",
+                      {'U': np.ones(25,)}, 'ystep',
+                      id="dt=0.2, no T"),
+         pytest.param("siso_ss2_dtnone",
+                      {'U': np.ones(10,)}, 'ystep',
+                      id="dt=None, no T"),
+         pytest.param("siso_dtf3",
+                      {'U': np.ones(10,)}, 'ystep',
+                      id="dt with rounding error, no T"),
+         ],
+        indirect=["tsystem"])
+    def test_forced_response_T_U(self, tsystem, fr_kwargs, refattr):
+        """Test documented forced_response behavior for parameters T and U."""
+        if refattr == 'yinitial':
+            fr_kwargs['X0'] = tsystem.X0
+        t, y = forced_response(tsystem.sys, **fr_kwargs)
+        np.testing.assert_allclose(t, tsystem.t)
+        np.testing.assert_allclose(y, getattr(tsystem, refattr), rtol=1e-3)
+
+    @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
+    def test_forced_response_invalid_c(self, tsystem):
+        """Test invalid parameters."""
+        with pytest.raises(TypeError,
+                           match="StateSpace.*or.*TransferFunction"):
+            forced_response("not a system")
+        with pytest.raises(ValueError, match="T.*is mandatory for continuous"):
+            forced_response(tsystem.sys)
+        with pytest.raises(ValueError, match="time values must be equally "
+                                             "spaced"):
+            forced_response(tsystem.sys, [0, 0.1, 0.12, 0.4])
+
+    @pytest.mark.parametrize("tsystem", ["siso_dss2"], indirect=True)
+    def test_forced_response_invalid_d(self, tsystem):
+        """Test invalid parameters dtime with sys.dt > 0."""
+        with pytest.raises(ValueError, match="can't both be zero"):
+            forced_response(tsystem.sys)
+        with pytest.raises(ValueError, match="must have same elements"):
+            forced_response(tsystem.sys,
+                            T=tsystem.t, U=np.random.randn(1, 12))
+        with pytest.raises(ValueError, match="must have same elements"):
+            forced_response(tsystem.sys,
+                            T=tsystem.t, U=np.random.randn(12))
+        with pytest.raises(ValueError, match="must match sampling time"):
+            forced_response(tsystem.sys, T=tsystem.t*0.9)
+        with pytest.raises(ValueError, match="must be multiples of "
+                                             "sampling time"):
+            forced_response(tsystem.sys, T=tsystem.t*1.1)
+        # but this is ok
+        forced_response(tsystem.sys, T=tsystem.t*2)
 
     @pytest.mark.parametrize("u, x0, xtrue",
                              [(np.zeros((10,)),
@@ -828,10 +843,11 @@ class TestTimeresp:
     @pytest.mark.parametrize("tsystem",
                              ["siso_ss2",   # continuous
                               "siso_tf1",
-                              "siso_dss1",  # no timebase
+                              "siso_dss1",  # unspecified sampling time
                               "siso_dtf1",
                               "siso_dss2",  # matching timebase
                               "siso_dtf2",
+                              "siso_ss2_dtnone",  # undetermined timebase
                               "mimo_ss2",   # MIMO
                               pytest.param("mimo_tf2", marks=slycotonly),
                               "mimo_dss1",
@@ -856,9 +872,9 @@ class TestTimeresp:
             kw['T'] = t
             if fun == forced_response:
                 kw['U'] = np.vstack([np.sin(t) for i in range(sys.ninputs)])
-        elif fun == forced_response and isctime(sys):
+        elif fun == forced_response and isctime(sys, strict=True):
             pytest.skip("No continuous forced_response without time vector.")
-        if hasattr(tsystem.sys, "nstates"):
+        if hasattr(sys, "nstates"):
             kw['X0'] = np.arange(sys.nstates) + 1
         if sys.ninputs > 1 and fun in [step_response, impulse_response]:
             kw['input'] = 1
@@ -872,6 +888,8 @@ class TestTimeresp:
         if hasattr(tsystem, 't'):
             # tout should always match t, which has shape (n, )
             np.testing.assert_allclose(tout, tsystem.t)
+        elif fun == forced_response and sys.dt in [None, True]:
+            np.testing.assert_allclose(np.diff(tout), 1.)
 
         if squeeze is False or not sys.issiso():
             assert yout.shape[0] == sys.noutputs
@@ -879,20 +897,22 @@ class TestTimeresp:
         else:
             assert yout.shape == tout.shape
 
-        if sys.dt > 0 and sys.dt is not True and not np.isclose(sys.dt, 0.5):
+        if sys.isdtime(strict=True) and sys.dt is not True and not \
+                np.isclose(sys.dt, 0.5):
             kw['T'] = np.arange(0, 5, 0.5)  # incompatible timebase
             with pytest.raises(ValueError):
                 fun(sys, **kw)
 
     @pytest.mark.parametrize("squeeze", [None, True, False])
-    def test_time_vector_interpolation(self, siso_dtf2, squeeze):
-        """Test time vector handling in case of interpolation
+    @pytest.mark.parametrize("tsystem", ["siso_dtf2"], indirect=True)
+    def test_time_vector_interpolation(self, tsystem, squeeze):
+        """Test time vector handling in case of interpolation.
 
         Interpolation of the input (to match scipy.signal.dlsim)
 
         gh-239, gh-295
         """
-        sys = siso_dtf2.sys
+        sys = tsystem.sys
         t = np.arange(0, 10, 1.)
         u = np.sin(t)
         x0 = 0
@@ -908,7 +928,8 @@ class TestTimeresp:
             assert yout.shape == tout.shape
         assert np.allclose(tout[1:] - tout[:-1], sys.dt)
 
-    def test_discrete_time_steps(self, siso_dtf2):
+    @pytest.mark.parametrize("tsystem", ["siso_dtf2"], indirect=True)
+    def test_discrete_time_steps(self, tsystem):
         """Make sure rounding errors in sample time are handled properly
 
         These tests play around with the input time vector to make sure that
@@ -916,7 +937,7 @@ class TestTimeresp:
 
         gh-332
         """
-        sys = siso_dtf2.sys
+        sys = tsystem.sys
 
         # Set up a time range and simulate
         T = np.arange(0, 100, 0.2)
@@ -948,10 +969,11 @@ class TestTimeresp:
         with pytest.raises(ValueError):
             step_response(sys, T)
 
-    def test_time_series_data_convention_2D(self, siso_ss1):
+    @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
+    def test_time_series_data_convention_2D(self, tsystem):
         """Allow input time as 2D array (output should be 1D)"""
         tin = np.array(np.linspace(0, 10, 100), ndmin=2)
-        t, y = step_response(siso_ss1.sys, tin)
+        t, y = step_response(tsystem.sys, tin)
         assert isinstance(t, np.ndarray) and not isinstance(t, np.matrix)
         assert t.ndim == 1
         assert y.ndim == 1  # SISO returns "scalar" output

@@ -50,25 +50,20 @@ To install using pip::
 
 Many parts of `python-control` will work without `slycot`, but some
 functionality is limited or absent, and installation of `slycot` is
-recommended.  
-
-*Note*: the `slycot` library only works on some platforms, mostly
-linux-based.  Users should check to insure that slycot is installed
+recommended. Users can check to insure that slycot is installed
 correctly by running the command::
 
   python -c "import slycot"
 
-and verifying that no error message appears.  It may be necessary to install
-`slycot` from source, which requires a working FORTRAN compiler and either
-the `lapack` or `openplas` library.  More information on the slycot package
-can be obtained from the `slycot project page
+and verifying that no error message appears. More information on the 
+slycot package can be obtained from the `slycot project page
 <https://github.com/python-control/Slycot>`_.
 
 For users with the Anaconda distribution of Python, the following
 commands can be used::
 
   conda install numpy scipy matplotlib    # if not yet installed
-  conda install -c conda-forge control
+  conda install -c conda-forge control slycot
 
 This installs `slycot` and `python-control` from conda-forge, including the
 `openblas` package.
