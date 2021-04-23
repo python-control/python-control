@@ -1073,11 +1073,11 @@ def singular_values_plot(syslist, omega=None,
 
     Examples
     --------
-    >>> from numpy import logspace
-    >>> from control import tf
+    >>> import numpy
+    >>> from control import tf, singular_values_plot
     >>> den = [75, 1]
     >>> sys = tf([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
-    >>> omega = logspace(-4, 1, 1000)
+    >>> omega = np.logspace(-4, 1, 1000)
     >>> sigma, omega = singular_values_plot(sys, plot=True)
     >>> singular_values_plot(sys, 0.0, plot=False)
     (array([[197.20868123],
