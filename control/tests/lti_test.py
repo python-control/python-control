@@ -58,8 +58,8 @@ class TestLTI:
         p = -wn * zeta + 1j * wn * np.sqrt(1 - zeta**2)
         sys = tf(1, [1, 2 * zeta * wn, wn**2])
         expected = ([wn, wn], [zeta, zeta], [p, p.conjugate()])
-        np.testing.assert_equal(sys.damp(), expected)
-        np.testing.assert_equal(damp(sys), expected)
+        np.testing.assert_allclose(sys.damp(), expected)
+        np.testing.assert_allclose(damp(sys), expected)
 
         # Also test the discrete time case.
         dt = 0.001
