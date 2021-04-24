@@ -89,10 +89,10 @@ class TestIOSys:
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
         iosys = ct.ss2io(linsys)
-        np.testing.assert_array_equal(linsys.A, iosys.A)
-        np.testing.assert_array_equal(linsys.B, iosys.B)
-        np.testing.assert_array_equal(linsys.C, iosys.C)
-        np.testing.assert_array_equal(linsys.D, iosys.D)
+        np.testing.assert_allclose(linsys.A, iosys.A)
+        np.testing.assert_allclose(linsys.B, iosys.B)
+        np.testing.assert_allclose(linsys.C, iosys.C)
+        np.testing.assert_allclose(linsys.D, iosys.D)
 
         # Try adding names to things
         iosys_named = ct.ss2io(linsys, inputs='u', outputs='y',
@@ -104,10 +104,10 @@ class TestIOSys:
         assert iosys_named.find_state('x0') is None
         assert iosys_named.find_state('x1') == 0
         assert iosys_named.find_state('x2') == 1
-        np.testing.assert_array_equal(linsys.A, iosys_named.A)
-        np.testing.assert_array_equal(linsys.B, iosys_named.B)
-        np.testing.assert_array_equal(linsys.C, iosys_named.C)
-        np.testing.assert_array_equal(linsys.D, iosys_named.D)
+        np.testing.assert_allclose(linsys.A, iosys_named.A)
+        np.testing.assert_allclose(linsys.B, iosys_named.B)
+        np.testing.assert_allclose(linsys.C, iosys_named.C)
+        np.testing.assert_allclose(linsys.D, iosys_named.D)
 
     def test_iosys_unspecified(self, tsys):
         """System with unspecified inputs and outputs"""
@@ -1132,14 +1132,14 @@ class TestIOSys:
         assert isinstance(iosys_siso, ct.StateSpace)
 
         # Make sure that state space functions work for LinearIOSystems
-        np.testing.assert_array_equal(
+        np.testing.assert_allclose(
             iosys_siso.pole(), tsys.siso_linsys.pole())
         omega = np.logspace(.1, 10, 100)
         mag_io, phase_io, omega_io = iosys_siso.frequency_response(omega)
         mag_ss, phase_ss, omega_ss = tsys.siso_linsys.frequency_response(omega)
-        np.testing.assert_array_equal(mag_io, mag_ss)
-        np.testing.assert_array_equal(phase_io, phase_ss)
-        np.testing.assert_array_equal(omega_io, omega_ss)
+        np.testing.assert_allclose(mag_io, mag_ss)
+        np.testing.assert_allclose(phase_io, phase_ss)
+        np.testing.assert_allclose(omega_io, omega_ss)
 
         # LinearIOSystem methods should override StateSpace methods
         io_mul = iosys_siso * iosys_siso2
@@ -1150,19 +1150,19 @@ class TestIOSys:
 
         # And make sure the systems match
         ss_series = tsys.siso_linsys * tsys.siso_linsys
-        np.testing.assert_array_equal(io_mul.A, ss_series.A)
-        np.testing.assert_array_equal(io_mul.B, ss_series.B)
-        np.testing.assert_array_equal(io_mul.C, ss_series.C)
-        np.testing.assert_array_equal(io_mul.D, ss_series.D)
+        np.testing.assert_allclose(io_mul.A, ss_series.A)
+        np.testing.assert_allclose(io_mul.B, ss_series.B)
+        np.testing.assert_allclose(io_mul.C, ss_series.C)
+        np.testing.assert_allclose(io_mul.D, ss_series.D)
 
         # Make sure that series does the same thing
         io_series = ct.series(iosys_siso, iosys_siso2)
         assert isinstance(io_series, ct.InputOutputSystem)
         assert isinstance(io_series, ct.StateSpace)
-        np.testing.assert_array_equal(io_series.A, ss_series.A)
-        np.testing.assert_array_equal(io_series.B, ss_series.B)
-        np.testing.assert_array_equal(io_series.C, ss_series.C)
-        np.testing.assert_array_equal(io_series.D, ss_series.D)
+        np.testing.assert_allclose(io_series.A, ss_series.A)
+        np.testing.assert_allclose(io_series.B, ss_series.B)
+        np.testing.assert_allclose(io_series.C, ss_series.C)
+        np.testing.assert_allclose(io_series.D, ss_series.D)
 
         # Test out feedback as well
         io_feedback = ct.feedback(iosys_siso, iosys_siso2)
@@ -1173,10 +1173,10 @@ class TestIOSys:
 
         # And make sure the systems match
         ss_feedback = ct.feedback(tsys.siso_linsys, tsys.siso_linsys)
-        np.testing.assert_array_equal(io_feedback.A, ss_feedback.A)
-        np.testing.assert_array_equal(io_feedback.B, ss_feedback.B)
-        np.testing.assert_array_equal(io_feedback.C, ss_feedback.C)
-        np.testing.assert_array_equal(io_feedback.D, ss_feedback.D)
+        np.testing.assert_allclose(io_feedback.A, ss_feedback.A)
+        np.testing.assert_allclose(io_feedback.B, ss_feedback.B)
+        np.testing.assert_allclose(io_feedback.C, ss_feedback.C)
+        np.testing.assert_allclose(io_feedback.D, ss_feedback.D)
 
         # Make sure series interconnections are done in the right order
         ss_sys1 = ct.rss(2, 3, 2)
@@ -1190,10 +1190,10 @@ class TestIOSys:
 
         # While we are at it, check that the state space matrices match
         ss_series = ss_sys2 * ss_sys1
-        np.testing.assert_array_equal(io_series.A, ss_series.A)
-        np.testing.assert_array_equal(io_series.B, ss_series.B)
-        np.testing.assert_array_equal(io_series.C, ss_series.C)
-        np.testing.assert_array_equal(io_series.D, ss_series.D)
+        np.testing.assert_allclose(io_series.A, ss_series.A)
+        np.testing.assert_allclose(io_series.B, ss_series.B)
+        np.testing.assert_allclose(io_series.C, ss_series.C)
+        np.testing.assert_allclose(io_series.D, ss_series.D)
 
     def test_docstring_example(self):
         P = ct.LinearIOSystem(

@@ -172,12 +172,12 @@ class TestStateSpace:
 
         # Change the original A matrix
         A[0, 0] = -2
-        np.testing.assert_array_equal(linsys.A, [[-1]])  # original value
-        np.testing.assert_array_equal(cpysys.A, [[-1]])  # original value
+        np.testing.assert_allclose(linsys.A, [[-1]])  # original value
+        np.testing.assert_allclose(cpysys.A, [[-1]])  # original value
 
         # Change the A matrix for the original system
         linsys.A[0, 0] = -3
-        np.testing.assert_array_equal(cpysys.A, [[-1]])  # original value
+        np.testing.assert_allclose(cpysys.A, [[-1]])  # original value
 
     def test_copy_constructor_nodt(self, sys322):
         """Test the copy constructor when an object without dt is passed"""
@@ -207,7 +207,7 @@ class TestStateSpace:
         """Test broadcast of D=0 to the right shape"""
         # Giving D as a scalar 0 should broadcast to the right shape
         sys = StateSpace(sys623.A, sys623.B, sys623.C, 0)
-        np.testing.assert_array_equal(sys623.D, sys.D)
+        np.testing.assert_allclose(sys623.D, sys.D)
 
         # Giving D as a matrix of the wrong size should generate an error
         with pytest.raises(ValueError):
@@ -215,16 +215,16 @@ class TestStateSpace:
 
         # Make sure that empty systems still work
         sys = StateSpace([], [], [], 1)
-        np.testing.assert_array_equal(sys.D, [[1]])
+        np.testing.assert_allclose(sys.D, [[1]])
 
         sys = StateSpace([], [], [], [[0]])
-        np.testing.assert_array_equal(sys.D, [[0]])
+        np.testing.assert_allclose(sys.D, [[0]])
 
         sys = StateSpace([], [], [], [0])
-        np.testing.assert_array_equal(sys.D, [[0]])
+        np.testing.assert_allclose(sys.D, [[0]])
 
         sys = StateSpace([], [], [], 0)
-        np.testing.assert_array_equal(sys.D, [[0]])
+        np.testing.assert_allclose(sys.D, [[0]])
 
     def test_pole(self, sys322):
         """Evaluate the poles of a MIMO system."""
@@ -592,14 +592,14 @@ class TestStateSpace:
         g3 = StateSpace([], [], [], d2.T)
 
         h1 = g1 * g2
-        np.testing.assert_array_equal(np.dot(d1, d2), h1.D)
+        np.testing.assert_allclose(np.dot(d1, d2), h1.D)
         h2 = g1 + g3
-        np.testing.assert_array_equal(d1 + d2.T, h2.D)
+        np.testing.assert_allclose(d1 + d2.T, h2.D)
         h3 = g1.feedback(g2)
         np.testing.assert_array_almost_equal(
             solve(np.eye(2) + np.dot(d1, d2), d1), h3.D)
         h4 = g1.append(g2)
-        np.testing.assert_array_equal(block_diag(d1, d2), h4.D)
+        np.testing.assert_allclose(block_diag(d1, d2), h4.D)
 
     def test_remove_useless_states(self):
         """Regression: _remove_useless_states gives correct ABC sizes."""
@@ -633,7 +633,7 @@ class TestStateSpace:
         np.testing.assert_array_equal(g1.A, g2.A)
         np.testing.assert_array_equal(g1.B, g2.B)
         np.testing.assert_array_equal(g1.C, g2.C)
-        np.testing.assert_array_equal(g1.D, g2.D)
+        np.testing.assert_allclose(g1.D, g2.D)
 
     def test_empty(self):
         """Regression: can we create an empty StateSpace object?"""
@@ -651,7 +651,7 @@ class TestStateSpace:
         np.testing.assert_array_equal(np.empty((0, 0)), g.A)
         np.testing.assert_array_equal(np.empty((0, D.shape[1])), g.B)
         np.testing.assert_array_equal(np.empty((D.shape[0], 0)), g.C)
-        np.testing.assert_array_equal(D, g.D)
+        np.testing.assert_allclose(D, g.D)
 
     def test_lft(self):
         """ test lft function with result obtained from matlab implementation"""

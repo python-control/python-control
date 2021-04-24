@@ -53,26 +53,26 @@ def test_static_nonlinear_call(satsys):
     input = [-2, -1, -0.5, 0, 0.5, 1, 2]
     desired = [-1, -1, -0.5, 0, 0.5, 1, 1]
     for x, y in zip(input, desired):
-        assert satsys(x) == y
+        np.testing.assert_allclose(satsys(x), y)
 
     # Test squeeze properties
     assert satsys(0.) == 0.
     assert satsys([0.], squeeze=True) == 0.
-    np.testing.assert_array_equal(satsys([0.]), [0.])
+    np.testing.assert_allclose(satsys([0.]), [0.])
 
     # Test SIMO nonlinearity
     def _simofcn(t, x, u, params):
         return np.array([np.cos(u), np.sin(u)])
     simo_sys = ct.NonlinearIOSystem(None, outfcn=_simofcn, input=1, output=2)
-    np.testing.assert_array_equal(simo_sys([0.]), [1, 0])
-    np.testing.assert_array_equal(simo_sys([0.], squeeze=True), [1, 0])
+    np.testing.assert_allclose(simo_sys([0.]), [1, 0])
+    np.testing.assert_allclose(simo_sys([0.], squeeze=True), [1, 0])
 
     # Test MISO nonlinearity
     def _misofcn(t, x, u, params={}):
         return np.array([np.sin(u[0]) * np.cos(u[1])])
     miso_sys = ct.NonlinearIOSystem(None, outfcn=_misofcn, input=2, output=1)
-    np.testing.assert_array_equal(miso_sys([0, 0]), [0])
-    np.testing.assert_array_equal(miso_sys([0, 0], squeeze=True), [0])
+    np.testing.assert_allclose(miso_sys([0, 0]), [0])
+    np.testing.assert_allclose(miso_sys([0, 0], squeeze=True), [0])
 
 
 # Test saturation describing function in multiple ways

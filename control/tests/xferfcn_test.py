@@ -145,15 +145,15 @@ class TestXferFcn:
         """Remove extraneous zeros in polynomial representations."""
         sys1 = TransferFunction([0., 0., 1., 2.], [[[0., 0., 0., 3., 2., 1.]]])
 
-        np.testing.assert_array_equal(sys1.num, [[[1., 2.]]])
-        np.testing.assert_array_equal(sys1.den, [[[3., 2., 1.]]])
+        np.testing.assert_allclose(sys1.num, [[[1., 2.]]])
+        np.testing.assert_allclose(sys1.den, [[[3., 2., 1.]]])
 
     def test_truncate_coefficients_null_numerator(self):
         """Remove extraneous zeros in polynomial representations."""
         sys1 = TransferFunction([0., 0., 0.], 1.)
 
-        np.testing.assert_array_equal(sys1.num, [[[0.]]])
-        np.testing.assert_array_equal(sys1.den, [[[1.]]])
+        np.testing.assert_allclose(sys1.num, [[[0.]]])
+        np.testing.assert_allclose(sys1.den, [[[1.]]])
 
     # Tests for TransferFunction.__neg__
 
@@ -162,16 +162,16 @@ class TestXferFcn:
         sys1 = TransferFunction(2., np.array([-3.]))
         sys2 = - sys1
 
-        np.testing.assert_array_equal(sys2.num, [[[-2.]]])
-        np.testing.assert_array_equal(sys2.den, [[[-3.]]])
+        np.testing.assert_allclose(sys2.num, [[[-2.]]])
+        np.testing.assert_allclose(sys2.den, [[[-3.]]])
 
     def test_reverse_sign_siso(self):
         """Negate a SISO system."""
         sys1 = TransferFunction([1., 3., 5], [1., 6., 2., -1.])
         sys2 = - sys1
 
-        np.testing.assert_array_equal(sys2.num, [[[-1., -3., -5.]]])
-        np.testing.assert_array_equal(sys2.den, [[[1., 6., 2., -1.]]])
+        np.testing.assert_allclose(sys2.num, [[[-1., -3., -5.]]])
+        np.testing.assert_allclose(sys2.den, [[[1., 6., 2., -1.]]])
 
     @slycotonly
     def test_reverse_sign_mimo(self):
@@ -189,8 +189,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_array_equal(sys2.num[i][j], sys3.num[i][j])
-                np.testing.assert_array_equal(sys2.den[i][j], sys3.den[i][j])
+                np.testing.assert_allclose(sys2.num[i][j], sys3.num[i][j])
+                np.testing.assert_allclose(sys2.den[i][j], sys3.den[i][j])
 
     # Tests for TransferFunction.__add__
 
@@ -200,8 +200,8 @@ class TestXferFcn:
         sys2 = TransferFunction(np.array([2.]), [1.])
         sys3 = sys1 + sys2
 
-        np.testing.assert_array_equal(sys3.num, 3.)
-        np.testing.assert_array_equal(sys3.den, 1.)
+        np.testing.assert_allclose(sys3.num, 3.)
+        np.testing.assert_allclose(sys3.den, 1.)
 
     def test_add_siso(self):
         """Add two SISO systems."""
@@ -210,8 +210,8 @@ class TestXferFcn:
         sys3 = sys1 + sys2
 
         # If sys3.num is [[[0., 20., 4., -8.]]], then this is wrong!
-        np.testing.assert_array_equal(sys3.num, [[[20., 4., -8]]])
-        np.testing.assert_array_equal(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
+        np.testing.assert_allclose(sys3.num, [[[20., 4., -8]]])
+        np.testing.assert_allclose(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
 
     @slycotonly
     def test_add_mimo(self):
@@ -235,8 +235,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
-                np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
+                np.testing.assert_allclose(sys3.num[i][j], num3[i][j])
+                np.testing.assert_allclose(sys3.den[i][j], den3[i][j])
 
     # Tests for TransferFunction.__sub__
 
@@ -246,8 +246,8 @@ class TestXferFcn:
         sys2 = TransferFunction(np.array([2.]), [1.])
         sys3 = sys1 - sys2
 
-        np.testing.assert_array_equal(sys3.num, -1.)
-        np.testing.assert_array_equal(sys3.den, 1.)
+        np.testing.assert_allclose(sys3.num, -1.)
+        np.testing.assert_allclose(sys3.den, 1.)
 
     def test_subtract_siso(self):
         """Subtract two SISO systems."""
@@ -256,10 +256,10 @@ class TestXferFcn:
         sys3 = sys1 - sys2
         sys4 = sys2 - sys1
 
-        np.testing.assert_array_equal(sys3.num, [[[2., 6., -12., -10., -2.]]])
-        np.testing.assert_array_equal(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
-        np.testing.assert_array_equal(sys4.num, [[[-2., -6., 12., 10., 2.]]])
-        np.testing.assert_array_equal(sys4.den, [[[1., 6., 1., -7., -2., 1.]]])
+        np.testing.assert_allclose(sys3.num, [[[2., 6., -12., -10., -2.]]])
+        np.testing.assert_allclose(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
+        np.testing.assert_allclose(sys4.num, [[[-2., -6., 12., 10., 2.]]])
+        np.testing.assert_allclose(sys4.den, [[[1., 6., 1., -7., -2., 1.]]])
 
     @slycotonly
     def test_subtract_mimo(self):
@@ -283,8 +283,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
-                np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
+                np.testing.assert_allclose(sys3.num[i][j], num3[i][j])
+                np.testing.assert_allclose(sys3.den[i][j], den3[i][j])
 
     # Tests for TransferFunction.__mul__
 
@@ -295,10 +295,10 @@ class TestXferFcn:
         sys3 = sys1 * sys2
         sys4 = sys1 * sys2
 
-        np.testing.assert_array_equal(sys3.num, [[[2.]]])
-        np.testing.assert_array_equal(sys3.den, [[[4.]]])
-        np.testing.assert_array_equal(sys3.num, sys4.num)
-        np.testing.assert_array_equal(sys3.den, sys4.den)
+        np.testing.assert_allclose(sys3.num, [[[2.]]])
+        np.testing.assert_allclose(sys3.den, [[[4.]]])
+        np.testing.assert_allclose(sys3.num, sys4.num)
+        np.testing.assert_allclose(sys3.den, sys4.den)
 
     def test_multiply_siso(self):
         """Multiply two SISO systems."""
@@ -307,10 +307,10 @@ class TestXferFcn:
         sys3 = sys1 * sys2
         sys4 = sys2 * sys1
 
-        np.testing.assert_array_equal(sys3.num, [[[-1., 0., 4., 15.]]])
-        np.testing.assert_array_equal(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
-        np.testing.assert_array_equal(sys3.num, sys4.num)
-        np.testing.assert_array_equal(sys3.den, sys4.den)
+        np.testing.assert_allclose(sys3.num, [[[-1., 0., 4., 15.]]])
+        np.testing.assert_allclose(sys3.den, [[[1., 6., 1., -7., -2., 1.]]])
+        np.testing.assert_allclose(sys3.num, sys4.num)
+        np.testing.assert_allclose(sys3.den, sys4.den)
 
     @slycotonly
     def test_multiply_mimo(self):
@@ -339,8 +339,8 @@ class TestXferFcn:
 
         for i in range(sys3.noutputs):
             for j in range(sys3.ninputs):
-                np.testing.assert_array_equal(sys3.num[i][j], num3[i][j])
-                np.testing.assert_array_equal(sys3.den[i][j], den3[i][j])
+                np.testing.assert_allclose(sys3.num[i][j], num3[i][j])
+                np.testing.assert_allclose(sys3.den[i][j], den3[i][j])
 
     # Tests for TransferFunction.__div__
 
@@ -350,8 +350,8 @@ class TestXferFcn:
         sys2 = TransferFunction(5., 2.)
         sys3 = sys1 / sys2
 
-        np.testing.assert_array_equal(sys3.num, [[[6.]]])
-        np.testing.assert_array_equal(sys3.den, [[[-20.]]])
+        np.testing.assert_allclose(sys3.num, [[[6.]]])
+        np.testing.assert_allclose(sys3.den, [[[-20.]]])
 
     def test_divide_siso(self):
         """Divide two SISO systems."""
@@ -360,10 +360,10 @@ class TestXferFcn:
         sys3 = sys1 / sys2
         sys4 = sys2 / sys1
 
-        np.testing.assert_array_equal(sys3.num, [[[1., 3., 4., -3., -5.]]])
-        np.testing.assert_array_equal(sys3.den, [[[-1., -3., 16., 7., -3.]]])
-        np.testing.assert_array_equal(sys4.num, sys3.den)
-        np.testing.assert_array_equal(sys4.den, sys3.num)
+        np.testing.assert_allclose(sys3.num, [[[1., 3., 4., -3., -5.]]])
+        np.testing.assert_allclose(sys3.den, [[[-1., -3., 16., 7., -3.]]])
+        np.testing.assert_allclose(sys4.num, sys3.den)
+        np.testing.assert_allclose(sys4.den, sys3.num)
 
     def test_div(self):
         # Make sure that sampling times work correctly
@@ -522,7 +522,7 @@ class TestXferFcn:
 
         np.testing.assert_array_almost_equal(mag, true_mag)
         np.testing.assert_array_almost_equal(phase, true_phase)
-        np.testing.assert_array_equal(omega, true_omega)
+        np.testing.assert_allclose(omega, true_omega)
 
     # Tests for TransferFunction.pole and TransferFunction.zero.
     def test_common_den(self):
@@ -626,10 +626,10 @@ class TestXferFcn:
         sys3 = sys1.feedback(sys2)
         sys4 = sys1.feedback(sys2, 1)
 
-        np.testing.assert_array_equal(sys3.num, [[[-1., 7., -16., 16., 0.]]])
-        np.testing.assert_array_equal(sys3.den, [[[1., 0., -2., 2., 32., 0.]]])
-        np.testing.assert_array_equal(sys4.num, [[[-1., 7., -16., 16., 0.]]])
-        np.testing.assert_array_equal(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
+        np.testing.assert_allclose(sys3.num, [[[-1., 7., -16., 16., 0.]]])
+        np.testing.assert_allclose(sys3.den, [[[1., 0., -2., 2., 32., 0.]]])
+        np.testing.assert_allclose(sys4.num, [[[-1., 7., -16., 16., 0.]]])
+        np.testing.assert_allclose(sys4.den, [[[1., 0., 2., -8., 8., 0.]]])
 
     @slycotonly
     def test_convert_to_transfer_function(self):
@@ -813,7 +813,7 @@ class TestXferFcn:
         den = [[[1, 3], [2, 3], [3, 3]], [[1, 5], [2, 7], [3, 11]]]
         sys4 = TransferFunction(num, den)
         expected = [[5, 7, 11], [2, 2, 2]]
-        np.testing.assert_array_equal(sys4.dcgain(), expected)
+        np.testing.assert_allclose(sys4.dcgain(), expected)
 
     def test_dcgain_discr(self):
         """Test DC gain for discrete-time transfer functions"""
