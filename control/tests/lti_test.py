@@ -15,13 +15,13 @@ class TestLTI:
 
     def test_pole(self):
         sys = tf(126, [-1, 42])
-        np.testing.assert_equal(sys.pole(), 42)
-        np.testing.assert_equal(pole(sys), 42)
+        np.testing.assert_allclose(sys.pole(), 42)
+        np.testing.assert_allclose(pole(sys), 42)
 
     def test_zero(self):
         sys = tf([-1, 42], [1, 10])
-        np.testing.assert_equal(sys.zero(), 42)
-        np.testing.assert_equal(zero(sys), 42)
+        np.testing.assert_allclose(sys.zero(), 42)
+        np.testing.assert_allclose(zero(sys), 42)
 
     def test_issiso(self):
         assert issiso(1)
@@ -72,8 +72,8 @@ class TestLTI:
 
     def test_dcgain(self):
         sys = tf(84, [1, 2])
-        np.testing.assert_equal(sys.dcgain(), 42)
-        np.testing.assert_equal(dcgain(sys), 42)
+        np.testing.assert_allclose(sys.dcgain(), 42)
+        np.testing.assert_allclose(dcgain(sys), 42)
 
     @pytest.mark.parametrize("dt1, dt2, expected",
                              [(None, None, True),

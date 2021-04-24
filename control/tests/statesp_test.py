@@ -388,7 +388,7 @@ class TestStateSpace:
 
         np.testing.assert_almost_equal(mag, true_mag)
         np.testing.assert_almost_equal(phase, true_phase)
-        np.testing.assert_equal(omega, true_omega)
+        np.testing.assert_almost_equal(omega, true_omega)
 
         # Deprecated version of the call (should return warning)
         with pytest.warns(DeprecationWarning, match="will be removed"):
@@ -516,7 +516,7 @@ class TestStateSpace:
         """Test DC gain for discrete-time state-space systems."""
         # static gain
         sys = StateSpace([], [], [], 2, True)
-        np.testing.assert_equal(sys.dcgain(), 2)
+        np.testing.assert_allclose(sys.dcgain(), 2)
 
         # averaging filter
         sys = StateSpace(0.5, 0.5, 1, 0, True)
@@ -524,7 +524,7 @@ class TestStateSpace:
 
         # differencer
         sys = StateSpace(0, 1, -1, 1, True)
-        np.testing.assert_equal(sys.dcgain(), 0)
+        np.testing.assert_allclose(sys.dcgain(), 0)
 
         # summer
         sys = StateSpace(1, 1, 1, 0, True)

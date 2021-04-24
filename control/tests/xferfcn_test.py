@@ -693,8 +693,8 @@ class TestXferFcn:
         h = (z - 1.00000000001) * (z + 1.0000000001) / (z**2 - 1)
         hm = h.minreal()
         hr = TransferFunction([1], [1], T)
-        np.testing.assert_array_almost_equal(hm.num[0][0], hr.num[0][0])
-        np.testing.assert_equal(hr.dt, hm.dt)
+        np.testing.assert_allclose(hm.num[0][0], hr.num[0][0])
+        np.testing.assert_allclose(hr.dt, hm.dt)
 
     @slycotonly
     def test_state_space_conversion_mimo(self):
@@ -801,10 +801,10 @@ class TestXferFcn:
     def test_dcgain_cont(self):
         """Test DC gain for continuous-time transfer functions"""
         sys = TransferFunction(6, 3)
-        np.testing.assert_equal(sys.dcgain(), 2)
+        np.testing.assert_allclose(sys.dcgain(), 2)
 
         sys2 = TransferFunction(6, [1, 3])
-        np.testing.assert_equal(sys2.dcgain(), 2)
+        np.testing.assert_allclose(sys2.dcgain(), 2)
 
         sys3 = TransferFunction(6, [1, 0])
         np.testing.assert_equal(sys3.dcgain(), np.inf)
@@ -819,7 +819,7 @@ class TestXferFcn:
         """Test DC gain for discrete-time transfer functions"""
         # static gain
         sys = TransferFunction(6, 3, True)
-        np.testing.assert_equal(sys.dcgain(), 2)
+        np.testing.assert_allclose(sys.dcgain(), 2)
 
         # averaging filter
         sys = TransferFunction(0.5, [1, -0.5], True)
@@ -837,7 +837,7 @@ class TestXferFcn:
 
         # summer
         sys = TransferFunction([1, -1], [1], True)
-        np.testing.assert_equal(sys.dcgain(), 0)
+        np.testing.assert_allclose(sys.dcgain(), 0)
 
     def test_ss2tf(self):
         """Test SISO ss2tf"""
