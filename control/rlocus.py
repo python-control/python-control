@@ -232,16 +232,11 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             ax.set_ylim(ylim)
 
         # Draw the grid
-        if grid and sisotool:
+        if grid:
             if isdtime(sys, strict=True):
                 zgrid(ax=ax)
             else:
-                _sgrid_func(fig=fig)
-        elif grid:
-            if isdtime(sys, strict=True):
-                zgrid(ax=ax)
-            else:
-                _sgrid_func()
+                _sgrid_func(fig=fig if sisotool else None)
         else:
             ax.axhline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
             ax.axvline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
