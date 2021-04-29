@@ -137,7 +137,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     print_gain = config._get_param(
         'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
-    sys_loop = sys if sys.issiso() else sys[0,0]
+    sys_loop = sys if sys.issiso() else sys[0, 0]
 
     # Convert numerator and denominator to polynomials if they aren't
     (nump, denp) = _systopoly1d(sys_loop)
