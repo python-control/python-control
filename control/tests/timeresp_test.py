@@ -364,7 +364,7 @@ class TestTimeresp:
         """
         sys = TransferFunction([1], [1], dt)
         t, y = step_response(sys)
-        np.testing.assert_array_equal(y, np.ones(len(t)))
+        np.testing.assert_allclose(y, np.ones(len(t)))
 
     def assert_step_info_match(self, sys, info, info_ref):
         """Assert reasonable step_info accuracy."""

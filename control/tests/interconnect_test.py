@@ -36,10 +36,10 @@ def test_summing_junction(inputs, output, dimension, D):
     sum = ct.summing_junction(
         inputs=inputs, output=output, dimension=dimension)
     dim = 1 if dimension is None else dimension
-    np.testing.assert_array_equal(sum.A, np.ndarray((0, 0)))
-    np.testing.assert_array_equal(sum.B, np.ndarray((0, ninputs*dim)))
-    np.testing.assert_array_equal(sum.C, np.ndarray((dim, 0)))
-    np.testing.assert_array_equal(sum.D, D)
+    np.testing.assert_allclose(sum.A, np.ndarray((0, 0)))
+    np.testing.assert_allclose(sum.B, np.ndarray((0, ninputs*dim)))
+    np.testing.assert_allclose(sum.C, np.ndarray((dim, 0)))
+    np.testing.assert_allclose(sum.D, D)
 
 
 def test_summation_exceptions():
@@ -96,7 +96,7 @@ def test_interconnect_implicit():
     # Setting connections to False should lead to an empty connection map
     empty = ct.interconnect(
         (C, P, sumblk), connections=False, inplist=['r'], outlist=['y'])
-    np.testing.assert_array_equal(empty.connect_map, np.zeros((4, 3)))
+    np.testing.assert_allclose(empty.connect_map, np.zeros((4, 3)))
 
     # Implicit summation across repeated signals
     kp_io = ct.tf2io(kp, inputs='e', outputs='u', name='kp')
