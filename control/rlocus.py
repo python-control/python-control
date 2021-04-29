@@ -236,7 +236,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             if isdtime(sys, strict=True):
                 zgrid(ax=ax)
             else:
-                _sgrid_func(f)
+                _sgrid_func(fig=fig)
         elif grid:
             if isdtime(sys, strict=True):
                 zgrid(ax=ax)
