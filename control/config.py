@@ -20,7 +20,43 @@ _control_defaults = {
     'control.squeeze_time_response': None,
     'forced_response.return_x': False,
 }
-defaults = dict(_control_defaults)
+
+
+class DefaultDict(dict):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __getitem__(self, key):
+        return super().__getitem__(self._check_deprecation(key))
+
+    def __setitem__(self, key, value):
+        super().__setitem__(self._check_deprecation(key), value)
+
+    def __missing__(self, key):
+        repl = self._check_deprecation(key)
+        if self.__contains__(repl):
+            return self[repl]
+        else:
+            raise KeyError
+
+    def copy(self):
+        return DefaultDict(self)
+
+    def get(self, key, default=None):
+        return super().get(self._check_deprecation(key), default)
+
+    def _check_deprecation(self, key):
+        if self.__contains__(f"deprecated.{key}"):
+            repl = self[f"deprecated.{key}"]
+            warnings.warn(f"config.defaults['{key}'] has been renamed to "
+                          f"config.defaults['{repl}'].",
+                          DeprecationWarning)
+            return repl
+        else:
+            return key
+
+
+defaults = DefaultDict(_control_defaults)
 
 
 def set_defaults(module, **keywords):
