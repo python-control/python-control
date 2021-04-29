@@ -26,9 +26,6 @@ class DefaultDict(dict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def __getitem__(self, key):
-        return super().__getitem__(self._check_deprecation(key))
-
     def __setitem__(self, key, value):
         super().__setitem__(self._check_deprecation(key), value)
 
