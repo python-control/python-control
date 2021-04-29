@@ -69,7 +69,7 @@ def test_clean_part(num, fun, dtype):
     for i, numi in enumerate(num_):
         assert len(numi) == ref_.shape[1]
         for j, numj in enumerate(numi):
-            np.testing.assert_array_equal(numj, ref_[i, j, ...])
+            np.testing.assert_allclose(numj, ref_[i, j, ...])
 
 
 @pytest.mark.parametrize("badinput", [[[0., 1.], [2., 3.]], "a"])

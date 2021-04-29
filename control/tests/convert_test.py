@@ -184,9 +184,7 @@ class TestConvert:
         assert 0 == gsiso.nstates
         assert 1 == gsiso.ninputs
         assert 1 == gsiso.noutputs
-        # in all cases ratios are exactly representable, so assert_array_equal
-        # is fine
-        np.testing.assert_array_equal([[0.5]], gsiso.D)
+        np.testing.assert_allclose([[0.5]], gsiso.D)
 
     def testTf2ssStaticMimo(self):
         """Regression: tf2ss for MIMO static gain"""
@@ -198,13 +196,13 @@ class TestConvert:
         assert 3 == gmimo.ninputs
         assert 2 == gmimo.noutputs
         d = np.array([[0.5, 30, 0.0625], [-0.5, -1.25, 101.3]])
-        np.testing.assert_array_equal(d, gmimo.D)
+        np.testing.assert_allclose(d, gmimo.D)
 
     def testSs2tfStaticSiso(self):
         """Regression: ss2tf for SISO static gain"""
         gsiso = ss2tf(ss([], [], [], 0.5))
-        np.testing.assert_array_equal([[[0.5]]], gsiso.num)
-        np.testing.assert_array_equal([[[1.]]], gsiso.den)
+        np.testing.assert_allclose([[[0.5]]], gsiso.num)
+        np.testing.assert_allclose([[[1.]]], gsiso.den)
 
     def testSs2tfStaticMimo(self):
         """Regression: ss2tf for MIMO static gain"""
@@ -217,8 +215,8 @@ class TestConvert:
 
         # we need a 3x2x1 array to compare with gtf.num
         numref = d[..., np.newaxis]
-        np.testing.assert_array_equal(numref,
-                                      np.array(gtf.num) / np.array(gtf.den))
+        np.testing.assert_allclose(numref,
+                                   np.array(gtf.num) / np.array(gtf.den))
 
     @slycotonly
     def testTf2SsDuplicatePoles(self):
@@ -229,7 +227,7 @@ class TestConvert:
                [[1], [1, 0]]]
         g = tf(num, den)
         s = ss(g)
-        np.testing.assert_array_equal(g.pole(), s.pole())
+        np.testing.assert_allclose(g.pole(), s.pole())
 
     @slycotonly
     def test_tf2ss_robustness(self):

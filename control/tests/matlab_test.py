@@ -420,7 +420,7 @@ class TestMatlab:
         klist = [1, 10, 100]
         rlist, klist_out = rlocus(siso.tf2, klist, plot=False)
         np.testing.assert_equal(len(rlist), len(klist))
-        np.testing.assert_array_equal(klist, klist_out)
+        np.testing.assert_allclose(klist, klist_out)
 
     def testNyquist(self, siso):
         """Call nyquist()"""
