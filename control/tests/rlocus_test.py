@@ -18,11 +18,19 @@ from control.bdalg import feedback
 class TestRootLocus:
     """These are tests for the feedback function in rlocus.py."""
 
-    @pytest.fixture(params=[(TransferFunction, ([1, 2], [1, 2, 3])),
-                            (StateSpace, ([[1., 4.], [3., 2.]],
-                                       [[1.], [-4.]],
-                                       [[1., 0.]], [[0.]]))],
-                    ids=["tf", "ss"])
+    @pytest.fixture(params=[pytest.param((sysclass, sargs + (dt, )),
+                                         id=f"{systypename}-{dtstring}")
+                            for sysclass, systypename, sargs in [
+                                    (TransferFunction, 'TF', ([1, 2],
+                                                              [1, 2, 3])),
+                                    (StateSpace, 'SS', ([[1., 4.], [3., 2.]],
+                                                        [[1.], [-4.]],
+                                                        [[1., 0.]],
+                                                        [[0.]])),
+                                    ]
+                            for dt, dtstring in [(0, 'ctime'),
+                                                 (True, 'dtime')]
+                            ])
     def sys(self, request):
         """Return some simple LTI system for testing"""
         # avoid construction during collection time: prevent unfiltered
