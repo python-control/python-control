@@ -210,16 +210,16 @@ on standard configurations.
 
 Selected variables that can be configured, along with their default values:
 
-  * bode.dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
-
-  * bode.deg (True): Bode plot phase plotted in degrees (otherwise radians)
-
-  * bode.Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
-
-  * bode.grid (True): Include grids for magnitude and phase plots
-
-  * freqplot.number_of_samples (None): Number of frequency points in Bode plots
-
+  * freqplot.dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
+    
+  * freqplot.deg (True): Bode plot phase plotted in degrees (otherwise radians)
+    
+  * freqplot.Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
+    
+  * freqplot.grid (True): Include grids for magnitude and phase plots
+    
+  * freqplot.number_of_samples (1000): Number of frequency points in Bode plots
+    
   * freqplot.feature_periphery_decade (1.0): How many decades to include in the
     frequency range on both sides of features (poles, zeros).
 

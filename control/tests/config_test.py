@@ -30,9 +30,9 @@ class TestConfig:
 
     @mplcleanup
     def test_get_param(self):
-        assert ct.config._get_param('bode', 'dB')\
-            == ct.config.defaults['bode.dB']
-        assert ct.config._get_param('bode', 'dB', 1) == 1
+        assert ct.config._get_param('freqplot', 'dB')\
+            == ct.config.defaults['freqplot.dB']
+        assert ct.config._get_param('freqplot', 'dB', 1) == 1
         ct.config.defaults['config.test1'] = 1
         assert ct.config._get_param('config', 'test1', None) == 1
         assert ct.config._get_param('config', 'test1', None, 1) == 1
@@ -141,9 +141,9 @@ class TestConfig:
 
     @mplcleanup
     def test_custom_bode_default(self):
-        ct.config.defaults['bode.dB'] = True
-        ct.config.defaults['bode.deg'] = True
-        ct.config.defaults['bode.Hz'] = True
+        ct.config.defaults['freqplot.dB'] = True
+        ct.config.defaults['freqplot.deg'] = True
+        ct.config.defaults['freqplot.Hz'] = True
 
         # Generate a Bode plot
         plt.figure()
@@ -200,9 +200,9 @@ class TestConfig:
     def test_reset_defaults(self):
         ct.use_matlab_defaults()
         ct.reset_defaults()
-        assert not ct.config.defaults['bode.dB']
-        assert ct.config.defaults['bode.deg']
-        assert not ct.config.defaults['bode.Hz']
+        assert not ct.config.defaults['freqplot.dB']
+        assert ct.config.defaults['freqplot.deg']
+        assert not ct.config.defaults['freqplot.Hz']
         assert ct.config.defaults['freqplot.number_of_samples'] == 1000
         assert ct.config.defaults['freqplot.feature_periphery_decades'] == 1.0
 

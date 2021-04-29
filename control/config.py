@@ -43,8 +43,7 @@ def reset_defaults():
     # System level defaults
     defaults.update(_control_defaults)
 
-    from .freqplot import _bode_defaults, _freqplot_defaults, _nyquist_defaults
-    defaults.update(_bode_defaults)
+    from .freqplot import _freqplot_defaults, _nyquist_defaults
     defaults.update(_freqplot_defaults)
     defaults.update(_nyquist_defaults)
 
@@ -133,7 +132,7 @@ def use_matlab_defaults():
         * State space class and functions use Numpy matrix objects
 
     """
-    set_defaults('bode', dB=True, deg=True, Hz=False, grid=True)
+    set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
     set_defaults('statesp', use_numpy_matrix=True)
 
 
@@ -147,7 +146,7 @@ def use_fbs_defaults():
         * Nyquist plots use dashed lines for mirror image of Nyquist curve
 
     """
-    set_defaults('bode', dB=False, deg=True, Hz=False, grid=False)
+    set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
     set_defaults('nyquist', mirror_style='--')
 
 
@@ -178,6 +177,7 @@ def use_numpy_matrix(flag=True, warn=True):
         warnings.warn("Return type numpy.matrix is deprecated.",
                       stacklevel=2, category=DeprecationWarning)
     set_defaults('statesp', use_numpy_matrix=flag)
+
 
 def use_legacy_defaults(version):
     """ Sets the defaults to whatever they were in a given release.

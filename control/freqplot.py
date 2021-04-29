@@ -56,13 +56,18 @@ from .statesp import StateSpace
 from .xferfcn import TransferFunction
 from . import config
 
-__all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot',
+__all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot', 'singular_values_plot',
            'bode', 'nyquist', 'gangof4']
 
 # Default values for module parameter variables
 _freqplot_defaults = {
     'freqplot.feature_periphery_decades': 1,
     'freqplot.number_of_samples': 1000,
+    'freqplot.dB': False,  # Plot gain in dB
+    'freqplot.deg': True,  # Plot phase in degrees
+    'freqplot.Hz': False,  # Plot frequency in Hertz
+    'freqplot.grid': True,  # Turn on grid for gain and phase
+    'freqplot.wrap_phase': False,  # Wrap the phase plot at a given value
 }
 
 #
@@ -75,15 +80,6 @@ _freqplot_defaults = {
 #
 # Bode plot
 #
-
-# Default values for Bode plot configuration variables
-_bode_defaults = {
-    'bode.dB': False,           # Plot gain in dB
-    'bode.deg': True,           # Plot phase in degrees
-    'bode.Hz': False,           # Plot frequency in Hertz
-    'bode.grid': True,          # Turn on grid for gain and phase
-    'bode.wrap_phase': False,   # Wrap the phase plot at a given value
-}
 
 
 def bode_plot(syslist, omega=None,
@@ -103,10 +99,10 @@ def bode_plot(syslist, omega=None,
         If True, plot result in dB.  Default is false.
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
-        Default value (False) set by config.defaults['bode.Hz']
+        Default value (False) set by config.defaults['freqplot.Hz']
     deg : bool
         If True, plot phase in degrees (else radians).  Default value (True)
-        config.defaults['bode.deg']
+        config.defaults['freqplot.deg']
     plot : bool
         If True (default), plot magnitude and phase
     omega_limits : array_like of two values
@@ -136,7 +132,7 @@ def bode_plot(syslist, omega=None,
     ----------------
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
-        `config.defaults['bode.grid']`.
+        `config.defaults['freqplot.grid']`.
     initial_phase : float
         Set the reference phase to use for the lowest frequency.  If set, the
         initial phase of the Bode plot will be set to the value closest to the
@@ -149,7 +145,7 @@ def bode_plot(syslist, omega=None,
         phase will be restricted to the range [-180, 180) (or [:math:`-\\pi`,
         :math:`\\pi`) radians). If `wrap_phase` is specified as a float, the
         phase will be offset by 360 degrees if it falls below the specified
-        value.  Default to `False`, set by config.defaults['bode.wrap_phase'].
+        value. Default to `False`, set by config.defaults['freqplot.wrap_phase'].
 
     The default values for Bode plot configuration parameters can be reset
     using the `config.defaults` dictionary, with module name 'bode'.
@@ -172,7 +168,7 @@ def bode_plot(syslist, omega=None,
     >>> mag, phase, omega = bode(sys)
 
     """
-    # Make a copy of the kwargs dictonary since we will modify it
+    # Make a copy of the kwargs dictionary since we will modify it
     kwargs = dict(kwargs)
 
     # Check to see if legacy 'Plot' keyword was used
@@ -184,41 +180,28 @@ def bode_plot(syslist, omega=None,
         plot = kwargs.pop('Plot')
 
     # Get values for params (and pop from list to allow keyword use in plot)
-    dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
-    deg = config._get_param('bode', 'deg', kwargs, _bode_defaults, pop=True)
-    Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
-    grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
-    plot = config._get_param('bode', 'grid', plot, True)
-    margins = config._get_param('bode', 'margins', margins, False)
+    dB = config._get_param(
+        'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
+    deg = config._get_param(
+        'freqplot', 'deg', kwargs, _freqplot_defaults, pop=True)
+    Hz = config._get_param(
+        'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
+    grid = config._get_param(
+        'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
+    plot = config._get_param('freqplot', 'plot', plot, True)
+    margins = config._get_param(
+        'freqplot', 'margins', margins, False)
     wrap_phase = config._get_param(
-        'bode', 'wrap_phase', kwargs, _bode_defaults, pop=True)
+        'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
-        'bode', 'initial_phase', kwargs, None, pop=True)
-
+        'freqplot', 'initial_phase', kwargs, None, pop=True)
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     # If argument was a singleton, turn it into a tuple
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # Decide whether to go above Nyquist frequency
-    omega_range_given = True if omega is not None else False
-
-    if omega is None:
-        omega_num = config._get_param(
-            'freqplot', 'number_of_samples', omega_num)
-        if omega_limits is None:
-            # Select a default range if none is provided
-            omega = _default_frequency_range(syslist,
-                                             number_of_samples=omega_num)
-        else:
-            omega_range_given = True
-            omega_limits = np.asarray(omega_limits)
-            if len(omega_limits) != 2:
-                raise ValueError("len(omega_limits) must be 2")
-            if Hz:
-                omega_limits *= 2. * math.pi
-            omega = np.logspace(np.log10(omega_limits[0]),
-                                np.log10(omega_limits[1]), num=omega_num,
-                                endpoint=True)
+    omega, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num)
 
     if plot:
         # Set up the axes with labels so that multiple calls to
@@ -955,9 +938,12 @@ def gangof4_plot(P, C, omega=None, **kwargs):
             "Gang of four is currently only implemented for SISO systems.")
 
     # Get the default parameter values
-    dB = config._get_param('bode', 'dB', kwargs, _bode_defaults, pop=True)
-    Hz = config._get_param('bode', 'Hz', kwargs, _bode_defaults, pop=True)
-    grid = config._get_param('bode', 'grid', kwargs, _bode_defaults, pop=True)
+    dB = config._get_param(
+        'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
+    Hz = config._get_param(
+        'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
+    grid = config._get_param(
+        'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
 
     # Compute the senstivity functions
     L = P * C
@@ -1039,13 +1025,236 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 
     plt.tight_layout()
 
+#
+# Singular values plot
+#
 
+
+def singular_values_plot(syslist, omega=None,
+                         plot=True, omega_limits=None, omega_num=None,
+                         *args, **kwargs):
+    """Singular value plot for a system
+
+    Plots a Singular Value plot for the system over a (optional) frequency range.
+
+    Parameters
+    ----------
+    syslist : linsys
+        List of linear systems (single system is OK).
+    omega : array_like
+        List of frequencies in rad/sec to be used for frequency response.
+    plot : bool
+        If True (default), generate the singular values plot.
+    omega_limits : array_like of two values
+        Limits of the frequency vector to generate.
+        If Hz=True the limits are in Hz otherwise in rad/s.
+    omega_num : int
+        Number of samples to plot.
+        Default value (1000) set by config.defaults['freqplot.number_of_samples'].
+    dB : bool
+        If True, plot result in dB.
+        Default value (False) set by config.defaults['freqplot.dB'].
+    Hz : bool
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
+        Default value (False) set by config.defaults['freqplot.Hz']
+
+    Returns
+    -------
+    sigma : ndarray (or list of ndarray if len(syslist) > 1))
+        singular values
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
+        frequency in rad/sec
+
+    Other Parameters
+    ----------------
+    grid : bool
+        If True, plot grid lines on gain and phase plots.  Default is set by
+        `config.defaults['freqplot.grid']`.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> den = [75, 1]
+    >>> sys = TransferFunction([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
+    >>> omega = np.logspace(-4, 1, 1000)
+    >>> sigma, omega = singular_values_plot(sys, plot=True)
+    >>> singular_values_plot(sys, 0.0, plot=False)
+    (array([[197.20868123],
+           [  1.39141948]]), array([0.]))
+
+    """
+
+    # Make a copy of the kwargs dictionary since we will modify it
+    kwargs = dict(kwargs)
+
+    # Get values for params (and pop from list to allow keyword use in plot)
+    dB = config._get_param(
+        'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
+    Hz = config._get_param(
+        'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
+    grid = config._get_param(
+        'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
+    plot = config._get_param(
+        'freqplot', 'plot', plot, True)
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+
+    # If argument was a singleton, turn it into a tuple
+    if not hasattr(syslist, '__iter__'):
+        syslist = (syslist,)
+
+    omega, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num)
+
+    omega = np.atleast_1d(omega)
+
+    if plot:
+        fig = plt.gcf()
+        ax_sigma = None
+
+        # Get the current axes if they already exist
+        for ax in fig.axes:
+            if ax.get_label() == 'control-sigma':
+                ax_sigma = ax
+
+        # If no axes present, create them from scratch
+        if ax_sigma is None:
+            plt.clf()
+            ax_sigma = plt.subplot(111, label='control-sigma')
+
+        # color cycle handled manually as all singular values
+        # of the same systems are expected to be of the same color
+        color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        color_offset = 0
+        if len(ax_sigma.lines) > 0:
+            last_color = ax_sigma.lines[-1].get_color()
+            if last_color in color_cycle:
+                color_offset = color_cycle.index(last_color) + 1
+
+    sigmas, omegas, nyquistfrqs = [], [], []
+    for idx_sys, sys in enumerate(syslist):
+        omega_sys = np.asarray(omega)
+        if sys.isdtime(strict=True):
+            nyquistfrq = math.pi / sys.dt
+            if not omega_range_given:
+                # limit up to and including nyquist frequency
+                omega_sys = np.hstack((
+                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+
+            omega_complex = np.exp(1j * omega_sys * sys.dt)
+        else:
+            nyquistfrq = None
+            omega_complex = 1j*omega_sys
+
+        fresp = sys(omega_complex, squeeze=False)
+
+        fresp = fresp.transpose((2, 0, 1))
+        sigma = np.linalg.svd(fresp, compute_uv=False)
+
+        sigmas.append(sigma.transpose())  # return shape is "channel first"
+        omegas.append(omega_sys)
+        nyquistfrqs.append(nyquistfrq)
+
+        if plot:
+            color = color_cycle[(idx_sys + color_offset) % len(color_cycle)]
+            color = kwargs.pop('color', color)
+
+            nyquistfrq_plot = None
+            if Hz:
+                omega_plot = omega_sys / (2. * math.pi)
+                if nyquistfrq:
+                    nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+            else:
+                omega_plot = omega_sys
+                if nyquistfrq:
+                    nyquistfrq_plot = nyquistfrq
+            sigma_plot = sigma
+
+            if dB:
+                ax_sigma.semilogx(omega_plot, 20 * np.log10(sigma_plot),
+                                  color=color, *args, **kwargs)
+            else:
+                ax_sigma.loglog(omega_plot, sigma_plot,
+                                color=color, *args, **kwargs)
+
+            if nyquistfrq_plot is not None:
+                ax_sigma.axvline(x=nyquistfrq_plot, color=color)
+
+    # Add a grid to the plot + labeling
+    if plot:
+        ax_sigma.grid(grid, which='both')
+        ax_sigma.set_ylabel("Singular Values (dB)" if dB else "Singular Values")
+        ax_sigma.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+
+    if len(syslist) == 1:
+        return sigmas[0], omegas[0]
+    else:
+        return sigmas, omegas
 #
 # Utility functions
 #
 # This section of the code contains some utility functions for
 # generating frequency domain plots
 #
+
+
+# Determine the frequency range to be used
+def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
+    """Determine the frequency range for a frequency-domain plot
+    according to a standard logic.
+
+    If omega_in and omega_limits are both None, then omega_out is computed
+    on omega_num points according to a default logic defined by
+    _default_frequency_range and tailored for the list of systems syslist, and
+    omega_range_given is set to False.
+    If omega_in is None but omega_limits is an array-like of 2 elements, then
+    omega_out is computed with the function np.logspace on omega_num points
+    within the interval [min, max] =  [omega_limits[0], omega_limits[1]], and
+    omega_range_given is set to True.
+    If omega_in is not None, then omega_out is set to omega_in,
+    and omega_range_given is set to True
+
+    Parameters
+    ----------
+    syslist : list of LTI
+        List of linear input/output systems (single system is OK)
+    omega_in : 1D array_like or None
+        Frequency range specified by the user
+    omega_limits : 1D array_like or None
+        Frequency limits specified by the user
+    omega_num : int
+        Number of points to be used for the frequency
+        range (if the frequency range is not user-specified)
+
+    Returns
+    -------
+    omega_out : 1D array
+        Frequency range to be used
+    omega_range_given : bool
+        True if the frequency range was specified by the user, either through
+        omega_in or through omega_limits. False if both omega_in
+        and omega_limits are None.
+    """
+
+    # Decide whether to go above Nyquist frequency
+    omega_range_given = True if omega_in is not None else False
+
+    if omega_in is None:
+        if omega_limits is None:
+            # Select a default range if none is provided
+            omega_out = _default_frequency_range(syslist,
+                                                 number_of_samples=omega_num)
+        else:
+            omega_range_given = True
+            omega_limits = np.asarray(omega_limits)
+            if len(omega_limits) != 2:
+                raise ValueError("len(omega_limits) must be 2")
+            omega_out = np.logspace(np.log10(omega_limits[0]),
+                                    np.log10(omega_limits[1]),
+                                    num=omega_num, endpoint=True)
+    else:
+        omega_out = np.copy(omega_in)
+    return omega_out, omega_range_given
+
 
 # Compute reasonable defaults for axes
 def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
