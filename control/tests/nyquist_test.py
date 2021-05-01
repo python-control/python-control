@@ -10,9 +10,10 @@ from ipython to generate plots interactively.
 
 import pytest
 import numpy as np
-import scipy as sp
 import matplotlib.pyplot as plt
 import control as ct
+
+pytestmark = pytest.mark.usefixtures("mplcleanup")
 
 
 # Utility function for counting unstable poles of open loop (P in FBS)
@@ -34,7 +35,6 @@ def _Z(sys):
 
 
 # Basic tests
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_basic():
     # Simple Nyquist plot
     sys = ct.rss(5, 1, 1)
@@ -109,7 +109,6 @@ def test_nyquist_basic():
 
 
 # Some FBS examples, for comparison
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_fbs_examples():
     s = ct.tf('s')
 
@@ -151,7 +150,6 @@ def test_nyquist_fbs_examples():
     1, 2, 3, 4,                 # specified number of arrows
     [0.1, 0.5, 0.9],            # specify arc lengths
 ])
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_arrows(arrows):
     sys = ct.tf([1.4], [1, 2, 1]) * ct.tf(*ct.pade(1, 4))
     plt.figure();
@@ -160,7 +158,6 @@ def test_nyquist_arrows(arrows):
     assert _Z(sys) == count + _P(sys)
 
 
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_encirclements():
     # Example 14.14: effect of friction in a cart-pendulum system
     s = ct.tf('s')
@@ -185,7 +182,6 @@ def test_nyquist_encirclements():
     assert _Z(sys) == count + _P(sys)
 
 
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_indent():
     # FBS Figure 10.10
     s = ct.tf('s')
