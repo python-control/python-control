@@ -675,26 +675,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # Decide whether to go above Nyquist frequency
-    omega_range_given = True if omega is not None else False
-
-    # Figure out the frequency limits
-    if omega is None:
-        if omega_limits is None:
-            # Select a default range if none is provided
-            omega = _default_frequency_range(
-                syslist, number_of_samples=omega_num)
-
-            # Replace first point with the origin
-            omega[0] = 0
-        else:
-            omega_range_given = True
-            omega_limits = np.asarray(omega_limits)
-            if len(omega_limits) != 2:
-                raise ValueError("len(omega_limits) must be 2")
-            omega = np.logspace(np.log10(omega_limits[0]),
-                                np.log10(omega_limits[1]), num=omega_num,
-                                endpoint=True)
+    omega, omega_range_given = _determine_omega_vector(syslist,
+                                                       omega,
+                                                       omega_limits,
+                                                       omega_num)
+    if not omega_range_given:
+        # Replace first point with the origin
+        omega[0] = 0
 
     # Go through each system and keep track of the results
     counts, contours = [], []
@@ -1235,16 +1222,15 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
         and omega_limits are None.
     """
 
-    # Decide whether to go above Nyquist frequency
-    omega_range_given = True if omega_in is not None else False
+    omega_range_given = True
 
     if omega_in is None:
         if omega_limits is None:
+            omega_range_given = False
             # Select a default range if none is provided
             omega_out = _default_frequency_range(syslist,
                                                  number_of_samples=omega_num)
         else:
-            omega_range_given = True
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
                 raise ValueError("len(omega_limits) must be 2")
