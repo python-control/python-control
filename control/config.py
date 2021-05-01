@@ -7,6 +7,8 @@
 # files.  For now, you can just choose between MATLAB and FBS default
 # values + tweak a few other things.
 
+
+import collections
 import warnings
 
 __all__ = ['defaults', 'set_defaults', 'reset_defaults',
@@ -22,7 +24,14 @@ _control_defaults = {
 }
 
 
-class DefaultDict(dict):
+class DefaultDict(collections.UserDict):
+    """Map names for settings from older version to their renamed ones.
+
+    If a user wants to write to an old setting, issue a warning and write to
+    the renamed setting instead. Accessing the old setting returns the value
+    from the new name.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -30,24 +39,20 @@ class DefaultDict(dict):
         super().__setitem__(self._check_deprecation(key), value)
 
     def __missing__(self, key):
+        # An old key should never have been set. If it is being accessed
+        # through __getitem__, return the value from the new name.
         repl = self._check_deprecation(key)
         if self.__contains__(repl):
             return self[repl]
         else:
-            raise KeyError
-
-    def copy(self):
-        return DefaultDict(self)
-
-    def get(self, key, default=None):
-        return super().get(self._check_deprecation(key), default)
+            raise KeyError(key)
 
     def _check_deprecation(self, key):
         if self.__contains__(f"deprecated.{key}"):
             repl = self[f"deprecated.{key}"]
             warnings.warn(f"config.defaults['{key}'] has been renamed to "
                           f"config.defaults['{repl}'].",
-                          DeprecationWarning)
+                          FutureWarning, stacklevel=3)
             return repl
         else:
             return key
