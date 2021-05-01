@@ -14,9 +14,6 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import control as ct
 
-# In interactive mode, turn on ipython interactive graphics
-plt.ion()
-
 
 # Utility function for counting unstable poles of open loop (P in FBS)
 def _P(sys, indent='right'):
@@ -255,34 +252,38 @@ def test_nyquist_exceptions():
         ct.nyquist_plot(sys, np.logspace(-2, 3))
 
 
-#
-# Interactive mode: generate plots for manual viewing
-#
-# Running this script in python (or better ipython) will show a collection of
-# figures that should all look OK on the screeen.
-#
+if __name__ == "__main__":
+    #
+    # Interactive mode: generate plots for manual viewing
+    #
+    # Running this script in python (or better ipython) will show a collection of
+    # figures that should all look OK on the screeen.
+    #
 
-# Start by clearing existing figures
-plt.close('all')
+    # In interactive mode, turn on ipython interactive graphics
+    plt.ion()
 
-print("Nyquist examples from FBS")
-test_nyquist_fbs_examples()
+    # Start by clearing existing figures
+    plt.close('all')
 
-print("Arrow test")
-test_nyquist_arrows(None)
-test_nyquist_arrows(1)
-test_nyquist_arrows(3)
-test_nyquist_arrows([0.1, 0.5, 0.9])
+    print("Nyquist examples from FBS")
+    test_nyquist_fbs_examples()
 
-print("Stability checks")
-test_nyquist_encirclements()
+    print("Arrow test")
+    test_nyquist_arrows(None)
+    test_nyquist_arrows(1)
+    test_nyquist_arrows(3)
+    test_nyquist_arrows([0.1, 0.5, 0.9])
 
-print("Indentation checks")
-test_nyquist_indent()
+    print("Stability checks")
+    test_nyquist_encirclements()
 
-print("Unusual Nyquist plot")
-sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-plt.figure()
-plt.title("Poles: %s" % np.array2string(sys.pole(), precision=2, separator=','))
-count = ct.nyquist_plot(sys)
-assert _Z(sys) == count + _P(sys)
+    print("Indentation checks")
+    test_nyquist_indent()
+
+    print("Unusual Nyquist plot")
+    sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
+    plt.figure()
+    plt.title("Poles: %s" % np.array2string(sys.pole(), precision=2, separator=','))
+    count = ct.nyquist_plot(sys)
+    assert _Z(sys) == count + _P(sys)
