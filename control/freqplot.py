@@ -68,7 +68,15 @@ _freqplot_defaults = {
     'freqplot.Hz': False,  # Plot frequency in Hertz
     'freqplot.grid': True,  # Turn on grid for gain and phase
     'freqplot.wrap_phase': False,  # Wrap the phase plot at a given value
+
+    # deprecations
+    'deprecated.bode.dB': 'freqplot.dB',
+    'deprecated.bode.deg': 'freqplot.deg',
+    'deprecated.bode.Hz': 'freqplot.Hz',
+    'deprecated.bode.grid': 'freqplot.grid',
+    'deprecated.bode.wrap_phase': 'freqplot.wrap_phase',
 }
+
 
 #
 # Main plotting functions

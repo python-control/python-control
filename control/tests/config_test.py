@@ -49,6 +49,49 @@ class TestConfig:
 
         assert ct.config._get_param('config', 'test4', {'test4': 1}, None) == 1
 
+    def test_default_deprecation(self):
+        ct.config.defaults['deprecated.config.oldkey'] = 'config.newkey'
+        ct.config.defaults['deprecated.config.oldmiss'] = 'config.newmiss'
+
+        msgpattern = r'config\.oldkey.* has been renamed to .*config\.newkey'
+
+        ct.config.defaults['config.newkey'] = 1
+        with pytest.warns(FutureWarning, match=msgpattern):
+            assert ct.config.defaults['config.oldkey'] == 1
+        with pytest.warns(FutureWarning, match=msgpattern):
+            ct.config.defaults['config.oldkey'] = 2
+        with pytest.warns(FutureWarning, match=msgpattern):
+            assert ct.config.defaults['config.oldkey'] == 2
+        assert ct.config.defaults['config.newkey'] == 2
+
+        ct.config.set_defaults('config', newkey=3)
+        with pytest.warns(FutureWarning, match=msgpattern):
+            assert ct.config._get_param('config', 'oldkey') == 3
+        with pytest.warns(FutureWarning, match=msgpattern):
+            ct.config.set_defaults('config', oldkey=4)
+        with pytest.warns(FutureWarning, match=msgpattern):
+            assert ct.config.defaults['config.oldkey'] == 4
+        assert ct.config.defaults['config.newkey'] == 4
+
+        ct.config.defaults.update({'config.newkey': 5})
+        with pytest.warns(FutureWarning, match=msgpattern):
+            ct.config.defaults.update({'config.oldkey': 6})
+        with pytest.warns(FutureWarning, match=msgpattern):
+            assert ct.config.defaults.get('config.oldkey') == 6
+
+        with pytest.raises(KeyError):
+            with pytest.warns(FutureWarning, match=msgpattern):
+                ct.config.defaults['config.oldmiss']
+        with pytest.raises(KeyError):
+            ct.config.defaults['config.neverdefined']
+
+        # assert that reset defaults keeps the custom type
+        ct.config.reset_defaults()
+        with pytest.warns(FutureWarning,
+                          match='bode.* has been renamed to.*freqplot'):
+            assert ct.config.defaults['bode.Hz'] \
+                == ct.config.defaults['freqplot.Hz']
+
     @mplcleanup
     def test_fbs_bode(self):
         ct.use_fbs_defaults()
