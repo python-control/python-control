@@ -12,6 +12,7 @@ these directly.
 		   
 .. autosummary::
    :toctree: generated/
+   :recursive:
 
    TransferFunction
    StateSpace

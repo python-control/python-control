@@ -7,6 +7,7 @@ Optimal control
 .. automodule:: control.optimal
    :no-members:
    :no-inherited-members:
+   :no-special-members:
 
 Problem setup
 =============

@@ -7,6 +7,7 @@ Differentially flat systems
 .. automodule:: control.flatsys
    :no-members:
    :no-inherited-members:
+   :no-special-members:
 
 Overview of differential flatness
 =================================

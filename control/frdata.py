@@ -77,13 +77,35 @@ class FrequencyResponseData(LTI):
     above, i.e. the rows represent the outputs and the columns
     represent the inputs.
 
+    A frequency response data object is callable and returns the value of the
+    transfer function evaluated at a point in the complex plane (must be on
+    the imaginary access).  See :meth:`~control.FrequencyResponseData.__call__`
+    for a more detailed description.
+
     """
 
     # Allow NDarray * StateSpace to give StateSpace._rmul_() priority
     # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html
     __array_priority__ = 11     # override ndarray and matrix types
 
-    epsw = 1e-8
+    #
+    # Class attributes
+    #
+    # These attributes are defined as class attributes so that they are
+    # documented properly.  They are "overwritten" in __init__.
+    #
+
+    #: Number of system inputs.
+    #:
+    #: :meta hide-value:
+    ninputs = 1
+
+    #: Number of system outputs.
+    #:
+    #: :meta hide-value:
+    noutputs = 1
+
+    _epsw = 1e-8                #: Bound for exact frequency match
 
     def __init__(self, *args, **kwargs):
         """Construct an FRD object.
@@ -141,7 +163,8 @@ class FrequencyResponseData(LTI):
             self.omega = args[0].omega
             self.fresp = args[0].fresp
         else:
-            raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
+            raise ValueError(
+                "Needs 1 or 2 arguments; received %i." % len(args))
 
         # create interpolation functions
         if smooth:
@@ -378,7 +401,7 @@ second has %i." % (self.noutputs, other.noutputs))
             then single-dimensional axes are removed.
 
         """
-        omega_array = np.array(omega, ndmin=1) # array-like version of omega
+        omega_array = np.array(omega, ndmin=1)  # array-like version of omega
 
         # Make sure that we are operating on a simple list
         if len(omega_array.shape) > 1:
@@ -389,7 +412,7 @@ second has %i." % (self.noutputs, other.noutputs))
             raise ValueError("FRD.eval can only accept real-valued omega")
 
         if self.ifunc is None:
-            elements = np.isin(self.omega, omega) # binary array
+            elements = np.isin(self.omega, omega)  # binary array
             if sum(elements) < len(omega_array):
                 raise ValueError(
                     "not all frequencies omega are in frequency list of FRD "
@@ -398,7 +421,7 @@ second has %i." % (self.noutputs, other.noutputs))
                 out = self.fresp[:, :, elements]
         else:
             out = empty((self.noutputs, self.ninputs, len(omega_array)),
-                         dtype=complex)
+                        dtype=complex)
             for i in range(self.noutputs):
                 for j in range(self.ninputs):
                     for k, w in enumerate(omega_array):
@@ -416,6 +439,9 @@ second has %i." % (self.noutputs, other.noutputs))
 
         To evaluate at a frequency omega in radians per second, enter
         ``s = omega * 1j`` or use ``sys.eval(omega)``
+
+        For a frequency response data object, the argument must be an
+        imaginary number (since only the frequency response is defined).
 
         Parameters
         ----------
@@ -444,6 +470,7 @@ second has %i." % (self.noutputs, other.noutputs))
             If `s` is not purely imaginary, because
             :class:`FrequencyDomainData` systems are only defined at imaginary
             frequency values.
+
         """
         # Make sure that we are operating on a simple list
         if len(np.atleast_1d(s).shape) > 1:
@@ -451,7 +478,7 @@ second has %i." % (self.noutputs, other.noutputs))
 
         if any(abs(np.atleast_1d(s).real) > 0):
             raise ValueError("__call__: FRD systems can only accept "
-                            "purely imaginary frequencies")
+                             "purely imaginary frequencies")
 
         # need to preserve array or scalar status
         if hasattr(s, '__len__'):
@@ -510,6 +537,7 @@ second has %i." % (self.noutputs, other.noutputs))
 # fixes this problem.
 #
 
+
 FRD = FrequencyResponseData
 
 
@@ -534,7 +562,7 @@ def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
     if isinstance(sys, FRD):
         omega.sort()
         if len(omega) == len(sys.omega) and \
-           (abs(omega - sys.omega) < FRD.epsw).all():
+           (abs(omega - sys.omega) < FRD._epsw).all():
             # frequencies match, and system was already frd; simply use
             return sys
 

@@ -72,6 +72,7 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 # Define module default parameter values
 _xferfcn_defaults = {}
 
+
 class TransferFunction(LTI):
     """TransferFunction(num, den[, dt])
 
@@ -105,6 +106,10 @@ class TransferFunction(LTI):
     The default value of dt can be changed by changing the value of
     ``control.config.defaults['control.default_dt']``.
 
+    A transfer function is callable and returns the value of the transfer
+    function evaluated at a point in the complex plane.  See
+    :meth:`~control.TransferFunction.__call__` for a more detailed description.
+
     The TransferFunction class defines two constants ``s`` and ``z`` that
     represent the differentiation and delay operators in continuous and
     discrete time.  These can be used to create variables that allow algebraic
@@ -112,6 +117,7 @@ class TransferFunction(LTI):
 
     >>> s = TransferFunction.s
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
+
     """
 
     # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
@@ -233,6 +239,45 @@ class TransferFunction(LTI):
                 else:
                     dt = config.defaults['control.default_dt']
         self.dt = dt
+
+    #
+    # Class attributes
+    #
+    # These attributes are defined as class attributes so that they are
+    # documented properly.  They are "overwritten" in __init__.
+    #
+
+    #: Number of system inputs.
+    #:
+    #: :meta hide-value:
+    ninputs = 1
+
+    #: Number of system outputs.
+    #:
+    #: :meta hide-value:
+    noutputs = 1
+
+    #: Transfer function numerator polynomial (array)
+    #:
+    #: The numerator of the transfer function is store as an 2D list of
+    #: arrays containing MIMO numerator coefficients, indexed by outputs and
+    #: inputs.  For example, ``num[2][5]`` is the array of coefficients for
+    #: the numerator of the transfer function from the sixth input to the
+    #: third output.
+    #:
+    #: :meta hide-value:
+    num = [[0]]
+
+    #: Transfer function denominator polynomial (array)
+    #:
+    #: The numerator of the transfer function is store as an 2D list of
+    #: arrays containing MIMO numerator coefficients, indexed by outputs and
+    #: inputs.  For example, ``den[2][5]`` is the array of coefficients for
+    #: the denominator of the transfer function from the sixth input to the
+    #: third output.
+    #:
+    #: :meta hide-value:
+    den = [[0]]
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's transfer function at complex frequencies.
@@ -390,11 +435,13 @@ class TransferFunction(LTI):
         if self.issiso():
             return "TransferFunction({num}, {den}{dt})".format(
                 num=self.num[0][0].__repr__(), den=self.den[0][0].__repr__(),
-                dt=(isdtime(self, strict=True) and ', {}'.format(self.dt)) or '')
+                dt=', {}'.format(self.dt) if isdtime(self, strict=True)
+                else '')
         else:
             return "TransferFunction({num}, {den}{dt})".format(
                 num=self.num.__repr__(), den=self.den.__repr__(),
-                dt=(isdtime(self, strict=True) and ', {}'.format(self.dt)) or '')
+                dt=', {}'.format(self.dt) if isdtime(self, strict=True)
+                else '')
 
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook"""
@@ -1047,7 +1094,7 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        if (method=='bilinear' or (method=='gbt' and alpha==0.5)) and \
+        if (method == 'bilinear' or (method == 'gbt' and alpha == 0.5)) and \
                 prewarp_frequency is not None:
             Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
         else:
@@ -1084,15 +1131,45 @@ class TransferFunction(LTI):
         return self._dcgain(warn_infinite)
 
     def _isstatic(self):
-         """returns True if and only if all of the numerator and denominator
-         polynomials of the (possibly MIMO) transfer function are zeroth order,
-         that is, if the system has no dynamics. """
-         for list_of_polys in self.num, self.den:
-             for row in list_of_polys:
-                 for poly in row:
-                     if len(poly) > 1:
-                         return False
-         return True
+        """returns True if and only if all of the numerator and denominator
+        polynomials of the (possibly MIMO) transfer function are zeroth order,
+        that is, if the system has no dynamics. """
+        for list_of_polys in self.num, self.den:
+            for row in list_of_polys:
+                for poly in row:
+                    if len(poly) > 1:
+                        return False
+        return True
+
+    # Attributes for differentiation and delay
+    #
+    # These attributes are created here with sphinx docstrings so that the
+    # autodoc generated documentation has a description.  The actual values of
+    # the class attributes are set at the bottom of the file to avoid problems
+    # with recursive calls.
+
+    #: Differentation operator (continuous time)
+    #:
+    #: The ``s`` constant can be used to create continuous time transfer
+    #: functions using algebraic expressions.
+    #:
+    #: Example
+    #: -------
+    #: >>> s = TransferFunction.s
+    #: >>> G  = (s + 1)/(s**2 + 2*s + 1)
+    s = None
+
+    #: Delay operator (discrete time)
+    #:
+    #: The ``z`` constant can be used to create discrete time transfer
+    #: functions using algebraic expressions.
+    #:
+    #: Example
+    #: -------
+    #: >>> z = TransferFunction.z
+    #: >>> G  = 2 * z / (4 * z**3 + 3*z - 1)
+    z = None
+
 
 # c2d function contributed by Benjamin White, Oct 2012
 def _c2d_matched(sysC, Ts):
@@ -1297,7 +1374,7 @@ def _convert_to_transfer_function(sys, **kw):
         num = [[[D[i, j]] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
         return TransferFunction(num, den)
-    except:
+    except Exception:
         raise TypeError("Can't convert given type to TransferFunction system.")
 
 
@@ -1562,6 +1639,7 @@ def _clean_part(data):
                     data[i][j][k] = float(data[i][j][k])
 
     return data
+
 
 # Define constants to represent differentiation, unit delay
 TransferFunction.s = TransferFunction([1, 0], [1], 0)

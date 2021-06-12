@@ -95,11 +95,10 @@ class InputOutputSystem(object):
         Dictionary of signal names for the inputs, outputs and states and the
         index of the corresponding array
     dt : None, True or float
-        System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
-        time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time).
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
@@ -120,12 +119,12 @@ class InputOutputSystem(object):
 
     """
 
-    idCounter = 0
+    _idCounter = 0
 
     def name_or_default(self, name=None):
         if name is None:
-            name = "sys[{}]".format(InputOutputSystem.idCounter)
-            InputOutputSystem.idCounter += 1
+            name = "sys[{}]".format(InputOutputSystem._idCounter)
+            InputOutputSystem._idCounter += 1
         return name
 
     def __init__(self, inputs=None, outputs=None, states=None, params={},
@@ -186,6 +185,28 @@ class InputOutputSystem(object):
         self.set_inputs(inputs)
         self.set_outputs(outputs)
         self.set_states(states)
+
+    #
+    # Class attributes
+    #
+    # These attributes are defined as class attributes so that they are
+    # documented properly.  They are "overwritten" in __init__.
+    #
+
+    #: Number of system inputs.
+    #:
+    #: :meta hide-value:
+    ninputs = 0
+
+    #: Number of system outputs.
+    #:
+    #: :meta hide-value:
+    noutputs = 0
+
+    #: Number of system states.
+    #:
+    #: :meta hide-value:
+    nstates = 0
 
     def __repr__(self):
         return self.name if self.name is not None else str(type(self))
@@ -750,6 +771,17 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             states if states is not None else linsys.nstates, prefix='x')
         if nstates is not None and linsys.nstates != nstates:
             raise ValueError("Wrong number/type of states given.")
+
+    # The following text needs to be replicated from StateSpace in order for
+    # this entry to show up properly in sphinx doccumentation (not sure why,
+    # but it was the only way to get it to work).
+    #
+    #: Deprecated attribute; use :attr:`nstates` instead.
+    #:
+    #: The ``state`` attribute was used to store the number of states for : a
+    #: state space system.  It is no longer used.  If you need to access the
+    #: number of states, use :attr:`nstates`.
+    states = property(StateSpace._get_states, StateSpace._set_states)
 
     def _update_params(self, params={}, warning=True):
         # Parameters not supported; issue a warning
@@ -1472,6 +1504,17 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
 
         else:
             raise TypeError("Second argument must be a state space system.")
+
+    # The following text needs to be replicated from StateSpace in order for
+    # this entry to show up properly in sphinx doccumentation (not sure why,
+    # but it was the only way to get it to work).
+    #
+    #: Deprecated attribute; use :attr:`nstates` instead.
+    #:
+    #: The ``state`` attribute was used to store the number of states for : a
+    #: state space system.  It is no longer used.  If you need to access the
+    #: number of states, use :attr:`nstates`.
+    states = property(StateSpace._get_states, StateSpace._set_states)
 
 
 def input_output_response(
