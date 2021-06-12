@@ -790,17 +790,17 @@ class NonlinearIOSystem(InputOutputSystem):
         updfcn : callable
             Function returning the state update function
 
-                `updfcn(t, x, u[, param]) -> array`
+                `updfcn(t, x, u, params) -> array`
 
             where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
             with shape (ninputs,), `t` is a float representing the currrent
-            time, and `param` is an optional dict containing the values of
-            parameters used by the function.
+            time, and `params` is a dict containing the values of parameters
+            used by the function.
 
         outfcn : callable
             Function returning the output at the given state
 
-                `outfcn(t, x, u[, param]) -> array`
+                `outfcn(t, x, u, params) -> array`
 
             where the arguments are the same as for `upfcn`.
 
