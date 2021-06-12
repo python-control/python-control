@@ -76,11 +76,38 @@ _xferfcn_defaults = {}
 class TransferFunction(LTI):
     """TransferFunction(num, den[, dt])
 
-    A class for representing transfer functions
+    A class for representing transfer functions.
 
     The TransferFunction class is used to represent systems in transfer
     function form.
 
+    Parameters
+    ----------
+    num : array_like, or list of list of array_like
+        Polynomial coefficients of the numerator
+    den : array_like, or list of list of array_like
+        Polynomial coefficients of the denominator
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time).
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    num, den : 2D list of array
+        Polynomial coeffients of the numerator and denominator.
+    dt : None, True or float
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
+
+    Notes
+    -----
     The main data members are 'num' and 'den', which are 2-D lists of arrays
     containing MIMO numerator and denominator coefficients.  For example,
 
@@ -259,7 +286,7 @@ class TransferFunction(LTI):
 
     #: Transfer function numerator polynomial (array)
     #:
-    #: The numerator of the transfer function is store as an 2D list of
+    #: The numerator of the transfer function is stored as an 2D list of
     #: arrays containing MIMO numerator coefficients, indexed by outputs and
     #: inputs.  For example, ``num[2][5]`` is the array of coefficients for
     #: the numerator of the transfer function from the sixth input to the
@@ -1157,6 +1184,8 @@ class TransferFunction(LTI):
     #: -------
     #: >>> s = TransferFunction.s
     #: >>> G  = (s + 1)/(s**2 + 2*s + 1)
+    #:
+    #: :meta hide-value:
     s = None
 
     #: Delay operator (discrete time)
@@ -1168,6 +1197,8 @@ class TransferFunction(LTI):
     #: -------
     #: >>> z = TransferFunction.z
     #: >>> G  = 2 * z / (4 * z**3 + 3*z - 1)
+    #:
+    #: :meta hide-value:
     z = None
 
 

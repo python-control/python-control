@@ -64,6 +64,29 @@ class FrequencyResponseData(LTI):
     The FrequencyResponseData (FRD) class is used to represent systems in
     frequency response data form.
 
+    Parameters
+    ----------
+    d : 1D or 3D complex array_like
+        The frequency response at each frequency point.  If 1D, the system is
+        assumed to be SISO.  If 3D, the system is MIMO, with the first
+        dimension corresponding to the output index of the FRD, the second
+        dimension corresponding to the input index, and the 3rd dimension
+        corresponding to the frequency points in omega
+    w : iterable of real frequencies
+        List of frequency points for which data are available.
+    smooth : bool, optional
+        If ``True``, create an interpoloation function that allows the
+        frequency response to be computed at any frequency within the range of
+        frquencies give in ``w``.  If ``False`` (default), frequency response
+        can only be obtained at the frequencies specified in ``w``.
+
+    Attributes
+    ----------
+    ninputs, noutputs : int
+        Number of input and output variables.
+
+    Notes
+    -----
     The main data members are 'omega' and 'fresp', where `omega` is a 1D array
     with the frequency points of the response, and `fresp` is a 3D array, with
     the first dimension corresponding to the output index of the FRD, the

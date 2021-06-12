@@ -12,7 +12,7 @@ these directly.
 		   
 .. autosummary::
    :toctree: generated/
-   :recursive:
+   :template: custom-class-template.rst
 
    TransferFunction
    StateSpace
@@ -26,6 +26,7 @@ that allow for linear, nonlinear, and interconnected elements:
 
 .. autosummary::
    :toctree: generated/
+   :template: custom-class-template.rst
 
    InterconnectedSystem
    LinearICSystem
@@ -35,6 +36,7 @@ that allow for linear, nonlinear, and interconnected elements:
 Additional classes
 ==================
 .. autosummary::
+   :template: custom-class-template.rst
 
    flatsys.BasisFamily
    flatsys.FlatSystem

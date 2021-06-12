@@ -79,6 +79,7 @@ Module classes and functions
 ============================
 .. autosummary::
    :toctree: generated/
+   :template: custom-class-template.rst
 
    ~control.DescribingFunctionNonlinearity
    ~control.friction_backlash_nonlinearity

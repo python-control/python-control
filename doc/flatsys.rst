@@ -260,6 +260,7 @@ Flat systems classes
 --------------------
 .. autosummary::
    :toctree: generated/
+   :template: custom-class-template.rst
 
    BasisFamily
    BezierFamily

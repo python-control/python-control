@@ -277,8 +277,13 @@ Module classes and functions
 ============================
 .. autosummary::
    :toctree: generated/
+   :template: custom-class-template.rst
 
    ~control.optimal.OptimalControlProblem
+
+.. autosummary::
+   :toctree: generated/
+
    ~control.optimal.solve_ocp
    ~control.optimal.create_mpc_iosystem
    ~control.optimal.input_poly_constraint

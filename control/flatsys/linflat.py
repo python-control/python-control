@@ -42,45 +42,52 @@ from ..iosys import LinearIOSystem
 
 
 class LinearFlatSystem(FlatSystem, LinearIOSystem):
+    """Base class for a linear, differentially flat system.
+
+    This class is used to create a differentially flat system representation
+    from a linear system.
+
+    Parameters
+    ----------
+    linsys : StateSpace
+        LTI StateSpace system to be converted
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.
+        If an integer count is specified, the names of the signal will be
+        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        this parameter is not given or given as `None`, the relevant
+        quantity will be determined when possible based on other
+        information provided to functions using the system.
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`.
+    dt : None, True or float, optional
+        System timebase.  None (default) indicates continuous
+        time, True indicates discrete time with undefined sampling
+        time, positive number is discrete time with specified
+        sampling time.
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+    name : string, optional
+        System name (used for specifying signals)
+
+    Returns
+    -------
+    iosys : LinearFlatSystem
+        Linear system represented as an flat input/output system
+
+    """
+
     def __init__(self, linsys, inputs=None, outputs=None, states=None,
                  name=None):
         """Define a flat system from a SISO LTI system.
 
         Given a reachable, single-input/single-output, linear time-invariant
         system, create a differentially flat system representation.
-
-        Parameters
-        ----------
-        linsys : StateSpace
-            LTI StateSpace system to be converted
-        inputs : int, list of str or None, optional
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-        outputs : int, list of str or None, optional
-            Description of the system outputs.  Same format as `inputs`.
-        states : int, list of str, or None, optional
-            Description of the system states.  Same format as `inputs`.
-        dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
-            time, positive number is discrete time with specified
-            sampling time.
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-        name : string, optional
-            System name (used for specifying signals)
-
-        Returns
-        -------
-        iosys : LinearFlatSystem
-            Linear system represented as an flat input/output system
 
         """
         # Make sure we can handle the system

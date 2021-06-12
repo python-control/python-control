@@ -24,13 +24,13 @@ __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
-    LTI is the parent to the StateSpace and TransferFunction child
-    classes. It contains the number of inputs and outputs, and the
-    timebase (dt) for the system.
+    LTI is the parent to the StateSpace and TransferFunction child classes. It
+    contains the number of inputs and outputs, and the timebase (dt) for the
+    system.  This function is not generally called directly by the user.
 
-    The timebase for the system, dt, is used to specify whether the
-    system is operating in continuous or discrete time.  It can have
-    the following values:
+    The timebase for the system, dt, is used to specify whether the system
+    is operating in continuous or discrete time. It can have the following
+    values:
 
       * dt = None       No timebase specified
       * dt = 0          Continuous time system

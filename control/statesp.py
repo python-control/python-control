@@ -160,7 +160,7 @@ def _f2s(f):
 class StateSpace(LTI):
     """StateSpace(A, B, C, D[, dt])
 
-    A class for representing state-space models
+    A class for representing state-space models.
 
     The StateSpace class is used to represent state-space realizations of
     linear time-invariant (LTI) systems:
@@ -170,13 +170,39 @@ class StateSpace(LTI):
 
     where u is the input, y is the output, and x is the state.
 
-    The main data members are the A, B, C, and D matrices.  The class also
-    keeps track of the number of states (i.e., the size of A).  The data
-    format used to store state space matrices is set using the value of
-    `config.defaults['use_numpy_matrix']`.  If True (default), the state space
-    elements are stored as `numpy.matrix` objects; otherwise they are
-    `numpy.ndarray` objects.  The :func:`~control.use_numpy_matrix` function
-    can be used to set the storage type.
+    Parameters
+    ----------
+    A, B, C, D: array_like
+        System matrices of the appropriate dimensions.
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time).
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    A, B, C, D : 2D arrays
+        System matrices defining the input/output dynamics.
+    dt : None, True or float
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
+
+    Notes
+    -----
+    The main data members in the ``StateSpace`` class are the A, B, C, and D
+    matrices.  The class also keeps track of the number of states (i.e.,
+    the size of A).  The data format used to store state space matrices is
+    set using the value of `config.defaults['use_numpy_matrix']`.  If True
+    (default), the state space elements are stored as `numpy.matrix` objects;
+    otherwise they are `numpy.ndarray` objects.  The
+    :func:`~control.use_numpy_matrix` function can be used to set the storage
+    type.
 
     A discrete time system is created by specifying a nonzero 'timebase', dt
     when the system is constructed:
