@@ -75,9 +75,9 @@ class FrequencyResponseData(LTI):
     w : iterable of real frequencies
         List of frequency points for which data are available.
     smooth : bool, optional
-        If ``True``, create an interpoloation function that allows the
+        If ``True``, create an interpolation function that allows the
         frequency response to be computed at any frequency within the range of
-        frquencies give in ``w``.  If ``False`` (default), frequency response
+        frequencies give in ``w``.  If ``False`` (default), frequency response
         can only be obtained at the frequencies specified in ``w``.
 
     Attributes

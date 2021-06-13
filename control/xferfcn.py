@@ -99,7 +99,7 @@ class TransferFunction(LTI):
     ninputs, noutputs, nstates : int
         Number of input, output and state variables.
     num, den : 2D list of array
-        Polynomial coeffients of the numerator and denominator.
+        Polynomial coefficients of the numerator and denominator.
     dt : None, True or float
         System timebase. 0 (default) indicates continuous time, True indicates
         discrete time with unspecified sampling time, positive number is
@@ -143,7 +143,7 @@ class TransferFunction(LTI):
     creation of transfer functions.  For example,
 
     >>> s = TransferFunction.s
-    >>> G  = (s + 1)/(s**2 + 2*s + 1)
+    >>> G = (s + 1)/(s**2 + 2*s + 1)
 
     """
 
