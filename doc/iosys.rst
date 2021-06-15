@@ -263,9 +263,9 @@ unconnected (so be careful!).
 Module classes and functions
 ============================
 
-Input/output system classes
----------------------------
 .. autosummary::
+   :toctree: generated/
+   :template: custom-class-template.rst
 
    ~control.InputOutputSystem
    ~control.InterconnectedSystem
@@ -273,9 +273,8 @@ Input/output system classes
    ~control.LinearIOSystem
    ~control.NonlinearIOSystem
 
-Input/output system functions
------------------------------
 .. autosummary::
+   :toctree: generated/
 
    ~control.find_eqpt
    ~control.linearize

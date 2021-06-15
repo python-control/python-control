@@ -108,13 +108,13 @@ class TransferFunction(LTI):
 
     Notes
     -----
-    The main data members are 'num' and 'den', which are 2-D lists of arrays
-    containing MIMO numerator and denominator coefficients.  For example,
+    The attribues 'num' and 'den' are 2-D lists of arrays containing MIMO
+    numerator and denominator coefficients.  For example,
 
     >>> num[2][5] = numpy.array([1., 4., 8.])
 
-    means that the numerator of the transfer function from the 6th input to the
-    3rd output is set to s^2 + 4s + 8.
+    means that the numerator of the transfer function from the 6th input to
+    the 3rd output is set to s^2 + 4s + 8.
 
     A discrete time transfer function is created by specifying a nonzero
     'timebase' dt when the system is constructed:

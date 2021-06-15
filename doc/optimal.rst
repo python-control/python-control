@@ -280,6 +280,7 @@ Module classes and functions
    :template: custom-class-template.rst
 
    ~control.optimal.OptimalControlProblem
+   ~control.optimal.OptimalControlResult
 
 .. autosummary::
    :toctree: generated/

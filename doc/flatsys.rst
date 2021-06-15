@@ -256,22 +256,18 @@ the endpoints.
 Module classes and functions
 ============================
 
-Flat systems classes
---------------------
 .. autosummary::
    :toctree: generated/
    :template: custom-class-template.rst
 
-   BasisFamily
-   BezierFamily
-   FlatSystem
-   LinearFlatSystem
-   PolyFamily
-   SystemTrajectory
+   ~control.flatsys.BasisFamily
+   ~control.flatsys.BezierFamily
+   ~control.flatsys.FlatSystem
+   ~control.flatsys.LinearFlatSystem
+   ~control.flatsys.PolyFamily
+   ~control.flatsys.SystemTrajectory
 
-Flat systems functions
-----------------------
 .. autosummary::
    :toctree: generated/
 
-   point_to_point
+   ~control.flatsys.point_to_point

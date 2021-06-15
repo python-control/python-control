@@ -57,9 +57,9 @@ __all__ = ['FrequencyResponseData', 'FRD', 'frd']
 
 
 class FrequencyResponseData(LTI):
-    """FrequencyResponseData(d, w)
+    """FrequencyResponseData(d, w[, smooth])
 
-    A class for models defined by frequency response data (FRD)
+    A class for models defined by frequency response data (FRD).
 
     The FrequencyResponseData (FRD) class is used to represent systems in
     frequency response data form.
@@ -84,13 +84,18 @@ class FrequencyResponseData(LTI):
     ----------
     ninputs, noutputs : int
         Number of input and output variables.
+    omega : 1D array
+        Frequency points of the response.
+    fresp : 3D array
+        Frequency response, indexed by output index, input index, and
+        frequency point.
 
     Notes
     -----
-    The main data members are 'omega' and 'fresp', where `omega` is a 1D array
-    with the frequency points of the response, and `fresp` is a 3D array, with
-    the first dimension corresponding to the output index of the FRD, the
-    second dimension corresponding to the input index, and the 3rd dimension
+    The main data members are 'omega' and 'fresp', where 'omega' is a the 1D
+    arran yf frequency points and and 'fresp' is a 3D array, with the first
+    dimension corresponding to the output index of the FRD, the second
+    dimension corresponding to the input index, and the 3rd dimension
     corresponding to the frequency points in omega.  For example,
 
     >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])

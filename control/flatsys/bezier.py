@@ -43,7 +43,7 @@ from scipy.special import binom, factorial
 from .basis import BasisFamily
 
 class BezierFamily(BasisFamily):
-    r"""Polynomial basis functions.
+    r"""Bezier curve basis functions.
 
     This class represents the family of polynomials of the form
 

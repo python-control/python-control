@@ -75,11 +75,6 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
     name : string, optional
         System name (used for specifying signals)
 
-    Returns
-    -------
-    iosys : LinearFlatSystem
-        Linear system represented as an flat input/output system
-
     """
 
     def __init__(self, linsys, inputs=None, outputs=None, states=None,

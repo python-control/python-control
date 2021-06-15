@@ -22,7 +22,7 @@ __all__ = ['find_optimal_input']
 
 
 class OptimalControlProblem():
-    """Description of a finite horizon, optimal control problem
+    """Description of a finite horizon, optimal control problem.
 
     The `OptimalControlProblem` class holds all of the information required to
     specify and optimal control problem: the system dynamics, cost function,
@@ -31,12 +31,64 @@ class OptimalControlProblem():
     `optimize.minimize` module, with the hope that this makes it easier to
     remember how to describe a problem.
 
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        I/O system for which the optimal input will be computed.
+    timepts : 1D array_like
+        List of times at which the optimal input should be computed.
+    integral_cost : callable
+        Function that returns the integral cost given the current state
+        and input.  Called as integral_cost(x, u).
+    trajectory_constraints : list of tuples, optional
+       List of constraints that should hold at each point in the time
+       vector.  Each element of the list should consist of a tuple with
+       first element given by :meth:`~scipy.optimize.LinearConstraint` or
+       :meth:`~scipy.optimize.NonlinearConstraint` and the remaining
+       elements of the tuple are the arguments that would be passed to
+       those functions.  The constraints will be applied at each time
+       point along the trajectory.
+    terminal_cost : callable, optional
+        Function that returns the terminal cost given the current state
+        and input.  Called as terminal_cost(x, u).
+    initial_guess : 1D or 2D array_like
+        Initial inputs to use as a guess for the optimal input.  The
+        inputs should either be a 2D vector of shape (ninputs, horizon)
+        or a 1D input of shape (ninputs,) that will be broadcast by
+        extension of the time axis.
+    log : bool, optional
+        If `True`, turn on logging messages (using Python logging module).
+    kwargs : dict, optional
+        Additional parameters (passed to :func:`scipy.optimal.minimize`).
+
+    Returns
+    -------
+    ocp : OptimalControlProblem
+        Optimal control problem object, to be used in computing optimal
+        controllers.
+
+    Additional parameters
+    ---------------------
+    solve_ivp_method : str, optional
+        Set the method used by :func:`scipy.integrate.solve_ivp`.
+    solve_ivp_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+    minimize_method : str, optional
+        Set the method used by :func:`scipy.optimize.minimize`.
+    minimize_options : str, optional
+        Set the options keyword used by :func:`scipy.optimize.minimize`.
+    minimize_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.optimize.minimize`.
+
     Notes
     -----
-    This class sets up an optimization over the inputs at each point in
-    time, using the integral and terminal costs as well as the
-    trajectory and terminal constraints.  The `compute_trajectory`
-    method sets up an optimization problem that can be solved using
+    To describe an optimal control problem we need an input/output system, a
+    time horizon, a cost function, and (optionally) a set of constraints on
+    the state and/or input, either along the trajectory and at the terminal
+    time.  This class sets up an optimization over the inputs at each point in
+    time, using the integral and terminal costs as well as the trajectory and
+    terminal constraints.  The `compute_trajectory` method sets up an
+    optimization problem that can be solved using
     :func:`scipy.optimize.minimize`.
 
     The `_cost_function` method takes the information computes the cost of the
@@ -62,63 +114,7 @@ class OptimalControlProblem():
             self, sys, timepts, integral_cost, trajectory_constraints=[],
             terminal_cost=None, terminal_constraints=[], initial_guess=None,
             basis=None, log=False, **kwargs):
-        """Set up an optimal control problem
-
-        To describe an optimal control problem we need an input/output system,
-        a time horizon, a cost function, and (optionally) a set of constraints
-        on the state and/or input, either along the trajectory and at the
-        terminal time.
-
-        Parameters
-        ----------
-        sys : InputOutputSystem
-            I/O system for which the optimal input will be computed.
-        timepts : 1D array_like
-            List of times at which the optimal input should be computed.
-        integral_cost : callable
-            Function that returns the integral cost given the current state
-            and input.  Called as integral_cost(x, u).
-        trajectory_constraints : list of tuples, optional
-           List of constraints that should hold at each point in the time
-           vector.  Each element of the list should consist of a tuple with
-           first element given by :meth:`~scipy.optimize.LinearConstraint` or
-           :meth:`~scipy.optimize.NonlinearConstraint` and the remaining
-           elements of the tuple are the arguments that would be passed to
-           those functions.  The constraints will be applied at each time
-           point along the trajectory.
-        terminal_cost : callable, optional
-            Function that returns the terminal cost given the current state
-            and input.  Called as terminal_cost(x, u).
-        initial_guess : 1D or 2D array_like
-            Initial inputs to use as a guess for the optimal input.  The
-            inputs should either be a 2D vector of shape (ninputs, horizon)
-            or a 1D input of shape (ninputs,) that will be broadcast by
-            extension of the time axis.
-        log : bool, optional
-            If `True`, turn on logging messages (using Python logging module).
-        kwargs : dict, optional
-            Additional parameters (passed to :func:`scipy.optimal.minimize`).
-
-        Returns
-        -------
-        ocp : OptimalControlProblem
-            Optimal control problem object, to be used in computing optimal
-            controllers.
-
-        Additional parameters
-        ---------------------
-        solve_ivp_method : str, optional
-            Set the method used by :func:`scipy.integrate.solve_ivp`.
-        solve_ivp_kwargs : str, optional
-            Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
-        minimize_method : str, optional
-            Set the method used by :func:`scipy.optimize.minimize`.
-        minimize_options : str, optional
-            Set the options keyword used by :func:`scipy.optimize.minimize`.
-        minimize_kwargs : str, optional
-            Pass additional keywords to :func:`scipy.optimize.minimize`.
-
-        """
+        """Set up an optimal control problem."""
         # Save the basic information for use later
         self.system = sys
         self.timepts = timepts
@@ -772,9 +768,9 @@ class OptimalControlProblem():
 
 # Optimal control result
 class OptimalControlResult(sp.optimize.OptimizeResult):
-    """Represents the optimal control result
+    """Result from solving an optimal control problem.
 
-    This class is a subclass of :class:`sp.optimize.OptimizeResult` with
+    This class is a subclass of :class:`scipy.optimize.OptimizeResult` with
     additional attributes associated with solving optimal control problems.
 
     Attributes
