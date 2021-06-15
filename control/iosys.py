@@ -772,10 +772,10 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 class NonlinearIOSystem(InputOutputSystem):
     """Nonlinear I/O system.
 
-    Creates an :class:`~control.InputOutputSystem` for a nonlinear system
-    by specifying a state update function and an output function.  The new
-    system can be a continuous or discrete time system (Note:
-    discrete-time systems not yet supported by most function.)
+    Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
+    specifying a state update function and an output function.  The new system
+    can be a continuous or discrete time system (Note: discrete-time systems
+    are not yet supported by most functions.)
 
     Parameters
     ----------

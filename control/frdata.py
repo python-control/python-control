@@ -92,18 +92,17 @@ class FrequencyResponseData(LTI):
 
     Notes
     -----
-    The main data members are 'omega' and 'fresp', where 'omega' is a the 1D
-    arran yf frequency points and and 'fresp' is a 3D array, with the first
-    dimension corresponding to the output index of the FRD, the second
-    dimension corresponding to the input index, and the 3rd dimension
+    The main data members are 'omega' and 'fresp', where 'omega' is a 1D array
+    of frequency points and and 'fresp' is a 3D array of frequency responses,
+    with the first dimension corresponding to the output index of the FRD, the
+    second dimension corresponding to the input index, and the 3rd dimension
     corresponding to the frequency points in omega.  For example,
 
     >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
 
-    means that the frequency response from the 6th input to the 3rd
-    output at the frequencies defined in omega is set to the array
-    above, i.e. the rows represent the outputs and the columns
-    represent the inputs.
+    means that the frequency response from the 6th input to the 3rd output at
+    the frequencies defined in omega is set to the array above, i.e. the rows
+    represent the outputs and the columns represent the inputs.
 
     A frequency response data object is callable and returns the value of the
     transfer function evaluated at a point in the complex plane (must be on
