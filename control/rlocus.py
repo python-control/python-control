@@ -137,7 +137,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     print_gain = config._get_param(
         'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
-    sys_loop = sys if sys.issiso() else sys[0,0]
+    sys_loop = sys if sys.issiso() else sys[0, 0]
 
     # Convert numerator and denominator to polynomials if they aren't
     (nump, denp) = _systopoly1d(sys_loop)
@@ -232,16 +232,11 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             ax.set_ylim(ylim)
 
         # Draw the grid
-        if grid and sisotool:
+        if grid:
             if isdtime(sys, strict=True):
                 zgrid(ax=ax)
             else:
-                _sgrid_func(fig=fig)
-        elif grid:
-            if isdtime(sys, strict=True):
-                zgrid(ax=ax)
-            else:
-                _sgrid_func()
+                _sgrid_func(fig=fig if sisotool else None)
         else:
             ax.axhline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
             ax.axvline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)

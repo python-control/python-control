@@ -17,14 +17,10 @@ class TestSisotool:
     """These are tests for the sisotool in sisotool.py."""
 
     @pytest.fixture
-    def sys(self):
+    def tsys(self, request):
         """Return a generic SISO transfer function"""
-        return TransferFunction([1000], [1, 25, 100, 0])
-
-    @pytest.fixture
-    def sysdt(self):
-        """Return a generic SISO transfer function"""
-        return TransferFunction([1000], [1, 25, 100, 0], True)
+        dt = getattr(request, 'param', 0)
+        return TransferFunction([1000], [1, 25, 100, 0], dt)
 
     @pytest.fixture
     def sys222(self):
@@ -50,8 +46,8 @@ class TestSisotool:
         D221 = [[1., -1.]]
         return StateSpace(A222, B222, C221, D221)
 
-    def test_sisotool(self, sys):
-        sisotool(sys, Hz=False)
+    def test_sisotool(self, tsys):
+        sisotool(tsys, Hz=False)
         fig = plt.gcf()
         ax_mag, ax_rlocus, ax_phase, ax_step = fig.axes[:4]
 
@@ -89,7 +85,7 @@ class TestSisotool:
         event = type('test', (object,), {'xdata': 2.31206868287,
                                          'ydata': 15.5983051046,
                                          'inaxes': ax_rlocus.axes})()
-        _RLClickDispatcher(event=event, sys=sys, fig=fig,
+        _RLClickDispatcher(event=event, sys=tsys, fig=fig,
                            ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
                            bode_plot_params=bode_plot_params, tvect=None)
 
@@ -118,10 +114,12 @@ class TestSisotool:
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
 
-    def test_sisotool_tvect(self, sys):
+    @pytest.mark.parametrize('tsys', [0, True],
+                             indirect=True, ids=['ctime', 'dtime'])
+    def test_sisotool_tvect(self, tsys):
         # test supply tvect
         tvect = np.linspace(0, 1, 10)
-        sisotool(sys, tvect=tvect)
+        sisotool(tsys, tvect=tvect)
         fig = plt.gcf()
         ax_rlocus, ax_step = fig.axes[1], fig.axes[3]
 
@@ -129,26 +127,11 @@ class TestSisotool:
         event = type('test', (object,), {'xdata': 2.31206868287,
                                          'ydata': 15.5983051046,
                                          'inaxes': ax_rlocus.axes})()
-        _RLClickDispatcher(event=event, sys=sys, fig=fig,
+        _RLClickDispatcher(event=event, sys=tsys, fig=fig,
                            ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
                            bode_plot_params=dict(), tvect=tvect)
         assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 
-    def test_sisotool_tvect_dt(self, sysdt):
-        # test supply tvect
-        tvect = np.linspace(0, 1, 10)
-        sisotool(sysdt, tvect=tvect)
-        fig = plt.gcf()
-        ax_rlocus, ax_step = fig.axes[1], fig.axes[3]
-
-        # Move the rootlocus to another point and confirm same tvect
-        event = type('test', (object,), {'xdata': 2.31206868287,
-                                         'ydata': 15.5983051046,
-                                         'inaxes': ax_rlocus.axes})()
-        _RLClickDispatcher(event=event, sys=sysdt, fig=fig,
-                           ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
-                           bode_plot_params=dict(), tvect=tvect)
-        assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 
     def test_sisotool_mimo(self,  sys222, sys221):
         # a 2x2 should not raise an error:
