@@ -628,7 +628,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
     2. If a continuous-time system contains poles on or near the imaginary
        axis, a small indentation will be used to avoid the pole.  The radius
-       of the indentation is given by `indent_radius` and it is taken the the
+       of the indentation is given by `indent_radius` and it is taken to the
        right of stable poles and the left of unstable poles.  If a pole is
        exactly on the imaginary axis, the `indent_direction` parameter can be
        used to set the direction of indentation.  Setting `indent_direction`
@@ -683,26 +683,11 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
-    # Decide whether to go above Nyquist frequency
-    omega_range_given = True if omega is not None else False
-
-    # Figure out the frequency limits
-    if omega is None:
-        if omega_limits is None:
-            # Select a default range if none is provided
-            omega = _default_frequency_range(
-                syslist, number_of_samples=omega_num)
-
-            # Replace first point with the origin
-            omega[0] = 0
-        else:
-            omega_range_given = True
-            omega_limits = np.asarray(omega_limits)
-            if len(omega_limits) != 2:
-                raise ValueError("len(omega_limits) must be 2")
-            omega = np.logspace(np.log10(omega_limits[0]),
-                                np.log10(omega_limits[1]), num=omega_num,
-                                endpoint=True)
+    omega, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num)
+    if not omega_range_given:
+        # Start contour at zero frequency
+        omega[0] = 0.
 
     # Go through each system and keep track of the results
     counts, contours = [], []
@@ -734,9 +719,15 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             contour = 1j * omega_sys
 
         # Bend the contour around any poles on/near the imaginary axis
-        if isinstance(sys, (StateSpace, TransferFunction)) and \
-            sys.isctime() and indent_direction != 'none':
+        if isinstance(sys, (StateSpace, TransferFunction)) \
+                and sys.isctime() and indent_direction != 'none':
             poles = sys.pole()
+            if contour[1].imag > indent_radius \
+                    and 0. in poles and not omega_range_given:
+                # add some points for quarter circle around poles at origin
+                contour = np.concatenate(
+                    (1j * np.linspace(0., indent_radius, 50),
+                     contour[1:]))
             for i, s in enumerate(contour):
                 # Find the nearest pole
                 p = poles[(np.abs(poles - s)).argmin()]
@@ -1242,17 +1233,15 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
         omega_in or through omega_limits. False if both omega_in
         and omega_limits are None.
     """
-
-    # Decide whether to go above Nyquist frequency
-    omega_range_given = True if omega_in is not None else False
+    omega_range_given = True
 
     if omega_in is None:
         if omega_limits is None:
+            omega_range_given = False
             # Select a default range if none is provided
             omega_out = _default_frequency_range(syslist,
                                                  number_of_samples=omega_num)
         else:
-            omega_range_given = True
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
                 raise ValueError("len(omega_limits) must be 2")
@@ -1267,11 +1256,12 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
 # Compute reasonable defaults for axes
 def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                              feature_periphery_decades=None):
-    """Compute a reasonable default frequency range for frequency
-    domain plots.
+    """Compute a default frequency range for frequency domain plots.
 
-    Finds a reasonable default frequency range by examining the features
-    (poles and zeros) of the systems in syslist.
+    This code looks at the poles and zeros of all of the systems that
+    we are plotting and sets the frequency range to be one decade above
+    and below the min and max feature frequencies, rounded to the nearest
+    integer.  If no features are found, it returns logspace(-1, 1)
 
     Parameters
     ----------
@@ -1302,12 +1292,6 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
     >>> omega = _default_frequency_range(sys)
 
     """
-    # This code looks at the poles and zeros of all of the systems that
-    # we are plotting and sets the frequency range to be one decade above
-    # and below the min and max feature frequencies, rounded to the nearest
-    # integer.  It excludes poles and zeros at the origin.  If no features
-    # are found, it turns logspace(-1, 1)
-
     # Set default values for options
     number_of_samples = config._get_param(
         'freqplot', 'number_of_samples', number_of_samples)
@@ -1329,8 +1313,9 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 features_ = np.concatenate((np.abs(sys.pole()),
                                             np.abs(sys.zero())))
                 # Get rid of poles and zeros at the origin
-                features_ = features_[features_ != 0.0]
-                features = np.concatenate((features, features_))
+                toreplace = features_ == 0.0
+                if np.any(toreplace):
+                    features_ = features_[~toreplace]
             elif sys.isdtime(strict=True):
                 fn = math.pi * 1. / sys.dt
                 # TODO: What distance to the Nyquist frequency is appropriate?
@@ -1338,21 +1323,21 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
                 features_ = np.concatenate((sys.pole(),
                                             sys.zero()))
-                # Get rid of poles and zeros
-                # * at the origin and real <= 0 & imag==0: log!
+                # Get rid of poles and zeros on the real axis (imag==0)
+                # * origin and real < 0
                 # * at 1.: would result in omega=0. (logaritmic plot!)
-                features_ = features_[
-                    (features_.imag != 0.0) | (features_.real > 0.)]
-                features_ = features_[
-                    np.bitwise_not((features_.imag == 0.0) &
-                                   (np.abs(features_.real - 1.0) < 1.e-10))]
+                toreplace = (features_.imag == 0.0) & (
+                                    (features_.real <= 0.) |
+                                    (np.abs(features_.real - 1.0) < 1.e-10))
+                if np.any(toreplace):
+                    features_ = features_[~toreplace]
                 # TODO: improve
-                features__ = np.abs(np.log(features_) / (1.j * sys.dt))
-                features = np.concatenate((features, features__))
+                features_ = np.abs(np.log(features_) / (1.j * sys.dt))
             else:
                 # TODO
                 raise NotImplementedError(
                     "type of system in not implemented now")
+            features = np.concatenate((features, features_))
         except NotImplementedError:
             pass
 

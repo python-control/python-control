@@ -10,12 +10,10 @@ from ipython to generate plots interactively.
 
 import pytest
 import numpy as np
-import scipy as sp
 import matplotlib.pyplot as plt
 import control as ct
 
-# In interactive mode, turn on ipython interactive graphics
-plt.ion()
+pytestmark = pytest.mark.usefixtures("mplcleanup")
 
 
 # Utility function for counting unstable poles of open loop (P in FBS)
@@ -37,7 +35,6 @@ def _Z(sys):
 
 
 # Basic tests
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_basic():
     # Simple Nyquist plot
     sys = ct.rss(5, 1, 1)
@@ -112,7 +109,6 @@ def test_nyquist_basic():
 
 
 # Some FBS examples, for comparison
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_fbs_examples():
     s = ct.tf('s')
 
@@ -154,7 +150,6 @@ def test_nyquist_fbs_examples():
     1, 2, 3, 4,                 # specified number of arrows
     [0.1, 0.5, 0.9],            # specify arc lengths
 ])
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_arrows(arrows):
     sys = ct.tf([1.4], [1, 2, 1]) * ct.tf(*ct.pade(1, 4))
     plt.figure();
@@ -163,7 +158,6 @@ def test_nyquist_arrows(arrows):
     assert _Z(sys) == count + _P(sys)
 
 
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_encirclements():
     # Example 14.14: effect of friction in a cart-pendulum system
     s = ct.tf('s')
@@ -188,21 +182,34 @@ def test_nyquist_encirclements():
     assert _Z(sys) == count + _P(sys)
 
 
-@pytest.mark.usefixtures("mplcleanup")
 def test_nyquist_indent():
     # FBS Figure 10.10
     s = ct.tf('s')
     sys = 3 * (s+6)**2 / (s * (s+1)**2)
+    # poles: [-1, -1, 0]
 
     plt.figure();
     count = ct.nyquist_plot(sys)
     plt.title("Pole at origin; indent_radius=default")
     assert _Z(sys) == count + _P(sys)
 
+    # first value of default omega vector was 0.1, replaced by 0. for contour
+    # indent_radius is larger than 0.1 -> no extra quater circle around origin
+    count, contour = ct.nyquist_plot(sys, plot=False, indent_radius=.1007,
+                                     return_contour=True)
+    np.testing.assert_allclose(contour[0], .1007+0.j)
+    # second value of omega_vector is larger than indent_radius: not indented
+    assert np.all(contour.real[2:] == 0.)
+
     plt.figure();
-    count = ct.nyquist_plot(sys, indent_radius=0.01)
+    count, contour = ct.nyquist_plot(sys, indent_radius=0.01,
+                                     return_contour=True)
     plt.title("Pole at origin; indent_radius=0.01; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
+    # indent radius is smaller than the start of the default omega vector
+    # check that a quarter circle around the pole at origin has been added.
+    np.testing.assert_allclose(contour[:50].real**2 + contour[:50].imag**2,
+                               0.01**2)
 
     plt.figure();
     count = ct.nyquist_plot(sys, indent_direction='left')
@@ -255,34 +262,38 @@ def test_nyquist_exceptions():
         ct.nyquist_plot(sys, np.logspace(-2, 3))
 
 
-#
-# Interactive mode: generate plots for manual viewing
-#
-# Running this script in python (or better ipython) will show a collection of
-# figures that should all look OK on the screeen.
-#
+if __name__ == "__main__":
+    #
+    # Interactive mode: generate plots for manual viewing
+    #
+    # Running this script in python (or better ipython) will show a collection of
+    # figures that should all look OK on the screeen.
+    #
 
-# Start by clearing existing figures
-plt.close('all')
+    # In interactive mode, turn on ipython interactive graphics
+    plt.ion()
 
-print("Nyquist examples from FBS")
-test_nyquist_fbs_examples()
+    # Start by clearing existing figures
+    plt.close('all')
 
-print("Arrow test")
-test_nyquist_arrows(None)
-test_nyquist_arrows(1)
-test_nyquist_arrows(3)
-test_nyquist_arrows([0.1, 0.5, 0.9])
+    print("Nyquist examples from FBS")
+    test_nyquist_fbs_examples()
 
-print("Stability checks")
-test_nyquist_encirclements()
+    print("Arrow test")
+    test_nyquist_arrows(None)
+    test_nyquist_arrows(1)
+    test_nyquist_arrows(3)
+    test_nyquist_arrows([0.1, 0.5, 0.9])
 
-print("Indentation checks")
-test_nyquist_indent()
+    print("Stability checks")
+    test_nyquist_encirclements()
 
-print("Unusual Nyquist plot")
-sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-plt.figure()
-plt.title("Poles: %s" % np.array2string(sys.pole(), precision=2, separator=','))
-count = ct.nyquist_plot(sys)
-assert _Z(sys) == count + _P(sys)
+    print("Indentation checks")
+    test_nyquist_indent()
+
+    print("Unusual Nyquist plot")
+    sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
+    plt.figure()
+    plt.title("Poles: %s" % np.array2string(sys.pole(), precision=2, separator=','))
+    count = ct.nyquist_plot(sys)
+    assert _Z(sys) == count + _P(sys)
