@@ -24,13 +24,13 @@ __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
-    LTI is the parent to the StateSpace and TransferFunction child
-    classes. It contains the number of inputs and outputs, and the
-    timebase (dt) for the system.
+    LTI is the parent to the StateSpace and TransferFunction child classes. It
+    contains the number of inputs and outputs, and the timebase (dt) for the
+    system.  This function is not generally called directly by the user.
 
-    The timebase for the system, dt, is used to specify whether the
-    system is operating in continuous or discrete time.  It can have
-    the following values:
+    The timebase for the system, dt, is used to specify whether the system
+    is operating in continuous or discrete time. It can have the following
+    values:
 
       * dt = None       No timebase specified
       * dt = 0          Continuous time system
@@ -59,33 +59,51 @@ class LTI:
     # future warning, so that users will see it.
     #
 
-    @property
-    def inputs(self):
+    def _get_inputs(self):
         warn("The LTI `inputs` attribute will be deprecated in a future "
              "release.  Use `ninputs` instead.",
              DeprecationWarning, stacklevel=2)
         return self.ninputs
 
-    @inputs.setter
-    def inputs(self, value):
+    def _set_inputs(self, value):
         warn("The LTI `inputs` attribute will be deprecated in a future "
              "release.  Use `ninputs` instead.",
              DeprecationWarning, stacklevel=2)
         self.ninputs = value
 
-    @property
-    def outputs(self):
+    #: Deprecated
+    inputs = property(
+        _get_inputs, _set_inputs, doc=
+        """
+        Deprecated attribute; use :attr:`ninputs` instead.
+
+        The ``input`` attribute was used to store the number of system inputs.
+        It is no longer used.  If you need access to the number of inputs for
+        an LTI system, use :attr:`ninputs`.
+        """)
+
+    def _get_outputs(self):
         warn("The LTI `outputs` attribute will be deprecated in a future "
              "release.  Use `noutputs` instead.",
              DeprecationWarning, stacklevel=2)
         return self.noutputs
 
-    @outputs.setter
-    def outputs(self, value):
+    def _set_outputs(self, value):
         warn("The LTI `outputs` attribute will be deprecated in a future "
              "release.  Use `noutputs` instead.",
              DeprecationWarning, stacklevel=2)
         self.noutputs = value
+
+    #: Deprecated
+    outputs = property(
+        _get_outputs, _set_outputs, doc=
+        """
+        Deprecated attribute; use :attr:`noutputs` instead.
+
+        The ``output`` attribute was used to store the number of system
+        outputs.  It is no longer used.  If you need access to the number of
+        outputs for an LTI system, use :attr:`noutputs`.
+        """)
 
     def isdtime(self, strict=False):
         """

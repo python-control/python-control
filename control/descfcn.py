@@ -26,7 +26,7 @@ __all__ = ['describing_function', 'describing_function_plot',
 
 # Class for nonlinearities with a built-in describing function
 class DescribingFunctionNonlinearity():
-    """Base class for nonlinear systems with a describing function
+    """Base class for nonlinear systems with a describing function.
 
     This class is intended to be used as a base class for nonlinear functions
     that have an analytically defined describing function.  Subclasses should
@@ -36,16 +36,16 @@ class DescribingFunctionNonlinearity():
 
     """
     def __init__(self):
-        """Initailize a describing function nonlinearity (optional)"""
+        """Initailize a describing function nonlinearity (optional)."""
         pass
 
     def __call__(self, A):
-        """Evaluate the nonlinearity at a (scalar) input value"""
+        """Evaluate the nonlinearity at a (scalar) input value."""
         raise NotImplementedError(
             "__call__() not implemented for this function (internal error)")
 
     def describing_function(self, A):
-        """Return the describing function for a nonlinearity
+        """Return the describing function for a nonlinearity.
 
         This method is used to allow analytical representations of the
         describing function for a nonlinearity.  It turns the (complex) value
@@ -56,7 +56,7 @@ class DescribingFunctionNonlinearity():
             "describing function not implemented for this function")
 
     def _isstatic(self):
-        """Return True if the function has no internal state (memoryless)
+        """Return True if the function has no internal state (memoryless).
 
         This internal function is used to optimize numerical computation of
         the describing function.  It can be set to `True` if the instance
@@ -329,7 +329,7 @@ def _find_intersection(L1a, L1b, L2a, L2b):
 
 # Saturation nonlinearity
 class saturation_nonlinearity(DescribingFunctionNonlinearity):
-    """Create a saturation nonlinearity for use in describing function analysis
+    """Create saturation nonlinearity for use in describing function analysis.
 
     This class creates a nonlinear function representing a saturation with
     given upper and lower bounds, including the describing function for the
@@ -381,7 +381,7 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
 
 # Relay with hysteresis (FBS2e, Example 10.12)
 class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
-    """Relay w/ hysteresis nonlinearity for use in describing function analysis
+    """Relay w/ hysteresis nonlinearity for describing function analysis.
 
     This class creates a nonlinear function representing a a relay with
     symmetric upper and lower bounds of magnitude `b` and a hysteretic region
@@ -437,7 +437,7 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
 
 # Friction-dominated backlash nonlinearity (#48 in Gelb and Vander Velde, 1968)
 class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
-    """Backlash nonlinearity for use in describing function analysis
+    """Backlash nonlinearity for describing function analysis.
 
     This class creates a nonlinear function representing a friction-dominated
     backlash nonlinearity ,including the describing function for the

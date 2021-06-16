@@ -41,30 +41,29 @@ import numpy as np
 class SystemTrajectory:
     """Class representing a system trajectory.
 
-    The `SystemTrajectory` class is used to represent the trajectory of
-    a (differentially flat) system.  Used by the
-    :func:`~control.trajsys.point_to_point` function to return a
-    trajectory.
+    The `SystemTrajectory` class is used to represent the
+    trajectory of a (differentially flat) system.  Used by the
+    :func:`~control.trajsys.point_to_point` function to return a trajectory.
+
+    Parameters
+    ----------
+    sys : FlatSystem
+        Flat system object associated with this trajectory.
+    basis : BasisFamily
+        Family of basis vectors to use to represent the trajectory.
+    coeffs : list of 1D arrays, optional
+        For each flat output, define the coefficients of the basis
+        functions used to represent the trajectory.  Defaults to an empty
+        list.
+    flaglen : list of ints, optional
+        For each flat output, the number of derivatives of the flat
+        output used to define the trajectory.  Defaults to an empty
+        list.
 
     """
+
     def __init__(self, sys, basis, coeffs=[], flaglen=[]):
-        """Initilize a system trajectory object.
-
-        Parameters
-        ----------
-        sys : FlatSystem
-            Flat system object associated with this trajectory.
-        basis : BasisFamily
-            Family of basis vectors to use to represent the trajectory.
-        coeffs : list of 1D arrays, optional
-            For each flat output, define the coefficients of the basis
-            functions used to represent the trajectory.  Defaults to an empty
-            list.
-        flaglen : list of ints, optional
-            For each flat output, the number of derivatives of the flat output
-            used to define the trajectory.  Defaults to an empty list.
-
-        """
+        """Initilize a system trajectory object."""
         self.nstates = sys.nstates
         self.ninputs = sys.ninputs
         self.system = sys

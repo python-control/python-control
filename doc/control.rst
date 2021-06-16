@@ -6,8 +6,9 @@ Function reference
 
 .. Include header information from the main control module
 .. automodule:: control
-    :no-members:
-    :no-inherited-members:
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
 
 System creation
 ===============

@@ -47,6 +47,11 @@ class BasisFamily:
 
       :math:`z_i^{(q)}(t)` = basis.eval_deriv(self, i, j, t)
 
+    Parameters
+    ----------
+    N : int
+        Order of the basis set.
+
     """
     def __init__(self, N):
         """Create a basis family of order N."""

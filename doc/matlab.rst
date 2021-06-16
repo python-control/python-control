@@ -7,6 +7,7 @@
 .. automodule:: control.matlab
    :no-members:
    :no-inherited-members:
+   :no-special-members:
 
 Creating linear models
 ======================

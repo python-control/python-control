@@ -160,23 +160,49 @@ def _f2s(f):
 class StateSpace(LTI):
     """StateSpace(A, B, C, D[, dt])
 
-    A class for representing state-space models
+    A class for representing state-space models.
 
     The StateSpace class is used to represent state-space realizations of
     linear time-invariant (LTI) systems:
 
         dx/dt = A x + B u
-            y = C x + D u
+        y = C x + D u
 
     where u is the input, y is the output, and x is the state.
 
-    The main data members are the A, B, C, and D matrices.  The class also
-    keeps track of the number of states (i.e., the size of A).  The data
-    format used to store state space matrices is set using the value of
-    `config.defaults['use_numpy_matrix']`.  If True (default), the state space
-    elements are stored as `numpy.matrix` objects; otherwise they are
-    `numpy.ndarray` objects.  The :func:`~control.use_numpy_matrix` function
-    can be used to set the storage type.
+    Parameters
+    ----------
+    A, B, C, D: array_like
+        System matrices of the appropriate dimensions.
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time).
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables.
+    A, B, C, D : 2D arrays
+        System matrices defining the input/output dynamics.
+    dt : None, True or float
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
+
+    Notes
+    -----
+    The main data members in the ``StateSpace`` class are the A, B, C, and D
+    matrices.  The class also keeps track of the number of states (i.e.,
+    the size of A).  The data format used to store state space matrices is
+    set using the value of `config.defaults['use_numpy_matrix']`.  If True
+    (default), the state space elements are stored as `numpy.matrix` objects;
+    otherwise they are `numpy.ndarray` objects.  The
+    :func:`~control.use_numpy_matrix` function can be used to set the storage
+    type.
 
     A discrete time system is created by specifying a nonzero 'timebase', dt
     when the system is constructed:
@@ -195,6 +221,10 @@ class StateSpace(LTI):
     The default value of dt can be changed by changing the value of
     ``control.config.defaults['control.default_dt']``.
 
+    A state space system is callable and returns the value of the transfer
+    function evaluated at a point in the complex plane.  See
+    :meth:`~control.StateSpace.__call__` for a more detailed description.
+
     StateSpace instances have support for IPython LaTeX output,
     intended for pretty-printing in Jupyter notebooks.  The LaTeX
     output can be configured using
@@ -212,6 +242,7 @@ class StateSpace(LTI):
     `'partitioned'` or `'separate'`.  If `'partitioned'`, the A, B, C, D
     matrices are shown as a single, partitioned matrix; if
     `'separate'`, the matrices are shown separately.
+
     """
 
     # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
@@ -296,7 +327,8 @@ class StateSpace(LTI):
         elif len(args) == 5:
             dt = args[4]
             if 'dt' in kwargs:
-                warn('received multiple dt arguments, using positional arg dt=%s'%dt)
+                warn("received multiple dt arguments, "
+                     "using positional arg dt = %s" % dt)
         elif len(args) == 1:
             try:
                 dt = args[0].dt
@@ -332,6 +364,48 @@ class StateSpace(LTI):
             self._remove_useless_states()
 
     #
+    # Class attributes
+    #
+    # These attributes are defined as class attributes so that they are
+    # documented properly.  They are "overwritten" in __init__.
+    #
+
+    #: Number of system inputs.
+    #:
+    #: :meta hide-value:
+    ninputs = 0
+
+    #: Number of system outputs.
+    #:
+    #: :meta hide-value:
+    noutputs = 0
+
+    #: Number of system states.
+    #:
+    #: :meta hide-value:
+    nstates = 0
+
+    #: Dynamics matrix.
+    #:
+    #: :meta hide-value:
+    A = []
+
+    #: Input matrix.
+    #:
+    #: :meta hide-value:
+    B = []
+
+    #: Output matrix.
+    #:
+    #: :meta hide-value:
+    C = []
+
+    #: Direct term.
+    #:
+    #: :meta hide-value:
+    D = []
+
+    #
     # Getter and setter functions for legacy state attributes
     #
     # For this iteration, generate a deprecation warning whenever the
@@ -339,19 +413,24 @@ class StateSpace(LTI):
     # future warning, so that users will see it.
     #
 
-    @property
-    def states(self):
+    def _get_states(self):
         warn("The StateSpace `states` attribute will be deprecated in a "
              "future release.  Use `nstates` instead.",
              DeprecationWarning, stacklevel=2)
         return self.nstates
 
-    @states.setter
-    def states(self, value):
+    def _set_states(self, value):
         warn("The StateSpace `states` attribute will be deprecated in a "
              "future release.  Use `nstates` instead.",
              DeprecationWarning, stacklevel=2)
         self.nstates = value
+
+    #: Deprecated attribute; use :attr:`nstates` instead.
+    #:
+    #: The ``state`` attribute was used to store the number of states for : a
+    #: state space system.  It is no longer used.  If you need to access the
+    #: number of states, use :attr:`nstates`.
+    states = property(_get_states, _set_states)
 
     def _remove_useless_states(self):
         """Check for states that don't do anything, and remove them.
@@ -626,8 +705,10 @@ class StateSpace(LTI):
 
             # Check to make sure the dimensions are OK
             if self.ninputs != other.noutputs:
-                raise ValueError("C = A * B: A has %i column(s) (input(s)), \
-                    but B has %i row(s)\n(output(s))." % (self.ninputs, other.noutputs))
+                raise ValueError(
+                    "C = A * B: A has %i column(s) (input(s)), "
+                    "but B has %i row(s)\n(output(s))." %
+                    (self.ninputs, other.noutputs))
             dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
@@ -821,10 +902,10 @@ class StateSpace(LTI):
             out = empty((self.noutputs, self.ninputs, len(x_arr)),
                         dtype=complex)
 
-            #TODO: can this be vectorized?
+            # TODO: can this be vectorized?
             for idx, x_idx in enumerate(x_arr):
                 try:
-                    out[:,:,idx] = np.dot(
+                    out[:, :, idx] = np.dot(
                         self.C,
                         solve(x_idx * eye(self.nstates) - self.A, self.B)) \
                         + self.D
@@ -837,9 +918,9 @@ class StateSpace(LTI):
                     # Evaluating at a pole.  Return value depends if there
                     # is a zero at the same point or not.
                     if x_idx in self.zero():
-                        out[:,:,idx] = complex(np.nan, np.nan)
+                        out[:, :, idx] = complex(np.nan, np.nan)
                     else:
-                        out[:,:,idx] = complex(np.inf, np.nan)
+                        out[:, :, idx] = complex(np.inf, np.nan)
 
         return out
 
@@ -914,7 +995,7 @@ class StateSpace(LTI):
         other = _convert_to_statespace(other)
 
         # Check to make sure the dimensions are OK
-        if (self.ninputs != other.noutputs) or (self.noutputs != other.ninputs):
+        if self.ninputs != other.noutputs or self.noutputs != other.ninputs:
             raise ValueError("State space systems don't have compatible "
                              "inputs/outputs for feedback.")
         dt = common_timebase(self.dt, other.dt)
@@ -1288,17 +1369,17 @@ class StateSpace(LTI):
         -------
         dx/dt or x[t+dt] : ndarray
         """
-        x = np.reshape(x, (-1, 1)) # force to a column in case matrix
+        x = np.reshape(x, (-1, 1))  # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
         if u is None:
-            return self.A.dot(x).reshape((-1,)) # return as row vector
-        else: # received t, x, and u, ignore t
-            u = np.reshape(u, (-1, 1)) # force to a column in case matrix
+            return self.A.dot(x).reshape((-1,))  # return as row vector
+        else:  # received t, x, and u, ignore t
+            u = np.reshape(u, (-1, 1))  # force to column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
             return self.A.dot(x).reshape((-1,)) \
-                 + self.B.dot(u).reshape((-1,)) # return as row vector
+                + self.B.dot(u).reshape((-1,))  # return as row vector
 
     def output(self, t, x, u=None):
         """Compute the output of the system
@@ -1312,8 +1393,8 @@ class StateSpace(LTI):
 
         The first argument `t` is ignored because :class:`StateSpace` systems
         are time-invariant. It is included so that the dynamics can be passed
-        to most numerical integrators, such as scipy's `integrate.solve_ivp` and
-        for consistency with :class:`IOSystem` systems.
+        to most numerical integrators, such as scipy's `integrate.solve_ivp`
+        and for consistency with :class:`IOSystem` systems.
 
         The inputs `x` and `u` must be of the correct length for the system.
 
@@ -1330,24 +1411,23 @@ class StateSpace(LTI):
         -------
         y : ndarray
         """
-        x = np.reshape(x, (-1, 1)) # force to a column in case matrix
+        x = np.reshape(x, (-1, 1))  # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
 
         if u is None:
-            return self.C.dot(x).reshape((-1,)) # return as row vector
-        else: # received t, x, and u, ignore t
-            u = np.reshape(u, (-1, 1)) # force to a column in case matrix
+            return self.C.dot(x).reshape((-1,))  # return as row vector
+        else:  # received t, x, and u, ignore t
+            u = np.reshape(u, (-1, 1))  # force to a column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
             return self.C.dot(x).reshape((-1,)) \
-                 + self.D.dot(u).reshape((-1,)) # return as row vector
+                + self.D.dot(u).reshape((-1,))  # return as row vector
 
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
         if A and B are zero. """
         return not np.any(self.A) and not np.any(self.B)
-
 
 
 # TODO: add discrete time check
@@ -1446,7 +1526,7 @@ def _convert_to_statespace(sys, **kw):
     try:
         D = _ssmatrix(sys)
         return StateSpace([], [], [], D)
-    except:
+    except Exception:
         raise TypeError("Can't convert given type to StateSpace system.")
 
 
@@ -1679,6 +1759,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
 
     return sys
 
+
 def ss(*args, **kwargs):
     """ss(A, B, C, D[, dt])
 
@@ -1767,7 +1848,8 @@ def ss(*args, **kwargs):
             raise TypeError("ss(sys): sys must be a StateSpace or "
                             "TransferFunction object.  It is %s." % type(sys))
     else:
-        raise ValueError("Needs 1, 4, or 5 arguments; received %i." % len(args))
+        raise ValueError(
+            "Needs 1, 4, or 5 arguments; received %i." % len(args))
 
 
 def tf2ss(*args):

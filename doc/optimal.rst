@@ -7,6 +7,7 @@ Optimal control
 .. automodule:: control.optimal
    :no-members:
    :no-inherited-members:
+   :no-special-members:
 
 Problem setup
 =============
@@ -276,8 +277,14 @@ Module classes and functions
 ============================
 .. autosummary::
    :toctree: generated/
+   :template: custom-class-template.rst
 
    ~control.optimal.OptimalControlProblem
+   ~control.optimal.OptimalControlResult
+
+.. autosummary::
+   :toctree: generated/
+
    ~control.optimal.solve_ocp
    ~control.optimal.create_mpc_iosystem
    ~control.optimal.input_poly_constraint

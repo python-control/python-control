@@ -95,11 +95,10 @@ class InputOutputSystem(object):
         Dictionary of signal names for the inputs, outputs and states and the
         index of the corresponding array
     dt : None, True or float
-        System timebase. 0 (default) indicates continuous
-        time, True indicates discrete time with unspecified sampling
-        time, positive number is discrete time with specified
-        sampling time, None indicates unspecified timebase (either
-        continuous or discrete time).
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
@@ -120,12 +119,12 @@ class InputOutputSystem(object):
 
     """
 
-    idCounter = 0
+    _idCounter = 0
 
-    def name_or_default(self, name=None):
+    def _name_or_default(self, name=None):
         if name is None:
-            name = "sys[{}]".format(InputOutputSystem.idCounter)
-            InputOutputSystem.idCounter += 1
+            name = "sys[{}]".format(InputOutputSystem._idCounter)
+            InputOutputSystem._idCounter += 1
         return name
 
     def __init__(self, inputs=None, outputs=None, states=None, params={},
@@ -139,39 +138,6 @@ class InputOutputSystem(object):
         :class:`~control.LinearIOSystem`, :class:`~control.NonlinearIOSystem`,
         :class:`~control.InterconnectedSystem`.
 
-        Parameters
-        ----------
-        inputs : int, list of str, or None
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-        outputs : int, list of str, or None
-            Description of the system outputs.  Same format as `inputs`.
-        states : int, list of str, or None
-            Description of the system states.  Same format as `inputs`.
-        dt : None, True or float, optional
-            System timebase. 0 (default) indicates continuous
-            time, True indicates discrete time with unspecified sampling
-            time, positive number is discrete time with specified
-            sampling time, None indicates unspecified timebase (either
-            continuous or discrete time).
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-        name : string, optional
-            System name (used for specifying signals). If unspecified, a
-            generic name <sys[id]> is generated with a unique integer id.
-
-        Returns
-        -------
-        InputOutputSystem
-            Input/output system object
-
         """
         # Store the input arguments
 
@@ -180,12 +146,34 @@ class InputOutputSystem(object):
         # timebase
         self.dt = kwargs.get('dt', config.defaults['control.default_dt'])
         # system name
-        self.name = self.name_or_default(name)
+        self.name = self._name_or_default(name)
 
         # Parse and store the number of inputs, outputs, and states
         self.set_inputs(inputs)
         self.set_outputs(outputs)
         self.set_states(states)
+
+    #
+    # Class attributes
+    #
+    # These attributes are defined as class attributes so that they are
+    # documented properly.  They are "overwritten" in __init__.
+    #
+
+    #: Number of system inputs.
+    #:
+    #: :meta hide-value:
+    ninputs = 0
+
+    #: Number of system outputs.
+    #:
+    #: :meta hide-value:
+    noutputs = 0
+
+    #: Number of system states.
+    #:
+    #: :meta hide-value:
+    nstates = 0
 
     def __repr__(self):
         return self.name if self.name is not None else str(type(self))
@@ -665,7 +653,7 @@ class InputOutputSystem(object):
         dup_prefix = config.defaults['iosys.duplicate_system_name_prefix']
         dup_suffix = config.defaults['iosys.duplicate_system_name_suffix']
         newsys = copy.copy(self)
-        newsys.name = self.name_or_default(
+        newsys.name = self._name_or_default(
             dup_prefix + self.name + dup_suffix if not newname else newname)
         return newsys
 
@@ -676,6 +664,42 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
     This class is used to implementat a system that is a linear state
     space system (defined by the StateSpace system object).
 
+    Parameters
+    ----------
+    linsys : StateSpace
+        LTI StateSpace system to be converted
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.  If an
+        integer count is specified, the names of the signal will be of the
+        form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If this parameter
+        is not given or given as `None`, the relevant quantity will be
+        determined when possible based on other information provided to
+        functions using the system.
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`.
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a
+        generic name <sys[id]> is generated with a unique integer id.
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates, dt, etc
+        See :class:`InputOutputSystem` for inherited attributes.
+
+    A, B, C, D
+        See :class:`~control.StateSpace` for inherited attributes.
+
     """
     def __init__(self, linsys, inputs=None, outputs=None, states=None,
                  name=None, **kwargs):
@@ -683,42 +707,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
         Converts a :class:`~control.StateSpace` system into an
         :class:`~control.InputOutputSystem` with the same inputs, outputs, and
-        states.  The new system can be a continuous or discrete time system
-
-        Parameters
-        ----------
-        linsys : StateSpace
-            LTI StateSpace system to be converted
-        inputs : int, list of str or None, optional
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-        outputs : int, list of str or None, optional
-            Description of the system outputs.  Same format as `inputs`.
-        states : int, list of str, or None, optional
-            Description of the system states.  Same format as `inputs`.
-        dt : None, True or float, optional
-            System timebase. 0 (default) indicates continuous
-            time, True indicates discrete time with unspecified sampling
-            time, positive number is discrete time with specified
-            sampling time, None indicates unspecified timebase (either
-            continuous or discrete time).
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-        name : string, optional
-            System name (used for specifying signals). If unspecified, a
-            generic name <sys[id]> is generated with a unique integer id.
-
-        Returns
-        -------
-        iosys : LinearIOSystem
-            Linear system represented as an input/output system
+        states.  The new system can be a continuous or discrete time system.
 
         """
         if not isinstance(linsys, StateSpace):
@@ -751,6 +740,17 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         if nstates is not None and linsys.nstates != nstates:
             raise ValueError("Wrong number/type of states given.")
 
+    # The following text needs to be replicated from StateSpace in order for
+    # this entry to show up properly in sphinx doccumentation (not sure why,
+    # but it was the only way to get it to work).
+    #
+    #: Deprecated attribute; use :attr:`nstates` instead.
+    #:
+    #: The ``state`` attribute was used to store the number of states for : a
+    #: state space system.  It is no longer used.  If you need to access the
+    #: number of states, use :attr:`nstates`.
+    states = property(StateSpace._get_states, StateSpace._set_states)
+
     def _update_params(self, params={}, warning=True):
         # Parameters not supported; issue a warning
         if params and warning:
@@ -772,78 +772,68 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 class NonlinearIOSystem(InputOutputSystem):
     """Nonlinear I/O system.
 
-    This class is used to implement a system that is a nonlinear state
-    space system (defined by and update function and an output function).
+    Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
+    specifying a state update function and an output function.  The new system
+    can be a continuous or discrete time system (Note: discrete-time systems
+    are not yet supported by most functions.)
+
+    Parameters
+    ----------
+    updfcn : callable
+        Function returning the state update function
+
+            `updfcn(t, x, u, params) -> array`
+
+        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
+        with shape (ninputs,), `t` is a float representing the currrent
+        time, and `params` is a dict containing the values of parameters
+        used by the function.
+
+    outfcn : callable
+        Function returning the output at the given state
+
+            `outfcn(t, x, u, params) -> array`
+
+        where the arguments are the same as for `upfcn`.
+
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.
+        If an integer count is specified, the names of the signal will be
+        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        this parameter is not given or given as `None`, the relevant
+        quantity will be determined when possible based on other
+        information provided to functions using the system.
+
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`.
+
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+
+    dt : timebase, optional
+        The timebase for the system, used to specify whether the system is
+        operating in continuous or discrete time.  It can have the
+        following values:
+
+        * dt = 0: continuous time system (default)
+        * dt > 0: discrete time system with sampling period 'dt'
+        * dt = True: discrete time with unspecified sampling period
+        * dt = None: no timebase specified
+
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a
+        generic name <sys[id]> is generated with a unique integer id.
 
     """
     def __init__(self, updfcn, outfcn=None, inputs=None, outputs=None,
                  states=None, params={}, name=None, **kwargs):
-        """Create a nonlinear I/O system given update and output functions.
-
-        Creates an :class:`~control.InputOutputSystem` for a nonlinear system
-        by specifying a state update function and an output function.  The new
-        system can be a continuous or discrete time system (Note:
-        discrete-time systems not yet supported by most function.)
-
-        Parameters
-        ----------
-        updfcn : callable
-            Function returning the state update function
-
-                `updfcn(t, x, u[, param]) -> array`
-
-            where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-            with shape (ninputs,), `t` is a float representing the currrent
-            time, and `param` is an optional dict containing the values of
-            parameters used by the function.
-
-        outfcn : callable
-            Function returning the output at the given state
-
-                `outfcn(t, x, u[, param]) -> array`
-
-            where the arguments are the same as for `upfcn`.
-
-        inputs : int, list of str or None, optional
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-
-        outputs : int, list of str or None, optional
-            Description of the system outputs.  Same format as `inputs`.
-
-        states : int, list of str, or None, optional
-            Description of the system states.  Same format as `inputs`.
-
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-
-        dt : timebase, optional
-            The timebase for the system, used to specify whether the system is
-            operating in continuous or discrete time.  It can have the
-            following values:
-
-            * dt = 0: continuous time system (default)
-            * dt > 0: discrete time system with sampling period 'dt'
-            * dt = True: discrete time with unspecified sampling period
-            * dt = None: no timebase specified
-
-        name : string, optional
-            System name (used for specifying signals). If unspecified, a
-            generic name <sys[id]> is generated with a unique integer id.
-
-        Returns
-        -------
-        iosys : NonlinearIOSystem
-            Nonlinear system represented as an input/output system.
-
-        """
+        """Create a nonlinear I/O system given update and output functions."""
         # Look for 'input' and 'output' parameter name variants
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
         outputs =  _parse_signal_parameter(outputs, 'output', kwargs)
@@ -944,21 +934,14 @@ class InterconnectedSystem(InputOutputSystem):
     whose inputs and outputs are connected via a connection map.  The overall
     system inputs and outputs are subsets of the subsystem inputs and outputs.
 
+    See :func:`~control.interconnect` for a list of parameters.
+
     """
     def __init__(self, syslist, connections=[], inplist=[], outlist=[],
                  inputs=None, outputs=None, states=None,
                  params={}, dt=None, name=None, **kwargs):
-        """Create an I/O system from a list of systems + connection info.
+        """Create an I/O system from a list of systems + connection info."""
 
-        The InterconnectedSystem class is used to represent an input/output
-        system that consists of an interconnection between a set of subystems.
-        The outputs of each subsystem can be summed together to provide
-        inputs to other subsystems.  The overall system inputs and outputs can
-        be any subset of subsystem inputs and outputs.
-
-        See :func:`~control.interconnect` for a list of parameters.
-
-        """
         # Look for 'input' and 'output' parameter name variants
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
         outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
@@ -1425,6 +1408,9 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
     :class:`StateSpace` class structure, allowing it to be passed to functions
     that expect a :class:`StateSpace` system.
 
+    This class is usually generated using :func:`~control.interconnect` and
+    not called directly
+
     """
 
     def __init__(self, io_sys, ss_sys=None):
@@ -1472,6 +1458,17 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
 
         else:
             raise TypeError("Second argument must be a state space system.")
+
+    # The following text needs to be replicated from StateSpace in order for
+    # this entry to show up properly in sphinx doccumentation (not sure why,
+    # but it was the only way to get it to work).
+    #
+    #: Deprecated attribute; use :attr:`nstates` instead.
+    #:
+    #: The ``state`` attribute was used to store the number of states for : a
+    #: state space system.  It is no longer used.  If you need to access the
+    #: number of states, use :attr:`nstates`.
+    states = property(StateSpace._get_states, StateSpace._set_states)
 
 
 def input_output_response(
@@ -2174,7 +2171,7 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
     Notes
     -----
     If a system is duplicated in the list of systems to be connected,
-    a warning is generated a copy of the system is created with the
+    a warning is generated and a copy of the system is created with the
     name of the new system determined by adding the prefix and suffix
     strings in config.defaults['iosys.linearized_system_name_prefix']
     and config.defaults['iosys.linearized_system_name_suffix'], with the

@@ -168,7 +168,7 @@ As all simulation functions return *arrays*, plotting is convenient::
 
 The output of a MIMO system can be plotted like this::
 
-    t, y, x = forced_response(sys, u, t)
+    t, y = forced_response(sys, u, t)
     plot(t, y[0], label='y_0')
     plot(t, y[1], label='y_1')
 

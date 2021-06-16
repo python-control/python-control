@@ -54,8 +54,59 @@ class FlatSystem(NonlinearIOSystem):
     """Base class for representing a differentially flat system.
 
     The FlatSystem class is used as a base class to describe differentially
-    flat systems for trajectory generation.  The class must implement two
-    functions:
+    flat systems for trajectory generation.  The output of the system does not
+    need to be the differentially flat output.
+
+    Parameters
+    ----------
+    forward : callable
+        A function to compute the flat flag given the states and input.
+    reverse : callable
+        A function to compute the states and input given the flat flag.
+    updfcn : callable, optional
+        Function returning the state update function
+
+            `updfcn(t, x, u[, param]) -> array`
+
+        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
+        with shape (ninputs,), `t` is a float representing the currrent
+        time, and `param` is an optional dict containing the values of
+        parameters used by the function.  If not specified, the state
+        space update will be computed using the flat system coordinates.
+    outfcn : callable
+        Function returning the output at the given state
+
+            `outfcn(t, x, u[, param]) -> array`
+
+        where the arguments are the same as for `upfcn`.  If not
+        specified, the output will be the flat outputs.
+    inputs : int, list of str, or None
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.
+        If an integer count is specified, the names of the signal will be
+        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        this parameter is not given or given as `None`, the relevant
+        quantity will be determined when possible based on other
+        information provided to functions using the system.
+    outputs : int, list of str, or None
+        Description of the system outputs.  Same format as `inputs`.
+    states : int, list of str, or None
+        Description of the system states.  Same format as `inputs`.
+    dt : None, True or float, optional
+        System timebase.  None (default) indicates continuous
+        time, True indicates discrete time with undefined sampling
+        time, positive number is discrete time with specified
+        sampling time.
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+    name : string, optional
+        System name (used for specifying signals)
+
+    Notes
+    -----
+    The class must implement two functions:
 
     zflag = flatsys.foward(x, u)
         This function computes the flag (derivatives) of the flat output.
@@ -83,65 +134,13 @@ class FlatSystem(NonlinearIOSystem):
                  updfcn=None, outfcn=None,      # I/O system
                  inputs=None, outputs=None,
                  states=None, params={}, dt=None, name=None):
-        """Create a differentially flat input/output system.
+        """Create a differentially flat I/O system.
 
         The FlatIOSystem constructor is used to create an input/output system
-        object that also represents a differentially flat system.  The output
-        of the system does not need to be the differentially flat output.
-
-        Parameters
-        ----------
-        forward : callable
-            A function to compute the flat flag given the states and input.
-        reverse : callable
-            A function to compute the states and input given the flat flag.
-        updfcn : callable, optional
-            Function returning the state update function
-
-                `updfcn(t, x, u[, param]) -> array`
-
-            where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-            with shape (ninputs,), `t` is a float representing the currrent
-            time, and `param` is an optional dict containing the values of
-            parameters used by the function.  If not specified, the state
-            space update will be computed using the flat system coordinates.
-        outfcn : callable
-            Function returning the output at the given state
-
-                `outfcn(t, x, u[, param]) -> array`
-
-            where the arguments are the same as for `upfcn`.  If not
-            specified, the output will be the flat outputs.
-        inputs : int, list of str, or None
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-        outputs : int, list of str, or None
-            Description of the system outputs.  Same format as `inputs`.
-        states : int, list of str, or None
-            Description of the system states.  Same format as `inputs`.
-        dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
-            time, positive number is discrete time with specified
-            sampling time.
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-        name : string, optional
-            System name (used for specifying signals)
-
-        Returns
-        -------
-        InputOutputSystem
-            Input/output system object
+        object that also represents a differentially flat system.
 
         """
+
         # TODO: specify default update and output functions
         if updfcn is None: updfcn = self._flat_updfcn
         if outfcn is None: outfcn = self._flat_outfcn
@@ -158,6 +157,7 @@ class FlatSystem(NonlinearIOSystem):
         # Save the length of the flat flag
 
     def forward(self, x, u, params={}):
+
         """Compute the flat flag given the states and input.
 
         Given the states and inputs for a system, compute the flat
