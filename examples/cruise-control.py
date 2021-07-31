@@ -7,11 +7,11 @@
 # road. The controller compensates for these unknowns by measuring the speed
 # of the car and adjusting the throttle appropriately.
 #
-# This file explore the dynamics and control of the cruise control system,
-# following the material presenting in Feedback Systems by Astrom and Murray.
+# This file explores the dynamics and control of the cruise control system,
+# following the material presented in Feedback Systems by Astrom and Murray.
 # A full nonlinear model of the vehicle dynamics is used, with both PI and
 # state space control laws.  Different methods of constructing control systems
-# are show, all using the InputOutputSystem class (and subclasses).
+# are shown, all using the InputOutputSystem class (and subclasses).
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -87,7 +87,7 @@ def vehicle_update(t, x, u, params={}):
     # the coefficient of rolling friction and sgn(v) is the sign of v (+/- 1) or
     # zero if v = 0.
     
-    Fr  = m * g * Cr * sign(v)
+    Fr = m * g * Cr * sign(v)
 
     # The aerodynamic drag is proportional to the square of the speed: Fa =
     # 1/\rho Cd A |v| v, where \rho is the density of air, Cd is the
@@ -120,7 +120,7 @@ def motor_torque(omega, params={}):
 # Define the input/output system for the vehicle
 vehicle = ct.NonlinearIOSystem(
     vehicle_update, None, name='vehicle',
-    inputs = ('u', 'gear', 'theta'), outputs = ('v'), states=('v'))
+    inputs=('u', 'gear', 'theta'), outputs=('v'), states=('v'))
 
 # Figure 1.11: A feedback system for controlling the speed of a vehicle. In
 # this example, the speed of the vehicle is measured and compared to the
@@ -140,13 +140,13 @@ control_tf = ct.tf2io(
 # Outputs: v (vehicle velocity)
 cruise_tf = ct.InterconnectedSystem(
     (control_tf, vehicle), name='cruise',
-    connections = (
+    connections=(
         ['control.u', '-vehicle.v'],
         ['vehicle.u', 'control.y']),
-    inplist = ('control.u', 'vehicle.gear', 'vehicle.theta'),
-    inputs = ('vref', 'gear', 'theta'),
-    outlist = ('vehicle.v', 'vehicle.u'),
-    outputs = ('v', 'u'))
+    inplist=('control.u', 'vehicle.gear', 'vehicle.theta'),
+    inputs=('vref', 'gear', 'theta'),
+    outlist=('vehicle.v', 'vehicle.u'),
+    outputs=('v', 'u'))
 
 # Define the time and input vectors
 T = np.linspace(0, 25, 101)
@@ -168,10 +168,10 @@ for m in (1200, 1600, 2000):
     # Compute the equilibrium state for the system
     X0, U0 = ct.find_eqpt(
         cruise_tf, [0, vref[0]], [vref[0], gear[0], theta0[0]], 
-        iu=[1, 2], y0=[vref[0], 0], iy=[0], params={'m':m})
+        iu=[1, 2], y0=[vref[0], 0], iy=[0], params={'m': m})
 
     t, y = ct.input_output_response(
-        cruise_tf, T, [vref, gear, theta_hill], X0, params={'m':m})
+        cruise_tf, T, [vref, gear, theta_hill], X0, params={'m': m})
 
     # Plot the velocity
     plt.sca(vel_axes)
@@ -202,7 +202,7 @@ plt.suptitle('Torque curves for typical car engine')
 omega_range = np.linspace(0, 700, 701)
 plt.subplot(2, 2, 1)
 plt.plot(omega_range, [motor_torque(w) for w in omega_range])
-plt.xlabel('Angular velocity $\omega$ [rad/s]')
+plt.xlabel(r'Angular velocity $\omega$ [rad/s]')
 plt.ylabel('Torque $T$ [Nm]')
 plt.grid(True, linestyle='dotted')
 
@@ -228,6 +228,7 @@ plt.text(58.5, 185, '$n$=5')
 plt.xlabel('Velocity $v$ [m/s]')
 plt.ylabel('Torque $T$ [Nm]')
 
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Make space for suptitle
 plt.show(block=False)
 
 # Figure 4.3: Car with cruise control encountering a sloping road
@@ -272,8 +273,8 @@ def pi_output(t, x, u, params={}):
 
 control_pi = ct.NonlinearIOSystem(
     pi_update, pi_output, name='control',
-    inputs = ['v', 'vref'], outputs = ['u'], states = ['z'],
-    params = {'kp':0.5, 'ki':0.1})
+    inputs=['v', 'vref'], outputs=['u'], states=['z'],
+    params={'kp': 0.5, 'ki': 0.1})
 
 # Create the closed loop system
 cruise_pi = ct.InterconnectedSystem(
@@ -290,8 +291,10 @@ cruise_pi = ct.InterconnectedSystem(
 # desired velocity is recovered after 20 s.
 
 # Define a function for creating a "standard" cruise control plot
-def cruise_plot(sys, t, y, t_hill=5, vref=20, antiwindup=False,
-                linetype='b-', subplots=[None, None]):
+def cruise_plot(sys, t, y, label=None, t_hill=None, vref=20, antiwindup=False,
+                linetype='b-', subplots=None, legend=None):
+    if subplots is None:
+        subplots = [None, None]
     # Figure out the plot bounds and indices
     v_min = vref-1.2; v_max = vref+0.5; v_ind = sys.find_output('v')
     u_min = 0; u_max = 2 if antiwindup else 1; u_ind = sys.find_output('u')
@@ -310,7 +313,8 @@ def cruise_plot(sys, t, y, t_hill=5, vref=20, antiwindup=False,
         plt.sca(subplots[0])
     plt.plot(t, y[v_ind], linetype)
     plt.plot(t, vref*np.ones(t.shape), 'k-')
-    plt.plot([t_hill, t_hill], [v_min, v_max], 'k--')
+    if t_hill:
+        plt.axvline(t_hill, color='k', linestyle='--', label='t hill')
     plt.axis([0, t[-1], v_min, v_max])
     plt.xlabel('Time $t$ [s]')
     plt.ylabel('Velocity $v$ [m/s]')
@@ -320,17 +324,18 @@ def cruise_plot(sys, t, y, t_hill=5, vref=20, antiwindup=False,
         subplot_axes[1] = plt.subplot(2, 1, 2)
     else:
         plt.sca(subplots[1])
-    plt.plot(t, y[u_ind], 'r--' if antiwindup else linetype)
-    plt.plot([t_hill, t_hill], [u_min, u_max], 'k--')
-    plt.axis([0, t[-1], u_min, u_max])
-    plt.xlabel('Time $t$ [s]')
-    plt.ylabel('Throttle $u$')
-
+    plt.plot(t, y[u_ind], 'r--' if antiwindup else linetype, label=label)
     # Applied input profile
     if antiwindup:
         # TODO: plot the actual signal from the process?
-        plt.plot(t, np.clip(y[u_ind], 0, 1), linetype)
-        plt.legend(['Commanded', 'Applied'], frameon=False)
+        plt.plot(t, np.clip(y[u_ind], 0, 1), linetype, label='Applied')
+    if t_hill:
+        plt.axvline(t_hill, color='k', linestyle='--')
+    if legend:
+        plt.legend(frameon=False)
+    plt.axis([0, t[-1], u_min, u_max])
+    plt.xlabel('Time $t$ [s]')
+    plt.ylabel('Throttle $u$')
 
     return subplot_axes
 
@@ -354,7 +359,7 @@ theta_hill = [
     4./180. * pi * (t-5) if t <= 6 else
     4./180. * pi for t in T]
 t, y = ct.input_output_response(cruise_pi, T, [vref, gear, theta_hill], X0)
-cruise_plot(cruise_pi, t, y)
+cruise_plot(cruise_pi, t, y, t_hill=5)
 
 #
 # Example 7.8: State space feedback with integral action
@@ -435,17 +440,15 @@ theta_hill = [
     4./180. * pi for t in T]
 t, y = ct.input_output_response(
     cruise_sf, T, [vref, gear, theta_hill], [X0[0], 0],
-    params={'K':K, 'kf':kf, 'ki':0.0, 'kf':kf, 'xd':xd, 'ud':ud, 'yd':yd})
-subplots = cruise_plot(cruise_sf, t, y, t_hill=8, linetype='b--')
+    params={'K': K, 'kf': kf, 'ki': 0.0, 'kf': kf, 'xd': xd, 'ud': ud, 'yd': yd})
+subplots = cruise_plot(cruise_sf, t, y, label='Proportional', linetype='b--')
 
 # Response of the system with state feedback + integral action
 t, y = ct.input_output_response(
     cruise_sf, T, [vref, gear, theta_hill], [X0[0], 0],
-    params={'K':K, 'kf':kf, 'ki':0.1, 'kf':kf, 'xd':xd, 'ud':ud, 'yd':yd})
-cruise_plot(cruise_sf, t, y, t_hill=8, linetype='b-', subplots=subplots)
-
-# Add a legend
-plt.legend(['Proportional', 'PI control'], frameon=False)
+    params={'K': K, 'kf': kf, 'ki': 0.1, 'kf': kf, 'xd': xd, 'ud': ud, 'yd': yd})
+cruise_plot(cruise_sf, t, y, label='PI control', t_hill=8, linetype='b-',
+            subplots=subplots, legend=True)
 
 # Example 11.5: simulate the effect of a (steeper) hill at t = 5 seconds
 #
@@ -463,8 +466,9 @@ theta_hill = [
     6./180. * pi for t in T]
 t, y = ct.input_output_response(
     cruise_pi, T, [vref, gear, theta_hill], X0,
-    params={'kaw':0})
-cruise_plot(cruise_pi, t, y, antiwindup=True)
+    params={'kaw': 0})
+cruise_plot(cruise_pi, t, y, label='Commanded', t_hill=5, antiwindup=True,
+            legend=True)
 
 # Example 11.6: add anti-windup compensation
 #
@@ -477,8 +481,9 @@ plt.figure()
 plt.suptitle('Cruise control with integrator anti-windup protection')
 t, y = ct.input_output_response(
     cruise_pi, T, [vref, gear, theta_hill], X0,
-    params={'kaw':2.})
-cruise_plot(cruise_pi, t, y, antiwindup=True)
+    params={'kaw': 2.})
+cruise_plot(cruise_pi, t, y, label='Commanded', t_hill=5, antiwindup=True,
+            legend=True)
 
 # If running as a standalone program, show plots and wait before closing
 import os
