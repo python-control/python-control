@@ -92,12 +92,12 @@ lat = (0, 2, 3, 5)
 alt = (1, 4)
 
 # Decoupled dynamics
-Ax = (A[lat, :])[:, lat]  # ! not sure why I have to do it this way
+Ax = A[np.ix_(lat, lat)]
 Bx = B[lat, 0]
 Cx = C[0, lat]
 Dx = D[0, 0]
 
-Ay = (A[alt, :])[:, alt]  # ! not sure why I have to do it this way
+Ay = A[np.ix_(alt, alt)]
 By = B[alt, 1]
 Cy = C[1, alt]
 Dy = D[1, 1]
