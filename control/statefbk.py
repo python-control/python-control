@@ -277,9 +277,9 @@ def lqe(A, G, C, QN, RN, NN=None):
 
     .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
 
-    produces a state estimate that x_e that minimizes the expected squared
-    error using the sensor measurements y. The noise cross-correlation `NN`
-    is set to zero when omitted.
+    produces a state estimate x_e that minimizes the expected squared error
+    using the sensor measurements y. The noise cross-correlation `NN` is
+    set to zero when omitted.
 
     Parameters
     ----------
@@ -617,7 +617,7 @@ def gram(sys, type):
     if type not in ['c', 'o', 'cf', 'of']:
         raise ValueError("That type is not supported!")
 
-    # TODO: Check for continous or discrete, only continuous supported for now
+    # TODO: Check for continuous or discrete, only continuous supported for now
         # if isCont():
         #    dico = 'C'
         # elif isDisc():

@@ -263,7 +263,7 @@ def append(*sys):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: StateSpace or Transferfunction
+    sys1, sys2, ..., sysn: StateSpace or TransferFunction
         LTI systems to combine
 
 
@@ -275,7 +275,7 @@ def append(*sys):
 
     Examples
     --------
-    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]]", [[6., 8]], [[9.]])
+    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6., 8]], [[9.]])
     >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
     >>> sys = append(sys1, sys2)
 
@@ -299,7 +299,7 @@ def connect(sys, Q, inputv, outputv):
 
     Parameters
     ----------
-    sys : StateSpace Transferfunction
+    sys : StateSpace or TransferFunction
         System to be connected
     Q : 2D array
         Interconnection matrix. First column gives the input to be connected.
