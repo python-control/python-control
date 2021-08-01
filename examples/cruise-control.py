@@ -195,40 +195,41 @@ plt.xlabel('Time [s]')
 # angular velocity of the engine, while the curve on the right shows
 # torque as a function of car speed for different gears.
 
-plt.figure()
-plt.suptitle('Torque curves for typical car engine')
+# Figure 4.2
+fig, axes = plt.subplots(1, 2, figsize=(7, 3))
 
-# Figure 4.2a - single torque curve as function of omega
-omega_range = np.linspace(0, 700, 701)
-plt.subplot(2, 2, 1)
-plt.plot(omega_range, [motor_torque(w) for w in omega_range])
-plt.xlabel(r'Angular velocity $\omega$ [rad/s]')
-plt.ylabel('Torque $T$ [Nm]')
-plt.grid(True, linestyle='dotted')
+# (a) - single torque curve as function of omega
+ax = axes[0]
+omega = np.linspace(0, 700, 701)
+ax.plot(omega, motor_torque(omega))
+ax.set_xlabel(r'Angular velocity $\omega$ [rad/s]')
+ax.set_ylabel('Torque $T$ [Nm]')
+ax.grid(True, linestyle='dotted')
 
-# Figure 4.2b - torque curves in different gears, as function of velocity
-plt.subplot(2, 2, 2)
-v_range = np.linspace(0, 70, 71)
+# (b) - torque curves in different gears, as function of velocity
+ax = axes[1]
+v = np.linspace(0, 70, 71)
 alpha = [40, 25, 16, 12, 10]
 for gear in range(5):
-    omega_range = alpha[gear] * v_range
-    plt.plot(v_range, [motor_torque(w) for w in omega_range],
-             color='blue', linestyle='solid')
+    omega = alpha[gear] * v
+    T = motor_torque(omega)
+    plt.plot(v, T, color='#1f77b4', linestyle='solid')
 
 # Set up the axes and style
-plt.axis([0, 70, 100, 200])
-plt.grid(True, linestyle='dotted')
+ax.axis([0, 70, 100, 200])
+ax.grid(True, linestyle='dotted')
 
 # Add labels
 plt.text(11.5, 120, '$n$=1')
-plt.text(24, 120, '$n$=2')
-plt.text(42.5, 120, '$n$=3')
-plt.text(58.5, 120, '$n$=4')
-plt.text(58.5, 185, '$n$=5')
-plt.xlabel('Velocity $v$ [m/s]')
-plt.ylabel('Torque $T$ [Nm]')
+ax.text(24, 120, '$n$=2')
+ax.text(42.5, 120, '$n$=3')
+ax.text(58.5, 120, '$n$=4')
+ax.text(58.5, 185, '$n$=5')
+ax.set_xlabel('Velocity $v$ [m/s]')
+ax.set_ylabel('Torque $T$ [Nm]')
 
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Make space for suptitle
+plt.suptitle('Torque curves for typical car engine')
+plt.tight_layout()
 plt.show(block=False)
 
 # Figure 4.3: Car with cruise control encountering a sloping road
