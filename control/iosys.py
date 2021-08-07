@@ -131,7 +131,7 @@ class InputOutputSystem(object):
                  name=None, **kwargs):
         """Create an input/output system.
 
-        The InputOutputSystem contructor is used to create an input/output
+        The InputOutputSystem constructor is used to create an input/output
         object with the core information required for all input/output
         systems.  Instances of this class are normally created by one of the
         input/output subclasses: :class:`~control.LinearICSystem`,
@@ -661,7 +661,7 @@ class InputOutputSystem(object):
 class LinearIOSystem(InputOutputSystem, StateSpace):
     """Input/output representation of a linear (state space) system.
 
-    This class is used to implementat a system that is a linear state
+    This class is used to implement a system that is a linear state
     space system (defined by the StateSpace system object).
 
     Parameters
@@ -1675,7 +1675,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
               return_y=False, return_result=False, **kw):
     """Find the equilibrium point for an input/output system.
 
-    Returns the value of an equlibrium point given the initial state and
+    Returns the value of an equilibrium point given the initial state and
     either input value or desired output value for the equilibrium point.
 
     Parameters
@@ -1926,7 +1926,7 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
 
     This function computes the linearization of an input/output system at a
     given state and input value and returns a :class:`~control.StateSpace`
-    object.  The eavaluation point need not be an equilibrium point.
+    object.  The evaluation point need not be an equilibrium point.
 
     Parameters
     ----------
@@ -1934,7 +1934,7 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
         The system to be linearized
     xeq : array
         The state at which the linearization will be evaluated (does not need
-        to be an equlibrium state).
+        to be an equilibrium state).
     ueq : array
         The input at which the linearization will be evaluated (does not need
         to correspond to an equlibrium state).
@@ -2055,7 +2055,7 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         ('sys', 'sig') are also recognized.
 
         Similarly, each output-spec should describe an output signal from one
-        of the susystems.  The lowest level representation is a tuple of the
+        of the subsystems.  The lowest level representation is a tuple of the
         form `(subsys_i, out_j, gain)`.  The input will be constructed by
         summing the listed outputs after multiplying by the gain term.  If the
         gain term is omitted, it is assumed to be 1.  If the system has a
