@@ -70,6 +70,14 @@ class TestLTI:
         np.testing.assert_almost_equal(sys_dt.damp(), expected_dt)
         np.testing.assert_almost_equal(damp(sys_dt), expected_dt)
 
+        #also check that for a discrete system with a negative real pole the damp function can extract wn and zeta.
+        p2_zplane = -0.2
+        sys_dt2 = tf(1, [1, -p2_zplane], dt)
+        wn2, zeta2, p2 = sys_dt2.damp()
+        p2_splane = -wn2 * zeta2 + 1j * wn2 * np.sqrt(1 - zeta2**2)
+        p2_zplane = np.exp(p2_splane * dt)
+        np.testing.assert_almost_equal(p2, p2_zplane)
+        
     def test_dcgain(self):
         sys = tf(84, [1, 2])
         np.testing.assert_allclose(sys.dcgain(), 42)

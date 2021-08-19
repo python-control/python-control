@@ -159,7 +159,7 @@ class LTI:
         poles = self.pole()
 
         if isdtime(self, strict=True):
-            splane_poles = np.log(poles)/self.dt
+            splane_poles = np.log(poles.astype(complex))/self.dt
         else:
             splane_poles = poles
         wn = absolute(splane_poles)
