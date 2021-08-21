@@ -83,6 +83,95 @@ __all__ = ['forced_response', 'step_response', 'step_info', 'initial_response',
            'impulse_response']
 
 
+class InputOutputResponse:
+    """Class for returning time responses
+
+    This class maintains and manipulates the data corresponding to the
+    temporal response of an input/output system.  It is used as the return
+    type for time domain simulations (step response, input/output response,
+    etc).
+
+    Attributes
+    ----------
+    t : array
+        Time values of the output.
+
+    y : array
+        Response of the system, indexed by the output number and time.
+
+    x : array
+        Time evolution of the state vector, indexed by state number and time.
+
+    u : array
+        Input to the system, indexed by the input number and time.
+
+    Methods
+    -------
+    plot(**kwargs)
+        Plot the input/output response.  Keywords are passed to matplotlib.
+
+    Notes
+    -----
+    1. For backward compatibility with earlier versions of python-control,
+       this class has an ``__iter__`` method that allows it to be assigned
+       to a tuple with a variable number of elements.  This allows the
+       following patterns to work:
+
+         t, y = step_response(sys)
+         t, y, x = step_response(sys, return_x=True)
+         t, y, x, u = step_response(sys, return_x=True, return_u=True)
+
+    2. For backward compatibility with earlier version of python-control,
+       this class has ``__getitem__`` and ``__len__`` methods that allow the
+       return value to be indexed:
+
+         response[0]: returns the time vector
+         response[1]: returns the output vector
+         response[2]: returns the state vector
+
+       If the index is two-dimensional, a new ``InputOutputResponse`` object
+       is returned that corresponds to the specified subset of input/output
+       responses.
+
+    """
+
+    def __init__(
+            self, t, y, x, u, sys=None, dt=None,
+            return_x=False, squeeze=None        # for legacy interface
+    ):
+        # Store response attributes
+        self.t, self.y, self.x = t, y, x
+
+        # Store legacy keyword values (only used for legacy interface)
+        self.return_x, self.squeeze = return_x, squeeze
+
+    # Implement iter to allow assigning to a tuple
+    def __iter__(self):
+        if not self.return_x:
+            return iter((self.t, self.y))
+        return iter((self.t, self.y, self.x))
+
+    # Implement (thin) getitem to allow access via legacy indexing
+    def __getitem__(self, index):
+        # See if we were passed a slice
+        if isinstance(index, slice):
+            if (index.start is None or index.start == 0) and index.stop == 2:
+                return (self.t, self.y)
+
+        # Otherwise assume we were passed a single index
+        if index == 0:
+            return self.t
+        if index == 1:
+            return self.y
+        if index == 2:
+            return self.x
+        raise IndexError
+
+    # Implement (thin) len to emulate legacy testing interface
+    def __len__(self):
+        return 3 if self.return_x else 2
+
+
 # Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
@@ -534,21 +623,9 @@ def _process_time_response(
 
     Returns
     -------
-    T : 1D array
-        Time values of the output
+    response: InputOutputResponse
+        The input/output response of the system.
 
-    yout : ndarray
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is either 2D (indexed by output and time)
-        or 3D (indexed by input, output, and time).
-
-    xout : array, optional
-        Individual response of each x variable (if return_x is True). For a
-        SISO system (or if a single input is specified), xout is a 2D array
-        indexed by the state index and time.  For a non-SISO system, xout is a
-        3D array indexed by the state, the input, and time.  The shape of xout
-        is not affected by the ``squeeze`` keyword.
     """
     # If squeeze was not specified, figure out the default (might remain None)
     if squeeze is None:
@@ -586,7 +663,8 @@ def _process_time_response(
             xout = np.transpose(xout, np.roll(range(xout.ndim), 1))
 
     # Return time, output, and (optionally) state
-    return (tout, yout, xout) if return_x else (tout, yout)
+    return InputOutputResponse(
+        tout, yout, xout, None, return_x=return_x, squeeze=squeeze)
 
 
 def _get_ss_simo(sys, input=None, output=None, squeeze=None):
