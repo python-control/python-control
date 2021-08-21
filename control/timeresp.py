@@ -137,13 +137,62 @@ class InputOutputResponse:
 
     def __init__(
             self, t, y, x, u, sys=None, dt=None,
-            return_x=False, squeeze=None        # for legacy interface
+            transpose=False, return_x=False, squeeze=None
     ):
-        # Store response attributes
-        self.t, self.y, self.x = t, y, x
+        #
+        # Process and store the basic input/output elements
+        #
+        t, y, x = _process_time_response(
+            sys, t, y, x,
+            transpose=transpose, return_x=True, squeeze=squeeze)
+
+        # Time vector
+        self.t = np.atleast_1d(t)
+        if len(self.t.shape) != 1:
+            raise ValueError("Time vector must be 1D array")
+
+        # Output vector
+        self.yout = np.array(y)
+        self.noutputs = 1 if len(self.yout.shape) < 2 else self.yout.shape[0]
+        self.ninputs = 1 if len(self.yout.shape) < 3 else self.yout.shape[-2]
+        # TODO: Check to make sure time points match
+
+        # State vector
+        self.xout = np.array(x)
+        self.nstates = self.xout.shape[0]
+        # TODO: Check to make sure time points match
+
+        # Input vector
+        self.uout = np.array(u)
+        # TODO: Check to make sure input shape is OK
+        # TODO: Check to make sure time points match
+
+        # If the system was specified, make sure it is compatible
+        if sys is not None:
+            if sys.ninputs != self.ninputs:
+                ValueError("System inputs do not match response data")
+            if sys.noutputs != self.noutputs:
+                ValueError("System outputs do not match response data")
+            if sys.nstates != self.nstates:
+                ValueError("System states do not match response data")
+        self.sys = sys
+
+        # Keep track of whether to squeeze inputs, outputs, and states
+        self.squeeze = squeeze
 
         # Store legacy keyword values (only used for legacy interface)
-        self.return_x, self.squeeze = return_x, squeeze
+        self.transpose = transpose
+        self.return_x = return_x
+
+    # Getter for output (implements squeeze processing)
+    @property
+    def y(self):
+        return self.yout
+
+    # Getter for state (implements squeeze processing)
+    @property
+    def x(self):
+        return self.xout
 
     # Implement iter to allow assigning to a tuple
     def __iter__(self):
@@ -565,8 +614,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         xout = np.transpose(xout)
         yout = np.transpose(yout)
 
-    return _process_time_response(sys, tout, yout, xout, transpose=transpose,
-                                  return_x=return_x, squeeze=squeeze)
+    return InputOutputResponse(
+        tout, yout, xout, U, sys=sys,
+        transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
 # Process time responses in a uniform way
@@ -623,8 +673,21 @@ def _process_time_response(
 
     Returns
     -------
-    response: InputOutputResponse
-        The input/output response of the system.
+    T : 1D array
+        Time values of the output
+
+    yout : ndarray
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is either 2D (indexed by output and time)
+        or 3D (indexed by input, output, and time).
+
+    xout : array, optional
+        Individual response of each x variable (if return_x is True). For a
+        SISO system (or if a single input is specified), xout is a 2D array
+        indexed by the state index and time.  For a non-SISO system, xout is a
+        3D array indexed by the state, the input, and time.  The shape of xout
+        is not affected by the ``squeeze`` keyword.
 
     """
     # If squeeze was not specified, figure out the default (might remain None)
@@ -663,8 +726,7 @@ def _process_time_response(
             xout = np.transpose(xout, np.roll(range(xout.ndim), 1))
 
     # Return time, output, and (optionally) state
-    return InputOutputResponse(
-        tout, yout, xout, None, return_x=return_x, squeeze=squeeze)
+    return (tout, yout, xout) if return_x else (tout, yout)
 
 
 def _get_ss_simo(sys, input=None, output=None, squeeze=None):

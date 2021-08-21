@@ -32,7 +32,8 @@ import copy
 from warnings import warn
 
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
-from .timeresp import _check_convert_array, _process_time_response
+from .timeresp import _check_convert_array, _process_time_response, \
+    InputOutputResponse
 from .lti import isctime, isdtime, common_timebase
 from . import config
 
@@ -1666,8 +1667,9 @@ def input_output_response(
     else:                       # Neither ctime or dtime??
         raise TypeError("Can't determine system type")
 
-    return _process_time_response(sys, soln.t, y, soln.y, transpose=transpose,
-                                  return_x=return_x, squeeze=squeeze)
+    return InputOutputResponse(
+        soln.t, y, soln.y, U, sys=sys,
+        transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
 def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
