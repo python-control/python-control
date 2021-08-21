@@ -91,24 +91,49 @@ class InputOutputResponse:
     type for time domain simulations (step response, input/output response,
     etc).
 
+    Input/output responses can be stored for multiple input signals, with
+    the output and state indexed by the input number.  This allows for
+    input/output response matrices, which is mainly useful for impulse and
+    step responses for linear systems.  For mulit-input responses, the same
+    time vector must be used for all inputs.
+
     Attributes
     ----------
     t : array
-        Time values of the output.
+        Time values of the input/output response(s).
 
     y : array
-        Response of the system, indexed by the output number and time.
+        Output response of the system, indexed by either the output and time
+        (if only a single input is given) or the output, input, and time
+        (for muitiple inputs).
 
     x : array
-        Time evolution of the state vector, indexed by state number and time.
+        Time evolution of the state vector, indexed indexed by either the
+        state and time (if only a single input is given) or the state,
+        input, and time (for muitiple inputs).
 
-    u : array
-        Input to the system, indexed by the input number and time.
+    u : 1D or 2D array
+        Input(s) to the system, indexed by input (optional) and time.  If a
+        1D vector is passed, the output and state responses should be 2D
+        arrays.  If a 2D array is passed, then the state and output vectors
+        should be 3D (indexed by input).
 
     Methods
     -------
     plot(**kwargs)
         Plot the input/output response.  Keywords are passed to matplotlib.
+
+    Examples
+    --------
+    >>> sys = ct.rss(4, 2, 2)
+    >>> response = ct.step_response(sys)
+    >>> response.plot()                   # 2x2 matrix of step responses
+    >>> response.plot(output=1, input=0)  # First input to second output
+
+    >>> T = np.linspace(0, 10, 100)
+    >>> U = np.sin(np.linspace(T))
+    >>> response = ct.forced_response(sys, T, U)
+    >>> t, y = response.t, response.y
 
     Notes
     -----
@@ -137,14 +162,64 @@ class InputOutputResponse:
 
     def __init__(
             self, t, y, x, u, sys=None, dt=None,
-            transpose=False, return_x=False, squeeze=None
+            transpose=False, return_x=False, squeeze=None,
+            input=None, output=None
     ):
+        """Create an input/output time response object.
+
+        Parameters
+        ----------
+        sys : LTI or InputOutputSystem
+            System that generated the data (used to check if SISO/MIMO).
+
+        T : 1D array
+            Time values of the output.  Ignored if None.
+
+        yout : ndarray
+            Response of the system.  This can either be a 1D array indexed
+            by time (for SISO systems), a 2D array indexed by output and
+            time (for MIMO systems with no input indexing, such as
+            initial_response or forced response) or a 3D array indexed by
+            output, input, and time.
+
+        xout : array, optional
+            Individual response of each x variable (if return_x is
+            True). For a SISO system (or if a single input is specified),
+            this should be a 2D array indexed by the state index and time
+            (for single input systems) or a 3D array indexed by state,
+            input, and time. Ignored if None.
+
+        transpose : bool, optional
+            If True, transpose all input and output arrays (for backward
+            compatibility with MATLAB and :func:`scipy.signal.lsim`).
+            Default value is False.
+
+        return_x : bool, optional
+            If True, return the state vector (default = False).
+
+        squeeze : bool, optional
+            By default, if a system is single-input, single-output (SISO) then
+            the output response is returned as a 1D array (indexed by time).
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep the output as a 3D array (indexed by the output, input, and
+            time) even if the system is SISO. The default value can be set
+            using config.defaults['control.squeeze_time_response'].
+
+        input : int, optional
+            If present, the response represents only the listed input.
+
+        output : int, optional
+            If present, the response represents only the listed output.
+
+        """
         #
         # Process and store the basic input/output elements
         #
         t, y, x = _process_time_response(
             sys, t, y, x,
-            transpose=transpose, return_x=True, squeeze=squeeze)
+            transpose=transpose, return_x=True, squeeze=squeeze,
+            input=input, output=output)
 
         # Time vector
         self.t = np.atleast_1d(t)
@@ -180,9 +255,10 @@ class InputOutputResponse:
         # Keep track of whether to squeeze inputs, outputs, and states
         self.squeeze = squeeze
 
-        # Store legacy keyword values (only used for legacy interface)
+        # Store legacy keyword values (only needed for legacy interface)
         self.transpose = transpose
         self.return_x = return_x
+        self.input, self.output = input, output
 
     # Getter for output (implements squeeze processing)
     @property
@@ -898,9 +974,9 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         if return_x:
             xout[:, i, :] = out[2]
 
-    return _process_time_response(
-        sys, out[0], yout, xout, transpose=transpose, return_x=return_x,
-        squeeze=squeeze, input=input, output=output)
+    return InputOutputResponse(
+        out[0], yout, xout, None, sys=sys, transpose=transpose,
+        return_x=return_x, squeeze=squeeze, input=input, output=output)
 
 
 def step_info(sysdata, T=None, T_num=None, yfinal=None,
@@ -1370,9 +1446,9 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         if return_x:
             xout[:, i, :] = out[2]
 
-    return _process_time_response(
-        sys, out[0], yout, xout, transpose=transpose, return_x=return_x,
-        squeeze=squeeze, input=input, output=output)
+    return InputOutputResponse(
+        out[0], yout, xout, None, sys=sys, transpose=transpose,
+        return_x=return_x, squeeze=squeeze, input=input, output=output)
 
 
 # utility function to find time period and time increment using pole locations

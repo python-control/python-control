@@ -1571,8 +1571,8 @@ def input_output_response(
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        return _process_time_response(
-            sys, T, y, np.array((0, 0, np.asarray(T).size)),
+        return InputOutputResponse(
+            T, y, np.array((0, 0, np.asarray(T).size)), None, sys=sys,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
