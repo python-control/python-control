@@ -120,8 +120,11 @@ class InputOutputResponse:
 
     Methods
     -------
-    plot(**kwargs)
+    plot(**kwargs) [NOT IMPLEMENTED]
         Plot the input/output response.  Keywords are passed to matplotlib.
+
+    set_defaults(**kwargs) [NOT IMPLEMENTED]
+        Set the default values for accessing the input/output data.
 
     Examples
     --------
@@ -144,7 +147,6 @@ class InputOutputResponse:
 
          t, y = step_response(sys)
          t, y, x = step_response(sys, return_x=True)
-         t, y, x, u = step_response(sys, return_x=True, return_u=True)
 
     2. For backward compatibility with earlier version of python-control,
        this class has ``__getitem__`` and ``__len__`` methods that allow the
@@ -154,9 +156,9 @@ class InputOutputResponse:
          response[1]: returns the output vector
          response[2]: returns the state vector
 
-       If the index is two-dimensional, a new ``InputOutputResponse`` object
-       is returned that corresponds to the specified subset of input/output
-       responses.
+    3. If a response is indexed using a two-dimensional tuple, a new
+       ``InputOutputResponse`` object is returned that corresponds to the
+       specified subset of input/output responses. [NOT IMPLEMENTED]
 
     """
 
@@ -169,26 +171,46 @@ class InputOutputResponse:
 
         Parameters
         ----------
-        sys : LTI or InputOutputSystem
-            System that generated the data (used to check if SISO/MIMO).
-
-        T : 1D array
+        t : 1D array
             Time values of the output.  Ignored if None.
 
-        yout : ndarray
-            Response of the system.  This can either be a 1D array indexed
-            by time (for SISO systems), a 2D array indexed by output and
-            time (for MIMO systems with no input indexing, such as
-            initial_response or forced response) or a 3D array indexed by
-            output, input, and time.
+        y : ndarray
+            Output response of the system.  This can either be a 1D array
+            indexed by time (for SISO systems or MISO systems with a specified
+            input), a 2D array indexed by output and time (for MIMO systems
+            with no input indexing, such as initial_response or forced
+            response) or a 3D array indexed by output, input, and time.
 
-        xout : array, optional
-            Individual response of each x variable (if return_x is
-            True). For a SISO system (or if a single input is specified),
-            this should be a 2D array indexed by the state index and time
-            (for single input systems) or a 3D array indexed by state,
-            input, and time. Ignored if None.
+        x : array, optional
+            Individual response of each state variable. This should be a 2D
+            array indexed by the state index and time (for single input
+            systems) or a 3D array indexed by state, input, and time.
 
+        u : array, optional
+            Inputs used to generate the output.  This can either be a 1D array
+            indexed by time (for SISO systems or MISO/MIMO systems with a
+            specified input) or a 2D array indexed by input and time.
+
+        sys : LTI or InputOutputSystem, optional
+            System that generated the data.  If desired, the system used to
+            generate the data can be stored along with the data.
+
+        squeeze : bool, optional
+            By default, if a system is single-input, single-output (SISO) then
+            the inputs and outputs are returned as a 1D array (indexed by
+            time) and if a system is multi-input or multi-output, the the
+            inputs are returned as a 2D array (indexed by input and time) and
+            the outputs are returned as a 3D array (indexed by output, input,
+            and time).  If squeeze=True, access to the output response will
+            remove single-dimensional entries from the shape of the inputs and
+            outputs even if the system is not SISO. If squeeze=False, keep the
+            input as a 2D array (indexed by the input and time) and the output
+            as a 3D array (indexed by the output, input, and time) even if the
+            system is SISO. The default value can be set using
+            config.defaults['control.squeeze_time_response'].
+
+        Additional parameters
+        ---------------------
         transpose : bool, optional
             If True, transpose all input and output arrays (for backward
             compatibility with MATLAB and :func:`scipy.signal.lsim`).
@@ -196,15 +218,6 @@ class InputOutputResponse:
 
         return_x : bool, optional
             If True, return the state vector (default = False).
-
-        squeeze : bool, optional
-            By default, if a system is single-input, single-output (SISO) then
-            the output response is returned as a 1D array (indexed by time).
-            If squeeze=True, remove single-dimensional entries from the shape
-            of the output even if the system is not SISO. If squeeze=False,
-            keep the output as a 3D array (indexed by the output, input, and
-            time) even if the system is SISO. The default value can be set
-            using config.defaults['control.squeeze_time_response'].
 
         input : int, optional
             If present, the response represents only the listed input.
@@ -216,10 +229,6 @@ class InputOutputResponse:
         #
         # Process and store the basic input/output elements
         #
-        t, y, x = _process_time_response(
-            sys, t, y, x,
-            transpose=transpose, return_x=True, squeeze=squeeze,
-            input=input, output=output)
 
         # Time vector
         self.t = np.atleast_1d(t)
@@ -229,23 +238,27 @@ class InputOutputResponse:
         # Output vector
         self.yout = np.array(y)
         self.noutputs = 1 if len(self.yout.shape) < 2 else self.yout.shape[0]
-        self.ninputs = 1 if len(self.yout.shape) < 3 else self.yout.shape[-2]
-        # TODO: Check to make sure time points match
+        if self.t.shape[-1] != self.yout.shape[-1]:
+            raise ValueError("Output vector does not match time vector")
 
         # State vector
         self.xout = np.array(x)
-        self.nstates = self.xout.shape[0]
-        # TODO: Check to make sure time points match
+        self.nstates = 0 if self.xout is None else self.xout.shape[0]
+        if self.t.shape[-1] != self.xout.shape[-1]:
+            raise ValueError("State vector does not match time vector")
 
         # Input vector
         self.uout = np.array(u)
-        # TODO: Check to make sure input shape is OK
-        # TODO: Check to make sure time points match
+        if len(self.uout.shape) != 0:
+            self.ninputs = 1 if len(self.uout.shape) < 2 \
+                else self.uout.shape[-2]
+            if self.t.shape[-1] != self.uout.shape[-1]:
+                raise ValueError("Input vector does not match time vector")
+        else:
+            self.ninputs = 0
 
         # If the system was specified, make sure it is compatible
         if sys is not None:
-            if sys.ninputs != self.ninputs:
-                ValueError("System inputs do not match response data")
             if sys.noutputs != self.noutputs:
                 ValueError("System outputs do not match response data")
             if sys.nstates != self.nstates:
@@ -253,6 +266,8 @@ class InputOutputResponse:
         self.sys = sys
 
         # Keep track of whether to squeeze inputs, outputs, and states
+        if not (squeeze is True or squeeze is None or squeeze is False):
+            raise ValueError("unknown squeeze value")
         self.squeeze = squeeze
 
         # Store legacy keyword values (only needed for legacy interface)
@@ -263,12 +278,29 @@ class InputOutputResponse:
     # Getter for output (implements squeeze processing)
     @property
     def y(self):
-        return self.yout
+        t, y = _process_time_response(
+            self.sys, self.t, self.yout, None,
+            transpose=self.transpose, return_x=False, squeeze=self.squeeze,
+            input=self.input, output=self.output)
+        return y
 
     # Getter for state (implements squeeze processing)
     @property
     def x(self):
-        return self.xout
+        t, y, x = _process_time_response(
+            self.sys, self.t, self.yout, self.xout,
+            transpose=self.transpose, return_x=True, squeeze=self.squeeze,
+            input=self.input, output=self.output)
+        return x
+
+    # Getter for state (implements squeeze processing)
+    @property
+    def u(self):
+        t, y = _process_time_response(
+            self.sys, self.t, self.uout, None,
+            transpose=self.transpose, return_x=False, squeeze=self.squeeze,
+            input=self.input, output=self.output)
+        return x
 
     # Implement iter to allow assigning to a tuple
     def __iter__(self):
@@ -685,6 +717,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             tout = T            # Return exact list of time steps
             yout = yout[::inc, :]
             xout = xout[::inc, :]
+        else:
+            # Interpolate the input to get the right number of points
+            U = sp.interpolate.interp1d(T, U)(tout)
 
         # Transpose the output and state vectors to match local convention
         xout = np.transpose(xout)
