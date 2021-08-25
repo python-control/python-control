@@ -828,7 +828,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
         # Process data as a time response (with "outputs" = inputs)
         response = TimeResponseData(
-            ocp.timepts, inputs, states, sys=ocp.system,
+            ocp.timepts, inputs, states, issiso=ocp.system.issiso(),
             transpose=transpose, return_x=return_states, squeeze=squeeze)
 
         self.time = response.time

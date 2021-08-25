@@ -157,8 +157,10 @@ class TimeResponseData:
         compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
         value is False.
 
-    sys : InputOutputSystem or LTI, optional
-        If present, stores the system used to generate the response.
+    issiso : bool, optional
+        Set to ``True`` if the system generating the data is single-input,
+        single-output.  If passed as ``None`` (default), the input data
+        will be used to set the value.
 
     ninputs, noutputs, nstates : int
         Number of inputs, outputs, and states of the underlying system.
@@ -198,7 +200,7 @@ class TimeResponseData:
     """
 
     def __init__(
-            self, time, outputs, states=None, inputs=None, sys=None, dt=None,
+            self, time, outputs, states=None, inputs=None, issiso=None,
             transpose=False, return_x=False, squeeze=None,
             multi_trace=False, input_index=None, output_index=None
     ):
@@ -369,15 +371,22 @@ class TimeResponseData:
             if self.t.shape[-1] != self.u.shape[-1]:
                 raise ValueError("Input vector does not match time vector")
 
-        # If the system was specified, make sure it is compatible
-        if sys is not None:
-            if sys.noutputs != self.noutputs:
-                ValueError("System outputs do not match response data")
-            if self.x is not None and sys.nstates != self.nstates:
-                ValueError("System states do not match response data")
-            if self.u is not None and sys.ninputs != self.ninputs:
-                ValueError("System inputs do not match response data")
-        self.sys = sys
+        # Figure out if the system is SISO
+        if issiso is None:
+            # Figure out based on the data
+            if self.ninputs == 1:
+                issiso = self.noutputs == 1
+            elif self.niinputs > 1:
+                issiso = False
+            else:
+                # Missing input data => can't resolve
+                raise ValueError("Can't determine if system is SISO")
+        elif issiso is True and (self.ninputs > 1 or self.noutputs > 1):
+            raise ValueError("Keyword `issiso` does not match data")
+
+        # Set the value to be used for future processing
+        self.issiso = issiso or \
+            (input_index is not None and output_index is not None)
 
         # Keep track of whether to squeeze inputs, outputs, and states
         if not (squeeze is True or squeeze is None or squeeze is False):
@@ -397,9 +406,8 @@ class TimeResponseData:
     @property
     def outputs(self):
         t, y = _process_time_response(
-            self.sys, self.t, self.y,
-            transpose=self.transpose, squeeze=self.squeeze,
-            input=self.input_index, output=self.output_index)
+            self.t, self.y, issiso=self.issiso,
+            transpose=self.transpose, squeeze=self.squeeze)
         return y
 
     # Getter for state (implements non-standard squeeze processing)
@@ -430,9 +438,8 @@ class TimeResponseData:
             return None
 
         t, u = _process_time_response(
-            self.sys, self.t, self.u,
-            transpose=self.transpose, squeeze=self.squeeze,
-            input=self.input_index, output=self.output_index)
+            self.t, self.u, issiso=self.issiso,
+            transpose=self.transpose, squeeze=self.squeeze)
         return u
 
     # Implement iter to allow assigning to a tuple
@@ -571,7 +578,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., transpose=False,
+def forced_response(sys, T=None, U=0., X0=0., issiso=False, transpose=False,
                     interpolate=False, return_x=None, squeeze=None):
     """Simulate the output of a linear system.
 
@@ -860,24 +867,20 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         yout = np.transpose(yout)
 
     return TimeResponseData(
-        tout, yout, xout, U, sys=sys,
+        tout, yout, xout, U, issiso=sys.issiso(),
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
 # Process time responses in a uniform way
 def _process_time_response(
-        sys, tout, yout, transpose=None,
-        squeeze=None, input=None, output=None):
+        tout, yout, issiso=False, transpose=None, squeeze=None):
     """Process time response signals.
 
-    This function processes the outputs of the time response functions and
-    processes the transpose and squeeze keywords.
+    This function processes the outputs (or inputs) of time response
+    functions and processes the transpose and squeeze keywords.
 
     Parameters
     ----------
-    sys : LTI or InputOutputSystem
-        System that generated the data (used to check if SISO/MIMO).
-
     T : 1D array
         Time values of the output.  Ignored if None.
 
@@ -886,6 +889,10 @@ def _process_time_response(
         (for SISO systems), a 2D array indexed by output and time (for MIMO
         systems with no input indexing, such as initial_response or forced
         response) or a 3D array indexed by output, input, and time.
+
+    issiso : bool, optional
+        If ``True``, process data as single-input, single-output data.
+        Default is ``False``.
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
@@ -900,12 +907,6 @@ def _process_time_response(
         output as a 3D array (indexed by the output, input, and time) even if
         the system is SISO. The default value can be set using
         config.defaults['control.squeeze_time_response'].
-
-    input : int, optional
-        If present, the response represents only the listed input.
-
-    output : int, optional
-        If present, the response represents only the listed output.
 
     Returns
     -------
@@ -922,9 +923,6 @@ def _process_time_response(
     # If squeeze was not specified, figure out the default (might remain None)
     if squeeze is None:
         squeeze = config.defaults['control.squeeze_time_response']
-
-    # Determine if the system is SISO
-    issiso = sys.issiso() or (input is not None and output is not None)
 
     # Figure out whether and how to squeeze output data
     if squeeze is True:         # squeeze all dimensions
@@ -1116,16 +1114,15 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         # Create a set of single inputs system for simulation
         squeeze, simo = _get_ss_simo(sys, i, output, squeeze=squeeze)
 
-        out = forced_response(simo, T, U, X0, transpose=False,
-                              return_x=return_x, squeeze=True)
+        response = forced_response(simo, T, U, X0, squeeze=True)
         inpidx = i if input is None else 0
-        yout[:, inpidx, :] = out[1]
-        xout[:, inpidx, :] = out[2]
+        yout[:, inpidx, :] = response.y
+        xout[:, inpidx, :] = response.x
         uout[:, inpidx, :] = U
 
     return TimeResponseData(
-        out[0], yout, xout, uout, sys=sys, transpose=transpose,
-        return_x=return_x, squeeze=squeeze,
+        response.time, yout, xout, uout, issiso=sys.issiso(),
+        transpose=transpose, return_x=return_x, squeeze=squeeze,
         input_index=input, output_index=output)
 
 
@@ -1441,12 +1438,11 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
 
     # Compute the forced response
-    res = forced_response(sys, T, 0, X0, transpose=transpose,
-                          return_x=return_x, squeeze=squeeze)
+    response = forced_response(sys, T, 0, X0)
 
     # Store the response without an input
     return TimeResponseData(
-        res.t, res.y, res.x, None, sys=sys,
+        response.t, response.y, response.x, None, issiso=sys.issiso(),
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1593,17 +1589,16 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
             U[0] = 1./simo.dt # unit area impulse
 
         # Simulate the impulse response fo this input
-        out = forced_response(simo, T, U, new_X0, transpose=False,
-                              return_x=True, squeeze=squeeze)
+        response = forced_response(simo, T, U, new_X0)
 
         # Store the output (and states)
         inpidx = i if input is None else 0
-        yout[:, inpidx, :] = out[1]
-        xout[:, inpidx, :] = out[2]
+        yout[:, inpidx, :] = response.y
+        xout[:, inpidx, :] = response.x
 
     return TimeResponseData(
-        out[0], yout, xout, uout, sys=sys, transpose=transpose,
-        return_x=return_x, squeeze=squeeze,
+        response.time, yout, xout, uout, issiso=sys.issiso(),
+        transpose=transpose, return_x=return_x, squeeze=squeeze,
         input_index=input, output_index=output)
 
 

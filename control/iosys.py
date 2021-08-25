@@ -908,7 +908,8 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Evaluate the function on the argument
         out = sys._out(0, np.array((0,)), np.asarray(u))
-        _, out = _process_time_response(sys, None, out, None, squeeze=squeeze)
+        _, out = _process_time_response(
+            None, out, issiso=sys.issiso(), squeeze=squeeze)
         return out
 
     def _update_params(self, params, warning=False):
@@ -1572,7 +1573,7 @@ def input_output_response(
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
         return TimeResponseData(
-            T, y, None, None, sys=sys,
+            T, y, None, None, issiso=sys.issiso(),
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
@@ -1668,7 +1669,7 @@ def input_output_response(
         raise TypeError("Can't determine system type")
 
     return TimeResponseData(
-        soln.t, y, soln.y, U, sys=sys,
+        soln.t, y, soln.y, U, issiso=sys.issiso(),
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
