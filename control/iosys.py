@@ -33,7 +33,7 @@ from warnings import warn
 
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
 from .timeresp import _check_convert_array, _process_time_response, \
-    InputOutputResponse
+    TimeResponseData
 from .lti import isctime, isdtime, common_timebase
 from . import config
 
@@ -1571,7 +1571,7 @@ def input_output_response(
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        return InputOutputResponse(
+        return TimeResponseData(
             T, y, np.zeros((0, 0, np.asarray(T).size)), None, sys=sys,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
@@ -1667,7 +1667,7 @@ def input_output_response(
     else:                       # Neither ctime or dtime??
         raise TypeError("Can't determine system type")
 
-    return InputOutputResponse(
+    return TimeResponseData(
         soln.t, y, soln.y, U, sys=sys,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 

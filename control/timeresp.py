@@ -64,7 +64,7 @@ Date: June 2020
 Modified by Ilhan Polat to improve automatic time vector creation
 Date: August 17, 2020
 
-Modified by Richard Murray to add InputOutputResponse class
+Modified by Richard Murray to add TimeResponseData class
 Date: August 2021
 
 $Id$
@@ -83,10 +83,10 @@ from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
 from .xferfcn import TransferFunction
 
 __all__ = ['forced_response', 'step_response', 'step_info',
-           'initial_response', 'impulse_response', 'InputOutputResponse']
+           'initial_response', 'impulse_response', 'TimeResponseData']
 
 
-class InputOutputResponse:
+class TimeResponseData:
     """Class for returning time responses
 
     This class maintains and manipulates the data corresponding to the
@@ -94,13 +94,24 @@ class InputOutputResponse:
     type for time domain simulations (step response, input/output response,
     etc).
 
-    Input/output responses can be stored for multiple input signals (called
+    A time response consists of a time vector, an output vector, and
+    optionally an input vector and/or state vector.  Inputs and outputs can
+    be 1D (scalar input/output) or 2D (vector input/output).
+
+    A time response can be stored for multiple input signals (called
     a trace), with the output and state indexed by the trace number.  This
     allows for input/output response matrices, which is mainly useful for
     impulse and step responses for linear systems.  For multi-trace
     responses, the same time vector must be used for all traces.
 
-    Attributes
+    Time responses are access through either the raw data, stored as ``t``,
+    ``y``, ``x``, ``u``, or using a set of properties ``time``, ``outputs``,
+    ``states``, ``inputs``.  When access time responses via their
+    properties, squeeze processing is applied so that (by default)
+    single-input, single-output systems will have the output and input
+    indices supressed.  This behavior is set using the ``squeeze`` keyword.
+
+    Properties
     ----------
     time : array
         Time values of the input/output response(s).
@@ -124,6 +135,27 @@ class InputOutputResponse:
         the two.  If a 3D vector is passed, then it represents a multi-trace,
         multi-input signal, indexed by input, trace, and time.
 
+    squeeze : bool, optional
+        By default, if a system is single-input, single-output (SISO) then
+        the inputs and outputs are returned as a 1D array (indexed by time)
+        and if a system is multi-input or multi-output, then the inputs are
+        returned as a 2D array (indexed by input and time) and the outputs
+        are returned as either a 2D array (indexed by output and time) or a
+        3D array (indexed by output, trace, and time).  If ``squeeze=True``,
+        access to the output response will remove single-dimensional entries
+        from the shape of the inputs and outputs even if the system is not
+        SISO. If ``squeeze=False``, the input is returned as a 2D or 3D
+        array (indexed by the input [if multi-input], trace [if
+        multi-trace] and time) and the output as a 2D or 3D array (indexed
+        by the output, trace [if multi-trace], and time) even if the system
+        is SISO. The default value can be set using
+        config.defaults['control.squeeze_time_response'].
+
+    transpose : bool, optional
+        If True, transpose all input and output arrays (for backward
+        compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
+        value is False.
+
     sys : InputOutputSystem or LTI, optional
         If present, stores the system used to generate the response.
 
@@ -131,7 +163,9 @@ class InputOutputResponse:
         Number of inputs, outputs, and states of the underlying system.
 
     ntraces : int
-        Number of independent traces represented in the input/output response.
+        Number of independent traces represented in the input/output
+        response.  If ntraces is 0 then the data represents a single trace
+        with the trace index surpressed in the data.
 
     input_index : int, optional
         If set to an integer, represents the input index for the input signal.
@@ -141,26 +175,6 @@ class InputOutputResponse:
         If set to an integer, represents the output index for the output
         response.  Default is ``None``, in which case all outputs should be
         given.
-
-    Methods
-    -------
-    plot(**kwargs) [NOT IMPLEMENTED]
-        Plot the input/output response.  Keywords are passed to matplotlib.
-
-    set_defaults(**kwargs) [NOT IMPLEMENTED]
-        Set the default values for accessing the input/output data.
-
-    Examples
-    --------
-    >>> sys = ct.rss(4, 2, 2)
-    >>> response = ct.step_response(sys)
-    >>> response.plot()                   # 2x2 matrix of step responses
-    >>> response.plot(output=1, input=0)  # First input to second output
-
-    >>> T = np.linspace(0, 10, 100)
-    >>> U = np.sin(np.linspace(T))
-    >>> response = ct.forced_response(sys, T, U)
-    >>> t, y = response.t, response.y
 
     Notes
     -----
@@ -180,14 +194,10 @@ class InputOutputResponse:
          response[1]: returns the output vector
          response[2]: returns the state vector
 
-    3. If a response is indexed using a two-dimensional tuple, a new
-       ``InputOutputResponse`` object is returned that corresponds to the
-       specified subset of input/output responses. [NOT IMPLEMENTED]
-
     """
 
     def __init__(
-            self, time, outputs, states, inputs, sys=None, dt=None,
+            self, time, outputs, states=None, inputs=None, sys=None, dt=None,
             transpose=False, return_x=False, squeeze=None,
             multi_trace=False, input_index=None, output_index=None
     ):
@@ -253,7 +263,7 @@ class InputOutputResponse:
         multi_trace : bool, optional
             If ``True``, then 2D input array represents multiple traces.  For
             a MIMO system, the ``input`` attribute should then be set to
-            indicate which input is being specified.  Default is ``False``.
+            indicate which trace is being specified.  Default is ``False``.
 
         input_index : int, optional
             If present, the response represents only the listed input.
@@ -272,40 +282,39 @@ class InputOutputResponse:
             raise ValueError("Time vector must be 1D array")
 
         # Output vector (and number of traces)
-        self.yout = np.array(outputs)
-        if multi_trace or len(self.yout.shape) == 3:
-            if len(self.yout.shape) < 2:
+        self.y = np.array(outputs)
+        if multi_trace or len(self.y.shape) == 3:
+            if len(self.y.shape) < 2:
                 raise ValueError("Output vector is the wrong shape")
-            self.ntraces = self.yout.shape[-2]
-            self.noutputs = 1 if len(self.yout.shape) < 2 else \
-                self.yout.shape[0]
+            self.ntraces = self.y.shape[-2]
+            self.noutputs = 1 if len(self.y.shape) < 2 else \
+                self.y.shape[0]
         else:
             self.ntraces = 1
-            self.noutputs = 1 if len(self.yout.shape) < 2 else \
-                self.yout.shape[0]
+            self.noutputs = 1 if len(self.y.shape) < 2 else \
+                self.y.shape[0]
 
         # Make sure time dimension of output is OK
-        if self.t.shape[-1] != self.yout.shape[-1]:
+        if self.t.shape[-1] != self.y.shape[-1]:
             raise ValueError("Output vector does not match time vector")
 
         # State vector
-        self.xout = np.array(states)
-        self.nstates = 0 if self.xout is None else self.xout.shape[0]
-        if self.t.shape[-1] != self.xout.shape[-1]:
+        self.x = np.array(states)
+        self.nstates = 0 if self.x is None else self.x.shape[0]
+        if self.t.shape[-1] != self.x.shape[-1]:
             raise ValueError("State vector does not match time vector")
 
         # Input vector
         # If no input is present, return an empty array
         if inputs is None:
-            self.uout = np.empty(
-                (sys.ninputs, self.ntraces, self.time.shape[0]))
+            self.u = None
         else:
-            self.uout = np.array(inputs)
+            self.u = np.array(inputs)
 
-        if len(self.uout.shape) != 0:
-            self.ninputs = 1 if len(self.uout.shape) < 2 \
-                else self.uout.shape[-2]
-            if self.t.shape[-1] != self.uout.shape[-1]:
+        if self.u is not None:
+            self.ninputs = 1 if len(self.u.shape) < 2 \
+                else self.u.shape[-2]
+            if self.t.shape[-1] != self.u.shape[-1]:
                 raise ValueError("Input vector does not match time vector")
         else:
             self.ninputs = 0
@@ -336,7 +345,7 @@ class InputOutputResponse:
     @property
     def outputs(self):
         t, y = _process_time_response(
-            self.sys, self.t, self.yout, None,
+            self.sys, self.t, self.y, None,
             transpose=self.transpose, return_x=False, squeeze=self.squeeze,
             input=self.input_index, output=self.output_index)
         return y
@@ -344,8 +353,11 @@ class InputOutputResponse:
     # Getter for state (implements squeeze processing)
     @property
     def states(self):
+        if self.x is None:
+            return None
+
         t, y, x = _process_time_response(
-            self.sys, self.t, self.yout, self.xout,
+            self.sys, self.t, self.y, self.x,
             transpose=self.transpose, return_x=True, squeeze=self.squeeze,
             input=self.input_index, output=self.output_index)
         return x
@@ -353,8 +365,11 @@ class InputOutputResponse:
     # Getter for state (implements squeeze processing)
     @property
     def inputs(self):
+        if self.u is None:
+            return None
+
         t, u = _process_time_response(
-            self.sys, self.t, self.uout, None,
+            self.sys, self.t, self.u, None,
             transpose=self.transpose, return_x=False, squeeze=self.squeeze,
             input=self.input_index, output=self.output_index)
         return u
@@ -671,6 +686,13 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
                               'Parameter ``X0``: ', squeeze=True)
 
+    # Test if U has correct shape and type
+    legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
+        [(n_inputs, n_steps)]
+    U = _check_convert_array(U, legal_shapes,
+                             'Parameter ``U``: ', squeeze=False,
+                             transpose=transpose)
+
     xout = np.zeros((n_states, n_steps))
     xout[:, 0] = X0
     yout = np.zeros((n_outputs, n_steps))
@@ -691,17 +713,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
         # General algorithm that interpolates U in between output points
         else:
-            # Test if U has correct shape and type
-            legal_shapes = [(n_steps,), (1, n_steps)] if n_inputs == 1 else \
-                           [(n_inputs, n_steps)]
-            U = _check_convert_array(U, legal_shapes,
-                                     'Parameter ``U``: ', squeeze=False,
-                                     transpose=transpose)
-            # convert 1D array to 2D array with only one row
+            # convert input from 1D array to 2D array with only one row
             if len(U.shape) == 1:
                 U = U.reshape(1, -1)  # pylint: disable=E1103
 
-            # Algorithm: to integrate from time 0 to time dt, with linear
+        # Algorithm: to integrate from time 0 to time dt, with linear
             # interpolation between inputs u(0) = u0 and u(dt) = u1, we solve
             #   xdot = A x + B u,        x(0) = x0
             #   udot = (u1 - u0) / dt,   u(0) = u0.
@@ -782,7 +798,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         xout = np.transpose(xout)
         yout = np.transpose(yout)
 
-    return InputOutputResponse(
+    return TimeResponseData(
         tout, yout, xout, U, sys=sys,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
@@ -1068,7 +1084,7 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         xout[:, inpidx, :] = out[2]
         uout[:, inpidx, :] = U
 
-    return InputOutputResponse(
+    return TimeResponseData(
         out[0], yout, xout, uout, sys=sys, transpose=transpose,
         return_x=return_x, squeeze=squeeze,
         input_index=input, output_index=output)
@@ -1384,10 +1400,15 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     # The initial vector X0 is created in forced_response(...) if necessary
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
-    U = np.zeros_like(T)
 
-    return forced_response(sys, T, U, X0, transpose=transpose,
-                           return_x=return_x, squeeze=squeeze)
+    # Compute the forced response
+    res = forced_response(sys, T, 0, X0, transpose=transpose,
+                          return_x=return_x, squeeze=squeeze)
+
+    # Store the response without an input
+    return TimeResponseData(
+        res.t, res.y, res.x, None, sys=sys,
+        transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
 def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
@@ -1541,7 +1562,7 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         yout[:, inpidx, :] = out[1]
         xout[:, inpidx, :] = out[2]
 
-    return InputOutputResponse(
+    return TimeResponseData(
         out[0], yout, xout, uout, sys=sys, transpose=transpose,
         return_x=return_x, squeeze=squeeze,
         input_index=input, output_index=output)
