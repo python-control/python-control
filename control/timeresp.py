@@ -10,7 +10,8 @@ vector (when needed), and an initial condition vector.  The most
 general function for simulating LTI systems the
 :func:`forced_response` function, which has the form::
 
-    t, y = forced_response(sys, T, U, X0)
+    response = forced_response(sys, T, U, X0)
+    t, y = response.time, response.outputs
 
 where `T` is a vector of times at which the response should be
 evaluated, `U` is a vector of inputs (one for each time point) and
@@ -106,7 +107,7 @@ class TimeResponseData:
 
     Time responses are access through either the raw data, stored as ``t``,
     ``y``, ``x``, ``u``, or using a set of properties ``time``, ``outputs``,
-    ``states``, ``inputs``.  When access time responses via their
+    ``states``, ``inputs``.  When accessing time responses via their
     properties, squeeze processing is applied so that (by default)
     single-input, single-output systems will have the output and input
     indices supressed.  This behavior is set using the ``squeeze`` keyword.
@@ -278,7 +279,7 @@ class TimeResponseData:
 
         # Time vector
         self.t = np.atleast_1d(time)
-        if len(self.t.shape) != 1:
+        if self.t.ndim != 1:
             raise ValueError("Time vector must be 1D array")
 
         #
@@ -286,20 +287,20 @@ class TimeResponseData:
         #
         self.y = np.array(outputs)
 
-        if len(self.y.shape) == 3:
+        if self.y.ndim == 3:
             multi_trace = True
             self.noutputs = self.y.shape[0]
             self.ntraces = self.y.shape[1]
 
-        elif multi_trace and len(self.y.shape) == 2:
+        elif multi_trace and self.y.ndim == 2:
             self.noutputs = 1
             self.ntraces = self.y.shape[0]
 
-        elif not multi_trace and len(self.y.shape) == 2:
+        elif not multi_trace and self.y.ndim == 2:
             self.noutputs = self.y.shape[0]
             self.ntraces = 1
 
-        elif not multi_trace and len(self.y.shape) == 1:
+        elif not multi_trace and self.y.ndim == 1:
             self.nouptuts = 1
             self.ntraces = 1
 
@@ -324,8 +325,8 @@ class TimeResponseData:
             self.nstates = self.x.shape[0]
 
             # Make sure the shape is OK
-            if multi_trace and len(self.x.shape) != 3 or \
-               not multi_trace and len(self.x.shape) != 2:
+            if multi_trace and self.x.ndim != 3 or \
+               not multi_trace and self.x.ndim != 2:
                 raise ValueError("State vector is the wrong shape")
 
             # Make sure time dimension of state is the right length
@@ -346,19 +347,19 @@ class TimeResponseData:
             self.u = np.array(inputs)
 
             # Make sure the shape is OK and figure out the nuumber of inputs
-            if multi_trace and len(self.u.shape) == 3 and \
+            if multi_trace and self.u.ndim == 3 and \
                self.u.shape[1] == self.ntraces:
                 self.ninputs = self.u.shape[0]
 
-            elif multi_trace and len(self.u.shape) == 2 and \
+            elif multi_trace and self.u.ndim == 2 and \
                  self.u.shape[0] == self.ntraces:
                 self.ninputs = 1
 
-            elif not multi_trace and len(self.u.shape) == 2 and \
+            elif not multi_trace and self.u.ndim == 2 and \
                  self.ntraces == 1:
                 self.ninputs = self.u.shape[0]
 
-            elif not multi_trace and len(self.u.shape) == 1:
+            elif not multi_trace and self.u.ndim == 1:
                 self.ninputs = 1
 
             else:
@@ -396,21 +397,30 @@ class TimeResponseData:
     @property
     def outputs(self):
         t, y = _process_time_response(
-            self.sys, self.t, self.y, None,
-            transpose=self.transpose, return_x=False, squeeze=self.squeeze,
+            self.sys, self.t, self.y,
+            transpose=self.transpose, squeeze=self.squeeze,
             input=self.input_index, output=self.output_index)
         return y
 
-    # Getter for state (implements squeeze processing)
+    # Getter for state (implements non-standard squeeze processing)
     @property
     def states(self):
         if self.x is None:
             return None
 
-        t, y, x = _process_time_response(
-            self.sys, self.t, self.y, self.x,
-            transpose=self.transpose, return_x=True, squeeze=self.squeeze,
-            input=self.input_index, output=self.output_index)
+        elif self.ninputs == 1 and self.noutputs == 1 and \
+             self.ntraces == 1 and self.x.ndim == 3:
+            # Single-input, single-output system with single trace
+            x = self.x[:, 0, :]
+
+        else:
+            # Return the full set of data
+            x = self.x
+
+        # Transpose processing
+        if self.transpose:
+            x = np.transpose(x, np.roll(range(x.ndim), 1))
+
         return x
 
     # Getter for state (implements squeeze processing)
@@ -420,8 +430,8 @@ class TimeResponseData:
             return None
 
         t, u = _process_time_response(
-            self.sys, self.t, self.u, None,
-            transpose=self.transpose, return_x=False, squeeze=self.squeeze,
+            self.sys, self.t, self.u,
+            transpose=self.transpose, squeeze=self.squeeze,
             input=self.input_index, output=self.output_index)
         return u
 
@@ -765,7 +775,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         # General algorithm that interpolates U in between output points
         else:
             # convert input from 1D array to 2D array with only one row
-            if len(U.shape) == 1:
+            if U.ndim == 1:
                 U = U.reshape(1, -1)  # pylint: disable=E1103
 
         # Algorithm: to integrate from time 0 to time dt, with linear
@@ -856,7 +866,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
 # Process time responses in a uniform way
 def _process_time_response(
-        sys, tout, yout, xout, transpose=None, return_x=False,
+        sys, tout, yout, transpose=None,
         squeeze=None, input=None, output=None):
     """Process time response signals.
 
@@ -877,19 +887,10 @@ def _process_time_response(
         systems with no input indexing, such as initial_response or forced
         response) or a 3D array indexed by output, input, and time.
 
-    xout : array, optional
-        Individual response of each x variable (if return_x is True). For a
-        SISO system (or if a single input is specified), this should be a 2D
-        array indexed by the state index and time (for single input systems)
-        or a 3D array indexed by state, input, and time. Ignored if None.
-
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
         compatibility with MATLAB and :func:`scipy.signal.lsim`).  Default
         value is False.
-
-    return_x : bool, optional
-        If True, return the state vector (default = False).
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -917,13 +918,6 @@ def _process_time_response(
         squeeze is False, the array is either 2D (indexed by output and time)
         or 3D (indexed by input, output, and time).
 
-    xout : array, optional
-        Individual response of each x variable (if return_x is True). For a
-        SISO system (or if a single input is specified), xout is a 2D array
-        indexed by the state index and time.  For a non-SISO system, xout is a
-        3D array indexed by the state, the input, and time.  The shape of xout
-        is not affected by the ``squeeze`` keyword.
-
     """
     # If squeeze was not specified, figure out the default (might remain None)
     if squeeze is None:
@@ -939,16 +933,12 @@ def _process_time_response(
         pass
     elif squeeze is None:       # squeeze signals if SISO
         if issiso:
-            if len(yout.shape) == 3:
+            if yout.ndim == 3:
                 yout = yout[0][0]       # remove input and output
             else:
                 yout = yout[0]          # remove input
     else:
         raise ValueError("unknown squeeze value")
-
-    # Figure out whether and how to squeeze the state data
-    if issiso and xout is not None and len(xout.shape) > 2:
-        xout = xout[:, 0, :]            # remove input
 
     # See if we need to transpose the data back into MATLAB form
     if transpose:
@@ -957,11 +947,9 @@ def _process_time_response(
 
         # For signals, put the last index (time) into the first slot
         yout = np.transpose(yout, np.roll(range(yout.ndim), 1))
-        if xout is not None:
-            xout = np.transpose(xout, np.roll(range(xout.ndim), 1))
 
     # Return time, output, and (optionally) state
-    return (tout, yout, xout) if return_x else (tout, yout)
+    return tout, yout
 
 
 def _get_ss_simo(sys, input=None, output=None, squeeze=None):
