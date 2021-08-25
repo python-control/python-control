@@ -219,7 +219,7 @@ class TimeResponseData:
 
         states : array, optional
             Individual response of each state variable. This should be a 2D
-            array indexed by the state index and time (for single input
+            array indexed by the state index and time (for single trace
             systems) or a 3D array indexed by state, trace, and time.
 
         inputs : array, optional
@@ -281,50 +281,101 @@ class TimeResponseData:
         if len(self.t.shape) != 1:
             raise ValueError("Time vector must be 1D array")
 
+        #
         # Output vector (and number of traces)
+        #
         self.y = np.array(outputs)
-        if multi_trace or len(self.y.shape) == 3:
-            if len(self.y.shape) < 2:
-                raise ValueError("Output vector is the wrong shape")
-            self.ntraces = self.y.shape[-2]
-            self.noutputs = 1 if len(self.y.shape) < 2 else \
-                self.y.shape[0]
-        else:
-            self.ntraces = 1
-            self.noutputs = 1 if len(self.y.shape) < 2 else \
-                self.y.shape[0]
 
-        # Make sure time dimension of output is OK
+        if len(self.y.shape) == 3:
+            multi_trace = True
+            self.noutputs = self.y.shape[0]
+            self.ntraces = self.y.shape[1]
+
+        elif multi_trace and len(self.y.shape) == 2:
+            self.noutputs = 1
+            self.ntraces = self.y.shape[0]
+
+        elif not multi_trace and len(self.y.shape) == 2:
+            self.noutputs = self.y.shape[0]
+            self.ntraces = 1
+
+        elif not multi_trace and len(self.y.shape) == 1:
+            self.nouptuts = 1
+            self.ntraces = 1
+
+        else:
+            raise ValueError("Output vector is the wrong shape")
+
+        # Make sure time dimension of output is the right length
         if self.t.shape[-1] != self.y.shape[-1]:
             raise ValueError("Output vector does not match time vector")
 
-        # State vector
-        self.x = np.array(states)
-        self.nstates = 0 if self.x is None else self.x.shape[0]
-        if self.t.shape[-1] != self.x.shape[-1]:
-            raise ValueError("State vector does not match time vector")
+        #
+        # State vector (optional)
+        #
+        # If present, the shape of the state vector should be consistent
+        # with the multi-trace nature of the data.
+        #
+        if states is None:
+            self.x = None
+            self.nstates = 0
+        else:
+            self.x = np.array(states)
+            self.nstates = self.x.shape[0]
 
-        # Input vector
-        # If no input is present, return an empty array
+            # Make sure the shape is OK
+            if multi_trace and len(self.x.shape) != 3 or \
+               not multi_trace and len(self.x.shape) != 2:
+                raise ValueError("State vector is the wrong shape")
+
+            # Make sure time dimension of state is the right length
+            if self.t.shape[-1] != self.x.shape[-1]:
+                raise ValueError("State vector does not match time vector")
+
+        #
+        # Input vector (optional)
+        #
+        # If present, the shape and dimensions of the input vector should be
+        # consistent with the trace count computed above.
+        #
         if inputs is None:
             self.u = None
+            self.ninputs = 0
+
         else:
             self.u = np.array(inputs)
 
-        if self.u is not None:
-            self.ninputs = 1 if len(self.u.shape) < 2 \
-                else self.u.shape[-2]
+            # Make sure the shape is OK and figure out the nuumber of inputs
+            if multi_trace and len(self.u.shape) == 3 and \
+               self.u.shape[1] == self.ntraces:
+                self.ninputs = self.u.shape[0]
+
+            elif multi_trace and len(self.u.shape) == 2 and \
+                 self.u.shape[0] == self.ntraces:
+                self.ninputs = 1
+
+            elif not multi_trace and len(self.u.shape) == 2 and \
+                 self.ntraces == 1:
+                self.ninputs = self.u.shape[0]
+
+            elif not multi_trace and len(self.u.shape) == 1:
+                self.ninputs = 1
+
+            else:
+                raise ValueError("Input vector is the wrong shape")
+
+            # Make sure time dimension of output is the right length
             if self.t.shape[-1] != self.u.shape[-1]:
                 raise ValueError("Input vector does not match time vector")
-        else:
-            self.ninputs = 0
 
         # If the system was specified, make sure it is compatible
         if sys is not None:
             if sys.noutputs != self.noutputs:
                 ValueError("System outputs do not match response data")
-            if sys.nstates != self.nstates:
+            if self.x is not None and sys.nstates != self.nstates:
                 ValueError("System states do not match response data")
+            if self.u is not None and sys.ninputs != self.ninputs:
+                ValueError("System inputs do not match response data")
         self.sys = sys
 
         # Keep track of whether to squeeze inputs, outputs, and states
