@@ -119,3 +119,39 @@ def test_trdata_shapes(nin, nout, squeeze):
 
     # Check state space dimensions (not affected by squeeze)
     assert res.states.shape == (sys.nstates, ntimes)
+
+
+def test_response_copy():
+    # Generate some initial data to use
+    sys_siso = ct.rss(4, 1, 1)
+    response_siso = ct.step_response(sys_siso)
+    siso_ntimes = response_siso.time.size
+
+    sys_mimo = ct.rss(4, 2, 1)
+    response_mimo = ct.step_response(sys_mimo)
+    mimo_ntimes = response_mimo.time.size
+
+    # Transpose
+    response_mimo_transpose = response_mimo(transpose=True)
+    assert response_mimo.outputs.shape == (2, 1, mimo_ntimes)
+    assert response_mimo_transpose.outputs.shape == (mimo_ntimes, 2, 1)
+    assert response_mimo.states.shape == (4, 1, mimo_ntimes)
+    assert response_mimo_transpose.states.shape == (mimo_ntimes, 4, 1)
+
+    # Squeeze
+    response_siso_as_mimo = response_siso(squeeze=False)
+    assert response_siso_as_mimo.outputs.shape == (1, 1, siso_ntimes)
+    assert response_siso_as_mimo.states.shape == (4, siso_ntimes)
+
+    response_mimo_squeezed = response_mimo(squeeze=True)
+    assert response_mimo_squeezed.outputs.shape == (2, mimo_ntimes)
+    assert response_mimo_squeezed.states.shape == (4, 1, mimo_ntimes)
+
+    # Squeeze and transpose
+    response_mimo_sqtr = response_mimo(squeeze=True, transpose=True)
+    assert response_mimo_sqtr.outputs.shape == (mimo_ntimes, 2)
+    assert response_mimo_sqtr.states.shape == (mimo_ntimes, 4, 1)
+
+    # Unknown keyword
+    with pytest.raises(ValueError, match="unknown"):
+        response_bad_kw = response_mimo(input=0)

@@ -76,6 +76,7 @@ import numpy as np
 import scipy as sp
 from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
+from copy import copy
 
 from . import config
 from .lti import isctime, isdtime
@@ -172,15 +173,6 @@ class TimeResponseData():
         response.  If ntraces is 0 then the data represents a single trace
         with the trace index surpressed in the data.
 
-    input_index : int, optional
-        If set to an integer, represents the input index for the input signal.
-        Default is ``None``, in which case all inputs should be given.
-
-    output_index : int, optional
-        If set to an integer, represents the output index for the output
-        response.  Default is ``None``, in which case all outputs should be
-        given.
-
     Notes
     -----
     1. For backward compatibility with earlier versions of python-control,
@@ -199,12 +191,16 @@ class TimeResponseData():
          response[1]: returns the output vector
          response[2]: returns the state vector
 
+    3. The default settings for ``return_x``, ``squeeze`` and ``transpose``
+       can be changed by calling the class instance and passing new values:
+
+         response(tranpose=True).input
+
     """
 
     def __init__(
             self, time, outputs, states=None, inputs=None, issiso=None,
-            transpose=False, return_x=False, squeeze=None,
-            multi_trace=False, input_index=None, output_index=None
+            transpose=False, return_x=False, squeeze=None, multi_trace=False
     ):
         """Create an input/output time response object.
 
@@ -270,12 +266,6 @@ class TimeResponseData():
             If ``True``, then 2D input array represents multiple traces.  For
             a MIMO system, the ``input`` attribute should then be set to
             indicate which trace is being specified.  Default is ``False``.
-
-        input_index : int, optional
-            If present, the response represents only the listed input.
-
-        output_index : int, optional
-            If present, the response represents only the listed output.
 
         """
         #
@@ -394,8 +384,7 @@ class TimeResponseData():
             raise ValueError("Keyword `issiso` does not match data")
 
         # Set the value to be used for future processing
-        self.issiso = issiso or \
-            (input_index is not None and output_index is not None)
+        self.issiso = issiso
 
         # Keep track of whether to squeeze inputs, outputs, and states
         if not (squeeze is True or squeeze is None or squeeze is False):
@@ -405,10 +394,50 @@ class TimeResponseData():
         # Store legacy keyword values (only needed for legacy interface)
         self.transpose = transpose
         self.return_x = return_x
-        self.input_index, self.output_index = input_index, output_index
+
+    def __call__(self, **kwargs):
+        """Change value of processing keywords.
+
+        Calling the time response object will create a copy of the object and
+        change the values of the keywords used to control the ``outputs``,
+        ``states``, and ``inputs`` properties.
+
+        Parameters
+        ----------
+        squeeze : bool, optional
+            If squeeze=True, access to the output response will
+            remove single-dimensional entries from the shape of the inputs
+            and outputs even if the system is not SISO. If squeeze=False,
+            keep the input as a 2D or 3D array (indexed by the input (if
+            multi-input), trace (if single input) and time) and the output
+            as a 3D array (indexed by the output, trace, and time) even if
+            the system is SISO.
+
+        transpose : bool, optional
+            If True, transpose all input and output arrays (for backward
+            compatibility with MATLAB and :func:`scipy.signal.lsim`).
+            Default value is False.
+
+        return_x : bool, optional
+            If True, return the state vector when enumerating result by
+            assigning to a tuple (default = False).
+        """
+        # Make a copy of the object
+        response = copy(self)
+
+        # Update any keywords that we were passed
+        response.transpose = kwargs.pop('transpose', self.transpose)
+        response.squeeze = kwargs.pop('squeeze', self.squeeze)
+
+        # Make sure no unknown keywords were passed
+        if len(kwargs) != 0:
+            raise ValueError("unknown parameter(s) %s" % kwargs)
+
+        return response
 
     @property
     def time(self):
+
         """Time vector.
 
         Time values of the input/output response(s).
@@ -1180,10 +1209,12 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         xout[:, inpidx, :] = response.x
         uout[:, inpidx, :] = U
 
+    # Figure out if the system is SISO or not
+    issiso = sys.issiso() or (input is not None and output is not None)
+
     return TimeResponseData(
-        response.time, yout, xout, uout, issiso=sys.issiso(),
-        transpose=transpose, return_x=return_x, squeeze=squeeze,
-        input_index=input, output_index=output)
+        response.time, yout, xout, uout, issiso=issiso,
+        transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
 def step_info(sysdata, T=None, T_num=None, yfinal=None,
@@ -1509,9 +1540,12 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     # Compute the forced response
     response = forced_response(sys, T, 0, X0)
 
+    # Figure out if the system is SISO or not
+    issiso = sys.issiso() or (input is not None and output is not None)
+
     # Store the response without an input
     return TimeResponseData(
-        response.t, response.y, response.x, None, issiso=sys.issiso(),
+        response.t, response.y, response.x, None, issiso=issiso,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1669,10 +1703,12 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         yout[:, inpidx, :] = response.y
         xout[:, inpidx, :] = response.x
 
+    # Figure out if the system is SISO or not
+    issiso = sys.issiso() or (input is not None and output is not None)
+
     return TimeResponseData(
-        response.time, yout, xout, uout, issiso=sys.issiso(),
-        transpose=transpose, return_x=return_x, squeeze=squeeze,
-        input_index=input, output_index=output)
+        response.time, yout, xout, uout, issiso=issiso,
+        transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
 # utility function to find time period and time increment using pole locations
