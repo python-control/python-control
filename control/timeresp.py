@@ -10,8 +10,7 @@ vector (when needed), and an initial condition vector.  The most
 general function for simulating LTI systems the
 :func:`forced_response` function, which has the form::
 
-    response = forced_response(sys, T, U, X0)
-    t, y = response.time, response.outputs
+    t, y = forced_response(sys, T, U, X0)
 
 where `T` is a vector of times at which the response should be
 evaluated, `U` is a vector of inputs (one for each time point) and
@@ -87,8 +86,8 @@ __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData']
 
 
-class TimeResponseData:
-    """Class for returning time responses
+class TimeResponseData():
+    """Class for returning time responses.
 
     This class maintains and manipulates the data corresponding to the
     temporal response of an input/output system.  It is used as the return
@@ -99,42 +98,45 @@ class TimeResponseData:
     optionally an input vector and/or state vector.  Inputs and outputs can
     be 1D (scalar input/output) or 2D (vector input/output).
 
-    A time response can be stored for multiple input signals (called
-    a trace), with the output and state indexed by the trace number.  This
-    allows for input/output response matrices, which is mainly useful for
-    impulse and step responses for linear systems.  For multi-trace
-    responses, the same time vector must be used for all traces.
+    A time response can be stored for multiple input signals (called traces),
+    with the output and state indexed by the trace number.  This allows for
+    input/output response matrices, which is mainly useful for impulse and
+    step responses for linear systems.  For multi-trace responses, the same
+    time vector must be used for all traces.
 
-    Time responses are access through either the raw data, stored as ``t``,
-    ``y``, ``x``, ``u``, or using a set of properties ``time``, ``outputs``,
-    ``states``, ``inputs``.  When accessing time responses via their
-    properties, squeeze processing is applied so that (by default)
-    single-input, single-output systems will have the output and input
-    indices supressed.  This behavior is set using the ``squeeze`` keyword.
+    Time responses are access through either the raw data, stored as
+    :attr:`t`, :attr:`y`, :attr:`x`, :attr:`u`, or using a set of properties
+    :attr:`time`, :attr:`outputs`, :attr:`states`, :attr:`inputs`.  When
+    accessing time responses via their properties, squeeze processing is
+    applied so that (by default) single-input, single-output systems will have
+    the output and input indices supressed.  This behavior is set using the
+    ``squeeze`` keyword.
 
-    Properties
+    Attributes
     ----------
-    time : array
-        Time values of the input/output response(s).
+    t : 1D array
+        Time values of the input/output response(s).  This attribute is
+        normally accessed via the :attr:`time` property.
 
-    outputs : 1D, 2D, or 3D array
-        Output response of the system, indexed by either the output and time
-        (if only a single input is given) or the output, trace, and time
-        (for multiple traces).
+    y : 2D or 3D array
+        Output response data, indexed either by output index and time (for
+        single trace responses) or output, trace, and time (for multi-trace
+        responses).  These data are normally accessed via the :attr:`outputs`
+        property, which performs squeeze processing.
 
-    states : 2D or 3D array
-        Time evolution of the state vector, indexed indexed by either the
-        state and time (if only a single trace is given) or the state,
-        trace, and time (for multiple traces).
+    x : 2D or 3D array, or None
+        State space data, indexed either by output number and time (for single
+        trace responses) or output, trace, and time (for multi-trace
+        responses).  If no state data are present, value is ``None``. These
+        data are normally accessed via the :attr:`states` property, which
+        performs squeeze processing.
 
-    inputs : 1D or 2D array
-        Input(s) to the system, indexed by input (optiona), trace (optional),
-        and time.  If a 1D vector is passed, the input corresponds to a
-        scalar-valued input.  If a 2D vector is passed, then it can either
-        represent multiple single-input traces or a single multi-input trace.
-        The optional ``multi_trace`` keyword should be used to disambiguate
-        the two.  If a 3D vector is passed, then it represents a multi-trace,
-        multi-input signal, indexed by input, trace, and time.
+    u : 2D or 3D array, or None
+        Input signal data, indexed either by input index and time (for single
+        trace responses) or input, trace, and time (for multi-trace
+        responses).  If no input data are present, value is ``None``.  These
+        data are normally accessed via the :attr:`inputs` property, which
+        performs squeeze processing.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then
@@ -261,7 +263,8 @@ class TimeResponseData:
             Default value is False.
 
         return_x : bool, optional
-            If True, return the state vector (default = False).
+            If True, return the state vector when enumerating result by
+            assigning to a tuple (default = False).
 
         multi_trace : bool, optional
             If ``True``, then 2D input array represents multiple traces.  For
@@ -305,6 +308,9 @@ class TimeResponseData:
         elif not multi_trace and self.y.ndim == 1:
             self.nouptuts = 1
             self.ntraces = 1
+
+            # Reshape the data to be 2D for consistency
+            self.y = self.y.reshape(self.noutputs, -1)
 
         else:
             raise ValueError("Output vector is the wrong shape")
@@ -364,6 +370,9 @@ class TimeResponseData:
             elif not multi_trace and self.u.ndim == 1:
                 self.ninputs = 1
 
+                # Reshape the data to be 2D for consistency
+                self.u = self.u.reshape(self.ninputs, -1)
+
             else:
                 raise ValueError("Input vector is the wrong shape")
 
@@ -375,7 +384,7 @@ class TimeResponseData:
         if issiso is None:
             # Figure out based on the data
             if self.ninputs == 1:
-                issiso = self.noutputs == 1
+                issiso = (self.noutputs == 1)
             elif self.niinputs > 1:
                 issiso = False
             else:
@@ -400,11 +409,24 @@ class TimeResponseData:
 
     @property
     def time(self):
+        """Time vector.
+
+        Time values of the input/output response(s).
+
+        :type: 1D array"""
         return self.t
 
     # Getter for output (implements squeeze processing)
     @property
     def outputs(self):
+        """Time response output vector.
+
+        Output response of the system, indexed by either the output and time
+        (if only a single input is given) or the output, trace, and time
+        (for multiple traces).
+
+        :type: 1D, 2D, or 3D array
+        """
         t, y = _process_time_response(
             self.t, self.y, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
@@ -413,6 +435,15 @@ class TimeResponseData:
     # Getter for state (implements non-standard squeeze processing)
     @property
     def states(self):
+        """Time response state vector.
+
+        Time evolution of the state vector, indexed indexed by either the
+        state and time (if only a single trace is given) or the state,
+        trace, and time (for multiple traces).
+
+        :type: 2D or 3D array
+        """
+
         if self.x is None:
             return None
 
@@ -434,6 +465,18 @@ class TimeResponseData:
     # Getter for state (implements squeeze processing)
     @property
     def inputs(self):
+        """Time response input vector.
+
+        Input(s) to the system, indexed by input (optiona), trace (optional),
+        and time.  If a 1D vector is passed, the input corresponds to a
+        scalar-valued input.  If a 2D vector is passed, then it can either
+        represent multiple single-input traces or a single multi-input trace.
+        The optional ``multi_trace`` keyword should be used to disambiguate
+        the two.  If a 3D vector is passed, then it represents a multi-trace,
+        multi-input signal, indexed by input, trace, and time.
+
+        :type: 1D or 2D array
+        """
         if self.u is None:
             return None
 
@@ -623,9 +666,13 @@ def forced_response(sys, T=None, U=0., X0=0., issiso=False, transpose=False,
         time simulations.
 
     return_x : bool, default=None
-        - If False, return only the time and output vectors.
-        - If True, also return the the state vector.
-        - If None, determine the returned variables by
+        Used if the time response data is assigned to a tuple:
+
+        * If False, return only the time and output vectors.
+
+        * If True, also return the the state vector.
+
+        * If None, determine the returned variables by
           config.defaults['forced_response.return_x'], which was True
           before version 0.9 and is False since then.
 
@@ -640,19 +687,25 @@ def forced_response(sys, T=None, U=0., X0=0., issiso=False, transpose=False,
 
     Returns
     -------
-    T : array
-        Time values of the output.
+    results : TimeResponseData
+        Time response represented as a :class:`TimeResponseData` object
+        containing the following properties:
 
-    yout : array
-        Response of the system.  If the system is SISO and `squeeze` is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        `squeeze` is False, the array is 2D (indexed by the output number and
-        time).
+        * time (array): Time values of the output.
 
-    xout : array
-        Time evolution of the state vector. Not affected by `squeeze`. Only
-        returned if `return_x` is True, or `return_x` is None and
-        config.defaults['forced_response.return_x'] is True.
+        * outputs (array): Response of the system.  If the system is SISO and
+          `squeeze` is not True, the array is 1D (indexed by time).  If the
+          system is not SISO or `squeeze` is False, the array is 2D (indexed
+          by output and time).
+
+        * states (array): Time evolution of the state vector, represented as
+          a 2D array indexed by state and time.
+
+        * inputs (array): Input(s) to the system, indexed by input and time.
+
+        The return value of the system can also be accessed by assigning the
+        function to a tuple of length 2 (time, output) or of length 3 (time,
+        output, state) if ``return_x`` is ``True``.
 
     See Also
     --------
@@ -911,7 +964,7 @@ def _process_time_response(
     Returns
     -------
     T : 1D array
-        Time values of the output
+        Time values of the output.
 
     yout : ndarray
         Response of the system.  If the system is SISO and squeeze is not
@@ -970,7 +1023,7 @@ def _get_ss_simo(sys, input=None, output=None, squeeze=None):
     sys_ss = _convert_to_statespace(sys)
     if sys_ss.issiso():
         return squeeze, sys_ss
-    elif squeeze == None and (input is None or output is None):
+    elif squeeze is None and (input is None or output is None):
         # Don't squeeze outputs if resulting system turns out to be siso
         # Note: if we expand input to allow a tuple, need to update this check
         squeeze = False
@@ -1040,7 +1093,8 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         value is False.
 
     return_x : bool, optional
-        If True, return the state vector (default = False).
+        If True, return the state vector when assigning to a tuple (default =
+        False).  See :func:`forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -1053,21 +1107,27 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Returns
     -------
-    T : 1D array
-        Time values of the output
+    results : TimeResponseData
+        Time response represented as a :class:`TimeResponseData` object
+        containing the following properties:
 
-    yout : ndarray
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 3D (indexed by the output, trace, and
-        time).
+        * time (array): Time values of the output.
 
-    xout : array, optional
-        Individual response of each x variable (if return_x is True). For a
-        SISO system (or if a single input is specified), xout is a 2D array
-        indexed by the state index and time.  For a non-SISO system, xout is a
-        3D array indexed by the state, the input, and time.  The shape of xout
-        is not affected by the ``squeeze`` keyword.
+        * outputs (array): Response of the system.  If the system is SISO and
+          squeeze is not True, the array is 1D (indexed by time).  If the
+          system is not SISO or ``squeeze`` is False, the array is 3D (indexed
+          by the output, trace, and time).
+
+        * states (array): Time evolution of the state vector, represented as
+          either a 2D array indexed by state and time (if SISO) or a 3D array
+          indexed by state, trace, and time.  Not affected by ``squeeze``.
+
+        * inputs (array): Input(s) to the system, indexed in the same manner
+          as ``outputs``.
+
+        The return value of the system can also be accessed by assigning the
+        function to a tuple of length 2 (time, output) or of length 3 (time,
+        output, state) if ``return_x`` is ``True``.
 
     See Also
     --------
@@ -1348,6 +1408,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
 
     return ret[0][0] if retsiso else ret
 
+
 def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
@@ -1391,7 +1452,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
         value is False.
 
     return_x : bool, optional
-        If True, return the state vector (default = False).
+        If True, return the state vector when assigning to a tuple (default =
+        False).  See :func:`forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -1404,17 +1466,24 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     Returns
     -------
-    T : array
-        Time values of the output
+    results : TimeResponseData
+        Time response represented as a :class:`TimeResponseData` object
+        containing the following properties:
 
-    yout : array
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
-        time).
+        * time (array): Time values of the output.
 
-    xout : array, optional
-        Individual response of each x variable (if return_x is True).
+        * outputs (array): Response of the system.  If the system is SISO and
+          squeeze is not True, the array is 1D (indexed by time).  If the
+          system is not SISO or ``squeeze`` is False, the array is 2D (indexed
+          by the output and time).
+
+        * states (array): Time evolution of the state vector, represented as
+          either a 2D array indexed by state and time (if SISO).  Not affected
+          by ``squeeze``.
+
+        The return value of the system can also be accessed by assigning the
+        function to a tuple of length 2 (time, output) or of length 3 (time,
+        output, state) if ``return_x`` is ``True``.
 
     See Also
     --------
@@ -1493,7 +1562,8 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         value is False.
 
     return_x : bool, optional
-        If True, return the state vector (default = False).
+        If True, return the state vector when assigning to a tuple (default =
+        False).  See :func:`forced_response` for more details.
 
     squeeze : bool, optional
         By default, if a system is single-input, single-output (SISO) then the
@@ -1506,21 +1576,24 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Returns
     -------
-    T : array
-        Time values of the output
+    results : TimeResponseData
+        Impulse response represented as a :class:`TimeResponseData` object
+        containing the following properties:
 
-    yout : array
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
-        time).
+        * time (array): Time values of the output.
 
-    xout : array, optional
-        Individual response of each x variable (if return_x is True). For a
-        SISO system (or if a single input is specified), xout is a 2D array
-        indexed by the state index and time.  For a non-SISO system, xout is a
-        3D array indexed by the state, the input, and time.  The shape of xout
-        is not affected by the ``squeeze`` keyword.
+        * outputs (array): Response of the system.  If the system is SISO and
+          squeeze is not True, the array is 1D (indexed by time).  If the
+          system is not SISO or ``squeeze`` is False, the array is 3D (indexed
+          by the output, trace, and time).
+
+        * states (array): Time evolution of the state vector, represented as
+          either a 2D array indexed by state and time (if SISO) or a 3D array
+          indexed by state, trace, and time.  Not affected by ``squeeze``.
+
+        The return value of the system can also be accessed by assigning the
+        function to a tuple of length 2 (time, output) or of length 3 (time,
+        output, state) if ``return_x`` is ``True``.
 
     See Also
     --------
@@ -1586,7 +1659,7 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
             new_X0 = B + X0
         else:
             new_X0 = X0
-            U[0] = 1./simo.dt # unit area impulse
+            U[0] = 1./simo.dt           # unit area impulse
 
         # Simulate the impulse response fo this input
         response = forced_response(simo, T, U, new_X0)
@@ -1650,11 +1723,11 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
     """
 
     sqrt_eps = np.sqrt(np.spacing(1.))
-    default_tfinal = 5  # Default simulation horizon
+    default_tfinal = 5                  # Default simulation horizon
     default_dt = 0.1
-    total_cycles = 5  # number of cycles for oscillating modes
-    pts_per_cycle = 25  # Number of points divide a period of oscillation
-    log_decay_percent = np.log(1000)  # Factor of reduction for real pole decays
+    total_cycles = 5                    # Number cycles for oscillating modes
+    pts_per_cycle = 25                  # Number points divide period of osc
+    log_decay_percent = np.log(1000)    # Reduction factor for real pole decays
 
     if sys._isstatic():
         tfinal = default_tfinal
@@ -1700,13 +1773,15 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
         if p_int.size > 0:
             tfinal = tfinal * 5
-    else: # cont time
+    else:       # cont time
         sys_ss = _convert_to_statespace(sys)
         # Improve conditioning via balancing and zeroing tiny entries
-        # See <w,v> for [[1,2,0], [9,1,0.01], [1,2,10*np.pi]] before/after balance
+        # See <w,v> for [[1,2,0], [9,1,0.01], [1,2,10*np.pi]]
+        #   before/after balance
         b, (sca, perm) = matrix_balance(sys_ss.A, separate=True)
         p, l, r = eig(b, left=True, right=True)
-        # Reciprocal of inner product <w,v> for each eigval, (bound the ~infs by 1e12)
+        # Reciprocal of inner product <w,v> for each eigval, (bound the
+        #   ~infs by 1e12)
         # G = Transfer([1], [1,0,1]) gives zero sensitivity (bound by 1e-12)
         eig_sens = np.reciprocal(maximum(1e-12, einsum('ij,ij->j', l, r).real))
         eig_sens = minimum(1e12, eig_sens)
@@ -1726,9 +1801,9 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         dc = np.zeros_like(p, dtype=float)
         # well-conditioned nonzero poles, np.abs just in case
         ok = np.abs(eig_sens) <= 1/sqrt_eps
-        # the averaged t->inf response of each simple eigval on each i/o channel
-        # See, A = [[-1, k], [0, -2]], response sizes are k-dependent (that is
-        # R/L eigenvector dependent)
+        # the averaged t->inf response of each simple eigval on each i/o
+        # channel. See, A = [[-1, k], [0, -2]], response sizes are
+        # k-dependent (that is R/L eigenvector dependent)
         dc[ok] = norm(v[ok, :], axis=1)*norm(w[:, ok], axis=0)*eig_sens[ok]
         dc[wn != 0.] /= wn[wn != 0] if is_step else 1.
         dc[wn == 0.] = 0.
@@ -1751,8 +1826,10 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         # The rest ~ts = log(%ss value) / exp(Re(eigval)t)
         texp_mode = log_decay_percent / np.abs(psub[~iw & ~ints].real)
         tfinal += texp_mode.tolist()
-        dt += minimum(texp_mode / 50,
-                    (2 * np.pi / pts_per_cycle / wnsub[~iw & ~ints])).tolist()
+        dt += minimum(
+            texp_mode / 50,
+            (2 * np.pi / pts_per_cycle / wnsub[~iw & ~ints])
+        ).tolist()
 
         # All integrators?
         if len(tfinal) == 0:
@@ -1763,13 +1840,14 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
     return tfinal, dt
 
+
 def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
     """Returns a time vector that has a reasonable number of points.
     if system is discrete-time, N is ignored """
 
     N_max = 5000
-    N_min_ct = 100 # min points for cont time systems
-    N_min_dt = 20 # more common to see just a few samples in discrete-time
+    N_min_ct = 100    # min points for cont time systems
+    N_min_dt = 20     # more common to see just a few samples in discrete time
 
     ideal_tfinal, ideal_dt = _ideal_tfinal_and_dt(sys, is_step=is_step)
 
@@ -1782,7 +1860,7 @@ def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
             tfinal = sys.dt * (N-1)
         else:
             N = int(np.ceil(tfinal/sys.dt)) + 1
-            tfinal = sys.dt * (N-1) # make tfinal an integer multiple of sys.dt
+            tfinal = sys.dt * (N-1)  # make tfinal integer multiple of sys.dt
     else:
         if tfinal is None:
             # for continuous time, simulate to ideal_tfinal but limit N

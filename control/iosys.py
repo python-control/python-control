@@ -1486,14 +1486,21 @@ def input_output_response(
     ----------
     sys : InputOutputSystem
         Input/output system to simulate.
+
     T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
+
     U : array-like or number, optional
         Input array giving input at each time `T` (default = 0).
+
     X0 : array-like or number, optional
         Initial condition (default = 0).
+
     return_x : bool, optional
+        If True, return the state vector when assigning to a tuple (default =
+        False).  See :func:`forced_response` for more details.
         If True, return the values of the state at each time (default = False).
+
     squeeze : bool, optional
         If True and if the system has a single output, return the system
         output as a 1D array rather than a 2D array.  If False, return the
@@ -1502,15 +1509,25 @@ def input_output_response(
 
     Returns
     -------
-    T : array
-        Time values of the output.
-    yout : array
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
-        time).
-    xout : array
-        Time evolution of the state vector (if return_x=True).
+    results : TimeResponseData
+        Time response represented as a :class:`TimeResponseData` object
+        containing the following properties:
+
+        * time (array): Time values of the output.
+
+        * outputs (array): Response of the system.  If the system is SISO and
+          `squeeze` is not True, the array is 1D (indexed by time).  If the
+          system is not SISO or `squeeze` is False, the array is 2D (indexed
+          by output and time).
+
+        * states (array): Time evolution of the state vector, represented as
+          a 2D array indexed by state and time.
+
+        * inputs (array): Input(s) to the system, indexed by input and time.
+
+        The return value of the system can also be accessed by assigning the
+        function to a tuple of length 2 (time, output) or of length 3 (time,
+        output, state) if ``return_x`` is ``True``.
 
     Other parameters
     ----------------

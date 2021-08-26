@@ -70,6 +70,7 @@ Time domain simulation
     input_output_response
     step_response
     phase_plot
+    TimeResponseData
 
 Block diagram algebra
 =====================

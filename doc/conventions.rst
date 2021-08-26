@@ -161,23 +161,43 @@ The initial conditions are either 1D, or 2D with shape (j, 1)::
            ...
            [xj]]
 
-As all simulation functions return *arrays*, plotting is convenient::
+Functions that return time responses (e.g., :func:`forced_response`,
+:func:`impulse_response`, :func:`input_output_response`,
+:func:`initial_response`, and :func:`step_response`) return a
+:class:`TimeResponseData` object that contains the data for the time
+response.  These data can be accessed via the ``time``, ``outputs``,
+``states`` and ``inputs`` properties::
+
+    sys = rss(4, 1, 1)
+    response = step_response(sys)
+    plot(response.time, response.outputs)
+
+The dimensions of the response properties depend on the function being
+called and whether the system is SISO or MIMO.  In addition, some time
+response function can return multiple "traces" (input/output pairs),
+such as the :func:`step_response` function applied to a MIMO system,
+which will compute the step response for each input/output pair.  See
+:class:`TimeResponseData` for more details.
+
+The time response functions can also be assigned to a tuple, which extracts
+the time and output (and optionally the state, if the `return_x` keyword is
+used).  This allows simple commands for plotting::
 
     t, y = step_response(sys)
     plot(t, y)
 
 The output of a MIMO system can be plotted like this::
 
-    t, y = forced_response(sys, u, t)
+    t, y = forced_response(sys, t, u)
     plot(t, y[0], label='y_0')
     plot(t, y[1], label='y_1')
 
-The convention also works well with the state space form of linear systems. If
-``D`` is the feedthrough *matrix* of a linear system, and ``U`` is its input
-(*matrix* or *array*), then the feedthrough part of the system's response,
-can be computed like this::
+The convention also works well with the state space form of linear
+systems. If ``D`` is the feedthrough matrix (2D array) of a linear system,
+and ``U`` is its input (array), then the feedthrough part of the system's
+response, can be computed like this::
 
-    ft = D * U
+    ft = D @ U
 
 
 .. currentmodule:: control

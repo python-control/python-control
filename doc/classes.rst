@@ -47,3 +47,4 @@ Additional classes
    flatsys.SystemTrajectory
    optimal.OptimalControlProblem
    optimal.OptimalControlResult
+   TimeResponseData
