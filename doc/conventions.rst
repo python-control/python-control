@@ -134,13 +134,12 @@ Types:
     * **Arguments** can be **arrays**, **matrices**, or **nested lists**.
     * **Return values** are **arrays** (not matrices).
 
-The time vector is either 1D, or 2D with shape (1, n)::
+The time vector is a 1D array with shape (n, )::
 
-      T = [[t1,     t2,     t3,     ..., tn    ]]
+      T = [t1,     t2,     t3,     ..., tn    ]
 
 Input, state, and output all follow the same convention. Columns are different
-points in time, rows are different components. When there is only one row, a
-1D object is accepted or returned, which adds convenience for SISO systems::
+points in time, rows are different components::
 
       U = [[u1(t1), u1(t2), u1(t3), ..., u1(tn)]
            [u2(t1), u2(t2), u2(t3), ..., u2(tn)]
@@ -152,6 +151,9 @@ points in time, rows are different components. When there is only one row, a
 
 So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:]
 is the sequence of values for the system's second input.
+
+When there is only one row, a 1D object is accepted or returned, which adds
+convenience for SISO systems:
 
 The initial conditions are either 1D, or 2D with shape (j, 1)::
 
@@ -230,27 +232,29 @@ on standard configurations.
 
 Selected variables that can be configured, along with their default values:
 
-  * freqplot.dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
+  * freqplot.dB (False): Bode plot magnitude plotted in dB (otherwise powers
+    of 10)
     
   * freqplot.deg (True): Bode plot phase plotted in degrees (otherwise radians)
     
-  * freqplot.Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
+  * freqplot.Hz (False): Bode plot frequency plotted in Hertz (otherwise
+    rad/sec)
     
   * freqplot.grid (True): Include grids for magnitude and phase plots
     
   * freqplot.number_of_samples (1000): Number of frequency points in Bode plots
     
-  * freqplot.feature_periphery_decade (1.0): How many decades to include in the
-    frequency range on both sides of features (poles, zeros).
+  * freqplot.feature_periphery_decade (1.0): How many decades to include in
+    the frequency range on both sides of features (poles, zeros).
 
-  * statesp.use_numpy_matrix (True): set the return type for state space matrices to
-    `numpy.matrix` (verus numpy.ndarray)
+  * statesp.use_numpy_matrix (True): set the return type for state space
+    matrices to `numpy.matrix` (verus numpy.ndarray)
 
-  * statesp.default_dt and xferfcn.default_dt (None): set the default value of dt when
-    constructing new LTI systems
+  * statesp.default_dt and xferfcn.default_dt (None): set the default value
+    of dt when constructing new LTI systems
 
-  * statesp.remove_useless_states (True): remove states that have no effect on the
-    input-output dynamics of the system
+  * statesp.remove_useless_states (True): remove states that have no effect
+    on the input-output dynamics of the system
 
 Additional parameter variables are documented in individual functions
 

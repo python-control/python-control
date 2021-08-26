@@ -621,7 +621,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 
 
 # Forced response of a linear system
-def forced_response(sys, T=None, U=0., X0=0., issiso=False, transpose=False,
+def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                     interpolate=False, return_x=None, squeeze=None):
     """Simulate the output of a linear system.
 
