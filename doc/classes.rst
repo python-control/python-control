@@ -17,6 +17,7 @@ these directly.
    TransferFunction
    StateSpace
    FrequencyResponseData
+   TimeResponseData
 
 Input/output system subclasses
 ==============================
@@ -47,4 +48,3 @@ Additional classes
    flatsys.SystemTrajectory
    optimal.OptimalControlProblem
    optimal.OptimalControlResult
-   TimeResponseData

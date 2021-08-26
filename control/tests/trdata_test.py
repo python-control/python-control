@@ -51,14 +51,17 @@ def test_trdata_shapes(nin, nout, squeeze):
     # Check shape of class properties
     if sys.issiso():
         assert res.outputs.shape == (ntimes,)
+        assert res._legacy_states.shape == (sys.nstates, ntimes)
         assert res.states.shape == (sys.nstates, ntimes)
         assert res.inputs is None
     elif res.squeeze is True:
         assert res.outputs.shape == (ntimes, )
+        assert res._legacy_states.shape == (sys.nstates, ntimes)
         assert res.states.shape == (sys.nstates, ntimes)
         assert res.inputs is None
     else:
         assert res.outputs.shape == (sys.noutputs, ntimes)
+        assert res._legacy_states.shape == (sys.nstates, ntimes)
         assert res.states.shape == (sys.nstates, ntimes)
         assert res.inputs is None
 
@@ -78,21 +81,26 @@ def test_trdata_shapes(nin, nout, squeeze):
         # Check shape of inputs and outputs
         if sys.issiso() and squeeze is not False:
             assert res.outputs.shape == (ntimes, )
+            assert res.states.shape == (sys.nstates, ntimes)
             assert res.inputs.shape == (ntimes, )
         elif res.squeeze is True:
             assert res.outputs.shape == \
                 np.empty((sys.noutputs, sys.ninputs, ntimes)).squeeze().shape
+            assert res.states.shape == \
+                np.empty((sys.nstates, sys.ninputs, ntimes)).squeeze().shape
             assert res.inputs.shape == \
                 np.empty((sys.ninputs, sys.ninputs, ntimes)).squeeze().shape
         else:
             assert res.outputs.shape == (sys.noutputs, sys.ninputs, ntimes)
+            assert res.states.shape == (sys.nstates, sys.ninputs, ntimes)
             assert res.inputs.shape == (sys.ninputs, sys.ninputs, ntimes)
 
-        # Check state space dimensions (not affected by squeeze)
+        # Check legacy state space dimensions (not affected by squeeze)
         if sys.issiso():
-            assert res.states.shape == (sys.nstates, ntimes)
+            assert res._legacy_states.shape == (sys.nstates, ntimes)
         else:
-            assert res.states.shape == (sys.nstates, sys.ninputs, ntimes)
+            assert res._legacy_states.shape == \
+                (sys.nstates, sys.ninputs, ntimes)
 
     #
     # Forced response
@@ -107,14 +115,18 @@ def test_trdata_shapes(nin, nout, squeeze):
 
     if sys.issiso() and squeeze is not False:
         assert res.outputs.shape == (ntimes,)
+        assert res.states.shape == (sys.nstates, ntimes)
         assert res.inputs.shape == (ntimes,)
     elif squeeze is True:
         assert res.outputs.shape == \
             np.empty((sys.noutputs, 1, ntimes)).squeeze().shape
+        assert res.states.shape == \
+            np.empty((sys.nstates, 1, ntimes)).squeeze().shape
         assert res.inputs.shape == \
             np.empty((sys.ninputs, 1, ntimes)).squeeze().shape
     else:                       # MIMO or squeeze is False
         assert res.outputs.shape == (sys.noutputs, ntimes)
+        assert res.states.shape == (sys.nstates, ntimes)
         assert res.inputs.shape == (sys.ninputs, ntimes)
 
     # Check state space dimensions (not affected by squeeze)
@@ -141,16 +153,28 @@ def test_response_copy():
     # Squeeze
     response_siso_as_mimo = response_siso(squeeze=False)
     assert response_siso_as_mimo.outputs.shape == (1, 1, siso_ntimes)
-    assert response_siso_as_mimo.states.shape == (4, siso_ntimes)
+    assert response_siso_as_mimo.states.shape == (4, 1, siso_ntimes)
+    assert response_siso_as_mimo._legacy_states.shape == (4, siso_ntimes)
 
     response_mimo_squeezed = response_mimo(squeeze=True)
     assert response_mimo_squeezed.outputs.shape == (2, mimo_ntimes)
-    assert response_mimo_squeezed.states.shape == (4, 1, mimo_ntimes)
+    assert response_mimo_squeezed.states.shape == (4, mimo_ntimes)
+    assert response_mimo_squeezed._legacy_states.shape == (4, 1, mimo_ntimes)
 
     # Squeeze and transpose
     response_mimo_sqtr = response_mimo(squeeze=True, transpose=True)
     assert response_mimo_sqtr.outputs.shape == (mimo_ntimes, 2)
-    assert response_mimo_sqtr.states.shape == (mimo_ntimes, 4, 1)
+    assert response_mimo_sqtr.states.shape == (mimo_ntimes, 4)
+    assert response_mimo_sqtr._legacy_states.shape == (mimo_ntimes, 4, 1)
+
+    # Return_x
+    t, y = response_mimo
+    t, y = response_mimo()
+    t, y, x = response_mimo(return_x=True)
+    with pytest.raises(ValueError, match="too many"):
+        t, y = response_mimo(return_x=True)
+    with pytest.raises(ValueError, match="not enough"):
+        t, y, x = response_mimo
 
     # Unknown keyword
     with pytest.raises(ValueError, match="unknown"):

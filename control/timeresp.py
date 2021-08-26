@@ -88,7 +88,7 @@ __all__ = ['forced_response', 'step_response', 'step_info',
 
 
 class TimeResponseData():
-    """Class for returning time responses.
+    """A class for returning time responses.
 
     This class maintains and manipulates the data corresponding to the
     temporal response of an input/output system.  It is used as the return
@@ -140,20 +140,18 @@ class TimeResponseData():
         performs squeeze processing.
 
     squeeze : bool, optional
-        By default, if a system is single-input, single-output (SISO) then
-        the inputs and outputs are returned as a 1D array (indexed by time)
-        and if a system is multi-input or multi-output, then the inputs are
-        returned as a 2D array (indexed by input and time) and the outputs
-        are returned as either a 2D array (indexed by output and time) or a
-        3D array (indexed by output, trace, and time).  If ``squeeze=True``,
-        access to the output response will remove single-dimensional entries
-        from the shape of the inputs and outputs even if the system is not
-        SISO. If ``squeeze=False``, the input is returned as a 2D or 3D
-        array (indexed by the input [if multi-input], trace [if
-        multi-trace] and time) and the output as a 2D or 3D array (indexed
-        by the output, trace [if multi-trace], and time) even if the system
-        is SISO. The default value can be set using
-        config.defaults['control.squeeze_time_response'].
+        By default, if a system is single-input, single-output (SISO)
+        then the outputs (and inputs) are returned as a 1D array
+        (indexed by time) and if a system is multi-input or
+        multi-output, then the outputs are returned as a 2D array
+        (indexed by output and time) or a 3D array (indexed by output,
+        trace, and time).  If ``squeeze=True``, access to the output
+        response will remove single-dimensional entries from the shape
+        of the inputs and outputs even if the system is not SISO. If
+        ``squeeze=False``, the output is returned as a 2D or 3D array
+        (indexed by the output [if multi-input], trace [if multi-trace]
+        and time) even if the system is SISO. The default value can be
+        set using config.defaults['control.squeeze_time_response'].
 
     transpose : bool, optional
         If True, transpose all input and output arrays (for backward
@@ -183,6 +181,9 @@ class TimeResponseData():
          t, y = step_response(sys)
          t, y, x = step_response(sys, return_x=True)
 
+       When using this (legacy) interface, the state vector is not affected by
+       the `squeeze` parameter.
+
     2. For backward compatibility with earlier version of python-control,
        this class has ``__getitem__`` and ``__len__`` methods that allow the
        return value to be indexed:
@@ -191,10 +192,15 @@ class TimeResponseData():
          response[1]: returns the output vector
          response[2]: returns the state vector
 
+       When using this (legacy) interface, the state vector is not affected by
+       the `squeeze` parameter.
+
     3. The default settings for ``return_x``, ``squeeze`` and ``transpose``
        can be changed by calling the class instance and passing new values:
 
          response(tranpose=True).input
+
+       See :meth:`TimeResponseData.__call__` for more information.
 
     """
 
@@ -251,8 +257,8 @@ class TimeResponseData():
             the system is SISO. The default value can be set using
             config.defaults['control.squeeze_time_response'].
 
-        Additional parameters
-        ---------------------
+        Other parameters
+        ----------------
         transpose : bool, optional
             If True, transpose all input and output arrays (for backward
             compatibility with MATLAB and :func:`scipy.signal.lsim`).
@@ -391,8 +397,10 @@ class TimeResponseData():
             raise ValueError("unknown squeeze value")
         self.squeeze = squeeze
 
-        # Store legacy keyword values (only needed for legacy interface)
+        # Keep track of whether to transpose for MATLAB/scipy.signal
         self.transpose = transpose
+
+        # Store legacy keyword values (only needed for legacy interface)
         self.return_x = return_x
 
     def __call__(self, **kwargs):
@@ -405,13 +413,13 @@ class TimeResponseData():
         Parameters
         ----------
         squeeze : bool, optional
-            If squeeze=True, access to the output response will
-            remove single-dimensional entries from the shape of the inputs
-            and outputs even if the system is not SISO. If squeeze=False,
-            keep the input as a 2D or 3D array (indexed by the input (if
-            multi-input), trace (if single input) and time) and the output
-            as a 3D array (indexed by the output, trace, and time) even if
-            the system is SISO.
+            If squeeze=True, access to the output response will remove
+            single-dimensional entries from the shape of the inputs, outputs,
+            and states even if the system is not SISO. If squeeze=False, keep
+            the input as a 2D or 3D array (indexed by the input (if
+            multi-input), trace (if single input) and time) and the output and
+            states as a 3D array (indexed by the output/state, trace, and
+            time) even if the system is SISO.
 
         transpose : bool, optional
             If True, transpose all input and output arrays (for backward
@@ -421,6 +429,7 @@ class TimeResponseData():
         return_x : bool, optional
             If True, return the state vector when enumerating result by
             assigning to a tuple (default = False).
+
         """
         # Make a copy of the object
         response = copy(self)
@@ -428,6 +437,7 @@ class TimeResponseData():
         # Update any keywords that we were passed
         response.transpose = kwargs.pop('transpose', self.transpose)
         response.squeeze = kwargs.pop('squeeze', self.squeeze)
+        response.return_x = kwargs.pop('return_x', self.squeeze)
 
         # Make sure no unknown keywords were passed
         if len(kwargs) != 0:
@@ -452,25 +462,95 @@ class TimeResponseData():
 
         Output response of the system, indexed by either the output and time
         (if only a single input is given) or the output, trace, and time
-        (for multiple traces).
+        (for multiple traces).  See :attr:`TimeResponseData.squeeze` for a
+        description of how this can be modified using the `squeeze` keyword.
 
         :type: 1D, 2D, or 3D array
+
         """
         t, y = _process_time_response(
             self.t, self.y, issiso=self.issiso,
             transpose=self.transpose, squeeze=self.squeeze)
         return y
 
-    # Getter for state (implements non-standard squeeze processing)
+    # Getter for states (implements squeeze processing)
     @property
     def states(self):
         """Time response state vector.
 
         Time evolution of the state vector, indexed indexed by either the
+        state and time (if only a single trace is given) or the state, trace,
+        and time (for multiple traces).  See :attr:`TimeResponseData.squeeze`
+        for a description of how this can be modified using the `squeeze`
+        keyword.
+
+        :type: 2D or 3D array
+
+        """
+        if self.x is None:
+            return None
+
+        elif self.squeeze is True:
+            x = self.x.squeeze()
+
+        elif self.ninputs == 1 and self.noutputs == 1 and \
+             self.ntraces == 1 and self.x.ndim == 3 and \
+             self.squeeze is not False:
+            # Single-input, single-output system with single trace
+            x = self.x[:, 0, :]
+
+        else:
+            # Return the full set of data
+            x = self.x
+
+        # Transpose processing
+        if self.transpose:
+            x = np.transpose(x, np.roll(range(x.ndim), 1))
+
+        return x
+
+    # Getter for inputs (implements squeeze processing)
+    @property
+    def inputs(self):
+        """Time response input vector.
+
+        Input(s) to the system, indexed by input (optiona), trace (optional),
+        and time.  If a 1D vector is passed, the input corresponds to a
+        scalar-valued input.  If a 2D vector is passed, then it can either
+        represent multiple single-input traces or a single multi-input trace.
+        The optional ``multi_trace`` keyword should be used to disambiguate
+        the two.  If a 3D vector is passed, then it represents a multi-trace,
+        multi-input signal, indexed by input, trace, and time.
+
+        See :attr:`TimeResponseData.squeeze` for a description of how the
+        dimensions of the input vector can be modified using the `squeeze`
+        keyword.
+
+        :type: 1D or 2D array
+
+        """
+        if self.u is None:
+            return None
+
+        t, u = _process_time_response(
+            self.t, self.u, issiso=self.issiso,
+            transpose=self.transpose, squeeze=self.squeeze)
+        return u
+
+    # Getter for legacy state (implements non-standard squeeze processing)
+    @property
+    def _legacy_states(self):
+        """Time response state vector (legacy version).
+
+        Time evolution of the state vector, indexed indexed by either the
         state and time (if only a single trace is given) or the state,
         trace, and time (for multiple traces).
 
+        The `legacy_states` property is not affected by the `squeeze` keyword
+        and hence it will always have these dimensions.
+
         :type: 2D or 3D array
+
         """
 
         if self.x is None:
@@ -491,34 +571,11 @@ class TimeResponseData():
 
         return x
 
-    # Getter for state (implements squeeze processing)
-    @property
-    def inputs(self):
-        """Time response input vector.
-
-        Input(s) to the system, indexed by input (optiona), trace (optional),
-        and time.  If a 1D vector is passed, the input corresponds to a
-        scalar-valued input.  If a 2D vector is passed, then it can either
-        represent multiple single-input traces or a single multi-input trace.
-        The optional ``multi_trace`` keyword should be used to disambiguate
-        the two.  If a 3D vector is passed, then it represents a multi-trace,
-        multi-input signal, indexed by input, trace, and time.
-
-        :type: 1D or 2D array
-        """
-        if self.u is None:
-            return None
-
-        t, u = _process_time_response(
-            self.t, self.u, issiso=self.issiso,
-            transpose=self.transpose, squeeze=self.squeeze)
-        return u
-
     # Implement iter to allow assigning to a tuple
     def __iter__(self):
         if not self.return_x:
             return iter((self.time, self.outputs))
-        return iter((self.time, self.outputs, self.states))
+        return iter((self.time, self.outputs, self._legacy_states))
 
     # Implement (thin) getitem to allow access via legacy indexing
     def __getitem__(self, index):
@@ -533,7 +590,7 @@ class TimeResponseData():
         if index == 1:
             return self.outputs
         if index == 2:
-            return self.states
+            return self._legacy_states
         raise IndexError
 
     # Implement (thin) len to emulate legacy testing interface
