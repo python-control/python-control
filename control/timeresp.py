@@ -105,7 +105,7 @@ class TimeResponseData():
     step responses for linear systems.  For multi-trace responses, the same
     time vector must be used for all traces.
 
-    Time responses are access through either the raw data, stored as
+    Time responses are accessed through either the raw data, stored as
     :attr:`t`, :attr:`y`, :attr:`x`, :attr:`u`, or using a set of properties
     :attr:`time`, :attr:`outputs`, :attr:`states`, :attr:`inputs`.  When
     accessing time responses via their properties, squeeze processing is
@@ -166,6 +166,9 @@ class TimeResponseData():
     ninputs, noutputs, nstates : int
         Number of inputs, outputs, and states of the underlying system.
 
+    input_labels, output_labels, state_labels : array of str
+        Names for the input, output, and state variables.
+
     ntraces : int
         Number of independent traces represented in the input/output
         response.  If ntraces is 0 then the data represents a single trace
@@ -206,6 +209,7 @@ class TimeResponseData():
 
     def __init__(
             self, time, outputs, states=None, inputs=None, issiso=None,
+            output_labels=None, state_labels=None, input_labels=None,
             transpose=False, return_x=False, squeeze=None, multi_trace=False
     ):
         """Create an input/output time response object.
@@ -259,6 +263,10 @@ class TimeResponseData():
 
         Other parameters
         ----------------
+        input_labels, output_labels, state_labels: array of str, optional
+            Optional labels for the inputs, outputs, and states, given as a
+            list of strings matching the appropriate signal dimension.
+
         transpose : bool, optional
             If True, transpose all input and output arrays (for backward
             compatibility with MATLAB and :func:`scipy.signal.lsim`).
@@ -299,17 +307,21 @@ class TimeResponseData():
 
         elif not multi_trace and self.y.ndim == 2:
             self.noutputs = self.y.shape[0]
-            self.ntraces = 1
+            self.ntraces = 0
 
         elif not multi_trace and self.y.ndim == 1:
-            self.nouptuts = 1
-            self.ntraces = 1
+            self.noutputs = 1
+            self.ntraces = 0
 
             # Reshape the data to be 2D for consistency
             self.y = self.y.reshape(self.noutputs, -1)
 
         else:
             raise ValueError("Output vector is the wrong shape")
+
+        # Check and store labels, if present
+        self.output_labels = _process_labels(
+            output_labels, "output", self.noutputs)
 
         # Make sure time dimension of output is the right length
         if self.t.shape[-1] != self.y.shape[-1]:
@@ -329,13 +341,18 @@ class TimeResponseData():
             self.nstates = self.x.shape[0]
 
             # Make sure the shape is OK
-            if multi_trace and self.x.ndim != 3 or \
-               not multi_trace and self.x.ndim != 2:
+            if multi_trace and \
+               (self.x.ndim != 3 or self.x.shape[1] != self.ntraces) or \
+               not multi_trace and self.x.ndim != 2 :
                 raise ValueError("State vector is the wrong shape")
 
             # Make sure time dimension of state is the right length
             if self.t.shape[-1] != self.x.shape[-1]:
                 raise ValueError("State vector does not match time vector")
+
+        # Check and store labels, if present
+        self.state_labels = _process_labels(
+            state_labels, "state", self.nstates)
 
         #
         # Input vector (optional)
@@ -360,7 +377,7 @@ class TimeResponseData():
                 self.ninputs = 1
 
             elif not multi_trace and self.u.ndim == 2 and \
-                 self.ntraces == 1:
+                 self.ntraces == 0:
                 self.ninputs = self.u.shape[0]
 
             elif not multi_trace and self.u.ndim == 1:
@@ -376,12 +393,16 @@ class TimeResponseData():
             if self.t.shape[-1] != self.u.shape[-1]:
                 raise ValueError("Input vector does not match time vector")
 
+        # Check and store labels, if present
+        self.input_labels = _process_labels(
+            input_labels, "input", self.ninputs)
+
         # Figure out if the system is SISO
         if issiso is None:
             # Figure out based on the data
             if self.ninputs == 1:
                 issiso = (self.noutputs == 1)
-            elif self.niinputs > 1:
+            elif self.ninputs > 1:
                 issiso = False
             else:
                 # Missing input data => can't resolve
@@ -394,7 +415,7 @@ class TimeResponseData():
 
         # Keep track of whether to squeeze inputs, outputs, and states
         if not (squeeze is True or squeeze is None or squeeze is False):
-            raise ValueError("unknown squeeze value")
+            raise ValueError("Unknown squeeze value")
         self.squeeze = squeeze
 
         # Keep track of whether to transpose for MATLAB/scipy.signal
@@ -430,6 +451,10 @@ class TimeResponseData():
             If True, return the state vector when enumerating result by
             assigning to a tuple (default = False).
 
+        input_labels, output_labels, state_labels: array of str
+            Labels for the inputs, outputs, and states, given as a
+            list of strings matching the appropriate signal dimension.
+
         """
         # Make a copy of the object
         response = copy(self)
@@ -439,9 +464,25 @@ class TimeResponseData():
         response.squeeze = kwargs.pop('squeeze', self.squeeze)
         response.return_x = kwargs.pop('return_x', self.squeeze)
 
+        # Check for new labels
+        input_labels = kwargs.pop('input_labels', None)
+        if input_labels is not None:
+            response.input_labels = _process_labels(
+                input_labels, "input", response.ninputs)
+
+        output_labels = kwargs.pop('output_labels', None)
+        if output_labels is not None:
+            response.output_labels = _process_labels(
+                output_labels, "output", response.noutputs)
+
+        state_labels = kwargs.pop('state_labels', None)
+        if state_labels is not None:
+            response.state_labels = _process_labels(
+                state_labels, "state", response.nstates)
+
         # Make sure no unknown keywords were passed
         if len(kwargs) != 0:
-            raise ValueError("unknown parameter(s) %s" % kwargs)
+            raise ValueError("Unknown parameter(s) %s" % kwargs)
 
         return response
 
@@ -598,9 +639,58 @@ class TimeResponseData():
         return 3 if self.return_x else 2
 
 
+# Process signal labels
+def _process_labels(labels, signal, length):
+    """Process time response signal labels.
+
+    Parameters
+    ----------
+    labels : list of str or dict
+        Description of the labels for the signal.  This can be a list of
+        strings or a dict giving the index of each signal (used in iosys).
+
+    signal : str
+        Name of the signal being processed (for error messages).
+
+    length : int
+        Number of labels required.
+
+    Returns
+    -------
+    labels : list of str
+        List of labels.
+
+    """
+    if labels is None or len(labels) == 0:
+        return None
+
+    # See if we got passed a dictionary (from iosys)
+    if isinstance(labels, dict):
+        # Form inverse dictionary
+        ivd = {v: k for k, v in labels.items()}
+
+        try:
+            # Turn into a list
+            labels = [ivd[n] for n in range(len(labels))]
+        except KeyError:
+            raise ValueError("Name dictionary for %s is incomplete" % signal)
+
+    # Convert labels to a list
+    labels = list(labels)
+
+    # Make sure the signal list is the right length and type
+    if len(labels) != length:
+        raise ValueError("List of %s labels is the wrong length" % signal)
+    elif not all([isinstance(label, str) for label in labels]):
+        raise ValueError("List of %s labels must all  be strings" % signal)
+
+    return labels
+
+
 # Helper function for checking array-like parameters
 def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
                          transpose=False):
+
     """Helper function for checking array_like parameters.
 
     * Check type and shape of ``in_obj``.
@@ -867,7 +957,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             # Make sure the input vector and time vector have same length
             if (U.ndim == 1 and U.shape[0] != T.shape[0]) or \
                     (U.ndim > 1 and U.shape[1] != T.shape[0]):
-                raise ValueError('Pamameter ``T`` must have same elements as'
+                raise ValueError('Parameter ``T`` must have same elements as'
                                  ' the number of columns in input array ``U``')
             if U.ndim == 0:
                 U = np.full((n_inputs, T.shape[0]), U)
@@ -1075,7 +1165,7 @@ def _process_time_response(
             else:
                 yout = yout[0]          # remove input
     else:
-        raise ValueError("unknown squeeze value")
+        raise ValueError("Unknown squeeze value")
 
     # See if we need to transpose the data back into MATLAB form
     if transpose:

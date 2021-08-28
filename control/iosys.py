@@ -1527,7 +1527,9 @@ def input_output_response(
 
         The return value of the system can also be accessed by assigning the
         function to a tuple of length 2 (time, output) or of length 3 (time,
-        output, state) if ``return_x`` is ``True``.
+        output, state) if ``return_x`` is ``True``.  If the input/output
+        system signals are named, these names will be used as labels for the
+        time response.
 
     Other parameters
     ----------------
@@ -1590,7 +1592,8 @@ def input_output_response(
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
         return TimeResponseData(
-            T, y, None, None, issiso=sys.issiso(),
+            T, y, None, U, issiso=sys.issiso(),
+            output_labels=sys.output_index, input_labels=sys.input_index,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
@@ -1687,6 +1690,8 @@ def input_output_response(
 
     return TimeResponseData(
         soln.t, y, soln.y, U, issiso=sys.issiso(),
+        output_labels=sys.output_index, input_labels=sys.input_index,
+        state_labels=sys.state_index,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 

@@ -1117,7 +1117,7 @@ class TestTimeresp:
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
     def test_squeeze_exception(self, fcn):
         sys = fcn(ct.rss(2, 1, 1))
-        with pytest.raises(ValueError, match="unknown squeeze value"):
+        with pytest.raises(ValueError, match="Unknown squeeze value"):
             step_response(sys, squeeze=1)
 
     @pytest.mark.usefixtures("editsdefaults")
