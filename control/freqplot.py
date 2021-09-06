@@ -329,7 +329,8 @@ def bode_plot(syslist, omega=None,
                     # if this extra nyquist lime is is plotted in a single plot
                     # command then line order is preserved when
                     # creating a legend eg. legend(('sys1', 'sys2'))
-                    omega_nyq_line = np.array((np.nan, nyquistfrq, nyquistfrq))
+                    omega_nyq_line = np.array(
+                        (np.nan, nyquistfrq_plot, nyquistfrq_plot))
                     omega_plot = np.hstack((omega_plot, omega_nyq_line))
                     mag_nyq_line = np.array((
                         np.nan, 0.7*min(mag_plot), 1.3*max(mag_plot)))
