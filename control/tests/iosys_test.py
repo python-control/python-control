@@ -9,6 +9,7 @@ created for that purpose.
 """
 
 from __future__ import print_function
+import re
 
 import numpy as np
 import pytest
@@ -1437,7 +1438,13 @@ def test_interconnect_unused_input():
                             connections=False)
 
         #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
-        assert not record
+        for r in record:
+            # strip out matrix warnings
+            if re.match(r'.*matrix subclass', str(r.message)):
+                continue
+            print(r.message)
+            pytest.fail(f'Unexpected warning: {r.message}')
+
 
     # warn if explicity ignored input in fact used
     with pytest.warns(UserWarning, match=r"Input\(s\) specified as ignored is \(are\) used:") as record:
@@ -1481,7 +1488,6 @@ def test_interconnect_unused_output():
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'])
-        print(record.list[0])
 
 
     # no warning if output explicitly ignored
@@ -1501,7 +1507,12 @@ def test_interconnect_unused_output():
                             connections=False)
 
         #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
-        assert not record
+        for r in record:
+            # strip out matrix warnings
+            if re.match(r'.*matrix subclass', str(r.message)):
+                continue
+            print(r.message)
+            pytest.fail(f'Unexpected warning: {r.message}')
 
     # warn if explicity ignored output in fact used
     with pytest.warns(UserWarning, match=r"Output\(s\) specified as ignored is \(are\) used:"):
