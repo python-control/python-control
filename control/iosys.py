@@ -2306,20 +2306,10 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
 
     check_unused : bool
         If True, check for unused sub-system signals.  This check is
-        not done if connections is False, and not input and output
+        not done if connections is False, and neither input nor output
         mappings are specified.
 
     ignore_inputs : list of input-spec
-
-        A list of sub-system known not to be connected.  This is
-        *only* used in checking for unused signals, and does not
-        disable use of the input.
-
-        Besides the usual input-spec forms (see `connections`), an
-        input-spec can be a string give just the signal name, as for inpu
-
-    ignore_inputs : list of input-spec
-
         A list of sub-system inputs known not to be connected.  This is
         *only* used in checking for unused signals, and does not
         disable use of the input.
@@ -2330,7 +2320,6 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         considered ignored.
 
     ignore_outputs : list of output-spec
-
         A list of sub-system outputs known not to be connected.  This
         is *only* used in checking for unused signals, and does not
         disable use of the output.
