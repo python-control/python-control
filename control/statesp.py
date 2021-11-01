@@ -921,9 +921,10 @@ class StateSpace(LTI):
                         out[:, :, idx] = complex(np.nan, np.nan)
                     else:
                         out[:, :, idx] = complex(np.inf, np.nan)
-            if np.any(np.isnan(out)):
-                print(self)
-                print(out)
+                else:
+                    if np.any(np.isnan(out[:, :, idx])):
+                        print(idx, x_idx, self.A, self.B)
+                        print(out[:, :, idx])
 
         return out
 
