@@ -911,7 +911,6 @@ class StateSpace(LTI):
                         + self.D
                 except LinAlgError as e:
                     print(self)
-                    raise e
                     # Issue a warning messsage, for consistency with xferfcn
                     if warn_infinite:
                         warn("singular matrix in frequency response",
