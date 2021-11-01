@@ -681,7 +681,8 @@ class TestTimeresp:
             fr_kwargs['X0'] = tsystem.X0
         t, y = forced_response(tsystem.sys, **fr_kwargs)
         np.testing.assert_allclose(t, tsystem.t)
-        np.testing.assert_allclose(y, getattr(tsystem, refattr), rtol=1e-3)
+        np.testing.assert_allclose(y, getattr(tsystem, refattr),
+                                   rtol=1e-3, atol=1e-5)
 
     @pytest.mark.parametrize("tsystem", ["siso_ss1"], indirect=True)
     def test_forced_response_invalid_c(self, tsystem):
