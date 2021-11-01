@@ -910,7 +910,6 @@ class StateSpace(LTI):
                         solve(x_idx * eye(self.nstates) - self.A, self.B)) \
                         + self.D
                 except LinAlgError as e:
-                    print(self)
                     # Issue a warning messsage, for consistency with xferfcn
                     if warn_infinite:
                         warn("singular matrix in frequency response",
@@ -922,6 +921,9 @@ class StateSpace(LTI):
                         out[:, :, idx] = complex(np.nan, np.nan)
                     else:
                         out[:, :, idx] = complex(np.inf, np.nan)
+            if np.any(np.isnan(out)):
+                print(self)
+                print(out)
 
         return out
 
