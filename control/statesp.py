@@ -909,7 +909,9 @@ class StateSpace(LTI):
                         self.C,
                         solve(x_idx * eye(self.nstates) - self.A, self.B)) \
                         + self.D
-                except LinAlgError:
+                except LinAlgError as e:
+                    print(self)
+                    raise e
                     # Issue a warning messsage, for consistency with xferfcn
                     if warn_infinite:
                         warn("singular matrix in frequency response",
