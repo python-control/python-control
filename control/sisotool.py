@@ -180,6 +180,7 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
     fig.subplots_adjust(top=0.9,wspace = 0.3,hspace=0.35)
     fig.canvas.draw()
 
+# contributed by Sawyer Fuller, minster@uw.edu 2021.11.02
 def pid_designer(plant, gain='P', sign=+1, input_signal='r',
                            Kp0=0, Ki0=0, Kd0=0, tau=0.01,
                            C_ff=0, derivative_in_feedback_path=False):
