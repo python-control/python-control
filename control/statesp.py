@@ -851,7 +851,7 @@ class StateSpace(LTI):
         # transformed state matrices, at, bt, ct.
 
         # Start at the second frequency, already have the first.
-        for kk, x_kk in enumerate(x_arr[1:len(x_arr)]):
+        for kk, x_kk in enumerate(x_arr[1:]):
             result = tb05ad(n, m, p, x_kk, at, bt, ct, job='NH')
             # When job='NH', result = (g_i, hinvb, info)
 
@@ -885,14 +885,26 @@ class StateSpace(LTI):
         Attempts to use Laub's method from Slycot library, with a
         fall-back to python code.
         """
+        # Make sure the argument is a 1D array of complex numbers
+        x_arr = np.atleast_1d(x).astype(complex, copy=False)
+
+        # return fast on systems with 0 or 1 state
+        if self.nstates == 0:
+            return self.D[:, :, np.newaxis] \
+                * np.ones_like(x_arr, dtype=complex)
+        if self.nstates == 1:
+            with np.errstate(divide='ignore', invalid='ignore'):
+                out = (self.C[:, :, np.newaxis]
+                       * (self.B[:, :, np.newaxis] / (x_arr - self.A[0, 0]))
+                       + self.D[:, :, np.newaxis])
+            out[np.isnan(out)] = complex(np.inf, np.nan)
+            return out
+
         try:
-            out = self.slycot_laub(x)
+            out = self.slycot_laub(x_arr)
         except (ImportError, Exception):
             # Fall back because either Slycot unavailable or cannot handle
             # certain cases.
-
-            # Make sure the argument is a 1D array of complex numbers
-            x_arr = np.atleast_1d(x).astype(complex, copy=False)
 
             # Make sure that we are operating on a simple list
             if len(x_arr.shape) > 1:
