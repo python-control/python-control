@@ -258,6 +258,7 @@ def pid_designer(plant, gain='P', sign=+1, input_signal='r',
         Feedforward controller. If :class:`LTI`, must have timebase that is
         compatible with plant.
     """
+
     plant = _convert_to_statespace(plant)
     if plant.ninputs == 1:
         plant = ss2io(plant, inputs='u', outputs='y')

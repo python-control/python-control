@@ -77,7 +77,7 @@ class TestLTI:
         p2_splane = -wn2 * zeta2 + 1j * wn2 * np.sqrt(1 - zeta2**2)
         p2_zplane = np.exp(p2_splane * dt)
         np.testing.assert_almost_equal(p2, p2_zplane)
-        
+
     def test_dcgain(self):
         sys = tf(84, [1, 2])
         np.testing.assert_allclose(sys.dcgain(), 42)
@@ -136,7 +136,7 @@ class TestLTI:
                               (0, 1),
                               (1, 2)])
     def test_common_timebase_errors(self, i1, i2):
-        """Test that common_timbase throws errors on invalid combinations"""
+        """Test that common_timbase raises errors on invalid combinations"""
         with pytest.raises(ValueError):
             common_timebase(i1, i2)
         # Make sure behaviour is symmetric
