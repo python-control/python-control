@@ -6,11 +6,11 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
 
-from control.sisotool import sisotool
+from control.sisotool import sisotool, pid_designer
 from control.rlocus import _RLClickDispatcher
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
-
+from control import c2d
 
 @pytest.mark.usefixtures("mplcleanup")
 class TestSisotool:
@@ -140,3 +140,25 @@ class TestSisotool:
         # but 2 input, 1 output should
         with pytest.raises(ControlMIMONotImplemented):
             sisotool(sys221)
+
+@pytest.mark.usefixtures("mplcleanup")
+class TestPidDesigner:
+    syscont = TransferFunction(1,[1, 3, 0])
+    sysdisc1 = c2d(TransferFunction(1,[1, 3, 0]), .1)
+    syscont221 = StateSpace([[-.3, 0],[1,0]],[[-1,],[.1,]], [0, -.3], 0)
+
+    # cont or discrete, vary P I or D
+    @pytest.mark.parametrize('plant', (syscont, sysdisc1))
+    @pytest.mark.parametrize('gain', ('P', 'I', 'D'))
+    @pytest.mark.parametrize("kwargs", [{'Kp0':0.01},])
+    def test_pid_designer_1(self, plant, gain, kwargs):
+        pid_designer(plant, gain, **kwargs)
+
+    # input from reference or disturbance
+    @pytest.mark.parametrize('plant', (syscont, syscont221))
+    @pytest.mark.parametrize("kwargs", [
+        {'input_signal':'r', 'Kp0':0.01, 'derivative_in_feedback_path':True},
+        {'input_signal':'d', 'Kp0':0.01, 'derivative_in_feedback_path':True},])
+    def test_pid_designer_2(self, plant, kwargs):
+        pid_designer(plant, **kwargs)
+
