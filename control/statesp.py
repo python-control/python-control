@@ -889,16 +889,18 @@ class StateSpace(LTI):
         x_arr = np.atleast_1d(x).astype(complex, copy=False)
 
         # return fast on systems with 0 or 1 state
-        if self.nstates == 0:
-            return self.D[:, :, np.newaxis] \
-                * np.ones_like(x_arr, dtype=complex)
-        if self.nstates == 1:
-            with np.errstate(divide='ignore', invalid='ignore'):
-                out = (self.C[:, :, np.newaxis]
-                       * (self.B[:, :, np.newaxis] / (x_arr - self.A[0, 0]))
-                       + self.D[:, :, np.newaxis])
-            out[np.isnan(out)] = complex(np.inf, np.nan)
-            return out
+        if not config.defaults['statesp.use_numpy_matrix']:
+            if self.nstates == 0:
+                return self.D[:, :, np.newaxis] \
+                    * np.ones_like(x_arr, dtype=complex)
+            if self.nstates == 1:
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    out = self.C[:, :, np.newaxis] \
+                          / (x_arr - self.A[0, 0]) \
+                          * self.B[:, :, np.newaxis] \
+                          + self.D[:, :, np.newaxis]
+                out[np.isnan(out)] = complex(np.inf, np.nan)
+                return out
 
         try:
             out = self.slycot_laub(x_arr)
