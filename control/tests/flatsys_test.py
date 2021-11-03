@@ -339,8 +339,9 @@ class TestFlatSys:
         traj_kwarg = fs.point_to_point(
             flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
             basis=fs.PolyFamily(8), minimize_kwargs={'method': 'slsqp'})
-        np.testing.assert_almost_equal(
-            traj_method.eval(timepts)[0], traj_kwarg.eval(timepts)[0])
+        np.testing.assert_allclose(
+            traj_method.eval(timepts)[0], traj_kwarg.eval(timepts)[0],
+            atol=1e-5)
 
         # Unrecognized keywords
         with pytest.raises(TypeError, match="unrecognized keyword"):
