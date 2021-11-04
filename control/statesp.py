@@ -919,10 +919,11 @@ class StateSpace(LTI):
                 try:
                     xI_A = x_idx * eye(self.nstates) - self.A
                     xI_A_inv = solve(xI_A, self.B)
-                    # gh-664: not singular but the underlying LAPACK routine
-                    # was not satisfied with the condition. Try least-squares
-                    # solver.
+                    # gh-664: x_IA not singular but the underlying LAPACK
+                    # routine was not satisfied with the condition.
+                    # Try least-squares solver.
                     if np.any(np.isnan(xI_A_inv)): # pragma: no cover
+                        print(f"DEBUG: {xI_A}, {self.B}")
                         xI_A_inv, _, _, _ = lstsq(xI_A, self.B, rcond=None)
                     out[:, :, idx] = np.dot(self.C, xI_A_inv) + self.D
                 except LinAlgError:
