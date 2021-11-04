@@ -36,7 +36,8 @@ jobs:
         pip install coveralls
 
         # Install python-control dependencies
-        conda install numpy matplotlib scipy
+        # use conda-forge until https://github.com/numpy/numpy/issues/20233 is resolved
+        conda install -c conda-forge numpy matplotlib scipy
         if [[ '${{matrix.slycot}}' == 'conda' ]]; then
           conda install -c conda-forge slycot
         fi
