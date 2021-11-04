@@ -1,4 +1,4 @@
-__all__ = ['sisotool', 'pid_designer']
+__all__ = ['sisotool', 'rootlocus_pid_designer']
 
 from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
@@ -180,11 +180,13 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
     fig.subplots_adjust(top=0.9,wspace = 0.3,hspace=0.35)
     fig.canvas.draw()
 
-# contributed by Sawyer Fuller, minster@uw.edu 2021.11.02
-def pid_designer(plant, gain='P', sign=+1, input_signal='r',
+# contributed by Sawyer Fuller, minster@uw.edu 2021.11.02, based on
+# an implementation in Matlab by Martin Berg.
+def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                            Kp0=0, Ki0=0, Kd0=0, tau=0.01,
-                           C_ff=0, derivative_in_feedback_path=False):
-    """Manual PID controller design using sisotool
+                           C_ff=0, derivative_in_feedback_path=False,
+                           noplot=False):
+    """Manual PID controller design based on root locus using Sisotool
 
     Uses `Sisotool` to investigate the effect of adding or subtracting an
     amount `deltaK` to the proportional, integral, or derivative (PID) gains of
@@ -192,7 +194,7 @@ def pid_designer(plant, gain='P', sign=+1, input_signal='r',
     be modified at a time. `Sisotool` plots the step response, frequency
     response, and root locus.
 
-    When first run, `deltaK` is set to 1; click on a branch of the root locus
+    When first run, `deltaK` is set to 0; click on a branch of the root locus
     plot to try a different value. Each click updates plots and prints
     the corresponding `deltaK`. To tune all three PID gains, repeatedly call
     `pid_designer`, and select a different `gain` each time (`'P'`, `'I'`,
@@ -240,13 +242,13 @@ def pid_designer(plant, gain='P', sign=+1, input_signal='r',
     plant : :class:`LTI` (:class:`TransferFunction` or :class:`StateSpace` system)
         The dynamical system to be controlled
     gain : string (optional)
-        Which gain to vary by deltaK. Must be one of 'P', 'I', or 'D'
+        Which gain to vary by `deltaK`. Must be one of `'P'`, `'I'`, or `'D'`
         (proportional, integral, or derative)
     sign : int (optional)
         The sign of deltaK gain perturbation
     input : string (optional)
-        The input used for the step response; must be 'r' (reference) or
-        'd' (disturbance) (see figure above)
+        The input used for the step response; must be `'r'` (reference) or
+        `'d'` (disturbance) (see figure above)
     Kp0, Ki0, Kd0 : float (optional)
         Initial values for proportional, integral, and derivative gains,
         respectively
@@ -257,16 +259,24 @@ def pid_designer(plant, gain='P', sign=+1, input_signal='r',
     C_ff : float or :class:`LTI` system (optional)
         Feedforward controller. If :class:`LTI`, must have timebase that is
         compatible with plant.
+    derivative_in_feedback_path : bool (optional)
+        Whether to place the derivative term in feedback transfer function
+        `C_b` instead of the forward transfer function `C_f`.
+    noplot : bool (optional)
+
+    Returns
+    ----------
+    closedloop : class:`StateSpace` system
+        The closed-loop system using initial gains.
     """
 
     plant = _convert_to_statespace(plant)
     if plant.ninputs == 1:
         plant = ss2io(plant, inputs='u', outputs='y')
     elif plant.ninputs == 2:
-        plant = ss2io(plant, inputs=('u', 'd'), outputs='y')
+        plant = ss2io(plant, inputs=['u', 'd'], outputs='y')
     else:
         raise ValueError("plant must have one or two inputs")
-    #plant = ss2io(plant, inputs='u', outputs='y')
     C_ff = ss2io(_convert_to_statespace(C_ff),   inputs='r', outputs='uff')
     dt = common_timebase(plant, C_ff)
 
@@ -277,29 +287,30 @@ def pid_designer(plant, gain='P', sign=+1, input_signal='r',
     else:
         u_summer = summing_junction(['ufb', 'uff', 'd'], 'u')
 
-    prop  = tf(1,1)
     if isctime(plant):
-        integ = tf(1,[1, 0])
+        prop  = tf(1, 1)
+        integ = tf(1, [1, 0])
         deriv = tf([1, 0], [tau, 1])
-    else:
-        integ = tf([dt/2, dt/2],[1, -1], dt)
-        deriv = tf([1, -1],[dt, 0], dt)
+    else: # discrete-time
+        prop  = tf(1, 1, dt)
+        integ = tf([dt/2, dt/2], [1, -1], dt)
+        deriv = tf([1, -1], [dt, 0], dt)
 
-    # add signal names
+    # add signal names by turning into iosystems
     prop  = tf2io(prop,        inputs='e', outputs='prop_e')
     integ = tf2io(integ,       inputs='e', outputs='int_e')
     if derivative_in_feedback_path:
-        deriv = tf2io(-deriv,  inputs='y', outputs='deriv_')
+        deriv = tf2io(-deriv,  inputs='y', outputs='deriv')
     else:
-        deriv = tf2io(deriv,   inputs='e', outputs='deriv_')
+        deriv = tf2io(deriv,   inputs='e', outputs='deriv')
 
     # create gain blocks
     Kpgain = tf2io(tf(Kp0, 1),            inputs='prop_e',  outputs='ufb')
     Kigain = tf2io(tf(Ki0, 1),            inputs='int_e',   outputs='ufb')
-    Kdgain = tf2io(tf(Kd0, 1),            inputs='deriv_',  outputs='ufb')
+    Kdgain = tf2io(tf(Kd0, 1),            inputs='deriv',  outputs='ufb')
 
-    # for the gain that is varied, create a special gain block with an
-    # 'input' and an 'output' signal to create the loop transfer function
+    # for the gain that is varied, replace gain block with a special block
+    # that has an 'input' and an 'output' that creates loop transfer function
     if gain in ('P', 'p'):
         Kpgain = ss2io(ss([],[],[],[[0, 1], [-sign, Kp0]]),
             inputs=['input', 'prop_e'], outputs=['output', 'ufb'])
@@ -308,13 +319,15 @@ def pid_designer(plant, gain='P', sign=+1, input_signal='r',
             inputs=['input', 'int_e'],  outputs=['output', 'ufb'])
     elif gain in ('D', 'd'):
         Kdgain = ss2io(ss([],[],[],[[0, 1], [-sign, Kd0]]),
-            inputs=['input', 'deriv_'], outputs=['output', 'ufb'])
+            inputs=['input', 'deriv'], outputs=['output', 'ufb'])
     else:
         raise ValueError(gain + ' gain not recognized.')
 
     # the second input and output are used by sisotool to plot step response
     loop = interconnect((plant, Kpgain, Kigain, Kdgain, prop, integ, deriv,
                             C_ff, e_summer, u_summer),
-                            inplist=['input', input_signal], outlist=['output', 'y'])
-    sisotool(loop)
-    return loop[1, 1]
+                            inplist=['input', input_signal],
+                            outlist=['output', 'y'])
+    if ~noplot:
+        sisotool(loop, kvect=(0.,))
+    return _convert_to_statespace(loop[1, 1])

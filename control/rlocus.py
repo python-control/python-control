@@ -188,7 +188,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                 zeta = -1 * s.real / abs(s)
             fig.suptitle(
                 "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-                (s.real, s.imag, 1, zeta),
+                (s.real, s.imag, kvect[0], zeta),
                 fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
             fig.canvas.mpl_connect(
                 'button_release_event',

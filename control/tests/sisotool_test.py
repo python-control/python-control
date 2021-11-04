@@ -6,7 +6,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
 
-from control.sisotool import sisotool, pid_designer
+from control.sisotool import sisotool, rootlocus_pid_designer
 from control.rlocus import _RLClickDispatcher
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
@@ -151,13 +151,14 @@ class TestPidDesigner:
             'syscont221':StateSpace([[-.3, 0],[1,0]],[[-1,],[.1,]], [0, -.3], 0)}
         return plants[request.param]
 
+    # check
     # cont or discrete, vary P I or D
 #    @pytest.mark.parametrize('plant', (syscont, sysdisc1))
     @pytest.mark.parametrize('plant', ('syscont', 'sysdisc1'), indirect=True)
     @pytest.mark.parametrize('gain', ('P', 'I', 'D'))
-    @pytest.mark.parametrize("kwargs", [{'Kp0':0.01},])
+    @pytest.mark.parametrize("kwargs", [{'Kp0':0.1, 'noplot':True},])
     def test_pid_designer_1(self, plant, gain, kwargs):
-        pid_designer(plant, gain, **kwargs)
+        rootlocus_pid_designer(plant, gain, **kwargs)
 
     # input from reference or disturbance
     @pytest.mark.parametrize('plant', ('syscont', 'syscont221'), indirect=True)
@@ -166,5 +167,5 @@ class TestPidDesigner:
         {'input_signal':'r', 'Kp0':0.01, 'derivative_in_feedback_path':True},
         {'input_signal':'d', 'Kp0':0.01, 'derivative_in_feedback_path':True},])
     def test_pid_designer_2(self, plant, kwargs):
-        pid_designer(plant, **kwargs)
+        rootlocus_pid_designer(plant, **kwargs)
 
