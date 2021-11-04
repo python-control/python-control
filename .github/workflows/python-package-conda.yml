@@ -50,7 +50,7 @@ jobs:
         # Use coverage instead of pytest-cov to get .coverage file
         # See https://github.com/python-control/python-control/pull/504
        
-        python3 -c 'import numpy; numpy.show_config()'
+        python3 .github/scripts/numpy-info.py
 
         xvfb-run --auto-servernum coverage run -m pytest control/tests
 
