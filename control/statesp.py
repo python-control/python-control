@@ -53,10 +53,10 @@ $Id$
 
 import math
 import numpy as np
-from numpy import any, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze
+from numpy import any, array, asarray, concatenate, cos, delete, \
+    dot, empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze, pi
 from numpy.random import rand, randn
-from numpy.linalg import eigvals, lstsq, matrix_rank, solve
+from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
 import scipy as sp
 from scipy.signal import cont2discrete
@@ -937,8 +937,6 @@ class StateSpace(LTI):
                         out[:, :, idx] = complex(np.nan, np.nan)
                     else:
                         out[:, :, idx] = complex(np.inf, np.nan)
-
-
 
         return out
 
