@@ -28,9 +28,6 @@ jobs:
         conda create -q -n test-environment python=${{matrix.python-version}}
         source $CONDA/bin/activate test-environment
 
-        # gh-664, https://github.com/numpy/numpy/issues/20233, https://github.com/conda/conda/issues/11023 -- disable MKL
-        conda install nomkl
-
         # Set up (virtual) X11
         sudo apt install -y xvfb
 
