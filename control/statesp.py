@@ -919,11 +919,6 @@ class StateSpace(LTI):
                 try:
                     xI_A = x_idx * eye(self.nstates) - self.A
                     xI_A_inv = solve(xI_A, self.B)
-                    # gh-664: xI_A did not raise singular matrix error,
-                    print(f"DEBUG np.linalg.solve(\n,"
-                          f"{xI_A}\n"
-                          f"{self.B} = \n"
-                          f"{xI_A_inv}")
                     out[:, :, idx] = np.dot(self.C, xI_A_inv) + self.D
                 except LinAlgError:
                     # Issue a warning messsage, for consistency with xferfcn
