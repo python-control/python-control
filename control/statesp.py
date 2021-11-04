@@ -53,10 +53,10 @@ $Id$
 
 import math
 import numpy as np
-from numpy import any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze, pi
+from numpy import any, asarray, concatenate, cos, delete, \
+    dot, empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze
 from numpy.random import rand, randn
-from numpy.linalg import solve, eigvals, matrix_rank
+from numpy.linalg import eigvals, lstsq, matrix_rank, solve
 from numpy.linalg.linalg import LinAlgError
 import scipy as sp
 from scipy.signal import cont2discrete
@@ -887,6 +887,8 @@ class StateSpace(LTI):
         """
         # Make sure the argument is a 1D array of complex numbers
         x_arr = np.atleast_1d(x).astype(complex, copy=False)
+        if len(x_arr.shape) > 1:
+            raise ValueError("input list must be 1D")
 
         # return fast on systems with 0 or 1 state
         if not config.defaults['statesp.use_numpy_matrix']:
@@ -908,10 +910,6 @@ class StateSpace(LTI):
             # Fall back because either Slycot unavailable or cannot handle
             # certain cases.
 
-            # Make sure that we are operating on a simple list
-            if len(x_arr.shape) > 1:
-                raise ValueError("input list must be 1D")
-
             # Preallocate
             out = empty((self.noutputs, self.ninputs, len(x_arr)),
                         dtype=complex)
@@ -919,10 +917,14 @@ class StateSpace(LTI):
             # TODO: can this be vectorized?
             for idx, x_idx in enumerate(x_arr):
                 try:
-                    out[:, :, idx] = np.dot(
-                        self.C,
-                        solve(x_idx * eye(self.nstates) - self.A, self.B)) \
-                        + self.D
+                    xI_A = x_idx * eye(self.nstates) - self.A
+                    xI_A_inv = solve(xI_A, self.B)
+                    # gh-664: not singular but the underlying LAPACK routine
+                    # was not satisfied with the condition. Try least-squares
+                    # solver.
+                    if np.any(np.isnan(xI_A_inv)): # pragma: no cover
+                        xI_A_inv, _, _, _ = lstsq(xI_A, self.B, rcond=None)
+                    out[:, :, idx] = np.dot(self.C, xI_A_inv) + self.D
                 except LinAlgError:
                     # Issue a warning messsage, for consistency with xferfcn
                     if warn_infinite:
@@ -935,6 +937,8 @@ class StateSpace(LTI):
                         out[:, :, idx] = complex(np.nan, np.nan)
                     else:
                         out[:, :, idx] = complex(np.inf, np.nan)
+
+
 
         return out
 
