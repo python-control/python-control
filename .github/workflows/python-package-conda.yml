@@ -10,7 +10,7 @@ jobs:
     strategy:
       max-parallel: 5
       matrix:
-        python-version: [3.6, 3.9]
+        python-version: [3.9]
         slycot: ["", "conda"]
         array-and-matrix: [0]
         include:
