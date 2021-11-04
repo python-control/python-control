@@ -168,8 +168,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         else:
             if ax is None:
                 ax = plt.gca()
-                fig = ax.figure
-                ax.set_title('Root Locus')
+            fig = ax.figure
+            ax.set_title('Root Locus')
 
         if print_gain and not sisotool:
             fig.canvas.mpl_connect(
