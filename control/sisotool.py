@@ -8,7 +8,7 @@ from .xferfcn import tf
 from .statesp import ss
 from .bdalg import append, connect
 from .iosys import tf2io, ss2io, summing_junction, interconnect
-from control.statesp import _convert_to_statespace
+from control.statesp import _convert_to_statespace, StateSpace
 from control.lti import common_timebase, isctime
 import matplotlib
 import matplotlib.pyplot as plt
@@ -331,4 +331,5 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                             outlist=['output', 'y'])
     if plot:
         sisotool(loop, kvect=(0.,))
-    return _convert_to_statespace(loop[1, 1])
+    return StateSpace(loop[1, 1].A, loop[1, 1].B, loop[1, 1].C, loop[1, 1].D,
+            loop[1, 1].dt)
