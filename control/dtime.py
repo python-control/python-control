@@ -89,7 +89,8 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None):
     if not isctime(sysc):
         raise ValueError("First argument must be continuous time system")
 
-    return sysc.sample(Ts, method, alpha, prewarp_frequency)
+    return sysc.sample(Ts,
+        method=method, alpha=alpha, prewarp_frequency=prewarp_frequency)
 
 
 def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
@@ -126,6 +127,7 @@ def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
     """
 
     #  Call the sample_system() function to do the work
-    sysd = sample_system(sysc, Ts, method, prewarp_frequency)
+    sysd = sample_system(sysc, Ts,
+        method=method, prewarp_frequency=prewarp_frequency)
 
     return sysd
