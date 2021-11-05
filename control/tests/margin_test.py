@@ -102,7 +102,7 @@ def test_margin_sys(tsys):
     sys, refout, refoutall = tsys
     """Test margin() function with system input"""
     out = margin(sys)
-    assert_allclose(out, np.array(refout)[[0, 1, 4, 3]], atol=1.5e-3)
+    assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
 def test_margin_3input(tsys):
     sys, refout, refoutall = tsys
@@ -110,7 +110,7 @@ def test_margin_3input(tsys):
     omega = np.logspace(-2, 2, 2000)
     mag, phase, omega_ = sys.frequency_response(omega)
     out = margin((mag, phase*180/np.pi, omega_))
-    assert_allclose(out, np.array(refout)[[0, 1, 4, 3]], atol=1.5e-3)
+    assert_allclose(out, np.array(refout)[[0, 1, 3, 4]], atol=1.5e-3)
 
 
 @pytest.mark.parametrize(
@@ -276,23 +276,23 @@ def tsys_zmore(request, tsys_zmoresystems):
 @pytest.mark.parametrize(
     'tsys_zmore',
     [dict(sysname='typem1', K=2.0, atol=1.5e-3,
-          result=(float('Inf'), -120.0007,  0.5774, float('NaN'))),
+          result=(float('Inf'), -120.0007, float('NaN'), 0.5774)),
      dict(sysname='type0', K=0.8, atol=1.5e-3,
-          result=(10.0014, float('inf'), float('nan'), 1.7322)),
+          result=(10.0014, float('inf'), 1.7322, float('nan'))),
      dict(sysname='type0', K=2.0, atol=1e-2,
-          result=(4.000, 67.6058, 0.7663, 1.7322)),
+          result=(4.000, 67.6058, 1.7322, 0.7663)),
      dict(sysname='type1', K=1.0, atol=1e-4,
-          result=(float('Inf'), 144.9032, 0.3162, float('NaN'))),
+          result=(float('Inf'), 144.9032, float('NaN'), 0.3162)),
      dict(sysname='type2', K=1.0, atol=1e-4,
-          result=(float('Inf'), 44.4594, 0.7907, float('NaN'))),
+          result=(float('Inf'), 44.4594, float('NaN'), 0.7907)),
      dict(sysname='type3', K=1.0, atol=1.5e-3,
-          result=(0.0626, 37.1748, 0.7951, 0.1119)),
+          result=(0.0626, 37.1748, 0.1119, 0.7951)),
      dict(sysname='example21', K=1.0, atol=1e-2,
           result=(0.0100, -14.5640, 0, 0.0022)),
      dict(sysname='example21', K=1000.0, atol=1e-2,
-          result=(0.1793, 22.5215, 0.0630, 0.0243)),
+          result=(0.1793, 22.5215, 0.0243, 0.0630)),
      dict(sysname='example21', K=5000.0, atol=1.5e-3,
-          result=(4.5596, 21.2101, 0.1868, 0.4385)),
+          result=(4.5596, 21.2101, 0.4385, 0.1868)),
      ],
     indirect=True)
 def test_zmore_margin(tsys_zmore):

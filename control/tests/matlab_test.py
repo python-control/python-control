@@ -355,13 +355,13 @@ class TestMatlab:
     def testMargin(self, siso):
         """Test margin()"""
         #! TODO: check results to make sure they are OK
-        gm, pm, wg, wp = margin(siso.tf1)
-        gm, pm, wg, wp = margin(siso.tf2)
-        gm, pm, wg, wp = margin(siso.ss1)
-        gm, pm, wg, wp = margin(siso.ss2)
-        gm, pm, wg, wp = margin(siso.ss2 * siso.ss2 * 2)
+        gm, pm, wcg, wcp = margin(siso.tf1)
+        gm, pm, wcg, wcp = margin(siso.tf2)
+        gm, pm, wcg, wcp = margin(siso.ss1)
+        gm, pm, wcg, wcp = margin(siso.ss2)
+        gm, pm, wcg, wcp = margin(siso.ss2 * siso.ss2 * 2)
         np.testing.assert_array_almost_equal(
-            [gm, pm, wg, wp], [1.5451, 75.9933, 0.6559, 1.2720], decimal=3)
+            [gm, pm, wcg, wcp], [1.5451, 75.9933, 1.2720, 0.6559], decimal=3)
 
     def testDcgain(self, siso):
         """Test dcgain() for SISO system"""
@@ -781,12 +781,12 @@ class TestMatlab:
         # total open loop
         Hol = Hc*Hno*Hp
 
-        gm, pm, wg, wp = margin(Hol)
-        # print("%f %f %f %f" % (gm, pm, wg, wp))
+        gm, pm, wcg, wcp = margin(Hol)
+        # print("%f %f %f %f" % (gm, pm, wcg, wcp))
         np.testing.assert_allclose(gm, 3.32065569155)
         np.testing.assert_allclose(pm, 46.9740430224)
-        np.testing.assert_allclose(wg, 0.0616288455466)
-        np.testing.assert_allclose(wp, 0.176469728448)
+        np.testing.assert_allclose(wcg, 0.176469728448)
+        np.testing.assert_allclose(wcp, 0.0616288455466)
 
     def test_tf_string_args(self):
         """Make sure s and z are defined properly"""
