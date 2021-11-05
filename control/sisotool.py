@@ -197,9 +197,9 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     When first run, `deltaK` is set to 0; click on a branch of the root locus
     plot to try a different value. Each click updates plots and prints
     the corresponding `deltaK`. To tune all three PID gains, repeatedly call
-    `pid_designer`, and select a different `gain` each time (`'P'`, `'I'`,
-    or `'D'`). Make sure to add the resulting `deltaK` to your chosen initial
-    gain on the next iteration.
+    `rootlocus_pid_designer`, and select a different `gain` each time (`'P'`,
+    `'I'`, or `'D'`). Make sure to add the resulting `deltaK` to your chosen
+    initial gain on the next iteration.
 
     Example: to examine the effect of varying `Kp` starting from an intial
     value of 10, use the arguments `gain='P', Kp0=10`. Suppose a `deltaK`
@@ -331,5 +331,5 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                             outlist=['output', 'y'])
     if plot:
         sisotool(loop, kvect=(0.,))
-    return StateSpace(loop[1, 1].A, loop[1, 1].B, loop[1, 1].C, loop[1, 1].D,
-            loop[1, 1].dt)
+    cl = loop[1, 1] # closed loop transfer function with initial gains
+    return StateSpace(cl.A, cl.B, cl.C, cl.D, cl.dt)
