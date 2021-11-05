@@ -714,41 +714,53 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             if np.any(omega_sys * sys.dt > np.pi) and warn_nyquist:
                 warnings.warn("evaluation above Nyquist frequency")
 
-            # Transform frequencies to continuous domain
-            contour = np.exp(1j * omega * sys.dt)
-        else:
-            contour = 1j * omega_sys
+        # do indentations in s-plane where it is more convenient
+        splane_contour = 1j * omega_sys
 
         # Bend the contour around any poles on/near the imaginary axis
+        # TODO: smarter indent radius that depends on dcgain of system
+        # and timebase of discrete system.
         if isinstance(sys, (StateSpace, TransferFunction)) \
-                and sys.isctime() and indent_direction != 'none':
-            poles = sys.pole()
-            if contour[1].imag > indent_radius \
-                    and 0. in poles and not omega_range_given:
-                # add some points for quarter circle around poles at origin
-                contour = np.concatenate(
-                    (1j * np.linspace(0., indent_radius, 50),
-                     contour[1:]))
-            for i, s in enumerate(contour):
-                # Find the nearest pole
-                p = poles[(np.abs(poles - s)).argmin()]
+                and indent_direction != 'none':
+            if sys.isctime():
+                splane_poles = sys.pole()
+            else:
+                # map z-plane poles to s-plane, ignoring any at the origin
+                # because we don't need to indent for them
+                zplane_poles = sys.pole()
+                zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
+                splane_poles = np.log(zplane_poles)/sys.dt
 
+            if splane_contour[1].imag > indent_radius \
+                    and np.any(np.isclose(abs(splane_poles), 0)) \
+                    and not omega_range_given:
+                # add some points for quarter circle around poles at origin
+                splane_contour = np.concatenate(
+                    (1j * np.linspace(0., indent_radius, 50),
+                    splane_contour[1:]))
+            for i, s in enumerate(splane_contour):
+                # Find the nearest pole
+                p = splane_poles[(np.abs(splane_poles - s)).argmin()]
                 # See if we need to indent around it
                 if abs(s - p) < indent_radius:
-                    if p.real < 0 or \
-                       (p.real == 0 and indent_direction == 'right'):
+                    if p.real < 0 or (np.isclose(p.real, 0) \
+                            and indent_direction == 'right'):
                         # Indent to the right
-                        contour[i] += \
+                        splane_contour[i] += \
                             np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
-                    elif p.real > 0 or \
-                         (p.real == 0 and indent_direction == 'left'):
+                    elif p.real > 0 or (np.isclose(p.real, 0) \
+                            and indent_direction == 'left'):
                         # Indent to the left
-                        contour[i] -= \
+                        splane_contour[i] -= \
                             np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
                     else:
                         ValueError("unknown value for indent_direction")
 
-            # TODO: add code to indent around discrete poles on unit circle
+        # change contour to z-plane if necessary
+        if sys.isctime():
+            contour = splane_contour
+        else:
+            contour = np.exp(splane_contour * sys.dt)
 
         # Compute the primary curve
         resp = sys(contour)
