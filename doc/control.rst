@@ -124,6 +124,7 @@ Control system synthesis
     lqe
     mixsyn
     place
+    rlocus_pid_designer
 
 Model simplification tools
 ==========================
