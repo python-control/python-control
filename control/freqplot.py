@@ -718,16 +718,22 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         splane_contour = 1j * omega_sys
 
         # Bend the contour around any poles on/near the imaginary axis
+        # TODO: smarter indent radius that depends on dcgain of system
+        # and timebase of discrete system.
         if isinstance(sys, (StateSpace, TransferFunction)) \
                 and indent_direction != 'none':
             if sys.isctime():
                 splane_poles = sys.pole()
             else:
-                # map z-plane poles to s-plane
-                splane_poles = np.log(sys.pole())/sys.dt
+                # map z-plane poles to s-plane, ignoring any at the origin
+                # because we don't need to indent for them
+                zplane_poles = sys.pole()
+                zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
+                splane_poles = np.log(zplane_poles)/sys.dt
 
             if splane_contour[1].imag > indent_radius \
-                    and 0. in splane_poles and not omega_range_given:
+                    and np.any(np.isclose(abs(splane_poles), 0)) \
+                    and not omega_range_given:
                 # add some points for quarter circle around poles at origin
                 splane_contour = np.concatenate(
                     (1j * np.linspace(0., indent_radius, 50),
@@ -737,13 +743,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 p = splane_poles[(np.abs(splane_poles - s)).argmin()]
                 # See if we need to indent around it
                 if abs(s - p) < indent_radius:
-                    if p.real < 0 or \
-                       (p.real == 0 and indent_direction == 'right'):
+                    if p.real < 0 or (np.isclose(p.real, 0) \
+                            and indent_direction == 'right'):
                         # Indent to the right
                         splane_contour[i] += \
                             np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
-                    elif p.real > 0 or \
-                         (p.real == 0 and indent_direction == 'left'):
+                    elif p.real > 0 or (np.isclose(p.real, 0) \
+                            and indent_direction == 'left'):
                         # Indent to the left
                         splane_contour[i] -= \
                             np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
