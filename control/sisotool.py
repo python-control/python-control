@@ -185,7 +185,7 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
 def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                            Kp0=0, Ki0=0, Kd0=0, tau=0.01,
                            C_ff=0, derivative_in_feedback_path=False,
-                           noplot=False):
+                           plot=True):
     """Manual PID controller design based on root locus using Sisotool
 
     Uses `Sisotool` to investigate the effect of adding or subtracting an
@@ -262,7 +262,8 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     derivative_in_feedback_path : bool (optional)
         Whether to place the derivative term in feedback transfer function
         `C_b` instead of the forward transfer function `C_f`.
-    noplot : bool (optional)
+    plot : bool (optional)
+        Whether to create Sisotool interactive plot.
 
     Returns
     ----------
@@ -328,6 +329,6 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                             C_ff, e_summer, u_summer),
                             inplist=['input', input_signal],
                             outlist=['output', 'y'])
-    if ~noplot:
+    if plot:
         sisotool(loop, kvect=(0.,))
     return _convert_to_statespace(loop[1, 1])
