@@ -288,9 +288,11 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
     sm : float or array_like
         Stability margin, the minimum distance from the Nyquist plot to -1
     wpc : float or array_like
-        Phase crossover frequency (where phase crosses -180 degrees)
+        Phase crossover frequency (where phase crosses -180 degrees), which is
+        associated with the gain margin.
     wgc : float or array_like
-        Gain crossover frequency (where gain crosses 1)
+        Gain crossover frequency (where gain crosses 1), which is associated
+        with the phase margin.
     wms : float or array_like
         Stability margin frequency (where Nyquist plot is closest to -1)
 
