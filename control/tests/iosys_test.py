@@ -9,6 +9,7 @@ created for that purpose.
 """
 
 from __future__ import print_function
+import re
 
 import numpy as np
 import pytest
@@ -1396,3 +1397,139 @@ def secord_update(t, x, u, params={}):
 def secord_output(t, x, u, params={}):
     """Second order system dynamics output"""
     return np.array([x[0]])
+
+
+def test_interconnect_unused_input():
+    # test that warnings about unused inputs are reported, or not,
+    # as required
+    g = ct.LinearIOSystem(ct.ss(-1,1,1,0),
+                          inputs=['u'],
+                          outputs=['y'],
+                          name='g')
+
+    s = ct.summing_junction(inputs=['r','-y','-n'],
+                            outputs=['e'],
+                            name='s')
+
+    k = ct.LinearIOSystem(ct.ss(0,10,2,0),
+                          inputs=['e'],
+                          outputs=['u'],
+                          name='k')
+
+    with pytest.warns(UserWarning, match=r"Unused input\(s\) in InterconnectedSystem"):
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'])
+
+    with pytest.warns(None) as record:
+        # no warning if output explicitly ignored, various argument forms
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_inputs=['n'])
+
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_inputs=['s.n'])
+
+        # no warning if auto-connect disabled
+        h = ct.interconnect([g,s,k],
+                            connections=False)
+
+        #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
+        for r in record:
+            # strip out matrix warnings
+            if re.match(r'.*matrix subclass', str(r.message)):
+                continue
+            print(r.message)
+            pytest.fail(f'Unexpected warning: {r.message}')
+
+
+    # warn if explicity ignored input in fact used
+    with pytest.warns(UserWarning, match=r"Input\(s\) specified as ignored is \(are\) used:") as record:
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_inputs=['u','n'])
+
+    with pytest.warns(UserWarning, match=r"Input\(s\) specified as ignored is \(are\) used:") as record:
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_inputs=['k.e','n'])
+
+    # error if ignored signal doesn't exist
+    with pytest.raises(ValueError):
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_inputs=['v'])
+
+
+def test_interconnect_unused_output():
+    # test that warnings about ignored outputs are reported, or not,
+    # as required
+    g = ct.LinearIOSystem(ct.ss(-1,1,[[1],[-1]],[[0],[1]]),
+                          inputs=['u'],
+                          outputs=['y','dy'],
+                          name='g')
+
+    s = ct.summing_junction(inputs=['r','-y'],
+                            outputs=['e'],
+                            name='s')
+
+    k = ct.LinearIOSystem(ct.ss(0,10,2,0),
+                          inputs=['e'],
+                          outputs=['u'],
+                          name='k')
+
+    with pytest.warns(UserWarning, match=r"Unused output\(s\) in InterconnectedSystem:") as record:
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'])
+
+
+    # no warning if output explicitly ignored
+    with pytest.warns(None) as record:
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_outputs=['dy'])
+
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_outputs=['g.dy'])
+
+        # no warning if auto-connect disabled
+        h = ct.interconnect([g,s,k],
+                            connections=False)
+
+        #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
+        for r in record:
+            # strip out matrix warnings
+            if re.match(r'.*matrix subclass', str(r.message)):
+                continue
+            print(r.message)
+            pytest.fail(f'Unexpected warning: {r.message}')
+
+    # warn if explicity ignored output in fact used
+    with pytest.warns(UserWarning, match=r"Output\(s\) specified as ignored is \(are\) used:"):
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_outputs=['dy','u'])
+
+    with pytest.warns(UserWarning, match=r"Output\(s\) specified as ignored is \(are\) used:"):
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_outputs=['dy', ('k.u')])
+
+    # error if ignored signal doesn't exist
+    with pytest.raises(ValueError):
+        h = ct.interconnect([g,s,k],
+                            inputs=['r'],
+                            outputs=['y'],
+                            ignore_outputs=['v'])
