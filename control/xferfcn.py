@@ -1086,12 +1086,10 @@ class TransferFunction(LTI):
             * euler: Euler (or forward difference) method ("gbt" with alpha=0)
             * backward_diff: Backwards difference ("gbt" with alpha=1.0)
             * zoh: zero-order hold (default)
-
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
-            otherwise.
-
+            otherwise. See :func:`scipy.signal.cont2discrete`.
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
             time system's magnitude and phase (the gain=1 crossover frequency,
@@ -1101,7 +1099,7 @@ class TransferFunction(LTI):
         Returns
         -------
         sysd : TransferFunction system
-            Discrete time system, with sampling rate Ts
+            Discrete time system, with sample period Ts
 
         Notes
         -----
