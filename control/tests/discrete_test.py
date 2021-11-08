@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 
 from control import (StateSpace, TransferFunction, bode, common_timebase,
-                     evalfr, feedback, forced_response, impulse_response,
-                     isctime, isdtime, rss, sample_system, step_response,
+                     feedback, forced_response, impulse_response,
+                     isctime, isdtime, rss, c2d, sample_system, step_response,
                      timebase)
 
 
@@ -382,10 +382,20 @@ class TestDiscrete:
         Ts = 0.025
         # test state space version
         plant = getattr(tsys, plantname)
+        plant_fr = plant(wwarp * 1j)
+
         plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
-        plant_fr = evalfr(plant, wwarp * 1j)
         dt = plant_d_warped.dt
-        plant_d_fr = evalfr(plant_d_warped, np.exp(wwarp * 1.j * dt))
+        plant_d_fr = plant_d_warped(np.exp(wwarp * 1.j * dt))
+        np.testing.assert_array_almost_equal(plant_fr, plant_d_fr)
+
+        plant_d_warped = sample_system(plant, Ts, 'bilinear',
+                prewarp_frequency=wwarp)
+        plant_d_fr = plant_d_warped(np.exp(wwarp * 1.j * dt))
+        np.testing.assert_array_almost_equal(plant_fr, plant_d_fr)
+
+        plant_d_warped = c2d(plant, Ts, 'bilinear', prewarp_frequency=wwarp)
+        plant_d_fr = plant_d_warped(np.exp(wwarp * 1.j * dt))
         np.testing.assert_array_almost_equal(plant_fr, plant_d_fr)
 
     def test_sample_system_errors(self, tsys):

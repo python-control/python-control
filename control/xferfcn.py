@@ -64,6 +64,7 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, common_timebase, isdtime, _process_frequency_response
+from .exception import ControlMIMONotImplemented
 from . import config
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -793,9 +794,9 @@ class TransferFunction(LTI):
         if (self.ninputs > 1 or self.noutputs > 1 or
                 other.ninputs > 1 or other.noutputs > 1):
             # TODO: MIMO feedback
-            raise NotImplementedError(
-                "TransferFunction.feedback is currently only implemented "
-                "for SISO functions.")
+            raise ControlMIMONotImplemented(
+                "TransferFunction.feedback is currently not implemented for "
+                "MIMO systems.")
         dt = common_timebase(self.dt, other.dt)
 
         num1 = self.num[0][0]
@@ -1085,12 +1086,10 @@ class TransferFunction(LTI):
             * euler: Euler (or forward difference) method ("gbt" with alpha=0)
             * backward_diff: Backwards difference ("gbt" with alpha=1.0)
             * zoh: zero-order hold (default)
-
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
-            otherwise.
-
+            otherwise. See :func:`scipy.signal.cont2discrete`.
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
             time system's magnitude and phase (the gain=1 crossover frequency,
@@ -1100,7 +1099,7 @@ class TransferFunction(LTI):
         Returns
         -------
         sysd : TransferFunction system
-            Discrete time system, with sampling rate Ts
+            Discrete time system, with sample period Ts
 
         Notes
         -----
@@ -1117,7 +1116,7 @@ class TransferFunction(LTI):
         if not self.isctime():
             raise ValueError("System must be continuous time system")
         if not self.issiso():
-            raise NotImplementedError("MIMO implementation not available")
+            raise ControlMIMONotImplemented("Not implemented for MIMO systems")
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
@@ -1373,7 +1372,8 @@ def _convert_to_transfer_function(sys, **kw):
             except ImportError:
                 # If slycot is not available, use signal.lti (SISO only)
                 if sys.ninputs != 1 or sys.noutputs != 1:
-                    raise TypeError("No support for MIMO without slycot.")
+                    raise ControlMIMONotImplemented("Not implemented for " +
+                        "MIMO systems without slycot.")
 
                 # Do the conversion using sp.signal.ss2tf
                 # Note that this returns a 2D array for the numerator

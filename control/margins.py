@@ -283,14 +283,16 @@ def stability_margins(sysdata, returnall=False, epsw=0.0, method='best'):
     -------
     gm : float or array_like
         Gain margin
-    pm : float or array_loke
+    pm : float or array_like
         Phase margin
     sm : float or array_like
         Stability margin, the minimum distance from the Nyquist plot to -1
     wpc : float or array_like
-        Phase crossover frequency (where phase crosses -180 degrees)
+        Phase crossover frequency (where phase crosses -180 degrees), which is
+        associated with the gain margin.
     wgc : float or array_like
-        Gain crossover frequency (where gain crosses 1)
+        Gain crossover frequency (where gain crosses 1), which is associated
+        with the phase margin.
     wms : float or array_like
         Stability margin frequency (where Nyquist plot is closest to -1)
 
@@ -522,10 +524,12 @@ def margin(*args):
         Gain margin
     pm : float
         Phase margin (in degrees)
-    wpc : float or array_like
-        Phase crossover frequency (where phase crosses -180 degrees)
-    wgc : float or array_like
-        Gain crossover frequency (where gain crosses 1)
+    wcg : float or array_like
+        Crossover frequency associated with gain margin (phase crossover
+        frequency), where phase crosses below -180 degrees.
+    wcp : float or array_like
+        Crossover frequency associated with phase margin (gain crossover
+        frequency), where gain crosses below 1.
 
     Margins are calculated for a SISO open-loop system.
 
@@ -536,7 +540,7 @@ def margin(*args):
     Examples
     --------
     >>> sys = tf(1, [1, 2, 1, 0])
-    >>> gm, pm, wg, wp = margin(sys)
+    >>> gm, pm, wcg, wcp = margin(sys)
 
     """
     if len(args) == 1:
