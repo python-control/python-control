@@ -488,7 +488,7 @@ class TestStatefbk:
         self.check_DLQE(L, P, poles, G, QN, RN)
 
     def test_care(self, matarrayin):
-        """Test stabilizing feedback, continuous"""
+        """Test stabilizing and anti-stabilizing feedback, continuous"""
         A = matarrayin(np.diag([1, -1]))
         B = matarrayin(np.identity(2))
         Q = matarrayin(np.identity(2))
@@ -506,8 +506,11 @@ class TestStatefbk:
             with pytest.raises(ControlArgument, match="'scipy' not valid"):
                 X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
 
-    def test_dare(self, matarrayin):
-        """Test stabilizing feedback, discrete"""
+    @pytest.mark.parametrize(
+        "stabilizing", 
+        [True, pytest.param(False, marks=slycotonly)])
+    def test_dare(self, matarrayin, stabilizing):
+        """Test stabilizing and anti-stabilizing feedback, discrete"""
         A = matarrayin(np.diag([0.5, 2]))
         B = matarrayin(np.identity(2))
         Q = matarrayin(np.identity(2))
@@ -515,12 +518,7 @@ class TestStatefbk:
         S = matarrayin(np.zeros((2, 2)))
         E = matarrayin(np.identity(2))
 
-        X, L, G = dare(A, B, Q, R, S, E, stabilizing=True)
-        assert np.all(np.abs(L) < 1)
+        X, L, G = dare(A, B, Q, R, S, E, stabilizing=stabilizing)
+        sgn = {True: -1, False: 1}[stabilizing]
+        assert np.all(sgn * (np.abs(L) - 1) > 0)
 
-        if slycot_check():
-            X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)
-            assert np.all(np.abs(L) > 1)
-        else:
-            with pytest.raises(ControlArgument, match="'scipy' not valid"):
-                X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)
