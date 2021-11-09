@@ -355,7 +355,7 @@ class TestMatrixEquations:
                 cdlyap(A, Q, None, Efq)
             with pytest.raises(ValueError):
                 cdlyap(A, Qfs, None, E)
-            with pytest.raises(ValueError):
+            with pytest.raises(ControlArgument):
                 cdlyap(A, Q, C, E)
 
         B = array([[1, 0], [0, 1]])
