@@ -403,6 +403,7 @@ def lqe(*args, **keywords):
     P, E, LT = care(A.T, C.T, G @ Q @ G.T, R, method=method)
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
+
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def dlqe(A, G, C, QN, RN, NN=None):
     """dlqe(A, G, C, QN, RN, [, N])
@@ -473,10 +474,7 @@ def dlqe(A, G, C, QN, RN, NN=None):
     #    NN = np.zeros(QN.size(0),RN.size(1))
     # NG = G @ NN
 
-    # LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
-    # P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
-    A, G, C = np.array(A, ndmin=2), np.array(G, ndmin=2), np.array(C, ndmin=2)
-    QN, RN = np.array(QN, ndmin=2), np.array(RN, ndmin=2)
+    A, G, C, QN, RN = map(np.atleast_2d, (A, G, C, QN, RN))
     P, E, LT = dare(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
@@ -574,7 +572,7 @@ def lqr(*args, **keywords):
 
     See Also
     --------
-    lqe
+    lqe, dlqr, dlqe
 
     Notes
     -----
@@ -621,6 +619,7 @@ def lqr(*args, **keywords):
     # Solve continuous algebraic Riccati equation
     X, L, G = care(A, B, Q, R, N, None, method=method)
     return G, X, L
+
 
 def dlqr(*args, **keywords):
     """dlqr(A, B, Q, R[, N])

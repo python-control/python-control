@@ -527,7 +527,8 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
         :math:`A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^{-1} (B^T X A + S^T) + Q = 0`
 
     where A, Q and E are square matrices of the same dimension. Further, Q and
-    R are symmetric matrices. The function returns the solution X, the gain
+    R are symmetric matrices. If R is None, it is set to the identity
+    matrix. The function returns the solution X, the gain
     matrix :math:`G = (B^T X B + R)^{-1} (B^T X A + S^T)` and the closed loop
     eigenvalues L, i.e., the eigenvalues of A - B G , E.
 

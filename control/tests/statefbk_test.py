@@ -166,7 +166,7 @@ class TestStatefbk:
                         continue
 
                 # Place the poles at random locations
-                des = rss(states, 1, 1);
+                des = rss(states, 1, 1)
                 poles = pole(des)
 
                 # Now place the poles using acker
@@ -339,6 +339,11 @@ class TestStatefbk:
         K, S, poles = dlqr(dsys, Q, R, method=method)
         self.check_DLQR(K, S, poles, Q, R)
 
+    def test_DLQR_4args(self, matarrayin, matarrayout):
+        A, B, Q, R = (matarrayin([[X]]) for X in [0., 1., 10., 2.])
+        K, S, poles = dlqr(A, B, Q, R)
+        self.check_DLQR(K, S, poles, Q, R)
+
     def test_lqr_badmethod(self):
         A, B, Q, R = 0, 1, 10, 2
         with pytest.raises(ControlArgument, match="Unknown method"):
@@ -469,8 +474,21 @@ class TestStatefbk:
         with pytest.raises(ct.ControlDimension, match="incorrect covariance"):
             L, P, E = lqe(sys.A, sys.B, sys.C, R, Q)
 
+    def check_DLQE(self, L, P, poles, G, QN, RN):
+        P_expected = asmatarrayout(G.dot(QN).dot(G))
+        L_expected = asmatarrayout(0)
+        poles_expected = -np.squeeze(np.asarray(L_expected))
+        np.testing.assert_array_almost_equal(P, P_expected)
+        np.testing.assert_array_almost_equal(L, L_expected)
+        np.testing.assert_array_almost_equal(poles, poles_expected)
+
+    def test_DLQE(self, matarrayin):
+        A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
+        L, P, poles = dlqe(A, G, C, QN, RN)
+        self.check_DLQE(L, P, poles, G, QN, RN)
+
     def test_care(self, matarrayin):
-        """Test stabilizing and anti-stabilizing feedbacks, continuous"""
+        """Test stabilizing feedback, continuous"""
         A = matarrayin(np.diag([1, -1]))
         B = matarrayin(np.identity(2))
         Q = matarrayin(np.identity(2))
@@ -489,7 +507,7 @@ class TestStatefbk:
                 X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
 
     def test_dare(self, matarrayin):
-        """Test stabilizing and anti-stabilizing feedbacks, discrete"""
+        """Test stabilizing feedback, discrete"""
         A = matarrayin(np.diag([0.5, 2]))
         B = matarrayin(np.identity(2))
         Q = matarrayin(np.identity(2))
