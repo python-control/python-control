@@ -48,6 +48,7 @@ from control.tests.conftest import slycotonly
 class TestMatrixEquations:
     """These are tests for the matrix equation solvers in mateqn.py"""
 
+    @slycotonly
     def test_lyap(self):
         A = array([[-1, 1], [-1, 0]])
         Q = array([[1, 0], [0, 1]])
@@ -67,6 +68,7 @@ class TestMatrixEquations:
             X_slycot = lyap(A, Q, method='slycot')
             assert_array_almost_equal(X_scipy, X_slycot)
 
+    @slycotonly
     def test_lyap_sylvester(self):
         A = 5
         B = array([[4, 3], [4, 3]])
@@ -129,7 +131,6 @@ class TestMatrixEquations:
         with pytest.raises(ControlArgument, match="'scipy' not valid"):
             X = dlyap(A, Q, None, E, method='scipy')
 
-    @slycotonly
     def test_dlyap_sylvester(self):
         A = 5
         B = array([[4, 3], [4, 3]])
@@ -317,6 +318,7 @@ class TestMatrixEquations:
         lam = eigvals(A - B @ G, E)
         assert_array_less(abs(lam), 1.0)
 
+    @slycotonly
     def test_raise(self):
         """ Test exception raise for invalid inputs """
 
