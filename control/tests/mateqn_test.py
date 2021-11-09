@@ -131,6 +131,7 @@ class TestMatrixEquations:
         with pytest.raises(ControlArgument, match="'scipy' not valid"):
             X = dlyap(A, Q, None, E, method='scipy')
 
+    @slycotonly
     def test_dlyap_sylvester(self):
         A = 5
         B = array([[4, 3], [4, 3]])
