@@ -341,7 +341,7 @@ class TestMatrixEquations:
                 cdlyap(Afq, Q)
             with pytest.raises(ControlDimension):
                 cdlyap(A, Qfq)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ValueError):
                 cdlyap(A, Qfs)
             with pytest.raises(ControlDimension):
                 cdlyap(Afq, Q, C)
@@ -353,9 +353,9 @@ class TestMatrixEquations:
                 cdlyap(A, Qfq, None, E)
             with pytest.raises(ControlDimension):
                 cdlyap(A, Q, None, Efq)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ValueError):
                 cdlyap(A, Qfs, None, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ValueError):
                 cdlyap(A, Q, C, E)
 
         B = array([[1, 0], [0, 1]])
@@ -376,7 +376,7 @@ class TestMatrixEquations:
             care(A, Bf, Q)
         with pytest.raises(ControlDimension):
             care(1, B, 1)
-        with pytest.raises(ControlArgument):
+        with pytest.raises(ValueError):
             care(A, B, Qfs)
         with pytest.raises(ControlArgument):
             dare(A, B, Q, Rfs)
@@ -393,7 +393,7 @@ class TestMatrixEquations:
                 cdare(A, B, Q, Rfq, S, E)
             with pytest.raises(ControlDimension):
                 cdare(A, B, Q, R, Sf, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ValueError):
                 cdare(A, B, Qfs, R, S, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ValueError):
                 cdare(A, B, Q, Rfs, S, E)
