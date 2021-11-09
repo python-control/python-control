@@ -511,7 +511,6 @@ def lqr(*args, **keywords):
     >>> K, S, E = lqr(A, B, Q, R, [N])
 
     """
-
     #
     # Process the arguments and figure out what inputs we received
     #
@@ -546,7 +545,6 @@ def lqr(*args, **keywords):
     # Solve continuous algebraic Riccati equation
     X, L, G = care(A, B, Q, R, N, None, method=method)
     return G, X, L
-
 
 def ctrb(A, B):
     """Controllabilty matrix
