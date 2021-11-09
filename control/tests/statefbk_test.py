@@ -11,7 +11,8 @@ from control import lqe, pole, rss, ss, tf
 from control.exception import ControlDimension, ControlSlycot, \
     ControlArgument, slycot_check
 from control.mateqn import care, dare
-from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
+from control.statefbk import (ctrb, obsv, place, place_varga, lqr, dlqr, 
+                              lqe, dlqe, gram, acker)              
 from control.tests.conftest import (slycotonly, check_deprecated_matrix,
                                     ismatarrayout, asmatarrayout)
 
@@ -77,7 +78,7 @@ class TestStatefbk:
         Wc = ctrb(A, B)
         A = np.transpose(A)
         C = np.transpose(B)
-        Wo = np.transpose(obsv(A, C));
+        Wo = np.transpose(obsv(A, C))
         np.testing.assert_array_almost_equal(Wc,Wo)
 
     @slycotonly
@@ -306,6 +307,14 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(K, K_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
+    def check_DLQR(self, K, S, poles, Q, R):
+        S_expected = asmatarrayout(Q)
+        K_expected = asmatarrayout(0)
+        poles_expected = -np.squeeze(np.asarray(K_expected))
+        np.testing.assert_array_almost_equal(S, S_expected)
+        np.testing.assert_array_almost_equal(K, K_expected)
+        np.testing.assert_array_almost_equal(poles, poles_expected)
+
     @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
     def test_LQR_integrator(self, matarrayin, matarrayout, method):
         if method == 'slycot' and not slycot_check():
@@ -322,6 +331,13 @@ class TestStatefbk:
         Q, R = (matarrayin([[X]]) for X in [10., 2.])
         K, S, poles = lqr(sys, Q, R, method=method)
         self.check_LQR(K, S, poles, Q, R)
+
+    @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
+    def test_DLQR_3args(self, matarrayin, matarrayout, method):
+        dsys = ss(0., 1., 1., 0., .1)
+        Q, R = (matarrayin([[X]]) for X in [10., 2.])
+        K, S, poles = dlqr(dsys, Q, R, method=method)
+        self.check_DLQR(K, S, poles, Q, R)
 
     def test_lqr_badmethod(self):
         A, B, Q, R = 0, 1, 10, 2
@@ -353,7 +369,6 @@ class TestStatefbk:
         with pytest.warns(UserWarning):
             (K, S, E) = lqr(A, B, Q, R, N)
 
-    @slycotonly
     def test_lqr_call_format(self):
         # Create a random state space system for testing
         sys = rss(2, 3, 2)
@@ -385,6 +400,25 @@ class TestStatefbk:
         # incorrect covariance matrix dimensions
         with pytest.raises(ct.ControlDimension, match="Q must be a square"):
             K, S, E = lqr(sys.A, sys.B, sys.C, R, Q)
+
+    @pytest.mark.xfail(reason="warning not implemented")
+    def testDLQR_warning(self):
+        """Test dlqr()
+
+        Make sure we get a warning if [Q N;N' R] is not positive semi-definite
+        """
+        # from matlab_test siso.ss2 (testLQR); probably not referenced before
+        # not yet implemented check
+        A = np.array([[-2, 3, 1],
+                      [-1, 0, 0],
+                      [0, 1, 0]])
+        B = np.array([[-1, 0, 0]]).T
+        Q = np.eye(3)
+        R = np.eye(1)
+        N = np.array([[1, 1, 2]]).T
+        # assert any(np.linalg.eigvals(np.block([[Q, N], [N.T, R]])) < 0)
+        with pytest.warns(UserWarning):
+            (K, S, E) = dlqr(A, B, Q, R, N)
 
     def check_LQE(self, L, P, poles, G, QN, RN):
         P_expected = asmatarrayout(np.sqrt(G @ QN @ G @ RN))

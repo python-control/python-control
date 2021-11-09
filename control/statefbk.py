@@ -43,9 +43,9 @@
 import numpy as np
 
 from . import statesp
-from .mateqn import care
+from .mateqn import care, dare
 from .statesp import _ssmatrix, _convert_to_statespace
-from .lti import LTI
+from .lti import LTI, isdtime
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
 
@@ -69,7 +69,7 @@ except ImportError:
 
 
 __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe',
-           'acker']
+           'dlqr', 'dlqe', 'acker']
 
 
 # Pole placement
@@ -335,7 +335,7 @@ def lqe(*args, **keywords):
 
     See Also
     --------
-    lqr
+    lqr, dlqe, dlqr
 
     """
 
@@ -403,6 +403,82 @@ def lqe(*args, **keywords):
     P, E, LT = care(A.T, C.T, G @ Q @ G.T, R, method=method)
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
+# contributed by Sawyer B. Fuller <minster@uw.edu>
+def dlqe(A, G, C, QN, RN, NN=None):
+    """dlqe(A, G, C, QN, RN, [, N])
+
+    Linear quadratic estimator design (Kalman filter) for discrete-time
+    systems. Given the system
+
+    .. math::
+
+        x[n+1] &= Ax[n] + Bu[n] + Gw[n] \\\\
+        y[n] &= Cx[n] + Du[n] + v[n]
+
+    with unbiased process noise w and measurement noise v with covariances
+
+    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+
+    The dlqe() function computes the observer gain matrix L such that the
+    stationary (non-time-varying) Kalman filter
+
+    .. math:: x_e[n+1] = A x_e[n] + B u[n] + L(y[n] - C x_e[n] - D u[n])
+
+    produces a state estimate x_e[n] that minimizes the expected squared error
+    using the sensor measurements y. The noise cross-correlation `NN` is
+    set to zero when omitted.
+
+    Parameters
+    ----------
+    A, G : 2D array_like
+        Dynamics and noise input matrices
+    QN, RN : 2D array_like
+        Process and sensor noise covariance matrices
+    NN : 2D array, optional
+        Cross covariance matrix
+
+    Returns
+    -------
+    L : 2D array (or matrix)
+        Kalman estimator gain
+    P : 2D array (or matrix)
+        Solution to Riccati equation
+
+        .. math::
+
+            A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
+
+    E : 1D array
+        Eigenvalues of estimator poles eig(A - L C)
+
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
+
+    Examples
+    --------
+    >>> L, P, E = dlqe(A, G, C, QN, RN)
+    >>> L, P, E = dlqe(A, G, C, QN, RN, NN)
+
+    See Also
+    --------
+    dlqr, lqe, lqr
+
+    """
+
+    # TODO: incorporate cross-covariance NN, something like this,
+    # which doesn't work for some reason
+    # if NN is None:
+    #    NN = np.zeros(QN.size(0),RN.size(1))
+    # NG = G @ NN
+
+    # LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
+    # P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
+    A, G, C = np.array(A, ndmin=2), np.array(G, ndmin=2), np.array(C, ndmin=2)
+    QN, RN = np.array(QN, ndmin=2), np.array(RN, ndmin=2)
+    P, E, LT = dare(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
+    return _ssmatrix(LT.T), _ssmatrix(P), E
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
@@ -458,7 +534,7 @@ def lqr(*args, **keywords):
     Linear quadratic regulator design
 
     The lqr() function computes the optimal state feedback controller
-    that minimizes the quadratic cost
+    u = -K x that minimizes the quadratic cost
 
     .. math:: J = \\int_0^\\infty (x' Q x + u' R u + 2 x' N u) dt
 
@@ -476,8 +552,8 @@ def lqr(*args, **keywords):
     ----------
     A, B : 2D array_like
         Dynamics and input matrices
-    sys : LTI (StateSpace or TransferFunction)
-        Linear I/O system
+    sys : LTI StateSpace system
+        Linear system
     Q, R : 2D array
         State and input weight matrices
     N : 2D array, optional
@@ -545,6 +621,111 @@ def lqr(*args, **keywords):
     # Solve continuous algebraic Riccati equation
     X, L, G = care(A, B, Q, R, N, None, method=method)
     return G, X, L
+
+def dlqr(*args, **keywords):
+    """dlqr(A, B, Q, R[, N])
+
+    Discrete-time linear quadratic regulator design
+
+    The dlqr() function computes the optimal state feedback controller
+    u[n] = - K x[n] that minimizes the quadratic cost
+
+    .. math:: J = \\Sum_0^\\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
+
+    The function can be called with either 3, 4, or 5 arguments:
+
+    * ``dlqr(dsys, Q, R)``
+    * ``dlqr(dsys, Q, R, N)``
+    * ``dlqr(A, B, Q, R)``
+    * ``dlqr(A, B, Q, R, N)``
+
+    where `dsys` is a discrete-time :class:`StateSpace` system, and `A`, `B`, 
+    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt` must 
+    not be 0.)
+
+    Parameters
+    ----------
+    A, B : 2D array
+        Dynamics and input matrices
+    dsys : LTI :class:`StateSpace` 
+        Discrete-time linear system
+    Q, R : 2D array
+        State and input weight matrices
+    N : 2D array, optional
+        Cross weight matrix
+
+    Returns
+    -------
+    K : 2D array (or matrix)
+        State feedback gains
+    S : 2D array (or matrix)
+        Solution to Riccati equation
+    E : 1D array
+        Eigenvalues of the closed loop system
+
+    See Also
+    --------
+    lqr, lqe, dlqe
+
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
+
+    Examples
+    --------
+    >>> K, S, E = dlqr(dsys, Q, R, [N])
+    >>> K, S, E = dlqr(A, B, Q, R, [N])
+    """
+
+    #
+    # Process the arguments and figure out what inputs we received
+    #
+
+    # Get the system description
+    if (len(args) < 3):
+        raise ControlArgument("not enough input arguments")
+
+    try:
+        # If this works, we were (probably) passed a system as the
+        # first argument; extract A and B
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        B = np.array(args[0].B, ndmin=2, dtype=float)
+        index = 1
+    except AttributeError:
+        # Arguments should be A and B matrices
+        A = np.array(args[0], ndmin=2, dtype=float)
+        B = np.array(args[1], ndmin=2, dtype=float)
+        index = 2
+
+    # confirm that if we received a system that it was discrete-time
+    if index == 1:
+        if not isdtime(args[0]):
+            raise ValueError("dsys must be discrete (dt !=0)")
+
+    # Get the weighting matrices (converting to matrices, if needed)
+    Q = np.array(args[index], ndmin=2, dtype=float)
+    R = np.array(args[index+1], ndmin=2, dtype=float)
+    if (len(args) > index + 2):
+        N = np.array(args[index+2], ndmin=2, dtype=float)
+    else:
+        N = np.zeros((Q.shape[0], R.shape[1]))
+
+    # Check dimensions for consistency
+    nstates = B.shape[0]
+    ninputs = B.shape[1]
+    if (A.shape[0] != nstates or A.shape[1] != nstates):
+        raise ControlDimension("inconsistent system dimensions")
+
+    elif (Q.shape[0] != nstates or Q.shape[1] != nstates or
+          R.shape[0] != ninputs or R.shape[1] != ninputs or
+          N.shape[0] != nstates or N.shape[1] != ninputs):
+        raise ControlDimension("incorrect weighting matrix dimensions")
+
+    # compute the result
+    S, E, K = dare(A, B, Q, R, N)
+    return _ssmatrix(K), _ssmatrix(S), E
+
 
 def ctrb(A, B):
     """Controllabilty matrix
