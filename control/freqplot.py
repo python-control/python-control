@@ -522,7 +522,7 @@ _nyquist_defaults = {
     'nyquist.mirror_style': '--',
     'nyquist.arrows': 2,
     'nyquist.arrow_size': 8,
-    'nyquist.indent_radius': 1e-3,
+    'nyquist.indent_radius': 1e-2,
     'nyquist.maximum_magnitude': 5,
     'nyquist.indent_direction': 'right',
 }
@@ -899,7 +899,7 @@ def _add_arrows_to_line2D(
         raise ValueError("expected a matplotlib.lines.Line2D object")
     x, y = line.get_xdata(), line.get_ydata()
     x, y = x[np.isfinite(x)], y[np.isfinite(x)]
-    if len(x) == 0: 
+    if len(x) in (0, 1): 
         return []
     arrow_kw = {
         "arrowstyle": arrowstyle,
