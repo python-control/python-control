@@ -522,8 +522,8 @@ _nyquist_defaults = {
     'nyquist.mirror_style': '--',
     'nyquist.arrows': 2,
     'nyquist.arrow_size': 8,
-    'nyquist.indent_radius': 1e-6,
-    'nyquist.infinity_radius': 10,
+    'nyquist.indent_radius': 1e-3,
+    'nyquist.maximum_magnitude': 5,
     'nyquist.indent_direction': 'right',
 }
 
@@ -594,8 +594,9 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     arrow_style : matplotlib.patches.ArrowStyle
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
 
-    infinity_radius : float
-
+    maximum_magnitude : float
+        Magnitude/radius at which to draw contours whose magnitude exceeds 
+        this value. 
 
     indent_radius : float
         Amount to indent the Nyquist contour around poles that are at or near
@@ -684,8 +685,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         'nyquist', 'indent_radius', kwargs, _nyquist_defaults, pop=True)
     indent_direction = config._get_param(
         'nyquist', 'indent_direction', kwargs, _nyquist_defaults, pop=True)
-    infinity_radius = config._get_param(
-        'nyquist', 'infinity_radius', kwargs, _nyquist_defaults, pop=True)
+    maximum_magnitude = config._get_param(
+        'nyquist', 'maximum_magnitude', kwargs, _nyquist_defaults, pop=True)
 
     # If argument was a singleton, turn it into a list
     if not hasattr(syslist, '__iter__'):
@@ -771,13 +772,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         # Compute the primary curve
         resp = sys(contour)
 
-        # compute infinity radius contour
+        # compute large radius contour where it exceeds 
         # fill with nans that don't plot
-        infinity_contour = np.full_like(contour, np.nan + 1j * np.nan)
+        large_mag_contour = np.full_like(contour, np.nan + 1j * np.nan)
         # where too big, use angle of resp but specifified mag
-        too_big = abs(resp) > infinity_radius
-        infinity_contour[too_big] = \
-            infinity_radius *(1+isys/40) * np.exp(1j * np.angle(resp[too_big]))
+        too_big = abs(resp) > maximum_magnitude
+        large_mag_contour[too_big] = \
+            maximum_magnitude *(1+isys/20) * np.exp(1j * np.angle(resp[too_big]))
         
         # Compute CW encirclements of -1 by integrating the (unwrapped) angle
         phase = -unwrap(np.angle(resp + 1))
@@ -806,7 +807,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
             # Save the components of the response
             x, y = resp.real, resp.imag
-            x_inf, y_inf = infinity_contour.real, infinity_contour.imag
+            x_lg, y_lg = large_mag_contour.real, large_mag_contour.imag
 
             # Plot the primary curve
             p = plt.plot(x, y, '-', color=color, *args, **kwargs)
@@ -814,15 +815,19 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             ax = plt.gca()
             _add_arrows_to_line2D(
                 ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
-            # plot infinity contour
-            plt.plot(x_inf, y_inf, ':', color='red', *args, **kwargs)
+            # plot large magnitude contour
+            p = plt.plot(x_lg, y_lg, ':', color='red', *args, **kwargs)
+            _add_arrows_to_line2D(
+                ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
 
             # Plot the mirror image
             if mirror_style is not False:
                 p = plt.plot(x, -y, mirror_style, color=c, *args, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
-                plt.plot(x_inf, -y_inf, ':', color='red', *args, **kwargs)
+                p = plt.plot(x_lg, -y_lg, ':', color='red', *args, **kwargs)
+                _add_arrows_to_line2D(
+                    ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
 
             # Mark the -1 point
             plt.plot([-1], [0], 'r+')
@@ -856,8 +861,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         ax.set_xlabel("Real axis")
         ax.set_ylabel("Imaginary axis")
         ax.grid(color="lightgray")
-        ax.set_xlim(-infinity_radius*1.1, infinity_radius*1.1)
-        ax.set_ylim(-infinity_radius*1.1, infinity_radius*1.1)
+        ax.set_xlim(-maximum_magnitude*1.1, maximum_magnitude*1.1)
+        ax.set_ylim(-maximum_magnitude*1.1, maximum_magnitude*1.1)
 
     # "Squeeze" the results
     if len(syslist) == 1:
@@ -893,6 +898,7 @@ def _add_arrows_to_line2D(
     if not isinstance(line, mpl.lines.Line2D):
         raise ValueError("expected a matplotlib.lines.Line2D object")
     x, y = line.get_xdata(), line.get_ydata()
+    x, y = x[np.isfinite(x)], y[np.isfinite(x)]
 
     arrow_kw = {
         "arrowstyle": arrowstyle,
