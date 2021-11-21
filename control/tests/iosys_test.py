@@ -1250,24 +1250,24 @@ class TestIOSys:
 
     @pytest.mark.parametrize(
         "Pout, Pin, C, op, PCout, PCin", [
-            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__mul__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__mul__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__mul__, 2, 2),
             (2, 3, 2, ct.LinearIOSystem.__mul__, 2, 3),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__mul__, 2, 2),
-            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__rmul__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__rmul__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__rmul__, 2, 2),
             (2, 3, 2, ct.LinearIOSystem.__rmul__, 2, 3),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rmul__, 2, 2),
-            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__add__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__add__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__add__, 2, 2),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__add__, 2, 2),
-            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__radd__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__radd__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__radd__, 2, 2),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__radd__, 2, 2),
-            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__sub__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__sub__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__sub__, 2, 2),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__sub__, 2, 2),
-            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__rsub__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__rsub__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__rsub__, 2, 2),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rsub__, 2, 2),
             
@@ -1275,6 +1275,9 @@ class TestIOSys:
     def test_operand_conversion(self, Pout, Pin, C, op, PCout, PCin):
         P = ct.LinearIOSystem(
             ct.rss(2, Pout, Pin, strictly_proper=True), name='P')
+        if isinstance(C, str) and C == 'rss':
+            # Need to generate inside class to avoid matrix deprecation error
+            C = ct.rss(2, 2, 2)
         PC = op(P, C)
         assert isinstance(PC, ct.LinearIOSystem)
         assert isinstance(PC, ct.StateSpace)
@@ -1283,20 +1286,24 @@ class TestIOSys:
 
     @pytest.mark.parametrize(
         "Pout, Pin, C, op", [
-            (2, 2, ct.rss(2, 3, 2), ct.LinearIOSystem.__mul__),
-            (2, 2, ct.rss(2, 2, 3), ct.LinearIOSystem.__rmul__),
-            (2, 2, ct.rss(2, 3, 2), ct.LinearIOSystem.__add__),
-            (2, 2, ct.rss(2, 2, 3), ct.LinearIOSystem.__radd__),
+            (2, 2, 'rss32', ct.LinearIOSystem.__mul__),
+            (2, 2, 'rss23', ct.LinearIOSystem.__rmul__),
+            (2, 2, 'rss32', ct.LinearIOSystem.__add__),
+            (2, 2, 'rss23', ct.LinearIOSystem.__radd__),
             (2, 3, 2, ct.LinearIOSystem.__add__),
             (2, 3, 2, ct.LinearIOSystem.__radd__),
-            (2, 2, ct.rss(2, 3, 2), ct.LinearIOSystem.__sub__),
-            (2, 2, ct.rss(2, 2, 3), ct.LinearIOSystem.__rsub__),
+            (2, 2, 'rss32', ct.LinearIOSystem.__sub__),
+            (2, 2, 'rss23', ct.LinearIOSystem.__rsub__),
             (2, 3, 2, ct.LinearIOSystem.__sub__),
             (2, 3, 2, ct.LinearIOSystem.__rsub__),
         ])
     def test_operand_incompatible(self, Pout, Pin, C, op):
         P = ct.LinearIOSystem(
             ct.rss(2, Pout, Pin, strictly_proper=True), name='P')
+        if isinstance(C, str) and C == 'rss32':
+            C = ct.rss(2, 3, 2)
+        elif isinstance(C, str) and C == 'rss23':
+            C = ct.rss(2, 2, 3)
         with pytest.raises(ValueError, match="incompatible"):
             PC = op(P, C)
 
