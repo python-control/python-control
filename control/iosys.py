@@ -423,7 +423,7 @@ class InputOutputSystem(object):
 
     # Update parameters used for _rhs, _out (used by subclasses)
     def _update_params(self, params, warning=False):
-        if (warning):
+        if warning:
             warn("Parameters passed to InputOutputSystem ignored.")
 
     def _rhs(self, t, x, u, params={}):

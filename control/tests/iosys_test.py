@@ -1307,6 +1307,32 @@ class TestIOSys:
         with pytest.raises(ValueError, match="incompatible"):
             PC = op(P, C)
 
+    @pytest.mark.parametrize(
+        "C, op", [
+            (None, ct.LinearIOSystem.__mul__),
+            (None, ct.LinearIOSystem.__rmul__),
+            (None, ct.LinearIOSystem.__add__),
+            (None, ct.LinearIOSystem.__radd__),
+            (None, ct.LinearIOSystem.__sub__),
+            (None, ct.LinearIOSystem.__rsub__),
+        ])
+    def test_operand_badtype(self, C, op):
+        P = ct.LinearIOSystem(
+            ct.rss(2, 2, 2, strictly_proper=True), name='P')
+        with pytest.raises(TypeError, match="Unknown"):
+            op(P, C)
+
+    def test_neg_badsize(self):
+        # Create a system of unspecified size
+        sys = ct.InputOutputSystem()
+        with pytest.raises(ValueError, match="Can't determine"):
+            -sys
+
+    def test_bad_signal_list(self):
+        # Create a ystem with a bad signal list
+        with pytest.raises(TypeError, match="Can't parse"):
+            ct.InputOutputSystem(inputs=[1, 2, 3])
+
     def test_docstring_example(self):
         P = ct.LinearIOSystem(
             ct.rss(2, 2, 2, strictly_proper=True), name='P')
