@@ -134,13 +134,12 @@ Types:
     * **Arguments** can be **arrays**, **matrices**, or **nested lists**.
     * **Return values** are **arrays** (not matrices).
 
-The time vector is either 1D, or 2D with shape (1, n)::
+The time vector is a 1D array with shape (n, )::
 
-      T = [[t1,     t2,     t3,     ..., tn    ]]
+      T = [t1,     t2,     t3,     ..., tn    ]
 
 Input, state, and output all follow the same convention. Columns are different
-points in time, rows are different components. When there is only one row, a
-1D object is accepted or returned, which adds convenience for SISO systems::
+points in time, rows are different components::
 
       U = [[u1(t1), u1(t2), u1(t3), ..., u1(tn)]
            [u2(t1), u2(t2), u2(t3), ..., u2(tn)]
@@ -153,6 +152,9 @@ points in time, rows are different components. When there is only one row, a
 So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:]
 is the sequence of values for the system's second input.
 
+When there is only one row, a 1D object is accepted or returned, which adds
+convenience for SISO systems:
+
 The initial conditions are either 1D, or 2D with shape (j, 1)::
 
      X0 = [[x1]
@@ -161,23 +163,43 @@ The initial conditions are either 1D, or 2D with shape (j, 1)::
            ...
            [xj]]
 
-As all simulation functions return *arrays*, plotting is convenient::
+Functions that return time responses (e.g., :func:`forced_response`,
+:func:`impulse_response`, :func:`input_output_response`,
+:func:`initial_response`, and :func:`step_response`) return a
+:class:`TimeResponseData` object that contains the data for the time
+response.  These data can be accessed via the ``time``, ``outputs``,
+``states`` and ``inputs`` properties::
+
+    sys = rss(4, 1, 1)
+    response = step_response(sys)
+    plot(response.time, response.outputs)
+
+The dimensions of the response properties depend on the function being
+called and whether the system is SISO or MIMO.  In addition, some time
+response function can return multiple "traces" (input/output pairs),
+such as the :func:`step_response` function applied to a MIMO system,
+which will compute the step response for each input/output pair.  See
+:class:`TimeResponseData` for more details.
+
+The time response functions can also be assigned to a tuple, which extracts
+the time and output (and optionally the state, if the `return_x` keyword is
+used).  This allows simple commands for plotting::
 
     t, y = step_response(sys)
     plot(t, y)
 
 The output of a MIMO system can be plotted like this::
 
-    t, y = forced_response(sys, u, t)
+    t, y = forced_response(sys, t, u)
     plot(t, y[0], label='y_0')
     plot(t, y[1], label='y_1')
 
-The convention also works well with the state space form of linear systems. If
-``D`` is the feedthrough *matrix* of a linear system, and ``U`` is its input
-(*matrix* or *array*), then the feedthrough part of the system's response,
-can be computed like this::
+The convention also works well with the state space form of linear
+systems. If ``D`` is the feedthrough matrix (2D array) of a linear system,
+and ``U`` is its input (array), then the feedthrough part of the system's
+response, can be computed like this::
 
-    ft = D * U
+    ft = D @ U
 
 
 .. currentmodule:: control
@@ -210,27 +232,29 @@ on standard configurations.
 
 Selected variables that can be configured, along with their default values:
 
-  * freqplot.dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
+  * freqplot.dB (False): Bode plot magnitude plotted in dB (otherwise powers
+    of 10)
     
   * freqplot.deg (True): Bode plot phase plotted in degrees (otherwise radians)
     
-  * freqplot.Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
+  * freqplot.Hz (False): Bode plot frequency plotted in Hertz (otherwise
+    rad/sec)
     
   * freqplot.grid (True): Include grids for magnitude and phase plots
     
   * freqplot.number_of_samples (1000): Number of frequency points in Bode plots
     
-  * freqplot.feature_periphery_decade (1.0): How many decades to include in the
-    frequency range on both sides of features (poles, zeros).
+  * freqplot.feature_periphery_decade (1.0): How many decades to include in
+    the frequency range on both sides of features (poles, zeros).
 
-  * statesp.use_numpy_matrix (True): set the return type for state space matrices to
-    `numpy.matrix` (verus numpy.ndarray)
+  * statesp.use_numpy_matrix (True): set the return type for state space
+    matrices to `numpy.matrix` (verus numpy.ndarray)
 
-  * statesp.default_dt and xferfcn.default_dt (None): set the default value of dt when
-    constructing new LTI systems
+  * statesp.default_dt and xferfcn.default_dt (None): set the default value
+    of dt when constructing new LTI systems
 
-  * statesp.remove_useless_states (True): remove states that have no effect on the
-    input-output dynamics of the system
+  * statesp.remove_useless_states (True): remove states that have no effect
+    on the input-output dynamics of the system
 
 Additional parameter variables are documented in individual functions
 

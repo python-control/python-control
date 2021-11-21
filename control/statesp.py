@@ -1946,10 +1946,10 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
     ----------
     states : int
         Number of state variables
-    inputs : int
-        Number of system inputs
     outputs : int
         Number of system outputs
+    inputs : int
+        Number of system inputs
     strictly_proper : bool, optional
         If set to 'True', returns a proper system (no direct term).
 

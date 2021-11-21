@@ -16,7 +16,7 @@ import warnings
 import logging
 import time
 
-from .timeresp import _process_time_response
+from .timeresp import TimeResponseData
 
 __all__ = ['find_optimal_input']
 
@@ -826,13 +826,14 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         else:
             states = None
 
-        retval = _process_time_response(
-            ocp.system, ocp.timepts, inputs, states,
+        # Process data as a time response (with "outputs" = inputs)
+        response = TimeResponseData(
+            ocp.timepts, inputs, states, issiso=ocp.system.issiso(),
             transpose=transpose, return_x=return_states, squeeze=squeeze)
 
-        self.time = retval[0]
-        self.inputs = retval[1]
-        self.states = None if states is None else retval[2]
+        self.time = response.time
+        self.inputs = response.outputs
+        self.states = response.states
 
 
 # Compute the input for a nonlinear, (constrained) optimal control problem

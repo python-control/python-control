@@ -32,7 +32,8 @@ import copy
 from warnings import warn
 
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
-from .timeresp import _check_convert_array, _process_time_response
+from .timeresp import _check_convert_array, _process_time_response, \
+    TimeResponseData
 from .lti import isctime, isdtime, common_timebase
 from . import config
 
@@ -878,7 +879,7 @@ class NonlinearIOSystem(InputOutputSystem):
     def __call__(sys, u, params=None, squeeze=None):
         """Evaluate a (static) nonlinearity at a given input value
 
-        If a nonlinear I/O system has not internal state, then evaluating the
+        If a nonlinear I/O system has no internal state, then evaluating the
         system at an input `u` gives the output `y = F(u)`, determined by the
         output function.
 
@@ -907,7 +908,8 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Evaluate the function on the argument
         out = sys._out(0, np.array((0,)), np.asarray(u))
-        _, out = _process_time_response(sys, None, out, None, squeeze=squeeze)
+        _, out = _process_time_response(
+            None, out, issiso=sys.issiso(), squeeze=squeeze)
         return out
 
     def _update_params(self, params, warning=False):
@@ -1641,14 +1643,21 @@ def input_output_response(
     ----------
     sys : InputOutputSystem
         Input/output system to simulate.
+
     T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
+
     U : array-like or number, optional
         Input array giving input at each time `T` (default = 0).
+
     X0 : array-like or number, optional
         Initial condition (default = 0).
+
     return_x : bool, optional
+        If True, return the state vector when assigning to a tuple (default =
+        False).  See :func:`forced_response` for more details.
         If True, return the values of the state at each time (default = False).
+
     squeeze : bool, optional
         If True and if the system has a single output, return the system
         output as a 1D array rather than a 2D array.  If False, return the
@@ -1657,15 +1666,27 @@ def input_output_response(
 
     Returns
     -------
-    T : array
-        Time values of the output.
-    yout : array
-        Response of the system.  If the system is SISO and squeeze is not
-        True, the array is 1D (indexed by time).  If the system is not SISO or
-        squeeze is False, the array is 2D (indexed by the output number and
-        time).
-    xout : array
-        Time evolution of the state vector (if return_x=True).
+    results : TimeResponseData
+        Time response represented as a :class:`TimeResponseData` object
+        containing the following properties:
+
+        * time (array): Time values of the output.
+
+        * outputs (array): Response of the system.  If the system is SISO and
+          `squeeze` is not True, the array is 1D (indexed by time).  If the
+          system is not SISO or `squeeze` is False, the array is 2D (indexed
+          by output and time).
+
+        * states (array): Time evolution of the state vector, represented as
+          a 2D array indexed by state and time.
+
+        * inputs (array): Input(s) to the system, indexed by input and time.
+
+        The return value of the system can also be accessed by assigning the
+        function to a tuple of length 2 (time, output) or of length 3 (time,
+        output, state) if ``return_x`` is ``True``.  If the input/output
+        system signals are named, these names will be used as labels for the
+        time response.
 
     Other parameters
     ----------------
@@ -1727,8 +1748,9 @@ def input_output_response(
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        return _process_time_response(
-            sys, T, y, np.array((0, 0, np.asarray(T).size)),
+        return TimeResponseData(
+            T, y, None, U, issiso=sys.issiso(),
+            output_labels=sys.output_index, input_labels=sys.input_index,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
@@ -1823,8 +1845,11 @@ def input_output_response(
     else:                       # Neither ctime or dtime??
         raise TypeError("Can't determine system type")
 
-    return _process_time_response(sys, soln.t, y, soln.y, transpose=transpose,
-                                  return_x=return_x, squeeze=squeeze)
+    return TimeResponseData(
+        soln.t, y, soln.y, U, issiso=sys.issiso(),
+        output_labels=sys.output_index, input_labels=sys.input_index,
+        state_labels=sys.state_index,
+        transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
 def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
