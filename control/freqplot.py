@@ -326,8 +326,8 @@ def bode_plot(syslist, omega=None,
 
                 if nyquistfrq_plot:
                     # append data for vertical nyquist freq indicator line.
-                    # if this extra nyquist lime is is plotted in a single plot
-                    # command then line order is preserved when
+                    # by including this in the same plot command, line order 
+                    # is preserved when
                     # creating a legend eg. legend(('sys1', 'sys2'))
                     omega_nyq_line = np.array(
                         (np.nan, nyquistfrq_plot, nyquistfrq_plot))
@@ -522,14 +522,16 @@ _nyquist_defaults = {
     'nyquist.mirror_style': '--',
     'nyquist.arrows': 2,
     'nyquist.arrow_size': 8,
-    'nyquist.indent_radius': 1e-1,
+    'nyquist.indent_radius': 1e-6,
+    'nyquist.infinity_radius': 10,
     'nyquist.indent_direction': 'right',
 }
 
 
 def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                  omega_num=None, label_freq=0, color=None,
-                 return_contour=False, warn_nyquist=True, *args, **kwargs):
+                 return_contour=False, warn_nyquist=True,  
+                 *args, **kwargs):
     """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
@@ -591,6 +593,9 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
     arrow_style : matplotlib.patches.ArrowStyle
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
+
+    infinity_radius : float
+
 
     indent_radius : float
         Amount to indent the Nyquist contour around poles that are at or near
@@ -679,6 +684,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         'nyquist', 'indent_radius', kwargs, _nyquist_defaults, pop=True)
     indent_direction = config._get_param(
         'nyquist', 'indent_direction', kwargs, _nyquist_defaults, pop=True)
+    infinity_radius = config._get_param(
+        'nyquist', 'infinity_radius', kwargs, _nyquist_defaults, pop=True)
 
     # If argument was a singleton, turn it into a list
     if not hasattr(syslist, '__iter__'):
@@ -692,13 +699,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
     # Go through each system and keep track of the results
     counts, contours = [], []
-    for sys in syslist:
+    for isys, sys in enumerate(syslist):
         if not sys.issiso():
             # TODO: Add MIMO nyquist plots.
             raise ControlMIMONotImplemented(
                 "Nyquist plot currently only supports SISO systems.")
 
-        # Figure out the frequency range
+        # local copy of freq range that may be truncated above nyquist freq
         omega_sys = np.asarray(omega)
 
         # Determine the contour used to evaluate the Nyquist curve
@@ -718,15 +725,14 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         splane_contour = 1j * omega_sys
 
         # Bend the contour around any poles on/near the imaginary axis
-        # TODO: smarter indent radius that depends on dcgain of system
-        # and timebase of discrete system.
         if isinstance(sys, (StateSpace, TransferFunction)) \
                 and indent_direction != 'none':
             if sys.isctime():
                 splane_poles = sys.pole()
             else:
-                # map z-plane poles to s-plane, ignoring any at the origin
-                # because we don't need to indent for them
+                # map z-plane poles to s-plane, ignoring any at z-plane origin
+                # that don't map to finite s-plane location, because we don't 
+                # need to indent for them
                 zplane_poles = sys.pole()
                 zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
                 splane_poles = np.log(zplane_poles)/sys.dt
@@ -756,7 +762,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                     else:
                         ValueError("unknown value for indent_direction")
 
-        # change contour to z-plane if necessary
+        # map contour to z-plane if necessary
         if sys.isctime():
             contour = splane_contour
         else:
@@ -765,6 +771,14 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         # Compute the primary curve
         resp = sys(contour)
 
+        # compute infinity radius contour
+        # fill with nans that don't plot
+        infinity_contour = np.full_like(contour, np.nan + 1j * np.nan)
+        # where too big, use angle of resp but specifified mag
+        too_big = abs(resp) > infinity_radius
+        infinity_contour[too_big] = \
+            infinity_radius *(1+isys/40) * np.exp(1j * np.angle(resp[too_big]))
+        
         # Compute CW encirclements of -1 by integrating the (unwrapped) angle
         phase = -unwrap(np.angle(resp + 1))
         count = int(np.round(np.sum(np.diff(phase)) / np.pi, 0))
@@ -792,6 +806,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
             # Save the components of the response
             x, y = resp.real, resp.imag
+            x_inf, y_inf = infinity_contour.real, infinity_contour.imag
 
             # Plot the primary curve
             p = plt.plot(x, y, '-', color=color, *args, **kwargs)
@@ -799,12 +814,15 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             ax = plt.gca()
             _add_arrows_to_line2D(
                 ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
+            # plot infinity contour
+            plt.plot(x_inf, y_inf, ':', color='red', *args, **kwargs)
 
             # Plot the mirror image
             if mirror_style is not False:
                 p = plt.plot(x, -y, mirror_style, color=c, *args, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
+                plt.plot(x_inf, -y_inf, ':', color='red', *args, **kwargs)
 
             # Mark the -1 point
             plt.plot([-1], [0], 'r+')
@@ -838,6 +856,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         ax.set_xlabel("Real axis")
         ax.set_ylabel("Imaginary axis")
         ax.grid(color="lightgray")
+        ax.set_xlim(-infinity_radius*1.1, infinity_radius*1.1)
+        ax.set_ylim(-infinity_radius*1.1, infinity_radius*1.1)
 
     # "Squeeze" the results
     if len(syslist) == 1:
