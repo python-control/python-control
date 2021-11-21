@@ -32,6 +32,7 @@ import copy
 from warnings import warn
 
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
+from .xferfcn import TransferFunction
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData
 from .lti import isctime, isdtime, common_timebase
@@ -120,6 +121,9 @@ class InputOutputSystem(object):
 
     """
 
+    # Allow ndarray * InputOutputSystem to give IOSystem._rmul_() priority
+    __array_priority__ = 12     # override ndarray, matrix, SS types
+
     _idCounter = 0
 
     def _name_or_default(self, name=None):
@@ -195,14 +199,19 @@ class InputOutputSystem(object):
 
     def __mul__(sys2, sys1):
         """Multiply two input/output systems (series interconnection)"""
+        # Note: order of arguments is flipped so that self = sys2,
+        # corresponding to the ordering convention of sys2 * sys1
 
+        # Convert sys1 to an I/O system if needed
         if isinstance(sys1, (int, float, np.number)):
-            # TODO: Scale the output
-            raise NotImplemented("Scalar multiplication not yet implemented")
+            sys1 = LinearIOSystem(StateSpace(
+                [], [], [], sys1 * np.eye(sys2.ninputs)))
 
         elif isinstance(sys1, np.ndarray):
-            # TODO: Post-multiply by a matrix
-            raise NotImplemented("Matrix multiplication not yet implemented")
+            sys1 = LinearIOSystem(StateSpace([], [], [], sys1))
+
+        elif isinstance(sys1, (StateSpace, TransferFunction)):
+            sys1 = LinearIOSystem(sys1)
 
         elif not isinstance(sys1, InputOutputSystem):
             raise TypeError("Unknown I/O system object ", sys1)
@@ -239,42 +248,41 @@ class InputOutputSystem(object):
 
     def __rmul__(sys1, sys2):
         """Pre-multiply an input/output systems by a scalar/matrix"""
-        if isinstance(sys2, InputOutputSystem):
-            # Both systems are InputOutputSystems => use __mul__
-            return InputOutputSystem.__mul__(sys2, sys1)
-
-        elif isinstance(sys2, (int, float, np.number)):
-            # TODO: Scale the output
-            raise NotImplemented("Scalar multiplication not yet implemented")
+        # Convert sys2 to an I/O system if needed
+        if isinstance(sys2, (int, float, np.number)):
+            sys2 = LinearIOSystem(StateSpace(
+                [], [], [], sys2 * np.eye(sys1.noutputs)))
 
         elif isinstance(sys2, np.ndarray):
-            # TODO: Post-multiply by a matrix
-            raise NotImplemented("Matrix multiplication not yet implemented")
+            sys2 = LinearIOSystem(StateSpace([], [], [], sys2))
 
-        elif isinstance(sys2, StateSpace):
-            # TODO: Should eventuall preserve LinearIOSystem structure
-            return StateSpace.__mul__(sys2, sys1)
+        elif isinstance(sys2, (StateSpace, TransferFunction)):
+            sys2 = LinearIOSystem(sys2)
 
-        else:
-            raise TypeError("Unknown I/O system object ", sys1)
+        elif not isinstance(sys2, InputOutputSystem):
+            raise TypeError("Unknown I/O system object ", sys2)
+
+        return InputOutputSystem.__mul__(sys2, sys1)
 
     def __add__(sys1, sys2):
         """Add two input/output systems (parallel interconnection)"""
-        # TODO: Allow addition of scalars and matrices
+        # Convert sys1 to an I/O system if needed
         if isinstance(sys2, (int, float, np.number)):
-            # TODO: Scale the output
-            raise NotImplemented("Scalar addition not yet implemented")
+            sys2 = LinearIOSystem(StateSpace(
+                [], [], [], sys2 * np.eye(sys1.ninputs)))
 
         elif isinstance(sys2, np.ndarray):
-            # TODO: Post-multiply by a matrix
-            raise NotImplemented("Matrix addition not yet implemented")
+            sys2 = LinearIOSystem(StateSpace([], [], [], sys2))
+
+        elif isinstance(sys2, (StateSpace, TransferFunction)):
+            sys2 = LinearIOSystem(sys2)
 
         elif not isinstance(sys2, InputOutputSystem):
             raise TypeError("Unknown I/O system object ", sys2)
 
         # Make sure number of input and outputs match
         if sys1.ninputs != sys2.ninputs or sys1.noutputs != sys2.noutputs:
-            raise ValueError("Can't add systems with different numbers of "
+            raise ValueError("Can't add systems with incompatible numbers of "
                              "inputs or outputs.")
         ninputs = sys1.ninputs
         noutputs = sys1.noutputs
@@ -293,16 +301,87 @@ class InputOutputSystem(object):
         # Return the newly created InterconnectedSystem
         return newsys
 
-    # TODO: add __radd__ to allow postaddition by scalars and matrices
+    def __radd__(sys1, sys2):
+        """Parallel addition of input/output system to a compatible object."""
+        # Convert sys2 to an I/O system if needed
+        if isinstance(sys2, (int, float, np.number)):
+            sys2 = LinearIOSystem(StateSpace(
+                [], [], [], sys2 * np.eye(sys1.noutputs)))
+
+        elif isinstance(sys2, np.ndarray):
+            sys2 = LinearIOSystem(StateSpace([], [], [], sys2))
+
+        elif isinstance(sys2, (StateSpace, TransferFunction)):
+            sys2 = LinearIOSystem(sys2)
+
+        elif not isinstance(sys2, InputOutputSystem):
+            raise TypeError("Unknown I/O system object ", sys2)
+
+        return InputOutputSystem.__add__(sys2, sys1)
+
+    def __sub__(sys1, sys2):
+        """Subtract two input/output systems (parallel interconnection)"""
+        # Convert sys1 to an I/O system if needed
+        if isinstance(sys2, (int, float, np.number)):
+            sys2 = LinearIOSystem(StateSpace(
+                [], [], [], sys2 * np.eye(sys1.ninputs)))
+
+        elif isinstance(sys2, np.ndarray):
+            sys2 = LinearIOSystem(StateSpace([], [], [], sys2))
+
+        elif isinstance(sys2, (StateSpace, TransferFunction)):
+            sys2 = LinearIOSystem(sys2)
+
+        elif not isinstance(sys2, InputOutputSystem):
+            raise TypeError("Unknown I/O system object ", sys2)
+
+        # Make sure number of input and outputs match
+        if sys1.ninputs != sys2.ninputs or sys1.noutputs != sys2.noutputs:
+            raise ValueError("Can't add systems with incompatible numbers of "
+                             "inputs or outputs.")
+        ninputs = sys1.ninputs
+        noutputs = sys1.noutputs
+
+        # Create a new system to handle the composition
+        inplist = [[(0, i), (1, i)] for i in range(ninputs)]
+        outlist = [[(0, i), (1, i, -1)] for i in range(noutputs)]
+        newsys = InterconnectedSystem(
+            (sys1, sys2), inplist=inplist, outlist=outlist)
+
+        # If both systems are linear, create LinearICSystem
+        if isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
+            ss_sys = StateSpace.__sub__(sys1, sys2)
+            return LinearICSystem(newsys, ss_sys)
+
+        # Return the newly created InterconnectedSystem
+        return newsys
+
+    def __rsub__(sys1, sys2):
+        """Parallel subtraction of I/O system to a compatible object."""
+        # Convert sys2 to an I/O system if needed
+        if isinstance(sys2, (int, float, np.number)):
+            sys2 = LinearIOSystem(StateSpace(
+                [], [], [], sys2 * np.eye(sys1.noutputs)))
+
+        elif isinstance(sys2, np.ndarray):
+            sys2 = LinearIOSystem(StateSpace([], [], [], sys2))
+
+        elif isinstance(sys2, (StateSpace, TransferFunction)):
+            sys2 = LinearIOSystem(sys2)
+
+        elif not isinstance(sys2, InputOutputSystem):
+            raise TypeError("Unknown I/O system object ", sys2)
+
+        return InputOutputSystem.__sub__(sys2, sys1)
 
     def __neg__(sys):
         """Negate an input/output systems (rescale)"""
         if sys.ninputs is None or sys.noutputs is None:
             raise ValueError("Can't determine number of inputs or outputs")
 
+        # Create a new system to hold the negation
         inplist = [(0, i) for i in range(sys.ninputs)]
         outlist = [(0, i, -1) for i in range(sys.noutputs)]
-        # Create a new system to hold the negation
         newsys = InterconnectedSystem(
             (sys,), dt=sys.dt, inplist=inplist, outlist=outlist)
 
@@ -667,8 +746,8 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
     Parameters
     ----------
-    linsys : StateSpace
-        LTI StateSpace system to be converted
+    linsys : StateSpace or TransferFunction
+        LTI system to be converted
     inputs : int, list of str or None, optional
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.  If an
@@ -711,12 +790,16 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         states.  The new system can be a continuous or discrete time system.
 
         """
-        if not isinstance(linsys, StateSpace):
+        if isinstance(linsys, TransferFunction):
+            # Convert system to StateSpace
+            linsys = _convert_to_statespace(linsys)
+
+        elif not isinstance(linsys, StateSpace):
             raise TypeError("Linear I/O system must be a state space object")
 
         # Look for 'input' and 'output' parameter name variants
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
-        outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+        outputs = _parse_signal_parameter(outputs, 'output', kwargs, end=True)
 
         # Create the I/O system object
         super(LinearIOSystem, self).__init__(
@@ -837,7 +920,7 @@ class NonlinearIOSystem(InputOutputSystem):
         """Create a nonlinear I/O system given update and output functions."""
         # Look for 'input' and 'output' parameter name variants
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
-        outputs =  _parse_signal_parameter(outputs, 'output', kwargs)
+        outputs = _parse_signal_parameter(outputs, 'output', kwargs)
 
         # Store the update and output functions
         self.updfcn = updfcn
@@ -1399,13 +1482,12 @@ class InterconnectedSystem(InputOutputSystem):
         self.output_map = output_map
         self.noutputs = output_map.shape[0]
 
-
     def unused_signals(self):
         """Find unused subsystem inputs and outputs
 
         Returns
         -------
-        
+
         unused_inputs : dict
 
           A mapping from tuple of indices (isys, isig) to string
@@ -1430,66 +1512,61 @@ class InterconnectedSystem(InputOutputSystem):
         unused_sysinp = sorted(set(range(nsubsysinp)) - used_sysinp)
         unused_sysout = sorted(set(range(nsubsysout)) - used_sysout)
 
-        inputs = [(isys,isig, f'{sys.name}.{sig}')
+        inputs = [(isys, isig, f'{sys.name}.{sig}')
                   for isys, sys in enumerate(self.syslist)
                   for sig, isig in sys.input_index.items()]
 
-        outputs = [(isys,isig,f'{sys.name}.{sig}')
+        outputs = [(isys, isig, f'{sys.name}.{sig}')
                    for isys, sys in enumerate(self.syslist)
                    for sig, isig in sys.output_index.items()]
 
-        return ({inputs[i][:2]:inputs[i][2]
-                for i in unused_sysinp},
-                {outputs[i][:2]:outputs[i][2]
-                 for i in unused_sysout})
-
+        return ({inputs[i][:2]: inputs[i][2] for i in unused_sysinp},
+                {outputs[i][:2]: outputs[i][2] for i in unused_sysout})
 
     def _find_inputs_by_basename(self, basename):
         """Find all subsystem inputs matching basename
 
         Returns
         -------
-        Mapping from (isys, isig) to '{sys}.{sig}' 
+        Mapping from (isys, isig) to '{sys}.{sig}'
 
         """
-        return {(isys, isig) : f'{sys.name}.{basename}'
+        return {(isys, isig): f'{sys.name}.{basename}'
                 for isys, sys in enumerate(self.syslist)
                 for sig, isig in sys.input_index.items()
                 if sig == (basename)}
-
 
     def _find_outputs_by_basename(self, basename):
         """Find all subsystem outputs matching basename
 
         Returns
         -------
-        Mapping from (isys, isig) to '{sys}.{sig}' 
+        Mapping from (isys, isig) to '{sys}.{sig}'
 
         """
-        return {(isys, isig) : f'{sys.name}.{basename}'
+        return {(isys, isig): f'{sys.name}.{basename}'
                 for isys, sys in enumerate(self.syslist)
                 for sig, isig in sys.output_index.items()
                 if sig == (basename)}
-
 
     def check_unused_signals(self, ignore_inputs=None, ignore_outputs=None):
         """Check for unused subsystem inputs and outputs
 
         If any unused inputs or outputs are found, emit a warning.
-        
+
         Parameters
         ----------
         ignore_inputs : list of input-spec
           Subsystem inputs known to be unused.  input-spec can be any of:
             'sig', 'sys.sig', (isys, isig), ('sys', isig)
-         
+
           If the 'sig' form is used, all subsystem inputs with that
           name are considered ignored.
 
         ignore_outputs : list of output-spec
           Subsystem outputs known to be unused.  output-spec can be any of:
             'sig', 'sys.sig', (isys, isig), ('sys', isig)
-         
+
           If the 'sig' form is used, all subsystem outputs with that
           name are considered ignored.
 
@@ -1509,10 +1586,12 @@ class InterconnectedSystem(InputOutputSystem):
             if isinstance(ignore_input, str) and '.' not in ignore_input:
                 ignore_idxs = self._find_inputs_by_basename(ignore_input)
                 if not ignore_idxs:
-                    raise ValueError(f"Couldn't find ignored input {ignore_input} in subsystems")
+                    raise ValueError(f"Couldn't find ignored input "
+                                     "{ignore_input} in subsystems")
                 ignore_input_map.update(ignore_idxs)
             else:
-                ignore_input_map[self._parse_signal(ignore_input, 'input')[:2]] = ignore_input
+                ignore_input_map[self._parse_signal(
+                    ignore_input, 'input')[:2]] = ignore_input
 
         # (isys, isig) -> signal-spec
         ignore_output_map = {}
@@ -1520,16 +1599,18 @@ class InterconnectedSystem(InputOutputSystem):
             if isinstance(ignore_output, str) and '.' not in ignore_output:
                 ignore_found = self._find_outputs_by_basename(ignore_output)
                 if not ignore_found:
-                    raise ValueError(f"Couldn't find ignored output {ignore_output} in subsystems")
+                    raise ValueError(f"Couldn't find ignored output "
+                                     "{ignore_output} in subsystems")
                 ignore_output_map.update(ignore_found)
             else:
-                ignore_output_map[self._parse_signal(ignore_output, 'output')[:2]] = ignore_output
+                ignore_output_map[self._parse_signal(
+                    ignore_output, 'output')[:2]] = ignore_output
 
         dropped_inputs = set(unused_inputs) - set(ignore_input_map)
         dropped_outputs = set(unused_outputs) - set(ignore_output_map)
 
         used_ignored_inputs = set(ignore_input_map) - set(unused_inputs)
-        used_ignored_outputs =  set(ignore_output_map) - set(unused_outputs)
+        used_ignored_outputs = set(ignore_output_map) - set(unused_outputs)
 
         if dropped_inputs:
             msg = ('Unused input(s) in InterconnectedSystem: '
@@ -2407,7 +2488,7 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
     """
     # Look for 'input' and 'output' parameter name variants
     inputs = _parse_signal_parameter(inputs, 'input', kwargs)
-    outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+    outputs = _parse_signal_parameter(outputs, 'output', kwargs, end=True)
 
     if not check_unused and (ignore_inputs or ignore_outputs):
         raise ValueError('check_unused is False, but either '
@@ -2507,7 +2588,6 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         inputs=inputs, outputs=outputs, states=states,
         params=params, dt=dt, name=name)
 
-
     # check for implicity dropped signals
     if check_unused:
         newsys.check_unused_signals(ignore_inputs, ignore_outputs)
@@ -2598,7 +2678,7 @@ def summing_junction(
 
     # Look for 'input' and 'output' parameter name variants
     inputs = _parse_signal_parameter(inputs, 'input', kwargs)
-    output =  _parse_signal_parameter(output, 'outputs', kwargs, end=True)
+    output = _parse_signal_parameter(output, 'outputs', kwargs, end=True)
 
     # Default values for inputs and output
     if inputs is None:
@@ -2623,8 +2703,8 @@ def summing_junction(
         ninputs = ninputs * dimension
 
         output_names = ["%s[%d]" % (name, dim)
-                       for name in output_names
-                       for dim in range(dimension)]
+                        for name in output_names
+                        for dim in range(dimension)]
         noutputs = noutputs * dimension
     elif dimension is not None:
         raise ValueError(

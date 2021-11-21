@@ -1,4 +1,4 @@
-"""iosys_test.py - test input/output system oeprations
+"""iosys_test.py - test input/output system operations
 
 RMM, 17 Apr 2019
 
@@ -593,6 +593,58 @@ class TestIOSys:
         iosys_feedback = ct.feedback(linio1, linio2)
         lin_t, lin_y = ct.forced_response(linsys_feedback, T, U, X0)
         ios_t, ios_y = ios.input_output_response(iosys_feedback, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+    @noscipy0
+    def test_algebraic_functions(self, tsys):
+        """Test algebraic operations on I/O systems"""
+        # Set up parameters for simulation
+        T = tsys.T
+        U = [np.sin(T), np.cos(T)]
+        X0 = 0
+
+        # Set up systems to be composed
+        linsys1 = tsys.mimo_linsys1
+        linio1 = ios.LinearIOSystem(linsys1)
+        linsys2 = tsys.mimo_linsys2
+        linio2 = ios.LinearIOSystem(linsys2)
+
+        # Multiplication
+        linsys_mul = linsys2 * linsys1
+        iosys_mul = linio2 * linio1
+        lin_t, lin_y = ct.forced_response(linsys_mul, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_mul, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+        # Make sure that systems don't commute
+        linsys_mul = linsys1 * linsys2
+        lin_t, lin_y = ct.forced_response(linsys_mul, T, U, X0)
+        assert not (np.abs(lin_y - ios_y) < 1e-3).all()
+
+        # Addition
+        linsys_add = linsys1 + linsys2
+        iosys_add = linio1 + linio2
+        lin_t, lin_y = ct.forced_response(linsys_add, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_add, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+        # Subtraction
+        linsys_sub = linsys1 - linsys2
+        iosys_sub = linio1 - linio2
+        lin_t, lin_y = ct.forced_response(linsys_sub, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_sub, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+        # Make sure that systems don't commute
+        linsys_sub = linsys2 - linsys1
+        lin_t, lin_y = ct.forced_response(linsys_sub, T, U, X0)
+        assert not (np.abs(lin_y - ios_y) < 1e-3).all()
+
+        # Negation
+        linsys_negate = -linsys1
+        iosys_negate = -linio1
+        lin_t, lin_y = ct.forced_response(linsys_negate, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_negate, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     @noscipy0
@@ -1195,6 +1247,58 @@ class TestIOSys:
         np.testing.assert_allclose(io_series.B, ss_series.B)
         np.testing.assert_allclose(io_series.C, ss_series.C)
         np.testing.assert_allclose(io_series.D, ss_series.D)
+
+    @pytest.mark.parametrize(
+        "Pout, Pin, C, op, PCout, PCin", [
+            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__mul__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__mul__, 2, 2),
+            (2, 3, 2, ct.LinearIOSystem.__mul__, 2, 3),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__mul__, 2, 2),
+            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__rmul__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__rmul__, 2, 2),
+            (2, 3, 2, ct.LinearIOSystem.__rmul__, 2, 3),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rmul__, 2, 2),
+            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__add__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__add__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__add__, 2, 2),
+            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__radd__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__radd__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__radd__, 2, 2),
+            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__sub__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__sub__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__sub__, 2, 2),
+            (2, 2, ct.rss(2, 2, 2), ct.LinearIOSystem.__rsub__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__rsub__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rsub__, 2, 2),
+            
+        ])
+    def test_operand_conversion(self, Pout, Pin, C, op, PCout, PCin):
+        P = ct.LinearIOSystem(
+            ct.rss(2, Pout, Pin, strictly_proper=True), name='P')
+        PC = op(P, C)
+        assert isinstance(PC, ct.LinearIOSystem)
+        assert isinstance(PC, ct.StateSpace)
+        assert PC.noutputs == PCout
+        assert PC.ninputs == PCin
+
+    @pytest.mark.parametrize(
+        "Pout, Pin, C, op", [
+            (2, 2, ct.rss(2, 3, 2), ct.LinearIOSystem.__mul__),
+            (2, 2, ct.rss(2, 2, 3), ct.LinearIOSystem.__rmul__),
+            (2, 2, ct.rss(2, 3, 2), ct.LinearIOSystem.__add__),
+            (2, 2, ct.rss(2, 2, 3), ct.LinearIOSystem.__radd__),
+            (2, 3, 2, ct.LinearIOSystem.__add__),
+            (2, 3, 2, ct.LinearIOSystem.__radd__),
+            (2, 2, ct.rss(2, 3, 2), ct.LinearIOSystem.__sub__),
+            (2, 2, ct.rss(2, 2, 3), ct.LinearIOSystem.__rsub__),
+            (2, 3, 2, ct.LinearIOSystem.__sub__),
+            (2, 3, 2, ct.LinearIOSystem.__rsub__),
+        ])
+    def test_operand_incompatible(self, Pout, Pin, C, op):
+        P = ct.LinearIOSystem(
+            ct.rss(2, Pout, Pin, strictly_proper=True), name='P')
+        with pytest.raises(ValueError, match="incompatible"):
+            PC = op(P, C)
 
     def test_docstring_example(self):
         P = ct.LinearIOSystem(
