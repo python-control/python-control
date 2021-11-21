@@ -899,7 +899,8 @@ def _add_arrows_to_line2D(
         raise ValueError("expected a matplotlib.lines.Line2D object")
     x, y = line.get_xdata(), line.get_ydata()
     x, y = x[np.isfinite(x)], y[np.isfinite(x)]
-
+    if len(x) == 0: 
+        return []
     arrow_kw = {
         "arrowstyle": arrowstyle,
     }
