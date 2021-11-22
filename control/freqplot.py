@@ -522,7 +522,7 @@ _nyquist_defaults = {
     'nyquist.mirror_style': '--',
     'nyquist.arrows': 2,
     'nyquist.arrow_size': 8,
-    'nyquist.indent_radius': 1e-2,
+    'nyquist.indent_radius': 1e-6,
     'nyquist.maximum_magnitude': 5,
     'nyquist.indent_direction': 'right',
 }
@@ -552,7 +552,9 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         If True, plot magnitude
 
     omega : array_like
-        Set of frequencies to be evaluated, in rad/sec.
+        Set of frequencies to be evaluated, in rad/sec. Remark: if omega is
+        specified, you may need to specify specify a larger `indent_radius` 
+        than the default to get reasonable contours. 
 
     omega_limits : array_like of two values
         Limits to the range of frequencies. Ignored if omega is provided, and
@@ -725,7 +727,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         # do indentations in s-plane where it is more convenient
         splane_contour = 1j * omega_sys
 
-        # Bend the contour around any poles on/near the imaginary axis
+        # indent the contour around any poles on/near the imaginary axis
         if isinstance(sys, (StateSpace, TransferFunction)) \
                 and indent_direction != 'none':
             if sys.isctime():
@@ -738,30 +740,49 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
                 splane_poles = np.log(zplane_poles)/sys.dt
 
-            if splane_contour[1].imag > indent_radius \
-                    and np.any(np.isclose(abs(splane_poles), 0)) \
-                    and not omega_range_given:
-                # add some points for quarter circle around poles at origin
-                splane_contour = np.concatenate(
-                    (1j * np.linspace(0., indent_radius, 50),
-                    splane_contour[1:]))
-            for i, s in enumerate(splane_contour):
-                # Find the nearest pole
-                p = splane_poles[(np.abs(splane_poles - s)).argmin()]
-                # See if we need to indent around it
-                if abs(s - p) < indent_radius:
-                    if p.real < 0 or (np.isclose(p.real, 0) \
-                            and indent_direction == 'right'):
-                        # Indent to the right
-                        splane_contour[i] += \
-                            np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
-                    elif p.real > 0 or (np.isclose(p.real, 0) \
-                            and indent_direction == 'left'):
-                        # Indent to the left
-                        splane_contour[i] -= \
-                            np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
-                    else:
-                        ValueError("unknown value for indent_direction")
+            if omega_range_given:
+                # indent given contour
+                for i, s in enumerate(splane_contour):
+                    # Find the nearest pole
+                    p = splane_poles[(np.abs(splane_poles - s)).argmin()]
+                    # See if we need to indent around it
+                    if abs(s - p) < indent_radius:
+                        if p.real < 0 or (np.isclose(p.real, 0) \
+                                and indent_direction == 'right'):
+                            # Indent to the right
+                            splane_contour[i] += \
+                                np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
+                        elif p.real > 0 or (np.isclose(p.real, 0) \
+                                and indent_direction == 'left'):
+                            # Indent to the left
+                            splane_contour[i] -= \
+                                np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
+                        else:
+                            ValueError("unknown value for indent_direction")
+            else:
+                # find poles that are near imag axis and replace contour 
+                # near there with indented contour 
+                if indent_direction == 'right': 
+                    indent = indent_radius * \
+                        np.exp(1j * np.linspace(-np.pi/2, np.pi/2, 51))                
+                elif indent_direction == 'left':
+                    indent = -indent_radius * \
+                        np.exp(1j * np.linspace(np.pi/2, -np.pi/2, 51))                
+                else: 
+                    ValueError("unknown value for indent_direction")
+                for p in splane_poles[np.isclose(splane_poles.real, 0) \
+                        & (splane_poles.imag >= 0)]:
+                    start = np.searchsorted(
+                        splane_contour.imag, p.imag - indent_radius)
+                    end = np.searchsorted(
+                        splane_contour.imag, p.imag + indent_radius)
+                    # only keep indent parts that are > 0 and within contour
+                    indent_mask = ((indent + p).imag >= 0) \
+                        & ((indent + p).imag <= splane_contour[-1].imag)
+                    splane_contour = np.concatenate((
+                        splane_contour[:start], 
+                        indent[indent_mask] + p, 
+                        splane_contour[end:]))
 
         # map contour to z-plane if necessary
         if sys.isctime():
@@ -816,7 +837,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             _add_arrows_to_line2D(
                 ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
             # plot large magnitude contour
-            p = plt.plot(x_lg, y_lg, ':', color='red', *args, **kwargs)
+            p = plt.plot(x_lg, y_lg, color='red', *args, **kwargs)
             _add_arrows_to_line2D(
                 ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
 
@@ -825,7 +846,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 p = plt.plot(x, -y, mirror_style, color=c, *args, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
-                p = plt.plot(x_lg, -y_lg, ':', color='red', *args, **kwargs)
+                p = plt.plot(x_lg, -y_lg, mirror_style, 
+                        color='red', *args, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
 

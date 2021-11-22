@@ -69,7 +69,8 @@ def test_nyquist_basic():
 
     # Make sure that we can turn off frequency modification
     count, contour_indented = ct.nyquist_plot(
-        sys, np.linspace(1e-4, 1e2, 100), return_contour=True)
+        sys, np.linspace(1e-4, 1e2, 100), indent_radius=0.01, 
+        return_contour=True)
     assert not all(contour_indented.real == 0)
     count, contour = ct.nyquist_plot(
         sys, np.linspace(1e-4, 1e2, 100), return_contour=True,
@@ -87,14 +88,17 @@ def test_nyquist_basic():
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, omega specified
+    # when specifying omega, usually need to specify larger indent radius
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-    count = ct.nyquist_plot(sys, np.linspace(1e-3, 1e1, 1000))
+    count = ct.nyquist_plot(sys, np.linspace(1e-3, 1e1, 1000), 
+        indent_radius=0.1)
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, omega specified, with contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     count, contour = ct.nyquist_plot(
-        sys, np.linspace(1e-3, 1e1, 1000), return_contour=True)
+        sys, np.linspace(1e-3, 1e1, 1000), indent_radius=0.1,
+        return_contour=True)
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, return contour
@@ -193,13 +197,10 @@ def test_nyquist_indent():
     plt.title("Pole at origin; indent_radius=default")
     assert _Z(sys) == count + _P(sys)
 
-    # first value of default omega vector was 0.1, replaced by 0. for contour
-    # indent_radius is larger than 0.1 -> no extra quater circle around origin
+    # confirm that first element of indent is properly indented
     count, contour = ct.nyquist_plot(sys, plot=False, indent_radius=.1007,
                                      return_contour=True)
     np.testing.assert_allclose(contour[0], .1007+0.j)
-    # second value of omega_vector is larger than indent_radius: not indented
-    assert np.all(contour.real[2:] == 0.)
 
     plt.figure();
     count, contour = ct.nyquist_plot(sys, indent_radius=0.01,
@@ -208,7 +209,7 @@ def test_nyquist_indent():
     assert _Z(sys) == count + _P(sys)
     # indent radius is smaller than the start of the default omega vector
     # check that a quarter circle around the pole at origin has been added.
-    np.testing.assert_allclose(contour[:50].real**2 + contour[:50].imag**2,
+    np.testing.assert_allclose(contour[:25].real**2 + contour[:25].imag**2,
                                0.01**2)
 
     plt.figure();
