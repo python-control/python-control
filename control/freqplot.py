@@ -523,14 +523,14 @@ _nyquist_defaults = {
     'nyquist.arrows': 2,
     'nyquist.arrow_size': 8,
     'nyquist.indent_radius': 1e-6,
-    'nyquist.maximum_magnitude': 5,
+    'nyquist.plot_maximum_magnitude': 5,
     'nyquist.indent_direction': 'right',
 }
 
 
 def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                  omega_num=None, label_freq=0, color=None,
-                 return_contour=False, warn_nyquist=True,  
+                 return_contour=False, warn_nyquist=True, 
                  *args, **kwargs):
     """Nyquist plot for a system
 
@@ -538,7 +538,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     The curve is computed by evaluating the Nyqist segment along the positive
     imaginary axis, with a mirror image generated to reflect the negative
     imaginary axis.  Poles on or near the imaginary axis are avoided using a
-    small indentation.  The portion of the Nyquist contour at infinity is not
+    small indentation. If portions of the Nyquist plot  The portion of the Nyquist contour at infinity is not
     explicitly computed (since it maps to a constant value for any system with
     a proper transfer function).
 
@@ -596,9 +596,10 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     arrow_style : matplotlib.patches.ArrowStyle
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
 
-    maximum_magnitude : float
-        Magnitude/radius at which to draw contours whose magnitude exceeds 
-        this value. 
+    plot_maximum_magnitude : float
+        If this value is not 0, an additional curve showing the path of 
+        the Nyquist plot when it leaves the plot window is drawn at a radius
+        equal to this value. 
 
     indent_radius : float
         Amount to indent the Nyquist contour around poles that are at or near
@@ -687,13 +688,14 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         'nyquist', 'indent_radius', kwargs, _nyquist_defaults, pop=True)
     indent_direction = config._get_param(
         'nyquist', 'indent_direction', kwargs, _nyquist_defaults, pop=True)
-    maximum_magnitude = config._get_param(
-        'nyquist', 'maximum_magnitude', kwargs, _nyquist_defaults, pop=True)
+    plot_maximum_magnitude = config._get_param(
+        'nyquist', 'plot_maximum_magnitude', kwargs, _nyquist_defaults, pop=True)
 
     # If argument was a singleton, turn it into a list
     if not hasattr(syslist, '__iter__'):
         syslist = (syslist,)
 
+    omega_given = True if omega is not None else False
     omega, omega_range_given = _determine_omega_vector(
         syslist, omega, omega_limits, omega_num)
     if not omega_range_given:
@@ -740,7 +742,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
                 splane_poles = np.log(zplane_poles)/sys.dt
 
-            if omega_range_given:
+            if omega_given:
                 # indent given contour
                 for i, s in enumerate(splane_contour):
                     # Find the nearest pole
@@ -793,13 +795,14 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         # Compute the primary curve
         resp = sys(contour)
 
-        # compute large radius contour where it exceeds 
-        # fill with nans that don't plot
-        large_mag_contour = np.full_like(contour, np.nan + 1j * np.nan)
-        # where too big, use angle of resp but specifified mag
-        too_big = abs(resp) > maximum_magnitude
-        large_mag_contour[too_big] = \
-            maximum_magnitude *(1+isys/20) * np.exp(1j * np.angle(resp[too_big]))
+        if plot_maximum_magnitude != 0:
+            # compute large radius contour where it exceeds 
+            # fill with nans that don't plot
+            large_mag_contour = np.full_like(contour, np.nan + 1j * np.nan)
+            # where too big, use angle of resp but specifified mag
+            too_big = abs(resp) > plot_maximum_magnitude
+            large_mag_contour[too_big] = plot_maximum_magnitude *\
+                (1+isys/20) * np.exp(1j * np.angle(resp[too_big]))
         
         # Compute CW encirclements of -1 by integrating the (unwrapped) angle
         phase = -unwrap(np.angle(resp + 1))
@@ -828,7 +831,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
             # Save the components of the response
             x, y = resp.real, resp.imag
-            x_lg, y_lg = large_mag_contour.real, large_mag_contour.imag
+            if plot_maximum_magnitude != 0:
+                x_lg, y_lg = large_mag_contour.real, large_mag_contour.imag
 
             # Plot the primary curve
             p = plt.plot(x, y, '-', color=color, *args, **kwargs)
@@ -836,20 +840,22 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             ax = plt.gca()
             _add_arrows_to_line2D(
                 ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
-            # plot large magnitude contour
-            p = plt.plot(x_lg, y_lg, color='red', *args, **kwargs)
-            _add_arrows_to_line2D(
-                ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
+            if plot_maximum_magnitude != 0:
+                # plot large magnitude contour
+                p = plt.plot(x_lg, y_lg, color='red', *args, **kwargs)
+                _add_arrows_to_line2D(
+                    ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=1)
 
             # Plot the mirror image
             if mirror_style is not False:
                 p = plt.plot(x, -y, mirror_style, color=c, *args, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
-                p = plt.plot(x_lg, -y_lg, mirror_style, 
-                        color='red', *args, **kwargs)
-                _add_arrows_to_line2D(
-                    ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
+                if plot_maximum_magnitude != 0:
+                    p = plt.plot(x_lg, -y_lg, mirror_style, 
+                            color='red', *args, **kwargs)
+                    _add_arrows_to_line2D(
+                        ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
 
             # Mark the -1 point
             plt.plot([-1], [0], 'r+')
@@ -883,8 +889,9 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         ax.set_xlabel("Real axis")
         ax.set_ylabel("Imaginary axis")
         ax.grid(color="lightgray")
-        ax.set_xlim(-maximum_magnitude*1.1, maximum_magnitude*1.1)
-        ax.set_ylim(-maximum_magnitude*1.1, maximum_magnitude*1.1)
+        if plot_maximum_magnitude != 0:
+            ax.set_xlim(-plot_maximum_magnitude*1.1,plot_maximum_magnitude*1.1)
+            ax.set_ylim(-plot_maximum_magnitude*1.1,plot_maximum_magnitude*1.1)
 
     # "Squeeze" the results
     if len(syslist) == 1:

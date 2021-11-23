@@ -141,12 +141,23 @@ def test_nyquist_fbs_examples():
     count = ct.nyquist_plot(sys)
     assert _Z(sys) == count + _P(sys)
 
+    # when omega is specified, no points are added at indentations, leading 
+    # to incorrect encirclement count
+    plt.figure()
+    plt.title("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2) [zoom]")
+    count = ct.nyquist_plot(sys, omega=np.linspace(1.5, 1e3, 1000))
+    # assert _Z(sys) == count + _P(sys)
+    assert count == -1
+
+    # when only the range of the frequency is provided, this permits 
+    # extra points to be added at indentations, leading to correct count
     plt.figure()
     plt.title("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2) [zoom]")
     count = ct.nyquist_plot(sys, omega_limits=[1.5, 1e3])
     # Frequency limits for zoom give incorrect encirclement count
     # assert _Z(sys) == count + _P(sys)
-    assert count == -1
+    assert count == 0
+
 
 
 @pytest.mark.parametrize("arrows", [
@@ -226,6 +237,10 @@ def test_nyquist_indent():
     count = ct.nyquist_plot(sys)
     plt.title("Imaginary poles; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
+
+    # confirm we can turn off maximum_magitude plot
+    plt.figure();
+    count = ct.nyquist_plot(sys, plot_maximum_magnitude=0)
 
     # Imaginary poles with indentation to the left
     plt.figure();
