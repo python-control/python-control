@@ -46,7 +46,8 @@ from . import statesp
 from .mateqn import care
 from .statesp import _ssmatrix, _convert_to_statespace
 from .lti import LTI
-from .exception import ControlSlycot, ControlArgument, ControlDimension
+from .exception import ControlSlycot, ControlArgument, ControlDimension, \
+    ControlNotImplemented
 
 # Make sure we have access to the right slycot routines
 try:
@@ -284,10 +285,10 @@ def lqe(*args, **keywords):
 
     The function can be called with either 3, 4, 5, or 6 arguments:
 
-    * ``lqe(sys, Q, R)``
-    * ``lqe(sys, Q, R, N)``
-    * ``lqe(A, G, C, Q, R)``
-    * ``lqe(A, B, C, Q, R, N)``
+    * ``L, P, E = lqe(sys, Q, R)``
+    * ``L, P, E = lqe(sys, Q, R, N)``
+    * ``L, P, E = lqe(A, G, C, Q, R)``
+    * ``L, P, E = lqe(A, B, C, Q, R, N)``
 
     where `sys` is an `LTI` object, and `A`, `G`, `C`, `Q`, `R`, and `N` are
     2D arrays or matrices of appropriate dimension.
@@ -390,7 +391,7 @@ def lqe(*args, **keywords):
     elif (Q.shape[0] != ninputs or Q.shape[1] != ninputs or
           R.shape[0] != noutputs or R.shape[1] != noutputs or
           N.shape[0] != ninputs or N.shape[1] != noutputs):
-        raise ControlDimension("incorrect weighting matrix dimensions")
+        raise ControlDimension("incorrect covariance matrix dimensions")
 
     # LT, P, E = lqr(A.T, C.T, G @ Q @ G.T, R)
     # P, E, LT = care(A.T, C.T, G @ Q @ G.T, R)
@@ -458,10 +459,10 @@ def lqr(*args, **keywords):
 
     The function can be called with either 3, 4, or 5 arguments:
 
-    * ``lqr(sys, Q, R)``
-    * ``lqr(sys, Q, R, N)``
-    * ``lqr(A, B, Q, R)``
-    * ``lqr(A, B, Q, R, N)``
+    * ``K, S, E = lqr(sys, Q, R)``
+    * ``K, S, E = lqr(sys, Q, R, N)``
+    * ``K, S, E = lqr(A, B, Q, R)``
+    * ``K, S, E = lqr(A, B, Q, R, N)``
 
     where `sys` is an `LTI` object, and `A`, `B`, `Q`, `R`, and `N` are
     2D arrays or matrices of appropriate dimension.
