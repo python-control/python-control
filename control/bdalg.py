@@ -62,7 +62,9 @@ __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
 
 def series(sys1, *sysn):
-    """Return the series connection (sysn \\* ... \\*) sys2 \\* sys1
+    r"""series(sys1, sys2, [..., sysn])
+
+    Return the series connection (`sysn` \* ...\  \*) `sys2` \* `sys1`.
 
     Parameters
     ----------
@@ -107,8 +109,9 @@ def series(sys1, *sysn):
 
 
 def parallel(sys1, *sysn):
-    """
-    Return the parallel connection sys1 + sys2 (+ ... + sysn)
+    r"""parallel(sys1, sys2, [..., sysn])
+
+    Return the parallel connection `sys1` + `sys2` (+ ...\  + `sysn`).
 
     Parameters
     ----------
@@ -252,9 +255,9 @@ def feedback(sys1, sys2=1, sign=-1):
     return sys1.feedback(sys2, sign)
 
 def append(*sys):
-    """append(sys1, sys2, ..., sysn)
+    """append(sys1, sys2, [..., sysn])
 
-    Group models by appending their inputs and outputs
+    Group models by appending their inputs and outputs.
 
     Forms an augmented system model, and appends the inputs and
     outputs together. The system type will be the type of the first
