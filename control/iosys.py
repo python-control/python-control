@@ -795,7 +795,8 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             linsys = _convert_to_statespace(linsys)
 
         elif not isinstance(linsys, StateSpace):
-            raise TypeError("Linear I/O system must be a state space object")
+            raise TypeError("Linear I/O system must be a state space "
+                            "or transfer function object")
 
         # Look for 'input' and 'output' parameter name variants
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
@@ -1586,8 +1587,8 @@ class InterconnectedSystem(InputOutputSystem):
             if isinstance(ignore_input, str) and '.' not in ignore_input:
                 ignore_idxs = self._find_inputs_by_basename(ignore_input)
                 if not ignore_idxs:
-                    raise ValueError(f"Couldn't find ignored input "
-                                     "{ignore_input} in subsystems")
+                    raise ValueError("Couldn't find ignored input "
+                                     f"{ignore_input} in subsystems")
                 ignore_input_map.update(ignore_idxs)
             else:
                 ignore_input_map[self._parse_signal(
@@ -1599,8 +1600,8 @@ class InterconnectedSystem(InputOutputSystem):
             if isinstance(ignore_output, str) and '.' not in ignore_output:
                 ignore_found = self._find_outputs_by_basename(ignore_output)
                 if not ignore_found:
-                    raise ValueError(f"Couldn't find ignored output "
-                                     "{ignore_output} in subsystems")
+                    raise ValueError("Couldn't find ignored output "
+                                     f"{ignore_output} in subsystems")
                 ignore_output_map.update(ignore_found)
             else:
                 ignore_output_map[self._parse_signal(
