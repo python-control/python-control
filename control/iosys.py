@@ -2252,7 +2252,7 @@ def _find_size(sysval, vecval):
     """
     if hasattr(vecval, '__len__'):
         if sysval is not None and sysval != len(vecval):
-            raise ValueError("Inconsistend information to determine size "
+            raise ValueError("Inconsistent information to determine size "
                              "of system component")
         return len(vecval)
     # None or 0, which is a valid value for "a (sysval, ) vector of zeros".
