@@ -393,7 +393,6 @@ def lqe(*args, **keywords):
           N.shape[0] != ninputs or N.shape[1] != noutputs):
         raise ControlDimension("incorrect covariance matrix dimensions")
 
-    # LT, P, E = lqr(A.T, C.T, G @ Q @ G.T, R)
     # P, E, LT = care(A.T, C.T, G @ Q @ G.T, R)
     P, E, LT = care(A.T, C.T, np.dot(np.dot(G, Q), G.T), R)
     return _ssmatrix(LT.T), _ssmatrix(P), E
