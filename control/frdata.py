@@ -542,13 +542,9 @@ second has %i." % (self.noutputs, other.noutputs))
         # TODO: is there a reason to use linalg.solve instead of linalg.inv?
         # https://github.com/python-control/python-control/pull/314#discussion_r294075154
         for k, w in enumerate(other.omega):
-            fresp[:, :, k] = np.dot(
-                self.fresp[:, :, k],
-                linalg.solve(
-                    eye(self.ninputs)
-                    + np.dot(other.fresp[:, :, k], self.fresp[:, :, k]),
-                    eye(self.ninputs))
-            )
+            fresp[:, :, k] = self.fresp[:, :, k] @ linalg.solve(
+                eye(self.ninputs) + other.fresp[:, :, k] @ self.fresp[:, :, k],
+                eye(self.ninputs))
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 

@@ -997,7 +997,6 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     # Separate out the discrete and continuous time cases
     if isctime(sys, strict=True):
         # Solve the differential equation, copied from scipy.signal.ltisys.
-        dot = np.dot  # Faster and shorter code
 
         # Faster algorithm if U is zero
         # (if not None, it was converted to array above)
@@ -1005,8 +1004,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             # Solve using matrix exponential
             expAdt = sp.linalg.expm(A * dt)
             for i in range(1, n_steps):
-                xout[:, i] = dot(expAdt, xout[:, i-1])
-            yout = dot(C, xout)
+                xout[:, i] = expAdt @ xout[:, i-1]
+            yout = C @ xout
 
         # General algorithm that interpolates U in between output points
         else:
@@ -1034,9 +1033,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             Bd0 = expM[:n_states, n_states:n_states + n_inputs] - Bd1
 
             for i in range(1, n_steps):
-                xout[:, i] = (dot(Ad, xout[:, i-1]) + dot(Bd0, U[:, i-1]) +
-                              dot(Bd1, U[:, i]))
-            yout = dot(C, xout) + dot(D, U)
+                xout[:, i] = (Ad @ xout[:, i-1]
+                              + Bd0 @ U[:, i-1] + Bd1 @ U[:, i])
+            yout = C @ xout + D @ U
         tout = T
 
     else:

@@ -712,11 +712,11 @@ class StateSpace(LTI):
                 (concatenate((other.A,
                               zeros((other.A.shape[0], self.A.shape[1]))),
                              axis=1),
-                 concatenate((np.dot(self.B, other.C), self.A), axis=1)),
+                 concatenate((self.B @ other.C, self.A), axis=1)),
                 axis=0)
-            B = concatenate((other.B, np.dot(self.B, other.D)), axis=0)
-            C = concatenate((np.dot(self.D, other.C), self.C), axis=1)
-            D = np.dot(self.D, other.D)
+            B = concatenate((other.B, self.B @ other.D), axis=0)
+            C = concatenate((self.D @ other.C, self.C), axis=1)
+            D = self.D @ other.D
 
         return StateSpace(A, B, C, D, dt)
 
@@ -741,8 +741,8 @@ class StateSpace(LTI):
         # try to treat this as a matrix
         try:
             X = _ssmatrix(other)
-            C = np.dot(X, self.C)
-            D = np.dot(X, self.D)
+            C = X @ self.C
+            D = X @ self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
 
         except Exception as e:
@@ -915,10 +915,8 @@ class StateSpace(LTI):
             # TODO: can this be vectorized?
             for idx, x_idx in enumerate(x_arr):
                 try:
-                    out[:, :, idx] = np.dot(
-                        self.C,
-                        solve(x_idx * eye(self.nstates) - self.A, self.B)) \
-                        + self.D
+                    xr = solve(x_idx * eye(self.nstates) - self.A, self.B)
+                    out[:, :, idx] = self.C @ xr + self.D
                 except LinAlgError:
                     # Issue a warning messsage, for consistency with xferfcn
                     if warn_infinite:
@@ -1019,7 +1017,7 @@ class StateSpace(LTI):
         C2 = other.C
         D2 = other.D
 
-        F = eye(self.ninputs) - sign * np.dot(D2, D1)
+        F = eye(self.ninputs) - sign * D2 @ D1
         if matrix_rank(F) != self.ninputs:
             raise ValueError(
                 "I - sign * D2 * D1 is singular to working precision.")
@@ -1033,20 +1031,20 @@ class StateSpace(LTI):
         E_D2 = E_D2_C2[:, :other.ninputs]
         E_C2 = E_D2_C2[:, other.ninputs:]
 
-        T1 = eye(self.noutputs) + sign * np.dot(D1, E_D2)
-        T2 = eye(self.ninputs) + sign * np.dot(E_D2, D1)
+        T1 = eye(self.noutputs) + sign * D1 @ E_D2
+        T2 = eye(self.ninputs) + sign * E_D2 @ D1
 
         A = concatenate(
             (concatenate(
-                (A1 + sign * np.dot(np.dot(B1, E_D2), C1),
-                 sign * np.dot(B1, E_C2)), axis=1),
+                (A1 + sign * B1 @ E_D2 @ C1,
+                 sign * B1 @ E_C2), axis=1),
              concatenate(
-                 (np.dot(B2, np.dot(T1, C1)),
-                  A2 + sign * np.dot(np.dot(B2, D1), E_C2)), axis=1)),
+                 (B2 @ T1 @ C1,
+                  A2 + sign * B2 @ D1 @ E_C2), axis=1)),
             axis=0)
-        B = concatenate((np.dot(B1, T2), np.dot(np.dot(B2, D1), T2)), axis=0)
-        C = concatenate((np.dot(T1, C1), sign * np.dot(D1, E_C2)), axis=1)
-        D = np.dot(D1, T2)
+        B = concatenate((B1 @ T2, B2 @ D1 @ T2), axis=0)
+        C = concatenate((T1 @ C1, sign * D1 @ E_C2), axis=1)
+        D = D1 @ T2
 
         return StateSpace(A, B, C, D, dt)
 

@@ -843,14 +843,14 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
     def _rhs(self, t, x, u):
         # Convert input to column vector and then change output to 1D array
-        xdot = np.dot(self.A, np.reshape(x, (-1, 1))) \
-            + np.dot(self.B, np.reshape(u, (-1, 1)))
+        xdot = self.A @ np.reshape(x, (-1, 1)) \
+               + self.B @ np.reshape(u, (-1, 1))
         return np.array(xdot).reshape((-1,))
 
     def _out(self, t, x, u):
         # Convert input to column vector and then change output to 1D array
-        y = np.dot(self.C, np.reshape(x, (-1, 1))) \
-            + np.dot(self.D, np.reshape(u, (-1, 1)))
+        y = self.C @ np.reshape(x, (-1, 1)) \
+            + self.D @ np.reshape(u, (-1, 1))
         return np.array(y).reshape((-1,))
 
 
@@ -1197,7 +1197,7 @@ class InterconnectedSystem(InputOutputSystem):
         ulist, ylist = self._compute_static_io(t, x, u)
 
         # Make the full set of subsystem outputs to system output
-        return np.dot(self.output_map, ylist)
+        return self.output_map @ ylist
 
     def _compute_static_io(self, t, x, u):
         # Figure out the total number of inputs and outputs
@@ -1239,7 +1239,7 @@ class InterconnectedSystem(InputOutputSystem):
                 output_index += sys.noutputs
 
             # Compute inputs based on connection map
-            new_ulist = np.dot(self.connect_map, ylist[:noutputs]) \
+            new_ulist = self.connect_map @ ylist[:noutputs] \
                 + np.dot(self.input_map, u)
 
             # Check to see if any of the inputs changed
