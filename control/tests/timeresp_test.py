@@ -743,7 +743,7 @@ class TestTimeresp:
 
         _t, yout, xout = forced_response(sys, t, u, x0, return_x=True)
         np.testing.assert_array_almost_equal(xout, xtrue, decimal=6)
-        ytrue = np.squeeze(np.asarray(C.dot(xtrue)))
+        ytrue = np.squeeze(np.asarray(C @ xtrue))
         np.testing.assert_array_almost_equal(yout, ytrue, decimal=6)
 
 
