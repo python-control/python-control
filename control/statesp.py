@@ -49,8 +49,8 @@ $Id$
 
 import math
 import numpy as np
-from numpy import any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze, pi
+from numpy import any, asarray, concatenate, cos, delete, \
+    empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
@@ -1126,23 +1126,23 @@ class StateSpace(LTI):
         H22 = TH[ny:, self.nstates + other.nstates + self.ninputs - nu:]
 
         Ares = np.block([
-            [A + B2.dot(T21), B2.dot(T22)],
-            [Bbar1.dot(T11), Abar + Bbar1.dot(T12)]
+            [A + B2 @ T21, B2 @ T22],
+            [Bbar1 @ T11, Abar + Bbar1 @ T12]
         ])
 
         Bres = np.block([
-            [B1 + B2.dot(H21), B2.dot(H22)],
-            [Bbar1.dot(H11), Bbar2 + Bbar1.dot(H12)]
+            [B1 + B2 @ H21, B2 @ H22],
+            [Bbar1 @ H11, Bbar2 + Bbar1 @ H12]
         ])
 
         Cres = np.block([
-            [C1 + D12.dot(T21), D12.dot(T22)],
-            [Dbar21.dot(T11), Cbar2 + Dbar21.dot(T12)]
+            [C1 + D12 @ T21, D12 @ T22],
+            [Dbar21 @ T11, Cbar2 + Dbar21 @ T12]
         ])
 
         Dres = np.block([
-            [D11 + D12.dot(H21), D12.dot(H22)],
-            [Dbar21.dot(H11), Dbar22 + Dbar21.dot(H12)]
+            [D11 + D12 @ H21, D12 @ H22],
+            [Dbar21 @ H11, Dbar22 + Dbar21 @ H12]
         ])
         return StateSpace(Ares, Bres, Cres, Dres, dt)
 
@@ -1381,13 +1381,13 @@ class StateSpace(LTI):
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
         if u is None:
-            return self.A.dot(x).reshape((-1,))  # return as row vector
+            return (self.A @ x).reshape((-1,))  # return as row vector
         else:  # received t, x, and u, ignore t
             u = np.reshape(u, (-1, 1))  # force to column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-            return self.A.dot(x).reshape((-1,)) \
-                + self.B.dot(u).reshape((-1,))  # return as row vector
+            return (self.A @ x).reshape((-1,)) \
+                + (self.B @ u).reshape((-1,))  # return as row vector
 
     def output(self, t, x, u=None):
         """Compute the output of the system
@@ -1424,13 +1424,13 @@ class StateSpace(LTI):
             raise ValueError("len(x) must be equal to number of states")
 
         if u is None:
-            return self.C.dot(x).reshape((-1,))  # return as row vector
+            return (self.C @ x).reshape((-1,))  # return as row vector
         else:  # received t, x, and u, ignore t
             u = np.reshape(u, (-1, 1))  # force to a column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-            return self.C.dot(x).reshape((-1,)) \
-                + self.D.dot(u).reshape((-1,))  # return as row vector
+            return (self.C @ x).reshape((-1,)) \
+                + (self.D @ u).reshape((-1,))  # return as row vector
 
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
@@ -1623,7 +1623,7 @@ def _rss_generate(states, inputs, outputs, cdtype, strictly_proper=False):
     while True:
         T = randn(states, states)
         try:
-            A = dot(solve(T, A), T)  # A = T \ A * T
+            A = solve(T, A) @ T  # A = T \ A @ T
             break
         except LinAlgError:
             # In the unlikely event that T is rank-deficient, iterate again.

@@ -35,7 +35,7 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-from numpy import shape, size, asarray, copy, zeros, eye, dot, \
+from numpy import shape, size, asarray, copy, zeros, eye, \
     finfo, inexact, atleast_2d
 from scipy.linalg import eigvals, solve_discrete_are, solve
 from .exception import ControlSlycot, ControlArgument
@@ -624,9 +624,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(dot(1/(R_ba), asarray(B_ba).T), X)
+            G = 1/(R_ba) * asarray(B_ba).T @ X
         else:
-            G = dot(solve(R_ba, asarray(B_ba).T), X)
+            G = solve(R_ba, asarray(B_ba).T) @ X
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
@@ -732,9 +732,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(1/(R_b), dot(asarray(B_b).T, dot(X, E_b)) + asarray(S_b).T)
+            G = 1/(R_b) * (asarray(B_b).T @ X @ E_b + asarray(S_b).T)
         else:
-            G = solve(R_b, dot(asarray(B_b).T, dot(X, E_b)) + asarray(S_b).T)
+            G = solve(R_b, asarray(B_b).T @ X @ E_b + asarray(S_b).T)
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
@@ -794,8 +794,8 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True):
         Rmat = _ssmatrix(R)
         Qmat = _ssmatrix(Q)
         X = solve_discrete_are(A, B, Qmat, Rmat)
-        G = solve(B.T.dot(X).dot(B) + Rmat, B.T.dot(X).dot(A))
-        L = eigvals(A - B.dot(G))
+        G = solve(B.T @ X @ B + Rmat, B.T @ X @ A)
+        L = eigvals(A - B @ G)
         return _ssmatrix(X), L, _ssmatrix(G)
 
 
@@ -926,11 +926,11 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(1/(dot(asarray(B_ba).T, dot(X, B_ba)) + R_ba),
-                    dot(asarray(B_ba).T, dot(X, A_ba)))
+            G = (1/(asarray(B_ba).T @ X @ B_ba + R_ba) *
+                 asarray(B_ba).T @ X @ A_ba)
         else:
-            G = solve(dot(asarray(B_ba).T, dot(X, B_ba)) + R_ba,
-                      dot(asarray(B_ba).T, dot(X, A_ba)))
+            G = solve(asarray(B_ba).T @ X @ B_ba + R_ba,
+                      asarray(B_ba).T @ X @ A_ba)
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
@@ -1036,11 +1036,11 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
-            G = dot(1/(dot(asarray(B_b).T, dot(X, B_b)) + R_b),
-                    dot(asarray(B_b).T, dot(X, A_b)) + asarray(S_b).T)
+            G = (1/(asarray(B_b).T @ X @ B_b + R_b) *
+                 (asarray(B_b).T @ X @ A_b + asarray(S_b).T))
         else:
-            G = solve(dot(asarray(B_b).T, dot(X, B_b)) + R_b,
-                      dot(asarray(B_b).T, dot(X, A_b)) + asarray(S_b).T)
+            G = solve(asarray(B_b).T @ X @ B_b + R_b,
+                      asarray(B_b).T @ X @ A_b + asarray(S_b).T)
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G

@@ -1972,7 +1972,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
         # Incorporate balancing to outer factors
         l[perm, :] *= np.reciprocal(sca)[:, None]
         r[perm, :] *= sca[:, None]
-        w, v = sys_ss.C.dot(r), l.T.conj().dot(sys_ss.B)
+        w, v = sys_ss.C @ r, l.T.conj() @ sys_ss.B
 
         origin = False
         # Computing the "size" of the response of each simple mode
