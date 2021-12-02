@@ -35,6 +35,9 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+
+import warnings
+
 from numpy import shape, size, asarray, copy, zeros, eye, dot, \
     finfo, inexact, atleast_2d
 from scipy.linalg import eigvals, solve_discrete_are, solve
@@ -42,6 +45,11 @@ from .exception import ControlSlycot, ControlArgument
 from .statesp import _ssmatrix
 
 # Make sure we have access to the right slycot routines
+try:
+    from slycot.exceptions import SlycotResultWarning
+except ImportError:
+    SlycotResultWarning = UserWarning
+
 try:
     from slycot import sb03md57
     # wrap without the deprecation warning
@@ -165,22 +173,11 @@ def lyap(A, Q, C=None, E=None):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the Lyapunov equation by calling Slycot function sb03md
-        try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=SlycotResultWarning)
             X, scale, sep, ferr, w = \
                 sb03md(n, -Q, A, eye(n, n), 'C', trana='T')
-        except ValueError as ve:
-            if ve.info < 0:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == n+1:
-                e = ValueError("The matrix A and -A have common or very \
-                    close eigenvalues.")
-                e.info = ve.info
-            else:
-                e = ValueError("The QR algorithm failed to compute all \
-                    the eigenvalues (see LAPACK Library routine DGEES).")
-                e.info = ve.info
-            raise e
+
 
     # Solve the Sylvester equation
     elif C is not None and E is None:
@@ -198,21 +195,8 @@ def lyap(A, Q, C=None, E=None):
             raise ControlArgument("C matrix has incompatible dimensions.")
 
         # Solve the Sylvester equation by calling the Slycot function sb04md
-        try:
-            X = sb04md(n, m, A, Q, -C)
-        except ValueError as ve:
-            if ve.info < 0:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info > m:
-                e = ValueError("A singular matrix was encountered whilst \
-                    solving for the %i-th column of matrix X." % ve.info-m)
-                e.info = ve.info
-            else:
-                e = ValueError("The QR algorithm failed to compute all the \
-                    eigenvalues (see LAPACK Library routine DGEES).")
-                e.info = ve.info
-            raise e
+        X = sb04md(n, m, A, Q, -C)
+
 
     # Solve the generalized Lyapunov equation
     elif C is None and E is not None:
@@ -240,35 +224,11 @@ def lyap(A, Q, C=None, E=None):
 
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
-        try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=SlycotResultWarning)
             A, E, Q, Z, X, scale, sep, ferr, alphar, alphai, beta = \
                 sg03ad('C', 'B', 'N', 'T', 'L', n,
                        A, E, eye(n, n), eye(n, n), -Q)
-        except ValueError as ve:
-            if ve.info < 0 or ve.info > 4:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == 1:
-                e = ValueError("The matrix contained in the upper \
-                                Hessenberg part of the array A is not in \
-                                upper quasitriangular form")
-                e.info = ve.info
-            elif ve.info == 2:
-                e = ValueError("The pencil A - lambda * E cannot be \
-                                reduced to generalized Schur form: LAPACK \
-                                routine DGEGS has failed to converge")
-                e.info = ve.info
-            elif ve.info == 4:
-                e = ValueError("The pencil A - lambda * E has a \
-                                degenerate pair of eigenvalues. That is, \
-                                lambda_i = lambda_j for some i and j, where \
-                                lambda_i and lambda_j are eigenvalues of \
-                                A - lambda * E. Hence, the equation is \
-                                singular;  perturbed values were \
-                                used to solve the equation (but the matrices \
-                                A and E are unchanged)")
-                e.info = ve.info
-            raise e
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters")
@@ -347,18 +307,10 @@ def dlyap(A, Q, C=None, E=None):
             raise ControlArgument("Q must be a symmetric matrix.")
 
         # Solve the Lyapunov equation by calling the Slycot function sb03md
-        try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=SlycotResultWarning)
             X, scale, sep, ferr, w = \
                 sb03md(n, -Q, A, eye(n, n), 'D', trana='T')
-        except ValueError as ve:
-            if ve.info < 0:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            else:
-                e = ValueError("The QR algorithm failed to compute all the \
-                    eigenvalues (see LAPACK Library routine DGEES).")
-                e.info = ve.info
-            raise e
 
     # Solve the Sylvester equation
     elif C is not None and E is None:
@@ -375,21 +327,7 @@ def dlyap(A, Q, C=None, E=None):
             raise ControlArgument("C matrix has incompatible dimensions")
 
         # Solve the Sylvester equation by calling Slycot function sb04qd
-        try:
-            X = sb04qd(n, m, -A, asarray(Q).T, C)
-        except ValueError as ve:
-            if ve.info < 0:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info > m:
-                e = ValueError("A singular matrix was encountered whilst \
-                    solving for the %i-th column of matrix X." % ve.info-m)
-                e.info = ve.info
-            else:
-                e = ValueError("The QR algorithm failed to compute all the \
-                    eigenvalues (see LAPACK Library routine DGEES)")
-                e.info = ve.info
-            raise e
+        X = sb04qd(n, m, -A, asarray(Q).T, C)
 
     # Solve the generalized Lyapunov equation
     elif C is None and E is not None:
@@ -411,35 +349,11 @@ def dlyap(A, Q, C=None, E=None):
 
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
-        try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=SlycotResultWarning)
             A, E, Q, Z, X, scale, sep, ferr, alphar, alphai, beta = \
                 sg03ad('D', 'B', 'N', 'T', 'L', n,
                        A, E, eye(n, n), eye(n, n), -Q)
-        except ValueError as ve:
-            if ve.info < 0 or ve.info > 4:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == 1:
-                e = ValueError("The matrix contained in the upper \
-                                Hessenberg part of the array A is not in \
-                                upper quasitriangular form")
-                e.info = ve.info
-            elif ve.info == 2:
-                e = ValueError("The pencil A - lambda * E cannot be \
-                                reduced to generalized Schur form: LAPACK \
-                                routine DGEGS has failed to converge")
-                e.info = ve.info
-            elif ve.info == 3:
-                e = ValueError("The pencil A - lambda * E has a \
-                                pair of reciprocal eigenvalues. That is, \
-                                lambda_i = 1/lambda_j for some i and j, \
-                                where  lambda_i and lambda_j are eigenvalues \
-                                of A - lambda * E. Hence, the equation is \
-                                singular;  perturbed values were \
-                                used to solve the equation (but the \
-                                matrices A and E are unchanged)")
-                e.info = ve.info
-            raise e
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters")
@@ -575,52 +489,10 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
         # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
-        try:
-            A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = sb02mt(n, m, B, R)
-        except ValueError as ve:
-            if ve.info < 0:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == m+1:
-                e = ValueError("The matrix R is numerically singular.")
-                e.info = ve.info
-            else:
-                e = ValueError("The %i-th element of d in the UdU (LdL) \
-                    factorization is zero." % ve.info)
-                e.info = ve.info
-            raise e
+        A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = sb02mt(n, m, B, R)
 
-        try:
-            if stabilizing:
-                sort = 'S'
-            else:
-                sort = 'U'
-            X, rcond, w, S_o, U, A_inv = sb02md(n, A, G, Q, 'C', sort=sort)
-        except ValueError as ve:
-            if ve.info < 0 or ve.info > 5:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == 1:
-                e = ValueError("The matrix A is (numerically) singular in \
-                    continuous-time case.")
-                e.info = ve.info
-            elif ve.info == 2:
-                e = ValueError("The Hamiltonian or symplectic matrix H cannot \
-                    be reduced to real Schur form.")
-                e.info = ve.info
-            elif ve.info == 3:
-                e = ValueError("The real Schur form of the Hamiltonian or \
-                    symplectic matrix H cannot be appropriately ordered.")
-                e.info = ve.info
-            elif ve.info == 4:
-                e = ValueError("The Hamiltonian or symplectic matrix H has \
-                    less than n stable eigenvalues.")
-                e.info = ve.info
-            elif ve.info == 5:
-                e = ValueError("The N-th order system of linear algebraic \
-                         equations is singular to working precision.")
-                e.info = ve.info
-            raise e
+        sort = 'S' if stabilizing else 'U'
+        X, rcond, w, S_o, U, A_inv = sb02md(n, A, G, Q, 'C', sort=sort)
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
@@ -680,49 +552,12 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
-        try:
-            if stabilizing:
-                sort = 'S'
-            else:
-                sort = 'U'
+        with warnings.catch_warnings():
+            sort = 'S' if stabilizing else 'U'
+            warnings.simplefilter("error", category=SlycotResultWarning)
             rcondu, X, alfar, alfai, beta, S_o, T, U, iwarn = \
                 sg02ad('C', 'B', 'N', 'U', 'N', 'N', sort,
                        'R', n, m, 0, A, E, B, Q, R, S)
-        except ValueError as ve:
-            if ve.info < 0 or ve.info > 7:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == 1:
-                e = ValueError("The computed extended matrix pencil is \
-                            singular, possibly due to rounding errors.")
-                e.info = ve.info
-            elif ve.info == 2:
-                e = ValueError("The QZ algorithm failed.")
-                e.info = ve.info
-            elif ve.info == 3:
-                e = ValueError("Reordering of the generalized eigenvalues \
-                    failed.")
-                e.info = ve.info
-            elif ve.info == 4:
-                e = ValueError("After reordering, roundoff changed values of \
-                            some complex eigenvalues so that leading \
-                            eigenvalues in the generalized Schur form no \
-                            longer satisfy the stability condition; this \
-                            could also be caused due to scaling.")
-                e.info = ve.info
-            elif ve.info == 5:
-                e = ValueError("The computed dimension of the solution does \
-                            not equal N.")
-                e.info = ve.info
-            elif ve.info == 6:
-                e = ValueError("The spectrum is too close to the boundary of \
-                            the stability domain.")
-                e.info = ve.info
-            elif ve.info == 7:
-                e = ValueError("A singular matrix was encountered during the \
-                            computation of the solution matrix X.")
-                e.info = ve.info
-            raise e
 
         # Calculate the closed-loop eigenvalues L
         L = zeros((n, 1))
@@ -876,53 +711,10 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
         # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
-        try:
-            A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = sb02mt(n, m, B, R)
-        except ValueError as ve:
-            if ve.info < 0:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == m+1:
-                e = ValueError("The matrix R is numerically singular.")
-                e.info = ve.info
-            else:
-                e = ValueError("The %i-th element of d in the UdU (LdL) \
-                     factorization is zero." % ve.info)
-                e.info = ve.info
-            raise e
+        A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = sb02mt(n, m, B, R)
 
-        try:
-            if stabilizing:
-                sort = 'S'
-            else:
-                sort = 'U'
-
-            X, rcond, w, S, U, A_inv = sb02md(n, A, G, Q, 'D', sort=sort)
-        except ValueError as ve:
-            if ve.info < 0 or ve.info > 5:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == 1:
-                e = ValueError("The matrix A is (numerically) singular in \
-                    discrete-time case.")
-                e.info = ve.info
-            elif ve.info == 2:
-                e = ValueError("The Hamiltonian or symplectic matrix H cannot \
-                    be reduced to real Schur form.")
-                e.info = ve.info
-            elif ve.info == 3:
-                e = ValueError("The real Schur form of the Hamiltonian or \
-                     symplectic matrix H cannot be appropriately ordered.")
-                e.info = ve.info
-            elif ve.info == 4:
-                e = ValueError("The Hamiltonian or symplectic matrix H has \
-                     less than n stable eigenvalues.")
-                e.info = ve.info
-            elif ve.info == 5:
-                e = ValueError("The N-th order system of linear algebraic \
-                     equations is singular to working precision.")
-                e.info = ve.info
-            raise e
+        sort = 'S' if stabilizing else 'U'
+        X, rcond, w, S, U, A_inv = sb02md(n, A, G, Q, 'D', sort=sort)
 
         # Calculate the gain matrix G
         if size(R_b) == 1:
@@ -985,49 +777,12 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
-        try:
-            if stabilizing:
-                sort = 'S'
-            else:
-                sort = 'U'
+        sort = 'S' if stabilizing else 'U'
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", category=SlycotResultWarning)
             rcondu, X, alfar, alfai, beta, S_o, T, U, iwarn = \
                 sg02ad('D', 'B', 'N', 'U', 'N', 'N', sort,
                        'R', n, m, 0, A, E, B, Q, R, S)
-        except ValueError as ve:
-            if ve.info < 0 or ve.info > 7:
-                e = ValueError(ve.message)
-                e.info = ve.info
-            elif ve.info == 1:
-                e = ValueError("The computed extended matrix pencil is \
-                            singular, possibly due to rounding errors.")
-                e.info = ve.info
-            elif ve.info == 2:
-                e = ValueError("The QZ algorithm failed.")
-                e.info = ve.info
-            elif ve.info == 3:
-                e = ValueError("Reordering of the generalized eigenvalues \
-                     failed.")
-                e.info = ve.info
-            elif ve.info == 4:
-                e = ValueError("After reordering, roundoff changed values of \
-                            some complex eigenvalues so that leading \
-                            eigenvalues in the generalized Schur form no \
-                            longer satisfy the stability condition; this \
-                            could also be caused due to scaling.")
-                e.info = ve.info
-            elif ve.info == 5:
-                e = ValueError("The computed dimension of the solution does \
-                            not equal N.")
-                e.info = ve.info
-            elif ve.info == 6:
-                e = ValueError("The spectrum is too close to the boundary of \
-                            the stability domain.")
-                e.info = ve.info
-            elif ve.info == 7:
-                e = ValueError("A singular matrix was encountered during the \
-                            computation of the solution matrix X.")
-                e.info = ve.info
-            raise e
 
         L = zeros((n, 1))
         L.dtype = 'complex64'
