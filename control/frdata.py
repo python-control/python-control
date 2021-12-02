@@ -536,20 +536,14 @@ second has %i." % (self.noutputs, other.noutputs))
         if (self.noutputs != other.ninputs or self.ninputs != other.noutputs):
             raise ValueError(
                 "FRD.feedback, inputs/outputs mismatch")
-        fresp = empty((self.noutputs, self.ninputs, len(other.omega)),
-                      dtype=complex)
-        # TODO: vectorize this
+
         # TODO: handle omega re-mapping
-        # TODO: is there a reason to use linalg.solve instead of linalg.inv?
-        # https://github.com/python-control/python-control/pull/314#discussion_r294075154
-        for k, w in enumerate(other.omega):
-            fresp[:, :, k] = np.dot(
-                self.fresp[:, :, k],
-                linalg.solve(
-                    eye(self.ninputs)
-                    + np.dot(other.fresp[:, :, k], self.fresp[:, :, k]),
-                    eye(self.ninputs))
-            )
+        # reorder array axes in order to leverage numpy broadcasting
+        myfresp = np.moveaxis(self.fresp, 2, 0)
+        otherfresp = np.moveaxis(other.fresp, 2, 0)
+        I_AB = eye(self.ninputs)[np.newaxis, :, :] + otherfresp @ myfresp
+        resfresp = (myfresp @ linalg.inv(I_AB))
+        fresp = np.moveaxis(resfresp, 0, 2)
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 
