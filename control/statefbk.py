@@ -44,8 +44,10 @@ import numpy as np
 
 from . import statesp
 from .mateqn import care
-from .statesp import _ssmatrix
-from .exception import ControlSlycot, ControlArgument, ControlDimension
+from .statesp import _ssmatrix, _convert_to_statespace
+from .lti import LTI
+from .exception import ControlSlycot, ControlArgument, ControlDimension, \
+    ControlNotImplemented
 
 # Make sure we have access to the right slycot routines
 try:
@@ -257,8 +259,8 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def lqe(A, G, C, QN, RN, NN=None):
-    """lqe(A, G, C, QN, RN, [, N])
+def lqe(*args, **keywords):
+    """lqe(A, G, C, Q, R, [, N])
 
     Linear quadratic estimator design (Kalman filter) for continuous-time
     systems. Given the system
@@ -270,7 +272,7 @@ def lqe(A, G, C, QN, RN, NN=None):
 
     with unbiased process noise w and measurement noise v with covariances
 
-    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+    .. math::       E{ww'} = Q,    E{vv'} = R,    E{wv'} = N
 
     The lqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
@@ -278,17 +280,30 @@ def lqe(A, G, C, QN, RN, NN=None):
     .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
 
     produces a state estimate x_e that minimizes the expected squared error
-    using the sensor measurements y. The noise cross-correlation `NN` is
+    using the sensor measurements y. The noise cross-correlation `N` is
     set to zero when omitted.
+
+    The function can be called with either 3, 4, 5, or 6 arguments:
+
+    * ``L, P, E = lqe(sys, Q, R)``
+    * ``L, P, E = lqe(sys, Q, R, N)``
+    * ``L, P, E = lqe(A, G, C, Q, R)``
+    * ``L, P, E = lqe(A, B, C, Q, R, N)``
+
+    where `sys` is an `LTI` object, and `A`, `G`, `C`, `Q`, `R`, and `N` are
+    2D arrays or matrices of appropriate dimension.
 
     Parameters
     ----------
-    A, G : 2D array_like
-        Dynamics and noise input matrices
-    QN, RN : 2D array_like
+    A, G, C : 2D array_like
+        Dynamics, process noise (disturbance), and output matrices
+    sys : LTI (StateSpace or TransferFunction)
+        Linear I/O system, with the process noise input taken as the system
+        input.
+    Q, R : 2D array_like
         Process and sensor noise covariance matrices
-    NN : 2D array, optional
-        Cross covariance matrix
+    N : 2D array, optional
+        Cross covariance matrix.  Not currently implemented.
 
     Returns
     -------
@@ -326,11 +341,60 @@ def lqe(A, G, C, QN, RN, NN=None):
     #    NN = np.zeros(QN.size(0),RN.size(1))
     # NG = G @ NN
 
-    # LT, P, E = lqr(A.T, C.T, G @ QN @ G.T, RN)
-    # P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN)
-    A, G, C = np.array(A, ndmin=2), np.array(G, ndmin=2), np.array(C, ndmin=2)
-    QN, RN = np.array(QN, ndmin=2), np.array(RN, ndmin=2)
-    P, E, LT = care(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
+    #
+    # Process the arguments and figure out what inputs we received
+    #
+
+    # Get the system description
+    if (len(args) < 3):
+        raise ControlArgument("not enough input arguments")
+
+    try:
+        sys = args[0]           # Treat the first argument as a system
+        if isinstance(sys, LTI):
+            # Convert LTI system to state space
+            sys = _convert_to_statespace(sys)
+
+        # Extract A, G (assume disturbances come through input), and C
+        A = np.array(sys.A, ndmin=2, dtype=float)
+        G = np.array(sys.B, ndmin=2, dtype=float)
+        C = np.array(sys.C, ndmin=2, dtype=float)
+        index = 1
+
+    except AttributeError:
+        # Arguments should be A and B matrices
+        A = np.array(args[0], ndmin=2, dtype=float)
+        G = np.array(args[1], ndmin=2, dtype=float)
+        C = np.array(args[2], ndmin=2, dtype=float)
+        index = 3
+
+    # Get the weighting matrices (converting to matrices, if needed)
+    Q = np.array(args[index], ndmin=2, dtype=float)
+    R = np.array(args[index+1], ndmin=2, dtype=float)
+
+    # Get the cross-covariance matrix, if given
+    if (len(args) > index + 2):
+        N = np.array(args[index+2], ndmin=2, dtype=float)
+        raise ControlNotImplemented("cross-covariance not implemented")
+
+    else:
+        N = np.zeros((Q.shape[0], R.shape[1]))
+
+    # Check dimensions for consistency
+    nstates = A.shape[0]
+    ninputs = G.shape[1]
+    noutputs = C.shape[0]
+    if (A.shape[0] != nstates or A.shape[1] != nstates or
+        G.shape[0] != nstates or C.shape[1] != nstates):
+        raise ControlDimension("inconsistent system dimensions")
+
+    elif (Q.shape[0] != ninputs or Q.shape[1] != ninputs or
+          R.shape[0] != noutputs or R.shape[1] != noutputs or
+          N.shape[0] != ninputs or N.shape[1] != noutputs):
+        raise ControlDimension("incorrect covariance matrix dimensions")
+
+    # P, E, LT = care(A.T, C.T, G @ Q @ G.T, R)
+    P, E, LT = care(A.T, C.T, np.dot(np.dot(G, Q), G.T), R)
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 
@@ -394,17 +458,17 @@ def lqr(*args, **keywords):
 
     The function can be called with either 3, 4, or 5 arguments:
 
-    * ``lqr(sys, Q, R)``
-    * ``lqr(sys, Q, R, N)``
-    * ``lqr(A, B, Q, R)``
-    * ``lqr(A, B, Q, R, N)``
+    * ``K, S, E = lqr(sys, Q, R)``
+    * ``K, S, E = lqr(sys, Q, R, N)``
+    * ``K, S, E = lqr(A, B, Q, R)``
+    * ``K, S, E = lqr(A, B, Q, R, N)``
 
     where `sys` is an `LTI` object, and `A`, `B`, `Q`, `R`, and `N` are
-    2d arrays or matrices of appropriate dimension.
+    2D arrays or matrices of appropriate dimension.
 
     Parameters
     ----------
-    A, B : 2D array
+    A, B : 2D array_like
         Dynamics and input matrices
     sys : LTI (StateSpace or TransferFunction)
         Linear I/O system

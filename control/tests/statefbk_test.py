@@ -6,6 +6,7 @@ RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 import numpy as np
 import pytest
 
+import control as ct
 from control import lqe, pole, rss, ss, tf
 from control.exception import ControlDimension
 from control.mateqn import care, dare
@@ -338,6 +339,39 @@ class TestStatefbk:
         with pytest.warns(UserWarning):
             (K, S, E) = lqr(A, B, Q, R, N)
 
+    @slycotonly
+    def test_lqr_call_format(self):
+        # Create a random state space system for testing
+        sys = rss(2, 3, 2)
+
+        # Weighting matrices
+        Q = np.eye(sys.nstates)
+        R = np.eye(sys.ninputs)
+        N = np.zeros((sys.nstates, sys.ninputs))
+
+        # Standard calling format
+        Kref, Sref, Eref = lqr(sys.A, sys.B, Q, R)
+
+        # Call with system instead of matricees
+        K, S, E = lqr(sys, Q, R)
+        np.testing.assert_array_almost_equal(Kref, K)
+        np.testing.assert_array_almost_equal(Sref, S)
+        np.testing.assert_array_almost_equal(Eref, E)
+
+        # Pass a cross-weighting matrix
+        K, S, E = lqr(sys, Q, R, N)
+        np.testing.assert_array_almost_equal(Kref, K)
+        np.testing.assert_array_almost_equal(Sref, S)
+        np.testing.assert_array_almost_equal(Eref, E)
+
+        # Inconsistent system dimensions
+        with pytest.raises(ct.ControlDimension, match="inconsistent system"):
+            K, S, E = lqr(sys.A, sys.C, Q, R)
+
+        # incorrect covariance matrix dimensions
+        with pytest.raises(ct.ControlDimension, match="incorrect weighting"):
+            K, S, E = lqr(sys.A, sys.B, sys.C, R, Q)
+
     def check_LQE(self, L, P, poles, G, QN, RN):
         P_expected = asmatarrayout(np.sqrt(G.dot(QN.dot(G).dot(RN))))
         L_expected = asmatarrayout(P_expected / RN)
@@ -351,6 +385,43 @@ class TestStatefbk:
         A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
         L, P, poles = lqe(A, G, C, QN, RN)
         self.check_LQE(L, P, poles, G, QN, RN)
+
+    @slycotonly
+    def test_lqe_call_format(self):
+        # Create a random state space system for testing
+        sys = rss(4, 3, 2)
+
+        # Covariance matrices
+        Q = np.eye(sys.ninputs)
+        R = np.eye(sys.noutputs)
+        N = np.zeros((sys.ninputs, sys.noutputs))
+
+        # Standard calling format
+        Lref, Pref, Eref = lqe(sys.A, sys.B, sys.C, Q, R)
+
+        # Call with system instead of matricees
+        L, P, E = lqe(sys, Q, R)
+        np.testing.assert_array_almost_equal(Lref, L)
+        np.testing.assert_array_almost_equal(Pref, P)
+        np.testing.assert_array_almost_equal(Eref, E)
+
+        # Compare state space and transfer function (SISO only)
+        sys_siso = rss(4, 1, 1)
+        L_ss, P_ss, E_ss = lqe(sys_siso, np.eye(1), np.eye(1))
+        L_tf, P_tf, E_tf = lqe(tf(sys_siso), np.eye(1), np.eye(1))
+        np.testing.assert_array_almost_equal(E_ss, E_tf)
+
+        # Make sure we get an error if we specify N
+        with pytest.raises(ct.ControlNotImplemented):
+            L, P, E = lqe(sys, Q, R, N)
+
+        # Inconsistent system dimensions
+        with pytest.raises(ct.ControlDimension, match="inconsistent system"):
+            L, P, E = lqe(sys.A, sys.C, sys.B, Q, R)
+
+        # incorrect covariance matrix dimensions
+        with pytest.raises(ct.ControlDimension, match="incorrect covariance"):
+            L, P, E = lqe(sys.A, sys.B, sys.C, R, Q)
 
     @slycotonly
     def test_care(self, matarrayin):
