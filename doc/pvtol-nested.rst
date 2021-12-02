@@ -17,8 +17,5 @@ Code
 Notes
 .....
 
-1. Importing `print_function` from `__future__` in line 11 is only
-required if using Python 2.7.
-
-2. The environment variable `PYCONTROL_TEST_EXAMPLES` is used for
+1. The environment variable `PYCONTROL_TEST_EXAMPLES` is used for
 testing to turn off plotting of the outputs.

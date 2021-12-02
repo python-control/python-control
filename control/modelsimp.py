@@ -40,9 +40,6 @@
 #
 # $Id$
 
-# Python 3 compatibility
-from __future__ import print_function
-
 # External packages and modules
 import numpy as np
 import warnings

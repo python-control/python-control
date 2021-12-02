@@ -35,7 +35,6 @@
 # Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
 # Date: 02 Oct 12
 
-from __future__ import division
 
 """
 Frequency response data representation and functions.

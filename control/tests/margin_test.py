@@ -6,7 +6,6 @@ RMM, 15 Jul 2011
 BG, 30 Jun 2020 -- convert to pytest, gh-425
 BG, 16 Nov 2020 -- pick from gh-438 and add discrete test
 """
-from __future__ import print_function
 
 import numpy as np
 import pytest

@@ -9,9 +9,6 @@ margins.phase_crossover_frequencies
 margins.margin
 """
 
-# Python 3 compatibility (needs to go here)
-from __future__ import print_function
-
 """Copyright (c) 2011 by California Institute of Technology
 All rights reserved.
 

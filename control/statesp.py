@@ -8,10 +8,6 @@ python-control library.
 
 """
 
-# Python 3 compatibility (needs to go here)
-from __future__ import print_function
-from __future__ import division         # for _convert_to_statespace
-
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
 

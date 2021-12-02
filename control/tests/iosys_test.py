@@ -8,12 +8,10 @@ operations on input/output systems.  Separate unit tests should be
 created for that purpose.
 """
 
-from __future__ import print_function
 import re
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import control as ct
 from control import iosys as ios
@@ -1270,7 +1268,7 @@ class TestIOSys:
             (2, 2, 'rss', ct.LinearIOSystem.__rsub__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__rsub__, 2, 2),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rsub__, 2, 2),
-            
+
         ])
     def test_operand_conversion(self, Pout, Pin, C, op, PCout, PCin):
         P = ct.LinearIOSystem(

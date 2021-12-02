@@ -8,8 +8,6 @@
 # package.
 #
 
-from __future__ import print_function
-
 import os
 import matplotlib.pyplot as plt  # MATLAB plotting functions
 from control.matlab import *    # MATLAB-like functions
@@ -30,7 +28,7 @@ Po = tf([1], [m, c, 0])  # outer loop (position)
 # Inner loop control design
 #
 # This is the controller for the pitch dynamics.  Goal is to have
-# fast response for the pitch dynamics so that we can use this as a 
+# fast response for the pitch dynamics so that we can use this as a
 # control for the lateral dynamics
 #
 
@@ -40,7 +38,7 @@ Ci = k*tf([1, a], [1, b])  # lead compensator
 Li = Pi*Ci
 
 # Bode plot for the open loop process
-plt.figure(1) 
+plt.figure(1)
 bode(Pi)
 
 # Bode plot for the loop transfer function, with margins
@@ -137,7 +135,7 @@ nyquist(L, (0.0001, 1000))
 # Add a box in the region we are going to expand
 plt.plot([-2, -2, 1, 1, -2], [-4, 4, 4, -4, -4], 'r-')
 
-# Expanded region  
+# Expanded region
 plt.figure(8)
 plt.clf()
 nyquist(L)

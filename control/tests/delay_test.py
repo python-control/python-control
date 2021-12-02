@@ -4,8 +4,6 @@
 Primitive; ideally test to numerical limits
 """
 
-from __future__ import division
-
 import numpy as np
 import pytest
 
@@ -94,4 +92,3 @@ class TestPade:
                     np.array(refnum), np.array(num))
                 np.testing.assert_array_almost_equal_nulp(
                     np.array(refden), np.array(den))
-
