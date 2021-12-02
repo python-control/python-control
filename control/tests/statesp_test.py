@@ -592,12 +592,12 @@ class TestStateSpace:
         g3 = StateSpace([], [], [], d2.T)
 
         h1 = g1 * g2
-        np.testing.assert_allclose(np.dot(d1, d2), h1.D)
+        np.testing.assert_allclose(d1 @ d2, h1.D)
         h2 = g1 + g3
         np.testing.assert_allclose(d1 + d2.T, h2.D)
         h3 = g1.feedback(g2)
         np.testing.assert_array_almost_equal(
-            solve(np.eye(2) + np.dot(d1, d2), d1), h3.D)
+            solve(np.eye(2) + d1 @ d2, d1), h3.D)
         h4 = g1.append(g2)
         np.testing.assert_allclose(block_diag(d1, d2), h4.D)
 

@@ -384,9 +384,8 @@ def test_modal_form(A_true, B_true, C_true, D_true):
     # Make sure Hankel coefficients are OK
     for i in range(A.shape[0]):
         np.testing.assert_almost_equal(
-            np.dot(np.dot(C_true, np.linalg.matrix_power(A_true, i)),
-                   B_true),
-            np.dot(np.dot(C, np.linalg.matrix_power(A, i)), B))
+            C_true @ np.linalg.matrix_power(A_true, i) @  B_true,
+            C @ np.linalg.matrix_power(A, i) @ B)
 
 
 @slycotonly
