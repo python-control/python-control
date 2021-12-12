@@ -1856,6 +1856,8 @@ def input_output_response(
         if idx == 0:
             # For consistency in return type, multiple by a float
             return U[..., 0] * 1.
+        elif idx == len(T): # request for extrapolation, stop at right side
+            return U[..., idx-1] * 1.
         else:
             dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
             return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
