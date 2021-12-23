@@ -8,7 +8,7 @@ import pytest
 
 import control as ct
 from control import lqe, pole, rss, ss, tf
-from control.exception import ControlDimension
+from control.exception import ControlDimension, ControlSlycot, slycot_check
 from control.mateqn import care, dare
 from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.tests.conftest import (slycotonly, check_deprecated_matrix,
@@ -306,18 +306,33 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
 
-    @slycotonly
-    def test_LQR_integrator(self, matarrayin, matarrayout):
+    @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
+    def test_LQR_integrator(self, matarrayin, matarrayout, method):
+        if method == 'slycot' and not slycot_check():
+            return
         A, B, Q, R = (matarrayin([[X]]) for X in [0., 1., 10., 2.])
-        K, S, poles = lqr(A, B, Q, R)
+        K, S, poles = lqr(A, B, Q, R, method=method)
         self.check_LQR(K, S, poles, Q, R)
 
-    @slycotonly
-    def test_LQR_3args(self, matarrayin, matarrayout):
+    @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
+    def test_LQR_3args(self, matarrayin, matarrayout, method):
+        if method == 'slycot' and not slycot_check():
+            return
         sys = ss(0., 1., 1., 0.)
         Q, R = (matarrayin([[X]]) for X in [10., 2.])
-        K, S, poles = lqr(sys, Q, R)
+        K, S, poles = lqr(sys, Q, R, method=method)
         self.check_LQR(K, S, poles, Q, R)
+
+    def test_lqr_badmethod(self):
+        A, B, Q, R = 0, 1, 10, 2
+        with pytest.raises(ValueError, match="unknown"):
+            K, S, poles = lqr(A, B, Q, R, method='nosuchmethod')
+
+    def test_lqr_slycot_not_installed(self):
+        A, B, Q, R = 0, 1, 10, 2
+        if not slycot_check():
+            with pytest.raises(ControlSlycot, match="can't find slycot"):
+                K, S, poles = lqr(A, B, Q, R, method='slycot')
 
     @slycotonly
     @pytest.mark.xfail(reason="warning not implemented")

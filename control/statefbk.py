@@ -475,6 +475,10 @@ def lqr(*args, **keywords):
         State and input weight matrices
     N : 2D array, optional
         Cross weight matrix
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy'.
 
     Returns
     -------
@@ -498,14 +502,23 @@ def lqr(*args, **keywords):
     --------
     >>> K, S, E = lqr(sys, Q, R, [N])
     >>> K, S, E = lqr(A, B, Q, R, [N])
+
     """
 
-    # Make sure that SLICOT is installed
-    try:
-        from slycot import sb02md
-        from slycot import sb02mt
-    except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb02md' or 'sb02nt'")
+    # Figure out what method to use
+    method = keywords.get('method', None)
+    if method == 'slycot' or method is None:
+        # Make sure that SLICOT is installed
+        try:
+            from slycot import sb02md
+            from slycot import sb02mt
+            method = 'slycot'
+        except ImportError:
+            if method == 'slycot':
+                raise ControlSlycot(
+                    "can't find slycot module 'sb02md' or 'sb02nt'")
+            else:
+                method = 'scipy'
 
     #
     # Process the arguments and figure out what inputs we received
@@ -546,18 +559,28 @@ def lqr(*args, **keywords):
           N.shape[0] != nstates or N.shape[1] != ninputs):
         raise ControlDimension("incorrect weighting matrix dimensions")
 
-    # Compute the G matrix required by SB02MD
-    A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = \
-        sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N')
+    if method == 'slycot':
+        # Compute the G matrix required by SB02MD
+        A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = \
+            sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N')
 
-    # Call the SLICOT function
-    X, rcond, w, S, U, A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
+        # Call the SLICOT function
+        X, rcond, w, S, U, A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
 
-    # Now compute the return value
-    # We assume that R is positive definite and, hence, invertible
-    K = np.linalg.solve(R, B.T @ X + N.T)
-    S = X
-    E = w[0:nstates]
+        # Now compute the return value
+        # We assume that R is positive definite and, hence, invertible
+        K = np.linalg.solve(R, np.dot(B.T, X) + N.T)
+        S = X
+        E = w[0:nstates]
+
+    elif method == 'scipy':
+        import scipy as sp
+        S = sp.linalg.solve_continuous_are(A, B, Q, R, s=N)
+        K = np.linalg.solve(R, B.T @ S + N.T)
+        E, _ = np.linalg.eig(A - B @ K)
+
+    else:
+        raise ValueError("unknown method: %s" % method)
 
     return _ssmatrix(K), _ssmatrix(S), E
 
