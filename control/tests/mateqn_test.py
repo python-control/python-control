@@ -33,11 +33,13 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
+import numpy as np
 from numpy import array, zeros
 from numpy.testing import assert_array_almost_equal, assert_array_less
 import pytest
 from scipy.linalg import eigvals, solve
 
+import control as ct
 from control.mateqn import lyap, dlyap, care, dare
 from control.exception import ControlArgument
 from control.tests.conftest import slycotonly
@@ -201,6 +203,26 @@ class TestMatrixEquations:
         lam = eigvals(A - B @ G)
         assert_array_less(abs(lam), 1.0)
 
+    def test_dare_compare(self):
+        A = np.array([[-0.6, 0], [-0.1, -0.4]])
+        Q = np.array([[2, 1], [1, 0]])
+        B = np.array([[2, 1], [0, 1]])
+        R = np.array([[1, 0], [0, 1]])
+        S = np.zeros((A.shape[0], B.shape[1]))
+        E = np.eye(A.shape[0])
+
+        # Solve via scipy
+        X_scipy, L_scipy, G_scipy = dare(A, B, Q, R)
+
+        # Solve via slycot
+        if ct.slycot_check():
+            X_slicot, L_slicot, G_slicot = dare(A, B, Q, R, S, E)
+
+            np.testing.assert_almost_equal(X_scipy, X_slicot)
+            np.testing.assert_almost_equal(L_scipy.flatten(),
+                                           L_slicot.flatten())
+            np.testing.assert_almost_equal(G_scipy, G_slicot)
+
     def test_dare_g(self):
         A = array([[-0.6, 0],[-0.1, -0.4]])
         Q = array([[2, 1],[1, 3]])
@@ -300,7 +322,7 @@ class TestMatrixEquations:
             care(1, B, 1)
         with pytest.raises(ControlArgument):
             care(A, B, Qfs)
-        with pytest.raises(ValueError):
+        with pytest.raises(ControlArgument):
             dare(A, B, Q, Rfs)
         for cdare in [care, dare]:
             with pytest.raises(ControlArgument):

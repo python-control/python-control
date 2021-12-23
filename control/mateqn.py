@@ -35,9 +35,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
-
 import warnings
-
+import numpy as np
 from numpy import shape, size, asarray, copy, zeros, eye, \
     finfo, inexact, atleast_2d
 from scipy.linalg import eigvals, solve_discrete_are, solve
@@ -52,8 +51,9 @@ except ImportError:
 
 try:
     from slycot import sb03md57
+
     # wrap without the deprecation warning
-    def sb03md(n, C, A, U, dico, job='X',fact='N',trana='N',ldwork=None):
+    def sb03md(n, C, A, U, dico, job='X', fact='N', trana='N', ldwork=None):
         ret = sb03md57(A, U, C, dico, job, fact, trana, ldwork)
         return ret[2:]
 except ImportError:
@@ -89,8 +89,8 @@ def lyap(A, Q, C=None, E=None):
 
         :math:`A X + X A^T + Q = 0`
 
-    where A and Q are square matrices of the same dimension.
-    Further, Q must be symmetric.
+    where A and Q are square matrices of the same dimension.  Q must be
+    symmetric.
 
     X = lyap(A, Q, C) solves the Sylvester equation
 
@@ -103,17 +103,17 @@ def lyap(A, Q, C=None, E=None):
 
         :math:`A X E^T + E X A^T + Q = 0`
 
-    where Q is a symmetric matrix and A, Q and E are square matrices
-    of the same dimension.
+    where Q is a symmetric matrix and A, Q and E are square matrices of the
+    same dimension.
 
     Parameters
     ----------
-    A : 2D array
-        Dynamics matrix
-    C : 2D array, optional
-        If present, solve the Slyvester equation
-    E : 2D array, optional
-        If present, solve the generalized Laypunov equation
+    A, Q : 2D array_like
+        Input matrices for the Lyapunov or Sylvestor equation
+    C : 2D array_like, optional
+        If present, solve the Sylvester equation
+    E : 2D array_like, optional
+        If present, solve the generalized Lyapunov equation
 
     Returns
     -------
@@ -124,6 +124,7 @@ def lyap(A, Q, C=None, E=None):
     -----
     The return type for 2D arrays depends on the default class set for
     state space operations.  See :func:`~control.use_numpy_matrix`.
+
     """
 
     if sb03md is None:
@@ -131,46 +132,25 @@ def lyap(A, Q, C=None, E=None):
     if sb04md is None:
         raise ControlSlycot("can't find slycot module 'sb04md'")
 
-
-    # Reshape 1-d arrays
-    if len(shape(A)) == 1:
-        A = A.reshape(1, A.size)
-
-    if len(shape(Q)) == 1:
-        Q = Q.reshape(1, Q.size)
-
-    if C is not None and len(shape(C)) == 1:
-        C = C.reshape(1, C.size)
-
-    if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1, E.size)
+    # Reshape input arrays
+    A = np.array(A, ndmin=2)
+    Q = np.array(Q, ndmin=2)
+    if C is not None:
+        C = np.array(C, ndmin=2)
+    if E is not None:
+        E = np.array(E, ndmin=2)
 
     # Determine main dimensions
-    if size(A) == 1:
-        n = 1
-    else:
-        n = size(A, 0)
+    n = A.shape[0]
+    m = Q.shape[0]
 
-    if size(Q) == 1:
-        m = 1
-    else:
-        m = size(Q, 0)
+    # Check to make sure input matrices are the right shape and type
+    _check_shape("A", A, n, n, square=True)
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
-        # Check input data for consistency
-        if shape(A) != shape(Q):
-            raise ControlArgument("A and Q must be matrices of identical \
-                                sizes.")
-
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix.")
-
-        if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
-            raise ControlArgument("Q must be a quadratic matrix.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("Q", Q, n, n, square=True, symmetric=True)
 
         # Solve the Lyapunov equation by calling Slycot function sb03md
         with warnings.catch_warnings():
@@ -178,47 +158,25 @@ def lyap(A, Q, C=None, E=None):
             X, scale, sep, ferr, w = \
                 sb03md(n, -Q, A, eye(n, n), 'C', trana='T')
 
-
     # Solve the Sylvester equation
     elif C is not None and E is None:
-        # Check input data for consistency
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix.")
-
-        if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
-            raise ControlArgument("Q must be a quadratic matrix.")
-
-        if (size(C) > 1 and shape(C)[0] != n) or \
-           (size(C) > 1 and shape(C)[1] != m) or \
-           (size(C) == 1 and size(A) != 1) or \
-           (size(C) == 1 and size(Q) != 1):
-            raise ControlArgument("C matrix has incompatible dimensions.")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("Q", Q, m, m, square=True)
+        _check_shape("C", C, n, m)
 
         # Solve the Sylvester equation by calling the Slycot function sb04md
         X = sb04md(n, m, A, Q, -C)
 
-
     # Solve the generalized Lyapunov equation
     elif C is None and E is not None:
-        # Check input data for consistency
-        if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
-           (size(Q) > 1 and shape(Q)[0] != n) or \
-           (size(Q) == 1 and n > 1):
-            raise ControlArgument("Q must be a square matrix with the same \
-                dimension as A.")
-
-        if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
-           (size(E) > 1 and shape(E)[0] != n) or \
-           (size(E) == 1 and n > 1):
-            raise ControlArgument("E must be a square matrix with the same \
-                dimension as A.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("Q", Q, n, n, square=True, symmetric=True)
+        _check_shape("E", E, n, n, square=True)
 
         # Make sure we have access to the write slicot routine
         try:
             from slycot import sg03ad
+
         except ImportError:
             raise ControlSlycot("can't find slycot module 'sg03ad'")
 
@@ -229,6 +187,7 @@ def lyap(A, Q, C=None, E=None):
             A, E, Q, Z, X, scale, sep, ferr, alphar, alphai, beta = \
                 sg03ad('C', 'B', 'N', 'T', 'L', n,
                        A, E, eye(n, n), eye(n, n), -Q)
+
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters")
@@ -237,20 +196,20 @@ def lyap(A, Q, C=None, E=None):
 
 
 def dlyap(A, Q, C=None, E=None):
-    """ dlyap(A,Q) solves the discrete-time Lyapunov equation
+    """ dlyap(A, Q) solves the discrete-time Lyapunov equation
 
         :math:`A X A^T - X + Q = 0`
 
     where A and Q are square matrices of the same dimension. Further
     Q must be symmetric.
 
-    dlyap(A,Q,C) solves the Sylvester equation
+    dlyap(A, Q, C) solves the Sylvester equation
 
         :math:`A X Q^T - X + C = 0`
 
     where A and Q are square matrices.
 
-    dlyap(A,Q,None,E) solves the generalized discrete-time Lyapunov
+    dlyap(A, Q, None, E) solves the generalized discrete-time Lyapunov
     equation
 
         :math:`A X A^T - E X E^T + Q = 0`
@@ -266,45 +225,25 @@ def dlyap(A, Q, C=None, E=None):
     if sg03ad is None:
         raise ControlSlycot("can't find slycot module 'sg03ad'")
 
-    # Reshape 1-d arrays
-    if len(shape(A)) == 1:
-        A = A.reshape(1, A.size)
-
-    if len(shape(Q)) == 1:
-        Q = Q.reshape(1, Q.size)
-
-    if C is not None and len(shape(C)) == 1:
-        C = C.reshape(1, C.size)
-
-    if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1, E.size)
+    # Reshape input arrays
+    A = np.array(A, ndmin=2)
+    Q = np.array(Q, ndmin=2)
+    if C is not None:
+        C = np.array(C, ndmin=2)
+    if E is not None:
+        E = np.array(E, ndmin=2)
 
     # Determine main dimensions
-    if size(A) == 1:
-        n = 1
-    else:
-        n = size(A, 0)
+    n = A.shape[0]
+    m = Q.shape[0]
 
-    if size(Q) == 1:
-        m = 1
-    else:
-        m = size(Q, 0)
+    # Check to make sure input matrices are the right shape and type
+    _check_shape("A", A, n, n, square=True)
 
     # Solve standard Lyapunov equation
     if C is None and E is None:
-        # Check input data for consistency
-        if shape(A) != shape(Q):
-            raise ControlArgument("A and Q must be matrices of identical \
-                                 sizes.")
-
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix.")
-
-        if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
-            raise ControlArgument("Q must be a quadratic matrix.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("Q", Q, n, n, square=True, symmetric=True)
 
         # Solve the Lyapunov equation by calling the Slycot function sb03md
         with warnings.catch_warnings():
@@ -314,38 +253,18 @@ def dlyap(A, Q, C=None, E=None):
 
     # Solve the Sylvester equation
     elif C is not None and E is None:
-        # Check input data for consistency
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix")
-
-        if size(Q) > 1 and shape(Q)[0] != shape(Q)[1]:
-            raise ControlArgument("Q must be a quadratic matrix")
-
-        if (size(C) > 1 and shape(C)[0] != n) or \
-           (size(C) > 1 and shape(C)[1] != m) or \
-           (size(C) == 1 and size(A) != 1) or (size(C) == 1 and size(Q) != 1):
-            raise ControlArgument("C matrix has incompatible dimensions")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("Q", Q, m, m, square=True)
+        _check_shape("C", C, n, m)
 
         # Solve the Sylvester equation by calling Slycot function sb04qd
         X = sb04qd(n, m, -A, asarray(Q).T, C)
 
     # Solve the generalized Lyapunov equation
     elif C is None and E is not None:
-        # Check input data for consistency
-        if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
-           (size(Q) > 1 and shape(Q)[0] != n) or \
-           (size(Q) == 1 and n > 1):
-            raise ControlArgument("Q must be a square matrix with the same \
-                dimension as A.")
-
-        if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
-           (size(E) > 1 and shape(E)[0] != n) or \
-           (size(E) == 1 and n > 1):
-            raise ControlArgument("E must be a square matrix with the same \
-                dimension as A.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("Q", Q, n, n, square=True, symmetric=True)
+        _check_shape("E", E, n, n, square=True)
 
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
@@ -354,6 +273,7 @@ def dlyap(A, Q, C=None, E=None):
             A, E, Q, Z, X, scale, sep, ferr, alphar, alphai, beta = \
                 sg03ad('D', 'B', 'N', 'T', 'L', n,
                        A, E, eye(n, n), eye(n, n), -Q)
+
     # Invalid set of input parameters
     else:
         raise ControlArgument("Invalid set of input parameters")
@@ -364,7 +284,6 @@ def dlyap(A, Q, C=None, E=None):
 #
 # Riccati equation solvers care and dare
 #
-
 
 def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
     """(X, L, G) = care(A, B, Q, R=None) solves the continuous-time
@@ -391,9 +310,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
     Parameters
     ----------
-    A, B, Q : 2D arrays
+    A, B, Q : 2D array_like
         Input matrices for the Riccati equation
-    R, S, E : 2D arrays, optional
+    R, S, E : 2D array_like, optional
         Input matrices for generalized Riccati equation
 
     Returns
@@ -412,7 +331,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
     """
 
-    # Make sure we can import required slycot routine
+    # Make sure we can import required slycot routines
     try:
         from slycot import sb02md
     except ImportError:
@@ -429,60 +348,28 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
     except ImportError:
         raise ControlSlycot("can't find slycot module 'sg02ad'")
 
-    # Reshape 1-d arrays
-    if len(shape(A)) == 1:
-        A = A.reshape(1, A.size)
-
-    if len(shape(B)) == 1:
-        B = B.reshape(1, B.size)
-
-    if len(shape(Q)) == 1:
-        Q = Q.reshape(1, Q.size)
-
-    if R is not None and len(shape(R)) == 1:
-        R = R.reshape(1, R.size)
-
-    if S is not None and len(shape(S)) == 1:
-        S = S.reshape(1, S.size)
-
-    if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1, E.size)
+    # Reshape input arrays
+    A = np.array(A, ndmin=2)
+    B = np.array(B, ndmin=2)
+    Q = np.array(Q, ndmin=2)
+    R = np.eye(B.shape[1]) if R is None else np.array(R, ndmin=2)
+    if S is not None:
+        S = np.array(S, ndmin=2)
+    if E is not None:
+        E = np.array(E, ndmin=2)
 
     # Determine main dimensions
-    if size(A) == 1:
-        n = 1
-    else:
-        n = size(A, 0)
+    n = A.shape[0]
+    m = B.shape[1]
 
-    if size(B) == 1:
-        m = 1
-    else:
-        m = size(B, 1)
-    if R is None:
-        R = eye(m, m)
+    # Check to make sure input matrices are the right shape and type
+    _check_shape("A", A, n, n, square=True)
+    _check_shape("B", B, n, m)
+    _check_shape("Q", Q, n, n, square=True, symmetric=True)
+    _check_shape("R", R, m, m, square=True, symmetric=True)
 
     # Solve the standard algebraic Riccati equation
     if S is None and E is None:
-        # Check input data for consistency
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix.")
-
-        if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
-           (size(Q) > 1 and shape(Q)[0] != n) or \
-           size(Q) == 1 and n > 1:
-            raise ControlArgument("Q must be a quadratic matrix of the same \
-                dimension as A.")
-
-        if (size(B) > 1 and shape(B)[0] != n) or \
-           size(B) == 1 and n > 1:
-            raise ControlArgument("Incompatible dimensions of B matrix.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
-
-        if not _is_symmetric(R):
-            raise ControlArgument("R must be a symmetric matrix.")
-
         # Create back-up of arrays needed for later computations
         R_ba = copy(R)
         B_ba = copy(B)
@@ -506,43 +393,9 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
-        # Check input data for consistency
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix.")
-
-        if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
-           (size(Q) > 1 and shape(Q)[0] != n) or \
-           size(Q) == 1 and n > 1:
-            raise ControlArgument("Q must be a quadratic matrix of the same \
-                dimension as A.")
-
-        if (size(B) > 1 and shape(B)[0] != n) or \
-           size(B) == 1 and n > 1:
-            raise ControlArgument("Incompatible dimensions of B matrix.")
-
-        if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
-           (size(E) > 1 and shape(E)[0] != n) or \
-           size(E) == 1 and n > 1:
-            raise ControlArgument("E must be a quadratic matrix of the same \
-                dimension as A.")
-
-        if (size(R) > 1 and shape(R)[0] != shape(R)[1]) or \
-           (size(R) > 1 and shape(R)[0] != m) or \
-           size(R) == 1 and m > 1:
-            raise ControlArgument("R must be a quadratic matrix of the same \
-                dimension as the number of columns in the B matrix.")
-
-        if (size(S) > 1 and shape(S)[0] != n) or \
-           (size(S) > 1 and shape(S)[1] != m) or \
-           size(S) == 1 and n > 1 or \
-           size(S) == 1 and m > 1:
-            raise ControlArgument("Incompatible dimensions of S matrix.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
-
-        if not _is_symmetric(R):
-            raise ControlArgument("R must be a symmetric matrix.")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("E", E, n, n, square=True)
+        _check_shape("S", S, n, m)
 
         # Create back-up of arrays needed for later computations
         R_b = copy(R)
@@ -577,7 +430,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True):
 
     # Invalid set of input parameters
     else:
-        raise ControlArgument("Invalid set of input parameters.")
+        raise ControlArgument("Invalid set of input parameters")
 
 
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True):
@@ -623,9 +476,31 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True):
     state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
+    # Reshape input arrays
+    A = np.array(A, ndmin=2)
+    B = np.array(B, ndmin=2)
+    Q = np.array(Q, ndmin=2)
+    R = np.eye(B.shape[1]) if R is None else np.array(R, ndmin=2)
+    if S is not None:
+        S = np.array(S, ndmin=2)
+    if E is not None:
+        E = np.array(E, ndmin=2)
+
+    # Determine main dimensions
+    n = A.shape[0]
+    m = B.shape[1]
+
+    # Check to make sure input matrices are the right shape and type
+    _check_shape("A", A, n, n, square=True)
+
     if S is not None or E is not None or not stabilizing:
         return dare_old(A, B, Q, R, S, E, stabilizing)
+
     else:
+        _check_shape("B", B, n, m)
+        _check_shape("Q", Q, n, n, square=True, symmetric=True)
+        _check_shape("R", R, m, m, square=True, symmetric=True)
+
         Rmat = _ssmatrix(R)
         Qmat = _ssmatrix(Q)
         X = solve_discrete_are(A, B, Qmat, Rmat)
@@ -652,58 +527,28 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
     except ImportError:
         raise ControlSlycot("can't find slycot module 'sg02ad'")
 
-    # Reshape 1-d arrays
-    if len(shape(A)) == 1:
-        A = A.reshape(1, A.size)
-
-    if len(shape(B)) == 1:
-        B = B.reshape(1, B.size)
-
-    if len(shape(Q)) == 1:
-        Q = Q.reshape(1, Q.size)
-
-    if R is not None and len(shape(R)) == 1:
-        R = R.reshape(1, R.size)
-
-    if S is not None and len(shape(S)) == 1:
-        S = S.reshape(1, S.size)
-
-    if E is not None and len(shape(E)) == 1:
-        E = E.reshape(1, E.size)
+    # Reshape input arrays
+    A = np.array(A, ndmin=2)
+    B = np.array(B, ndmin=2)
+    Q = np.array(Q, ndmin=2)
+    R = np.eye(B.shape[1]) if R is None else np.array(R, ndmin=2)
+    if S is not None:
+        S = np.array(S, ndmin=2)
+    if E is not None:
+        E = np.array(E, ndmin=2)
 
     # Determine main dimensions
-    if size(A) == 1:
-        n = 1
-    else:
-        n = size(A, 0)
+    n = A.shape[0]
+    m = B.shape[1]
 
-    if size(B) == 1:
-        m = 1
-    else:
-        m = size(B, 1)
+    # Check to make sure input matrices are the right shape and type
+    _check_shape("A", A, n, n, square=True)
+    _check_shape("B", B, n, m)
+    _check_shape("Q", Q, n, n, square=True, symmetric=True)
+    _check_shape("R", R, m, m, square=True, symmetric=True)
 
     # Solve the standard algebraic Riccati equation
     if S is None and E is None:
-        # Check input data for consistency
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix.")
-
-        if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
-           (size(Q) > 1 and shape(Q)[0] != n) or \
-           size(Q) == 1 and n > 1:
-            raise ControlArgument("Q must be a quadratic matrix of the same \
-                dimension as A.")
-
-        if (size(B) > 1 and shape(B)[0] != n) or \
-           size(B) == 1 and n > 1:
-            raise ControlArgument("Incompatible dimensions of B matrix.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
-
-        if not _is_symmetric(R):
-            raise ControlArgument("R must be a symmetric matrix.")
-
         # Create back-up of arrays needed for later computations
         A_ba = copy(A)
         R_ba = copy(R)
@@ -730,43 +575,9 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
     # Solve the generalized algebraic Riccati equation
     elif S is not None and E is not None:
-        # Check input data for consistency
-        if size(A) > 1 and shape(A)[0] != shape(A)[1]:
-            raise ControlArgument("A must be a quadratic matrix.")
-
-        if (size(Q) > 1 and shape(Q)[0] != shape(Q)[1]) or \
-           (size(Q) > 1 and shape(Q)[0] != n) or \
-           size(Q) == 1 and n > 1:
-            raise ControlArgument("Q must be a quadratic matrix of the same \
-                dimension as A.")
-
-        if (size(B) > 1 and shape(B)[0] != n) or \
-           size(B) == 1 and n > 1:
-            raise ControlArgument("Incompatible dimensions of B matrix.")
-
-        if (size(E) > 1 and shape(E)[0] != shape(E)[1]) or \
-           (size(E) > 1 and shape(E)[0] != n) or \
-           size(E) == 1 and n > 1:
-            raise ControlArgument("E must be a quadratic matrix of the same \
-                dimension as A.")
-
-        if (size(R) > 1 and shape(R)[0] != shape(R)[1]) or \
-           (size(R) > 1 and shape(R)[0] != m) or \
-           size(R) == 1 and m > 1:
-            raise ControlArgument("R must be a quadratic matrix of the same \
-                dimension as the number of columns in the B matrix.")
-
-        if (size(S) > 1 and shape(S)[0] != n) or \
-           (size(S) > 1 and shape(S)[1] != m) or \
-           size(S) == 1 and n > 1 or \
-           size(S) == 1 and m > 1:
-            raise ControlArgument("Incompatible dimensions of S matrix.")
-
-        if not _is_symmetric(Q):
-            raise ControlArgument("Q must be a symmetric matrix.")
-
-        if not _is_symmetric(R):
-            raise ControlArgument("R must be a symmetric matrix.")
+        # Check to make sure input matrices are the right shape and type
+        _check_shape("E", E, n, n, square=True)
+        _check_shape("S", S, n, m)
 
         # Create back-up of arrays needed for later computations
         A_b = copy(A)
@@ -803,11 +614,24 @@ def dare_old(A, B, Q, R, S=None, E=None, stabilizing=True):
 
     # Invalid set of input parameters
     else:
-        raise ControlArgument("Invalid set of input parameters.")
+        raise ControlArgument("Invalid set of input parameters")
 
 
+# Utility function to check matrix dimensions
+def _check_shape(name, M, n, m, square=False, symmetric=False):
+    if square and M.shape[0] != M.shape[1]:
+        raise ControlArgument("%s must be a square matrix" % name)
+
+    if symmetric and not _is_symmetric(M):
+        raise ControlArgument("%s must be a symmetric matrix" % name)
+
+    if M.shape[0] != n or M.shape[1] != m:
+        raise ControlArgument("Incompatible dimensions of %s matrix" % name)
+
+
+# Utility function to check if a matrix is symmetric
 def _is_symmetric(M):
-    M = atleast_2d(M)
+    M = np.atleast_2d(M)
     if isinstance(M[0, 0], inexact):
         eps = finfo(M.dtype).eps
         return ((M - M.T) < eps).all()
