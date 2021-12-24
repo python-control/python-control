@@ -206,7 +206,7 @@ def lyap(A, Q, C=None, E=None, method=None):
                 sg03ad('C', 'B', 'N', 'T', 'L', n,
                        A, E, eye(n, n), eye(n, n), -Q)
 
-    # Invalid set of input parameters
+    # Invalid set of input parameters (C and E specified)
     else:
         raise ControlArgument("Invalid set of input parameters")
 
@@ -331,7 +331,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
                 sg03ad('D', 'B', 'N', 'T', 'L', n,
                        A, E, eye(n, n), eye(n, n), -Q)
 
-    # Invalid set of input parameters
+    # Invalid set of input parameters (C and E specified)
     else:
         raise ControlArgument("Invalid set of input parameters")
 
@@ -464,7 +464,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         return _ssmatrix(X), w[:n], _ssmatrix(G)
 
     # Solve the generalized algebraic Riccati equation
-    elif S is not None and E is not None:
+    else:
+        # Initialize optional matrices
+        S = np.zeros((n, m)) if S is None else np.array(S, ndmin=2)
+        E = np.eye(A.shape[0]) if E is None else np.array(E, ndmin=2)
+
         # Check to make sure input matrices are the right shape and type
         _check_shape("E", E, n, n, square=True)
         _check_shape("S", S, n, m)
@@ -507,11 +511,6 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
         return _ssmatrix(X), L, _ssmatrix(G)
-
-    # Invalid set of input parameters
-    else:
-        raise ControlArgument("Invalid set of input parameters")
-
 
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
     """(X, L, G) = dare(A, B, Q, R) solves the discrete-time algebraic Riccati
@@ -596,10 +595,6 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
             _check_shape("E", E, n, n, square=True)
         if S is not None:
             _check_shape("S", S, n, m)
-
-        # For consistency with dare_slycot(), don't allow just S or E
-        if (S is None and E is not None) or (E is None and S is not None):
-            raise ControlArgument("Invalid set of input parameters")
 
         Rmat = _ssmatrix(R)
         Qmat = _ssmatrix(Q)
@@ -687,9 +682,9 @@ def _dare_slycot(A, B, Q, R, S=None, E=None, stabilizing=True):
 
 # Utility function to decide on method to use
 def _slycot_or_scipy(method):
-    if (method is None and slycot_check()) or method == 'slycot':
+    if method == 'slycot' or (method is None and slycot_check()):
         return 'slycot'
-    elif method == 'scipy' or not slycot_check():
+    elif method == 'scipy' or (method is None and not slycot_check()):
         return 'scipy'
     else:
         raise ValueError("unknown method %s" % method)

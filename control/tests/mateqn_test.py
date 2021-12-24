@@ -120,7 +120,7 @@ class TestMatrixEquations:
         A = array([[-0.6, 0],[-0.1, -0.4]])
         Q = array([[3, 1],[1, 1]])
         E = array([[1, 1],[2, 1]])
-        X = dlyap(A,Q,None,E)
+        X = dlyap(A, Q, None, E)
         # print("The solution obtained is ", X)
         assert_array_almost_equal(A @ X @ A.T - E @ X @ E.T + Q,
                                   zeros((2,2)))

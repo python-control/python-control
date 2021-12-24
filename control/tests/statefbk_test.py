@@ -305,7 +305,6 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(K, K_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
-
     @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
     def test_LQR_integrator(self, matarrayin, matarrayout, method):
         if method == 'slycot' and not slycot_check():
@@ -334,7 +333,6 @@ class TestStatefbk:
             with pytest.raises(ControlSlycot, match="can't find slycot"):
                 K, S, poles = lqr(A, B, Q, R, method='slycot')
 
-    @slycotonly
     @pytest.mark.xfail(reason="warning not implemented")
     def testLQR_warning(self):
         """Test lqr()
@@ -395,13 +393,11 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(L, L_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
-    @slycotonly
     def test_LQE(self, matarrayin):
         A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
         L, P, poles = lqe(A, G, C, QN, RN)
         self.check_LQE(L, P, poles, G, QN, RN)
 
-    @slycotonly
     def test_lqe_call_format(self):
         # Create a random state space system for testing
         sys = rss(4, 3, 2)
@@ -438,7 +434,6 @@ class TestStatefbk:
         with pytest.raises(ct.ControlDimension, match="incorrect covariance"):
             L, P, E = lqe(sys.A, sys.B, sys.C, R, Q)
 
-    @slycotonly
     def test_care(self, matarrayin):
         """Test stabilizing and anti-stabilizing feedbacks, continuous"""
         A = matarrayin(np.diag([1, -1]))
@@ -447,12 +442,17 @@ class TestStatefbk:
         R = matarrayin(np.identity(2))
         S = matarrayin(np.zeros((2, 2)))
         E = matarrayin(np.identity(2))
+
         X, L, G = care(A, B, Q, R, S, E, stabilizing=True)
         assert np.all(np.real(L) < 0)
-        X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
-        assert np.all(np.real(L) > 0)
 
-    @slycotonly
+        if slycot_check():
+            X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
+            assert np.all(np.real(L) > 0)
+        else:
+            with pytest.raises(ValueError, match="'scipy' not valid"):
+                X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
+
     def test_dare(self, matarrayin):
         """Test stabilizing and anti-stabilizing feedbacks, discrete"""
         A = matarrayin(np.diag([0.5, 2]))
@@ -461,7 +461,13 @@ class TestStatefbk:
         R = matarrayin(np.identity(2))
         S = matarrayin(np.zeros((2, 2)))
         E = matarrayin(np.identity(2))
+
         X, L, G = dare(A, B, Q, R, S, E, stabilizing=True)
         assert np.all(np.abs(L) < 1)
-        X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)
-        assert np.all(np.abs(L) > 1)
+
+        if slycot_check():
+            X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
+            assert np.all(np.real(L) > 0)
+        else:
+            with pytest.raises(ValueError, match="'scipy' not valid"):
+                X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
