@@ -41,7 +41,7 @@ from scipy.linalg import eigvals, solve
 
 import control as ct
 from control.mateqn import lyap, dlyap, care, dare
-from control.exception import ControlArgument, slycot_check
+from control.exception import ControlArgument, ControlDimension, slycot_check
 from control.tests.conftest import slycotonly
 
 
@@ -334,21 +334,21 @@ class TestMatrixEquations:
         Efq = array([[2, 1, 0], [1, 2, 0]])
 
         for cdlyap in [lyap, dlyap]:
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdlyap(Afq, Q)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdlyap(A, Qfq)
             with pytest.raises(ControlArgument):
                 cdlyap(A, Qfs)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdlyap(Afq, Q, C)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdlyap(A, Qfq, C)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdlyap(A, Q, Cfd)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdlyap(A, Qfq, None, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdlyap(A, Q, None, Efq)
             with pytest.raises(ControlArgument):
                 cdlyap(A, Qfs, None, E)
@@ -365,30 +365,30 @@ class TestMatrixEquations:
         E = array([[2, 1], [1, 2]])
         Ef = array([[2, 1], [1, 2], [1, 2]])
 
-        with pytest.raises(ControlArgument):
+        with pytest.raises(ControlDimension):
             care(Afq, B, Q)
-        with pytest.raises(ControlArgument):
+        with pytest.raises(ControlDimension):
             care(A, B, Qfq)
-        with pytest.raises(ControlArgument):
+        with pytest.raises(ControlDimension):
             care(A, Bf, Q)
-        with pytest.raises(ControlArgument):
+        with pytest.raises(ControlDimension):
             care(1, B, 1)
         with pytest.raises(ControlArgument):
             care(A, B, Qfs)
         with pytest.raises(ControlArgument):
             dare(A, B, Q, Rfs)
         for cdare in [care, dare]:
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdare(Afq, B, Q, R, S, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdare(A, B, Qfq, R, S, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdare(A, Bf, Q, R, S, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdare(A, B, Q, R, S, Ef)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdare(A, B, Q, Rfq, S, E)
-            with pytest.raises(ControlArgument):
+            with pytest.raises(ControlDimension):
                 cdare(A, B, Q, R, Sf, E)
             with pytest.raises(ControlArgument):
                 cdare(A, B, Qfs, R, S, E)

@@ -324,13 +324,13 @@ class TestStatefbk:
 
     def test_lqr_badmethod(self):
         A, B, Q, R = 0, 1, 10, 2
-        with pytest.raises(ValueError, match="unknown"):
+        with pytest.raises(ValueError, match="Unknown method"):
             K, S, poles = lqr(A, B, Q, R, method='nosuchmethod')
 
     def test_lqr_slycot_not_installed(self):
         A, B, Q, R = 0, 1, 10, 2
         if not slycot_check():
-            with pytest.raises(ControlSlycot, match="can't find slycot"):
+            with pytest.raises(ControlSlycot, match="Can't find slycot"):
                 K, S, poles = lqr(A, B, Q, R, method='slycot')
 
     @pytest.mark.xfail(reason="warning not implemented")
@@ -378,11 +378,11 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(Eref, E)
 
         # Inconsistent system dimensions
-        with pytest.raises(ct.ControlDimension, match="inconsistent system"):
+        with pytest.raises(ct.ControlDimension, match="Incompatible dimen"):
             K, S, E = lqr(sys.A, sys.C, Q, R)
 
         # incorrect covariance matrix dimensions
-        with pytest.raises(ct.ControlDimension, match="incorrect weighting"):
+        with pytest.raises(ct.ControlDimension, match="Q must be a square"):
             K, S, E = lqr(sys.A, sys.B, sys.C, R, Q)
 
     def check_LQE(self, L, P, poles, G, QN, RN):
@@ -420,7 +420,7 @@ class TestStatefbk:
         sys_siso = rss(4, 1, 1)
         L_ss, P_ss, E_ss = lqe(sys_siso, np.eye(1), np.eye(1))
         L_tf, P_tf, E_tf = lqe(tf(sys_siso), np.eye(1), np.eye(1))
-        np.testing.assert_array_almost_equal(E_ss, E_tf)
+        np.testing.assert_array_almost_equal(np.sort(E_ss), np.sort(E_tf))
 
         # Make sure we get an error if we specify N
         with pytest.raises(ct.ControlNotImplemented):

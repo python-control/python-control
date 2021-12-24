@@ -37,12 +37,13 @@
 
 import warnings
 import numpy as np
-from numpy import shape, size, copy, zeros, eye, finfo, inexact, atleast_2d
+from numpy import copy, eye, dot, finfo, inexact, atleast_2d
 
 import scipy as sp
-from scipy.linalg import eigvals, solve_discrete_are, solve
+from scipy.linalg import eigvals, solve
 
-from .exception import ControlSlycot, ControlArgument, slycot_check
+from .exception import ControlSlycot, ControlArgument, ControlDimension, \
+    slycot_check
 from .statesp import _ssmatrix
 
 # Make sure we have access to the right slycot routines
@@ -136,9 +137,9 @@ def lyap(A, Q, C=None, E=None, method=None):
     method = _slycot_or_scipy(method)
     if method == 'slycot':
         if sb03md is None:
-            raise ControlSlycot("can't find slycot module 'sb03md'")
+            raise ControlSlycot("Can't find slycot module 'sb03md'")
         if sb04md is None:
-            raise ControlSlycot("can't find slycot module 'sb04md'")
+            raise ControlSlycot("Can't find slycot module 'sb04md'")
 
     # Reshape input arrays
     A = np.array(A, ndmin=2)
@@ -196,7 +197,7 @@ def lyap(A, Q, C=None, E=None, method=None):
             from slycot import sg03ad
 
         except ImportError:
-            raise ControlSlycot("can't find slycot module 'sg03ad'")
+            raise ControlSlycot("Can't find slycot module 'sg03ad'")
 
         # Solve the generalized Lyapunov equation by calling Slycot
         # function sg03ad
@@ -265,11 +266,11 @@ def dlyap(A, Q, C=None, E=None, method=None):
     if method == 'slycot':
         # Make sure we have access to the right slycot routines
         if sb03md is None:
-            raise ControlSlycot("can't find slycot module 'sb03md'")
+            raise ControlSlycot("Can't find slycot module 'sb03md'")
         if sb04qd is None:
-            raise ControlSlycot("can't find slycot module 'sb04qd'")
+            raise ControlSlycot("Can't find slycot module 'sb04qd'")
         if sg03ad is None:
-            raise ControlSlycot("can't find slycot module 'sg03ad'")
+            raise ControlSlycot("Can't find slycot module 'sg03ad'")
 
     # Reshape input arrays
     A = np.array(A, ndmin=2)
@@ -399,18 +400,18 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         try:
             from slycot import sb02md
         except ImportError:
-            raise ControlSlycot("can't find slycot module 'sb02md'")
+            raise ControlSlycot("Can't find slycot module 'sb02md'")
 
         try:
             from slycot import sb02mt
         except ImportError:
-            raise ControlSlycot("can't find slycot module 'sb02mt'")
+            raise ControlSlycot("Can't find slycot module 'sb02mt'")
 
         # Make sure we can find the required slycot routine
         try:
             from slycot import sg02ad
         except ImportError:
-            raise ControlSlycot("can't find slycot module 'sg02ad'")
+            raise ControlSlycot("Can't find slycot module 'sg02ad'")
 
     # Reshape input arrays
     A = np.array(A, ndmin=2)
@@ -500,10 +501,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
                        'R', n, m, 0, A, E, B, Q, R, S)
 
         # Calculate the closed-loop eigenvalues L
-        L = zeros(n)
-        L.dtype = 'complex64'
-        for i in range(n):
-            L[i] = (alfar[i] + alfai[i]*1j) / beta[i]
+        L = np.array([(alfar[i] + alfai[i]*1j) / beta[i] for i in range(n)])
 
         # Calculate the gain matrix G
         G = solve(R_b, B_b.T @ X @ E_b + S_b.T)
@@ -598,7 +596,7 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
 
         Rmat = _ssmatrix(R)
         Qmat = _ssmatrix(Q)
-        X = solve_discrete_are(A, B, Qmat, Rmat, e=E, s=S)
+        X = sp.linalg.solve_discrete_are(A, B, Qmat, Rmat, e=E, s=S)
         if S is None:
             G = solve(B.T @ X @ B + Rmat, B.T @ X @ A)
         else:
@@ -616,18 +614,18 @@ def _dare_slycot(A, B, Q, R, S=None, E=None, stabilizing=True):
     try:
         from slycot import sb02md
     except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb02md'")
+        raise ControlSlycot("Can't find slycot module 'sb02md'")
 
     try:
         from slycot import sb02mt
     except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb02mt'")
+        raise ControlSlycot("Can't find slycot module 'sb02mt'")
 
     # Make sure we can find the required slycot routine
     try:
         from slycot import sg02ad
     except ImportError:
-        raise ControlSlycot("can't find slycot module 'sg02ad'")
+        raise ControlSlycot("Can't find slycot module 'sg02ad'")
 
     # Reshape input arrays
     A = np.array(A, ndmin=2)
@@ -667,10 +665,8 @@ def _dare_slycot(A, B, Q, R, S=None, E=None, stabilizing=True):
             sg02ad('D', 'B', 'N', 'U', 'N', 'N', sort,
                    'R', n, m, 0, A, E, B, Q, R, S)
 
-    L = zeros(n)
-    L.dtype = 'complex64'
-    for i in range(n):
-        L[i] = (alfar[i] + alfai[i]*1j)/beta[i]
+    # Calculate the closed-loop eigenvalues L
+    L = np.array([(alfar[i] + alfai[i]*1j) / beta[i] for i in range(n)])
 
     # Calculate the gain matrix G
     G = solve(B_b.T @ X @ B_b + R_b, B_b.T @ X @ A_b + S_b.T)
@@ -687,19 +683,19 @@ def _slycot_or_scipy(method):
     elif method == 'scipy' or (method is None and not slycot_check()):
         return 'scipy'
     else:
-        raise ValueError("unknown method %s" % method)
+        raise ValueError("Unknown method %s" % method)
 
 
 # Utility function to check matrix dimensions
 def _check_shape(name, M, n, m, square=False, symmetric=False):
     if square and M.shape[0] != M.shape[1]:
-        raise ControlArgument("%s must be a square matrix" % name)
+        raise ControlDimension("%s must be a square matrix" % name)
 
     if symmetric and not _is_symmetric(M):
         raise ControlArgument("%s must be a symmetric matrix" % name)
 
     if M.shape[0] != n or M.shape[1] != m:
-        raise ControlArgument("Incompatible dimensions of %s matrix" % name)
+        raise ControlDimension("Incompatible dimensions of %s matrix" % name)
 
 
 # Utility function to check if a matrix is symmetric
