@@ -11,8 +11,8 @@ from control import lqe, pole, rss, ss, tf
 from control.exception import ControlDimension, ControlSlycot, \
     ControlArgument, slycot_check
 from control.mateqn import care, dare
-from control.statefbk import (ctrb, obsv, place, place_varga, lqr, dlqr, 
-                              lqe, dlqe, gram, acker)              
+from control.statefbk import (ctrb, obsv, place, place_varga, lqr, dlqr,
+                              lqe, dlqe, gram, acker)
 from control.tests.conftest import (slycotonly, check_deprecated_matrix,
                                     ismatarrayout, asmatarrayout)
 
@@ -507,7 +507,7 @@ class TestStatefbk:
                 X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
 
     @pytest.mark.parametrize(
-        "stabilizing", 
+        "stabilizing",
         [True, pytest.param(False, marks=slycotonly)])
     def test_dare(self, matarrayin, stabilizing):
         """Test stabilizing and anti-stabilizing feedback, discrete"""

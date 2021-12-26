@@ -48,7 +48,6 @@ from control.tests.conftest import slycotonly
 class TestMatrixEquations:
     """These are tests for the matrix equation solvers in mateqn.py"""
 
-    @slycotonly
     def test_lyap(self):
         A = array([[-1, 1], [-1, 0]])
         Q = array([[1, 0], [0, 1]])
@@ -68,7 +67,6 @@ class TestMatrixEquations:
             X_slycot = lyap(A, Q, method='slycot')
             assert_array_almost_equal(X_scipy, X_slycot)
 
-    @slycotonly
     def test_lyap_sylvester(self):
         A = 5
         B = array([[4, 3], [4, 3]])

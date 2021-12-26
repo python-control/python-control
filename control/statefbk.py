@@ -638,15 +638,15 @@ def dlqr(*args, **keywords):
     * ``dlqr(A, B, Q, R)``
     * ``dlqr(A, B, Q, R, N)``
 
-    where `dsys` is a discrete-time :class:`StateSpace` system, and `A`, `B`, 
-    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt` must 
+    where `dsys` is a discrete-time :class:`StateSpace` system, and `A`, `B`,
+    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt` must
     not be 0.)
 
     Parameters
     ----------
     A, B : 2D array
         Dynamics and input matrices
-    dsys : LTI :class:`StateSpace` 
+    dsys : LTI :class:`StateSpace`
         Discrete-time linear system
     Q, R : 2D array
         State and input weight matrices
