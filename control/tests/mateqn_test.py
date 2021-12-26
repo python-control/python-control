@@ -99,7 +99,7 @@ class TestMatrixEquations:
                                   zeros((2,2)))
 
         # Make sure that trying to solve with SciPy generates an error
-        with pytest.raises(ValueError, match="'scipy' not valid"):
+        with pytest.raises(ControlArgument, match="'scipy' not valid"):
             X = lyap(A, Q, None, E, method='scipy')
 
     def test_dlyap(self):
@@ -126,7 +126,7 @@ class TestMatrixEquations:
                                   zeros((2,2)))
 
         # Make sure that trying to solve with SciPy generates an error
-        with pytest.raises(ValueError, match="'scipy' not valid"):
+        with pytest.raises(ControlArgument, match="'scipy' not valid"):
             X = dlyap(A, Q, None, E, method='scipy')
 
     @slycotonly
@@ -146,7 +146,7 @@ class TestMatrixEquations:
         assert_array_almost_equal(A @ X @ B.T - X + C, zeros((2,2)))
 
         # Make sure that trying to solve with SciPy generates an error
-        with pytest.raises(ValueError, match="'scipy' not valid"):
+        with pytest.raises(ControlArgument, match="'scipy' not valid"):
             X = dlyap(A, B, C, method='scipy')
 
     def test_care(self):

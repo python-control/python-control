@@ -8,7 +8,8 @@ import pytest
 
 import control as ct
 from control import lqe, pole, rss, ss, tf
-from control.exception import ControlDimension, ControlSlycot, slycot_check
+from control.exception import ControlDimension, ControlSlycot, \
+    ControlArgument, slycot_check
 from control.mateqn import care, dare
 from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.tests.conftest import (slycotonly, check_deprecated_matrix,
@@ -324,7 +325,7 @@ class TestStatefbk:
 
     def test_lqr_badmethod(self):
         A, B, Q, R = 0, 1, 10, 2
-        with pytest.raises(ValueError, match="Unknown method"):
+        with pytest.raises(ControlArgument, match="Unknown method"):
             K, S, poles = lqr(A, B, Q, R, method='nosuchmethod')
 
     def test_lqr_slycot_not_installed(self):
@@ -450,7 +451,7 @@ class TestStatefbk:
             X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
             assert np.all(np.real(L) > 0)
         else:
-            with pytest.raises(ValueError, match="'scipy' not valid"):
+            with pytest.raises(ControlArgument, match="'scipy' not valid"):
                 X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
 
     def test_dare(self, matarrayin):
@@ -466,8 +467,8 @@ class TestStatefbk:
         assert np.all(np.abs(L) < 1)
 
         if slycot_check():
-            X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
-            assert np.all(np.real(L) > 0)
+            X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)
+            assert np.all(np.abs(L) > 1)
         else:
-            with pytest.raises(ValueError, match="'scipy' not valid"):
-                X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
+            with pytest.raises(ControlArgument, match="'scipy' not valid"):
+                X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)

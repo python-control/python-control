@@ -189,7 +189,7 @@ def lyap(A, Q, C=None, E=None, method=None):
         _check_shape("E", E, n, n, square=True)
 
         if method == 'scipy':
-            raise ValueError(
+            raise ControlArgument(
                 "method='scipy' not valid for generalized Lyapunov equation")
 
         # Make sure we have access to the write slicot routine
@@ -308,7 +308,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
         _check_shape("C", C, n, m)
 
         if method == 'scipy':
-            raise ValueError(
+            raise ControlArgument(
                 "method='scipy' not valid for Sylvester equation")
 
         # Solve the Sylvester equation by calling Slycot function sb04qd
@@ -321,7 +321,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
         _check_shape("E", E, n, n, square=True)
 
         if method == 'scipy':
-            raise ValueError(
+            raise ControlArgument(
                 "method='scipy' not valid for generalized Lyapunov equation")
 
         # Solve the generalized Lyapunov equation by calling Slycot
@@ -438,7 +438,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         # See if we should solve this using SciPy
         if method == 'scipy':
             if not stabilizing:
-                raise ValueError(
+                raise ControlArgument(
                     "method='scipy' not valid when stabilizing is not True")
 
             X = sp.linalg.solve_continuous_are(A, B, Q, R)
@@ -477,7 +477,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         # See if we should solve this using SciPy
         if method == 'scipy':
             if not stabilizing:
-                raise ValueError(
+                raise ControlArgument(
                     "method='scipy' not valid when stabilizing is not True")
 
             X = sp.linalg.solve_continuous_are(A, B, Q, R, s=S, e=E)
@@ -579,7 +579,7 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
 
     # Figure out how to solve the problem
     if method == 'scipy' and not stabilizing:
-        raise ValueError(
+        raise ControlArgument(
             "method='scipy' not valid when stabilizing is not True")
 
     elif method == 'slycot':
@@ -683,7 +683,7 @@ def _slycot_or_scipy(method):
     elif method == 'scipy' or (method is None and not slycot_check()):
         return 'scipy'
     else:
-        raise ValueError("Unknown method %s" % method)
+        raise ControlArgument("Unknown method %s" % method)
 
 
 # Utility function to check matrix dimensions
