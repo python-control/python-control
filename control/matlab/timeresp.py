@@ -22,7 +22,7 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
 
     X0: array-like or number, optional
@@ -59,45 +59,64 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     '''
     from ..timeresp import step_response
 
-    T, yout, xout = step_response(sys, T, X0, input, output,
-                                  transpose=True, return_x=True)
+    # Switch output argument order and transpose outputs
+    out = step_response(sys, T, X0, input, output,
+                        transpose=True, return_x=return_x)
+    return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
-    if return_x:
-        return yout, T, xout
 
-    return yout, T
-
-def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
-    '''
+def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
+             RiseTimeLimits=(0.1, 0.9)):
+    """
     Step response characteristics (Rise time, Settling Time, Peak and others).
 
     Parameters
     ----------
-    sys: StateSpace, or TransferFunction
-        LTI system to simulate
-
-    T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
-        autocomputed if not given)
-
-    SettlingTimeThreshold: float value, optional
+    sysdata : StateSpace or TransferFunction or array_like
+        The system data. Either LTI system to similate (StateSpace,
+        TransferFunction), or a time series of step response data.
+    T : array_like or float, optional
+        Time vector, or simulation time duration if a number (time vector is
+        autocomputed if not given).
+        Required, if sysdata is a time series of response data.
+    yfinal : scalar or array_like, optional
+        Steady-state response. If not given, sysdata.dcgain() is used for
+        systems to simulate and the last value of the the response data is
+        used for a given time series of response data. Scalar for SISO,
+        (noutputs, ninputs) array_like for MIMO systems.
+    SettlingTimeThreshold : float, optional
         Defines the error to compute settling time (default = 0.02)
-
-    RiseTimeLimits: tuple (lower_threshold, upper_theshold)
+    RiseTimeLimits : tuple (lower_threshold, upper_theshold)
         Defines the lower and upper threshold for RiseTime computation
 
     Returns
     -------
-    S: a dictionary containing:
-        RiseTime: Time from 10% to 90% of the steady-state value.
-        SettlingTime: Time to enter inside a default error of 2%
-        SettlingMin: Minimum value after RiseTime
-        SettlingMax: Maximum value after RiseTime
-        Overshoot: Percentage of the Peak relative to steady value
-        Undershoot: Percentage of undershoot
-        Peak: Absolute peak value
-        PeakTime: time of the Peak
-        SteadyStateValue: Steady-state value
+    S : dict or list of list of dict
+        If `sysdata` corresponds to a SISO system, S is a dictionary
+        containing:
+
+        RiseTime:
+            Time from 10% to 90% of the steady-state value.
+        SettlingTime:
+            Time to enter inside a default error of 2%
+        SettlingMin:
+            Minimum value after RiseTime
+        SettlingMax:
+            Maximum value after RiseTime
+        Overshoot:
+            Percentage of the Peak relative to steady value
+        Undershoot:
+            Percentage of undershoot
+        Peak:
+            Absolute peak value
+        PeakTime:
+            time of the Peak
+        SteadyStateValue:
+            Steady-state value
+
+        If `sysdata` corresponds to a MIMO system, `S` is a 2D list of dicts.
+        To get the step response characteristics from the j-th input to the
+        i-th output, access ``S[i][j]``
 
 
     See Also
@@ -107,10 +126,13 @@ def stepinfo(sys, T=None, SettlingTimeThreshold=0.02, RiseTimeLimits=(0.1,0.9)):
     Examples
     --------
     >>> S = stepinfo(sys, T)
-    '''
+    """
     from ..timeresp import step_info
 
-    S = step_info(sys, T, SettlingTimeThreshold, RiseTimeLimits)
+    # Call step_info with MATLAB defaults
+    S = step_info(sysdata, T=T, T_num=None, yfinal=yfinal,
+                  SettlingTimeThreshold=SettlingTimeThreshold,
+                  RiseTimeLimits=RiseTimeLimits)
 
     return S
 
@@ -130,9 +152,9 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-    
+
     X0: array-like or number, optional
         Initial condition (default = 0)
 
@@ -164,13 +186,11 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     >>> yout, T = impulse(sys, T)
     '''
     from ..timeresp import impulse_response
-    T, yout, xout = impulse_response(sys, T, X0, input, output,
-                                     transpose = True, return_x=True)
 
-    if return_x:
-        return yout, T, xout
-
-    return yout, T
+    # Switch output argument order and transpose outputs
+    out = impulse_response(sys, T, X0, input, output,
+                           transpose = True, return_x=return_x)
+    return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
 def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
     '''
@@ -186,9 +206,9 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
         LTI system to simulate
 
     T: array-like or number, optional
-        Time vector, or simulation time duration if a number (time vector is 
+        Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-    
+
     X0: array-like object or number, optional
         Initial condition (default = 0)
 
@@ -222,13 +242,12 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
     '''
     from ..timeresp import initial_response
+
+    # Switch output argument order and transpose outputs
     T, yout, xout = initial_response(sys, T, X0, output=output,
                                      transpose=True, return_x=True)
+    return (yout, T, xout) if return_x else (yout, T)
 
-    if return_x:
-        return yout, T, xout
-
-    return yout, T
 
 def lsim(sys, U=0., T=None, X0=0.):
     '''
@@ -273,5 +292,7 @@ def lsim(sys, U=0., T=None, X0=0.):
     >>> yout, T, xout = lsim(sys, U, T, X0)
     '''
     from ..timeresp import forced_response
-    T, yout, xout = forced_response(sys, T, U, X0, transpose = True)
-    return yout, T, xout
+
+    # Switch output argument order and transpose outputs (and always return x)
+    out = forced_response(sys, T, U, X0, return_x=True, transpose=True)
+    return out[1], out[0], out[2]

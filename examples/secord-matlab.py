@@ -24,12 +24,12 @@ plt.show(block=False)
 
 # Bode plot for the system
 plt.figure(2)
-mag, phase, om = bode(sys, logspace(-2, 2), Plot=True)
+mag, phase, om = bode(sys, logspace(-2, 2), plot=True)
 plt.show(block=False)
 
 # Nyquist plot for the system
 plt.figure(3)
-nyquist(sys, logspace(-2, 2))
+nyquist(sys)
 plt.show(block=False)
 
 # Root lcous plot for the system

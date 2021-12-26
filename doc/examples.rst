@@ -42,5 +42,7 @@ using running examples in FBS2e.
    :maxdepth: 1
 
    cruise
+   describing_functions
+   mpc_aircraft
    steering
    pvtol-lqr-nested

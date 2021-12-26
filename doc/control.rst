@@ -6,8 +6,9 @@ Function reference
 
 .. Include header information from the main control module
 .. automodule:: control
-    :no-members:
-    :no-inherited-members:
+   :no-members:
+   :no-inherited-members:
+   :no-special-members:
 
 System creation
 ===============
@@ -42,9 +43,11 @@ Frequency domain plotting
    :toctree: generated/
 
     bode_plot
+    describing_function_plot
     nyquist_plot
     gangof4_plot
     nichols_plot
+    nichols_grid
 
 Note: For plotting commands that create multiple axes on the same plot, the
 individual axes can be retrieved using the axes label (retrieved using the
@@ -84,6 +87,7 @@ Control system analysis
    :toctree: generated/
 
     dcgain
+    describing_function
     evalfr
     freqresp
     margin
@@ -138,12 +142,15 @@ Nonlinear system support
 .. autosummary::
    :toctree: generated/
 
-   ~iosys.find_eqpt
-   ~iosys.linearize
-   ~iosys.input_output_response
-   ~iosys.ss2io
-   ~iosys.tf2io
-   flatsys.point_to_point
+    describing_function
+    find_eqpt
+    interconnect
+    linearize
+    input_output_response
+    ss2io
+    summing_junction
+    tf2io
+    flatsys.point_to_point
 
 .. _utility-and-conversions:
 
@@ -153,6 +160,7 @@ Utility functions and conversions
    :toctree: generated/
 
     augw
+    bdschur
     canonical_form
     damp
     db2mag
@@ -161,6 +169,7 @@ Utility functions and conversions
     issiso
     issys
     mag2db
+    modal_form
     observable_form
     pade
     reachable_form

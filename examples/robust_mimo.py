@@ -43,7 +43,7 @@ def triv_sigma(g, w):
     g - LTI object, order n
     w - frequencies, length m
     s - (m,n) array of singular values of g(1j*w)"""
-    m, p, _ = g.freqresp(w)
+    m, p, _ = g.frequency_response(w)
     sjw = (m*np.exp(1j*p)).transpose(2, 0, 1)
     sv = np.linalg.svd(sjw, compute_uv=False)
     return sv
@@ -54,11 +54,8 @@ def analysis():
     g = plant()
 
     t = np.linspace(0, 10, 101)
-    _, yu1 = step_response(g, t, input=0)
-    _, yu2 = step_response(g, t, input=1)
-
-    yu1 = yu1
-    yu2 = yu2
+    _, yu1 = step_response(g, t, input=0, squeeze=True)
+    _, yu2 = step_response(g, t, input=1, squeeze=True)
 
     # linear system, so scale and sum previous results to get the
     # [1,-1] response
@@ -112,8 +109,8 @@ def synth(wb1, wb2):
 
 def step_opposite(g, t):
     """reponse to step of [-1,1]"""
-    _, yu1 = step_response(g, t, input=0)
-    _, yu2 = step_response(g, t, input=1)
+    _, yu1 = step_response(g, t, input=0, squeeze=True)
+    _, yu2 = step_response(g, t, input=1, squeeze=True)
     return yu1 - yu2
 
 

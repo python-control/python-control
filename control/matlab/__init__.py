@@ -70,7 +70,7 @@ from ..exception import ControlArgument
 
 # Import MATLAB-like functions that can be used as-is
 from ..ctrlutil import *
-from ..freqplot import nyquist, gangof4
+from ..freqplot import gangof4
 from ..nichols import nichols
 from ..bdalg import *
 from ..pzmap import *
@@ -224,8 +224,8 @@ Frequency-domain analysis
 \*  :func:`~control.nichols`    Nichols plot
 \*  :func:`margin`              gain and phase margins
 \   lti/allmargin               all crossover frequencies and margins
-\*  :func:`freqresp`            frequency response over a frequency grid
-\*  :func:`evalfr`              frequency response at single frequency
+\*  :func:`freqresp`            frequency response
+\*  :func:`evalfr`              frequency response at complex frequency s
 ==  ==========================  ============================================
 
 

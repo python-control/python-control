@@ -1,35 +1,36 @@
-#!/usr/bin/env python
-#
-# phaseplot_test.py - test phase plot functions
-# RMM, 17 24 2011 (based on TestMatlab from v0.4c)
-#
-# This test suite calls various phaseplot functions.  Since the plots
-# themselves can't be verified, this is mainly here to make sure all
-# of the function arguments are handled correctly.  If you run an
-# individual test by itself and then type show(), it should pop open
-# the figures so that you can check them visually.
+"""phaseplot_test.py - test phase plot functions
 
-import unittest
-import numpy as np
-import scipy as sp
+RMM, 17 24 2011 (based on TestMatlab from v0.4c)
+
+This test suite calls various phaseplot functions.  Since the plots
+themselves can't be verified, this is mainly here to make sure all
+of the function arguments are handled correctly.  If you run an
+individual test by itself and then type show(), it should pop open
+the figures so that you can check them visually.
+"""
+
+
 import matplotlib.pyplot as mpl
-from control import phase_plot
+import numpy as np
 from numpy import pi
+import pytest
+from control import phase_plot
 
-class TestPhasePlot(unittest.TestCase):
-    def setUp(self):
-        pass;
+
+
+@pytest.mark.usefixtures("mplcleanup")
+class TestPhasePlot:
 
     def testInvPendNoSims(self):
         phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10));
 
     def testInvPendSims(self):
         phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10),
-                  X0 = ([1,1], [-1,1]));
+                  X0 = ([1,1], [-1,1]))
 
     def testInvPendTimePoints(self):
         phase_plot(self.invpend_ode, (-6,6,10), (-6,6,10),
-                  X0 = ([1,1], [-1,1]), T=np.linspace(0,5,100));
+                  X0 = ([1,1], [-1,1]), T=np.linspace(0,5,100))
 
     def testInvPendLogtime(self):
         phase_plot(self.invpend_ode, X0 =
@@ -46,12 +47,15 @@ class TestPhasePlot(unittest.TestCase):
                   [[-2.3056, 2.1], [2.3056, -2.1]], T=6, verbose=False)
 
     def testOscillatorParams(self):
-        m = 1; b = 1; k = 1;            # default values
+        # default values
+        m = 1
+        b = 1
+        k = 1           
         phase_plot(self.oscillator_ode, timepts = [0.3, 1, 2, 3], X0 =
                   [[-1,1], [-0.3,1], [0,1], [0.25,1], [0.5,1], [0.7,1],
                    [1,1], [1.3,1], [1,-1], [0.3,-1], [0,-1], [-0.25,-1],
                    [-0.5,-1], [-0.7,-1], [-1,-1], [-1.3,-1]],
-                  T = np.linspace(0, 10, 100), parms = (m, b, k));
+                  T = np.linspace(0, 10, 100), parms = (m, b, k))
 
     def testNoArrows(self):
         # Test case from aramakrl that was generating a type error
@@ -76,7 +80,3 @@ class TestPhasePlot(unittest.TestCase):
     # Sample dynamical systems - oscillator
     def oscillator_ode(self, x, t, m=1., b=1, k=1, extra=None):
         return (x[1], -k/m*x[0] - b/m*x[1])
-
-
-if __name__ == '__main__':
-    unittest.main()

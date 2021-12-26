@@ -12,22 +12,38 @@ these directly.
 		   
 .. autosummary::
    :toctree: generated/
+   :template: custom-class-template.rst
 
    TransferFunction
    StateSpace
    FrequencyResponseData
-   ~iosys.InputOutputSystem
 
 Input/output system subclasses
 ==============================
-.. currentmodule:: control.iosys
-
 Input/output systems are accessed primarily via a set of subclasses
 that allow for linear, nonlinear, and interconnected elements:
 
 .. autosummary::
-   :toctree: generated/
+   :template: custom-class-template.rst
+   :nosignatures:
 
+   InputOutputSystem
+   InterconnectedSystem
+   LinearICSystem
    LinearIOSystem
    NonlinearIOSystem
-   InterconnectedSystem
+
+Additional classes
+==================
+.. autosummary::
+   :template: custom-class-template.rst
+   :nosignatures:
+
+   DescribingFunctionNonlinearity
+   flatsys.BasisFamily
+   flatsys.FlatSystem
+   flatsys.LinearFlatSystem
+   flatsys.PolyFamily
+   flatsys.SystemTrajectory
+   optimal.OptimalControlProblem
+   optimal.OptimalControlResult

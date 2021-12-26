@@ -47,7 +47,19 @@ class BasisFamily:
 
       :math:`z_i^{(q)}(t)` = basis.eval_deriv(self, i, j, t)
 
+    Parameters
+    ----------
+    N : int
+        Order of the basis set.
+
     """
     def __init__(self, N):
         """Create a basis family of order N."""
         self.N = N                    # save number of basis functions
+
+    def __call__(self, i, t):
+        """Evaluate the ith basis function at a point in time"""
+        return self.eval_deriv(i, 0, t)
+
+    def eval_deriv(self, i, j, t):
+        raise NotImplementedError("Internal error; improper basis functions")

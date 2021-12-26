@@ -76,7 +76,7 @@ def series(sys1, *sysn):
     Raises
     ------
     ValueError
-        if `sys2.inputs` does not equal `sys1.outputs`
+        if `sys2.ninputs` does not equal `sys1.noutputs`
         if `sys1.dt` is not compatible with `sys2.dt`
 
     See Also
@@ -174,7 +174,7 @@ def negate(sys):
     >>> sys2 = negate(sys1) # Same as sys2 = -sys1.
 
     """
-    return -sys;
+    return -sys
 
 #! TODO: expand to allow sys2 default to work in MIMO case?
 def feedback(sys1, sys2=1, sign=-1):
@@ -242,9 +242,9 @@ def feedback(sys1, sys2=1, sign=-1):
         if isinstance(sys2, tf.TransferFunction):
             sys1 = tf._convert_to_transfer_function(sys1)
         elif isinstance(sys2, ss.StateSpace):
-            sys1 = ss._convertToStateSpace(sys1)
+            sys1 = ss._convert_to_statespace(sys1)
         elif isinstance(sys2, frd.FRD):
-            sys1 = frd._convertToFRD(sys1, sys2.omega)
+            sys1 = frd._convert_to_FRD(sys1, sys2.omega)
         else: # sys2 is a scalar.
             sys1 = tf._convert_to_transfer_function(sys1)
             sys2 = tf._convert_to_transfer_function(sys2)
@@ -263,7 +263,7 @@ def append(*sys):
 
     Parameters
     ----------
-    sys1, sys2, ..., sysn: StateSpace or Transferfunction
+    sys1, sys2, ..., sysn: StateSpace or TransferFunction
         LTI systems to combine
 
 
@@ -275,12 +275,12 @@ def append(*sys):
 
     Examples
     --------
-    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]]", [[6., 8]], [[9.]])
+    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6., 8]], [[9.]])
     >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
     >>> sys = append(sys1, sys2)
 
     """
-    s1 = sys[0]
+    s1 = ss._convert_to_statespace(sys[0])
     for s in sys[1:]:
         s1 = s1.append(s)
     return s1
@@ -299,17 +299,19 @@ def connect(sys, Q, inputv, outputv):
 
     Parameters
     ----------
-    sys : StateSpace Transferfunction
+    sys : StateSpace or TransferFunction
         System to be connected
     Q : 2D array
-        Interconnection matrix. First column gives the input to be connected
-        second column gives the output to be fed into this input.  Negative
-        values for the second column mean the feedback is negative, 0 means
-        no connection is made.  Inputs and outputs are indexed starting at 1.
+        Interconnection matrix. First column gives the input to be connected.
+        The second column gives the index of an output that is to be fed into
+        that input. Each additional column gives the index of an additional
+        input that may be optionally added to that input. Negative
+        values mean the feedback is negative. A zero value is ignored. Inputs
+        and outputs are indexed starting at 1 to communicate sign information.
     inputv : 1D array
-        list of final external inputs
+        list of final external inputs, indexed starting at 1
     outputv : 1D array
-        list of final external outputs
+        list of final external outputs, indexed starting at 1
 
     Returns
     -------
@@ -324,21 +326,48 @@ def connect(sys, Q, inputv, outputv):
     >>> Q = [[1, 2], [2, -1]]  # negative feedback interconnection
     >>> sysc = connect(sys, Q, [2], [1, 2])
 
+    Notes
+    -----
+    The :func:`~control.interconnect` function in the
+    :ref:`input/output systems <iosys-module>` module allows the use
+    of named signals and provides an alternative method for
+    interconnecting multiple systems.
+
     """
+    inputv, outputv, Q = \
+        np.atleast_1d(inputv), np.atleast_1d(outputv), np.atleast_1d(Q)
+    # check indices
+    index_errors = (inputv - 1 > sys.ninputs) | (inputv < 1)
+    if np.any(index_errors):
+        raise IndexError(
+            "inputv index %s out of bounds" % inputv[np.where(index_errors)])
+    index_errors = (outputv - 1 > sys.noutputs) | (outputv < 1)
+    if np.any(index_errors):
+        raise IndexError(
+            "outputv index %s out of bounds" % outputv[np.where(index_errors)])
+    index_errors = (Q[:,0:1] - 1 > sys.ninputs) | (Q[:,0:1] < 1)
+    if np.any(index_errors):
+        raise IndexError(
+            "Q input index %s out of bounds" % Q[np.where(index_errors)])
+    index_errors = (np.abs(Q[:,1:]) - 1 > sys.noutputs)
+    if np.any(index_errors):
+        raise IndexError(
+            "Q output index %s out of bounds" % Q[np.where(index_errors)])
+
     # first connect
-    K = np.zeros((sys.inputs, sys.outputs))
+    K = np.zeros((sys.ninputs, sys.noutputs))
     for r in np.array(Q).astype(int):
         inp = r[0]-1
         for outp in r[1:]:
-            if outp > 0 and outp <= sys.outputs:
-                K[inp,outp-1] = 1.
-            elif outp < 0 and -outp >= -sys.outputs:
+            if outp < 0:
                 K[inp,-outp-1] = -1.
+            elif outp > 0:
+                K[inp,outp-1] = 1.
     sys = sys.feedback(np.array(K), sign=1)
 
     # now trim
-    Ytrim = np.zeros((len(outputv), sys.outputs))
-    Utrim = np.zeros((sys.inputs, len(inputv)))
+    Ytrim = np.zeros((len(outputv), sys.noutputs))
+    Utrim = np.zeros((sys.ninputs, len(inputv)))
     for i,u in enumerate(inputv):
         Utrim[u-1,i] = 1.
     for i,y in enumerate(outputv):

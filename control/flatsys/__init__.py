@@ -53,6 +53,7 @@ member function.
 # Basis function families
 from .basis import BasisFamily
 from .poly import PolyFamily
+from .bezier import BezierFamily
 
 # Classes
 from .systraj import SystemTrajectory

@@ -1,33 +1,36 @@
-#!/usr/bin/env python
-#
-# frd_test.py - test FRD class
-# RvP, 4 Oct 2012
+"""frd_test.py - test FRD class
 
+RvP, 4 Oct 2012
+"""
 
-import unittest
 import sys as pysys
+
 import numpy as np
+import matplotlib.pyplot as plt
+import pytest
+
 import control as ct
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from control.frdata import FRD, _convertToFRD, FrequencyResponseData
-from control import bdalg
-from control import freqplot
-from control.exception import slycot_check
-import matplotlib.pyplot as plt
+from control.frdata import FRD, _convert_to_FRD, FrequencyResponseData
+from control import bdalg, evalfr, freqplot
+from control.tests.conftest import slycotonly
 
 
-class TestFRD(unittest.TestCase):
+class TestFRD:
     """These are tests for functionality and correct reporting of the
     frequency response data class."""
 
     def testBadInputType(self):
         """Give the constructor invalid input types."""
-        self.assertRaises(ValueError, FRD)
-        self.assertRaises(TypeError, FRD, [1])
+        with pytest.raises(ValueError):
+            FRD()
+        with pytest.raises(TypeError):
+            FRD([1])
 
     def testInconsistentDimension(self):
-        self.assertRaises(TypeError, FRD, [1, 1], [1, 2, 3])
+        with pytest.raises(TypeError):
+            FRD([1, 1], [1, 2, 3])
 
     def testSISOtf(self):
         # get a SISO transfer function
@@ -36,8 +39,11 @@ class TestFRD(unittest.TestCase):
         frd = FRD(h, omega)
         assert isinstance(frd, FRD)
 
-        np.testing.assert_array_almost_equal(
-            frd.freqresp([1.0]), h.freqresp([1.0]))
+        mag1, phase1, omega1 = frd.frequency_response([1.0])
+        mag2, phase2, omega2 = h.frequency_response([1.0])
+        np.testing.assert_array_almost_equal(mag1, mag2)
+        np.testing.assert_array_almost_equal(phase1, phase2)
+        np.testing.assert_array_almost_equal(omega1, omega2)
 
     def testOperators(self):
         # get two SISO transfer functions
@@ -48,39 +54,39 @@ class TestFRD(unittest.TestCase):
         f2 = FRD(h2, omega)
 
         np.testing.assert_array_almost_equal(
-            (f1 + f2).freqresp([0.1, 1.0, 10])[0],
-            (h1 + h2).freqresp([0.1, 1.0, 10])[0])
+            (f1 + f2).frequency_response([0.1, 1.0, 10])[0],
+            (h1 + h2).frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            (f1 + f2).freqresp([0.1, 1.0, 10])[1],
-            (h1 + h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 + f2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 + h2).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (f1 - f2).freqresp([0.1, 1.0, 10])[0],
-            (h1 - h2).freqresp([0.1, 1.0, 10])[0])
+            (f1 - f2).frequency_response([0.1, 1.0, 10])[0],
+            (h1 - h2).frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            (f1 - f2).freqresp([0.1, 1.0, 10])[1],
-            (h1 - h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 - f2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 - h2).frequency_response([0.1, 1.0, 10])[1])
 
         # multiplication and division
         np.testing.assert_array_almost_equal(
-            (f1 * f2).freqresp([0.1, 1.0, 10])[1],
-            (h1 * h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 * f2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 * h2).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (f1 / f2).freqresp([0.1, 1.0, 10])[1],
-            (h1 / h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 / f2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 / h2).frequency_response([0.1, 1.0, 10])[1])
 
         # with default conversion from scalar
         np.testing.assert_array_almost_equal(
-            (f1 * 1.5).freqresp([0.1, 1.0, 10])[1],
-            (h1 * 1.5).freqresp([0.1, 1.0, 10])[1])
+            (f1 * 1.5).frequency_response([0.1, 1.0, 10])[1],
+            (h1 * 1.5).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (f1 / 1.7).freqresp([0.1, 1.0, 10])[1],
-            (h1 / 1.7).freqresp([0.1, 1.0, 10])[1])
+            (f1 / 1.7).frequency_response([0.1, 1.0, 10])[1],
+            (h1 / 1.7).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (2.2 * f2).freqresp([0.1, 1.0, 10])[1],
-            (2.2 * h2).freqresp([0.1, 1.0, 10])[1])
+            (2.2 * f2).frequency_response([0.1, 1.0, 10])[1],
+            (2.2 * h2).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (1.3 / f2).freqresp([0.1, 1.0, 10])[1],
-            (1.3 / h2).freqresp([0.1, 1.0, 10])[1])
+            (1.3 / f2).frequency_response([0.1, 1.0, 10])[1],
+            (1.3 / h2).frequency_response([0.1, 1.0, 10])[1])
 
     def testOperatorsTf(self):
         # get two SISO transfer functions
@@ -92,24 +98,24 @@ class TestFRD(unittest.TestCase):
         f2  # reference to avoid pyflakes error
 
         np.testing.assert_array_almost_equal(
-            (f1 + h2).freqresp([0.1, 1.0, 10])[0],
-            (h1 + h2).freqresp([0.1, 1.0, 10])[0])
+            (f1 + h2).frequency_response([0.1, 1.0, 10])[0],
+            (h1 + h2).frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            (f1 + h2).freqresp([0.1, 1.0, 10])[1],
-            (h1 + h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 + h2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 + h2).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (f1 - h2).freqresp([0.1, 1.0, 10])[0],
-            (h1 - h2).freqresp([0.1, 1.0, 10])[0])
+            (f1 - h2).frequency_response([0.1, 1.0, 10])[0],
+            (h1 - h2).frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            (f1 - h2).freqresp([0.1, 1.0, 10])[1],
-            (h1 - h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 - h2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 - h2).frequency_response([0.1, 1.0, 10])[1])
         # multiplication and division
         np.testing.assert_array_almost_equal(
-            (f1 * h2).freqresp([0.1, 1.0, 10])[1],
-            (h1 * h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 * h2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 * h2).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (f1 / h2).freqresp([0.1, 1.0, 10])[1],
-            (h1 / h2).freqresp([0.1, 1.0, 10])[1])
+            (f1 / h2).frequency_response([0.1, 1.0, 10])[1],
+            (h1 / h2).frequency_response([0.1, 1.0, 10])[1])
         # the reverse does not work
 
     def testbdalg(self):
@@ -121,45 +127,45 @@ class TestFRD(unittest.TestCase):
         f2 = FRD(h2, omega)
 
         np.testing.assert_array_almost_equal(
-            (bdalg.series(f1, f2)).freqresp([0.1, 1.0, 10])[0],
-            (bdalg.series(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+            (bdalg.series(f1, f2)).frequency_response([0.1, 1.0, 10])[0],
+            (bdalg.series(h1, h2)).frequency_response([0.1, 1.0, 10])[0])
 
         np.testing.assert_array_almost_equal(
-            (bdalg.parallel(f1, f2)).freqresp([0.1, 1.0, 10])[0],
-            (bdalg.parallel(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+            (bdalg.parallel(f1, f2)).frequency_response([0.1, 1.0, 10])[0],
+            (bdalg.parallel(h1, h2)).frequency_response([0.1, 1.0, 10])[0])
 
         np.testing.assert_array_almost_equal(
-            (bdalg.feedback(f1, f2)).freqresp([0.1, 1.0, 10])[0],
-            (bdalg.feedback(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+            (bdalg.feedback(f1, f2)).frequency_response([0.1, 1.0, 10])[0],
+            (bdalg.feedback(h1, h2)).frequency_response([0.1, 1.0, 10])[0])
 
         np.testing.assert_array_almost_equal(
-            (bdalg.negate(f1)).freqresp([0.1, 1.0, 10])[0],
-            (bdalg.negate(h1)).freqresp([0.1, 1.0, 10])[0])
+            (bdalg.negate(f1)).frequency_response([0.1, 1.0, 10])[0],
+            (bdalg.negate(h1)).frequency_response([0.1, 1.0, 10])[0])
 
 #       append() and connect() not implemented for FRD objects
 #        np.testing.assert_array_almost_equal(
-#            (bdalg.append(f1, f2)).freqresp([0.1, 1.0, 10])[0],
-#            (bdalg.append(h1, h2)).freqresp([0.1, 1.0, 10])[0])
+#            (bdalg.append(f1, f2)).frequency_response([0.1, 1.0, 10])[0],
+#            (bdalg.append(h1, h2)).frequency_response([0.1, 1.0, 10])[0])
 #
 #        f3 = bdalg.append(f1, f2, f2)
 #        h3 = bdalg.append(h1, h2, h2)
 #        Q = np.mat([ [1, 2], [2, -1] ])
 #        np.testing.assert_array_almost_equal(
-#           (bdalg.connect(f3, Q, [2], [1])).freqresp([0.1, 1.0, 10])[0],
-#            (bdalg.connect(h3, Q, [2], [1])).freqresp([0.1, 1.0, 10])[0])
+#           (bdalg.connect(f3, Q, [2], [1])).frequency_response([0.1, 1.0, 10])[0],
+#            (bdalg.connect(h3, Q, [2], [1])).frequency_response([0.1, 1.0, 10])[0])
 
     def testFeedback(self):
         h1 = TransferFunction([1], [1, 2, 2])
         omega = np.logspace(-1, 2, 10)
         f1 = FRD(h1, omega)
         np.testing.assert_array_almost_equal(
-            f1.feedback(1).freqresp([0.1, 1.0, 10])[0],
-            h1.feedback(1).freqresp([0.1, 1.0, 10])[0])
+            f1.feedback(1).frequency_response([0.1, 1.0, 10])[0],
+            h1.feedback(1).frequency_response([0.1, 1.0, 10])[0])
 
         # Make sure default argument also works
         np.testing.assert_array_almost_equal(
-            f1.feedback().freqresp([0.1, 1.0, 10])[0],
-            h1.feedback().freqresp([0.1, 1.0, 10])[0])
+            f1.feedback().frequency_response([0.1, 1.0, 10])[0],
+            h1.feedback().frequency_response([0.1, 1.0, 10])[0])
 
     def testFeedback2(self):
         h2 = StateSpace([[-1.0, 0], [0, -2.0]], [[0.4], [0.1]],
@@ -168,9 +174,9 @@ class TestFRD(unittest.TestCase):
 
     def testAuto(self):
         omega = np.logspace(-1, 2, 10)
-        f1 = _convertToFRD(1, omega)
-        f2 = _convertToFRD(np.matrix([[1, 0], [0.1, -1]]), omega)
-        f2 = _convertToFRD([[1, 0], [0.1, -1]], omega)
+        f1 = _convert_to_FRD(1, omega)
+        f2 = _convert_to_FRD(np.array([[1, 0], [0.1, -1]]), omega)
+        f2 = _convert_to_FRD([[1, 0], [0.1, -1]], omega)
         f1, f2  # reference to avoid pyflakes error
 
     def testNyquist(self):
@@ -183,7 +189,7 @@ class TestFRD(unittest.TestCase):
         freqplot.nyquist(f1, f1.omega)
         # plt.savefig('/dev/null', format='svg')
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMIMO(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
@@ -192,13 +198,13 @@ class TestFRD(unittest.TestCase):
         omega = np.logspace(-1, 2, 10)
         f1 = FRD(sys, omega)
         np.testing.assert_array_almost_equal(
-            sys.freqresp([0.1, 1.0, 10])[0],
-            f1.freqresp([0.1, 1.0, 10])[0])
+            sys.frequency_response([0.1, 1.0, 10])[0],
+            f1.frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            sys.freqresp([0.1, 1.0, 10])[1],
-            f1.freqresp([0.1, 1.0, 10])[1])
+            sys.frequency_response([0.1, 1.0, 10])[1],
+            f1.frequency_response([0.1, 1.0, 10])[1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMIMOfb(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
@@ -208,29 +214,31 @@ class TestFRD(unittest.TestCase):
         f1 = FRD(sys, omega).feedback([[0.1, 0.3], [0.0, 1.0]])
         f2 = FRD(sys.feedback([[0.1, 0.3], [0.0, 1.0]]), omega)
         np.testing.assert_array_almost_equal(
-            f1.freqresp([0.1, 1.0, 10])[0],
-            f2.freqresp([0.1, 1.0, 10])[0])
+            f1.frequency_response([0.1, 1.0, 10])[0],
+            f2.frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            f1.freqresp([0.1, 1.0, 10])[1],
-            f2.freqresp([0.1, 1.0, 10])[1])
+            f1.frequency_response([0.1, 1.0, 10])[1],
+            f2.frequency_response([0.1, 1.0, 10])[1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMIMOfb2(self):
-        sys = StateSpace(np.matrix('-2.0 0 0; 0 -1 1; 0 0 -3'),
-                         np.matrix('1.0 0; 0 0; 0 1'),
+        sys = StateSpace(np.array([[-2.0, 0, 0],
+                                   [0, -1, 1],
+                                   [0, 0, -3]]),
+                         np.array([[1.0, 0], [0, 0], [0, 1]]),
                          np.eye(3), np.zeros((3, 2)))
         omega = np.logspace(-1, 2, 10)
-        K = np.matrix('1 0.3 0; 0.1 0 0')
+        K = np.array([[1, 0.3, 0], [0.1, 0, 0]])
         f1 = FRD(sys, omega).feedback(K)
         f2 = FRD(sys.feedback(K), omega)
         np.testing.assert_array_almost_equal(
-            f1.freqresp([0.1, 1.0, 10])[0],
-            f2.freqresp([0.1, 1.0, 10])[0])
+            f1.frequency_response([0.1, 1.0, 10])[0],
+            f2.frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            f1.freqresp([0.1, 1.0, 10])[1],
-            f2.freqresp([0.1, 1.0, 10])[1])
+            f1.frequency_response([0.1, 1.0, 10])[1],
+            f2.frequency_response([0.1, 1.0, 10])[1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMIMOMult(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
@@ -240,78 +248,85 @@ class TestFRD(unittest.TestCase):
         f1 = FRD(sys, omega)
         f2 = FRD(sys, omega)
         np.testing.assert_array_almost_equal(
-            (f1*f2).freqresp([0.1, 1.0, 10])[0],
-            (sys*sys).freqresp([0.1, 1.0, 10])[0])
+            (f1*f2).frequency_response([0.1, 1.0, 10])[0],
+            (sys*sys).frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            (f1*f2).freqresp([0.1, 1.0, 10])[1],
-            (sys*sys).freqresp([0.1, 1.0, 10])[1])
+            (f1*f2).frequency_response([0.1, 1.0, 10])[1],
+            (sys*sys).frequency_response([0.1, 1.0, 10])[1])
 
-    @unittest.skipIf(not slycot_check(), "slycot not installed")
+    @slycotonly
     def testMIMOSmooth(self):
         sys = StateSpace([[-0.5, 0.0], [0.0, -1.0]],
                          [[1.0, 0.0], [0.0, 1.0]],
                          [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
                          [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]])
-        sys2 = np.matrix([[1, 0, 0], [0, 1, 0]]) * sys
+        sys2 = np.array([[1, 0, 0], [0, 1, 0]]) * sys
         omega = np.logspace(-1, 2, 10)
         f1 = FRD(sys, omega, smooth=True)
         f2 = FRD(sys2, omega, smooth=True)
         np.testing.assert_array_almost_equal(
-            (f1*f2).freqresp([0.1, 1.0, 10])[0],
-            (sys*sys2).freqresp([0.1, 1.0, 10])[0])
+            (f1*f2).frequency_response([0.1, 1.0, 10])[0],
+            (sys*sys2).frequency_response([0.1, 1.0, 10])[0])
         np.testing.assert_array_almost_equal(
-            (f1*f2).freqresp([0.1, 1.0, 10])[1],
-            (sys*sys2).freqresp([0.1, 1.0, 10])[1])
+            (f1*f2).frequency_response([0.1, 1.0, 10])[1],
+            (sys*sys2).frequency_response([0.1, 1.0, 10])[1])
         np.testing.assert_array_almost_equal(
-            (f1*f2).freqresp([0.1, 1.0, 10])[2],
-            (sys*sys2).freqresp([0.1, 1.0, 10])[2])
+            (f1*f2).frequency_response([0.1, 1.0, 10])[2],
+            (sys*sys2).frequency_response([0.1, 1.0, 10])[2])
 
     def testAgainstOctave(self):
         # with data from octave:
         # sys = ss([-2 0 0; 0 -1 1; 0 0 -3],
         #  [1 0; 0 0; 0 1], eye(3), zeros(3,2))
         # bfr = frd(bsys, [1])
-        sys = StateSpace(np.matrix('-2.0 0 0; 0 -1 1; 0 0 -3'),
-                         np.matrix('1.0 0; 0 0; 0 1'),
+        sys = StateSpace(np.array([[-2.0, 0, 0], [0, -1, 1], [0, 0, -3]]),
+                         np.array([[1.0, 0], [0, 0], [0, 1]]),
                          np.eye(3), np.zeros((3, 2)))
         omega = np.logspace(-1, 2, 10)
         f1 = FRD(sys, omega)
         np.testing.assert_array_almost_equal(
-            (f1.freqresp([1.0])[0] *
-             np.exp(1j*f1.freqresp([1.0])[1])).reshape(3, 2),
-            np.matrix('0.4-0.2j 0; 0 0.1-0.2j; 0 0.3-0.1j'))
+            (f1.frequency_response([1.0])[0] *
+             np.exp(1j * f1.frequency_response([1.0])[1])).reshape(3, 2),
+            np.array([[0.4 - 0.2j, 0], [0, 0.1 - 0.2j], [0, 0.3 - 0.1j]]))
 
-    def test_string_representation(self):
+    def test_string_representation(self, capsys):
         sys = FRD([1, 2, 3], [4, 5, 6])
         print(sys)              # Just print without checking
 
-    def test_frequency_mismatch(self):
+    def test_frequency_mismatch(self, recwarn):
+        # recwarn: there may be a warning before the error!
         # Overlapping but non-equal frequency ranges
         sys1 = FRD([1, 2, 3], [4, 5, 6])
         sys2 = FRD([2, 3, 4], [5, 6, 7])
-        self.assertRaises(NotImplementedError, FRD.__add__, sys1, sys2)
+        with pytest.raises(NotImplementedError):
+            FRD.__add__(sys1, sys2)
 
         # One frequency range is a subset of another
         sys1 = FRD([1, 2, 3], [4, 5, 6])
         sys2 = FRD([2, 3], [4, 5])
-        self.assertRaises(NotImplementedError, FRD.__add__, sys1, sys2)
+        with pytest.raises(NotImplementedError):
+            FRD.__add__(sys1, sys2)
 
     def test_size_mismatch(self):
         sys1 = FRD(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
 
         # Different number of inputs
         sys2 = FRD(ct.rss(3, 1, 2), np.logspace(-1, 1, 10))
-        self.assertRaises(ValueError, FRD.__add__, sys1, sys2)
+        with pytest.raises(ValueError):
+            FRD.__add__(sys1, sys2)
 
         # Different number of outputs
         sys2 = FRD(ct.rss(3, 2, 1), np.logspace(-1, 1, 10))
-        self.assertRaises(ValueError, FRD.__add__, sys1, sys2)
+        with pytest.raises(ValueError):
+            FRD.__add__(sys1, sys2)
 
         # Inputs and outputs don't match
-        self.assertRaises(ValueError, FRD.__mul__, sys2, sys1)
+        with pytest.raises(ValueError):
+            FRD.__mul__(sys2, sys1)
 
         # Feedback mismatch
-        self.assertRaises(ValueError, FRD.feedback, sys2, sys1)
+        with pytest.raises(ValueError):
+            FRD.feedback(sys2, sys1)
 
     def test_operator_conversion(self):
         sys_tf = ct.tf([1], [1, 2, 1])
@@ -365,7 +380,8 @@ class TestFRD(unittest.TestCase):
         np.testing.assert_array_almost_equal(sys_pow.fresp, chk_pow.fresp)
 
         # Assertion error if we try to raise to a non-integer power
-        self.assertRaises(ValueError, FRD.__pow__, frd_tf, 0.5)
+        with pytest.raises(ValueError):
+            FRD.__pow__(frd_tf, 0.5)
 
         # Selected testing on transfer function conversion
         sys_add = frd_2 + sys_tf
@@ -375,44 +391,36 @@ class TestFRD(unittest.TestCase):
 
         # Input/output mismatch size mismatch in  rmul
         sys1 = FRD(ct.rss(2, 2, 2), np.logspace(-1, 1, 10))
-        self.assertRaises(ValueError, FRD.__rmul__, frd_2, sys1)
+        with pytest.raises(ValueError):
+            FRD.__rmul__(frd_2, sys1)
 
         # Make sure conversion of something random generates exception
-        self.assertRaises(TypeError,  FRD.__add__, frd_tf, 'string')
+        with pytest.raises(TypeError):
+            FRD.__add__(frd_tf, 'string')
 
     def test_eval(self):
         sys_tf = ct.tf([1], [1, 2, 1])
         frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
-        np.testing.assert_almost_equal(sys_tf.evalfr(1), frd_tf.eval(1))
+        np.testing.assert_almost_equal(sys_tf(1j), frd_tf.eval(1))
+        np.testing.assert_almost_equal(sys_tf(1j), frd_tf(1j))
 
         # Should get an error if we evaluate at an unknown frequency
-        self.assertRaises(ValueError, frd_tf.eval, 2)
+        with pytest.raises(ValueError, match="not .* in frequency list"):
+            frd_tf.eval(2)
 
-    # This test only works in Python 3 due to a conflict with the same
-    # warning type in other test modules (frd_test.py).  See
-    # https://bugs.python.org/issue4180 for more details
-    @unittest.skipIf(pysys.version_info < (3, 0), "test requires Python 3+")
-    def test_evalfr_deprecated(self):
+        # Should get an error if we evaluate at an complex number
+        with pytest.raises(ValueError, match="can only accept real-valued"):
+            frd_tf.eval(2 + 1j)
+
+        # Should get an error if we use __call__ at real-valued frequency
+        with pytest.raises(ValueError, match="only accept purely imaginary"):
+            frd_tf(2)
+
+    def test_freqresp_deprecated(self):
         sys_tf = ct.tf([1], [1, 2, 1])
         frd_tf = FRD(sys_tf, np.logspace(-1, 1, 3))
-
-        # Deprecated version of the call (should generate warning)
-        import warnings
-        with warnings.catch_warnings():
-            # Make warnings generate an exception
-            warnings.simplefilter('error')
-
-            # Make sure that we get a pending deprecation warning
-            self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
-
-        # FRD.evalfr() is being deprecated
-        import warnings
-        with warnings.catch_warnings():
-            # Make warnings generate an exception
-            warnings.simplefilter('error')
-
-            # Make sure that we get a pending deprecation warning
-            self.assertRaises(PendingDeprecationWarning, frd_tf.evalfr, 1.)
+        with pytest.warns(DeprecationWarning):
+            frd_tf.freqresp(1.)
 
     def test_repr_str(self):
         # repr printing
@@ -427,8 +435,8 @@ class TestFRD(unittest.TestCase):
         sysm = FrequencyResponseData(
             np.matmul(array([[1],[2]]), sys0.fresp), sys0.omega)
 
-        self.assertEqual(repr(sys0), ref0)
-        self.assertEqual(repr(sys1), ref1)
+        assert repr(sys0) == ref0
+        assert repr(sys1) == ref1
         sys0r = eval(repr(sys0))
         np.testing.assert_array_almost_equal(sys0r.fresp, sys0.fresp)
         np.testing.assert_array_almost_equal(sys0r.omega, sys0.omega)
@@ -444,8 +452,8 @@ Freq [rad/s]  Response
        1.000         0.9      +0.1j
       10.000         0.1        +2j
      100.000        0.05        +3j"""
-        self.assertEqual(str(sys0), refs)
-        self.assertEqual(str(sys1), refs)
+        assert str(sys0) == refs
+        assert str(sys1) == refs
 
         # print multi-input system
         refm = """Frequency response data
@@ -463,7 +471,4 @@ Freq [rad/s]  Response
        1.000         1.8      +0.2j
       10.000         0.2        +4j
      100.000         0.1        +6j"""
-        self.assertEqual(str(sysm), refm)
-
-if __name__ == "__main__":
-    unittest.main()
+        assert str(sysm) == refm

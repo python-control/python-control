@@ -30,7 +30,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # -- Project information -----------------------------------------------------
 
 project = u'Python Control Systems Library'
-copyright = u'2019, python-control.org'
+copyright = u'2020, python-control.org'
 author = u'Python Control Developers'
 
 # Version information - read from the source code
@@ -48,14 +48,14 @@ print("version %s, release %s" % (version, release))
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
+needs_sphinx = '3.1'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
     'sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.napoleon',
-    'sphinx.ext.intersphinx', 'sphinx.ext.imgmath', 
+    'sphinx.ext.intersphinx', 'sphinx.ext.imgmath',
     'sphinx.ext.autosummary', 'nbsphinx',
 ]
 
@@ -64,7 +64,11 @@ autosummary_generate = True
 
 # list of autodoc directive flags that should be automatically applied
 # to all autodoc directives.
-autodoc_default_flags = ['members', 'inherited-members']
+autodoc_default_options = {
+    'members': True,
+    'inherited-members': True,
+    'exclude-members': '__init__, __weakref__, __repr__, __str__'
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -94,14 +98,16 @@ exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store',
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
-#This config value contains the locations and names of other projects that 
-#should be linked to in this documentation.
+# This config value contains the locations and names of other projects that
+# should be linked to in this documentation.
 intersphinx_mapping = \
-    {'scipy':('https://docs.scipy.org/doc/scipy/reference', None),
-     'numpy':('https://docs.scipy.org/doc/numpy', None)}
+    {'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
+     'numpy': ('https://numpy.org/doc/stable', None),
+     'matplotlib': ('https://matplotlib.org/', None),
+     }
 
-#If this is True, todo and todolist produce output, else they produce nothing. 
-#The default is False.
+# If this is True, todo and todolist produce output, else they produce nothing.
+# The default is False.
 todo_include_todos = True
 
 
@@ -189,11 +195,3 @@ texinfo_documents = [
      author, 'PythonControlLibrary', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-# -- Extension configuration -------------------------------------------------
-
-# -- Options for intersphinx extension ---------------------------------------
-
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}

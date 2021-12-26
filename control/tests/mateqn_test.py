@@ -1,15 +1,6 @@
-#!/usr/bin/env python
-from __future__ import print_function
-#
-# mateqn_test.py - test wuit for matrix equation solvers
-#
-#! Currently uses numpy.testing framework; will dump you out of unittest
-#! if an error occurs.  Should figure out the right way to fix this.
+"""mateqn_test.py - test suite for matrix equation solvers
 
-""" Test cases for lyap, dlyap, care and dare functions in the file
-pyctrl_lin_alg.py. """
-
-"""Copyright (c) 2011, All rights reserved.
+Copyright (c) 2020, All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -42,18 +33,18 @@ SUCH DAMAGE.
 Author: Bjorn Olofsson
 """
 
-import unittest
-from numpy import array
-from numpy.testing import assert_array_almost_equal, assert_array_less, \
-                          assert_raises
-# need scipy version of eigvals for generalized eigenvalue problem
+from numpy import array, zeros
+from numpy.testing import assert_array_almost_equal, assert_array_less
+import pytest
 from scipy.linalg import eigvals, solve
-from scipy import zeros,dot
-from control.mateqn import lyap,dlyap,care,dare
-from control.exception import slycot_check, ControlArgument
 
-@unittest.skipIf(not slycot_check(), "slycot not installed")
-class TestMatrixEquations(unittest.TestCase):
+from control.mateqn import lyap, dlyap, care, dare
+from control.exception import ControlArgument
+from control.tests.conftest import slycotonly
+
+
+@slycotonly
+class TestMatrixEquations:
     """These are tests for the matrix equation solvers in mateqn.py"""
 
     def test_lyap(self):
@@ -90,7 +81,8 @@ class TestMatrixEquations(unittest.TestCase):
         E = array([[1,2],[2,1]])
         X = lyap(A,Q,None,E)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X).dot(E.T) + E.dot(X).dot(A.T) + Q, zeros((2,2)))
+        assert_array_almost_equal(A.dot(X).dot(E.T) + E.dot(X).dot(A.T) + Q,
+                                  zeros((2,2)))
 
     def test_dlyap(self):
         A = array([[-0.6, 0],[-0.1, -0.4]])
@@ -111,7 +103,8 @@ class TestMatrixEquations(unittest.TestCase):
         E = array([[1, 1],[2, 1]])
         X = dlyap(A,Q,None,E)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X).dot(A.T) - E.dot(X).dot(E.T) + Q, zeros((2,2)))
+        assert_array_almost_equal(A.dot(X).dot(A.T) - E.dot(X).dot(E.T) + Q,
+                                  zeros((2,2)))
 
     def test_dlyap_sylvester(self):
         A = 5
@@ -135,7 +128,8 @@ class TestMatrixEquations(unittest.TestCase):
 
         X,L,G = care(A,B,Q)
         # print("The solution obtained is", X)
-        assert_array_almost_equal(A.T.dot(X) + X.dot(A) - X.dot(B).dot(B.T).dot(X) + Q,
+        M = A.T.dot(X) + X.dot(A) - X.dot(B).dot(B.T).dot(X) + Q
+        assert_array_almost_equal(M,
                                   zeros((2,2)))
         assert_array_almost_equal(B.T.dot(X), G)
 
@@ -156,6 +150,7 @@ class TestMatrixEquations(unittest.TestCase):
             - (E.T.dot(X).dot(B) + S).dot(Gref) + Q,
             zeros((2,2)))
 
+    def test_care_g2(self):
         A = array([[-2, -1],[-1, -1]])
         Q = array([[0, 0],[0, 1]])
         B = array([[1],[0]])
@@ -183,9 +178,7 @@ class TestMatrixEquations(unittest.TestCase):
         Gref = solve(B.T.dot(X).dot(B) + R, B.T.dot(X).dot(A))
         assert_array_almost_equal(Gref, G)
         assert_array_almost_equal(
-            A.T.dot(X).dot(A) - X -
-            A.T.dot(X).dot(B).dot(Gref) + Q,
-            zeros((2,2)))
+            X, A.T.dot(X).dot(A) - A.T.dot(X).dot(B).dot(Gref) + Q)
         # check for stable closed loop
         lam = eigvals(A - B.dot(G))
         assert_array_less(abs(lam), 1.0)
@@ -197,10 +190,13 @@ class TestMatrixEquations(unittest.TestCase):
 
         X,L,G = dare(A,B,Q,R)
         # print("The solution obtained is", X)
+        AtXA = A.T.dot(X).dot(A)
+        AtXB = A.T.dot(X).dot(B)
+        BtXA = B.T.dot(X).dot(A)
+        BtXB = B.T.dot(X).dot(B)
         assert_array_almost_equal(
-            A.T.dot(X).dot(A) - X -
-            A.T.dot(X).dot(B) * solve(B.T.dot(X).dot(B) + R, B.T.dot(X).dot(A)) + Q, zeros((2,2)))
-        assert_array_almost_equal(B.T.dot(X).dot(A) / (B.T.dot(X).dot(B) + R), G)
+            X, AtXA - AtXB.dot(solve(BtXB + R, BtXA)) + Q)
+        assert_array_almost_equal(BtXA / (BtXB + R), G)
         # check for stable closed loop
         lam = eigvals(A - B.dot(G))
         assert_array_less(abs(lam), 1.0)
@@ -216,29 +212,32 @@ class TestMatrixEquations(unittest.TestCase):
         X,L,G = dare(A,B,Q,R,S,E)
         # print("The solution obtained is", X)
         Gref = solve(B.T.dot(X).dot(B) + R, B.T.dot(X).dot(A) + S.T)
-        assert_array_almost_equal(Gref,G)
+        assert_array_almost_equal(Gref, G)
         assert_array_almost_equal(
-            A.T.dot(X).dot(A) - E.T.dot(X).dot(E)
-            - (A.T.dot(X).dot(B) + S).dot(Gref) + Q,
-            zeros((2,2)) )
+            E.T.dot(X).dot(E),
+            A.T.dot(X).dot(A) - (A.T.dot(X).dot(B) + S).dot(Gref) + Q)
         # check for stable closed loop
         lam = eigvals(A - B.dot(G), E)
         assert_array_less(abs(lam), 1.0)
 
-        A = array([[-0.6, 0],[-0.1, -0.4]])
-        Q = array([[2, 1],[1, 3]])
-        B = array([[1],[2]])
+    def test_dare_g2(self):
+        A = array([[-0.6, 0], [-0.1, -0.4]])
+        Q = array([[2, 1], [1, 3]])
+        B = array([[1], [2]])
         R = 1
-        S = array([[1],[2]])
-        E = array([[2, 1],[1, 2]])
+        S = array([[1], [2]])
+        E = array([[2, 1], [1, 2]])
 
-        X,L,G = dare(A,B,Q,R,S,E)
+        X, L, G = dare(A, B, Q, R, S, E)
         # print("The solution obtained is", X)
+        AtXA = A.T.dot(X).dot(A)
+        AtXB = A.T.dot(X).dot(B)
+        BtXA = B.T.dot(X).dot(A)
+        BtXB = B.T.dot(X).dot(B)
+        EtXE = E.T.dot(X).dot(E)
         assert_array_almost_equal(
-            A.T.dot(X).dot(A) - E.T.dot(X).dot(E) -
-            (A.T.dot(X).dot(B) + S).dot(solve(B.T.dot(X).dot(B) + R, B.T.dot(X).dot(A) + S.T)) + Q,
-            zeros((2,2)) )
-        assert_array_almost_equal((B.T.dot(X).dot(A) + S.T) / (B.T.dot(X).dot(B) + R), G)
+            EtXE, AtXA - (AtXB + S).dot(solve(BtXB + R, BtXA + S.T)) + Q)
+        assert_array_almost_equal((BtXA + S.T) / (BtXB + R), G)
         # check for stable closed loop
         lam = eigvals(A - B.dot(G), E)
         assert_array_less(abs(lam), 1.0)
@@ -260,16 +259,26 @@ class TestMatrixEquations(unittest.TestCase):
         Efq = array([[2, 1, 0], [1, 2, 0]])
 
         for cdlyap in [lyap, dlyap]:
-            assert_raises(ControlArgument, cdlyap, Afq, Q)
-            assert_raises(ControlArgument, cdlyap, A, Qfq)
-            assert_raises(ControlArgument, cdlyap, A, Qfs)
-            assert_raises(ControlArgument, cdlyap, Afq, Q, C)
-            assert_raises(ControlArgument, cdlyap, A, Qfq, C)
-            assert_raises(ControlArgument, cdlyap, A, Q, Cfd)
-            assert_raises(ControlArgument, cdlyap, A, Qfq, None, E)
-            assert_raises(ControlArgument, cdlyap, A, Q, None, Efq)
-            assert_raises(ControlArgument, cdlyap, A, Qfs, None, E)
-            assert_raises(ControlArgument, cdlyap, A, Q, C, E)
+            with pytest.raises(ControlArgument):
+                cdlyap(Afq, Q)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Qfq)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Qfs)
+            with pytest.raises(ControlArgument):
+                cdlyap(Afq, Q, C)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Qfq, C)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Q, Cfd)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Qfq, None, E)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Q, None, Efq)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Qfs, None, E)
+            with pytest.raises(ControlArgument):
+                cdlyap(A, Q, C, E)
 
         B = array([[1, 0], [0, 1]])
         Bf = array([[1, 0], [0, 1], [1, 1]])
@@ -281,23 +290,34 @@ class TestMatrixEquations(unittest.TestCase):
         E = array([[2, 1], [1, 2]])
         Ef = array([[2, 1], [1, 2], [1, 2]])
 
-        assert_raises(ControlArgument, care, Afq, B, Q)
-        assert_raises(ControlArgument, care, A, B, Qfq)
-        assert_raises(ControlArgument, care, A, Bf, Q)
-        assert_raises(ControlArgument, care, 1, B, 1)
-        assert_raises(ControlArgument, care, A, B, Qfs)
-        assert_raises(ValueError, dare, A, B, Q, Rfs)
+        with pytest.raises(ControlArgument):
+            care(Afq, B, Q)
+        with pytest.raises(ControlArgument):
+            care(A, B, Qfq)
+        with pytest.raises(ControlArgument):
+            care(A, Bf, Q)
+        with pytest.raises(ControlArgument):
+            care(1, B, 1)
+        with pytest.raises(ControlArgument):
+            care(A, B, Qfs)
+        with pytest.raises(ValueError):
+            dare(A, B, Q, Rfs)
         for cdare in [care, dare]:
-            assert_raises(ControlArgument, cdare, Afq, B, Q, R, S, E)
-            assert_raises(ControlArgument, cdare, A, B, Qfq, R, S, E)
-            assert_raises(ControlArgument, cdare, A, Bf, Q, R, S, E)
-            assert_raises(ControlArgument, cdare, A, B, Q, R, S, Ef)
-            assert_raises(ControlArgument, cdare, A, B, Q, Rfq, S, E)
-            assert_raises(ControlArgument, cdare, A, B, Q, R, Sf, E)
-            assert_raises(ControlArgument, cdare, A, B, Qfs, R, S, E)
-            assert_raises(ControlArgument, cdare, A, B, Q, Rfs, S, E)
-            assert_raises(ControlArgument, cdare, A, B, Q, R, S)
-
-
-if __name__ == "__main__":
-    unittest.main()
+            with pytest.raises(ControlArgument):
+                cdare(Afq, B, Q, R, S, E)
+            with pytest.raises(ControlArgument):
+                cdare(A, B, Qfq, R, S, E)
+            with pytest.raises(ControlArgument):
+                cdare(A, Bf, Q, R, S, E)
+            with pytest.raises(ControlArgument):
+                cdare(A, B, Q, R, S, Ef)
+            with pytest.raises(ControlArgument):
+                cdare(A, B, Q, Rfq, S, E)
+            with pytest.raises(ControlArgument):
+                cdare(A, B, Q, R, Sf, E)
+            with pytest.raises(ControlArgument):
+                cdare(A, B, Qfs, R, S, E)
+            with pytest.raises(ControlArgument):
+                cdare(A, B, Q, Rfs, S, E)
+            with pytest.raises(ControlArgument):
+                cdare(A, B, Q, R, S)

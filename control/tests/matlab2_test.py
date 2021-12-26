@@ -1,56 +1,41 @@
-'''
-Copyright (C) 2011 by Eike Welk.
+"""matlab2_test.py
 
 Test the control.matlab toolbox.
-'''
 
-import unittest
+Copyright (C) 2011 by Eike Welk.
+"""
 
+
+from matplotlib.pyplot import figure, plot, legend, subplot2grid
 import numpy as np
-import scipy.signal
+from numpy import array, matrix, zeros, linspace, r_
 from numpy.testing import assert_array_almost_equal
-from numpy import array, asarray, matrix, asmatrix, zeros, ones, linspace,\
-                  all, hstack, vstack, c_, r_
-from matplotlib.pylab import show, figure, plot, legend, subplot2grid
-from control.matlab import ss, step, impulse, initial, lsim, dcgain, \
-                           ss2tf
+
+import pytest
+import scipy.signal
+
+from control.matlab import ss, step, impulse, initial, lsim, dcgain, ss2tf
 from control.statesp import _mimo2siso
 from control.timeresp import _check_convert_array
-from control.exception import slycot_check
-import warnings
-
-class TestControlMatlab(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
-    def plot_matrix(self):
-        #Test: can matplotlib correctly plot matrices?
-        #Yes, but slightly inconvenient
-        figure()
-        t = matrix([[ 1.],
-                    [ 2.],
-                    [ 3.],
-                    [ 4.]])
-        y = matrix([[ 1., 4.],
-                    [ 4., 5.],
-                    [ 9., 6.],
-                    [16., 7.]])
-        plot(t, y)
-        #plot(asarray(t)[0], asarray(y)[0])
+from control.tests.conftest import slycotonly
 
 
-    def make_SISO_mats(self):
+class TestControlMatlab:
+    """Test the control.matlab toolbox."""
+
+    @pytest.fixture
+    def SISO_mats(self):
         """Return matrices for a SISO system"""
-        A = matrix([[-81.82, -45.45],
+        A =  array([[-81.82, -45.45],
                     [ 10.,    -1.  ]])
-        B = matrix([[9.09],
+        B =  array([[9.09],
                     [0.  ]])
-        C = matrix([[0, 0.159]])
+        C =  array([[0, 0.159]])
         D = zeros((1, 1))
         return A, B, C, D
 
-    def make_MIMO_mats(self):
+    @pytest.fixture
+    def MIMO_mats(self):
         """Return matrices for a MIMO system"""
         A = array([[-81.82, -45.45,   0,      0   ],
                    [ 10,     -1,      0,      0   ],
@@ -65,39 +50,40 @@ class TestControlMatlab(unittest.TestCase):
         D = zeros((2, 2))
         return A, B, C, D
 
-    def test_dcgain(self):
-        """Test function dcgain with different systems"""
-        if slycot_check():
-            #Test MIMO systems
-            A, B, C, D = self.make_MIMO_mats()
+    @slycotonly
+    def test_dcgain_mimo(self, MIMO_mats):
+        """Test function dcgain with MIMO systems"""
+        #Test MIMO systems
+        A, B, C, D = MIMO_mats
 
-            gain1 = dcgain(ss(A, B, C, D))
-            gain2 = dcgain(A, B, C, D)
-            sys_tf = ss2tf(A, B, C, D)
-            gain3 = dcgain(sys_tf)
-            gain4 = dcgain(sys_tf.num, sys_tf.den)
-            #print("gain1:", gain1)
+        gain1 = dcgain(ss(A, B, C, D))
+        gain2 = dcgain(A, B, C, D)
+        sys_tf = ss2tf(A, B, C, D)
+        gain3 = dcgain(sys_tf)
+        gain4 = dcgain(sys_tf.num, sys_tf.den)
+        #print("gain1:", gain1)
 
-            assert_array_almost_equal(gain1,
-                                      array([[0.0269, 0.    ],
-                                             [0.    , 0.0269]]),
-                                      decimal=4)
-            assert_array_almost_equal(gain1, gain2)
-            assert_array_almost_equal(gain3, gain4)
-            assert_array_almost_equal(gain1, gain4)
+        assert_array_almost_equal(gain1,
+                                  array([[0.0269, 0.    ],
+                                         [0.    , 0.0269]]),
+                                  decimal=4)
+        assert_array_almost_equal(gain1, gain2)
+        assert_array_almost_equal(gain3, gain4)
+        assert_array_almost_equal(gain1, gain4)
 
-        #Test SISO systems
-        A, B, C, D = self.make_SISO_mats()
+    def test_dcgain_siso(self, SISO_mats):
+        """Test function dcgain with SISO systems"""
+        A, B, C, D = SISO_mats
 
         gain1 = dcgain(ss(A, B, C, D))
         assert_array_almost_equal(gain1,
                                   array([[0.0269]]),
                                   decimal=4)
 
-    def test_dcgain_2(self):
+    def test_dcgain_2(self, SISO_mats):
         """Test function dcgain with different systems"""
         #Create different forms of a SISO system
-        A, B, C, D = self.make_SISO_mats()
+        A, B, C, D = SISO_mats
         num, den = scipy.signal.ss2tf(A, B, C, D)
         # numerator is only a constant here; pick it out to avoid numpy warning
         Z, P, k = scipy.signal.tf2zpk(num[0][-1], den)
@@ -124,39 +110,39 @@ class TestControlMatlab(unittest.TestCase):
                                    0.026948],
                                   decimal=6)
 
-    def test_step(self):
+    def test_step(self, SISO_mats, MIMO_mats, mplcleanup):
         """Test function ``step``."""
         figure(); plot_shape = (1, 3)
 
         #Test SISO system
-        A, B, C, D = self.make_SISO_mats()
+        A, B, C, D = SISO_mats
         sys = ss(A, B, C, D)
         #print(sys)
         #print("gain:", dcgain(sys))
 
         subplot2grid(plot_shape, (0, 0))
-        t, y = step(sys)
+        y, t = step(sys)
         plot(t, y)
 
         subplot2grid(plot_shape, (0, 1))
         T = linspace(0, 2, 100)
         X0 = array([1, 1])
-        t, y = step(sys, T, X0)
+        y, t = step(sys, T, X0)
         plot(t, y)
 
         # Test output of state vector
-        t, y, x = step(sys, return_x=True)
+        y, t, x = step(sys, return_x=True)
 
         #Test MIMO system
-        A, B, C, D = self.make_MIMO_mats()
+        A, B, C, D = MIMO_mats
         sys = ss(A, B, C, D)
 
         subplot2grid(plot_shape, (0, 2))
-        t, y = step(sys)
-        plot(t, y)
+        y, t = step(sys)
+        plot(t, y[:, 0, 0])
 
-    def test_impulse(self):
-        A, B, C, D = self.make_SISO_mats()
+    def test_impulse(self, SISO_mats, mplcleanup):
+        A, B, C, D = SISO_mats
         sys = ss(A, B, C, D)
 
         figure()
@@ -174,23 +160,23 @@ class TestControlMatlab(unittest.TestCase):
         #Test system with direct feed-though, the function should print a warning.
         D = [[0.5]]
         sys_ft = ss(A, B, C, D)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+        with pytest.warns(UserWarning, match="has direct feedthrough"):
             t, y = impulse(sys_ft)
             plot(t, y, label='Direct feedthrough D=[[0.5]]')
 
+    def test_impulse_mimo(self, MIMO_mats, mplcleanup):
         #Test MIMO system
-        A, B, C, D = self.make_MIMO_mats()
+        A, B, C, D = MIMO_mats
         sys = ss(A, B, C, D)
-        t, y = impulse(sys)
-        plot(t, y, label='MIMO System')
+        y, t = impulse(sys)
+        plot(t, y[:, :, 0], label='MIMO System')
 
         legend(loc='best')
         #show()
 
 
-    def test_initial(self):
-        A, B, C, D = self.make_SISO_mats()
+    def test_initial(self, SISO_mats, MIMO_mats, mplcleanup):
+        A, B, C, D = SISO_mats
         sys = ss(A, B, C, D)
 
         figure(); plot_shape = (1, 3)
@@ -202,11 +188,10 @@ class TestControlMatlab(unittest.TestCase):
 
         #X0=[1,1] : produces a spike
         subplot2grid(plot_shape, (0, 1))
-        t, y = initial(sys, X0=matrix("1; 1"))
+        t, y = initial(sys, X0=array([[1], [1]]))
         plot(t, y)
 
-        #Test MIMO system
-        A, B, C, D = self.make_MIMO_mats()
+        A, B, C, D = MIMO_mats
         sys = ss(A, B, C, D)
         #X0=[1,1] : produces same spike as above spike
         subplot2grid(plot_shape, (0, 2))
@@ -216,7 +201,8 @@ class TestControlMatlab(unittest.TestCase):
         #show()
 
     #! Old test; no longer functional?? (RMM, 3 Nov 2012)
-    @unittest.skip("skipping test_check_convert_shape, need to update test")
+    @pytest.mark.skip(
+        reason="skipping test_check_convert_shape, need to update test")
     def test_check_convert_shape(self):
         #TODO: check if shape is correct everywhere.
         #Correct input ---------------------------------------------
@@ -286,9 +272,9 @@ class TestControlMatlab(unittest.TestCase):
         self.assertRaises(ValueError, _check_convert_array(array([1., 2, 3, 4]),
             [(3,), (1,3)], 'Test: '))
 
-    @unittest.skip("skipping test_lsim, need to update test")
-    def test_lsim(self):
-        A, B, C, D = self.make_SISO_mats()
+    @pytest.mark.skip(reason="need to update test")
+    def test_lsim(self, SISO_mats, MIMO_mats):
+        A, B, C, D = SISO_mats
         sys = ss(A, B, C, D)
 
         figure(); plot_shape = (2, 2)
@@ -318,21 +304,11 @@ class TestControlMatlab(unittest.TestCase):
         plot(t, y, label='y')
         legend(loc='best')
 
-        #Test with matrices
-        subplot2grid(plot_shape, (1, 0))
-        t = matrix(linspace(0, 1, 100))
-        u = matrix(r_[1:1:50j, 0:0:50j])
-        x0 = matrix("0.; 0")
-        y, t_out, _x = lsim(sys, u, t, x0)
-        plot(t_out, y, label='y')
-        plot(t_out, asarray(u/10)[0], label='u/10')
-        legend(loc='best')
-
         #Test with MIMO system
         subplot2grid(plot_shape, (1, 1))
-        A, B, C, D = self.make_MIMO_mats()
+        A, B, C, D = MIMO_mats
         sys = ss(A, B, C, D)
-        t = matrix(linspace(0, 1, 100))
+        t =  array(linspace(0, 1, 100))
         u = array([r_[1:1:50j, 0:0:50j],
                    r_[0:1:50j, 0:0:50j]])
         x0 = [0, 0, 0, 0]
@@ -376,14 +352,14 @@ class TestControlMatlab(unittest.TestCase):
         y2, t2 = step(sys2, t1)
         assert_array_almost_equal(y1, y2)
 
-    def test_convert_MIMO_to_SISO(self):
+    def test_convert_MIMO_to_SISO(self, SISO_mats, MIMO_mats):
         '''Convert mimo to siso systems'''
         #Test with our usual systems --------------------------------------------
         #SISO PT2 system
-        As, Bs, Cs, Ds = self.make_SISO_mats()
+        As, Bs, Cs, Ds = SISO_mats
         sys_siso = ss(As, Bs, Cs, Ds)
         #MIMO system that contains two independent copies of the SISO system above
-        Am, Bm, Cm, Dm = self.make_MIMO_mats()
+        Am, Bm, Cm, Dm = MIMO_mats
         sys_mimo = ss(Am, Bm, Cm, Dm)
         #    t, y = step(sys_siso)
         #    plot(t, y, label='sys_siso d=0')
@@ -404,12 +380,12 @@ class TestControlMatlab(unittest.TestCase):
         #Test with additional systems --------------------------------------------
         #They have crossed inputs and direct feedthrough
         #SISO system
-        As = matrix([[-81.82, -45.45],
+        As =  array([[-81.82, -45.45],
                      [ 10.,    -1.  ]])
-        Bs = matrix([[9.09],
+        Bs =  array([[9.09],
                      [0.  ]])
-        Cs = matrix([[0, 0.159]])
-        Ds = matrix([[0.02]])
+        Cs =  array([[0, 0.159]])
+        Ds =  array([[0.02]])
         sys_siso = ss(As, Bs, Cs, Ds)
         #    t, y = step(sys_siso)
         #    plot(t, y, label='sys_siso d=0.02')
@@ -428,7 +404,7 @@ class TestControlMatlab(unittest.TestCase):
                     [0   , 0   ]])
         Cm = array([[0, 0,     0, 0.159],
                     [0, 0.159, 0, 0    ]])
-        Dm = matrix([[0,   0.02],
+        Dm =  array([[0,   0.02],
                      [0.02, 0  ]])
         sys_mimo = ss(Am, Bm, Cm, Dm)
 
@@ -446,24 +422,3 @@ class TestControlMatlab(unittest.TestCase):
         self.assert_systems_behave_equal(sys_siso, sys_siso_01)
         self.assert_systems_behave_equal(sys_siso, sys_siso_10)
 
-    def debug_nasty_import_problem():
-        '''
-        ``*.egg`` files have precedence over ``PYTHONPATH``. Therefore packages
-        that were installed with ``easy_install``, can not be easily developed with
-        Eclipse.
-
-        See also:
-        http://bugs.python.org/setuptools/issue53
-
-        Use this function to debug the issue.
-        '''
-        #print the directories where python searches for modules and packages.
-        import sys
-        print('sys.path: -----------------------------------')
-        for name in sys.path:
-            print(name)
-
-
-if __name__ == '__main__':
-    unittest.main()
-# vi:ts=4:sw=4:expandtab

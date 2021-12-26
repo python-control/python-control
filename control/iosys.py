@@ -3,16 +3,11 @@
 # RMM, 28 April 2019
 #
 # Additional features to add
-#   * Improve support for signal names, specially in operator overloads
-#       - Figure out how to handle "nested" names (icsys.sys[1].x[1])
-#       - Use this to implement signal names for operators?
 #   * Allow constant inputs for MIMO input_output_response (w/out ones)
 #   * Add support for constants/matrices as part of operators (1 + P)
 #   * Add unit tests (and example?) for time-varying systems
 #   * Allow time vector for discrete time simulations to be multiples of dt
 #   * Check the way initial outputs for discrete time systems are handled
-#   * Rename 'connections' as 'conlist' to match 'inplist' and 'outlist'?
-#   * Allow signal summation in InterconnectedSystem diagrams (via new output?)
 #
 
 """The :mod:`~control.iosys` module contains the
@@ -36,13 +31,24 @@ import scipy as sp
 import copy
 from warnings import warn
 
-from .statesp import StateSpace, tf2ss
-from .timeresp import _check_convert_array
-from .lti import isctime, isdtime, _find_timebase
+from .statesp import StateSpace, tf2ss, _convert_to_statespace
+from .timeresp import _check_convert_array, _process_time_response
+from .lti import isctime, isdtime, common_timebase
+from . import config
 
 __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
-           'InterconnectedSystem', 'input_output_response', 'find_eqpt',
-           'linearize', 'ss2io', 'tf2io']
+           'InterconnectedSystem', 'LinearICSystem', 'input_output_response',
+           'find_eqpt', 'linearize', 'ss2io', 'tf2io', 'interconnect',
+           'summing_junction']
+
+# Define module default parameter values
+_iosys_defaults = {
+    'iosys.state_name_delim': '_',
+    'iosys.duplicate_system_name_prefix': '',
+    'iosys.duplicate_system_name_suffix': '$copy',
+    'iosys.linearized_system_name_prefix': '',
+    'iosys.linearized_system_name_suffix': '$linearized'
+}
 
 
 class InputOutputSystem(object):
@@ -69,14 +75,17 @@ class InputOutputSystem(object):
     states : int, list of str, or None
         Description of the system states.  Same format as `inputs`.
     dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous time, True
-        indicates discrete time with undefined sampling time, positive number
-        is discrete time with specified sampling time.
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
     name : string, optional
-        System name (used for specifying signals)
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Attributes
     ----------
@@ -86,9 +95,10 @@ class InputOutputSystem(object):
         Dictionary of signal names for the inputs, outputs and states and the
         index of the corresponding array
     dt : None, True or float
-        System timebase.  None (default) indicates continuous time, True
-        indicates discrete time with undefined sampling time, positive number
-        is discrete time with specified sampling time.
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
@@ -97,8 +107,8 @@ class InputOutputSystem(object):
 
     Notes
     -----
-    The `InputOuputSystem` class (and its subclasses) makes use of two special
-    methods for implementing much of the work of the class:
+    The :class:`~control.InputOuputSystem` class (and its subclasses) makes
+    use of two special methods for implementing much of the work of the class:
 
     * _rhs(t, x, u): compute the right hand side of the differential or
       difference equation for the system.  This must be specified by the
@@ -108,58 +118,62 @@ class InputOutputSystem(object):
       The default is to return the entire system state.
 
     """
+
+    _idCounter = 0
+
+    def _name_or_default(self, name=None):
+        if name is None:
+            name = "sys[{}]".format(InputOutputSystem._idCounter)
+            InputOutputSystem._idCounter += 1
+        return name
+
     def __init__(self, inputs=None, outputs=None, states=None, params={},
-                 dt=None, name=None):
+                 name=None, **kwargs):
         """Create an input/output system.
 
-        The InputOutputSystem contructor is used to create an input/output
+        The InputOutputSystem constructor is used to create an input/output
         object with the core information required for all input/output
         systems.  Instances of this class are normally created by one of the
-        input/output subclasses: :class:`~control.LinearIOSystem`,
-        :class:`~control.NonlinearIOSystem`,
+        input/output subclasses: :class:`~control.LinearICSystem`,
+        :class:`~control.LinearIOSystem`, :class:`~control.NonlinearIOSystem`,
         :class:`~control.InterconnectedSystem`.
-
-        Parameters
-        ----------
-        inputs : int, list of str, or None
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-        outputs : int, list of str, or None
-            Description of the system outputs.  Same format as `inputs`.
-        states : int, list of str, or None
-            Description of the system states.  Same format as `inputs`.
-        dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
-            time, positive number is discrete time with specified
-            sampling time.
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-        name : string, optional
-            System name (used for specifying signals)
-
-        Returns
-        -------
-        InputOutputSystem
-            Input/output system object
 
         """
         # Store the input arguments
-        self.params = params.copy()     # default parameters
-        self.dt = dt                    # timebase
-        self.name = name                # system name
+
+        # default parameters
+        self.params = params.copy()
+        # timebase
+        self.dt = kwargs.get('dt', config.defaults['control.default_dt'])
+        # system name
+        self.name = self._name_or_default(name)
 
         # Parse and store the number of inputs, outputs, and states
         self.set_inputs(inputs)
         self.set_outputs(outputs)
         self.set_states(states)
+
+    #
+    # Class attributes
+    #
+    # These attributes are defined as class attributes so that they are
+    # documented properly.  They are "overwritten" in __init__.
+    #
+
+    #: Number of system inputs.
+    #:
+    #: :meta hide-value:
+    ninputs = 0
+
+    #: Number of system outputs.
+    #:
+    #: :meta hide-value:
+    noutputs = 0
+
+    #: Number of system states.
+    #:
+    #: :meta hide-value:
+    nstates = 0
 
     def __repr__(self):
         return self.name if self.name is not None else str(type(self))
@@ -168,11 +182,14 @@ class InputOutputSystem(object):
         """String representation of an input/output system"""
         str = "System: " + (self.name if self.name else "(None)") + "\n"
         str += "Inputs (%s): " % self.ninputs
-        for key in self.input_index: str += key + ", "
+        for key in self.input_index:
+            str += key + ", "
         str += "\nOutputs (%s): " % self.noutputs
-        for key in self.output_index: str += key + ", "
+        for key in self.output_index:
+            str += key + ", "
         str += "\nStates (%s): " % self.nstates
-        for key in self.state_index: str += key + ", "
+        for key in self.state_index:
+            str += key + ", "
         return str
 
     def __mul__(sys2, sys1):
@@ -181,18 +198,13 @@ class InputOutputSystem(object):
         if isinstance(sys1, (int, float, np.number)):
             # TODO: Scale the output
             raise NotImplemented("Scalar multiplication not yet implemented")
+
         elif isinstance(sys1, np.ndarray):
             # TODO: Post-multiply by a matrix
             raise NotImplemented("Matrix multiplication not yet implemented")
-        elif isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
-            # Special case: maintain linear systems structure
-            new_ss_sys = StateSpace.__mul__(sys2, sys1)
-            # TODO: set input and output names
-            new_io_sys = LinearIOSystem(new_ss_sys)
 
-            return new_io_sys
         elif not isinstance(sys1, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys1)
+            raise TypeError("Unknown I/O system object ", sys1)
 
         # Make sure systems can be interconnected
         if sys1.noutputs != sys2.ninputs:
@@ -200,14 +212,15 @@ class InputOutputSystem(object):
                              "inputs and outputs")
 
         # Make sure timebase are compatible
-        dt = _find_timebase(sys1, sys2)
-        if dt is False:
-            raise ValueError("System timebases are not compabile")
+        dt = common_timebase(sys1.dt, sys2.dt)
 
-        # Return the series interconnection between the systems
-        newsys = InterconnectedSystem((sys1, sys2))
+        # Create a new system to handle the composition
+        inplist = [(0, i) for i in range(sys1.ninputs)]
+        outlist = [(1, i) for i in range(sys2.noutputs)]
+        newsys = InterconnectedSystem(
+            (sys1, sys2), inplist=inplist, outlist=outlist)
 
-        #  Set up the connecton map
+        # Set up the connection map manually
         newsys.set_connect_map(np.block(
             [[np.zeros((sys1.ninputs, sys1.noutputs)),
               np.zeros((sys1.ninputs, sys2.noutputs))],
@@ -215,54 +228,48 @@ class InputOutputSystem(object):
               np.zeros((sys2.ninputs, sys2.noutputs))]]
         ))
 
-        # Set up the input map
-        newsys.set_input_map(np.concatenate(
-            (np.eye(sys1.ninputs), np.zeros((sys2.ninputs, sys1.ninputs))),
-            axis=0))
-        # TODO: set up input names
+        # If both systems are linear, create LinearICSystem
+        if isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
+            ss_sys = StateSpace.__mul__(sys2, sys1)
+            return LinearICSystem(newsys, ss_sys)
 
-        # Set up the output map
-        newsys.set_output_map(np.concatenate(
-            (np.zeros((sys2.noutputs, sys1.noutputs)), np.eye(sys2.noutputs)),
-            axis=1))
-        # TODO: set up output names
-
-        # Return the newly created system
+        # Return the newly created InterconnectedSystem
         return newsys
 
     def __rmul__(sys1, sys2):
         """Pre-multiply an input/output systems by a scalar/matrix"""
-        if isinstance(sys2, (int, float, np.number)):
+        if isinstance(sys2, InputOutputSystem):
+            # Both systems are InputOutputSystems => use __mul__
+            return InputOutputSystem.__mul__(sys2, sys1)
+
+        elif isinstance(sys2, (int, float, np.number)):
             # TODO: Scale the output
             raise NotImplemented("Scalar multiplication not yet implemented")
+
         elif isinstance(sys2, np.ndarray):
             # TODO: Post-multiply by a matrix
             raise NotImplemented("Matrix multiplication not yet implemented")
-        elif isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
-            # Special case: maintain linear systems structure
-            new_ss_sys = StateSpace.__rmul__(sys1, sys2)
-            # TODO: set input and output names
-            new_io_sys = LinearIOSystem(new_ss_sys)
 
-            return new_io_sys
-        elif not isinstance(sys2, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys1)
+        elif isinstance(sys2, StateSpace):
+            # TODO: Should eventuall preserve LinearIOSystem structure
+            return StateSpace.__mul__(sys2, sys1)
+
         else:
-            # Both systetms are InputOutputSystems => use __mul__
-            return InputOutputSystem.__mul__(sys2, sys1)
+            raise TypeError("Unknown I/O system object ", sys1)
 
     def __add__(sys1, sys2):
         """Add two input/output systems (parallel interconnection)"""
         # TODO: Allow addition of scalars and matrices
-        if not isinstance(sys2, InputOutputSystem):
-            raise ValueError("Unknown I/O system object ", sys2)
-        elif isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
-            # Special case: maintain linear systems structure
-            new_ss_sys = StateSpace.__add__(sys1, sys2)
-            # TODO: set input and output names
-            new_io_sys = LinearIOSystem(new_ss_sys)
+        if isinstance(sys2, (int, float, np.number)):
+            # TODO: Scale the output
+            raise NotImplemented("Scalar addition not yet implemented")
 
-            return new_io_sys
+        elif isinstance(sys2, np.ndarray):
+            # TODO: Post-multiply by a matrix
+            raise NotImplemented("Matrix addition not yet implemented")
+
+        elif not isinstance(sys2, InputOutputSystem):
+            raise TypeError("Unknown I/O system object ", sys2)
 
         # Make sure number of input and outputs match
         if sys1.ninputs != sys2.ninputs or sys1.noutputs != sys2.noutputs:
@@ -272,48 +279,43 @@ class InputOutputSystem(object):
         noutputs = sys1.noutputs
 
         # Create a new system to handle the composition
-        newsys = InterconnectedSystem((sys1, sys2))
+        inplist = [[(0, i), (1, i)] for i in range(ninputs)]
+        outlist = [[(0, i), (1, i)] for i in range(noutputs)]
+        newsys = InterconnectedSystem(
+            (sys1, sys2), inplist=inplist, outlist=outlist)
 
-        # Set up the input map
-        newsys.set_input_map(np.concatenate(
-            (np.eye(ninputs), np.eye(ninputs)), axis=0))
-        # TODO: set up input names
+        # If both systems are linear, create LinearICSystem
+        if isinstance(sys1, StateSpace) and isinstance(sys2, StateSpace):
+            ss_sys = StateSpace.__add__(sys2, sys1)
+            return LinearICSystem(newsys, ss_sys)
 
-        # Set up the output map
-        newsys.set_output_map(np.concatenate(
-            (np.eye(noutputs), np.eye(noutputs)), axis=1))
-        # TODO: set up output names
-
-        # Return the newly created system
+        # Return the newly created InterconnectedSystem
         return newsys
 
     # TODO: add __radd__ to allow postaddition by scalars and matrices
 
     def __neg__(sys):
         """Negate an input/output systems (rescale)"""
-        if isinstance(sys, StateSpace):
-            # Special case: maintain linear systems structure
-            new_ss_sys = StateSpace.__neg__(sys)
-            # TODO: set input and output names
-            new_io_sys = LinearIOSystem(new_ss_sys)
-
-            return new_io_sys
         if sys.ninputs is None or sys.noutputs is None:
             raise ValueError("Can't determine number of inputs or outputs")
 
+        inplist = [(0, i) for i in range(sys.ninputs)]
+        outlist = [(0, i, -1) for i in range(sys.noutputs)]
         # Create a new system to hold the negation
-        newsys = InterconnectedSystem((sys,), dt=sys.dt)
+        newsys = InterconnectedSystem(
+            (sys,), dt=sys.dt, inplist=inplist, outlist=outlist)
 
-        # Set up the input map (identity)
-        newsys.set_input_map(np.eye(sys.ninputs))
-        # TODO: set up input names
-
-        # Set up the output map (negate the output)
-        newsys.set_output_map(-np.eye(sys.noutputs))
-        # TODO: set up output names
+        # If the system is linear, create LinearICSystem
+        if isinstance(sys, StateSpace):
+            ss_sys = StateSpace.__neg__(sys)
+            return LinearICSystem(newsys, ss_sys)
 
         # Return the newly created system
         return newsys
+
+    def _isstatic(self):
+        """Check to see if a system is a static system (no states)"""
+        return self.nstates == 0
 
     # Utility function to parse a list of signals
     def _process_signal_list(self, signals, prefix='s'):
@@ -344,25 +346,87 @@ class InputOutputSystem(object):
         if (warning):
             warn("Parameters passed to InputOutputSystem ignored.")
 
-    def _rhs(self, t, x, u):
+    def _rhs(self, t, x, u, params={}):
         """Evaluate right hand side of a differential or difference equation.
 
         Private function used to compute the right hand side of an
-        input/output system model.
+        input/output system model. Intended for fast
+        evaluation; for a more user-friendly interface
+        you may want to use :meth:`dynamics`.
 
         """
         NotImplemented("Evaluation not implemented for system of type ",
                        type(self))
 
+    def dynamics(self, t, x, u):
+        """Compute the dynamics of a differential or difference equation.
+
+        Given time `t`, input `u` and state `x`, returns the value of the
+        right hand side of the dynamical system. If the system is continuous,
+        returns the time derivative
+
+            dx/dt = f(t, x, u)
+
+        where `f` is the system's (possibly nonlinear) dynamics function.
+        If the system is discrete-time, returns the next value of `x`:
+
+            x[t+dt] = f(t, x[t], u[t])
+
+        Where `t` is a scalar.
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        dx/dt or x[t+dt] : ndarray
+        """
+        return self._rhs(t, x, u)
+
     def _out(self, t, x, u, params={}):
         """Evaluate the output of a system at a given state, input, and time
 
         Private function used to compute the output of of an input/output
-        system model given the state, input, parameters, and time.
+        system model given the state, input, parameters. Intended for fast
+        evaluation; for a more user-friendly interface you may want to use
+        :meth:`output`.
 
         """
         # If no output function was defined in subclass, return state
         return x
+
+    def output(self, t, x, u):
+        """Compute the output of the system
+
+        Given time `t`, input `u` and state `x`, returns the output of the
+        system:
+
+            y = g(t, x, u)
+
+        The inputs `x` and `u` must be of the correct length.
+
+        Parameters
+        ----------
+        t : float
+            the time at which to evaluate
+        x : array_like
+            current state
+        u : array_like
+            input
+
+        Returns
+        -------
+        y : ndarray
+        """
+        return self._out(t, x, u)
 
     def set_inputs(self, inputs, prefix='u'):
         """Set the number/names of the system inputs.
@@ -436,6 +500,10 @@ class InputOutputSystem(object):
         """Find the index for a state given its name (`None` if not found)"""
         return self.state_index.get(name, None)
 
+    def issiso(self):
+        """Check to see if a system is single input, single output"""
+        return self.ninputs == 1 and self.noutputs == 1
+
     def feedback(self, other=1, sign=-1, params={}):
         """Feedback interconnection between two input/output systems
 
@@ -463,14 +531,14 @@ class InputOutputSystem(object):
         """
         # TODO: add conversion to I/O system when needed
         if not isinstance(other, InputOutputSystem):
-            raise TypeError("Feedback around I/O system must be I/O system.")
-        elif isinstance(self, StateSpace) and isinstance(other, StateSpace):
-            # Special case: maintain linear systems structure
-            new_ss_sys = StateSpace.feedback(self, other, sign=sign)
-            # TODO: set input and output names
-            new_io_sys = LinearIOSystem(new_ss_sys)
-
-            return new_io_sys
+            # Try converting to a state space system
+            try:
+                other = _convert_to_statespace(other)
+            except TypeError:
+                raise TypeError(
+                    "Feedback around I/O system must be an I/O system "
+                    "or convertable to an I/O system.")
+            other = LinearIOSystem(other)
 
         # Make sure systems can be interconnected
         if self.noutputs != other.ninputs or other.noutputs != self.ninputs:
@@ -478,14 +546,17 @@ class InputOutputSystem(object):
                              "inputs and outputs")
 
         # Make sure timebases are compatible
-        dt = _find_timebase(self, other)
-        if dt is False:
-            raise ValueError("System timebases are not compabile")
+        dt = common_timebase(self.dt, other.dt)
+
+        inplist = [(0, i) for i in range(self.ninputs)]
+        outlist = [(0, i) for i in range(self.noutputs)]
 
         # Return the series interconnection between the systems
-        newsys = InterconnectedSystem((self, other), params=params, dt=dt)
+        newsys = InterconnectedSystem(
+            (self, other), inplist=inplist, outlist=outlist,
+            params=params, dt=dt)
 
-        #  Set up the connecton map
+        #  Set up the connecton map manually
         newsys.set_connect_map(np.block(
             [[np.zeros((self.ninputs, self.noutputs)),
               sign * np.eye(self.ninputs, other.noutputs)],
@@ -493,22 +564,16 @@ class InputOutputSystem(object):
               np.zeros((other.ninputs, other.noutputs))]]
         ))
 
-        # Set up the input map
-        newsys.set_input_map(np.concatenate(
-            (np.eye(self.ninputs), np.zeros((other.ninputs, self.ninputs))),
-            axis=0))
-        # TODO: set up input names
-
-        # Set up the output map
-        newsys.set_output_map(np.concatenate(
-            (np.eye(self.noutputs), np.zeros((self.noutputs, other.noutputs))),
-            axis=1))
-        # TODO: set up output names
+        if isinstance(self, StateSpace) and isinstance(other, StateSpace):
+            # Special case: maintain linear systems structure
+            ss_sys = StateSpace.feedback(self, other, sign=sign)
+            return LinearICSystem(newsys, ss_sys)
 
         # Return the newly created system
         return newsys
 
-    def linearize(self, x0, u0, t=0, params={}, eps=1e-6):
+    def linearize(self, x0, u0, t=0, params={}, eps=1e-6,
+                  name=None, copy=False, **kwargs):
         """Linearize an input/output system at a given state and input.
 
         Return the linearization of an input/output system at a given state
@@ -527,8 +592,10 @@ class InputOutputSystem(object):
         ninputs = _find_size(self.ninputs, u0)
 
         # Convert x0, u0 to arrays, if needed
-        if np.isscalar(x0): x0 = np.ones((nstates,)) * x0
-        if np.isscalar(u0): u0 = np.ones((ninputs,)) * u0
+        if np.isscalar(x0):
+            x0 = np.ones((nstates,)) * x0
+        if np.isscalar(u0):
+            u0 = np.ones((ninputs,)) * u0
 
         # Compute number of outputs by evaluating the output function
         noutputs = _find_size(self.noutputs, self._out(t, x0, u0))
@@ -553,7 +620,7 @@ class InputOutputSystem(object):
             A[:, i] = (self._rhs(t, x0 + dx, u0) - F0) / eps
             C[:, i] = (self._out(t, x0 + dx, u0) - H0) / eps
 
-            # Perturb each of the input variables and compute linearization
+        # Perturb each of the input variables and compute linearization
         for i in range(ninputs):
             du = np.zeros((ninputs,))
             du[i] = eps
@@ -561,70 +628,99 @@ class InputOutputSystem(object):
             D[:, i] = (self._out(t, x0, u0 + du) - H0) / eps
 
         # Create the state space system
-        linsys = StateSpace(A, B, C, D, self.dt, remove_useless=False)
-        return LinearIOSystem(linsys)
+        linsys = LinearIOSystem(
+            StateSpace(A, B, C, D, self.dt, remove_useless=False),
+            name=name, **kwargs)
 
-    def copy(self):
+        # Set the names the system, inputs, outputs, and states
+        if copy:
+            if name is None:
+                linsys.name = \
+                    config.defaults['iosys.linearized_system_name_prefix'] + \
+                    self.name + \
+                    config.defaults['iosys.linearized_system_name_suffix']
+            linsys.ninputs, linsys.input_index = self.ninputs, \
+                self.input_index.copy()
+            linsys.noutputs, linsys.output_index = \
+                self.noutputs, self.output_index.copy()
+            linsys.nstates, linsys.state_index = \
+                self.nstates, self.state_index.copy()
+
+        return linsys
+
+    def copy(self, newname=None):
         """Make a copy of an input/output system."""
-        return copy.copy(self)
+        dup_prefix = config.defaults['iosys.duplicate_system_name_prefix']
+        dup_suffix = config.defaults['iosys.duplicate_system_name_suffix']
+        newsys = copy.copy(self)
+        newsys.name = self._name_or_default(
+            dup_prefix + self.name + dup_suffix if not newname else newname)
+        return newsys
 
 
 class LinearIOSystem(InputOutputSystem, StateSpace):
     """Input/output representation of a linear (state space) system.
 
-    This class is used to implementat a system that is a linear state
+    This class is used to implement a system that is a linear state
     space system (defined by the StateSpace system object).
+
+    Parameters
+    ----------
+    linsys : StateSpace
+        LTI StateSpace system to be converted
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.  If an
+        integer count is specified, the names of the signal will be of the
+        form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If this parameter
+        is not given or given as `None`, the relevant quantity will be
+        determined when possible based on other information provided to
+        functions using the system.
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`.
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a
+        generic name <sys[id]> is generated with a unique integer id.
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates, dt, etc
+        See :class:`InputOutputSystem` for inherited attributes.
+
+    A, B, C, D
+        See :class:`~control.StateSpace` for inherited attributes.
 
     """
     def __init__(self, linsys, inputs=None, outputs=None, states=None,
-                 name=None):
+                 name=None, **kwargs):
         """Create an I/O system from a state space linear system.
 
         Converts a :class:`~control.StateSpace` system into an
         :class:`~control.InputOutputSystem` with the same inputs, outputs, and
-        states.  The new system can be a continuous or discrete time system
-
-        Parameters
-        ----------
-        linsys : StateSpace
-            LTI StateSpace system to be converted
-        inputs : int, list of str or None, optional
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-        outputs : int, list of str or None, optional
-            Description of the system outputs.  Same format as `inputs`.
-        states : int, list of str, or None, optional
-            Description of the system states.  Same format as `inputs`.
-        dt : None, True or float, optional
-            System timebase.  None (default) indicates continuous
-            time, True indicates discrete time with undefined sampling
-            time, positive number is discrete time with specified
-            sampling time.
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-        name : string, optional
-            System name (used for specifying signals)
-
-        Returns
-        -------
-        iosys : LinearIOSystem
-            Linear system represented as an input/output system
+        states.  The new system can be a continuous or discrete time system.
 
         """
         if not isinstance(linsys, StateSpace):
             raise TypeError("Linear I/O system must be a state space object")
 
+        # Look for 'input' and 'output' parameter name variants
+        inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+        outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+
         # Create the I/O system object
         super(LinearIOSystem, self).__init__(
-            inputs=linsys.inputs, outputs=linsys.outputs,
-            states=linsys.states, params={}, dt=linsys.dt, name=name)
+            inputs=linsys.ninputs, outputs=linsys.noutputs,
+            states=linsys.nstates, params={}, dt=linsys.dt, name=name)
 
         # Initalize additional state space variables
         StateSpace.__init__(self, linsys, remove_useless=False)
@@ -632,17 +728,28 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         # Process input, output, state lists, if given
         # Make sure they match the size of the linear system
         ninputs, self.input_index = self._process_signal_list(
-            inputs if inputs is not None else linsys.inputs, prefix='u')
-        if ninputs is not None and linsys.inputs != ninputs:
+            inputs if inputs is not None else linsys.ninputs, prefix='u')
+        if ninputs is not None and linsys.ninputs != ninputs:
             raise ValueError("Wrong number/type of inputs given.")
         noutputs, self.output_index = self._process_signal_list(
-            outputs if outputs is not None else linsys.outputs, prefix='y')
-        if noutputs is not None and linsys.outputs != noutputs:
+            outputs if outputs is not None else linsys.noutputs, prefix='y')
+        if noutputs is not None and linsys.noutputs != noutputs:
             raise ValueError("Wrong number/type of outputs given.")
         nstates, self.state_index = self._process_signal_list(
-            states if states is not None else linsys.states, prefix='x')
-        if nstates is not None and linsys.states != nstates:
+            states if states is not None else linsys.nstates, prefix='x')
+        if nstates is not None and linsys.nstates != nstates:
             raise ValueError("Wrong number/type of states given.")
+
+    # The following text needs to be replicated from StateSpace in order for
+    # this entry to show up properly in sphinx doccumentation (not sure why,
+    # but it was the only way to get it to work).
+    #
+    #: Deprecated attribute; use :attr:`nstates` instead.
+    #:
+    #: The ``state`` attribute was used to store the number of states for : a
+    #: state space system.  It is no longer used.  If you need to access the
+    #: number of states, use :attr:`nstates`.
+    states = property(StateSpace._get_states, StateSpace._set_states)
 
     def _update_params(self, params={}, warning=True):
         # Parameters not supported; issue a warning
@@ -665,86 +772,86 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 class NonlinearIOSystem(InputOutputSystem):
     """Nonlinear I/O system.
 
-    This class is used to implement a system that is a nonlinear state
-    space system (defined by and update function and an output function).
+    Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
+    specifying a state update function and an output function.  The new system
+    can be a continuous or discrete time system (Note: discrete-time systems
+    are not yet supported by most functions.)
+
+    Parameters
+    ----------
+    updfcn : callable
+        Function returning the state update function
+
+            `updfcn(t, x, u, params) -> array`
+
+        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
+        with shape (ninputs,), `t` is a float representing the currrent
+        time, and `params` is a dict containing the values of parameters
+        used by the function.
+
+    outfcn : callable
+        Function returning the output at the given state
+
+            `outfcn(t, x, u, params) -> array`
+
+        where the arguments are the same as for `upfcn`.
+
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.
+        If an integer count is specified, the names of the signal will be
+        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        this parameter is not given or given as `None`, the relevant
+        quantity will be determined when possible based on other
+        information provided to functions using the system.
+
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`.
+
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+
+    dt : timebase, optional
+        The timebase for the system, used to specify whether the system is
+        operating in continuous or discrete time.  It can have the
+        following values:
+
+        * dt = 0: continuous time system (default)
+        * dt > 0: discrete time system with sampling period 'dt'
+        * dt = True: discrete time with unspecified sampling period
+        * dt = None: no timebase specified
+
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a
+        generic name <sys[id]> is generated with a unique integer id.
 
     """
     def __init__(self, updfcn, outfcn=None, inputs=None, outputs=None,
-                 states=None, params={}, dt=None, name=None):
-        """Create a nonlinear I/O system given update and output functions.
+                 states=None, params={}, name=None, **kwargs):
+        """Create a nonlinear I/O system given update and output functions."""
+        # Look for 'input' and 'output' parameter name variants
+        inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+        outputs =  _parse_signal_parameter(outputs, 'output', kwargs)
 
-        Creates an `InputOutputSystem` for a nonlinear system by specifying a
-        state update function and an output function.  The new system can be a
-        continuous or discrete time system (Note: discrete-time systems not
-        yet supported by most function.)
-
-        Parameters
-        ----------
-        updfcn : callable
-            Function returning the state update function
-
-                `updfcn(t, x, u[, param]) -> array`
-
-            where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-            with shape (ninputs,), `t` is a float representing the currrent
-            time, and `param` is an optional dict containing the values of
-            parameters used by the function.
-
-        outfcn : callable
-            Function returning the output at the given state
-
-                `outfcn(t, x, u[, param]) -> array`
-
-            where the arguments are the same as for `upfcn`.
-
-        inputs : int, list of str or None, optional
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-            this parameter is not given or given as `None`, the relevant
-            quantity will be determined when possible based on other
-            information provided to functions using the system.
-
-        outputs : int, list of str or None, optional
-            Description of the system outputs.  Same format as `inputs`.
-
-        states : int, list of str, or None, optional
-            Description of the system states.  Same format as `inputs`.
-
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-
-        dt : timebase, optional
-            The timebase for the system, used to specify whether the system is
-            operating in continuous or discrete time.  It can have the
-            following values:
-
-            * dt = None       No timebase specified
-            * dt = 0          Continuous time system
-            * dt > 0          Discrete time system with sampling time dt
-            * dt = True       Discrete time with unspecified sampling time
-
-        name : string, optional
-            System name (used for specifying signals).
-
-        Returns
-        -------
-        iosys : NonlinearIOSystem
-            Nonlinear system represented as an input/output system.
-
-        """
         # Store the update and output functions
         self.updfcn = updfcn
         self.outfcn = outfcn
 
         # Initialize the rest of the structure
+        dt = kwargs.pop('dt', config.defaults['control.default_dt'])
         super(NonlinearIOSystem, self).__init__(
             inputs=inputs, outputs=outputs, states=states,
             params=params, dt=dt, name=name
         )
+
+        # Make sure all input arguments got parsed
+        if kwargs:
+            raise TypeError("unknown parameters %s" % kwargs)
 
         # Check to make sure arguments are consistent
         if updfcn is None:
@@ -766,6 +873,42 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Initialize current parameters to default parameters
         self._current_params = params.copy()
+
+    # Return the value of a static nonlinear system
+    def __call__(sys, u, params=None, squeeze=None):
+        """Evaluate a (static) nonlinearity at a given input value
+
+        If a nonlinear I/O system has not internal state, then evaluating the
+        system at an input `u` gives the output `y = F(u)`, determined by the
+        output function.
+
+        Parameters
+        ----------
+        params : dict, optional
+            Parameter values for the system. Passed to the evaluation function
+            for the system as default values, overriding internal defaults.
+        squeeze : bool, optional
+            If True and if the system has a single output, return the system
+            output as a 1D array rather than a 2D array.  If False, return the
+            system output as a 2D array even if the system is SISO.  Default
+            value set by config.defaults['control.squeeze_time_response'].
+
+        """
+
+        # Make sure the call makes sense
+        if not sys._isstatic():
+            raise TypeError(
+                "function evaluation is only supported for static "
+                "input/output systems")
+
+        # If we received any parameters, update them before calling _out()
+        if params is not None:
+            sys._update_params(params)
+
+        # Evaluate the function on the argument
+        out = sys._out(0, np.array((0,)), np.asarray(u))
+        _, out = _process_time_response(sys, None, out, None, squeeze=squeeze)
+        return out
 
     def _update_params(self, params, warning=False):
         # Update the current parameter values
@@ -791,109 +934,38 @@ class InterconnectedSystem(InputOutputSystem):
     whose inputs and outputs are connected via a connection map.  The overall
     system inputs and outputs are subsets of the subsystem inputs and outputs.
 
+    See :func:`~control.interconnect` for a list of parameters.
+
     """
     def __init__(self, syslist, connections=[], inplist=[], outlist=[],
                  inputs=None, outputs=None, states=None,
-                 params={}, dt=None, name=None):
-        """Create an I/O system from a list of systems + connection info.
+                 params={}, dt=None, name=None, **kwargs):
+        """Create an I/O system from a list of systems + connection info."""
 
-        The InterconnectedSystem class is used to represent an input/output
-        system that consists of an interconnection between a set of subystems.
-        The outputs of each subsystem can be summed together to to provide
-        inputs to other subsystems.  The overall system inputs and outputs can
-        be any subset of subsystem inputs and outputs.
+        # Look for 'input' and 'output' parameter name variants
+        inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+        outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
 
-        Parameters
-        ----------
-        syslist : array_like of InputOutputSystems
-            The list of input/output systems to be connected
-
-        connections : tuple of connection specifications, optional
-            Description of the internal connections between the subsystems.
-            Each element of the tuple describes an input to one of the
-            subsystems.  The entries are are of the form:
-
-                (input-spec, output-spec1, output-spec2, ...)
-
-            The input-spec should be a tuple of the form `(subsys_i, inp_j)`
-            where `subsys_i` is the index into `syslist` and `inp_j` is the
-            index into the input vector for the subsystem.  If `subsys_i` has
-            a single input, then the subsystem index `subsys_i` can be listed
-            as the input-spec.  If systems and signals are given names, then
-            the form 'sys.sig' or ('sys', 'sig') are also recognized.
-
-            Each output-spec should be a tuple of the form `(subsys_i, out_j,
-            gain)`.  The input will be constructed by summing the listed
-            outputs after multiplying by the gain term.  If the gain term is
-            omitted, it is assumed to be 1.  If the system has a single
-            output, then the subsystem index `subsys_i` can be listed as the
-            input-spec.  If systems and signals are given names, then the form
-            'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also
-            recognized, and the special form '-sys.sig' can be used to specify
-            a signal with gain -1.
-
-            If omitted, the connection map (matrix) can be specified using the
-            :func:`~control.InterconnectedSystem.set_connect_map` method.
-
-        inplist : tuple of input specifications, optional
-            List of specifications for how the inputs for the overall system
-            are mapped to the subsystem inputs.  The input specification is
-            the same as the form defined in the connection specification.
-            Each system input is added to the input for the listed subsystem.
-
-            If omitted, the input map can be specified using the
-            `set_input_map` method.
-
-        outlist : tuple of output specifications, optional
-            List of specifications for how the outputs for the subsystems are
-            mapped to overall system outputs.  The output specification is the
-            same as the form defined in the connection specification
-            (including the optional gain term).  Numbered outputs must be
-            chosen from the list of subsystem outputs, but named outputs can
-            also be contained in the list of subsystem inputs.
-
-            If omitted, the output map can be specified using the
-            `set_output_map` method.
-
-        params : dict, optional
-            Parameter values for the systems.  Passed to the evaluation
-            functions for the system as default values, overriding internal
-            defaults.
-
-        dt : timebase, optional
-            The timebase for the system, used to specify whether the system is
-            operating in continuous or discrete time.  It can have the
-            following values:
-
-            * dt = None       No timebase specified
-            * dt = 0          Continuous time system
-            * dt > 0          Discrete time system with sampling time dt
-            * dt = True       Discrete time with unspecified sampling time
-
-        name : string, optional
-            System name (used for specifying signals).
-
-        """
         # Convert input and output names to lists if they aren't already
-        if not isinstance(inplist, (list, tuple)): inplist = [inplist]
-        if not isinstance(outlist, (list, tuple)): outlist = [outlist]
+        if not isinstance(inplist, (list, tuple)):
+            inplist = [inplist]
+        if not isinstance(outlist, (list, tuple)):
+            outlist = [outlist]
 
         # Check to make sure all systems are consistent
         self.syslist = syslist
         self.syslist_index = {}
-        dt = None
-        nstates = 0; self.state_offset = []
-        ninputs = 0; self.input_offset = []
-        noutputs = 0; self.output_offset = []
-        system_count = 0
-        for sys in syslist:
+        nstates = 0
+        self.state_offset = []
+        ninputs = 0
+        self.input_offset = []
+        noutputs = 0
+        self.output_offset = []
+        sysobj_name_dct = {}
+        sysname_count_dct = {}
+        for sysidx, sys in enumerate(syslist):
             # Make sure time bases are consistent
-            # TODO: Use lti._find_timebase() instead?
-            if dt is None and sys.dt is not None:
-                # Timebase was not specified; set to match this system
-                dt = sys.dt
-            elif dt != sys.dt:
-                raise TypeError("System timebases are not compatible")
+            dt = common_timebase(dt, sys.dt)
 
             # Make sure number of inputs, outputs, states is given
             if sys.ninputs is None or sys.noutputs is None or \
@@ -912,36 +984,48 @@ class InterconnectedSystem(InputOutputSystem):
             ninputs += sys.ninputs
             noutputs += sys.noutputs
 
-            # Store the index to the system for later retrieval
-            # TODO: look for duplicated system names
-            self.syslist_index[sys.name] = system_count
-            system_count += 1
+            # Check for duplicate systems or duplicate names
+            # Duplicates are renamed sysname_1, sysname_2, etc.
+            if sys in sysobj_name_dct:
+                sys = sys.copy()
+                warn("Duplicate object found in system list: %s. "
+                     "Making a copy" % str(sys.name))
+            if sys.name is not None and sys.name in sysname_count_dct:
+                count = sysname_count_dct[sys.name]
+                sysname_count_dct[sys.name] += 1
+                sysname = sys.name + "_" + str(count)
+                sysobj_name_dct[sys] = sysname
+                self.syslist_index[sysname] = sysidx
+                warn("Duplicate name found in system list. "
+                     "Renamed to {}".format(sysname))
+            else:
+                sysname_count_dct[sys.name] = 1
+                sysobj_name_dct[sys] = sys.name
+                self.syslist_index[sys.name] = sysidx
 
-        # Check for duplicate systems or duplicate names
-        sysobj_list = []
-        sysname_list = []
-        for sys in syslist:
-            if sys in sysobj_list:
-                warn("Duplicate object found in system list: %s" % str(sys))
-            elif sys.name is not None and sys.name in sysname_list:
-                warn("Duplicate name found in system list: %s" % sys.name)
-            sysobj_list.append(sys)
-            sysname_list.append(sys.name)
+        if states is None:
+            states = []
+            state_name_delim = config.defaults['iosys.state_name_delim']
+            for sys, sysname in sysobj_name_dct.items():
+                states += [sysname + state_name_delim +
+                           statename for statename in sys.state_index.keys()]
 
         # Create the I/O system
         super(InterconnectedSystem, self).__init__(
             inputs=len(inplist), outputs=len(outlist),
-            states=nstates, params=params, dt=dt)
+            states=states, params=params, dt=dt, name=name)
 
         # If input or output list was specified, update it
-        nsignals, self.input_index = \
-            self._process_signal_list(inputs, prefix='u')
-        if nsignals is not None and len(inplist) != nsignals:
-            raise ValueError("Wrong number/type of inputs given.")
-        nsignals, self.output_index = \
-            self._process_signal_list(outputs, prefix='y')
-        if nsignals is not None and len(outlist) != nsignals:
-            raise ValueError("Wrong number/type of outputs given.")
+        if inputs is not None:
+            nsignals, self.input_index = \
+                self._process_signal_list(inputs, prefix='u')
+            if nsignals is not None and len(inplist) != nsignals:
+                raise ValueError("Wrong number/type of inputs given.")
+        if outputs is not None:
+            nsignals, self.output_index = \
+                self._process_signal_list(outputs, prefix='y')
+            if nsignals is not None and len(outlist) != nsignals:
+                raise ValueError("Wrong number/type of outputs given.")
 
         # Convert the list of interconnections to a connection map (matrix)
         self.connect_map = np.zeros((ninputs, noutputs))
@@ -949,43 +1033,43 @@ class InterconnectedSystem(InputOutputSystem):
             input_index = self._parse_input_spec(connection[0])
             for output_spec in connection[1:]:
                 output_index, gain = self._parse_output_spec(output_spec)
-                self.connect_map[input_index, output_index] = gain
+                if self.connect_map[input_index, output_index] != 0:
+                    warn("multiple connections given for input %d" %
+                         input_index + ". Combining with previous entries.")
+                self.connect_map[input_index, output_index] += gain
 
         # Convert the input list to a matrix: maps system to subsystems
         self.input_map = np.zeros((ninputs, self.ninputs))
         for index, inpspec in enumerate(inplist):
-            if isinstance(inpspec, (int, str, tuple)): inpspec = [inpspec]
+            if isinstance(inpspec, (int, str, tuple)):
+                inpspec = [inpspec]
+            if not isinstance(inpspec, list):
+                raise ValueError("specifications in inplist must be of type "
+                                 "int, str, tuple or list.")
             for spec in inpspec:
-                self.input_map[self._parse_input_spec(spec), index] = 1
+                ulist_index = self._parse_input_spec(spec)
+                if self.input_map[ulist_index, index] != 0:
+                    warn("multiple connections given for input %d" %
+                         index + ". Combining with previous entries.")
+                self.input_map[ulist_index, index] += 1
 
         # Convert the output list to a matrix: maps subsystems to system
         self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
-        for index in range(len(outlist)):
-            ylist_index, gain = self._parse_output_spec(outlist[index])
-            self.output_map[index, ylist_index] = gain
+        for index, outspec in enumerate(outlist):
+            if isinstance(outspec, (int, str, tuple)):
+                outspec = [outspec]
+            if not isinstance(outspec, list):
+                raise ValueError("specifications in outlist must be of type "
+                                 "int, str, tuple or list.")
+            for spec in outspec:
+                ylist_index, gain = self._parse_output_spec(spec)
+                if self.output_map[index, ylist_index] != 0:
+                    warn("multiple connections given for output %d" %
+                         index + ". Combining with previous entries.")
+                self.output_map[index, ylist_index] += gain
 
         # Save the parameters for the system
         self.params = params.copy()
-
-    def __add__(self, sys):
-        # TODO: implement special processing to maintain flat structure
-        return super(InterconnectedSystem, self).__add__(sys)
-
-    def __radd__(self, sys):
-        # TODO: implement special processing to maintain flat structure
-        return super(InterconnectedSystem, self).__radd__(sys)
-
-    def __mul__(self, sys):
-        # TODO: implement special processing to maintain flat structure
-        return super(InterconnectedSystem, self).__mul__(sys)
-
-    def __rmul__(self, sys):
-        # TODO: implement special processing to maintain flat structure
-        return super(InterconnectedSystem, self).__rmul__(sys)
-
-    def __neg__(self):
-        # TODO: implement special processing to maintain flat structure
-        return super(InterconnectedSystem, self).__neg__()
 
     def _update_params(self, params, warning=False):
         for sys in self.syslist:
@@ -1004,7 +1088,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         # Go through each system and update the right hand side for that system
         xdot = np.zeros((self.nstates,))        # Array to hold results
-        state_index = 0; input_index = 0        # Start at the beginning
+        state_index, input_index = 0, 0         # Start at the beginning
         for sys in self.syslist:
             # Update the right hand side for this subsystem
             if sys.nstates != 0:
@@ -1047,7 +1131,7 @@ class InterconnectedSystem(InputOutputSystem):
         # TODO (later): see if there is a more efficient way to compute
         cycle_count = len(self.syslist) + 1
         while cycle_count > 0:
-            state_index = 0; input_index = 0; output_index = 0
+            state_index, input_index, output_index = 0, 0, 0
             for sys in self.syslist:
                 # Compute outputs for each system from current state
                 ysys = sys._out(
@@ -1060,8 +1144,8 @@ class InterconnectedSystem(InputOutputSystem):
 
                 # Store the input in the second part of ylist
                 ylist[noutputs + input_index:
-                    noutputs + input_index + sys.ninputs] = \
-                    ulist[input_index:input_index + sys.ninputs]
+                      noutputs + input_index + sys.ninputs] = \
+                          ulist[input_index:input_index + sys.ninputs]
 
                 # Increment the index pointers
                 state_index += sys.nstates
@@ -1105,7 +1189,9 @@ class InterconnectedSystem(InputOutputSystem):
 
         """
         # Parse the signal that we received
-        subsys_index, input_index = self._parse_signal(spec, 'input')
+        subsys_index, input_index, gain = self._parse_signal(spec, 'input')
+        if gain != 1:
+            raise ValueError("gain not allowed in spec '%s'." % str(spec))
 
         # Return the index into the input vector list (ylist)
         return self.input_offset[subsys_index] + input_index
@@ -1134,27 +1220,18 @@ class InterconnectedSystem(InputOutputSystem):
         the gain to use for that output.
 
         """
-        gain = 1                # Default gain
-
-        # Check for special forms of the input
-        if isinstance(spec, tuple) and len(spec) == 3:
-            gain = spec[2]
-            spec = spec[:2]
-        elif isinstance(spec, str) and spec[0] == '-':
-            gain = -1
-            spec = spec[1:]
-
         # Parse the rest of the spec with standard signal parsing routine
         try:
             # Start by looking in the set of subsystem outputs
-            subsys_index, output_index = self._parse_signal(spec, 'output')
+            subsys_index, output_index, gain = \
+                self._parse_signal(spec, 'output')
 
             # Return the index into the input vector list (ylist)
             return self.output_offset[subsys_index] + output_index, gain
 
         except ValueError:
             # Try looking in the set of subsystem *inputs*
-            subsys_index, input_index = self._parse_signal(
+            subsys_index, input_index, gain = self._parse_signal(
                 spec, 'input or output', dictname='input_index')
 
             # Return the index into the input vector list (ylist)
@@ -1179,20 +1256,31 @@ class InterconnectedSystem(InputOutputSystem):
         """
         import re
 
+        gain = 1                # Default gain
+
+        # Check for special forms of the input
+        if isinstance(spec, tuple) and len(spec) == 3:
+            gain = spec[2]
+            spec = spec[:2]
+        elif isinstance(spec, str) and spec[0] == '-':
+            gain = -1
+            spec = spec[1:]
+
         # Process cases where we are given indices as integers
         if isinstance(spec, int):
-            return spec, 0
+            return spec, 0, gain
 
         elif isinstance(spec, tuple) and len(spec) == 1 \
              and isinstance(spec[0], int):
-            return spec[0], 0
+            return spec[0], 0, gain
 
         elif isinstance(spec, tuple) and len(spec) == 2 \
              and all([isinstance(index, int) for index in spec]):
-            return spec
+            return spec + (gain,)
 
         # Figure out the name of the dictionary to use
-        if dictname is None: dictname = signame + '_index'
+        if dictname is None:
+            dictname = signame + '_index'
 
         if isinstance(spec, str):
             # If we got a dotted string, break up into pieces
@@ -1214,7 +1302,7 @@ class InterconnectedSystem(InputOutputSystem):
                 raise ValueError("Couldn't find %s signal '%s.%s'." %
                                  (signame, namelist[0], namelist[1]))
 
-            return system_index, signal_index
+            return system_index, signal_index, gain
 
         # Handle the ('sys', 'sig'), (i, j), and mixed cases
         elif isinstance(spec, tuple) and len(spec) == 2 and \
@@ -1227,7 +1315,7 @@ class InterconnectedSystem(InputOutputSystem):
             else:
                 system_index = self._find_system(spec[0])
             if system_index is None:
-                raise ValueError("Couldn't find system %s." % spec[0])
+                raise ValueError("Couldn't find system '%s'." % spec[0])
 
             if isinstance(spec[1], int):
                 signal_index = spec[1]
@@ -1240,7 +1328,7 @@ class InterconnectedSystem(InputOutputSystem):
             if signal_index is None:
                 raise ValueError("Couldn't find signal %s.%s." % tuple(spec))
 
-            return system_index, signal_index
+            return system_index, signal_index, gain
 
         else:
             raise ValueError("Couldn't parse signal reference %s." % str(spec))
@@ -1310,9 +1398,240 @@ class InterconnectedSystem(InputOutputSystem):
         self.noutputs = output_map.shape[0]
 
 
-def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
-                          return_x=False, squeeze=True):
+    def unused_signals(self):
+        """Find unused subsystem inputs and outputs
 
+        Returns
+        -------
+        
+        unused_inputs : dict
+
+          A mapping from tuple of indices (isys, isig) to string
+          '{sys}.{sig}', for all unused subsystem inputs.
+
+        unused_outputs : dict
+
+          A mapping from tuple of indices (isys, isig) to string
+          '{sys}.{sig}', for all unused subsystem outputs.
+
+        """
+        used_sysinp_via_inp = np.nonzero(self.input_map)[0]
+        used_sysout_via_out = np.nonzero(self.output_map)[1]
+        used_sysinp_via_con, used_sysout_via_con = np.nonzero(self.connect_map)
+
+        used_sysinp = set(used_sysinp_via_inp) | set(used_sysinp_via_con)
+        used_sysout = set(used_sysout_via_out) | set(used_sysout_via_con)
+
+        nsubsysinp = sum(sys.ninputs for sys in self.syslist)
+        nsubsysout = sum(sys.noutputs for sys in self.syslist)
+
+        unused_sysinp = sorted(set(range(nsubsysinp)) - used_sysinp)
+        unused_sysout = sorted(set(range(nsubsysout)) - used_sysout)
+
+        inputs = [(isys,isig, f'{sys.name}.{sig}')
+                  for isys, sys in enumerate(self.syslist)
+                  for sig, isig in sys.input_index.items()]
+
+        outputs = [(isys,isig,f'{sys.name}.{sig}')
+                   for isys, sys in enumerate(self.syslist)
+                   for sig, isig in sys.output_index.items()]
+
+        return ({inputs[i][:2]:inputs[i][2]
+                for i in unused_sysinp},
+                {outputs[i][:2]:outputs[i][2]
+                 for i in unused_sysout})
+
+
+    def _find_inputs_by_basename(self, basename):
+        """Find all subsystem inputs matching basename
+
+        Returns
+        -------
+        Mapping from (isys, isig) to '{sys}.{sig}' 
+
+        """
+        return {(isys, isig) : f'{sys.name}.{basename}'
+                for isys, sys in enumerate(self.syslist)
+                for sig, isig in sys.input_index.items()
+                if sig == (basename)}
+
+
+    def _find_outputs_by_basename(self, basename):
+        """Find all subsystem outputs matching basename
+
+        Returns
+        -------
+        Mapping from (isys, isig) to '{sys}.{sig}' 
+
+        """
+        return {(isys, isig) : f'{sys.name}.{basename}'
+                for isys, sys in enumerate(self.syslist)
+                for sig, isig in sys.output_index.items()
+                if sig == (basename)}
+
+
+    def check_unused_signals(self, ignore_inputs=None, ignore_outputs=None):
+        """Check for unused subsystem inputs and outputs
+
+        If any unused inputs or outputs are found, emit a warning.
+        
+        Parameters
+        ----------
+        ignore_inputs : list of input-spec
+          Subsystem inputs known to be unused.  input-spec can be any of:
+            'sig', 'sys.sig', (isys, isig), ('sys', isig)
+         
+          If the 'sig' form is used, all subsystem inputs with that
+          name are considered ignored.
+
+        ignore_outputs : list of output-spec
+          Subsystem outputs known to be unused.  output-spec can be any of:
+            'sig', 'sys.sig', (isys, isig), ('sys', isig)
+         
+          If the 'sig' form is used, all subsystem outputs with that
+          name are considered ignored.
+
+        """
+
+        if ignore_inputs is None:
+            ignore_inputs = []
+
+        if ignore_outputs is None:
+            ignore_outputs = []
+
+        unused_inputs, unused_outputs = self.unused_signals()
+
+        # (isys, isig) -> signal-spec
+        ignore_input_map = {}
+        for ignore_input in ignore_inputs:
+            if isinstance(ignore_input, str) and '.' not in ignore_input:
+                ignore_idxs = self._find_inputs_by_basename(ignore_input)
+                if not ignore_idxs:
+                    raise ValueError(f"Couldn't find ignored input {ignore_input} in subsystems")
+                ignore_input_map.update(ignore_idxs)
+            else:
+                ignore_input_map[self._parse_signal(ignore_input, 'input')[:2]] = ignore_input
+
+        # (isys, isig) -> signal-spec
+        ignore_output_map = {}
+        for ignore_output in ignore_outputs:
+            if isinstance(ignore_output, str) and '.' not in ignore_output:
+                ignore_found = self._find_outputs_by_basename(ignore_output)
+                if not ignore_found:
+                    raise ValueError(f"Couldn't find ignored output {ignore_output} in subsystems")
+                ignore_output_map.update(ignore_found)
+            else:
+                ignore_output_map[self._parse_signal(ignore_output, 'output')[:2]] = ignore_output
+
+        dropped_inputs = set(unused_inputs) - set(ignore_input_map)
+        dropped_outputs = set(unused_outputs) - set(ignore_output_map)
+
+        used_ignored_inputs = set(ignore_input_map) - set(unused_inputs)
+        used_ignored_outputs =  set(ignore_output_map) - set(unused_outputs)
+
+        if dropped_inputs:
+            msg = ('Unused input(s) in InterconnectedSystem: '
+                   + '; '.join(f'{inp}={unused_inputs[inp]}'
+                               for inp in dropped_inputs))
+            warn(msg)
+
+        if dropped_outputs:
+            msg = ('Unused output(s) in InterconnectedSystem: '
+                   + '; '.join(f'{out} : {unused_outputs[out]}'
+                               for out in dropped_outputs))
+            warn(msg)
+
+        if used_ignored_inputs:
+            msg = ('Input(s) specified as ignored is (are) used: '
+                   + '; '.join(f'{inp} : {ignore_input_map[inp]}'
+                               for inp in used_ignored_inputs))
+            warn(msg)
+
+        if used_ignored_outputs:
+            msg = ('Output(s) specified as ignored is (are) used: '
+                   + '; '.join(f'{out}={ignore_output_map[out]}'
+                               for out in used_ignored_outputs))
+            warn(msg)
+
+
+class LinearICSystem(InterconnectedSystem, LinearIOSystem):
+
+    """Interconnection of a set of linear input/output systems.
+
+    This class is used to implement a system that is an interconnection of
+    linear input/output systems.  It has all of the structure of an
+    :class:`~control.InterconnectedSystem`, but also maintains the requirement
+    elements of :class:`~control.LinearIOSystem`, including the
+    :class:`StateSpace` class structure, allowing it to be passed to functions
+    that expect a :class:`StateSpace` system.
+
+    This class is usually generated using :func:`~control.interconnect` and
+    not called directly
+
+    """
+
+    def __init__(self, io_sys, ss_sys=None):
+        if not isinstance(io_sys, InterconnectedSystem):
+            raise TypeError("First argument must be an interconnected system.")
+
+        # Create the I/O system object
+        InputOutputSystem.__init__(
+            self, name=io_sys.name, params=io_sys.params)
+
+        # Copy over the I/O systems attributes
+        self.syslist = io_sys.syslist
+        self.ninputs = io_sys.ninputs
+        self.noutputs = io_sys.noutputs
+        self.nstates = io_sys.nstates
+        self.input_index = io_sys.input_index
+        self.output_index = io_sys.output_index
+        self.state_index = io_sys.state_index
+        self.dt = io_sys.dt
+
+        # Copy over the attributes from the interconnected system
+        self.syslist_index = io_sys.syslist_index
+        self.state_offset = io_sys.state_offset
+        self.input_offset = io_sys.input_offset
+        self.output_offset = io_sys.output_offset
+        self.connect_map = io_sys.connect_map
+        self.input_map = io_sys.input_map
+        self.output_map = io_sys.output_map
+        self.params = io_sys.params
+
+        # If we didnt' get a state space system, linearize the full system
+        # TODO: this could be replaced with a direct computation (someday)
+        if ss_sys is None:
+            ss_sys = self.linearize(0, 0)
+
+        # Initialize the state space attributes
+        if isinstance(ss_sys, StateSpace):
+            # Make sure the dimension match
+            if io_sys.ninputs != ss_sys.ninputs or \
+               io_sys.noutputs != ss_sys.noutputs or \
+               io_sys.nstates != ss_sys.nstates:
+                raise ValueError("System dimensions for first and second "
+                                 "arguments must match.")
+            StateSpace.__init__(self, ss_sys, remove_useless=False)
+
+        else:
+            raise TypeError("Second argument must be a state space system.")
+
+    # The following text needs to be replicated from StateSpace in order for
+    # this entry to show up properly in sphinx doccumentation (not sure why,
+    # but it was the only way to get it to work).
+    #
+    #: Deprecated attribute; use :attr:`nstates` instead.
+    #:
+    #: The ``state`` attribute was used to store the number of states for : a
+    #: state space system.  It is no longer used.  If you need to access the
+    #: number of states, use :attr:`nstates`.
+    states = property(StateSpace._get_states, StateSpace._set_states)
+
+
+def input_output_response(
+        sys, T, U=0., X0=0, params={},
+        transpose=False, return_x=False, squeeze=None,
+        solve_ivp_kwargs={}, **kwargs):
     """Compute the output response of a system to a given input.
 
     Simulate a dynamical system with a given input and return its output
@@ -1320,38 +1639,68 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
 
     Parameters
     ----------
-    sys: InputOutputSystem
+    sys : InputOutputSystem
         Input/output system to simulate.
-    T: array-like
+    T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
-    U: array-like or number, optional
+    U : array-like or number, optional
         Input array giving input at each time `T` (default = 0).
-    X0: array-like or number, optional
+    X0 : array-like or number, optional
         Initial condition (default = 0).
     return_x : bool, optional
         If True, return the values of the state at each time (default = False).
     squeeze : bool, optional
-        If True (default), squeeze unused dimensions out of the output
-        response.  In particular, for a single output system, return a
-        vector of shape (nsteps) instead of (nsteps, 1).
+        If True and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If False, return the
+        system output as a 2D array even if the system is SISO.  Default value
+        set by config.defaults['control.squeeze_time_response'].
 
     Returns
     -------
     T : array
         Time values of the output.
     yout : array
-        Response of the system.
+        Response of the system.  If the system is SISO and squeeze is not
+        True, the array is 1D (indexed by time).  If the system is not SISO or
+        squeeze is False, the array is 2D (indexed by the output number and
+        time).
     xout : array
-        Time evolution of the state vector (if return_x=True)
+        Time evolution of the state vector (if return_x=True).
+
+    Other parameters
+    ----------------
+    solve_ivp_method : str, optional
+        Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
+        to 'RK45'.
+    solve_ivp_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
 
     Raises
     ------
     TypeError
         If the system is not an input/output system.
     ValueError
-        If time step does not match sampling time (for discrete time systems)
+        If time step does not match sampling time (for discrete time systems).
 
     """
+    #
+    # Process keyword arguments
+    #
+
+    # Allow method as an alternative to solve_ivp_method
+    if kwargs.get('method', None):
+        solve_ivp_kwargs['method'] = kwargs.pop('method')
+
+    # Figure out the method to be used
+    if kwargs.get('solve_ivp_method', None):
+        if kwargs.get('method', None):
+            raise ValueError("ivp_method specified more than once")
+        solve_ivp_kwargs['method'] = kwargs['solve_ivp_method']
+
+    # Set the default method to 'RK45'
+    if solve_ivp_kwargs.get('method', None) is None:
+        solve_ivp_kwargs['method'] = 'RK45'
+
     # Sanity checking on the input
     if not isinstance(sys, InputOutputSystem):
         raise TypeError("System of type ", type(sys), " not valid")
@@ -1378,11 +1727,9 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             u = U[i] if len(U.shape) == 1 else U[:, i]
             y[:, i] = sys._out(T[i], [], u)
-        if (squeeze): y = np.squeeze(y)
-        if return_x:
-            return T, y, []
-        else:
-            return T, y
+        return _process_time_response(
+            sys, T, y, np.array((0, 0, np.asarray(T).size)),
+            transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],
@@ -1391,17 +1738,36 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     # Update the parameter values
     sys._update_params(params)
 
+    #
+    # Define a function to evaluate the input at an arbitrary time
+    #
+    # This is equivalent to the function
+    #
+    #   ufun = sp.interpolate.interp1d(T, U, fill_value='extrapolate')
+    #
+    # but has a lot less overhead => simulation runs much faster
+    def ufun(t):
+        # Find the value of the index using linear interpolation
+        idx = np.searchsorted(T, t, side='left')
+        if idx == 0:
+            # For consistency in return type, multiple by a float
+            return U[..., 0] * 1.
+        else:
+            dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
+            return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
+
     # Create a lambda function for the right hand side
-    u = sp.interpolate.interp1d(T, U, fill_value="extrapolate")
-    def ivp_rhs(t, x): return sys._rhs(t, x, u(t))
+    def ivp_rhs(t, x):
+        return sys._rhs(t, x, ufun(t))
 
     # Perform the simulation
     if isctime(sys):
         if not hasattr(sp.integrate, 'solve_ivp'):
             raise NameError("scipy.integrate.solve_ivp not found; "
                             "use SciPy 1.0 or greater")
-        soln = sp.integrate.solve_ivp(ivp_rhs, (T0, Tf), X0, t_eval=T,
-                                      method=method, vectorized=False)
+        soln = sp.integrate.solve_ivp(
+            ivp_rhs, (T0, Tf), X0, t_eval=T,
+            vectorized=False, **solve_ivp_kwargs)
 
         # Compute the output associated with the state (and use sys.out to
         # figure out the number of outputs just in case it wasn't specified)
@@ -1442,10 +1808,10 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
         for i in range(len(T)):
             # Store the current state and output
             soln.y.append(x)
-            y.append(sys._out(T[i], x, u(T[i])))
+            y.append(sys._out(T[i], x, ufun(T[i])))
 
             # Update the state for the next iteration
-            x = sys._rhs(T[i], x, u(T[i]))
+            x = sys._rhs(T[i], x, ufun(T[i]))
 
         # Convert output to numpy arrays
         soln.y = np.transpose(np.array(soln.y))
@@ -1457,13 +1823,8 @@ def input_output_response(sys, T, U=0., X0=0, params={}, method='RK45',
     else:                       # Neither ctime or dtime??
         raise TypeError("Can't determine system type")
 
-    # Get rid of extra dimensions in the output, of desired
-    if (squeeze): y = np.squeeze(y)
-
-    if return_x:
-        return soln.t, y, soln.y
-    else:
-        return soln.t, y
+    return _process_time_response(sys, soln.t, y, soln.y, transpose=transpose,
+                                  return_x=return_x, squeeze=squeeze)
 
 
 def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
@@ -1471,7 +1832,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
               return_y=False, return_result=False, **kw):
     """Find the equilibrium point for an input/output system.
 
-    Returns the value of an equlibrium point given the initial state and
+    Returns the value of an equilibrium point given the initial state and
     either input value or desired output value for the equilibrium point.
 
     Parameters
@@ -1514,8 +1875,9 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     return_y : bool, optional
         If True, return the value of output at the equilibrium point.
     return_result : bool, optional
-        If True, return the `result` option from the scipy root function used
-        to compute the equilibrium point.
+        If True, return the `result` option from the
+        :func:`scipy.optimize.root` function used to compute the equilibrium
+        point.
 
     Returns
     -------
@@ -1529,9 +1891,9 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         If `return_y` is True, returns the value of the outputs at the
         equilibrium point, or `None` if no equilibrium point was found and
         `return_result` was False.
-    result : scipy root() result object, optional
-        If `return_result` is True, returns the `result` from the scipy root
-        function.
+    result : :class:`scipy.optimize.OptimizeResult`, optional
+        If `return_result` is True, returns the `result` from the
+        :func:`scipy.optimize.root` function.
 
     """
     from scipy.optimize import root
@@ -1542,9 +1904,12 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
     noutputs = _find_size(sys.noutputs, y0)
 
     # Convert x0, u0, y0 to arrays, if needed
-    if np.isscalar(x0): x0 = np.ones((nstates,)) * x0
-    if np.isscalar(u0): u0 = np.ones((ninputs,)) * u0
-    if np.isscalar(y0): y0 = np.ones((ninputs,)) * y0
+    if np.isscalar(x0):
+        x0 = np.ones((nstates,)) * x0
+    if np.isscalar(u0):
+        u0 = np.ones((ninputs,)) * u0
+    if np.isscalar(y0):
+        y0 = np.ones((ninputs,)) * y0
 
     # Discrete-time not yet supported
     if isdtime(sys, strict=True):
@@ -1680,7 +2045,8 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
 
             # Compute the update and output maps
             dx = sys._rhs(t, x, u) - dx0
-            if dtime: dx -= x           # TODO: check
+            if dtime:
+                dx -= x           # TODO: check
             dy = sys._out(t, x, u) - y0
 
             # Map the results into the constrained variables
@@ -1698,7 +2064,8 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         z = (x, u, sys._out(t, x, u))
 
     # Return the result based on what the user wants and what we found
-    if not return_y: z = z[0:2]     # Strip y from result if not desired
+    if not return_y:
+        z = z[0:2]              # Strip y from result if not desired
     if return_result:
         # Return whatever we got, along with the result dictionary
         return z + (result,)
@@ -1715,8 +2082,8 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
     """Linearize an input/output system at a given state and input.
 
     This function computes the linearization of an input/output system at a
-    given state and input value and returns a :class:`control.StateSpace`
-    object.  The eavaluation point need not be an equilibrium point.
+    given state and input value and returns a :class:`~control.StateSpace`
+    object.  The evaluation point need not be an equilibrium point.
 
     Parameters
     ----------
@@ -1724,7 +2091,7 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
         The system to be linearized
     xeq : array
         The state at which the linearization will be evaluated (does not need
-        to be an equlibrium state).
+        to be an equilibrium state).
     ueq : array
         The input at which the linearization will be evaluated (does not need
         to correspond to an equlibrium state).
@@ -1734,6 +2101,19 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
+    copy : bool, Optional
+        If `copy` is True, copy the names of the input signals, output signals,
+        and states to the linearized system.  If `name` is not specified,
+        the system name is set to the input system name with the string
+        '_linearized' appended.
+    name : string, optional
+        Set the name of the linearized system.  If not specified and
+        if `copy` is `False`, a generic name <sys[id]> is generated
+        with a unique integer id.  If `copy` is `True`, the new system
+        name is determined by adding the prefix and suffix strings in
+        config.defaults['iosys.linearized_system_name_prefix'] and
+        config.defaults['iosys.linearized_system_name_suffix'], with the
+        default being to add the suffix '$linearized'.
 
     Returns
     -------
@@ -1745,6 +2125,17 @@ def linearize(sys, xeq, ueq=[], t=0, params={}, **kw):
     if not isinstance(sys, InputOutputSystem):
         raise TypeError("Can only linearize InputOutputSystem types")
     return sys.linearize(xeq, ueq, t=t, params=params, **kw)
+
+
+# Utility function to parse a signal parameter
+def _parse_signal_parameter(value, name, kwargs, end=False):
+    # Check kwargs for a variant of the parameter name
+    if value is None and name in kwargs:
+        value = kwargs.pop(name)
+
+    if end and kwargs:
+        raise TypeError("unknown parameters %s" % kwargs)
+    return value
 
 
 def _find_size(sysval, vecval):
@@ -1767,16 +2158,462 @@ def _find_size(sysval, vecval):
 
 
 # Convert a state space system into an input/output system (wrapper)
-def ss2io(*args, **kw): return LinearIOSystem(*args, **kw)
+def ss2io(*args, **kwargs):
+    return LinearIOSystem(*args, **kwargs)
 ss2io.__doc__ = LinearIOSystem.__init__.__doc__
 
 
 # Convert a transfer function into an input/output system (wrapper)
-def tf2io(*args, **kw):
+def tf2io(*args, **kwargs):
     """Convert a transfer function into an I/O system"""
     # TODO: add remaining documentation
     # Convert the system to a state space system
     linsys = tf2ss(*args)
 
     # Now convert the state space system to an I/O system
-    return LinearIOSystem(linsys, **kw)
+    return LinearIOSystem(linsys, **kwargs)
+
+
+# Function to create an interconnected system
+def interconnect(syslist, connections=None, inplist=[], outlist=[],
+                 inputs=None, outputs=None, states=None,
+                 params={}, dt=None, name=None,
+                 check_unused=True, ignore_inputs=None, ignore_outputs=None,
+                 **kwargs):
+    """Interconnect a set of input/output systems.
+
+    This function creates a new system that is an interconnection of a set of
+    input/output systems.  If all of the input systems are linear I/O systems
+    (type :class:`~control.LinearIOSystem`) then the resulting system will be
+    a linear interconnected I/O system (type :class:`~control.LinearICSystem`)
+    with the appropriate inputs, outputs, and states.  Otherwise, an
+    interconnected I/O system (type :class:`~control.InterconnectedSystem`)
+    will be created.
+
+    Parameters
+    ----------
+    syslist : list of InputOutputSystems
+        The list of input/output systems to be connected
+
+    connections : list of connections, optional
+        Description of the internal connections between the subsystems:
+
+            [connection1, connection2, ...]
+
+        Each connection is itself a list that describes an input to one of the
+        subsystems.  The entries are of the form:
+
+            [input-spec, output-spec1, output-spec2, ...]
+
+        The input-spec can be in a number of different forms.  The lowest
+        level representation is a tuple of the form `(subsys_i, inp_j)` where
+        `subsys_i` is the index into `syslist` and `inp_j` is the index into
+        the input vector for the subsystem.  If `subsys_i` has a single input,
+        then the subsystem index `subsys_i` can be listed as the input-spec.
+        If systems and signals are given names, then the form 'sys.sig' or
+        ('sys', 'sig') are also recognized.
+
+        Similarly, each output-spec should describe an output signal from one
+        of the subsystems.  The lowest level representation is a tuple of the
+        form `(subsys_i, out_j, gain)`.  The input will be constructed by
+        summing the listed outputs after multiplying by the gain term.  If the
+        gain term is omitted, it is assumed to be 1.  If the system has a
+        single output, then the subsystem index `subsys_i` can be listed as
+        the input-spec.  If systems and signals are given names, then the form
+        'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also recognized,
+        and the special form '-sys.sig' can be used to specify a signal with
+        gain -1.
+
+        If omitted, the `interconnect` function will attempt to create the
+        interconnection map by connecting all signals with the same base names
+        (ignoring the system name).  Specifically, for each input signal name
+        in the list of systems, if that signal name corresponds to the output
+        signal in any of the systems, it will be connected to that input (with
+        a summation across all signals if the output name occurs in more than
+        one system).
+
+        The `connections` keyword can also be set to `False`, which will leave
+        the connection map empty and it can be specified instead using the
+        low-level :func:`~control.InterconnectedSystem.set_connect_map`
+        method.
+
+    inplist : list of input connections, optional
+        List of connections for how the inputs for the overall system are
+        mapped to the subsystem inputs.  The input specification is similar to
+        the form defined in the connection specification, except that
+        connections do not specify an input-spec, since these are the system
+        inputs. The entries for a connection are thus of the form:
+
+            [input-spec1, input-spec2, ...]
+
+        Each system input is added to the input for the listed subsystem.  If
+        the system input connects to only one subsystem input, a single input
+        specification can be given (without the inner list).
+
+        If omitted, the input map can be specified using the
+        :func:`~control.InterconnectedSystem.set_input_map` method.
+
+    outlist : list of output connections, optional
+        List of connections for how the outputs from the subsystems are mapped
+        to overall system outputs.  The output connection description is the
+        same as the form defined in the inplist specification (including the
+        optional gain term).  Numbered outputs must be chosen from the list of
+        subsystem outputs, but named outputs can also be contained in the list
+        of subsystem inputs.
+
+        If an output connection contains more than one signal specification,
+        then those signals are added together (multiplying by the any gain
+        term) to form the system output.
+
+        If omitted, the output map can be specified using the
+        :func:`~control.InterconnectedSystem.set_output_map` method.
+
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.  If an
+        integer count is specified, the names of the signal will be of the
+        form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If this parameter
+        is not given or given as `None`, the relevant quantity will be
+        determined when possible based on other information provided to
+        functions using the system.
+
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`. The
+        default is `None`, in which case the states will be given names of the
+        form '<subsys_name>.<state_name>', for each subsys in syslist and each
+        state_name of each subsys.
+
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
+
+    dt : timebase, optional
+        The timebase for the system, used to specify whether the system is
+        operating in continuous or discrete time.  It can have the following
+        values:
+
+        * dt = 0: continuous time system (default)
+        * dt > 0: discrete time system with sampling period 'dt'
+        * dt = True: discrete time with unspecified sampling period
+        * dt = None: no timebase specified
+
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
+    check_unused : bool
+        If True, check for unused sub-system signals.  This check is
+        not done if connections is False, and neither input nor output
+        mappings are specified.
+
+    ignore_inputs : list of input-spec
+        A list of sub-system inputs known not to be connected.  This is
+        *only* used in checking for unused signals, and does not
+        disable use of the input.
+
+        Besides the usual input-spec forms (see `connections`), an
+        input-spec can be just the signal base name, in which case all
+        signals from all sub-systems with that base name are
+        considered ignored.
+
+    ignore_outputs : list of output-spec
+        A list of sub-system outputs known not to be connected.  This
+        is *only* used in checking for unused signals, and does not
+        disable use of the output.
+
+        Besides the usual output-spec forms (see `connections`), an
+        output-spec can be just the signal base name, in which all
+        outputs from all sub-systems with that base name are
+        considered ignored.
+
+
+    Example
+    -------
+    >>> P = control.LinearIOSystem(
+    >>>        control.rss(2, 2, 2, strictly_proper=True), name='P')
+    >>> C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
+    >>> T = control.interconnect(
+    >>>     [P, C],
+    >>>     connections = [
+    >>>       ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
+    >>>       ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
+    >>>     inplist = ['C.u[0]', 'C.u[1]'],
+    >>>     outlist = ['P.y[0]', 'P.y[1]'],
+    >>> )
+
+    For a SISO system, this example can be simplified by using the
+    :func:`~control.summing_block` function and the ability to automatically
+    interconnect signals with the same names:
+
+    >>> P = control.tf2io(control.tf(1, [1, 0]), inputs='u', outputs='y')
+    >>> C = control.tf2io(control.tf(10, [1, 1]), inputs='e', outputs='u')
+    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = control.interconnect([P, C, sumblk], input='r', output='y')
+
+    Notes
+    -----
+    If a system is duplicated in the list of systems to be connected,
+    a warning is generated and a copy of the system is created with the
+    name of the new system determined by adding the prefix and suffix
+    strings in config.defaults['iosys.linearized_system_name_prefix']
+    and config.defaults['iosys.linearized_system_name_suffix'], with the
+    default being to add the suffix '$copy'$ to the system name.
+
+    It is possible to replace lists in most of arguments with tuples instead,
+    but strictly speaking the only use of tuples should be in the
+    specification of an input- or output-signal via the tuple notation
+    `(subsys_i, signal_j, gain)` (where `gain` is optional).  If you get an
+    unexpected error message about a specification being of the wrong type,
+    check your use of tuples.
+
+    In addition to its use for general nonlinear I/O systems, the
+    :func:`~control.interconnect` function allows linear systems to be
+    interconnected using named signals (compared with the
+    :func:`~control.connect` function, which uses signal indices) and to be
+    treated as both a :class:`~control.StateSpace` system as well as an
+    :class:`~control.InputOutputSystem`.
+
+    The `input` and `output` keywords can be used instead of `inputs` and
+    `outputs`, for more natural naming of SISO systems.
+
+    """
+    # Look for 'input' and 'output' parameter name variants
+    inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+    outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+
+    if not check_unused and (ignore_inputs or ignore_outputs):
+        raise ValueError('check_unused is False, but either '
+                         + 'ignore_inputs or ignore_outputs non-empty')
+
+    if (connections is False
+        and not inplist and not outlist
+        and not inputs and not outputs):
+        # user has disabled auto-connect, and supplied neither input
+        # nor output mappings; assume they know what they're doing
+        check_unused = False
+
+    # If connections was not specified, set up default connection list
+    if connections is None:
+        # For each system input, look for outputs with the same name
+        connections = []
+        for input_sys in syslist:
+            for input_name in input_sys.input_index.keys():
+                connect = [input_sys.name + "." + input_name]
+                for output_sys in syslist:
+                    if input_name in output_sys.output_index.keys():
+                        connect.append(output_sys.name + "." + input_name)
+                if len(connect) > 1:
+                    connections.append(connect)
+
+        auto_connect = True
+
+    elif connections is False:
+        check_unused = False
+        # Use an empty connections list
+        connections = []
+
+    # If inplist/outlist is not present, try using inputs/outputs instead
+    if not inplist and inputs is not None:
+        inplist = list(inputs)
+    if not outlist and outputs is not None:
+        outlist = list(outputs)
+
+    # Process input list
+    if not isinstance(inplist, (list, tuple)):
+        inplist = [inplist]
+    new_inplist = []
+    for signal in inplist:
+        # Create an empty connection and append to inplist
+        connection = []
+
+        # Check for signal names without a system name
+        if isinstance(signal, str) and len(signal.split('.')) == 1:
+            # Get the signal name
+            name = signal[1:] if signal[0] == '-' else signal
+            sign = '-' if signal[0] == '-' else ""
+
+            # Look for the signal name as a system input
+            for sys in syslist:
+                if name in sys.input_index.keys():
+                    connection.append(sign + sys.name + "." + name)
+
+            # Make sure we found the name
+            if len(connection) == 0:
+                raise ValueError("could not find signal %s" % name)
+            else:
+                new_inplist.append(connection)
+        else:
+            new_inplist.append(signal)
+    inplist = new_inplist
+
+    # Process output list
+    if not isinstance(outlist, (list, tuple)):
+        outlist = [outlist]
+    new_outlist = []
+    for signal in outlist:
+        # Create an empty connection and append to inplist
+        connection = []
+
+        # Check for signal names without a system name
+        if isinstance(signal, str) and len(signal.split('.')) == 1:
+            # Get the signal name
+            name = signal[1:] if signal[0] == '-' else signal
+            sign = '-' if signal[0] == '-' else ""
+
+            # Look for the signal name as a system output
+            for sys in syslist:
+                if name in sys.output_index.keys():
+                    connection.append(sign + sys.name + "." + name)
+
+            # Make sure we found the name
+            if len(connection) == 0:
+                raise ValueError("could not find signal %s" % name)
+            else:
+                new_outlist.append(connection)
+        else:
+            new_outlist.append(signal)
+    outlist = new_outlist
+
+    newsys = InterconnectedSystem(
+        syslist, connections=connections, inplist=inplist, outlist=outlist,
+        inputs=inputs, outputs=outputs, states=states,
+        params=params, dt=dt, name=name)
+
+
+    # check for implicity dropped signals
+    if check_unused:
+        newsys.check_unused_signals(ignore_inputs, ignore_outputs)
+    # If all subsystems are linear systems, maintain linear structure
+    if all([isinstance(sys, LinearIOSystem) for sys in syslist]):
+        return LinearICSystem(newsys, None)
+
+    return newsys
+
+
+# Summing junction
+def summing_junction(
+        inputs=None, output=None, dimension=None, name=None,
+        prefix='u', **kwargs):
+    """Create a summing junction as an input/output system.
+
+    This function creates a static input/output system that outputs the sum of
+    the inputs, potentially with a change in sign for each individual input.
+    The input/output system that is created by this function can be used as a
+    component in the :func:`~control.interconnect` function.
+
+    Parameters
+    ----------
+    inputs : int, string or list of strings
+        Description of the inputs to the summing junction.  This can be given
+        as an integer count, a string, or a list of strings. If an integer
+        count is specified, the names of the input signals will be of the form
+        `u[i]`.
+    output : string, optional
+        Name of the system output.  If not specified, the output will be 'y'.
+    dimension : int, optional
+        The dimension of the summing junction.  If the dimension is set to a
+        positive integer, a multi-input, multi-output summing junction will be
+        created.  The input and output signal names will be of the form
+        `<signal>[i]` where `signal` is the input/output signal name specified
+        by the `inputs` and `output` keywords.  Default value is `None`.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+    prefix : string, optional
+        If `inputs` is an integer, create the names of the states using the
+        given prefix (default = 'u').  The names of the input will be of the
+        form `prefix[i]`.
+
+    Returns
+    -------
+    sys : static LinearIOSystem
+        Linear input/output system object with no states and only a direct
+        term that implements the summing junction.
+
+    Example
+    -------
+    >>> P = control.tf2io(ct.tf(1, [1, 0]), input='u', output='y')
+    >>> C = control.tf2io(ct.tf(10, [1, 1]), input='e', output='u')
+    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = control.interconnect((P, C, sumblk), input='r', output='y')
+
+    """
+    # Utility function to parse input and output signal lists
+    def _parse_list(signals, signame='input', prefix='u'):
+        # Parse signals, including gains
+        if isinstance(signals, int):
+            nsignals = signals
+            names = ["%s[%d]" % (prefix, i) for i in range(nsignals)]
+            gains = np.ones((nsignals,))
+        elif isinstance(signals, str):
+            nsignals = 1
+            gains = [-1 if signals[0] == '-' else 1]
+            names = [signals[1:] if signals[0] == '-' else signals]
+        elif isinstance(signals, list) and \
+             all([isinstance(x, str) for x in signals]):
+            nsignals = len(signals)
+            gains = np.ones((nsignals,))
+            names = []
+            for i in range(nsignals):
+                if signals[i][0] == '-':
+                    gains[i] = -1
+                    names.append(signals[i][1:])
+                else:
+                    names.append(signals[i])
+        else:
+            raise ValueError(
+                "could not parse %s description '%s'"
+                % (signame, str(signals)))
+
+        # Return the parsed list
+        return nsignals, names, gains
+
+    # Look for 'input' and 'output' parameter name variants
+    inputs = _parse_signal_parameter(inputs, 'input', kwargs)
+    output =  _parse_signal_parameter(output, 'outputs', kwargs, end=True)
+
+    # Default values for inputs and output
+    if inputs is None:
+        raise TypeError("input specification is required")
+    if output is None:
+        output = 'y'
+
+    # Read the input list
+    ninputs, input_names, input_gains = _parse_list(
+        inputs, signame="input", prefix=prefix)
+    noutputs, output_names, output_gains = _parse_list(
+        output, signame="output", prefix='y')
+    if noutputs > 1:
+        raise NotImplementedError("vector outputs not yet supported")
+
+    # If the dimension keyword is present, vectorize inputs and outputs
+    if isinstance(dimension, int) and dimension >= 1:
+        # Create a new list of input/output names and update parameters
+        input_names = ["%s[%d]" % (name, dim)
+                       for name in input_names
+                       for dim in range(dimension)]
+        ninputs = ninputs * dimension
+
+        output_names = ["%s[%d]" % (name, dim)
+                       for name in output_names
+                       for dim in range(dimension)]
+        noutputs = noutputs * dimension
+    elif dimension is not None:
+        raise ValueError(
+            "unrecognized dimension value '%s'" % str(dimension))
+    else:
+        dimension = 1
+
+    # Create the direct term
+    D = np.kron(input_gains * output_gains[0], np.eye(dimension))
+
+    # Create a linear system of the appropriate size
+    ss_sys = StateSpace(
+        np.zeros((0, 0)), np.ones((0, ninputs)), np.ones((noutputs, 0)), D)
+
+    # Create a LinearIOSystem
+    return LinearIOSystem(
+        ss_sys, inputs=input_names, outputs=output_names, name=name)

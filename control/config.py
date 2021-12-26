@@ -7,6 +7,8 @@
 # files.  For now, you can just choose between MATLAB and FBS default
 # values + tweak a few other things.
 
+
+import collections
 import warnings
 
 __all__ = ['defaults', 'set_defaults', 'reset_defaults',
@@ -15,9 +17,48 @@ __all__ = ['defaults', 'set_defaults', 'reset_defaults',
 
 # Package level default values
 _control_defaults = {
-    # No package level defaults (yet)
+    'control.default_dt': 0,
+    'control.squeeze_frequency_response': None,
+    'control.squeeze_time_response': None,
+    'forced_response.return_x': False,
 }
-defaults = dict(_control_defaults)
+
+
+class DefaultDict(collections.UserDict):
+    """Map names for settings from older version to their renamed ones.
+
+    If a user wants to write to an old setting, issue a warning and write to
+    the renamed setting instead. Accessing the old setting returns the value
+    from the new name.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __setitem__(self, key, value):
+        super().__setitem__(self._check_deprecation(key), value)
+
+    def __missing__(self, key):
+        # An old key should never have been set. If it is being accessed
+        # through __getitem__, return the value from the new name.
+        repl = self._check_deprecation(key)
+        if self.__contains__(repl):
+            return self[repl]
+        else:
+            raise KeyError(key)
+
+    def _check_deprecation(self, key):
+        if self.__contains__(f"deprecated.{key}"):
+            repl = self[f"deprecated.{key}"]
+            warnings.warn(f"config.defaults['{key}'] has been renamed to "
+                          f"config.defaults['{repl}'].",
+                          FutureWarning, stacklevel=3)
+            return repl
+        else:
+            return key
+
+
+defaults = DefaultDict(_control_defaults)
 
 
 def set_defaults(module, **keywords):
@@ -40,9 +81,9 @@ def reset_defaults():
     # System level defaults
     defaults.update(_control_defaults)
 
-    from .freqplot import _bode_defaults, _freqplot_defaults
-    defaults.update(_bode_defaults)
+    from .freqplot import _freqplot_defaults, _nyquist_defaults
     defaults.update(_freqplot_defaults)
+    defaults.update(_nyquist_defaults)
 
     from .nichols import _nichols_defaults
     defaults.update(_nichols_defaults)
@@ -59,8 +100,11 @@ def reset_defaults():
     from .statesp import _statesp_defaults
     defaults.update(_statesp_defaults)
 
+    from .iosys import _iosys_defaults
+    defaults.update(_iosys_defaults)
 
-def _get_param(module, param, argval=None, defval=None, pop=False):
+
+def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     """Return the default value for a configuration option.
 
     The _get_param() function is a utility function used to get the value of a
@@ -84,11 +128,13 @@ def _get_param(module, param, argval=None, defval=None, pop=False):
         `config.defaults` dictionary.  If a dictionary is provided, then
         `module.param` is used to determine the default value.  Defaults to
         None.
-    pop : bool
+    pop : bool, optional
         If True and if argval is a dict, then pop the remove the parameter
         entry from the argval dict after retreiving it.  This allows the use
         of a keyword argument list to be passed through to other functions
         internal to the function being called.
+    last : bool, optional
+        If True, check to make sure dictionary is empy after processing.
 
     """
 
@@ -101,7 +147,10 @@ def _get_param(module, param, argval=None, defval=None, pop=False):
 
     # If we were passed a dict for the argval, get the param value from there
     if isinstance(argval, dict):
-        argval = argval.pop(param, None) if pop else argval.get(param, None)
+        val = argval.pop(param, None) if pop else argval.get(param, None)
+        if last and argval:
+            raise TypeError("unrecognized keywords: " + str(argval))
+        argval = val
 
     # If we were passed a dict for the defval, get the param value from there
     if isinstance(defval, dict):
@@ -121,7 +170,7 @@ def use_matlab_defaults():
         * State space class and functions use Numpy matrix objects
 
     """
-    set_defaults('bode', dB=True, deg=True, Hz=False, grid=True)
+    set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
     set_defaults('statesp', use_numpy_matrix=True)
 
 
@@ -132,9 +181,11 @@ def use_fbs_defaults():
     The following conventions are used:
         * Bode plots plot gain in powers of ten, phase in degrees,
           frequency in rad/sec, no grid
+        * Nyquist plots use dashed lines for mirror image of Nyquist curve
 
     """
-    set_defaults('bode', dB=False, deg=True, Hz=False, grid=False)
+    set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
+    set_defaults('nyquist', mirror_style='--')
 
 
 # Decide whether to use numpy.matrix for state space operations
@@ -144,7 +195,7 @@ def use_numpy_matrix(flag=True, warn=True):
     Parameters
     ----------
     flag : bool
-        If flag is `True` (default), use the Numpy (soon to be deprecated)
+        If flag is `True` (default), use the deprecated Numpy
         `matrix` class to represent matrices in the `~control.StateSpace`
         class and functions.  If flat is `False`, then matrices are
         represented by a 2D `ndarray` object.
@@ -154,11 +205,17 @@ def use_numpy_matrix(flag=True, warn=True):
         of the Numpy `matrix` class.  Set `warn` to false to omit display of
         the warning message.
 
+    Notes
+    -----
+    Prior to release 0.9.x, the default type for 2D arrays is the Numpy
+    `matrix` class.  Starting in release 0.9.0, the default type for state
+    space operations is a 2D array.
     """
     if flag and warn:
-        warnings.warn("Return type numpy.matrix is soon to be deprecated.",
-                      stacklevel=2)
+        warnings.warn("Return type numpy.matrix is deprecated.",
+                      stacklevel=2, category=DeprecationWarning)
     set_defaults('statesp', use_numpy_matrix=flag)
+
 
 def use_legacy_defaults(version):
     """ Sets the defaults to whatever they were in a given release.
@@ -166,9 +223,69 @@ def use_legacy_defaults(version):
     Parameters
     ----------
     version : string
-        version number of the defaults desired. Currently only supports `0.8.3`. 
+        Version number of the defaults desired. Ranges from '0.1' to '0.8.4'.
     """
-    if version == '0.8.3': 
-        use_numpy_matrix(True) # alternatively: set_defaults('statesp', use_numpy_matrix=True)
-    else:
-        raise ValueError('''version number not recognized. Possible values are: ['0.8.3']''') 
+    import re
+    (major, minor, patch) = (None, None, None)  # default values
+
+    # Early release tag format: REL-0.N
+    match = re.match("REL-0.([12])", version)
+    if match: (major, minor, patch) = (0, int(match.group(1)), 0)
+
+    # Early release tag format: control-0.Np
+    match = re.match("control-0.([3-6])([a-d])", version)
+    if match: (major, minor, patch) = \
+       (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
+
+    # Early release tag format: v0.Np
+    match = re.match("[vV]?0.([3-6])([a-d])", version)
+    if match: (major, minor, patch) = \
+       (0, int(match.group(1)), ord(match.group(2)) - ord('a') + 1)
+
+    # Abbreviated version format: vM.N or M.N
+    match = re.match("([vV]?[0-9]).([0-9])", version)
+    if match: (major, minor, patch) = \
+       (int(match.group(1)), int(match.group(2)), 0)
+
+    # Standard version format: vM.N.P or M.N.P
+    match = re.match("[vV]?([0-9]).([0-9]).([0-9])", version)
+    if match: (major, minor, patch) = \
+        (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+    # Make sure we found match
+    if major is None or minor is None:
+        raise ValueError("Version number not recognized. Try M.N.P format.")
+
+    #
+    # Go backwards through releases and reset defaults
+    #
+    reset_defaults()            # start from a clean slate
+
+    # Version 0.9.0:
+    if major == 0 and minor < 9:
+        # switched to 'array' as default for state space objects
+        set_defaults('statesp', use_numpy_matrix=True)
+
+        # switched to 0 (=continuous) as default timestep
+        set_defaults('control', default_dt=None)
+
+        # changed iosys naming conventions
+        set_defaults('iosys', state_name_delim='.',
+                     duplicate_system_name_prefix='copy of ',
+                     duplicate_system_name_suffix='',
+                     linearized_system_name_prefix='',
+                     linearized_system_name_suffix='_linearized')
+
+        # turned off _remove_useless_states
+        set_defaults('statesp', remove_useless_states=True)
+
+        # forced_response no longer returns x by default
+        set_defaults('forced_response', return_x=True)
+
+        # time responses are only squeezed if SISO
+        set_defaults('control', squeeze_time_response=True)
+
+        # switched mirror_style of nyquist from '-' to '--'
+        set_defaults('nyqist', mirror_style='-')
+
+    return (major, minor, patch)

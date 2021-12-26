@@ -7,7 +7,7 @@ MANIFEST
 control/_version.py
 __conda_*.txt
 record.txt
-build.log
+*.log
 *.egg-info/
 .eggs/
 .coverage
@@ -23,3 +23,9 @@ Untitled*.ipynb
 # Files created by or for emacs (RMM, 29 Dec 2017)
 *~
 TAGS
+
+# Files created by or for asv (airspeed velocity)
+.asv/
+
+# Files created by Spyder
+.spyproject/

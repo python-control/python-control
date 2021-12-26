@@ -80,27 +80,24 @@ Discrete time systems
 A discrete time system is created by specifying a nonzero 'timebase', dt.
 The timebase argument can be given when a system is constructed:
 
-* dt = None: no timebase specified (default)
-* dt = 0: continuous time system
+* dt = 0: continuous time system (default)
 * dt > 0: discrete time system with sampling period 'dt'
 * dt = True: discrete time with unspecified sampling period
+* dt = None: no timebase specified
 
 Only the :class:`StateSpace`, :class:`TransferFunction`, and
 :class:`InputOutputSystem` classes allow explicit representation of
 discrete time systems.
 
-Systems must have compatible timebases in order to be combined.  A system
-with timebase `None` can be combined with a system having a specified
-timebase; the result will have the timebase of the latter system.
-Similarly, a discrete time system with unspecified sampling time (`dt =
-True`) can be combined with a system having a specified sampling time;
-the result will be a discrete time system with the sample time of the latter
-system.  For continuous time systems, the :func:`sample_system` function or
-the :meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods
+Systems must have compatible timebases in order to be combined. A discrete time
+system with unspecified sampling time (`dt = True`) can be combined with a system
+having a specified sampling time; the result will be a discrete time system with the sample time of the latter
+system.  Similarly, a system with timebase `None` can be combined with a system having a specified
+timebase; the result will have the timebase of the latter system. For continuous
+time systems, the :func:`sample_system` function or the :meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods
 can be used to create a discrete time system from a continuous time system.
 See :ref:`utility-and-conversions`. The default value of 'dt' can be changed by
-changing the values of ``control.config.defaults['statesp.default_dt']`` and 
-``control.config.defaults['xferfcn.default_dt']``.
+changing the value of ``control.config.defaults['control.default_dt']``.
 
 Conversion between representations
 ----------------------------------
@@ -171,7 +168,7 @@ As all simulation functions return *arrays*, plotting is convenient::
 
 The output of a MIMO system can be plotted like this::
 
-    t, y, x = forced_response(sys, u, t)
+    t, y = forced_response(sys, u, t)
     plot(t, y[0], label='y_0')
     plot(t, y[1], label='y_1')
 
@@ -181,6 +178,10 @@ The convention also works well with the state space form of linear systems. If
 can be computed like this::
 
     ft = D * U
+
+
+.. currentmodule:: control
+.. _package-configuration-parameters:
 
 Package configuration parameters
 ================================
@@ -209,27 +210,27 @@ on standard configurations.
 
 Selected variables that can be configured, along with their default values:
 
-  * bode.dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
+  * freqplot.dB (False): Bode plot magnitude plotted in dB (otherwise powers of 10)
     
-  * bode.deg (True): Bode plot phase plotted in degrees (otherwise radians)
+  * freqplot.deg (True): Bode plot phase plotted in degrees (otherwise radians)
     
-  * bode.Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
+  * freqplot.Hz (False): Bode plot frequency plotted in Hertz (otherwise rad/sec)
     
-  * bode.grid (True): Include grids for magnitude and phase plots
+  * freqplot.grid (True): Include grids for magnitude and phase plots
     
-  * freqplot.number_of_samples (None): Number of frequency points in Bode plots
+  * freqplot.number_of_samples (1000): Number of frequency points in Bode plots
     
   * freqplot.feature_periphery_decade (1.0): How many decades to include in the
     frequency range on both sides of features (poles, zeros).
-    
+
   * statesp.use_numpy_matrix (True): set the return type for state space matrices to
     `numpy.matrix` (verus numpy.ndarray)
 
-  * statesp.default_dt and xferfcn.default_dt (None): set the default value of dt when 
-  constructing new LTI systems
+  * statesp.default_dt and xferfcn.default_dt (None): set the default value of dt when
+    constructing new LTI systems
 
-  * statesp.remove_useless_states (True): remove states that have no effect on the 
-  input-output dynamics of the system 
+  * statesp.remove_useless_states (True): remove states that have no effect on the
+    input-output dynamics of the system
 
 Additional parameter variables are documented in individual functions
 

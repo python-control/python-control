@@ -7,6 +7,7 @@ Differentially flat systems
 .. automodule:: control.flatsys
    :no-members:
    :no-inherited-members:
+   :no-special-members:
 
 Overview of differential flatness
 =================================
@@ -27,6 +28,7 @@ and we can write the solutions of the nonlinear system as functions of
 .. math::
     x &= \beta(z, \dot z, \dots, z^{(q)}) \\
     u &= \gamma(z, \dot z, \dots, z^{(q)}).
+    :label: flat2state
 
 For a differentially flat system, all of the feasible trajectories for
 the system can be written as functions of a flat output :math:`z(\cdot)` and
@@ -52,7 +54,7 @@ and we see that the initial and final condition in the full state
 space depends on just the output :math:`z` and its derivatives at the
 initial and final times.  Thus any trajectory for :math:`z` that satisfies
 these boundary conditions will be a feasible trajectory for the
-system, using equation~\eqref{eq:trajgen:flat2state} to determine the
+system, using equation :eq:`flat2state` to determine the
 full state space and input trajectories.
 
 In particular, given initial and final conditions on :math:`z` and its
@@ -131,36 +133,41 @@ and their derivatives up to order :math:`q_i`:
 The number of flat outputs must match the number of system inputs.
 
 For a linear system, a flat system representation can be generated using the
-:class:`~control.flatsys.LinearFlatSystem` class:
+:class:`~control.flatsys.LinearFlatSystem` class::
 
-    flatsys = control.flatsys.LinearFlatSystem(linsys)
+    sys = control.flatsys.LinearFlatSystem(linsys)
 
-For more general systems, the `FlatSystem` object must be created manually
+For more general systems, the `FlatSystem` object must be created manually::
 
-    flatsys = control.flatsys.FlatSystem(nstate, ninputs, forward, reverse)
+    sys = control.flatsys.FlatSystem(nstate, ninputs, forward, reverse)
 
-In addition to the flat system descriptionn, a set of basis functions
+In addition to the flat system description, a set of basis functions
 :math:`\phi_i(t)` must be chosen.  The `FlatBasis` class is used to represent
 the basis functions.  A polynomial basis function of the form 1, :math:`t`,
-:math:`t^2:, ... can be computed using the `PolyBasis` class, which is
-initialized by passing the desired order of the polynomial basis set:
+:math:`t^2`, ... can be computed using the `PolyBasis` class, which is
+initialized by passing the desired order of the polynomial basis set::
 
     polybasis = control.flatsys.PolyBasis(N)
 
 Once the system and basis function have been defined, the
 :func:`~control.flatsys.point_to_point` function can be used to compute a
-trajectory between initial and final states and inputs:
+trajectory between initial and final states and inputs::
 
-    traj = control.flatsys.point_to_point(x0, u0, xf, uf, Tf, basis=polybasis)
+    traj = control.flatsys.point_to_point(
+        sys, Tf, x0, u0, xf, uf, basis=polybasis)
 
 The returned object has class :class:`~control.flatsys.SystemTrajectory` and
 can be used to compute the state and input trajectory between the initial and
-final condition:
+final condition::
 
     xd, ud = traj.eval(T)
 
 where `T` is a list of times on which the trajectory should be evaluated
 (e.g., `T = numpy.linspace(0, Tf, M)`.
+
+The :func:`~control.flatsys.point_to_point` function also allows the
+specification of a cost function and/or constraints, in the same
+format as :func:`~control.optimal.solve_ocp`.
 
 Example
 =======
@@ -225,9 +232,9 @@ derived *Feedback Systems* by Astrom and Murray, Example 3.11.
 
 To find a trajectory from an initial state :math:`x_0` to a final state
 :math:`x_\text{f}` in time :math:`T_\text{f}` we solve a point-to-point
-trajectory generation problem. We also set the initial and final inputs, whi
-ch sets the vehicle velocity :math:`v` and steering wheel angle :math:`\delta`
-at the endpoints.
+trajectory generation problem. We also set the initial and final inputs, which
+sets the vehicle velocity :math:`v` and steering wheel angle :math:`\delta` at
+the endpoints.
 
 .. code-block:: python
 
@@ -240,7 +247,7 @@ at the endpoints.
     poly = fs.PolyFamily(6)
 
     # Find a trajectory between the initial condition and the final condition
-    traj = fs.point_to_point(vehicle_flat, x0, u0, xf, uf, Tf, basis=poly)
+    traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
 
     # Create the trajectory
     t = np.linspace(0, Tf, 100)
@@ -249,20 +256,18 @@ at the endpoints.
 Module classes and functions
 ============================
 
-Flat systems classes
---------------------
+.. autosummary::
+   :toctree: generated/
+   :template: custom-class-template.rst
+
+   ~control.flatsys.BasisFamily
+   ~control.flatsys.BezierFamily
+   ~control.flatsys.FlatSystem
+   ~control.flatsys.LinearFlatSystem
+   ~control.flatsys.PolyFamily
+   ~control.flatsys.SystemTrajectory
+
 .. autosummary::
    :toctree: generated/
 
-   BasisFamily
-   FlatSystem
-   LinearFlatSystem
-   PolyFamily
-   SystemTrajectory
-
-Flat systems functions
-----------------------
-.. autosummary::
-   :toctree: generated/
-
-   point_to_point
+   ~control.flatsys.point_to_point
