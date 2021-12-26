@@ -45,7 +45,7 @@ import numpy as np
 from . import statesp
 from .mateqn import care, dare
 from .statesp import _ssmatrix, _convert_to_statespace
-from .lti import LTI, isdtime
+from .lti import LTI, isdtime, isctime
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
 
@@ -325,8 +325,13 @@ def lqe(*args, **keywords):
 
     Notes
     -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
+    1. If the first argument is an LTI object, then this object will be used
+       to define the dynamics, noise and output matrices.  Furthermore, if
+       the LTI object corresponds to a discrete time system, the ``dlqe()``
+       function will be called.
+
+    2. The return type for 2D arrays depends on the default class set for
+       state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -355,6 +360,11 @@ def lqe(*args, **keywords):
     # Get the system description
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
+
+    # If we were passed a discrete time system as the first arg, use dlqe()
+    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
+        # Call dlqe
+        return dlqe(*args, **keywords)
 
     try:
         sys = args[0]           # Treat the first argument as a system
@@ -405,7 +415,7 @@ def lqe(*args, **keywords):
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def dlqe(A, G, C, QN, RN, NN=None):
+def dlqe(*args, **keywords):
     """dlqe(A, G, C, QN, RN, [, N])
 
     Linear quadratic estimator design (Kalman filter) for discrete-time
@@ -436,7 +446,11 @@ def dlqe(A, G, C, QN, RN, NN=None):
     QN, RN : 2D array_like
         Process and sensor noise covariance matrices
     NN : 2D array, optional
-        Cross covariance matrix
+        Cross covariance matrix (not yet supported)
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy'.
 
     Returns
     -------
@@ -468,14 +482,49 @@ def dlqe(A, G, C, QN, RN, NN=None):
 
     """
 
+    #
+    # Process the arguments and figure out what inputs we received
+    #
+
+    # Get the method to use (if specified as a keyword)
+    method = keywords.get('method', None)
+
+    # Get the system description
+    if (len(args) < 3):
+        raise ControlArgument("not enough input arguments")
+
+    # If we were passed a continus time system as the first arg, raise error
+    if isinstance(args[0], LTI) and isctime(args[0], strict=True):
+        raise ControlArgument("dlqr() called with a continuous time system")
+
+    try:
+        # If this works, we were (probably) passed a system as the
+        # first argument; extract A and B
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        G = np.array(args[0].B, ndmin=2, dtype=float)
+        C = np.array(args[0].C, ndmin=2, dtype=float)
+        index = 1
+    except AttributeError:
+        # Arguments should be A and B matrices
+        A = np.array(args[0], ndmin=2, dtype=float)
+        G = np.array(args[1], ndmin=2, dtype=float)
+        C = np.array(args[2], ndmin=2, dtype=float)
+        index = 3
+
+    # Get the weighting matrices (converting to matrices, if needed)
+    QN = np.array(args[index], ndmin=2, dtype=float)
+    RN = np.array(args[index+1], ndmin=2, dtype=float)
+
     # TODO: incorporate cross-covariance NN, something like this,
     # which doesn't work for some reason
     # if NN is None:
     #    NN = np.zeros(QN.size(0),RN.size(1))
     # NG = G @ NN
+    if len(args) > index + 2:
+        NN = np.array(args[index+2], ndmin=2, dtype=float)
+        raise ControlNotImplemented("cross-covariance not yet implememented")
 
-    A, G, C, QN, RN = map(np.atleast_2d, (A, G, C, QN, RN))
-    P, E, LT = dare(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN)
+    P, E, LT = dare(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN, method=method)
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
@@ -576,8 +625,13 @@ def lqr(*args, **keywords):
 
     Notes
     -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
+    1. If the first argument is an LTI object, then this object will be used
+       to define the dynamics and input matrices.  Furthermore, if the LTI
+       object corresponds to a discrete time system, the ``dlqr()`` function
+       will be called.
+
+    2. The return type for 2D arrays depends on the default class set for
+       state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -595,6 +649,11 @@ def lqr(*args, **keywords):
     # Get the system description
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
+
+    # If we were passed a discrete time system as the first arg, use dlqr()
+    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
+        # Call dlqr
+        return dlqr(*args, **keywords)
 
     try:
         # If this works, we were (probably) passed a system as the
@@ -681,9 +740,16 @@ def dlqr(*args, **keywords):
     # Process the arguments and figure out what inputs we received
     #
 
+    # Get the method to use (if specified as a keyword)
+    method = keywords.get('method', None)
+
     # Get the system description
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
+
+    # If we were passed a continus time system as the first arg, raise error
+    if isinstance(args[0], LTI) and isctime(args[0], strict=True):
+        raise ControlArgument("dsys must be discrete time (dt != 0)")
 
     try:
         # If this works, we were (probably) passed a system as the
@@ -696,11 +762,6 @@ def dlqr(*args, **keywords):
         A = np.array(args[0], ndmin=2, dtype=float)
         B = np.array(args[1], ndmin=2, dtype=float)
         index = 2
-
-    # confirm that if we received a system that it was discrete-time
-    if index == 1:
-        if not isdtime(args[0]):
-            raise ValueError("dsys must be discrete (dt !=0)")
 
     # Get the weighting matrices (converting to matrices, if needed)
     Q = np.array(args[index], ndmin=2, dtype=float)
@@ -722,7 +783,7 @@ def dlqr(*args, **keywords):
         raise ControlDimension("incorrect weighting matrix dimensions")
 
     # compute the result
-    S, E, K = dare(A, B, Q, R, N)
+    S, E, K = dare(A, B, Q, R, N, method=method)
     return _ssmatrix(K), _ssmatrix(S), E
 
 
