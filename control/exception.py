@@ -61,10 +61,13 @@ class ControlNotImplemented(NotImplementedError):
     pass
 
 # Utility function to see if slycot is installed
+slycot_installed = None
 def slycot_check():
-    try:
-        import slycot
-    except:
-        return False
-    else:
-        return True
+    global slycot_installed
+    if slycot_installed is None:
+        try:
+            import slycot
+            slycot_installed = True
+        except:
+            slycot_installed = False
+    return slycot_installed

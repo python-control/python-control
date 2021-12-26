@@ -304,6 +304,10 @@ def lqe(*args, **keywords):
         Process and sensor noise covariance matrices
     N : 2D array, optional
         Cross covariance matrix.  Not currently implemented.
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy'.
 
     Returns
     -------
@@ -326,8 +330,8 @@ def lqe(*args, **keywords):
 
     Examples
     --------
-    >>> L, P, E = lqe(A, G, C, QN, RN)
-    >>> L, P, E = lqe(A, G, C, QN, RN, NN)
+    >>> L, P, E = lqe(A, G, C, Q, R)
+    >>> L, P, E = lqe(A, G, C, Q, R, N)
 
     See Also
     --------
@@ -344,6 +348,9 @@ def lqe(*args, **keywords):
     #
     # Process the arguments and figure out what inputs we received
     #
+
+    # Get the method to use (if specified as a keyword)
+    method = keywords.get('method', None)
 
     # Get the system description
     if (len(args) < 3):
@@ -393,7 +400,7 @@ def lqe(*args, **keywords):
           N.shape[0] != ninputs or N.shape[1] != noutputs):
         raise ControlDimension("incorrect covariance matrix dimensions")
 
-    P, E, LT = care(A.T, C.T, G @ Q @ G.T, R)
+    P, E, LT = care(A.T, C.T, G @ Q @ G.T, R, method=method)
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 
@@ -475,6 +482,10 @@ def lqr(*args, **keywords):
         State and input weight matrices
     N : 2D array, optional
         Cross weight matrix
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy'.
 
     Returns
     -------
@@ -498,18 +509,15 @@ def lqr(*args, **keywords):
     --------
     >>> K, S, E = lqr(sys, Q, R, [N])
     >>> K, S, E = lqr(A, B, Q, R, [N])
-    """
 
-    # Make sure that SLICOT is installed
-    try:
-        from slycot import sb02md
-        from slycot import sb02mt
-    except ImportError:
-        raise ControlSlycot("can't find slycot module 'sb02md' or 'sb02nt'")
+    """
 
     #
     # Process the arguments and figure out what inputs we received
     #
+
+    # Get the method to use (if specified as a keyword)
+    method = keywords.get('method', None)
 
     # Get the system description
     if (len(args) < 3):
@@ -533,33 +541,11 @@ def lqr(*args, **keywords):
     if (len(args) > index + 2):
         N = np.array(args[index+2], ndmin=2, dtype=float)
     else:
-        N = np.zeros((Q.shape[0], R.shape[1]))
+        N = None
 
-    # Check dimensions for consistency
-    nstates = B.shape[0]
-    ninputs = B.shape[1]
-    if (A.shape[0] != nstates or A.shape[1] != nstates):
-        raise ControlDimension("inconsistent system dimensions")
-
-    elif (Q.shape[0] != nstates or Q.shape[1] != nstates or
-          R.shape[0] != ninputs or R.shape[1] != ninputs or
-          N.shape[0] != nstates or N.shape[1] != ninputs):
-        raise ControlDimension("incorrect weighting matrix dimensions")
-
-    # Compute the G matrix required by SB02MD
-    A_b, B_b, Q_b, R_b, L_b, ipiv, oufact, G = \
-        sb02mt(nstates, ninputs, B, R, A, Q, N, jobl='N')
-
-    # Call the SLICOT function
-    X, rcond, w, S, U, A_inv = sb02md(nstates, A_b, G, Q_b, 'C')
-
-    # Now compute the return value
-    # We assume that R is positive definite and, hence, invertible
-    K = np.linalg.solve(R, B.T @ X + N.T)
-    S = X
-    E = w[0:nstates]
-
-    return _ssmatrix(K), _ssmatrix(S), E
+    # Solve continuous algebraic Riccati equation
+    X, L, G = care(A, B, Q, R, N, None, method=method)
+    return G, X, L
 
 
 def ctrb(A, B):

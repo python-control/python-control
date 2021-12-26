@@ -507,7 +507,6 @@ class TestMatlab:
         """Call acker()"""
         acker(siso.ss1.A, siso.ss1.B, [-2, -2.5])
 
-    @slycotonly
     def testLQR(self, siso):
         """Call lqr()"""
         (K, S, E) = lqr(siso.ss1.A, siso.ss1.B, np.eye(2), np.eye(1))
