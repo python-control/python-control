@@ -1,8 +1,5 @@
 #!/usr/bin/python
 # needs pmw (in pypi, conda-forge)
-# For Python 2, needs future (in conda pypi and "default")
-
-from __future__ import print_function
 
 """ Simple GUI application for visualizing how the poles/zeros of the transfer
 function effects the bode, nyquist and step response of a SISO system """
@@ -20,7 +17,7 @@ are met:
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
 
-3. Neither the name of the project author nor the names of its 
+3. Neither the name of the project author nor the names of its
    contributors may be used to endorse or promote products derived
    from this software without specific prior written permission.
 
@@ -146,7 +143,7 @@ class TFInput:
         self.denominator = make_poly(poles)
         self.denominator_widget.setentry(
             ' '.join([format(i,'.3g') for i in self.denominator]))
-                  
+
     def set_zeros(self, zeros):
         """ Set the zeros to the new positions"""
         self.numerator = make_poly(zeros)
@@ -208,7 +205,7 @@ class Analysis:
         self.canvas_step.get_tk_widget().grid(row=1, column=0,
                                               padx=0, pady=0)
 
-        self.canvas_nyquist = FigureCanvasTkAgg(self.f_nyquist, 
+        self.canvas_nyquist = FigureCanvasTkAgg(self.f_nyquist,
                                                 master=self.figure)
         self.canvas_nyquist.draw()
         self.canvas_nyquist.get_tk_widget().grid(row=1, column=1,
@@ -221,7 +218,7 @@ class Analysis:
         self.canvas_pzmap.mpl_connect('motion_notify_event',
                                       self.mouse_move)
 
-        self.apply()    
+        self.apply()
 
     def button_press(self, event):
         """ Handle button presses, detect if we are going to move
@@ -276,12 +273,12 @@ class Analysis:
             self.zeros = tfcn.zero()
             self.poles = tfcn.pole()
             self.sys = tfcn
-            self.redraw()  
+            self.redraw()
 
     def mouse_move(self, event):
         """ Handle mouse movement, redraw pzmap while drag/dropping """
         if (self.move_zero != None and
-            event.xdata != None and 
+            event.xdata != None and
             event.ydata != None):
 
             if (self.index1 == self.index2):
@@ -320,7 +317,7 @@ class Analysis:
             self.zeros = tfcn.zero()
             self.poles = tfcn.pole()
             self.sys = tfcn
-            self.redraw()    
+            self.redraw()
 
     def draw_pz(self, tfcn):
         """Draw pzmap"""
@@ -338,7 +335,7 @@ class Analysis:
     def redraw(self):
         """ Redraw all diagrams """
         self.draw_pz(self.sys)
-        
+
         self.f_bode.clf()
         plt.figure(self.f_bode.number)
         control.matlab.bode(self.sys, logspace(-2, 2, 1000))
@@ -376,7 +373,7 @@ def create_analysis():
     # Launch a GUI for the Analysis module
     root = tkinter.Tk()
     root.protocol("WM_DELETE_WINDOW", handler)
-    Pmw.initialise(root)    
+    Pmw.initialise(root)
     root.title('Analysis of Linear Systems')
     Analysis(root)
     root.mainloop()

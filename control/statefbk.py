@@ -393,8 +393,7 @@ def lqe(*args, **keywords):
           N.shape[0] != ninputs or N.shape[1] != noutputs):
         raise ControlDimension("incorrect covariance matrix dimensions")
 
-    # P, E, LT = care(A.T, C.T, G @ Q @ G.T, R)
-    P, E, LT = care(A.T, C.T, np.dot(np.dot(G, Q), G.T), R)
+    P, E, LT = care(A.T, C.T, G @ Q @ G.T, R)
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 
@@ -439,7 +438,7 @@ def acker(A, B, poles):
     n = np.size(p)
     pmat = p[n-1] * np.linalg.matrix_power(a, 0)
     for i in np.arange(1, n):
-        pmat = pmat + np.dot(p[n-i-1], np.linalg.matrix_power(a, i))
+        pmat = pmat + p[n-i-1] * np.linalg.matrix_power(a, i)
     K = np.linalg.solve(ct, pmat)
 
     K = K[-1][:]                # Extract the last row
@@ -556,7 +555,7 @@ def lqr(*args, **keywords):
 
     # Now compute the return value
     # We assume that R is positive definite and, hence, invertible
-    K = np.linalg.solve(R, np.dot(B.T, X) + N.T)
+    K = np.linalg.solve(R, B.T @ X + N.T)
     S = X
     E = w[0:nstates]
 
@@ -594,7 +593,7 @@ def ctrb(A, B):
 
     # Construct the controllability matrix
     ctrb = np.hstack(
-        [bmat] + [np.dot(np.linalg.matrix_power(amat, i), bmat)
+        [bmat] + [np.linalg.matrix_power(amat, i) @ bmat
                   for i in range(1, n)])
     return _ssmatrix(ctrb)
 
@@ -628,7 +627,7 @@ def obsv(A, C):
     n = np.shape(amat)[0]
 
     # Construct the observability matrix
-    obsv = np.vstack([cmat] + [np.dot(cmat, np.linalg.matrix_power(amat, i))
+    obsv = np.vstack([cmat] + [cmat @ np.linalg.matrix_power(amat, i)
                                for i in range(1, n)])
     return _ssmatrix(obsv)
 
@@ -701,10 +700,10 @@ def gram(sys, type):
             raise ControlSlycot("can't find slycot module 'sb03md'")
         if type == 'c':
             tra = 'T'
-            C = -np.dot(sys.B, sys.B.transpose())
+            C = -sys.B @ sys.B.T
         elif type == 'o':
             tra = 'N'
-            C = -np.dot(sys.C.transpose(), sys.C)
+            C = -sys.C.T @ sys.C
         n = sys.nstates
         U = np.zeros((n, n))
         A = np.array(sys.A)         # convert to NumPy array for slycot
