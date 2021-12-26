@@ -743,7 +743,7 @@ class TestTimeresp:
 
         _t, yout, xout = forced_response(sys, t, u, x0, return_x=True)
         np.testing.assert_array_almost_equal(xout, xtrue, decimal=6)
-        ytrue = np.squeeze(np.asarray(C.dot(xtrue)))
+        ytrue = np.squeeze(np.asarray(C @ xtrue))
         np.testing.assert_array_almost_equal(yout, ytrue, decimal=6)
 
 
@@ -1010,9 +1010,7 @@ class TestTimeresp:
 
         # Generate the time and input vectors
         tvec = np.linspace(0, 1, 8)
-        uvec = np.dot(
-            np.ones((sys.ninputs, 1)),
-            np.reshape(np.sin(tvec), (1, 8)))
+        uvec = np.ones((sys.ninputs, 1)) @ np.reshape(np.sin(tvec), (1, 8))
 
         #
         # Pass squeeze argument and make sure the shape is correct
@@ -1118,7 +1116,7 @@ class TestTimeresp:
     @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
     def test_squeeze_exception(self, fcn):
         sys = fcn(ct.rss(2, 1, 1))
-        with pytest.raises(ValueError, match="unknown squeeze value"):
+        with pytest.raises(ValueError, match="Unknown squeeze value"):
             step_response(sys, squeeze=1)
 
     @pytest.mark.usefixtures("editsdefaults")
@@ -1144,9 +1142,7 @@ class TestTimeresp:
         # Generate system, time, and input vectors
         sys = ct.rss(nstate, nout, ninp, strictly_proper=True)
         tvec = np.linspace(0, 1, 8)
-        uvec = np.dot(
-            np.ones((sys.ninputs, 1)),
-            np.reshape(np.sin(tvec), (1, 8)))
+        uvec =np.ones((sys.ninputs, 1)) @ np.reshape(np.sin(tvec), (1, 8))
 
         _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
         assert yvec.shape == shape

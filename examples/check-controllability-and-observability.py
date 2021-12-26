@@ -4,8 +4,6 @@ Example to check the controllability and the observability of a state space syst
 RMM, 6 Sep 2010
 """
 
-from __future__ import print_function
-
 import numpy as np  # Load the scipy functions
 from control.matlab import *  # Load the controls systems library
 

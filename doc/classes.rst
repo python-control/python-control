@@ -17,6 +17,7 @@ these directly.
    TransferFunction
    StateSpace
    FrequencyResponseData
+   TimeResponseData
 
 Input/output system subclasses
 ==============================

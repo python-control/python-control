@@ -71,16 +71,6 @@ Time domain simulation
     step_response
     phase_plot
 
-Block diagram algebra
-=====================
-.. autosummary::
-   :toctree: generated/
-
-    series
-    parallel
-    feedback
-    negate
-
 Control system analysis
 =======================
 .. autosummary::
@@ -124,6 +114,7 @@ Control system synthesis
     lqe
     mixsyn
     place
+    rlocus_pid_designer
 
 Model simplification tools
 ==========================

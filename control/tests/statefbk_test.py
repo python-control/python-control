@@ -6,8 +6,10 @@ RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 import numpy as np
 import pytest
 
+import control as ct
 from control import lqe, pole, rss, ss, tf
-from control.exception import ControlDimension
+from control.exception import ControlDimension, ControlSlycot, \
+    ControlArgument, slycot_check
 from control.mateqn import care, dare
 from control.statefbk import ctrb, obsv, place, place_varga, lqr, gram, acker
 from control.tests.conftest import (slycotonly, check_deprecated_matrix,
@@ -202,7 +204,7 @@ class TestStatefbk:
         P = matarrayin([-0.5 + 1j, -0.5 - 1j, -5.0566, -8.6659])
         K = place(A, B, P)
         assert ismatarrayout(K)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
         # Test that the dimension checks work.
@@ -227,7 +229,7 @@ class TestStatefbk:
 
         P = [-2., -2.]
         K = place_varga(A, B, P)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
         # Test that the dimension checks work.
@@ -240,7 +242,7 @@ class TestStatefbk:
         B = matarrayin([[0], [1]])
         P = matarrayin([-20 + 10*1j, -20 - 10*1j])
         K = place_varga(A, B, P)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
 
@@ -260,7 +262,7 @@ class TestStatefbk:
         alpha = -1.5
         K = place_varga(A, B, P, alpha=alpha)
 
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         # No guarantee of the ordering, so sort them
         self.checkPlaced(P_expected, P_placed)
 
@@ -274,7 +276,7 @@ class TestStatefbk:
 
         P = matarrayin([0.5, 0.5])
         K = place_varga(A, B, P, dtime=True)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         # No guarantee of the ordering, so sort them
         self.checkPlaced(P, P_placed)
 
@@ -292,33 +294,46 @@ class TestStatefbk:
         P_expected = np.array([0.5, 0.6])
         alpha = 0.51
         K = place_varga(A, B, P, dtime=True, alpha=alpha)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P_expected, P_placed)
 
 
     def check_LQR(self, K, S, poles, Q, R):
-        S_expected = asmatarrayout(np.sqrt(Q.dot(R)))
+        S_expected = asmatarrayout(np.sqrt(Q @ R))
         K_expected = asmatarrayout(S_expected / R)
         poles_expected = -np.squeeze(np.asarray(K_expected))
         np.testing.assert_array_almost_equal(S, S_expected)
         np.testing.assert_array_almost_equal(K, K_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
-
-    @slycotonly
-    def test_LQR_integrator(self, matarrayin, matarrayout):
+    @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
+    def test_LQR_integrator(self, matarrayin, matarrayout, method):
+        if method == 'slycot' and not slycot_check():
+            return
         A, B, Q, R = (matarrayin([[X]]) for X in [0., 1., 10., 2.])
-        K, S, poles = lqr(A, B, Q, R)
+        K, S, poles = lqr(A, B, Q, R, method=method)
         self.check_LQR(K, S, poles, Q, R)
 
-    @slycotonly
-    def test_LQR_3args(self, matarrayin, matarrayout):
+    @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
+    def test_LQR_3args(self, matarrayin, matarrayout, method):
+        if method == 'slycot' and not slycot_check():
+            return
         sys = ss(0., 1., 1., 0.)
         Q, R = (matarrayin([[X]]) for X in [10., 2.])
-        K, S, poles = lqr(sys, Q, R)
+        K, S, poles = lqr(sys, Q, R, method=method)
         self.check_LQR(K, S, poles, Q, R)
 
-    @slycotonly
+    def test_lqr_badmethod(self):
+        A, B, Q, R = 0, 1, 10, 2
+        with pytest.raises(ControlArgument, match="Unknown method"):
+            K, S, poles = lqr(A, B, Q, R, method='nosuchmethod')
+
+    def test_lqr_slycot_not_installed(self):
+        A, B, Q, R = 0, 1, 10, 2
+        if not slycot_check():
+            with pytest.raises(ControlSlycot, match="Can't find slycot"):
+                K, S, poles = lqr(A, B, Q, R, method='slycot')
+
     @pytest.mark.xfail(reason="warning not implemented")
     def testLQR_warning(self):
         """Test lqr()
@@ -338,21 +353,88 @@ class TestStatefbk:
         with pytest.warns(UserWarning):
             (K, S, E) = lqr(A, B, Q, R, N)
 
+    @slycotonly
+    def test_lqr_call_format(self):
+        # Create a random state space system for testing
+        sys = rss(2, 3, 2)
+
+        # Weighting matrices
+        Q = np.eye(sys.nstates)
+        R = np.eye(sys.ninputs)
+        N = np.zeros((sys.nstates, sys.ninputs))
+
+        # Standard calling format
+        Kref, Sref, Eref = lqr(sys.A, sys.B, Q, R)
+
+        # Call with system instead of matricees
+        K, S, E = lqr(sys, Q, R)
+        np.testing.assert_array_almost_equal(Kref, K)
+        np.testing.assert_array_almost_equal(Sref, S)
+        np.testing.assert_array_almost_equal(Eref, E)
+
+        # Pass a cross-weighting matrix
+        K, S, E = lqr(sys, Q, R, N)
+        np.testing.assert_array_almost_equal(Kref, K)
+        np.testing.assert_array_almost_equal(Sref, S)
+        np.testing.assert_array_almost_equal(Eref, E)
+
+        # Inconsistent system dimensions
+        with pytest.raises(ct.ControlDimension, match="Incompatible dimen"):
+            K, S, E = lqr(sys.A, sys.C, Q, R)
+
+        # incorrect covariance matrix dimensions
+        with pytest.raises(ct.ControlDimension, match="Q must be a square"):
+            K, S, E = lqr(sys.A, sys.B, sys.C, R, Q)
+
     def check_LQE(self, L, P, poles, G, QN, RN):
-        P_expected = asmatarrayout(np.sqrt(G.dot(QN.dot(G).dot(RN))))
+        P_expected = asmatarrayout(np.sqrt(G @ QN @ G @ RN))
         L_expected = asmatarrayout(P_expected / RN)
         poles_expected = -np.squeeze(np.asarray(L_expected))
         np.testing.assert_array_almost_equal(P, P_expected)
         np.testing.assert_array_almost_equal(L, L_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
-    @slycotonly
     def test_LQE(self, matarrayin):
         A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
         L, P, poles = lqe(A, G, C, QN, RN)
         self.check_LQE(L, P, poles, G, QN, RN)
 
-    @slycotonly
+    def test_lqe_call_format(self):
+        # Create a random state space system for testing
+        sys = rss(4, 3, 2)
+
+        # Covariance matrices
+        Q = np.eye(sys.ninputs)
+        R = np.eye(sys.noutputs)
+        N = np.zeros((sys.ninputs, sys.noutputs))
+
+        # Standard calling format
+        Lref, Pref, Eref = lqe(sys.A, sys.B, sys.C, Q, R)
+
+        # Call with system instead of matricees
+        L, P, E = lqe(sys, Q, R)
+        np.testing.assert_array_almost_equal(Lref, L)
+        np.testing.assert_array_almost_equal(Pref, P)
+        np.testing.assert_array_almost_equal(Eref, E)
+
+        # Compare state space and transfer function (SISO only)
+        sys_siso = rss(4, 1, 1)
+        L_ss, P_ss, E_ss = lqe(sys_siso, np.eye(1), np.eye(1))
+        L_tf, P_tf, E_tf = lqe(tf(sys_siso), np.eye(1), np.eye(1))
+        np.testing.assert_array_almost_equal(np.sort(E_ss), np.sort(E_tf))
+
+        # Make sure we get an error if we specify N
+        with pytest.raises(ct.ControlNotImplemented):
+            L, P, E = lqe(sys, Q, R, N)
+
+        # Inconsistent system dimensions
+        with pytest.raises(ct.ControlDimension, match="inconsistent system"):
+            L, P, E = lqe(sys.A, sys.C, sys.B, Q, R)
+
+        # incorrect covariance matrix dimensions
+        with pytest.raises(ct.ControlDimension, match="incorrect covariance"):
+            L, P, E = lqe(sys.A, sys.B, sys.C, R, Q)
+
     def test_care(self, matarrayin):
         """Test stabilizing and anti-stabilizing feedbacks, continuous"""
         A = matarrayin(np.diag([1, -1]))
@@ -361,12 +443,17 @@ class TestStatefbk:
         R = matarrayin(np.identity(2))
         S = matarrayin(np.zeros((2, 2)))
         E = matarrayin(np.identity(2))
+
         X, L, G = care(A, B, Q, R, S, E, stabilizing=True)
         assert np.all(np.real(L) < 0)
-        X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
-        assert np.all(np.real(L) > 0)
 
-    @slycotonly
+        if slycot_check():
+            X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
+            assert np.all(np.real(L) > 0)
+        else:
+            with pytest.raises(ControlArgument, match="'scipy' not valid"):
+                X, L, G = care(A, B, Q, R, S, E, stabilizing=False)
+
     def test_dare(self, matarrayin):
         """Test stabilizing and anti-stabilizing feedbacks, discrete"""
         A = matarrayin(np.diag([0.5, 2]))
@@ -375,7 +462,13 @@ class TestStatefbk:
         R = matarrayin(np.identity(2))
         S = matarrayin(np.zeros((2, 2)))
         E = matarrayin(np.identity(2))
+
         X, L, G = dare(A, B, Q, R, S, E, stabilizing=True)
         assert np.all(np.abs(L) < 1)
-        X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)
-        assert np.all(np.abs(L) > 1)
+
+        if slycot_check():
+            X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)
+            assert np.all(np.abs(L) > 1)
+        else:
+            with pytest.raises(ControlArgument, match="'scipy' not valid"):
+                X, L, G = dare(A, B, Q, R, S, E, stabilizing=False)

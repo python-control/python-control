@@ -110,7 +110,7 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
 
         # Compute the flat output variable z = C x
         Cfz = np.zeros(np.shape(linsys.C)); Cfz[0, 0] = 1
-        self.Cf = np.dot(Cfz, Tr)
+        self.Cf = Cfz @ Tr
 
     # Compute the flat flag from the state (and input)
     def forward(self, x, u):
@@ -122,11 +122,11 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
         x = np.reshape(x, (-1, 1))
         u = np.reshape(u, (1, -1))
         zflag = [np.zeros(self.nstates + 1)]
-        zflag[0][0] = np.dot(self.Cf, x)
+        zflag[0][0] = self.Cf @ x
         H = self.Cf                     # initial state transformation
         for i in range(1, self.nstates + 1):
-            zflag[0][i] = np.dot(H, np.dot(self.A, x) + np.dot(self.B, u))
-            H = np.dot(H, self.A)       # derivative for next iteration
+            zflag[0][i] = H @ (self.A @ x + self.B @ u)
+            H = H @ self.A       # derivative for next iteration
         return zflag
 
     # Compute state and input from flat flag
@@ -137,6 +137,6 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
 
         """
         z = zflag[0][0:-1]
-        x = np.dot(self.Tinv, z)
-        u = zflag[0][-1] - np.dot(self.F, z)
+        x = self.Tinv @ z
+        u = zflag[0][-1] - self.F @ z
         return np.reshape(x, self.nstates), np.reshape(u, self.ninputs)

@@ -1,4 +1,4 @@
-"""iosys_test.py - test input/output system oeprations
+"""iosys_test.py - test input/output system operations
 
 RMM, 17 Apr 2019
 
@@ -8,12 +8,10 @@ operations on input/output systems.  Separate unit tests should be
 created for that purpose.
 """
 
-from __future__ import print_function
 import re
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import control as ct
 from control import iosys as ios
@@ -58,7 +56,7 @@ class TestIOSys:
         for x, u in (([0, 0], 0), ([1, 0], 0), ([0, 1], 0), ([0, 0], 1)):
             np.testing.assert_array_almost_equal(
                 np.reshape(iosys._rhs(0, x, u), (-1, 1)),
-                np.dot(linsys.A, np.reshape(x, (-1, 1))) + np.dot(linsys.B, u))
+                linsys.A @ np.reshape(x, (-1, 1)) + linsys.B * u)
 
         # Make sure that simulations also line up
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -154,11 +152,13 @@ class TestIOSys:
 
         # Create a nonlinear system with the same dynamics
         nlupd = lambda t, x, u, params: \
-            np.reshape(np.dot(linsys.A, np.reshape(x, (-1, 1)))
-                       + np.dot(linsys.B, u), (-1,))
+            np.reshape(linsys.A @ np.reshape(x, (-1, 1))
+                       + linsys.B @ np.reshape(u, (-1, 1)),
+                       (-1,))
         nlout = lambda t, x, u, params: \
-            np.reshape(np.dot(linsys.C, np.reshape(x, (-1, 1)))
-                       + np.dot(linsys.D, u), (-1,))
+            np.reshape(linsys.C @ np.reshape(x, (-1, 1))
+                       + linsys.D @ np.reshape(u, (-1, 1)),
+                       (-1,))
         nlsys = ios.NonlinearIOSystem(nlupd, nlout, inputs=1, outputs=1)
 
         # Make sure that simulations also line up
@@ -596,6 +596,58 @@ class TestIOSys:
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
     @noscipy0
+    def test_algebraic_functions(self, tsys):
+        """Test algebraic operations on I/O systems"""
+        # Set up parameters for simulation
+        T = tsys.T
+        U = [np.sin(T), np.cos(T)]
+        X0 = 0
+
+        # Set up systems to be composed
+        linsys1 = tsys.mimo_linsys1
+        linio1 = ios.LinearIOSystem(linsys1)
+        linsys2 = tsys.mimo_linsys2
+        linio2 = ios.LinearIOSystem(linsys2)
+
+        # Multiplication
+        linsys_mul = linsys2 * linsys1
+        iosys_mul = linio2 * linio1
+        lin_t, lin_y = ct.forced_response(linsys_mul, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_mul, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+        # Make sure that systems don't commute
+        linsys_mul = linsys1 * linsys2
+        lin_t, lin_y = ct.forced_response(linsys_mul, T, U, X0)
+        assert not (np.abs(lin_y - ios_y) < 1e-3).all()
+
+        # Addition
+        linsys_add = linsys1 + linsys2
+        iosys_add = linio1 + linio2
+        lin_t, lin_y = ct.forced_response(linsys_add, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_add, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+        # Subtraction
+        linsys_sub = linsys1 - linsys2
+        iosys_sub = linio1 - linio2
+        lin_t, lin_y = ct.forced_response(linsys_sub, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_sub, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+        # Make sure that systems don't commute
+        linsys_sub = linsys2 - linsys1
+        lin_t, lin_y = ct.forced_response(linsys_sub, T, U, X0)
+        assert not (np.abs(lin_y - ios_y) < 1e-3).all()
+
+        # Negation
+        linsys_negate = -linsys1
+        iosys_negate = -linio1
+        lin_t, lin_y = ct.forced_response(linsys_negate, T, U, X0)
+        ios_t, ios_y = ios.input_output_response(iosys_negate, T, U, X0)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
+    @noscipy0
     def test_nonsquare_bdalg(self, tsys):
         # Set up parameters for simulation
         T = tsys.T
@@ -855,12 +907,12 @@ class TestIOSys:
     def test_named_signals(self, tsys):
         sys1 = ios.NonlinearIOSystem(
             updfcn = lambda t, x, u, params: np.array(
-                np.dot(tsys.mimo_linsys1.A, np.reshape(x, (-1, 1))) \
-                + np.dot(tsys.mimo_linsys1.B, np.reshape(u, (-1, 1)))
+                tsys.mimo_linsys1.A @ np.reshape(x, (-1, 1)) \
+                + tsys.mimo_linsys1.B @ np.reshape(u, (-1, 1))
             ).reshape(-1,),
             outfcn = lambda t, x, u, params: np.array(
-                np.dot(tsys.mimo_linsys1.C, np.reshape(x, (-1, 1))) \
-                + np.dot(tsys.mimo_linsys1.D, np.reshape(u, (-1, 1)))
+                tsys.mimo_linsys1.C @ np.reshape(x, (-1, 1)) \
+                + tsys.mimo_linsys1.D @ np.reshape(u, (-1, 1))
             ).reshape(-1,),
             inputs = ['u[0]', 'u[1]'],
             outputs = ['y[0]', 'y[1]'],
@@ -1088,8 +1140,8 @@ class TestIOSys:
         def updfcn(t, x, u, params):
             """2 inputs, 2 states"""
             return np.array(
-                np.dot(tsys.mimo_linsys1.A, np.reshape(x, (-1, 1)))
-                + np.dot(tsys.mimo_linsys1.B, np.reshape(u, (-1, 1)))
+                tsys.mimo_linsys1.A @ np.reshape(x, (-1, 1))
+                + tsys.mimo_linsys1.B @ np.reshape(u, (-1, 1))
                 ).reshape(-1,)
 
         def outfcn(t, x, u, params):
@@ -1196,6 +1248,91 @@ class TestIOSys:
         np.testing.assert_allclose(io_series.C, ss_series.C)
         np.testing.assert_allclose(io_series.D, ss_series.D)
 
+    @pytest.mark.parametrize(
+        "Pout, Pin, C, op, PCout, PCin", [
+            (2, 2, 'rss', ct.LinearIOSystem.__mul__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__mul__, 2, 2),
+            (2, 3, 2, ct.LinearIOSystem.__mul__, 2, 3),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__mul__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__rmul__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__rmul__, 2, 2),
+            (2, 3, 2, ct.LinearIOSystem.__rmul__, 2, 3),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rmul__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__add__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__add__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__add__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__radd__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__radd__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__radd__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__sub__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__sub__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__sub__, 2, 2),
+            (2, 2, 'rss', ct.LinearIOSystem.__rsub__, 2, 2),
+            (2, 2, 2, ct.LinearIOSystem.__rsub__, 2, 2),
+            (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rsub__, 2, 2),
+
+        ])
+    def test_operand_conversion(self, Pout, Pin, C, op, PCout, PCin):
+        P = ct.LinearIOSystem(
+            ct.rss(2, Pout, Pin, strictly_proper=True), name='P')
+        if isinstance(C, str) and C == 'rss':
+            # Need to generate inside class to avoid matrix deprecation error
+            C = ct.rss(2, 2, 2)
+        PC = op(P, C)
+        assert isinstance(PC, ct.LinearIOSystem)
+        assert isinstance(PC, ct.StateSpace)
+        assert PC.noutputs == PCout
+        assert PC.ninputs == PCin
+
+    @pytest.mark.parametrize(
+        "Pout, Pin, C, op", [
+            (2, 2, 'rss32', ct.LinearIOSystem.__mul__),
+            (2, 2, 'rss23', ct.LinearIOSystem.__rmul__),
+            (2, 2, 'rss32', ct.LinearIOSystem.__add__),
+            (2, 2, 'rss23', ct.LinearIOSystem.__radd__),
+            (2, 3, 2, ct.LinearIOSystem.__add__),
+            (2, 3, 2, ct.LinearIOSystem.__radd__),
+            (2, 2, 'rss32', ct.LinearIOSystem.__sub__),
+            (2, 2, 'rss23', ct.LinearIOSystem.__rsub__),
+            (2, 3, 2, ct.LinearIOSystem.__sub__),
+            (2, 3, 2, ct.LinearIOSystem.__rsub__),
+        ])
+    def test_operand_incompatible(self, Pout, Pin, C, op):
+        P = ct.LinearIOSystem(
+            ct.rss(2, Pout, Pin, strictly_proper=True), name='P')
+        if isinstance(C, str) and C == 'rss32':
+            C = ct.rss(2, 3, 2)
+        elif isinstance(C, str) and C == 'rss23':
+            C = ct.rss(2, 2, 3)
+        with pytest.raises(ValueError, match="incompatible"):
+            PC = op(P, C)
+
+    @pytest.mark.parametrize(
+        "C, op", [
+            (None, ct.LinearIOSystem.__mul__),
+            (None, ct.LinearIOSystem.__rmul__),
+            (None, ct.LinearIOSystem.__add__),
+            (None, ct.LinearIOSystem.__radd__),
+            (None, ct.LinearIOSystem.__sub__),
+            (None, ct.LinearIOSystem.__rsub__),
+        ])
+    def test_operand_badtype(self, C, op):
+        P = ct.LinearIOSystem(
+            ct.rss(2, 2, 2, strictly_proper=True), name='P')
+        with pytest.raises(TypeError, match="Unknown"):
+            op(P, C)
+
+    def test_neg_badsize(self):
+        # Create a system of unspecified size
+        sys = ct.InputOutputSystem()
+        with pytest.raises(ValueError, match="Can't determine"):
+            -sys
+
+    def test_bad_signal_list(self):
+        # Create a ystem with a bad signal list
+        with pytest.raises(TypeError, match="Can't parse"):
+            ct.InputOutputSystem(inputs=[1, 2, 3])
+
     def test_docstring_example(self):
         P = ct.LinearIOSystem(
             ct.rss(2, 2, 2, strictly_proper=True), name='P')
@@ -1278,11 +1415,13 @@ def test_linear_interconnection():
         outputs = ('y[0]', 'y[1]'), name = 'sys2')
     nl_sys2 = ios.NonlinearIOSystem(
         lambda t, x, u, params: np.array(
-            np.dot(ss_sys2.A, np.reshape(x, (-1, 1))) \
-            + np.dot(ss_sys2.B, np.reshape(u, (-1, 1)))).reshape((-1,)),
+            ss_sys2.A @ np.reshape(x, (-1, 1)) \
+            + ss_sys2.B @ np.reshape(u, (-1, 1))
+            ).reshape((-1,)),
         lambda t, x, u, params: np.array(
-            np.dot(ss_sys2.C, np.reshape(x, (-1, 1))) \
-            + np.dot(ss_sys2.D, np.reshape(u, (-1, 1)))).reshape((-1,)),
+            ss_sys2.C @ np.reshape(x, (-1, 1)) \
+            + ss_sys2.D @ np.reshape(u, (-1, 1))
+            ).reshape((-1,)),
         states = 2,
         inputs = ('u[0]', 'u[1]'),
         outputs = ('y[0]', 'y[1]'),

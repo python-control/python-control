@@ -16,7 +16,7 @@ import warnings
 import logging
 import time
 
-from .timeresp import _process_time_response
+from .timeresp import TimeResponseData
 
 __all__ = ['find_optimal_input']
 
@@ -387,33 +387,29 @@ class OptimalControlProblem():
         # Evaluate the constraint function along the trajectory
         value = []
         for i, t in enumerate(self.timepts):
-            for type, fun, lb, ub in self.trajectory_constraints:
+            for ctype, fun, lb, ub in self.trajectory_constraints:
                 if np.all(lb == ub):
                     # Skip equality constraints
                     continue
-                elif type == opt.LinearConstraint:
+                elif ctype == opt.LinearConstraint:
                     # `fun` is the A matrix associated with the polytope...
-                    value.append(
-                        np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
-                elif type == opt.NonlinearConstraint:
+                    value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
+                elif ctype == opt.NonlinearConstraint:
                     value.append(fun(states[:, i], inputs[:, i]))
                 else:
-                    raise TypeError("unknown constraint type %s" %
-                                    constraint[0])
+                    raise TypeError(f"unknown constraint type {ctype}")
 
         # Evaluate the terminal constraint functions
-        for type, fun, lb, ub in self.terminal_constraints:
+        for ctype, fun, lb, ub in self.terminal_constraints:
             if np.all(lb == ub):
                 # Skip equality constraints
                 continue
-            elif type == opt.LinearConstraint:
-                value.append(
-                    np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
-            elif type == opt.NonlinearConstraint:
+            elif ctype == opt.LinearConstraint:
+                value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
+            elif ctype == opt.NonlinearConstraint:
                 value.append(fun(states[:, i], inputs[:, i]))
             else:
-                raise TypeError("unknown constraint type %s" %
-                                constraint[0])
+                raise TypeError(f"unknown constraint type {ctype}")
 
         # Update statistics
         self.constraint_evaluations += 1
@@ -475,33 +471,29 @@ class OptimalControlProblem():
         # Evaluate the constraint function along the trajectory
         value = []
         for i, t in enumerate(self.timepts):
-            for type, fun, lb, ub in self.trajectory_constraints:
+            for ctype, fun, lb, ub in self.trajectory_constraints:
                 if np.any(lb != ub):
                     # Skip inequality constraints
                     continue
-                elif type == opt.LinearConstraint:
+                elif ctype == opt.LinearConstraint:
                     # `fun` is the A matrix associated with the polytope...
-                    value.append(
-                        np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
-                elif type == opt.NonlinearConstraint:
+                    value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
+                elif ctype == opt.NonlinearConstraint:
                     value.append(fun(states[:, i], inputs[:, i]))
                 else:
-                    raise TypeError("unknown constraint type %s" %
-                                    constraint[0])
+                    raise TypeError(f"unknown constraint type {ctype}")
 
         # Evaluate the terminal constraint functions
-        for type, fun, lb, ub in self.terminal_constraints:
+        for ctype, fun, lb, ub in self.terminal_constraints:
             if np.any(lb != ub):
                 # Skip inequality constraints
                 continue
-            elif type == opt.LinearConstraint:
-                value.append(
-                    np.dot(fun, np.hstack([states[:, i], inputs[:, i]])))
-            elif type == opt.NonlinearConstraint:
+            elif ctype == opt.LinearConstraint:
+                value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
+            elif ctype == opt.NonlinearConstraint:
                 value.append(fun(states[:, i], inputs[:, i]))
             else:
-                raise TypeError("unknown constraint type %s" %
-                                constraint[0])
+                raise TypeError("unknown constraint type {ctype}")
 
         # Update statistics
         self.eqconst_evaluations += 1
@@ -826,13 +818,14 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         else:
             states = None
 
-        retval = _process_time_response(
-            ocp.system, ocp.timepts, inputs, states,
+        # Process data as a time response (with "outputs" = inputs)
+        response = TimeResponseData(
+            ocp.timepts, inputs, states, issiso=ocp.system.issiso(),
             transpose=transpose, return_x=return_states, squeeze=squeeze)
 
-        self.time = retval[0]
-        self.inputs = retval[1]
-        self.states = None if states is None else retval[2]
+        self.time = response.time
+        self.inputs = response.outputs
+        self.states = response.states
 
 
 # Compute the input for a nonlinear, (constrained) optimal control problem

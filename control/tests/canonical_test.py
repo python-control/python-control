@@ -29,9 +29,9 @@ class TestCanonical:
                             [-0.74855725, -0.39136285, -0.18142339, -0.50356997],
                             [-0.40688007,  0.81416369,  0.38002113, -0.16483334],
                             [-0.44769516,  0.15654653, -0.50060858,  0.72419146]])
-        A = np.linalg.solve(T_true, A_true).dot(T_true)
+        A = np.linalg.solve(T_true, A_true) @ T_true
         B = np.linalg.solve(T_true, B_true)
-        C = C_true.dot(T_true)
+        C = C_true @ T_true
         D = D_true
 
         # Create a state space system and convert it to the reachable canonical form
@@ -77,9 +77,9 @@ class TestCanonical:
                             [-0.74855725, -0.39136285, -0.18142339, -0.50356997],
                             [-0.40688007,  0.81416369,  0.38002113, -0.16483334],
                             [-0.44769516,  0.15654653, -0.50060858,  0.72419146]])
-        A = np.linalg.solve(T_true, A_true).dot(T_true)
+        A = np.linalg.solve(T_true, A_true) @ T_true
         B = np.linalg.solve(T_true, B_true)
-        C = C_true.dot(T_true)
+        C = C_true @ T_true
         D = D_true
 
         # Create a state space system and convert it to the observable canonical form
@@ -266,7 +266,7 @@ def test_bdschur_ref(eigvals, condmax, blksizes):
     bdiag_b = scipy.linalg.block_diag(*extract_bdiag(b, test_blksizes))
     np.testing.assert_array_almost_equal(bdiag_b, b)
 
-    np.testing.assert_array_almost_equal(solve(t, a).dot(t), b)
+    np.testing.assert_array_almost_equal(solve(t, a) @ t, b)
 
 
 @slycotonly
@@ -357,9 +357,9 @@ def test_modal_form(A_true, B_true, C_true, D_true):
                         [-0.74855725, -0.39136285, -0.18142339, -0.50356997],
                         [-0.40688007,  0.81416369,  0.38002113, -0.16483334],
                         [-0.44769516,  0.15654653, -0.50060858,  0.72419146]])
-    A = np.linalg.solve(T_true, A_true).dot(T_true)
+    A = np.linalg.solve(T_true, A_true) @ T_true
     B = np.linalg.solve(T_true, B_true)
-    C = C_true.dot(T_true)
+    C = C_true @ T_true
     D = D_true
 
     # Create a state space system and convert it to modal canonical form
@@ -370,7 +370,7 @@ def test_modal_form(A_true, B_true, C_true, D_true):
     np.testing.assert_array_almost_equal(sys_check.A, a_bds)
     np.testing.assert_array_almost_equal(T_check, t_bds)
     np.testing.assert_array_almost_equal(sys_check.B, np.linalg.solve(t_bds, B))
-    np.testing.assert_array_almost_equal(sys_check.C, C.dot(t_bds))
+    np.testing.assert_array_almost_equal(sys_check.C, C @ t_bds)
     np.testing.assert_array_almost_equal(sys_check.D, D)
 
     # canonical_form(...,'modal') is the same as modal_form with default parameters
@@ -384,9 +384,8 @@ def test_modal_form(A_true, B_true, C_true, D_true):
     # Make sure Hankel coefficients are OK
     for i in range(A.shape[0]):
         np.testing.assert_almost_equal(
-            np.dot(np.dot(C_true, np.linalg.matrix_power(A_true, i)),
-                   B_true),
-            np.dot(np.dot(C, np.linalg.matrix_power(A, i)), B))
+            C_true @ np.linalg.matrix_power(A_true, i) @  B_true,
+            C @ np.linalg.matrix_power(A, i) @ B)
 
 
 @slycotonly
@@ -404,7 +403,7 @@ def test_modal_form_condmax(condmax, len_blksizes):
     np.testing.assert_array_almost_equal(zsys.A, amodal)
     np.testing.assert_array_almost_equal(t, tmodal)
     np.testing.assert_array_almost_equal(zsys.B, np.linalg.solve(tmodal, xsys.B))
-    np.testing.assert_array_almost_equal(zsys.C, xsys.C.dot(tmodal))
+    np.testing.assert_array_almost_equal(zsys.C, xsys.C @ tmodal)
     np.testing.assert_array_almost_equal(zsys.D, xsys.D)
 
 
@@ -422,13 +421,13 @@ def test_modal_form_sort(sys_type):
     xsys = ss(a, [[1],[0],[0],[0],], [0,0,0,1], 0, dt)
     zsys, t = modal_form(xsys, sort=True)
 
-    my_amodal = np.linalg.solve(tmodal, a).dot(tmodal)
+    my_amodal = np.linalg.solve(tmodal, a) @ tmodal
     np.testing.assert_array_almost_equal(amodal, my_amodal)
 
     np.testing.assert_array_almost_equal(t, tmodal)
     np.testing.assert_array_almost_equal(zsys.A, amodal)
     np.testing.assert_array_almost_equal(zsys.B, np.linalg.solve(tmodal, xsys.B))
-    np.testing.assert_array_almost_equal(zsys.C, xsys.C.dot(tmodal))
+    np.testing.assert_array_almost_equal(zsys.C, xsys.C @ tmodal)
     np.testing.assert_array_almost_equal(zsys.D, xsys.D)
 
 
