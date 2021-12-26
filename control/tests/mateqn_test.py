@@ -52,13 +52,13 @@ class TestMatrixEquations:
         Q = array([[1,0],[0,1]])
         X = lyap(A,Q)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X) + X.dot(A.T) + Q, zeros((2,2)))
+        assert_array_almost_equal(A @ X + X @ A.T + Q, zeros((2,2)))
 
         A = array([[1, 2],[-3, -4]])
         Q = array([[3, 1],[1, 1]])
         X = lyap(A,Q)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X) + X.dot(A.T) + Q, zeros((2,2)))
+        assert_array_almost_equal(A @ X + X @ A.T + Q, zeros((2,2)))
 
     def test_lyap_sylvester(self):
         A = 5
@@ -66,14 +66,14 @@ class TestMatrixEquations:
         C = array([2, 1])
         X = lyap(A,B,C)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A * X + X.dot(B) + C, zeros((1,2)))
+        assert_array_almost_equal(A * X + X @ B + C, zeros((1,2)))
 
         A = array([[2,1],[1,2]])
         B = array([[1,2],[0.5,0.1]])
         C = array([[1,0],[0,1]])
         X = lyap(A,B,C)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X) + X.dot(B) + C, zeros((2,2)))
+        assert_array_almost_equal(A @ X + X @ B + C, zeros((2,2)))
 
     def test_lyap_g(self):
         A = array([[-1, 2],[-3, -4]])
@@ -81,7 +81,7 @@ class TestMatrixEquations:
         E = array([[1,2],[2,1]])
         X = lyap(A,Q,None,E)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X).dot(E.T) + E.dot(X).dot(A.T) + Q,
+        assert_array_almost_equal(A @ X @ E.T + E @ X @ A.T + Q,
                                   zeros((2,2)))
 
     def test_dlyap(self):
@@ -89,13 +89,13 @@ class TestMatrixEquations:
         Q = array([[1,0],[0,1]])
         X = dlyap(A,Q)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X).dot(A.T) - X + Q, zeros((2,2)))
+        assert_array_almost_equal(A @ X @ A.T - X + Q, zeros((2,2)))
 
         A = array([[-0.6, 0],[-0.1, -0.4]])
         Q = array([[3, 1],[1, 1]])
         X = dlyap(A,Q)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X).dot(A.T) - X + Q, zeros((2,2)))
+        assert_array_almost_equal(A @ X @ A.T - X + Q, zeros((2,2)))
 
     def test_dlyap_g(self):
         A = array([[-0.6, 0],[-0.1, -0.4]])
@@ -103,7 +103,7 @@ class TestMatrixEquations:
         E = array([[1, 1],[2, 1]])
         X = dlyap(A,Q,None,E)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X).dot(A.T) - E.dot(X).dot(E.T) + Q,
+        assert_array_almost_equal(A @ X @ A.T - E @ X @ E.T + Q,
                                   zeros((2,2)))
 
     def test_dlyap_sylvester(self):
@@ -112,14 +112,14 @@ class TestMatrixEquations:
         C = array([2, 1])
         X = dlyap(A,B,C)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A * X.dot(B.T) - X + C, zeros((1,2)))
+        assert_array_almost_equal(A * X @ B.T - X + C, zeros((1,2)))
 
         A = array([[2,1],[1,2]])
         B = array([[1,2],[0.5,0.1]])
         C = array([[1,0],[0,1]])
         X = dlyap(A,B,C)
         # print("The solution obtained is ", X)
-        assert_array_almost_equal(A.dot(X).dot(B.T) - X + C, zeros((2,2)))
+        assert_array_almost_equal(A @ X @ B.T - X + C, zeros((2,2)))
 
     def test_care(self):
         A = array([[-2, -1],[-1, -1]])
@@ -128,10 +128,10 @@ class TestMatrixEquations:
 
         X,L,G = care(A,B,Q)
         # print("The solution obtained is", X)
-        M = A.T.dot(X) + X.dot(A) - X.dot(B).dot(B.T).dot(X) + Q
+        M = A.T @ X + X @ A - X @ B @ B.T @ X + Q
         assert_array_almost_equal(M,
                                   zeros((2,2)))
-        assert_array_almost_equal(B.T.dot(X), G)
+        assert_array_almost_equal(B.T @ X, G)
 
     def test_care_g(self):
         A = array([[-2, -1],[-1, -1]])
@@ -143,11 +143,11 @@ class TestMatrixEquations:
 
         X,L,G = care(A,B,Q,R,S,E)
         # print("The solution obtained is", X)
-        Gref = solve(R, B.T.dot(X).dot(E) + S.T)
+        Gref = solve(R, B.T @ X @ E + S.T)
         assert_array_almost_equal(Gref, G)
         assert_array_almost_equal(
-            A.T.dot(X).dot(E) + E.T.dot(X).dot(A)
-            - (E.T.dot(X).dot(B) + S).dot(Gref) + Q,
+            A.T @ X @ E + E.T @ X @ A
+            - (E.T @ X @ B + S) @ Gref + Q,
             zeros((2,2)))
 
     def test_care_g2(self):
@@ -160,10 +160,10 @@ class TestMatrixEquations:
 
         X,L,G = care(A,B,Q,R,S,E)
         # print("The solution obtained is", X)
-        Gref = 1/R * (B.T.dot(X).dot(E) + S.T)
+        Gref = 1/R * (B.T @ X @ E + S.T)
         assert_array_almost_equal(
-            A.T.dot(X).dot(E) + E.T.dot(X).dot(A)
-            - (E.T.dot(X).dot(B) + S).dot(Gref) + Q ,
+            A.T @ X @ E + E.T @ X @ A
+            - (E.T @ X @ B + S) @ Gref + Q ,
             zeros((2,2)))
         assert_array_almost_equal(Gref , G)
 
@@ -175,12 +175,12 @@ class TestMatrixEquations:
 
         X,L,G = dare(A,B,Q,R)
         # print("The solution obtained is", X)
-        Gref = solve(B.T.dot(X).dot(B) + R, B.T.dot(X).dot(A))
+        Gref = solve(B.T @ X @ B + R, B.T @ X @ A)
         assert_array_almost_equal(Gref, G)
         assert_array_almost_equal(
-            X, A.T.dot(X).dot(A) - A.T.dot(X).dot(B).dot(Gref) + Q)
+            X, A.T @ X @ A - A.T @ X @ B @ Gref + Q)
         # check for stable closed loop
-        lam = eigvals(A - B.dot(G))
+        lam = eigvals(A - B @ G)
         assert_array_less(abs(lam), 1.0)
 
         A = array([[1, 0],[-1, 1]])
@@ -190,15 +190,15 @@ class TestMatrixEquations:
 
         X,L,G = dare(A,B,Q,R)
         # print("The solution obtained is", X)
-        AtXA = A.T.dot(X).dot(A)
-        AtXB = A.T.dot(X).dot(B)
-        BtXA = B.T.dot(X).dot(A)
-        BtXB = B.T.dot(X).dot(B)
+        AtXA = A.T @ X @ A
+        AtXB = A.T @ X @ B
+        BtXA = B.T @ X @ A
+        BtXB = B.T @ X @ B
         assert_array_almost_equal(
-            X, AtXA - AtXB.dot(solve(BtXB + R, BtXA)) + Q)
+            X, AtXA - AtXB @ solve(BtXB + R, BtXA) + Q)
         assert_array_almost_equal(BtXA / (BtXB + R), G)
         # check for stable closed loop
-        lam = eigvals(A - B.dot(G))
+        lam = eigvals(A - B @ G)
         assert_array_less(abs(lam), 1.0)
 
     def test_dare_g(self):
@@ -211,13 +211,13 @@ class TestMatrixEquations:
 
         X,L,G = dare(A,B,Q,R,S,E)
         # print("The solution obtained is", X)
-        Gref = solve(B.T.dot(X).dot(B) + R, B.T.dot(X).dot(A) + S.T)
+        Gref = solve(B.T @ X @ B + R, B.T @ X @ A + S.T)
         assert_array_almost_equal(Gref, G)
         assert_array_almost_equal(
-            E.T.dot(X).dot(E),
-            A.T.dot(X).dot(A) - (A.T.dot(X).dot(B) + S).dot(Gref) + Q)
+            E.T @ X @ E,
+            A.T @ X @ A - (A.T @ X @ B + S) @ Gref + Q)
         # check for stable closed loop
-        lam = eigvals(A - B.dot(G), E)
+        lam = eigvals(A - B @ G, E)
         assert_array_less(abs(lam), 1.0)
 
     def test_dare_g2(self):
@@ -230,16 +230,16 @@ class TestMatrixEquations:
 
         X, L, G = dare(A, B, Q, R, S, E)
         # print("The solution obtained is", X)
-        AtXA = A.T.dot(X).dot(A)
-        AtXB = A.T.dot(X).dot(B)
-        BtXA = B.T.dot(X).dot(A)
-        BtXB = B.T.dot(X).dot(B)
-        EtXE = E.T.dot(X).dot(E)
+        AtXA = A.T @ X @ A
+        AtXB = A.T @ X @ B
+        BtXA = B.T @ X @ A
+        BtXB = B.T @ X @ B
+        EtXE = E.T @ X @ E
         assert_array_almost_equal(
-            EtXE, AtXA - (AtXB + S).dot(solve(BtXB + R, BtXA + S.T)) + Q)
+            EtXE, AtXA - (AtXB + S)  @ solve(BtXB + R, BtXA + S.T) + Q)
         assert_array_almost_equal((BtXA + S.T) / (BtXB + R), G)
         # check for stable closed loop
-        lam = eigvals(A - B.dot(G), E)
+        lam = eigvals(A - B @ G, E)
         assert_array_less(abs(lam), 1.0)
 
     def test_raise(self):

@@ -592,12 +592,12 @@ class TestStateSpace:
         g3 = StateSpace([], [], [], d2.T)
 
         h1 = g1 * g2
-        np.testing.assert_allclose(np.dot(d1, d2), h1.D)
+        np.testing.assert_allclose(d1 @ d2, h1.D)
         h2 = g1 + g3
         np.testing.assert_allclose(d1 + d2.T, h2.D)
         h3 = g1.feedback(g2)
         np.testing.assert_array_almost_equal(
-            solve(np.eye(2) + np.dot(d1, d2), d1), h3.D)
+            solve(np.eye(2) + d1 @ d2, d1), h3.D)
         h4 = g1.append(g2)
         np.testing.assert_allclose(block_diag(d1, d2), h4.D)
 
@@ -767,18 +767,19 @@ class TestStateSpace:
         [[1, 1], [[1], [1]], np.atleast_2d([1,1]).T])
     @pytest.mark.parametrize('u', [0, 1, np.atleast_1d(2)])
     def test_dynamics_and_output_siso(self, x, u, sys121):
+        uref = np.atleast_1d(u)
         assert_array_almost_equal(
             sys121.dynamics(0, x, u),
-            sys121.A.dot(x).reshape((-1,)) + sys121.B.dot(u).reshape((-1,)))
+            (sys121.A @ x).reshape((-1,)) + (sys121.B @ uref).reshape((-1,)))
         assert_array_almost_equal(
             sys121.output(0, x, u),
-            sys121.C.dot(x).reshape((-1,)) + sys121.D.dot(u).reshape((-1,)))
+            (sys121.C @ x).reshape((-1,)) + (sys121.D @ uref).reshape((-1,)))
         assert_array_almost_equal(
             sys121.dynamics(0, x),
-            sys121.A.dot(x).reshape((-1,)))
+            (sys121.A @ x).reshape((-1,)))
         assert_array_almost_equal(
             sys121.output(0, x),
-            sys121.C.dot(x).reshape((-1,)))
+            (sys121.C @ x).reshape((-1,)))
 
     # too few and too many states and inputs
     @pytest.mark.parametrize('x', [0, 1, [], [1, 2, 3], np.atleast_1d(2)])
@@ -801,16 +802,16 @@ class TestStateSpace:
     def test_dynamics_and_output_mimo(self, x, u, sys222):
         assert_array_almost_equal(
             sys222.dynamics(0, x, u),
-            sys222.A.dot(x).reshape((-1,)) + sys222.B.dot(u).reshape((-1,)))
+            (sys222.A @ x).reshape((-1,)) + (sys222.B @ u).reshape((-1,)))
         assert_array_almost_equal(
             sys222.output(0, x, u),
-            sys222.C.dot(x).reshape((-1,)) + sys222.D.dot(u).reshape((-1,)))
+            (sys222.C @ x).reshape((-1,)) + (sys222.D @ u).reshape((-1,)))
         assert_array_almost_equal(
             sys222.dynamics(0, x),
-            sys222.A.dot(x).reshape((-1,)))
+            (sys222.A @ x).reshape((-1,)))
         assert_array_almost_equal(
             sys222.output(0, x),
-            sys222.C.dot(x).reshape((-1,)))
+            (sys222.C @ x).reshape((-1,)))
 
     # too few and too many states and inputs
     @pytest.mark.parametrize('x', [0, 1, [1, 1, 1]])
@@ -1095,4 +1096,3 @@ def test_latex_repr_testsize(editsdefaults):
 
     gstatic = ss([], [], [], 1)
     assert gstatic._repr_latex_() is None
-

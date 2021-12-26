@@ -35,7 +35,6 @@
 # Author: M.M. (Rene) van Paassen (using xferfcn.py as basis)
 # Date: 02 Oct 12
 
-from __future__ import division
 
 """
 Frequency response data representation and functions.
@@ -48,7 +47,7 @@ FRD data.
 from warnings import warn
 import numpy as np
 from numpy import angle, array, empty, ones, \
-    real, imag, absolute, eye, linalg, where, dot, sort
+    real, imag, absolute, eye, linalg, where, sort
 from scipy.interpolate import splprep, splev
 from .lti import LTI, _process_frequency_response
 from . import config
@@ -302,7 +301,7 @@ second has %i." % (self.noutputs, other.noutputs))
         fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
         for i in range(len(self.omega)):
-            fresp[:, :, i] = dot(self.fresp[:, :, i], other.fresp[:, :, i])
+            fresp[:, :, i] = self.fresp[:, :, i] @ other.fresp[:, :, i]
         return FRD(fresp, self.omega,
                    smooth=(self.ifunc is not None) and
                           (other.ifunc is not None))
@@ -330,7 +329,7 @@ second has %i." % (self.noutputs, other.noutputs))
         fresp = empty((outputs, inputs, len(self.omega)),
                       dtype=self.fresp.dtype)
         for i in range(len(self.omega)):
-            fresp[:, :, i] = dot(other.fresp[:, :, i], self.fresp[:, :, i])
+            fresp[:, :, i] = other.fresp[:, :, i] @ self.fresp[:, :, i]
         return FRD(fresp, self.omega,
                    smooth=(self.ifunc is not None) and
                           (other.ifunc is not None))
@@ -543,13 +542,9 @@ second has %i." % (self.noutputs, other.noutputs))
         # TODO: is there a reason to use linalg.solve instead of linalg.inv?
         # https://github.com/python-control/python-control/pull/314#discussion_r294075154
         for k, w in enumerate(other.omega):
-            fresp[:, :, k] = np.dot(
-                self.fresp[:, :, k],
-                linalg.solve(
-                    eye(self.ninputs)
-                    + np.dot(other.fresp[:, :, k], self.fresp[:, :, k]),
-                    eye(self.ninputs))
-            )
+            fresp[:, :, k] = self.fresp[:, :, k] @ linalg.solve(
+                eye(self.ninputs) + other.fresp[:, :, k] @ self.fresp[:, :, k],
+                eye(self.ninputs))
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 

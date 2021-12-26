@@ -14,8 +14,6 @@ of this is unknown.
 
 """
 
-from __future__ import print_function
-from warnings import warn
 
 import numpy as np
 import pytest

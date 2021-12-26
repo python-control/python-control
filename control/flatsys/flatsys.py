@@ -462,8 +462,7 @@ def point_to_point(
                     for type, fun, lb, ub in traj_constraints:
                         if type == sp.optimize.LinearConstraint:
                             # `fun` is A matrix associated with polytope...
-                            values.append(
-                                np.dot(fun, np.hstack([states, inputs])))
+                            values.append(fun @ np.hstack([states, inputs]))
                         elif type == sp.optimize.NonlinearConstraint:
                             values.append(fun(states, inputs))
                         else:
