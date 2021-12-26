@@ -1852,13 +1852,10 @@ def input_output_response(
     # but has a lot less overhead => simulation runs much faster
     def ufun(t):
         # Find the value of the index using linear interpolation
-        idx = np.searchsorted(T, t, side='left')
-        if idx == 0:
-            # For consistency in return type, multiple by a float
-            return U[..., 0] * 1.
-        else:
-            dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
-            return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
+        # Use clip to allow for extrapolation if t is out of range
+        idx = np.clip(np.searchsorted(T, t, side='left'), 1, len(T)-1)
+        dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
+        return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
 
     # Create a lambda function for the right hand side
     def ivp_rhs(t, x):
