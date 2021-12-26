@@ -8,10 +8,6 @@ python-control library.
 
 """
 
-# Python 3 compatibility (needs to go here)
-from __future__ import print_function
-from __future__ import division         # for _convert_to_statespace
-
 """Copyright (c) 2010 by California Institute of Technology
 All rights reserved.
 
@@ -53,8 +49,8 @@ $Id$
 
 import math
 import numpy as np
-from numpy import any, array, asarray, concatenate, cos, delete, \
-    dot, empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze, pi
+from numpy import any, asarray, concatenate, cos, delete, \
+    empty, exp, eye, isinf, ones, pad, sin, zeros, squeeze
 from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
@@ -716,11 +712,11 @@ class StateSpace(LTI):
                 (concatenate((other.A,
                               zeros((other.A.shape[0], self.A.shape[1]))),
                              axis=1),
-                 concatenate((np.dot(self.B, other.C), self.A), axis=1)),
+                 concatenate((self.B @ other.C, self.A), axis=1)),
                 axis=0)
-            B = concatenate((other.B, np.dot(self.B, other.D)), axis=0)
-            C = concatenate((np.dot(self.D, other.C), self.C), axis=1)
-            D = np.dot(self.D, other.D)
+            B = concatenate((other.B, self.B @ other.D), axis=0)
+            C = concatenate((self.D @ other.C, self.C), axis=1)
+            D = self.D @ other.D
 
         return StateSpace(A, B, C, D, dt)
 
@@ -745,8 +741,8 @@ class StateSpace(LTI):
         # try to treat this as a matrix
         try:
             X = _ssmatrix(other)
-            C = np.dot(X, self.C)
-            D = np.dot(X, self.D)
+            C = X @ self.C
+            D = X @ self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
 
         except Exception as e:
@@ -919,10 +915,8 @@ class StateSpace(LTI):
             # TODO: can this be vectorized?
             for idx, x_idx in enumerate(x_arr):
                 try:
-                    out[:, :, idx] = np.dot(
-                        self.C,
-                        solve(x_idx * eye(self.nstates) - self.A, self.B)) \
-                        + self.D
+                    xr = solve(x_idx * eye(self.nstates) - self.A, self.B)
+                    out[:, :, idx] = self.C @ xr + self.D
                 except LinAlgError:
                     # Issue a warning messsage, for consistency with xferfcn
                     if warn_infinite:
@@ -1023,7 +1017,7 @@ class StateSpace(LTI):
         C2 = other.C
         D2 = other.D
 
-        F = eye(self.ninputs) - sign * np.dot(D2, D1)
+        F = eye(self.ninputs) - sign * D2 @ D1
         if matrix_rank(F) != self.ninputs:
             raise ValueError(
                 "I - sign * D2 * D1 is singular to working precision.")
@@ -1037,20 +1031,20 @@ class StateSpace(LTI):
         E_D2 = E_D2_C2[:, :other.ninputs]
         E_C2 = E_D2_C2[:, other.ninputs:]
 
-        T1 = eye(self.noutputs) + sign * np.dot(D1, E_D2)
-        T2 = eye(self.ninputs) + sign * np.dot(E_D2, D1)
+        T1 = eye(self.noutputs) + sign * D1 @ E_D2
+        T2 = eye(self.ninputs) + sign * E_D2 @ D1
 
         A = concatenate(
             (concatenate(
-                (A1 + sign * np.dot(np.dot(B1, E_D2), C1),
-                 sign * np.dot(B1, E_C2)), axis=1),
+                (A1 + sign * B1 @ E_D2 @ C1,
+                 sign * B1 @ E_C2), axis=1),
              concatenate(
-                 (np.dot(B2, np.dot(T1, C1)),
-                  A2 + sign * np.dot(np.dot(B2, D1), E_C2)), axis=1)),
+                 (B2 @ T1 @ C1,
+                  A2 + sign * B2 @ D1 @ E_C2), axis=1)),
             axis=0)
-        B = concatenate((np.dot(B1, T2), np.dot(np.dot(B2, D1), T2)), axis=0)
-        C = concatenate((np.dot(T1, C1), sign * np.dot(D1, E_C2)), axis=1)
-        D = np.dot(D1, T2)
+        B = concatenate((B1 @ T2, B2 @ D1 @ T2), axis=0)
+        C = concatenate((T1 @ C1, sign * D1 @ E_C2), axis=1)
+        D = D1 @ T2
 
         return StateSpace(A, B, C, D, dt)
 
@@ -1132,23 +1126,23 @@ class StateSpace(LTI):
         H22 = TH[ny:, self.nstates + other.nstates + self.ninputs - nu:]
 
         Ares = np.block([
-            [A + B2.dot(T21), B2.dot(T22)],
-            [Bbar1.dot(T11), Abar + Bbar1.dot(T12)]
+            [A + B2 @ T21, B2 @ T22],
+            [Bbar1 @ T11, Abar + Bbar1 @ T12]
         ])
 
         Bres = np.block([
-            [B1 + B2.dot(H21), B2.dot(H22)],
-            [Bbar1.dot(H11), Bbar2 + Bbar1.dot(H12)]
+            [B1 + B2 @ H21, B2 @ H22],
+            [Bbar1 @ H11, Bbar2 + Bbar1 @ H12]
         ])
 
         Cres = np.block([
-            [C1 + D12.dot(T21), D12.dot(T22)],
-            [Dbar21.dot(T11), Cbar2 + Dbar21.dot(T12)]
+            [C1 + D12 @ T21, D12 @ T22],
+            [Dbar21 @ T11, Cbar2 + Dbar21 @ T12]
         ])
 
         Dres = np.block([
-            [D11 + D12.dot(H21), D12.dot(H22)],
-            [Dbar21.dot(H11), Dbar22 + Dbar21.dot(H12)]
+            [D11 + D12 @ H21, D12 @ H22],
+            [Dbar21 @ H11, Dbar22 + Dbar21 @ H12]
         ])
         return StateSpace(Ares, Bres, Cres, Dres, dt)
 
@@ -1387,13 +1381,13 @@ class StateSpace(LTI):
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
         if u is None:
-            return self.A.dot(x).reshape((-1,))  # return as row vector
+            return (self.A @ x).reshape((-1,))  # return as row vector
         else:  # received t, x, and u, ignore t
             u = np.reshape(u, (-1, 1))  # force to column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-            return self.A.dot(x).reshape((-1,)) \
-                + self.B.dot(u).reshape((-1,))  # return as row vector
+            return (self.A @ x).reshape((-1,)) \
+                + (self.B @ u).reshape((-1,))  # return as row vector
 
     def output(self, t, x, u=None):
         """Compute the output of the system
@@ -1430,13 +1424,13 @@ class StateSpace(LTI):
             raise ValueError("len(x) must be equal to number of states")
 
         if u is None:
-            return self.C.dot(x).reshape((-1,))  # return as row vector
+            return (self.C @ x).reshape((-1,))  # return as row vector
         else:  # received t, x, and u, ignore t
             u = np.reshape(u, (-1, 1))  # force to a column in case matrix
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-            return self.C.dot(x).reshape((-1,)) \
-                + self.D.dot(u).reshape((-1,))  # return as row vector
+            return (self.C @ x).reshape((-1,)) \
+                + (self.D @ u).reshape((-1,))  # return as row vector
 
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
@@ -1629,7 +1623,7 @@ def _rss_generate(states, inputs, outputs, cdtype, strictly_proper=False):
     while True:
         T = randn(states, states)
         try:
-            A = dot(solve(T, A), T)  # A = T \ A * T
+            A = solve(T, A) @ T  # A = T \ A @ T
             break
         except LinAlgError:
             # In the unlikely event that T is rank-deficient, iterate again.

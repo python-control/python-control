@@ -203,7 +203,7 @@ class TestStatefbk:
         P = matarrayin([-0.5 + 1j, -0.5 - 1j, -5.0566, -8.6659])
         K = place(A, B, P)
         assert ismatarrayout(K)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
         # Test that the dimension checks work.
@@ -228,7 +228,7 @@ class TestStatefbk:
 
         P = [-2., -2.]
         K = place_varga(A, B, P)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
         # Test that the dimension checks work.
@@ -241,7 +241,7 @@ class TestStatefbk:
         B = matarrayin([[0], [1]])
         P = matarrayin([-20 + 10*1j, -20 - 10*1j])
         K = place_varga(A, B, P)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
 
@@ -261,7 +261,7 @@ class TestStatefbk:
         alpha = -1.5
         K = place_varga(A, B, P, alpha=alpha)
 
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         # No guarantee of the ordering, so sort them
         self.checkPlaced(P_expected, P_placed)
 
@@ -275,7 +275,7 @@ class TestStatefbk:
 
         P = matarrayin([0.5, 0.5])
         K = place_varga(A, B, P, dtime=True)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         # No guarantee of the ordering, so sort them
         self.checkPlaced(P, P_placed)
 
@@ -293,12 +293,12 @@ class TestStatefbk:
         P_expected = np.array([0.5, 0.6])
         alpha = 0.51
         K = place_varga(A, B, P, dtime=True, alpha=alpha)
-        P_placed = np.linalg.eigvals(A - B.dot(K))
+        P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P_expected, P_placed)
 
 
     def check_LQR(self, K, S, poles, Q, R):
-        S_expected = asmatarrayout(np.sqrt(Q.dot(R)))
+        S_expected = asmatarrayout(np.sqrt(Q @ R))
         K_expected = asmatarrayout(S_expected / R)
         poles_expected = -np.squeeze(np.asarray(K_expected))
         np.testing.assert_array_almost_equal(S, S_expected)
@@ -373,7 +373,7 @@ class TestStatefbk:
             K, S, E = lqr(sys.A, sys.B, sys.C, R, Q)
 
     def check_LQE(self, L, P, poles, G, QN, RN):
-        P_expected = asmatarrayout(np.sqrt(G.dot(QN.dot(G).dot(RN))))
+        P_expected = asmatarrayout(np.sqrt(G @ QN @ G @ RN))
         L_expected = asmatarrayout(P_expected / RN)
         poles_expected = -np.squeeze(np.asarray(L_expected))
         np.testing.assert_array_almost_equal(P, P_expected)

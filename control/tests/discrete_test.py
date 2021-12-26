@@ -416,7 +416,7 @@ class TestDiscrete:
         for sys in (sys1, sys2):
             for h in (0.1, 0.5, 1, 2):
                 Ad = I + h * sys.A
-                Bd = h * sys.B + 0.5 * h**2 * np.dot(sys.A, sys.B)
+                Bd = h * sys.B + 0.5 * h**2 * sys.A @ sys.B
                 sysd = sample_system(sys, h, method='zoh')
                 np.testing.assert_array_almost_equal(sysd.A, Ad)
                 np.testing.assert_array_almost_equal(sysd.B, Bd)

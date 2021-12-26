@@ -95,9 +95,9 @@ class TestModelsimp:
         Hd = c2d(Hc, Ts, 'zoh')
 
         # Compute the Markov parameters from state space
-        Mtrue = np.hstack([Hd.D] + [np.dot(
-            Hd.C, np.dot(np.linalg.matrix_power(Hd.A, i),
-                         Hd.B)) for i in range(m-1)])
+        Mtrue = np.hstack([Hd.D] + [
+            Hd.C @ np.linalg.matrix_power(Hd.A, i) @ Hd.B
+            for i in range(m-1)])
 
         # Generate input/output data
         T = np.array(range(n)) * Ts

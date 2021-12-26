@@ -8,12 +8,10 @@ operations on input/output systems.  Separate unit tests should be
 created for that purpose.
 """
 
-from __future__ import print_function
 import re
 
 import numpy as np
 import pytest
-import scipy as sp
 
 import control as ct
 from control import iosys as ios
@@ -58,7 +56,7 @@ class TestIOSys:
         for x, u in (([0, 0], 0), ([1, 0], 0), ([0, 1], 0), ([0, 0], 1)):
             np.testing.assert_array_almost_equal(
                 np.reshape(iosys._rhs(0, x, u), (-1, 1)),
-                np.dot(linsys.A, np.reshape(x, (-1, 1))) + np.dot(linsys.B, u))
+                linsys.A @ np.reshape(x, (-1, 1)) + linsys.B * u)
 
         # Make sure that simulations also line up
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -154,11 +152,13 @@ class TestIOSys:
 
         # Create a nonlinear system with the same dynamics
         nlupd = lambda t, x, u, params: \
-            np.reshape(np.dot(linsys.A, np.reshape(x, (-1, 1)))
-                       + np.dot(linsys.B, u), (-1,))
+            np.reshape(linsys.A @ np.reshape(x, (-1, 1))
+                       + linsys.B @ np.reshape(u, (-1, 1)),
+                       (-1,))
         nlout = lambda t, x, u, params: \
-            np.reshape(np.dot(linsys.C, np.reshape(x, (-1, 1)))
-                       + np.dot(linsys.D, u), (-1,))
+            np.reshape(linsys.C @ np.reshape(x, (-1, 1))
+                       + linsys.D @ np.reshape(u, (-1, 1)),
+                       (-1,))
         nlsys = ios.NonlinearIOSystem(nlupd, nlout, inputs=1, outputs=1)
 
         # Make sure that simulations also line up
@@ -907,12 +907,12 @@ class TestIOSys:
     def test_named_signals(self, tsys):
         sys1 = ios.NonlinearIOSystem(
             updfcn = lambda t, x, u, params: np.array(
-                np.dot(tsys.mimo_linsys1.A, np.reshape(x, (-1, 1))) \
-                + np.dot(tsys.mimo_linsys1.B, np.reshape(u, (-1, 1)))
+                tsys.mimo_linsys1.A @ np.reshape(x, (-1, 1)) \
+                + tsys.mimo_linsys1.B @ np.reshape(u, (-1, 1))
             ).reshape(-1,),
             outfcn = lambda t, x, u, params: np.array(
-                np.dot(tsys.mimo_linsys1.C, np.reshape(x, (-1, 1))) \
-                + np.dot(tsys.mimo_linsys1.D, np.reshape(u, (-1, 1)))
+                tsys.mimo_linsys1.C @ np.reshape(x, (-1, 1)) \
+                + tsys.mimo_linsys1.D @ np.reshape(u, (-1, 1))
             ).reshape(-1,),
             inputs = ['u[0]', 'u[1]'],
             outputs = ['y[0]', 'y[1]'],
@@ -1140,8 +1140,8 @@ class TestIOSys:
         def updfcn(t, x, u, params):
             """2 inputs, 2 states"""
             return np.array(
-                np.dot(tsys.mimo_linsys1.A, np.reshape(x, (-1, 1)))
-                + np.dot(tsys.mimo_linsys1.B, np.reshape(u, (-1, 1)))
+                tsys.mimo_linsys1.A @ np.reshape(x, (-1, 1))
+                + tsys.mimo_linsys1.B @ np.reshape(u, (-1, 1))
                 ).reshape(-1,)
 
         def outfcn(t, x, u, params):
@@ -1270,7 +1270,7 @@ class TestIOSys:
             (2, 2, 'rss', ct.LinearIOSystem.__rsub__, 2, 2),
             (2, 2, 2, ct.LinearIOSystem.__rsub__, 2, 2),
             (2, 2, np.random.rand(2, 2), ct.LinearIOSystem.__rsub__, 2, 2),
-            
+
         ])
     def test_operand_conversion(self, Pout, Pin, C, op, PCout, PCin):
         P = ct.LinearIOSystem(
@@ -1415,11 +1415,13 @@ def test_linear_interconnection():
         outputs = ('y[0]', 'y[1]'), name = 'sys2')
     nl_sys2 = ios.NonlinearIOSystem(
         lambda t, x, u, params: np.array(
-            np.dot(ss_sys2.A, np.reshape(x, (-1, 1))) \
-            + np.dot(ss_sys2.B, np.reshape(u, (-1, 1)))).reshape((-1,)),
+            ss_sys2.A @ np.reshape(x, (-1, 1)) \
+            + ss_sys2.B @ np.reshape(u, (-1, 1))
+            ).reshape((-1,)),
         lambda t, x, u, params: np.array(
-            np.dot(ss_sys2.C, np.reshape(x, (-1, 1))) \
-            + np.dot(ss_sys2.D, np.reshape(u, (-1, 1)))).reshape((-1,)),
+            ss_sys2.C @ np.reshape(x, (-1, 1)) \
+            + ss_sys2.D @ np.reshape(u, (-1, 1))
+            ).reshape((-1,)),
         states = 2,
         inputs = ('u[0]', 'u[1]'),
         outputs = ('y[0]', 'y[1]'),

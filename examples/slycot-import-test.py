@@ -39,6 +39,6 @@ if slycot_check():
     dico = 'D'   # Discrete system
     _, _, _, _, _, K, _ = sb01bd(n, m, npp, alpha, A, B, w, dico, tol=0.0, ldwork=None)
     print("[slycot] K = ", K)
-    print("[slycot] eigs = ", np.linalg.eig(A + np.dot(B, K))[0])
+    print("[slycot] eigs = ", np.linalg.eig(A + B @ K)[0])
 else:
     print("Slycot is not installed.")

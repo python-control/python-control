@@ -8,7 +8,7 @@ from .statefbk import ctrb, obsv
 
 import numpy as np
 
-from numpy import zeros, zeros_like, shape, poly, iscomplex, vstack, hstack, dot, \
+from numpy import zeros, zeros_like, shape, poly, iscomplex, vstack, hstack, \
     transpose, empty, finfo, float64
 from numpy.linalg import solve, matrix_rank, eig
 
@@ -149,7 +149,7 @@ def observable_form(xsys):
         raise ValueError("Transformation matrix singular to working precision.")
 
     # Finally, compute the output matrix
-    zsys.B = Tzx.dot(xsys.B)
+    zsys.B = Tzx @ xsys.B
 
     return zsys, Tzx
 
@@ -189,13 +189,13 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
 
     # Update the system matrices
     if not inverse:
-        zsys.A = rsolve(T, dot(T, zsys.A)) / timescale
-        zsys.B = dot(T, zsys.B) / timescale
+        zsys.A = rsolve(T, T @ zsys.A) / timescale
+        zsys.B = T @ zsys.B / timescale
         zsys.C = rsolve(T, zsys.C)
     else:
-        zsys.A = solve(T, zsys.A).dot(T) / timescale
+        zsys.A = solve(T, zsys.A) @ T / timescale
         zsys.B = solve(T, zsys.B) / timescale
-        zsys.C = zsys.C.dot(T)
+        zsys.C = zsys.C @ T
 
     return zsys
 
@@ -405,8 +405,8 @@ def bdschur(a, condmax=None, sort=None):
         permidx = np.hstack([blkidxs[i] for i in sortidx])
         rperm = np.eye(amodal.shape[0])[permidx]
 
-        tmodal = tmodal.dot(rperm)
-        amodal = rperm.dot(amodal).dot(rperm.T)
+        tmodal = tmodal @ rperm
+        amodal = rperm @ amodal @ rperm.T
         blksizes = blksizes[sortidx]
 
     elif sort is None:
