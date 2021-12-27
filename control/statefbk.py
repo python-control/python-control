@@ -277,7 +277,7 @@ def lqe(*args, **keywords):
     The lqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
 
-    .. math:: x_e = A x_e + G u + L(y - C x_e - D u)
+    .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
 
     produces a state estimate x_e that minimizes the expected squared error
     using the sensor measurements y. The noise cross-correlation `NN` is
