@@ -44,7 +44,7 @@ import numpy as np
 
 from . import statesp
 from .mateqn import care, dare, _check_shape
-from .statesp import _ssmatrix, _convert_to_statespace
+from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
 from .lti import LTI, isdtime, isctime
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
@@ -366,19 +366,18 @@ def lqe(*args, **keywords):
         # Call dlqe
         return dlqe(*args, **keywords)
 
-    try:
-        sys = args[0]           # Treat the first argument as a system
-        if isinstance(sys, LTI):
-            # Convert LTI system to state space
-            sys = _convert_to_statespace(sys)
-
-        # Extract A, G (assume disturbances come through input), and C
-        A = np.array(sys.A, ndmin=2, dtype=float)
-        G = np.array(sys.B, ndmin=2, dtype=float)
-        C = np.array(sys.C, ndmin=2, dtype=float)
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        G = np.array(args[0].B, ndmin=2, dtype=float)
+        C = np.array(args[0].C, ndmin=2, dtype=float)
         index = 1
 
-    except AttributeError:
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
         # Arguments should be A and B matrices
         A = np.array(args[0], ndmin=2, dtype=float)
         G = np.array(args[1], ndmin=2, dtype=float)
@@ -490,14 +489,18 @@ def dlqe(*args, **keywords):
     if isinstance(args[0], LTI) and isctime(args[0], strict=True):
         raise ControlArgument("dlqr() called with a continuous time system")
 
-    try:
-        # If this works, we were (probably) passed a system as the
-        # first argument; extract A and B
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
         A = np.array(args[0].A, ndmin=2, dtype=float)
         G = np.array(args[0].B, ndmin=2, dtype=float)
         C = np.array(args[0].C, ndmin=2, dtype=float)
         index = 1
-    except AttributeError:
+
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
         # Arguments should be A and B matrices
         A = np.array(args[0], ndmin=2, dtype=float)
         G = np.array(args[1], ndmin=2, dtype=float)
@@ -516,6 +519,9 @@ def dlqe(*args, **keywords):
     if len(args) > index + 2:
         NN = np.array(args[index+2], ndmin=2, dtype=float)
         raise ControlNotImplemented("cross-covariance not yet implememented")
+
+    # Check dimensions of G (needed before calling care())
+    _check_shape("QN", QN, G.shape[1], G.shape[1])
 
     # Compute the result (dimension and symmetry checking done in dare())
     P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
@@ -650,13 +656,17 @@ def lqr(*args, **keywords):
         # Call dlqr
         return dlqr(*args, **keywords)
 
-    try:
-        # If this works, we were (probably) passed a system as the
-        # first argument; extract A and B
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
         A = np.array(args[0].A, ndmin=2, dtype=float)
         B = np.array(args[0].B, ndmin=2, dtype=float)
         index = 1
-    except AttributeError:
+
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
         # Arguments should be A and B matrices
         A = np.array(args[0], ndmin=2, dtype=float)
         B = np.array(args[1], ndmin=2, dtype=float)
@@ -746,13 +756,17 @@ def dlqr(*args, **keywords):
     if isinstance(args[0], LTI) and isctime(args[0], strict=True):
         raise ControlArgument("dsys must be discrete time (dt != 0)")
 
-    try:
-        # If this works, we were (probably) passed a system as the
-        # first argument; extract A and B
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
         A = np.array(args[0].A, ndmin=2, dtype=float)
         B = np.array(args[0].B, ndmin=2, dtype=float)
         index = 1
-    except AttributeError:
+
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
         # Arguments should be A and B matrices
         A = np.array(args[0], ndmin=2, dtype=float)
         B = np.array(args[1], ndmin=2, dtype=float)

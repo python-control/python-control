@@ -345,16 +345,18 @@ class TestStatefbk:
         K, S, poles = dlqr(A, B, Q, R)
         self.check_DLQR(K, S, poles, Q, R)
 
-    def test_lqr_badmethod(self):
+    @pytest.mark.parametrize("cdlqr", [lqr, dlqr])
+    def test_lqr_badmethod(self, cdlqr):
         A, B, Q, R = 0, 1, 10, 2
         with pytest.raises(ControlArgument, match="Unknown method"):
-            K, S, poles = lqr(A, B, Q, R, method='nosuchmethod')
+            K, S, poles = cdlqr(A, B, Q, R, method='nosuchmethod')
 
-    def test_lqr_slycot_not_installed(self):
+    @pytest.mark.parametrize("cdlqr", [lqr, dlqr])
+    def test_lqr_slycot_not_installed(self, cdlqr):
         A, B, Q, R = 0, 1, 10, 2
         if not slycot_check():
             with pytest.raises(ControlSlycot, match="Can't find slycot"):
-                K, S, poles = lqr(A, B, Q, R, method='slycot')
+                K, S, poles = cdlqr(A, B, Q, R, method='slycot')
 
     @pytest.mark.xfail(reason="warning not implemented")
     def testLQR_warning(self):
@@ -375,9 +377,11 @@ class TestStatefbk:
         with pytest.warns(UserWarning):
             (K, S, E) = lqr(A, B, Q, R, N)
 
-    def test_lqr_call_format(self):
+    @pytest.mark.parametrize("cdlqr", [lqr, dlqr])
+    def test_lqr_call_format(self, cdlqr):
         # Create a random state space system for testing
         sys = rss(2, 3, 2)
+        sys.dt = None           # treat as either continuous or discrete time
 
         # Weighting matrices
         Q = np.eye(sys.nstates)
@@ -385,27 +389,37 @@ class TestStatefbk:
         N = np.zeros((sys.nstates, sys.ninputs))
 
         # Standard calling format
-        Kref, Sref, Eref = lqr(sys.A, sys.B, Q, R)
+        Kref, Sref, Eref = cdlqr(sys.A, sys.B, Q, R)
 
         # Call with system instead of matricees
-        K, S, E = lqr(sys, Q, R)
+        K, S, E = cdlqr(sys, Q, R)
         np.testing.assert_array_almost_equal(Kref, K)
         np.testing.assert_array_almost_equal(Sref, S)
         np.testing.assert_array_almost_equal(Eref, E)
 
         # Pass a cross-weighting matrix
-        K, S, E = lqr(sys, Q, R, N)
+        K, S, E = cdlqr(sys, Q, R, N)
         np.testing.assert_array_almost_equal(Kref, K)
         np.testing.assert_array_almost_equal(Sref, S)
         np.testing.assert_array_almost_equal(Eref, E)
 
         # Inconsistent system dimensions
         with pytest.raises(ct.ControlDimension, match="Incompatible dimen"):
-            K, S, E = lqr(sys.A, sys.C, Q, R)
+            K, S, E = cdlqr(sys.A, sys.C, Q, R)
 
-        # incorrect covariance matrix dimensions
+        # Incorrect covariance matrix dimensions
         with pytest.raises(ct.ControlDimension, match="Q must be a square"):
-            K, S, E = lqr(sys.A, sys.B, sys.C, R, Q)
+            K, S, E = cdlqr(sys.A, sys.B, sys.C, R, Q)
+
+        # Too few input arguments
+        with pytest.raises(ct.ControlArgument, match="not enough input"):
+            K, S, E = cdlqr(sys.A, sys.B)
+
+        # First argument is the wrong type (use SISO for non-slycot tests)
+        sys_tf = tf(rss(3, 1, 1))
+        sys_tf.dt = None        # treat as either continuous or discrete time
+        with pytest.raises(ct.ControlArgument, match="LTI system must be"):
+            K, S, E = cdlqr(sys_tf, Q, R)
 
     @pytest.mark.xfail(reason="warning not implemented")
     def testDLQR_warning(self):
@@ -443,9 +457,11 @@ class TestStatefbk:
         L, P, poles = lqe(A, G, C, QN, RN, method=method)
         self.check_LQE(L, P, poles, G, QN, RN)
 
-    def test_lqe_call_format(self):
+    @pytest.mark.parametrize("cdlqe", [lqe, dlqe])
+    def test_lqe_call_format(self, cdlqe):
         # Create a random state space system for testing
         sys = rss(4, 3, 2)
+        sys.dt = None           # treat as either continuous or discrete time
 
         # Covariance matrices
         Q = np.eye(sys.ninputs)
@@ -453,31 +469,35 @@ class TestStatefbk:
         N = np.zeros((sys.ninputs, sys.noutputs))
 
         # Standard calling format
-        Lref, Pref, Eref = lqe(sys.A, sys.B, sys.C, Q, R)
+        Lref, Pref, Eref = cdlqe(sys.A, sys.B, sys.C, Q, R)
 
         # Call with system instead of matricees
-        L, P, E = lqe(sys, Q, R)
+        L, P, E = cdlqe(sys, Q, R)
         np.testing.assert_array_almost_equal(Lref, L)
         np.testing.assert_array_almost_equal(Pref, P)
         np.testing.assert_array_almost_equal(Eref, E)
 
-        # Compare state space and transfer function (SISO only)
-        sys_siso = rss(4, 1, 1)
-        L_ss, P_ss, E_ss = lqe(sys_siso, np.eye(1), np.eye(1))
-        L_tf, P_tf, E_tf = lqe(tf(sys_siso), np.eye(1), np.eye(1))
-        np.testing.assert_array_almost_equal(np.sort(E_ss), np.sort(E_tf))
-
         # Make sure we get an error if we specify N
         with pytest.raises(ct.ControlNotImplemented):
-            L, P, E = lqe(sys, Q, R, N)
+            L, P, E = cdlqe(sys, Q, R, N)
 
         # Inconsistent system dimensions
         with pytest.raises(ct.ControlDimension, match="Incompatible"):
-            L, P, E = lqe(sys.A, sys.C, sys.B, Q, R)
+            L, P, E = cdlqe(sys.A, sys.C, sys.B, Q, R)
 
-        # incorrect covariance matrix dimensions
+        # Incorrect covariance matrix dimensions
         with pytest.raises(ct.ControlDimension, match="Incompatible"):
-            L, P, E = lqe(sys.A, sys.B, sys.C, R, Q)
+            L, P, E = cdlqe(sys.A, sys.B, sys.C, R, Q)
+
+        # Too few input arguments
+        with pytest.raises(ct.ControlArgument, match="not enough input"):
+            L, P, E = cdlqe(sys.A, sys.C)
+
+        # First argument is the wrong type (use SISO for non-slycot tests)
+        sys_tf = tf(rss(3, 1, 1))
+        sys_tf.dt = None        # treat as either continuous or discrete time
+        with pytest.raises(ct.ControlArgument, match="LTI system must be"):
+            L, P, E = cdlqe(sys_tf, Q, R)
 
     def check_DLQE(self, L, P, poles, G, QN, RN):
         P_expected = asmatarrayout(G.dot(QN).dot(G))
