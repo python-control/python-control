@@ -43,7 +43,7 @@
 import numpy as np
 
 from . import statesp
-from .mateqn import care, dare
+from .mateqn import care, dare, _check_shape
 from .statesp import _ssmatrix, _convert_to_statespace
 from .lti import LTI, isdtime, isctime
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
@@ -260,7 +260,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def lqe(*args, **keywords):
-    """lqe(A, G, C, Q, R, [, N])
+    """lqe(A, G, C, QN, RN, [, NN])
 
     Linear quadratic estimator design (Kalman filter) for continuous-time
     systems. Given the system
@@ -272,26 +272,26 @@ def lqe(*args, **keywords):
 
     with unbiased process noise w and measurement noise v with covariances
 
-    .. math::       E{ww'} = Q,    E{vv'} = R,    E{wv'} = N
+    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
 
     The lqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
 
-    .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
+    .. math:: x_e = A x_e + G u + L(y - C x_e - D u)
 
     produces a state estimate x_e that minimizes the expected squared error
-    using the sensor measurements y. The noise cross-correlation `N` is
+    using the sensor measurements y. The noise cross-correlation `NN` is
     set to zero when omitted.
 
     The function can be called with either 3, 4, 5, or 6 arguments:
 
-    * ``L, P, E = lqe(sys, Q, R)``
-    * ``L, P, E = lqe(sys, Q, R, N)``
-    * ``L, P, E = lqe(A, G, C, Q, R)``
-    * ``L, P, E = lqe(A, B, C, Q, R, N)``
+    * ``L, P, E = lqe(sys, QN, RN)``
+    * ``L, P, E = lqe(sys, QN, RN, NN)``
+    * ``L, P, E = lqe(A, G, C, QN, RN)``
+    * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
 
-    where `sys` is an `LTI` object, and `A`, `G`, `C`, `Q`, `R`, and `N` are
-    2D arrays or matrices of appropriate dimension.
+    where `sys` is an `LTI` object, and `A`, `G`, `C`, `QN`, `RN`, and `NN`
+    are 2D arrays or matrices of appropriate dimension.
 
     Parameters
     ----------
@@ -300,9 +300,9 @@ def lqe(*args, **keywords):
     sys : LTI (StateSpace or TransferFunction)
         Linear I/O system, with the process noise input taken as the system
         input.
-    Q, R : 2D array_like
+    QN, RN : 2D array_like
         Process and sensor noise covariance matrices
-    N : 2D array, optional
+    NN : 2D array, optional
         Cross covariance matrix.  Not currently implemented.
     method : str, optional
         Set the method used for computing the result.  Current methods are
@@ -335,8 +335,8 @@ def lqe(*args, **keywords):
 
     Examples
     --------
-    >>> L, P, E = lqe(A, G, C, Q, R)
-    >>> L, P, E = lqe(A, G, C, Q, R, N)
+    >>> L, P, E = lqe(A, G, C, QN, RN)
+    >>> L, P, E = lqe(A, G, C, Q, RN, NN)
 
     See Also
     --------
@@ -386,31 +386,24 @@ def lqe(*args, **keywords):
         index = 3
 
     # Get the weighting matrices (converting to matrices, if needed)
-    Q = np.array(args[index], ndmin=2, dtype=float)
-    R = np.array(args[index+1], ndmin=2, dtype=float)
+    QN = np.array(args[index], ndmin=2, dtype=float)
+    RN = np.array(args[index+1], ndmin=2, dtype=float)
 
     # Get the cross-covariance matrix, if given
     if (len(args) > index + 2):
-        N = np.array(args[index+2], ndmin=2, dtype=float)
+        NN = np.array(args[index+2], ndmin=2, dtype=float)
         raise ControlNotImplemented("cross-covariance not implemented")
 
     else:
-        N = np.zeros((Q.shape[0], R.shape[1]))
+        # For future use (not currently used below)
+        NN = np.zeros((QN.shape[0], RN.shape[1]))
 
-    # Check dimensions for consistency
-    nstates = A.shape[0]
-    ninputs = G.shape[1]
-    noutputs = C.shape[0]
-    if (A.shape[0] != nstates or A.shape[1] != nstates or
-        G.shape[0] != nstates or C.shape[1] != nstates):
-        raise ControlDimension("inconsistent system dimensions")
+    # Check dimensions of G (needed before calling care())
+    _check_shape("QN", QN, G.shape[1], G.shape[1])
 
-    elif (Q.shape[0] != ninputs or Q.shape[1] != ninputs or
-          R.shape[0] != noutputs or R.shape[1] != noutputs or
-          N.shape[0] != ninputs or N.shape[1] != noutputs):
-        raise ControlDimension("incorrect covariance matrix dimensions")
-
-    P, E, LT = care(A.T, C.T, G @ Q @ G.T, R, method=method)
+    # Compute the result (dimension and symmetry checking done in care())
+    P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN, method=method,
+                    B_s="C", Q_s="QN", R_s="RN", S_s="NN")
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 
@@ -524,7 +517,9 @@ def dlqe(*args, **keywords):
         NN = np.array(args[index+2], ndmin=2, dtype=float)
         raise ControlNotImplemented("cross-covariance not yet implememented")
 
-    P, E, LT = dare(A.T, C.T, np.dot(np.dot(G, QN), G.T), RN, method=method)
+    # Compute the result (dimension and symmetry checking done in dare())
+    P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
+                    B_s="C", Q_s="QN", R_s="RN", S_s="NN")
     return _ssmatrix(LT.T), _ssmatrix(P), E
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
@@ -675,8 +670,8 @@ def lqr(*args, **keywords):
     else:
         N = None
 
-    # Solve continuous algebraic Riccati equation
-    X, L, G = care(A, B, Q, R, N, None, method=method)
+    # Compute the result (dimension and symmetry checking done in care())
+    X, L, G = care(A, B, Q, R, N, None, method=method, S_s="N")
     return G, X, L
 
 
@@ -771,19 +766,8 @@ def dlqr(*args, **keywords):
     else:
         N = np.zeros((Q.shape[0], R.shape[1]))
 
-    # Check dimensions for consistency
-    nstates = B.shape[0]
-    ninputs = B.shape[1]
-    if (A.shape[0] != nstates or A.shape[1] != nstates):
-        raise ControlDimension("inconsistent system dimensions")
-
-    elif (Q.shape[0] != nstates or Q.shape[1] != nstates or
-          R.shape[0] != ninputs or R.shape[1] != ninputs or
-          N.shape[0] != nstates or N.shape[1] != ninputs):
-        raise ControlDimension("incorrect weighting matrix dimensions")
-
-    # compute the result
-    S, E, K = dare(A, B, Q, R, N, method=method)
+    # Compute the result (dimension and symmetry checking done in dare())
+    S, E, K = dare(A, B, Q, R, N, method=method, S_s="N")
     return _ssmatrix(K), _ssmatrix(S), E
 
 

@@ -472,11 +472,11 @@ class TestStatefbk:
             L, P, E = lqe(sys, Q, R, N)
 
         # Inconsistent system dimensions
-        with pytest.raises(ct.ControlDimension, match="inconsistent system"):
+        with pytest.raises(ct.ControlDimension, match="Incompatible"):
             L, P, E = lqe(sys.A, sys.C, sys.B, Q, R)
 
         # incorrect covariance matrix dimensions
-        with pytest.raises(ct.ControlDimension, match="incorrect covariance"):
+        with pytest.raises(ct.ControlDimension, match="Incompatible"):
             L, P, E = lqe(sys.A, sys.B, sys.C, R, Q)
 
     def check_DLQE(self, L, P, poles, G, QN, RN):
