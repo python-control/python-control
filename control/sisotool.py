@@ -328,7 +328,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     loop = interconnect((plant, Kpgain, Kigain, Kdgain, prop, integ, deriv,
                             C_ff, e_summer, u_summer),
                             inplist=['input', input_signal],
-                            outlist=['output', 'y'])
+                            outlist=['output', 'y'], check_unused=False)
     if plot:
         sisotool(loop, kvect=(0.,))
     cl = loop[1, 1] # closed loop transfer function with initial gains
