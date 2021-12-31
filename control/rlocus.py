@@ -114,6 +114,14 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         Computed root locations, given as a 2D array
     klist : ndarray or list
         Gains used.  Same as klist keyword argument if provided.
+
+    Notes
+    -----
+    The root_locus function calls matplotlib.pyplot.axis('equal'), which
+    means that trying to reset the axis limits may not behave as expected.
+    To change the axis limits, use matplotlib.pyplot.gca().axis('auto') and
+    then set the axis limits to the desired values.
+
     """
     # Check to see if legacy 'Plot' keyword was used
     if 'Plot' in kwargs:
