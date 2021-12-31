@@ -59,8 +59,7 @@ _pzmap_defaults = {
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
 def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
-    """
-    Plot a pole/zero map for a linear system.
+    """Plot a pole/zero map for a linear system.
 
     Parameters
     ----------
@@ -78,6 +77,14 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
         The systems poles
     zeros: array
         The system's zeros.
+
+    Notes
+    -----
+    The pzmap function calls matplotlib.pyplot.axis('equal'), which means
+    that trying to reset the axis limits may not behave as expected.  To
+    change the axis limits, use matplotlib.pyplot.gca().axis('auto') and
+    then set the axis limits to the desired values.
+
     """
     # Check to see if legacy 'Plot' keyword was used
     if 'Plot' in kwargs:
