@@ -3,7 +3,7 @@
 # Implementation of the functions lyap, dlyap, care and dare
 # for solution of Lyapunov and Riccati equations.
 #
-# Author: Bjorn Olofsson
+# Original author: Bjorn Olofsson
 
 # Copyright (c) 2011, All rights reserved.
 
@@ -162,6 +162,7 @@ def lyap(A, Q, C=None, E=None, method=None):
         _check_shape("Q", Q, n, n, square=True, symmetric=True)
 
         if method == 'scipy':
+            # Solve the Lyapunov equation using SciPy
             return sp.linalg.solve_continuous_lyapunov(A, -Q)
 
         # Solve the Lyapunov equation by calling Slycot function sb03md
@@ -177,6 +178,7 @@ def lyap(A, Q, C=None, E=None, method=None):
         _check_shape("C", C, n, m)
 
         if method == 'scipy':
+            # Solve the Sylvester equation using SciPy
             return sp.linalg.solve_sylvester(A, Q, -C)
 
         # Solve the Sylvester equation by calling the Slycot function sb04md
@@ -293,6 +295,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
         _check_shape("Q", Q, n, n, square=True, symmetric=True)
 
         if method == 'scipy':
+            # Solve the Lyapunov equation using SciPy
             return sp.linalg.solve_discrete_lyapunov(A, Q)
 
         # Solve the Lyapunov equation by calling the Slycot function sb03md
@@ -343,7 +346,8 @@ def dlyap(A, Q, C=None, E=None, method=None):
 # Riccati equation solvers care and dare
 #
 
-def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
+def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
+         A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
     """X, L, G = care(A, B, Q, R=None) solves the continuous-time
     algebraic Riccati equation
 
@@ -395,24 +399,6 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
     # Decide what method to use
     method = _slycot_or_scipy(method)
 
-    if method == 'slycot':
-        # Make sure we can import required slycot routines
-        try:
-            from slycot import sb02md
-        except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sb02md'")
-
-        try:
-            from slycot import sb02mt
-        except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sb02mt'")
-
-        # Make sure we can find the required slycot routine
-        try:
-            from slycot import sg02ad
-        except ImportError:
-            raise ControlSlycot("Can't find slycot module 'sg02ad'")
-
     # Reshape input arrays
     A = np.array(A, ndmin=2)
     B = np.array(B, ndmin=2)
@@ -428,10 +414,10 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
     m = B.shape[1]
 
     # Check to make sure input matrices are the right shape and type
-    _check_shape("A", A, n, n, square=True)
-    _check_shape("B", B, n, m)
-    _check_shape("Q", Q, n, n, square=True, symmetric=True)
-    _check_shape("R", R, m, m, square=True, symmetric=True)
+    _check_shape(A_s, A, n, n, square=True)
+    _check_shape(B_s, B, n, m)
+    _check_shape(Q_s, Q, n, n, square=True, symmetric=True)
+    _check_shape(R_s, R, m, m, square=True, symmetric=True)
 
     # Solve the standard algebraic Riccati equation
     if S is None and E is None:
@@ -446,9 +432,16 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
             E, _ = np.linalg.eig(A - B @ K)
             return _ssmatrix(X), E, _ssmatrix(K)
 
-        # Create back-up of arrays needed for later computations
-        R_ba = copy(R)
-        B_ba = copy(B)
+        # Make sure we can import required slycot routines
+        try:
+            from slycot import sb02md
+        except ImportError:
+            raise ControlSlycot("Can't find slycot module 'sb02md'")
+
+        try:
+            from slycot import sb02mt
+        except ImportError:
+            raise ControlSlycot("Can't find slycot module 'sb02mt'")
 
         # Solve the standard algebraic Riccati equation by calling Slycot
         # functions sb02mt and sb02md
@@ -458,7 +451,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         X, rcond, w, S_o, U, A_inv = sb02md(n, A, G, Q, 'C', sort=sort)
 
         # Calculate the gain matrix G
-        G = solve(R_ba, B_ba.T) @ X
+        G = solve(R, B.T) @ X
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
@@ -471,8 +464,8 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         E = np.eye(A.shape[0]) if E is None else np.array(E, ndmin=2)
 
         # Check to make sure input matrices are the right shape and type
-        _check_shape("E", E, n, n, square=True)
-        _check_shape("S", S, n, m)
+        _check_shape(E_s, E, n, n, square=True)
+        _check_shape(S_s, S, n, m)
 
         # See if we should solve this using SciPy
         if method == 'scipy':
@@ -485,11 +478,11 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
             eigs, _ = sp.linalg.eig(A - B @ K, E)
             return _ssmatrix(X), eigs, _ssmatrix(K)
 
-        # Create back-up of arrays needed for later computations
-        R_b = copy(R)
-        B_b = copy(B)
-        E_b = copy(E)
-        S_b = copy(S)
+        # Make sure we can find the required slycot routine
+        try:
+            from slycot import sg02ad
+        except ImportError:
+            raise ControlSlycot("Can't find slycot module 'sg02ad'")
 
         # Solve the generalized algebraic Riccati equation by calling the
         # Slycot function sg02ad
@@ -504,14 +497,15 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None):
         L = np.array([(alfar[i] + alfai[i]*1j) / beta[i] for i in range(n)])
 
         # Calculate the gain matrix G
-        G = solve(R_b, B_b.T @ X @ E_b + S_b.T)
+        G = solve(R, B.T @ X @ E + S.T)
 
         # Return the solution X, the closed-loop eigenvalues L and
         # the gain matrix G
         return _ssmatrix(X), L, _ssmatrix(G)
 
-def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
-    """(X, L, G) = dare(A, B, Q, R) solves the discrete-time algebraic Riccati
+def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
+         A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
+    """X, L, G = dare(A, B, Q, R) solves the discrete-time algebraic Riccati
     equation
 
         :math:`A^T X A - X - A^T X B (B^T X B + R)^{-1} B^T X A + Q = 0`
@@ -521,15 +515,17 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
     matrix G = (B^T X B + R)^-1 B^T X A and the closed loop eigenvalues L,
     i.e., the eigenvalues of A - B G.
 
-    (X, L, G) = dare(A, B, Q, R, S, E) solves the generalized discrete-time
+    X, L, G = dare(A, B, Q, R, S, E) solves the generalized discrete-time
     algebraic Riccati equation
 
         :math:`A^T X A - E^T X E - (A^T X B + S) (B^T X B + R)^{-1} (B^T X A + S^T) + Q = 0`
 
-    where A, Q and E are square matrices of the same dimension. Further, Q and
-    R are symmetric matrices. The function returns the solution X, the gain
-    matrix :math:`G = (B^T X B + R)^{-1} (B^T X A + S^T)` and the closed loop
-    eigenvalues L, i.e., the eigenvalues of A - B G , E.
+    where A, Q and E are square matrices of the same dimension. Further, Q
+    and R are symmetric matrices. If R is None, it is set to the identity
+    matrix.  The function returns the solution X, the gain matrix :math:`G =
+    (B^T X B + R)^{-1} (B^T X A + S^T)` and the closed loop eigenvalues L,
+    i.e., the (generalized) eigenvalues of A - B G (with respect to E, if
+    specified).
 
     Parameters
     ----------
@@ -575,32 +571,26 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
     m = B.shape[1]
 
     # Check to make sure input matrices are the right shape and type
-    _check_shape("A", A, n, n, square=True)
+    _check_shape(A_s, A, n, n, square=True)
+    _check_shape(B_s, B, n, m)
+    _check_shape(Q_s, Q, n, n, square=True, symmetric=True)
+    _check_shape(R_s, R, m, m, square=True, symmetric=True)
+    if E is not None:
+        _check_shape(E_s, E, n, n, square=True)
+    if S is not None:
+        _check_shape(S_s, S, n, m)
 
     # Figure out how to solve the problem
-    if method == 'scipy' and not stabilizing:
-        raise ControlArgument(
-            "method='scipy' not valid when stabilizing is not True")
+    if method == 'scipy':
+        if not stabilizing:
+            raise ControlArgument(
+                "method='scipy' not valid when stabilizing is not True")
 
-    elif method == 'slycot':
-        return _dare_slycot(A, B, Q, R, S, E, stabilizing)
-
-    else:
-        _check_shape("B", B, n, m)
-        _check_shape("Q", Q, n, n, square=True, symmetric=True)
-        _check_shape("R", R, m, m, square=True, symmetric=True)
-        if E is not None:
-            _check_shape("E", E, n, n, square=True)
-        if S is not None:
-            _check_shape("S", S, n, m)
-
-        Rmat = _ssmatrix(R)
-        Qmat = _ssmatrix(Q)
-        X = sp.linalg.solve_discrete_are(A, B, Qmat, Rmat, e=E, s=S)
+        X = sp.linalg.solve_discrete_are(A, B, Q, R, e=E, s=S)
         if S is None:
-            G = solve(B.T @ X @ B + Rmat, B.T @ X @ A)
+            G = solve(B.T @ X @ B + R, B.T @ X @ A)
         else:
-            G = solve(B.T @ X @ B + Rmat, B.T @ X @ A + S.T)
+            G = solve(B.T @ X @ B + R, B.T @ X @ A + S.T)
         if E is None:
             L = eigvals(A - B @ G)
         else:
@@ -608,53 +598,15 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None):
 
         return _ssmatrix(X), L, _ssmatrix(G)
 
-
-def _dare_slycot(A, B, Q, R, S=None, E=None, stabilizing=True):
     # Make sure we can import required slycot routine
-    try:
-        from slycot import sb02md
-    except ImportError:
-        raise ControlSlycot("Can't find slycot module 'sb02md'")
-
-    try:
-        from slycot import sb02mt
-    except ImportError:
-        raise ControlSlycot("Can't find slycot module 'sb02mt'")
-
-    # Make sure we can find the required slycot routine
     try:
         from slycot import sg02ad
     except ImportError:
         raise ControlSlycot("Can't find slycot module 'sg02ad'")
 
-    # Reshape input arrays
-    A = np.array(A, ndmin=2)
-    B = np.array(B, ndmin=2)
-    Q = np.array(Q, ndmin=2)
-    R = np.eye(B.shape[1]) if R is None else np.array(R, ndmin=2)
-
-    # Determine main dimensions
-    n = A.shape[0]
-    m = B.shape[1]
-
     # Initialize optional matrices
     S = np.zeros((n, m)) if S is None else np.array(S, ndmin=2)
     E = np.eye(A.shape[0]) if E is None else np.array(E, ndmin=2)
-
-    # Check to make sure input matrices are the right shape and type
-    _check_shape("A", A, n, n, square=True)
-    _check_shape("B", B, n, m)
-    _check_shape("Q", Q, n, n, square=True, symmetric=True)
-    _check_shape("R", R, m, m, square=True, symmetric=True)
-    _check_shape("E", E, n, n, square=True)
-    _check_shape("S", S, n, m)
-
-    # Create back-up of arrays needed for later computations
-    A_b = copy(A)
-    R_b = copy(R)
-    B_b = copy(B)
-    E_b = copy(E)
-    S_b = copy(S)
 
     # Solve the generalized algebraic Riccati equation by calling the
     # Slycot function sg02ad
@@ -669,7 +621,7 @@ def _dare_slycot(A, B, Q, R, S=None, E=None, stabilizing=True):
     L = np.array([(alfar[i] + alfai[i]*1j) / beta[i] for i in range(n)])
 
     # Calculate the gain matrix G
-    G = solve(B_b.T @ X @ B_b + R_b, B_b.T @ X @ A_b + S_b.T)
+    G = solve(B.T @ X @ B + R, B.T @ X @ A + S.T)
 
     # Return the solution X, the closed-loop eigenvalues L and
     # the gain matrix G

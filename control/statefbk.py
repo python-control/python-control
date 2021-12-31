@@ -43,9 +43,9 @@
 import numpy as np
 
 from . import statesp
-from .mateqn import care
-from .statesp import _ssmatrix, _convert_to_statespace
-from .lti import LTI
+from .mateqn import care, dare, _check_shape
+from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
+from .lti import LTI, isdtime, isctime
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
 
@@ -69,7 +69,7 @@ except ImportError:
 
 
 __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe',
-           'acker']
+           'dlqr', 'dlqe', 'acker']
 
 
 # Pole placement
@@ -260,7 +260,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def lqe(*args, **keywords):
-    """lqe(A, G, C, Q, R, [, N])
+    """lqe(A, G, C, QN, RN, [, NN])
 
     Linear quadratic estimator design (Kalman filter) for continuous-time
     systems. Given the system
@@ -272,7 +272,7 @@ def lqe(*args, **keywords):
 
     with unbiased process noise w and measurement noise v with covariances
 
-    .. math::       E{ww'} = Q,    E{vv'} = R,    E{wv'} = N
+    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
 
     The lqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
@@ -280,18 +280,18 @@ def lqe(*args, **keywords):
     .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
 
     produces a state estimate x_e that minimizes the expected squared error
-    using the sensor measurements y. The noise cross-correlation `N` is
+    using the sensor measurements y. The noise cross-correlation `NN` is
     set to zero when omitted.
 
     The function can be called with either 3, 4, 5, or 6 arguments:
 
-    * ``L, P, E = lqe(sys, Q, R)``
-    * ``L, P, E = lqe(sys, Q, R, N)``
-    * ``L, P, E = lqe(A, G, C, Q, R)``
-    * ``L, P, E = lqe(A, B, C, Q, R, N)``
+    * ``L, P, E = lqe(sys, QN, RN)``
+    * ``L, P, E = lqe(sys, QN, RN, NN)``
+    * ``L, P, E = lqe(A, G, C, QN, RN)``
+    * ``L, P, E = lqe(A, G, C, QN, RN, NN)``
 
-    where `sys` is an `LTI` object, and `A`, `G`, `C`, `Q`, `R`, and `N` are
-    2D arrays or matrices of appropriate dimension.
+    where `sys` is an `LTI` object, and `A`, `G`, `C`, `QN`, `RN`, and `NN`
+    are 2D arrays or matrices of appropriate dimension.
 
     Parameters
     ----------
@@ -300,10 +300,145 @@ def lqe(*args, **keywords):
     sys : LTI (StateSpace or TransferFunction)
         Linear I/O system, with the process noise input taken as the system
         input.
-    Q, R : 2D array_like
+    QN, RN : 2D array_like
         Process and sensor noise covariance matrices
-    N : 2D array, optional
+    NN : 2D array, optional
         Cross covariance matrix.  Not currently implemented.
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy'.
+
+    Returns
+    -------
+    L : 2D array (or matrix)
+        Kalman estimator gain
+    P : 2D array (or matrix)
+        Solution to Riccati equation
+
+        .. math::
+
+            A P + P A^T - (P C^T + G N) R^{-1}  (C P + N^T G^T) + G Q G^T = 0
+
+    E : 1D array
+        Eigenvalues of estimator poles eig(A - L C)
+
+    Notes
+    -----
+    1. If the first argument is an LTI object, then this object will be used
+       to define the dynamics, noise and output matrices.  Furthermore, if
+       the LTI object corresponds to a discrete time system, the ``dlqe()``
+       function will be called.
+
+    2. The return type for 2D arrays depends on the default class set for
+       state space operations.  See :func:`~control.use_numpy_matrix`.
+
+    Examples
+    --------
+    >>> L, P, E = lqe(A, G, C, QN, RN)
+    >>> L, P, E = lqe(A, G, C, Q, RN, NN)
+
+    See Also
+    --------
+    lqr, dlqe, dlqr
+
+    """
+
+    # TODO: incorporate cross-covariance NN, something like this,
+    # which doesn't work for some reason
+    # if NN is None:
+    #    NN = np.zeros(QN.size(0),RN.size(1))
+    # NG = G @ NN
+
+    #
+    # Process the arguments and figure out what inputs we received
+    #
+
+    # Get the method to use (if specified as a keyword)
+    method = keywords.get('method', None)
+
+    # Get the system description
+    if (len(args) < 3):
+        raise ControlArgument("not enough input arguments")
+
+    # If we were passed a discrete time system as the first arg, use dlqe()
+    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
+        # Call dlqe
+        return dlqe(*args, **keywords)
+
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        G = np.array(args[0].B, ndmin=2, dtype=float)
+        C = np.array(args[0].C, ndmin=2, dtype=float)
+        index = 1
+
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
+        # Arguments should be A and B matrices
+        A = np.array(args[0], ndmin=2, dtype=float)
+        G = np.array(args[1], ndmin=2, dtype=float)
+        C = np.array(args[2], ndmin=2, dtype=float)
+        index = 3
+
+    # Get the weighting matrices (converting to matrices, if needed)
+    QN = np.array(args[index], ndmin=2, dtype=float)
+    RN = np.array(args[index+1], ndmin=2, dtype=float)
+
+    # Get the cross-covariance matrix, if given
+    if (len(args) > index + 2):
+        NN = np.array(args[index+2], ndmin=2, dtype=float)
+        raise ControlNotImplemented("cross-covariance not implemented")
+
+    else:
+        # For future use (not currently used below)
+        NN = np.zeros((QN.shape[0], RN.shape[1]))
+
+    # Check dimensions of G (needed before calling care())
+    _check_shape("QN", QN, G.shape[1], G.shape[1])
+
+    # Compute the result (dimension and symmetry checking done in care())
+    P, E, LT = care(A.T, C.T, G @ QN @ G.T, RN, method=method,
+                    B_s="C", Q_s="QN", R_s="RN", S_s="NN")
+    return _ssmatrix(LT.T), _ssmatrix(P), E
+
+
+# contributed by Sawyer B. Fuller <minster@uw.edu>
+def dlqe(*args, **keywords):
+    """dlqe(A, G, C, QN, RN, [, N])
+
+    Linear quadratic estimator design (Kalman filter) for discrete-time
+    systems. Given the system
+
+    .. math::
+
+        x[n+1] &= Ax[n] + Bu[n] + Gw[n] \\\\
+        y[n] &= Cx[n] + Du[n] + v[n]
+
+    with unbiased process noise w and measurement noise v with covariances
+
+    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+
+    The dlqe() function computes the observer gain matrix L such that the
+    stationary (non-time-varying) Kalman filter
+
+    .. math:: x_e[n+1] = A x_e[n] + B u[n] + L(y[n] - C x_e[n] - D u[n])
+
+    produces a state estimate x_e[n] that minimizes the expected squared error
+    using the sensor measurements y. The noise cross-correlation `NN` is
+    set to zero when omitted.
+
+    Parameters
+    ----------
+    A, G : 2D array_like
+        Dynamics and noise input matrices
+    QN, RN : 2D array_like
+        Process and sensor noise covariance matrices
+    NN : 2D array, optional
+        Cross covariance matrix (not yet supported)
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -330,20 +465,14 @@ def lqe(*args, **keywords):
 
     Examples
     --------
-    >>> L, P, E = lqe(A, G, C, Q, R)
-    >>> L, P, E = lqe(A, G, C, Q, R, N)
+    >>> L, P, E = dlqe(A, G, C, QN, RN)
+    >>> L, P, E = dlqe(A, G, C, QN, RN, NN)
 
     See Also
     --------
-    lqr
+    dlqr, lqe, lqr
 
     """
-
-    # TODO: incorporate cross-covariance NN, something like this,
-    # which doesn't work for some reason
-    # if NN is None:
-    #    NN = np.zeros(QN.size(0),RN.size(1))
-    # NG = G @ NN
 
     #
     # Process the arguments and figure out what inputs we received
@@ -356,19 +485,22 @@ def lqe(*args, **keywords):
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
 
-    try:
-        sys = args[0]           # Treat the first argument as a system
-        if isinstance(sys, LTI):
-            # Convert LTI system to state space
-            sys = _convert_to_statespace(sys)
+    # If we were passed a continus time system as the first arg, raise error
+    if isinstance(args[0], LTI) and isctime(args[0], strict=True):
+        raise ControlArgument("dlqr() called with a continuous time system")
 
-        # Extract A, G (assume disturbances come through input), and C
-        A = np.array(sys.A, ndmin=2, dtype=float)
-        G = np.array(sys.B, ndmin=2, dtype=float)
-        C = np.array(sys.C, ndmin=2, dtype=float)
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        G = np.array(args[0].B, ndmin=2, dtype=float)
+        C = np.array(args[0].C, ndmin=2, dtype=float)
         index = 1
 
-    except AttributeError:
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
         # Arguments should be A and B matrices
         A = np.array(args[0], ndmin=2, dtype=float)
         G = np.array(args[1], ndmin=2, dtype=float)
@@ -376,33 +508,25 @@ def lqe(*args, **keywords):
         index = 3
 
     # Get the weighting matrices (converting to matrices, if needed)
-    Q = np.array(args[index], ndmin=2, dtype=float)
-    R = np.array(args[index+1], ndmin=2, dtype=float)
+    QN = np.array(args[index], ndmin=2, dtype=float)
+    RN = np.array(args[index+1], ndmin=2, dtype=float)
 
-    # Get the cross-covariance matrix, if given
-    if (len(args) > index + 2):
-        N = np.array(args[index+2], ndmin=2, dtype=float)
-        raise ControlNotImplemented("cross-covariance not implemented")
+    # TODO: incorporate cross-covariance NN, something like this,
+    # which doesn't work for some reason
+    # if NN is None:
+    #    NN = np.zeros(QN.size(0),RN.size(1))
+    # NG = G @ NN
+    if len(args) > index + 2:
+        NN = np.array(args[index+2], ndmin=2, dtype=float)
+        raise ControlNotImplemented("cross-covariance not yet implememented")
 
-    else:
-        N = np.zeros((Q.shape[0], R.shape[1]))
+    # Check dimensions of G (needed before calling care())
+    _check_shape("QN", QN, G.shape[1], G.shape[1])
 
-    # Check dimensions for consistency
-    nstates = A.shape[0]
-    ninputs = G.shape[1]
-    noutputs = C.shape[0]
-    if (A.shape[0] != nstates or A.shape[1] != nstates or
-        G.shape[0] != nstates or C.shape[1] != nstates):
-        raise ControlDimension("inconsistent system dimensions")
-
-    elif (Q.shape[0] != ninputs or Q.shape[1] != ninputs or
-          R.shape[0] != noutputs or R.shape[1] != noutputs or
-          N.shape[0] != ninputs or N.shape[1] != noutputs):
-        raise ControlDimension("incorrect covariance matrix dimensions")
-
-    P, E, LT = care(A.T, C.T, G @ Q @ G.T, R, method=method)
+    # Compute the result (dimension and symmetry checking done in dare())
+    P, E, LT = dare(A.T, C.T, G @ QN @ G.T, RN, method=method,
+                    B_s="C", Q_s="QN", R_s="RN", S_s="NN")
     return _ssmatrix(LT.T), _ssmatrix(P), E
-
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
@@ -458,7 +582,7 @@ def lqr(*args, **keywords):
     Linear quadratic regulator design
 
     The lqr() function computes the optimal state feedback controller
-    that minimizes the quadratic cost
+    u = -K x that minimizes the quadratic cost
 
     .. math:: J = \\int_0^\\infty (x' Q x + u' R u + 2 x' N u) dt
 
@@ -476,8 +600,8 @@ def lqr(*args, **keywords):
     ----------
     A, B : 2D array_like
         Dynamics and input matrices
-    sys : LTI (StateSpace or TransferFunction)
-        Linear I/O system
+    sys : LTI StateSpace system
+        Linear system
     Q, R : 2D array
         State and input weight matrices
     N : 2D array, optional
@@ -498,12 +622,17 @@ def lqr(*args, **keywords):
 
     See Also
     --------
-    lqe
+    lqe, dlqr, dlqe
 
     Notes
     -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
+    1. If the first argument is an LTI object, then this object will be used
+       to define the dynamics and input matrices.  Furthermore, if the LTI
+       object corresponds to a discrete time system, the ``dlqr()`` function
+       will be called.
+
+    2. The return type for 2D arrays depends on the default class set for
+       state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -511,7 +640,6 @@ def lqr(*args, **keywords):
     >>> K, S, E = lqr(A, B, Q, R, [N])
 
     """
-
     #
     # Process the arguments and figure out what inputs we received
     #
@@ -523,13 +651,22 @@ def lqr(*args, **keywords):
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
 
-    try:
-        # If this works, we were (probably) passed a system as the
-        # first argument; extract A and B
+    # If we were passed a discrete time system as the first arg, use dlqr()
+    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
+        # Call dlqr
+        return dlqr(*args, **keywords)
+
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
         A = np.array(args[0].A, ndmin=2, dtype=float)
         B = np.array(args[0].B, ndmin=2, dtype=float)
         index = 1
-    except AttributeError:
+
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
         # Arguments should be A and B matrices
         A = np.array(args[0], ndmin=2, dtype=float)
         B = np.array(args[1], ndmin=2, dtype=float)
@@ -543,9 +680,109 @@ def lqr(*args, **keywords):
     else:
         N = None
 
-    # Solve continuous algebraic Riccati equation
-    X, L, G = care(A, B, Q, R, N, None, method=method)
+    # Compute the result (dimension and symmetry checking done in care())
+    X, L, G = care(A, B, Q, R, N, None, method=method, S_s="N")
     return G, X, L
+
+
+def dlqr(*args, **keywords):
+    """dlqr(A, B, Q, R[, N])
+
+    Discrete-time linear quadratic regulator design
+
+    The dlqr() function computes the optimal state feedback controller
+    u[n] = - K x[n] that minimizes the quadratic cost
+
+    .. math:: J = \\Sum_0^\\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
+
+    The function can be called with either 3, 4, or 5 arguments:
+
+    * ``dlqr(dsys, Q, R)``
+    * ``dlqr(dsys, Q, R, N)``
+    * ``dlqr(A, B, Q, R)``
+    * ``dlqr(A, B, Q, R, N)``
+
+    where `dsys` is a discrete-time :class:`StateSpace` system, and `A`, `B`,
+    `Q`, `R`, and `N` are 2d arrays of appropriate dimension (`dsys.dt` must
+    not be 0.)
+
+    Parameters
+    ----------
+    A, B : 2D array
+        Dynamics and input matrices
+    dsys : LTI :class:`StateSpace`
+        Discrete-time linear system
+    Q, R : 2D array
+        State and input weight matrices
+    N : 2D array, optional
+        Cross weight matrix
+
+    Returns
+    -------
+    K : 2D array (or matrix)
+        State feedback gains
+    S : 2D array (or matrix)
+        Solution to Riccati equation
+    E : 1D array
+        Eigenvalues of the closed loop system
+
+    See Also
+    --------
+    lqr, lqe, dlqe
+
+    Notes
+    -----
+    The return type for 2D arrays depends on the default class set for
+    state space operations.  See :func:`~control.use_numpy_matrix`.
+
+    Examples
+    --------
+    >>> K, S, E = dlqr(dsys, Q, R, [N])
+    >>> K, S, E = dlqr(A, B, Q, R, [N])
+    """
+
+    #
+    # Process the arguments and figure out what inputs we received
+    #
+
+    # Get the method to use (if specified as a keyword)
+    method = keywords.get('method', None)
+
+    # Get the system description
+    if (len(args) < 3):
+        raise ControlArgument("not enough input arguments")
+
+    # If we were passed a continus time system as the first arg, raise error
+    if isinstance(args[0], LTI) and isctime(args[0], strict=True):
+        raise ControlArgument("dsys must be discrete time (dt != 0)")
+
+    # If we were passed a state space  system, use that to get system matrices
+    if isinstance(args[0], StateSpace):
+        A = np.array(args[0].A, ndmin=2, dtype=float)
+        B = np.array(args[0].B, ndmin=2, dtype=float)
+        index = 1
+
+    elif isinstance(args[0], LTI):
+        # Don't allow other types of LTI systems
+        raise ControlArgument("LTI system must be in state space form")
+
+    else:
+        # Arguments should be A and B matrices
+        A = np.array(args[0], ndmin=2, dtype=float)
+        B = np.array(args[1], ndmin=2, dtype=float)
+        index = 2
+
+    # Get the weighting matrices (converting to matrices, if needed)
+    Q = np.array(args[index], ndmin=2, dtype=float)
+    R = np.array(args[index+1], ndmin=2, dtype=float)
+    if (len(args) > index + 2):
+        N = np.array(args[index+2], ndmin=2, dtype=float)
+    else:
+        N = np.zeros((Q.shape[0], R.shape[1]))
+
+    # Compute the result (dimension and symmetry checking done in dare())
+    S, E, K = dare(A, B, Q, R, N, method=method, S_s="N")
+    return _ssmatrix(K), _ssmatrix(S), E
 
 
 def ctrb(A, B):
