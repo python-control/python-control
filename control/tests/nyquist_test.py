@@ -182,42 +182,56 @@ def test_nyquist_encirclements():
     assert _Z(sys) == count + _P(sys)
 
 
-def test_nyquist_indent():
+@pytest.fixture
+def indentsys():
     # FBS Figure 10.10
-    s = ct.tf('s')
-    sys = 3 * (s+6)**2 / (s * (s+1)**2)
     # poles: [-1, -1, 0]
+    s = ct.tf('s')
+    return 3 * (s+6)**2 / (s * (s+1)**2)
 
+
+def test_nyquist_indent_default(indentsys):
     plt.figure();
-    count = ct.nyquist_plot(sys)
+    count = ct.nyquist_plot(indentsys)
     plt.title("Pole at origin; indent_radius=default")
-    assert _Z(sys) == count + _P(sys)
+    assert _Z(indentsys) == count + _P(indentsys)
 
+
+def test_nyquist_indent_dont(indentsys):
     # first value of default omega vector was 0.1, replaced by 0. for contour
     # indent_radius is larger than 0.1 -> no extra quater circle around origin
-    count, contour = ct.nyquist_plot(sys, plot=False, indent_radius=.1007,
+    count, contour = ct.nyquist_plot(indentsys,
+                                     plot=False,
+                                     indent_radius=.1007,
                                      return_contour=True)
     np.testing.assert_allclose(contour[0], .1007+0.j)
     # second value of omega_vector is larger than indent_radius: not indented
     assert np.all(contour.real[2:] == 0.)
 
+
+def test_nyquist_indent_do(indentsys):
     plt.figure();
-    count, contour = ct.nyquist_plot(sys, indent_radius=0.01,
+    count, contour = ct.nyquist_plot(indentsys,
+                                     indent_radius=0.01,
                                      return_contour=True)
     plt.title("Pole at origin; indent_radius=0.01; encirclements = %d" % count)
-    assert _Z(sys) == count + _P(sys)
+    assert _Z(indentsys) == count + _P(indentsys)
     # indent radius is smaller than the start of the default omega vector
     # check that a quarter circle around the pole at origin has been added.
     np.testing.assert_allclose(contour[:50].real**2 + contour[:50].imag**2,
                                0.01**2)
 
+
+def test_nyquist_indent_left(indentsys):
     plt.figure();
-    count = ct.nyquist_plot(sys, indent_direction='left')
+    count = ct.nyquist_plot(indentsys, indent_direction='left')
     plt.title(
         "Pole at origin; indent_direction='left'; encirclements = %d" % count)
-    assert _Z(sys) == count + _P(sys, indent='left')
+    assert _Z(indentsys) == count + _P(indentsys, indent='left')
 
-    # System with poles on the imaginary axis
+
+def test_nyquist_indent_im():
+    """Test system with poles on the imaginary axis."""
     sys = ct.tf([1, 1], [1, 0, 1])
 
     # Imaginary poles with standard indentation
