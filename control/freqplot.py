@@ -1237,7 +1237,7 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
     omega_num : int
         Number of points to be used for the frequency
         range (if the frequency range is not user-specified)
-    Hz : bool. optional
+    Hz : bool, optional
         If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
@@ -1286,7 +1286,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
-    Hz : bool. optional
+    Hz : bool, optional
         If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
