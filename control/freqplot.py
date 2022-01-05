@@ -209,7 +209,7 @@ def bode_plot(syslist, omega=None,
         syslist = (syslist,)
 
     omega, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num)
+        syslist, omega, omega_limits, omega_num, Hz=Hz)
 
     if plot:
         # Set up the axes with labels so that multiple calls to
@@ -965,7 +965,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     # Select a default range if none is provided
     # TODO: This needs to be made more intelligent
     if omega is None:
-        omega = _default_frequency_range((P, C, S))
+        omega = _default_frequency_range((P, C, S), Hz=Hz)
 
     # Set up the axes with labels so that multiple calls to
     # gangof4_plot will superimpose the data.  See details in bode_plot.
@@ -1115,7 +1115,7 @@ def singular_values_plot(syslist, omega=None,
         syslist = (syslist,)
 
     omega, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num)
+        syslist, omega, omega_limits, omega_num, Hz=Hz)
 
     omega = np.atleast_1d(omega)
 
@@ -1210,7 +1210,8 @@ def singular_values_plot(syslist, omega=None,
 
 
 # Determine the frequency range to be used
-def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
+def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
+                            Hz=None):
     """Determine the frequency range for a frequency-domain plot
     according to a standard logic.
 
@@ -1236,6 +1237,10 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
     omega_num : int
         Number of points to be used for the frequency
         range (if the frequency range is not user-specified)
+    Hz : bool, optional
+        If True, the limits (first and last value) of the frequencies
+        are set to full decades in Hz so it fits plotting with logarithmic
+        scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
 
     Returns
     -------
@@ -1253,7 +1258,8 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num):
             omega_range_given = False
             # Select a default range if none is provided
             omega_out = _default_frequency_range(syslist,
-                                                 number_of_samples=omega_num)
+                                                 number_of_samples=omega_num,
+                                                 Hz=Hz)
         else:
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
@@ -1280,7 +1286,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
     ----------
     syslist : list of LTI
         List of linear input/output systems (single system is OK)
-    Hz : bool
+    Hz : bool, optional
         If True, the limits (first and last value) of the frequencies
         are set to full decades in Hz so it fits plotting with logarithmic
         scale in Hz otherwise in rad/s. Omega is always returned in rad/sec.
@@ -1326,7 +1332,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 features_ = np.concatenate((np.abs(sys.pole()),
                                             np.abs(sys.zero())))
                 # Get rid of poles and zeros at the origin
-                toreplace = features_ == 0.0
+                toreplace = np.isclose(features_, 0.0)
                 if np.any(toreplace):
                     features_ = features_[~toreplace]
             elif sys.isdtime(strict=True):
@@ -1339,7 +1345,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 # Get rid of poles and zeros on the real axis (imag==0)
                 # * origin and real < 0
                 # * at 1.: would result in omega=0. (logaritmic plot!)
-                toreplace = (features_.imag == 0.0) & (
+                toreplace = np.isclose(features_.imag, 0.0) & (
                                     (features_.real <= 0.) |
                                     (np.abs(features_.real - 1.0) < 1.e-10))
                 if np.any(toreplace):
@@ -1360,15 +1366,13 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
     if Hz:
         features /= 2. * math.pi
-        features = np.log10(features)
-        lsp_min = np.floor(np.min(features) - feature_periphery_decades)
-        lsp_max = np.ceil(np.max(features) + feature_periphery_decades)
+    features = np.log10(features)
+    lsp_min = np.rint(np.min(features) - feature_periphery_decades)
+    lsp_max = np.rint(np.max(features) + feature_periphery_decades)
+    if Hz:
         lsp_min += np.log10(2. * math.pi)
         lsp_max += np.log10(2. * math.pi)
-    else:
-        features = np.log10(features)
-        lsp_min = np.floor(np.min(features) - feature_periphery_decades)
-        lsp_max = np.ceil(np.max(features) + feature_periphery_decades)
+
     if freq_interesting:
         lsp_min = min(lsp_min, np.log10(min(freq_interesting)))
         lsp_max = max(lsp_max, np.log10(max(freq_interesting)))

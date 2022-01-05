@@ -102,8 +102,8 @@ class TestSisotool:
 
         # Check if the bode_mag line has moved
         bode_mag_moved = np.array(
-            [674.0242, 667.8354, 661.7033, 655.6275, 649.6074, 643.6426,
-              637.7324, 631.8765, 626.0742, 620.3252])
+            [69.0065, 68.6749, 68.3448, 68.0161, 67.6889, 67.3631, 67.0388,
+             66.7159, 66.3944, 66.0743])
         assert_array_almost_equal(ax_mag.lines[0].get_data()[1][10:20],
                                   bode_mag_moved, 4)
 
