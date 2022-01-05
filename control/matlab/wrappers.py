@@ -9,8 +9,10 @@ from ..ctrlutil import issys
 from ..exception import ControlArgument
 from scipy.signal import zpk2tf
 from warnings import warn
+from ..freqplot import bode_plot, frequency_response_bode, nyquist_plot, frequency_response_nyquist
 
 __all__ = ['bode', 'nyquist', 'ngrid', 'dcgain']
+
 
 def bode(*args, **kwargs):
     """bode(syslist[, omega, dB, Hz, deg, ...])
@@ -40,7 +42,7 @@ def bode(*args, **kwargs):
     deg : boolean
         If True, return phase in degrees (else radians)
     plot : boolean
-        If True, plot magnitude and phase
+        If False, do not make Bode plot (default: True)
 
     Examples
     --------
@@ -56,18 +58,27 @@ def bode(*args, **kwargs):
         * >>> bode(sys1, sys2, ..., sysN, w)
         * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')
     """
-    from ..freqplot import bode_plot
+
+    # See if plot kwarg was given
+    plot = kwargs.get('plot', True)
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
-        return bode_plot(*args, **kwargs)
+        if plot:
+            bode_plot(*args, **kwargs)
+        syslist, omega = args[0], None
+    else:
+        # Parse input arguments
+        syslist, omega, args, other = _parse_freqplot_args(*args)
+        kwargs.update(other)
+        if plot:
+            # TODO: Provide _bode_plot function to use mag, phase, omega
+            bode_plot(syslist, omega, *args, **kwargs)
 
-    # Parse input arguments
-    syslist, omega, args, other = _parse_freqplot_args(*args)
-    kwargs.update(other)
+    mag, phase, omega = frequency_response_bode(syslist, omega, 
+                                                *args, **kwargs)
 
-    # Call the bode command
-    return bode_plot(syslist, omega, *args, **kwargs)
+    return mag, phase, omega
 
 
 def nyquist(*args, **kwargs):
@@ -94,7 +105,9 @@ def nyquist(*args, **kwargs):
         frequencies in rad/s
 
     """
-    from ..freqplot import nyquist_plot
+
+    # See if plot kwarg was given
+    plot = kwargs.get('plot', True)
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
@@ -105,19 +118,21 @@ def nyquist(*args, **kwargs):
     kwargs.update(other)
 
     # Call the nyquist command
-    kwargs['return_contour'] = True
-    _, contour = nyquist_plot(syslist, omega, *args, **kwargs)
+    # TODO: Provide _nyquist_plot function to use contour, freqresp
+    nyquist_plot(syslist, omega, *args, **kwargs)
 
     # Create the MATLAB output arguments
-    freqresp = syslist(contour)
+    count, contour = frequency_response_nyquist(syslist, omega, *args, **kwargs)
+    freqresp = syslist(contour)  # assumes syslist is not a list
     real, imag = freqresp.real, freqresp.imag
+
     return real, imag, contour.imag
 
 
 def _parse_freqplot_args(*args):
     """Parse arguments to frequency plot routines (bode, nyquist)"""
     syslist, plotstyle, omega, other = [], [], None, {}
-    i = 0;
+    i = 0
     while i < len(args):
         # Check to see if this is a system of some sort
         if issys(args[i]):

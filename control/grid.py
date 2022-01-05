@@ -9,7 +9,7 @@ from matplotlib.projections import PolarAxes
 from matplotlib.transforms import Affine2D
 
 
-class FormatterDMS(object):
+class FormatterDMS(object):  # TODO: This is an old-style Python class. Remove 'object'
     '''Transforms angle ticks to damping ratios'''
     def __call__(self, direction, factor, values):
         angles_deg = np.asarray(values)/factor

@@ -206,39 +206,59 @@ class TestConfig:
 
     @mplcleanup
     def test_bode_number_of_samples(self):
-        # Set the number of samples (default is 50, from np.logspace)
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
-        assert len(mag_ret) == 87
+        # Set the number of samples (default is 1000 from logspace)
+        ct.reset_defaults()     # Make sure starting state is correct
+        fig, axes = ct.bode_plot(self.sys)
+        xy_data = axes[0].get_lines()[0].get_xydata()
+        assert xy_data.shape == (1000, 2)
+        #fig.clear()  # this currently rasies an annoying warning, see: 
+                      # https://github.com/matplotlib/matplotlib/issues/9970
 
         # Change the default number of samples
         ct.config.defaults['freqplot.number_of_samples'] = 76
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys)
-        assert len(mag_ret) == 76
+        fig, axes = ct.bode_plot(self.sys)
+        mag_xy_data = axes[0].get_lines()[1].get_xydata()
+        assert mag_xy_data.shape == (76, 2)
+        phase_xy_data = axes[0].get_lines()[1].get_xydata()
+        assert phase_xy_data.shape == (76, 2)
+        #fig.clear()
 
         # Override the default number of samples
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
-        assert len(mag_ret) == 87
+        fig, axes = ct.bode_plot(self.sys, omega_num=87)
+        mag_xy_data = axes[0].get_lines()[2].get_xydata()
+        assert mag_xy_data.shape == (87, 2)
+        phase_xy_data = axes[0].get_lines()[2].get_xydata()
+        assert phase_xy_data.shape == (87, 2)
+        #fig.clear()
 
     @mplcleanup
     def test_bode_feature_periphery_decade(self):
         # Generate a sample Bode plot to figure out the range it uses
         ct.reset_defaults()     # Make sure starting state is correct
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=False)
-        omega_min, omega_max = omega_ret[[0,  -1]]
+        fig, axes = ct.bode_plot(self.sys, Hz=False)
+        xy_data = axes[0].get_lines()[0].get_xydata()
+        omega = xy_data[:, 0]
+        omega_min, omega_max = omega[[0,  -1]]
 
         # Reset the periphery decade value (should add one decade on each end)
         ct.config.defaults['freqplot.feature_periphery_decades'] = 2
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=False)
-        np.testing.assert_almost_equal(omega_ret[0], omega_min/10)
-        np.testing.assert_almost_equal(omega_ret[-1], omega_max * 10)
+        fig, axes = ct.bode_plot(self.sys, Hz=False)
+        xy_data = axes[0].get_lines()[1].get_xydata()
+        omega = xy_data[:, 0]
+        np.testing.assert_almost_equal(omega[0], omega_min/10)
+        np.testing.assert_almost_equal(omega[-1], omega_max*10)
 
         # Make sure it also works in rad/sec, in opposite direction
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=True)
-        omega_min, omega_max = omega_ret[[0,  -1]]
+        fig, axes = ct.bode_plot(self.sys, Hz=True)
+        xy_data = axes[0].get_lines()[2].get_xydata()
+        omega = xy_data[:, 0]
+        omega_min, omega_max = omega[[0,  -1]]
         ct.config.defaults['freqplot.feature_periphery_decades'] = 1
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=True)
-        np.testing.assert_almost_equal(omega_ret[0], omega_min*10)
-        np.testing.assert_almost_equal(omega_ret[-1], omega_max/10)
+        fig, axes = ct.bode_plot(self.sys, Hz=True)
+        xy_data = axes[0].get_lines()[3].get_xydata()
+        omega = xy_data[:, 0]
+        np.testing.assert_almost_equal(omega[0], omega_min*10)
+        np.testing.assert_almost_equal(omega[-1], omega_max/10)
 
     def test_reset_defaults(self):
         ct.use_matlab_defaults()

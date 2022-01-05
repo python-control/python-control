@@ -13,10 +13,13 @@ import math
 import pytest
 
 import control as ctrl
+from control.lti import frequency_response
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from control.matlab import ss, tf, bode, rss
-from control.freqplot import bode_plot, nyquist_plot, singular_values_plot
+from control.matlab import ss, tf, bode, nyquist, rss
+from control.freqplot import (bode_plot, frequency_response_bode, 
+                              nyquist_plot, frequency_response_nyquist, 
+                              singular_values_plot)
 from control.tests.conftest import slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
@@ -63,31 +66,37 @@ def test_bode_basic(ss_siso):
     tf_siso = tf(ss_siso)
     bode(ss_siso)
     bode(tf_siso)
-    assert len(bode_plot(tf_siso, plot=False, omega_num=20)[0] == 20)
-    omega = bode_plot(tf_siso, plot=False, omega_limits=(1, 100))[2]
+    bode_plot(ss_siso)
+    bode_plot(ss_siso)
+    fr = frequency_response_bode(tf_siso, omega_num=20)
+    assert len(fr[0] == 20)
+    fr = frequency_response_bode(tf_siso, omega_limits=(1, 100))
+    omega = fr[2]
     assert_allclose(omega[0], 1)
     assert_allclose(omega[-1], 100)
-    assert len(bode_plot(tf_siso, plot=False, omega=np.logspace(-1,1,10))[0])\
-         == 10
+    omega = np.logspace(-1,1,10)
+    fr = frequency_response_bode(tf_siso, omega=omega)
+    assert len(fr[0]) == 10
 
 
 def test_nyquist_basic(ss_siso):
     """Test nyquist plot call (Very basic)"""
     # TODO: proper test
     tf_siso = tf(ss_siso)
+    nyquist(ss_siso)
+    nyquist(tf_siso)
     nyquist_plot(ss_siso)
     nyquist_plot(tf_siso)
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, return_contour=True, omega_num=20)
+    count, contour = frequency_response_nyquist(tf_siso, omega_num=20)
     assert len(contour) == 20
 
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, omega_limits=(1, 100), return_contour=True)
+    count, contour = frequency_response_nyquist(
+        tf_siso, omega_limits=(1, 100))
     assert_allclose(contour[0], 1j)
     assert_allclose(contour[-1], 100j)
 
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, omega=np.logspace(-1, 1, 10), return_contour=True)
+    count, contour = frequency_response_nyquist(
+        tf_siso, omega=np.logspace(-1, 1, 10))
     assert len(contour) == 10
 
 
@@ -176,9 +185,7 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
     den = [1, 25, 100, 0]
     sys = ctrl.tf(num, den)
     plt.figure()
-    ctrl.bode_plot(sys, margins=True, dB=dB, deg=deg, Hz=Hz)
-    fig = plt.gcf()
-    allaxes = fig.get_axes()
+    fig, allaxes = ctrl.bode_plot(sys, margins=True, dB=dB, deg=deg, Hz=Hz)
 
     mag_to_infinity = (np.array([Wcp, Wcp]),
                        np.array([maginfty1, maginfty2]))
@@ -331,18 +338,18 @@ def test_options(editsdefaults):
      ])
 def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
     # Check initial phase of standard transfer functions
-    mag, phase, omega = ctrl.bode(TF)
+    mag, phase, omega = frequency_response_bode(TF)
     assert(abs(phase[0] - default_phase) < 0.1)
 
     # Now reset the initial phase to +180 and see if things work
-    mag, phase, omega = ctrl.bode(TF, initial_phase=initial_phase)
+    mag, phase, omega = frequency_response_bode(TF, initial_phase=initial_phase)
     assert(abs(phase[0] - expected_phase) < 0.1)
 
     # Make sure everything works in rad/sec as well
     if initial_phase:
         plt.xscale('linear')  # avoids xlim warning on next line
         plt.clf()  # clear previous figure (speeds things up)
-        mag, phase, omega = ctrl.bode(
+        mag, phase, omega = frequency_response_bode(
             TF, initial_phase=initial_phase/180. * math.pi, deg=False)
         assert(abs(phase[0] - expected_phase) < 0.1)
 
@@ -369,7 +376,7 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
                   -270, -3*math.pi/2, math.pi/2,    id="order5, -270"),
     ])
 def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
-    mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
+    mag, phase, omega = frequency_response_bode(TF, wrap_phase=wrap_phase)
     assert(min(phase) >= min_phase)
     assert(max(phase) <= max_phase)
 
