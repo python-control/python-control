@@ -60,13 +60,16 @@ def bode(*args, **kwargs):
     """
 
     # See if plot kwarg was given
-    plot = kwargs.get('plot', True)
+    if 'plot' in kwargs:
+        plot = kwargs.pop('plot')
+    else:
+        plot = True
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
         if plot:
             bode_plot(*args, **kwargs)
-        syslist, omega = args[0], None
+        mag, phase, omega = frequency_response_bode(*args, **kwargs)
     else:
         # Parse input arguments
         syslist, omega, args, other = _parse_freqplot_args(*args)
@@ -74,9 +77,8 @@ def bode(*args, **kwargs):
         if plot:
             # TODO: Provide _bode_plot function to use mag, phase, omega
             bode_plot(syslist, omega, *args, **kwargs)
-
-    mag, phase, omega = frequency_response_bode(syslist, omega, 
-                                                *args, **kwargs)
+        mag, phase, omega = frequency_response_bode(syslist, omega, 
+                                                    *args, **kwargs)
 
     return mag, phase, omega
 
@@ -107,7 +109,10 @@ def nyquist(*args, **kwargs):
     """
 
     # See if plot kwarg was given
-    plot = kwargs.get('plot', True)
+    if 'plot' in kwargs:
+        plot = kwargs.pop('plot')
+    else:
+        plot = True
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
@@ -118,8 +123,8 @@ def nyquist(*args, **kwargs):
     kwargs.update(other)
 
     # Call the nyquist command
-    # TODO: Provide _nyquist_plot function to use contour, freqresp
-    nyquist_plot(syslist, omega, *args, **kwargs)
+    if plot:
+        nyquist_plot(syslist, omega, *args, **kwargs)
 
     # Create the MATLAB output arguments
     count, contour = frequency_response_nyquist(syslist, omega, *args, **kwargs)

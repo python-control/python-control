@@ -690,8 +690,7 @@ def nyquist_plot(syslist, omega=None, omega_limits=None, omega_num=None,
     if ax is None:
         ax = plt.gca()
 
-    # Go through each system and keep track of the results
-    counts, contours = [], []
+    # Go through each system and make plots
     for sys in syslist:
 
         contour = _nyquist_contour(sys, omega_sys, omega_range_given, 
@@ -775,6 +774,7 @@ def nyquist_plot(syslist, omega=None, omega_limits=None, omega_num=None,
 # in terms of real and imaginary components without plotting.
 # This is just a placeholder to hold the calculations that
 # were removed from nyquist_plot to implement plotting changes.
+# TODO: Change the name of this function since it only calculates the count and contour
 def frequency_response_nyquist(syslist, omega=None, omega_limits=None, omega_num=None, 
                                warn_nyquist=True, *args, **kwargs):
 
@@ -819,11 +819,17 @@ def frequency_response_nyquist(syslist, omega=None, omega_limits=None, omega_num
 #
 
 # TODO: think about how (and whether) to handle lists of systems
-def gangof4_plot(P, C, omega=None, **kwargs):
-    """Plot the "Gang of 4" transfer functions for a system
+def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
+    """Plot the 'Gang of 4' transfer functions for a system
 
-    Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
-    [T, PS; CS, S]
+    Given a transfer function describing the plant P and a transfer function
+    describing the controller C, generates a figure with 2x2 plots showing
+    the frequency responses of the four transfer functions:
+
+    S = 1/(1+PC) : Sensitivity function
+    PS = P/(1+PC) : Load disturbance to measurement signal
+    CS = C/(1+PC) : Measurement noise to control signal
+    T = PC/(1+PC) : Complementary sensitivity function
 
     Parameters
     ----------
@@ -861,75 +867,87 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     if omega is None:
         omega = _default_frequency_range((P, C, S))
 
-    # Set up the axes with labels so that multiple calls to
-    # gangof4_plot will superimpose the data.  See details in bode_plot.
-    plot_axes = {'t': None, 's': None, 'ps': None, 'cs': None}
-    for ax in plt.gcf().axes:
-        label = ax.get_label()
-        if label.startswith('control-gangof4-'):
-            key = label[len('control-gangof4-'):]
-            if key not in plot_axes:
-                raise RuntimeError(
-                    "unknown gangof4 axis type '{}'".format(label))
-            plot_axes[key] = ax
+    # Convert frequency units if Hz specified
+    omega_plot = omega / (2. * math.pi) if Hz else omega
 
-    # if any of the axes are missing, start from scratch
-    if any((ax is None for ax in plot_axes.values())):
-        plt.clf()
-        plot_axes = {'s': plt.subplot(221, label='control-gangof4-s'),
-                     'ps': plt.subplot(222, label='control-gangof4-ps'),
-                     'cs': plt.subplot(223, label='control-gangof4-cs'),
-                     't': plt.subplot(224, label='control-gangof4-t')}
+    # Get the current figure if no axes provided (plt.gcf creates a new figure if none exists)
+    plot_keys = ['s', 'ps', 'cs', 't']
+    if axes is None:
+        fig = plt.gcf()
+        axes = fig.get_axes()
+        if len(axes) == 0:  # empty figure
+            axes = [fig.add_subplot(2, 2, i) for i in range(1, 5)]
+
+    # Check axes and put them in a dict for ease of indexing
+    if isinstance(axes, np.ndarray):
+        if axes.size < 4:
+            raise ValueError('Current figure does not have 4 subplots.')
+        axes_dict = dict(zip(plot_keys, axes.ravel()))
+    else:
+        if len(axes) < 4:
+            raise ValueError('Current figure does not have 4 subplots.')
+        axes_dict = dict(zip(plot_keys, axes))
+    # Let's assume the axes provided are from the same figure
+    # although it doesn't matter to this function.
+    fig = axes_dict['s'].get_figure()
 
     #
     # Plot the four sensitivity functions
     #
-    omega_plot = omega / (2. * math.pi) if Hz else omega
 
     # TODO: Need to add in the mag = 1 lines
     mag_tmp, phase_tmp, omega = S.frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
-        plot_axes['s'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
+        axes_dict['s'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
     else:
-        plot_axes['s'].loglog(omega_plot, mag, **kwargs)
-    plot_axes['s'].set_ylabel("$|S|$" + " (dB)" if dB else "")
-    plot_axes['s'].tick_params(labelbottom=False)
-    plot_axes['s'].grid(grid, which='both')
+        axes_dict['s'].loglog(omega_plot, mag, **kwargs)
+    axes_dict['s'].set_ylabel("$|S|$" + " (dB)" if dB else "")
+    axes_dict['s'].tick_params(labelbottom=False)
+    axes_dict['s'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = (P * S).frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
-        plot_axes['ps'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
+        axes_dict['ps'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
     else:
-        plot_axes['ps'].loglog(omega_plot, mag, **kwargs)
-    plot_axes['ps'].tick_params(labelbottom=False)
-    plot_axes['ps'].set_ylabel("$|PS|$" + " (dB)" if dB else "")
-    plot_axes['ps'].grid(grid, which='both')
+        axes_dict['ps'].loglog(omega_plot, mag, **kwargs)
+    axes_dict['ps'].tick_params(labelbottom=False)
+    axes_dict['ps'].set_ylabel("$|PS|$" + " (dB)" if dB else "")
+    axes_dict['ps'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = (C * S).frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
-        plot_axes['cs'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
+        axes_dict['cs'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
     else:
-        plot_axes['cs'].loglog(omega_plot, mag, **kwargs)
-    plot_axes['cs'].set_xlabel(
+        axes_dict['cs'].loglog(omega_plot, mag, **kwargs)
+    axes_dict['cs'].set_xlabel(
         "Frequency (Hz)" if Hz else "Frequency (rad/sec)")
-    plot_axes['cs'].set_ylabel("$|CS|$" + " (dB)" if dB else "")
-    plot_axes['cs'].grid(grid, which='both')
+    axes_dict['cs'].set_ylabel("$|CS|$" + " (dB)" if dB else "")
+    axes_dict['cs'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = T.frequency_response(omega)
     mag = np.squeeze(mag_tmp)
     if dB:
-        plot_axes['t'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
+        axes_dict['t'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
     else:
-        plot_axes['t'].loglog(omega_plot, mag, **kwargs)
-    plot_axes['t'].set_xlabel(
+        axes_dict['t'].loglog(omega_plot, mag, **kwargs)
+    axes_dict['t'].set_xlabel(
         "Frequency (Hz)" if Hz else "Frequency (rad/sec)")
-    plot_axes['t'].set_ylabel("$|T|$" + " (dB)" if dB else "")
-    plot_axes['t'].grid(grid, which='both')
+    axes_dict['t'].set_ylabel("$|T|$" + " (dB)" if dB else "")
+    axes_dict['t'].grid(grid, which='both')
 
-    plt.tight_layout()
+    # TODO: This doesn't seem to take effect
+    fig.tight_layout()
+
+    # Decided not to return the axes_dict as not sure this is something
+    # users would be used to. Instead, axes is returned as a list of Axes
+    # objects, or if it was provided as an argument then it is returned
+    # unchanged. Note: it could be a numpy array if user used:
+    # fig, axes = plt.subplot(2, 2)
+
+    return fig, axes
 
 
 #

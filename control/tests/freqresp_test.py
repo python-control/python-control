@@ -82,6 +82,7 @@ def test_bode_basic(ss_siso):
 def test_nyquist_basic(ss_siso):
     """Test nyquist plot call (Very basic)"""
     # TODO: proper test
+    # TODO: there are other tests in nyquist_test.py
     tf_siso = tf(ss_siso)
     nyquist(ss_siso)
     nyquist(tf_siso)
@@ -654,3 +655,6 @@ def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
     assert(len(nyquist_line[0]) == 2)
     assert(nyquist_line[0][0] == nyquist_line[0][1])
     assert(nyquist_line[0][0] == np.pi/sys_dt.dt)
+
+
+# TODO: Is there a test for gangof4_plot somewhere?

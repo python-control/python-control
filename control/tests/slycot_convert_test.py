@@ -6,7 +6,7 @@ RMM, 30 Mar 2011 (based on TestSlycot from v0.4a)
 import numpy as np
 import pytest
 
-from control import bode, rss, ss, tf
+from control import frequency_response_bode, rss, ss, tf
 from control.tests.conftest import slycotonly
 
 numTests = 5
@@ -173,20 +173,18 @@ class TestSlycot:
         for inputNum in range(inputs):
             for outputNum in range(outputs):
                 [ssOriginalMag, ssOriginalPhase, freq] =\
-                    bode(ssOriginal, plot=False)
+                    frequency_response_bode(ssOriginal)
                 [tfOriginalMag, tfOriginalPhase, freq] =\
-                    bode(tf(numOriginal[outputNum][inputNum],
-                            denOriginal[outputNum]),
-                         plot=False)
+                    frequency_response_bode(
+                        tf(numOriginal[outputNum][inputNum],
+                           denOriginal[outputNum]))
                 [ssTransformedMag, ssTransformedPhase, freq] =\
-                    bode(ssTransformed,
-                         freq,
-                         plot=False)
+                    frequency_response_bode(ssTransformed, freq)
                 [tfTransformedMag, tfTransformedPhase, freq] =\
-                    bode(tf(numTransformed[outputNum][inputNum],
-                            denTransformed[outputNum]),
-                         freq,
-                         plot=False)
+                    frequency_response_bode(
+                        tf(numTransformed[outputNum][inputNum],
+                           denTransformed[outputNum]),
+                        freq)
                 # print('numOrig=',
                 #  numOriginal[outputNum][inputNum])
                 # print('denOrig=',

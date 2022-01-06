@@ -402,7 +402,6 @@ class TestMatlab:
         bode(siso.ss1)
         bode(siso.tf1)
         bode(siso.tf2)
-        breakpoint()
         mag, phase, freq = bode(siso.tf2, plot=False)
         bode(siso.tf1, siso.tf2)
         w = logspace(-3, 3)
@@ -819,7 +818,7 @@ class TestMatlab:
             dcgain(1, 2, 3, 4, 5)
 
     def test_matlab_freqplot_passthru(self, mplcleanup):
-        """Test nyquist and bode to make sure the pass arguments through"""
+        """Test nyquist and bode to make sure they pass arguments through"""
         sys = tf([1], [1, 2, 1])
         bode((sys,))            # Passing tuple will call bode_plot
         nyquist((sys,))         # Passing tuple will call nyquist_plot

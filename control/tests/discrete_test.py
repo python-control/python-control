@@ -6,8 +6,8 @@ RMM, 9 Sep 2012
 import numpy as np
 import pytest
 
-from control import (StateSpace, TransferFunction, bode, common_timebase,
-                     feedback, forced_response, impulse_response,
+from control import (StateSpace, TransferFunction, frequency_response_bode, 
+                     common_timebase, feedback, forced_response, impulse_response,
                      isctime, isdtime, rss, c2d, sample_system, step_response,
                      timebase)
 
@@ -441,7 +441,7 @@ class TestDiscrete:
         # Create a simple discrete time system and check the calculation
         sys = TransferFunction([1], [1, 0.5], 1)
         omega = [1, 2, 3]
-        mag_out, phase_out, omega_out = bode(sys, omega)
+        mag_out, phase_out, omega_out = frequency_response_bode(sys, omega)
         H_z = list(map(lambda w: 1./(np.exp(1.j * w) + 0.5), omega))
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
