@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" pzmap_test.py - test pzmap()
+""" pzmap_test.py - test pole_zero_plot()
 
 Created on Thu Aug 20 20:06:21 2020
 
@@ -12,7 +12,7 @@ import pytest
 from matplotlib import pyplot as plt
 from mpl_toolkits.axisartist import Axes as mpltAxes
 
-from control import TransferFunction, config, pzmap
+from control import TransferFunction, config, pole_zero_plot
 
 
 @pytest.mark.parametrize("kwargs",
@@ -23,8 +23,8 @@ from control import TransferFunction, config, pzmap
                           pytest.param(dict(title="My Title"), id="title")])
 @pytest.mark.parametrize("setdefaults", [False, True], ids=["kw", "config"])
 @pytest.mark.parametrize("dt", [0, 1], ids=["s", "z"])
-def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
-    """Test pzmap"""
+def test_pole_zero_plot(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
+    """Test pole_zero_plot"""
     # T from from pvtol-nested example
     T = TransferFunction([-9.0250000e-01, -4.7200750e+01, -8.6812900e+02,
                           +5.6261850e+03, +2.1258472e+05, +8.4724600e+05,
@@ -47,9 +47,9 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
         for k in ['grid']:
             if k in pzkwargs:
                 v = pzkwargs.pop(k)
-                config.set_defaults('pzmap', **{k: v})
+                config.set_defaults('pole_zero_plot', **{k: v})
 
-    ax = pzmap(T, **pzkwargs)
+    ax = pole_zero_plot(T, **pzkwargs)
 
     assert ax.get_title() == kwargs.get('title', 'Pole Zero Map')
 
@@ -70,12 +70,12 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
         assert not has_sgrid
 
 
-def test_pzmap_warns():
+def test_pole_zero_plot_warns():
     with pytest.warns(FutureWarning):
-        pzmap(TransferFunction([1], [1, 2]), Plot=True)
+        pole_zero_plot(TransferFunction([1], [1, 2]), Plot=True)
 
 
-def test_pzmap_raises():
+def test_pole_zero_plot_raises():
     with pytest.raises(TypeError):
         # not an LTI system
-        pzmap(([1], [1,2]))
+        pole_zero_plot(([1], [1,2]))

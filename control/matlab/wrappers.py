@@ -3,6 +3,9 @@ Wrappers for the MATLAB compatibility module
 """
 
 import numpy as np
+
+from control.pzmap import pole_zero_plot
+from ..lti import pole, zero
 from ..statesp import ss
 from ..xferfcn import tf
 from ..ctrlutil import issys
@@ -11,7 +14,7 @@ from scipy.signal import zpk2tf
 from warnings import warn
 from ..freqplot import bode_plot, frequency_response_bode, nyquist_plot, frequency_response_nyquist
 
-__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain']
+__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain', 'pzmap']
 
 
 def bode(*args, **kwargs):
@@ -248,3 +251,39 @@ def dcgain(*args):
     else:
         raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
                          "arguments.")
+
+
+def pzmap(sys, plot=True, grid=None, title='Pole Zero Map', **kwargs):
+    """
+    Plot a pole/zero map for a linear system.
+    
+    Parameters
+    ----------
+    sys: LTI (StateSpace or TransferFunction)
+        Linear system for which poles and zeros are computed.
+    plot: bool, optional, default True
+        If ``True``, display the pole-zero plot on the current axes
+            using Matplotlib or open a new figure if none exists.
+        otherwise the poles and zeros are only computed and returned.
+    grid: bool, optional, default False
+        If ``True``, plot omega-damping grid.
+    
+    Returns
+    -------
+    poles: array
+        The systems poles
+    zeros: array
+        The system's zeros.
+    
+    Notes
+    -----
+    The pzmap function calls matplotlib.pyplot.axis('equal'), which means
+    that trying to reset the axis limits may not behave as expected.  To
+    change the axis limits, use matplotlib.pyplot.gca().axis('auto') and
+    then set the axis limits to the desired values.
+    """
+
+    if plot:
+        pole_zero_plot(sys)
+
+    return pole(sys), zero(sys)

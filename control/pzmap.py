@@ -46,19 +46,19 @@ from .lti import LTI, isdtime
 from .grid import sgrid, zgrid, nogrid
 from . import config
 
-__all__ = ['pzmap']
+__all__ = ['pole_zero_plot']
 
 
 # Define default parameter values for this module
-_pzmap_defaults = {
-    'pzmap.grid': False       # Plot omega-damping grid
+_pole_zero_plot_defaults = {
+    'pole_zero_plot.grid': False       # Plot omega-damping grid
 }
 
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, ax=None, grid=None, title='Pole Zero Map', **kwargs):
+def pole_zero_plot(sys, ax=None, grid=None, title='Pole Zero Map', **kwargs):
     """
     Plot a pole/zero map for a linear system.
 
@@ -79,17 +79,17 @@ def pzmap(sys, ax=None, grid=None, title='Pole Zero Map', **kwargs):
     # Check to see if legacy 'Plot' keyword was used
     if 'Plot' in kwargs:
         import warnings
-        warnings.warn("'Plot' keyword is deprecated in pzmap;",
+        warnings.warn("'Plot' keyword is deprecated in pole_zero_plot;",
                       FutureWarning)
         kwargs.pop('Plot')
     if 'plot' in kwargs:
         import warnings
-        warnings.warn("'plot' keyword is deprecated in pzmap;",
+        warnings.warn("'plot' keyword is deprecated in pole_zero_plot;",
                       FutureWarning)
         kwargs.pop('plot')
 
     # Get parameter values
-    grid = config._get_param('pzmap', 'grid', grid, False)
+    grid = config._get_param('pole_zero_plot', 'grid', grid, False)
 
     if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')
