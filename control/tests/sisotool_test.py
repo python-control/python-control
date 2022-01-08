@@ -49,7 +49,8 @@ class TestSisotool:
     def test_sisotool(self, tsys):
         sisotool(tsys, Hz=False)
         fig = plt.gcf()
-        ax_mag, ax_rlocus, ax_phase, ax_step = fig.axes[:4]
+        axes = fig.get_axes()
+        ax_mag, ax_rlocus, ax_phase, ax_step = axes[:4]
 
         # Check the initial root locus plot points
         initial_point_0 = (np.array([-22.53155977]), np.array([0.]))
@@ -77,7 +78,7 @@ class TestSisotool:
             'omega_limits': None,
             'omega_num': None,
             'sisotool': True,
-            'fig': fig,
+            'axes': [axes[0], axes[2]],
             'margins': True
         }
 
@@ -121,7 +122,10 @@ class TestSisotool:
         tvect = np.linspace(0, 1, 10)
         sisotool(tsys, tvect=tvect)
         fig = plt.gcf()
-        ax_rlocus, ax_step = fig.axes[1], fig.axes[3]
+        axes = fig.get_axes()
+        ax_rlocus, ax_step = axes[1], axes[3]
+
+        bode_plot_params = {'axes': [axes[0], axes[2]]}
 
         # Move the rootlocus to another point and confirm same tvect
         event = type('test', (object,), {'xdata': 2.31206868287,
@@ -129,7 +133,7 @@ class TestSisotool:
                                          'inaxes': ax_rlocus.axes})()
         _RLClickDispatcher(event=event, sys=tsys, fig=fig,
                            ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
-                           bode_plot_params=dict(), tvect=tvect)
+                           bode_plot_params=bode_plot_params, tvect=tvect)
         assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 
 

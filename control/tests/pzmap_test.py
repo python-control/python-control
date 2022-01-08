@@ -44,38 +44,30 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
 
     pzkwargs = kwargs.copy()
     if setdefaults:
-        for k in ['plot', 'grid']:
+        for k in ['grid']:
             if k in pzkwargs:
                 v = pzkwargs.pop(k)
                 config.set_defaults('pzmap', **{k: v})
 
-    P, Z = pzmap(T, **pzkwargs)
+    ax = pzmap(T, **pzkwargs)
 
-    np.testing.assert_allclose(P, Pref, rtol=1e-3)
-    np.testing.assert_allclose(Z, Zref, rtol=1e-3)
+    assert ax.get_title() == kwargs.get('title', 'Pole Zero Map')
 
-    if kwargs.get('plot', True):
-        ax = plt.gca()
+    # TODO: This won't work when zgrid and sgrid are unified
+    children = ax.get_children()
+    has_zgrid = False
+    for c in children:
+        if isinstance(c, matplotlib.text.Annotation):
+            if r'\pi' in c.get_text():
+                has_zgrid = True
+    has_sgrid = isinstance(ax, mpltAxes)
 
-        assert ax.get_title() == kwargs.get('title', 'Pole Zero Map')
-
-        # FIXME: This won't work when zgrid and sgrid are unified
-        children = ax.get_children()
-        has_zgrid = False
-        for c in children:
-            if isinstance(c, matplotlib.text.Annotation):
-                if r'\pi' in c.get_text():
-                    has_zgrid = True
-        has_sgrid = isinstance(ax, mpltAxes)
-
-        if kwargs.get('grid', False):
-            assert dt == has_zgrid
-            assert dt != has_sgrid
-        else:
-            assert not has_zgrid
-            assert not has_sgrid
+    if kwargs.get('grid', False):
+        assert dt == has_zgrid
+        assert dt != has_sgrid
     else:
-        assert not plt.get_fignums()
+        assert not has_zgrid
+        assert not has_sgrid
 
 
 def test_pzmap_warns():

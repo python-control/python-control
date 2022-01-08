@@ -39,9 +39,10 @@
 # SUCH DAMAGE.
 #
 
-from numpy import real, imag, linspace, exp, cos, sin, sqrt
+from numpy import real, imag
 from math import pi
-from .lti import LTI, isdtime, isctime
+import matplotlib.pyplot as plt
+from .lti import LTI, isdtime
 from .grid import sgrid, zgrid, nogrid
 from . import config
 
@@ -50,15 +51,14 @@ __all__ = ['pzmap']
 
 # Define default parameter values for this module
 _pzmap_defaults = {
-    'pzmap.grid': False,       # Plot omega-damping grid
-    'pzmap.plot': True,        # Generate plot using Matplotlib
+    'pzmap.grid': False       # Plot omega-damping grid
 }
 
 
 # TODO: Implement more elegant cross-style axes. See:
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
 #    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
+def pzmap(sys, ax=None, grid=None, title='Pole Zero Map', **kwargs):
     """
     Plot a pole/zero map for a linear system.
 
@@ -66,9 +66,6 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     ----------
     sys: LTI (StateSpace or TransferFunction)
         Linear system for which poles and zeros are computed.
-    plot: bool, optional
-        If ``True`` a graph is generated with Matplotlib,
-        otherwise the poles and zeros are only computed and returned.
     grid: boolean (default = False)
         If True plot omega-damping grid.
 
@@ -82,12 +79,16 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     # Check to see if legacy 'Plot' keyword was used
     if 'Plot' in kwargs:
         import warnings
-        warnings.warn("'Plot' keyword is deprecated in pzmap; use 'plot'",
+        warnings.warn("'Plot' keyword is deprecated in pzmap;",
                       FutureWarning)
-        plot = kwargs['Plot']
+        kwargs.pop('Plot')
+    if 'plot' in kwargs:
+        import warnings
+        warnings.warn("'plot' keyword is deprecated in pzmap;",
+                      FutureWarning)
+        kwargs.pop('plot')
 
     # Get parameter values
-    plot = config._get_param('pzmap', 'plot', plot, True)
     grid = config._get_param('pzmap', 'grid', grid, False)
 
     if not isinstance(sys, LTI):
@@ -96,26 +97,23 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     poles = sys.pole()
     zeros = sys.zero()
 
-    if (plot):
-        import matplotlib.pyplot as plt
-
-        if grid:
-            if isdtime(sys, strict=True):
-                ax, fig = zgrid()
-            else:
-                ax, fig = sgrid()
+    if grid:
+        if isdtime(sys, strict=True):
+            ax = zgrid(ax=ax)
         else:
-            ax, fig = nogrid()
+            ax = sgrid(ax=ax)
+    else:
+        ax = nogrid(ax=ax)
 
-        # Plot the locations of the poles and zeros
-        if len(poles) > 0:
-            ax.scatter(real(poles), imag(poles), s=50, marker='x',
-                       facecolors='k')
-        if len(zeros) > 0:
-            ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
-                       facecolors='none', edgecolors='k')
+    # Plot the locations of the poles and zeros
+    if len(poles) > 0:
+        ax.scatter(real(poles), imag(poles), s=50, marker='x',
+                    facecolors='k')
+    if len(zeros) > 0:
+        ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
+                    facecolors='none', edgecolors='k')
 
-        plt.title(title)
+    plt.title(title)
 
     # Return locations of poles and zeros as a tuple
-    return poles, zeros
+    return ax

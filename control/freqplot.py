@@ -92,7 +92,7 @@ _freqplot_defaults = {
 
 
 def bode_plot(syslist, omega=None, omega_limits=None, omega_num=None,
-              margins=None, method='best', *args, **kwargs):
+              margins=None, method='best', axes=None, *args, **kwargs):
     """Bode plot for a system
 
     Plots a Bode plot for the system over a (optional) frequency range.
@@ -173,6 +173,7 @@ def bode_plot(syslist, omega=None, omega_limits=None, omega_num=None,
     >>> bode_plot(sys)
 
     """
+
     # Make a copy of the kwargs dictionary since we will modify it
     kwargs = dict(kwargs)
 
@@ -220,33 +221,28 @@ def bode_plot(syslist, omega=None, omega_limits=None, omega_num=None,
     # The code below should work on all cases.
 
     # Get the current figure
-
     if 'sisotool' in kwargs:
-        fig = kwargs['fig']
-        ax_mag = fig.axes[0]
-        ax_phase = fig.axes[2]
+        # TODO: Can we eliminate this sisotool special-case
+        #       using the new axes argument?
+        ax_mag = axes[0]
+        ax_phase = axes[1]
+        fig = ax_mag.get_figure()
         sisotool = kwargs['sisotool']
-        del kwargs['fig']
         del kwargs['sisotool']
     else:
-        fig = plt.gcf()
-        ax_mag = None
-        ax_phase = None
+        if axes is None:
+            fig = plt.gcf()
+            axes = fig.get_axes()
+            if len(axes) == 0:  # empty figure
+                ax_mag = fig.add_subplot(2, 1, 1)
+                ax_phase = fig.add_subplot(2, 1, 2, sharex=ax_mag)
+                axes = fig.get_axes()
+            else:
+                ax_mag, ax_phase = axes
+        else:
+            ax_mag, ax_phase = axes
+            fig = ax_mag.get_figure()
         sisotool = False
-
-        # Get the current axes if they already exist
-        for ax in fig.axes:
-            if ax.get_label() == 'control-bode-magnitude':
-                ax_mag = ax
-            elif ax.get_label() == 'control-bode-phase':
-                ax_phase = ax
-
-        # If no axes present, create them from scratch
-        if ax_mag is None or ax_phase is None:
-            plt.clf()
-            ax_mag = plt.subplot(211, label='control-bode-magnitude')
-            ax_phase = plt.subplot(
-                212, label='control-bode-phase', sharex=ax_mag)
 
     phases, omegas = [], []
     for sys in syslist:
@@ -454,7 +450,12 @@ def bode_plot(syslist, omega=None, omega_limits=None, omega_num=None,
         ax_phase.set_xlabel("Frequency (Hz)" if Hz
                             else "Frequency (rad/sec)")
 
-    return fig, np.array([ax_mag, ax_phase])
+    # Put axes back in the same collection in case user passed it
+    # and still has a reference.
+    axes[0] = ax_mag
+    axes[1] = ax_phase
+
+    return fig, axes
 
 
 #
@@ -777,6 +778,55 @@ def nyquist_plot(syslist, omega=None, omega_limits=None, omega_num=None,
 # TODO: Change the name of this function since it only calculates the count and contour
 def frequency_response_nyquist(syslist, omega=None, omega_limits=None, omega_num=None, 
                                warn_nyquist=True, *args, **kwargs):
+    """Nyquist countour and number of encirclements for one or more systems.
+
+    Calculates the Nyquist contour over a (optional) frequency range and the
+    number of encirclements of the critical point. The curve is computed by 
+    evaluating the Nyqist segment along the positive imaginary axis, with a 
+    mirror image generated to reflect the negative imaginary axis.  Poles on 
+    or near the imaginary axis are avoided using a small indentation.  The 
+    portion of the Nyquist contour at infinity is not explicitly computed 
+    (since it maps to a constant value for any system with a proper transfer
+    function).
+
+    Parameters
+    ----------
+    syslist : list of LTI
+        List of linear input/output systems (single system is OK). Nyquist
+        curves for each system are plotted on the same graph.
+
+    omega : array_like
+        Set of frequencies to be evaluated, in rad/sec.
+
+    omega_limits : array_like of two values
+        Limits to the range of frequencies. Ignored if omega is provided, and
+        auto-generated if omitted.
+
+    omega_num : int
+        Number of frequency samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
+
+    indent_radius : float
+        Amount to indent the Nyquist contour around poles that are at or near
+        the imaginary axis.
+
+    indent_direction : str
+        For poles on the imaginary axis, set the direction of indentation to
+        be 'right' (default), 'left', or 'none'.
+
+    warn_nyquist : bool, optional
+        If set to 'False', turn off warnings about frequencies above Nyquist.
+
+    Returns
+    -------
+    count : int (or list of int if len(syslist) > 1)
+        Number of encirclements of the point -1 by the Nyquist curve.  If
+        multiple systems are given, an array of counts is returned.
+    contour : ndarray (or list of ndarray if len(syslist) > 1)), optional
+        The contour used to create the primary Nyquist curve segment.  To
+        obtain the Nyquist curve values, evaluate system(s) along contour.
+
+    """
 
     # Check to see if legacy 'return_contour' keyword was used
     if 'return_contour' in kwargs:
@@ -870,7 +920,8 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
     # Convert frequency units if Hz specified
     omega_plot = omega / (2. * math.pi) if Hz else omega
 
-    # Get the current figure if no axes provided (plt.gcf creates a new figure if none exists)
+    # Get the current figure if no axes provided (plt.gcf creates
+    # a new figure if none exists)
     plot_keys = ['s', 'ps', 'cs', 't']
     if axes is None:
         fig = plt.gcf()
@@ -882,14 +933,15 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
     if isinstance(axes, np.ndarray):
         if axes.size < 4:
             raise ValueError('Current figure does not have 4 subplots.')
-        axes_dict = dict(zip(plot_keys, axes.ravel()))
+        axes_dict = dict(zip(plot_keys, axes.flat))
+        fig = axes_dict['s'].get_figure()
     else:
         if len(axes) < 4:
             raise ValueError('Current figure does not have 4 subplots.')
         axes_dict = dict(zip(plot_keys, axes))
+        fig = axes_dict['s'].get_figure()
     # Let's assume the axes provided are from the same figure
     # although it doesn't matter to this function.
-    fig = axes_dict['s'].get_figure()
 
     #
     # Plot the four sensitivity functions
@@ -902,7 +954,7 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
         axes_dict['s'].semilogx(omega_plot, 20 * np.log10(mag), **kwargs)
     else:
         axes_dict['s'].loglog(omega_plot, mag, **kwargs)
-    axes_dict['s'].set_ylabel("$|S|$" + " (dB)" if dB else "")
+    axes_dict['s'].set_ylabel("$|S|$" + (" (dB)" if dB else ""))
     axes_dict['s'].tick_params(labelbottom=False)
     axes_dict['s'].grid(grid, which='both')
 
@@ -913,7 +965,7 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
     else:
         axes_dict['ps'].loglog(omega_plot, mag, **kwargs)
     axes_dict['ps'].tick_params(labelbottom=False)
-    axes_dict['ps'].set_ylabel("$|PS|$" + " (dB)" if dB else "")
+    axes_dict['ps'].set_ylabel("$|PS|$" + (" (dB)" if dB else ""))
     axes_dict['ps'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = (C * S).frequency_response(omega)
@@ -924,7 +976,7 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
         axes_dict['cs'].loglog(omega_plot, mag, **kwargs)
     axes_dict['cs'].set_xlabel(
         "Frequency (Hz)" if Hz else "Frequency (rad/sec)")
-    axes_dict['cs'].set_ylabel("$|CS|$" + " (dB)" if dB else "")
+    axes_dict['cs'].set_ylabel("$|CS|$" + (" (dB)" if dB else ""))
     axes_dict['cs'].grid(grid, which='both')
 
     mag_tmp, phase_tmp, omega = T.frequency_response(omega)
@@ -935,7 +987,7 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
         axes_dict['t'].loglog(omega_plot, mag, **kwargs)
     axes_dict['t'].set_xlabel(
         "Frequency (Hz)" if Hz else "Frequency (rad/sec)")
-    axes_dict['t'].set_ylabel("$|T|$" + " (dB)" if dB else "")
+    axes_dict['t'].set_ylabel("$|T|$" + (" (dB)" if dB else ""))
     axes_dict['t'].grid(grid, which='both')
 
     # TODO: This doesn't seem to take effect

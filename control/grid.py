@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import cos, sin, sqrt, linspace, pi, exp
 import matplotlib.pyplot as plt
-from mpl_toolkits.axisartist import SubplotHost
+from mpl_toolkits.axisartist import Axes, SubplotHost
 from mpl_toolkits.axisartist.grid_helper_curvelinear \
     import GridHelperCurveLinear
 import mpl_toolkits.axisartist.angle_helper as angle_helper
@@ -65,7 +65,9 @@ class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
         return lon_min, lon_max, lat_min, lat_max
 
 
-def sgrid():
+def sgrid(ax=None):
+    """A custom grid and ticklines for making plots in the s-plane.
+    """
     # From matplotlib demos:
     # https://matplotlib.org/gallery/axisartist/demo_curvelinear_grid.html
     # https://matplotlib.org/gallery/axisartist/demo_floating_axis.html
@@ -89,10 +91,26 @@ def sgrid():
         tr, extreme_finder=extreme_finder, grid_locator1=grid_locator1,
         tick_formatter1=tick_formatter1)
 
-    fig = plt.gcf()
-    ax = SubplotHost(fig, 1, 1, 1, grid_helper=grid_helper)
+    # Get the current axes if no axes provided (plt.gca creates
+    # a new figure if none exists).
+    if ax is None:
+        ax = plt.gca()
+    fig = ax.get_figure()
 
-    # make ticklabels of right invisible, and top axis visible.
+    # If the axis is not from mpl_toolkits.axisartist, replace it
+    # with a new axis
+    if not isinstance(ax, Axes):
+        subargs = ax.get_geometry()
+        fig.delaxes(ax)
+        # TODO: The caller of sgrid() will still have a references to ax which 
+        #       is no longer part of the figure. Is there a more sophisticated
+        #       way to replace the axes reference?
+        ax = SubplotHost(fig, *subargs, grid_helper=grid_helper)
+        fig.add_subplot(ax)
+    else:
+        ax = ax
+
+    # make ticklabels of right axis invisible, and top axis visible.
     visible = True
     ax.axis[:].major_ticklabels.set_visible(visible)
     ax.axis[:].major_ticks.set_visible(False)
@@ -118,7 +136,8 @@ def sgrid():
     ax.axis["left"].get_helper().nth_coord_ticks = 0
     ax.axis["bottom"].get_helper().nth_coord_ticks = 0
 
-    fig.add_subplot(ax)
+    # TODO: What was this for?
+    #fig.add_subplot(ax)
 
     # RECTANGULAR X Y AXES WITH SCALE
     # par2 = ax.twiny()
@@ -136,7 +155,8 @@ def sgrid():
     ax.grid(True, zorder=0, linestyle='dotted')
 
     _final_setup(ax)
-    return ax, fig
+
+    return ax
 
 
 def _final_setup(ax):
@@ -147,20 +167,29 @@ def _final_setup(ax):
     plt.axis('equal')
 
 
-def nogrid():
-    f = plt.gcf()
-    ax = plt.axes()
+def nogrid(ax=None):
+    """A substitute for sgrid or zgrid when no grid is required.
+    """
+    # Get the current axes if no axes provided (plt.gca creates
+    # a new figure if none exists).
+    if ax is None:
+        ax = plt.gca()
+    fig = ax.get_figure()
 
     _final_setup(ax)
-    return ax, f
+
+    return ax
 
 
 def zgrid(zetas=None, wns=None, ax=None):
-    '''Draws discrete damping and frequency grid'''
+    """A custom grid and ticklines for making plots in the z-plane.
+    """
 
-    fig = plt.gcf()
+    # Get the current axes if no axes provided (plt.gca creates
+    # a new figure if none exists).
     if ax is None:
-        ax = fig.gca()
+        ax = plt.gca()
+    fig = ax.get_figure()
 
     # Constant damping lines
     if zetas is None:
@@ -207,4 +236,6 @@ def zgrid(zetas=None, wns=None, ax=None):
                     xytext=(an_x, an_y), size=9)
 
     _final_setup(ax)
-    return ax, fig
+
+    # TODO: Do we need to return fig?
+    return ax
