@@ -6,10 +6,17 @@ and TransferFunction.  It is designed for use in the python-control library.
 Routines in this module:
 
 LTI.__init__
-isdtime()
-isctime()
+issiso()
 timebase()
 common_timebase()
+timebaseEqual()
+isdtime()
+isctime()
+pole()
+zero()
+damp()
+damp()
+dcgain()
 """
 
 import numpy as np
@@ -19,7 +26,7 @@ from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
            'isdtime', 'isctime', 'pole', 'zero', 'damp', 'evalfr',
-           'freqresp', 'dcgain']
+           'frequency_response', 'freqresp', 'dcgain']
 
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
@@ -542,7 +549,7 @@ def evalfr(sys, x, squeeze=None):
     To evaluate at a frequency omega in radians per second, enter
     ``x = omega * 1j`` for continuous-time systems, or
     ``x = exp(1j * omega * dt)`` for discrete-time systems, or use
-    ``freqresp(sys, omega)``.
+    ``frequency_response(sys, omega)``.
 
     Parameters
     ----------
@@ -569,8 +576,8 @@ def evalfr(sys, x, squeeze=None):
 
     See Also
     --------
-    freqresp
-    bode
+    frequency_response
+    bode_plot
 
     Notes
     -----
@@ -589,7 +596,22 @@ def evalfr(sys, x, squeeze=None):
     """
     return sys.__call__(x, squeeze=squeeze)
 
-def freqresp(sys, omega, squeeze=None):
+
+def dcgain(sys):
+    """Return the zero-frequency (or DC) gain of the given system
+
+    Returns
+    -------
+    gain : ndarray
+        The zero-frequency gain, or (inf + nanj) if the system has a pole at
+        the origin, (nan + nanj) if there is a pole/zero cancellation at the
+        origin.
+
+    """
+    return sys.dcgain()
+
+
+def frequency_response(sys, omega, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
 
     In general the system may be multiple input, multiple output (MIMO), where
@@ -629,7 +651,7 @@ def freqresp(sys, omega, squeeze=None):
     See Also
     --------
     evalfr
-    bode
+    bode_plot
 
     Notes
     -----
@@ -639,7 +661,7 @@ def freqresp(sys, omega, squeeze=None):
     Examples
     --------
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
+    >>> mag, phase, omega = frequency_response(sys, [0.1, 1., 10.])
     >>> mag
     array([[[ 58.8576682 ,  49.64876635,  13.40825927]]])
     >>> phase
@@ -649,7 +671,7 @@ def freqresp(sys, omega, squeeze=None):
         Add example with MIMO system
 
         #>>> sys = rss(3, 2, 2)
-        #>>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
+        #>>> mag, phase, omega = frequency_response(sys, [0.1, 1., 10.])
         #>>> mag[0, 1, :]
         #array([ 55.43747231,  42.47766549,   1.97225895])
         #>>> phase[1, 0, :]
@@ -661,20 +683,6 @@ def freqresp(sys, omega, squeeze=None):
 
     """
     return sys.frequency_response(omega, squeeze=squeeze)
-
-
-def dcgain(sys):
-    """Return the zero-frequency (or DC) gain of the given system
-
-    Returns
-    -------
-    gain : ndarray
-        The zero-frequency gain, or (inf + nanj) if the system has a pole at
-        the origin, (nan + nanj) if there is a pole/zero cancellation at the
-        origin.
-
-    """
-    return sys.dcgain()
 
 
 # Process frequency responses in a uniform way
@@ -706,3 +714,7 @@ def _process_frequency_response(sys, omega, out, squeeze=None):
         return out
     else:
         raise ValueError("unknown squeeze value")
+
+
+# Function aliases
+freqresp = frequency_response

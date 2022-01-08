@@ -88,8 +88,8 @@ def reset_defaults():
     from .nichols import _nichols_defaults
     defaults.update(_nichols_defaults)
 
-    from .pzmap import _pzmap_defaults
-    defaults.update(_pzmap_defaults)
+    from .pzmap import _pole_zero_plot_defaults
+    defaults.update(_pole_zero_plot_defaults)
 
     from .rlocus import _rlocus_defaults
     defaults.update(_rlocus_defaults)

@@ -87,8 +87,11 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
     fig = plt.gcf()
     if fig.canvas.manager.get_window_title() != 'Sisotool':
         plt.close(fig)
-        fig,axes = plt.subplots(2, 2)
+        fig, axes = plt.subplots(2, 2)
+        axes = list(axes.flat)  # convert from array to flat list
         fig.canvas.manager.set_window_title('Sisotool')
+    else:
+        axes = fig.get_axes()
 
     # Extract bode plot parameters
     bode_plot_params = {
@@ -99,7 +102,7 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
         'omega_limits': omega_limits,
         'omega_num' : omega_num,
         'sisotool': True,
-        'fig': fig,
+        'axes': [axes[0], axes[2]],
         'margins': margins_bode
     }
 

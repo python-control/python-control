@@ -6,17 +6,21 @@ This is a rudimentary set of tests for frequency response functions,
 including bode plots.
 """
 
+from re import A
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.testing import assert_allclose
+from numpy.testing import assert_almost_equal, assert_allclose
 import math
 import pytest
 
 import control as ctrl
+from control.lti import frequency_response
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
-from control.matlab import ss, tf, bode, rss
-from control.freqplot import bode_plot, nyquist_plot, singular_values_plot
+from control.matlab import ss, tf, bode, nyquist, rss
+from control.freqplot import (bode_plot, frequency_response_bode, 
+                              nyquist_plot, frequency_response_nyquist, 
+                              singular_values_plot, gangof4_plot)
 from control.tests.conftest import slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
@@ -57,38 +61,160 @@ def test_freqresp_mimo(ss_mimo):
     ctrl.freqresp(tf_mimo, omega)
 
 
-def test_bode_basic(ss_siso):
-    """Test bode plot call (Very basic)"""
-    # TODO: proper test
+def test_bode_siso(ss_siso):
+    """Test matlab.bode function."""
     tf_siso = tf(ss_siso)
-    bode(ss_siso)
-    bode(tf_siso)
-    assert len(bode_plot(tf_siso, plot=False, omega_num=20)[0] == 20)
-    omega = bode_plot(tf_siso, plot=False, omega_limits=(1, 100))[2]
-    assert_allclose(omega[0], 1)
-    assert_allclose(omega[-1], 100)
-    assert len(bode_plot(tf_siso, plot=False, omega=np.logspace(-1,1,10))[0])\
-         == 10
+    mag, phase, omega = bode(ss_siso)
+    assert mag.shape == (1000,)
+    assert phase.shape == (1000,)
+    assert omega.shape == (1000,)
+    mag2, phase2, omega2 = bode(tf_siso)
+    assert_allclose(mag, mag2)
+    assert_allclose(phase, phase2)
+    assert_allclose(omega, omega2)
+    omega = np.logspace(-1,1,10)
+    mag, phase, w_out = bode(ss_siso, omega)
+    assert np.array_equal(w_out, omega)
+    mag_test_values = [
+        0.990099, 0.972928, 0.928138, 0.822745, 0.625202, 0.374798,
+        0.177255, 0.071862, 0.027072, 0.009901
+    ]
+    assert_allclose(mag, mag_test_values, atol=1e-6)
+    phase_test_values = [
+        -6.083848, -5.952609, -5.740404, -5.414054, -4.965486, -4.459292,
+        -4.010724, -3.684374, -3.472169, -3.34093
+    ]
+    assert_allclose(phase, phase_test_values, atol=1e-6)
 
 
-def test_nyquist_basic(ss_siso):
-    """Test nyquist plot call (Very basic)"""
+def test_bode_plot_siso(ss_siso):
+    """Test bode plot_plot function."""
+    tf_siso = tf(ss_siso)
+    # Basic plotting
+    bode_plot(ss_siso)
+    bode_plot(tf_siso)
+    # Using existing figure
+    fig = plt.figure()
+    fig_out, axes = bode_plot(ss_siso)
+    assert fig_out is fig
+    # Using existing figure and axes
+    fig, axes = plt.subplots(2, 1, figsize=(8, 7))
+    fig_out, axes_out = bode_plot(tf_siso, axes=axes)
+    assert fig_out is fig
+    assert axes_out is axes
+    # Separate functions for frequency response
+    fr = frequency_response_bode(tf_siso, omega_num=20)
+    assert fr[0].shape == (20,)
+    assert fr[1].shape == (20,)
+    assert fr[2].shape == (20,)
+    fr = frequency_response_bode(tf_siso, omega_limits=(1, 100))
+    omega = fr[2]
+    assert_almost_equal(omega[0], 1)
+    assert_almost_equal(omega[-1], 100)
+    omega = np.logspace(-1,1,10)
+    fr = frequency_response_bode(tf_siso, omega=omega)
+    assert len(fr[0]) == 10
+
+
+def test_nyquist_siso(ss_siso):
+    """Test matlab.nyquist function (Very basic)"""
     # TODO: proper test
+    # TODO: there are other tests in nyquist_test.py
+    tf_siso = tf(ss_siso)
+    real, im, omega = nyquist(ss_siso)
+    assert real.shape == (1000,)
+    assert im.shape == (1000,)
+    assert omega.shape == (1000,)
+    real2, im2, omega2 = nyquist(tf_siso)
+    assert_allclose(real, real2)
+    assert_allclose(im, im2)
+    assert_allclose(omega, omega2)
+    real, im, omega = nyquist(tf_siso, omega_num=20)
+    assert real.shape == (20,)
+
+
+def test_nyquist_plot_siso(ss_siso):
+    """Test nyquist_plot function (Very basic)"""
+    # TODO: proper test
+    # TODO: there are other tests in nyquist_test.py
     tf_siso = tf(ss_siso)
     nyquist_plot(ss_siso)
     nyquist_plot(tf_siso)
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, return_contour=True, omega_num=20)
+    count, contour = frequency_response_nyquist(tf_siso, omega_num=20)
     assert len(contour) == 20
 
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, omega_limits=(1, 100), return_contour=True)
+    count, contour = frequency_response_nyquist(
+        tf_siso, omega_limits=(1, 100))
+
     assert_allclose(contour[0], 1j)
     assert_allclose(contour[-1], 100j)
 
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, omega=np.logspace(-1, 1, 10), return_contour=True)
+    count, contour = frequency_response_nyquist(
+        tf_siso, omega=np.logspace(-1, 1, 10))
     assert len(contour) == 10
+
+
+def test_gangof4_plot_siso(ss_siso):
+
+    sys = tf([2, 2], np.convolve([1, 1], [1, 1]))
+    
+    # Quick plots (ss/tf)
+    P = sys
+    C1 = tf([0.5, 0.5], [0.5, 0])
+    gangof4_plot(P, C1)
+    P_ss = ss(P)
+    C1_tf = ss(tf([0.5, 0.5], [0.5, 0]))
+    gangof4_plot(P_ss, C1_tf)
+
+    # Using existing figure
+    fig = plt.figure(figsize=(8, 5))
+    fig_out, axes_out = gangof4_plot(P, C1)
+    assert fig_out is fig
+
+    # Two systems on one plot
+    P = sys
+    C1 = tf([0.5, 0.5], [0.5, 0])
+    C2 = tf([0.75, 0.5], [0.75, 0])
+
+    fig = plt.figure(figsize=(8, 5))
+    fig1_out, axes1_out = gangof4_plot(P, C1, label='C1')
+    assert fig1_out is fig
+    assert len(axes1_out) == 4
+    fig2_out, axes2_out = gangof4_plot(P, C2, label='C2')
+    assert fig2_out is fig
+    assert len(axes2_out) == 4
+
+    # Using existing axes
+    fig, axes = plt.subplots(2, 2)
+    fig_out, axes_out = gangof4_plot(P, C1, axes=axes)
+    assert fig_out is fig
+    assert axes_out is axes
+
+    # Check axes labels
+    xlabels = [ax.get_xlabel() for ax in axes_out.flat]
+    assert xlabels == ['', '', 'Frequency (rad/sec)', 'Frequency (rad/sec)']
+    ylabels = [ax.get_ylabel() for ax in axes_out.flat]
+    assert ylabels == ['$|S|$', '$|PS|$', '$|CS|$', '$|T|$']
+
+    # Check axes labels with Hz and dB specified
+    fig, axes = gangof4_plot(P, C1, Hz=True, dB=True)
+    xlabels = [ax.get_xlabel() for ax in axes]
+    assert xlabels == ['', '', 'Frequency (Hz)', 'Frequency (Hz)']
+    ylabels = [ax.get_ylabel() for ax in axes]
+    assert ylabels == ['$|S|$ (dB)', '$|PS|$ (dB)', '$|CS|$ (dB)', '$|T|$ (dB)']
+
+    # Test with additional plot keyword passed
+    controllers = {
+        'C1': tf([0.5, 0.5], [0.5, 0]),
+        'C2': tf([0.75, 0.5], [0.75, 0])
+    }
+    fig, axes = plt.subplots(2, 2, figsize=(8, 5))
+    for label, C in controllers.items():
+        fig_out, axes_out = gangof4_plot(P, C, axes=axes, label=label)
+        assert fig_out is fig
+    for ax in axes_out.flat:
+        for i, label in enumerate(controllers):
+            assert ax.get_lines()[i].get_label() == label
 
 
 @pytest.mark.filterwarnings("ignore:.*non-positive left xlim:UserWarning")
@@ -144,7 +270,7 @@ def test_superimpose():
 
 
 def test_doubleint():
-    """Test typcast bug with double int
+    """Test typecast bug with double int
 
     30 May 2016, RMM: added to replicate typecast bug in frequency_response.py
     """
@@ -176,9 +302,7 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
     den = [1, 25, 100, 0]
     sys = ctrl.tf(num, den)
     plt.figure()
-    ctrl.bode_plot(sys, margins=True, dB=dB, deg=deg, Hz=Hz)
-    fig = plt.gcf()
-    allaxes = fig.get_axes()
+    fig, allaxes = ctrl.bode_plot(sys, margins=True, dB=dB, deg=deg, Hz=Hz)
 
     mag_to_infinity = (np.array([Wcp, Wcp]),
                        np.array([maginfty1, maginfty2]))
@@ -331,18 +455,18 @@ def test_options(editsdefaults):
      ])
 def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
     # Check initial phase of standard transfer functions
-    mag, phase, omega = ctrl.bode(TF)
+    mag, phase, omega = frequency_response_bode(TF)
     assert(abs(phase[0] - default_phase) < 0.1)
 
     # Now reset the initial phase to +180 and see if things work
-    mag, phase, omega = ctrl.bode(TF, initial_phase=initial_phase)
+    mag, phase, omega = frequency_response_bode(TF, initial_phase=initial_phase)
     assert(abs(phase[0] - expected_phase) < 0.1)
 
     # Make sure everything works in rad/sec as well
     if initial_phase:
         plt.xscale('linear')  # avoids xlim warning on next line
         plt.clf()  # clear previous figure (speeds things up)
-        mag, phase, omega = ctrl.bode(
+        mag, phase, omega = frequency_response_bode(
             TF, initial_phase=initial_phase/180. * math.pi, deg=False)
         assert(abs(phase[0] - expected_phase) < 0.1)
 
@@ -369,7 +493,7 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
                   -270, -3*math.pi/2, math.pi/2,    id="order5, -270"),
     ])
 def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
-    mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
+    mag, phase, omega = frequency_response_bode(TF, wrap_phase=wrap_phase)
     assert(min(phase) >= min_phase)
     assert(max(phase) <= max_phase)
 
@@ -647,3 +771,6 @@ def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
     assert(len(nyquist_line[0]) == 2)
     assert(nyquist_line[0][0] == nyquist_line[0][1])
     assert(nyquist_line[0][0] == np.pi/sys_dt.dt)
+
+
+# TODO: Is there a test for gangof4_plot somewhere?

@@ -21,7 +21,7 @@ import pytest
 from control import rss, ss, ss2tf, tf, tf2ss
 from control.statesp import _mimo2siso
 from control.statefbk import ctrb, obsv
-from control.freqplot import bode
+from control.freqplot import frequency_response_bode
 from control.exception import slycot_check
 from control.tests.conftest import slycotonly
 
@@ -88,7 +88,8 @@ class TestConvert:
                   (ssOriginal.nstates, ssTransformed.nstates))
 
         # Now make sure the frequency responses match
-        # Since bode() only handles SISO, go through each I/O pair
+        # Since frequency_response_bode() only handles SISO, go through 
+        # each I/O pair.
         # For phase, take sine and cosine to avoid +/- 360 offset
         for inputNum in range(inputs):
             for outputNum in range(outputs):
@@ -96,8 +97,9 @@ class TestConvert:
                     print("Checking input %d, output %d"
                           % (inputNum, outputNum))
                 ssorig_mag, ssorig_phase, ssorig_omega = \
-                    bode(_mimo2siso(ssOriginal, inputNum, outputNum),
-                         deg=False, plot=False)
+                    frequency_response_bode( \
+                        _mimo2siso(ssOriginal, inputNum, outputNum),
+                         deg=False)
                 ssorig_real = ssorig_mag * np.cos(ssorig_phase)
                 ssorig_imag = ssorig_mag * np.sin(ssorig_phase)
 
@@ -109,8 +111,8 @@ class TestConvert:
                 tforig = tf(num, den)
 
                 tforig_mag, tforig_phase, tforig_omega = \
-                    bode(tforig, ssorig_omega,
-                         deg=False, plot=False)
+                    frequency_response_bode(tforig, ssorig_omega,
+                         deg=False)
 
                 tforig_real = tforig_mag * np.cos(tforig_phase)
                 tforig_imag = tforig_mag * np.sin(tforig_phase)
@@ -123,10 +125,9 @@ class TestConvert:
                 # Make sure xform'd SS has same frequency response
                 #
                 ssxfrm_mag, ssxfrm_phase, ssxfrm_omega = \
-                    bode(_mimo2siso(ssTransformed,
+                    frequency_response_bode(_mimo2siso(ssTransformed,
                                     inputNum, outputNum),
-                         ssorig_omega,
-                         deg=False, plot=False)
+                         ssorig_omega, deg=False)
                 ssxfrm_real = ssxfrm_mag * np.cos(ssxfrm_phase)
                 ssxfrm_imag = ssxfrm_mag * np.sin(ssxfrm_phase)
                 np.testing.assert_array_almost_equal(
@@ -140,8 +141,8 @@ class TestConvert:
                 den = tfTransformed.den[outputNum][inputNum]
                 tfxfrm = tf(num, den)
                 tfxfrm_mag, tfxfrm_phase, tfxfrm_omega = \
-                    bode(tfxfrm, ssorig_omega,
-                         deg=False, plot=False)
+                    frequency_response_bode(tfxfrm, ssorig_omega, 
+                                            deg=False)
 
                 tfxfrm_real = tfxfrm_mag * np.cos(tfxfrm_phase)
                 tfxfrm_imag = tfxfrm_mag * np.sin(tfxfrm_phase)
