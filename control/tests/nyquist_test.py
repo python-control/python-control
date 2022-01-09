@@ -16,7 +16,7 @@ import control as ct
 # TODO: This function was introduced to allow encirclement calculation
 #       since nyquist_plot no longer returns count.
 #       In future, a different way to calculate this may be implemented.
-from control.freqplot import frequency_response_nyquist
+from control.freqplot import nyquist_stability_criterion
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
 
@@ -45,14 +45,14 @@ def test_nyquist_basic():
     sys = ct.rss(5, 1, 1)
     ax = ct.nyquist_plot(sys)
     assert isinstance(ax, plt.Axes)
-    N_sys, contour = frequency_response_nyquist(sys)
+    N_sys, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == N_sys + _P(sys)
 
     # Unstable system
     sys = ct.tf([10], [1, 2, 2, 1])
     ax = ct.nyquist_plot(sys)
     assert isinstance(ax, plt.Axes)
-    N_sys, contour = frequency_response_nyquist(sys)
+    N_sys, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) > 0
     assert _Z(sys) == N_sys + _P(sys)
 
@@ -62,7 +62,7 @@ def test_nyquist_basic():
     sys3 = ct.rss(5, 1, 1)
     ax = ct.nyquist_plot([sys1, sys2, sys3])
     assert isinstance(ax, plt.Axes)
-    counts, contour = frequency_response_nyquist([sys1, sys2, sys3])
+    counts, contour = nyquist_stability_criterion([sys1, sys2, sys3])
     for N_sys, sys in zip(counts, [sys1, sys2, sys3]):
         assert _Z(sys) == N_sys + _P(sys)
 
@@ -70,7 +70,7 @@ def test_nyquist_basic():
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0])
     omega = np.linspace(0, 1e2, 100)
     ct.nyquist_plot(sys, omega)
-    count, contour = frequency_response_nyquist(sys, omega)
+    count, contour = nyquist_stability_criterion(sys, omega)
     np.testing.assert_array_equal(
         contour[contour.real < 0], omega[contour.real < 0])
 
@@ -82,11 +82,11 @@ def test_nyquist_basic():
     # Make sure that we can turn off frequency modification
     ax = ct.nyquist_plot(sys, np.linspace(1e-4, 1e2, 100))
     count, contour_indented = \
-        frequency_response_nyquist(sys, np.linspace(1e-4, 1e2, 100))
+        nyquist_stability_criterion(sys, np.linspace(1e-4, 1e2, 100))
     assert not all(contour_indented.real == 0)
     ax = ct.nyquist_plot(sys, np.linspace(1e-4, 1e2, 100), 
                          indent_direction='none')
-    count, contour = frequency_response_nyquist(sys, 
+    count, contour = nyquist_stability_criterion(sys, 
                         np.linspace(1e-4, 1e2, 100), 
                         indent_direction='none')
     np.testing.assert_almost_equal(contour, 1j*np.linspace(1e-4, 1e2, 100))
@@ -94,39 +94,39 @@ def test_nyquist_basic():
     # Nyquist plot with poles at the origin, omega unspecified
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0])
     ax = ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles at the origin, return contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0])
     ax = ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, omega specified
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     ax = ct.nyquist_plot(sys, np.linspace(1e-3, 1e1, 1000))
     count, contour = \
-        frequency_response_nyquist(sys, np.linspace(1e-3, 1e1, 1000))
+        nyquist_stability_criterion(sys, np.linspace(1e-3, 1e1, 1000))
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, omega specified, with contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     ax = ct.nyquist_plot(sys, np.linspace(1e-3, 1e1, 1000))
     count, contour = \
-        frequency_response_nyquist(sys, np.linspace(1e-3, 1e1, 1000))
+        nyquist_stability_criterion(sys, np.linspace(1e-3, 1e1, 1000))
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, return contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     ax = ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles at the origin and on imaginary axis
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1]) * ct.tf([1], [1, 0])
     ax = ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
 
@@ -139,35 +139,35 @@ def test_nyquist_fbs_examples():
     plt.title("Figure 10.4: L(s) = 1.4 e^{-s}/(s+1)^2")
     sys = ct.tf([1.4], [1, 2, 1]) * ct.tf(*ct.pade(1, 4))
     ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
     plt.figure()
     plt.title("Figure 10.4: L(s) = 1/(s + a)^2 with a = 0.6")
     sys = 1/(s + 0.6)**3
     ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
     plt.figure()
     plt.title("Figure 10.6: L(s) = 1/(s (s+1)^2) - pole at the origin")
     sys = 1/(s * (s+1)**2)
     ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
     plt.figure()
     plt.title("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2)")
     sys = 3 * (s+6)**2 / (s * (s+1)**2)
     ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
     plt.figure()
     plt.title("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2) [zoom]")
     omega_limits = [1.5, 1e3]
     ct.nyquist_plot(sys, omega_limits=omega_limits)
-    count, contour = frequency_response_nyquist(sys, 
+    count, contour = nyquist_stability_criterion(sys, 
                                         omega_limits=omega_limits)
     # Frequency limits for zoom give incorrect encirclement count
     # assert _Z(sys) == count + _P(sys)
@@ -184,7 +184,7 @@ def test_nyquist_arrows(arrows):
     plt.figure()
     plt.title("L(s) = 1.4 e^{-s}/(s+1)^2 / arrows = %s" % arrows)
     ct.nyquist_plot(sys, arrows=arrows)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     assert _Z(sys) == count + _P(sys)
 
 
@@ -195,13 +195,13 @@ def test_nyquist_encirclements():
 
     plt.figure()
     ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     plt.title("Stable system; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
 
     plt.figure()
     ct.nyquist_plot(sys * 3)
-    count, contour = frequency_response_nyquist(sys * 3)
+    count, contour = nyquist_stability_criterion(sys * 3)
     plt.title("Unstable system; encirclements = %d" % count)
     assert _Z(sys * 3) == count + _P(sys * 3)
 
@@ -210,7 +210,7 @@ def test_nyquist_encirclements():
 
     plt.figure()
     ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     plt.title("Pole at the origin; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
 
@@ -223,21 +223,21 @@ def test_nyquist_indent():
 
     plt.figure()
     ax = ct.nyquist_plot(sys)
-    count, contours = frequency_response_nyquist(sys)
+    count, contours = nyquist_stability_criterion(sys)
     ax.set_title("Pole at origin; indent_radius=default")
     assert _Z(sys) == count + _P(sys)
 
     # first value of default omega vector was 0.1, replaced by 0. for contour
     # indent_radius is larger than 0.1 -> no extra quater circle around origin
     ct.nyquist_plot(sys, indent_radius=.1007)
-    count, contour = frequency_response_nyquist(sys, indent_radius=.1007)
+    count, contour = nyquist_stability_criterion(sys, indent_radius=.1007)
     np.testing.assert_allclose(contour[0], .1007+0.j)
     # second value of omega_vector is larger than indent_radius: not indented
     assert np.all(contour.real[2:] == 0.)
 
     plt.figure()
     ct.nyquist_plot(sys, indent_radius=0.01)
-    count, contour = frequency_response_nyquist(sys, indent_radius=0.01)
+    count, contour = nyquist_stability_criterion(sys, indent_radius=0.01)
     plt.title("Pole at origin; indent_radius=0.01; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
     # indent radius is smaller than the start of the default omega vector
@@ -247,7 +247,7 @@ def test_nyquist_indent():
 
     plt.figure()
     ct.nyquist_plot(sys, indent_direction='left')
-    count, contour = frequency_response_nyquist(sys, indent_direction='left')
+    count, contour = nyquist_stability_criterion(sys, indent_direction='left')
     plt.title(
         "Pole at origin; indent_direction='left'; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys, indent='left')
@@ -258,14 +258,14 @@ def test_nyquist_indent():
     # Imaginary poles with standard indentation
     plt.figure()
     ct.nyquist_plot(sys)
-    count, contour = frequency_response_nyquist(sys)
+    count, contour = nyquist_stability_criterion(sys)
     plt.title("Imaginary poles; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
 
     # Imaginary poles with indentation to the left
     plt.figure()
     ct.nyquist_plot(sys, indent_direction='left', label_freq=300)
-    count, contour = frequency_response_nyquist(sys, 
+    count, contour = nyquist_stability_criterion(sys, 
                             indent_direction='left', label_freq=300)
     plt.title("Imaginary poles; indent_direction='left'; " \
               "encirclements = %d" % count)
@@ -275,7 +275,7 @@ def test_nyquist_indent():
     plt.figure()
     ct.nyquist_plot(sys, np.linspace(0, 1e3, 1000), 
                     indent_direction='none')
-    count, contour = frequency_response_nyquist(sys, 
+    count, contour = nyquist_stability_criterion(sys, 
                     np.linspace(0, 1e3, 1000), 
                     indent_direction='none')
     plt.title(
