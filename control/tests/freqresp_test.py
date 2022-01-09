@@ -7,6 +7,7 @@ including bode plots.
 """
 
 from re import A
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.testing import assert_almost_equal, assert_allclose
@@ -19,8 +20,8 @@ from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, nyquist, rss
 from control.freqplot import (bode_plot, frequency_response_bode, 
-                              nyquist_plot, frequency_response_nyquist, 
-                              singular_values_plot, gangof4_plot)
+                              nyquist_plot, nyquist_stability_criterion, 
+                              singular_values_plot, singular_values, gangof4_plot)
 from control.tests.conftest import slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
@@ -140,17 +141,18 @@ def test_nyquist_plot_siso(ss_siso):
     tf_siso = tf(ss_siso)
     nyquist_plot(ss_siso)
     nyquist_plot(tf_siso)
-    count, contour = frequency_response_nyquist(tf_siso, omega_num=20)
+    count, contour = nyquist_stability_criterion(
+                                             tf_siso, omega_num=20)
     assert len(contour) == 20
 
-    count, contour = frequency_response_nyquist(
-        tf_siso, omega_limits=(1, 100))
+    count, contour = nyquist_stability_criterion(
+                                    tf_siso, omega_limits=(1, 100))
 
     assert_allclose(contour[0], 1j)
     assert_allclose(contour[-1], 100j)
 
-    count, contour = frequency_response_nyquist(
-        tf_siso, omega=np.logspace(-1, 1, 10))
+    count, contour = nyquist_stability_criterion(
+                             tf_siso, omega=np.logspace(-1, 1, 10))
     assert len(contour) == 10
 
 
@@ -732,28 +734,41 @@ def tsystem(request, ss_mimo_ct, ss_miso_ct, ss_simo_ct, ss_siso_ct, ss_mimo_dt)
 
 @pytest.mark.parametrize("tsystem",
                          ["ss_mimo_ct", "ss_miso_ct", "ss_simo_ct", "ss_siso_ct", "ss_mimo_dt"], indirect=["tsystem"])
-def test_singular_values_plot(tsystem):
+def test_singular_values(tsystem):
     sys = tsystem.sys
     for omega_ref, sigma_ref in zip(tsystem.omegas, tsystem.sigmas):
-        sigma, _ = singular_values_plot(sys, omega_ref, plot=False)
+        sigma, _ = singular_values(sys, omega_ref)
         np.testing.assert_almost_equal(sigma, sigma_ref)
 
 
 def test_singular_values_plot_mpl_base(ss_mimo_ct, ss_mimo_dt):
     sys_ct = ss_mimo_ct.sys
     sys_dt = ss_mimo_dt.sys
+
+    # Basic plotting
+    ax1 = singular_values_plot(sys_ct)
+    ax2 = singular_values_plot(sys_dt)
+    for ax in [ax1, ax2]:
+        assert(isinstance(ax, matplotlib.axes.Axes))
+        assert(len(ax.get_lines()) == 5)  # is 5 correct?
+        assert(ax.get_xlabel() == 'Frequency (rad/sec)')
+        assert(ax.get_ylabel() == 'Singular Values')
+
+    # Using existing axes
+    fig, ax = plt.subplots()
+    ax_out = singular_values_plot(sys_ct)
+    assert ax_out is ax
+    fig, ax = plt.subplots()
+    ax_out = singular_values_plot(sys_dt, ax=ax)
+    assert ax_out is ax
+
+    # Plot for multiple systems
     plt.figure()
-    singular_values_plot(sys_ct, plot=True)
-    fig = plt.gcf()
-    allaxes = fig.get_axes()
-    assert(len(allaxes) == 1)
-    assert(allaxes[0].get_label() == 'control-sigma')
-    plt.figure()
-    singular_values_plot([sys_ct, sys_dt], plot=True, Hz=True, dB=True, grid=False)
-    fig = plt.gcf()
-    allaxes = fig.get_axes()
-    assert(len(allaxes) == 1)
-    assert(allaxes[0].get_label() == 'control-sigma')
+    ax = singular_values_plot([sys_ct, sys_dt], Hz=True, dB=True, grid=False)
+    assert(isinstance(ax, matplotlib.axes.Axes))
+    assert(len(ax.get_lines()) == 5)  # is 5 correct?
+    assert(ax.get_xlabel() == 'Frequency (Hz)')
+    assert(ax.get_ylabel() == 'Singular Values (dB)')
 
 
 def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
@@ -761,13 +776,11 @@ def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
     sys_dt = ss_mimo_dt.sys
     omega_all = np.logspace(-3, 2, 1000)
     plt.figure()
-    singular_values_plot(sys_ct, omega_all, plot=True)
-    singular_values_plot(sys_dt, omega_all, plot=True)
-    fig = plt.gcf()
-    allaxes = fig.get_axes()
-    assert(len(allaxes) == 1)
-    assert (allaxes[0].get_label() == 'control-sigma')
-    nyquist_line = allaxes[0].lines[-1].get_data()
+    singular_values_plot(sys_ct, omega_all)
+    ax = singular_values_plot(sys_dt, omega_all)
+    assert(ax.get_xlabel() == 'Frequency (rad/sec)')
+    assert(ax.get_ylabel() == 'Singular Values')
+    nyquist_line = ax.lines[-1].get_data()
     assert(len(nyquist_line[0]) == 2)
     assert(nyquist_line[0][0] == nyquist_line[0][1])
     assert(nyquist_line[0][0] == np.pi/sys_dt.dt)

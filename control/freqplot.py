@@ -57,8 +57,9 @@ from .xferfcn import TransferFunction
 from . import config
 
 
-__all__ = ['bode_plot', 'frequency_response_bode', 'nyquist_plot', 'frequency_response_nyquist', 
-           'gangof4_plot', 'singular_values_plot', 'bode', 'nyquist', 'gangof4']
+__all__ = ['bode_plot', 'frequency_response_bode', 'nyquist_plot', 
+           'nyquist_stability_criterion', 'gangof4_plot', 'singular_values', 
+           'singular_values_plot', 'bode', 'nyquist', 'gangof4']
 
 # Default values for module parameter variables
 _freqplot_defaults = {
@@ -119,7 +120,11 @@ def bode_plot(syslist, omega=None, omega_limits=None, omega_num=None,
         config.defaults['freqplot.number_of_samples'].
     margins : bool
         If True, plot gain and phase margin.
-    method : method to use in computing margins (see :func:`stability_margins`)
+    method : str 
+        method to use in computing margins (see :func:`stability_margins`).
+    axes : list or array
+        2 `matplotlib.axes.Axes` objects to use for the magnitude and phase
+        plots.
     *args : :func:`matplotlib.pyplot.plot` positional properties, optional
         Additional arguments for `matplotlib` plots (color, linestyle, etc)
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
@@ -129,9 +134,9 @@ def bode_plot(syslist, omega=None, omega_limits=None, omega_num=None,
     -------
     fig : `matplotlib.figure.Figure`
         Figure object.
-    axes : ndarray of `matplotlib.axes.Axes`
-        Array containing two axes objects, the magnitude (upper) subplot axis
-        and the phase (lower) subplot axis.
+    axes : list of `matplotlib.axes.Axes`
+        List containing two plot axes, the magnitude (upper) subplot axes
+        and the phase (lower) subplot axes.
 
     Other Parameters
     ----------------
@@ -513,7 +518,7 @@ def frequency_response_bode(syslist, omega=None, omega_limits=None,
 
 
 #
-# Nyquist plot
+# Nyquist stability analysis and Nyquist plot
 #
 
 # Default values for module parameter variables
@@ -767,17 +772,13 @@ def nyquist_plot(syslist, omega=None, omega_limits=None, omega_num=None,
     return ax
 
 
-#
-# Nyquist frequency response
-#
-
 # Temporary functon to compute frequency response of a system
 # in terms of real and imaginary components without plotting.
 # This is just a placeholder to hold the calculations that
 # were removed from nyquist_plot to implement plotting changes.
 # TODO: Change the name of this function since it only calculates the count and contour
-def frequency_response_nyquist(syslist, omega=None, omega_limits=None, omega_num=None, 
-                               warn_nyquist=True, *args, **kwargs):
+def nyquist_stability_criterion(syslist, omega=None, omega_limits=None, omega_num=None, 
+                                warn_nyquist=True, *args, **kwargs):
     """Nyquist countour and number of encirclements for one or more systems.
 
     Calculates the Nyquist contour over a (optional) frequency range and the
@@ -830,8 +831,9 @@ def frequency_response_nyquist(syslist, omega=None, omega_limits=None, omega_num
 
     # Check to see if legacy 'return_contour' keyword was used
     if 'return_contour' in kwargs:
-        warnings.warn("'return_contour' keyword is deprecated in frequency_response_nyquist; "
-                      "always returns contour.", FutureWarning)
+        warnings.warn("'return_contour' keyword is deprecated in "
+                      "nyquist_stability_criterion; always returns contour.", 
+                      FutureWarning)
 
     # Get values for params
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
@@ -853,7 +855,8 @@ def frequency_response_nyquist(syslist, omega=None, omega_limits=None, omega_num
     omega_sys = np.asarray(omega)
 
     counts, contours = \
-        _nyquist_contours_and_encirclements(syslist, omega_sys, omega_range_given, 
+        _nyquist_contours_and_encirclements(syslist, omega_sys, 
+                                            omega_range_given, 
                                             indent_direction, indent_radius, 
                                             warn_nyquist=warn_nyquist)
 
@@ -872,9 +875,10 @@ def frequency_response_nyquist(syslist, omega=None, omega_limits=None, omega_num
 def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
     """Plot the 'Gang of 4' transfer functions for a system
 
-    Given a transfer function describing the plant P and a transfer function
-    describing the controller C, generates a figure with 2x2 plots showing
-    the frequency responses of the four transfer functions:
+    Given a transfer function describing the plant P and a transfer 
+    function describing the controller C, generates a figure with 2x2 
+    plots showing the frequency responses of the four transfer 
+    functions:
 
     S = 1/(1+PC) : Sensitivity function
     PS = P/(1+PC) : Load disturbance to measurement signal
@@ -887,17 +891,22 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
         Linear input/output systems (process and control)
     omega : array
         Range of frequencies (list or bounds) in rad/sec
+    axes : list or array
+        Four `matplotlib.axes.Axes` to use for the gang-of-four plots.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords (passed to `matplotlib`)
 
     Returns
     -------
-    None
+    fig : `matplotlib.figure.Figure`
+        Figure object.
+    axes : list of `matplotlib.axes.Axes`
+        List containing four plot axes.
     """
     if not P.issiso() or not C.issiso():
         # TODO: Add MIMO go4 plots.
-        raise ControlMIMONotImplemented(
-            "Gang of four is currently only implemented for SISO systems.")
+        raise ControlMIMONotImplemented("Gang of four is currently only "
+                                        "implemented for SISO systems.")
 
     # Get the default parameter values
     dB = config._get_param(
@@ -1003,15 +1012,95 @@ def gangof4_plot(P, C, omega=None, axes=None, **kwargs):
 
 
 #
-# Singular values plot
+# Singular values and singular values plot
 #
 
-def singular_values_plot(syslist, omega=None,
-                         plot=True, omega_limits=None, omega_num=None,
-                         *args, **kwargs):
+def singular_values(syslist, omega=None, omega_limits=None, omega_num=None):
+    """Singular value for a system
+
+    Calculate the singular values for the system over a (optional) frequency range.
+
+    Parameters
+    ----------
+    syslist : linsys
+        List of linear systems (single system is OK).
+    omega : array_like
+        List of frequencies in rad/sec to be used for frequency response.
+    omega_limits : array_like of two values
+        Limits of the frequency vector to generate.
+        If Hz=True the limits are in Hz otherwise in rad/s.
+    omega_num : int
+        Number of samples to plot.
+        Default value (1000) set by config.defaults['freqplot.number_of_samples'].
+
+    Returns
+    -------
+    sigma : ndarray (or list of ndarray if len(syslist) > 1))
+        singular values.
+    omega : ndarray (or list of ndarray if len(syslist) > 1))
+        frequencies in rad/sec.
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> den = [75, 1]
+    >>> sys = TransferFunction([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
+    >>> omega = np.logspace(-4, 1, 1000)
+    >>> sigma, omega = singular_values(sys, 0)
+    (array([[197.20868123],
+           [  1.39141948]]), array([0.]))
+
+    """
+
+    # Get values for params (and pop from list to allow keyword use in plot)
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+
+    # If argument was a singleton, turn it into a tuple
+    if not hasattr(syslist, '__iter__'):
+        syslist = (syslist,)
+
+    omega, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num)
+
+    omega = np.atleast_1d(omega)
+
+    sigmas, omegas, = [], []
+    for sys in syslist:
+        # omega_sys = np.asarray(omega)
+        # if sys.isdtime(strict=True):
+        #     # Calculate Nyquist frequency
+        #     nyquistfrq = math.pi / sys.dt
+        #     if not omega_range_given:
+        #         # limit up to and including nyquist frequency
+        #         omega_sys = np.hstack((
+        #             omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+
+        #     omega_complex = np.exp(1j * omega_sys * sys.dt)
+        # else:
+        #     nyquistfrq = None
+        #     omega_complex = 1j*omega_sys
+
+        # fresp = sys(omega_complex, squeeze=False)
+
+        # fresp = fresp.transpose((2, 0, 1))
+        # sigma = np.linalg.svd(fresp, compute_uv=False)
+        sigma, omega_sys = _singular_values(sys, omega, 
+                                            omega_range_given=omega_range_given)
+
+        sigmas.append(sigma.transpose())  # return shape is "channel first"
+        omegas.append(omega_sys)
+
+    if len(syslist) == 1:
+        return sigmas[0], omegas[0]
+    else:
+        return sigmas, omegas
+
+
+def singular_values_plot(syslist, omega=None, omega_limits=None, omega_num=None,
+                         ax=None, *args, **kwargs):
     """Singular value plot for a system
 
-    Plots a Singular Value plot for the system over a (optional) frequency range.
+    Plots a singular value plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
@@ -1027,6 +1116,8 @@ def singular_values_plot(syslist, omega=None,
     omega_num : int
         Number of samples to plot.
         Default value (1000) set by config.defaults['freqplot.number_of_samples'].
+    ax : `matplotlib.axes.Axes` object, default None
+        Axes of the current figure.
     dB : bool
         If True, plot result in dB.
         Default value (False) set by config.defaults['freqplot.dB'].
@@ -1036,10 +1127,8 @@ def singular_values_plot(syslist, omega=None,
 
     Returns
     -------
-    sigma : ndarray (or list of ndarray if len(syslist) > 1))
-        singular values
-    omega : ndarray (or list of ndarray if len(syslist) > 1))
-        frequency in rad/sec
+    axes : `matplotlib.axes.Axes`
+        Plot axes.
 
     Other Parameters
     ----------------
@@ -1070,8 +1159,6 @@ def singular_values_plot(syslist, omega=None,
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    plot = config._get_param(
-        'freqplot', 'plot', plot, True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
 
     # If argument was a singleton, turn it into a tuple
@@ -1083,88 +1170,61 @@ def singular_values_plot(syslist, omega=None,
 
     omega = np.atleast_1d(omega)
 
-    if plot:
-        fig = plt.gcf()
-        ax_sigma = None
+    # Get the current figure axis if none provided.
+    # (plt.gca creates a new figure if none exists)
+    if ax is None:
+        ax = plt.gca()
 
-        # Get the current axes if they already exist
-        for ax in fig.axes:
-            if ax.get_label() == 'control-sigma':
-                ax_sigma = ax
+    # color cycle handled manually as all singular values
+    # of the same systems are expected to be of the same color
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    color_offset = 0
+    if len(ax.lines) > 0:
+        last_color = ax.lines[-1].get_color()
+        if last_color in color_cycle:
+            color_offset = color_cycle.index(last_color) + 1
 
-        # If no axes present, create them from scratch
-        if ax_sigma is None:
-            plt.clf()
-            ax_sigma = plt.subplot(111, label='control-sigma')
-
-        # color cycle handled manually as all singular values
-        # of the same systems are expected to be of the same color
-        color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        color_offset = 0
-        if len(ax_sigma.lines) > 0:
-            last_color = ax_sigma.lines[-1].get_color()
-            if last_color in color_cycle:
-                color_offset = color_cycle.index(last_color) + 1
-
-    sigmas, omegas, nyquistfrqs = [], [], []
     for idx_sys, sys in enumerate(syslist):
-        omega_sys = np.asarray(omega)
+
+        sigma, omega_sys = _singular_values(sys, omega, 
+                                            omega_range_given=omega_range_given)
+
+        # Calculate Nyquist frequency
         if sys.isdtime(strict=True):
             nyquistfrq = math.pi / sys.dt
-            if not omega_range_given:
-                # limit up to and including nyquist frequency
-                omega_sys = np.hstack((
-                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
-
-            omega_complex = np.exp(1j * omega_sys * sys.dt)
         else:
             nyquistfrq = None
-            omega_complex = 1j*omega_sys
 
-        fresp = sys(omega_complex, squeeze=False)
+        color = color_cycle[(idx_sys + color_offset) % len(color_cycle)]
+        color = kwargs.pop('color', color)
 
-        fresp = fresp.transpose((2, 0, 1))
-        sigma = np.linalg.svd(fresp, compute_uv=False)
+        nyquistfrq_plot = None
+        if Hz:
+            omega_plot = omega_sys / (2. * math.pi)
+            if nyquistfrq:
+                nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+        else:
+            omega_plot = omega_sys
+            if nyquistfrq:
+                nyquistfrq_plot = nyquistfrq
+        sigma_plot = sigma
 
-        sigmas.append(sigma.transpose())  # return shape is "channel first"
-        omegas.append(omega_sys)
-        nyquistfrqs.append(nyquistfrq)
-
-        if plot:
-            color = color_cycle[(idx_sys + color_offset) % len(color_cycle)]
-            color = kwargs.pop('color', color)
-
-            nyquistfrq_plot = None
-            if Hz:
-                omega_plot = omega_sys / (2. * math.pi)
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq / (2. * math.pi)
-            else:
-                omega_plot = omega_sys
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq
-            sigma_plot = sigma
-
-            if dB:
-                ax_sigma.semilogx(omega_plot, 20 * np.log10(sigma_plot),
-                                  color=color, *args, **kwargs)
-            else:
-                ax_sigma.loglog(omega_plot, sigma_plot,
+        if dB:
+            ax.semilogx(omega_plot, 20 * np.log10(sigma_plot),
                                 color=color, *args, **kwargs)
+        else:
+            ax.loglog(omega_plot, sigma_plot,
+                            color=color, *args, **kwargs)
 
-            if nyquistfrq_plot is not None:
-                ax_sigma.axvline(x=nyquistfrq_plot, color=color)
+        if nyquistfrq_plot is not None:
+            ax.axvline(x=nyquistfrq_plot, color=color)
 
     # Add a grid to the plot + labeling
-    if plot:
-        ax_sigma.grid(grid, which='both')
-        ax_sigma.set_ylabel("Singular Values (dB)" if dB else "Singular Values")
-        ax_sigma.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+    ax.grid(grid, which='both')
+    ax.set_ylabel("Singular Values (dB)" if dB else "Singular Values")
+    ax.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
 
-    if len(syslist) == 1:
-        return sigmas[0], omegas[0]
-    else:
-        return sigmas, omegas
+    return ax
 
 
 #
@@ -1522,6 +1582,26 @@ def _nyquist_contour(sys, omega_sys, omega_range_given, indent_direction,
         contour = np.exp(splane_contour * sys.dt)
 
     return contour
+
+
+def _singular_values(sys, omega, omega_range_given=False):
+    omega_sys = np.asarray(omega)
+    if sys.isdtime(strict=True):
+        # Calculate Nyquist frequency
+        nyquistfrq = math.pi / sys.dt
+        if not omega_range_given:
+            # limit up to and including nyquist frequency
+            omega_sys = np.hstack((
+                omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+        omega_complex = np.exp(1j * omega_sys * sys.dt)
+    else:
+        nyquistfrq = None
+        omega_complex = 1j * omega_sys
+
+    fresp = sys(omega_complex, squeeze=False)
+    fresp = fresp.transpose((2, 0, 1))
+    sigma = np.linalg.svd(fresp, compute_uv=False)
+    return sigma, omega_sys
 
 
 # Internal function to add arrows to a curve

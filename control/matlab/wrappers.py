@@ -12,7 +12,7 @@ from ..ctrlutil import issys
 from ..exception import ControlArgument
 from scipy.signal import zpk2tf
 from warnings import warn
-from ..freqplot import bode_plot, frequency_response_bode, nyquist_plot, frequency_response_nyquist
+from ..freqplot import bode_plot, frequency_response_bode, nyquist_plot, nyquist_stability_criterion
 
 __all__ = ['bode', 'nyquist', 'ngrid', 'dcgain', 'pzmap']
 
@@ -130,7 +130,7 @@ def nyquist(*args, **kwargs):
         nyquist_plot(syslist, omega, *args, **kwargs)
 
     # Create the MATLAB output arguments
-    count, contour = frequency_response_nyquist(syslist, omega, *args, **kwargs)
+    count, contour = nyquist_stability_criterion(syslist, omega, *args, **kwargs)
     freqresp = syslist(contour)  # assumes syslist is not a list
     real, imag = freqresp.real, freqresp.imag
 
