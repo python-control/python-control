@@ -639,35 +639,9 @@ class OptimalControlProblem():
         if reset:
             self._reset_statistics(self.log)
 
-    # Create an input/output system implementing an MPC controller
-    def _create_mpc_iosystem(self, dt=True):
-        """Create an I/O system implementing an MPC controller"""
-        def _update(t, x, u, params={}):
-            coeffs = x.reshape((self.system.ninputs, -1))
-            if self.basis:
-                # Keep the coeffecients unchanged
-                # TODO: could compute input vector, shift, and re-project (?)
-                self.initial_guess = coeffs
-            else:
-                # Shift the basis elements by one time step
-                self.initial_guess = np.hstack(
-                    [coeffs[:, 1:], coeffs[:, -1:]]).reshape(-1)
-            res = self.compute_trajectory(u, print_summary=False)
-            return res.inputs.reshape(-1)
-
-        def _output(t, x, u, params={}):
-            if self.basis:
-                # TODO: compute inputs from basis elements
-                raise NotImplementedError("basis elements not implemented")
-            else:
-                inputs = x.reshape((self.system.ninputs, -1))
-            return inputs[:, 0]
-
-        return ct.NonlinearIOSystem(
-            _update, _output, dt=dt,
-            inputs=self.system.nstates, outputs=self.system.ninputs,
-            states=self.system.ninputs * \
-                (self.timepts.size if self.basis is None else self.basis.N))
+    #
+    # Optimal control computations
+    #
 
     # Compute the optimal trajectory from the current state
     def compute_trajectory(
@@ -761,6 +735,41 @@ class OptimalControlProblem():
         """
         res = self.compute_trajectory(x, squeeze=squeeze)
         return res.inputs[:, 0]
+
+    # Create an input/output system implementing an MPC controller
+    def create_mpc_iosystem(self):
+        """Create an I/O system implementing an MPC controller"""
+        # Check to make sure we are in discrete time
+        if self.system.dt == 0:
+            raise ControlNotImplemented(
+                "MPC for continuous time systems not implemented")
+
+        def _update(t, x, u, params={}):
+            coeffs = x.reshape((self.system.ninputs, -1))
+            if self.basis:
+                # Keep the coeffecients unchanged
+                # TODO: could compute input vector, shift, and re-project (?)
+                self.initial_guess = coeffs
+            else:
+                # Shift the basis elements by one time step
+                self.initial_guess = np.hstack(
+                    [coeffs[:, 1:], coeffs[:, -1:]]).reshape(-1)
+            res = self.compute_trajectory(u, print_summary=False)
+
+            # New state is the new input vector
+            return res.inputs.reshape(-1)
+
+        def _output(t, x, u, params={}):
+            # Start with initial guess and recompute based on input state (u)
+            self.initial_guess = x
+            res = self.compute_trajectory(u, print_summary=False)
+            return res.inputs[:, 0]
+
+        return ct.NonlinearIOSystem(
+            _update, _output, dt=self.system.dt,
+            inputs=self.system.nstates, outputs=self.system.ninputs,
+            states=self.system.ninputs * \
+                (self.timepts.size if self.basis is None else self.basis.N))
 
 
 # Optimal control result
@@ -952,7 +961,7 @@ def solve_ocp(
 # Create a model predictive controller for an optimal control problem
 def create_mpc_iosystem(
         sys, horizon, cost, constraints=[], terminal_cost=None,
-        terminal_constraints=[], dt=True, log=False, **kwargs):
+        terminal_constraints=[], log=False, **kwargs):
     """Create a model predictive I/O control system
 
     This function creates an input/output system that implements a model
@@ -1001,7 +1010,6 @@ def create_mpc_iosystem(
     :func:`OptimalControlProblem` for more information.
 
     """
-
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
         sys, horizon, cost, trajectory_constraints=constraints,
@@ -1009,7 +1017,7 @@ def create_mpc_iosystem(
         log=log, **kwargs)
 
     # Return an I/O system implementing the model predictive controller
-    return ocp._create_mpc_iosystem(dt=dt)
+    return ocp.create_mpc_iosystem()
 
 
 #
