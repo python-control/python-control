@@ -1870,6 +1870,11 @@ def input_output_response(
             ivp_rhs, (T0, Tf), X0, t_eval=T,
             vectorized=False, **solve_ivp_kwargs)
 
+        if not soln.success or soln.status != 0:
+            # Something went wrong
+            warn("sp.integrate.solve_ivp failed")
+            print("Return bunch:", soln)
+
         # Compute the output associated with the state (and use sys.out to
         # figure out the number of outputs just in case it wasn't specified)
         u = U[0] if len(U.shape) == 1 else U[:, 0]
@@ -1886,7 +1891,7 @@ def input_output_response(
                              "equally spaced.")
 
         # Make sure the sample time matches the given time
-        if (sys.dt is not True):
+        if sys.dt is not True:
             # Make sure that the time increment is a multiple of sampling time
 
             # TODO: add back functionality for undersampling
