@@ -134,6 +134,10 @@ class OptimalControlProblem():
         self.minimize_kwargs['options'] = kwargs.pop('minimize_options', {})
         self.minimize_kwargs.update(kwargs.pop('minimize_kwargs', {}))
 
+        if len(kwargs) > 0:
+            raise ValueError(
+                f'unrecognized keyword(s): {list(kwargs.keys())}')
+
         # Process trajectory constraints
         if isinstance(trajectory_constraints, tuple):
             self.trajectory_constraints = [trajectory_constraints]

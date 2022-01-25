@@ -436,6 +436,11 @@ def test_ocp_argument_errors():
         res = opt.solve_ocp(
             sys, time, x0, cost, constraints, initial_guess=np.zeros((4,1,1)))
 
+    # Unrecognized arguments
+    with pytest.raises(ValueError, match="unrecognized keyword"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, constraints, terminal_constraint=None)
+
 
 def test_optimal_basis_simple():
     sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
