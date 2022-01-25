@@ -39,7 +39,8 @@ def test_finite_horizon_simple():
 
     # Retrieve the full open-loop predictions
     res = opt.solve_ocp(
-        sys, time, x0, cost, constraints, squeeze=True)
+        sys, time, x0, cost, constraints, squeeze=True,
+        terminal_cost=cost)     # include to match MPT3 formulation
     t, u_openloop = res.time, res.inputs
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=4)
@@ -57,9 +58,7 @@ def test_finite_horizon_simple():
 #
 # The next unit test is intended to confirm that a finite horizon
 # optimal control problem with terminal cost set to LQR "cost to go"
-# gives the same answer as LQR.  Unfortunately, it requires a discrete
-# time LQR function which is not yet availbale => for now this just
-# tests the interface a bit.
+# gives the same answer as LQR.
 #
 @slycotonly
 def test_discrete_lqr():
@@ -76,35 +75,43 @@ def test_discrete_lqr():
     # Include weights on states/inputs
     Q = np.eye(2)
     R = 1
-    K, S, E = ct.lqr(A, B, Q, R)        # note: *continuous* time LQR
+    K, S, E = ct.dlqr(A, B, Q, R)
 
     # Compute the integral and terminal cost
     integral_cost = opt.quadratic_cost(sys, Q, R)
     terminal_cost = opt.quadratic_cost(sys, S, None)
 
-    # Formulate finite horizon MPC problem
+    # Solve the LQR problem
+    lqr_sys = ct.ss2io(ct.ss(A - B @ K, B, C, D, 1))
+
+    # Generate a simulation of the LQR controller
     time = np.arange(0, 5, 1)
     x0 = np.array([1, 1])
+    _, _, lqr_x = ct.input_output_response(
+        lqr_sys, time, 0, x0, return_x=True)
+
+    # Use LQR input as initial guess to avoid convergence/precision issues
+    lqr_u = -K @ lqr_x[0:time.size]
+
+    # Formulate the optimal control problem and compute optimal trajectory
     optctrl = opt.OptimalControlProblem(
-        sys, time, integral_cost, terminal_cost=terminal_cost)
+        sys, time, integral_cost, terminal_cost=terminal_cost,
+        initial_guess=lqr_u)
     res1 = optctrl.compute_trajectory(x0, return_states=True)
 
-    with pytest.xfail("discrete LQR not implemented"):
-        # Result should match LQR
-        K, S, E = ct.dlqr(A, B, Q, R)
-        lqr_sys = ct.ss2io(ct.ss(A - B @ K, B, C, D, 1))
-        _, _, lqr_x = ct.input_output_response(
-            lqr_sys, time, 0, x0, return_x=True)
-        np.testing.assert_almost_equal(res1.states, lqr_x)
+    # Compare to make sure results are the same
+    np.testing.assert_almost_equal(res1.inputs, lqr_u[0])
+    np.testing.assert_almost_equal(res1.states, lqr_x)
 
     # Add state and input constraints
     trajectory_constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-10, -10, -1], [10, 10, 1]),
+        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -.5], [5, 5, 0.5]),
     ]
 
     # Re-solve
     res2 = opt.solve_ocp(
-        sys, time, x0, integral_cost, constraints, terminal_cost=terminal_cost)
+        sys, time, x0, integral_cost, trajectory_constraints,
+        terminal_cost=terminal_cost, initial_guess=lqr_u)
 
     # Make sure we got a different solution
     assert np.any(np.abs(res1.inputs - res2.inputs) > 0.1)
@@ -205,7 +212,9 @@ def test_constraint_specification(constraint_list):
 
     # Create a model predictive controller system
     time = np.arange(0, 5, 1)
-    optctrl = opt.OptimalControlProblem(sys, time, cost, constraints)
+    optctrl = opt.OptimalControlProblem(
+        sys, time, cost, constraints,
+        terminal_cost=cost)     # include to match MPT3 formulation
 
     # Compute optimal control and compare against MPT3 solution
     x0 = [4, 0]
@@ -223,7 +232,7 @@ def test_constraint_specification(constraint_list):
         ([[1, 0], [0, 1]], np.eye(2), np.eye(2), 0, 1),
         id = "discrete, dt=1"),
     pytest.param(
-        (np.zeros((2,2)), np.eye(2), np.eye(2), 0),
+        (np.zeros((2, 2)), np.eye(2), np.eye(2), 0),
         id = "continuous"),
 ])
 def test_terminal_constraints(sys_args):
@@ -274,8 +283,11 @@ def test_terminal_constraints(sys_args):
 
     # Re-run using a basis function and see if we get the same answer
     res = opt.solve_ocp(sys, time, x0, cost, terminal_constraints=final_point,
-                       basis=flat.BezierFamily(4, Tf))
-    np.testing.assert_almost_equal(res.inputs, u1, decimal=2)
+                        basis=flat.BezierFamily(8, Tf))
+
+    # Final point doesn't affect cost => don't need to test
+    np.testing.assert_almost_equal(
+        res.inputs[:, :-1], u1[:, :-1], decimal=2)
 
     # Impose some cost on the state, which should change the path
     Q = np.eye(2)
