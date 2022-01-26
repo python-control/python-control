@@ -1524,14 +1524,14 @@ def ss2tf(*args, **kwargs):
     The function accepts either 1 or 4 parameters:
 
     ``ss2tf(sys)``
-        Convert a linear system into space system form. Always creates a
-        new system, even if sys is already a StateSpace object.
+        Convert a linear system from state space into transfer function form. Always creates a
+        new system.
 
     ``ss2tf(A, B, C, D)``
-        Create a state space system from the matrices of its state and
+        Create a transfer function system from the matrices of its state and
         output equations.
 
-        For details see: :func:`ss`
+        For details see: :func:`tf`
 
     Parameters
     ----------
