@@ -181,7 +181,8 @@ class InputOutputSystem(object):
     nstates = 0
 
     def __repr__(self):
-        return self.name if self.name is not None else str(type(self))
+        return f'<{self.__class__.__name__}:{self.name}:{list(self.input_index)}->{list(self.output_index)}>'
+
 
     def __str__(self):
         """String representation of an input/output system"""
