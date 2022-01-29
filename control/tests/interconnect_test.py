@@ -210,3 +210,23 @@ def test_interconnect_exceptions():
 
     with pytest.raises(TypeError, match="unknown parameter"):
         sumblk = ct.summing_junction(input_count=2, output_count=2)
+
+
+def test_string_inputoutput():
+    # regression test for gh-692
+    P1 = ct.rss(2, 1, 1)
+    P1_iosys = ct.LinearIOSystem(P1, inputs='u1', outputs='y1')
+    P2 = ct.rss(2, 1, 1)
+    P2_iosys = ct.LinearIOSystem(P2, inputs='y1', outputs='y2')
+
+    P_s1 = ct.interconnect([P1_iosys, P2_iosys], inputs='u1', outputs=['y2'])
+    assert P_s1.input_index == {'u1' : 0}
+
+    P_s2 = ct.interconnect([P1_iosys, P2_iosys], input='u1', outputs=['y2'])
+    assert P_s2.input_index == {'u1' : 0}
+
+    P_s1 = ct.interconnect([P1_iosys, P2_iosys], inputs=['u1'], outputs='y2')
+    assert P_s1.output_index == {'y2' : 0}
+
+    P_s2 = ct.interconnect([P1_iosys, P2_iosys], inputs=['u1'], output='y2')
+    assert P_s2.output_index == {'y2' : 0}
