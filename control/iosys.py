@@ -2519,6 +2519,11 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         # Use an empty connections list
         connections = []
 
+    if isinstance(inputs, str):
+        inputs = [inputs]
+    if isinstance(outputs, str):
+        outputs = [outputs]
+
     # If inplist/outlist is not present, try using inputs/outputs instead
     if not inplist and inputs is not None:
         inplist = list(inputs)
