@@ -108,7 +108,7 @@ class FlatSystem(NonlinearIOSystem):
     -----
     The class must implement two functions:
 
-    zflag = flatsys.foward(x, u)
+    zflag = flatsys.foward(x, u, params)
         This function computes the flag (derivatives) of the flat output.
         The inputs to this function are the state 'x' and inputs 'u' (both
         1D arrays).  The output should be a 2D array with the first
@@ -116,7 +116,7 @@ class FlatSystem(NonlinearIOSystem):
         dimension of the length required to represent the full system
         dynamics (typically the number of states)
 
-    x, u = flatsys.reverse(zflag)
+    x, u = flatsys.reverse(zflag, params)
         This function system state and inputs give the the flag (derivatives)
         of the flat output.  The input to this function is an 2D array whose
         first dimension is equal to the number of system inputs and whose
@@ -244,8 +244,8 @@ def _basis_flag_matrix(sys, basis, flag, t, params={}):
 
 # Solve a point to point trajectory generation problem for a flat system
 def point_to_point(
-        sys, timepts, x0=0, u0=0, xf=0, uf=0, T0=0, basis=None, cost=None,
-        constraints=None, initial_guess=None, minimize_kwargs={}, **kwargs):
+        sys, timepts, x0=0, u0=0, xf=0, uf=0, T0=0, cost=None, basis=None,
+        trajectory_constraints=None, initial_guess=None, params=None, **kwargs):
     """Compute trajectory between an initial and final conditions.
 
     Compute a feasible trajectory for a differentially flat system between an
@@ -284,7 +284,7 @@ def point_to_point(
         Function that returns the integral cost given the current state
         and input.  Called as `cost(x, u)`.
 
-    constraints : list of tuples, optional
+    trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.
         Each element of the list should consist of a tuple with first element
         given by :class:`scipy.optimize.LinearConstraint` or
@@ -337,8 +337,15 @@ def point_to_point(
     T0 = timepts[0] if len(timepts) > 1 else T0
 
     # Process keyword arguments
+    if trajectory_constraints is None:
+        # Backwards compatibility
+        trajectory_constraints = kwargs.pop('constraints', None)
+
+    minimize_kwargs = {}
     minimize_kwargs['method'] = kwargs.pop('minimize_method', None)
     minimize_kwargs['options'] = kwargs.pop('minimize_options', {})
+    minimize_kwargs.update(kwargs.pop('minimize_kwargs', {}))
+
     if kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
@@ -353,11 +360,14 @@ def point_to_point(
     # Make sure we have enough basis functions to solve the problem
     if basis.N * sys.ninputs < 2 * (sys.nstates + sys.ninputs):
         raise ValueError("basis set is too small")
-    elif (cost is not None or constraints is not None) and \
+    elif (cost is not None or trajectory_constraints is not None) and \
          basis.N * sys.ninputs == 2 * (sys.nstates + sys.ninputs):
         warnings.warn("minimal basis specified; optimization not possible")
         cost = None
-        constraints = None
+        trajectory_constraints = None
+
+    # Figure out the parameters to use, if any
+    params = sys.params if params is None else params
 
     #
     # Map the initial and final conditions to flat output conditions
@@ -366,8 +376,8 @@ def point_to_point(
     # and then evaluate this at the initial and final condition.
     #
 
-    zflag_T0 = sys.forward(x0, u0)
-    zflag_Tf = sys.forward(xf, uf)
+    zflag_T0 = sys.forward(x0, u0, params)
+    zflag_Tf = sys.forward(xf, uf, params)
 
     #
     # Compute the matrix constraints for initial and final conditions
@@ -400,7 +410,7 @@ def point_to_point(
     # Start by solving the least squares problem
     alpha, residuals, rank, s = np.linalg.lstsq(M, Z, rcond=None)
 
-    if cost is not None or constraints is not None:
+    if cost is not None or trajectory_constraints is not None:
         # Search over the null space to minimize cost/satisfy constraints
         N = sp.linalg.null_space(M)
 
@@ -418,7 +428,7 @@ def point_to_point(
                 zflag = (M_t @ coeffs).reshape(sys.ninputs, -1)
 
                 # Find states and inputs at the time points
-                x, u = sys.reverse(zflag)
+                x, u = sys.reverse(zflag, params)
 
                 # Evaluate the cost at this time point
                 costval += cost(x, u)
@@ -429,13 +439,13 @@ def point_to_point(
             traj_cost = lambda coeffs: coeffs @ coeffs
 
         # Process the constraints we were given
-        traj_constraints = constraints
-        if constraints is None:
+        traj_constraints = trajectory_constraints
+        if traj_constraints is None:
             traj_constraints = []
-        elif isinstance(constraints, tuple):
+        elif isinstance(traj_constraints, tuple):
             # TODO: Check to make sure this is really a constraint
-            traj_constraints = [constraints]
-        elif not isinstance(constraints, list):
+            traj_constraints = [traj_constraints]
+        elif not isinstance(traj_constraints, list):
             raise TypeError("trajectory constraints must be a list")
 
         # Process constraints
@@ -456,7 +466,7 @@ def point_to_point(
                     zflag = (M_t @ coeffs).reshape(sys.ninputs, -1)
 
                     # Find states and inputs at the time points
-                    states, inputs = sys.reverse(zflag)
+                    states, inputs = sys.reverse(zflag, params)
 
                     # Evaluate the constraint function along the trajectory
                     for type, fun, lb, ub in traj_constraints:
@@ -507,8 +517,8 @@ def point_to_point(
     # Transform the trajectory from flat outputs to states and inputs
     #
 
-    # Createa  trajectory object to store the resul
-    systraj = SystemTrajectory(sys, basis)
+    # Create a trajectory object to store the result
+    systraj = SystemTrajectory(sys, basis, params=params)
 
     # Store the flag lengths and coefficients
     # TODO: make this more pythonic

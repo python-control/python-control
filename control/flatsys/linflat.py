@@ -113,7 +113,7 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
         self.Cf = Cfz @ Tr
 
     # Compute the flat flag from the state (and input)
-    def forward(self, x, u):
+    def forward(self, x, u, params):
         """Compute the flat flag given the states and input.
 
         See :func:`control.flatsys.FlatSystem.forward` for more info.
@@ -130,7 +130,7 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
         return zflag
 
     # Compute state and input from flat flag
-    def reverse(self, zflag):
+    def reverse(self, zflag, params):
         """Compute the states and input given the flat flag.
 
         See :func:`control.flatsys.FlatSystem.reverse` for more info.
