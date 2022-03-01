@@ -1820,6 +1820,7 @@ def input_output_response(
         legal_shapes = [(sys.ninputs, n_steps)]
     U = _check_convert_array(U, legal_shapes,
                              'Parameter ``U``: ', squeeze=False)
+    U = U.reshape(-1, n_steps)
 
     # Check to make sure this is not a static function
     nstates = _find_size(sys.nstates, X0)
@@ -1908,7 +1909,7 @@ def input_output_response(
         # Compute the solution
         soln = sp.optimize.OptimizeResult()
         soln.t = T                      # Store the time vector directly
-        x = [float(x0) for x0 in X0]    # State vector (store as floats)
+        x = X0                          # Initilize state
         soln.y = []                     # Solution, following scipy convention
         y = []                          # System output
         for i in range(len(T)):
