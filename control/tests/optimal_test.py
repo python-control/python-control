@@ -441,6 +441,17 @@ def test_ocp_argument_errors():
         res = opt.solve_ocp(
             sys, time, x0, cost, constraints, terminal_constraint=None)
 
+    # Unrecognized trajectory constraint type
+    constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
+    with pytest.raises(TypeError, match="unknown constraint type"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, trajectory_constraints=constraints)
+
+    # Unrecognized terminal constraint type
+    with pytest.raises(TypeError, match="unknown constraint type"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, terminal_constraints=constraints)
+
 
 def test_optimal_basis_simple():
     sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
@@ -484,3 +495,57 @@ def test_optimal_basis_simple():
         basis=flat.BezierFamily(4, Tf), return_x=True, log=True)
     assert res3.success
     np.testing.assert_almost_equal(res3.inputs, res1.inputs, decimal=3)
+
+
+def test_equality_constraints():
+    """Test out the ability to handle equality constraints"""
+    # Create the system (double integrator, continuous time)
+    sys = ct.ss2io(ct.ss(np.zeros((2, 2)), np.eye(2), np.eye(2), 0))
+
+    # Shortest path to a point is a line
+    Q = np.zeros((2, 2))
+    R = np.eye(2)
+    cost = opt.quadratic_cost(sys, Q, R)
+
+    # Set up the terminal constraint to be the origin
+    final_point = [opt.state_range_constraint(sys, [0, 0], [0, 0])]
+
+    # Create the optimal control problem
+    time = np.arange(0, 3, 1)
+    optctrl = opt.OptimalControlProblem(
+        sys, time, cost, terminal_constraints=final_point)
+
+    # Find a path to the origin
+    x0 = np.array([4, 3])
+    res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    t, u1, x1 = res.time, res.inputs, res.states
+
+    # Bug prior to SciPy 1.6 will result in incorrect results
+    if NumpyVersion(sp.__version__) < '1.6.0':
+        pytest.xfail("SciPy 1.6 or higher required")
+
+    np.testing.assert_almost_equal(x1[:,-1], 0, decimal=4)
+
+    # Set up terminal constraints as a nonlinear constraint
+    def final_point_eval(x, u):
+        return x
+    final_point = [
+        (sp.optimize.NonlinearConstraint, final_point_eval, [0, 0], [0, 0])]
+
+    optctrl = opt.OptimalControlProblem(
+        sys, time, cost, terminal_constraints=final_point)
+
+    # Find a path to the origin
+    x0 = np.array([4, 3])
+    res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+    t, u2, x2 = res.time, res.inputs, res.states
+    np.testing.assert_almost_equal(x2[:,-1], 0, decimal=4)
+    np.testing.assert_almost_equal(u1, u2)
+    np.testing.assert_almost_equal(x1, x2)
+
+    # Try passing and unknown constraint type
+    final_point = [(None, final_point_eval, [0, 0], [0, 0])]
+    with pytest.raises(TypeError, match="unknown constraint type"):
+        optctrl = opt.OptimalControlProblem(
+            sys, time, cost, terminal_constraints=final_point)
+        res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)

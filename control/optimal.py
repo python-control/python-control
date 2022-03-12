@@ -146,6 +146,11 @@ class OptimalControlProblem():
         else:
             self.trajectory_constraints = trajectory_constraints
 
+        # Make sure that we recognize all of the constraint types
+        for ctype, fun, lb, ub in self.trajectory_constraints:
+            if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
+                raise TypeError(f"unknown constraint type {ctype}")
+
         # Process terminal constraints
         if isinstance(terminal_constraints, tuple):
             self.terminal_constraints = [terminal_constraints]
@@ -153,6 +158,11 @@ class OptimalControlProblem():
             raise TypeError("terminal constraints must be a list")
         else:
             self.terminal_constraints = terminal_constraints
+
+        # Make sure that we recognize all of the constraint types
+        for ctype, fun, lb, ub in self.terminal_constraints:
+            if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
+                raise TypeError(f"unknown constraint type {ctype}")
 
         #
         # Compute and store constraints
@@ -401,7 +411,8 @@ class OptimalControlProblem():
                     value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
                 elif ctype == opt.NonlinearConstraint:
                     value.append(fun(states[:, i], inputs[:, i]))
-                else:
+                else:      # pragma: no cover
+                    # Checked above => we should never get here
                     raise TypeError(f"unknown constraint type {ctype}")
 
         # Evaluate the terminal constraint functions
@@ -413,7 +424,8 @@ class OptimalControlProblem():
                 value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
             elif ctype == opt.NonlinearConstraint:
                 value.append(fun(states[:, i], inputs[:, i]))
-            else:
+            else:      # pragma: no cover
+                # Checked above => we should never get here
                 raise TypeError(f"unknown constraint type {ctype}")
 
         # Update statistics
@@ -485,7 +497,8 @@ class OptimalControlProblem():
                     value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
                 elif ctype == opt.NonlinearConstraint:
                     value.append(fun(states[:, i], inputs[:, i]))
-                else:
+                else:      # pragma: no cover
+                    # Checked above => we should never get here
                     raise TypeError(f"unknown constraint type {ctype}")
 
         # Evaluate the terminal constraint functions
@@ -497,7 +510,8 @@ class OptimalControlProblem():
                 value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
             elif ctype == opt.NonlinearConstraint:
                 value.append(fun(states[:, i], inputs[:, i]))
-            else:
+            else:      # pragma: no cover
+                # Checked above => we should never get here
                 raise TypeError("unknown constraint type {ctype}")
 
         # Update statistics
@@ -844,7 +858,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def solve_ocp(
-        sys, horizon, X0, cost, constraints=[], terminal_cost=None,
+        sys, horizon, X0, cost, trajectory_constraints=[], terminal_cost=None,
         terminal_constraints=[], initial_guess=None, basis=None, squeeze=None,
         transpose=None, return_states=False, log=False, **kwargs):
 
@@ -865,7 +879,7 @@ def solve_ocp(
         Function that returns the integral cost given the current state
         and input.  Called as `cost(x, u)`.
 
-    constraints : list of tuples, optional
+    trajectory_constraints : list of tuples, optional
         List of constraints that should hold at each point in the time vector.
         Each element of the list should consist of a tuple with first element
         given by :meth:`scipy.optimize.LinearConstraint` or
@@ -943,13 +957,18 @@ def solve_ocp(
     :func:`OptimalControlProblem` for more information.
 
     """
+    # Process keyword arguments
+    if trajectory_constraints is None:
+        # Backwards compatibility
+        trajectory_constraints = kwargs.pop('constraints', None)
+
     # Allow 'return_x` as a synonym for 'return_states'
     return_states = ct.config._get_param(
         'optimal', 'return_x', kwargs, return_states, pop=True)
 
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
-        sys, horizon, cost, trajectory_constraints=constraints,
+        sys, horizon, cost, trajectory_constraints=trajectory_constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
         initial_guess=initial_guess, basis=basis, log=log, **kwargs)
 
