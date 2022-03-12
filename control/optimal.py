@@ -776,7 +776,7 @@ class OptimalControlProblem():
         """Create an I/O system implementing an MPC controller"""
         # Check to make sure we are in discrete time
         if self.system.dt == 0:
-            raise ControlNotImplemented(
+            raise ct.ControlNotImplemented(
                 "MPC for continuous time systems not implemented")
 
         def _update(t, x, u, params={}):
