@@ -113,14 +113,45 @@ class TestFlatSys:
         np.testing.assert_array_almost_equal(uf, u[:, 1])
 
         # Simulate the system and make sure we stay close to desired traj
-        T = np.linspace(0, Tf, 500)
+        T = np.linspace(0, Tf, 100)
         xd, ud = traj.eval(T)
+        resp = ct.input_output_response(vehicle_flat, T, ud, x0)
+        np.testing.assert_array_almost_equal(resp.states, xd, decimal=2)
 
         # For SciPy 1.0+, integrate equations and compare to desired
         if StrictVersion(sp.__version__) >= "1.0":
             t, y, x = ct.input_output_response(
                 vehicle_flat, T, ud, x0, return_x=True)
             np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
+
+    def test_flat_default_output(self, vehicle_flat):
+        # Construct a flat system with the default outputs
+        flatsys = fs.FlatSystem(
+            vehicle_flat.forward, vehicle_flat.reverse, vehicle_flat.updfcn,
+            inputs=vehicle_flat.ninputs, outputs=vehicle_flat.ninputs,
+            states=vehicle_flat.nstates)
+
+        # Define the endpoints of the trajectory
+        x0 = [0., -2., 0.]; u0 = [10., 0.]
+        xf = [100., 2., 0.]; uf = [10., 0.]
+        Tf = 10
+
+        # Find trajectory between initial and final conditions
+        poly = fs.PolyFamily(6)
+        traj1 = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
+        traj2 = fs.point_to_point(flatsys, Tf, x0, u0, xf, uf, basis=poly)
+
+        # Verify that the trajectory computation is correct
+        T = np.linspace(0, Tf, 10)
+        x1, u1 = traj1.eval(T)
+        x2, u2 = traj2.eval(T)
+        np.testing.assert_array_almost_equal(x1, x2)
+        np.testing.assert_array_almost_equal(u1, u2)
+
+        # Run a simulation and verify that the outputs are correct
+        resp1 = ct.input_output_response(vehicle_flat, T, u1, x0)
+        resp2 = ct.input_output_response(flatsys, T, u1, x0)
+        np.testing.assert_array_almost_equal(resp1.outputs[0:2], resp2.outputs)
 
     def test_flat_cost_constr(self):
         # Double integrator system

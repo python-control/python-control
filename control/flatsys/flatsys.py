@@ -216,7 +216,7 @@ class FlatSystem(NonlinearIOSystem):
     def _flat_outfcn(self, t, x, u, params={}):
         # Return the flat output
         zflag = self.forward(x, u, params)
-        return np.array(zflag[:][0])
+        return np.array([zflag[i][0] for i in range(len(zflag))])
 
 
 # Utility function to compute flag matrix given a basis

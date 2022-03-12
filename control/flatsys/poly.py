@@ -52,7 +52,7 @@ class PolyFamily(BasisFamily):
     """
     def __init__(self, N):
         """Create a polynomial basis of order N."""
-        self.N = N                    # save number of basis functions
+        super(PolyFamily, self).__init__(N)
 
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t):
