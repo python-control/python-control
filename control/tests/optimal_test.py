@@ -91,7 +91,7 @@ def test_discrete_lqr():
         lqr_sys, time, 0, x0, return_x=True)
 
     # Use LQR input as initial guess to avoid convergence/precision issues
-    lqr_u = -K @ lqr_x[0:time.size]
+    lqr_u = np.array(-K @ lqr_x[0:time.size]) # convert from matrix
 
     # Formulate the optimal control problem and compute optimal trajectory
     optctrl = opt.OptimalControlProblem(

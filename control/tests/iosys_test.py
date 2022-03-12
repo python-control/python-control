@@ -745,7 +745,7 @@ class TestIOSys:
             return C @ x
         nlsys = ct.NonlinearIOSystem(
             nlsys_update, nlsys_output, inputs=1, outputs=1, states=2, dt=True)
-        
+
         # Set up parameters for simulation
         T, U, X0 = tsys.T, tsys.U, tsys.X0
 
