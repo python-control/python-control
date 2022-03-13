@@ -62,8 +62,7 @@ from .lti import LTI, common_timebase, isdtime, _process_frequency_response
 from . import config
 from copy import deepcopy
 
-__all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
-
+__all__ = ['StateSpace', 'tf2ss', 'ssdata']
 
 # Define module default parameter values
 _statesp_defaults = {
@@ -1768,7 +1767,7 @@ def _mimo2simo(sys, input, warn_conversion=False):
     return sys
 
 
-def ss(*args, **kwargs):
+def _ss(*args, **kwargs):
     """ss(A, B, C, D[, dt])
 
     Create a state space system.
@@ -1930,89 +1929,6 @@ def tf2ss(*args):
         return _convert_to_statespace(sys)
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
-
-
-def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
-    """
-    Create a stable *continuous* random state space object.
-
-    Parameters
-    ----------
-    states : int
-        Number of state variables
-    outputs : int
-        Number of system outputs
-    inputs : int
-        Number of system inputs
-    strictly_proper : bool, optional
-        If set to 'True', returns a proper system (no direct term).
-
-    Returns
-    -------
-    sys : StateSpace
-        The randomly created linear system
-
-    Raises
-    ------
-    ValueError
-        if any input is not a positive integer
-
-    See Also
-    --------
-    drss
-
-    Notes
-    -----
-    If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system
-    will always have a negative real part.
-
-    """
-
-    return _rss_generate(states, inputs, outputs, 'c',
-                         strictly_proper=strictly_proper)
-
-
-def drss(states=1, outputs=1, inputs=1, strictly_proper=False):
-    """
-    Create a stable *discrete* random state space object.
-
-    Parameters
-    ----------
-    states : int
-        Number of state variables
-    inputs : integer
-        Number of system inputs
-    outputs : int
-        Number of system outputs
-    strictly_proper: bool, optional
-        If set to 'True', returns a proper system (no direct term).
-
-
-    Returns
-    -------
-    sys : StateSpace
-        The randomly created linear system
-
-    Raises
-    ------
-    ValueError
-        if any input is not a positive integer
-
-    See Also
-    --------
-    rss
-
-    Notes
-    -----
-    If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system
-    will always have a magnitude less than 1.
-
-    """
-
-    return _rss_generate(states, inputs, outputs, 'd',
-                         strictly_proper=strictly_proper)
 
 
 def ssdata(sys):

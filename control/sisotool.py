@@ -5,7 +5,7 @@ from .freqplot import bode_plot
 from .timeresp import step_response
 from .lti import issiso, isdtime
 from .xferfcn import tf
-from .statesp import ss
+from .iosys import ss
 from .bdalg import append, connect
 from .iosys import tf2io, ss2io, summing_junction, interconnect
 from control.statesp import _convert_to_statespace, StateSpace

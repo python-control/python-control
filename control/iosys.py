@@ -32,6 +32,7 @@ import copy
 from warnings import warn
 
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
+from .statesp import _ss, _rss_generate
 from .xferfcn import TransferFunction
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData
@@ -40,8 +41,8 @@ from . import config
 
 __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
            'InterconnectedSystem', 'LinearICSystem', 'input_output_response',
-           'find_eqpt', 'linearize', 'ss2io', 'tf2io', 'interconnect',
-           'summing_junction']
+           'find_eqpt', 'linearize', 'ss', 'rss', 'drss', 'ss2io', 'tf2io',
+           'interconnect', 'summing_junction']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -181,7 +182,8 @@ class InputOutputSystem(object):
     nstates = 0
 
     def __repr__(self):
-        return self.name if self.name is not None else str(type(self))
+        return str(type(self)) + ": " + self.name if self.name is not None \
+            else str(type(self))
 
     def __str__(self):
         """String representation of an input/output system"""
@@ -852,6 +854,10 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         y = self.C @ np.reshape(x, (-1, 1)) \
             + self.D @ np.reshape(u, (-1, 1))
         return np.array(y).reshape((-1,))
+
+    def __str__(self):
+        return InputOutputSystem.__str__(self) + "\n\n" \
+            + StateSpace.__str__(self)
 
 
 class NonlinearIOSystem(InputOutputSystem):
@@ -2259,6 +2265,94 @@ def _find_size(sysval, vecval):
         # (1, scalar) is also a valid combination from legacy code
         return 1
     raise ValueError("Can't determine size of system component.")
+
+
+# Define a state space object that is an I/O system
+def ss(*args, **kwargs):
+    return LinearIOSystem(_ss(*args, **kwargs))
+ss.__doc__ = _ss.__doc__
+
+
+def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
+    """
+    Create a stable *continuous* random state space object.
+
+    Parameters
+    ----------
+    states : int
+        Number of state variables
+    outputs : int
+        Number of system outputs
+    inputs : int
+        Number of system inputs
+    strictly_proper : bool, optional
+        If set to 'True', returns a proper system (no direct term).
+
+    Returns
+    -------
+    sys : StateSpace
+        The randomly created linear system
+
+    Raises
+    ------
+    ValueError
+        if any input is not a positive integer
+
+    See Also
+    --------
+    drss
+
+    Notes
+    -----
+    If the number of states, inputs, or outputs is not specified, then the
+    missing numbers are assumed to be 1.  The poles of the returned system
+    will always have a negative real part.
+
+    """
+
+    return LinearIOSystem(_rss_generate(
+        states, inputs, outputs, 'c', strictly_proper=strictly_proper))
+
+
+def drss(states=1, outputs=1, inputs=1, strictly_proper=False):
+    """
+    Create a stable *discrete* random state space object.
+
+    Parameters
+    ----------
+    states : int
+        Number of state variables
+    inputs : integer
+        Number of system inputs
+    outputs : int
+        Number of system outputs
+    strictly_proper: bool, optional
+        If set to 'True', returns a proper system (no direct term).
+
+    Returns
+    -------
+    sys : StateSpace
+        The randomly created linear system
+
+    Raises
+    ------
+    ValueError
+        if any input is not a positive integer
+
+    See Also
+    --------
+    rss
+
+    Notes
+    -----
+    If the number of states, inputs, or outputs is not specified, then the
+    missing numbers are assumed to be 1.  The poles of the returned system
+    will always have a magnitude less than 1.
+
+    """
+
+    return LinearIOSystem(_rss_generate(
+        states, inputs, outputs, 'd', strictly_proper=strictly_proper))
 
 
 # Convert a state space system into an input/output system (wrapper)

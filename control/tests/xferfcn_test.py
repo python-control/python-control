@@ -8,14 +8,11 @@ import pytest
 import operator
 
 import control as ct
-from control.statesp import StateSpace, _convert_to_statespace, rss
-from control.xferfcn import TransferFunction, _convert_to_transfer_function, \
-    ss2tf
-from control.lti import evalfr
+from control import StateSpace, TransferFunction, rss, ss2tf, evalfr
+from control import isctime, isdtime, sample_system, defaults
+from control.statesp import _convert_to_statespace
+from control.xferfcn import _convert_to_transfer_function
 from control.tests.conftest import slycotonly, nopython2, matrixfilter
-from control.lti import isctime, isdtime
-from control.dtime import sample_system
-from control.config import defaults
 
 
 class TestXferFcn:

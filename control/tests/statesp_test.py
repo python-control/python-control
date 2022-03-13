@@ -18,8 +18,9 @@ import control as ct
 from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
-from control.statesp import (StateSpace, _convert_to_statespace, drss,
-                             rss, ss, tf2ss, _statesp_defaults, _rss_generate)
+from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
+    _statesp_defaults, _rss_generate
+from control.iosys import ss, rss, drss
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
