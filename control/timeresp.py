@@ -80,6 +80,7 @@ from copy import copy
 
 from . import config
 from .lti import isctime, isdtime
+from .namedio import _NamedIOStateObject
 from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
 from .xferfcn import TransferFunction
 
@@ -87,7 +88,7 @@ __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData']
 
 
-class TimeResponseData():
+class TimeResponseData(_NamedIOStateObject):
     """A class for returning time responses.
 
     This class maintains and manipulates the data corresponding to the

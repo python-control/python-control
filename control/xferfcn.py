@@ -243,7 +243,7 @@ class TransferFunction(LTI):
         if len(args) == 2:
             # no dt given in positional arguments
             if 'dt' in kwargs:
-                dt = kwargs['dt']
+                dt = kwargs.pop('dt')
             elif self._isstatic():
                 dt = None
             else:
@@ -253,6 +253,7 @@ class TransferFunction(LTI):
             if 'dt' in kwargs:
                 warn('received multiple dt arguments, '
                      'using positional arg dt=%s' % dt)
+                kwargs.pop('dt')
         elif len(args) == 1:
             # TODO: not sure this can ever happen since dt is always present
             try:
