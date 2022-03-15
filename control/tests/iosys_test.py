@@ -1016,7 +1016,7 @@ class TestIOSys:
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
         ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        ct.namedio._NamedIOObject._idCounter = 0
+        ct.namedio._NamedIOSystem._idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
 
         assert sys.name == "sys[0]"
@@ -1080,7 +1080,7 @@ class TestIOSys:
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
         ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        ct.namedio._NamedIOObject._idCounter = 0
+        ct.namedio._NamedIOSystem._idCounter = 0
         sys = ct.LinearIOSystem(tsys.mimo_linsys1)
         for statename in ["x[0]", "x[1]"]:
             assert statename in sys.state_index

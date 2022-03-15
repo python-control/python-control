@@ -59,7 +59,7 @@ from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
 from .lti import LTI, common_timebase, isdtime, _process_frequency_response
-from .namedio import _NamedIOStateObject, _process_signal_list
+from .namedio import _NamedIOStateSystem, _process_signal_list
 from . import config
 from copy import deepcopy
 
@@ -153,7 +153,7 @@ def _f2s(f):
     return s
 
 
-class StateSpace(LTI, _NamedIOStateObject):
+class StateSpace(LTI, _NamedIOStateSystem):
     """StateSpace(A, B, C, D[, dt])
 
     A class for representing state-space models.

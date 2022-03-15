@@ -31,7 +31,7 @@ import scipy as sp
 import copy
 from warnings import warn
 
-from .namedio import _NamedIOStateObject, _process_signal_list
+from .namedio import _NamedIOStateSystem, _process_signal_list
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
 from .statesp import _ss, _rss_generate
 from .xferfcn import TransferFunction
@@ -55,7 +55,7 @@ _iosys_defaults = {
 }
 
 
-class InputOutputSystem(_NamedIOStateObject):
+class InputOutputSystem(_NamedIOStateSystem):
     """A class for representing input/output systems.
 
     The InputOutputSystem class allows (possibly nonlinear) input/output
@@ -139,7 +139,7 @@ class InputOutputSystem(_NamedIOStateObject):
 
         """
         # Store the system name, inputs, outputs, and states
-        _NamedIOStateObject.__init__(
+        _NamedIOStateSystem.__init__(
             self, inputs=inputs, outputs=outputs, states=states, name=name)
 
         # default parameters
@@ -886,7 +886,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         # Look for 'input' and 'output' parameter name variants
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
-        outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+        outputs = _parse_signal_parameter(outputs, 'output', kwargs, end=True)
 
         # Convert input and output names to lists if they aren't already
         if not isinstance(inplist, (list, tuple)):
@@ -2526,9 +2526,8 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         raise ValueError('check_unused is False, but either '
                          + 'ignore_inputs or ignore_outputs non-empty')
 
-    if (connections is False
-        and not inplist and not outlist
-        and not inputs and not outputs):
+    if connections is False and not inplist and not outlist \
+       and not inputs and not outputs:
         # user has disabled auto-connect, and supplied neither input
         # nor output mappings; assume they know what they're doing
         check_unused = False

@@ -46,6 +46,8 @@ from . import statesp
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
 from .lti import LTI, isdtime, isctime
+from .iosys import InputOutputSystem, NonlinearIOSystem, LinearIOSystem, \
+    interconnect, ss
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
 
@@ -69,7 +71,7 @@ except ImportError:
 
 
 __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 'lqe',
-           'dlqr', 'dlqe', 'acker']
+           'dlqr', 'dlqe', 'acker', 'create_statefbk_iosystem']
 
 
 # Pole placement
@@ -783,6 +785,193 @@ def dlqr(*args, **keywords):
     # Compute the result (dimension and symmetry checking done in dare())
     S, E, K = dare(A, B, Q, R, N, method=method, S_s="N")
     return _ssmatrix(K), _ssmatrix(S), E
+
+
+# Function to create an I/O sytems representing a state feedback controller
+def create_statefbk_iosystem(
+        sys, K, integral_action=None, xd_labels='xd[{i}]', ud_labels='ud[{i}]',
+        estimator=None, type='linear'):
+    """Create an I/O system using a (full) state feedback controller
+
+    This function creates an input/output system that implements a
+    state feedback controller of the form
+
+        u = ud - K_p (x - xd) - K_i integral(C x - C x_d)
+
+    It can be called in the form
+
+        ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
+
+    where ``sys`` is the process dynamics and ``K`` is the state (+ integral)
+    feedback gain (eg, from LQR).  The function returns the controller
+    ``ctrl`` and the closed loop systems ``clsys``, both as I/O systems.
+
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        The I/O system that represents the process dynamics.  If no estimator
+        is given, the output of this system should represent the full state.
+
+    K : ndarray
+        The state feedback gain.  This matrix defines the gains to be
+        applied to the system.  If ``integral_action`` is None, then the
+        dimensions of this array should be (sys.ninputs, sys.nstates).  If
+        `integral action` is set to a matrix or a function, then additional
+        columns represent the gains of the integral states of the
+        controller.
+
+    xd_labels, ud_labels : str or list of str, optional
+        Set the name of the signals to use for the desired state and inputs.
+        If a single string is specified, it should be a format string using
+        the variable ``i`` as an index.  Otherwise, a list of strings matching
+        the size of xd and ud, respectively, should be used.  Default is
+        ``'xd[{i}]'`` for xd_labels and ``'xd[{i}]'`` for ud_labels.
+
+    integral_action : None, ndarray, or func, optional
+        If this keyword is specified, the controller can include integral
+        action in addition to state feedback.  If ``integral_action`` is an
+        ndarray, it will be multiplied by the current and desired state to
+        generate the error for the internal integrator states of the control
+        law.  If ``integral_action`` is a function ``h``, that function will
+        be called with the signature h(t, x, u, params) to obtain the
+        outputs that should be integrated.  The number of outputs that are
+        to be integrated must match the number of additional columns in the
+        ``K`` matrix.
+
+    estimator : InputOutputSystem, optional
+        If an estimator is provided, using the states of the estimator as
+        the system inputs for the controller.
+
+    type : 'nonlinear' or 'linear', optional
+        Set the type of controller to create. The default is a linear
+        controller implementing the LQR regulator. If the type is 'nonlinear',
+        a :class:NonlinearIOSystem is created instead, with the gain ``K`` as
+        a parameter (allowing modifications of the gain at runtime).
+
+    Returns
+    -------
+    ctrl : InputOutputSystem
+        Input/output system representing the controller.  This system takes
+        as inputs the desired state xd, the desired input ud, and the system
+        state x.  It outputs the controller action u according to the
+        formula u = ud - K(x - xd).  If the keyword `integral_action` is
+        specified, then an additional set of integrators is included in the
+        control system (with the gain matrix K having the integral gains
+        appended after the state gains).
+
+    clsys : InputOutputSystem
+        Input/output system representing the closed loop system.  This
+        systems takes as inputs the desired trajectory (xd, ud) and outputs
+        the system state x and the applied input u (vertically stacked).
+
+    """
+    # Make sure that we were passed an I/O system as an input
+    if not isinstance(sys, InputOutputSystem):
+        raise ControlArgument("Input system must be I/O system")
+
+    # See whether we were give an estimator
+    if estimator is not None:
+        # Check to make sure the estimator is the right size
+        if estimator.noutputs != sys.nstates:
+            raise ControlArgument("Estimator output size must match state")
+    elif sys.noutputs != sys.nstates:
+        # If no estimator, make sure that the system has all states as outputs
+        # TODO: check to make sure output map is the identity
+        raise ControlArgument("System output must be the full state")
+    else:
+        # Use the system directly instead of an estimator
+        estimator = sys
+
+    # See whether we should implement integral action
+    nintegrators = 0
+    if integral_action is not None:
+        if not isinstance(integral_action, np.ndarray):
+            raise ControlArgument("Integral action must pass an array")
+        elif integral_action.shape[1] != sys.nstates:
+            raise ControlArgument(
+                "Integral gain output size must match system input size")
+        else:
+            nintegrators = integral_action.shape[0]
+            C = integral_action
+    else:
+        # Create a C matrix with no outputs, just in case update gets called
+        C = np.zeros((0, sys.nstates))
+
+    # Check to make sure that state feedback has the right shape
+    if not isinstance(K, np.ndarray) or \
+       K.shape != (sys.ninputs, estimator.noutputs + nintegrators):
+        raise ControlArgument(
+            f'Control gain must be an array of size {sys.ninputs}'
+            f'x {sys.nstates}' +
+            (f'+{nintegrators}' if nintegrators > 0 else ''))
+
+    # Figure out the labels to use
+    if isinstance(xd_labels, str):
+        # Gnerate the list of labels using the argument as a format string
+        xd_labels = [xd_labels.format(i=i) for i in range(sys.nstates)]
+
+    if isinstance(ud_labels, str):
+        # Gnerate the list of labels using the argument as a format string
+        ud_labels = [ud_labels.format(i=i) for i in range(sys.ninputs)]
+
+    # Define the controller system
+    if type == 'nonlinear':
+        # Create an I/O system for the state feedback gains
+        def _control_update(t, x, inputs, params):
+            # Split input into desired state, nominal input, and current state
+            xd_vec = inputs[0:sys.nstates]
+            x_vec = inputs[-estimator.nstates:]
+
+            # Compute the integral error in the xy coordinates
+            return C @ x_vec - C @ xd_vec
+
+        def _control_output(t, e, z, params):
+            K = params.get('K')
+
+            # Split input into desired state, nominal input, and current state
+            xd_vec = z[0:sys.nstates]
+            ud_vec = z[sys.nstates:sys.nstates + sys.ninputs]
+            x_vec = z[-sys.nstates:]
+
+            # Compute the control law
+            u = ud_vec - K[:, 0:sys.nstates] @ (x_vec - xd_vec)
+            if nintegrators > 0:
+                u -= K[:, sys.nstates:] @ e
+
+            return u
+
+        ctrl = NonlinearIOSystem(
+            _control_update, _control_output, name='control',
+            inputs=xd_labels + ud_labels + estimator.output_labels,
+            outputs=list(sys.input_index.keys()), params={'K': K},
+            states=nintegrators)
+
+    elif type == 'linear' or type is None:
+        # Create the matrices implementing the controller
+        A_lqr = np.zeros((C.shape[0], C.shape[0]))
+        B_lqr = np.hstack([-C, np.zeros((C.shape[0], sys.ninputs)), C])
+        C_lqr = -K[:, sys.nstates:]
+        D_lqr = np.hstack([
+            K[:, 0:sys.nstates], np.eye(sys.ninputs), -K[:, 0:sys.nstates]
+        ])
+
+        ctrl = ss(
+            A_lqr, B_lqr, C_lqr, D_lqr, dt=sys.dt, name='control',
+            inputs=xd_labels + ud_labels + estimator.output_labels,
+            outputs=list(sys.input_index.keys()), states=nintegrators)
+
+    else:
+        raise ControlArgument(f"unknown type '{type}'")
+
+    # Define the closed loop system
+    closed = interconnect(
+        [sys, ctrl] if estimator == sys else [sys, ctrl, estimator],
+        name=sys.name + "_" + ctrl.name,
+        inplist=xd_labels + ud_labels, inputs=xd_labels + ud_labels,
+        outlist=sys.output_labels + sys.input_labels,
+        outputs=sys.output_labels + sys.input_labels
+    )
+    return ctrl, closed
 
 
 def ctrb(A, B):

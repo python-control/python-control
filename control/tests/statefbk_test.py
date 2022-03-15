@@ -616,3 +616,114 @@ class TestStatefbk:
         # Calling dlqe() with a continuous time system should raise an error
         with pytest.raises(ControlArgument, match="called with a continuous"):
             K, S, E = ct.dlqe(csys, Q, R)
+
+    @pytest.mark.parametrize(
+        'nstates, noutputs, ninputs, nintegrators, type',
+        [(2,      0,        1,       0,            None),
+         (2,      1,        1,       0,            None),
+         (4,      0,        2,       0,            None),
+         (4,      3,        2,       0,            None),
+         (2,      0,        1,       1,            None),
+         (4,      0,        2,       2,            None),
+         (4,      3,        2,       2,            None),
+         (2,      0,        1,       0,            'nonlinear'),
+         (4,      0,        2,       2,            'nonlinear'),
+         (4,      3,        2,       2,            'nonlinear'),
+        ])
+    def test_lqr_iosys(self, nstates, ninputs, noutputs, nintegrators, type):
+        # Create the system to be controlled (and estimator)
+        # TODO: make sure it is controllable?
+        if noutputs == 0:
+            # Create a system with full state output
+            sys = ct.rss(nstates, nstates, ninputs, strictly_proper=True)
+            sys.C = np.eye(nstates)
+            est = None
+
+        else:
+            # Create a system with of the desired size
+            sys = ct.rss(nstates, noutputs, ninputs, strictly_proper=True)
+
+            # Create an estimator with different signal names
+            L, _, _ = ct.lqe(
+                sys.A, sys.B, sys.C, np.eye(ninputs), np.eye(noutputs))
+            est = ss(
+                sys.A - L @ sys.C, np.hstack([L, sys.B]), np.eye(nstates), 0,
+                inputs=sys.output_labels + sys.input_labels,
+                outputs=[f'xhat[{i}]' for i in range(nstates)])
+
+        # Decide whether to include integral action
+        if nintegrators:
+            # Choose the first 'n' outputs as integral terms
+            C_int = np.eye(nintegrators, nstates)
+
+            # Set up an augmented system for LQR computation
+            # TODO: move this computation into LQR
+            A_aug = np.block([
+                [sys.A, np.zeros((sys.nstates, nintegrators))],
+                [C_int, np.zeros((nintegrators, nintegrators))]
+            ])
+            B_aug = np.vstack([sys.B, np.zeros((nintegrators, ninputs))])
+            C_aug = np.hstack([sys.C, np.zeros((sys.C.shape[0], nintegrators))])
+            aug = ss(A_aug, B_aug, C_aug, 0)
+        else:
+            C_int = np.zeros((0, nstates))
+            aug = sys
+
+        # Design an LQR controller
+        K, _, _ = ct.lqr(aug, np.eye(nstates + nintegrators), np.eye(ninputs))
+        Kp, Ki = K[:, :nstates], K[:, nstates:]
+
+        # Create an I/O system for the controller
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, integral_action=C_int, estimator=est, type=type)
+
+        # If we used a nonlinear controller, linearize it for testing
+        if type == 'nonlinear':
+            clsys = clsys.linearize(0, 0)
+
+        # Make sure the linear system elements are correct
+        if noutputs == 0:
+            # No estimator
+            Ac = np.block([
+                [sys.A - sys.B @ Kp, -sys.B @ Ki],
+                [C_int, np.zeros((nintegrators, nintegrators))]
+            ])
+            Bc = np.block([
+                [sys.B @ Kp, sys.B],
+                [-C_int, np.zeros((nintegrators, ninputs))]
+            ])
+            Cc = np.block([
+                [np.eye(nstates), np.zeros((nstates, nintegrators))],
+                [-Kp, -Ki]
+            ])
+            Dc = np.block([
+                [np.zeros((nstates, nstates + ninputs))],
+                [Kp, np.eye(ninputs)]
+            ])
+        else:
+            # Estimator
+            Be1, Be2 = est.B[:, :noutputs], est.B[:, noutputs:]
+            Ac = np.block([
+                [sys.A, -sys.B @ Ki, -sys.B @ Kp],
+                [np.zeros((nintegrators, nstates + nintegrators)), C_int],
+                [Be1 @ sys.C, -Be2 @ Ki, est.A - Be2 @ Kp]
+                ])
+            Bc = np.block([
+                [sys.B @ Kp, sys.B],
+                [-C_int, np.zeros((nintegrators, ninputs))],
+                [Be2 @ Kp, Be2]
+            ])
+            Cc = np.block([
+                [sys.C, np.zeros((noutputs, nintegrators + nstates))],
+                [np.zeros_like(Kp), -Ki, -Kp]
+            ])
+            Dc = np.block([
+                [np.zeros((noutputs, nstates + ninputs))],
+                [Kp, np.eye(ninputs)]
+            ])
+
+        # Check to make sure everything matches
+        np.testing.assert_array_almost_equal(clsys.A, Ac)
+        np.testing.assert_array_almost_equal(clsys.B, Bc)
+        np.testing.assert_array_almost_equal(clsys.C, Cc)
+        np.testing.assert_array_almost_equal(clsys.D, Dc)
