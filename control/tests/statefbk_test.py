@@ -7,12 +7,12 @@ import numpy as np
 import pytest
 
 import control as ct
-from control import lqe, pole, rss, ss, tf
+from control import lqe, dlqe, pole, rss, ss, tf
 from control.exception import ControlDimension, ControlSlycot, \
     ControlArgument, slycot_check
 from control.mateqn import care, dare
 from control.statefbk import (ctrb, obsv, place, place_varga, lqr, dlqr,
-                              lqe, dlqe, gram, acker)
+                              gram, acker)
 from control.tests.conftest import (slycotonly, check_deprecated_matrix,
                                     ismatarrayout, asmatarrayout)
 
@@ -440,82 +440,6 @@ class TestStatefbk:
         with pytest.warns(UserWarning):
             (K, S, E) = dlqr(A, B, Q, R, N)
 
-    def check_LQE(self, L, P, poles, G, QN, RN):
-        P_expected = asmatarrayout(np.sqrt(G @ QN @ G @ RN))
-        L_expected = asmatarrayout(P_expected / RN)
-        poles_expected = -np.squeeze(np.asarray(L_expected))
-        np.testing.assert_array_almost_equal(P, P_expected)
-        np.testing.assert_array_almost_equal(L, L_expected)
-        np.testing.assert_array_almost_equal(poles, poles_expected)
-
-    @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
-    def test_LQE(self, matarrayin, method):
-        if method == 'slycot' and not slycot_check():
-            return
-
-        A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
-        L, P, poles = lqe(A, G, C, QN, RN, method=method)
-        self.check_LQE(L, P, poles, G, QN, RN)
-
-    @pytest.mark.parametrize("cdlqe", [lqe, dlqe])
-    def test_lqe_call_format(self, cdlqe):
-        # Create a random state space system for testing
-        sys = rss(4, 3, 2)
-        sys.dt = None           # treat as either continuous or discrete time
-
-        # Covariance matrices
-        Q = np.eye(sys.ninputs)
-        R = np.eye(sys.noutputs)
-        N = np.zeros((sys.ninputs, sys.noutputs))
-
-        # Standard calling format
-        Lref, Pref, Eref = cdlqe(sys.A, sys.B, sys.C, Q, R)
-
-        # Call with system instead of matricees
-        L, P, E = cdlqe(sys, Q, R)
-        np.testing.assert_array_almost_equal(Lref, L)
-        np.testing.assert_array_almost_equal(Pref, P)
-        np.testing.assert_array_almost_equal(Eref, E)
-
-        # Make sure we get an error if we specify N
-        with pytest.raises(ct.ControlNotImplemented):
-            L, P, E = cdlqe(sys, Q, R, N)
-
-        # Inconsistent system dimensions
-        with pytest.raises(ct.ControlDimension, match="Incompatible"):
-            L, P, E = cdlqe(sys.A, sys.C, sys.B, Q, R)
-
-        # Incorrect covariance matrix dimensions
-        with pytest.raises(ct.ControlDimension, match="Incompatible"):
-            L, P, E = cdlqe(sys.A, sys.B, sys.C, R, Q)
-
-        # Too few input arguments
-        with pytest.raises(ct.ControlArgument, match="not enough input"):
-            L, P, E = cdlqe(sys.A, sys.C)
-
-        # First argument is the wrong type (use SISO for non-slycot tests)
-        sys_tf = tf(rss(3, 1, 1))
-        sys_tf.dt = None        # treat as either continuous or discrete time
-        with pytest.raises(ct.ControlArgument, match="LTI system must be"):
-            L, P, E = cdlqe(sys_tf, Q, R)
-
-    def check_DLQE(self, L, P, poles, G, QN, RN):
-        P_expected = asmatarrayout(G.dot(QN).dot(G))
-        L_expected = asmatarrayout(0)
-        poles_expected = -np.squeeze(np.asarray(L_expected))
-        np.testing.assert_array_almost_equal(P, P_expected)
-        np.testing.assert_array_almost_equal(L, L_expected)
-        np.testing.assert_array_almost_equal(poles, poles_expected)
-
-    @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
-    def test_DLQE(self, matarrayin, method):
-        if method == 'slycot' and not slycot_check():
-            return
-
-        A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
-        L, P, poles = dlqe(A, G, C, QN, RN, method=method)
-        self.check_DLQE(L, P, poles, G, QN, RN)
-
     def test_care(self, matarrayin):
         """Test stabilizing and anti-stabilizing feedback, continuous"""
         A = matarrayin(np.diag([1, -1]))
@@ -584,39 +508,6 @@ class TestStatefbk:
         with pytest.raises(ControlArgument, match="dsys must be discrete"):
             K, S, E = ct.dlqr(csys, Q, R)
 
-    def test_lqe_discrete(self):
-        """Test overloading of lqe operator for discrete time systems"""
-        csys = ct.rss(2, 1, 1)
-        dsys = ct.drss(2, 1, 1)
-        Q = np.eye(1)
-        R = np.eye(1)
-
-        # Calling with a system versus explicit A, B should be the sam
-        K_csys, S_csys, E_csys = ct.lqe(csys, Q, R)
-        K_expl, S_expl, E_expl = ct.lqe(csys.A, csys.B, csys.C, Q, R)
-        np.testing.assert_almost_equal(K_csys, K_expl)
-        np.testing.assert_almost_equal(S_csys, S_expl)
-        np.testing.assert_almost_equal(E_csys, E_expl)
-
-        # Calling lqe() with a discrete time system should call dlqe()
-        K_lqe, S_lqe, E_lqe = ct.lqe(dsys, Q, R)
-        K_dlqe, S_dlqe, E_dlqe = ct.dlqe(dsys, Q, R)
-        np.testing.assert_almost_equal(K_lqe, K_dlqe)
-        np.testing.assert_almost_equal(S_lqe, S_dlqe)
-        np.testing.assert_almost_equal(E_lqe, E_dlqe)
-
-        # Calling lqe() with no timebase should call lqe()
-        asys = ct.ss(csys.A, csys.B, csys.C, csys.D, dt=None)
-        K_asys, S_asys, E_asys = ct.lqe(asys, Q, R)
-        K_expl, S_expl, E_expl = ct.lqe(csys.A, csys.B, csys.C, Q, R)
-        np.testing.assert_almost_equal(K_asys, K_expl)
-        np.testing.assert_almost_equal(S_asys, S_expl)
-        np.testing.assert_almost_equal(E_asys, E_expl)
-
-        # Calling dlqe() with a continuous time system should raise an error
-        with pytest.raises(ControlArgument, match="called with a continuous"):
-            K, S, E = ct.dlqe(csys, Q, R)
-
     @pytest.mark.parametrize(
         'nstates, noutputs, ninputs, nintegrators, type',
         [(2,      0,        1,       0,            None),
@@ -630,7 +521,8 @@ class TestStatefbk:
          (4,      0,        2,       2,            'nonlinear'),
          (4,      3,        2,       2,            'nonlinear'),
         ])
-    def test_lqr_iosys(self, nstates, ninputs, noutputs, nintegrators, type):
+    def test_statefbk_iosys(
+            self, nstates, ninputs, noutputs, nintegrators, type):
         # Create the system to be controlled (and estimator)
         # TODO: make sure it is controllable?
         if noutputs == 0:
