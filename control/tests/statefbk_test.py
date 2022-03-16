@@ -727,3 +727,102 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(clsys.B, Bc)
         np.testing.assert_array_almost_equal(clsys.C, Cc)
         np.testing.assert_array_almost_equal(clsys.D, Dc)
+
+    def test_lqr_integral_continuous(self):
+        # Generate a continuous time system for testing
+        sys = ct.rss(4, 4, 2, strictly_proper=True)
+        sys.C = np.eye(4)       # reset output to be full state
+        C_int = np.eye(2, 4)    # integrate outputs for first two states
+        nintegrators = C_int.shape[0]
+
+        # Generate a controller with integral action
+        K, _, _ = ct.lqr(
+            sys, np.eye(sys.nstates + nintegrators), np.eye(sys.ninputs),
+            integral_action=C_int)
+        Kp, Ki = K[:, :sys.nstates], K[:, sys.nstates:]
+
+        # Create an I/O system for the controller
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, integral_action=C_int)
+
+        # Construct the state space matrices for the controller
+        # Controller inputs = xd, ud, x
+        # Controller state = z (integral of x-xd)
+        # Controller output = ud - Kp(x - xd) - Ki z
+        A_ctrl = np.zeros((nintegrators, nintegrators))
+        B_ctrl = np.block([
+            [-C_int, np.zeros((nintegrators, sys.ninputs)), C_int]
+        ])
+        C_ctrl = -K[:, sys.nstates:]
+        D_ctrl = np.block([[Kp, np.eye(nintegrators), -Kp]])
+
+        # Check to make sure everything matches
+        np.testing.assert_array_almost_equal(ctrl.A, A_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.B, B_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.C, C_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.D, D_ctrl)
+
+        # Construct the state space matrices for the closed loop system
+        A_clsys = np.block([
+            [sys.A - sys.B @ Kp, -sys.B @ Ki],
+            [C_int, np.zeros((nintegrators, nintegrators))]
+        ])
+        B_clsys = np.block([
+            [sys.B @ Kp, sys.B],
+            [-C_int, np.zeros((nintegrators, sys.ninputs))]
+        ])
+        C_clsys = np.block([
+            [np.eye(sys.nstates), np.zeros((sys.nstates, nintegrators))],
+            [-Kp, -Ki]
+        ])
+        D_clsys = np.block([
+            [np.zeros((sys.nstates, sys.nstates + sys.ninputs))],
+            [Kp, np.eye(sys.ninputs)]
+        ])
+
+        # Check to make sure closed loop matches
+        np.testing.assert_array_almost_equal(clsys.A, A_clsys)
+        np.testing.assert_array_almost_equal(clsys.B, B_clsys)
+        np.testing.assert_array_almost_equal(clsys.C, C_clsys)
+        np.testing.assert_array_almost_equal(clsys.D, D_clsys)
+
+        # Check the poles of the closed loop system
+        assert all(np.real(clsys.pole()) < 0)
+
+        # Make sure controller infinite zero frequency gain
+        if slycot_check():
+            ctrl_tf = tf(ctrl)
+            assert abs(ctrl_tf(1e-9)[0][0]) > 1e6
+            assert abs(ctrl_tf(1e-9)[1][1]) > 1e6
+
+    def test_lqr_integral_discrete(self):
+        # Generate a discrete time system for testing
+        sys = ct.drss(4, 4, 2, strictly_proper=True)
+        sys.C = np.eye(4)       # reset output to be full state
+        C_int = np.eye(2, 4)    # integrate outputs for first two states
+        nintegrators = C_int.shape[0]
+
+        # Generate a controller with integral action
+        K, _, _ = ct.lqr(
+            sys, np.eye(sys.nstates + nintegrators), np.eye(sys.ninputs),
+            integral_action=C_int)
+        Kp, Ki = K[:, :sys.nstates], K[:, sys.nstates:]
+
+        # Create an I/O system for the controller
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, integral_action=C_int)
+
+        # Construct the state space matrices by hand
+        A_ctrl = np.eye(nintegrators)
+        B_ctrl = np.block([
+            [-C_int, np.zeros((nintegrators, sys.ninputs)), C_int]
+        ])
+        C_ctrl = -K[:, sys.nstates:]
+        D_ctrl = np.block([[Kp, np.eye(nintegrators), -Kp]])
+
+        # Check to make sure everything matches
+        assert ct.isdtime(clsys)
+        np.testing.assert_array_almost_equal(ctrl.A, A_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.B, B_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.C, C_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.D, D_ctrl)

@@ -578,7 +578,7 @@ def acker(A, B, poles):
     return _ssmatrix(K)
 
 
-def lqr(*args, **keywords):
+def lqr(*args, **kwargs):
     """lqr(A, B, Q, R[, N])
 
     Linear quadratic regulator design
@@ -646,17 +646,14 @@ def lqr(*args, **keywords):
     # Process the arguments and figure out what inputs we received
     #
 
-    # Get the method to use (if specified as a keyword)
-    method = keywords.get('method', None)
+    # If we were passed a discrete time system as the first arg, use dlqr()
+    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
+        # Call dlqr
+        return dlqr(*args, **kwargs)
 
     # Get the system description
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
-
-    # If we were passed a discrete time system as the first arg, use dlqr()
-    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
-        # Call dlqr
-        return dlqr(*args, **keywords)
 
     # If we were passed a state space  system, use that to get system matrices
     if isinstance(args[0], StateSpace):
@@ -682,12 +679,47 @@ def lqr(*args, **keywords):
     else:
         N = None
 
+    #
+    # Process keywords
+    #
+
+    # Get the method to use (if specified as a keyword)
+    method = kwargs.pop('method', None)
+
+    # See if we should augment the controller with integral feedback
+    integral_action = kwargs.pop('integral_action', None)
+    if integral_action is not None:
+        # Figure out the size of the system
+        nstates = A.shape[0]
+        ninputs = B.shape[1]
+
+        # Make sure that the integral action argument is the right type
+        if not isinstance(integral_action, np.ndarray):
+            raise ControlArgument("Integral action must pass an array")
+        elif integral_action.shape[1] != nstates:
+            raise ControlArgument(
+                "Integral gain output size must match system input size")
+
+        # Process the states to be integrated
+        nintegrators = integral_action.shape[0]
+        C = integral_action
+
+        # Augment the system with integrators
+        A = np.block([
+            [A, np.zeros((nstates, nintegrators))],
+            [C, np.zeros((nintegrators, nintegrators))]
+        ])
+        B = np.vstack([B, np.zeros((nintegrators, ninputs))])
+
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
     # Compute the result (dimension and symmetry checking done in care())
     X, L, G = care(A, B, Q, R, N, None, method=method, S_s="N")
     return G, X, L
 
 
-def dlqr(*args, **keywords):
+def dlqr(*args, **kwargs):
     """dlqr(A, B, Q, R[, N])
 
     Discrete-time linear quadratic regulator design
@@ -747,9 +779,6 @@ def dlqr(*args, **keywords):
     # Process the arguments and figure out what inputs we received
     #
 
-    # Get the method to use (if specified as a keyword)
-    method = keywords.get('method', None)
-
     # Get the system description
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
@@ -781,6 +810,39 @@ def dlqr(*args, **keywords):
         N = np.array(args[index+2], ndmin=2, dtype=float)
     else:
         N = np.zeros((Q.shape[0], R.shape[1]))
+
+    #
+    # Process keywords
+    #
+
+    # Get the method to use (if specified as a keyword)
+    method = kwargs.pop('method', None)
+
+    # See if we should augment the controller with integral feedback
+    integral_action = kwargs.pop('integral_action', None)
+    if integral_action is not None:
+        # Figure out the size of the system
+        nstates = A.shape[0]
+        ninputs = B.shape[1]
+
+        if not isinstance(integral_action, np.ndarray):
+            raise ControlArgument("Integral action must pass an array")
+        elif integral_action.shape[1] != nstates:
+            raise ControlArgument(
+                "Integral gain output size must match system input size")
+        else:
+            nintegrators = integral_action.shape[0]
+            C = integral_action
+
+            # Augment the system with integrators
+            A = np.block([
+                [A, np.zeros((nstates, nintegrators))],
+                [C, np.eye(nintegrators)]
+            ])
+            B = np.vstack([B, np.zeros((nintegrators, ninputs))])
+
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Compute the result (dimension and symmetry checking done in dare())
     S, E, K = dare(A, B, Q, R, N, method=method, S_s="N")
@@ -948,7 +1010,12 @@ def create_statefbk_iosystem(
 
     elif type == 'linear' or type is None:
         # Create the matrices implementing the controller
-        A_lqr = np.zeros((C.shape[0], C.shape[0]))
+        if isctime(sys):
+            # Continuous time: integrator
+            A_lqr = np.zeros((C.shape[0], C.shape[0]))
+        else:
+            # Discrete time: summer
+            A_lqr = np.eye(C.shape[0])
         B_lqr = np.hstack([-C, np.zeros((C.shape[0], sys.ninputs)), C])
         C_lqr = -K[:, sys.nstates:]
         D_lqr = np.hstack([
