@@ -608,6 +608,13 @@ def lqr(*args, **kwargs):
         State and input weight matrices
     N : 2D array, optional
         Cross weight matrix
+    integral_action : ndarray, optional
+        If this keyword is specified, the controller includes integral action
+        in addition to state feedback.  The value of the `integral_action``
+        keyword should be an ndarray that will be multiplied by the current to
+        generate the error for the internal integrator states of the control
+        law.  The number of outputs that are to be integrated must match the
+        number of additional rows and columns in the ``Q`` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -750,6 +757,17 @@ def dlqr(*args, **kwargs):
         State and input weight matrices
     N : 2D array, optional
         Cross weight matrix
+    integral_action : ndarray, optional
+        If this keyword is specified, the controller includes integral action
+        in addition to state feedback.  The value of the `integral_action``
+        keyword should be an ndarray that will be multiplied by the current to
+        generate the error for the internal integrator states of the control
+        law.  The number of outputs that are to be integrated must match the
+        number of additional rows and columns in the ``Q`` matrix.
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy'.
 
     Returns
     -------
