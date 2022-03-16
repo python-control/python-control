@@ -698,7 +698,7 @@ def lqr(*args, **kwargs):
             raise ControlArgument("Integral action must pass an array")
         elif integral_action.shape[1] != nstates:
             raise ControlArgument(
-                "Integral gain output size must match system input size")
+                "Integral gain size must match system state size")
 
         # Process the states to be integrated
         nintegrators = integral_action.shape[0]
@@ -829,7 +829,7 @@ def dlqr(*args, **kwargs):
             raise ControlArgument("Integral action must pass an array")
         elif integral_action.shape[1] != nstates:
             raise ControlArgument(
-                "Integral gain output size must match system input size")
+                "Integral gain size must match system state size")
         else:
             nintegrators = integral_action.shape[0]
             C = integral_action
@@ -951,7 +951,7 @@ def create_statefbk_iosystem(
             raise ControlArgument("Integral action must pass an array")
         elif integral_action.shape[1] != sys.nstates:
             raise ControlArgument(
-                "Integral gain output size must match system input size")
+                "Integral gain size must match system state size")
         else:
             nintegrators = integral_action.shape[0]
             C = integral_action

@@ -826,3 +826,62 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(ctrl.B, B_ctrl)
         np.testing.assert_array_almost_equal(ctrl.C, C_ctrl)
         np.testing.assert_array_almost_equal(ctrl.D, D_ctrl)
+
+    @pytest.mark.parametrize(
+        "rss_fun, lqr_fun",
+        [(ct.rss, lqr), (ct.drss, dlqr)])
+    def test_lqr_errors(self, rss_fun, lqr_fun):
+        # Generate a discrete time system for testing
+        sys = rss_fun(4, 4, 2, strictly_proper=True)
+
+        with pytest.raises(ControlArgument, match="must pass an array"):
+            K, _, _ = lqr_fun(
+                sys, np.eye(sys.nstates), np.eye(sys.ninputs),
+                integral_action="invalid argument")
+
+        with pytest.raises(ControlArgument, match="gain size must match"):
+            C_int = np.eye(2, 3)
+            K, _, _ = lqr_fun(
+                sys, np.eye(sys.nstates), np.eye(sys.ninputs),
+                integral_action=C_int)
+
+        with pytest.raises(TypeError, match="unrecognized keywords"):
+            K, _, _ = lqr_fun(
+                sys, np.eye(sys.nstates), np.eye(sys.ninputs),
+                integrator=None)
+
+    def test_statefbk_errors(self):
+        sys = ct.rss(4, 4, 2, strictly_proper=True)
+        K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+
+        with pytest.raises(ControlArgument, match="must be I/O system"):
+            sys_tf = ct.tf([1], [1, 1])
+            ctrl, clsys = ct.create_statefbk_iosystem(sys_tf, K)
+
+        with pytest.raises(ControlArgument, match="output size must match"):
+            est = ct.rss(3, 3, 2)
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=est)
+
+        with pytest.raises(ControlArgument, match="must be the full state"):
+            sys_nf = ct.rss(4, 3, 2, strictly_proper=True)
+            ctrl, clsys = ct.create_statefbk_iosystem(sys_nf, K)
+
+        with pytest.raises(ControlArgument, match="gain must be an array"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, "bad argument")
+
+        with pytest.raises(ControlArgument, match="unknown type"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, type=1)
+
+        # Errors involving integral action
+        C_int = np.eye(2, 4)
+        K_int, _, _ = ct.lqr(
+            sys, np.eye(sys.nstates + C_int.shape[0]), np.eye(sys.ninputs),
+            integral_action=C_int)
+
+        with pytest.raises(ControlArgument, match="must pass an array"):
+            ctrl, clsys = ct.create_statefbk_iosystem(
+                sys, K_int, integral_action="bad argument")
+
+        with pytest.raises(ControlArgument, match="must be an array of size"):
+            ctrl, clsys = ct.create_statefbk_iosystem(
+                sys, K, integral_action=C_int)
