@@ -455,8 +455,8 @@ def create_estimator_iosystem(
     # Define the estimator system
     return NonlinearIOSystem(
         _estim_update, _estim_output, states=state_labels + covariance_labels,
-        inputs=sensor_labels + sys.input_labels,
-        outputs=output_labels, dt=sys.dt)
+        inputs=sensor_labels + sys.input_labels, outputs=output_labels,
+        dt=sys.dt)
 
 
 def white_noise(T, Q, dt=0):
