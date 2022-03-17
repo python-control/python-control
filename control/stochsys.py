@@ -17,6 +17,8 @@ __maintainer__ = "Richard Murray"
 __email__ = "murray@cds.caltech.edu"
 
 import numpy as np
+import scipy as sp
+from math import sqrt
 
 from .iosys import InputOutputSystem, NonlinearIOSystem
 from .lti import LTI, isctime, isdtime
@@ -24,7 +26,8 @@ from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
 
-__all__ = ['lqe','dlqe', 'create_estimator_iosystem']
+__all__ = ['lqe','dlqe', 'create_estimator_iosystem', 'white_noise',
+           'correlation']
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
@@ -409,18 +412,18 @@ def create_estimator_iosystem(
 
     else:
         # Create an I/O system for the state feedback gains
+        # Note: reshape various vectors into column vectors for legacy matrix
         def _estim_update(t, x, u, params):
             # See if we are estimating or predicting
             correct = params.get('correct', True)
 
-            # Get the state of the estimator
-            x = np.array(x)             # bug fix for python-control 0.9.1
-            xhat = x[0:sys.nstates]
+            # Get the state of the estimator 
+            xhat = x[0:sys.nstates].reshape(-1, 1)
             P = x[sys.nstates:].reshape(sys.nstates, sys.nstates)
 
             # Extract the inputs to the estimator
-            y = u[0:C.shape[0]]
-            u = u[C.shape[0]:]
+            y = u[0:C.shape[0]].reshape(-1, 1)
+            u = u[C.shape[0]:].reshape(-1, 1)
 
             # Compute the optimal again
             Reps_inv = np.linalg.inv(RN + C @ P @ C.T)
@@ -437,7 +440,7 @@ def create_estimator_iosystem(
                 dP -= A @ P @ C.T @ Reps_inv @ C @ P @ A.T
 
             # Return the update
-            return np.hstack([dxhat, dP.reshape(-1)])
+            return np.hstack([dxhat.reshape(-1), dP.reshape(-1)])
 
         def _estim_output(t, x, u, params):
             return x[0:sys.nstates]
@@ -447,3 +450,79 @@ def create_estimator_iosystem(
         _estim_update, _estim_output, states=state_labels + covariance_labels,
         inputs=sys.output_labels + sys.input_labels, outputs=output_labels,
         dt=sys.dt)
+
+
+def white_noise(T, Q, dt=0):
+    """Generate a white noise signal with specified intensity.
+
+    This function generates a (multi-variable) white noise signal of
+    specified intensity as either a sampled continous time signal or a
+    discrete time signal.  A white noise signal along a 1D array
+    of linearly spaced set of times T can be computing using
+
+        V = ct.white_noise(T, Q, dt)
+
+    where Q is a positive definite matrix providing the noise intensity.
+
+    In continuous time, the white noise signal is scaled such that the
+    integral of the covariance over a sample period is Q, thus approximating
+    a white noise signal.  In discrete time, the white noise signal has
+    covariance Q at each point in time (without any scaling based on the
+    sample time).
+
+    """
+    # Check the shape of the input arguments
+    if len(T.shape) != 1:
+        raise ValueError("Time vector T must be 1D")
+    if len(Q.shape) != 2 or Q.shape[0] != Q.shape[1]:
+        raise ValueError("Covariance matrix Q must be square")
+
+    # Figure out the time increment
+    if dt != 0:
+        # Discrete time system => white noise is not scaled
+        dt = 1
+    else:
+        dt = T[1] - T[0]
+
+    # Make sure data points are equally spaced
+    if not np.allclose(np.diff(T), T[1] - T[0]):
+        raise ValueError("Time values must be equally spaced.")
+
+    # Generate independent white noise sources for each input
+    W = np.array([
+        np.random.normal(0, 1/sqrt(dt), T.size) for i in range(Q.shape[0])])
+
+    # Return a linear combination of the noise sources
+    return sp.linalg.sqrtm(Q) @ W
+
+def correlation(T, X, Y=None, dt=0, squeeze=True):
+    T = np.atleast_1d(T)
+    X = np.atleast_2d(X)
+    Y = np.atleast_2d(Y) if Y is not None else X
+
+    # Check the shape of the input arguments
+    if len(T.shape) != 1:
+        raise ValueError("Time vector T must be 1D")
+    if len(X.shape) != 2 or len(Y.shape) != 2:
+        raise ValueError("Signals X and Y must be 2D arrays")
+    if T.shape[0] != X.shape[1] or T.shape[0] != Y.shape[1]:
+        raise ValueError("Signals X and Y must have same length as T")
+
+    # Figure out the time increment
+    if dt != 0:
+        raise NotImplementedError("Discrete time systems not yet supported")
+    else:
+        dt = T[1] - T[0]
+
+    # Make sure data points are equally spaced
+    if not np.allclose(np.diff(T), T[1] - T[0]):
+        raise ValueError("Time values must be equally spaced.")
+
+    # Compute the correlation matrix
+    R = np.array(
+        [[sp.signal.correlate(X[i], Y[j])
+          for i in range(X.shape[0])] for j in range(Y.shape[0])]
+    ) * dt / (T[-1] - T[0])
+    tau = sp.signal.correlation_lags(len(X[0]), len(Y[0])) * dt
+
+    return tau, R.squeeze() if squeeze else R
