@@ -31,7 +31,7 @@ __all__ = ['lqe','dlqe', 'create_estimator_iosystem', 'white_noise',
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def lqe(*args, **keywords):
+def lqe(*args, **kwargs):
     """lqe(A, G, C, QN, RN, [, NN])
 
     Linear quadratic estimator design (Kalman filter) for continuous-time
@@ -126,17 +126,19 @@ def lqe(*args, **keywords):
     # Process the arguments and figure out what inputs we received
     #
 
+    # If we were passed a discrete time system as the first arg, use dlqe()
+    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
+        # Call dlqe
+        return dlqe(*args, **kwargs)
+
     # Get the method to use (if specified as a keyword)
-    method = keywords.get('method', None)
+    method = kwargs.pop('method', None)
+    if kwargs:
+        raise TypeError("unrecognized kwargs: ", str(kwargs))
 
     # Get the system description
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
-
-    # If we were passed a discrete time system as the first arg, use dlqe()
-    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
-        # Call dlqe
-        return dlqe(*args, **keywords)
 
     # If we were passed a state space  system, use that to get system matrices
     if isinstance(args[0], StateSpace):
@@ -179,7 +181,7 @@ def lqe(*args, **keywords):
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def dlqe(*args, **keywords):
+def dlqe(*args, **kwargs):
     """dlqe(A, G, C, QN, RN, [, N])
 
     Linear quadratic estimator design (Kalman filter) for discrete-time
@@ -251,7 +253,9 @@ def dlqe(*args, **keywords):
     #
 
     # Get the method to use (if specified as a keyword)
-    method = keywords.get('method', None)
+    method = kwargs.pop('method', None)
+    if kwargs:
+        raise TypeError("unrecognized kwargs: ", str(kwargs))
 
     # Get the system description
     if (len(args) < 3):
@@ -340,14 +344,14 @@ def create_estimator_iosystem(
         If the system has all full states output, define the measured values
         to be used by the estimator.  Otherwise, use the system output as the
         measured values.
-    {state, covariance, output}_labels : str or list of str, optional
+    {state, covariance, sensor, output}_labels : str or list of str, optional
         Set the name of the signals to use for the internal state, covariance,
-        and output (state estimate).  If a single string is specified, it
-        should be a format string using the variable ``i`` as an index (or
-        ``i`` and ``j`` for covariance).  Otherwise, a list of strings
-        matching the size of the respective signal should be used.  Default is
-        ``'xhat[{i}]'`` for state and output labels and ``'P[{i},{j}]'`` for
-        covariance labels.
+        sensors, and outputs (state estimate).  If a single string is
+        specified, it should be a format string using the variable ``i`` as an
+        index (or ``i`` and ``j`` for covariance).  Otherwise, a list of
+        strings matching the size of the respective signal should be used.
+        Default is ``'xhat[{i}]'`` for state and output labels, ``'y[{i}]'``
+        for output labels and ``'P[{i},{j}]'`` for covariance labels.
 
     Returns
     -------
@@ -478,6 +482,10 @@ def white_noise(T, Q, dt=0):
     sample time).
 
     """
+    # Convert input arguments to arrays
+    T = np.atleast_1d(T)
+    Q = np.atleast_2d(Q)
+
     # Check the shape of the input arguments
     if len(T.shape) != 1:
         raise ValueError("Time vector T must be 1D")
@@ -502,7 +510,37 @@ def white_noise(T, Q, dt=0):
     # Return a linear combination of the noise sources
     return sp.linalg.sqrtm(Q) @ W
 
-def correlation(T, X, Y=None, dt=0, squeeze=True):
+def correlation(T, X, Y=None, squeeze=True):
+    """Compute the correlation of time signals.
+
+    For a time series X(t) (and optionally Y(t)), the correlation() function
+    computes the correlation matrix E(X'(t+tau) X(t)) or the cross-correlation
+    matrix E(X'(t+tau) Y(t)]:
+
+      tau, Rtau = correlation(T, X[, Y])
+
+    The signal X (and Y, if present) represent a continuous time signal
+    sampled at times T.  The return value provides the correlation Rtau
+    between X(t+tau) and X(t) at a set of time offets tau.
+
+    Parameters
+    ----------
+    T : 1D array_like
+        Sample times for the signal(s).
+    X : 1D or 2D array_like
+        Values of the signal at each time in T.  The signal can either be
+        scalar or vector values.
+    Y : 1D or 2D array_like, optional
+        If present, the signal with which to compute the correlation.
+        Defaults to X.
+    squeeze : bool, optional
+        If True, squeeze Rtau to remove extra dimensions (useful if the
+        signals are scalars).
+
+    Returns
+    -------
+
+    """
     T = np.atleast_1d(T)
     X = np.atleast_2d(X)
     Y = np.atleast_2d(Y) if Y is not None else X
@@ -516,10 +554,7 @@ def correlation(T, X, Y=None, dt=0, squeeze=True):
         raise ValueError("Signals X and Y must have same length as T")
 
     # Figure out the time increment
-    if dt != 0:
-        raise NotImplementedError("Discrete time systems not yet supported")
-    else:
-        dt = T[1] - T[0]
+    dt = T[1] - T[0]
 
     # Make sure data points are equally spaced
     if not np.allclose(np.diff(T), T[1] - T[0]):

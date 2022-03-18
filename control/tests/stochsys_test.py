@@ -13,18 +13,18 @@ def check_LQE(L, P, poles, G, QN, RN):
     P_expected = asmatarrayout(np.sqrt(G @ QN @ G @ RN))
     L_expected = asmatarrayout(P_expected / RN)
     poles_expected = -np.squeeze(np.asarray(L_expected))
-    np.testing.assert_array_almost_equal(P, P_expected)
-    np.testing.assert_array_almost_equal(L, L_expected)
-    np.testing.assert_array_almost_equal(poles, poles_expected)
+    np.testing.assert_almost_equal(P, P_expected)
+    np.testing.assert_almost_equal(L, L_expected)
+    np.testing.assert_almost_equal(poles, poles_expected)
 
 # Utility function to check discrete LQE solutions
 def check_DLQE(L, P, poles, G, QN, RN):
     P_expected = asmatarrayout(G.dot(QN).dot(G))
     L_expected = asmatarrayout(0)
     poles_expected = -np.squeeze(np.asarray(L_expected))
-    np.testing.assert_array_almost_equal(P, P_expected)
-    np.testing.assert_array_almost_equal(L, L_expected)
-    np.testing.assert_array_almost_equal(poles, poles_expected)
+    np.testing.assert_almost_equal(P, P_expected)
+    np.testing.assert_almost_equal(L, L_expected)
+    np.testing.assert_almost_equal(poles, poles_expected)
 
 @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
 def test_LQE(matarrayin, method):
@@ -51,9 +51,9 @@ def test_lqe_call_format(cdlqe):
     
     # Call with system instead of matricees
     L, P, E = cdlqe(sys, Q, R)
-    np.testing.assert_array_almost_equal(Lref, L)
-    np.testing.assert_array_almost_equal(Pref, P)
-    np.testing.assert_array_almost_equal(Eref, E)
+    np.testing.assert_almost_equal(Lref, L)
+    np.testing.assert_almost_equal(Pref, P)
+    np.testing.assert_almost_equal(Eref, E)
 
     # Make sure we get an error if we specify N
     with pytest.raises(ct.ControlNotImplemented):
@@ -156,10 +156,10 @@ def test_estimator_iosys():
     # Check to make sure everything matches
     cls = clsys.linearize(0, 0)
     nstates = sys.nstates
-    np.testing.assert_array_almost_equal(cls.A[:2*nstates, :2*nstates], A_clchk)
-    np.testing.assert_array_almost_equal(cls.B[:2*nstates, :], B_clchk)
-    np.testing.assert_array_almost_equal(cls.C[:, :2*nstates], C_clchk)
-    np.testing.assert_array_almost_equal(cls.D, D_clchk)
+    np.testing.assert_almost_equal(cls.A[:2*nstates, :2*nstates], A_clchk)
+    np.testing.assert_almost_equal(cls.B[:2*nstates, :], B_clchk)
+    np.testing.assert_almost_equal(cls.C[:, :2*nstates], C_clchk)
+    np.testing.assert_almost_equal(cls.D, D_clchk)
 
 
 def test_estimator_errors():
@@ -185,3 +185,78 @@ def test_estimator_errors():
         sys_fs.C = np.eye(4)
         C = np.eye(1, 4)
         estim = ct.create_estimator_iosystem(sys_fs, QN, RN, C=C)
+
+
+def test_white_noise():
+    # Scalar white noise signal
+    T = np.linspace(0, 1000, 1000)
+    R = 0.5
+    V = ct.white_noise(T, R)
+    assert abs(np.mean(V)) < 0.1                # can occassionally fail
+    assert abs(np.cov(V) - 0.5) < 0.1           # can occassionally fail
+
+    # Vector white noise signal
+    R = [[0.5, 0], [0, 0.1]]
+    V = ct.white_noise(T, R)
+    assert abs(np.mean(V)) < 0.1                # can occassionally fail
+    assert np.all(abs(np.cov(V) - R) < 0.1)     # can occassionally fail
+
+    # Make sure time scaling works properly
+    T = T / 10
+    V = ct.white_noise(T, R)
+    assert abs(np.mean(V)) < np.sqrt(10)        # can occassionally fail
+    assert np.all(abs(np.cov(V) - R) < 10)      # can occassionally fail
+
+    # Make sure discrete time works properly
+    V = ct.white_noise(T, R, dt=T[1] - T[0])
+    assert abs(np.mean(V)) < 0.1                # can occassionally fail
+    assert np.all(abs(np.cov(V) - R) < 0.1)     # can occassionally fail
+
+    # Test error conditions
+    with pytest.raises(ValueError, match="T must be 1D"):
+        V = ct.white_noise(R, R)
+
+    with pytest.raises(ValueError, match="Q must be square"):
+        R = np.outer(np.eye(2, 3), np.ones_like(T))
+        V = ct.white_noise(T, R)
+
+    with pytest.raises(ValueError, match="Time values must be equally"):
+        T = np.logspace(0, 2, 100)
+        R = [[0.5, 0], [0, 0.1]]
+        V = ct.white_noise(T, R)
+
+
+def test_correlation():
+    # Create an uncorrelated random sigmal
+    T = np.linspace(0, 1000, 1000)
+    R = 0.5
+    V = ct.white_noise(T, R)
+
+    # Compute the correlation
+    tau, Rtau = ct.correlation(T, V)
+
+    # Make sure the correlation makes sense
+    zero_index = np.where(tau == 0)
+    np.testing.assert_almost_equal(Rtau[zero_index], np.cov(V), decimal=2)
+    for i, t in enumerate(tau):
+        if i == zero_index:
+            continue
+    assert abs(Rtau[i]) < 0.01
+
+    # Try passing a second argument
+    tau, Rneg = ct.correlation(T, V, -V)
+    np.testing.assert_equal(Rtau, -Rneg)
+    
+    # Test error conditions
+    with pytest.raises(ValueError, match="Time vector T must be 1D"):
+        tau, Rtau = ct.correlation(V, V)
+
+    with pytest.raises(ValueError, match="X and Y must be 2D"):
+        tau, Rtau = ct.correlation(T, np.zeros((3, T.size, 2)))
+
+    with pytest.raises(ValueError, match="X and Y must have same length as T"):
+        tau, Rtau = ct.correlation(T, V[:, 0:-1])
+
+    with pytest.raises(ValueError, match="Time values must be equally"):
+        T = np.logspace(0, 2, T.size)
+        tau, Rtau = ct.correlation(T, V)
