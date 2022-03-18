@@ -565,6 +565,8 @@ def correlation(T, X, Y=None, squeeze=True):
         [[sp.signal.correlate(X[i], Y[j])
           for i in range(X.shape[0])] for j in range(Y.shape[0])]
     ) * dt / (T[-1] - T[0])
-    tau = sp.signal.correlation_lags(len(X[0]), len(Y[0])) * dt
+    # From scipy.signal.correlation_lags (for use with older versions)
+    # tau = sp.signal.correlation_lags(len(X[0]), len(Y[0])) * dt
+    tau = np.arange(-len(Y[0]) + 1, len(X[0])) * dt
 
     return tau, R.squeeze() if squeeze else R
