@@ -1711,6 +1711,7 @@ def test_interconnect_unused_output():
                             outputs=['y'],
                             ignore_outputs=['v'])
 
+
 def test_input_output_broadcasting():
     # Create a system, time vector, and noisy input
     sys = ct.rss(6, 2, 3)
@@ -1751,6 +1752,7 @@ def test_input_output_broadcasting():
     with pytest.raises(ValueError, match="inconsistent"):
         resp_bad = ct.input_output_response(
             sys, T, (U[0, :], U[:2, :-1]), [X0, P0])
+
 
 def test_nonuniform_timepts():
     """Test non-uniform time points for simulations"""
