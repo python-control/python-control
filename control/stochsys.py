@@ -323,9 +323,11 @@ def create_estimator_iosystem(
 
         estim = ct.create_estimator_iosystem(sys, QN, RN)
 
-    where ``sys`` is the process dynamics and QN and RN are the covariance of
-    the disturbance noise and sensor noise.  The function returns the
-    estimator ``estim`` as I/O systems.
+    where ``sys`` is the process dynamics and QN and RN are the covariance
+    of the disturbance noise and sensor noise.  The function returns the
+    estimator ``estim`` as I/O system with a parameter ``correct`` that can
+    be used to turn off the correction term in the estimation (for forward
+    predictions).
 
     Parameters
     ----------
@@ -367,6 +369,16 @@ def create_estimator_iosystem(
         K, _, _ = ct.lqr(sys, Q, R)
         est = ct.create_estimator_iosystem(sys, QN, RN, P0)
         ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=est)
+
+    The estimator can also be run on its own to process a noisy signal:
+
+        resp = ct.input_output_response(est, T, [Y, U], [X0, P0])
+
+    If desired, the ``correct`` parameter can be set to ``False`` to allow
+    prediction with no additional sensor information:
+
+        resp = ct.input_output_response(
+           est, T, 0, [X0, P0], param={'correct': False)
 
     """
 

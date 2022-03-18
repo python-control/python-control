@@ -1585,11 +1585,17 @@ def input_output_response(
     T : array-like
         Time steps at which the input is defined; values must be evenly spaced.
 
-    U : array-like or number, optional
-        Input array giving input at each time `T` (default = 0).
+    U : array-like, list, or number, optional
+        Input array giving input at each time `T` (default = 0).  If a list
+        is specified, each element in the list will be treated as a portion
+        of the input and broadcast (if necessary) to match the time vector.
 
-    X0 : array-like or number, optional
-        Initial condition (default = 0).
+    X0 : array-like, list, or number, optional
+        Initial condition (default = 0).  If a list is given, each element
+        in the list will be flattened and stacked into the initial
+        condition.  If a smaller number of elements are given that the
+        number of states in the system, the initial condition will be padded
+        with zeros.
 
     return_x : bool, optional
         If True, return the state vector when assigning to a tuple (default =
@@ -1641,6 +1647,16 @@ def input_output_response(
     ValueError
         If time step does not match sampling time (for discrete time systems).
 
+    Notes
+    -----
+    1. If a smaller number of initial conditions are given than the number of
+       states in the system, the initial conditions will be padded with
+       zeros.  This is often useful for interconnected control systems where
+       the process dynamics are the first system and all other components
+       start with zero initial condition since this can be specified as
+       [xsys_0, 0].  A warning is issued if the initial conditions are padded
+       and and the final listed initial state is not zero.
+
     """
     #
     # Process keyword arguments
@@ -1683,19 +1699,75 @@ def input_output_response(
         # Use the input time points as the output time points
         t_eval = T
 
-    # Check and convert the input, if needed
-    # TODO: improve MIMO ninputs check (choose from U)
+    # If we were passed a list of input, concatenate them (w/ broadcast)
+    if isinstance(U, (tuple, list)) and len(U) != ntimepts:
+        U_elements = []
+        for i, u in enumerate(U):
+            u = np.array(u)     # convert everyting to an array
+            # Process this input
+            if u.ndim == 0 or (u.ndim == 1 and u.shape[0] != T.shape[0]):
+                # Broadcast array to the length of the time input
+                u = np.outer(u, np.ones_like(T))
+
+            elif (u.ndim == 1 and u.shape[0] == T.shape[0]) or \
+                 (u.ndim == 2 and u.shape[1] == T.shape[0]):
+                # No processing necessary; just stack
+                pass
+
+            else:
+                raise ValueError(f"Input element {i} has inconsistent shape")
+
+            # Append this input to our list
+            U_elements.append(u)
+
+        # Save the newly created input vector
+        U = np.vstack(U_elements)
+
+    # Make sure the input has the right shape
     if sys.ninputs is None or sys.ninputs == 1:
         legal_shapes = [(ntimepts,), (1, ntimepts)]
     else:
         legal_shapes = [(sys.ninputs, ntimepts)]
+
     U = _check_convert_array(U, legal_shapes,
                              'Parameter ``U``: ', squeeze=False)
+
+    # Always store the input as a 2D array
     U = U.reshape(-1, ntimepts)
     ninputs = U.shape[0]
 
-    # create X0 if not given, test if X0 has correct shape
+    # If we were passed a list of initial states, concatenate them
+    if isinstance(X0, (tuple, list)):
+        X0_list = []
+        for i, x0 in enumerate(X0):
+            x0 = np.array(x0).reshape(-1)       # convert everyting to 1D array
+            X0_list += x0.tolist()              # add elements to initial state
+
+        # Save the newly created input vector
+        X0 = np.array(X0_list)
+
+    # If the initial state is too short, make it longer (NB: sys.nstates
+    # could be None if nstates comes from size of initial condition)
+    if sys.nstates and isinstance(X0, np.ndarray) and X0.size < sys.nstates:
+        if X0[-1] != 0:
+            warn("initial state too short; padding with zeros")
+        X0 = np.hstack([X0, np.zeros(sys.nstates - X0.size)])
+
+    # Check to make sure this is not a static function
     nstates = _find_size(sys.nstates, X0)
+    if nstates == 0:
+        # No states => map input to output
+        u = U[0] if len(U.shape) == 1 else U[:, 0]
+        y = np.zeros((np.shape(sys._out(T[0], X0, u))[0], len(T)))
+        for i in range(len(T)):
+            u = U[i] if len(U.shape) == 1 else U[:, i]
+            y[:, i] = sys._out(T[i], [], u)
+        return TimeResponseData(
+            T, y, None, U, issiso=sys.issiso(),
+            output_labels=sys.output_index, input_labels=sys.input_index,
+            transpose=transpose, return_x=return_x, squeeze=squeeze)
+
+    # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],
                               'Parameter ``X0``: ', squeeze=True)
 
