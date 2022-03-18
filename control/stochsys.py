@@ -305,7 +305,7 @@ def dlqe(*args, **keywords):
 def create_estimator_iosystem(
         sys, QN, RN, P0=None, G=None, C=None,
         state_labels='xhat[{i}]', output_labels='xhat[{i}]',
-        covariance_labels='P[{i},{j}]'):
+        covariance_labels='P[{i},{j}]', sensor_labels=None):
     """Create an I/O system implementing a linqear quadratic estimator
 
     This function creates an input/output system that implements a
@@ -386,6 +386,8 @@ def create_estimator_iosystem(
     else:
         # Use the system outputs as the sensor outputs
         C = sys.C
+        if sensor_labels is None:
+            sensor_labels = sys.output_labels
 
     # Initialize the covariance matrix
     if P0 is None:
@@ -407,12 +409,17 @@ def create_estimator_iosystem(
         # Generate the list of labels using the argument as a format string
         output_labels = [output_labels.format(i=i) for i in range(sys.nstates)]
 
+    sensor_labels = 'y[{i}]' if sensor_labels is None else sensor_labels
+    if isinstance(sensor_labels, str):
+        # Generate the list of labels using the argument as a format string
+        sensor_labels = [sensor_labels.format(i=i) for i in range(C.shape[0])]
+
     if isctime(sys):
         raise NotImplementedError("continuous time not yet implemented")
 
     else:
         # Create an I/O system for the state feedback gains
-        # Note: reshape various vectors into column vectors for legacy matrix
+        # Note: reshape vectors into column vectors for legacy np.matrix
         def _estim_update(t, x, u, params):
             # See if we are estimating or predicting
             correct = params.get('correct', True)
@@ -448,8 +455,8 @@ def create_estimator_iosystem(
     # Define the estimator system
     return NonlinearIOSystem(
         _estim_update, _estim_output, states=state_labels + covariance_labels,
-        inputs=sys.output_labels + sys.input_labels, outputs=output_labels,
-        dt=sys.dt)
+        inputs=sensor_labels + sys.input_labels,
+        outputs=output_labels, dt=sys.dt)
 
 
 def white_noise(T, Q, dt=0):
