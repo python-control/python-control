@@ -117,7 +117,7 @@ def test_discrete_lqr():
     assert np.any(np.abs(res1.inputs - res2.inputs) > 0.1)
 
 
-def test_mpc_iosystem():
+def test_mpc_iosystem_aircraft():
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
     A = [[0.99, 0.01, 0.18, -0.09,   0],
@@ -169,6 +169,21 @@ def test_mpc_iosystem():
     # Make sure the system converged to the desired state
     np.testing.assert_allclose(
         xout[0:sys.nstates, -1], xd, atol=0.1, rtol=0.01)
+
+
+def test_mpc_iosystem_continuous():
+    # Create a random state space system
+    sys = ct.rss(2, 1, 1)
+    T, _ = ct.step_response(sys)
+
+    # provide penalties on the system signals
+    Q = np.eye(sys.nstates)
+    R = np.eye(sys.ninputs)
+    cost = opt.quadratic_cost(sys, Q, R)
+
+    # Continuous time MPC controller not implemented
+    with pytest.raises(NotImplementedError):
+        ctrl = opt.create_mpc_iosystem(sys, T, cost)
 
 
 # Test various constraint combinations; need to use a somewhat convoluted
