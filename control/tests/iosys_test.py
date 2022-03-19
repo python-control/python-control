@@ -731,6 +731,32 @@ class TestIOSys:
         np.testing.assert_allclose(ios_t, lin_t,atol=0.002,rtol=0.)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
+    def test_discrete_iosys(self, tsys):
+        """Create a discrete time system from scratch"""
+        linsys = ct.StateSpace(
+            [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]], True)
+
+        # Create nonlinear version of the same system
+        def nlsys_update(t, x, u, params):
+            A, B = params['A'], params['B']
+            return A @ x + B @ u
+        def nlsys_output(t, x, u, params):
+            C = params['C']
+            return C @ x
+        nlsys = ct.NonlinearIOSystem(
+            nlsys_update, nlsys_output, inputs=1, outputs=1, states=2, dt=True)
+
+        # Set up parameters for simulation
+        T, U, X0 = tsys.T, tsys.U, tsys.X0
+
+        # Simulate and compare to LTI output
+        ios_t, ios_y = ios.input_output_response(
+            nlsys, T, U, X0,
+            params={'A': linsys.A, 'B': linsys.B, 'C': linsys.C})
+        lin_t, lin_y = ct.forced_response(linsys, T, U, X0)
+        np.testing.assert_allclose(ios_t, lin_t,atol=0.002,rtol=0.)
+        np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
+
     def test_find_eqpts(self, tsys):
         """Test find_eqpt function"""
         # Simple equilibrium point with no inputs
@@ -1526,7 +1552,6 @@ def secord_update(t, x, u, params={}):
     """Second order system dynamics"""
     omega0 = params.get('omega0', 1.)
     zeta = params.get('zeta', 0.5)
-    u = np.array(u, ndmin=1)
     return np.array([
         x[1],
         -2 * zeta * omega0 * x[1] - omega0*omega0 * x[0] + u[0]

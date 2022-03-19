@@ -1820,6 +1820,7 @@ def input_output_response(
         legal_shapes = [(sys.ninputs, n_steps)]
     U = _check_convert_array(U, legal_shapes,
                              'Parameter ``U``: ', squeeze=False)
+    U = U.reshape(-1, n_steps)
 
     # Check to make sure this is not a static function
     nstates = _find_size(sys.nstates, X0)
@@ -1870,6 +1871,11 @@ def input_output_response(
             ivp_rhs, (T0, Tf), X0, t_eval=T,
             vectorized=False, **solve_ivp_kwargs)
 
+        if not soln.success or soln.status != 0:
+            # Something went wrong
+            warn("sp.integrate.solve_ivp failed")
+            print("Return bunch:", soln)
+
         # Compute the output associated with the state (and use sys.out to
         # figure out the number of outputs just in case it wasn't specified)
         u = U[0] if len(U.shape) == 1 else U[:, 0]
@@ -1886,7 +1892,7 @@ def input_output_response(
                              "equally spaced.")
 
         # Make sure the sample time matches the given time
-        if (sys.dt is not True):
+        if sys.dt is not True:
             # Make sure that the time increment is a multiple of sampling time
 
             # TODO: add back functionality for undersampling
@@ -1903,7 +1909,7 @@ def input_output_response(
         # Compute the solution
         soln = sp.optimize.OptimizeResult()
         soln.t = T                      # Store the time vector directly
-        x = [float(x0) for x0 in X0]    # State vector (store as floats)
+        x = X0                          # Initilize state
         soln.y = []                     # Solution, following scipy convention
         y = []                          # System output
         for i in range(len(T)):

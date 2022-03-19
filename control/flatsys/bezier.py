@@ -55,7 +55,7 @@ class BezierFamily(BasisFamily):
     """
     def __init__(self, N, T=1):
         """Create a polynomial basis of order N."""
-        self.N = N                      # save number of basis functions
+        super(BezierFamily, self).__init__(N)
         self.T = T                      # save end of time interval
 
     # Compute the kth derivative of the ith basis function at time t

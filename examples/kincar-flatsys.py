@@ -109,7 +109,7 @@ def plot_results(t, x, ud):
 # Create differentially flat input/output system
 vehicle_flat = fs.FlatSystem(
     vehicle_flat_forward, vehicle_flat_reverse, vehicle_update,
-    inputs=('v', 'delta'), outputs=('x', 'y', 'theta'),
+    inputs=('v', 'delta'), outputs=('x', 'y'),
     states=('x', 'y', 'theta'))
 
 # Define the endpoints of the trajectory

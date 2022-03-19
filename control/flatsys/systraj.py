@@ -62,7 +62,7 @@ class SystemTrajectory:
 
     """
 
-    def __init__(self, sys, basis, coeffs=[], flaglen=[]):
+    def __init__(self, sys, basis, coeffs=[], flaglen=[], params=None):
         """Initilize a system trajectory object."""
         self.nstates = sys.nstates
         self.ninputs = sys.ninputs
@@ -70,6 +70,7 @@ class SystemTrajectory:
         self.basis = basis
         self.coeffs = list(coeffs)
         self.flaglen = list(flaglen)
+        self.params = sys.params if params is None else params
 
     # Evaluate the trajectory over a list of time points
     def eval(self, tlist):
@@ -112,6 +113,7 @@ class SystemTrajectory:
 
             # Now copy the states and inputs
             # TODO: revisit order of list arguments
-            xd[:,tind], ud[:,tind] = self.system.reverse(zflag)
+            xd[:,tind], ud[:,tind] = \
+                self.system.reverse(zflag, self.params)
 
         return xd, ud
