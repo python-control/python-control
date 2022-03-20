@@ -17,8 +17,18 @@ import logging
 import time
 
 from .timeresp import TimeResponseData
+from . import config
 
 __all__ = ['find_optimal_input']
+
+# Define module default parameter values
+_optimal_defaults = {
+    'optimal.minimize_method': None,
+    'optimal.minimize_options': {},
+    'optimal.minimize_kwargs': {},
+    'optimal.solve_ivp_method': None,
+    'optimal.solve_ivp_options': {},
+}
 
 
 class OptimalControlProblem():
@@ -110,6 +120,10 @@ class OptimalControlProblem():
     values of the input at the specified times (using linear interpolation for
     continuous systems).
 
+    The default values for ``minimize_method``, ``minimize_options``,
+    ``minimize_kwargs``, ``solve_ivp_method``, and ``solve_ivp_options`` can
+    be set using config.defaults['optimal.<keyword>'].
+
     """
     def __init__(
             self, sys, timepts, integral_cost, trajectory_constraints=[],
@@ -126,13 +140,22 @@ class OptimalControlProblem():
 
         # Process keyword arguments
         self.solve_ivp_kwargs = {}
-        self.solve_ivp_kwargs['method'] = kwargs.pop('solve_ivp_method', None)
-        self.solve_ivp_kwargs.update(kwargs.pop('solve_ivp_kwargs', {}))
+        self.solve_ivp_kwargs['method'] = kwargs.pop(
+            'solve_ivp_method', config.defaults['optimal.solve_ivp_method'])
+        self.solve_ivp_kwargs.update(kwargs.pop(
+            'solve_ivp_kwargs', config.defaults['optimal.solve_ivp_options']))
 
         self.minimize_kwargs = {}
-        self.minimize_kwargs['method'] = kwargs.pop('minimize_method', None)
-        self.minimize_kwargs['options'] = kwargs.pop('minimize_options', {})
-        self.minimize_kwargs.update(kwargs.pop('minimize_kwargs', {}))
+        self.minimize_kwargs['method'] = kwargs.pop(
+            'minimize_method', config.defaults['optimal.minimize_method'])
+        self.minimize_kwargs['options'] = kwargs.pop(
+            'minimize_options', config.defaults['optimal.minimize_options'])
+        self.minimize_kwargs.update(kwargs.pop(
+            'minimize_kwargs', config.defaults['optimal.minimize_kwargs']))
+
+        # Make sure all input arguments got parsed
+        if kwargs:
+            raise TypeError("unknown parameters %s" % kwargs)
 
         if len(kwargs) > 0:
             raise ValueError(
@@ -271,9 +294,10 @@ class OptimalControlProblem():
                 logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
 
             # Simulate the system to get the state
+            # TODO: try calling solve_ivp directly for better speed?
             _, _, states = ct.input_output_response(
                 self.system, self.timepts, inputs, x, return_x=True,
-                solve_ivp_kwargs=self.solve_ivp_kwargs)
+                solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
             self.system_simulations += 1
             self.last_x = x
             self.last_coeffs = coeffs
@@ -393,7 +417,7 @@ class OptimalControlProblem():
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
                 self.system, self.timepts, inputs, x, return_x=True,
-                solve_ivp_kwargs=self.solve_ivp_kwargs)
+                solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
             self.system_simulations += 1
             self.last_x = x
             self.last_coeffs = coeffs
@@ -475,7 +499,7 @@ class OptimalControlProblem():
             # Simulate the system to get the state
             _, _, states = ct.input_output_response(
                 self.system, self.timepts, inputs, x, return_x=True,
-                solve_ivp_kwargs=self.solve_ivp_kwargs)
+                solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
             self.system_simulations += 1
             self.last_x = x
             self.last_coeffs = coeffs
@@ -548,7 +572,7 @@ class OptimalControlProblem():
             initial_guess = np.atleast_1d(initial_guess)
 
             # See whether we got entire guess or just first time point
-            if len(initial_guess.shape) == 1:
+            if initial_guess.ndim == 1:
                 # Broadcast inputs to entire time vector
                 try:
                     initial_guess = np.broadcast_to(
@@ -804,6 +828,15 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         Whether or not the optimizer exited successful.
     problem : OptimalControlProblem
         Optimal control problem that generated this solution.
+    cost : float
+        Final cost of the return solution.
+    system_simulations, {cost, constraint, eqconst}_evaluations : int
+        Number of system simulations and evaluations of the cost function,
+        (inequality) constraint function, and equality constraint function
+        performed during the optimzation.
+    {cost, constraint, eqconst}_process_time : float
+        If logging was enabled, the amount of time spent evaluating the cost
+        and constraint functions.
 
     """
     def __init__(
@@ -833,15 +866,19 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
                 "unable to solve optimal control problem\n"
                 "scipy.optimize.minimize returned " + res.message, UserWarning)
 
+        # Save the final cost
+        self.cost = res.fun
+
         # Optionally print summary information
         if print_summary:
             ocp._print_statistics()
+            print("* Final cost:", self.cost)
 
         if return_states and inputs.shape[1] == ocp.timepts.shape[0]:
             # Simulate the system if we need the state back
             _, _, states = ct.input_output_response(
                 ocp.system, ocp.timepts, inputs, ocp.x, return_x=True,
-                solve_ivp_kwargs=ocp.solve_ivp_kwargs)
+                solve_ivp_kwargs=ocp.solve_ivp_kwargs, t_eval=ocp.timepts)
             ocp.system_simulations += 1
         else:
             states = None
@@ -858,7 +895,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def solve_ocp(
-        sys, horizon, X0, cost, trajectory_constraints=[], terminal_cost=None,
+        sys, horizon, X0, cost, trajectory_constraints=None, terminal_cost=None,
         terminal_constraints=[], initial_guess=None, basis=None, squeeze=None,
         transpose=None, return_states=False, log=False, **kwargs):
 
@@ -965,6 +1002,16 @@ def solve_ocp(
     # Allow 'return_x` as a synonym for 'return_states'
     return_states = ct.config._get_param(
         'optimal', 'return_x', kwargs, return_states, pop=True)
+
+    # Process terminal constraints keyword
+    if constraints is None:
+        constraints = kwargs.pop('trajectory_constraints', [])
+
+    # Process (legacy) method keyword
+    if kwargs.get('method'):
+        if kwargs.get('minimize_method'):
+            raise ValueError("'minimize_method' specified more than once")
+        kwargs['minimize_method'] = kwargs.pop('method')
 
     # Set up the optimal control problem
     ocp = OptimalControlProblem(

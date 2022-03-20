@@ -29,6 +29,7 @@ other sources.
    robust_mimo
    cruise-control
    steering-gainsched
+   steering-optimal
    kincar-flatsys
 
 Jupyter notebooks

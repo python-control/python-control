@@ -734,7 +734,7 @@ def dlqr(*args, **kwargs):
     The dlqr() function computes the optimal state feedback controller
     u[n] = - K x[n] that minimizes the quadratic cost
 
-    .. math:: J = \\Sum_0^\\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
+    .. math:: J = \\sum_0^\\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
 
     The function can be called with either 3, 4, or 5 arguments:
 

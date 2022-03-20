@@ -79,7 +79,7 @@ Every :math:`\Delta T` seconds, an optimal control problem is solved over a
 :math:`T` second horizon, starting from the current state.  The first
 :math:`\Delta T` seconds of the optimal control :math:`u_T^{\*}(\cdot;
 x(t))` is then applied to the system. If we let :math:`x_T^{\*}(\cdot;
-x(t))` represent the optimal trajectory starting from :math:`x(t)`$ then the
+x(t))` represent the optimal trajectory starting from :math:`x(t)` then the
 system state evolves from :math:`x(t)` at current time :math:`t` to
 :math:`x_T^{*}(\delta T, x(t))` at the next sample time :math:`t + \Delta
 T`, assuming no model uncertainty.
@@ -219,9 +219,11 @@ with a starting and ending velocity of 10 m/s::
 To set up the optimal control problem we design a cost function that
 penalizes the state and input using quadratic cost functions::
 
-  Q = np.diag([0.1, 10, .1])    # keep lateral error low
-  R = np.eye(2) * 0.1
-  cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+  Q = np.diag([0, 0, 0.1])          # don't turn too sharply
+  R = np.diag([1, 1])               # keep inputs small
+  P = np.diag([1000, 1000, 1000])   # get close to final point
+  traj_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+  term_cost = opt.quadratic_cost(vehicle, P, 0, x0=xf)
 
 We also constraint the maximum turning rate to 0.1 radians (about 6 degees)
 and constrain the velocity to be in the range of 9 m/s to 11 m/s::
@@ -230,20 +232,19 @@ and constrain the velocity to be in the range of 9 m/s to 11 m/s::
 
 Finally, we solve for the optimal inputs::
 
-  horizon = np.linspace(0, Tf, 20, endpoint=True)
-  bend_left = [10, 0.01]	# slight left veer
-
+  horizon = np.linspace(0, Tf, 3, endpoint=True)
   result = opt.solve_ocp(
-      vehicle, horizon, x0, cost, constraints, initial_guess=bend_left,
-      options={'eps': 0.01})    # set step size for gradient calculation
-
-  # Extract the results
-  u = result.inputs
-  t, y = ct.input_output_response(vehicle, horizon, u, x0)
+      vehicle, horizon, x0, traj_cost, constraints,
+      terminal_cost=term_cost, initial_guess=u0)
 
 Plotting the results::
 
-  # Plot the results
+  # Simulate the system dynamics (open loop)
+  resp = ct.input_output_response(
+      vehicle, horizon, result.inputs, x0,
+      t_eval=np.linspace(0, Tf, 100))
+  t, y, u = resp.time, resp.outputs, resp.inputs
+
   plt.subplot(3, 1, 1)
   plt.plot(y[0], y[1])
   plt.plot(x0[0], x0[1], 'ro', xf[0], xf[1], 'ro')
@@ -252,15 +253,13 @@ Plotting the results::
 
   plt.subplot(3, 1, 2)
   plt.plot(t, u[0])
-  plt.axis([0, 10, 8.5, 11.5])
-  plt.plot([0, 10], [9, 9], 'k--', [0, 10], [11, 11], 'k--')
+  plt.axis([0, 10, 9.9, 10.1])
   plt.xlabel("t [sec]")
   plt.ylabel("u1 [m/s]")
 
   plt.subplot(3, 1, 3)
   plt.plot(t, u[1])
-  plt.axis([0, 10, -0.15, 0.15])
-  plt.plot([0, 10], [-0.1, -0.1], 'k--', [0, 10], [0.1, 0.1], 'k--')
+  plt.axis([0, 10, -0.01, 0.01])
   plt.xlabel("t [sec]")
   plt.ylabel("u2 [rad/s]")
 
@@ -271,6 +270,47 @@ Plotting the results::
 yields
 
 .. image:: steering-optimal.png
+
+Optimization Tips
+=================
+
+The python-control optimization module makes use of the SciPy optimization
+toolbox and it can sometimes be tricky to get the optimization to converge.
+If you are getting errors when solving optimal control problems or your
+solutions do not seem close to optimal, here are a few things to try:
+
+* Less is more: try using a smaller number of time points in your
+  optimiation.  The default optimal control problem formulation uses the
+  value of the inputs at each time point as a free variable and this can
+  generate a large number of parameters quickly.  Often you can find very
+  good solutions with a small number of free variables (the example above
+  uses 3 time points for 2 inputs, so a total of 6 optimization variables).
+  Note that you can "resample" the optimal trajectory by running a
+  simulation of the sytem and using the `t_eval` keyword in
+  `input_output_response` (as done above).
+
+* Use a smooth basis: as an alternative to parameterizing the optimal
+  control inputs using the value of the control at the listed time points,
+  you can specify a set of basis functions using the `basis` keyword in
+  :func:`~control.solve_ocp` and then parameterize the controller by linear
+  combination of the basis functions.  The :mod:`!control.flatsys` module
+  defines several sets of basis functions that can be used.
+
+* Tweak the optimizer: by using the `minimize_method`, `minimize_options`,
+  and `minimize_kwargs` keywords in :func:`~control.solve_ocp`, you can
+  choose the SciPy optimization function that you use and set many
+  parameters.  See :func:`scipy.optimize.minimize` for more information on
+  the optimzers that are available and the options and keywords that they
+  accept.
+
+* Walk before you run: try setting up a simpler version of the optimization,
+  remove constraints or simplifying the cost to get a simple version of the
+  problem working and then add complexity.  Sometimes this can help you find
+  the right set of options or identify situations in which you are being too
+  aggressive in what your are trying to get the system to do.
+
+See :ref:`steering-optimal` for some examples of different problem
+formulations.
 
 
 Module classes and functions
