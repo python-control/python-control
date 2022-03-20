@@ -1656,13 +1656,13 @@ def input_output_response(
             raise ValueError("ivp_method specified more than once")
         solve_ivp_kwargs['method'] = kwargs.pop('solve_ivp_method')
 
+    # Make sure there were no extraneous keywords
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
     # Set the default method to 'RK45'
     if solve_ivp_kwargs.get('method', None) is None:
         solve_ivp_kwargs['method'] = 'RK45'
-
-    # Make sure all input arguments got parsed
-    if kwargs:
-        raise TypeError("unknown parameters %s" % kwargs)
 
     # Sanity checking on the input
     if not isinstance(sys, InputOutputSystem):
