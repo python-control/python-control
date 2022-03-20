@@ -560,7 +560,7 @@ class InputOutputSystem(_NamedIOStateSystem):
 
         # Create the state space system
         linsys = LinearIOSystem(
-            StateSpace(A, B, C, D, self.dt, remove_useless=False),
+            StateSpace(A, B, C, D, self.dt, remove_useless_states=False),
             name=name, **kwargs)
 
         # Set the names the system, inputs, outputs, and states
@@ -660,7 +660,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             states=linsys.nstates, params={}, dt=linsys.dt, name=name)
 
         # Initalize additional state space variables
-        StateSpace.__init__(self, linsys, remove_useless=False)
+        StateSpace.__init__(self, linsys, remove_useless_states=False)
 
         # Process input, output, state lists, if given
         # Make sure they match the size of the linear system
@@ -1551,7 +1551,7 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
                io_sys.nstates != ss_sys.nstates:
                 raise ValueError("System dimensions for first and second "
                                  "arguments must match.")
-            StateSpace.__init__(self, ss_sys, remove_useless=False)
+            StateSpace.__init__(self, ss_sys, remove_useless_states=False)
 
         else:
             raise TypeError("Second argument must be a state space system.")
