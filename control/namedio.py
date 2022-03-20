@@ -131,8 +131,7 @@ class _NamedIOStateSystem(_NamedIOSystem):
     def __init__(
             self, inputs=None, outputs=None, states=None, name=None):
         # Parse and store the system name, inputs, and outputs
-        _NamedIOSystem.__init__(
-            self, inputs=inputs, outputs=outputs, name=name)
+        super().__init__(inputs=inputs, outputs=outputs, name=name)
 
         # Parse and store the number of states
         self.set_states(states)

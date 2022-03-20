@@ -233,7 +233,7 @@ class TransferFunction(LTI):
                 if zeronum:
                     den[i][j] = ones(1)
 
-        LTI.__init__(self, inputs, outputs)
+        super().__init__(inputs, outputs)
         self.num = num
         self.den = den
 

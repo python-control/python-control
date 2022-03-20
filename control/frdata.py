@@ -204,7 +204,7 @@ class FrequencyResponseData(LTI):
                         w=1.0/(absolute(self.fresp[i, j, :]) + 0.001), s=0.0)
         else:
             self.ifunc = None
-        LTI.__init__(self, self.fresp.shape[1], self.fresp.shape[0])
+        super().__init__(self.fresp.shape[1], self.fresp.shape[0])
 
     def __str__(self):
         """String representation of the transfer function."""

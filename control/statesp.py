@@ -309,8 +309,7 @@ class StateSpace(LTI, _NamedIOStateSystem):
             D = np.zeros((C.shape[0], B.shape[1]))
         D = _ssmatrix(D)
 
-        # TODO: use super here?
-        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0])
+        super().__init__(inputs=D.shape[1], outputs=D.shape[0])
         self.A = A
         self.B = B
         self.C = C
