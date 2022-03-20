@@ -221,12 +221,10 @@ def bode_plot(syslist, omega=None,
         # Get the current figure
 
         if 'sisotool' in kwargs:
-            fig = kwargs['fig']
+            fig = kwargs.pop('fig')
             ax_mag = fig.axes[0]
             ax_phase = fig.axes[2]
-            sisotool = kwargs['sisotool']
-            del kwargs['fig']
-            del kwargs['sisotool']
+            sisotool = kwargs.pop('sisotool')
         else:
             fig = plt.gcf()
             ax_mag = None

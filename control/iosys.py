@@ -148,7 +148,7 @@ class InputOutputSystem(_NamedIOStateSystem):
         # timebase
         self.dt = kwargs.pop('dt', config.defaults['control.default_dt'])
 
-        # Make sure there were no extraneous keyworks
+        # Make sure there were no extraneous keywords
         if kwargs:
             raise TypeError("unrecognized keywords: ", str(kwargs))
 
@@ -790,9 +790,9 @@ class NonlinearIOSystem(InputOutputSystem):
             params=params, dt=dt, name=name
         )
 
-        # Make sure all input arguments got parsed
+        # Make sure there were no extraneous keywords
         if kwargs:
-            raise TypeError("unknown parameters %s" % kwargs)
+            raise TypeError("unrecognized keywords: ", str(kwargs))
 
         # Check to make sure arguments are consistent
         if updfcn is None:
@@ -2134,7 +2134,8 @@ def _parse_signal_parameter(value, name, kwargs, end=False):
         value = kwargs.pop(name)
 
     if end and kwargs:
-        raise TypeError("unknown parameters %s" % kwargs)
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+    
     return value
 
 

@@ -154,7 +154,7 @@ class OptimalControlProblem():
         self.minimize_kwargs.update(kwargs.pop(
             'minimize_kwargs', config.defaults['optimal.minimize_kwargs']))
 
-        # Make sure all input arguments got parsed
+        # Make sure there were no extraneous keywords
         if kwargs:
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
 

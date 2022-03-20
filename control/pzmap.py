@@ -91,7 +91,11 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
         import warnings
         warnings.warn("'Plot' keyword is deprecated in pzmap; use 'plot'",
                       FutureWarning)
-        plot = kwargs['Plot']
+        plot = kwargs.pop('Plot')
+
+    # Make sure there were no extraneous keywords
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Get parameter values
     plot = config._get_param('pzmap', 'plot', plot, True)

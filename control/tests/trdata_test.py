@@ -208,7 +208,7 @@ def test_response_copy():
     assert response.input_labels == ['u']
 
     # Unknown keyword
-    with pytest.raises(ValueError, match="Unknown parameter(s)*"):
+    with pytest.raises(TypeError, match="unrecognized keywords"):
         response_bad_kw = response_mimo(input=0)
 
 
