@@ -1776,7 +1776,12 @@ def _ss(*args, keywords=None, **kwargs):
     """Internal function to create StateSpace system"""
     if len(args) == 4 or len(args) == 5:
         return StateSpace(*args, keywords=keywords, **kwargs)
+
     elif len(args) == 1:
+        # Make sure there were no extraneous keywords
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
+
         from .xferfcn import TransferFunction
         sys = args[0]
         if isinstance(sys, StateSpace):
