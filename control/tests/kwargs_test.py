@@ -58,54 +58,58 @@ def test_kwarg_search(module, prefix):
             test_kwarg_search(obj, prefix + obj.__name__ + '.')
 
 
-# Create a SISO system for use in parameterized tests
-sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
+def test_unrecognized_kwargs():
+    # Create a SISO system for use in parameterized tests
+    sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
+
+    table = [
+        [control.dlqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
+        [control.drss, (2, 1, 1), {}],
+        [control.input_output_response, (sys, [0, 1, 2], [1, 1, 1]), {}],
+        [control.lqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
+        [control.pzmap, (sys,), {}],
+        [control.rlocus, (control.tf([1], [1, 1]), ), {}],
+        [control.root_locus, (control.tf([1], [1, 1]), ), {}],
+        [control.rss, (2, 1, 1), {}],
+        [control.ss, (0, 0, 0, 0), {'dt': 1}],
+        [control.ss2io, (sys,), {}],
+        [control.summing_junction, (2,), {}],
+        [control.tf, ([1], [1, 1]), {}],
+        [control.tf2io, (control.tf([1], [1, 1]),), {}],
+        [control.InputOutputSystem, (1, 1, 1), {}],
+        [control.StateSpace, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}],
+        [control.TransferFunction, ([1], [1, 1]), {}],
+    ]
+
+    for function, args, kwargs in table:
+        # Call the function normally and make sure it works
+        function(*args, **kwargs)
+
+        # Now add an unrecognized keyword and make sure there is an error
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            function(*args, **kwargs, unknown=None)
 
 
-# Parameterized tests for looking for unrecognized keyword errors
-@pytest.mark.parametrize("function, args, kwargs", [
-    [control.dlqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
-    [control.drss, (2, 1, 1), {}],
-    [control.input_output_response, (sys, [0, 1, 2], [1, 1, 1]), {}],
-    [control.lqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
-    [control.pzmap, (sys,), {}],
-    [control.rlocus, (control.tf([1], [1, 1]), ), {}],
-    [control.root_locus, (control.tf([1], [1, 1]), ), {}],
-    [control.rss, (2, 1, 1), {}],
-    [control.ss, (0, 0, 0, 0), {'dt': 1}],
-    [control.ss2io, (sys,), {}],
-    [control.summing_junction, (2,), {}],
-    [control.tf, ([1], [1, 1]), {}],
-    [control.tf2io, (control.tf([1], [1, 1]),), {}],
-    [control.InputOutputSystem, (1, 1, 1), {}],
-    [control.StateSpace, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}],
-    [control.TransferFunction, ([1], [1, 1]), {}],
-])
-def test_unrecognized_kwargs(function, args, kwargs):
-    # Call the function normally and make sure it works
-    function(*args, **kwargs)
+def test_matplotlib_kwargs():
+    # Create a SISO system for use in parameterized tests
+    sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
 
-    # Now add an unrecognized keyword and make sure there is an error
-    with pytest.raises(TypeError, match="unrecognized keyword"):
-        function(*args, **kwargs, unknown=None)
+    table = [
+        [control.bode, (sys, ), {}],
+        [control.bode_plot, (sys, ), {}],
+        [control.gangof4, (sys, sys), {}],
+        [control.gangof4_plot, (sys, sys), {}],
+        [control.nyquist, (sys, ), {}],
+        [control.nyquist_plot, (sys, ), {}],
+    ]
 
+    for function, args, kwargs in table:
+        # Call the function normally and make sure it works
+        function(*args, **kwargs)
 
-# Parameterized tests for looking for keyword errors handled by matplotlib
-@pytest.mark.parametrize("function, args, kwargs", [
-    [control.bode, (sys, ), {}],
-    [control.bode_plot, (sys, ), {}],
-    [control.gangof4, (sys, sys), {}],
-    [control.gangof4_plot, (sys, sys), {}],
-    [control.nyquist, (sys, ), {}],
-    [control.nyquist_plot, (sys, ), {}],
-])
-def test_matplotlib_kwargs(function, args, kwargs):
-    # Call the function normally and make sure it works
-    function(*args, **kwargs)
-
-    # Now add an unrecognized keyword and make sure there is an error
-    with pytest.raises(AttributeError, match="has no property"):
-        function(*args, **kwargs, unknown=None)
+        # Now add an unrecognized keyword and make sure there is an error
+        with pytest.raises(AttributeError, match="has no property"):
+            function(*args, **kwargs, unknown=None)
     
 
 #
