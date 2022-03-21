@@ -1574,7 +1574,11 @@ def ss2tf(*args, **kwargs):
         # Assume we were given the A, B, C, D matrix and (optional) dt
         return _convert_to_transfer_function(StateSpace(*args, **kwargs))
 
-    elif len(args) == 1:
+    # Make sure there were no extraneous keywords
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    if len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
             return _convert_to_transfer_function(sys)

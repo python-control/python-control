@@ -340,6 +340,10 @@ class StateSpace(LTI, _NamedIOStateSystem):
         self.dt = dt
         self.nstates = A.shape[1]
 
+        # Make sure there were no extraneous keywords
+        if keywords:
+            raise TypeError("unrecognized keywords: ", str(keywords))
+
         if 0 == self.nstates:
             # static gain
             # matrix's default "empty" shape is 1x0

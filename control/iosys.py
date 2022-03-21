@@ -2238,7 +2238,15 @@ def ss(*args, **kwargs):
     >>> sys2 = ss(sys_tf)
 
     """
-    sys = _ss(*args, keywords=kwargs)
+    # Extract the keyword arguments needed for StateSpace (via _ss)
+    ss_kwlist = ('dt', 'remove_useless_states')
+    ss_kwargs = {}
+    for kw in ss_kwlist:
+        if kw in kwargs:
+            ss_kwargs[kw] = kwargs.pop(kw)
+
+    # Create the statespace system and then convert to I/O system
+    sys = _ss(*args, keywords=ss_kwargs)
     return LinearIOSystem(sys, **kwargs)
 
 

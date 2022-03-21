@@ -1580,7 +1580,8 @@ def test_interconnect_unused_input():
                           outputs=['u'],
                           name='k')
 
-    with pytest.warns(UserWarning, match=r"Unused input\(s\) in InterconnectedSystem"):
+    with pytest.warns(
+            UserWarning, match=r"Unused input\(s\) in InterconnectedSystem"):
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'])
@@ -1611,13 +1612,19 @@ def test_interconnect_unused_input():
 
 
     # warn if explicity ignored input in fact used
-    with pytest.warns(UserWarning, match=r"Input\(s\) specified as ignored is \(are\) used:") as record:
+    with pytest.warns(
+            UserWarning,
+            match=r"Input\(s\) specified as ignored is \(are\) used:") \
+            as record:
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
                             ignore_inputs=['u','n'])
 
-    with pytest.warns(UserWarning, match=r"Input\(s\) specified as ignored is \(are\) used:") as record:
+    with pytest.warns(
+            UserWarning,
+            match=r"Input\(s\) specified as ignored is \(are\) used:") \
+            as record:
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
