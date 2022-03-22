@@ -73,6 +73,9 @@ def set_defaults(module, **keywords):
     if not isinstance(module, str):
         raise ValueError("module must be a string")
     for key, val in keywords.items():
+        keyname = module + '.' + key
+        if keyname not in defaults and f"deprecated.{keyname}" not in defaults:
+            raise TypeError(f"unrecognized keyword: {key}")
         defaults[module + '.' + key] = val
 
 
@@ -289,6 +292,6 @@ def use_legacy_defaults(version):
         set_defaults('control', squeeze_time_response=True)
 
         # switched mirror_style of nyquist from '-' to '--'
-        set_defaults('nyqist', mirror_style='-')
+        set_defaults('nyquist', mirror_style='-')
 
     return (major, minor, patch)
