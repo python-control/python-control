@@ -16,8 +16,9 @@ import warnings
 import logging
 import time
 
-from .timeresp import TimeResponseData
 from . import config
+from .exception import ControlNotImplemented
+from .timeresp import TimeResponseData
 
 __all__ = ['find_optimal_input']
 
@@ -155,11 +156,7 @@ class OptimalControlProblem():
 
         # Make sure all input arguments got parsed
         if kwargs:
-            raise TypeError("unknown parameters %s" % kwargs)
-
-        if len(kwargs) > 0:
-            raise ValueError(
-                f'unrecognized keyword(s): {list(kwargs.keys())}')
+            raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
         # Process trajectory constraints
         if isinstance(trajectory_constraints, tuple):
@@ -997,15 +994,11 @@ def solve_ocp(
     # Process keyword arguments
     if trajectory_constraints is None:
         # Backwards compatibility
-        trajectory_constraints = kwargs.pop('constraints', None)
+        trajectory_constraints = kwargs.pop('constraints', [])
 
     # Allow 'return_x` as a synonym for 'return_states'
     return_states = ct.config._get_param(
         'optimal', 'return_x', kwargs, return_states, pop=True)
-
-    # Process terminal constraints keyword
-    if constraints is None:
-        constraints = kwargs.pop('trajectory_constraints', [])
 
     # Process (legacy) method keyword
     if kwargs.get('method'):

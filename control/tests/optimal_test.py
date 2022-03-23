@@ -455,7 +455,7 @@ def test_ocp_argument_errors():
             sys, time, x0, cost, constraints, initial_guess=np.zeros((4,1,1)))
 
     # Unrecognized arguments
-    with pytest.raises(ValueError, match="unrecognized keyword"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         res = opt.solve_ocp(
             sys, time, x0, cost, constraints, terminal_constraint=None)
 
