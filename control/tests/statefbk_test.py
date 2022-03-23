@@ -616,3 +616,272 @@ class TestStatefbk:
         # Calling dlqe() with a continuous time system should raise an error
         with pytest.raises(ControlArgument, match="called with a continuous"):
             K, S, E = ct.dlqe(csys, Q, R)
+
+    @pytest.mark.parametrize(
+        'nstates, noutputs, ninputs, nintegrators, type',
+        [(2,      0,        1,       0,            None),
+         (2,      1,        1,       0,            None),
+         (4,      0,        2,       0,            None),
+         (4,      3,        2,       0,            None),
+         (2,      0,        1,       1,            None),
+         (4,      0,        2,       2,            None),
+         (4,      3,        2,       2,            None),
+         (2,      0,        1,       0,            'nonlinear'),
+         (4,      0,        2,       2,            'nonlinear'),
+         (4,      3,        2,       2,            'nonlinear'),
+        ])
+    def test_lqr_iosys(self, nstates, ninputs, noutputs, nintegrators, type):
+        # Create the system to be controlled (and estimator)
+        # TODO: make sure it is controllable?
+        if noutputs == 0:
+            # Create a system with full state output
+            sys = ct.rss(nstates, nstates, ninputs, strictly_proper=True)
+            sys.C = np.eye(nstates)
+            est = None
+
+        else:
+            # Create a system with of the desired size
+            sys = ct.rss(nstates, noutputs, ninputs, strictly_proper=True)
+
+            # Create an estimator with different signal names
+            L, _, _ = ct.lqe(
+                sys.A, sys.B, sys.C, np.eye(ninputs), np.eye(noutputs))
+            est = ss(
+                sys.A - L @ sys.C, np.hstack([L, sys.B]), np.eye(nstates), 0,
+                inputs=sys.output_labels + sys.input_labels,
+                outputs=[f'xhat[{i}]' for i in range(nstates)])
+
+        # Decide whether to include integral action
+        if nintegrators:
+            # Choose the first 'n' outputs as integral terms
+            C_int = np.eye(nintegrators, nstates)
+
+            # Set up an augmented system for LQR computation
+            # TODO: move this computation into LQR
+            A_aug = np.block([
+                [sys.A, np.zeros((sys.nstates, nintegrators))],
+                [C_int, np.zeros((nintegrators, nintegrators))]
+            ])
+            B_aug = np.vstack([sys.B, np.zeros((nintegrators, ninputs))])
+            C_aug = np.hstack([sys.C, np.zeros((sys.C.shape[0], nintegrators))])
+            aug = ss(A_aug, B_aug, C_aug, 0)
+        else:
+            C_int = np.zeros((0, nstates))
+            aug = sys
+
+        # Design an LQR controller
+        K, _, _ = ct.lqr(aug, np.eye(nstates + nintegrators), np.eye(ninputs))
+        Kp, Ki = K[:, :nstates], K[:, nstates:]
+
+        # Create an I/O system for the controller
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, integral_action=C_int, estimator=est, type=type)
+
+        # If we used a nonlinear controller, linearize it for testing
+        if type == 'nonlinear':
+            clsys = clsys.linearize(0, 0)
+
+        # Make sure the linear system elements are correct
+        if noutputs == 0:
+            # No estimator
+            Ac = np.block([
+                [sys.A - sys.B @ Kp, -sys.B @ Ki],
+                [C_int, np.zeros((nintegrators, nintegrators))]
+            ])
+            Bc = np.block([
+                [sys.B @ Kp, sys.B],
+                [-C_int, np.zeros((nintegrators, ninputs))]
+            ])
+            Cc = np.block([
+                [np.eye(nstates), np.zeros((nstates, nintegrators))],
+                [-Kp, -Ki]
+            ])
+            Dc = np.block([
+                [np.zeros((nstates, nstates + ninputs))],
+                [Kp, np.eye(ninputs)]
+            ])
+        else:
+            # Estimator
+            Be1, Be2 = est.B[:, :noutputs], est.B[:, noutputs:]
+            Ac = np.block([
+                [sys.A, -sys.B @ Ki, -sys.B @ Kp],
+                [np.zeros((nintegrators, nstates + nintegrators)), C_int],
+                [Be1 @ sys.C, -Be2 @ Ki, est.A - Be2 @ Kp]
+                ])
+            Bc = np.block([
+                [sys.B @ Kp, sys.B],
+                [-C_int, np.zeros((nintegrators, ninputs))],
+                [Be2 @ Kp, Be2]
+            ])
+            Cc = np.block([
+                [sys.C, np.zeros((noutputs, nintegrators + nstates))],
+                [np.zeros_like(Kp), -Ki, -Kp]
+            ])
+            Dc = np.block([
+                [np.zeros((noutputs, nstates + ninputs))],
+                [Kp, np.eye(ninputs)]
+            ])
+
+        # Check to make sure everything matches
+        np.testing.assert_array_almost_equal(clsys.A, Ac)
+        np.testing.assert_array_almost_equal(clsys.B, Bc)
+        np.testing.assert_array_almost_equal(clsys.C, Cc)
+        np.testing.assert_array_almost_equal(clsys.D, Dc)
+
+    def test_lqr_integral_continuous(self):
+        # Generate a continuous time system for testing
+        sys = ct.rss(4, 4, 2, strictly_proper=True)
+        sys.C = np.eye(4)       # reset output to be full state
+        C_int = np.eye(2, 4)    # integrate outputs for first two states
+        nintegrators = C_int.shape[0]
+
+        # Generate a controller with integral action
+        K, _, _ = ct.lqr(
+            sys, np.eye(sys.nstates + nintegrators), np.eye(sys.ninputs),
+            integral_action=C_int)
+        Kp, Ki = K[:, :sys.nstates], K[:, sys.nstates:]
+
+        # Create an I/O system for the controller
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, integral_action=C_int)
+
+        # Construct the state space matrices for the controller
+        # Controller inputs = xd, ud, x
+        # Controller state = z (integral of x-xd)
+        # Controller output = ud - Kp(x - xd) - Ki z
+        A_ctrl = np.zeros((nintegrators, nintegrators))
+        B_ctrl = np.block([
+            [-C_int, np.zeros((nintegrators, sys.ninputs)), C_int]
+        ])
+        C_ctrl = -K[:, sys.nstates:]
+        D_ctrl = np.block([[Kp, np.eye(nintegrators), -Kp]])
+
+        # Check to make sure everything matches
+        np.testing.assert_array_almost_equal(ctrl.A, A_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.B, B_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.C, C_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.D, D_ctrl)
+
+        # Construct the state space matrices for the closed loop system
+        A_clsys = np.block([
+            [sys.A - sys.B @ Kp, -sys.B @ Ki],
+            [C_int, np.zeros((nintegrators, nintegrators))]
+        ])
+        B_clsys = np.block([
+            [sys.B @ Kp, sys.B],
+            [-C_int, np.zeros((nintegrators, sys.ninputs))]
+        ])
+        C_clsys = np.block([
+            [np.eye(sys.nstates), np.zeros((sys.nstates, nintegrators))],
+            [-Kp, -Ki]
+        ])
+        D_clsys = np.block([
+            [np.zeros((sys.nstates, sys.nstates + sys.ninputs))],
+            [Kp, np.eye(sys.ninputs)]
+        ])
+
+        # Check to make sure closed loop matches
+        np.testing.assert_array_almost_equal(clsys.A, A_clsys)
+        np.testing.assert_array_almost_equal(clsys.B, B_clsys)
+        np.testing.assert_array_almost_equal(clsys.C, C_clsys)
+        np.testing.assert_array_almost_equal(clsys.D, D_clsys)
+
+        # Check the poles of the closed loop system
+        assert all(np.real(clsys.pole()) < 0)
+
+        # Make sure controller infinite zero frequency gain
+        if slycot_check():
+            ctrl_tf = tf(ctrl)
+            assert abs(ctrl_tf(1e-9)[0][0]) > 1e6
+            assert abs(ctrl_tf(1e-9)[1][1]) > 1e6
+
+    def test_lqr_integral_discrete(self):
+        # Generate a discrete time system for testing
+        sys = ct.drss(4, 4, 2, strictly_proper=True)
+        sys.C = np.eye(4)       # reset output to be full state
+        C_int = np.eye(2, 4)    # integrate outputs for first two states
+        nintegrators = C_int.shape[0]
+
+        # Generate a controller with integral action
+        K, _, _ = ct.lqr(
+            sys, np.eye(sys.nstates + nintegrators), np.eye(sys.ninputs),
+            integral_action=C_int)
+        Kp, Ki = K[:, :sys.nstates], K[:, sys.nstates:]
+
+        # Create an I/O system for the controller
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            sys, K, integral_action=C_int)
+
+        # Construct the state space matrices by hand
+        A_ctrl = np.eye(nintegrators)
+        B_ctrl = np.block([
+            [-C_int, np.zeros((nintegrators, sys.ninputs)), C_int]
+        ])
+        C_ctrl = -K[:, sys.nstates:]
+        D_ctrl = np.block([[Kp, np.eye(nintegrators), -Kp]])
+
+        # Check to make sure everything matches
+        assert ct.isdtime(clsys)
+        np.testing.assert_array_almost_equal(ctrl.A, A_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.B, B_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.C, C_ctrl)
+        np.testing.assert_array_almost_equal(ctrl.D, D_ctrl)
+
+    @pytest.mark.parametrize(
+        "rss_fun, lqr_fun",
+        [(ct.rss, lqr), (ct.drss, dlqr)])
+    def test_lqr_errors(self, rss_fun, lqr_fun):
+        # Generate a discrete time system for testing
+        sys = rss_fun(4, 4, 2, strictly_proper=True)
+
+        with pytest.raises(ControlArgument, match="must pass an array"):
+            K, _, _ = lqr_fun(
+                sys, np.eye(sys.nstates), np.eye(sys.ninputs),
+                integral_action="invalid argument")
+
+        with pytest.raises(ControlArgument, match="gain size must match"):
+            C_int = np.eye(2, 3)
+            K, _, _ = lqr_fun(
+                sys, np.eye(sys.nstates), np.eye(sys.ninputs),
+                integral_action=C_int)
+
+        with pytest.raises(TypeError, match="unrecognized keywords"):
+            K, _, _ = lqr_fun(
+                sys, np.eye(sys.nstates), np.eye(sys.ninputs),
+                integrator=None)
+
+    def test_statefbk_errors(self):
+        sys = ct.rss(4, 4, 2, strictly_proper=True)
+        K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+
+        with pytest.raises(ControlArgument, match="must be I/O system"):
+            sys_tf = ct.tf([1], [1, 1])
+            ctrl, clsys = ct.create_statefbk_iosystem(sys_tf, K)
+
+        with pytest.raises(ControlArgument, match="output size must match"):
+            est = ct.rss(3, 3, 2)
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=est)
+
+        with pytest.raises(ControlArgument, match="must be the full state"):
+            sys_nf = ct.rss(4, 3, 2, strictly_proper=True)
+            ctrl, clsys = ct.create_statefbk_iosystem(sys_nf, K)
+
+        with pytest.raises(ControlArgument, match="gain must be an array"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, "bad argument")
+
+        with pytest.raises(ControlArgument, match="unknown type"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, type=1)
+
+        # Errors involving integral action
+        C_int = np.eye(2, 4)
+        K_int, _, _ = ct.lqr(
+            sys, np.eye(sys.nstates + C_int.shape[0]), np.eye(sys.ninputs),
+            integral_action=C_int)
+
+        with pytest.raises(ControlArgument, match="must pass an array"):
+            ctrl, clsys = ct.create_statefbk_iosystem(
+                sys, K_int, integral_action="bad argument")
+
+        with pytest.raises(ControlArgument, match="must be an array of size"):
+            ctrl, clsys = ct.create_statefbk_iosystem(
+                sys, K, integral_action=C_int)

@@ -87,7 +87,7 @@ __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData']
 
 
-class TimeResponseData():
+class TimeResponseData:
     """A class for returning time responses.
 
     This class maintains and manipulates the data corresponding to the

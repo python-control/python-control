@@ -31,7 +31,9 @@ import scipy as sp
 import copy
 from warnings import warn
 
+from .namedio import _NamedIOStateSystem, _process_signal_list
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
+from .statesp import _ss, _rss_generate
 from .xferfcn import TransferFunction
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData
@@ -40,8 +42,8 @@ from . import config
 
 __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
            'InterconnectedSystem', 'LinearICSystem', 'input_output_response',
-           'find_eqpt', 'linearize', 'ss2io', 'tf2io', 'interconnect',
-           'summing_junction']
+           'find_eqpt', 'linearize', 'ss', 'rss', 'drss', 'ss2io', 'tf2io',
+           'interconnect', 'summing_junction']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -53,7 +55,7 @@ _iosys_defaults = {
 }
 
 
-class InputOutputSystem(object):
+class InputOutputSystem(_NamedIOStateSystem):
     """A class for representing input/output systems.
 
     The InputOutputSystem class allows (possibly nonlinear) input/output
@@ -124,14 +126,6 @@ class InputOutputSystem(object):
     # Allow ndarray * InputOutputSystem to give IOSystem._rmul_() priority
     __array_priority__ = 12     # override ndarray, matrix, SS types
 
-    _idCounter = 0
-
-    def _name_or_default(self, name=None):
-        if name is None:
-            name = "sys[{}]".format(InputOutputSystem._idCounter)
-            InputOutputSystem._idCounter += 1
-        return name
-
     def __init__(self, inputs=None, outputs=None, states=None, params={},
                  name=None, **kwargs):
         """Create an input/output system.
@@ -144,58 +138,19 @@ class InputOutputSystem(object):
         :class:`~control.InterconnectedSystem`.
 
         """
-        # Store the input arguments
+        # Store the system name, inputs, outputs, and states
+        _NamedIOStateSystem.__init__(
+            self, inputs=inputs, outputs=outputs, states=states, name=name)
 
         # default parameters
         self.params = params.copy()
+
         # timebase
-        self.dt = kwargs.get('dt', config.defaults['control.default_dt'])
-        # system name
-        self.name = self._name_or_default(name)
+        self.dt = kwargs.pop('dt', config.defaults['control.default_dt'])
 
-        # Parse and store the number of inputs, outputs, and states
-        self.set_inputs(inputs)
-        self.set_outputs(outputs)
-        self.set_states(states)
-
-    #
-    # Class attributes
-    #
-    # These attributes are defined as class attributes so that they are
-    # documented properly.  They are "overwritten" in __init__.
-    #
-
-    #: Number of system inputs.
-    #:
-    #: :meta hide-value:
-    ninputs = 0
-
-    #: Number of system outputs.
-    #:
-    #: :meta hide-value:
-    noutputs = 0
-
-    #: Number of system states.
-    #:
-    #: :meta hide-value:
-    nstates = 0
-
-    def __repr__(self):
-        return self.name if self.name is not None else str(type(self))
-
-    def __str__(self):
-        """String representation of an input/output system"""
-        str = "System: " + (self.name if self.name else "(None)") + "\n"
-        str += "Inputs (%s): " % self.ninputs
-        for key in self.input_index:
-            str += key + ", "
-        str += "\nOutputs (%s): " % self.noutputs
-        for key in self.output_index:
-            str += key + ", "
-        str += "\nStates (%s): " % self.nstates
-        for key in self.state_index:
-            str += key + ", "
-        return str
+        # Make sure there were no extraneous keyworks
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
 
     def __mul__(sys2, sys1):
         """Multiply two input/output systems (series interconnection)"""
@@ -393,34 +348,6 @@ class InputOutputSystem(object):
         # Return the newly created system
         return newsys
 
-    def _isstatic(self):
-        """Check to see if a system is a static system (no states)"""
-        return self.nstates == 0
-
-    # Utility function to parse a list of signals
-    def _process_signal_list(self, signals, prefix='s'):
-        if signals is None:
-            # No information provided; try and make it up later
-            return None, {}
-
-        elif isinstance(signals, int):
-            # Number of signals given; make up the names
-            return signals, {'%s[%d]' % (prefix, i): i for i in range(signals)}
-
-        elif isinstance(signals, str):
-            # Single string given => single signal with given name
-            return 1, {signals: 0}
-
-        elif all(isinstance(s, str) for s in signals):
-            # Use the list of strings as the signal names
-            return len(signals), {signals[i]: i for i in range(len(signals))}
-
-        else:
-            raise TypeError("Can't parse signal list %s" % str(signals))
-
-    # Find a signal by name
-    def _find_signal(self, name, sigdict): return sigdict.get(name, None)
-
     # Update parameters used for _rhs, _out (used by subclasses)
     def _update_params(self, params, warning=False):
         if warning:
@@ -507,82 +434,6 @@ class InputOutputSystem(object):
         y : ndarray
         """
         return self._out(t, x, u)
-
-    def set_inputs(self, inputs, prefix='u'):
-        """Set the number/names of the system inputs.
-
-        Parameters
-        ----------
-        inputs : int, list of str, or None
-            Description of the system inputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `u[i]` (where the prefix `u` can be changed using the
-            optional prefix parameter).
-        prefix : string, optional
-            If `inputs` is an integer, create the names of the states using
-            the given prefix (default = 'u').  The names of the input will be
-            of the form `prefix[i]`.
-
-        """
-        self.ninputs, self.input_index = \
-            self._process_signal_list(inputs, prefix=prefix)
-
-    def set_outputs(self, outputs, prefix='y'):
-        """Set the number/names of the system outputs.
-
-        Parameters
-        ----------
-        outputs : int, list of str, or None
-            Description of the system outputs.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `u[i]` (where the prefix `u` can be changed using the
-            optional prefix parameter).
-        prefix : string, optional
-            If `outputs` is an integer, create the names of the states using
-            the given prefix (default = 'y').  The names of the input will be
-            of the form `prefix[i]`.
-
-        """
-        self.noutputs, self.output_index = \
-            self._process_signal_list(outputs, prefix=prefix)
-
-    def set_states(self, states, prefix='x'):
-        """Set the number/names of the system states.
-
-        Parameters
-        ----------
-        states : int, list of str, or None
-            Description of the system states.  This can be given as an integer
-            count or as a list of strings that name the individual signals.
-            If an integer count is specified, the names of the signal will be
-            of the form `u[i]` (where the prefix `u` can be changed using the
-            optional prefix parameter).
-        prefix : string, optional
-            If `states` is an integer, create the names of the states using
-            the given prefix (default = 'x').  The names of the input will be
-            of the form `prefix[i]`.
-
-        """
-        self.nstates, self.state_index = \
-            self._process_signal_list(states, prefix=prefix)
-
-    def find_input(self, name):
-        """Find the index for an input given its name (`None` if not found)"""
-        return self.input_index.get(name, None)
-
-    def find_output(self, name):
-        """Find the index for an output given its name (`None` if not found)"""
-        return self.output_index.get(name, None)
-
-    def find_state(self, name):
-        """Find the index for a state given its name (`None` if not found)"""
-        return self.state_index.get(name, None)
-
-    def issiso(self):
-        """Check to see if a system is single input, single output"""
-        return self.ninputs == 1 and self.noutputs == 1
 
     def feedback(self, other=1, sign=-1, params={}):
         """Feedback interconnection between two input/output systems
@@ -799,6 +650,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
                             "or transfer function object")
 
         # Look for 'input' and 'output' parameter name variants
+        states = _parse_signal_parameter(states, 'state', kwargs)
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
         outputs = _parse_signal_parameter(outputs, 'output', kwargs, end=True)
 
@@ -812,15 +664,15 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
         # Process input, output, state lists, if given
         # Make sure they match the size of the linear system
-        ninputs, self.input_index = self._process_signal_list(
+        ninputs, self.input_index = _process_signal_list(
             inputs if inputs is not None else linsys.ninputs, prefix='u')
         if ninputs is not None and linsys.ninputs != ninputs:
             raise ValueError("Wrong number/type of inputs given.")
-        noutputs, self.output_index = self._process_signal_list(
+        noutputs, self.output_index = _process_signal_list(
             outputs if outputs is not None else linsys.noutputs, prefix='y')
         if noutputs is not None and linsys.noutputs != noutputs:
             raise ValueError("Wrong number/type of outputs given.")
-        nstates, self.state_index = self._process_signal_list(
+        nstates, self.state_index = _process_signal_list(
             states if states is not None else linsys.nstates, prefix='x')
         if nstates is not None and linsys.nstates != nstates:
             raise ValueError("Wrong number/type of states given.")
@@ -852,6 +704,10 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         y = self.C @ np.reshape(x, (-1, 1)) \
             + self.D @ np.reshape(u, (-1, 1))
         return np.array(y).reshape((-1,))
+
+    def __str__(self):
+        return InputOutputSystem.__str__(self) + "\n\n" \
+            + StateSpace.__str__(self)
 
 
 class NonlinearIOSystem(InputOutputSystem):
@@ -1030,7 +886,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         # Look for 'input' and 'output' parameter name variants
         inputs = _parse_signal_parameter(inputs, 'input', kwargs)
-        outputs =  _parse_signal_parameter(outputs, 'output', kwargs, end=True)
+        outputs = _parse_signal_parameter(outputs, 'output', kwargs, end=True)
 
         # Convert input and output names to lists if they aren't already
         if not isinstance(inplist, (list, tuple)):
@@ -1104,12 +960,12 @@ class InterconnectedSystem(InputOutputSystem):
         # If input or output list was specified, update it
         if inputs is not None:
             nsignals, self.input_index = \
-                self._process_signal_list(inputs, prefix='u')
+                _process_signal_list(inputs, prefix='u')
             if nsignals is not None and len(inplist) != nsignals:
                 raise ValueError("Wrong number/type of inputs given.")
         if outputs is not None:
             nsignals, self.output_index = \
-                self._process_signal_list(outputs, prefix='y')
+                _process_signal_list(outputs, prefix='y')
             if nsignals is not None and len(outlist) != nsignals:
                 raise ValueError("Wrong number/type of outputs given.")
 
@@ -2267,6 +2123,184 @@ def _find_size(sysval, vecval):
     raise ValueError("Can't determine size of system component.")
 
 
+# Define a state space object that is an I/O system
+def ss(*args, **kwargs):
+    """ss(A, B, C, D[, dt])
+
+    Create a state space system.
+
+    The function accepts either 1, 4 or 5 parameters:
+
+    ``ss(sys)``
+        Convert a linear system into space system form. Always creates a
+        new system, even if sys is already a state space system.
+
+    ``ss(A, B, C, D)``
+        Create a state space system from the matrices of its state and
+        output equations:
+
+        .. math::
+            \\dot x = A \\cdot x + B \\cdot u
+
+            y = C \\cdot x + D \\cdot u
+
+    ``ss(A, B, C, D, dt)``
+        Create a discrete-time state space system from the matrices of
+        its state and output equations:
+
+        .. math::
+            x[k+1] = A \\cdot x[k] + B \\cdot u[k]
+
+            y[k] = C \\cdot x[k] + D \\cdot u[ki]
+
+        The matrices can be given as *array like* data types or strings.
+        Everything that the constructor of :class:`numpy.matrix` accepts is
+        permissible here too.
+
+    Parameters
+    ----------
+    sys : StateSpace or TransferFunction
+        A linear system.
+    A, B, C, D : array_like or string
+        System, control, output, and feed forward matrices.
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time).
+    inputs, outputs, states : str, or list of str, optional
+        List of strings that name the individual signals.  If this parameter
+        is not given or given as `None`, the signal names will be of the
+        form `s[i]` (where `s` is one of `u`, `y`, or `x`).
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
+    Returns
+    -------
+    out: :class:`LinearIOSystem`
+        Linear input/output system.
+
+    Raises
+    ------
+    ValueError
+        If matrix sizes are not self-consistent.
+
+    See Also
+    --------
+    tf
+    ss2tf
+    tf2ss
+
+    Examples
+    --------
+    >>> # Create a Linear I/O system object from from for matrices
+    >>> sys1 = ss([[1, -2], [3 -4]], [[5], [7]], [[6, 8]], [[9]])
+
+    >>> # Convert a TransferFunction to a StateSpace object.
+    >>> sys_tf = tf([2.], [1., 3])
+    >>> sys2 = ss(sys_tf)
+
+    """
+    sys = _ss(*args, keywords=kwargs)
+    return LinearIOSystem(sys, **kwargs)
+
+
+def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
+    """
+    Create a stable *continuous* random state space object.
+
+    Parameters
+    ----------
+    states : int
+        Number of state variables
+    outputs : int
+        Number of system outputs
+    inputs : int
+        Number of system inputs
+    strictly_proper : bool, optional
+        If set to 'True', returns a proper system (no direct term).
+
+    Returns
+    -------
+    sys : StateSpace
+        The randomly created linear system
+
+    Raises
+    ------
+    ValueError
+        if any input is not a positive integer
+
+    See Also
+    --------
+    drss
+
+    Notes
+    -----
+    If the number of states, inputs, or outputs is not specified, then the
+    missing numbers are assumed to be 1.  The poles of the returned system
+    will always have a negative real part.
+
+    """
+    # Process states, inputs, outputs (ignoring names)
+    nstates, _ = _process_signal_list(states)
+    ninputs, _ = _process_signal_list(inputs)
+    noutputs, _ = _process_signal_list(outputs)
+
+    sys = _rss_generate(
+        nstates, ninputs, noutputs, 'c', strictly_proper=strictly_proper)
+    return LinearIOSystem(
+        sys, states=states, inputs=inputs, outputs=outputs, **kwargs)
+
+
+def drss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
+    """
+    Create a stable *discrete* random state space object.
+
+    Parameters
+    ----------
+    states : int
+        Number of state variables
+    inputs : integer
+        Number of system inputs
+    outputs : int
+        Number of system outputs
+    strictly_proper: bool, optional
+        If set to 'True', returns a proper system (no direct term).
+
+    Returns
+    -------
+    sys : StateSpace
+        The randomly created linear system
+
+    Raises
+    ------
+    ValueError
+        if any input is not a positive integer
+
+    See Also
+    --------
+    rss
+
+    Notes
+    -----
+    If the number of states, inputs, or outputs is not specified, then the
+    missing numbers are assumed to be 1.  The poles of the returned system
+    will always have a magnitude less than 1.
+
+    """
+    # Process states, inputs, outputs (ignoring names)
+    nstates, _ = _process_signal_list(states)
+    ninputs, _ = _process_signal_list(inputs)
+    noutputs, _ = _process_signal_list(outputs)
+
+    sys = _rss_generate(
+        nstates, ninputs, noutputs, 'd', strictly_proper=strictly_proper)
+    return LinearIOSystem(
+        sys, states=states, inputs=inputs, outputs=outputs, **kwargs)
+
+
 # Convert a state space system into an input/output system (wrapper)
 def ss2io(*args, **kwargs):
     return LinearIOSystem(*args, **kwargs)
@@ -2498,9 +2532,8 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[],
         raise ValueError('check_unused is False, but either '
                          + 'ignore_inputs or ignore_outputs non-empty')
 
-    if (connections is False
-        and not inplist and not outlist
-        and not inputs and not outputs):
+    if connections is False and not inplist and not outlist \
+       and not inputs and not outputs:
         # user has disabled auto-connect, and supplied neither input
         # nor output mappings; assume they know what they're doing
         check_unused = False

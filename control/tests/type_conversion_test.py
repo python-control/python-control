@@ -59,7 +59,7 @@ type_dict = {
 rtype_list =           ['ss',  'tf', 'frd', 'lio', 'ios', 'arr', 'flt']
 conversion_table = [
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('add',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'xos', 'ss',  'ss' ]),
+    ('add',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'ios', 'ss',  'ss' ]),
     ('add',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
     ('add',     'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'xrd']),
     ('add',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
@@ -68,7 +68,7 @@ conversion_table = [
     ('add',     'flt', ['ss',  'tf',  'xrd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('sub',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'xos', 'ss',  'ss' ]),
+    ('sub',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'ios', 'ss',  'ss' ]),
     ('sub',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
     ('sub',     'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'xrd']),
     ('sub',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
@@ -77,7 +77,7 @@ conversion_table = [
     ('sub',     'flt', ['ss',  'tf',  'xrd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('mul',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'xos', 'ss',  'ss' ]),
+    ('mul',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'ios', 'ss',  'ss' ]),
     ('mul',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
     ('mul',     'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'frd']),
     ('mul',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),

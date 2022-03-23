@@ -59,11 +59,11 @@ from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
 from .lti import LTI, common_timebase, isdtime, _process_frequency_response
+from .namedio import _NamedIOStateSystem, _process_signal_list
 from . import config
 from copy import deepcopy
 
-__all__ = ['StateSpace', 'ss', 'rss', 'drss', 'tf2ss', 'ssdata']
-
+__all__ = ['StateSpace', 'tf2ss', 'ssdata']
 
 # Define module default parameter values
 _statesp_defaults = {
@@ -153,7 +153,7 @@ def _f2s(f):
     return s
 
 
-class StateSpace(LTI):
+class StateSpace(LTI, _NamedIOStateSystem):
     """StateSpace(A, B, C, D[, dt])
 
     A class for representing state-space models.
@@ -244,7 +244,7 @@ class StateSpace(LTI):
     # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
     __array_priority__ = 11     # override ndarray and matrix types
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, keywords=None, **kwargs):
         """StateSpace(A, B, C, D[, dt])
 
         Construct a state space object.
@@ -263,6 +263,10 @@ class StateSpace(LTI):
         (default = False).
 
         """
+        # Use keywords object if we received one (and pop keywords we use)
+        if keywords is None:
+            keywords = kwargs
+
         # first get A, B, C, D matrices
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
@@ -285,7 +289,7 @@ class StateSpace(LTI):
                 "Expected 1, 4, or 5 arguments; received %i." % len(args))
 
         # Process keyword arguments
-        remove_useless_states = kwargs.get(
+        remove_useless_states = keywords.pop(
             'remove_useless_states',
             config.defaults['statesp.remove_useless_states'])
 
@@ -305,8 +309,7 @@ class StateSpace(LTI):
             D = np.zeros((C.shape[0], B.shape[1]))
         D = _ssmatrix(D)
 
-        # TODO: use super here?
-        LTI.__init__(self, inputs=D.shape[1], outputs=D.shape[0])
+        super().__init__(inputs=D.shape[1], outputs=D.shape[0])
         self.A = A
         self.B = B
         self.C = C
@@ -314,17 +317,18 @@ class StateSpace(LTI):
 
         # now set dt
         if len(args) == 4:
-            if 'dt' in kwargs:
-                dt = kwargs['dt']
+            if 'dt' in keywords:
+                dt = keywords.pop('dt')
             elif self._isstatic():
                 dt = None
             else:
                 dt = config.defaults['control.default_dt']
         elif len(args) == 5:
             dt = args[4]
-            if 'dt' in kwargs:
+            if 'dt' in keywords:
                 warn("received multiple dt arguments, "
                      "using positional arg dt = %s" % dt)
+                keywords.pop('dt')
         elif len(args) == 1:
             try:
                 dt = args[0].dt
@@ -1768,83 +1772,10 @@ def _mimo2simo(sys, input, warn_conversion=False):
     return sys
 
 
-def ss(*args, **kwargs):
-    """ss(A, B, C, D[, dt])
-
-    Create a state space system.
-
-    The function accepts either 1, 4 or 5 parameters:
-
-    ``ss(sys)``
-        Convert a linear system into space system form. Always creates a
-        new system, even if sys is already a StateSpace object.
-
-    ``ss(A, B, C, D)``
-        Create a state space system from the matrices of its state and
-        output equations:
-
-        .. math::
-            \\dot x = A \\cdot x + B \\cdot u
-
-            y = C \\cdot x + D \\cdot u
-
-    ``ss(A, B, C, D, dt)``
-        Create a discrete-time state space system from the matrices of
-        its state and output equations:
-
-        .. math::
-            x[k+1] = A \\cdot x[k] + B \\cdot u[k]
-
-            y[k] = C \\cdot x[k] + D \\cdot u[ki]
-
-        The matrices can be given as *array like* data types or strings.
-        Everything that the constructor of :class:`numpy.matrix` accepts is
-        permissible here too.
-
-    Parameters
-    ----------
-    sys: StateSpace or TransferFunction
-        A linear system
-    A: array_like or string
-        System matrix
-    B: array_like or string
-        Control matrix
-    C: array_like or string
-        Output matrix
-    D: array_like or string
-        Feed forward matrix
-    dt: If present, specifies the timebase of the system
-
-    Returns
-    -------
-    out: :class:`StateSpace`
-        The new linear system
-
-    Raises
-    ------
-    ValueError
-        if matrix sizes are not self-consistent
-
-    See Also
-    --------
-    StateSpace
-    tf
-    ss2tf
-    tf2ss
-
-    Examples
-    --------
-    >>> # Create a StateSpace object from four "matrices".
-    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-
-    >>> # Convert a TransferFunction to a StateSpace object.
-    >>> sys_tf = tf([2.], [1., 3])
-    >>> sys2 = ss(sys_tf)
-
-    """
-
+def _ss(*args, keywords=None, **kwargs):
+    """Internal function to create StateSpace system"""
     if len(args) == 4 or len(args) == 5:
-        return StateSpace(*args, **kwargs)
+        return StateSpace(*args, keywords=keywords, **kwargs)
     elif len(args) == 1:
         from .xferfcn import TransferFunction
         sys = args[0]
@@ -1930,89 +1861,6 @@ def tf2ss(*args):
         return _convert_to_statespace(sys)
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
-
-
-def rss(states=1, outputs=1, inputs=1, strictly_proper=False):
-    """
-    Create a stable *continuous* random state space object.
-
-    Parameters
-    ----------
-    states : int
-        Number of state variables
-    outputs : int
-        Number of system outputs
-    inputs : int
-        Number of system inputs
-    strictly_proper : bool, optional
-        If set to 'True', returns a proper system (no direct term).
-
-    Returns
-    -------
-    sys : StateSpace
-        The randomly created linear system
-
-    Raises
-    ------
-    ValueError
-        if any input is not a positive integer
-
-    See Also
-    --------
-    drss
-
-    Notes
-    -----
-    If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system
-    will always have a negative real part.
-
-    """
-
-    return _rss_generate(states, inputs, outputs, 'c',
-                         strictly_proper=strictly_proper)
-
-
-def drss(states=1, outputs=1, inputs=1, strictly_proper=False):
-    """
-    Create a stable *discrete* random state space object.
-
-    Parameters
-    ----------
-    states : int
-        Number of state variables
-    inputs : integer
-        Number of system inputs
-    outputs : int
-        Number of system outputs
-    strictly_proper: bool, optional
-        If set to 'True', returns a proper system (no direct term).
-
-
-    Returns
-    -------
-    sys : StateSpace
-        The randomly created linear system
-
-    Raises
-    ------
-    ValueError
-        if any input is not a positive integer
-
-    See Also
-    --------
-    rss
-
-    Notes
-    -----
-    If the number of states, inputs, or outputs is not specified, then the
-    missing numbers are assumed to be 1.  The poles of the returned system
-    will always have a magnitude less than 1.
-
-    """
-
-    return _rss_generate(states, inputs, outputs, 'd',
-                         strictly_proper=strictly_proper)
 
 
 def ssdata(sys):
