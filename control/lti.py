@@ -16,12 +16,13 @@ import numpy as np
 from numpy import absolute, real, angle, abs
 from warnings import warn
 from . import config
+from .namedio import _NamedIOSystem
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
            'isdtime', 'isctime', 'pole', 'zero', 'damp', 'evalfr',
            'freqresp', 'dcgain']
 
-class LTI:
+class LTI(_NamedIOSystem):
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
     LTI is the parent to the StateSpace and TransferFunction child classes. It
