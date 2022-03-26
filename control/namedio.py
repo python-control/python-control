@@ -1,10 +1,9 @@
 # namedio.py - internal named I/O object class
 # RMM, 13 Mar 2022
 #
-# This file implements the _NamedIOSystem and _NamedIOStateSystem classes,
-# which are used as a parent classes for FrequencyResponseData,
-# InputOutputSystem, LTI, TimeResponseData, and other similar classes to
-# allow naming of signals.
+# This file implements the _NamedIOSystem class, which is used as a parent
+# class for FrequencyResponseData, InputOutputSystem, LTI, TimeResponseData,
+# and other similar classes to allow naming of signals.
 
 import numpy as np
 
@@ -19,7 +18,7 @@ class _NamedIOSystem(object):
         return name
 
     def __init__(
-            self, inputs=None, outputs=None, name=None):
+            self, name=None, inputs=None, outputs=None, states=None):
 
         # system name
         self.name = self._name_or_default(name)
@@ -27,6 +26,7 @@ class _NamedIOSystem(object):
         # Parse and store the number of inputs and outputs
         self.set_inputs(inputs)
         self.set_outputs(outputs)
+        self.set_states(states)
 
     #
     # Class attributes
@@ -38,12 +38,17 @@ class _NamedIOSystem(object):
     #: Number of system inputs.
     #:
     #: :meta hide-value:
-    ninputs = 0
+    ninputs = None
 
     #: Number of system outputs.
     #:
     #: :meta hide-value:
-    noutputs = 0
+    noutputs = None
+
+    #: Number of system states.
+    #:
+    #: :meta hide-value:
+    nstates = None
 
     def __repr__(self):
         return str(type(self)) + ": " + self.name if self.name is not None \
@@ -58,6 +63,10 @@ class _NamedIOSystem(object):
         str += "\nOutputs (%s): " % self.noutputs
         for key in self.output_index:
             str += key + ", "
+        if self.nstates is not None:
+            str += "\nStates (%s): " % self.nstates
+            for key in self.state_index:
+                str += key + ", "
         return str
 
     # Find a signal by name
@@ -122,44 +131,6 @@ class _NamedIOSystem(object):
         lambda self: list(self.output_index.keys()),     # getter
         set_outputs)                                     # setter
 
-    def issiso(self):
-        """Check to see if a system is single input, single output"""
-        return self.ninputs == 1 and self.noutputs == 1
-
-
-class _NamedIOStateSystem(_NamedIOSystem):
-    def __init__(
-            self, inputs=None, outputs=None, states=None, name=None):
-        # Parse and store the system name, inputs, and outputs
-        super().__init__(inputs=inputs, outputs=outputs, name=name)
-
-        # Parse and store the number of states
-        self.set_states(states)
-
-    #
-    # Class attributes
-    #
-    # These attributes are defined as class attributes so that they are
-    # documented properly.  They are "overwritten" in __init__.
-    #
-
-    #: Number of system states.
-    #:
-    #: :meta hide-value:
-    nstates = 0
-
-    def __str__(self):
-        """String representation of an input/output system"""
-        str = _NamedIOSystem.__str__(self)
-        str += "\nStates (%s): " % self.nstates
-        for key in self.state_index:
-            str += key + ", "
-        return str
-
-    def _isstatic(self):
-        """Check to see if a system is a static system (no states)"""
-        return self.nstates == 0
-
     def set_states(self, states, prefix='x'):
         """Set the number/names of the system states.
 
@@ -188,6 +159,14 @@ class _NamedIOStateSystem(_NamedIOSystem):
     state_labels = property(
         lambda self: list(self.state_index.keys()),     # getter
         set_states)                                     # setter
+
+    def issiso(self):
+        """Check to see if a system is single input, single output"""
+        return self.ninputs == 1 and self.noutputs == 1
+
+    def _isstatic(self):
+        """Check to see if a system is a static system (no states)"""
+        return self.nstates == 0
 
 
 # Utility function to parse a list of signals

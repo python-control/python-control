@@ -31,7 +31,7 @@ import scipy as sp
 import copy
 from warnings import warn
 
-from .namedio import _NamedIOStateSystem, _process_signal_list
+from .namedio import _NamedIOSystem, _process_signal_list
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
 from .statesp import _ss, _rss_generate
 from .xferfcn import TransferFunction
@@ -55,7 +55,7 @@ _iosys_defaults = {
 }
 
 
-class InputOutputSystem(_NamedIOStateSystem):
+class InputOutputSystem(_NamedIOSystem):
     """A class for representing input/output systems.
 
     The InputOutputSystem class allows (possibly nonlinear) input/output
@@ -139,7 +139,7 @@ class InputOutputSystem(_NamedIOStateSystem):
 
         """
         # Store the system name, inputs, outputs, and states
-        _NamedIOStateSystem.__init__(
+        _NamedIOSystem.__init__(
             self, inputs=inputs, outputs=outputs, states=states, name=name)
 
         # default parameters
