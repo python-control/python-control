@@ -130,9 +130,10 @@ class TestIOSys:
         print(ios_linearized)
 
     @noscipy0
-    def test_nonlinear_iosys(self, tsys):
+    @pytest.mark.parametrize("ss", [ios.NonlinearIOSystem, ct.ss])
+    def test_nonlinear_iosys(self, tsys, ss):
         # Create a simple nonlinear I/O system
-        nlsys = ios.NonlinearIOSystem(predprey)
+        nlsys = ss(predprey)
         T = tsys.T
 
         # Start by simulating from an equilibrium point
@@ -159,7 +160,7 @@ class TestIOSys:
             np.reshape(linsys.C @ np.reshape(x, (-1, 1))
                        + linsys.D @ np.reshape(u, (-1, 1)),
                        (-1,))
-        nlsys = ios.NonlinearIOSystem(nlupd, nlout, inputs=1, outputs=1)
+        nlsys = ss(nlupd, nlout, inputs=1, outputs=1)
 
         # Make sure that simulations also line up
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -1775,3 +1776,21 @@ def test_nonuniform_timepts():
     t_even, y_even = ct.input_output_response(
         sys, noufpts, nonunif, t_eval=unifpts)
     np.testing.assert_almost_equal(y_unif, y_even, decimal=6)
+
+
+def test_ss_nonlinear():
+    """Test ss() for creating nonlinear systems"""
+    secord = ct.ss(secord_update, secord_output, inputs='u', outputs='y',
+                   states = ['x1', 'x2'], name='secord')
+    assert secord.name == 'secord'
+    assert secord.input_labels == ['u']
+    assert secord.output_labels == ['y']
+    assert secord.state_labels == ['x1', 'x2']
+
+    # Make sure that optional keywords are allowed
+    secord = ct.ss(secord_update, secord_output, dt=True)
+    assert ct.isdtime(secord)
+
+    # Make sure that state space keywords are flagged
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.ss(secord_update, remove_useless_states=True)

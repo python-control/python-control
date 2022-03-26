@@ -31,6 +31,7 @@ import scipy as sp
 import copy
 from warnings import warn
 
+from .lti import LTI
 from .namedio import _NamedIOSystem, _process_signal_list
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
 from .statesp import _ss, _rss_generate
@@ -2252,11 +2253,16 @@ def ss(*args, **kwargs):
 
     Create a state space system.
 
-    The function accepts either 1, 4 or 5 parameters:
+    The function accepts either 1, 2, 4 or 5 parameters:
 
     ``ss(sys)``
         Convert a linear system into space system form. Always creates a
         new system, even if sys is already a state space system.
+
+    ``ss(updfcn, outfucn)```
+        Create a nonlinear input/output system with update function ``updfcn``
+        and output function ``outfcn``.  See :class:`NonlinearIOSystem` for
+        more information.
 
     ``ss(A, B, C, D)``
         Create a state space system from the matrices of its state and
@@ -2279,6 +2285,10 @@ def ss(*args, **kwargs):
         The matrices can be given as *array like* data types or strings.
         Everything that the constructor of :class:`numpy.matrix` accepts is
         permissible here too.
+
+    ``ss(args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'],
+         states=['x1', ..., 'xn'])
+        Create a system with named input, output, and state signals.
 
     Parameters
     ----------
@@ -2326,6 +2336,12 @@ def ss(*args, **kwargs):
     >>> sys2 = ss(sys_tf)
 
     """
+    # See if this is a nonlinear I/O system
+    if len(args) > 0 and hasattr(args[0], '__call__') and \
+       not isinstance (args[0], (InputOutputSystem, LTI)):
+        # Function as first argument => assume nonlinear IO system
+        return NonlinearIOSystem(*args, **kwargs)
+
     # Extract the keyword arguments needed for StateSpace (via _ss)
     ss_kwlist = ('dt', 'remove_useless_states')
     ss_kwargs = {}
@@ -2334,7 +2350,7 @@ def ss(*args, **kwargs):
             ss_kwargs[kw] = kwargs.pop(kw)
 
     # Create the statespace system and then convert to I/O system
-    sys = _ss(*args, keywords=ss_kwargs)
+    sys = _ss(*args, **ss_kwargs)
     return LinearIOSystem(sys, **kwargs)
 
 

@@ -875,7 +875,7 @@ class TestTimeresp:
                 kw['U'] = np.vstack([np.sin(t) for i in range(sys.ninputs)])
         elif fun == forced_response and isctime(sys, strict=True):
             pytest.skip("No continuous forced_response without time vector.")
-        if hasattr(sys, "nstates"):
+        if hasattr(sys, "nstates") and sys.nstates is not None:
             kw['X0'] = np.arange(sys.nstates) + 1
         if sys.ninputs > 1 and fun in [step_response, impulse_response]:
             kw['input'] = 1

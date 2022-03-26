@@ -61,6 +61,7 @@ from itertools import chain
 from re import sub
 from .lti import LTI, common_timebase, isdtime, _process_frequency_response
 from .exception import ControlMIMONotImplemented
+from .namedio import _NamedIOSystem, _process_signal_list
 from . import config
 
 __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
@@ -70,7 +71,7 @@ __all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
 _xferfcn_defaults = {}
 
 
-class TransferFunction(LTI):
+class TransferFunction(LTI, _NamedIOSystem):
     """TransferFunction(num, den[, dt])
 
     A class for representing transfer functions.
