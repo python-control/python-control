@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test-linux:
-    name: Python ${{ matrix.python-version }}${{ matrix.slycot && format(' with Slycot from {0}', matrix.slycot) || ' without Slycot' }}${{ matrix.array-and-matrix == 1 && ', array and matrix' || '' }}
+    name: Python ${{ matrix.python-version }}${{ matrix.slycot && format(' with Slycot from {0}', matrix.slycot) || ' without Slycot' }}${{ matrix.pandas && ', with pandas' || '' }}${{ matrix.array-and-matrix == 1 && ', array and matrix' || '' }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -12,10 +12,12 @@ jobs:
       matrix:
         python-version: [3.7, 3.9]
         slycot: ["", "conda"]
+        pandas: [""]
         array-and-matrix: [0]
         include:
           - python-version: 3.9
             slycot: conda
+            pandas: conda
             array-and-matrix: 1
 
     steps:
@@ -40,6 +42,9 @@ jobs:
         conda install -c conda-forge numpy matplotlib scipy
         if [[ '${{matrix.slycot}}' == 'conda' ]]; then
           conda install -c conda-forge slycot
+        fi
+        if [[ '${{matrix.pandas}}' == 'conda' ]]; then
+          conda install -c conda-forge pandas
         fi
 
     - name: Test with pytest
