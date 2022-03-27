@@ -77,9 +77,9 @@ class LTI:
         """
         Deprecated attribute; use :attr:`ninputs` instead.
 
-        The ``input`` attribute was used to store the number of system inputs.
-        It is no longer used.  If you need access to the number of inputs for
-        an LTI system, use :attr:`ninputs`.
+        The ``inputs`` attribute was used to store the number of system
+        inputs.  It is no longer used.  If you need access to the number
+        of inputs for an LTI system, use :attr:`ninputs`.
         """)
 
     def _get_outputs(self):
@@ -100,7 +100,7 @@ class LTI:
         """
         Deprecated attribute; use :attr:`noutputs` instead.
 
-        The ``output`` attribute was used to store the number of system
+        The ``outputs`` attribute was used to store the number of system
         outputs.  It is no longer used.  If you need access to the number of
         outputs for an LTI system, use :attr:`noutputs`.
         """)
@@ -197,17 +197,21 @@ class LTI:
 
         Returns
         -------
-        mag : ndarray
-            The magnitude (absolute value, not dB or log10) of the system
-            frequency response.  If the system is SISO and squeeze is not
-            True, the array is 1D, indexed by frequency.  If the system is not
-            SISO or squeeze is False, the array is 3D, indexed by the output,
-            input, and frequency.  If ``squeeze`` is True then
-            single-dimensional axes are removed.
-        phase : ndarray
-            The wrapped phase in radians of the system frequency response.
-        omega : ndarray
-            The (sorted) frequencies at which the response was evaluated.
+        response : :class:`FrequencyReponseData`
+            Frequency response data object representing the frequency
+            response.  This object can be assigned to a tuple using
+
+                mag, phase, omega = response
+
+            where ``mag`` is the magnitude (absolute value, not dB or log10)
+            of the system frequency response, ``phase`` is the wrapped phase
+            in radians of the system frequency response, and ``omega`` is the
+            (sorted) frequencies at which the response was evaluated.  If the
+            system is SISO and squeeze is not True, ``mag`` and ``phase`` are
+            1D, indexed by frequency.  If the system is not SISO or squeeze is
+            False, the array is 3D, indexed by the output, input, and
+            frequency.  If ``squeeze`` is True then single-dimensional axes
+            are removed.
 
         """
         omega = np.sort(np.array(omega, ndmin=1))
@@ -218,8 +222,12 @@ class LTI:
             s = np.exp(1j * omega * self.dt)
         else:
             s = 1j * omega
-        response = self.__call__(s, squeeze=squeeze)
-        return abs(response), angle(response), omega
+
+        # Return the data as a frequency response data object
+        from .frdata import FrequencyResponseData
+        response = self.__call__(s)
+        return FrequencyResponseData(
+            response, omega, return_magphase=True, squeeze=squeeze)
 
     def dcgain(self):
         """Return the zero-frequency gain"""

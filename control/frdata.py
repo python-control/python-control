@@ -44,11 +44,14 @@ FRD data.
 """
 
 # External function declarations
+from copy import copy
 from warnings import warn
+
 import numpy as np
 from numpy import angle, array, empty, ones, \
     real, imag, absolute, eye, linalg, where, sort
 from scipy.interpolate import splprep, splev
+
 from .lti import LTI, _process_frequency_response
 from .exception import pandas_check
 from .namedio import _NamedIOSystem
@@ -141,7 +144,7 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
         The default constructor is FRD(d, w), where w is an iterable of
         frequency points, and d is the matching frequency data.
 
-        If d is a single list, 1d array, or tuple, a SISO system description
+        If d is a single list, 1D array, or tuple, a SISO system description
         is assumed. d can also be
 
         To call the copy constructor, call FRD(sys), where sys is a
@@ -170,13 +173,12 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
 
             else:
                 # The user provided a response and a freq vector
-                self.fresp = array(args[0], dtype=complex)
-                if len(self.fresp.shape) == 1:
-                    self.fresp = self.fresp.reshape(1, 1, len(args[0]))
-                self.omega = array(args[1], dtype=float)
-                if len(self.fresp.shape) != 3 or \
-                        self.fresp.shape[-1] != self.omega.shape[-1] or \
-                        len(self.omega.shape) != 1:
+                self.fresp = array(args[0], dtype=complex, ndmin=1)
+                if self.fresp.ndim == 1:
+                    self.fresp = self.fresp.reshape(1, 1, -1)
+                self.omega = array(args[1], dtype=float, ndmin=1)
+                if self.fresp.ndim != 3 or self.omega.ndim != 1 or \
+                        self.fresp.shape[-1] != self.omega.shape[-1]:
                     raise TypeError(
                         "The frequency data constructor needs a 1-d or 3-d"
                         " response data array and a matching frequency vector"
@@ -206,6 +208,12 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
 
         # Keep track of return type
         self.return_magphase=kwargs.pop('return_magphase', False)
+        if self.return_magphase not in (True, False):
+            raise ValueError("unknown return_magphase value")
+
+        self.squeeze=kwargs.pop('squeeze', None)
+        if self.squeeze not in (None, True, False):
+            raise ValueError("unknown squeeze value")
 
         # Make sure there were no extraneous keywords
         if kwargs:
@@ -477,7 +485,7 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
 
         return _process_frequency_response(self, omega, out, squeeze=squeeze)
 
-    def __call__(self, s, squeeze=None):
+    def __call__(self, s=None, squeeze=None, return_magphase=None):
         """Evaluate system's transfer function at complex frequencies.
 
         Returns the complex frequency response `sys(s)` of system `sys` with
@@ -490,16 +498,30 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
         For a frequency response data object, the argument must be an
         imaginary number (since only the frequency response is defined).
 
+        If ``s`` is not given, this function creates a copy of a frequency
+        response data object with a different set of output settings.
+
         Parameters
         ----------
         s : complex scalar or 1D array_like
-            Complex frequencies
-        squeeze : bool, optional (default=True)
+            Complex frequencies.  If not specified, return a copy of the
+            frequency response data object with updated settings for output
+            processing (``squeeze``, ``return_magphase``).
+
+        squeeze : bool, optional
             If squeeze=True, remove single-dimensional entries from the shape
             of the output even if the system is not SISO. If squeeze=False,
             keep all indices (output, input and, if omega is array_like,
             frequency) even if the system is SISO. The default value can be
             set using config.defaults['control.squeeze_frequency_response'].
+
+        return_magphase : bool, optional
+            If True, then a frequency response data object will enumerate as a
+            tuple of the form (mag, phase, omega) where where ``mag`` is the
+            magnitude (absolute value, not dB or log10) of the system
+            frequency response, ``phase`` is the wrapped phase in radians of
+            the system frequency response, and ``omega`` is the (sorted)
+            frequencies at which the response was evaluated.
 
         Returns
         -------
@@ -519,6 +541,17 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
             frequency values.
 
         """
+        if s is None:
+            # Create a copy of the response with new keywords
+            response = copy(self)
+
+            # Update any keywords that we were passed
+            response.squeeze = self.squeeze if squeeze is None else squeeze
+            response.return_magphase = self.return_magphase \
+                if return_magphase is None else return_magphase
+
+            return response
+
         # Make sure that we are operating on a simple list
         if len(np.atleast_1d(s).shape) > 1:
             raise ValueError("input list must be 1D")
@@ -532,6 +565,22 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
             return self.eval(np.asarray(s).imag, squeeze=squeeze)
         else:
             return self.eval(complex(s).imag, squeeze=squeeze)
+
+    # Implement iter to allow assigning to a tuple
+    def __iter__(self):
+        fresp = _process_frequency_response(
+            self, self.omega, self.fresp, squeeze=self.squeeze)
+        if not self.return_magphase:
+            return iter((self.omega, fresp))
+        return iter((np.abs(fresp), np.angle(fresp), self.omega))
+
+    # Implement (thin) getitem to allow access via legacy indexing
+    def __getitem__(self, index):
+        return list(self.__iter__())[index]
+
+    # Implement (thin) len to emulate legacy testing interface
+    def __len__(self):
+        return 3 if self.return_magphase else 2
 
     def freqresp(self, omega):
         """(deprecated) Evaluate transfer function at complex frequencies.

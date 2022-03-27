@@ -463,7 +463,7 @@ class TimeResponseData:
         # Update any keywords that we were passed
         response.transpose = kwargs.pop('transpose', self.transpose)
         response.squeeze = kwargs.pop('squeeze', self.squeeze)
-        response.return_x = kwargs.pop('return_x', self.squeeze)
+        response.return_x = kwargs.pop('return_x', self.return_x)
 
         # Check for new labels
         input_labels = kwargs.pop('input_labels', None)

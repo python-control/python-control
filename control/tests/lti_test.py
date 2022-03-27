@@ -267,7 +267,7 @@ class TestLTI:
             sys = fcn(ct.rss(2, 1, 1))
 
         with pytest.raises(ValueError, match="unknown squeeze value"):
-            sys.frequency_response([1], squeeze=1)
+            resp = sys.frequency_response([1], squeeze='siso')
         with pytest.raises(ValueError, match="unknown squeeze value"):
             sys([1j], squeeze='siso')
         with pytest.raises(ValueError, match="unknown squeeze value"):

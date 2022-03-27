@@ -61,6 +61,7 @@ from itertools import chain
 from re import sub
 from .lti import LTI, common_timebase, isdtime, _process_frequency_response
 from .exception import ControlMIMONotImplemented
+from .frdata import FrequencyResponseData
 from .namedio import _NamedIOSystem, _process_signal_list
 from . import config
 
@@ -1381,6 +1382,9 @@ def _convert_to_transfer_function(sys, inputs=1, outputs=1):
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
 
         return TransferFunction(num, den)
+
+    elif isinstance(sys, FrequencyResponseData):
+        raise TypeError("Can't convert given FRD to TransferFunction system.")
 
     # If this is array-like, try to create a constant feedthrough
     try:
