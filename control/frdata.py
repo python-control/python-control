@@ -50,12 +50,14 @@ from numpy import angle, array, empty, ones, \
     real, imag, absolute, eye, linalg, where, sort
 from scipy.interpolate import splprep, splev
 from .lti import LTI, _process_frequency_response
+from .exception import pandas_check
+from .namedio import _NamedIOSystem
 from . import config
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
 
 
-class FrequencyResponseData(LTI):
+class FrequencyResponseData(LTI, _NamedIOSystem):
     """FrequencyResponseData(d, w[, smooth])
 
     A class for models defined by frequency response data (FRD).
@@ -152,10 +154,6 @@ class FrequencyResponseData(LTI):
         # TODO: discrete-time FRD systems?
         smooth = kwargs.pop('smooth', False)
 
-        # Make sure there were no extraneous keywords
-        if kwargs:
-            raise TypeError("unrecognized keywords: ", str(kwargs))
-
         if len(args) == 2:
             if not isinstance(args[0], FRD) and isinstance(args[0], LTI):
                 # not an FRD, but still a system, second argument should be
@@ -195,6 +193,23 @@ class FrequencyResponseData(LTI):
         else:
             raise ValueError(
                 "Needs 1 or 2 arguments; received %i." % len(args))
+
+        # Set the size of the system
+        self.noutputs = self.fresp.shape[0]
+        self.ninputs = self.fresp.shape[1]
+
+        # Process signal names
+        _NamedIOSystem.__init__(
+            self, name=kwargs.pop('name', None),
+            inputs=kwargs.pop('inputs', self.ninputs),
+            outputs=kwargs.pop('outputs', self.noutputs))
+
+        # Keep track of return type
+        self.return_magphase=kwargs.pop('return_magphase', False)
+
+        # Make sure there were no extraneous keywords
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
 
         # create interpolation functions
         if smooth:
@@ -260,11 +275,13 @@ class FrequencyResponseData(LTI):
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
-            raise ValueError("The first summand has %i input(s), but the \
-second has %i." % (self.ninputs, other.ninputs))
+            raise ValueError(
+                "The first summand has %i input(s), but the " \
+                "second has %i." % (self.ninputs, other.ninputs))
         if self.noutputs != other.noutputs:
-            raise ValueError("The first summand has %i output(s), but the \
-second has %i." % (self.noutputs, other.noutputs))
+            raise ValueError(
+                "The first summand has %i output(s), but the " \
+                "second has %i." % (self.noutputs, other.noutputs))
 
         return FRD(self.fresp + other.fresp, other.omega)
 
@@ -550,6 +567,22 @@ second has %i." % (self.noutputs, other.noutputs))
         fresp = np.moveaxis(resfresp, 0, 2)
 
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
+
+    # Convert to pandas
+    def to_pandas(self):
+        if not pandas_check():
+            ImportError('pandas not installed')
+        import pandas
+
+        # Create a dict for setting up the data frame
+        data = {'omega': self.omega}
+        data.update(
+            {'H_{%s, %s}' % (out, inp): self.fresp[i, j] \
+             for i, out in enumerate(self.output_labels) \
+             for j, inp in enumerate(self.input_labels)})
+
+        return pandas.DataFrame(data)
+
 
 #
 # Allow FRD as an alias for the FrequencyResponseData class

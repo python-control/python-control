@@ -185,3 +185,9 @@ def test_binary_op_type_conversions(opname, ltype, rtype, sys_dict):
 
         # Print out what we are testing in case something goes wrong
         assert isinstance(result, type_dict[expected])
+
+        # Make sure that input, output, and state names make sense
+        assert len(result.input_labels) == result.ninputs
+        assert len(result.output_labels) == result.outputs
+        if result.nstates is not None:
+            assert len(result.state_labels) == result.states

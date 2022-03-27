@@ -204,8 +204,9 @@ def bode_plot(syslist, omega=None,
     initial_phase = config._get_param(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+
     # If argument was a singleton, turn it into a tuple
-    if not hasattr(syslist, '__iter__'):
+    if not isinstance(syslist, (list, tuple)):
         syslist = (syslist,)
 
     omega, omega_range_given = _determine_omega_vector(
@@ -678,8 +679,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     indent_direction = config._get_param(
         'nyquist', 'indent_direction', kwargs, _nyquist_defaults, pop=True)
 
-    # If argument was a singleton, turn it into a list
-    if not hasattr(syslist, '__iter__'):
+    # If argument was a singleton, turn it into a tuple
+    if not isinstance(syslist, (list, tuple)):
         syslist = (syslist,)
 
     omega, omega_range_given = _determine_omega_vector(
@@ -1109,7 +1110,7 @@ def singular_values_plot(syslist, omega=None,
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
 
     # If argument was a singleton, turn it into a tuple
-    if not hasattr(syslist, '__iter__'):
+    if not isinstance(syslist, (list, tuple)):
         syslist = (syslist,)
 
     omega, omega_range_given = _determine_omega_vector(
