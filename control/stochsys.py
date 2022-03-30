@@ -26,7 +26,7 @@ from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
 
-__all__ = ['lqe','dlqe', 'create_estimator_iosystem', 'white_noise',
+__all__ = ['lqe', 'dlqe', 'create_estimator_iosystem', 'white_noise',
            'correlation']
 
 
@@ -134,7 +134,7 @@ def lqe(*args, **kwargs):
     # Get the method to use (if specified as a keyword)
     method = kwargs.pop('method', None)
     if kwargs:
-        raise TypeError("unrecognized kwargs: ", str(kwargs))
+        raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
     # Get the system description
     if (len(args) < 3):
@@ -255,7 +255,7 @@ def dlqe(*args, **kwargs):
     # Get the method to use (if specified as a keyword)
     method = kwargs.pop('method', None)
     if kwargs:
-        raise TypeError("unrecognized kwargs: ", str(kwargs))
+        raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
     # Get the system description
     if (len(args) < 3):
