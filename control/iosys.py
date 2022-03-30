@@ -148,7 +148,7 @@ class InputOutputSystem(_NamedIOStateSystem):
         # timebase
         self.dt = kwargs.pop('dt', config.defaults['control.default_dt'])
 
-        # Make sure there were no extraneous keyworks
+        # Make sure there were no extraneous keywords
         if kwargs:
             raise TypeError("unrecognized keywords: ", str(kwargs))
 
@@ -560,7 +560,7 @@ class InputOutputSystem(_NamedIOStateSystem):
 
         # Create the state space system
         linsys = LinearIOSystem(
-            StateSpace(A, B, C, D, self.dt, remove_useless=False),
+            StateSpace(A, B, C, D, self.dt, remove_useless_states=False),
             name=name, **kwargs)
 
         # Set the names the system, inputs, outputs, and states
@@ -660,7 +660,7 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             states=linsys.nstates, params={}, dt=linsys.dt, name=name)
 
         # Initalize additional state space variables
-        StateSpace.__init__(self, linsys, remove_useless=False)
+        StateSpace.__init__(self, linsys, remove_useless_states=False)
 
         # Process input, output, state lists, if given
         # Make sure they match the size of the linear system
@@ -790,9 +790,9 @@ class NonlinearIOSystem(InputOutputSystem):
             params=params, dt=dt, name=name
         )
 
-        # Make sure all input arguments got parsed
+        # Make sure there were no extraneous keywords
         if kwargs:
-            raise TypeError("unknown parameters %s" % kwargs)
+            raise TypeError("unrecognized keywords: ", str(kwargs))
 
         # Check to make sure arguments are consistent
         if updfcn is None:
@@ -1551,7 +1551,7 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
                io_sys.nstates != ss_sys.nstates:
                 raise ValueError("System dimensions for first and second "
                                  "arguments must match.")
-            StateSpace.__init__(self, ss_sys, remove_useless=False)
+            StateSpace.__init__(self, ss_sys, remove_useless_states=False)
 
         else:
             raise TypeError("Second argument must be a state space system.")
@@ -1656,13 +1656,13 @@ def input_output_response(
             raise ValueError("ivp_method specified more than once")
         solve_ivp_kwargs['method'] = kwargs.pop('solve_ivp_method')
 
+    # Make sure there were no extraneous keywords
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
     # Set the default method to 'RK45'
     if solve_ivp_kwargs.get('method', None) is None:
         solve_ivp_kwargs['method'] = 'RK45'
-
-    # Make sure all input arguments got parsed
-    if kwargs:
-        raise TypeError("unknown parameters %s" % kwargs)
 
     # Sanity checking on the input
     if not isinstance(sys, InputOutputSystem):
@@ -1829,7 +1829,7 @@ def input_output_response(
 
 def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
               iu=None, iy=None, ix=None, idx=None, dx0=None,
-              return_y=False, return_result=False, **kw):
+              return_y=False, return_result=False):
     """Find the equilibrium point for an input/output system.
 
     Returns the value of an equilibrium point given the initial state and
@@ -1933,7 +1933,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
             # Take u0 as fixed and minimize over x
             # TODO: update to allow discrete time systems
             def ode_rhs(z): return sys._rhs(t, z, u0)
-            result = root(ode_rhs, x0, **kw)
+            result = root(ode_rhs, x0)
             z = (result.x, u0, sys._out(t, result.x, u0))
         else:
             # Take y0 as fixed and minimize over x and u
@@ -1944,7 +1944,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
                 return np.concatenate(
                     (sys._rhs(t, x, u), sys._out(t, x, u) - y0), axis=0)
             z0 = np.concatenate((x0, u0), axis=0)   # Put variables together
-            result = root(rootfun, z0, **kw)        # Find the eq point
+            result = root(rootfun, z0)              # Find the eq point
             x, u = np.split(result.x, [nstates])    # Split result back in two
             z = (x, u, sys._out(t, x, u))
 
@@ -2056,7 +2056,7 @@ def find_eqpt(sys, x0, u0=[], y0=None, t=0, params={},
         z0 = np.concatenate((x[state_vars], u[input_vars]), axis=0)
 
         # Finally, call the root finding function
-        result = root(rootfun, z0, **kw)
+        result = root(rootfun, z0)
 
         # Extract out the results and insert into x and u
         x[state_vars] = result.x[:nstate_vars]
@@ -2134,7 +2134,8 @@ def _parse_signal_parameter(value, name, kwargs, end=False):
         value = kwargs.pop(name)
 
     if end and kwargs:
-        raise TypeError("unknown parameters %s" % kwargs)
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
     return value
 
 
@@ -2237,7 +2238,15 @@ def ss(*args, **kwargs):
     >>> sys2 = ss(sys_tf)
 
     """
-    sys = _ss(*args, keywords=kwargs)
+    # Extract the keyword arguments needed for StateSpace (via _ss)
+    ss_kwlist = ('dt', 'remove_useless_states')
+    ss_kwargs = {}
+    for kw in ss_kwlist:
+        if kw in kwargs:
+            ss_kwargs[kw] = kwargs.pop(kw)
+
+    # Create the statespace system and then convert to I/O system
+    sys = _ss(*args, keywords=ss_kwargs)
     return LinearIOSystem(sys, **kwargs)
 
 

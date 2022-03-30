@@ -168,6 +168,10 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     # Check for sisotool mode
     sisotool = False if 'sisotool' not in kwargs else True
 
+    # Make sure there were no extraneous keywords
+    if not sisotool and kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
     # Create the Plot
     if plot:
         if sisotool:

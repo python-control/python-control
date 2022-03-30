@@ -188,19 +188,19 @@ def test_interconnect_exceptions():
 
     # Unrecognized arguments
     # LinearIOSystem
-    with pytest.raises(TypeError, match="unknown parameter"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         P = ct.LinearIOSystem(ct.rss(2, 1, 1), output_name='y')
 
     # Interconnect
-    with pytest.raises(TypeError, match="unknown parameter"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         T = ct.interconnect((P, C, sumblk), input_name='r', output='y')
 
     # Interconnected system
-    with pytest.raises(TypeError, match="unknown parameter"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         T = ct.InterconnectedSystem((P, C, sumblk), input_name='r', output='y')
 
     # NonlinearIOSytem
-    with pytest.raises(TypeError, match="unknown parameter"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         nlios =  ct.NonlinearIOSystem(
             None, lambda t, x, u, params: u*u, input_count=1, output_count=1)
 
@@ -208,7 +208,7 @@ def test_interconnect_exceptions():
     with pytest.raises(TypeError, match="input specification is required"):
         sumblk = ct.summing_junction()
 
-    with pytest.raises(TypeError, match="unknown parameter"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         sumblk = ct.summing_junction(input_count=2, output_count=2)
 
 

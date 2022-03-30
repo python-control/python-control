@@ -480,9 +480,9 @@ class TimeResponseData:
             response.state_labels = _process_labels(
                 state_labels, "state", response.nstates)
 
-        # Make sure no unknown keywords were passed
-        if len(kwargs) != 0:
-            raise ValueError("Unknown parameter(s) %s" % kwargs)
+        # Make sure there were no extraneous keywords
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
 
         return response
 

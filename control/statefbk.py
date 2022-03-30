@@ -261,7 +261,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def lqe(*args, **keywords):
+def lqe(*args, method=None):
     """lqe(A, G, C, QN, RN, [, NN])
 
     Linear quadratic estimator design (Kalman filter) for continuous-time
@@ -356,17 +356,14 @@ def lqe(*args, **keywords):
     # Process the arguments and figure out what inputs we received
     #
 
-    # Get the method to use (if specified as a keyword)
-    method = keywords.get('method', None)
+    # If we were passed a discrete time system as the first arg, use dlqe()
+    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
+        # Call dlqe
+        return dlqe(*args, method=method)
 
     # Get the system description
     if (len(args) < 3):
         raise ControlArgument("not enough input arguments")
-
-    # If we were passed a discrete time system as the first arg, use dlqe()
-    if isinstance(args[0], LTI) and isdtime(args[0], strict=True):
-        # Call dlqe
-        return dlqe(*args, **keywords)
 
     # If we were passed a state space  system, use that to get system matrices
     if isinstance(args[0], StateSpace):
@@ -409,7 +406,7 @@ def lqe(*args, **keywords):
 
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
-def dlqe(*args, **keywords):
+def dlqe(*args, method=None):
     """dlqe(A, G, C, QN, RN, [, N])
 
     Linear quadratic estimator design (Kalman filter) for discrete-time
@@ -479,9 +476,6 @@ def dlqe(*args, **keywords):
     #
     # Process the arguments and figure out what inputs we received
     #
-
-    # Get the method to use (if specified as a keyword)
-    method = keywords.get('method', None)
 
     # Get the system description
     if (len(args) < 3):

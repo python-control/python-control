@@ -265,6 +265,10 @@ class TransferFunction(LTI):
                     dt = config.defaults['control.default_dt']
         self.dt = dt
 
+        # Make sure there were no extraneous keywords
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
+
     #
     # Class attributes
     #
@@ -1297,7 +1301,7 @@ def _add_siso(num1, den1, num2, den2):
     return num, den
 
 
-def _convert_to_transfer_function(sys, **kw):
+def _convert_to_transfer_function(sys, inputs=1, outputs=1):
     """Convert a system to transfer function form (if needed).
 
     If sys is already a transfer function, then it is returned.  If sys is a
@@ -1324,13 +1328,9 @@ def _convert_to_transfer_function(sys, **kw):
     from .statesp import StateSpace
 
     if isinstance(sys, TransferFunction):
-        if len(kw):
-            raise TypeError("If sys is a TransferFunction, " +
-                            "_convertToTransferFunction cannot take keywords.")
-
         return sys
-    elif isinstance(sys, StateSpace):
 
+    elif isinstance(sys, StateSpace):
         if 0 == sys.nstates:
             # Slycot doesn't like static SS->TF conversion, so handle
             # it first.  Can't join this with the no-Slycot branch,
@@ -1341,14 +1341,9 @@ def _convert_to_transfer_function(sys, **kw):
                    for i in range(sys.noutputs)]
         else:
             try:
-                from slycot import tb04ad
-                if len(kw):
-                    raise TypeError(
-                        "If sys is a StateSpace, " +
-                        "_convertToTransferFunction cannot take keywords.")
-
                 # Use Slycot to make the transformation
                 # Make sure to convert system matrices to numpy arrays
+                from slycot import tb04ad
                 tfout = tb04ad(
                     sys.nstates, sys.ninputs, sys.noutputs, array(sys.A),
                     array(sys.B), array(sys.C), array(sys.D), tol1=0.0)
@@ -1381,15 +1376,6 @@ def _convert_to_transfer_function(sys, **kw):
         return TransferFunction(num, den, sys.dt)
 
     elif isinstance(sys, (int, float, complex, np.number)):
-        if "inputs" in kw:
-            inputs = kw["inputs"]
-        else:
-            inputs = 1
-        if "outputs" in kw:
-            outputs = kw["outputs"]
-        else:
-            outputs = 1
-
         num = [[[sys] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
 
@@ -1498,6 +1484,10 @@ def tf(*args, **kwargs):
     if len(args) == 2 or len(args) == 3:
         return TransferFunction(*args, **kwargs)
     elif len(args) == 1:
+        # Make sure there were no extraneous keywords
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
+
         # Look for special cases defining differential/delay operator
         if args[0] == 's':
             return TransferFunction.s
@@ -1525,8 +1515,8 @@ def ss2tf(*args, **kwargs):
     The function accepts either 1 or 4 parameters:
 
     ``ss2tf(sys)``
-        Convert a linear system from state space into transfer function form. Always creates a
-        new system.
+        Convert a linear system from state space into transfer function
+        form. Always creates a new system.
 
     ``ss2tf(A, B, C, D)``
         Create a transfer function system from the matrices of its state and
@@ -1584,7 +1574,11 @@ def ss2tf(*args, **kwargs):
         # Assume we were given the A, B, C, D matrix and (optional) dt
         return _convert_to_transfer_function(StateSpace(*args, **kwargs))
 
-    elif len(args) == 1:
+    # Make sure there were no extraneous keywords
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    if len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
             return _convert_to_transfer_function(sys)

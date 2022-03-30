@@ -472,3 +472,9 @@ Freq [rad/s]  Response
       10.000         0.2        +4j
      100.000         0.1        +6j"""
         assert str(sysm) == refm
+
+    def test_unrecognized_keyword(self):
+        h = TransferFunction([1], [1, 2, 2])
+        omega = np.logspace(-1, 2, 10)
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            frd = FRD(h, omega, unknown=None)

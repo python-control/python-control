@@ -150,7 +150,11 @@ class FrequencyResponseData(LTI):
 
         """
         # TODO: discrete-time FRD systems?
-        smooth = kwargs.get('smooth', False)
+        smooth = kwargs.pop('smooth', False)
+
+        # Make sure there were no extraneous keywords
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
 
         if len(args) == 2:
             if not isinstance(args[0], FRD) and isinstance(args[0], LTI):

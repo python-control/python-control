@@ -23,10 +23,10 @@ class TestConfig:
     sys = ct.tf([10], [1, 2, 1])
 
     def test_set_defaults(self):
-        ct.config.set_defaults('config', test1=1, test2=2, test3=None)
-        assert ct.config.defaults['config.test1'] == 1
-        assert ct.config.defaults['config.test2'] == 2
-        assert ct.config.defaults['config.test3'] is None
+        ct.config.set_defaults('freqplot', dB=1, deg=2, Hz=None)
+        assert ct.config.defaults['freqplot.dB'] == 1
+        assert ct.config.defaults['freqplot.deg'] == 2
+        assert ct.config.defaults['freqplot.Hz'] is None
 
     @mplcleanup
     def test_get_param(self):
