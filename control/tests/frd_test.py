@@ -519,3 +519,16 @@ def test_to_pandas():
     # Check to make sure the data make senses
     np.testing.assert_equal(df['omega'], resp.omega)
     np.testing.assert_equal(df['H_{y[0], u[0]}'], resp.fresp[0, 0])
+
+
+def test_frequency_response():
+    # Create an SISO frequence response
+    sys = ct.rss(2, 2, 2)
+    omega = np.logspace(-2, 2, 20)
+    resp = ct.frequency_response(sys, omega)
+    eval = sys(omega*1j)
+
+    # Make sure we get the right answers in various ways
+    np.testing.assert_equal(resp.magnitude, np.abs(eval))
+    np.testing.assert_equal(resp.phase, np.angle(eval))
+    np.testing.assert_equal(resp.omega, omega)

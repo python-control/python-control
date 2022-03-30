@@ -19,7 +19,7 @@ from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
            'isdtime', 'isctime', 'pole', 'zero', 'damp', 'evalfr',
-           'freqresp', 'dcgain']
+           'frequency_response', 'freqresp', 'dcgain']
 
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
@@ -172,16 +172,16 @@ class LTI:
 
         Reports the frequency response of the system,
 
-             G(j*omega) = mag*exp(j*phase)
+             G(j*omega) = mag * exp(j*phase)
 
-        for continuous time systems. For discrete time systems, the response is
-        evaluated around the unit circle such that
+        for continuous time systems. For discrete time systems, the response
+        is evaluated around the unit circle such that
 
-             G(exp(j*omega*dt)) = mag*exp(j*phase).
+             G(exp(j*omega*dt)) = mag * exp(j*phase).
 
         In general the system may be multiple input, multiple output (MIMO),
-        where `m = self.ninputs` number of inputs and `p = self.noutputs` number
-        of outputs.
+        where `m = self.ninputs` number of inputs and `p = self.noutputs`
+        number of outputs.
 
         Parameters
         ----------
@@ -203,15 +203,15 @@ class LTI:
 
                 mag, phase, omega = response
 
-            where ``mag`` is the magnitude (absolute value, not dB or log10)
-            of the system frequency response, ``phase`` is the wrapped phase
-            in radians of the system frequency response, and ``omega`` is the
-            (sorted) frequencies at which the response was evaluated.  If the
-            system is SISO and squeeze is not True, ``mag`` and ``phase`` are
-            1D, indexed by frequency.  If the system is not SISO or squeeze is
-            False, the array is 3D, indexed by the output, input, and
-            frequency.  If ``squeeze`` is True then single-dimensional axes
-            are removed.
+            where ``mag`` is the magnitude (absolute value, not dB or
+            log10) of the system frequency response, ``phase`` is the wrapped
+            phase in radians of the system frequency response, and ``omega``
+            is the (sorted) frequencies at which the response was evaluated.
+            If the system is SISO and squeeze is not True, ``magnitude`` and
+            ``phase`` are 1D, indexed by frequency.  If the system is not SISO
+            or squeeze is False, the array is 3D, indexed by the output,
+            input, and frequency.  If ``squeeze`` is True then
+            single-dimensional axes are removed.
 
         """
         omega = np.sort(np.array(omega, ndmin=1))
@@ -597,7 +597,7 @@ def evalfr(sys, x, squeeze=None):
     """
     return sys.__call__(x, squeeze=squeeze)
 
-def freqresp(sys, omega, squeeze=None):
+def frequency_response(sys, omega, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
 
     In general the system may be multiple input, multiple output (MIMO), where
@@ -669,6 +669,10 @@ def freqresp(sys, omega, squeeze=None):
 
     """
     return sys.frequency_response(omega, squeeze=squeeze)
+
+
+# Alternative name (legacy)
+freqresp = frequency_response
 
 
 def dcgain(sys):

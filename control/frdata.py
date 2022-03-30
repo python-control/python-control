@@ -233,6 +233,29 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
             self.ifunc = None
         super().__init__(self.fresp.shape[1], self.fresp.shape[0])
 
+    #
+    # Frequency response properties
+    #
+    # Different properties of the frequency response that can be used for
+    # analysis and characterization.
+    #
+
+    @property
+    def magnitude(self):
+        return np.abs(self.fresp)
+
+    @property
+    def phase(self):
+        return np.angle(self.fresp)
+
+    @property
+    def frequency(self):
+        return self.omega
+
+    @property
+    def response(self):
+        return self.fresp
+
     def __str__(self):
         """String representation of the transfer function."""
 
