@@ -103,6 +103,9 @@ def reset_defaults():
     from .iosys import _iosys_defaults
     defaults.update(_iosys_defaults)
 
+    from .optimal import _optimal_defaults
+    defaults.update(_optimal_defaults)
+
 
 def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     """Return the default value for a configuration option.

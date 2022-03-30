@@ -1648,7 +1648,9 @@ def test_interconnect_unused_output():
                           outputs=['u'],
                           name='k')
 
-    with pytest.warns(UserWarning, match=r"Unused output\(s\) in InterconnectedSystem:") as record:
+    with pytest.warns(
+            UserWarning,
+            match=r"Unused output\(s\) in InterconnectedSystem:") as record:
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'])
@@ -1679,13 +1681,17 @@ def test_interconnect_unused_output():
             pytest.fail(f'Unexpected warning: {r.message}')
 
     # warn if explicity ignored output in fact used
-    with pytest.warns(UserWarning, match=r"Output\(s\) specified as ignored is \(are\) used:"):
+    with pytest.warns(
+            UserWarning,
+            match=r"Output\(s\) specified as ignored is \(are\) used:"):
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
                             ignore_outputs=['dy','u'])
 
-    with pytest.warns(UserWarning, match=r"Output\(s\) specified as ignored is \(are\) used:"):
+    with pytest.warns(
+            UserWarning,
+            match=r"Output\(s\) specified as ignored is \(are\) used:"):
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
@@ -1697,3 +1703,25 @@ def test_interconnect_unused_output():
                             inputs=['r'],
                             outputs=['y'],
                             ignore_outputs=['v'])
+
+def test_nonuniform_timepts():
+    """Test non-uniform time points for simulations"""
+    sys = ct.LinearIOSystem(ct.rss(2, 1, 1))
+
+    # Start with a uniform set of times
+    unifpts = [0, 1, 2, 3, 4,  5,  6,  7,  8,  9, 10]
+    uniform = [1, 2, 3, 2, 1, -1, -3, -5, -7, -3,  1]
+    t_unif, y_unif = ct.input_output_response(sys, unifpts, uniform)
+
+    # Create a non-uniform set of inputs
+    noufpts = [0, 2, 4,  8, 10]
+    nonunif = [1, 3, 1, -7,  1]
+    t_nouf, y_nouf = ct.input_output_response(sys, noufpts, nonunif)
+
+    # Make sure the outputs agree at common times
+    np.testing.assert_almost_equal(y_unif[noufpts], y_nouf, decimal=6)
+
+    # Resimulate using a new set of evaluation points
+    t_even, y_even = ct.input_output_response(
+        sys, noufpts, nonunif, t_eval=unifpts)
+    np.testing.assert_almost_equal(y_unif, y_even, decimal=6)

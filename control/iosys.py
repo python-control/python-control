@@ -1571,7 +1571,7 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
 def input_output_response(
         sys, T, U=0., X0=0, params={},
         transpose=False, return_x=False, squeeze=None,
-        solve_ivp_kwargs={}, **kwargs):
+        solve_ivp_kwargs={}, t_eval='T', **kwargs):
     """Compute the output response of a system to a given input.
 
     Simulate a dynamical system with a given input and return its output
@@ -1654,11 +1654,15 @@ def input_output_response(
     if kwargs.get('solve_ivp_method', None):
         if kwargs.get('method', None):
             raise ValueError("ivp_method specified more than once")
-        solve_ivp_kwargs['method'] = kwargs['solve_ivp_method']
+        solve_ivp_kwargs['method'] = kwargs.pop('solve_ivp_method')
 
     # Set the default method to 'RK45'
     if solve_ivp_kwargs.get('method', None) is None:
         solve_ivp_kwargs['method'] = 'RK45'
+
+    # Make sure all input arguments got parsed
+    if kwargs:
+        raise TypeError("unknown parameters %s" % kwargs)
 
     # Sanity checking on the input
     if not isinstance(sys, InputOutputSystem):
@@ -1666,38 +1670,41 @@ def input_output_response(
 
     # Compute the time interval and number of steps
     T0, Tf = T[0], T[-1]
-    n_steps = len(T)
+    ntimepts = len(T)
+
+    # Figure out simulation times (t_eval)
+    if solve_ivp_kwargs.get('t_eval'):
+        if t_eval == 'T':
+            # Override the default with the solve_ivp keyword
+            t_eval = solve_ivp_kwargs.pop('t_eval')
+        else:
+            raise ValueError("t_eval specified more than once")
+    if isinstance(t_eval, str) and t_eval == 'T':
+        # Use the input time points as the output time points
+        t_eval = T
 
     # Check and convert the input, if needed
     # TODO: improve MIMO ninputs check (choose from U)
     if sys.ninputs is None or sys.ninputs == 1:
-        legal_shapes = [(n_steps,), (1, n_steps)]
+        legal_shapes = [(ntimepts,), (1, ntimepts)]
     else:
-        legal_shapes = [(sys.ninputs, n_steps)]
+        legal_shapes = [(sys.ninputs, ntimepts)]
     U = _check_convert_array(U, legal_shapes,
                              'Parameter ``U``: ', squeeze=False)
-    U = U.reshape(-1, n_steps)
-
-    # Check to make sure this is not a static function
-    nstates = _find_size(sys.nstates, X0)
-    if nstates == 0:
-        # No states => map input to output
-        u = U[0] if len(U.shape) == 1 else U[:, 0]
-        y = np.zeros((np.shape(sys._out(T[0], X0, u))[0], len(T)))
-        for i in range(len(T)):
-            u = U[i] if len(U.shape) == 1 else U[:, i]
-            y[:, i] = sys._out(T[i], [], u)
-        return TimeResponseData(
-            T, y, None, U, issiso=sys.issiso(),
-            output_labels=sys.output_index, input_labels=sys.input_index,
-            transpose=transpose, return_x=return_x, squeeze=squeeze)
+    U = U.reshape(-1, ntimepts)
+    ninputs = U.shape[0]
 
     # create X0 if not given, test if X0 has correct shape
+    nstates = _find_size(sys.nstates, X0)
     X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],
                               'Parameter ``X0``: ', squeeze=True)
 
-    # Update the parameter values
-    sys._update_params(params)
+    # Figure out the number of outputs
+    if sys.noutputs is None:
+        # Evaluate the output function to find number of outputs
+        noutputs = np.shape(sys._out(T[0], X0, U[:, 0]))[0]
+    else:
+        noutputs = sys.noutputs
 
     #
     # Define a function to evaluate the input at an arbitrary time
@@ -1714,6 +1721,31 @@ def input_output_response(
         dt = (t - T[idx-1]) / (T[idx] - T[idx-1])
         return U[..., idx-1] * (1. - dt) + U[..., idx] * dt
 
+    # Check to make sure this is not a static function
+    if nstates == 0:            # No states => map input to output
+        # Make sure the user gave a time vector for evaluation (or 'T')
+        if t_eval is None:
+            # User overrode t_eval with None, but didn't give us the times...
+            warn("t_eval set to None, but no dynamics; using T instead")
+            t_eval = T
+
+        # Allocate space for the inputs and outputs
+        u = np.zeros((ninputs, len(t_eval)))
+        y = np.zeros((noutputs, len(t_eval)))
+
+        # Compute the input and output at each point in time
+        for i, t in enumerate(t_eval):
+            u[:, i] = ufun(t)
+            y[:, i] = sys._out(t, [], u[:, i])
+
+        return TimeResponseData(
+            t_eval, y, None, u, issiso=sys.issiso(),
+            output_labels=sys.output_index, input_labels=sys.input_index,
+            transpose=transpose, return_x=return_x, squeeze=squeeze)
+
+    # Update the parameter values
+    sys._update_params(params)
+
     # Create a lambda function for the right hand side
     def ivp_rhs(t, x):
         return sys._rhs(t, x, ufun(t))
@@ -1724,27 +1756,27 @@ def input_output_response(
             raise NameError("scipy.integrate.solve_ivp not found; "
                             "use SciPy 1.0 or greater")
         soln = sp.integrate.solve_ivp(
-            ivp_rhs, (T0, Tf), X0, t_eval=T,
+            ivp_rhs, (T0, Tf), X0, t_eval=t_eval,
             vectorized=False, **solve_ivp_kwargs)
+        if not soln.success:
+            raise RuntimeError("solve_ivp failed: " + soln.message)
 
-        if not soln.success or soln.status != 0:
-            # Something went wrong
-            warn("sp.integrate.solve_ivp failed")
-            print("Return bunch:", soln)
-
-        # Compute the output associated with the state (and use sys.out to
-        # figure out the number of outputs just in case it wasn't specified)
-        u = U[0] if len(U.shape) == 1 else U[:, 0]
-        y = np.zeros((np.shape(sys._out(T[0], X0, u))[0], len(T)))
-        for i in range(len(T)):
-            u = U[i] if len(U.shape) == 1 else U[:, i]
-            y[:, i] = sys._out(T[i], soln.y[:, i], u)
+        # Compute inputs and outputs for each time point
+        u = np.zeros((ninputs, len(soln.t)))
+        y = np.zeros((noutputs, len(soln.t)))
+        for i, t in enumerate(soln.t):
+            u[:, i] = ufun(t)
+            y[:, i] = sys._out(t, soln.y[:, i], u[:, i])
 
     elif isdtime(sys):
+        # If t_eval was not specified, use the sampling time
+        if t_eval is None:
+            t_eval = np.arange(T[0], T[1] + sys.dt, sys.dt)
+
         # Make sure the time vector is uniformly spaced
-        dt = T[1] - T[0]
-        if not np.allclose(T[1:] - T[:-1], dt):
-            raise ValueError("Parameter ``T``: time values must be "
+        dt = t_eval[1] - t_eval[0]
+        if not np.allclose(t_eval[1:] - t_eval[:-1], dt):
+            raise ValueError("Parameter ``t_eval``: time values must be "
                              "equally spaced.")
 
         # Make sure the sample time matches the given time
@@ -1764,21 +1796,23 @@ def input_output_response(
 
         # Compute the solution
         soln = sp.optimize.OptimizeResult()
-        soln.t = T                      # Store the time vector directly
-        x = X0                          # Initilize state
+        soln.t = t_eval                 # Store the time vector directly
+        x = np.array(X0)                # State vector (store as floats)
         soln.y = []                     # Solution, following scipy convention
-        y = []                          # System output
-        for i in range(len(T)):
-            # Store the current state and output
+        u, y = [], []                   # System input, output
+        for t in t_eval:
+            # Store the current input, state, and output
             soln.y.append(x)
-            y.append(sys._out(T[i], x, ufun(T[i])))
+            u.append(ufun(t))
+            y.append(sys._out(t, x, u[-1]))
 
             # Update the state for the next iteration
-            x = sys._rhs(T[i], x, ufun(T[i]))
+            x = sys._rhs(t, x, u[-1])
 
         # Convert output to numpy arrays
         soln.y = np.transpose(np.array(soln.y))
         y = np.transpose(np.array(y))
+        u = np.transpose(np.array(u))
 
         # Mark solution as successful
         soln.success = True     # No way to fail
@@ -1787,7 +1821,7 @@ def input_output_response(
         raise TypeError("Can't determine system type")
 
     return TimeResponseData(
-        soln.t, y, soln.y, U, issiso=sys.issiso(),
+        soln.t, y, soln.y, u, issiso=sys.issiso(),
         output_labels=sys.output_index, input_labels=sys.input_index,
         state_labels=sys.state_index,
         transpose=transpose, return_x=return_x, squeeze=squeeze)

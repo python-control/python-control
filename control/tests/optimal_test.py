@@ -45,6 +45,9 @@ def test_finite_horizon_simple():
     np.testing.assert_almost_equal(
         u_openloop, [-1, -1, 0.1393, 0.3361, -5.204e-16], decimal=4)
 
+    # Make sure the final cost is correct
+    assert math.isclose(res.cost, 32.4898, rel_tol=1e-5)
+
     # Convert controller to an explicit form (not implemented yet)
     # mpc_explicit = opt.explicit_mpc();
 
@@ -117,7 +120,7 @@ def test_discrete_lqr():
     assert np.any(np.abs(res1.inputs - res2.inputs) > 0.1)
 
 
-def test_mpc_iosystem():
+def test_mpc_iosystem_aircraft():
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
     A = [[0.99, 0.01, 0.18, -0.09,   0],
@@ -169,6 +172,21 @@ def test_mpc_iosystem():
     # Make sure the system converged to the desired state
     np.testing.assert_allclose(
         xout[0:sys.nstates, -1], xd, atol=0.1, rtol=0.01)
+
+
+def test_mpc_iosystem_continuous():
+    # Create a random state space system
+    sys = ct.rss(2, 1, 1)
+    T, _ = ct.step_response(sys)
+
+    # provide penalties on the system signals
+    Q = np.eye(sys.nstates)
+    R = np.eye(sys.ninputs)
+    cost = opt.quadratic_cost(sys, Q, R)
+
+    # Continuous time MPC controller not implemented
+    with pytest.raises(NotImplementedError):
+        ctrl = opt.create_mpc_iosystem(sys, T, cost)
 
 
 # Test various constraint combinations; need to use a somewhat convoluted
@@ -437,7 +455,7 @@ def test_ocp_argument_errors():
             sys, time, x0, cost, constraints, initial_guess=np.zeros((4,1,1)))
 
     # Unrecognized arguments
-    with pytest.raises(ValueError, match="unrecognized keyword"):
+    with pytest.raises(TypeError, match="unrecognized keyword"):
         res = opt.solve_ocp(
             sys, time, x0, cost, constraints, terminal_constraint=None)
 
@@ -549,3 +567,59 @@ def test_equality_constraints():
         optctrl = opt.OptimalControlProblem(
             sys, time, cost, terminal_constraints=final_point)
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
+
+
+def test_optimal_doc():
+    """Test optimal control problem from documentation"""
+    def vehicle_update(t, x, u, params):
+        # Get the parameters for the model
+        l = params.get('wheelbase', 3.)         # vehicle wheelbase
+        phimax = params.get('maxsteer', 0.5)    # max steering angle (rad)
+
+        # Saturate the steering input
+        phi = np.clip(u[1], -phimax, phimax)
+
+        # Return the derivative of the state
+        return np.array([
+            np.cos(x[2]) * u[0],            # xdot = cos(theta) v
+            np.sin(x[2]) * u[0],            # ydot = sin(theta) v
+            (u[0] / l) * np.tan(phi)        # thdot = v/l tan(phi)
+        ])
+
+    def vehicle_output(t, x, u, params):
+        return x                            # return x, y, theta (full state)
+
+    # Define the vehicle steering dynamics as an input/output system
+    vehicle = ct.NonlinearIOSystem(
+        vehicle_update, vehicle_output, states=3, name='vehicle',
+        inputs=('v', 'phi'), outputs=('x', 'y', 'theta'))
+
+    # Define the initial and final points and time interval
+    x0 = [0., -2., 0.]; u0 = [10., 0.]
+    xf = [100., 2., 0.]; uf = [10., 0.]
+    Tf = 10
+
+    # Define the cost functions
+    Q = np.diag([0, 0, 0.1])          # don't turn too sharply
+    R = np.diag([1, 1])               # keep inputs small
+    P = np.diag([1000, 1000, 1000])   # get close to final point
+    traj_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+    term_cost = opt.quadratic_cost(vehicle, P, 0, x0=xf)
+
+    # Define the constraints
+    constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+
+    # Solve the optimal control problem
+    horizon = np.linspace(0, Tf, 3, endpoint=True)
+    result = opt.solve_ocp(
+        vehicle, horizon, x0, traj_cost, constraints,
+        terminal_cost= term_cost, initial_guess=u0)
+
+    # Make sure the resulting trajectory generate a good solution
+    resp = ct.input_output_response(
+        vehicle, horizon, result.inputs, x0,
+        t_eval=np.linspace(0, Tf, 10))
+    t, y = resp
+    assert (y[0, -1] - xf[0]) / xf[0] < 0.01
+    assert (y[1, -1] - xf[1]) / xf[1] < 0.01
+    assert y[2, -1] < 0.1
