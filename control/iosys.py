@@ -1663,15 +1663,14 @@ def input_output_response(
     # Process keyword arguments
     #
 
-    # Allow method as an alternative to solve_ivp_method
-    if kwargs.get('method', None):
-        solve_ivp_kwargs['method'] = kwargs.pop('method')
-
     # Figure out the method to be used
     if kwargs.get('solve_ivp_method', None):
         if kwargs.get('method', None):
             raise ValueError("ivp_method specified more than once")
         solve_ivp_kwargs['method'] = kwargs.pop('solve_ivp_method')
+    elif kwargs.get('method', None):
+        # Allow method as an alternative to solve_ivp_method
+        solve_ivp_kwargs['method'] = kwargs.pop('method')
 
     # Set the default method to 'RK45'
     if solve_ivp_kwargs.get('method', None) is None:
