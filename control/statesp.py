@@ -933,7 +933,7 @@ class StateSpace(LTI, _NamedIOSystem):
 
                     # Evaluating at a pole.  Return value depends if there
                     # is a zero at the same point or not.
-                    if x_idx in self.zero():
+                    if x_idx in self.zeros():
                         out[:, :, idx] = complex(np.nan, np.nan)
                     else:
                         out[:, :, idx] = complex(np.inf, np.nan)
@@ -955,12 +955,12 @@ class StateSpace(LTI, _NamedIOSystem):
         return self.frequency_response(omega)
 
     # Compute poles and zeros
-    def pole(self):
+    def poles(self):
         """Compute the poles of a state space system."""
 
         return eigvals(self.A) if self.nstates else np.array([])
 
-    def zero(self):
+    def zeros(self):
         """Compute the zeros of a state space system."""
 
         if not self.nstates:
@@ -982,9 +982,9 @@ class StateSpace(LTI, _NamedIOSystem):
 
         except ImportError:  # Slycot unavailable. Fall back to scipy.
             if self.C.shape[0] != self.D.shape[1]:
-                raise NotImplementedError("StateSpace.zero only supports "
-                                          "systems with the same number of "
-                                          "inputs as outputs.")
+                raise NotImplementedError(
+                    "StateSpace.zero only supports systems with the same "
+                    "number of inputs as outputs.")
 
             # This implements the QZ algorithm for finding transmission zeros
             # from

@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 import control as ct
-from control import lqe, dlqe, pole, rss, ss, tf
+from control import lqe, dlqe, poles, rss, ss, tf
 from control.exception import ControlDimension, ControlSlycot, \
     ControlArgument, slycot_check
 from control.mateqn import care, dare
@@ -167,12 +167,12 @@ class TestStatefbk:
 
                 # Place the poles at random locations
                 des = rss(states, 1, 1)
-                poles = pole(des)
+                desired = poles(des)
 
                 # Now place the poles using acker
-                K = acker(sys.A, sys.B, poles)
+                K = acker(sys.A, sys.B, desired)
                 new = ss(sys.A - sys.B * K, sys.B, sys.C, sys.D)
-                placed = pole(new)
+                placed = poles(new)
 
                 # Debugging code
                 # diff = np.sort(poles) - np.sort(placed)
@@ -181,8 +181,8 @@ class TestStatefbk:
                 #     print(sys)
                 #     print("desired = ", poles)
 
-                np.testing.assert_array_almost_equal(np.sort(poles),
-                                                     np.sort(placed), decimal=4)
+                np.testing.assert_array_almost_equal(
+                    np.sort(desired), np.sort(placed), decimal=4)
 
     def checkPlaced(self, P_expected, P_placed):
         """Check that placed poles are correct"""
@@ -679,7 +679,7 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(clsys.D, D_clsys)
 
         # Check the poles of the closed loop system
-        assert all(np.real(clsys.pole()) < 0)
+        assert all(np.real(clsys.poles()) < 0)
 
         # Make sure controller infinite zero frequency gain
         if slycot_check():

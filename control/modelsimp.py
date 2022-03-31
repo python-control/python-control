@@ -354,7 +354,7 @@ def minreal(sys, tol=None, verbose=True):
     sysr = sys.minreal(tol)
     if verbose:
         print("{nstates} states have been removed from the model".format(
-                nstates=len(sys.pole()) - len(sysr.pole())))
+                nstates=len(sys.poles()) - len(sysr.poles())))
     return sysr
 
 

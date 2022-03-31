@@ -84,6 +84,9 @@ from ..rlocus import rlocus
 from ..dtime import c2d
 from ..sisotool import sisotool
 
+# Functions that are renamed in MATLAB
+pole, zero = poles, zeros
+
 # Import functions specific to Matlab compatibility package
 from .timeresp import *
 from .wrappers import *

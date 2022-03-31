@@ -18,8 +18,8 @@ from warnings import warn
 from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
-           'isdtime', 'isctime', 'pole', 'zero', 'damp', 'evalfr',
-           'frequency_response', 'freqresp', 'dcgain']
+           'isdtime', 'isctime', 'poles', 'zeros', 'damp', 'evalfr',
+           'frequency_response', 'freqresp', 'dcgain', 'pole', 'zero']
 
 class LTI:
     """LTI is a parent class to linear time-invariant (LTI) system objects.
@@ -156,7 +156,7 @@ class LTI:
         poles : array
             Array of system poles
         '''
-        poles = self.pole()
+        poles = self.poles()
 
         if isdtime(self, strict=True):
             splane_poles = np.log(poles.astype(complex))/self.dt
@@ -241,6 +241,21 @@ class LTI:
             return zeroresp.real
         else:
             return zeroresp
+
+    #
+    # Deprecated functions
+    #
+
+    def pole(self):
+        warn("pole() will be deprecated; use poles()",
+             PendingDeprecationWarning)
+        return self.poles()
+
+    def zero(self):
+        warn("zero() will be deprecated; use zeros()",
+             PendingDeprecationWarning)
+        return self.zeros()
+
 
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
@@ -426,7 +441,8 @@ def isctime(sys, strict=False):
     # Got passed something we don't recognize
     return False
 
-def pole(sys):
+
+def poles(sys):
     """
     Compute system poles.
 
@@ -440,23 +456,23 @@ def pole(sys):
     poles: ndarray
         Array that contains the system's poles.
 
-    Raises
-    ------
-    NotImplementedError
-        when called on a TransferFunction object
-
     See Also
     --------
-    zero
-    TransferFunction.pole
-    StateSpace.pole
+    zeros
+    TransferFunction.poles
+    StateSpace.poles
 
     """
 
-    return sys.pole()
+    return sys.poles()
 
 
-def zero(sys):
+def pole(sys):
+    warn("pole() will be deprecated; use poles()", PendingDeprecationWarning)
+    return poles(sys)
+
+
+def zeros(sys):
     """
     Compute system zeros.
 
@@ -470,20 +486,21 @@ def zero(sys):
     zeros: ndarray
         Array that contains the system's zeros.
 
-    Raises
-    ------
-    NotImplementedError
-        when called on a MIMO system
-
     See Also
     --------
-    pole
-    StateSpace.zero
-    TransferFunction.zero
+    poles
+    StateSpace.zeros
+    TransferFunction.zeros
 
     """
 
-    return sys.zero()
+    return sys.zeros()
+
+
+def zero(sys):
+    warn("zero() will be deprecated; use zeros()", PendingDeprecationWarning)
+    return zeros(sys)
+
 
 def damp(sys, doprint=True):
     """

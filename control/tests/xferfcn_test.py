@@ -596,7 +596,7 @@ class TestXferFcn:
         sys = TransferFunction(
             [[[1.], [1.]], [[1.], [1.]]],
             [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
-        p = sys.pole()
+        p = sys.poles()
 
         np.testing.assert_array_almost_equal(p, [-2., -2., -7., -3., -2.])
 
@@ -604,14 +604,14 @@ class TestXferFcn:
         sys2 = TransferFunction(
             [[[1., 2., 3., 4.], [1.]], [[1.], [1.]]],
             [[[1., 2.], [1., 3.]], [[1., 4., 4.], [1., 9., 14.]]])
-        p2 = sys2.pole()
+        p2 = sys2.poles()
 
         np.testing.assert_array_almost_equal(p2, [-2., -2., -7., -3., -2.])
 
     def test_double_cancelling_poles_siso(self):
 
         H = TransferFunction([1, 1], [1, 2, 1])
-        p = H.pole()
+        p = H.poles()
         np.testing.assert_array_almost_equal(p, [-1, -1])
 
     # Tests for TransferFunction.feedback

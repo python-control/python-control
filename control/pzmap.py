@@ -104,8 +104,8 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')
 
-    poles = sys.pole()
-    zeros = sys.zero()
+    poles = sys.poles()
+    zeros = sys.zeros()
 
     if (plot):
         import matplotlib.pyplot as plt

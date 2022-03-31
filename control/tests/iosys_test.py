@@ -1213,7 +1213,7 @@ class TestIOSys:
 
         # Make sure that state space functions work for LinearIOSystems
         np.testing.assert_allclose(
-            iosys_siso.pole(), tsys.siso_linsys.pole())
+            iosys_siso.poles(), tsys.siso_linsys.poles())
         omega = np.logspace(.1, 10, 100)
         mag_io, phase_io, omega_io = iosys_siso.frequency_response(omega)
         mag_ss, phase_ss, omega_ss = tsys.siso_linsys.frequency_response(omega)

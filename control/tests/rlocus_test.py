@@ -41,7 +41,7 @@ class TestRootLocus:
 
     def check_cl_poles(self, sys, pole_list, k_list):
         for k, poles in zip(k_list, pole_list):
-            poles_expected = np.sort(feedback(sys, k).pole())
+            poles_expected = np.sort(feedback(sys, k).poles())
             poles = np.sort(poles)
             np.testing.assert_array_almost_equal(poles, poles_expected)
 

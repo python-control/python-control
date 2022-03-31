@@ -772,7 +772,7 @@ class TransferFunction(LTI, _NamedIOSystem):
              "MATLAB compatibility module instead", DeprecationWarning)
         return self.frequency_response(omega)
 
-    def pole(self):
+    def poles(self):
         """Compute the poles of a transfer function."""
         _, den, denorder = self._common_den(allow_nonproper=True)
         rts = []
@@ -780,7 +780,7 @@ class TransferFunction(LTI, _NamedIOSystem):
             rts.extend(roots(d[:o + 1]))
         return np.array(rts)
 
-    def zero(self):
+    def zeros(self):
         """Compute the zeros of a transfer function."""
         if self.ninputs > 1 or self.noutputs > 1:
             raise NotImplementedError(

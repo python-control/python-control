@@ -722,11 +722,11 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         if isinstance(sys, (StateSpace, TransferFunction)) \
                 and indent_direction != 'none':
             if sys.isctime():
-                splane_poles = sys.pole()
+                splane_poles = sys.poles()
             else:
                 # map z-plane poles to s-plane, ignoring any at the origin
                 # because we don't need to indent for them
-                zplane_poles = sys.pole()
+                zplane_poles = sys.poles()
                 zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
                 splane_poles = np.log(zplane_poles)/sys.dt
 
@@ -1328,8 +1328,8 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
         try:
             # Add new features to the list
             if sys.isctime():
-                features_ = np.concatenate((np.abs(sys.pole()),
-                                            np.abs(sys.zero())))
+                features_ = np.concatenate(
+                    (np.abs(sys.poles()), np.abs(sys.zeros())))
                 # Get rid of poles and zeros at the origin
                 toreplace = np.isclose(features_, 0.0)
                 if np.any(toreplace):
@@ -1339,8 +1339,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 # TODO: What distance to the Nyquist frequency is appropriate?
                 freq_interesting.append(fn * 0.9)
 
-                features_ = np.concatenate((sys.pole(),
-                                            sys.zero()))
+                features_ = np.concatenate((sys.poles(), sys.zeros()))
                 # Get rid of poles and zeros on the real axis (imag==0)
                 # * origin and real < 0
                 # * at 1.: would result in omega=0. (logaritmic plot!)

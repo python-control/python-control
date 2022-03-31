@@ -230,7 +230,7 @@ class TestStateSpace:
     def test_pole(self, sys322):
         """Evaluate the poles of a MIMO system."""
 
-        p = np.sort(sys322.pole())
+        p = np.sort(sys322.poles())
         true_p = np.sort([3.34747678408874,
                           -3.17373839204437 + 1.47492908003839j,
                           -3.17373839204437 - 1.47492908003839j])
@@ -240,7 +240,7 @@ class TestStateSpace:
     def test_zero_empty(self):
         """Test to make sure zero() works with no zeros in system."""
         sys = _convert_to_statespace(TransferFunction([1], [1, 2, 1]))
-        np.testing.assert_array_equal(sys.zero(), np.array([]))
+        np.testing.assert_array_equal(sys.zeros(), np.array([]))
 
     @slycotonly
     def test_zero_siso(self, sys222):
@@ -252,9 +252,9 @@ class TestStateSpace:
 
         # compute zeros as root of the characteristic polynomial at the numerator of tf111
         # this method is simple and assumed as valid in this test
-        true_z = np.sort(tf111[0, 0].zero())
+        true_z = np.sort(tf111[0, 0].zeros())
         # Compute the zeros through ab08nd, which is tested here
-        z = np.sort(sys111.zero())
+        z = np.sort(sys111.zeros())
 
         np.testing.assert_almost_equal(true_z, z)
 
@@ -262,7 +262,7 @@ class TestStateSpace:
     def test_zero_mimo_sys322_square(self, sys322):
         """Evaluate the zeros of a square MIMO system."""
 
-        z = np.sort(sys322.zero())
+        z = np.sort(sys322.zeros())
         true_z = np.sort([44.41465, -0.490252, -5.924398])
         np.testing.assert_array_almost_equal(z, true_z)
 
@@ -270,7 +270,7 @@ class TestStateSpace:
     def test_zero_mimo_sys222_square(self, sys222):
         """Evaluate the zeros of a square MIMO system."""
 
-        z = np.sort(sys222.zero())
+        z = np.sort(sys222.zeros())
         true_z = np.sort([-10.568501,   3.368501])
         np.testing.assert_array_almost_equal(z, true_z)
 
@@ -278,7 +278,7 @@ class TestStateSpace:
     def test_zero_mimo_sys623_non_square(self, sys623):
         """Evaluate the zeros of a non square MIMO system."""
 
-        z = np.sort(sys623.zero())
+        z = np.sort(sys623.zeros())
         true_z = np.sort([2., -1.])
         np.testing.assert_array_almost_equal(z, true_z)
 
@@ -749,9 +749,9 @@ class TestStateSpace:
         assert str(sysdt1) == tref + "\ndt = {}\n".format(1.)
 
     def test_pole_static(self):
-        """Regression: pole() of static gain is empty array."""
+        """Regression: poles() of static gain is empty array."""
         np.testing.assert_array_equal(np.array([]),
-                                      StateSpace([], [], [], [[1]]).pole())
+                                      StateSpace([], [], [], [[1]]).poles())
 
     def test_horner(self, sys322):
         """Test horner() function"""
@@ -853,7 +853,7 @@ class TestRss:
     def test_pole(self, states, outputs, inputs):
         """Test that the poles of rss outputs have a negative real part."""
         sys = rss(states, outputs, inputs)
-        p = sys.pole()
+        p = sys.poles()
         for z in p:
             assert z.real < 0
 
@@ -905,7 +905,7 @@ class TestDrss:
     def test_pole(self, states, outputs, inputs):
         """Test that the poles of drss outputs have less than unit magnitude."""
         sys = drss(states, outputs, inputs)
-        p = sys.pole()
+        p = sys.poles()
         for z in p:
             assert abs(z) < 1
 
