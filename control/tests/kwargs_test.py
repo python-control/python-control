@@ -83,7 +83,6 @@ def test_unrecognized_kwargs():
     table = [
         [control.dlqe, (sys, [[1]], [[1]]), {}],
         [control.dlqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
-        [control.dlqe, (sys, [[1]], [[1]]), {}],
         [control.drss, (2, 1, 1), {}],
         [control.input_output_response, (sys, [0, 1, 2], [1, 1, 1]), {}],
         [control.lqe, (sys, [[1]], [[1]]), {}],

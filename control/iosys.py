@@ -2224,6 +2224,7 @@ def _parse_signal_parameter(value, name, kwargs, end=False):
 
     if end and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
+    
     return value
 
 
