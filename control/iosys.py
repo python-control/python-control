@@ -706,6 +706,10 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
             + self.D @ np.reshape(u, (-1, 1))
         return np.array(y).reshape((-1,))
 
+    def __repr__(self):
+        # Need to define so that I/O system gets used instead of StateSpace
+        return InputOutputSystem.__repr__(self)
+
     def __str__(self):
         return InputOutputSystem.__str__(self) + "\n\n" \
             + StateSpace.__str__(self)
@@ -786,7 +790,7 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Initialize the rest of the structure
         dt = kwargs.pop('dt', config.defaults['control.default_dt'])
-        super(NonlinearIOSystem, self).__init__(
+        super().__init__(
             inputs=inputs, outputs=outputs, states=states,
             params=params, dt=dt, name=name
         )
@@ -815,6 +819,11 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Initialize current parameters to default parameters
         self._current_params = params.copy()
+
+    def __str__(self):
+        return f"{InputOutputSystem.__str__(self)}\n\n" + \
+            f"Update: {self.updfcn}\n" + \
+            f"Output: {self.outfcn}"
 
     # Return the value of a static nonlinear system
     def __call__(sys, u, params=None, squeeze=None):

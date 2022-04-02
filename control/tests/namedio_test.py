@@ -31,6 +31,8 @@ def test_named_ss():
     assert sys.input_labels == ['u[0]', 'u[1]']
     assert sys.output_labels == ['y[0]', 'y[1]']
     assert sys.state_labels == ['x[0]', 'x[1]']
+    assert repr(sys) == \
+        "<LinearIOSystem:sys[0]:['u[0]', 'u[1]']->['y[0]', 'y[1]']>"
 
     # Pass the names as arguments
     sys = ct.ss(
@@ -41,6 +43,8 @@ def test_named_ss():
     assert sys.input_labels == ['u1', 'u2']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2']
+    assert repr(sys) == \
+        "<LinearIOSystem:system:['u1', 'u2']->['y1', 'y2']>"
 
     # Do the same with rss
     sys = ct.rss(['x1', 'x2', 'x3'], ['y1', 'y2'], 'u1', name='random')
@@ -49,3 +53,5 @@ def test_named_ss():
     assert sys.input_labels == ['u1']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2', 'x3']
+    assert repr(sys) == \
+        "<LinearIOSystem:random:['u1']->['y1', 'y2']>"

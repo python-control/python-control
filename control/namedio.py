@@ -51,22 +51,16 @@ class _NamedIOSystem(object):
     nstates = None
 
     def __repr__(self):
-        return str(type(self)) + ": " + self.name if self.name is not None \
-            else str(type(self))
+        return f'<{self.__class__.__name__}:{self.name}:' + \
+            f'{list(self.input_labels)}->{list(self.output_labels)}>'
 
     def __str__(self):
         """String representation of an input/output object"""
-        str = "Object: " + (self.name if self.name else "(None)") + "\n"
-        str += "Inputs (%s): " % self.ninputs
-        for key in self.input_index:
-            str += key + ", "
-        str += "\nOutputs (%s): " % self.noutputs
-        for key in self.output_index:
-            str += key + ", "
+        str = f"<{self.__class__.__name__}>: {self.name}\n"
+        str += f"Inputs ({self.ninputs}): {self.input_labels}\n"
+        str += f"Outputs ({self.noutputs}): {self.output_labels}\n"
         if self.nstates is not None:
-            str += "\nStates (%s): " % self.nstates
-            for key in self.state_index:
-                str += key + ", "
+            str += f"States ({self.nstates}): {self.state_labels}"
         return str
 
     # Find a signal by name
