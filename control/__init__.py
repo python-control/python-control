@@ -61,6 +61,7 @@ from .pzmap import *
 from .rlocus import *
 from .statefbk import *
 from .statesp import *
+from .stochsys import *
 from .timeresp import *
 from .xferfcn import *
 from .ctrlutil import *

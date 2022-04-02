@@ -81,9 +81,11 @@ def test_unrecognized_kwargs():
     sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
 
     table = [
+        [control.dlqe, (sys, [[1]], [[1]]), {}],
         [control.dlqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
         [control.drss, (2, 1, 1), {}],
         [control.input_output_response, (sys, [0, 1, 2], [1, 1, 1]), {}],
+        [control.lqe, (sys, [[1]], [[1]]), {}],
         [control.lqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
         [control.linearize, (sys, 0, 0), {}],
         [control.pzmap, (sys,), {}],
@@ -154,6 +156,7 @@ kwarg_unittest = {
     'bode': test_matplotlib_kwargs,
     'bode_plot': test_matplotlib_kwargs,
     'describing_function_plot': test_matplotlib_kwargs,
+    'dlqe': test_unrecognized_kwargs,
     'dlqr': statefbk_test.TestStatefbk.test_lqr_errors,
     'drss': test_unrecognized_kwargs,
     'gangof4': test_matplotlib_kwargs,
@@ -161,6 +164,7 @@ kwarg_unittest = {
     'input_output_response': test_unrecognized_kwargs,
     'interconnect': interconnect_test.test_interconnect_exceptions,
     'linearize': test_unrecognized_kwargs,
+    'lqe': test_unrecognized_kwargs,
     'lqr': statefbk_test.TestStatefbk.test_lqr_errors,
     'nyquist': test_matplotlib_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,

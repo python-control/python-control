@@ -215,14 +215,14 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     derivative terms are given instead by Kp, Ki*dt/2*(z+1)/(z-1), and
     Kd/dt*(z-1)/z, respectively.
 
-        ------> C_ff ------    d
-        |                 |    |
-    r   |     e           V    V  u         y
-    ------->O---> C_f --->O--->O---> plant --->
-            ^-            ^-                |
-            |             |                 |
-            |             ----- C_b <-------|
-            ---------------------------------
+          ------> C_ff ------    d
+          |                 |    |
+      r   |     e           V    V  u         y
+      ------->O---> C_f --->O--->O---> plant --->
+              ^-            ^-                |
+              |             |                 |
+              |             ----- C_b <-------|
+              ---------------------------------
 
     It is also possible to move the derivative term into the feedback path
     `C_b` using `derivative_in_feedback_path=True`. This may be desired to
@@ -234,8 +234,8 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
 
     Remark: It may be helpful to zoom in using the magnifying glass on the
     plot. Just ake sure to deactivate magnification mode when you are done by
-    clicking the magnifying glass. Otherwise you will not be able to be able to choose
-    a gain on the root locus plot.
+    clicking the magnifying glass. Otherwise you will not be able to be able
+    to choose a gain on the root locus plot.
 
     Parameters
     ----------
@@ -269,6 +269,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     ----------
     closedloop : class:`StateSpace` system
         The closed-loop system using initial gains.
+
     """
 
     plant = _convert_to_statespace(plant)

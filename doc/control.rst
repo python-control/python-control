@@ -108,10 +108,11 @@ Control system synthesis
    :toctree: generated/
 
     acker
+    create_statefbk_iosystem
+    dlqr
     h2syn
     hinfsyn
     lqr
-    lqe
     mixsyn
     place
     rootlocus_pid_designer
@@ -142,6 +143,17 @@ Nonlinear system support
     summing_junction
     tf2io
     flatsys.point_to_point
+
+Stochastic system support
+=========================
+.. autosummary::
+   :toctree: generated/
+
+    correlation
+    create_estimator_iosystem
+    dlqe
+    lqe
+    white_noise
 
 .. _utility-and-conversions:
 

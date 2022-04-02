@@ -1711,6 +1711,47 @@ def test_interconnect_unused_output():
                             outputs=['y'],
                             ignore_outputs=['v'])
 
+def test_input_output_broadcasting():
+    # Create a system, time vector, and noisy input
+    sys = ct.rss(6, 2, 3)
+    T = np.linspace(0, 10, 10)
+    U = np.zeros((sys.ninputs, T.size))
+    U[0, :] = np.sin(T)
+    U[1, :] = np.zeros_like(U[1, :])
+    U[2, :] = np.ones_like(U[2, :])
+    X0 = np.array([1, 2])
+    P0 = np.array([[3.11, 3.12], [3.21, 3.3]])
+
+    # Simulate the system with nominal input to establish baseline
+    resp_base = ct.input_output_response(
+        sys, T, U, np.hstack([X0, P0.reshape(-1)]))
+
+    # Split up the inputs into two pieces
+    resp_inp1 = ct.input_output_response(sys, T, [U[:1], U[1:]], [X0, P0])
+    np.testing.assert_equal(resp_base.states, resp_inp1.states)
+
+    # Specify two of the inputs as constants
+    resp_inp2 = ct.input_output_response(sys, T, [U[0], 0, 1], [X0, P0])
+    np.testing.assert_equal(resp_base.states, resp_inp2.states)
+
+    # Specify two of the inputs as constant vector
+    resp_inp3 = ct.input_output_response(sys, T, [U[0], [0, 1]], [X0, P0])
+    np.testing.assert_equal(resp_base.states, resp_inp3.states)
+
+    # Specify only some of the initial conditions
+    resp_init = ct.input_output_response(sys, T, [U[0], [0, 1]], [X0, 0])
+    resp_cov0 = ct.input_output_response(sys, T, U, [X0, P0 * 0])
+    np.testing.assert_equal(resp_cov0.states, resp_init.states)
+
+    # Specify only some of the initial conditions
+    with pytest.warns(UserWarning, match="initial state too short; padding"):
+        resp_short = ct.input_output_response(sys, T, [U[0], [0, 1]], [X0, 1])
+
+    # Make sure that inconsistent settings don't work
+    with pytest.raises(ValueError, match="inconsistent"):
+        resp_bad = ct.input_output_response(
+            sys, T, (U[0, :], U[:2, :-1]), [X0, P0])
+
 def test_nonuniform_timepts():
     """Test non-uniform time points for simulations"""
     sys = ct.LinearIOSystem(ct.rss(2, 1, 1))
