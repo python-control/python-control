@@ -292,8 +292,12 @@ class TestConfig:
         """Test that static gain systems always have dt=None"""
         ct.set_defaults('control', default_dt=0)
         assert ct.tf(1, 1).dt is None
-        assert ct.ss(0, 0, 0, 1).dt is None
-        # TODO: add in test for static gain iosys
+        assert ct.ss([], [], [], 1).dt is None
+
+        # Make sure static gain is preserved for the I/O system
+        sys = ct.ss([], [], [], 1)
+        sys_io = ct.ss2io(sys)
+        assert sys_io.dt is None
 
     def test_get_param_last(self):
         """Test _get_param last keyword"""

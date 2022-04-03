@@ -99,7 +99,9 @@ def test_unrecognized_kwargs():
         [control.summing_junction, (2,), {}],
         [control.tf, ([1], [1, 1]), {}],
         [control.tf2io, (control.tf([1], [1, 1]),), {}],
-        [control.InputOutputSystem, (1, 1, 1), {}],
+        [control.tf2ss, (control.tf([1], [1, 1]),), {}],
+        [control.InputOutputSystem, (),
+         {'inputs': 1, 'outputs': 1, 'states': 1}],
         [control.InputOutputSystem.linearize, (sys, 0, 0), {}],
         [control.StateSpace, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}],
         [control.TransferFunction, ([1], [1, 1]), {}],
@@ -117,14 +119,15 @@ def test_unrecognized_kwargs():
 def test_matplotlib_kwargs():
     # Create a SISO system for use in parameterized tests
     sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
+    ctl = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
 
     table = [
         [control.bode, (sys, ), {}],
         [control.bode_plot, (sys, ), {}],
         [control.describing_function_plot,
          (sys, control.descfcn.saturation_nonlinearity(1), [1, 2, 3, 4]), {}],
-        [control.gangof4, (sys, sys), {}],
-        [control.gangof4_plot, (sys, sys), {}],
+        [control.gangof4, (sys, ctl), {}],
+        [control.gangof4_plot, (sys, ctl), {}],
         [control.nyquist, (sys, ), {}],
         [control.nyquist_plot, (sys, ), {}],
         [control.singular_values_plot, (sys, ), {}],
@@ -180,6 +183,7 @@ kwarg_unittest = {
     'summing_junction': interconnect_test.test_interconnect_exceptions,
     'tf': test_unrecognized_kwargs,
     'tf2io' : test_unrecognized_kwargs,
+    'tf2ss' : test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'FrequencyResponseData.__init__':

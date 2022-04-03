@@ -99,7 +99,10 @@ The optimal control module provides a means of computing optimal
 trajectories for nonlinear systems and implementing optimization-based
 controllers, including model predictive control.  It follows the basic
 problem setup described above, but carries out all computations in *discrete
-time* (so that integrals become sums) and over a *finite horizon*.
+time* (so that integrals become sums) and over a *finite horizon*.  To local
+the optimal control modules, import `control.optimal`:
+
+  import control.optimal as obc
 
 To describe an optimal control problem we need an input/output system, a
 time horizon, a cost function, and (optionally) a set of constraints on the

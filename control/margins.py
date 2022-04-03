@@ -52,7 +52,8 @@ from warnings import warn
 import numpy as np
 import scipy as sp
 from . import xferfcn
-from .lti import issiso, evalfr
+from .lti import evalfr
+from .namedio import issiso
 from . import frdata
 from . import freqplot
 from .exception import ControlMIMONotImplemented

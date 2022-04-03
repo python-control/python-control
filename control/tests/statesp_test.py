@@ -125,7 +125,7 @@ class TestStateSpace:
     @pytest.mark.parametrize("args, exc, errmsg",
                              [((True, ), TypeError,
                                "(can only take in|sys must be) a StateSpace"),
-                              ((1, 2), ValueError, "1, 4, or 5 arguments"),
+                              ((1, 2), TypeError, "1, 4, or 5 arguments"),
                               ((np.ones((3, 2)), np.ones((3, 2)),
                                 np.ones((2, 2)), np.ones((2, 2))),
                                ValueError, "A must be square"),
@@ -180,16 +180,17 @@ class TestStateSpace:
         linsys.A[0, 0] = -3
         np.testing.assert_allclose(cpysys.A, [[-1]])  # original value
 
+    @pytest.mark.skip("obsolete test")
     def test_copy_constructor_nodt(self, sys322):
         """Test the copy constructor when an object without dt is passed"""
         sysin = sample_system(sys322, 1.)
-        del sysin.dt
+        del sysin.dt            # this is a nonsensical thing to do
         sys = StateSpace(sysin)
         assert sys.dt == defaults['control.default_dt']
 
         # test for static gain
         sysin = StateSpace([], [], [], [[1, 2], [3, 4]], 1.)
-        del sysin.dt
+        del sysin.dt            # this is a nonsensical thing to do
         sys = StateSpace(sysin)
         assert sys.dt is None
 
@@ -570,15 +571,24 @@ class TestStateSpace:
         """
         g1 = StateSpace([], [], [], [2])
         g2 = StateSpace([], [], [], [3])
+        assert g1.dt == None
+        assert g2.dt == None
 
         g3 = g1 * g2
         assert 6 == g3.D[0, 0]
+        assert g3.dt == None
+
         g4 = g1 + g2
         assert 5 == g4.D[0, 0]
+        assert g4.dt == None
+
         g5 = g1.feedback(g2)
         np.testing.assert_allclose(2. / 7, g5.D[0, 0])
+        assert g5.dt == None
+
         g6 = g1.append(g2)
         np.testing.assert_allclose(np.diag([2, 3]), g6.D)
+        assert g6.dt == None
 
     def test_matrix_static_gain(self):
         """Regression: can we create matrix static gains?"""

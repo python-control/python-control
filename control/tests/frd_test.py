@@ -482,7 +482,7 @@ Freq [rad/s]  Response
 
 
 def test_named_signals():
-    ct.namedio._NamedIOSystem._idCounter = 0
+    ct.namedio.NamedIOSystem._idCounter = 0
     h1 = TransferFunction([1], [1, 2, 2])
     h2 = TransferFunction([1], [0.1, 1])
     omega = np.logspace(-1, 2, 10)
@@ -490,8 +490,8 @@ def test_named_signals():
     f2 = FRD(h2, omega)
 
     # Make sure that systems were properly named
-    assert f1.name == 'sys[0]'
-    assert f2.name == 'sys[1]'
+    assert f1.name == 'sys[2]'
+    assert f2.name == 'sys[3]'
     assert f1.ninputs == 1
     assert f1.input_labels == ['u[0]']
     assert f1.noutputs == 1

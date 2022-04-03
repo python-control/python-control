@@ -29,9 +29,9 @@ of linear time-invariant (LTI) systems:
 
 where u is the input, y is the output, and x is the state.
 
-To create a state space system, use the :class:`StateSpace` constructor:
+To create a state space system, use the :fun:`ss` function:
 
-  sys = StateSpace(A, B, C, D)
+  sys = ct.ss(A, B, C, D)
 
 State space systems can be manipulated using standard arithmetic operations
 as well as the :func:`feedback`, :func:`parallel`, and :func:`series`
@@ -51,10 +51,9 @@ transfer functions
 where n is generally greater than or equal to m (for a proper transfer
 function).
 
-To create a transfer function, use the :class:`TransferFunction`
-constructor:
+To create a transfer function, use the :func:`tf` function:
 
-  sys = TransferFunction(num, den)
+  sys = ct.tf(num, den)
 
 Transfer functions can be manipulated using standard arithmetic operations
 as well as the :func:`feedback`, :func:`parallel`, and :func:`series`
@@ -89,14 +88,16 @@ Only the :class:`StateSpace`, :class:`TransferFunction`, and
 :class:`InputOutputSystem` classes allow explicit representation of
 discrete time systems.
 
-Systems must have compatible timebases in order to be combined. A discrete time
-system with unspecified sampling time (`dt = True`) can be combined with a system
-having a specified sampling time; the result will be a discrete time system with the sample time of the latter
-system.  Similarly, a system with timebase `None` can be combined with a system having a specified
-timebase; the result will have the timebase of the latter system. For continuous
-time systems, the :func:`sample_system` function or the :meth:`StateSpace.sample` and :meth:`TransferFunction.sample` methods
-can be used to create a discrete time system from a continuous time system.
-See :ref:`utility-and-conversions`. The default value of 'dt' can be changed by
+Systems must have compatible timebases in order to be combined. A discrete
+time system with unspecified sampling time (`dt = True`) can be combined with
+a system having a specified sampling time; the result will be a discrete time
+system with the sample time of the latter system.  Similarly, a system with
+timebase `None` can be combined with a system having a specified timebase; the
+result will have the timebase of the latter system. For continuous time
+systems, the :func:`sample_system` function or the :meth:`StateSpace.sample`
+and :meth:`TransferFunction.sample` methods can be used to create a discrete
+time system from a continuous time system.  See
+:ref:`utility-and-conversions`. The default value of 'dt' can be changed by
 changing the value of ``control.config.defaults['control.default_dt']``.
 
 Conversion between representations
@@ -128,11 +129,6 @@ and :func:`initial_response`.
     Scipy's convention the meaning of rows and columns is interchanged.
     Thus, all 2D values must be transposed when they are used with functions
     from `scipy.signal`_.
-
-Types:
-
-    * **Arguments** can be **arrays**, **matrices**, or **nested lists**.
-    * **Return values** are **arrays** (not matrices).
 
 The time vector is a 1D array with shape (n, )::
 
@@ -170,8 +166,8 @@ Functions that return time responses (e.g., :func:`forced_response`,
 response.  These data can be accessed via the ``time``, ``outputs``,
 ``states`` and ``inputs`` properties::
 
-    sys = rss(4, 1, 1)
-    response = step_response(sys)
+    sys = ct.rss(4, 1, 1)
+    response = ct.step_response(sys)
     plot(response.time, response.outputs)
 
 The dimensions of the response properties depend on the function being
@@ -185,12 +181,12 @@ The time response functions can also be assigned to a tuple, which extracts
 the time and output (and optionally the state, if the `return_x` keyword is
 used).  This allows simple commands for plotting::
 
-    t, y = step_response(sys)
+    t, y = ct.step_response(sys)
     plot(t, y)
 
-The output of a MIMO system can be plotted like this::
+The output of a MIMO LTI system can be plotted like this::
 
-    t, y = forced_response(sys, t, u)
+    t, y = ct.forced_response(sys, t, u)
     plot(t, y[0], label='y_0')
     plot(t, y[1], label='y_1')
 
@@ -201,6 +197,16 @@ response, can be computed like this::
 
     ft = D @ U
 
+Finally, the `to_pandas()` function can be used to create a pandas dataframe:
+
+    df = response.to_pandas()
+
+The column labels for the data frame are `time` and the labels for the input,
+output, and state signals (`u[i]`, `y[i]`, and `x[i]` by default, but these
+can be changed using the `inputs`, `outputs`, and `states` keywords when
+constructing the system, as described in :func:`ss`, :func:`tf`, and other
+system creation function.  Note that when exporting to pandas, "rows" in the
+data frame correspond to time and "cols" (DataSeries) correspond to signals.
 
 .. currentmodule:: control
 .. _package-configuration-parameters:
@@ -218,14 +224,14 @@ element of the `control.config.defaults` dictionary:
 
 .. code-block:: python
 
-    control.config.defaults['module.parameter'] = value
+    ct.config.defaults['module.parameter'] = value
 
 The `~control.config.set_defaults` function can also be used to set multiple
 configuration parameters at the same time:
 
 .. code-block:: python
 
-    control.config.set_defaults('module', param1=val1, param2=val2, ...]
+    ct.config.set_defaults('module', param1=val1, param2=val2, ...]
 
 Finally, there are also functions available set collections of variables based
 on standard configurations.

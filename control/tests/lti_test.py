@@ -6,8 +6,8 @@ from .conftest import editsdefaults
 
 import control as ct
 from control import c2d, tf, ss, tf2ss, NonlinearIOSystem
-from control.lti import (LTI, common_timebase, evalfr, damp, dcgain, isctime,
-                         isdtime, issiso, poles, timebaseEqual, zeros)
+from control.lti import LTI, evalfr, damp, dcgain, zeros, poles
+from control import common_timebase, isctime, isdtime, issiso, timebaseEqual
 from control.tests.conftest import slycotonly
 from control.exception import slycot_check
 
@@ -22,10 +22,12 @@ class TestLTI:
         np.testing.assert_allclose(poles(sys), 42)
 
         with pytest.warns(PendingDeprecationWarning):
-            sys.pole()
+            pole_list = sys.pole()
+            assert pole_list == sys.poles()
 
         with pytest.warns(PendingDeprecationWarning):
-            ct.pole(sys)
+            pole_list = ct.pole(sys)
+            assert pole_list == sys.poles()
 
     @pytest.mark.parametrize("fun, args", [
         [tf, (126, [-1, 42])],

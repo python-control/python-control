@@ -10,7 +10,7 @@
 import numpy as np
 import control as ct
 from cmath import sqrt
-import matplotlib.pyplot as mpl
+import matplotlib.pyplot as plt
 
 #
 # Vehicle steering dynamics
@@ -137,7 +137,7 @@ trajgen = ct.NonlinearIOSystem(
 # We construct the system using the InterconnectedSystem constructor and using
 # signal labels to keep track of everything.  
 
-steering = ct.InterconnectedSystem(
+steering = ct.interconnect(
     # List of subsystems
     (trajgen, controller, vehicle), name='steering',
 
@@ -167,10 +167,10 @@ yref = 1
 T = np.linspace(0, 5, 100)
 
 # Set up a figure for plotting the results
-mpl.figure();
+plt.figure();
 
 # Plot the reference trajectory for the y position
-mpl.plot([0, 5], [yref, yref], 'k--')
+plt.plot([0, 5], [yref, yref], 'k--')
 
 # Find the signals we want to plot
 y_index = steering.find_output('y')
@@ -183,13 +183,13 @@ for vref in [8, 10, 12]:
         steering, T, [vref * np.ones(len(T)), yref * np.ones(len(T))])
 
     # Plot the reference speed
-    mpl.plot([0, 5], [vref, vref], 'k--')
+    plt.plot([0, 5], [vref, vref], 'k--')
 
     # Plot the system output
-    y_line, = mpl.plot(tout, yout[y_index, :], 'r')  # lateral position
-    v_line, = mpl.plot(tout, yout[v_index, :], 'b')  # vehicle velocity
+    y_line, = plt.plot(tout, yout[y_index, :], 'r')  # lateral position
+    v_line, = plt.plot(tout, yout[v_index, :], 'b')  # vehicle velocity
 
 # Add axis labels
-mpl.xlabel('Time (s)')
-mpl.ylabel('x vel (m/s), y pos (m)')
-mpl.legend((v_line, y_line), ('v', 'y'), loc='center right', frameon=False)
+plt.xlabel('Time (s)')
+plt.ylabel('x vel (m/s), y pos (m)')
+plt.legend((v_line, y_line), ('v', 'y'), loc='center right', frameon=False)

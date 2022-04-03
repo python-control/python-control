@@ -2,7 +2,7 @@
 # RMM, 10 Nov 2012
 
 from .exception import ControlNotImplemented, ControlSlycot
-from .lti import issiso
+from .namedio import issiso
 from .statesp import StateSpace, _convert_to_statespace
 from .statefbk import ctrb, obsv
 

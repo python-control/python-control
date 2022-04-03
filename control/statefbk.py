@@ -45,7 +45,8 @@ import numpy as np
 from . import statesp
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
-from .lti import LTI, isdtime, isctime
+from .lti import LTI
+from .namedio import isdtime, isctime
 from .iosys import InputOutputSystem, NonlinearIOSystem, LinearIOSystem, \
     interconnect, ss
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \

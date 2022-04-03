@@ -54,13 +54,13 @@ from scipy.interpolate import splprep, splev
 
 from .lti import LTI, _process_frequency_response
 from .exception import pandas_check
-from .namedio import _NamedIOSystem
+from .namedio import NamedIOSystem, _process_namedio_keywords
 from . import config
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
 
 
-class FrequencyResponseData(LTI, _NamedIOSystem):
+class FrequencyResponseData(LTI):
     """FrequencyResponseData(d, w[, smooth])
 
     A class for models defined by frequency response data (FRD).
@@ -117,7 +117,7 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
 
     # Allow NDarray * StateSpace to give StateSpace._rmul_() priority
     # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html
-    __array_priority__ = 11     # override ndarray and matrix types
+    __array_priority__ = 13     # override ndarray, StateSpace, I/O sys
 
     #
     # Class attributes
@@ -157,6 +157,9 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
         # TODO: discrete-time FRD systems?
         smooth = kwargs.pop('smooth', False)
 
+        #
+        # Process positional arguments
+        #
         if len(args) == 2:
             if not isinstance(args[0], FRD) and isinstance(args[0], LTI):
                 # not an FRD, but still a system, second argument should be
@@ -196,28 +199,28 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
             raise ValueError(
                 "Needs 1 or 2 arguments; received %i." % len(args))
 
-        # Set the size of the system
-        self.noutputs = self.fresp.shape[0]
-        self.ninputs = self.fresp.shape[1]
-
-        # Process signal names
-        _NamedIOSystem.__init__(
-            self, name=kwargs.pop('name', None),
-            inputs=kwargs.pop('inputs', self.ninputs),
-            outputs=kwargs.pop('outputs', self.noutputs))
-
+        #
+        # Process key word arguments
+        #
         # Keep track of return type
         self.return_magphase=kwargs.pop('return_magphase', False)
         if self.return_magphase not in (True, False):
             raise ValueError("unknown return_magphase value")
 
+        # Determine whether to squeeze the output
         self.squeeze=kwargs.pop('squeeze', None)
         if self.squeeze not in (None, True, False):
             raise ValueError("unknown squeeze value")
 
-        # Make sure there were no extraneous keywords
-        if kwargs:
-            raise TypeError("unrecognized keywords: ", str(kwargs))
+        # Process namedio keywords
+        defaults = {
+            'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0]}
+        name, inputs, outputs, states, dt = _process_namedio_keywords(
+                kwargs, defaults, end=True)
+
+        # Process signal names
+        NamedIOSystem.__init__(
+            self, name=name, inputs=inputs, outputs=outputs, dt=dt)
 
         # create interpolation functions
         if smooth:
@@ -231,7 +234,6 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
                         w=1.0/(absolute(self.fresp[i, j, :]) + 0.001), s=0.0)
         else:
             self.ifunc = None
-        super().__init__(self.fresp.shape[1], self.fresp.shape[0])
 
     #
     # Frequency response properties
@@ -666,8 +668,6 @@ class FrequencyResponseData(LTI, _NamedIOSystem):
 # FrequenceResponseData and then assigning FRD to point to the same object
 # fixes this problem.
 #
-
-
 FRD = FrequencyResponseData
 
 

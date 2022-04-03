@@ -39,7 +39,7 @@ class TestXferFcn:
             TransferFunction([1])
 
         # Too many arguments
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             TransferFunction(1, 2, 3, 4)
 
         # Different numbers of elements in numerator rows
@@ -85,18 +85,19 @@ class TestXferFcn:
             TransferFunction([[[1.], [2., 3.]], [[-1., 4.], [3., 2.]]],
                              [[[1., 0.], [0.]], [[0., 0.], [2.]]])
 
+    @pytest.mark.skip("outdated test")
     def test_constructor_nodt(self):
         """Test the constructor when an object without dt is passed"""
         sysin = TransferFunction([[[0., 1.], [2., 3.]]],
                                  [[[5., 2.], [3., 0.]]])
-        del sysin.dt
+        del sysin.dt            # this doesn't make sense and now breaks
         sys = TransferFunction(sysin)
         assert sys.dt == defaults['control.default_dt']
 
         # test for static gain
         sysin = TransferFunction([[[2.], [3.]]],
                                  [[[1.], [.1]]])
-        del sysin.dt
+        del sysin.dt            # this doesn't make sense and now breaks
         sys = TransferFunction(sysin)
         assert sys.dt is None
 

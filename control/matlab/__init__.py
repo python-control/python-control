@@ -65,6 +65,7 @@ from ..statesp import *
 from ..iosys import ss, rss, drss       # moved from .statesp
 from ..xferfcn import *
 from ..lti import *
+from ..namedio import *
 from ..frdata import *
 from ..dtime import *
 from ..exception import ControlArgument

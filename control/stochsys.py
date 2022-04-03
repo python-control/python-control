@@ -21,7 +21,8 @@ import scipy as sp
 from math import sqrt
 
 from .iosys import InputOutputSystem, NonlinearIOSystem
-from .lti import LTI, isctime, isdtime
+from .lti import LTI
+from .namedio import isctime, isdtime
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented

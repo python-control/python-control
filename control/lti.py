@@ -16,12 +16,12 @@ import numpy as np
 from numpy import absolute, real, angle, abs
 from warnings import warn
 from . import config
+from .namedio import NamedIOSystem, isdtime
 
-__all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
-           'isdtime', 'isctime', 'poles', 'zeros', 'damp', 'evalfr',
-           'frequency_response', 'freqresp', 'dcgain', 'pole', 'zero']
+__all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
+           'freqresp', 'dcgain', 'pole', 'zero']
 
-class LTI:
+class LTI(NamedIOSystem):
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
     LTI is the parent to the StateSpace and TransferFunction child classes. It
@@ -41,15 +41,13 @@ class LTI:
     with timebase None can be combined with a system having a specified
     timebase, and the result will have the timebase of the latter system.
 
+    Note: dt processing has been moved to the NamedIOSystem class.
+
     """
-
-    def __init__(self, inputs=1, outputs=1, dt=None):
+    def __init__(self, inputs=1, outputs=1, states=None, name=None, **kwargs):
         """Assign the LTI object's numbers of inputs and ouputs."""
-
-        # Data members common to StateSpace and TransferFunction.
-        self.ninputs = inputs
-        self.noutputs = outputs
-        self.dt = dt
+        super().__init__(
+            name=name, inputs=inputs, outputs=outputs, states=states, **kwargs)
 
     #
     # Getter and setter functions for legacy state attributes
@@ -105,45 +103,6 @@ class LTI:
         outputs for an LTI system, use :attr:`noutputs`.
         """)
 
-    def isdtime(self, strict=False):
-        """
-        Check to see if a system is a discrete-time system
-
-        Parameters
-        ----------
-        strict: bool, optional
-            If strict is True, make sure that timebase is not None.  Default
-            is False.
-        """
-
-        # If no timebase is given, answer depends on strict flag
-        if self.dt == None:
-            return True if not strict else False
-
-        # Look for dt > 0 (also works if dt = True)
-        return self.dt > 0
-
-    def isctime(self, strict=False):
-        """
-        Check to see if a system is a continuous-time system
-
-        Parameters
-        ----------
-        sys : LTI system
-            System to be checked
-        strict: bool, optional
-            If strict is True, make sure that timebase is not None.  Default
-            is False.
-        """
-        # If no timebase is given, answer depends on strict flag
-        if self.dt is None:
-            return True if not strict else False
-        return self.dt == 0
-
-    def issiso(self):
-        '''Check to see if a system is single input, single output'''
-        return self.ninputs == 1 and self.noutputs == 1
-
     def damp(self):
         '''Natural frequency, damping ratio of system poles
 
@@ -158,7 +117,7 @@ class LTI:
         '''
         poles = self.poles()
 
-        if isdtime(self, strict=True):
+        if self.isdtime(strict=True):
             splane_poles = np.log(poles.astype(complex))/self.dt
         else:
             splane_poles = poles
@@ -215,7 +174,7 @@ class LTI:
 
         """
         omega = np.sort(np.array(omega, ndmin=1))
-        if isdtime(self, strict=True):
+        if self.isdtime(strict=True):
             # Convert the frequency to discrete time
             if np.any(omega * self.dt > np.pi):
                 warn("__call__: evaluation above Nyquist frequency")
@@ -255,191 +214,6 @@ class LTI:
         warn("zero() will be deprecated; use zeros()",
              PendingDeprecationWarning)
         return self.zeros()
-
-
-# Test to see if a system is SISO
-def issiso(sys, strict=False):
-    """
-    Check to see if a system is single input, single output
-
-    Parameters
-    ----------
-    sys : LTI system
-        System to be checked
-    strict: bool (default = False)
-        If strict is True, do not treat scalars as SISO
-    """
-    if isinstance(sys, (int, float, complex, np.number)) and not strict:
-        return True
-    elif not isinstance(sys, LTI):
-        raise ValueError("Object is not an LTI system")
-
-    # Done with the tricky stuff...
-    return sys.issiso()
-
-# Return the timebase (with conversion if unspecified)
-def timebase(sys, strict=True):
-    """Return the timebase for an LTI system
-
-    dt = timebase(sys)
-
-    returns the timebase for a system 'sys'.  If the strict option is
-    set to False, dt = True will be returned as 1.
-    """
-    # System needs to be either a constant or an LTI system
-    if isinstance(sys, (int, float, complex, np.number)):
-        return None
-    elif not isinstance(sys, LTI):
-        raise ValueError("Timebase not defined")
-
-    # Return the sample time, with converstion to float if strict is false
-    if (sys.dt == None):
-        return None
-    elif (strict):
-        return float(sys.dt)
-
-    return sys.dt
-
-def common_timebase(dt1, dt2):
-    """
-    Find the common timebase when interconnecting systems
-
-    Parameters
-    ----------
-    dt1, dt2: number or system with a 'dt' attribute (e.g. TransferFunction
-        or StateSpace system)
-
-    Returns
-    -------
-    dt: number
-        The common timebase of dt1 and dt2, as specified in
-        :ref:`conventions-ref`.
-
-    Raises
-    ------
-    ValueError
-        when no compatible time base can be found
-    """
-    # explanation:
-    # if either dt is None, they are compatible with anything
-    # if either dt is True (discrete with unspecified time base),
-    #   use the timebase of the other, if it is also discrete
-    # otherwise both dts must be equal
-    if hasattr(dt1, 'dt'):
-        dt1 = dt1.dt
-    if hasattr(dt2, 'dt'):
-        dt2 = dt2.dt
-
-    if dt1 is None:
-        return dt2
-    elif dt2 is None:
-        return dt1
-    elif dt1 is True:
-        if dt2 > 0:
-            return dt2
-        else:
-            raise ValueError("Systems have incompatible timebases")
-    elif dt2 is True:
-        if dt1 > 0:
-            return dt1
-        else:
-            raise ValueError("Systems have incompatible timebases")
-    elif np.isclose(dt1, dt2):
-        return dt1
-    else:
-        raise ValueError("Systems have incompatible timebases")
-
-# Check to see if two timebases are equal
-def timebaseEqual(sys1, sys2):
-    """
-    Check to see if two systems have the same timebase
-
-    timebaseEqual(sys1, sys2)
-
-    returns True if the timebases for the two systems are compatible.  By
-    default, systems with timebase 'None' are compatible with either
-    discrete or continuous timebase systems.  If two systems have a discrete
-    timebase (dt > 0) then their timebases must be equal.
-    """
-    warn("timebaseEqual will be deprecated in a future release of "
-         "python-control; use :func:`common_timebase` instead",
-         PendingDeprecationWarning)
-
-    if (type(sys1.dt) == bool or type(sys2.dt) == bool):
-        # Make sure both are unspecified discrete timebases
-        return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
-    elif (sys1.dt is None or sys2.dt is None):
-        # One or the other is unspecified => the other can be anything
-        return True
-    else:
-        return sys1.dt == sys2.dt
-
-
-# Check to see if a system is a discrete time system
-def isdtime(sys, strict=False):
-    """
-    Check to see if a system is a discrete time system
-
-    Parameters
-    ----------
-    sys : LTI system
-        System to be checked
-    strict: bool (default = False)
-        If strict is True, make sure that timebase is not None
-    """
-
-    # Check to see if this is a constant
-    if isinstance(sys, (int, float, complex, np.number)):
-        # OK as long as strict checking is off
-        return True if not strict else False
-
-    # Check for a transfer function or state-space object
-    if isinstance(sys, LTI):
-        return sys.isdtime(strict)
-
-    # Check to see if object has a dt object
-    if hasattr(sys, 'dt'):
-        # If no timebase is given, answer depends on strict flag
-        if sys.dt == None:
-            return True if not strict else False
-
-        # Look for dt > 0 (also works if dt = True)
-        return sys.dt > 0
-
-    # Got passed something we don't recognize
-    return False
-
-# Check to see if a system is a continuous time system
-def isctime(sys, strict=False):
-    """
-    Check to see if a system is a continuous-time system
-
-    Parameters
-    ----------
-    sys : LTI system
-        System to be checked
-    strict: bool (default = False)
-        If strict is True, make sure that timebase is not None
-    """
-
-    # Check to see if this is a constant
-    if isinstance(sys, (int, float, complex, np.number)):
-        # OK as long as strict checking is off
-        return True if not strict else False
-
-    # Check for a transfer function or state space object
-    if isinstance(sys, LTI):
-        return sys.isctime(strict)
-
-    # Check to see if object has a dt object
-    if hasattr(sys, 'dt'):
-        # If no timebase is given, answer depends on strict flag
-        if sys.dt is None:
-            return True if not strict else False
-        return sys.dt == 0
-
-    # Got passed something we don't recognize
-    return False
 
 
 def poles(sys):
