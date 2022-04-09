@@ -115,6 +115,10 @@ def test_unrecognized_kwargs():
         with pytest.raises(TypeError, match="unrecognized keyword"):
             function(*args, **kwargs, unknown=None)
 
+        # If we opened any figures, close them to avoid matplotlib warnings
+        if plt.gca():
+            plt.close('all')
+
 
 def test_matplotlib_kwargs():
     # Create a SISO system for use in parameterized tests
@@ -141,7 +145,7 @@ def test_matplotlib_kwargs():
         with pytest.raises(AttributeError, match="has no property"):
             function(*args, **kwargs, unknown=None)
 
-        # If we opened any figures, close them
+        # If we opened any figures, close them to avoid matplotlib warnings
         if plt.gca():
             plt.close('all')
 
@@ -171,7 +175,7 @@ kwarg_unittest = {
     'lqr': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
-    'pzmap': test_matplotlib_kwargs,
+    'pzmap': test_unrecognized_kwargs,
     'rlocus': test_unrecognized_kwargs,
     'root_locus': test_unrecognized_kwargs,
     'rss': test_unrecognized_kwargs,
