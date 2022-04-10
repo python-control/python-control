@@ -47,6 +47,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
+from math import nan
 
 from .ctrlutil import unwrap
 from .bdalg import feedback
@@ -804,6 +805,28 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         # Compute CW encirclements of -1 by integrating the (unwrapped) angle
         phase = -unwrap(np.angle(resp + 1))
         count = int(np.round(np.sum(np.diff(phase)) / np.pi, 0))
+
+        #
+        # Make sure that the enciriclements match the Nyquist criterion
+        #
+        # If the user specifies the frequency points to use, it is possible
+        # to miss enciriclements, so we check here to make sure that the
+        # Nyquist criterion is actually satisfied.
+        #
+        if isinstance(sys, (StateSpace, TransferFunction)):
+            P = (sys.pole().real > 0).sum() if indent_direction == 'right' \
+                else (sys.pole().real >= 0).sum()
+            Z = (sys.feedback().pole().real >= 0).sum()
+            if Z != count + P:
+                warnings.warn(
+                    "number of encirclements does not match Nyquist criterion;"
+                    " check frequency range and indent radius/direction",
+                    UserWarning, stacklevel=2)
+            elif indent_direction == 'none' and any(sys.pole().real == 0):
+                warnings.warn(
+                    "system has pure imaginary poles but indentation is"
+                    " turned off; results may be meaningless",
+                    RuntimeWarning, stacklevel=2)
 
         counts.append(count)
         contours.append(contour)

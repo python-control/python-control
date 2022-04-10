@@ -98,9 +98,10 @@ def test_nyquist_basic():
     count, contour_indented = ct.nyquist_plot(
         sys, np.linspace(1e-4, 1e2, 100), return_contour=True)
     assert not all(contour_indented.real == 0)
-    count, contour = ct.nyquist_plot(
-        sys, np.linspace(1e-4, 1e2, 100), return_contour=True,
-        indent_direction='none')
+    with pytest.warns(UserWarning, match="encirclements does not match"):
+        count, contour = ct.nyquist_plot(
+            sys, np.linspace(1e-4, 1e2, 100), return_contour=True,
+            indent_direction='none')
     np.testing.assert_almost_equal(contour, 1j*np.linspace(1e-4, 1e2, 100))
 
     # Nyquist plot with poles at the origin, omega unspecified
@@ -166,10 +167,11 @@ def test_nyquist_fbs_examples():
 
     plt.figure()
     plt.title("Figure 10.10: L(s) = 3 (s+6)^2 / (s (s+1)^2) [zoom]")
-    count = ct.nyquist_plot(sys, omega_limits=[1.5, 1e3])
-    # Frequency limits for zoom give incorrect encirclement count
-    # assert _Z(sys) == count + _P(sys)
-    assert count == -1
+    with pytest.warns(UserWarning, match="encirclements does not match"):
+        count = ct.nyquist_plot(sys, omega_limits=[1.5, 1e3])
+        # Frequency limits for zoom give incorrect encirclement count
+        # assert _Z(sys) == count + _P(sys)
+        assert count == -1
 
 
 @pytest.mark.parametrize("arrows", [
@@ -276,8 +278,9 @@ def test_nyquist_indent_im():
 
     # Imaginary poles with no indentation
     plt.figure();
-    count = ct.nyquist_plot(
-        sys, np.linspace(0, 1e3, 1000), indent_direction='none')
+    with pytest.warns(UserWarning, match="encirclements does not match"):
+        count = ct.nyquist_plot(
+            sys, np.linspace(0, 1e3, 1000), indent_direction='none')
     plt.title(
         "Imaginary poles; indent_direction='none'; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
