@@ -94,14 +94,18 @@ def test_nyquist_basic():
         contour[contour.real == 0],
         1j*np.linspace(0, 1e2, 100)[contour.real == 0])
 
+    #
     # Make sure that we can turn off frequency modification
+    #
+    # Start with a case where indentation should occur
     count, contour_indented = ct.nyquist_plot(
-        sys, np.linspace(1e-4, 1e2, 100), return_contour=True)
+        sys, np.linspace(1e-4, 1e2, 100), indent_radius=1e-2,
+        return_contour=True)
     assert not all(contour_indented.real == 0)
     with pytest.warns(UserWarning, match="encirclements does not match"):
         count, contour = ct.nyquist_plot(
-            sys, np.linspace(1e-4, 1e2, 100), return_contour=True,
-            indent_direction='none')
+            sys, np.linspace(1e-4, 1e2, 100), indent_radius=1e-2,
+            return_contour=True, indent_direction='none')
     np.testing.assert_almost_equal(contour, 1j*np.linspace(1e-4, 1e2, 100))
 
     # Nyquist plot with poles at the origin, omega unspecified
@@ -115,15 +119,20 @@ def test_nyquist_basic():
     assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, omega specified
+    # (can miss encirclements due to the imaginary poles at +/- 1j)
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-    count = ct.nyquist_plot(sys, np.linspace(1e-3, 1e1, 1000))
-    assert _Z(sys) == count + _P(sys)
+    with pytest.warns(UserWarning, match="does not match") as records:
+        count = ct.nyquist_plot(sys, np.linspace(1e-3, 1e1, 1000))
+    if len(records) == 0:
+        assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, omega specified, with contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
-    count, contour = ct.nyquist_plot(
-        sys, np.linspace(1e-3, 1e1, 1000), return_contour=True)
-    assert _Z(sys) == count + _P(sys)
+    with pytest.warns(UserWarning, match="does not match") as records:
+        count, contour = ct.nyquist_plot(
+            sys, np.linspace(1e-3, 1e1, 1000), return_contour=True)
+    if len(records) == 0:
+        assert _Z(sys) == count + _P(sys)
 
     # Nyquist plot with poles on imaginary axis, return contour
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
@@ -229,10 +238,10 @@ def test_nyquist_indent_default(indentsys):
 def test_nyquist_indent_dont(indentsys):
     # first value of default omega vector was 0.1, replaced by 0. for contour
     # indent_radius is larger than 0.1 -> no extra quater circle around origin
-    count, contour = ct.nyquist_plot(indentsys,
-                                     plot=False,
-                                     indent_radius=.1007,
-                                     return_contour=True)
+    with pytest.warns(UserWarning, match="encirclements does not match"):
+        count, contour = ct.nyquist_plot(
+            indentsys, omega=[0, 0.2, 0.3, 0.4], indent_radius=.1007,
+            plot=False, return_contour=True)
     np.testing.assert_allclose(contour[0], .1007+0.j)
     # second value of omega_vector is larger than indent_radius: not indented
     assert np.all(contour.real[2:] == 0.)
@@ -240,9 +249,8 @@ def test_nyquist_indent_dont(indentsys):
 
 def test_nyquist_indent_do(indentsys):
     plt.figure();
-    count, contour = ct.nyquist_plot(indentsys,
-                                     indent_radius=0.01,
-                                     return_contour=True)
+    count, contour = ct.nyquist_plot(
+        indentsys, indent_radius=0.01, return_contour=True)
     plt.title("Pole at origin; indent_radius=0.01; encirclements = %d" % count)
     assert _Z(indentsys) == count + _P(indentsys)
     # indent radius is smaller than the start of the default omega vector
@@ -305,6 +313,19 @@ def test_nyquist_exceptions():
     with pytest.warns(UserWarning, match="above Nyquist"):
         ct.nyquist_plot(sys, np.logspace(-2, 3))
 
+def test_linestyle_checks():
+    sys = ct.rss(2, 1, 1)
+
+    # Things that should work
+    ct.nyquist_plot(sys, primary_style=['-', '-'], mirror_style=['-', '-'])
+    ct.nyquist_plot(sys, mirror_style=None)
+
+    with pytest.raises(ValueError, match="invalid 'primary_style'"):
+        ct.nyquist_plot(sys, primary_style=False)
+
+    with pytest.raises(ValueError, match="invalid 'mirror_style'"):
+        ct.nyquist_plot(sys, mirror_style=0.2)
+
 
 if __name__ == "__main__":
     #
@@ -333,11 +354,16 @@ if __name__ == "__main__":
     test_nyquist_encirclements()
 
     print("Indentation checks")
-    test_nyquist_indent()
+    s = ct.tf('s')
+    indentsys = 3 * (s+6)**2 / (s * (s+1)**2)
+    test_nyquist_indent_default(indentsys)
+    test_nyquist_indent_do(indentsys)
+    test_nyquist_indent_left(indentsys)
 
     print("Unusual Nyquist plot")
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     plt.figure()
-    plt.title("Poles: %s" % np.array2string(sys.poles(), precision=2, separator=','))
+    plt.title("Poles: %s" %
+              np.array2string(sys.poles(), precision=2, separator=','))
     count = ct.nyquist_plot(sys)
     assert _Z(sys) == count + _P(sys)
