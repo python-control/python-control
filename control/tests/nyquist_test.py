@@ -41,6 +41,33 @@ def test_nyquist_basic():
     N_sys = ct.nyquist_plot(sys)
     assert _Z(sys) == N_sys + _P(sys)
 
+    # Previously identified bug
+    #
+    # This example has an open loop pole at -0.06 and a closed loop pole at
+    # 0.06, so if you use an indent_radius of larger than 0.12, then the
+    # encirclements computed by nyquist_plot() will not properly predict
+    # stability.  A new warning messages was added to catch this case.
+    #
+    A = np.array([
+        [-3.56355873, -1.22980795, -1.5626527 , -0.4626829 , -0.16741484],
+        [-8.52361371, -3.60331459, -3.71574266, -0.43839201,  0.41893656],
+        [-2.50458726, -0.72361335, -1.77795489, -0.4038419 ,  0.52451147],
+        [-0.281183  ,  0.23391825,  0.19096003, -0.9771515 ,  0.66975606],
+        [-3.04982852, -1.1091943 , -1.40027242, -0.1974623 , -0.78930791]])
+    B = np.array([[-0.], [-1.42827213], [ 0.76806551], [-1.07987454], [0.]])
+    C = np.array([[-0.,  0.35557249,  0.35941791, -0., -1.42320969]])
+    D = np.array([[0]])
+    sys = ct.ss(A, B, C, D)
+
+    # With a small indent_radius, all should be fine
+    N_sys = ct.nyquist_plot(sys, indent_radius=0.001)
+    assert _Z(sys) == N_sys + _P(sys)
+
+    # With a larger indent_radius, we get a warning message + wrong answer
+    with pytest.warns(UserWarning, match="contour may miss closed loop pole"):
+        N_sys = ct.nyquist_plot(sys, indent_radius=0.2)
+        assert _Z(sys) != N_sys + _P(sys)
+
     # Unstable system
     sys = ct.tf([10], [1, 2, 2, 1])
     N_sys = ct.nyquist_plot(sys)

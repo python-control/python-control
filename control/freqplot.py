@@ -723,6 +723,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 and indent_direction != 'none':
             if sys.isctime():
                 splane_poles = sys.poles()
+                splane_cl_poles = sys.feedback().poles()
             else:
                 # map z-plane poles to s-plane, ignoring any at the origin
                 # because we don't need to indent for them
@@ -730,28 +731,64 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
                 splane_poles = np.log(zplane_poles)/sys.dt
 
+                zplane_cl_poles = sys.feedback().poles()
+                zplane_cl_poles = zplane_cl_poles[
+                    ~np.isclose(abs(zplane_poles), 0.)]
+                splane_cl_poles = np.log(zplane_cl_poles)/sys.dt
+
+            #
+            # Check to make sure indent radius is small enough
+            #
+            # If there is a closed loop pole that is near the imaginary access
+            # at a point that is near an open loop pole, it is possible that
+            # indentation might skip or create an extraneous encirclement.
+            # We check for that situation here and generate a warning if that
+            # could happen.
+            #
+            for p_cl in splane_cl_poles:
+                # See if any closed loop poles are near the imaginary axis
+                if abs(p_cl.real) <= indent_radius:
+                    # See if any open loop poles are close to closed loop poles
+                    p_ol = splane_poles[
+                        (np.abs(splane_poles - p_cl)).argmin()]
+
+                    if abs(p_ol - p_cl) <= indent_radius:
+                        warnings.warn(
+                            "indented contour may miss closed loop pole; "
+                            "consider reducing indent_radius to be less than "
+                            f"{abs(p_ol - p_cl):5.2g}", stacklevel=2)
+
+            # See if we should add some frequency points near the origin
             if splane_contour[1].imag > indent_radius \
                     and np.any(np.isclose(abs(splane_poles), 0)) \
                     and not omega_range_given:
                 # add some points for quarter circle around poles at origin
+                # (these will get indented left or right below)
                 splane_contour = np.concatenate(
                     (1j * np.linspace(0., indent_radius, 50),
                     splane_contour[1:]))
+
             for i, s in enumerate(splane_contour):
                 # Find the nearest pole
                 p = splane_poles[(np.abs(splane_poles - s)).argmin()]
+
                 # See if we need to indent around it
                 if abs(s - p) < indent_radius:
+                    # Figure out how much to offset (simple trigonometry)
+                    offset = np.sqrt(indent_radius ** 2 - (s-p).imag ** 2) \
+                        -(s-p).real
+
+                    # Figure out which way to offset the contour point
                     if p.real < 0 or (np.isclose(p.real, 0) \
                             and indent_direction == 'right'):
                         # Indent to the right
-                        splane_contour[i] += \
-                            np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
+                        splane_contour[i] += offset
+
                     elif p.real > 0 or (np.isclose(p.real, 0) \
                             and indent_direction == 'left'):
                         # Indent to the left
-                        splane_contour[i] -= \
-                            np.sqrt(indent_radius ** 2 - (s-p).imag ** 2)
+                        splane_contour[i] -= offset
+
                     else:
                         ValueError("unknown value for indent_direction")
 
