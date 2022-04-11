@@ -519,8 +519,8 @@ def bode_plot(syslist, omega=None,
 
 # Default values for module parameter variables
 _nyquist_defaults = {
-    'nyquist.primary_style': ['-', ':'],        # style for primary curve
-    'nyquist.mirror_style': ['--', '-.'],       # style for mirror curve
+    'nyquist.primary_style': ['-', '-.'],        # style for primary curve
+    'nyquist.mirror_style': ['--', ':'],       # style for mirror curve
     'nyquist.arrows': 2,
     'nyquist.arrow_size': 8,
     'nyquist.indent_radius': 1e-6,              # indentation radius
@@ -696,6 +696,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         kwargs.pop('arrow_length', False)
 
     # Get values for params (and pop from list to allow keyword use in plot)
+    omega_num_given = omega_num is not None
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     arrows = config._get_param(
         'nyquist', 'arrows', kwargs, _nyquist_defaults, pop=True)
@@ -736,8 +737,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     omega, omega_range_given = _determine_omega_vector(
         syslist, omega, omega_limits, omega_num)
     if not omega_range_given:
-        # Start contour at zero frequency
-        omega[0] = 0.
+        if omega_num_given:
+            # Just reset the starting point
+            omega[0] = 0.0
+        else:
+            # Insert points between the origin and the first frequency point
+            omega = np.concatenate((
+                np.linspace(0, omega[0], indent_points), omega[1:]))
 
     # Go through each system and keep track of the results
     counts, contours = [], []
@@ -938,17 +944,23 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 x_reg, y_reg, primary_style[0], color=color, *args, **kwargs)
             c = p[0].get_color()
 
+            # Figure out how much to offset the curve: the offset goes from
+            # zero at the start of the scaled section to max_curve_offset as
+            # we move along the curve
+            curve_offset = _compute_curve_offset(
+                resp, scale_mask, max_curve_offset)
+
             # Plot the scaled sections of the curve (changing linestyle)
             x_scl = np.ma.masked_where(scale_mask, resp.real)
             y_scl = np.ma.masked_where(scale_mask, resp.imag)
             plt.plot(
-                x_scl * (1 + max_curve_offset), y_scl * (1 + max_curve_offset),
+                x_scl * (1 + curve_offset), y_scl * (1 + curve_offset),
                 primary_style[1], color=c, *args, **kwargs)
 
             # Plot the primary curve (invisible) for setting arrows
             x, y = resp.real.copy(), resp.imag.copy()
-            x[reg_mask] *= (1 + max_curve_offset)
-            y[reg_mask] *= (1 + max_curve_offset)
+            x[reg_mask] *= (1 + curve_offset[reg_mask])
+            y[reg_mask] *= (1 + curve_offset[reg_mask])
             p = plt.plot(x, y, linestyle='None', color=c, *args, **kwargs)
 
             # Add arrows
@@ -962,14 +974,14 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 plt.plot(
                     x_reg, -y_reg, mirror_style[0], color=c, *args, **kwargs)
                 plt.plot(
-                    x_scl * (1 - max_curve_offset),
-                    -y_scl * (1 - max_curve_offset),
+                    x_scl * (1 - curve_offset),
+                    -y_scl * (1 - curve_offset),
                     mirror_style[1], color=c, *args, **kwargs)
 
                 # Add the arrows (on top of an invisible contour)
                 x, y = resp.real.copy(), resp.imag.copy()
-                x[reg_mask] *= (1 - max_curve_offset)
-                y[reg_mask] *= (1 - max_curve_offset)
+                x[reg_mask] *= (1 - curve_offset[reg_mask])
+                y[reg_mask] *= (1 - curve_offset[reg_mask])
                 p = plt.plot(x, -y, linestyle='None', color=c, *args, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
@@ -1086,6 +1098,62 @@ def _add_arrows_to_line2D(
         axes.add_patch(p)
         arrows.append(p)
     return arrows
+
+#
+# Function to compute Nyquist curve offsets
+#
+# This function computes a smoothly varying offset that starts and ends at
+# zero at the ends of a scaled segment.
+#
+def _compute_curve_offset(resp, mask, max_offset):
+    # Compute the arc length along the curve
+    s_curve = np.cumsum(
+        np.sqrt(np.diff(resp.real) ** 2 + np.diff(resp.imag) ** 2))
+
+    # Initialize the offset
+    offset = np.zeros(resp.size)
+    arclen = np.zeros(resp.size)
+
+    # Walk through the response and keep track of each continous component
+    i, nsegs = 0, 0
+    while i < resp.size:
+        # Skip the regular segment
+        while i < resp.size and mask[i]:
+            i += 1              # Increment the counter
+            if i == resp.size:
+                break;
+            # Keep track of the arclength
+            arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
+
+        nsegs += 0.5
+        if i == resp.size:
+            break;
+
+        # Save the starting offset of this segment
+        seg_start = i
+
+        # Walk through the scaled segment
+        while i < resp.size and not mask[i]:
+            i += 1
+            if i == resp.size:  # See if we are done with this segment
+                break;
+            # Keep track of the arclength
+            arclen[i] = arclen[i-1] + np.abs(resp[i] - resp[i-1])
+
+        nsegs += 0.5
+        if i == resp.size:
+            break;
+
+        # Save the ending offset of this segment
+        seg_end = i
+
+        # Now compute the scaling for this segment
+        s_segment = arclen[seg_end-1] - arclen[seg_start]
+        offset[seg_start:seg_end] = max_offset * s_segment/s_curve[-1] * \
+            np.sin(np.pi * (arclen[seg_start:seg_end]
+                            - arclen[seg_start])/s_segment)
+
+    return offset
 
 
 #
