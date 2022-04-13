@@ -360,6 +360,13 @@ if __name__ == "__main__":
     test_nyquist_indent_do(indentsys)
     test_nyquist_indent_left(indentsys)
 
+    # Generate a figuring showing effects of different parameters
+    sys = 3 * (s+6)**2 / (s * (s**2 + 1e-4 * s + 1))
+    plt.figure()
+    ct.nyquist_plot(sys)
+    ct.nyquist_plot(sys, max_curve_magnitude=15)
+    ct.nyquist_plot(sys, indent_radius=1e-6, max_curve_magnitude=25)
+
     print("Unusual Nyquist plot")
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     plt.figure()

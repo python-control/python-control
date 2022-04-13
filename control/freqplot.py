@@ -519,15 +519,17 @@ def bode_plot(syslist, omega=None,
 
 # Default values for module parameter variables
 _nyquist_defaults = {
-    'nyquist.primary_style': ['-', '-.'],        # style for primary curve
-    'nyquist.mirror_style': ['--', ':'],       # style for mirror curve
-    'nyquist.arrows': 2,
-    'nyquist.arrow_size': 8,
-    'nyquist.indent_radius': 1e-6,              # indentation radius
+    'nyquist.primary_style': ['-', '-.'],       # style for primary curve
+    'nyquist.mirror_style': ['--', ':'],        # style for mirror curve
+    'nyquist.arrows': 2,                        # number of arrors around curve
+    'nyquist.arrow_size': 8,                    # pixel size for arrows
+    'nyquist.indent_radius': 1e-4,              # indentation radius
     'nyquist.indent_direction': 'right',        # indentation direction
     'nyquist.indent_points': 50,                # number of points to insert
-    'nyquist.max_curve_magnitude': 20,
-    'nyquist.max_curve_offset': 0.02,           # percent offset of curves
+    'nyquist.max_curve_magnitude': 20,          # clip large values
+    'nyquist.max_curve_offset': 0.02,           # offset of primary/mirror
+    'nyquist.start_marker': 'o',                # marker at start of curve
+    'nyquist.start_marker_size': 4,             # size of the maker
 }
 
 
@@ -618,8 +620,9 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         are at or near the imaginary axis.
 
     indent_radius : float, optional
-        Amount to indent the Nyquist contour around poles that are at or near
-        the imaginary axis.
+        Amount to indent the Nyquist contour around poles on or near the
+        imaginary axis. Portions of the Nyquist plot corresponding to indented
+        portions of the contour are plotted using a different line style.
 
     max_curve_magnitude : float, optional
         Restrict the maximum magnitude of the Nyquist plot to this value.
@@ -638,12 +641,21 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         `False` then omit completely.  Default linestyle (['--', '-.']) is
         determined by config.defaults['nyquist.mirror_style'].
 
-    primary_style : [str, str]
+    primary_style : [str, str], optional
         Linestyles for primary image of the Nyquist curve.  The first element
         is used for unscaled portions of the Nyquist curve, the second
         element is used for scaled portions that are scaled (using
         max_curve_magnitude). Default linestyle (['-', ':']) is determined by
         config.defaults['nyquist.mirror_style'].
+
+    start_marker : str, optional
+        Matplotlib marker to use to mark the starting point of the Nyquist
+        plot.  Defaults value is 'o' and can be set using
+        config.defaults['nyquist.start_marker'].
+
+    start_marker_size : float, optional
+        Start marker size (in display coordinates).  Default value is
+        4 and can be set using config.defaults['nyquist.start_marker_size'].
 
     warn_nyquist : bool, optional
         If set to 'False', turn off warnings about frequencies above Nyquist.
@@ -713,6 +725,10 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         'nyquist', 'max_curve_magnitude', kwargs, _nyquist_defaults, pop=True)
     max_curve_offset = config._get_param(
         'nyquist', 'max_curve_offset', kwargs, _nyquist_defaults, pop=True)
+    start_marker = config._get_param(
+        'nyquist', 'start_marker', kwargs, _nyquist_defaults, pop=True)
+    start_marker_size = config._get_param(
+        'nyquist', 'start_marker_size', kwargs, _nyquist_defaults, pop=True)
 
     # Set line styles for the curves
     def _parse_linestyle(style_name, allow_false=False):
@@ -848,6 +864,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                         start_freq, p.imag + indent_radius, indent_points)),
                     splane_contour[last_point:]))
 
+            # Indent points that are too close to a pole
             for i, s in enumerate(splane_contour):
                 # Find the nearest pole
                 p = splane_poles[(np.abs(splane_poles - s)).argmin()]
@@ -929,13 +946,21 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                     'simple', head_width=arrow_size, head_length=arrow_size)
 
             # Find the different portions of the curve (with scaled pts marked)
-            reg_mask = abs(resp) > max_curve_magnitude
+            reg_mask = np.logical_or(
+                np.abs(resp) > max_curve_magnitude,
+                contour.real != 0)
+            # reg_mask = np.logical_or(
+            #     np.abs(resp.real) > max_curve_magnitude,
+            #     np.abs(resp.imag) > max_curve_magnitude)
+
             scale_mask = ~reg_mask \
                 & np.concatenate((~reg_mask[1:], ~reg_mask[-1:])) \
                 & np.concatenate((~reg_mask[0:1], ~reg_mask[:-1]))
 
             # Rescale the points with large magnitude
-            resp[reg_mask] /= (np.abs(resp[reg_mask]) / max_curve_magnitude)
+            rescale = np.logical_and(
+                reg_mask, abs(resp) > max_curve_magnitude)
+            resp[rescale] *= max_curve_magnitude / abs(resp[rescale])
 
             # Plot the regular portions of the curve (and grab the color)
             x_reg = np.ma.masked_where(reg_mask, resp.real)
@@ -985,6 +1010,11 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                 p = plt.plot(x, -y, linestyle='None', color=c, *args, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
+
+            # Mark the start of the curve
+            if start_marker:
+                plt.plot(resp[0].real, resp[0].imag, start_marker,
+                         color=c, markersize=start_marker_size)
 
             # Mark the -1 point
             plt.plot([-1], [0], 'r+')
