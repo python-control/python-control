@@ -219,6 +219,17 @@ def test_nyquist_encirclements():
     plt.title("Pole at the origin; encirclements = %d" % count)
     assert _Z(sys) == count + _P(sys)
 
+    # Non-integer number of encirclements
+    plt.figure();
+    sys = 1 / (s**2 + s + 1)
+    with pytest.warns(UserWarning, match="encirclements was a non-integer"):
+        count = ct.nyquist_plot(sys, omega_limits=[0.5, 1e3])
+    with pytest.warns(None) as records:
+        count = ct.nyquist_plot(
+            sys, omega_limits=[0.5, 1e3], encirclement_threshold=0.2)
+    assert len(records) == 0
+    plt.title("Non-integer number of encirclements [%g]" % count)
+
 
 @pytest.fixture
 def indentsys():

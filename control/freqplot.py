@@ -523,6 +523,7 @@ _nyquist_defaults = {
     'nyquist.mirror_style': ['--', ':'],        # style for mirror curve
     'nyquist.arrows': 2,                        # number of arrors around curve
     'nyquist.arrow_size': 8,                    # pixel size for arrows
+    'nyquist.encirclement_threshold': 0.05,     # warning threshold
     'nyquist.indent_radius': 1e-4,              # indentation radius
     'nyquist.indent_direction': 'right',        # indentation direction
     'nyquist.indent_points': 50,                # number of points to insert
@@ -610,6 +611,11 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
     arrow_style : matplotlib.patches.ArrowStyle, optional
         Define style used for Nyquist curve arrows (overrides `arrow_size`).
+
+    encirclement_threshold : float, optional
+        Define the threshold for generating a warning if the number of net
+        encirclements is a non-integer value.  Default value is 0.05 and can
+        be set using config.defaults['nyquist.encirclement_threshold'].
 
     indent_direction : str, optional
         For poles on the imaginary axis, set the direction of indentation to
@@ -717,6 +723,9 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     arrow_style = config._get_param('nyquist', 'arrow_style', kwargs, None)
     indent_radius = config._get_param(
         'nyquist', 'indent_radius', kwargs, _nyquist_defaults, pop=True)
+    encirclement_threshold = config._get_param(
+        'nyquist', 'encirclement_threshold', kwargs,
+        _nyquist_defaults, pop=True)
     indent_direction = config._get_param(
         'nyquist', 'indent_direction', kwargs, _nyquist_defaults, pop=True)
     indent_points = config._get_param(
@@ -750,8 +759,11 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
     if not isinstance(syslist, (list, tuple)):
         syslist = (syslist,)
 
+    # Determine the range of frequencies to use, based on args/features
     omega, omega_range_given = _determine_omega_vector(
         syslist, omega, omega_limits, omega_num)
+
+    # If omega was not specified explicitly, start at omega = 0
     if not omega_range_given:
         if omega_num_given:
             # Just reset the starting point
@@ -852,6 +864,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                     first_point = 0
                     start_freq = 0
 
+                # Find the frequencies after the pole frequency
                 above_points = np.argwhere(
                     splane_contour.imag - abs(p.imag) > indent_radius)
                 last_point = above_points[0].item()
@@ -900,7 +913,15 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
 
         # Compute CW encirclements of -1 by integrating the (unwrapped) angle
         phase = -unwrap(np.angle(resp + 1))
-        count = int(np.round(np.sum(np.diff(phase)) / np.pi, 0))
+        encirclements = np.sum(np.diff(phase)) / np.pi
+        count = int(np.round(encirclements, 0))
+
+        # Let the user know if the count might not make sense
+        if abs(encirclements - count) > encirclement_threshold:
+            warnings.warn(
+                "number of encirclements was a non-integer value; this can"
+                " happen is contour is not closed, possibly based on a"
+                " frequency range that does not include zero.")
 
         #
         # Make sure that the enciriclements match the Nyquist criterion
@@ -1534,6 +1555,7 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
                                     num=omega_num, endpoint=True)
     else:
         omega_out = np.copy(omega_in)
+
     return omega_out, omega_range_given
 
 
