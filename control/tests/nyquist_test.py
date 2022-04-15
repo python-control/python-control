@@ -337,6 +337,17 @@ def test_linestyle_checks():
     with pytest.raises(ValueError, match="invalid 'mirror_style'"):
         ct.nyquist_plot(sys, mirror_style=0.2)
 
+@pytest.mark.usefixtures("editsdefaults")
+def test_nyquist_legacy():
+    ct.use_legacy_defaults('0.9.1')
+
+    # Example that generated a warning using earlier defaults
+    s = ct.tf('s')
+    sys = (0.02 * s**3 - 0.1 * s) / (s**4 + s**3 + s**2 + 0.25 * s + 0.04)
+
+    with pytest.warns(UserWarning, match="indented contour may miss"):
+        count = ct.nyquist_plot(sys)
+
 
 if __name__ == "__main__":
     #
