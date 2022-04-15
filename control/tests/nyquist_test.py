@@ -185,6 +185,7 @@ def test_nyquist_fbs_examples():
 
 @pytest.mark.parametrize("arrows", [
     None,                       # default argument
+    False,                      # no arrows
     1, 2, 3, 4,                 # specified number of arrows
     [0.1, 0.5, 0.9],            # specify arc lengths
 ])
@@ -318,11 +319,21 @@ def test_nyquist_exceptions():
     with pytest.warns(FutureWarning, match="use `arrow_size` instead"):
         ct.nyquist_plot(sys, arrow_width=8, arrow_length=6)
 
+    # Unknown arrow keyword
+    with pytest.raises(ValueError, match="unsupported arrow location"):
+        ct.nyquist_plot(sys, arrows='uniform')
+
+    # Bad value for indent direction
+    sys = ct.tf([1], [1, 0, 1])
+    with pytest.raises(ValueError, match="unknown value for indent"):
+        ct.nyquist_plot(sys, indent_direction='up')
+
     # Discrete time system sampled above Nyquist frequency
     sys = ct.drss(2, 1, 1)
     sys.dt = 0.01
     with pytest.warns(UserWarning, match="above Nyquist"):
         ct.nyquist_plot(sys, np.logspace(-2, 3))
+
 
 def test_linestyle_checks():
     sys = ct.rss(2, 1, 1)
@@ -336,6 +347,10 @@ def test_linestyle_checks():
 
     with pytest.raises(ValueError, match="invalid 'mirror_style'"):
         ct.nyquist_plot(sys, mirror_style=0.2)
+
+    # If only one line style is given use, the default value for the other
+    # TODO: for now, just make sure the signature works; no correct check yet
+    ct.nyquist_plot(sys, primary_style=':', mirror_style='-.')
 
 @pytest.mark.usefixtures("editsdefaults")
 def test_nyquist_legacy():
