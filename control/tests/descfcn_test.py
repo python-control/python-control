@@ -140,7 +140,7 @@ def test_describing_function(fcn, amin, amax):
 def test_describing_function_plot():
     # Simple linear system with at most 1 intersection
     H_simple = ct.tf([1], [1, 2, 2, 1])
-    omega = np.logspace(-2, 2, 100)
+    omega = np.logspace(-1, 2, 100)
 
     # Saturation nonlinearity
     F_saturation = ct.descfcn.saturation_nonlinearity(1)
@@ -160,7 +160,7 @@ def test_describing_function_plot():
 
     # Multiple intersections
     H_multiple = H_simple * ct.tf(*ct.pade(5, 4)) * 4
-    omega = np.logspace(-2, 3, 50)
+    omega = np.logspace(-1, 3, 50)
     F_backlash = ct.descfcn.friction_backlash_nonlinearity(1)
     amp = np.linspace(0.6, 5, 50)
     xsects = ct.describing_function_plot(H_multiple, F_backlash, amp, omega)

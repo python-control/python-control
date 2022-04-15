@@ -535,9 +535,10 @@ _nyquist_defaults = {
 }
 
 
-def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
-                 omega_num=None, label_freq=0, color=None,
-                 return_contour=False, warn_nyquist=True, *args, **kwargs):
+def nyquist_plot(
+        syslist, omega=None, plot=True, omega_limits=None, omega_num=None,
+        label_freq=0, color=None, return_contour=False,
+        warn_encirclements=True, warn_nyquist=True, **kwargs):
     """Nyquist plot for a system
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
@@ -647,11 +648,11 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         determined by config.defaults['nyquist.mirror_style'].
 
     primary_style : [str, str], optional
-        Linestyles for primary image of the Nyquist curve.  The first element
-        is used for unscaled portions of the Nyquist curve, the second
-        element is used for scaled portions that are scaled (using
-        max_curve_magnitude). Default linestyle (['-', ':']) is determined by
-        config.defaults['nyquist.mirror_style'].
+        Linestyles for primary image of the Nyquist curve.  The first
+        element is used for unscaled portions of the Nyquist curve,
+        the second element is used for portions that are scaled (using
+        max_curve_magnitude). Default linestyle (['-', ':']) is
+        determined by config.defaults['nyquist.mirror_style'].
 
     start_marker : str, optional
         Matplotlib marker to use to mark the starting point of the Nyquist
@@ -839,7 +840,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
                     p_ol = splane_poles[
                         (np.abs(splane_poles - p_cl)).argmin()]
 
-                    if abs(p_ol - p_cl) <= indent_radius:
+                    if abs(p_ol - p_cl) <= indent_radius and \
+                       warn_encirclements:
                         warnings.warn(
                             "indented contour may miss closed loop pole; "
                             "consider reducing indent_radius to be less than "
@@ -920,7 +922,8 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
         count = int(np.round(encirclements, 0))
 
         # Let the user know if the count might not make sense
-        if abs(encirclements - count) > encirclement_threshold:
+        if abs(encirclements - count) > encirclement_threshold and \
+           warn_encirclements:
             warnings.warn(
                 "number of encirclements was a non-integer value; this can"
                 " happen is contour is not closed, possibly based on a"
@@ -937,13 +940,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             P = (sys.pole().real > 0).sum() if indent_direction == 'right' \
                 else (sys.pole().real >= 0).sum()
             Z = (sys.feedback().pole().real >= 0).sum()
-            if Z != count + P:
+            if Z != count + P and warn_encirclements:
                 warnings.warn(
                     "number of encirclements does not match Nyquist criterion;"
                     " check frequency range and indent radius/direction",
                     UserWarning, stacklevel=2)
-            elif indent_direction == 'none' and \
-                 any(np.isclose(sys.pole().real, 0)):
+            elif indent_direction == 'none' and any(sys.pole().real == 0) and \
+                 warn_encirclements:
                 warnings.warn(
                     "system has pure imaginary poles but indentation is"
                     " turned off; results may be meaningless",
@@ -991,7 +994,7 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             x_reg = np.ma.masked_where(reg_mask, resp.real)
             y_reg = np.ma.masked_where(reg_mask, resp.imag)
             p = plt.plot(
-                x_reg, y_reg, primary_style[0], color=color, *args, **kwargs)
+                x_reg, y_reg, primary_style[0], color=color, **kwargs)
             c = p[0].get_color()
 
             # Figure out how much to offset the curve: the offset goes from
@@ -1005,13 +1008,13 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             y_scl = np.ma.masked_where(scale_mask, resp.imag)
             plt.plot(
                 x_scl * (1 + curve_offset), y_scl * (1 + curve_offset),
-                primary_style[1], color=c, *args, **kwargs)
+                primary_style[1], color=c, **kwargs)
 
             # Plot the primary curve (invisible) for setting arrows
             x, y = resp.real.copy(), resp.imag.copy()
             x[reg_mask] *= (1 + curve_offset[reg_mask])
             y[reg_mask] *= (1 + curve_offset[reg_mask])
-            p = plt.plot(x, y, linestyle='None', color=c, *args, **kwargs)
+            p = plt.plot(x, y, linestyle='None', color=c, **kwargs)
 
             # Add arrows
             ax = plt.gca()
@@ -1022,17 +1025,17 @@ def nyquist_plot(syslist, omega=None, plot=True, omega_limits=None,
             if mirror_style is not False:
                 # Plot the regular and scaled segments
                 plt.plot(
-                    x_reg, -y_reg, mirror_style[0], color=c, *args, **kwargs)
+                    x_reg, -y_reg, mirror_style[0], color=c, **kwargs)
                 plt.plot(
                     x_scl * (1 - curve_offset),
                     -y_scl * (1 - curve_offset),
-                    mirror_style[1], color=c, *args, **kwargs)
+                    mirror_style[1], color=c, **kwargs)
 
                 # Add the arrows (on top of an invisible contour)
                 x, y = resp.real.copy(), resp.imag.copy()
                 x[reg_mask] *= (1 - curve_offset[reg_mask])
                 y[reg_mask] *= (1 - curve_offset[reg_mask])
-                p = plt.plot(x, -y, linestyle='None', color=c, *args, **kwargs)
+                p = plt.plot(x, -y, linestyle='None', color=c, **kwargs)
                 _add_arrows_to_line2D(
                     ax, p[0], arrow_pos, arrowstyle=arrow_style, dir=-1)
 
