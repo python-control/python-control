@@ -412,18 +412,21 @@ def frequency_response(sys, omega, squeeze=None):
 
     Returns
     -------
-    mag : ndarray
-        The magnitude (absolute value, not dB or log10) of the system
-        frequency response.  If the system is SISO and squeeze is not True,
-        the array is 1D, indexed by frequency.  If the system is not SISO or
-        squeeze is False, the array is 3D, indexed by the output, input, and
+    response : FrequencyResponseData
+        Frequency response data object representing the frequency response.
+        This object can be assigned to a tuple using
+
+            mag, phase, omega = response
+
+        where ``mag`` is the magnitude (absolute value, not dB or log10) of
+        the system frequency response, ``phase`` is the wrapped phase in
+        radians of the system frequency response, and ``omega`` is the
+        (sorted) frequencies at which the response was evaluated.  If the
+        system is SISO and squeeze is not True, ``magnitude`` and ``phase``
+        are 1D, indexed by frequency.  If the system is not SISO or squeeze
+        is False, the array is 3D, indexed by the output, input, and
         frequency.  If ``squeeze`` is True then single-dimensional axes are
         removed.
-    phase : ndarray
-        The wrapped phase in radians of the system frequency response.
-    omega : ndarray
-        The list of sorted frequencies at which the response was
-        evaluated.
 
     See Also
     --------

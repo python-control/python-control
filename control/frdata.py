@@ -151,7 +151,7 @@ class FrequencyResponseData(LTI):
         FRD object.
 
         To construct frequency response data for an existing LTI
-        object, other than an FRD, call FRD(sys, omega)
+        object, other than an FRD, call FRD(sys, omega).
 
         """
         # TODO: discrete-time FRD systems?

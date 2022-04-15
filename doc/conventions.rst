@@ -74,6 +74,28 @@ FRD systems have a somewhat more limited set of functions that are
 available, although all of the standard algebraic manipulations can be
 performed.
 
+The FRD class is also used as the return type for the
+:func:`frequency_response` function (and the equivalent method for the
+:class:`StateSpace` and :class:`TransferFunction` classes).  This
+object can be assigned to a tuple using
+
+    mag, phase, omega = response
+
+where `mag` is the magnitude (absolute value, not dB or log10) of the
+system frequency response, `phase` is the wrapped phase in radians of
+the system frequency response, and `omega` is the (sorted) frequencies
+at which the response was evaluated.  If the system is SISO and the
+`squeeze` argument to :func:`frequency_response` is not True,
+`magnitude` and `phase` are 1D, indexed by frequency.  If the system
+is not SISO or `squeeze` is False, the array is 3D, indexed by the
+output, input, and frequency.  If `squeeze` is True then
+single-dimensional axes are removed.  The processing of the `squeeze`
+keyword can be changed by calling the response function with a new
+argument:
+
+    mag, phase, omega = response(squeeze=False)
+
+
 Discrete time systems
 ---------------------
 A discrete time system is created by specifying a nonzero 'timebase', dt.

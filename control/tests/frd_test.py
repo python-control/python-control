@@ -532,3 +532,34 @@ def test_frequency_response():
     np.testing.assert_equal(resp.magnitude, np.abs(eval))
     np.testing.assert_equal(resp.phase, np.angle(eval))
     np.testing.assert_equal(resp.omega, omega)
+
+    # Make sure that we can change the properties of the response
+    sys = ct.rss(2, 1, 1)
+    resp_default = ct.frequency_response(sys, omega)
+    mag_default, phase_default, omega_default = resp_default
+    assert mag_default.ndim == 1
+    assert phase_default.ndim == 1
+    assert omega_default.ndim == 1
+    assert mag_default.shape[0] == omega_default.shape[0]
+    assert phase_default.shape[0] == omega_default.shape[0]
+
+    resp_nosqueeze = ct.frequency_response(sys, omega, squeeze=False)
+    mag_nosqueeze, phase_nosqueeze, omega_nosqueeze = resp_nosqueeze
+    assert mag_nosqueeze.ndim == 3
+    assert phase_nosqueeze.ndim == 3
+    assert omega_nosqueeze.ndim == 1
+    assert mag_nosqueeze.shape[2] == omega_nosqueeze.shape[0]
+    assert phase_nosqueeze.shape[2] == omega_nosqueeze.shape[0]
+
+    # Try changing the response
+    resp_def_nosq = resp_default(squeeze=False)
+    mag_def_nosq, phase_def_nosq, omega_def_nosq = resp_def_nosq
+    assert mag_def_nosq.shape == mag_nosqueeze.shape
+    assert phase_def_nosq.shape == phase_nosqueeze.shape
+    assert omega_def_nosq.shape == omega_nosqueeze.shape
+
+    resp_nosq_sq = resp_nosqueeze(squeeze=True)
+    mag_nosq_sq, phase_nosq_sq, omega_nosq_sq = resp_nosq_sq
+    assert mag_nosq_sq.shape == mag_default.shape
+    assert phase_nosq_sq.shape == phase_default.shape
+    assert omega_nosq_sq.shape == omega_default.shape
