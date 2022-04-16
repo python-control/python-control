@@ -987,7 +987,8 @@ class StateSpace(LTI):
     def poles(self):
         """Compute the poles of a state space system."""
 
-        return eigvals(self.A) if self.nstates else np.array([])
+        return eigvals(self.A).astype(complex) if self.nstates \
+            else np.array([])
 
     def zeros(self):
         """Compute the zeros of a state space system."""
@@ -1006,8 +1007,9 @@ class StateSpace(LTI):
             if nu == 0:
                 return np.array([])
             else:
+                # Use SciPy generalized eigenvalue fucntion
                 return sp.linalg.eigvals(out[8][0:nu, 0:nu],
-                                         out[9][0:nu, 0:nu])
+                                         out[9][0:nu, 0:nu]).astype(complex)
 
         except ImportError:  # Slycot unavailable. Fall back to scipy.
             if self.C.shape[0] != self.D.shape[1]:
@@ -1031,7 +1033,7 @@ class StateSpace(LTI):
                                            (0, self.B.shape[1])), "constant")
             return np.array([x for x in sp.linalg.eigvals(L, M,
                                                           overwrite_a=True)
-                             if not isinf(x)])
+                             if not isinf(x)], dtype=complex)
 
     # Feedback around a state space system
     def feedback(self, other=1, sign=-1):

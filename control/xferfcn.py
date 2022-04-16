@@ -798,7 +798,7 @@ class TransferFunction(LTI):
         rts = []
         for d, o in zip(den, denorder):
             rts.extend(roots(d[:o + 1]))
-        return np.array(rts)
+        return np.array(rts).astype(complex)
 
     def zeros(self):
         """Compute the zeros of a transfer function."""
@@ -808,7 +808,7 @@ class TransferFunction(LTI):
                 "for SISO systems.")
         else:
             # for now, just give zeros of a SISO tf
-            return roots(self.num[0][0])
+            return roots(self.num[0][0]).astype(complex)
 
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two LTI objects."""

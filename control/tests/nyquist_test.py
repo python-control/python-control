@@ -350,7 +350,8 @@ def test_linestyle_checks():
 
     # If only one line style is given use, the default value for the other
     # TODO: for now, just make sure the signature works; no correct check yet
-    ct.nyquist_plot(sys, primary_style=':', mirror_style='-.')
+    with pytest.warns(PendingDeprecationWarning, match="single string"):
+        ct.nyquist_plot(sys, primary_style=':', mirror_style='-.')
 
 @pytest.mark.usefixtures("editsdefaults")
 def test_nyquist_legacy():
@@ -363,13 +364,17 @@ def test_nyquist_legacy():
     with pytest.warns(UserWarning, match="indented contour may miss"):
         count = ct.nyquist_plot(sys)
 
-
+def test_discrete_nyquist():
+    # Make sure we can handle discrete time systems with negative poles
+    sys = ct.tf(1, [1, -0.1], dt=1) * ct.tf(1, [1, 0.1], dt=1)
+    ct.nyquist_plot(sys)
+    
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing
     #
-    # Running this script in python (or better ipython) will show a collection of
-    # figures that should all look OK on the screeen.
+    # Running this script in python (or better ipython) will show a
+    # collection of figures that should all look OK on the screeen.
     #
 
     # In interactive mode, turn on ipython interactive graphics
@@ -411,3 +416,13 @@ if __name__ == "__main__":
               np.array2string(sys.poles(), precision=2, separator=','))
     count = ct.nyquist_plot(sys)
     assert _Z(sys) == count + _P(sys)
+
+    print("Discrete time systems")
+    sys = ct.c2d(sys, 0.01)
+    plt.figure()
+    plt.title("Discrete-time; poles: %s" %
+              np.array2string(sys.poles(), precision=2, separator=','))
+    count = ct.nyquist_plot(sys)
+
+    
+

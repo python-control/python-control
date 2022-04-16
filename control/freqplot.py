@@ -644,14 +644,14 @@ def nyquist_plot(
         Linestyles for mirror image of the Nyquist curve.  The first element
         is used for unscaled portions of the Nyquist curve, the second element
         is used for portions that are scaled (using max_curve_magnitude).  If
-        `False` then omit completely.  Default linestyle (['--', '-.']) is
+        `False` then omit completely.  Default linestyle (['--', ':']) is
         determined by config.defaults['nyquist.mirror_style'].
 
     primary_style : [str, str], optional
         Linestyles for primary image of the Nyquist curve.  The first
         element is used for unscaled portions of the Nyquist curve,
         the second element is used for portions that are scaled (using
-        max_curve_magnitude). Default linestyle (['-', ':']) is
+        max_curve_magnitude).  Default linestyle (['-', '-.']) is
         determined by config.defaults['nyquist.mirror_style'].
 
     start_marker : str, optional
@@ -750,6 +750,9 @@ def nyquist_plot(
         if isinstance(style, str):
             # Only one style provided, use the default for the other
             style = [style, _nyquist_defaults['nyquist.' + style_name][1]]
+            warnings.warn(
+                "use of a single string for linestyle will be deprecated "
+                " in a future release", PendingDeprecationWarning)
         if (allow_false and style is False) or \
            (isinstance(style, list) and len(style) == 2):
             return style
@@ -765,7 +768,7 @@ def nyquist_plot(
 
     # Determine the range of frequencies to use, based on args/features
     omega, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num)
+        syslist, omega, omega_limits, omega_num, feature_periphery_decades=2)
 
     # If omega was not specified explicitly, start at omega = 0
     if not omega_range_given:
@@ -790,7 +793,7 @@ def nyquist_plot(
 
         # Determine the contour used to evaluate the Nyquist curve
         if sys.isdtime(strict=True):
-            # Transform frequencies in for discrete-time systems
+            # Restrict frequencies for discrete-time systems
             nyquistfrq = math.pi / sys.dt
             if not omega_range_given:
                 # limit up to and including nyquist frequency
@@ -817,12 +820,12 @@ def nyquist_plot(
                 # because we don't need to indent for them
                 zplane_poles = sys.poles()
                 zplane_poles = zplane_poles[~np.isclose(abs(zplane_poles), 0.)]
-                splane_poles = np.log(zplane_poles)/sys.dt
+                splane_poles = np.log(zplane_poles) / sys.dt
 
                 zplane_cl_poles = sys.feedback().poles()
                 zplane_cl_poles = zplane_cl_poles[
                     ~np.isclose(abs(zplane_poles), 0.)]
-                splane_cl_poles = np.log(zplane_cl_poles)/sys.dt
+                splane_cl_poles = np.log(zplane_cl_poles) / sys.dt
 
             #
             # Check to make sure indent radius is small enough
@@ -851,8 +854,8 @@ def nyquist_plot(
             # See if we should add some frequency points near imaginary poles
             #
             for p in splane_poles:
-                # See if we need to process this pole (skip any that is on
-                # the not near or on the negative omega axis + user override)
+                # See if we need to process this pole (skip if on the negative
+                # imaginary axis or not near imaginary axis + user override)
                 if p.imag < 0 or abs(p.real) > indent_radius or \
                    omega_range_given:
                     continue
@@ -894,13 +897,13 @@ def nyquist_plot(
                         - (s - p).real
 
                     # Figure out which way to offset the contour point
-                    if p.real < 0 or (np.isclose(p.real, 0)
-                                      and indent_direction == 'right'):
+                    if p.real < 0 or (p.real == 0 and
+                                      indent_direction == 'right'):
                         # Indent to the right
                         splane_contour[i] += offset
 
-                    elif p.real > 0 or (np.isclose(p.real, 0)
-                                        and indent_direction == 'left'):
+                    elif p.real > 0 or (p.real == 0 and
+                                         indent_direction == 'left'):
                         # Indent to the left
                         splane_contour[i] -= offset
 
@@ -937,9 +940,21 @@ def nyquist_plot(
         # Nyquist criterion is actually satisfied.
         #
         if isinstance(sys, (StateSpace, TransferFunction)):
-            P = (sys.poles().real > 0).sum() if indent_direction == 'right' \
-                else (sys.poles().real >= 0).sum()
-            Z = (sys.feedback().poles().real >= 0).sum()
+            # Count the number of open/closed loop RHP poles
+            if sys.isctime():
+                if indent_direction == 'right':
+                    P = (sys.poles().real > 0).sum()
+                else:
+                    P = (sys.poles().real >= 0).sum()
+                Z = (sys.feedback().poles().real >= 0).sum()
+            else:
+                if indent_direction == 'right':
+                    P = (np.abs(sys.poles()) > 1).sum()
+                else:
+                    P = (np.abs(sys.poles()) >= 1).sum()
+                Z = (np.abs(sys.feedback().poles()) >= 1).sum()
+
+            # Check to make sure the results make sense; warn if not
             if Z != count + P and warn_encirclements:
                 warnings.warn(
                     "number of encirclements does not match Nyquist criterion;"
@@ -976,7 +991,7 @@ def nyquist_plot(
             # Find the different portions of the curve (with scaled pts marked)
             reg_mask = np.logical_or(
                 np.abs(resp) > max_curve_magnitude,
-                contour.real != 0)
+                splane_contour.real != 0)
             # reg_mask = np.logical_or(
             #     np.abs(resp.real) > max_curve_magnitude,
             #     np.abs(resp.imag) > max_curve_magnitude)
@@ -1508,7 +1523,7 @@ def singular_values_plot(syslist, omega=None,
 
 # Determine the frequency range to be used
 def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
-                            Hz=None):
+                            Hz=None, feature_periphery_decades=None):
     """Determine the frequency range for a frequency-domain plot
     according to a standard logic.
 
@@ -1554,9 +1569,9 @@ def _determine_omega_vector(syslist, omega_in, omega_limits, omega_num,
         if omega_limits is None:
             omega_range_given = False
             # Select a default range if none is provided
-            omega_out = _default_frequency_range(syslist,
-                                                 number_of_samples=omega_num,
-                                                 Hz=Hz)
+            omega_out = _default_frequency_range(
+                syslist, number_of_samples=omega_num, Hz=Hz,
+                feature_periphery_decades=feature_periphery_decades)
         else:
             omega_limits = np.asarray(omega_limits)
             if len(omega_limits) != 2:
@@ -1640,7 +1655,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
                 features_ = np.concatenate((sys.poles(), sys.zeros()))
                 # Get rid of poles and zeros on the real axis (imag==0)
-                # * origin and real < 0
+               # * origin and real < 0
                 # * at 1.: would result in omega=0. (logaritmic plot!)
                 toreplace = np.isclose(features_.imag, 0.0) & (
                                     (features_.real <= 0.) |
