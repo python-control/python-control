@@ -13,13 +13,13 @@ import pytest
 @pytest.fixture()
 def sys_dict():
     sdict = {}
-    sdict['ss'] = ct.ss([[-1]], [[1]], [[1]], [[0]])
-    sdict['tf'] = ct.tf([1],[0.5, 1])
-    sdict['tfx'] = ct.tf([1, 1],[1])     # non-proper transfer function
-    sdict['frd'] = ct.frd([10+0j, 9 + 1j, 8 + 2j], [1,2,3])
+    sdict['ss'] = ct.StateSpace([[-1]], [[1]], [[1]], [[0]])
+    sdict['tf'] = ct.TransferFunction([1],[0.5, 1])
+    sdict['tfx'] = ct.TransferFunction([1, 1], [1]) # non-proper TF
+    sdict['frd'] = ct.frd([10+0j, 9 + 1j, 8 + 2j, 7 + 3j], [1, 2, 3, 4])
     sdict['lio'] = ct.LinearIOSystem(ct.ss([[-1]], [[5]], [[5]], [[0]]))
     sdict['ios'] = ct.NonlinearIOSystem(
-        sdict['lio']._rhs, sdict['lio']._out, 1, 1, 1)
+        sdict['lio']._rhs, sdict['lio']._out, inputs=1, outputs=1, states=1)
     sdict['arr'] = np.array([[2.0]])
     sdict['flt'] = 3.
     return sdict
@@ -59,39 +59,39 @@ type_dict = {
 rtype_list =           ['ss',  'tf', 'frd', 'lio', 'ios', 'arr', 'flt']
 conversion_table = [
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('add',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'ios', 'ss',  'ss' ]),
-    ('add',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
-    ('add',     'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'xrd']),
+    ('add',     'ss',  ['ss',  'ss',  'frd', 'ss',  'ios', 'ss',  'ss' ]),
+    ('add',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
+    ('add',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('add',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
     ('add',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios', 'ios']),
-    ('add',     'arr', ['ss',  'tf',  'xrd', 'lio', 'ios', 'arr', 'arr']),
-    ('add',     'flt', ['ss',  'tf',  'xrd', 'lio', 'ios', 'arr', 'flt']),
+    ('add',     'arr', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'arr']),
+    ('add',     'flt', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('sub',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'ios', 'ss',  'ss' ]),
-    ('sub',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
-    ('sub',     'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'xrd']),
+    ('sub',     'ss',  ['ss',  'ss',  'frd', 'ss',  'ios', 'ss',  'ss' ]),
+    ('sub',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
+    ('sub',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('sub',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
     ('sub',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios', 'ios']),
-    ('sub',     'arr', ['ss',  'tf',  'xrd', 'lio', 'ios', 'arr', 'arr']),
-    ('sub',     'flt', ['ss',  'tf',  'xrd', 'lio', 'ios', 'arr', 'flt']),
+    ('sub',     'arr', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'arr']),
+    ('sub',     'flt', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('mul',     'ss',  ['ss',  'ss',  'xrd', 'ss',  'ios', 'ss',  'ss' ]),
-    ('mul',     'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
-    ('mul',     'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'frd']),
+    ('mul',     'ss',  ['ss',  'ss',  'frd', 'ss',  'ios', 'ss',  'ss' ]),
+    ('mul',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
+    ('mul',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('mul',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
     ('mul',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios', 'ios']),
-    ('mul',     'arr', ['ss',  'tf',  'xrd', 'lio', 'ios', 'arr', 'arr']),
+    ('mul',     'arr', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'arr']),
     ('mul',     'flt', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('truediv', 'ss',  ['xs',  'tf',  'xrd', 'xio', 'xos', 'xs',  'xs' ]),
+    ('truediv', 'ss',  ['xs',  'tf',  'frd', 'xio', 'xos', 'xs',  'xs' ]),
     ('truediv', 'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
-    ('truediv', 'frd', ['xrd', 'xrd', 'frd', 'xrd', 'E',   'xrd', 'frd']),
-    ('truediv', 'lio', ['xio', 'tf',  'xrd', 'xio', 'xio', 'xio', 'xio']),
+    ('truediv', 'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
+    ('truediv', 'lio', ['xio', 'tf',  'frd', 'xio', 'xio', 'xio', 'xio']),
     ('truediv', 'ios', ['xos', 'xos', 'E',   'xos', 'xos'  'xos', 'xos']),
-    ('truediv', 'arr', ['xs',  'tf',  'xrd', 'xio', 'xos', 'arr', 'arr']),
+    ('truediv', 'arr', ['xs',  'tf',  'frd', 'xio', 'xos', 'arr', 'arr']),
     ('truediv', 'flt', ['xs',  'tf',  'frd', 'xio', 'xos', 'arr', 'flt'])]
 
 # Now create list of the tests we actually want to run
@@ -147,9 +147,8 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
 # Note: tfx = non-proper transfer function, order(num) > order(den)
 #
 
-type_list = ['ss', 'tf', 'tfx', 'frd', 'lio', 'ios', 'arr', 'flt']
+type_list = ['ss',  'tf',  'tfx', 'frd', 'lio', 'ios', 'arr', 'flt']
 conversion_table = [
-    # L \ R ['ss',  'tf',  'tfx', 'frd', 'lio', 'ios', 'arr', 'flt'] 
     ('ss',  ['ss',  'ss',  'tf'   'frd', 'lio', 'ios', 'ss',  'ss' ]),
     ('tf',  ['tf',  'tf',  'tf'   'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('tfx', ['tf',  'tf',  'tf',  'frd', 'E',   'E',   'tf',  'tf' ]),
@@ -161,6 +160,7 @@ conversion_table = [
 
 @pytest.mark.skip(reason="future test; conversions not yet fully implemented")
 # @pytest.mark.parametrize("opname", ['add', 'sub', 'mul', 'truediv'])
+# @pytest.mark.parametrize("opname", ['add', 'sub', 'mul'])
 # @pytest.mark.parametrize("ltype", type_list)
 # @pytest.mark.parametrize("rtype", type_list)
 def test_binary_op_type_conversions(opname, ltype, rtype, sys_dict):
@@ -185,3 +185,9 @@ def test_binary_op_type_conversions(opname, ltype, rtype, sys_dict):
 
         # Print out what we are testing in case something goes wrong
         assert isinstance(result, type_dict[expected])
+
+        # Make sure that input, output, and state names make sense
+        assert len(result.input_labels) == result.ninputs
+        assert len(result.output_labels) == result.noutputs
+        if result.nstates is not None:
+            assert len(result.state_labels) == result.nstates

@@ -418,11 +418,11 @@ def test_dcgain_consistency():
     """Test to make sure that DC gain is consistently evaluated"""
     # Set up transfer function with pole at the origin
     sys_tf = ctrl.tf([1], [1, 0])
-    assert 0 in sys_tf.pole()
+    assert 0 in sys_tf.poles()
 
     # Set up state space system with pole at the origin
     sys_ss = ctrl.tf2ss(sys_tf)
-    assert 0 in sys_ss.pole()
+    assert 0 in sys_ss.poles()
 
     # Finite (real) numerator over 0 denominator => inf + nanj
     np.testing.assert_equal(
@@ -440,8 +440,8 @@ def test_dcgain_consistency():
 
     # Set up transfer function with pole, zero at the origin
     sys_tf = ctrl.tf([1, 0], [1, 0])
-    assert 0 in sys_tf.pole()
-    assert 0 in sys_tf.zero()
+    assert 0 in sys_tf.poles()
+    assert 0 in sys_tf.zeros()
 
     # Pole and zero at the origin should give nan + nanj for the response
     np.testing.assert_equal(
@@ -456,7 +456,7 @@ def test_dcgain_consistency():
         ctrl.tf2ss(ctrl.tf([1], [1, 0]))
 
     # Different systems give different representations => test accordingly
-    if 0 in sys_ss.pole() and 0 in sys_ss.zero():
+    if 0 in sys_ss.poles() and 0 in sys_ss.zeros():
         # Pole and zero at the origin => should get (nan + nanj)
         np.testing.assert_equal(
             sys_ss(0, warn_infinite=False), complex(np.nan, np.nan))
@@ -464,7 +464,7 @@ def test_dcgain_consistency():
             sys_ss(0j, warn_infinite=False), complex(np.nan, np.nan))
         np.testing.assert_equal(
             sys_ss.dcgain(), np.nan)
-    elif 0 in sys_ss.pole():
+    elif 0 in sys_ss.poles():
         # Pole at the origin, but zero elsewhere => should get (inf + nanj)
         np.testing.assert_equal(
             sys_ss(0, warn_infinite=False), complex(np.inf, np.nan))
@@ -479,11 +479,11 @@ def test_dcgain_consistency():
     # Pole with non-zero, complex numerator => inf + infj
     s = ctrl.tf('s')
     sys_tf = (s + 1) / (s**2 + 1)
-    assert 1j in sys_tf.pole()
+    assert 1j in sys_tf.poles()
 
     # Set up state space system with pole on imaginary axis
     sys_ss = ctrl.tf2ss(sys_tf)
-    assert 1j in sys_tf.pole()
+    assert 1j in sys_tf.poles()
 
     # Make sure we get correct response if evaluated at the pole
     np.testing.assert_equal(

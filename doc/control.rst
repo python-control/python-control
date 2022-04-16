@@ -83,8 +83,8 @@ Control system analysis
     margin
     stability_margins
     phase_crossover_frequencies
-    pole
-    zero
+    poles
+    zeros
     pzmap
     root_locus
     sisotool

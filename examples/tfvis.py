@@ -270,8 +270,8 @@ class Analysis:
 
         tfcn = self.tfi.get_tf()
         if (tfcn):
-            self.zeros = tfcn.zero()
-            self.poles = tfcn.pole()
+            self.zeros = tfcn.zeros()
+            self.poles = tfcn.poles()
             self.sys = tfcn
             self.redraw()
 
@@ -314,8 +314,8 @@ class Analysis:
         tfcn = self.tfi.get_tf()
 
         if (tfcn):
-            self.zeros = tfcn.zero()
-            self.poles = tfcn.pole()
+            self.zeros = tfcn.zeros()
+            self.poles = tfcn.poles()
             self.sys = tfcn
             self.redraw()
 

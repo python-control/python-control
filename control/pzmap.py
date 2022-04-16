@@ -41,7 +41,8 @@
 
 from numpy import real, imag, linspace, exp, cos, sin, sqrt
 from math import pi
-from .lti import LTI, isdtime, isctime
+from .lti import LTI
+from .namedio import isdtime, isctime
 from .grid import sgrid, zgrid, nogrid
 from . import config
 
@@ -104,8 +105,8 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     if not isinstance(sys, LTI):
         raise TypeError('Argument ``sys``: must be a linear system.')
 
-    poles = sys.pole()
-    zeros = sys.zero()
+    poles = sys.poles()
+    zeros = sys.zeros()
 
     if (plot):
         import matplotlib.pyplot as plt

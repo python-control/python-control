@@ -71,3 +71,16 @@ def slycot_check():
         except:
             slycot_installed = False
     return slycot_installed
+
+
+# Utility function to see if pandas is installed
+pandas_installed = None
+def pandas_check():
+    global pandas_installed
+    if pandas_installed is None:
+        try:
+            import pandas
+            pandas_installed = True
+        except:
+            pandas_installed = False
+    return pandas_installed

@@ -156,6 +156,11 @@ class FlatSystem(NonlinearIOSystem):
 
         # Save the length of the flat flag
 
+    def __str__(self):
+        return f"{NonlinearIOSystem.__str__(self)}\n\n" \
+            + f"Forward: {self.forward}\n" \
+            + f"Reverse: {self.reverse}"
+
     def forward(self, x, u, params={}):
 
         """Compute the flat flag given the states and input.

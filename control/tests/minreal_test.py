@@ -7,7 +7,7 @@ import numpy as np
 from scipy.linalg import eigvals
 import pytest
 
-from control import rss, ss, zero
+from control import rss, ss, zeros
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from itertools import permutations
@@ -64,8 +64,8 @@ class TestMinreal:
 
                         # Check that the zeros match
                         # Note: sorting doesn't work => have to do the hard way
-                        z1 = zero(s1)
-                        z2 = zero(s2)
+                        z1 = zeros(s1)
+                        z2 = zeros(s2)
 
                         # Start by making sure we have the same # of zeros
                         assert len(z1) == len(z2)

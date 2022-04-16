@@ -11,7 +11,7 @@ import control as ctrl
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
 from control.bdalg import feedback, append, connect
-from control.lti import zero, pole
+from control.lti import zeros, poles
 
 
 class TestFeedback:
@@ -188,52 +188,52 @@ class TestFeedback:
 
         # Series
         sys1_2 = ctrl.series(sys1, sys2)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_2)), [-4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_2)), [-3., -1.])
+        np.testing.assert_array_almost_equal(sort(poles(sys1_2)), [-4., -2.])
+        np.testing.assert_array_almost_equal(sort(zeros(sys1_2)), [-3., -1.])
 
         sys1_3 = ctrl.series(sys1, sys2, sys3)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_3)),
+        np.testing.assert_array_almost_equal(sort(poles(sys1_3)),
                                              [-6., -4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_3)),
+        np.testing.assert_array_almost_equal(sort(zeros(sys1_3)),
                                              [-5., -3., -1.])
 
         sys1_4 = ctrl.series(sys1, sys2, sys3, sys4)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_4)),
+        np.testing.assert_array_almost_equal(sort(poles(sys1_4)),
                                              [-8., -6., -4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_4)),
+        np.testing.assert_array_almost_equal(sort(zeros(sys1_4)),
                                              [-7., -5., -3., -1.])
 
         sys1_5 = ctrl.series(sys1, sys2, sys3, sys4, sys5)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_5)),
+        np.testing.assert_array_almost_equal(sort(poles(sys1_5)),
                                              [-8., -6., -4., -2., -0.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_5)),
+        np.testing.assert_array_almost_equal(sort(zeros(sys1_5)),
                                              [-9., -7., -5., -3., -1.])
 
         # Parallel
         sys1_2 = ctrl.parallel(sys1, sys2)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_2)), [-4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_2)),
-                                             sort(zero(sys1 + sys2)))
+        np.testing.assert_array_almost_equal(sort(poles(sys1_2)), [-4., -2.])
+        np.testing.assert_array_almost_equal(sort(zeros(sys1_2)),
+                                             sort(zeros(sys1 + sys2)))
 
         sys1_3 = ctrl.parallel(sys1, sys2, sys3)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_3)),
+        np.testing.assert_array_almost_equal(sort(poles(sys1_3)),
                                              [-6., -4., -2.])
-        np.testing.assert_array_almost_equal(sort(zero(sys1_3)),
-                                             sort(zero(sys1 + sys2 + sys3)))
+        np.testing.assert_array_almost_equal(sort(zeros(sys1_3)),
+                                             sort(zeros(sys1 + sys2 + sys3)))
 
         sys1_4 = ctrl.parallel(sys1, sys2, sys3, sys4)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_4)),
+        np.testing.assert_array_almost_equal(sort(poles(sys1_4)),
                                              [-8., -6., -4., -2.])
         np.testing.assert_array_almost_equal(
-            sort(zero(sys1_4)),
-            sort(zero(sys1 + sys2 + sys3 + sys4)))
+            sort(zeros(sys1_4)),
+            sort(zeros(sys1 + sys2 + sys3 + sys4)))
 
         sys1_5 = ctrl.parallel(sys1, sys2, sys3, sys4, sys5)
-        np.testing.assert_array_almost_equal(sort(pole(sys1_5)),
+        np.testing.assert_array_almost_equal(sort(poles(sys1_5)),
                                              [-8., -6., -4., -2., -0.])
         np.testing.assert_array_almost_equal(
-            sort(zero(sys1_5)),
-            sort(zero(sys1 + sys2 + sys3 + sys4 + sys5)))
+            sort(zeros(sys1_5)),
+            sort(zeros(sys1 + sys2 + sys3 + sys4 + sys5)))
 
     def testMimoSeries(self, tsys):
         """regression: bdalg.series reverses order of arguments"""

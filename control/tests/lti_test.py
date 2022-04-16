@@ -5,23 +5,44 @@ import pytest
 from .conftest import editsdefaults
 
 import control as ct
-from control import c2d, tf, tf2ss, NonlinearIOSystem
-from control.lti import (LTI, common_timebase, evalfr, damp, dcgain, isctime,
-                         isdtime, issiso, pole, timebaseEqual, zero)
+from control import c2d, tf, ss, tf2ss, NonlinearIOSystem
+from control.lti import LTI, evalfr, damp, dcgain, zeros, poles
+from control import common_timebase, isctime, isdtime, issiso, timebaseEqual
 from control.tests.conftest import slycotonly
 from control.exception import slycot_check
 
 class TestLTI:
+    @pytest.mark.parametrize("fun, args", [
+        [tf, (126, [-1, 42])],
+        [ss, ([[42]], [[1]], [[1]], 0)]
+    ])
+    def test_poles(self, fun, args):
+        sys = fun(*args)
+        np.testing.assert_allclose(sys.poles(), 42)
+        np.testing.assert_allclose(poles(sys), 42)
 
-    def test_pole(self):
-        sys = tf(126, [-1, 42])
-        np.testing.assert_allclose(sys.pole(), 42)
-        np.testing.assert_allclose(pole(sys), 42)
+        with pytest.warns(PendingDeprecationWarning):
+            pole_list = sys.pole()
+            assert pole_list == sys.poles()
 
-    def test_zero(self):
-        sys = tf([-1, 42], [1, 10])
-        np.testing.assert_allclose(sys.zero(), 42)
-        np.testing.assert_allclose(zero(sys), 42)
+        with pytest.warns(PendingDeprecationWarning):
+            pole_list = ct.pole(sys)
+            assert pole_list == sys.poles()
+
+    @pytest.mark.parametrize("fun, args", [
+        [tf, (126, [-1, 42])],
+        [ss, ([[42]], [[1]], [[1]], 0)]
+    ])
+    def test_zero(self, fun, args):
+        sys = fun(*args)
+        np.testing.assert_allclose(sys.zeros(), 42)
+        np.testing.assert_allclose(zeros(sys), 42)
+
+        with pytest.warns(PendingDeprecationWarning):
+            sys.zero()
+
+        with pytest.warns(PendingDeprecationWarning):
+            ct.zero(sys)
 
     def test_issiso(self):
         assert issiso(1)
@@ -267,7 +288,7 @@ class TestLTI:
             sys = fcn(ct.rss(2, 1, 1))
 
         with pytest.raises(ValueError, match="unknown squeeze value"):
-            sys.frequency_response([1], squeeze=1)
+            resp = sys.frequency_response([1], squeeze='siso')
         with pytest.raises(ValueError, match="unknown squeeze value"):
             sys([1j], squeeze='siso')
         with pytest.raises(ValueError, match="unknown squeeze value"):

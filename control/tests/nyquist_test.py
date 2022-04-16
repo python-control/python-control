@@ -19,11 +19,11 @@ pytestmark = pytest.mark.usefixtures("mplcleanup")
 # Utility function for counting unstable poles of open loop (P in FBS)
 def _P(sys, indent='right'):
     if indent == 'right':
-        return (sys.pole().real > 0).sum()
+        return (sys.poles().real > 0).sum()
     elif indent == 'left':
-        return (sys.pole().real >= 0).sum()
+        return (sys.poles().real >= 0).sum()
     elif indent == 'none':
-        if any(sys.pole().real == 0):
+        if any(sys.poles().real == 0):
             raise ValueError("indent must be left or right for imaginary pole")
     else:
         raise TypeError("unknown indent value")
@@ -31,7 +31,7 @@ def _P(sys, indent='right'):
 
 # Utility function for counting unstable poles of closed loop (Z in FBS)
 def _Z(sys):
-    return (sys.feedback().pole().real >= 0).sum()
+    return (sys.feedback().poles().real >= 0).sum()
 
 
 # Basic tests
@@ -308,6 +308,6 @@ if __name__ == "__main__":
     print("Unusual Nyquist plot")
     sys = ct.tf([1], [1, 3, 2]) * ct.tf([1], [1, 0, 1])
     plt.figure()
-    plt.title("Poles: %s" % np.array2string(sys.pole(), precision=2, separator=','))
+    plt.title("Poles: %s" % np.array2string(sys.poles(), precision=2, separator=','))
     count = ct.nyquist_plot(sys)
     assert _Z(sys) == count + _P(sys)

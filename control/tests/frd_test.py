@@ -15,6 +15,7 @@ from control.xferfcn import TransferFunction
 from control.frdata import FRD, _convert_to_FRD, FrequencyResponseData
 from control import bdalg, evalfr, freqplot
 from control.tests.conftest import slycotonly
+from control.exception import pandas_check
 
 
 class TestFRD:
@@ -478,3 +479,87 @@ Freq [rad/s]  Response
         omega = np.logspace(-1, 2, 10)
         with pytest.raises(TypeError, match="unrecognized keyword"):
             frd = FRD(h, omega, unknown=None)
+
+
+def test_named_signals():
+    ct.namedio.NamedIOSystem._idCounter = 0
+    h1 = TransferFunction([1], [1, 2, 2])
+    h2 = TransferFunction([1], [0.1, 1])
+    omega = np.logspace(-1, 2, 10)
+    f1 = FRD(h1, omega)
+    f2 = FRD(h2, omega)
+
+    # Make sure that systems were properly named
+    assert f1.name == 'sys[2]'
+    assert f2.name == 'sys[3]'
+    assert f1.ninputs == 1
+    assert f1.input_labels == ['u[0]']
+    assert f1.noutputs == 1
+    assert f1.output_labels == ['y[0]']
+
+    # Change names
+    f1 = FRD(h1, omega, name='mysys', inputs='u0', outputs='y0')
+    assert f1.name == 'mysys'
+    assert f1.ninputs == 1
+    assert f1.input_labels == ['u0']
+    assert f1.noutputs == 1
+    assert f1.output_labels == ['y0']
+
+
+@pytest.mark.skipif(not pandas_check(), reason="pandas not installed")
+def test_to_pandas():
+    # Create a SISO frequency response
+    h1 = TransferFunction([1], [1, 2, 2])
+    omega = np.logspace(-1, 2, 10)
+    resp = FRD(h1, omega)
+
+    # Convert to pandas
+    df = resp.to_pandas()
+
+    # Check to make sure the data make senses
+    np.testing.assert_equal(df['omega'], resp.omega)
+    np.testing.assert_equal(df['H_{y[0], u[0]}'], resp.fresp[0, 0])
+
+
+def test_frequency_response():
+    # Create an SISO frequence response
+    sys = ct.rss(2, 2, 2)
+    omega = np.logspace(-2, 2, 20)
+    resp = ct.frequency_response(sys, omega)
+    eval = sys(omega*1j)
+
+    # Make sure we get the right answers in various ways
+    np.testing.assert_equal(resp.magnitude, np.abs(eval))
+    np.testing.assert_equal(resp.phase, np.angle(eval))
+    np.testing.assert_equal(resp.omega, omega)
+
+    # Make sure that we can change the properties of the response
+    sys = ct.rss(2, 1, 1)
+    resp_default = ct.frequency_response(sys, omega)
+    mag_default, phase_default, omega_default = resp_default
+    assert mag_default.ndim == 1
+    assert phase_default.ndim == 1
+    assert omega_default.ndim == 1
+    assert mag_default.shape[0] == omega_default.shape[0]
+    assert phase_default.shape[0] == omega_default.shape[0]
+
+    resp_nosqueeze = ct.frequency_response(sys, omega, squeeze=False)
+    mag_nosqueeze, phase_nosqueeze, omega_nosqueeze = resp_nosqueeze
+    assert mag_nosqueeze.ndim == 3
+    assert phase_nosqueeze.ndim == 3
+    assert omega_nosqueeze.ndim == 1
+    assert mag_nosqueeze.shape[2] == omega_nosqueeze.shape[0]
+    assert phase_nosqueeze.shape[2] == omega_nosqueeze.shape[0]
+
+    # Try changing the response
+    resp_def_nosq = resp_default(squeeze=False)
+    mag_def_nosq, phase_def_nosq, omega_def_nosq = resp_def_nosq
+    assert mag_def_nosq.shape == mag_nosqueeze.shape
+    assert phase_def_nosq.shape == phase_nosqueeze.shape
+    assert omega_def_nosq.shape == omega_nosqueeze.shape
+
+    resp_nosq_sq = resp_nosqueeze(squeeze=True)
+    mag_nosq_sq, phase_nosq_sq, omega_nosq_sq = resp_nosq_sq
+    assert mag_nosq_sq.shape == mag_default.shape
+    assert phase_nosq_sq.shape == phase_default.shape
+    assert omega_nosq_sq.shape == omega_default.shape

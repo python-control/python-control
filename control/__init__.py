@@ -55,6 +55,7 @@ from .lti import *
 from .margins import *
 from .mateqn import *
 from .modelsimp import *
+from .namedio import *
 from .nichols import *
 from .phaseplot import *
 from .pzmap import *

@@ -378,3 +378,29 @@ class TestFlatSys:
         with pytest.raises(TypeError, match="unrecognized keyword"):
             traj_method = fs.point_to_point(
                 flat_sys, timepts, x0, u0, xf, uf, solve_ivp_method=None)
+
+    @pytest.mark.parametrize(
+        "xf, uf, Tf",
+        [([1, 0], [0], 2),
+         ([0, 1], [0], 3),
+         ([1, 1], [1], 4)])
+    def test_response(self, xf, uf, Tf):
+        # Define a second order integrator
+        sys = ct.StateSpace([[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], 0)
+        flatsys = fs.LinearFlatSystem(sys)
+
+        # Define the basis set
+        poly = fs.PolyFamily(6)
+
+        x1, u1, = [0, 0], [0]
+        traj = fs.point_to_point(flatsys, Tf, x1, u1, xf, uf, basis=poly)
+
+        # Compute the response the regular way
+        T = np.linspace(0, Tf, 10)
+        x, u = traj.eval(T)
+
+        # Recompute using response()
+        response = traj.response(T, squeeze=False)
+        np.testing.assert_equal(T, response.time)
+        np.testing.assert_equal(u, response.inputs)
+        np.testing.assert_equal(x, response.states)

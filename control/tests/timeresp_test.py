@@ -9,7 +9,7 @@ import scipy as sp
 
 import control as ct
 from control import StateSpace, TransferFunction, c2d, isctime, ss2tf, tf2ss
-from control.exception import slycot_check
+from control.exception import slycot_check, pandas_check
 from control.tests.conftest import slycotonly
 from control.timeresp import (_default_time_vector, _ideal_tfinal_and_dt,
                               forced_response, impulse_response,
@@ -875,7 +875,7 @@ class TestTimeresp:
                 kw['U'] = np.vstack([np.sin(t) for i in range(sys.ninputs)])
         elif fun == forced_response and isctime(sys, strict=True):
             pytest.skip("No continuous forced_response without time vector.")
-        if hasattr(sys, "nstates"):
+        if hasattr(sys, "nstates") and sys.nstates is not None:
             kw['X0'] = np.arange(sys.nstates) + 1
         if sys.ninputs > 1 and fun in [step_response, impulse_response]:
             kw['input'] = 1
@@ -1180,3 +1180,55 @@ class TestTimeresp:
         assert t.shape == (T.size, )
         assert y.shape == ysh_no
         assert x.shape == (T.size, sys.nstates)
+
+
+@pytest.mark.skipif(not pandas_check(), reason="pandas not installed")
+def test_to_pandas():
+    # Create a SISO time response
+    sys = ct.rss(2, 1, 1)
+    timepts = np.linspace(0, 10, 10)
+    resp = ct.input_output_response(sys, timepts, 1)
+
+    # Convert to pandas
+    df = resp.to_pandas()
+
+    # Check to make sure the data make senses
+    np.testing.assert_equal(df['time'], resp.time)
+    np.testing.assert_equal(df['u[0]'], resp.inputs)
+    np.testing.assert_equal(df['y[0]'], resp.outputs)
+    np.testing.assert_equal(df['x[0]'], resp.states[0])
+    np.testing.assert_equal(df['x[1]'], resp.states[1])
+
+    # Create a MIMO time response
+    sys = ct.rss(2, 2, 1)
+    resp = ct.input_output_response(sys, timepts, np.sin(timepts))
+    df = resp.to_pandas()
+    np.testing.assert_equal(df['time'], resp.time)
+    np.testing.assert_equal(df['u[0]'], resp.inputs[0])
+    np.testing.assert_equal(df['y[0]'], resp.outputs[0])
+    np.testing.assert_equal(df['y[1]'], resp.outputs[1])
+    np.testing.assert_equal(df['x[0]'], resp.states[0])
+    np.testing.assert_equal(df['x[1]'], resp.states[1])
+
+    # Change the time points
+    sys = ct.rss(2, 1, 1)
+    T = np.linspace(0, timepts[-1]/2, timepts.size * 2)
+    resp = ct.input_output_response(sys, timepts, np.sin(timepts), t_eval=T)
+    df = resp.to_pandas()
+    np.testing.assert_equal(df['time'], resp.time)
+    np.testing.assert_equal(df['u[0]'], resp.inputs)
+    np.testing.assert_equal(df['y[0]'], resp.outputs)
+    np.testing.assert_equal(df['x[0]'], resp.states[0])
+    np.testing.assert_equal(df['x[1]'], resp.states[1])
+
+
+@pytest.mark.skipif(pandas_check(), reason="pandas installed")
+def test_no_pandas():
+    # Create a SISO time response
+    sys = ct.rss(2, 1, 1)
+    timepts = np.linspace(0, 10, 10)
+    resp = ct.input_output_response(sys, timepts, 1)
+
+    # Convert to pandas
+    with pytest.raises(ImportError, match="pandas"):
+        df = resp.to_pandas()

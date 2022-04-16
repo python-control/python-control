@@ -37,6 +37,7 @@
 # SUCH DAMAGE.
 
 import numpy as np
+from ..timeresp import TimeResponseData
 
 class SystemTrajectory:
     """Class representing a system trajectory.
@@ -117,3 +118,75 @@ class SystemTrajectory:
                 self.system.reverse(zflag, self.params)
 
         return xd, ud
+
+    # Return the system trajectory as a TimeResponseData object
+    def response(self, tlist, transpose=False, return_x=False, squeeze=None):
+        """Return the trajectory of a system as a TimeResponseData object
+
+        Evaluate the trajectory at a list of time points, returning the state
+        and input vectors for the trajectory:
+
+            response = traj.response(tlist)
+            time, yd, ud = response.time, response.outputs, response.inputs
+
+        Parameters
+        ----------
+        tlist : 1D array
+            List of times to evaluate the trajectory.
+
+        transpose : bool, optional
+            If True, transpose all input and output arrays (for backward
+            compatibility with MATLAB and :func:`scipy.signal.lsim`).
+            Default value is False.
+
+        return_x : bool, optional
+            If True, return the state vector when assigning to a tuple
+            (default = False).  See :func:`forced_response` for more details.
+
+        squeeze : bool, optional
+            By default, if a system is single-input, single-output (SISO) then
+            the output response is returned as a 1D array (indexed by time).
+            If squeeze=True, remove single-dimensional entries from the shape
+            of the output even if the system is not SISO. If squeeze=False,
+            keep the output as a 3D array (indexed by the output, input, and
+            time) even if the system is SISO. The default value can be set
+            using config.defaults['control.squeeze_time_response'].
+
+        Returns
+        -------
+        results : TimeResponseData
+            Time response represented as a :class:`TimeResponseData` object
+            containing the following properties:
+
+            * time (array): Time values of the output.
+
+            * outputs (array): Response of the system.  If the system is SISO
+              and squeeze is not True, the array is 1D (indexed by time).  If
+              the system is not SISO or ``squeeze`` is False, the array is 3D
+              (indexed by the output, trace, and time).
+
+            * states (array): Time evolution of the state vector, represented
+              as either a 2D array indexed by state and time (if SISO) or a 3D
+              array indexed by state, trace, and time.  Not affected by
+              ``squeeze``.
+
+            * inputs (array): Input(s) to the system, indexed in the same
+              manner as ``outputs``.
+
+            The return value of the system can also be accessed by assigning
+            the function to a tuple of length 2 (time, output) or of length 3
+            (time, output, state) if ``return_x`` is ``True``.
+
+        """
+        # Compute the state and input response using the eval function
+        sys = self.system
+        xout, uout = self.eval(tlist)
+        yout = np.array([
+            sys.output(tlist[i], xout[:, i], uout[:, i])
+            for i in range(len(tlist))]).transpose()
+
+        return TimeResponseData(
+            tlist, yout, xout, uout, issiso=sys.issiso(),
+            input_labels=sys.input_labels, output_labels=sys.output_labels,
+            state_labels=sys.state_labels,
+            transpose=transpose, return_x=return_x, squeeze=squeeze)

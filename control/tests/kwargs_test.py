@@ -99,7 +99,9 @@ def test_unrecognized_kwargs():
         [control.summing_junction, (2,), {}],
         [control.tf, ([1], [1, 1]), {}],
         [control.tf2io, (control.tf([1], [1, 1]),), {}],
-        [control.InputOutputSystem, (1, 1, 1), {}],
+        [control.tf2ss, (control.tf([1], [1, 1]),), {}],
+        [control.InputOutputSystem, (),
+         {'inputs': 1, 'outputs': 1, 'states': 1}],
         [control.InputOutputSystem.linearize, (sys, 0, 0), {}],
         [control.StateSpace, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}],
         [control.TransferFunction, ([1], [1, 1]), {}],
@@ -113,18 +115,23 @@ def test_unrecognized_kwargs():
         with pytest.raises(TypeError, match="unrecognized keyword"):
             function(*args, **kwargs, unknown=None)
 
+        # If we opened any figures, close them to avoid matplotlib warnings
+        if plt.gca():
+            plt.close('all')
+
 
 def test_matplotlib_kwargs():
     # Create a SISO system for use in parameterized tests
     sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
+    ctl = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
 
     table = [
         [control.bode, (sys, ), {}],
         [control.bode_plot, (sys, ), {}],
         [control.describing_function_plot,
          (sys, control.descfcn.saturation_nonlinearity(1), [1, 2, 3, 4]), {}],
-        [control.gangof4, (sys, sys), {}],
-        [control.gangof4_plot, (sys, sys), {}],
+        [control.gangof4, (sys, ctl), {}],
+        [control.gangof4_plot, (sys, ctl), {}],
         [control.nyquist, (sys, ), {}],
         [control.nyquist_plot, (sys, ), {}],
         [control.singular_values_plot, (sys, ), {}],
@@ -138,7 +145,7 @@ def test_matplotlib_kwargs():
         with pytest.raises(AttributeError, match="has no property"):
             function(*args, **kwargs, unknown=None)
 
-        # If we opened any figures, close them
+        # If we opened any figures, close them to avoid matplotlib warnings
         if plt.gca():
             plt.close('all')
 
@@ -157,7 +164,7 @@ kwarg_unittest = {
     'bode_plot': test_matplotlib_kwargs,
     'describing_function_plot': test_matplotlib_kwargs,
     'dlqe': test_unrecognized_kwargs,
-    'dlqr': statefbk_test.TestStatefbk.test_lqr_errors,
+    'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
     'gangof4': test_matplotlib_kwargs,
     'gangof4_plot': test_matplotlib_kwargs,
@@ -165,10 +172,10 @@ kwarg_unittest = {
     'interconnect': interconnect_test.test_interconnect_exceptions,
     'linearize': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
-    'lqr': statefbk_test.TestStatefbk.test_lqr_errors,
+    'lqr': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
-    'pzmap': test_matplotlib_kwargs,
+    'pzmap': test_unrecognized_kwargs,
     'rlocus': test_unrecognized_kwargs,
     'root_locus': test_unrecognized_kwargs,
     'rss': test_unrecognized_kwargs,
@@ -180,6 +187,7 @@ kwarg_unittest = {
     'summing_junction': interconnect_test.test_interconnect_exceptions,
     'tf': test_unrecognized_kwargs,
     'tf2io' : test_unrecognized_kwargs,
+    'tf2ss' : test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'FrequencyResponseData.__init__':

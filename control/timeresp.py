@@ -79,7 +79,8 @@ from scipy.linalg import eig, eigvals, matrix_balance, norm
 from copy import copy
 
 from . import config
-from .lti import isctime, isdtime
+from .exception import pandas_check
+from .namedio import isctime, isdtime
 from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
 from .xferfcn import TransferFunction
 
@@ -462,7 +463,7 @@ class TimeResponseData:
         # Update any keywords that we were passed
         response.transpose = kwargs.pop('transpose', self.transpose)
         response.squeeze = kwargs.pop('squeeze', self.squeeze)
-        response.return_x = kwargs.pop('return_x', self.squeeze)
+        response.return_x = kwargs.pop('return_x', self.return_x)
 
         # Check for new labels
         input_labels = kwargs.pop('input_labels', None)
@@ -637,6 +638,23 @@ class TimeResponseData:
     # Implement (thin) len to emulate legacy testing interface
     def __len__(self):
         return 3 if self.return_x else 2
+
+    # Convert to pandas
+    def to_pandas(self):
+        if not pandas_check():
+            ImportError('pandas not installed')
+        import pandas
+
+        # Create a dict for setting up the data frame
+        data = {'time': self.time}
+        data.update(
+            {name: self.u[i] for i, name in enumerate(self.input_labels)})
+        data.update(
+            {name: self.y[i] for i, name in enumerate(self.output_labels)})
+        data.update(
+            {name: self.x[i] for i, name in enumerate(self.state_labels)})
+
+        return pandas.DataFrame(data)
 
 
 # Process signal labels

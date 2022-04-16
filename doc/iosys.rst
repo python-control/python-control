@@ -13,25 +13,22 @@ The dynamics of the system can be in continuous or discrete time.  To simulate
 an input/output system, use the :func:`~control.input_output_response`
 function::
 
-  t, y = input_output_response(io_sys, T, U, X0, params)
+  t, y = ct.input_output_response(io_sys, T, U, X0, params)
 
 An input/output system can be linearized around an equilibrium point to obtain
 a :class:`~control.StateSpace` linear system.  Use the
 :func:`~control.find_eqpt` function to obtain an equilibrium point and the
 :func:`~control.linearize` function to linearize about that equilibrium point::
 
-  xeq, ueq = find_eqpt(io_sys, X0, U0)
-  ss_sys = linearize(io_sys, xeq, ueq)
+  xeq, ueq = ct.find_eqpt(io_sys, X0, U0)
+  ss_sys = ct.linearize(io_sys, xeq, ueq)
 
-Input/output systems can be created from state space LTI systems by using the
-:class:`~control.LinearIOSystem` class`::
-
-  io_sys = LinearIOSystem(ss_sys)
-
-Nonlinear input/output systems can be created using the
-:class:`~control.NonlinearIOSystem` class, which requires the definition of an
-update function (for the right hand side of the differential or different
-equation) and and output function (computes the outputs from the state)::
+Input/output systems are automatically created for state space LTI systems
+when using the :func:`ss` function.  Nonlinear input/output systems can be
+created using the :class:`~control.NonlinearIOSystem` class, which requires
+the definition of an update function (for the right hand side of the
+differential or different equation) and an output function (computes the
+outputs from the state)::
 
   io_sys = NonlinearIOSystem(updfcn, outfcn, inputs=M, outputs=P, states=N)
 
@@ -64,7 +61,7 @@ We begin by defining the dynamics of the system
 
 .. code-block:: python
 
-  import control
+  import control as ct
   import numpy as np
   import matplotlib.pyplot as plt
 
@@ -94,7 +91,7 @@ We now create an input/output system using these dynamics:
 
 .. code-block:: python
 
-  io_predprey = control.NonlinearIOSystem(
+  io_predprey = ct.NonlinearIOSystem(
       predprey_rhs, None, inputs=('u'), outputs=('H', 'L'),
       states=('H', 'L'), name='predprey')
 
@@ -110,7 +107,7 @@ of the system:
   T = np.linspace(0, 70, 500)   # Simulation 70 years of time
   
   # Simulate the system
-  t, y = control.input_output_response(io_predprey, T, 0, X0)
+  t, y = ct.input_output_response(io_predprey, T, 0, X0)
   
   # Plot the response
   plt.figure(1)
@@ -125,9 +122,9 @@ system and computing the linearization about that point.
 
 .. code-block:: python
 
-  eqpt = control.find_eqpt(io_predprey, X0, 0)
+  eqpt = ct.find_eqpt(io_predprey, X0, 0)
   xeq = eqpt[0]                         # choose the nonzero equilibrium point
-  lin_predprey = control.linearize(io_predprey, xeq, 0)
+  lin_predprey = ct.linearize(io_predprey, xeq, 0)
 
 We next compute a controller that stabilizes the equilibrium point using
 eigenvalue placement and computing the feedforward gain using the number of
@@ -135,7 +132,7 @@ lynxes as the desired output (following FBS2e, Example 7.5):
 
 .. code-block:: python
 
-  K = control.place(lin_predprey.A, lin_predprey.B, [-0.1, -0.2])
+  K = ct.place(lin_predprey.A, lin_predprey.B, [-0.1, -0.2])
   A, B = lin_predprey.A, lin_predprey.B
   C = np.array([[0, 1]])                # regulated output = number of lynxes
   kf = -1/(C @ np.linalg.inv(A - B @ K) @ B)
@@ -147,7 +144,7 @@ constructed using the `~control.ios.NonlinearIOSystem` class:
 
 .. code-block:: python
 
-  io_controller = control.NonlinearIOSystem(
+  io_controller = ct.NonlinearIOSystem(
     None,
     lambda t, x, u, params: -K @ (u[1:] - xeq) + kf * (u[0] - xeq[1]),
     inputs=('Ld', 'u1', 'u2'), outputs=1, name='control')
@@ -161,7 +158,7 @@ function:
 
 .. code-block:: python
 
-  io_closed = control.interconnect(
+  io_closed = ct.interconnect(
     [io_predprey, io_controller],	# systems
     connections=[
       ['predprey.u', 'control.y[0]'],
@@ -177,7 +174,7 @@ Finally, we simulate the closed loop system:
 .. code-block:: python
 
   # Simulate the system
-  t, y = control.input_output_response(io_closed, T, 30, [15, 20])
+  t, y = ct.input_output_response(io_closed, T, 30, [15, 20])
   
   # Plot the response
   plt.figure(2)
@@ -245,10 +242,10 @@ interconnecting systems, especially when combined with the
 :func:`~control.summing_junction` function.  For example, the following code
 will create a unity gain, negative feedback system::
 
-  P = control.tf2io(control.tf(1, [1, 0]), inputs='u', outputs='y')
-  C = control.tf2io(control.tf(10, [1, 1]), inputs='e', outputs='u')
-  sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
-  T = control.interconnect([P, C, sumblk], inplist='r', outlist='y')
+  P = ct.tf2io([1], [1, 0], inputs='u', outputs='y')
+  C = ct.tf2io([10], [1, 1], inputs='e', outputs='u')
+  sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
+  T = ct.interconnect([P, C, sumblk], inplist='r', outlist='y')
 
 If a signal name appears in multiple outputs then that signal will be summed
 when it is interconnected.  Similarly, if a signal name appears in multiple

@@ -45,7 +45,7 @@ import numpy as np
 import warnings
 from .exception import ControlSlycot, ControlMIMONotImplemented, \
     ControlDimension
-from .lti import isdtime, isctime
+from .namedio import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
 
@@ -354,7 +354,7 @@ def minreal(sys, tol=None, verbose=True):
     sysr = sys.minreal(tol)
     if verbose:
         print("{nstates} states have been removed from the model".format(
-                nstates=len(sys.pole()) - len(sysr.pole())))
+                nstates=len(sys.poles()) - len(sysr.poles())))
     return sysr
 
 

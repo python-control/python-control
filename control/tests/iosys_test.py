@@ -130,7 +130,8 @@ class TestIOSys:
         print(ios_linearized)
 
     @noscipy0
-    def test_nonlinear_iosys(self, tsys):
+    @pytest.mark.parametrize("ss", [ios.NonlinearIOSystem, ct.ss])
+    def test_nonlinear_iosys(self, tsys, ss):
         # Create a simple nonlinear I/O system
         nlsys = ios.NonlinearIOSystem(predprey)
         T = tsys.T
@@ -239,9 +240,9 @@ class TestIOSys:
     def test_connect(self, tsys):
         # Define a couple of (linear) systems to interconnection
         linsys1 = tsys.siso_linsys
-        iosys1 = ios.LinearIOSystem(linsys1)
+        iosys1 = ios.LinearIOSystem(linsys1, name='iosys1')
         linsys2 = tsys.siso_linsys
-        iosys2 = ios.LinearIOSystem(linsys2)
+        iosys2 = ios.LinearIOSystem(linsys2, name='iosys2')
 
         # Connect systems in different ways and compare to StateSpace
         linsys_series = linsys2 * linsys1
@@ -407,8 +408,8 @@ class TestIOSys:
         lnios = ios.LinearIOSystem(linsys)
         nlios =  ios.NonlinearIOSystem(None, \
             lambda t, x, u, params: u*u, inputs=1, outputs=1)
-        nlios1 = nlios.copy()
-        nlios2 = nlios.copy()
+        nlios1 = nlios.copy(name='nlios1')
+        nlios2 = nlios.copy(name='nlios2')
 
         # Set up parameters for simulation
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -473,8 +474,8 @@ class TestIOSys:
     def test_summer(self, tsys):
         # Construct a MIMO system for testing
         linsys = tsys.mimo_linsys1
-        linio1 = ios.LinearIOSystem(linsys)
-        linio2 = ios.LinearIOSystem(linsys)
+        linio1 = ios.LinearIOSystem(linsys, name='linio1')
+        linio2 = ios.LinearIOSystem(linsys, name='linio2')
 
         linsys_parallel = linsys + linsys
         iosys_parallel = linio1 + linio2
@@ -1042,8 +1043,12 @@ class TestIOSys:
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
         ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        ct.namedio._NamedIOSystem._idCounter = 0
-        sys = ct.LinearIOSystem(tsys.mimo_linsys1)
+
+        # Create a system with a known ID
+        ct.namedio.NamedIOSystem._idCounter = 0
+        sys = ct.ss(
+            tsys.mimo_linsys1.A, tsys.mimo_linsys1.B,
+            tsys.mimo_linsys1.C, tsys.mimo_linsys1.D)
 
         assert sys.name == "sys[0]"
         assert sys.copy().name == "copy of sys[0]"
@@ -1093,7 +1098,7 @@ class TestIOSys:
 
         # Same system conflict
         with pytest.warns(UserWarning):
-            unnamedsys1 * unnamedsys1
+            namedsys * namedsys
 
     @pytest.mark.usefixtures("editsdefaults")
     def test_signals_naming_convention_0_8_4(self, tsys):
@@ -1106,8 +1111,13 @@ class TestIOSys:
 
         ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
         ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        ct.namedio._NamedIOSystem._idCounter = 0
-        sys = ct.LinearIOSystem(tsys.mimo_linsys1)
+
+        # Create a system with a known ID
+        ct.namedio.NamedIOSystem._idCounter = 0
+        sys = ct.ss(
+            tsys.mimo_linsys1.A, tsys.mimo_linsys1.B,
+            tsys.mimo_linsys1.C, tsys.mimo_linsys1.D)
+
         for statename in ["x[0]", "x[1]"]:
             assert statename in sys.state_index
         for inputname in ["u[0]", "u[1]"]:
@@ -1154,9 +1164,9 @@ class TestIOSys:
 
         # Same system conflict
         with pytest.warns(UserWarning):
-            same_name_series = unnamedsys * unnamedsys
-            assert "sys[1].x[0]" in same_name_series.state_index
-            assert "copy of sys[1].x[0]" in same_name_series.state_index
+            same_name_series = namedsys * namedsys
+            assert "namedsys.x0" in same_name_series.state_index
+            assert "copy of namedsys.x0" in same_name_series.state_index
 
     def test_named_signals_linearize_inconsistent(self, tsys):
         """Mare sure that providing inputs or outputs not consistent with
@@ -1206,13 +1216,13 @@ class TestIOSys:
 
     def test_lineariosys_statespace(self, tsys):
         """Make sure that a LinearIOSystem is also a StateSpace object"""
-        iosys_siso = ct.LinearIOSystem(tsys.siso_linsys)
-        iosys_siso2 = ct.LinearIOSystem(tsys.siso_linsys)
+        iosys_siso = ct.LinearIOSystem(tsys.siso_linsys, name='siso')
+        iosys_siso2 = ct.LinearIOSystem(tsys.siso_linsys, name='siso2')
         assert isinstance(iosys_siso, ct.StateSpace)
 
         # Make sure that state space functions work for LinearIOSystems
         np.testing.assert_allclose(
-            iosys_siso.pole(), tsys.siso_linsys.pole())
+            iosys_siso.poles(), tsys.siso_linsys.poles())
         omega = np.logspace(.1, 10, 100)
         mag_io, phase_io, omega_io = iosys_siso.frequency_response(omega)
         mag_ss, phase_ss, omega_ss = tsys.siso_linsys.frequency_response(omega)
@@ -1390,7 +1400,7 @@ class TestIOSys:
                                       name="sys")
 
         # Duplicate objects
-        with pytest.warns(UserWarning, match="Duplicate object"):
+        with pytest.warns(UserWarning, match="duplicate object"):
             ios_series = nlios * nlios
 
         # Nonduplicate objects
@@ -1398,7 +1408,7 @@ class TestIOSys:
         ct.config.use_numpy_matrix(False)       # np.matrix deprecated
         nlios1 = nlios.copy()
         nlios2 = nlios.copy()
-        with pytest.warns(UserWarning, match="Duplicate name"):
+        with pytest.warns(UserWarning, match="duplicate name"):
             ios_series = nlios1 * nlios2
             assert "copy of sys_1.x[0]" in ios_series.state_index.keys()
             assert "copy of sys.x[0]" in ios_series.state_index.keys()
@@ -1412,7 +1422,7 @@ class TestIOSys:
                                        lambda t, x, u, params: u * u,
                                        inputs=1, outputs=1, name="sys")
 
-        with pytest.warns(UserWarning, match="Duplicate name"):
+        with pytest.warns(UserWarning, match="duplicate name"):
             ct.InterconnectedSystem([nlios1, iosys_siso, nlios2],
                                     inputs=0, outputs=0, states=0)
 
@@ -1711,6 +1721,7 @@ def test_interconnect_unused_output():
                             outputs=['y'],
                             ignore_outputs=['v'])
 
+
 def test_input_output_broadcasting():
     # Create a system, time vector, and noisy input
     sys = ct.rss(6, 2, 3)
@@ -1752,6 +1763,7 @@ def test_input_output_broadcasting():
         resp_bad = ct.input_output_response(
             sys, T, (U[0, :], U[:2, :-1]), [X0, P0])
 
+
 def test_nonuniform_timepts():
     """Test non-uniform time points for simulations"""
     sys = ct.LinearIOSystem(ct.rss(2, 1, 1))
@@ -1773,3 +1785,77 @@ def test_nonuniform_timepts():
     t_even, y_even = ct.input_output_response(
         sys, noufpts, nonunif, t_eval=unifpts)
     np.testing.assert_almost_equal(y_unif, y_even, decimal=6)
+
+
+def test_ss_nonlinear():
+    """Test ss() for creating nonlinear systems"""
+    secord = ct.ss(secord_update, secord_output, inputs='u', outputs='y',
+                   states = ['x1', 'x2'], name='secord')
+    assert secord.name == 'secord'
+    assert secord.input_labels == ['u']
+    assert secord.output_labels == ['y']
+    assert secord.state_labels == ['x1', 'x2']
+
+    # Make sure we get the same answer for simulations
+    T = np.linspace(0, 10, 100)
+    U = np.sin(T)
+    X0 = np.array([1, -1])
+    secord_nlio = ct.NonlinearIOSystem(
+        secord_update, secord_output, inputs=1, outputs=1, states=2)
+    ss_response = ct.input_output_response(secord, T, U, X0)
+    io_response = ct.input_output_response(secord_nlio, T, U, X0)
+    np.testing.assert_almost_equal(ss_response.time, io_response.time)
+    np.testing.assert_almost_equal(ss_response.inputs, io_response.inputs)
+    np.testing.assert_almost_equal(ss_response.outputs, io_response.outputs)
+
+    # Make sure that optional keywords are allowed
+    secord = ct.ss(secord_update, secord_output, dt=True)
+    assert ct.isdtime(secord)
+
+    # Make sure that state space keywords are flagged
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.ss(secord_update, remove_useless_states=True)
+
+
+def test_rss():
+    # Basic call, with no arguments
+    sys = ct.rss()
+    assert sys.ninputs == 1
+    assert sys.noutputs == 1
+    assert sys.nstates == 1
+    assert sys.dt == 0
+    assert np.all(np.real(sys.poles()) < 0)
+
+    # Set the timebase explicitly
+    sys = ct.rss(inputs=2, outputs=3, states=4, dt=None, name='sys')
+    assert sys.name == 'sys'
+    assert sys.ninputs == 2
+    assert sys.noutputs == 3
+    assert sys.nstates == 4
+    assert sys.dt == None
+    assert np.all(np.real(sys.poles()) < 0)
+
+    # Discrete time
+    sys = ct.rss(inputs=['a', 'b'], outputs=1, states=1, dt=True)
+    assert sys.ninputs == 2
+    assert sys.input_labels == ['a', 'b']
+    assert sys.noutputs == 1
+    assert sys.nstates == 1
+    assert sys.dt == True
+    assert np.all(np.abs(sys.poles()) < 1)
+
+    # Call drss directly
+    sys = ct.drss(inputs=['a', 'b'], outputs=1, states=1, dt=True)
+    assert sys.ninputs == 2
+    assert sys.input_labels == ['a', 'b']
+    assert sys.noutputs == 1
+    assert sys.nstates == 1
+    assert sys.dt == True
+    assert np.all(np.abs(sys.poles()) < 1)
+
+    with pytest.raises(ValueError, match="continuous timebase"):
+        sys = ct.drss(2, 1, 1, dt=0)
+
+    with pytest.warns(UserWarning, match="may be interpreted as continuous"):
+        sys = ct.drss(2, 1, 1, dt=None)
+        assert np.all(np.abs(sys.poles()) < 1)
