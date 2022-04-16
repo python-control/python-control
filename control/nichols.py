@@ -51,6 +51,8 @@ nichols.nichols_grid
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.transforms
+
 from .ctrlutil import unwrap
 from .freqplot import _default_frequency_range
 from . import config
@@ -119,7 +121,18 @@ def nichols_plot(sys_list, omega=None, grid=None):
         nichols_grid()
 
 
-def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
+def _inner_extents(ax):
+    # intersection of data and view extents
+    # if intersection empty, return view extents
+    _inner = matplotlib.transforms.Bbox.intersection(ax.viewLim, ax.dataLim)
+    if _inner is None:
+        return ax.ViewLim.extents
+    else:
+        return _inner.extents
+
+
+def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
+                 label_cl_phases=True):
     """Nichols chart grid
 
     Plots a Nichols chart grid on the current axis, or creates a new chart
@@ -136,8 +149,14 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
     line_style : string, optional
         :doc:`Matplotlib linestyle \
             <matplotlib:gallery/lines_bars_and_markers/linestyles>`
-
+    ax : matplotlib.axes.Axes, optional
+        Axes to add grid to.  If ``None``, use ``plt.gca()``.
+    label_cl_phases: bool, optional
+        If True, closed-loop phase lines will be labelled.
     """
+    if ax is None:
+        ax = plt.gca()
+
     # Default chart size
     ol_phase_min = -359.99
     ol_phase_max = 0.0
@@ -145,8 +164,8 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
     ol_mag_max = default_ol_mag_max = 50.0
 
     # Find bounds of the current dataset, if there is one.
-    if plt.gcf().gca().has_data():
-        ol_phase_min, ol_phase_max, ol_mag_min, ol_mag_max = plt.axis()
+    if ax.has_data():
+        ol_phase_min, ol_mag_min, ol_phase_max, ol_mag_max = _inner_extents(ax)
 
     # M-circle magnitudes.
     if cl_mags is None:
@@ -165,17 +184,18 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
                                      ol_mag_min + cl_mag_step, cl_mag_step)
         cl_mags = np.concatenate((extended_cl_mags, key_cl_mags))
 
+    phase_offset_min = 360.0*np.ceil(ol_phase_min/360.0)
+    phase_offset_max = 360.0*np.ceil(ol_phase_max/360.0) + 360.0
+
     # N-circle phases (should be in the range -360 to 0)
     if cl_phases is None:
-        # Choose a reasonable set of default phases (denser if the open-loop
-        # data is restricted to a relatively small range of phases).
-        key_cl_phases = np.array([-0.25, -45.0, -90.0, -180.0, -270.0,
-                                  -325.0, -359.75])
-        if np.abs(ol_phase_max - ol_phase_min) < 90.0:
-            other_cl_phases = np.arange(-10.0, -360.0, -10.0)
-        else:
-            other_cl_phases = np.arange(-10.0, -360.0, -20.0)
-        cl_phases = np.concatenate((key_cl_phases, other_cl_phases))
+        # aim for 9 lines, but always show (-360+eps, -180, -eps)
+        # smallest spacing is 45, biggest is 180
+        phase_span = phase_offset_max - phase_offset_min
+        spacing = np.clip(round(phase_span / 8 / 45) * 45, 45, 180)
+        key_cl_phases = np.array([-0.25, -359.75])
+        other_cl_phases = np.arange(-spacing, -360.0, -spacing)
+        cl_phases = np.unique(np.concatenate((key_cl_phases, other_cl_phases)))
     else:
         assert ((-360.0 < np.min(cl_phases)) and (np.max(cl_phases) < 0.0))
 
@@ -196,27 +216,46 @@ def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted'):
     # over the range -360 < phase < 0. Given the range
     # the base chart is computed over, the phase offset should be 0
     # for -360 < ol_phase_min < 0.
-    phase_offset_min = 360.0*np.ceil(ol_phase_min/360.0)
-    phase_offset_max = 360.0*np.ceil(ol_phase_max/360.0) + 360.0
     phase_offsets = np.arange(phase_offset_min, phase_offset_max, 360.0)
 
     for phase_offset in phase_offsets:
         # Draw M and N contours
-        plt.plot(m_phase + phase_offset, m_mag, color='lightgray',
+        ax.plot(m_phase + phase_offset, m_mag, color='lightgray',
                  linestyle=line_style, zorder=0)
-        plt.plot(n_phase + phase_offset, n_mag, color='lightgray',
+        ax.plot(n_phase + phase_offset, n_mag, color='lightgray',
                  linestyle=line_style, zorder=0)
 
         # Add magnitude labels
         for x, y, m in zip(m_phase[:][-1] + phase_offset, m_mag[:][-1],
                            cl_mags):
             align = 'right' if m < 0.0 else 'left'
-            plt.text(x, y, str(m) + ' dB', size='small', ha=align,
-                     color='gray')
+            ax.text(x, y, str(m) + ' dB', size='small', ha=align,
+                     color='gray', clip_on=True)
+
+        # phase labels
+        if label_cl_phases:
+            for x, y, p in zip(n_phase[:][0] + phase_offset,
+                               n_mag[:][0],
+                               cl_phases):
+                if p > -175:
+                    align = 'right'
+                elif p > -185:
+                    align = 'center'
+                else:
+                    align = 'left'
+                ax.text(x, y, f'{round(p)}\N{DEGREE SIGN}',
+                        size='small',
+                        ha=align,
+                        va='bottom',
+                        color='gray',
+                        clip_on=True)
+
 
     # Fit axes to generated chart
-    plt.axis([phase_offset_min - 360.0, phase_offset_max - 360.0,
-              np.min(cl_mags), np.max([ol_mag_max, default_ol_mag_max])])
+    ax.axis([phase_offset_min - 360.0,
+             phase_offset_max - 360.0,
+             np.min(np.concatenate([cl_mags,[ol_mag_min]])),
+             np.max([ol_mag_max, default_ol_mag_max])])
 
 #
 # Utility functions
