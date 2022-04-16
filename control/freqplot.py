@@ -937,15 +937,15 @@ def nyquist_plot(
         # Nyquist criterion is actually satisfied.
         #
         if isinstance(sys, (StateSpace, TransferFunction)):
-            P = (sys.pole().real > 0).sum() if indent_direction == 'right' \
-                else (sys.pole().real >= 0).sum()
-            Z = (sys.feedback().pole().real >= 0).sum()
+            P = (sys.poles().real > 0).sum() if indent_direction == 'right' \
+                else (sys.poles().real >= 0).sum()
+            Z = (sys.feedback().poles().real >= 0).sum()
             if Z != count + P and warn_encirclements:
                 warnings.warn(
                     "number of encirclements does not match Nyquist criterion;"
                     " check frequency range and indent radius/direction",
                     UserWarning, stacklevel=2)
-            elif indent_direction == 'none' and any(sys.pole().real == 0) and \
+            elif indent_direction == 'none' and any(sys.poles().real == 0) and \
                  warn_encirclements:
                 warnings.warn(
                     "system has pure imaginary poles but indentation is"
