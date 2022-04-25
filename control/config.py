@@ -267,6 +267,15 @@ def use_legacy_defaults(version):
     #
     reset_defaults()            # start from a clean slate
 
+    # Version 0.9.2:
+    if major == 0 and minor < 9 or (minor == 9 and patch < 2):
+        from math import inf
+
+        # Reset Nyquist defaults
+        set_defaults('nyquist', indent_radius=0.1, max_curve_magnitude=inf,
+                     max_curve_offset=0, primary_style=['-', '-'],
+                     mirror_style=['--', '--'], start_marker_size=0)
+
     # Version 0.9.0:
     if major == 0 and minor < 9:
         # switched to 'array' as default for state space objects
