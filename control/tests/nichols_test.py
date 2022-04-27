@@ -83,7 +83,7 @@ class TestNicholsGrid:
 
         # normally a broad axis
         plt.clf()
-        m, p = nichols(g)
+        nichols(g)
 
         assert(plt.xlim()[0] == -1440)
         assert(plt.ylim()[0] <= -240)
