@@ -19,12 +19,14 @@ from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
-    _statesp_defaults, _rss_generate
+    _statesp_defaults, _rss_generate, linfnorm
 from control.iosys import ss, rss, drss
 from control.tests.conftest import ismatarrayout, slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
+
 from .conftest import editsdefaults
+
 
 class TestStateSpace:
     """Tests for the StateSpace class."""
@@ -1107,3 +1109,52 @@ def test_latex_repr_testsize(editsdefaults):
 
     gstatic = ss([], [], [], 1)
     assert gstatic._repr_latex_() is None
+
+
+class TestLinfnorm:
+    # these are simple tests; we assume ab13dd is correct
+    # python-control specific behaviour is:
+    #   - checking for continuous- and discrete-time
+    #   - scaling fpeak for discrete-time
+    #   - handling static gains
+
+    # the underdamped gpeak and fpeak are found from
+    #   gpeak = 1/(2*zeta*(1-zeta**2)**0.5)
+    #   fpeak = wn*(1-2*zeta**2)**0.5
+    @pytest.fixture(params=[
+        ('static', ct.tf, ([1.23],[1]), 1.23, 0),
+        ('underdamped', ct.tf, ([100],[1, 2*0.5*10, 100]), 1.1547005, 7.0710678),
+        ])
+    def ct_siso(self, request):
+        name, systype, sysargs, refgpeak, reffpeak = request.param
+        return systype(*sysargs), refgpeak, reffpeak
+
+    @pytest.fixture(params=[
+        ('underdamped', ct.tf, ([100],[1, 2*0.5*10, 100]), 1e-4, 1.1547005, 7.0710678),
+        ])
+    def dt_siso(self, request):
+        name, systype, sysargs, dt, refgpeak, reffpeak = request.param
+        return ct.c2d(systype(*sysargs), dt), refgpeak, reffpeak
+
+    @slycotonly
+    def test_linfnorm_ct_siso(self, ct_siso):
+        sys, refgpeak, reffpeak = ct_siso
+        gpeak, fpeak = linfnorm(sys)
+        np.testing.assert_allclose(gpeak, refgpeak)
+        np.testing.assert_allclose(fpeak, reffpeak)
+
+    @slycotonly
+    def test_linfnorm_dt_siso(self, dt_siso):
+        sys, refgpeak, reffpeak = dt_siso
+        gpeak, fpeak = linfnorm(sys)
+        # c2d pole-mapping has round-off
+        np.testing.assert_allclose(gpeak, refgpeak)
+        np.testing.assert_allclose(fpeak, reffpeak)
+
+    @slycotonly
+    def test_linfnorm_ct_mimo(self, ct_siso):
+        siso, refgpeak, reffpeak = ct_siso
+        sys = ct.append(siso, siso)
+        gpeak, fpeak = linfnorm(sys)
+        np.testing.assert_allclose(gpeak, refgpeak)
+        np.testing.assert_allclose(fpeak, reffpeak)

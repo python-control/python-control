@@ -55,6 +55,7 @@ from numpy.random import rand, randn
 from numpy.linalg import solve, eigvals, matrix_rank
 from numpy.linalg.linalg import LinAlgError
 import scipy as sp
+import scipy.linalg
 from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
@@ -65,7 +66,12 @@ from .namedio import _process_namedio_keywords
 from . import config
 from copy import deepcopy
 
-__all__ = ['StateSpace', 'tf2ss', 'ssdata']
+try:
+    from slycot import ab13dd
+except ImportError:
+    ab13dd = None
+
+__all__ = ['StateSpace', 'tf2ss', 'ssdata', 'linfnorm']
 
 # Define module default parameter values
 _statesp_defaults = {
@@ -1895,3 +1901,61 @@ def ssdata(sys):
     """
     ss = _convert_to_statespace(sys)
     return ss.A, ss.B, ss.C, ss.D
+
+
+def linfnorm(sys, tol=1e-10):
+    """L-infinity norm of a linear system
+
+    Parameters
+    ----------
+    sys : LTI (StateSpace or TransferFunction)
+      system to evalute L-infinity norm of
+    tol : real scalar
+      tolerance on norm estimate
+
+    Returns
+    -------
+    gpeak : non-negative scalar
+      L-infinity norm
+    fpeak : non-negative scalar
+      Frequency, in rad/s, at which gpeak occurs
+
+    For stable systems, the L-infinity and H-infinity norms are equal;
+    for unstable systems, the H-infinity norm is infinite, while the
+    L-infinity norm is finite if the system has no poles on the
+    imaginary axis.
+
+    See also
+    --------
+    slycot.ab13dd : the Slycot routine linfnorm that does the calculation
+    """
+
+    if ab13dd is None:
+        raise ControlSlycot("Can't find slycot module 'ab13dd'")
+
+    a, b, c, d = ssdata(_convert_to_statespace(sys))
+    e = np.eye(a.shape[0])
+
+    n = a.shape[0]
+    m = b.shape[1]
+    p = c.shape[0]
+
+    if n == 0:
+        # ab13dd doesn't accept empty A, B, C, D;
+        # static gain case is easy enough to compute
+        gpeak = scipy.linalg.svdvals(d)[0]
+        # max svd is constant with freq; arbitrarily choose 0 as peak
+        fpeak = 0
+        return gpeak, fpeak
+
+    dico = 'C' if sys.isctime() else 'D'
+    jobe = 'I'
+    equil = 'S'
+    jobd = 'Z' if all(0 == d.flat) else 'D'
+
+    gpeak, fpeak = ab13dd(dico, jobe, equil, jobd, n, m, p, a, e, b, c, d, tol)
+
+    if dico=='D':
+        fpeak /= sys.dt
+
+    return gpeak, fpeak
