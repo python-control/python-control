@@ -30,6 +30,7 @@ def test_nichols_alias(tsys, mplcleanup):
     nichols(tsys, grid=False)
 
 
+@pytest.mark.usefixtures("mplcleanup")
 class TestNicholsGrid:
     def test_ax(self):
         # check grid is plotted into gca, or specified axis
@@ -47,12 +48,10 @@ class TestNicholsGrid:
 
     def test_cl_phase_label_control(self):
         # test label_cl_phases argument
-        plt.clf()
         cl_mag_lines, cl_phase_lines, cl_mag_labels, cl_phase_labels \
             = nichols_grid()
         assert len(cl_phase_labels) > 0
 
-        plt.clf()
         cl_mag_lines, cl_phase_lines, cl_mag_labels, cl_phase_labels \
             = nichols_grid(label_cl_phases=False)
         assert len(cl_phase_labels) == 0
@@ -60,7 +59,6 @@ class TestNicholsGrid:
 
     def test_labels_clipped(self):
         # regression test: check that contour labels are clipped
-        plt.clf()
         mcontours, ncontours, mlabels, nlabels = nichols_grid()
         assert all(ml.get_clip_on() for ml in mlabels)
         assert all(nl.get_clip_on() for nl in nlabels)
@@ -69,7 +67,6 @@ class TestNicholsGrid:
     def test_minimal_phase(self):
         # regression test: phase extent is minimal
         g = tf([1],[1,1]) * tf([1],[1/1, 2*0.1/1, 1])
-        plt.clf()
         nichols(g)
         ax = plt.gca()
         assert ax.get_xlim()[1] <= 0
@@ -82,13 +79,11 @@ class TestNicholsGrid:
              * tf(*pade(0.01, 5)))
 
         # normally a broad axis
-        plt.clf()
         nichols(g)
 
         assert(plt.xlim()[0] == -1440)
         assert(plt.ylim()[0] <= -240)
 
-        plt.clf()
         nichols(g, grid=False)
 
         # zoom in
