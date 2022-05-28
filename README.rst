@@ -24,7 +24,7 @@ operations for analysis and design of feedback control systems.
 
 
 Have a go now!
-======
+==============
 Try out the examples in the examples folder using the binder service.
 
 .. image:: https://mybinder.org/badge_logo.svg
