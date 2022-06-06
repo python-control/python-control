@@ -33,7 +33,7 @@ def is_passive(sys):
 
     P = np.zeros_like(A)
     matrix_list = []
-    state_space_size = A.shape[0]
+    state_space_size = sys.nstates
     for i in range(0, state_space_size):
         for j in range(0, state_space_size):
             if j <= i:
