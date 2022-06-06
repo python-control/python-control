@@ -3,12 +3,12 @@ Author: Mark Yeatman
 Date: May 30, 2022
 '''
 
-import pytest
 import numpy
 from control import ss, passivity
 from sympy import Matrix
+from control.tests.conftest import cvxoptonly
 
-
+@cvxoptonly
 def test_is_passive():
     A = numpy.array([[0, 1], [-2, -2]])
     B = numpy.array([[0], [1]])

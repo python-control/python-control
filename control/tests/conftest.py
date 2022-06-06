@@ -18,6 +18,8 @@ TEST_MATRIX_AND_ARRAY = os.getenv("PYTHON_CONTROL_ARRAY_AND_MATRIX") == "1"
 # pytest.param(marks=)
 slycotonly = pytest.mark.skipif(not control.exception.slycot_check(),
                                 reason="slycot not installed")
+cvxoptonly = pytest.mark.skipif(not control.exception.cvxopt_check(),
+                                reason="cvxopt not installed")
 noscipy0 = pytest.mark.skipif(StrictVersion(sp.__version__) < "1.0",
                               reason="requires SciPy 1.0 or greater")
 nopython2 = pytest.mark.skipif(sys.version_info < (3, 0),

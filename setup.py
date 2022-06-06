@@ -43,6 +43,7 @@ setup(
                       'matplotlib'],
     extras_require={
        'test': ['pytest', 'pytest-timeout'],
-       'slycot': [ 'slycot>=0.4.0' ]
+       'slycot': [ 'slycot>=0.4.0' ],
+       'cvxopt': [ 'cvxopt>=1.2.0' ]
     }
 )

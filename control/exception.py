@@ -84,3 +84,15 @@ def pandas_check():
         except:
             pandas_installed = False
     return pandas_installed
+
+# Utility function to see if cvxopt is installed
+cvxopt_installed = None
+def cvxopt_check():
+    global cvxopt_installed
+    if cvxopt_installed is None:
+        try:
+            import cvxopt
+            cvxopt_installed = True
+        except:
+            cvxopt_installed = False
+    return cvxopt_installed

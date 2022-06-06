@@ -13,6 +13,7 @@ jobs:
         python-version: [3.7, 3.9]
         slycot: ["", "conda"]
         pandas: [""]
+        cvxopt: ["conda"]
         array-and-matrix: [0]
         include:
           - python-version: 3.9
@@ -45,6 +46,9 @@ jobs:
         fi
         if [[ '${{matrix.pandas}}' == 'conda' ]]; then
           conda install -c conda-forge pandas
+        fi
+        if [[ '${{matrix.cvxopt}}' == 'conda' ]]; then
+          conda install -c conda-forge cvxopt
         fi
 
     - name: Test with pytest
