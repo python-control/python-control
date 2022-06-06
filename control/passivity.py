@@ -4,11 +4,8 @@ Date: May 15, 2022
 '''
 
 from . import statesp as ss
-from sympy import symbols, Matrix, symarray
-from lmi_sdp import LMI_NSD, to_cvxopt
-from cvxopt import solvers
-
 import numpy as np
+import cvxopt as cvx
 
 
 def is_passive(sys):
@@ -27,28 +24,38 @@ def is_passive(sys):
     C = sys.C
     D = sys.D
 
-    P = Matrix(symarray('p', A.shape))
+    def make_LMI_matrix(P):
+        V = np.vstack((
+            np.hstack((A.T @ P + P@A, P@B)),
+            np.hstack((B.T@P, np.zeros_like(D))))
+        )
+        return V
 
-    # enforce symmetry in P
-    size = A.shape[0]
-    for i in range(0, size):
-        for j in range(0, size):
-            P[i, j] = P[j, i]
+    P = np.zeros_like(A)
+    matrix_list = []
+    state_space_size = A.shape[0]
+    for i in range(0, state_space_size):
+        for j in range(0, state_space_size):
+            if j <= i:
+                P = P*0.0
+                P[i, j] = 1.0
+                P[j, i] = 1.0
+                matrix_list.append(make_LMI_matrix(P).flatten())
 
-    # construct matrix for storage function x'*V*x
-    V = Matrix.vstack(
-        Matrix.hstack(A.T * P + P*A, P*B - C.T),
-        Matrix.hstack(B.T*P - C, Matrix(-D - D.T))
+    coefficents = np.vstack(matrix_list).T
+
+    constants = -np.vstack((
+        np.hstack((np.zeros_like(A),  - C.T)),
+        np.hstack((- C, -D - D.T)))
     )
 
-    # construct LMI, convert to form for feasibility solver
-    LMI_passivty = LMI_NSD(V, 0*V)
-    min_obj = 0 * symbols("x")
-    variables = V.free_symbols
-    solvers.options['show_progress'] = False
-    c, Gs, hs = to_cvxopt(min_obj, LMI_passivty, variables)
+    number_of_opt_vars = int(
+        (state_space_size**2-state_space_size)/2 + state_space_size)
+    c = cvx.matrix(0.0, (number_of_opt_vars, 1))
 
     # crunch feasibility solution
-    sol = solvers.sdp(c, Gs=Gs, hs=hs)
+    sol = cvx.solvers.sdp(c,
+                          Gs=[cvx.matrix(coefficents)],
+                          hs=[cvx.matrix(constants)])
 
     return (sol["x"] is not None)
