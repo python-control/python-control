@@ -3,7 +3,6 @@ Author: Mark Yeatman
 Date: May 15, 2022
 '''
 
-from . import statesp as ss
 import numpy as np
 import cvxopt as cvx
 
