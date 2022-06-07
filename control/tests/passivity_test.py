@@ -5,7 +5,6 @@ Date: May 30, 2022
 
 import numpy
 from control import ss, passivity
-from sympy import Matrix
 from control.tests.conftest import cvxoptonly
 
 @cvxoptonly

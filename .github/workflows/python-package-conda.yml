@@ -13,7 +13,7 @@ jobs:
         python-version: [3.7, 3.9]
         slycot: ["", "conda"]
         pandas: [""]
-        cvxopt: ["conda"]
+        cvxopt: ["", "conda"]
         array-and-matrix: [0]
         include:
           - python-version: 3.9
