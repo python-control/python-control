@@ -1763,27 +1763,40 @@ def test_input_output_broadcasting():
         resp_bad = ct.input_output_response(
             sys, T, (U[0, :], U[:2, :-1]), [X0, P0])
 
-
-def test_nonuniform_timepts():
+@pytest.mark.parametrize("nstates, ninputs, noutputs", [
+    [2, 1, 1],
+    [4, 2, 3],
+    [0, 1, 1],                  # static function
+    [0, 3, 2],                  # static function
+])
+def test_nonuniform_timepts(nstates, noutputs, ninputs):
     """Test non-uniform time points for simulations"""
-    sys = ct.LinearIOSystem(ct.rss(2, 1, 1))
+    if nstates:
+        sys = ct.rss(nstates, noutputs, ninputs)
+    else:
+        sys = ct.ss(
+            [], np.zeros((0, ninputs)), np.zeros((noutputs, 0)),
+            np.random.rand(noutputs, ninputs))
 
     # Start with a uniform set of times
     unifpts = [0, 1, 2, 3, 4,  5,  6,  7,  8,  9, 10]
-    uniform = [1, 2, 3, 2, 1, -1, -3, -5, -7, -3,  1]
-    t_unif, y_unif = ct.input_output_response(sys, unifpts, uniform)
+    uniform = np.outer(
+        np.ones(ninputs), [1, 2, 3, 2, 1, -1, -3, -5, -7, -3,  1])
+    t_unif, y_unif = ct.input_output_response(
+        sys, unifpts, uniform, squeeze=False)
 
     # Create a non-uniform set of inputs
     noufpts = [0, 2, 4,  8, 10]
-    nonunif = [1, 3, 1, -7,  1]
-    t_nouf, y_nouf = ct.input_output_response(sys, noufpts, nonunif)
+    nonunif = np.outer(np.ones(ninputs), [1, 3, 1, -7,  1])
+    t_nouf, y_nouf = ct.input_output_response(
+        sys, noufpts, nonunif, squeeze=False)
 
     # Make sure the outputs agree at common times
-    np.testing.assert_almost_equal(y_unif[noufpts], y_nouf, decimal=6)
+    np.testing.assert_almost_equal(y_unif[:, noufpts], y_nouf, decimal=6)
 
     # Resimulate using a new set of evaluation points
     t_even, y_even = ct.input_output_response(
-        sys, noufpts, nonunif, t_eval=unifpts)
+        sys, noufpts, nonunif, t_eval=unifpts, squeeze=False)
     np.testing.assert_almost_equal(y_unif, y_even, decimal=6)
 
 
