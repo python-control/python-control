@@ -4,8 +4,11 @@ Date: May 15, 2022
 '''
 
 import numpy as np
-import cvxopt as cvx
 
+try:
+    import cvxopt as cvx
+except ImportError as e:
+    cvx = None
 
 def is_passive(sys):
     '''
@@ -17,7 +20,9 @@ def is_passive(sys):
     The source for the algorithm is: 
     McCourt, Michael J., and Panos J. Antsaklis. "Demonstrating passivity and dissipativity using computational methods." ISIS 8 (2013).
     '''
-
+    if cvx is None:
+        raise ModuleNotFoundError
+    
     A = sys.A
     B = sys.B
     C = sys.C
