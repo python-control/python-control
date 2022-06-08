@@ -34,6 +34,9 @@ setup(
     author='Python Control Developers',
     author_email='python-control-developers@lists.sourceforge.net',
     url='http://python-control.org',
+    project_urls={
+        'Source': 'https://github.com/python-control/python-control',
+    },
     description='Python Control Systems Library',
     long_description=long_description,
     packages=find_packages(exclude=['benchmarks']),
