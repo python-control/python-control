@@ -10,6 +10,7 @@ try:
 except ImportError as e:
     cvx = None
 
+
 def is_passive(sys):
     '''
     Indicates if a linear time invarient system is passive
@@ -18,11 +19,13 @@ def is_passive(sys):
     such that is a solution exists, the system is passive.
 
     The source for the algorithm is: 
-    McCourt, Michael J., and Panos J. Antsaklis. "Demonstrating passivity and dissipativity using computational methods." ISIS 8 (2013).
+    McCourt, Michael J., and Panos J. Antsaklis. 
+        "Demonstrating passivity and dissipativity using computational methods." ISIS 8 (2013).
     '''
     if cvx is None:
+        print("cvxopt required for passivity module")
         raise ModuleNotFoundError
-    
+
     A = sys.A
     B = sys.B
     C = sys.C
@@ -35,13 +38,12 @@ def is_passive(sys):
         )
         return V
 
-    P = np.zeros_like(A)
     matrix_list = []
     state_space_size = sys.nstates
     for i in range(0, state_space_size):
         for j in range(0, state_space_size):
             if j <= i:
-                P = P*0.0
+                P = np.zeros_like(A)
                 P[i, j] = 1.0
                 P[j, i] = 1.0
                 matrix_list.append(make_LMI_matrix(P).flatten())
