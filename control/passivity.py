@@ -24,7 +24,7 @@ def is_passive(sys):
     '''
     if cvx is None:
         print("cvxopt required for passivity module")
-        raise ModuleNotFoundError
+        raise ModuleNotFoundError("cvxopt required for passivity module")
 
     A = sys.A
     B = sys.B
