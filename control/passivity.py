@@ -23,7 +23,6 @@ def is_passive(sys):
         "Demonstrating passivity and dissipativity using computational methods." ISIS 8 (2013).
     '''
     if cvx is None:
-        print("cvxopt required for passivity module")
         raise ModuleNotFoundError("cvxopt required for passivity module")
 
     A = sys.A
