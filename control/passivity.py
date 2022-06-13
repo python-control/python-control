@@ -13,7 +13,7 @@ except ImportError as e:
 
 def is_passive(sys):
     '''
-    Indicates if a linear time invarient system is passive
+    Indicates if a linear time invariant system is passive
 
     Constructs a linear matrix inequality and a feasibility optimization
     such that if a solution exists, the system is passive.
