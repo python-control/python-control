@@ -7,8 +7,9 @@ import numpy
 from control import ss, passivity
 from control.tests.conftest import cvxoptonly
 
+
 @cvxoptonly
-def test_is_passive():
+def test_ispassive():
     A = numpy.array([[0, 1], [-2, -2]])
     B = numpy.array([[0], [1]])
     C = numpy.array([[-1, 2]])
@@ -16,21 +17,47 @@ def test_is_passive():
     sys = ss(A, B, C, D)
 
     # happy path is passive
-    assert(passivity.is_passive(sys))
+    assert(passivity.ispassive(sys))
 
     # happy path not passive
     D = -D
     sys = ss(A, B, C, D)
 
-    assert(not passivity.is_passive(sys))
+    assert(not passivity.ispassive(sys))
 
-    #edge cases of D=0 boundary condition
-    B *= 0
-    C *= 0
+
+@cvxoptonly
+def test_ispassive_edge_cases():
+    A = numpy.array([[0, 1], [-2, -2]])
+    B = numpy.array([[0], [1]])
+    C = numpy.array([[-1, 2]])
+    D = numpy.array([[1.5]])
+
     D *= 0
-    sys = ss(A, B, C, D)
-    assert(passivity.is_passive(sys))
 
+    # strictly proper
+    sys = ss(A, B, C, D)
+    assert(passivity.ispassive(sys))
+
+    # ill conditioned
     A = A*1e12
     sys = ss(A, B, C, D)
-    assert(passivity.is_passive(sys))
+    assert(passivity.ispassive(sys))
+
+    # different combinations of zero A,B,C,D are 0
+    B *= 0
+    C *= 0
+    assert(passivity.ispassive(sys))
+
+    A *= 0
+    B = numpy.array([[0], [1]])
+    C = numpy.array([[-1, 2]])
+    D = numpy.array([[1.5]])
+    assert(passivity.ispassive(sys))
+
+    B *= 0
+    C *= 0
+    assert(passivity.ispassive(sys))
+
+    A *= 0
+    assert(passivity.ispassive(sys))

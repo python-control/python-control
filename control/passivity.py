@@ -10,11 +10,10 @@ try:
 except ImportError as e:
     cvx = None
 
-lmi_epsilon = 1e-12
 
-def is_passive(sys):
+def ispassive(sys):
     '''
-    Indicates if a linear time invariant system is passive
+    Indicates if a linear time invariant (LTI) system is passive
 
     Constructs a linear matrix inequality and a feasibility optimization
     such that if a solution exists, the system is passive.
@@ -22,6 +21,16 @@ def is_passive(sys):
     The source for the algorithm is: 
     McCourt, Michael J., and Panos J. Antsaklis. 
         "Demonstrating passivity and dissipativity using computational methods." ISIS 8 (2013).
+
+    Parameters
+    ----------
+    sys: A continuous LTI system
+        System to be checked.
+
+    Returns
+    -------
+    bool: 
+        The input system passive.
     '''
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
@@ -31,9 +40,9 @@ def is_passive(sys):
     C = sys.C
     D = sys.D
 
-    #account for strictly proper systems
-    [n,m] = D.shape
-    D = D + np.nextafter(0,1)*np.eye(n,m)
+    # account for strictly proper systems
+    [n, m] = D.shape
+    D = D + np.nextafter(0, 1)*np.eye(n, m)
 
     def make_LMI_matrix(P):
         V = np.vstack((
