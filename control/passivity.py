@@ -78,7 +78,7 @@ def ispassive(sys):
     # crunch feasibility solution
     cvx.solvers.options['show_progress'] = False
     sol = cvx.solvers.sdp(c,
-                        Gs=[cvx.matrix(coefficents)],
-                        hs=[cvx.matrix(constants)])
+                          Gs=[cvx.matrix(coefficents)],
+                          hs=[cvx.matrix(constants)])
 
     return (sol["x"] is not None)

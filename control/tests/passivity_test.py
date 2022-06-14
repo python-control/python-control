@@ -25,20 +25,23 @@ def test_ispassive():
 
     assert(not passivity.ispassive(sys))
 
+
 A_d = numpy.array([[-2, 0], [0, 0]])
 A = numpy.array([[-3, 0], [0, -2]])
 B = numpy.array([[0], [1]])
 C = numpy.array([[-1, 2]])
 D = numpy.array([[1.5]])
+
+
 @cvxoptonly
 @pytest.mark.parametrize(
-    "test_input,expected", 
-    [((A,B,C,D*0.0), True), 
-     ((A_d,B,C,D), True), 
-     ((A*1e12,B,C,D*0), True), 
-     ((A,B*0,C*0,D), True),
-     ((A*0,B,C,D), True),
-     ((A*0,B*0,C*0,D*0), True)])
+    "test_input,expected",
+    [((A, B, C, D*0.0), True),
+     ((A_d, B, C, D), True),
+     ((A*1e12, B, C, D*0), True),
+     ((A, B*0, C*0, D), True),
+     ((A*0, B, C, D), True),
+     ((A*0, B*0, C*0, D*0), True)])
 def test_ispassive_edge_cases(test_input, expected):
 
     # strictly proper
@@ -47,4 +50,4 @@ def test_ispassive_edge_cases(test_input, expected):
     C = test_input[2]
     D = test_input[3]
     sys = ss(A, B, C, D)
-    assert(passivity.ispassive(sys)==expected)
+    assert(passivity.ispassive(sys) == expected)
