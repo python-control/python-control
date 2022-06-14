@@ -10,6 +10,7 @@ try:
 except ImportError as e:
     cvx = None
 
+lmi_epsilon = 1e-12
 
 def is_passive(sys):
     '''
@@ -29,6 +30,10 @@ def is_passive(sys):
     B = sys.B
     C = sys.C
     D = sys.D
+
+    #account for strictly proper systems
+    [n,m] = D.shape
+    D = D + np.nextafter(0,1)*np.eye(n,m)
 
     def make_LMI_matrix(P):
         V = np.vstack((
@@ -59,6 +64,7 @@ def is_passive(sys):
     c = cvx.matrix(0.0, (number_of_opt_vars, 1))
 
     # crunch feasibility solution
+    cvx.solvers.options['show_progress'] = False
     sol = cvx.solvers.sdp(c,
                           Gs=[cvx.matrix(coefficents)],
                           hs=[cvx.matrix(constants)])
