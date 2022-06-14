@@ -44,6 +44,9 @@ def ispassive(sys):
     [n, m] = D.shape
     D = D + np.nextafter(0, 1)*np.eye(n, m)
 
+    [n, _] = A.shape
+    A = A - np.nextafter(0, 1)*np.eye(n)
+
     def make_LMI_matrix(P):
         V = np.vstack((
             np.hstack((A.T @ P + P@A, P@B)),
@@ -75,7 +78,7 @@ def ispassive(sys):
     # crunch feasibility solution
     cvx.solvers.options['show_progress'] = False
     sol = cvx.solvers.sdp(c,
-                          Gs=[cvx.matrix(coefficents)],
-                          hs=[cvx.matrix(constants)])
+                        Gs=[cvx.matrix(coefficents)],
+                        hs=[cvx.matrix(constants)])
 
     return (sol["x"] is not None)
