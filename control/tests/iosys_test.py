@@ -9,6 +9,7 @@ created for that purpose.
 """
 
 import re
+import warnings
 
 import numpy as np
 import pytest
@@ -16,6 +17,7 @@ import pytest
 import control as ct
 from control import iosys as ios
 from control.tests.conftest import matrixfilter
+
 
 class TestIOSys:
 
@@ -1416,11 +1418,10 @@ class TestIOSys:
         nlios2 = ios.NonlinearIOSystem(None,
                                        lambda t, x, u, params: u * u,
                                        inputs=1, outputs=1, name="nlios2")
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             ct.InterconnectedSystem([nlios1, iosys_siso, nlios2],
                                     inputs=0, outputs=0, states=0)
-        if record:
-            pytest.fail("Warning not expected: " + record[0].message)
 
 
 def test_linear_interconnection():
@@ -1510,7 +1511,7 @@ def predprey(t, x, u, params={}):
 
 def pvtol(t, x, u, params={}):
     """Reduced planar vertical takeoff and landing dynamics"""
-    from math import sin, cos
+    from math import cos, sin
     m = params.get('m', 4.)      # kg, system mass
     J = params.get('J', 0.0475)  # kg m^2, system inertia
     r = params.get('r', 0.25)    # m, thrust offset
@@ -1526,7 +1527,7 @@ def pvtol(t, x, u, params={}):
 
 
 def pvtol_full(t, x, u, params={}):
-    from math import sin, cos
+    from math import cos, sin
     m = params.get('m', 4.)      # kg, system mass
     J = params.get('J', 0.0475)  # kg m^2, system inertia
     r = params.get('r', 0.25)    # m, thrust offset
@@ -1579,8 +1580,12 @@ def test_interconnect_unused_input():
                             inputs=['r'],
                             outputs=['y'])
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
         # no warning if output explicitly ignored, various argument forms
+        warnings.simplefilter("error")
+        # strip out matrix warnings
+        warnings.filterwarnings("ignore", "the matrix subclass",
+                                category=PendingDeprecationWarning)
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
@@ -1594,14 +1599,6 @@ def test_interconnect_unused_input():
         # no warning if auto-connect disabled
         h = ct.interconnect([g,s,k],
                             connections=False)
-
-        #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
-        for r in record:
-            # strip out matrix warnings
-            if re.match(r'.*matrix subclass', str(r.message)):
-                continue
-            print(r.message)
-            pytest.fail(f'Unexpected warning: {r.message}')
 
 
     # warn if explicity ignored input in fact used
@@ -1657,7 +1654,11 @@ def test_interconnect_unused_output():
 
 
     # no warning if output explicitly ignored
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        # strip out matrix warnings
+        warnings.filterwarnings("ignore", "the matrix subclass",
+                                category=PendingDeprecationWarning)
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
@@ -1671,14 +1672,6 @@ def test_interconnect_unused_output():
         # no warning if auto-connect disabled
         h = ct.interconnect([g,s,k],
                             connections=False)
-
-        #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
-        for r in record:
-            # strip out matrix warnings
-            if re.match(r'.*matrix subclass', str(r.message)):
-                continue
-            print(r.message)
-            pytest.fail(f'Unexpected warning: {r.message}')
 
     # warn if explicity ignored output in fact used
     with pytest.warns(
