@@ -17,6 +17,8 @@ TEST_MATRIX_AND_ARRAY = os.getenv("PYTHON_CONTROL_ARRAY_AND_MATRIX") == "1"
 # pytest.param(marks=)
 slycotonly = pytest.mark.skipif(not control.exception.slycot_check(),
                                 reason="slycot not installed")
+cvxoptonly = pytest.mark.skipif(not control.exception.cvxopt_check(),
+                                reason="cvxopt not installed")
 matrixfilter = pytest.mark.filterwarnings("ignore:.*matrix subclass:"
                                           "PendingDeprecationWarning")
 matrixerrorfilter = pytest.mark.filterwarnings("error:.*matrix subclass:"

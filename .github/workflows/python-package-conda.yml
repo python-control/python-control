@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test-linux:
-    name: Python ${{ matrix.python-version }}${{ matrix.slycot && format(' with Slycot from {0}', matrix.slycot) || ' without Slycot' }}${{ matrix.pandas && ', with pandas' || '' }}${{ matrix.array-and-matrix == 1 && ', array and matrix' || '' }}
+    name: Python ${{ matrix.python-version }}${{ matrix.slycot && format(' with Slycot from {0}', matrix.slycot) || ' without Slycot' }}${{ matrix.pandas && ', with pandas' || '' }}${{ matrix.array-and-matrix == 1 && ', array and matrix' || '' }}${{ matrix.cvxopt && format(' with cvxopt from {0}', matrix.cvxopt) || ' without cvxopt' }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -13,6 +13,7 @@ jobs:
         python-version: [3.7, 3.9]
         slycot: ["", "conda"]
         pandas: [""]
+        cvxopt: ["", "conda"]
         array-and-matrix: [0]
         include:
           - python-version: 3.9
@@ -44,6 +45,9 @@ jobs:
         fi
         if [[ '${{matrix.pandas}}' == 'conda' ]]; then
           conda install pandas
+        fi
+        if [[ '${{matrix.cvxopt}}' == 'conda' ]]; then
+          conda install -c conda-forge cvxopt
         fi
 
     - name: Test with pytest
