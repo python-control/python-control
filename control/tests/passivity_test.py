@@ -8,7 +8,9 @@ from control import ss, passivity, tf
 from control.tests.conftest import cvxoptonly
 
 
-@cvxoptonly
+pytestmark = cvxoptonly
+
+
 def test_ispassive():
     A = numpy.array([[0, 1], [-2, -2]])
     B = numpy.array([[0], [1]])
@@ -33,7 +35,6 @@ C = numpy.array([[-1, 2]])
 D = numpy.array([[1.5]])
 
 
-@cvxoptonly
 @pytest.mark.parametrize(
     "test_input,expected",
     [((A, B, C, D*0.0), True),
