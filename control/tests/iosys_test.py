@@ -15,7 +15,7 @@ import pytest
 
 import control as ct
 from control import iosys as ios
-from control.tests.conftest import noscipy0, matrixfilter
+from control.tests.conftest import matrixfilter
 
 class TestIOSys:
 
@@ -46,7 +46,6 @@ class TestIOSys:
 
         return T
 
-    @noscipy0
     def test_linear_iosys(self, tsys):
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
@@ -65,7 +64,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
-    @noscipy0
     def test_tf2io(self, tsys):
         # Create a transfer function from the state space system
         linsys = tsys.siso_linsys
@@ -129,7 +127,6 @@ class TestIOSys:
         ios_linearized = ios.linearize(ios_unspecified, [0, 0], [0])
         print(ios_linearized)
 
-    @noscipy0
     @pytest.mark.parametrize("ss", [ios.NonlinearIOSystem, ct.ss])
     def test_nonlinear_iosys(self, tsys, ss):
         # Create a simple nonlinear I/O system
@@ -236,7 +233,6 @@ class TestIOSys:
         assert lin_nocopy.find_output('x') is None
         assert lin_nocopy.find_state('x') is None
 
-    @noscipy0
     def test_connect(self, tsys):
         # Define a couple of (linear) systems to interconnection
         linsys1 = tsys.siso_linsys
@@ -294,7 +290,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     @pytest.mark.parametrize(
         "connections, inplist, outlist",
         [pytest.param([[(1, 0), (0, 0, 1)]], [[(0, 0, 1)]], [[(1, 0, 1)]],
@@ -338,7 +333,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
-    @noscipy0
     @pytest.mark.parametrize(
         "connections, inplist, outlist",
         [pytest.param([['sys2.u[0]', 'sys1.y[0]']],
@@ -375,7 +369,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
-    @noscipy0
     def test_static_nonlinearity(self, tsys):
         # Linear dynamical system
         linsys = tsys.siso_linsys
@@ -400,7 +393,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=2)
 
 
-    @noscipy0
     @pytest.mark.filterwarnings("ignore:Duplicate name::control.iosys")
     def test_algebraic_loop(self, tsys):
         # Create some linear and nonlinear systems to play with
@@ -470,7 +462,6 @@ class TestIOSys:
         with pytest.raises(RuntimeError):
             ios.input_output_response(*args)
 
-    @noscipy0
     def test_summer(self, tsys):
         # Construct a MIMO system for testing
         linsys = tsys.mimo_linsys1
@@ -489,7 +480,6 @@ class TestIOSys:
         ios_t, ios_y = ios.input_output_response(iosys_parallel, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_rmul(self, tsys):
         # Test right multiplication
         # TODO: replace with better tests when conversions are implemented
@@ -510,7 +500,6 @@ class TestIOSys:
         lti_t, lti_y = ct.forced_response(ioslin, T, U*U, X0)
         np.testing.assert_array_almost_equal(ios_y, lti_y*lti_y, decimal=3)
 
-    @noscipy0
     def test_neg(self, tsys):
         """Test negation of a system"""
 
@@ -533,7 +522,6 @@ class TestIOSys:
         lti_t, lti_y = ct.forced_response(ioslin, T, U*U, X0)
         np.testing.assert_array_almost_equal(ios_y, -lti_y, decimal=3)
 
-    @noscipy0
     def test_feedback(self, tsys):
         # Set up parameters for simulation
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -549,7 +537,6 @@ class TestIOSys:
         lti_t, lti_y = ct.forced_response(linsys, T, U, X0)
         np.testing.assert_allclose(ios_y, lti_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_bdalg_functions(self, tsys):
         """Test block diagram functions algebra on I/O systems"""
         # Set up parameters for simulation
@@ -596,7 +583,6 @@ class TestIOSys:
         ios_t, ios_y = ios.input_output_response(iosys_feedback, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_algebraic_functions(self, tsys):
         """Test algebraic operations on I/O systems"""
         # Set up parameters for simulation
@@ -648,7 +634,6 @@ class TestIOSys:
         ios_t, ios_y = ios.input_output_response(iosys_negate, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_nonsquare_bdalg(self, tsys):
         # Set up parameters for simulation
         T = tsys.T
@@ -699,7 +684,6 @@ class TestIOSys:
         with pytest.raises(ValueError):
             ct.series(*args)
 
-    @noscipy0
     def test_discrete(self, tsys):
         """Test discrete time functionality"""
         # Create some linear and nonlinear systems to play with
@@ -868,7 +852,6 @@ class TestIOSys:
         assert xeq is None
         assert ueq is None
 
-    @noscipy0
     def test_params(self, tsys):
         # Start with the default set of parameters
         ios_secord_default = ios.NonlinearIOSystem(

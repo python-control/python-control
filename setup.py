@@ -42,7 +42,7 @@ setup(
     packages=find_packages(exclude=['benchmarks']),
     classifiers=[f for f in CLASSIFIERS.split('\n') if f],
     install_requires=['numpy',
-                      'scipy',
+                      'scipy>=1.3',
                       'matplotlib'],
     extras_require={
        'test': ['pytest', 'pytest-timeout'],

@@ -12,7 +12,7 @@ from control import StateSpace, TransferFunction, rss, ss2tf, evalfr
 from control import isctime, isdtime, sample_system, defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
-from control.tests.conftest import slycotonly, nopython2, matrixfilter
+from control.tests.conftest import slycotonly, matrixfilter
 
 
 class TestXferFcn:
@@ -448,7 +448,6 @@ class TestXferFcn:
             np.testing.assert_allclose(sys.evalfr(omega), resp, atol=1e-3)
 
 
-    @nopython2
     def test_call_dtime(self):
         sys = TransferFunction([1., 3., 5], [1., 6., 2., -1], 0.1)
         np.testing.assert_array_almost_equal(sys(1j), -0.5 - 0.5j)
@@ -741,8 +740,7 @@ class TestXferFcn:
         "matarrayin",
         [pytest.param(np.array,
                       id="arrayin",
-                      marks=[nopython2,
-                             pytest.mark.skip(".__matmul__ not implemented")]),
+                      marks=[pytest.mark.skip(".__matmul__ not implemented")]),
          pytest.param(np.matrix,
                       id="matrixin",
                       marks=matrixfilter)],

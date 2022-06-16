@@ -8,8 +8,6 @@ testing of operations on flat systems.  Separate unit tests should be
 created for that purpose.
 """
 
-from distutils.version import StrictVersion
-
 import numpy as np
 import pytest
 import scipy as sp
@@ -118,11 +116,10 @@ class TestFlatSys:
         resp = ct.input_output_response(vehicle_flat, T, ud, x0)
         np.testing.assert_array_almost_equal(resp.states, xd, decimal=2)
 
-        # For SciPy 1.0+, integrate equations and compare to desired
-        if StrictVersion(sp.__version__) >= "1.0":
-            t, y, x = ct.input_output_response(
-                vehicle_flat, T, ud, x0, return_x=True)
-            np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
+        # integrate equations and compare to desired
+        t, y, x = ct.input_output_response(
+            vehicle_flat, T, ud, x0, return_x=True)
+        np.testing.assert_allclose(x, xd, atol=0.01, rtol=0.01)
 
     def test_flat_default_output(self, vehicle_flat):
         # Construct a flat system with the default outputs
