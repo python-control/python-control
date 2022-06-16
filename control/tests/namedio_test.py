@@ -10,6 +10,7 @@ created for that purpose.
 
 import re
 from copy import copy
+import warnings
 
 import numpy as np
 import control as ct
@@ -243,9 +244,12 @@ def test_duplicate_sysname():
     sys = ct.rss(4, 1, 1)
 
     # No warnings should be generated if we reuse an an unnamed system
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        # strip out matrix warnings
+        warnings.filterwarnings("ignore", "the matrix subclass",
+                                category=PendingDeprecationWarning)
         res = sys * sys
-    assert not any([type(msg) == UserWarning for msg in record])
 
     # Generate a warning if the system is named
     sys = ct.rss(4, 1, 1, name='sys')

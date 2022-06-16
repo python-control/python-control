@@ -8,6 +8,8 @@ from ipython to generate plots interactively.
 
 """
 
+import warnings
+
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
@@ -225,10 +227,11 @@ def test_nyquist_encirclements():
     sys = 1 / (s**2 + s + 1)
     with pytest.warns(UserWarning, match="encirclements was a non-integer"):
         count = ct.nyquist_plot(sys, omega_limits=[0.5, 1e3])
-    with pytest.warns(None) as records:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        # strip out matrix warnings
         count = ct.nyquist_plot(
             sys, omega_limits=[0.5, 1e3], encirclement_threshold=0.2)
-    assert len(records) == 0
     plt.title("Non-integer number of encirclements [%g]" % count)
 
 

@@ -1,14 +1,13 @@
 """conftest.py - pytest local plugins and fixtures"""
 
-from contextlib import contextmanager
-from distutils.version import StrictVersion
 import os
 import sys
+from contextlib import contextmanager
 
 import matplotlib as mpl
 import numpy as np
-import scipy as sp
 import pytest
+import scipy as sp
 
 import control
 
@@ -18,10 +17,6 @@ TEST_MATRIX_AND_ARRAY = os.getenv("PYTHON_CONTROL_ARRAY_AND_MATRIX") == "1"
 # pytest.param(marks=)
 slycotonly = pytest.mark.skipif(not control.exception.slycot_check(),
                                 reason="slycot not installed")
-noscipy0 = pytest.mark.skipif(StrictVersion(sp.__version__) < "1.0",
-                              reason="requires SciPy 1.0 or greater")
-nopython2 = pytest.mark.skipif(sys.version_info < (3, 0),
-                               reason="requires Python 3+")
 matrixfilter = pytest.mark.filterwarnings("ignore:.*matrix subclass:"
                                           "PendingDeprecationWarning")
 matrixerrorfilter = pytest.mark.filterwarnings("error:.*matrix subclass:"
@@ -42,6 +37,7 @@ def control_defaults():
     yield
     # assert that nothing changed it without reverting
     assert control.config.defaults == the_defaults
+
 
 @pytest.fixture(scope="function", autouse=TEST_MATRIX_AND_ARRAY,
                 params=[pytest.param("arrayout", marks=matrixerrorfilter),
@@ -110,10 +106,10 @@ def editsdefaults():
 
 @pytest.fixture(scope="function")
 def mplcleanup():
-    """Workaround for python2
+    """Clean up any plots and changes a test may have made to matplotlib.
 
-    python 2 does not like to mix the original mpl decorator with pytest
-    fixtures. So we roll our own.
+    compare matplotlib.testing.decorators.cleanup() but as a fixture instead
+    of a decorator.
     """
     save = mpl.units.registry.copy()
     try:
