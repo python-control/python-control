@@ -1,13 +1,13 @@
 """conftest.py - pytest local plugins and fixtures"""
 
-from contextlib import contextmanager
 import os
 import sys
+from contextlib import contextmanager
 
 import matplotlib as mpl
 import numpy as np
-import scipy as sp
 import pytest
+import scipy as sp
 
 import control
 
@@ -37,6 +37,7 @@ def control_defaults():
     yield
     # assert that nothing changed it without reverting
     assert control.config.defaults == the_defaults
+
 
 @pytest.fixture(scope="function", autouse=TEST_MATRIX_AND_ARRAY,
                 params=[pytest.param("arrayout", marks=matrixerrorfilter),
@@ -106,7 +107,7 @@ def editsdefaults():
 @pytest.fixture(scope="function")
 def mplcleanup():
     """Clean up any plots and changes a test may have made to matplotlib.
-    
+
     compare matplotlib.testing.decorators.cleanup() but as a fixture instead
     of a decorator.
     """
