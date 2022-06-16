@@ -4,7 +4,7 @@ Date: May 30, 2022
 '''
 import pytest
 import numpy
-from control import ss, passivity
+from control import ss, passivity, tf
 from control.tests.conftest import cvxoptonly
 
 
@@ -51,3 +51,23 @@ def test_ispassive_edge_cases(test_input, expected):
     D = test_input[3]
     sys = ss(A, B, C, D)
     assert(passivity.ispassive(sys) == expected)
+
+
+def test_transfer_function():
+    sys = tf([1], [1, -2])
+    assert(passivity.ispassive(sys))
+
+    sys = tf([1], [1, 2])
+    assert(not passivity.ispassive(sys))
+
+
+def test_oo_style():
+    A = numpy.array([[0, 1], [-2, -2]])
+    B = numpy.array([[0], [1]])
+    C = numpy.array([[-1, 2]])
+    D = numpy.array([[1.5]])
+    sys = ss(A, B, C, D)
+    assert(sys.ispassive())
+
+    sys = tf([1], [1, -2])
+    assert(sys.ispassive())

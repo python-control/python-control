@@ -4,6 +4,7 @@ Date: May 15, 2022
 '''
 
 import numpy as np
+from control import statesp as ss
 
 try:
     import cvxopt as cvx
@@ -34,6 +35,8 @@ def ispassive(sys):
     '''
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
+
+    sys = ss._convert_to_statespace(sys)
 
     A = sys.A
     B = sys.B

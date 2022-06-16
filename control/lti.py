@@ -13,6 +13,7 @@ common_timebase()
 """
 
 import numpy as np
+
 from numpy import absolute, real, angle, abs
 from warnings import warn
 from . import config
@@ -20,6 +21,7 @@ from .namedio import NamedIOSystem, isdtime
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
            'freqresp', 'dcgain', 'pole', 'zero']
+
 
 class LTI(NamedIOSystem):
     """LTI is a parent class to linear time-invariant (LTI) system objects.
@@ -44,6 +46,7 @@ class LTI(NamedIOSystem):
     Note: dt processing has been moved to the NamedIOSystem class.
 
     """
+
     def __init__(self, inputs=1, outputs=1, states=None, name=None, **kwargs):
         """Assign the LTI object's numbers of inputs and ouputs."""
         super().__init__(
@@ -71,8 +74,7 @@ class LTI(NamedIOSystem):
 
     #: Deprecated
     inputs = property(
-        _get_inputs, _set_inputs, doc=
-        """
+        _get_inputs, _set_inputs, doc="""
         Deprecated attribute; use :attr:`ninputs` instead.
 
         The ``inputs`` attribute was used to store the number of system
@@ -94,8 +96,7 @@ class LTI(NamedIOSystem):
 
     #: Deprecated
     outputs = property(
-        _get_outputs, _set_outputs, doc=
-        """
+        _get_outputs, _set_outputs, doc="""
         Deprecated attribute; use :attr:`noutputs` instead.
 
         The ``outputs`` attribute was used to store the number of system
@@ -200,6 +201,11 @@ class LTI(NamedIOSystem):
             return zeroresp.real
         else:
             return zeroresp
+
+    def ispassive(self):
+        # importing here prevents circular dependancy
+        from control.passivity import ispassive
+        ispassive(self)
 
     #
     # Deprecated functions
@@ -321,7 +327,7 @@ def damp(sys, doprint=True):
     wn, damping, poles = sys.damp()
     if doprint:
         print('_____Eigenvalue______ Damping___ Frequency_')
-        for p, d, w in zip(poles, damping, wn) :
+        for p, d, w in zip(poles, damping, wn):
             if abs(p.imag) < 1e-12:
                 print("%10.4g            %10.4g %10.4g" %
                       (p.real, 1.0, -p.real))
@@ -329,6 +335,7 @@ def damp(sys, doprint=True):
                 print("%10.4g%+10.4gj %10.4g %10.4g" %
                       (p.real, p.imag, d, w))
     return wn, damping, poles
+
 
 def evalfr(sys, x, squeeze=None):
     """Evaluate the transfer function of an LTI system for complex frequency x.
@@ -387,6 +394,7 @@ def evalfr(sys, x, squeeze=None):
 
     """
     return sys.__call__(x, squeeze=squeeze)
+
 
 def frequency_response(sys, omega, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
