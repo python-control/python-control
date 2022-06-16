@@ -1,7 +1,6 @@
 """timeresp_test.py - test time response functions"""
 
 from copy import copy
-from distutils.version import StrictVersion
 
 import numpy as np
 import pytest
@@ -521,8 +520,6 @@ class TestTimeresp:
         _t, yy = impulse_response(sys, T=t, input=0)
         np.testing.assert_array_almost_equal(yy[:,0,:], yref_notrim, decimal=4)
 
-    @pytest.mark.skipif(StrictVersion(sp.__version__) < "1.3",
-                        reason="requires SciPy 1.3 or greater")
     @pytest.mark.parametrize("tsystem", ["siso_tf1"], indirect=True)
     def test_discrete_time_impulse(self, tsystem):
         # discrete time impulse sampled version should match cont time
@@ -998,9 +995,6 @@ class TestTimeresp:
         [6,    2,    2,  False,  (2, 2, 8),  (2, 8)],
     ])
     def test_squeeze(self, fcn, nstate, nout, ninp, squeeze, shape1, shape2):
-        # Figure out if we have SciPy 1+
-        scipy0 = StrictVersion(sp.__version__) < '1.0'
-
         # Define the system
         if fcn == ct.tf and (nout > 1 or ninp > 1) and not slycot_check():
             pytest.skip("Conversion of MIMO systems to transfer functions "
@@ -1077,7 +1071,7 @@ class TestTimeresp:
             assert yvec.shape == (8, )
 
         # For InputOutputSystems, also test input/output response
-        if isinstance(sys, ct.InputOutputSystem) and not scipy0:
+        if isinstance(sys, ct.InputOutputSystem):
             _, yvec = ct.input_output_response(sys, tvec, uvec, squeeze=squeeze)
             assert yvec.shape == shape2
 
@@ -1108,7 +1102,7 @@ class TestTimeresp:
             assert yvec.shape == (sys.noutputs, 8)
 
         # For InputOutputSystems, also test input_output_response
-        if isinstance(sys, ct.InputOutputSystem) and not scipy0:
+        if isinstance(sys, ct.InputOutputSystem):
             _, yvec = ct.input_output_response(sys, tvec, uvec)
             if squeeze is not True or sys.noutputs > 1:
                 assert yvec.shape == (sys.noutputs, 8)

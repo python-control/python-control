@@ -39,13 +39,12 @@ jobs:
         pip install coveralls
 
         # Install python-control dependencies
-        # use conda-forge until https://github.com/numpy/numpy/issues/20233 is resolved
-        conda install -c conda-forge numpy matplotlib scipy
+        conda install numpy matplotlib scipy
         if [[ '${{matrix.slycot}}' == 'conda' ]]; then
           conda install -c conda-forge slycot
         fi
         if [[ '${{matrix.pandas}}' == 'conda' ]]; then
-          conda install -c conda-forge pandas
+          conda install pandas
         fi
         if [[ '${{matrix.cvxopt}}' == 'conda' ]]; then
           conda install -c conda-forge cvxopt

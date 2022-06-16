@@ -1762,19 +1762,8 @@ def input_output_response(
             warn("initial state too short; padding with zeros")
         X0 = np.hstack([X0, np.zeros(sys.nstates - X0.size)])
 
-    # Check to make sure this is not a static function
+    # Compute the number of states
     nstates = _find_size(sys.nstates, X0)
-    if nstates == 0:
-        # No states => map input to output
-        u = U[0] if len(U.shape) == 1 else U[:, 0]
-        y = np.zeros((np.shape(sys._out(T[0], X0, u))[0], len(T)))
-        for i in range(len(T)):
-            u = U[i] if len(U.shape) == 1 else U[:, i]
-            y[:, i] = sys._out(T[i], [], u)
-        return TimeResponseData(
-            T, y, None, U, issiso=sys.issiso(),
-            output_labels=sys.output_index, input_labels=sys.input_index,
-            transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # create X0 if not given, test if X0 has correct shape
     X0 = _check_convert_array(X0, [(nstates,), (nstates, 1)],

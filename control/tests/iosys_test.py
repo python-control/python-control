@@ -9,13 +9,15 @@ created for that purpose.
 """
 
 import re
+import warnings
 
 import numpy as np
 import pytest
 
 import control as ct
 from control import iosys as ios
-from control.tests.conftest import noscipy0, matrixfilter
+from control.tests.conftest import matrixfilter
+
 
 class TestIOSys:
 
@@ -46,7 +48,6 @@ class TestIOSys:
 
         return T
 
-    @noscipy0
     def test_linear_iosys(self, tsys):
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
@@ -65,7 +66,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
-    @noscipy0
     def test_tf2io(self, tsys):
         # Create a transfer function from the state space system
         linsys = tsys.siso_linsys
@@ -129,7 +129,6 @@ class TestIOSys:
         ios_linearized = ios.linearize(ios_unspecified, [0, 0], [0])
         print(ios_linearized)
 
-    @noscipy0
     @pytest.mark.parametrize("ss", [ios.NonlinearIOSystem, ct.ss])
     def test_nonlinear_iosys(self, tsys, ss):
         # Create a simple nonlinear I/O system
@@ -236,7 +235,6 @@ class TestIOSys:
         assert lin_nocopy.find_output('x') is None
         assert lin_nocopy.find_state('x') is None
 
-    @noscipy0
     def test_connect(self, tsys):
         # Define a couple of (linear) systems to interconnection
         linsys1 = tsys.siso_linsys
@@ -294,7 +292,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     @pytest.mark.parametrize(
         "connections, inplist, outlist",
         [pytest.param([[(1, 0), (0, 0, 1)]], [[(0, 0, 1)]], [[(1, 0, 1)]],
@@ -338,7 +335,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
-    @noscipy0
     @pytest.mark.parametrize(
         "connections, inplist, outlist",
         [pytest.param([['sys2.u[0]', 'sys1.y[0]']],
@@ -375,7 +371,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
-    @noscipy0
     def test_static_nonlinearity(self, tsys):
         # Linear dynamical system
         linsys = tsys.siso_linsys
@@ -400,7 +395,6 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=2)
 
 
-    @noscipy0
     @pytest.mark.filterwarnings("ignore:Duplicate name::control.iosys")
     def test_algebraic_loop(self, tsys):
         # Create some linear and nonlinear systems to play with
@@ -470,7 +464,6 @@ class TestIOSys:
         with pytest.raises(RuntimeError):
             ios.input_output_response(*args)
 
-    @noscipy0
     def test_summer(self, tsys):
         # Construct a MIMO system for testing
         linsys = tsys.mimo_linsys1
@@ -489,7 +482,6 @@ class TestIOSys:
         ios_t, ios_y = ios.input_output_response(iosys_parallel, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_rmul(self, tsys):
         # Test right multiplication
         # TODO: replace with better tests when conversions are implemented
@@ -510,7 +502,6 @@ class TestIOSys:
         lti_t, lti_y = ct.forced_response(ioslin, T, U*U, X0)
         np.testing.assert_array_almost_equal(ios_y, lti_y*lti_y, decimal=3)
 
-    @noscipy0
     def test_neg(self, tsys):
         """Test negation of a system"""
 
@@ -533,7 +524,6 @@ class TestIOSys:
         lti_t, lti_y = ct.forced_response(ioslin, T, U*U, X0)
         np.testing.assert_array_almost_equal(ios_y, -lti_y, decimal=3)
 
-    @noscipy0
     def test_feedback(self, tsys):
         # Set up parameters for simulation
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -549,7 +539,6 @@ class TestIOSys:
         lti_t, lti_y = ct.forced_response(linsys, T, U, X0)
         np.testing.assert_allclose(ios_y, lti_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_bdalg_functions(self, tsys):
         """Test block diagram functions algebra on I/O systems"""
         # Set up parameters for simulation
@@ -596,7 +585,6 @@ class TestIOSys:
         ios_t, ios_y = ios.input_output_response(iosys_feedback, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_algebraic_functions(self, tsys):
         """Test algebraic operations on I/O systems"""
         # Set up parameters for simulation
@@ -648,7 +636,6 @@ class TestIOSys:
         ios_t, ios_y = ios.input_output_response(iosys_negate, T, U, X0)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
-    @noscipy0
     def test_nonsquare_bdalg(self, tsys):
         # Set up parameters for simulation
         T = tsys.T
@@ -699,7 +686,6 @@ class TestIOSys:
         with pytest.raises(ValueError):
             ct.series(*args)
 
-    @noscipy0
     def test_discrete(self, tsys):
         """Test discrete time functionality"""
         # Create some linear and nonlinear systems to play with
@@ -868,7 +854,6 @@ class TestIOSys:
         assert xeq is None
         assert ueq is None
 
-    @noscipy0
     def test_params(self, tsys):
         # Start with the default set of parameters
         ios_secord_default = ios.NonlinearIOSystem(
@@ -1433,11 +1418,10 @@ class TestIOSys:
         nlios2 = ios.NonlinearIOSystem(None,
                                        lambda t, x, u, params: u * u,
                                        inputs=1, outputs=1, name="nlios2")
-        with pytest.warns(None) as record:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
             ct.InterconnectedSystem([nlios1, iosys_siso, nlios2],
                                     inputs=0, outputs=0, states=0)
-        if record:
-            pytest.fail("Warning not expected: " + record[0].message)
 
 
 def test_linear_interconnection():
@@ -1527,7 +1511,7 @@ def predprey(t, x, u, params={}):
 
 def pvtol(t, x, u, params={}):
     """Reduced planar vertical takeoff and landing dynamics"""
-    from math import sin, cos
+    from math import cos, sin
     m = params.get('m', 4.)      # kg, system mass
     J = params.get('J', 0.0475)  # kg m^2, system inertia
     r = params.get('r', 0.25)    # m, thrust offset
@@ -1543,7 +1527,7 @@ def pvtol(t, x, u, params={}):
 
 
 def pvtol_full(t, x, u, params={}):
-    from math import sin, cos
+    from math import cos, sin
     m = params.get('m', 4.)      # kg, system mass
     J = params.get('J', 0.0475)  # kg m^2, system inertia
     r = params.get('r', 0.25)    # m, thrust offset
@@ -1596,8 +1580,12 @@ def test_interconnect_unused_input():
                             inputs=['r'],
                             outputs=['y'])
 
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
         # no warning if output explicitly ignored, various argument forms
+        warnings.simplefilter("error")
+        # strip out matrix warnings
+        warnings.filterwarnings("ignore", "the matrix subclass",
+                                category=PendingDeprecationWarning)
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
@@ -1611,14 +1599,6 @@ def test_interconnect_unused_input():
         # no warning if auto-connect disabled
         h = ct.interconnect([g,s,k],
                             connections=False)
-
-        #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
-        for r in record:
-            # strip out matrix warnings
-            if re.match(r'.*matrix subclass', str(r.message)):
-                continue
-            print(r.message)
-            pytest.fail(f'Unexpected warning: {r.message}')
 
 
     # warn if explicity ignored input in fact used
@@ -1674,7 +1654,11 @@ def test_interconnect_unused_output():
 
 
     # no warning if output explicitly ignored
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        # strip out matrix warnings
+        warnings.filterwarnings("ignore", "the matrix subclass",
+                                category=PendingDeprecationWarning)
         h = ct.interconnect([g,s,k],
                             inputs=['r'],
                             outputs=['y'],
@@ -1688,14 +1672,6 @@ def test_interconnect_unused_output():
         # no warning if auto-connect disabled
         h = ct.interconnect([g,s,k],
                             connections=False)
-
-        #https://docs.pytest.org/en/6.2.x/warnings.html#recwarn
-        for r in record:
-            # strip out matrix warnings
-            if re.match(r'.*matrix subclass', str(r.message)):
-                continue
-            print(r.message)
-            pytest.fail(f'Unexpected warning: {r.message}')
 
     # warn if explicity ignored output in fact used
     with pytest.warns(
@@ -1763,27 +1739,40 @@ def test_input_output_broadcasting():
         resp_bad = ct.input_output_response(
             sys, T, (U[0, :], U[:2, :-1]), [X0, P0])
 
-
-def test_nonuniform_timepts():
+@pytest.mark.parametrize("nstates, ninputs, noutputs", [
+    [2, 1, 1],
+    [4, 2, 3],
+    [0, 1, 1],                  # static function
+    [0, 3, 2],                  # static function
+])
+def test_nonuniform_timepts(nstates, noutputs, ninputs):
     """Test non-uniform time points for simulations"""
-    sys = ct.LinearIOSystem(ct.rss(2, 1, 1))
+    if nstates:
+        sys = ct.rss(nstates, noutputs, ninputs)
+    else:
+        sys = ct.ss(
+            [], np.zeros((0, ninputs)), np.zeros((noutputs, 0)),
+            np.random.rand(noutputs, ninputs))
 
     # Start with a uniform set of times
     unifpts = [0, 1, 2, 3, 4,  5,  6,  7,  8,  9, 10]
-    uniform = [1, 2, 3, 2, 1, -1, -3, -5, -7, -3,  1]
-    t_unif, y_unif = ct.input_output_response(sys, unifpts, uniform)
+    uniform = np.outer(
+        np.ones(ninputs), [1, 2, 3, 2, 1, -1, -3, -5, -7, -3,  1])
+    t_unif, y_unif = ct.input_output_response(
+        sys, unifpts, uniform, squeeze=False)
 
     # Create a non-uniform set of inputs
     noufpts = [0, 2, 4,  8, 10]
-    nonunif = [1, 3, 1, -7,  1]
-    t_nouf, y_nouf = ct.input_output_response(sys, noufpts, nonunif)
+    nonunif = np.outer(np.ones(ninputs), [1, 3, 1, -7,  1])
+    t_nouf, y_nouf = ct.input_output_response(
+        sys, noufpts, nonunif, squeeze=False)
 
     # Make sure the outputs agree at common times
-    np.testing.assert_almost_equal(y_unif[noufpts], y_nouf, decimal=6)
+    np.testing.assert_almost_equal(y_unif[:, noufpts], y_nouf, decimal=6)
 
     # Resimulate using a new set of evaluation points
     t_even, y_even = ct.input_output_response(
-        sys, noufpts, nonunif, t_eval=unifpts)
+        sys, noufpts, nonunif, t_eval=unifpts, squeeze=False)
     np.testing.assert_almost_equal(y_unif, y_even, decimal=6)
 
 

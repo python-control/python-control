@@ -36,7 +36,7 @@ Installation
 ============
 
 The `python-control` package can be installed using pip, conda or the
-standard distutils/setuptools mechanisms.  The package requires `numpy`_ and
+standard setuptools mechanisms.  The package requires `numpy`_ and
 `scipy`_, and the plotting routines require `matplotlib
 <https://matplotlib.org>`_.  In addition, some routines require the `slycot
 <https://github.com/python-control/Slycot>`_ library in order to implement
