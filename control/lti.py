@@ -205,7 +205,7 @@ class LTI(NamedIOSystem):
     def ispassive(self):
         # importing here prevents circular dependancy
         from control.passivity import ispassive
-        ispassive(self)
+        return ispassive(self)
 
     #
     # Deprecated functions

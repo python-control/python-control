@@ -55,10 +55,10 @@ def test_ispassive_edge_cases(test_input, expected):
 
 
 def test_transfer_function():
-    sys = tf([1], [1, -2])
+    sys = tf([1], [1, 2])
     assert(passivity.ispassive(sys))
 
-    sys = tf([1], [1, 2])
+    sys = tf([1], [1, -2])
     assert(not passivity.ispassive(sys))
 
 
@@ -70,5 +70,5 @@ def test_oo_style():
     sys = ss(A, B, C, D)
     assert(sys.ispassive())
 
-    sys = tf([1], [1, -2])
+    sys = tf([1], [1, 2])
     assert(sys.ispassive())
