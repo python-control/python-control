@@ -4,20 +4,36 @@ Date: May 30, 2022
 '''
 import pytest
 import numpy
-from control import ss, passivity, tf
+from control import ss, passivity, tf, sample_system
 from control.tests.conftest import cvxoptonly
 
 
 pytestmark = cvxoptonly
 
 
-def test_ispassive():
+def test_ispassive_ctime():
     A = numpy.array([[0, 1], [-2, -2]])
     B = numpy.array([[0], [1]])
     C = numpy.array([[-1, 2]])
     D = numpy.array([[1.5]])
     sys = ss(A, B, C, D)
 
+    # happy path is passive
+    assert(passivity.ispassive(sys))
+
+    # happy path not passive
+    D = -D
+    sys = ss(A, B, C, D)
+
+    assert(not passivity.ispassive(sys))
+
+def test_ispassive_dtime():
+    A = numpy.array([[0, 1], [-2, -2]])
+    B = numpy.array([[0], [1]])
+    C = numpy.array([[-1, 2]])
+    D = numpy.array([[1.5]])
+    sys = ss(A, B, C, D)
+    sys = sample_system(sys, 1, method='bilinear')
     # happy path is passive
     assert(passivity.ispassive(sys))
 

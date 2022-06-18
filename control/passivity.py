@@ -19,13 +19,18 @@ def ispassive(sys):
     Constructs a linear matrix inequality and a feasibility optimization
     such that if a solution exists, the system is passive.
 
-    The source for the algorithm is: 
-    McCourt, Michael J., and Panos J. Antsaklis. 
-        "Demonstrating passivity and dissipativity using computational methods." ISIS 8 (2013).
+    The sources for the algorithm are: 
+    
+    McCourt, Michael J., and Panos J. Antsaklis
+        "Demonstrating passivity and dissipativity using computational methods." 
+
+    Nicholas Kottenstette and Panos J. Antsaklis
+        "Relationships Between Positive Real, Passive Dissipative, & Positive Systems" 
+        equation 36.
 
     Parameters
     ----------
-    sys: A continuous LTI system
+    sys: An LTI system
         System to be checked.
 
     Returns
@@ -51,11 +56,17 @@ def ispassive(sys):
     A = A - np.nextafter(0, 1)*np.eye(n)
 
     def make_LMI_matrix(P):
-        V = np.vstack((
-            np.hstack((A.T @ P + P@A, P@B)),
-            np.hstack((B.T@P, np.zeros_like(D))))
-        )
-        return V
+        if sys.isctime():
+            return np.vstack((
+                np.hstack((A.T @ P + P@A, P@B)),
+                np.hstack((B.T@P, np.zeros_like(D))))
+            )
+        else:
+            return np.vstack((
+                np.hstack((2*A.T @ P @A - P , 2*A.T @ P@B)),
+                np.hstack(((2*A.T @ P@B).T, 2*B.T@P@B)))
+            )
+        
 
     matrix_list = []
     state_space_size = sys.nstates
