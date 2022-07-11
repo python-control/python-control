@@ -27,6 +27,7 @@ def test_ispassive_ctime():
 
     assert(not passivity.ispassive(sys))
 
+
 def test_ispassive_dtime():
     A = numpy.array([[0, 1], [-2, -2]])
     B = numpy.array([[0], [1]])
@@ -42,6 +43,17 @@ def test_ispassive_dtime():
     sys = ss(A, B, C, D)
 
     assert(not passivity.ispassive(sys))
+
+
+def test_system_dimension():
+    A = numpy.array([[0, 1], [-2, -2]])
+    B = numpy.array([[0], [1]])
+    C = numpy.array([[-1, 2], [0, 1]])
+    D = numpy.array([[1.5], [1]])
+    sys = ss(A, B, C, D)
+
+    with pytest.raises(Exception):
+        passivity.ispassive(sys)
 
 
 A_d = numpy.array([[-2, 0], [0, 0]])

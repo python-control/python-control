@@ -12,6 +12,7 @@ try:
 except ImportError as e:
     cvx = None
 
+
 def __parse_lti__(sys):
     '''
     Utility function to parse LTI input for passivity module functions
@@ -32,6 +33,7 @@ def __parse_lti__(sys):
 
     return (A, B, C, D)
 
+
 def __make_P_basis_matrices__(n, make_LMI_matrix_func):
     '''
     Utility function to make basis matrices for a LMI from a 
@@ -42,11 +44,12 @@ def __make_P_basis_matrices__(n, make_LMI_matrix_func):
     for i in range(0, n):
         for j in range(0, n):
             if j <= i:
-                P = np.zeros((n,n))
+                P = np.zeros((n, n))
                 P[i, j] = 1.0
                 P[j, i] = 1.0
                 matrix_list.append(make_LMI_matrix_func(P).flatten())
     return matrix_list
+
 
 def __P_pos_def_constraint__(n):
     '''
@@ -57,18 +60,19 @@ def __P_pos_def_constraint__(n):
     for i in range(0, n):
         for j in range(0, n):
             if j <= i:
-                P = np.zeros((n,n))
+                P = np.zeros((n, n))
                 P[i, j] = -1.0
                 P[j, i] = -1.0
                 matrix_list.append(P.flatten())
     return matrix_list
 
+
 def __solve_LMI_problem__(A, C, D, nu, rho, n, make_LMI_matrix):
     '''
     Construct LMI for constants in passivitiy problem, format matrices and input into SDP solver. 
     '''
-    #LMI for passivity from A,B,C,D   
-    sys_matrix_list =__make_P_basis_matrices__(n, make_LMI_matrix)
+    # LMI for passivity from A,B,C,D
+    sys_matrix_list = __make_P_basis_matrices__(n, make_LMI_matrix)
 
     sys_coefficents = np.vstack(sys_matrix_list).T
 
@@ -95,8 +99,8 @@ def __solve_LMI_problem__(A, C, D, nu, rho, n, make_LMI_matrix):
     #         np.hstack(( (rho*C.T@D).T, rho*D.T@D)))
     #     )
 
-    #LMI to ensure P is positive definite
-    P_matrix_list =__P_pos_def_constraint__(n)
+    # LMI to ensure P is positive definite
+    P_matrix_list = __P_pos_def_constraint__(n)
     P_coefficents = np.vstack(P_matrix_list).T
 
     P_constants = np.zeros((n, n))
@@ -125,13 +129,14 @@ def __solve_LMI_problem__(A, C, D, nu, rho, n, make_LMI_matrix):
     # crunch feasibility solution
     cvx.solvers.options['show_progress'] = False
     sol = cvx.solvers.sdp(c,
-                          Gs=[cvx.matrix(sys_coefficents)]+[cvx.matrix(P_coefficents)],
+                          Gs=[cvx.matrix(sys_coefficents)] +
+                          [cvx.matrix(P_coefficents)],
                           hs=[cvx.matrix(sys_constants)]+[cvx.matrix(P_constants)])
 
     return (sol["x"] is not None)
 
 
-def ispassive(sys, nu = None, rho = None):
+def ispassive(sys, nu=None, rho=None):
     '''
     Indicates if a linear time invariant (LTI) system is passive
 
@@ -139,7 +144,7 @@ def ispassive(sys, nu = None, rho = None):
     such that if a solution exists, the system is passive.
 
     The sources for the algorithm are: 
-    
+
     McCourt, Michael J., and Panos J. Antsaklis
         "Demonstrating passivity and dissipativity using computational methods." 
 
@@ -161,9 +166,14 @@ def ispassive(sys, nu = None, rho = None):
         raise ModuleNotFoundError("cvxopt required for passivity module")
 
     if not sys.isctime() and rho is not None and nu is not None:
-        raise Error("Passivity indices for discrete time systems not supported yet.")
+        raise Exception(
+            "Passivity indices for discrete time systems not supported yet.")
 
-    (A,B,C,D) = __parse_lti__(sys)
+    if sys.ninputs != sys.noutputs:
+        raise Exception(
+            "The number of system inputs must be the same as the number of system outputs.")
+
+    (A, B, C, D) = __parse_lti__(sys)
 
     def make_LMI_matrix(P):
         if sys.isctime():
@@ -173,7 +183,7 @@ def ispassive(sys, nu = None, rho = None):
             )
         else:
             return 2*np.vstack((
-                np.hstack((A.T @ P @A - P , A.T @ P@B)),
+                np.hstack((A.T @ P @ A - P, A.T @ P@B)),
                 np.hstack(((A.T @ P@B).T, B.T@P@B)))
             )
 
@@ -186,13 +196,13 @@ def ispassive(sys, nu = None, rho = None):
 #     Constructs a linear matrix inequality and a feasibility optimization
 #     such that if a solution exists, the system is dissapative.
 
-#     The sources for the algorithm are: 
-    
+#     The sources for the algorithm are:
+
 #     McCourt, Michael J., and Panos J. Antsaklis
-#         "Demonstrating passivity and dissipativity using computational methods." 
+#         "Demonstrating passivity and dissipativity using computational methods."
 
 #     Nicholas Kottenstette and Panos J. Antsaklis
-#         "Relationships Between Positive Real, Passive Dissipative, & Positive Systems" 
+#         "Relationships Between Positive Real, Passive Dissipative, & Positive Systems"
 #         equation 36.
 
 #     Parameters
@@ -202,7 +212,7 @@ def ispassive(sys, nu = None, rho = None):
 
 #     Returns
 #     -------
-#     bool: 
+#     bool:
 #         The input system dissapative.
 #     '''
 #     if cvx is None:
@@ -212,7 +222,7 @@ def ispassive(sys, nu = None, rho = None):
 
 #     def make_LMI_matrix(P):
 #         None
-        
+
 #     matrix_list =_make_basis_matrices(sys.nstates, make_LMI_matrix)
 
 #     coefficents = np.vstack(matrix_list).T
