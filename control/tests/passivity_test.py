@@ -2,6 +2,7 @@
 Author: Mark Yeatman  
 Date: May 30, 2022
 '''
+from tokenize import Double
 import pytest
 import numpy
 from control import ss, passivity, tf, sample_system
@@ -11,7 +12,7 @@ from control.tests.conftest import cvxoptonly
 pytestmark = cvxoptonly
 
 
-def test_ispassive_ctime():
+def test_ispassive_ctime(capsys):
     A = numpy.array([[0, 1], [-2, -2]])
     B = numpy.array([[0], [1]])
     C = numpy.array([[-1, 2]])
@@ -20,6 +21,15 @@ def test_ispassive_ctime():
 
     # happy path is passive
     assert(passivity.ispassive(sys))
+
+    # happy path is passive
+    ret = passivity.ispassive(sys, rho = 0.00001)
+    assert(isinstance(ret, float))
+    assert(ret>0.0)
+
+    ret = passivity.ispassive(sys, nu = 0.00001)
+    assert(isinstance(ret, float))
+    assert(ret>0.0)
 
     # happy path not passive
     D = -D
