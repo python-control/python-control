@@ -112,7 +112,7 @@ class TestRootLocus:
         assert_array_almost_equal(zoom_x, zoom_x_valid)
         assert_array_almost_equal(zoom_y, zoom_y_valid)
 
-    @pytest.mark.timeout(2)
+    # @pytest.mark.timeout(2)
     def test_rlocus_default_wn(self):
         """Check that default wn calculation works properly"""
         #

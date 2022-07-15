@@ -211,6 +211,10 @@ def getPassiveIndex(sys, index_type = None):
     if index_type is None:
         raise Exception("Must provide index_type of 'input' or 'output'.")
     if index_type == "input":
-        return ispassive(sys, rho = 0.000001)
+        nu = ispassive(sys, rho = 0.000001)
+        print(nu)
+        return nu
     if index_type == "output":
-        return ispassive(sys, nu = 0.000001)
+        nu = ispassive(sys, nu = 0.000001)
+        print(nu)
+        return nu

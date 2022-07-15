@@ -11,8 +11,18 @@ from control.tests.conftest import cvxoptonly
 
 pytestmark = cvxoptonly
 
+def test_passivity_indices():
+    sys = tf([1,1,5,0.1],[1,2,3,4])
 
-def test_ispassive_ctime(capsys):
+    nu = passivity.getPassiveIndex(sys, 'input')
+    assert(isinstance(nu, float))
+    assert(nu > 0.0250)
+
+    rho = passivity.getPassiveIndex(sys, 'output')
+    assert(isinstance(rho, float))
+    assert(rho < 0.2583)
+
+def test_ispassive_ctime():
     A = numpy.array([[0, 1], [-2, -2]])
     B = numpy.array([[0], [1]])
     C = numpy.array([[-1, 2]])
@@ -21,15 +31,6 @@ def test_ispassive_ctime(capsys):
 
     # happy path is passive
     assert(passivity.ispassive(sys))
-
-    # happy path is passive
-    ret = passivity.ispassive(sys, rho=0.00001)
-    assert(isinstance(ret, float))
-    assert(ret > 0.0)
-
-    ret = passivity.ispassive(sys, nu=0.00001)
-    assert(isinstance(ret, float))
-    assert(ret > 0.0)
 
     # happy path not passive
     D = -D
