@@ -87,11 +87,15 @@ def ispassive(sys, nu=None, rho=None):
     ----------
     sys: An LTI system
         System to be checked.
+    nu: float
+        Concrete value for input passivity index. 
+    rho: float
+        Concrete value for output passivity index. 
 
     Returns
     -------
-    bool: 
-        The input system passive.
+    bool or float: 
+        The input system passive, or the passivity index "opposite" the input. 
     '''
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
@@ -188,3 +192,25 @@ def ispassive(sys, nu=None, rho=None):
         return sol["x"] is not None
     else:
         return np.ravel(sol["x"])[-1]
+
+def getPassiveIndex(sys, index_type = None):
+    '''
+    Returns the passivity index associated with the input string. 
+    Parameters
+    ----------
+    sys: An LTI system
+        System to be checked.
+    index_type: String
+        Must be 'input' or 'output'. Indicates which passivity index will be returned. 
+
+    Returns
+    -------
+    float: 
+        The passivity index 
+    '''
+    if index_type is None:
+        raise Exception("Must provide index_type of 'input' or 'output'.")
+    if index_type == "input":
+        return ispassive(sys, rho = 0.000001)
+    if index_type == "output":
+        return ispassive(sys, nu = 0.000001)
