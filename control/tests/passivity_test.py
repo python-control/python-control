@@ -23,13 +23,13 @@ def test_ispassive_ctime(capsys):
     assert(passivity.ispassive(sys))
 
     # happy path is passive
-    ret = passivity.ispassive(sys, rho = 0.00001)
+    ret = passivity.ispassive(sys, rho=0.00001)
     assert(isinstance(ret, float))
-    assert(ret>0.0)
+    assert(ret > 0.0)
 
-    ret = passivity.ispassive(sys, nu = 0.00001)
+    ret = passivity.ispassive(sys, nu=0.00001)
     assert(isinstance(ret, float))
-    assert(ret>0.0)
+    assert(ret > 0.0)
 
     # happy path not passive
     D = -D

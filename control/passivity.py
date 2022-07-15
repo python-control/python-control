@@ -66,6 +66,7 @@ def __P_pos_def_constraint__(n):
                 matrix_list.append(P.flatten())
     return matrix_list
 
+
 def ispassive(sys, nu=None, rho=None):
     '''
     Indicates if a linear time invariant (LTI) system is passive
@@ -129,48 +130,48 @@ def ispassive(sys, nu=None, rho=None):
 
     if nu is not None:
         m = D.shape[1]
-        sys_constants+= -np.vstack((
+        sys_constants += -np.vstack((
             np.hstack((np.zeros_like(A),  np.zeros_like(C.T))),
-            np.hstack((np.zeros_like(C),  nu*np.eye(m) )))
+            np.hstack((np.zeros_like(C),  nu*np.eye(m))))
         )
 
     if rho is not None:
-        sys_constants+= -np.vstack((
-            np.hstack((rho*C.T@C,  rho*C.T@D )),
-            np.hstack(( (rho*C.T@D).T, rho*D.T@D)))
+        sys_constants += -np.vstack((
+            np.hstack((rho*C.T@C,  rho*C.T@D)),
+            np.hstack(((rho*C.T@D).T, rho*D.T@D)))
         )
 
     if rho is not None and nu is not None:
-        sys_constants+= -np.vstack((
+        sys_constants += -np.vstack((
             np.hstack((np.zeros_like(A),  -0.5*nu*rho*C.T)),
-            np.hstack(( (rho*C.T@D).T, rho*D.T@D)))
+            np.hstack(((rho*C.T@D).T, rho*D.T@D)))
         )
 
     # LMI to ensure P is positive definite
     P_matrix_list = __P_pos_def_constraint__(n)
-    
+
     number_of_opt_vars = int(
         (n**2-n)/2 + n)
     c = cvx.matrix(0.0, (number_of_opt_vars, 1))
 
-    #LMI for passivity indices
+    # LMI for passivity indices
     if nu is not None and rho is None:
-        #pick out coefficents for rho
+        # pick out coefficents for rho
         rho_coefficents_matrix = np.vstack((
-                np.hstack((C.T@C, 0.5*nu*C.T + C.T@D)),
-                np.hstack(( (0.5*nu*C.T + C.T@D).T, D.T@D-nu*(D+D.T))))
-            )
+            np.hstack((C.T@C, 0.5*nu*C.T + C.T@D)),
+            np.hstack(((0.5*nu*C.T + C.T@D).T, D.T@D-nu*(D+D.T))))
+        )
         sys_matrix_list.append(rho_coefficents_matrix.flatten())
-        c = cvx.matrix(np.append(np.array(c),-1.0))
+        c = cvx.matrix(np.append(np.array(c), -1.0))
         P_matrix_list.append(np.zeros_like(A).flatten())
     elif rho is not None and nu is None:
-        #pick out coefficents for nu
+        # pick out coefficents for nu
         nu_coefficents_matrix = np.vstack((
-                np.hstack((np.zeros_like(A), 0.5*rho*C.T)),
-                np.hstack(( (0.5*rho*C.T + rho*C.T@D).T, rho*D.T@D)))
-            )
+            np.hstack((np.zeros_like(A), 0.5*rho*C.T)),
+            np.hstack(((0.5*rho*C.T + rho*C.T@D).T, rho*D.T@D)))
+        )
         sys_matrix_list.append(nu_coefficents_matrix.flatten())
-        c = cvx.matrix(np.append(np.array(c),-1.0))
+        c = cvx.matrix(np.append(np.array(c), -1.0))
         P_matrix_list.append(np.zeros_like(A).flatten())
 
     sys_coefficents = np.vstack(sys_matrix_list).T
@@ -182,7 +183,7 @@ def ispassive(sys, nu=None, rho=None):
 
     # crunch feasibility solution
     cvx.solvers.options['show_progress'] = False
-    sol = cvx.solvers.sdp(c, Gs = Gs, hs= hs)
+    sol = cvx.solvers.sdp(c, Gs=Gs, hs=hs)
     if nu is None and rho is None:
         return sol["x"] is not None
     else:
