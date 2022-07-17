@@ -86,7 +86,7 @@ def __ispassive__(sys, rho=None, nu=None):
         return np.vstack((
             np.hstack((A.T @ P + P@A + rho*C.T@C,  off_diag)),
             np.hstack((off_diag.T, rho*D.T@D -
-                       (one+rho*nu)*(D+D.T)+nu*np.eye(m)))
+                       1.0/2.0*(one+rho*nu)*(D+D.T)+nu*np.eye(m)))
         ))
 
     n = sys.nstates
@@ -162,15 +162,24 @@ def ispassive(sys, rho=None, nu=None):
     if rho is not None and nu is not None:
         return __ispassive__(sys, rho, nu) is not None
     elif rho is None and nu is not None:
-        rho = __ispassive__(sys, nu=nu)[-1]
-        return rho
+        sol = __ispassive__(sys, nu=nu)
+        if sol is not None:
+            return sol[-1]
+        else:
+            return None
     elif nu is None and rho is not None:
-        nu = __ispassive__(sys, rho=rho)[-1]
-        return nu
+        sol = __ispassive__(sys, rho=rho)
+        if sol is not None:
+            return sol[-1]
+        else:
+            return None
     else:
-        rho = __ispassive__(sys, nu=eps)[-1]
-        nu = __ispassive__(sys, rho=eps)[-1]
-        return rho > 0 or nu > 0
+        sol_rho = __ispassive__(sys, nu=eps)
+        sol_nu = __ispassive__(sys, rho=eps)
+        if sol_rho is not None and sol_nu is not None:
+            return sol_rho[-1] > 0 or sol_nu[-1] > 0
+        else:
+            return False
 
 
 def getPassiveIndex(sys, index_type=None):
