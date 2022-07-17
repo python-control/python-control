@@ -163,16 +163,13 @@ def ispassive(sys, rho=None, nu=None):
         return __ispassive__(sys, rho, nu) is not None
     elif rho is None and nu is not None:
         rho = __ispassive__(sys, nu=nu)[-1]
-        print(rho)
         return rho
     elif nu is None and rho is not None:
         nu = __ispassive__(sys, rho=rho)[-1]
-        print(nu)
         return nu
     else:
         rho = __ispassive__(sys, nu=eps)[-1]
         nu = __ispassive__(sys, rho=eps)[-1]
-        print((rho, nu))
         return rho > 0 or nu > 0
 
 
