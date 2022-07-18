@@ -188,7 +188,7 @@ def ispassive(sys, rho=None, nu=None):
             return False
 
 
-def getPassiveIndex(sys, index_type=None):
+def get_passivity_index(sys, index_type=None):
     '''
     Returns the passivity index associated with the input string. 
     Parameters

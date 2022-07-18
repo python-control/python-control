@@ -41,8 +41,8 @@ def test_ispassive_dtime():
 def test_passivity_indices_ctime():
     sys = tf([1, 1, 5, 0.1], [1, 2, 3, 4])
 
-    nu = passivity.getPassiveIndex(sys, 'input')
-    rho = passivity.getPassiveIndex(sys, 'output')
+    nu = passivity.get_passivity_index(sys, 'input')
+    rho = passivity.get_passivity_index(sys, 'output')
 
     assert(isinstance(nu, float))
 
@@ -62,8 +62,8 @@ def test_passivity_indices_ctime():
 def test_passivity_indices_dtime():
     sys = tf([1, 1, 5, 0.1], [1, 2, 3, 4])
     sys = sample_system(sys, Ts=0.01, alpha=1, method="bilinear")
-    nu = passivity.getPassiveIndex(sys, 'input')
-    rho = passivity.getPassiveIndex(sys, 'output')
+    nu = passivity.get_passivity_index(sys, 'input')
+    rho = passivity.get_passivity_index(sys, 'output')
 
     assert(isinstance(nu, float))
 
