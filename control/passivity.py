@@ -3,7 +3,6 @@ Author: Mark Yeatman
 Date: July 17, 2022
 '''
 
-from msilib.schema import Error
 import numpy as np
 from control import statesp as ss
 from control.modelsimp import minreal

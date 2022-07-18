@@ -2,7 +2,6 @@
 Author: Mark Yeatman  
 Date: May 30, 2022
 '''
-from tokenize import Double
 import pytest
 import numpy
 from control import ss, passivity, tf, sample_system, parallel, feedback
