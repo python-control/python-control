@@ -5,23 +5,11 @@ Date: May 30, 2022
 from tokenize import Double
 import pytest
 import numpy
-from control import ss, passivity, tf, sample_system
+from control import ss, passivity, tf, sample_system, parallel, feedback
 from control.tests.conftest import cvxoptonly
 
 
 pytestmark = cvxoptonly
-
-
-def test_passivity_indices():
-    sys = tf([1, 1, 5, 0.1], [1, 2, 3, 4])
-
-    nu = passivity.getPassiveIndex(sys, 'input')
-    assert(isinstance(nu, float))
-    assert(nu > 0.0250)
-
-    rho = passivity.getPassiveIndex(sys, 'output')
-    assert(isinstance(rho, float))
-    assert(rho < 0.2583)
 
 
 def test_ispassive_ctime():
@@ -48,8 +36,49 @@ def test_ispassive_dtime():
     D = numpy.array([[1.5]])
     sys = ss(A, B, C, D)
     sys = sample_system(sys, 1, method='bilinear')
-    with pytest.raises(Exception):
-        passivity.ispassive(sys)
+    assert(passivity.ispassive(sys))
+
+
+def test_passivity_indices_ctime():
+    sys = tf([1, 1, 5, 0.1], [1, 2, 3, 4])
+
+    nu = passivity.getPassiveIndex(sys, 'input')
+    rho = passivity.getPassiveIndex(sys, 'output')
+
+    assert(isinstance(nu, float))
+
+    sys_ff_nu = parallel(-nu, sys)
+    sys_fb_rho = feedback(rho, sys, sign=1)
+
+    assert(sys_ff_nu.ispassive())
+    assert(sys_fb_rho.ispassive())
+
+    sys_ff_nu = parallel(-nu-1e-6, sys)
+    sys_fb_rho = feedback(rho+1e-6, sys, sign=1)
+
+    assert(not sys_ff_nu.ispassive())
+    assert(not sys_fb_rho.ispassive())
+
+
+def test_passivity_indices_dtime():
+    sys = tf([1, 1, 5, 0.1], [1, 2, 3, 4])
+    sys = sample_system(sys, Ts=0.01, alpha=1, method="bilinear")
+    nu = passivity.getPassiveIndex(sys, 'input')
+    rho = passivity.getPassiveIndex(sys, 'output')
+
+    assert(isinstance(nu, float))
+
+    sys_ff_nu = parallel(-nu, sys)
+    sys_fb_rho = feedback(rho, sys, sign=1)
+
+    assert(sys_ff_nu.ispassive())
+    assert(sys_fb_rho.ispassive())
+
+    sys_ff_nu = parallel(-nu-1e-6, sys)
+    sys_fb_rho = feedback(rho+1e-6, sys, sign=1)
+
+    assert(not sys_ff_nu.ispassive())
+    assert(not sys_fb_rho.ispassive())
 
 
 def test_system_dimension():

@@ -56,9 +56,9 @@ def __ispassive__(sys, rho=None, nu=None):
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
 
-    if sys.isdtime():
-        raise Exception(
-            "Passivity for discrete time systems not supported yet.")
+    # if sys.isdtime():
+    #     raise Exception(
+    #         "Passivity for discrete time systems not supported yet.")
 
     if sys.ninputs != sys.noutputs:
         raise Exception(
@@ -82,12 +82,38 @@ def __ispassive__(sys, rho=None, nu=None):
     A = A - eps*np.eye(n)
 
     def make_LMI_matrix(P, rho, nu, one):
-        off_diag = P@B - 1.0/2.0*(one+rho*nu)*C.T + rho*C.T*D
-        return np.vstack((
-            np.hstack((A.T @ P + P@A + rho*C.T@C,  off_diag)),
-            np.hstack((off_diag.T, rho*D.T@D -
-                       1.0/2.0*(one+rho*nu)*(D+D.T)+nu*np.eye(m)))
-        ))
+        q = sys.noutputs
+        Q = -rho*np.eye(q, q)
+        S = 1.0/2.0*(one+rho*nu)*np.eye(q)
+        R = -nu*np.eye(m)
+        if sys.isctime():
+            off_diag = P@B - (C.T@S + C.T@Q@D)
+            return np.vstack((
+                np.hstack((A.T @ P + P@A - C.T@Q@C,  off_diag)),
+                np.hstack((off_diag.T, -(D.T@Q@D + D.T@S + S.T@D + R)))
+            ))
+        else:
+            off_diag = A.T@P@B - (C.T@S + C.T@Q@D)
+            return np.vstack((
+                np.hstack((A.T @ P  @ A - P - C.T@Q@C,  off_diag)),
+                np.hstack((off_diag.T, -(D.T@Q@D + D.T@S + S.T@D + R)))
+            ))
+
+    # def make_LMI_matrix(P, rho, nu, one):
+    #     if sys.isctime():
+    #         off_diag = P@B - 1.0/2.0*(one+rho*nu)*C.T + rho*C.T*D
+    #         return np.vstack((
+    #             np.hstack((A.T @ P + P@A + rho*C.T@C,  off_diag)),
+    #             np.hstack((off_diag.T, rho*D.T@D -
+    #                     1.0/2.0*(one+rho*nu)*(D+D.T)+nu*np.eye(m)))
+    #         ))
+    #     else:
+    #         off_diag = A.T@P@B - 1.0/2.0*(one+rho*nu)*C.T + rho*C.T*D
+    #         return np.vstack((
+    #             np.hstack((A.T @ P  @ A - P + rho*C.T@C,  off_diag)),
+    #             np.hstack((off_diag.T, rho*D.T@D -
+    #                     1.0/2.0*(one+rho*nu)*(D+D.T)+nu*np.eye(m)))
+    #         ))
 
     n = sys.nstates
 
