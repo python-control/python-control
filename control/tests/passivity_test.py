@@ -6,7 +6,7 @@ import pytest
 import numpy
 from control import ss, passivity, tf, sample_system, parallel, feedback
 from control.tests.conftest import cvxoptonly
-
+from control.exception import ControlDimension
 
 pytestmark = cvxoptonly
 
@@ -87,7 +87,7 @@ def test_system_dimension():
     D = numpy.array([[1.5], [1]])
     sys = ss(A, B, C, D)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ControlDimension):
         passivity.ispassive(sys)
 
 
@@ -121,7 +121,7 @@ def test_ispassive_all_zeros():
     D = numpy.array([[0]])
     sys = ss(A, B, C, D)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         passivity.ispassive(sys)
 
 

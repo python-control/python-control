@@ -161,8 +161,9 @@ def ispassive(sys, rho=None, nu=None):
 
     Returns
     -------
-    bool or float: 
-        The input system passive, or the passivity index "opposite" the input. 
+    bool, float, or None: 
+        The input system is passive, or the passivity index "opposite" the input. 
+        If the problem is unfeasiable when requesting the passivity index, returns None.
     '''
     if rho is not None and nu is not None:
         return __ispassive__(sys, rho, nu) is not None
