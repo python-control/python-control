@@ -5,7 +5,7 @@ Date: July 17, 2022
 
 import numpy as np
 from control import statesp as ss
-from control.modelsimp import minreal
+from control.exception import ControlArgument, ControlDimension
 
 try:
     import cvxopt as cvx
@@ -56,11 +56,11 @@ def __ispassive__(sys, rho=None, nu=None):
         raise ModuleNotFoundError("cvxopt required for passivity module")
 
     if sys.ninputs != sys.noutputs:
-        raise Exception(
+        raise ControlDimension(
             "The number of system inputs must be the same as the number of system outputs.")
 
     if rho is None and nu is None:
-        raise Exception("rho or nu must be given a float value.")
+        raise ControlArgument("rho or nu must be given a float value.")
 
     sys = ss._convert_to_statespace(sys)
 
@@ -203,7 +203,7 @@ def getPassiveIndex(sys, index_type=None):
         The passivity index 
     '''
     if index_type is None:
-        raise Exception("Must provide index_type of 'input' or 'output'.")
+        raise ControlArgument("Must provide index_type of 'input' or 'output'.")
     if index_type == "input":
         nu = ispassive(sys, rho=eps)
         return nu
