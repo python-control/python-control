@@ -7,7 +7,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout python-control
+      uses: actions/checkout@v3
+      with:
+        path: python-control
     - name: Set up Python
       uses: actions/setup-python@v2
     - name: Install Python dependencies
@@ -24,18 +27,27 @@ jobs:
         # Install python-control dependencies
         conda install numpy matplotlib scipy
 
+    - name: Checkout Slycot
+      uses: actions/checkout@v3
+      with:
+        repository: python-control/Slycot
+        submodules: recursive
+        fetch-depth: 0
+        path: slycot
     - name: Install slycot from source
+      env:
+        BLA_VENDOR: Generic
+        CMAKE_GENERATOR: Unix Makefiles
+      working-directory: slycot
       run: |
         # Install compilers, libraries, and development environment
         sudo apt-get -y install gfortran cmake --fix-missing
         sudo apt-get -y install libblas-dev liblapack-dev
-        conda install -c conda-forge scikit-build;
+        conda install -c conda-forge scikit-build setuptools-scm
 
         # Compile and install slycot
-        git clone https://github.com/python-control/Slycot.git slycot
-        cd slycot
-        git submodule update --init
-        python setup.py build_ext install -DBLA_VENDOR=Generic
+        pip install -v --no-build-isolation --no-deps .
 
     - name: Test with pytest
+      working-directory: python-control
       run: xvfb-run --auto-servernum pytest control/tests
