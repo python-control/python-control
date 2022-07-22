@@ -91,7 +91,7 @@ def __ispassive__(sys, rho=None, nu=None):
             off_diag = A.T@P@B - (C.T@S + C.T@Q@D)
             return np.vstack((
                 np.hstack((A.T @ P  @ A - P - C.T@Q@C,  off_diag)),
-                np.hstack((off_diag.T, -(D.T@Q@D + D.T@S + S.T@D + R)))
+                np.hstack((off_diag.T, B.T@P@B-(D.T@Q@D + D.T@S + S.T@D + R)))
             ))
 
     n = sys.nstates
