@@ -15,7 +15,7 @@ except ImportError as e:
 eps = np.nextafter(0, 1)
 
 
-def __make_P_basis_matrices__(n, rho, nu, make_LMI_matrix_func):
+def _make_P_basis_matrices(n, rho, nu, make_LMI_matrix_func):
     '''
     Utility function to make basis matrices for a LMI from a 
     functional make_LMI_matrix_func and a symmetric matrix P of size n by n
@@ -34,7 +34,7 @@ def __make_P_basis_matrices__(n, rho, nu, make_LMI_matrix_func):
     return matrix_list
 
 
-def __P_pos_def_constraint__(n):
+def _P_pos_def_constraint(n):
     '''
     Utility function to make basis matrices for a LMI that ensures parametrized symbolic matrix 
     of size n by n is positive definite.
@@ -51,7 +51,7 @@ def __P_pos_def_constraint__(n):
     return matrix_list
 
 
-def __solve_passivity_LMI__(sys, rho=None, nu=None):
+def _solve_passivity_LMI(sys, rho=None, nu=None):
     '''
     Constructs a linear matrix inequality such that if a solution exists 
     and the last element of the solution is positive, the system is passive.
@@ -117,18 +117,18 @@ def __solve_passivity_LMI__(sys, rho=None, nu=None):
     )
 
     if rho is not None:
-        sys_matrix_list = __make_P_basis_matrices__(
+        sys_matrix_list = _make_P_basis_matrices(
             n, eps, 1.0, make_LMI_matrix)
         sys_constants = -make_LMI_matrix(np.zeros_like(A), rho, eps, 1.0)
     else:
-        sys_matrix_list = __make_P_basis_matrices__(
+        sys_matrix_list = _make_P_basis_matrices(
             n, 1.0, eps, make_LMI_matrix)
         sys_constants = -make_LMI_matrix(np.zeros_like(A), eps, nu, 1.0)
 
     sys_coefficents = np.vstack(sys_matrix_list).T
 
     # LMI to ensure P is positive definite
-    P_matrix_list = __P_pos_def_constraint__(n)
+    P_matrix_list = _P_pos_def_constraint(n)
     P_coefficents = np.vstack(P_matrix_list).T
     P_constants = np.zeros((n, n))
 
@@ -161,7 +161,7 @@ def get_output_fb_index(sys):
     float: 
         The OFP index 
     '''
-    sol = __solve_passivity_LMI__(sys, nu=eps)
+    sol = _solve_passivity_LMI(sys, nu=eps)
     if sol is None:
         return -np.inf
     else:
@@ -183,7 +183,7 @@ def get_input_ff_index(sys, index_type=None):
         The IFP index 
     '''
 
-    sol = __solve_passivity_LMI__(sys, rho=eps)
+    sol = _solve_passivity_LMI(sys, rho=eps)
     if sol is None:
         return -np.inf
     else:
