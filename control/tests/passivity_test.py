@@ -41,40 +41,40 @@ def test_ispassive_dtime():
 def test_passivity_indices_ctime():
     sys = tf([1, 1, 5, 0.1], [1, 2, 3, 4])
 
-    nu = passivity.get_passivity_index(sys, 'input')
-    rho = passivity.get_passivity_index(sys, 'output')
+    iff_index = passivity.get_input_ff_index(sys)
+    ofb_index = passivity.get_output_fb_index(sys)
 
-    assert(isinstance(nu, float))
+    assert(isinstance(ofb_index, float))
 
-    sys_ff_nu = parallel(sys, -nu)
-    sys_fb_rho = feedback(sys, rho, sign=1)
+    sys_ff = parallel(sys, -iff_index)
+    sys_fb = feedback(sys, ofb_index, sign=1)
 
-    assert(sys_ff_nu.ispassive())
-    assert(sys_fb_rho.ispassive())
+    assert(sys_ff.ispassive())
+    assert(sys_fb.ispassive())
 
-    sys_ff_nu = parallel(sys, -nu-1e-6)
-    sys_fb_rho = feedback(sys, rho+1e-6,  sign=1)
+    sys_ff = parallel(sys, -iff_index-1e-6)
+    sys_fb = feedback(sys, ofb_index+1e-6,  sign=1)
 
-    assert(not sys_ff_nu.ispassive())
-    assert(not sys_fb_rho.ispassive())
+    assert(not sys_ff.ispassive())
+    assert(not sys_fb.ispassive())
 
 
 def test_passivity_indices_dtime():
     sys = tf([1, 1, 5, 0.1], [1, 2, 3, 4])
     sys = sample_system(sys, Ts=0.1)
-    nu = passivity.get_passivity_index(sys, 'input')
-    rho = passivity.get_passivity_index(sys, 'output')
+    iff_index = passivity.get_input_ff_index(sys)
+    ofb_index = passivity.get_output_fb_index(sys)
 
-    assert(isinstance(nu, float))
+    assert(isinstance(iff_index, float))
 
-    sys_ff_nu = parallel(sys, -nu)
-    sys_fb_rho = feedback(sys, rho-1e-6,  sign=1)
+    sys_ff_nu = parallel(sys, -iff_index)
+    sys_fb_rho = feedback(sys, ofb_index-1e-6,  sign=1)
 
     assert(sys_ff_nu.ispassive())
     assert(sys_fb_rho.ispassive())
 
-    sys_ff_nu = parallel(sys, -nu-1e-6)
-    sys_fb_rho = feedback(sys, rho, sign=1)
+    sys_ff_nu = parallel(sys, -iff_index-1e-6)
+    sys_fb_rho = feedback(sys, ofb_index, sign=1)
 
     assert(not sys_ff_nu.ispassive())
     assert(not sys_fb_rho.ispassive())

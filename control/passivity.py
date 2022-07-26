@@ -51,7 +51,20 @@ def __P_pos_def_constraint__(n):
     return matrix_list
 
 
-def __ispassive__(sys, rho=None, nu=None):
+def __solve_passivity_LMI__(sys, rho=None, nu=None):
+    '''
+    Constructs a linear matrix inequality such that if a solution exists 
+    and the last element of the solution is positive, the system is passive.
+
+    The sources for the algorithm are: 
+
+    McCourt, Michael J., and Panos J. Antsaklis
+        "Demonstrating passivity and dissipativity using computational methods." 
+
+    Nicholas Kottenstette and Panos J. Antsaklis
+        "Relationships Between Positive Real, Passive Dissipative, & Positive Systems" 
+        equation 36.
+    '''
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
 
@@ -134,30 +147,57 @@ def __ispassive__(sys, rho=None, nu=None):
     return sol["x"]
 
 
+def get_output_fb_index(sys):
+    '''
+    Returns the output feedback passivity index for the input system. This is largest gain that can be placed in
+    positive feedback with a system such that the new interconnected system is passive.
+    Parameters
+    ----------
+    sys: An LTI system
+        System to be checked.
+
+    Returns
+    -------
+    float: 
+        The OFP index 
+    '''
+    sol = __solve_passivity_LMI__(sys, nu=eps)
+    if sol is not None:
+        return sol[-1]
+    else:
+        return -np.inf
+
+
+def get_input_ff_index(sys, index_type=None):
+    '''
+    Returns the input feedforward passivity (IFP) index for the input system. This is the largest gain that can be 
+    placed in negative parallel interconnection with a system such that the new interconnected system is passive.
+    Parameters
+    ----------
+    sys: An LTI system
+        System to be checked.
+
+    Returns
+    -------
+    float: 
+        The IFP index 
+    '''
+
+    sol = __solve_passivity_LMI__(sys, rho=eps)
+    if sol is not None:
+        return sol[-1]
+    else:
+        return -np.inf
+
+
 def ispassive(sys, rho=None, nu=None):
     '''
     Indicates if a linear time invariant (LTI) system is passive
-
-    Constructs a linear matrix inequality and a feasibility optimization
-    such that if a solution exists, the system is passive.
-
-    The sources for the algorithm are: 
-
-    McCourt, Michael J., and Panos J. Antsaklis
-        "Demonstrating passivity and dissipativity using computational methods." 
-
-    Nicholas Kottenstette and Panos J. Antsaklis
-        "Relationships Between Positive Real, Passive Dissipative, & Positive Systems" 
-        equation 36.
 
     Parameters
     ----------
     sys: An LTI system
         System to be checked.
-    nu: float
-        Concrete value for input passivity index. 
-    rho: float
-        Concrete value for output passivity index. 
 
     Returns
     -------
@@ -165,49 +205,6 @@ def ispassive(sys, rho=None, nu=None):
         The input system is passive, or the passivity index "opposite" the input. 
         If the problem is unfeasiable when requesting the passivity index, returns None.
     '''
-    if rho is not None and nu is not None:
-        return __ispassive__(sys, rho, nu) is not None
-    elif rho is None and nu is not None:
-        sol = __ispassive__(sys, nu=nu)
-        if sol is not None:
-            return sol[-1]
-        else:
-            return None
-    elif nu is None and rho is not None:
-        sol = __ispassive__(sys, rho=rho)
-        if sol is not None:
-            return sol[-1]
-        else:
-            return None
-    else:
-        sol_rho = __ispassive__(sys, nu=eps)
-        sol_nu = __ispassive__(sys, rho=eps)
-        if sol_rho is not None and sol_nu is not None:
-            return sol_rho[-1] > 0 or sol_nu[-1] > 0
-        else:
-            return False
-
-
-def get_passivity_index(sys, index_type=None):
-    '''
-    Returns the passivity index associated with the input string. 
-    Parameters
-    ----------
-    sys: An LTI system
-        System to be checked.
-    index_type: String
-        Must be 'input' or 'output'. Indicates which passivity index will be returned. 
-
-    Returns
-    -------
-    float: 
-        The passivity index 
-    '''
-    if index_type is None:
-        raise ControlArgument("Must provide index_type of 'input' or 'output'.")
-    if index_type == "input":
-        nu = ispassive(sys, rho=eps)
-        return nu
-    if index_type == "output":
-        rho = ispassive(sys, nu=eps)
-        return rho
+    output_fb_index = get_output_fb_index(sys)
+    input_ff_index = get_input_ff_index(sys)
+    return output_fb_index >= 0 or input_ff_index >= 0
