@@ -6,7 +6,7 @@ import pytest
 import numpy
 from control import ss, passivity, tf, sample_system, parallel, feedback
 from control.tests.conftest import cvxoptonly
-from control.exception import ControlDimension
+from control.exception import ControlArgument, ControlDimension
 
 pytestmark = cvxoptonly
 
@@ -124,6 +124,15 @@ def test_ispassive_all_zeros():
     with pytest.raises(ValueError):
         passivity.ispassive(sys)
 
+def test_rho_and_nu_are_none():
+    A = numpy.array([[0]])
+    B = numpy.array([[0]])
+    C = numpy.array([[0]])
+    D = numpy.array([[0]])
+    sys = ss(A, B, C, D)
+
+    with pytest.raises(ControlArgument):
+        passivity._solve_passivity_LMI(sys)
 
 def test_transfer_function():
     sys = tf([1], [1, 2])
