@@ -162,10 +162,10 @@ def get_output_fb_index(sys):
         The OFP index 
     '''
     sol = __solve_passivity_LMI__(sys, nu=eps)
-    if sol is not None:
-        return sol[-1]
-    else:
+    if sol is None:
         return -np.inf
+    else:
+        return sol[-1]
 
 
 def get_input_ff_index(sys, index_type=None):
@@ -184,10 +184,10 @@ def get_input_ff_index(sys, index_type=None):
     '''
 
     sol = __solve_passivity_LMI__(sys, rho=eps)
-    if sol is not None:
-        return sol[-1]
-    else:
+    if sol is None:
         return -np.inf
+    else:
+        return sol[-1]
 
 
 def ispassive(sys, rho=None, nu=None):
