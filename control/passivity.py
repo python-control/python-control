@@ -168,7 +168,7 @@ def get_output_fb_index(sys):
         return sol[-1]
 
 
-def get_input_ff_index(sys, index_type=None):
+def get_input_ff_index(sys):
     '''
     Returns the input feedforward passivity (IFP) index for the input system. This is the largest gain that can be 
     placed in negative parallel interconnection with a system such that the new interconnected system is passive.
@@ -190,7 +190,7 @@ def get_input_ff_index(sys, index_type=None):
         return sol[-1]
 
 
-def ispassive(sys, rho=None, nu=None):
+def ispassive(sys):
     '''
     Indicates if a linear time invariant (LTI) system is passive
 
@@ -201,9 +201,8 @@ def ispassive(sys, rho=None, nu=None):
 
     Returns
     -------
-    bool, float, or None: 
-        The input system is passive, or the passivity index "opposite" the input. 
-        If the problem is unfeasiable when requesting the passivity index, returns None.
+    bool: 
+        The input system is passive.
     '''
     output_fb_index = get_output_fb_index(sys)
     input_ff_index = get_input_ff_index(sys)
