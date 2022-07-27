@@ -14,9 +14,11 @@ except ImportError as e:
 
 eps = np.nextafter(0, 1)
 
+__all__ = ["get_output_fb_index", "get_input_ff_index", "ispassive"]
 
 def _make_P_basis_matrices(n, rho, nu, make_LMI_matrix_func):
-    '''
+    '''Make list of matrix constraints for passivity LMI
+
     Utility function to make basis matrices for a LMI from a 
     functional make_LMI_matrix_func and a symmetric matrix P of size n by n
     representing a parametrized symbolic matrix
@@ -35,7 +37,8 @@ def _make_P_basis_matrices(n, rho, nu, make_LMI_matrix_func):
 
 
 def _P_pos_def_constraint(n):
-    '''
+    '''Make list of matrix constraints for P >= 0
+
     Utility function to make basis matrices for a LMI that ensures parametrized symbolic matrix 
     of size n by n is positive definite.
     '''
@@ -52,9 +55,11 @@ def _P_pos_def_constraint(n):
 
 
 def _solve_passivity_LMI(sys, rho=None, nu=None):
-    '''
-    Constructs a linear matrix inequality such that if a solution exists 
-    and the last element of the solution is positive, the system is passive.
+    '''Compute passivity indices via a linear matrix inequality (LMI)
+
+    Constructs an LMI such that if a solution exists and the last element of the 
+    solution is positive, the system is passive. The last element is either the 
+    input or output passivity index, for nu=None and rho=None respectively.
 
     The sources for the algorithm are: 
 
@@ -124,7 +129,7 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
         sys_matrix_list = _make_P_basis_matrices(
             n, 1.0, eps, make_LMI_matrix)
         sys_constants = -make_LMI_matrix(np.zeros_like(A), eps, nu, 1.0)
-
+    
     sys_coefficents = np.vstack(sys_matrix_list).T
 
     # LMI to ensure P is positive definite
@@ -148,9 +153,11 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
 
 
 def get_output_fb_index(sys):
-    '''
-    Returns the output feedback passivity index for the input system. This is largest gain that can be placed in
-    positive feedback with a system such that the new interconnected system is passive.
+    '''Returns the output feedback passivity (OFP) index for the input system. 
+    
+    The OFP is largest gain that can be placed in positive feedback 
+    with a system such that the new interconnected system is passive.
+
     Parameters
     ----------
     sys: An LTI system
@@ -169,9 +176,11 @@ def get_output_fb_index(sys):
 
 
 def get_input_ff_index(sys):
-    '''
-    Returns the input feedforward passivity (IFP) index for the input system. This is the largest gain that can be 
-    placed in negative parallel interconnection with a system such that the new interconnected system is passive.
+    '''Returns the input feedforward passivity (IFP) index for the input system. 
+    
+    The IFP is the largest gain that can be placed in negative parallel interconnection 
+    with a system such that the new interconnected system is passive.
+
     Parameters
     ----------
     sys: An LTI system
@@ -191,8 +200,7 @@ def get_input_ff_index(sys):
 
 
 def ispassive(sys):
-    '''
-    Indicates if a linear time invariant (LTI) system is passive
+    '''Indicates if a linear time invariant (LTI) system is passive
 
     Parameters
     ----------
