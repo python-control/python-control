@@ -4,7 +4,7 @@ Date: July 17, 2022
 '''
 
 import numpy as np
-from control import statesp as ss
+from control import statesp
 from control.exception import ControlArgument, ControlDimension
 
 try:
@@ -75,7 +75,7 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
     if rho is None and nu is None:
         raise ControlArgument("rho or nu must be given a float value.")
 
-    sys = ss._convert_to_statespace(sys)
+    sys = statesp._convert_to_statespace(sys)
 
     A = sys.A
     B = sys.B
