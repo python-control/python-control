@@ -72,6 +72,7 @@ from .robust import *
 from .config import *
 from .sisotool import *
 from .iosys import *
+from .passivity import *
 
 # Exceptions
 from .exception import *
