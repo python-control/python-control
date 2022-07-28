@@ -243,18 +243,11 @@ def get_directional_index(sys):
 
     
 def ispassive(sys, ofp_index = 0, ifp_index = 0):
-    '''Indicates if a linear time invariant (LTI) system is passive.
-
-    Checks if system is passive with the given output feedback (OFP) and input feedforward (IFP)
-    passivity indices. Querying if the system is passive in the sense of V(x)>=0 and \\dot{V}(x) <= y.T*u, 
-    is equiavlent to the default case of ofp_index = 0, ifp_index = 0.
-
-    Note that computing the ofp_index and ifp_index for a system, then using both values simultaneously 
-    to as inputs to this function is not guaranteed to have an output of 'True' 
-    (the system might not be passive with both indices at the same time). For more details, see:
-        McCourt, Michael J., and Panos J. Antsaklis
-            "Demonstrating passivity and dissipativity using computational methods." 
-
+    '''Indicate if a linear time invariant (LTI) system is passive.
+    
+    Checks if system is passive with the given output feedback (OFP) and input
+    feedforward (IFP) passivity indices.
+    
     Parameters
     ----------
     sys: An LTI system
@@ -263,10 +256,28 @@ def ispassive(sys, ofp_index = 0, ifp_index = 0):
         Output feedback passivity index.
     ifp_index: float
         Input feedforward passivity index.
-
+        
     Returns
     -------
     bool: 
         The system is passive.
+        
+    Notes
+    -----
+    Querying if the system is passive in the sense of
+    
+    .. math:: V(x) >= 0 \land \dot{V}(x) <= y^T u
+    is equivalent to the default case of `ofp_index = 0`, `ifp_index = 0`.
+    Note that computing the ofp_index and ifp_index for a system, then using
+    both values simultaneously as inputs to this function is not guaranteed
+    to have an output of `True` (the system might not be passive with both
+    indices at the same time).
+    
+    For more details, see [1].
+    
+    References
+    ----------
+    .. [1] McCourt, Michael J., and Panos J. Antsaklis
+          "Demonstrating passivity and dissipativity using computational methods." 
     '''
     return solve_passivity_LMI(sys, rho = ofp_index, nu = ifp_index) is not None
