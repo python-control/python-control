@@ -34,6 +34,20 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
     Nicholas Kottenstette and Panos J. Antsaklis
         "Relationships Between Positive Real, Passive Dissipative, & Positive Systems" 
         equation 36.
+
+    Parameters
+    ----------
+    sys: An LTI system
+        System to be checked.
+    rho: Float or None
+        Output feedback passivity index
+    nu: Float or None
+        Input feedforward passivity index
+        
+    Returns
+    -------
+    numpy array: 
+        The LMI solution
     '''
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
