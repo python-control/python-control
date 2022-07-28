@@ -14,16 +14,17 @@ except ImportError as e:
 
 eps = np.nextafter(0, 1)
 
-__all__ = ["get_output_fb_index", "get_input_ff_index", "ispassive"]
+__all__ = ["get_output_fb_index", "get_input_ff_index", 
+    "ispassive", "solve_passivity_LMI"]
 
 
-def _solve_passivity_LMI(sys, rho=None, nu=None):
+def solve_passivity_LMI(sys, rho=None, nu=None):
     '''Computes passivity indices and/or solves feasiblity via a linear matrix inequality (LMI).
 
     Constructs an LMI such that if a solution exists and the last element of the 
     solution is positive, the system is passive. Inputs of None for rho or nu indicates that 
     the function should solve for that index (they are mutually exclusive, they can't both be None, 
-    otherwise you're trying to solve a bilinear matrix inequality.) The last element is either the 
+    otherwise you're trying to solve a nonconvex bilinear matrix inequality.) The last element is either the 
     output or input passivity index, for rho=None and nu=None respectively.
 
     The sources for the algorithm are: 
@@ -186,7 +187,7 @@ def get_output_fb_index(sys):
     float: 
         The OFP index 
     '''
-    sol = _solve_passivity_LMI(sys, nu=eps)
+    sol = solve_passivity_LMI(sys, nu=eps)
     if sol is None:
         return -np.inf
     else:
@@ -210,7 +211,7 @@ def get_input_ff_index(sys):
         The IFP index 
     '''
 
-    sol = _solve_passivity_LMI(sys, rho=eps)
+    sol = solve_passivity_LMI(sys, rho=eps)
     if sol is None:
         return -np.inf
     else:
@@ -220,14 +221,28 @@ def get_input_ff_index(sys):
 def ispassive(sys, ofp_index = 0, ifp_index = 0):
     '''Indicates if a linear time invariant (LTI) system is passive.
 
+    Checks if system is passive with the given output feedback (OFP) and input feedforward (IFP)
+    passivity indices. Querying if the system is passive in the sense of V(x)>=0 and \\dot{V}(x) <= y.T*u, 
+    is equiavlent to the default case of ofp_index = 0, ifp_index = 0.
+
+    Note that computing the ofp_index and ifp_index for a system, then using both values simultaneously 
+    to as inputs to this function is not guaranteed to have an output of 'True' 
+    (the system might not be passive with both indices at the same time). For more details, see:
+        McCourt, Michael J., and Panos J. Antsaklis
+            "Demonstrating passivity and dissipativity using computational methods." 
+
     Parameters
     ----------
     sys: An LTI system
         System to be checked.
+    ofp_index: float
+        Output feedback passivity index.
+    ifp_index: float
+        Input feedforward passivity index.
 
     Returns
     -------
     bool: 
-        The input system is passive.
+        The system is passive.
     '''
-    return _solve_passivity_LMI(sys, rho = ofp_index, nu = ifp_index) is not None
+    return solve_passivity_LMI(sys, rho = ofp_index, nu = ifp_index) is not None

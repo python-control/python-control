@@ -123,7 +123,7 @@ def test_rho_and_nu_are_none():
     sys = ss(A, B, C, D)
 
     with pytest.raises(ControlArgument):
-        passivity._solve_passivity_LMI(sys)
+        passivity.solve_passivity_LMI(sys)
 
 
 def test_transfer_function():
