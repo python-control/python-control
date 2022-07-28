@@ -218,6 +218,30 @@ def get_input_ff_index(sys):
         return sol[-1]
 
 
+def get_relative_index(sys):
+    """Returns the relative passivity index for the system.
+
+    (not implemented yet)
+    """
+    raise NotImplemented("Relative passivity index not implemented")
+
+
+def get_combined_io_index(sys):
+    """Returns the combined I/O passivity index for the system.
+
+    (not implemented yet)
+    """
+    raise NotImplemented("Combined I/O passivity index not implemented")
+
+
+def get_directional_index(sys):
+    """Returns the directional passivity index for the system.
+
+    (not implemented yet)
+    """
+    raise NotImplemented("Directional passivity index not implemented")
+
+    
 def ispassive(sys, ofp_index = 0, ifp_index = 0):
     '''Indicates if a linear time invariant (LTI) system is passive.
 
