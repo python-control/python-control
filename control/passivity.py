@@ -16,50 +16,15 @@ eps = np.nextafter(0, 1)
 
 __all__ = ["get_output_fb_index", "get_input_ff_index", "ispassive"]
 
-def _make_P_basis_matrices(n, rho, nu, make_LMI_matrix_func):
-    '''Make list of matrix constraints for passivity LMI
-
-    Utility function to make basis matrices for a LMI from a 
-    functional make_LMI_matrix_func and a symmetric matrix P of size n by n
-    representing a parametrized symbolic matrix
-    '''
-    matrix_list = []
-    for i in range(0, n):
-        for j in range(0, n):
-            if j <= i:
-                P = np.zeros((n, n))
-                P[i, j] = 1.0
-                P[j, i] = 1.0
-                matrix_list.append(make_LMI_matrix_func(P, 0, 0, 0).flatten())
-    P = eps*np.eye(n)
-    matrix_list.append(make_LMI_matrix_func(P, rho, nu, 0).flatten())
-    return matrix_list
-
-
-def _P_pos_def_constraint(n):
-    '''Make list of matrix constraints for P >= 0
-
-    Utility function to make basis matrices for a LMI that ensures parametrized symbolic matrix 
-    of size n by n is positive definite.
-    '''
-    matrix_list = []
-    for i in range(0, n):
-        for j in range(0, n):
-            if j <= i:
-                P = np.zeros((n, n))
-                P[i, j] = -1.0
-                P[j, i] = -1.0
-                matrix_list.append(P.flatten())
-    matrix_list.append(np.zeros((n, n)).flatten())
-    return matrix_list
-
 
 def _solve_passivity_LMI(sys, rho=None, nu=None):
-    '''Compute passivity indices via a linear matrix inequality (LMI)
+    '''Computes passivity indices and/or solves feasiblity via a linear matrix inequality (LMI).
 
     Constructs an LMI such that if a solution exists and the last element of the 
-    solution is positive, the system is passive. The last element is either the 
-    input or output passivity index, for nu=None and rho=None respectively.
+    solution is positive, the system is passive. Inputs of None for rho or nu indicates that 
+    the function should solve for that index (they are mutually exclusive, they can't both be None, 
+    otherwise you're trying to solve a bilinear matrix inequality.) The last element is either the 
+    output or input passivity index, for rho=None and nu=None respectively.
 
     The sources for the algorithm are: 
 
@@ -78,7 +43,7 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
             "The number of system inputs must be the same as the number of system outputs.")
 
     if rho is None and nu is None:
-        raise ControlArgument("rho or nu must be given a float value.")
+        raise ControlArgument("rho or nu must be given a numerical value.")
 
     sys = statesp._convert_to_statespace(sys)
 
@@ -112,28 +77,64 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
                 np.hstack((off_diag.T, B.T@P@B-(D.T@Q@D + D.T@S + S.T@D + R)))
             ))
 
+    def make_P_basis_matrices(n, rho, nu):
+        '''Makes list of matrix constraints for passivity LMI.
+
+        Utility function to make basis matrices for a LMI from a 
+        symmetric matrix P of size n by n representing a parametrized symbolic matrix
+        '''
+        matrix_list = []
+        for i in range(0, n):
+            for j in range(0, n):
+                if j <= i:
+                    P = np.zeros((n, n))
+                    P[i, j] = 1
+                    P[j, i] = 1
+                    matrix_list.append(make_LMI_matrix(P, 0, 0, 0).flatten())
+        zeros = eps*np.eye(n)
+        if rho is None:
+            matrix_list.append(make_LMI_matrix(zeros, 1, 0, 0).flatten())
+        elif nu is None:
+            matrix_list.append(make_LMI_matrix(zeros, 0, 1, 0).flatten())
+        return matrix_list
+
+
+    def P_pos_def_constraint(n):
+        '''Makes a list of matrix constraints for P >= 0.
+
+        Utility function to make basis matrices for a LMI that ensures parametrized symbolic matrix 
+        of size n by n is positive definite.
+        '''
+        matrix_list = []
+        for i in range(0, n):
+            for j in range(0, n):
+                if j <= i:
+                    P = np.zeros((n, n))
+                    P[i, j] = -1
+                    P[j, i] = -1
+                    matrix_list.append(P.flatten())
+        if rho is None or nu is None:
+            matrix_list.append(np.zeros((n, n)).flatten())
+        return matrix_list
+
     n = sys.nstates
 
-    # LMI for passivity indices from A,B,C,D
-    sys_matrix_list = list()
-    sys_constants = -np.vstack((
-        np.hstack((np.zeros_like(A),  np.zeros_like(C.T))),
-        np.hstack((np.zeros_like(C), np.zeros_like(D))))
-    )
+    # coefficents for passivity indices and feasibility matrix 
+    sys_matrix_list = make_P_basis_matrices(n, rho, nu)
 
-    if rho is not None:
-        sys_matrix_list = _make_P_basis_matrices(
-            n, eps, 1.0, make_LMI_matrix)
+    # get constants for numerical values of rho and nu
+    sys_constants = list()
+    if rho is not None and nu is not None:
+        sys_constants = -make_LMI_matrix(np.zeros_like(A), rho, nu, 1.0)
+    elif rho is not None:
         sys_constants = -make_LMI_matrix(np.zeros_like(A), rho, eps, 1.0)
-    else:
-        sys_matrix_list = _make_P_basis_matrices(
-            n, 1.0, eps, make_LMI_matrix)
+    elif nu is not None:
         sys_constants = -make_LMI_matrix(np.zeros_like(A), eps, nu, 1.0)
     
     sys_coefficents = np.vstack(sys_matrix_list).T
 
     # LMI to ensure P is positive definite
-    P_matrix_list = _P_pos_def_constraint(n)
+    P_matrix_list = P_pos_def_constraint(n)
     P_coefficents = np.vstack(P_matrix_list).T
     P_constants = np.zeros((n, n))
 
@@ -141,7 +142,10 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
     number_of_opt_vars = int(
         (n**2-n)/2 + n)
     c = cvx.matrix(0.0, (number_of_opt_vars, 1))
-    c = cvx.matrix(np.append(np.array(c), -1.0))
+
+    #we're maximizing a passivity index, include it in the cost function
+    if rho is None or nu is None:
+        c = cvx.matrix(np.append(np.array(c), -1.0))
 
     Gs = [cvx.matrix(sys_coefficents)] + [cvx.matrix(P_coefficents)]
     hs = [cvx.matrix(sys_constants)] + [cvx.matrix(P_constants)]
@@ -155,7 +159,7 @@ def _solve_passivity_LMI(sys, rho=None, nu=None):
 def get_output_fb_index(sys):
     '''Returns the output feedback passivity (OFP) index for the input system. 
     
-    The OFP is largest gain that can be placed in positive feedback 
+    The OFP is the largest gain that can be placed in positive feedback 
     with a system such that the new interconnected system is passive.
 
     Parameters
@@ -199,8 +203,8 @@ def get_input_ff_index(sys):
         return sol[-1]
 
 
-def ispassive(sys):
-    '''Indicates if a linear time invariant (LTI) system is passive
+def ispassive(sys, ofp_index = 0, ifp_index = 0):
+    '''Indicates if a linear time invariant (LTI) system is passive.
 
     Parameters
     ----------
@@ -212,6 +216,4 @@ def ispassive(sys):
     bool: 
         The input system is passive.
     '''
-    output_fb_index = get_output_fb_index(sys)
-    input_ff_index = get_input_ff_index(sys)
-    return output_fb_index >= 0 or input_ff_index >= 0
+    return _solve_passivity_LMI(sys, rho = ofp_index, nu = ifp_index) is not None

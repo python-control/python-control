@@ -67,17 +67,17 @@ def test_passivity_indices_dtime():
 
     assert(isinstance(iff_index, float))
 
-    sys_ff_nu = parallel(sys, -iff_index)
-    sys_fb_rho = feedback(sys, ofb_index-1e-6,  sign=1)
+    sys_ff = parallel(sys, -iff_index)
+    sys_fb = feedback(sys, ofb_index,  sign=1)
 
-    assert(sys_ff_nu.ispassive())
-    assert(sys_fb_rho.ispassive())
+    assert(sys_ff.ispassive())
+    assert(sys_fb.ispassive())
 
-    sys_ff_nu = parallel(sys, -iff_index-1e-6)
-    sys_fb_rho = feedback(sys, ofb_index, sign=1)
+    sys_ff = parallel(sys, -iff_index-1e-2)
+    sys_fb = feedback(sys, ofb_index+1e-2, sign=1)
 
-    assert(not sys_ff_nu.ispassive())
-    assert(not sys_fb_rho.ispassive())
+    assert(not sys_ff.ispassive())
+    assert(not sys_fb.ispassive())
 
 
 def test_system_dimension():
@@ -104,7 +104,8 @@ D = numpy.array([[1.5]])
      ((A_d, B, C, D), True),
      ((A*1e12, B, C, D*0), True),
      ((A, B*0, C*0, D), True),
-     ((A*0, B, C, D), True)])
+     ((A*0, B, C, D), True),
+     ((A*0, B*0, C*0, D*0), True)])
 def test_ispassive_edge_cases(test_input, expected):
     A = test_input[0]
     B = test_input[1]
@@ -113,16 +114,6 @@ def test_ispassive_edge_cases(test_input, expected):
     sys = ss(A, B, C, D)
     assert(passivity.ispassive(sys) == expected)
 
-
-def test_ispassive_all_zeros():
-    A = numpy.array([[0]])
-    B = numpy.array([[0]])
-    C = numpy.array([[0]])
-    D = numpy.array([[0]])
-    sys = ss(A, B, C, D)
-
-    with pytest.raises(ValueError):
-        passivity.ispassive(sys)
 
 def test_rho_and_nu_are_none():
     A = numpy.array([[0]])
@@ -133,6 +124,7 @@ def test_rho_and_nu_are_none():
 
     with pytest.raises(ControlArgument):
         passivity._solve_passivity_LMI(sys)
+
 
 def test_transfer_function():
     sys = tf([1], [1, 2])
