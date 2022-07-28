@@ -189,7 +189,7 @@ def get_output_fb_index(sys):
     '''
     sol = solve_passivity_LMI(sys, nu=eps)
     if sol is None:
-        return -np.inf
+        raise RuntimeError("LMI passivity problem is infeasible")
     else:
         return sol[-1]
 
@@ -213,7 +213,7 @@ def get_input_ff_index(sys):
 
     sol = solve_passivity_LMI(sys, rho=eps)
     if sol is None:
-        return -np.inf
+        raise RuntimeError("LMI passivity problem is infeasible")
     else:
         return sol[-1]
 
