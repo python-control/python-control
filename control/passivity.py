@@ -1,7 +1,9 @@
-'''
-Author: Mark Yeatman  
+"""
+Functions for passive control.
+
+Author: Mark Yeatman
 Date: July 17, 2022
-'''
+"""
 
 import numpy as np
 from control import statesp
@@ -9,53 +11,57 @@ from control.exception import ControlArgument, ControlDimension
 
 try:
     import cvxopt as cvx
-except ImportError as e:
+except ImportError:
     cvx = None
 
 eps = np.nextafter(0, 1)
 
-__all__ = ["get_output_fb_index", "get_input_ff_index", 
-    "ispassive", "solve_passivity_LMI"]
+__all__ = ["get_output_fb_index", "get_input_ff_index",  "ispassive",
+           "solve_passivity_LMI"]
 
 
 def solve_passivity_LMI(sys, rho=None, nu=None):
-    '''Computes passivity indices and/or solves feasiblity via a linear matrix inequality (LMI).
+    """Compute passivity indices and/or solves feasiblity via a LMI.
 
-    Constructs an LMI such that if a solution exists and the last element of the 
-    solution is positive, the system is passive. Inputs of None for rho or nu indicates that 
-    the function should solve for that index (they are mutually exclusive, they can't both be None, 
-    otherwise you're trying to solve a nonconvex bilinear matrix inequality.) The last element is either the 
-    output or input passivity index, for rho=None and nu=None respectively.
+    Constructs a linear matrix inequality (LMI) such that if a solution exists
+    and the last element of the solution is positive, the system `sys` is
+    passive. Inputs of None for `rho` or `nu` indicate that the function should
+    solve for that index (they are mutually exclusive, they can't both be
+    None, otherwise you're trying to solve a nonconvex bilinear matrix
+    inequality.) The last element of `solution` is either the output or input
+    passivity index, for `rho` = None and  `nu` = None respectively.
 
-    The sources for the algorithm are: 
+    The sources for the algorithm are:
 
     McCourt, Michael J., and Panos J. Antsaklis
-        "Demonstrating passivity and dissipativity using computational methods." 
+        "Demonstrating passivity and dissipativity using computational
+        methods."
 
     Nicholas Kottenstette and Panos J. Antsaklis
-        "Relationships Between Positive Real, Passive Dissipative, & Positive Systems" 
-        equation 36.
+        "Relationships Between Positive Real, Passive Dissipative, & Positive
+        Systems", equation 36.
 
     Parameters
     ----------
-    sys: An LTI system
-        System to be checked.
-    rho: Float or None
+    sys : LTI
+        System to be checked
+    rho : float or None
         Output feedback passivity index
-    nu: Float or None
+    nu : float or None
         Input feedforward passivity index
-        
+
     Returns
     -------
-    numpy array: 
+    solution : ndarray
         The LMI solution
-    '''
+    """
     if cvx is None:
         raise ModuleNotFoundError("cvxopt required for passivity module")
 
     if sys.ninputs != sys.noutputs:
         raise ControlDimension(
-            "The number of system inputs must be the same as the number of system outputs.")
+            "The number of system inputs must be the same as the number of "
+            "system outputs.")
 
     if rho is None and nu is None:
         raise ControlArgument("rho or nu must be given a numerical value.")
@@ -93,11 +99,12 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
             ))
 
     def make_P_basis_matrices(n, rho, nu):
-        '''Makes list of matrix constraints for passivity LMI.
+        """Make list of matrix constraints for passivity LMI.
 
-        Utility function to make basis matrices for a LMI from a 
-        symmetric matrix P of size n by n representing a parametrized symbolic matrix
-        '''
+        Utility function to make basis matrices for a LMI from a
+        symmetric matrix P of size n by n representing a parametrized symbolic
+        matrix
+        """
         matrix_list = []
         for i in range(0, n):
             for j in range(0, n):
@@ -115,11 +122,11 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
 
 
     def P_pos_def_constraint(n):
-        '''Makes a list of matrix constraints for P >= 0.
+        """Make a list of matrix constraints for P >= 0.
 
-        Utility function to make basis matrices for a LMI that ensures parametrized symbolic matrix 
-        of size n by n is positive definite.
-        '''
+        Utility function to make basis matrices for a LMI that ensures
+        parametrized symbolic matrix of size n by n is positive definite
+        """
         matrix_list = []
         for i in range(0, n):
             for j in range(0, n):
@@ -134,7 +141,7 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
 
     n = sys.nstates
 
-    # coefficents for passivity indices and feasibility matrix 
+    # coefficents for passivity indices and feasibility matrix
     sys_matrix_list = make_P_basis_matrices(n, rho, nu)
 
     # get constants for numerical values of rho and nu
@@ -145,7 +152,7 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
         sys_constants = -make_LMI_matrix(np.zeros_like(A), rho, eps, 1.0)
     elif nu is not None:
         sys_constants = -make_LMI_matrix(np.zeros_like(A), eps, nu, 1.0)
-    
+
     sys_coefficents = np.vstack(sys_matrix_list).T
 
     # LMI to ensure P is positive definite
@@ -172,21 +179,21 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
 
 
 def get_output_fb_index(sys):
-    '''Returns the output feedback passivity (OFP) index for the input system. 
-    
-    The OFP is the largest gain that can be placed in positive feedback 
+    """Return the output feedback passivity (OFP) index for the system.
+
+    The OFP is the largest gain that can be placed in positive feedback
     with a system such that the new interconnected system is passive.
 
     Parameters
     ----------
-    sys: An LTI system
-        System to be checked.
+    sys : LTI
+        System to be checked
 
     Returns
     -------
-    float: 
-        The OFP index 
-    '''
+    float
+        The OFP index
+    """
     sol = solve_passivity_LMI(sys, nu=eps)
     if sol is None:
         raise RuntimeError("LMI passivity problem is infeasible")
@@ -195,22 +202,22 @@ def get_output_fb_index(sys):
 
 
 def get_input_ff_index(sys):
-    '''Returns the input feedforward passivity (IFP) index for the input system. 
-    
-    The IFP is the largest gain that can be placed in negative parallel interconnection 
-    with a system such that the new interconnected system is passive.
+    """Return the input feedforward passivity (IFP) index for the system.
+
+    The IFP is the largest gain that can be placed in negative parallel
+    interconnection with a system such that the new interconnected system is
+    passive.
 
     Parameters
     ----------
-    sys: An LTI system
+    sys : LTI
         System to be checked.
 
     Returns
     -------
-    float: 
-        The IFP index 
-    '''
-
+    float
+        The IFP index
+    """
     sol = solve_passivity_LMI(sys, rho=eps)
     if sol is None:
         raise RuntimeError("LMI passivity problem is infeasible")
@@ -219,65 +226,67 @@ def get_input_ff_index(sys):
 
 
 def get_relative_index(sys):
-    """Returns the relative passivity index for the system.
+    """Return the relative passivity index for the system.
 
     (not implemented yet)
     """
-    raise NotImplemented("Relative passivity index not implemented")
+    raise NotImplementedError("Relative passivity index not implemented")
 
 
 def get_combined_io_index(sys):
-    """Returns the combined I/O passivity index for the system.
+    """Return the combined I/O passivity index for the system.
 
     (not implemented yet)
     """
-    raise NotImplemented("Combined I/O passivity index not implemented")
+    raise NotImplementedError("Combined I/O passivity index not implemented")
 
 
 def get_directional_index(sys):
-    """Returns the directional passivity index for the system.
+    """Return the directional passivity index for the system.
 
     (not implemented yet)
     """
-    raise NotImplemented("Directional passivity index not implemented")
+    raise NotImplementedError("Directional passivity index not implemented")
 
-    
-def ispassive(sys, ofp_index = 0, ifp_index = 0):
+
+def ispassive(sys, ofp_index=0, ifp_index=0):
     r"""Indicate if a linear time invariant (LTI) system is passive.
-    
+
     Checks if system is passive with the given output feedback (OFP) and input
     feedforward (IFP) passivity indices.
-    
+
     Parameters
     ----------
-    sys: An LTI system
-        System to be checked.
-    ofp_index: float
-        Output feedback passivity index.
-    ifp_index: float
-        Input feedforward passivity index.
-        
+    sys : LTI
+        System to be checked
+    ofp_index : float
+        Output feedback passivity index
+    ifp_index : float
+        Input feedforward passivity index
+
     Returns
     -------
-    bool: 
+    bool
         The system is passive.
-        
+
     Notes
     -----
     Querying if the system is passive in the sense of
-    
+
     .. math:: V(x) >= 0 \land \dot{V}(x) <= y^T u
-    is equivalent to the default case of `ofp_index = 0`, `ifp_index = 0`.
-    Note that computing the ofp_index and ifp_index for a system, then using
-    both values simultaneously as inputs to this function is not guaranteed
-    to have an output of `True` (the system might not be passive with both
-    indices at the same time).
-    
+
+    is equivalent to the default case of `ofp_index` = 0 and `ifp_index` = 0.
+    Note that computing the `ofp_index` and `ifp_index` for a system, then
+    using both values simultaneously as inputs to this function is not
+    guaranteed to have an output of True (the system might not be passive with
+    both indices at the same time).
+
     For more details, see [1].
-    
+
     References
     ----------
     .. [1] McCourt, Michael J., and Panos J. Antsaklis
-          "Demonstrating passivity and dissipativity using computational methods." 
+          "Demonstrating passivity and dissipativity using computational
+          methods."
     """
-    return solve_passivity_LMI(sys, rho = ofp_index, nu = ifp_index) is not None
+    return solve_passivity_LMI(sys, rho=ofp_index, nu=ifp_index) is not None
