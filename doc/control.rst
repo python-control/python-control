@@ -80,6 +80,9 @@ Control system analysis
     describing_function
     evalfr
     freqresp
+    get_input_ff_index
+    get_output_fb_index
+    ispassive
     margin
     stability_margins
     phase_crossover_frequencies
@@ -88,6 +91,8 @@ Control system analysis
     pzmap
     root_locus
     sisotool
+
+
 
 Matrix computations
 ===================
