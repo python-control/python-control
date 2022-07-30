@@ -243,7 +243,7 @@ def get_directional_index(sys):
 
     
 def ispassive(sys, ofp_index = 0, ifp_index = 0):
-    '''Indicate if a linear time invariant (LTI) system is passive.
+    r"""Indicate if a linear time invariant (LTI) system is passive.
     
     Checks if system is passive with the given output feedback (OFP) and input
     feedforward (IFP) passivity indices.
@@ -279,5 +279,5 @@ def ispassive(sys, ofp_index = 0, ifp_index = 0):
     ----------
     .. [1] McCourt, Michael J., and Panos J. Antsaklis
           "Demonstrating passivity and dissipativity using computational methods." 
-    '''
+    """
     return solve_passivity_LMI(sys, rho = ofp_index, nu = ifp_index) is not None
