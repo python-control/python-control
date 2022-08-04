@@ -35,3 +35,28 @@ def test_composition(dt1, dt2, dt3, op, type):
     else:
         sys3 = op(sys1, sys2)
         assert sys3.dt == dt3
+
+
+@pytest.mark.parametrize("dt", [None, 0, 0.1])
+def test_composition_override(dt):
+    # Define the system
+    A, B, C, D = [[1, 1], [0, 1]], [[0], [1]], [[1, 0]], 0
+    sys1 = ct.ss(A, B, C, D, None, inputs='u1', outputs='y1')
+    sys2 = ct.ss(A, B, C, D, None, inputs='y1', outputs='y2')
+
+    # Show that we can override the type
+    sys3 = ct.interconnect([sys1, sys2], inputs='u1', outputs='y2', dt=dt)
+    assert sys3.dt == dt
+
+    # Overriding the type with an inconsistent type generates an error
+    sys1 = ct.StateSpace(A, B, C, D, 0.1, inputs='u1', outputs='y1')
+    if dt != 0.1 and dt is not None:
+        with pytest.raises(ValueError, match="incompatible timebases"):
+            sys3 = ct.interconnect(
+                [sys1, sys2], inputs='u1', outputs='y2', dt=dt)
+
+    sys1 = ct.StateSpace(A, B, C, D, 0, inputs='u1', outputs='y1')
+    if dt != 0 and dt is not None:
+        with pytest.raises(ValueError, match="incompatible timebases"):
+            sys3 = ct.interconnect(
+                [sys1, sys2], inputs='u1', outputs='y2', dt=dt)
