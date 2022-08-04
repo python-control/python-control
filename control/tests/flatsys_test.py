@@ -150,7 +150,10 @@ class TestFlatSys:
         resp2 = ct.input_output_response(flatsys, T, u1, x0)
         np.testing.assert_array_almost_equal(resp1.outputs[0:2], resp2.outputs)
 
-    def test_flat_cost_constr(self):
+    @pytest.mark.parametrize("basis", [
+        fs.PolyFamily(8),
+        fs.BSplineFamily([0, 3, 7, 10], 4, 2)])
+    def test_flat_cost_constr(self, basis):
         # Double integrator system
         sys = ct.ss([[0, 1], [0, 0]], [[0], [1]], [[1, 0]], 0)
         flat_sys = fs.LinearFlatSystem(sys)
@@ -159,11 +162,11 @@ class TestFlatSys:
         x0 = [1, 0]; u0 = [0]
         xf = [0, 0]; uf = [0]
         Tf = 10
-        T = np.linspace(0, Tf, 500)
+        T = np.linspace(0, Tf, 100)
 
         # Find trajectory between initial and final conditions
         traj = fs.point_to_point(
-            flat_sys, Tf, x0, u0, xf, uf, basis=fs.PolyFamily(8))
+            flat_sys, Tf, x0, u0, xf, uf, basis=basis)
         x, u = traj.eval(T)
 
         np.testing.assert_array_almost_equal(x0, x[:, 0])
@@ -178,7 +181,7 @@ class TestFlatSys:
 
         traj_cost = fs.point_to_point(
             flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
-            basis=fs.PolyFamily(8),
+            basis=basis,
             # initial_guess='lstsq',
             # minimize_kwargs={'method': 'trust-constr'}
         )
@@ -204,7 +207,7 @@ class TestFlatSys:
 
         traj_const = fs.point_to_point(
             flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
-            constraints=constraints, basis=fs.PolyFamily(8),
+            constraints=constraints, basis=basis,
         )
 
         # Verify that the trajectory computation is correct
@@ -224,7 +227,7 @@ class TestFlatSys:
             (sp.optimize.NonlinearConstraint, lambda x, u: x, lb, ub)]
         traj_nlconst = fs.point_to_point(
             flat_sys, timepts, x0, u0, xf, uf, cost=cost_fcn,
-            constraints=nl_constraints, basis=fs.PolyFamily(8),
+            constraints=nl_constraints, basis=basis,
         )
         x_nlconst, u_nlconst = traj_nlconst.eval(T)
         np.testing.assert_almost_equal(x_const, x_nlconst)

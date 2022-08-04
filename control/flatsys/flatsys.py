@@ -413,7 +413,10 @@ def point_to_point(
     #
 
     # Start by solving the least squares problem
+    # TODO: add warning if rank is too small
     alpha, residuals, rank, s = np.linalg.lstsq(M, Z, rcond=None)
+    if rank < Z.size:
+        warnings.warn("basis too small; solution may not exist")
 
     if cost is not None or trajectory_constraints is not None:
         # Search over the null space to minimize cost/satisfy constraints
@@ -425,6 +428,7 @@ def point_to_point(
             coeffs = alpha + N @ null_coeffs
 
             # Evaluate the costs at the listed time points
+            # TODO: store Mt ahead of time, since it doesn't change
             costval = 0
             for t in timepts:
                 M_t = _basis_flag_matrix(sys, basis, zflag_T0, t)

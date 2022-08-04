@@ -54,6 +54,7 @@ member function.
 from .basis import BasisFamily
 from .poly import PolyFamily
 from .bezier import BezierFamily
+from .bspline import BSplineFamily
 
 # Classes
 from .systraj import SystemTrajectory

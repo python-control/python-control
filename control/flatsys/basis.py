@@ -61,5 +61,10 @@ class BasisFamily:
         """Evaluate the ith basis function at a point in time"""
         return self.eval_deriv(i, 0, t)
 
+    def eval(self, coeffs, tlist):
+        return [
+            sum([coeffs[i] * self(i, t) for i in range(self.N)])
+            for t in tlist]
+
     def eval_deriv(self, i, j, t):
         raise NotImplementedError("Internal error; improper basis functions")
