@@ -871,9 +871,12 @@ class InterconnectedSystem(InputOutputSystem):
         if not isinstance(outlist, (list, tuple)):
             outlist = [outlist]
 
-        # Process keyword arguments
+        # Check if dt argument was given; if not, pull from systems
+        dt = kwargs.pop('dt', None)
+
+        # Process keyword arguments (except dt)
         defaults = {'inputs': len(inplist), 'outputs': len(outlist)}
-        name, inputs, outputs, states, dt = _process_namedio_keywords(
+        name, inputs, outputs, states, _ = _process_namedio_keywords(
             kwargs, defaults, end=True)
 
         # Initialize the system list and index
