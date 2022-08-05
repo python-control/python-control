@@ -5,10 +5,10 @@ on: [push, pull_request]
 jobs:
   test-linux:
     name: >
-      Python ${{ matrix.python-version }};
-      ${{ matrix.slycot || 'without' }} Slycot;
-      ${{ matrix.pandas || 'without' }} Pandas;
-      ${{ matrix.cvxopt || 'without' }} CVXOPT;
+      Py${{ matrix.python-version }};
+      ${{ matrix.slycot || 'no' }} Slycot;
+      ${{ matrix.pandas || 'no' }} Pandas;
+      ${{ matrix.cvxopt || 'no' }} CVXOPT;
       ${{ matrix.array-and-matrix == 1 && '; array and matrix' || '' }}
     runs-on: ubuntu-latest
 
@@ -27,43 +27,41 @@ jobs:
             array-and-matrix: 1
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-    - name: Install dependencies
+    - name: Set up (virtual) X11
+      run:  sudo apt install -y xvfb
+
+    - name: Setup Conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+        activate-environment: test-env
+        environment-file: .github/conda-env/test-env.yml
+        miniforge-version: latest
+        miniforge-variant: Mambaforge
+        channels: conda-forge
+        channel-priority: strict
+        auto-update-conda: false
+        auto-activate-base: false
+
+    - name: Install optional dependencies
       run: |
-        # Set up conda
-        echo $CONDA/bin >> $GITHUB_PATH
-        conda create -q -n test-environment python=${{matrix.python-version}}
-        source $CONDA/bin/activate test-environment
-
-        # Set up (virtual) X11
-        sudo apt install -y xvfb
-
-        # Install test tools
-        conda install pip coverage pytest pytest-timeout
-        pip install coveralls
-
-        # Install python-control dependencies
-        conda install numpy matplotlib scipy
         if [[ '${{matrix.slycot}}' == 'conda' ]]; then
-          conda install -c conda-forge slycot
+          mamba install slycot
         fi
         if [[ '${{matrix.pandas}}' == 'conda' ]]; then
-          conda install pandas
+          mamba install pandas
         fi
         if [[ '${{matrix.cvxopt}}' == 'conda' ]]; then
-          conda install -c conda-forge cvxopt
+          mamba install  cvxopt
         fi
 
     - name: Test with pytest
       env:
         PYTHON_CONTROL_ARRAY_AND_MATRIX: ${{ matrix.array-and-matrix }}
       run: |
-        source $CONDA/bin/activate test-environment
-        # Use xvfb-run instead of pytest-xvfb to get proper mpl backend
-        # Use coverage instead of pytest-cov to get .coverage file
-        # See https://github.com/python-control/python-control/pull/504
-        xvfb-run --auto-servernum coverage run -m pytest control/tests
+        xvfb-run --auto-servernum pytest --cov=control --cov-config=.coveragerc control/tests
 
     - name: Coveralls parallel
       # https://github.com/coverallsapp/github-action
