@@ -4,7 +4,12 @@ on: [push, pull_request]
 
 jobs:
   test-linux:
-    name: Python ${{ matrix.python-version }}${{ matrix.slycot && format(' with Slycot from {0}', matrix.slycot) || ' without Slycot' }}${{ matrix.pandas && ', with pandas' || '' }}${{ matrix.array-and-matrix == 1 && ', array and matrix' || '' }}${{ matrix.cvxopt && format(' with cvxopt from {0}', matrix.cvxopt) || ' without cvxopt' }}
+    name: >
+      Python ${{ matrix.python-version }};
+      ${{ matrix.slycot || 'without' }} Slycot;
+      ${{ matrix.pandas || 'without' }} Pandas;
+      ${{ matrix.cvxopt || 'without' }} CVXOPT;
+      ${{ matrix.array-and-matrix == 1 && '; array and matrix' || '' }}
     runs-on: ubuntu-latest
 
     strategy:
