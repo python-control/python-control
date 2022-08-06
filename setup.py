@@ -6,7 +6,7 @@ try:
         exec(fd.read(), ver)
     version = ver.get('__version__', 'dev')
 except IOError:
-    version = 'dev'
+    version = '0.0.0dev'
 
 with open('README.rst') as fp:
     long_description = fp.read()
