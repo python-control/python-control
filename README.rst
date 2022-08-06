@@ -97,17 +97,14 @@ To install using pip::
 If you install Slycot using pip you'll need a development environment
 (e.g., Python development files, C and Fortran compilers).
 
-Distutils
----------
+Installing from source
+----------------------
 
-To install in your home directory, use::
+To install from source, get the source code of the desired branch or release
+from the github repository or archive, unpack, and run from within the
+toplevel `python-control` directory::
 
-  python setup.py install --user
-
-To install for all users (on Linux or Mac OS)::
-
-  python setup.py build
-  sudo python setup.py install
+  pip install .
 
 
 Development
