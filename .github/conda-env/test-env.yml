@@ -1,0 +1,11 @@
+name: test-env
+dependencies:
+  - pip
+  - coverage
+  - coveralls
+  - pytest
+  - pytest-cov
+  - pytest-timeout
+  - numpy
+  - matplotlib
+  - scipy
