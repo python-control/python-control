@@ -85,6 +85,8 @@ class TestRootLocus:
 
     # TODO: cover and validate negative false_gain branch in _default_gains()
 
+    @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
+                        reason="Requires the zoom toolbar")
     def test_root_locus_zoom(self):
         """Check the zooming functionality of the Root locus plot"""
         system = TransferFunction([1000], [1, 25, 100, 0])

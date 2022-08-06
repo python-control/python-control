@@ -46,6 +46,8 @@ class TestSisotool:
         D221 = [[1., -1.]]
         return StateSpace(A222, B222, C221, D221)
 
+    @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
+                        reason="Requires the zoom toolbar")
     def test_sisotool(self, tsys):
         sisotool(tsys, Hz=False)
         fig = plt.gcf()
@@ -114,6 +116,8 @@ class TestSisotool:
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
 
+    @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
+                        reason="Requires the zoom toolbar")
     @pytest.mark.parametrize('tsys', [0, True],
                              indirect=True, ids=['ctime', 'dtime'])
     def test_sisotool_tvect(self, tsys):

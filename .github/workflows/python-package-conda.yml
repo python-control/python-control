@@ -10,6 +10,7 @@ jobs:
       ${{ matrix.pandas || 'no' }} Pandas;
       ${{ matrix.cvxopt || 'no' }} CVXOPT
       ${{ matrix.array-and-matrix == 1 && '; array and matrix' || '' }}
+      ${{ matrix.mplbackend && format('; {0}', matrix.mplbackend) }}
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,18 +21,18 @@ jobs:
         slycot: ["", "conda"]
         pandas: [""]
         cvxopt: ["", "conda"]
+        mplbackend: [""]
         array-and-matrix: [0]
         include:
           - python-version: '3.10'
             slycot: conda
             pandas: conda
+            cvxopt: conda
+            mplbackend: QtAgg
             array-and-matrix: 1
 
     steps:
     - uses: actions/checkout@v3
-
-    - name: Set up (virtual) X11
-      run:  sudo apt install -y xvfb
 
     - name: Setup Conda
       uses: conda-incubator/setup-miniconda@v2
@@ -63,8 +64,8 @@ jobs:
       shell: bash -l {0}
       env:
         PYTHON_CONTROL_ARRAY_AND_MATRIX: ${{ matrix.array-and-matrix }}
-      run: |
-        xvfb-run --auto-servernum pytest --cov=control --cov-config=.coveragerc control/tests
+        MPLBACKEND: ${{ matrix.mplbackend }}
+      run: pytest -v --cov=control --cov-config=.coveragerc control/tests
 
     - name: Coveralls parallel
       # https://github.com/coverallsapp/github-action
