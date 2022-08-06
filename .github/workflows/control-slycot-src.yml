@@ -15,17 +15,14 @@ jobs:
       uses: actions/setup-python@v2
     - name: Install Python dependencies
       run: |
-        # Set up conda
-        echo $CONDA/bin >> $GITHUB_PATH
-
         # Set up (virtual) X11
         sudo apt install -y xvfb
 
         # Install test tools
-        conda install pip pytest pytest-timeout
+        pip install pytest pytest-timeout
 
         # Install python-control dependencies
-        conda install numpy matplotlib scipy
+        pip install numpy matplotlib scipy
 
     - name: Checkout Slycot
       uses: actions/checkout@v3
@@ -43,10 +40,9 @@ jobs:
         # Install compilers, libraries, and development environment
         sudo apt-get -y install gfortran cmake --fix-missing
         sudo apt-get -y install libblas-dev liblapack-dev
-        conda install -c conda-forge scikit-build setuptools-scm
 
         # Compile and install slycot
-        pip install -v --no-build-isolation --no-deps .
+        pip install -v .
 
     - name: Test with pytest
       working-directory: python-control
