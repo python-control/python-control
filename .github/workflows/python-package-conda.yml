@@ -8,20 +8,20 @@ jobs:
       Py${{ matrix.python-version }};
       ${{ matrix.slycot || 'no' }} Slycot;
       ${{ matrix.pandas || 'no' }} Pandas;
-      ${{ matrix.cvxopt || 'no' }} CVXOPT;
+      ${{ matrix.cvxopt || 'no' }} CVXOPT
       ${{ matrix.array-and-matrix == 1 && '; array and matrix' || '' }}
     runs-on: ubuntu-latest
 
     strategy:
       max-parallel: 5
       matrix:
-        python-version: [3.7, 3.9]
+        python-version: ['3.7', '3.10']
         slycot: ["", "conda"]
         pandas: [""]
         cvxopt: ["", "conda"]
         array-and-matrix: [0]
         include:
-          - python-version: 3.9
+          - python-version: '3.10'
             slycot: conda
             pandas: conda
             array-and-matrix: 1
@@ -55,7 +55,7 @@ jobs:
           mamba install pandas
         fi
         if [[ '${{matrix.cvxopt}}' == 'conda' ]]; then
-          mamba install  cvxopt
+          mamba install cvxopt
         fi
 
     - name: Test with pytest
