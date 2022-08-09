@@ -59,6 +59,11 @@ def test_bspline_basis():
                 bspline.eval_deriv(i, j, time)[0:-1],
                 atol=0.01, rtol=0.01)
 
+    # Make sure that ndarrays are processed the same as integer lists
+    degree = np.array(degree)
+    bspline2 = fs.BSplineFamily([0, Tf/3, Tf/2, Tf], degree, maxderiv)
+    np.testing.assert_equal(bspline(0, time), bspline2(0, time))
+
     # Exception check
     with pytest.raises(IndexError, match="out of bounds"):
         bspline.eval_deriv(bspline.N, 0, time)
@@ -93,11 +98,6 @@ def test_double_integrator(xf, uf, Tf):
 
     t, y, x = ct.forced_response(sys, T, ud, x0, return_x=True)
     np.testing.assert_array_almost_equal(x, xd, decimal=3)
-
-    # Multi-dimensional splines not yet implemented
-    bspline = fs.BSplineFamily([0, Tf/3, Tf/2, Tf], [4, 5], [2, 3], vars=2)
-    with pytest.raises(NotImplementedError, match="not yet supported"):
-        fs.point_to_point(flatsys, Tf, x0, u0, xf, uf, basis=bspline)
 
 
 # Bicycle model
@@ -160,6 +160,25 @@ def test_kinematic_car():
     np.testing.assert_array_almost_equal(xf, x[:, 1])
     np.testing.assert_array_almost_equal(uf, u[:, 1])
 
+def test_kinematic_car_multivar():
+    # Define the endpoints of the trajectory
+    x0 = [0., -2., 0.]; u0 = [10., 0.]
+    xf = [100., 2., 0.]; uf = [10., 0.]
+    Tf = 10
+
+    # Set up a basis vector
+    bspline = fs.BSplineFamily([0, Tf/2, Tf], [5, 6], [3, 4], vars=2)
+
+    # Find trajectory between initial and final conditions
+    traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=bspline)
+
+    # Verify that the trajectory computation is correct
+    x, u = traj.eval([0, Tf])
+    np.testing.assert_array_almost_equal(x0, x[:, 0])
+    np.testing.assert_array_almost_equal(u0, u[:, 0])
+    np.testing.assert_array_almost_equal(xf, x[:, 1])
+    np.testing.assert_array_almost_equal(uf, u[:, 1])
+
 def test_bspline_errors():
     # Breakpoints must be a 1D array, in increasing order
     with pytest.raises(NotImplementedError, match="not yet supported"):
@@ -179,3 +198,24 @@ def test_bspline_errors():
     basis = fs.BSplineFamily([0, 1], 4, 3)      # OK
     with pytest.raises(ValueError, match="degree must be greater"):
         basis = fs.BSplineFamily([0, 1], 4, 4)  # not OK
+
+    # nvars must be an integer
+    with pytest.raises(TypeError, match="vars must be an integer"):
+        basis = fs.BSplineFamily([0, 1], 4, 3, vars=['x1', 'x2'])
+
+    # degree, smoothness must match nvars
+    with pytest.raises(ValueError, match="length of 'degree' does not match"):
+        basis = fs.BSplineFamily([0, 1], [4, 4, 4], 3, vars=2)
+
+    # degree, smoothness must be list of ints
+    basis = fs.BSplineFamily([0, 1], [4, 4], 3, vars=2) # OK
+    with pytest.raises(ValueError, match="could not parse 'degree'"):
+        basis = fs.BSplineFamily([0, 1], [4, '4'], 3, vars=2)
+
+    # degree must be strictly positive
+    with pytest.raises(ValueError, match="'degree'; must be at least 1"):
+        basis = fs.BSplineFamily([0, 1], 0, 1)
+
+    # smoothness must be non-negative
+    with pytest.raises(ValueError, match="'smoothness'; must be at least 0"):
+        basis = fs.BSplineFamily([0, 1], 2, -1)

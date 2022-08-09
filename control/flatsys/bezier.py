@@ -59,7 +59,7 @@ class BezierFamily(BasisFamily):
         self.T = T                      # save end of time interval
 
     # Compute the kth derivative of the ith basis function at time t
-    def eval_deriv(self, i, k, t):
+    def eval_deriv(self, i, k, t, var=None):
         """Evaluate the kth derivative of the ith basis function at time t."""
         if i >= self.N:
             raise ValueError("Basis function index too high")

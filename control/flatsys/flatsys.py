@@ -155,6 +155,7 @@ class FlatSystem(NonlinearIOSystem):
         if reverse is not None: self.reverse = reverse
 
         # Save the length of the flat flag
+        # TODO: missing
 
     def __str__(self):
         return f"{NonlinearIOSystem.__str__(self)}\n\n" \
@@ -233,17 +234,19 @@ def _basis_flag_matrix(sys, basis, flag, t, params={}):
     column of the matrix corresponds to a basis function and each row is a
     derivative, with the derivatives (flag) for each output stacked on top
     of each other.
-
+l
     """
     flagshape = [len(f) for f in flag]
-    M = np.zeros((sum(flagshape), basis.N * sys.ninputs))
+    M = np.zeros((sum(flagshape),
+                  sum([basis.var_ncoefs(i) for i in range(sys.ninputs)])))
     flag_off = 0
-    coeff_off = 0
+    coef_off = 0
     for i, flag_len in enumerate(flagshape):
-        for j, k in itertools.product(range(basis.N), range(flag_len)):
-            M[flag_off + k, coeff_off + j] = basis.eval_deriv(j, k, t)
+        coef_len = basis.var_ncoefs(i)
+        for j, k in itertools.product(range(coef_len), range(flag_len)):
+            M[flag_off + k, coef_off + j] = basis.eval_deriv(j, k, t, var=i)
         flag_off += flag_len
-        coeff_off += basis.N
+        coef_off += coef_len
     return M
 
 
@@ -362,11 +365,16 @@ def point_to_point(
     if basis is None:
         basis = PolyFamily(2 * (sys.nstates + sys.ninputs))
 
+    # If a multivariable basis was given, make sure the size is correct
+    if basis.nvars is not None and basis.nvars != sys.ninputs:
+        raise ValueError("size of basis does not match flat system size")
+
     # Make sure we have enough basis functions to solve the problem
-    if basis.N * sys.ninputs < 2 * (sys.nstates + sys.ninputs):
+    ncoefs = sum([basis.var_ncoefs(i) for i in range(sys.ninputs)])
+    if ncoefs < 2 * (sys.nstates + sys.ninputs):
         raise ValueError("basis set is too small")
     elif (cost is not None or trajectory_constraints is not None) and \
-         basis.N * sys.ninputs == 2 * (sys.nstates + sys.ninputs):
+         ncoefs == 2 * (sys.nstates + sys.ninputs):
         warnings.warn("minimal basis specified; optimization not possible")
         cost = None
         trajectory_constraints = None
@@ -531,11 +539,12 @@ def point_to_point(
 
     # Store the flag lengths and coefficients
     # TODO: make this more pythonic
-    coeff_off = 0
+    coef_off = 0
     for i in range(sys.ninputs):
         # Grab the coefficients corresponding to this flat output
-        systraj.coeffs.append(alpha[coeff_off:coeff_off + basis.N])
-        coeff_off += basis.N
+        coef_len = basis.var_ncoefs(i)
+        systraj.coeffs.append(alpha[coef_off:coef_off + coef_len])
+        coef_off += coef_len
 
         # Keep track of the length of the flat flag for this output
         systraj.flaglen.append(len(zflag_T0[i]))

@@ -106,11 +106,11 @@ class SystemTrajectory:
             for i in range(self.ninputs):
                 flag_len = self.flaglen[i]
                 zflag.append(np.zeros(flag_len))
-                for j in range(self.basis.N):
+                for j in range(self.basis.var_ncoefs(i)):
                     for k in range(flag_len):
                         #! TODO: rewrite eval_deriv to take in time vector
                         zflag[i][k] += self.coeffs[i][j] * \
-                            self.basis.eval_deriv(j, k, t)
+                            self.basis.eval_deriv(j, k, t, var=i)
 
             # Now copy the states and inputs
             # TODO: revisit order of list arguments

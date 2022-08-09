@@ -17,14 +17,14 @@ class BSplineFamily(BasisFamily):
     across a set of breakpoints with given order and smoothness.
 
     """
-    def __init__(self, breakpoints, degree, smoothness=None, vars=1):
+    def __init__(self, breakpoints, degree, smoothness=None, vars=None):
         """Create a B-spline basis for piecewise smooth polynomials
 
         Define B-spline polynomials for a set of one or more variables.
-        B-splines are characterized by a set of intervals separated by break
-        points.  On each interval we have a polynomial of a certain order
-        and the spline is continuous up to a given smoothness at interior
-        break points.
+        B-splines are used as a basis for a set of piecewise smooth
+        polynomials joined at breakpoints. On each interval we have a
+        polynomial of a given order and the spline is continuous up to a
+        given smoothness at interior breakpoints.
 
         Parameters
         ----------
@@ -41,8 +41,11 @@ class BSplineFamily(BasisFamily):
             For each spline variable, the smoothness at breakpoints (number
             of derivatives that should match).
 
-        vars : int or list of str, option
-            The number of spline variables or a list of spline variable names.
+        vars : None or int, optional
+            The number of spline variables.  If specified as None (default),
+            then the spline basis describes a single variable, with no
+            indexing.  If the number of spine variables is > 0, then the
+            spline basis is index using the `var` keyword.
 
         """
         # Process the breakpoints for the spline */
@@ -58,17 +61,19 @@ class BSplineFamily(BasisFamily):
             raise ValueError("break points must be strictly increasing values")
 
         # Decide on the number of spline variables
-        if isinstance(vars, list) and all([isinstance(v, str) for v in vars]):
-            raise NotImplemented("list of variable names not yet supported")
+        if vars is None:
+            nvars = 1
+            self.nvars = None           # track as single variable
         elif not isinstance(vars, int):
-            raise TypeError("vars must be an integer or list of strings")
+            raise TypeError("vars must be an integer")
         else:
             nvars = vars
+            self.nvars = nvars
 
         #
         # Process B-spline parameters (order, smoothness)
         #
-        # B-splines are characterized by a set of intervals separated by
+        # B-splines are defined on a set of intervals separated by
         # breakpoints.  On each interval we have a polynomial of a certain
         # order and the spline is continuous up to a given smoothness at
         # breakpoints.  The code in this section allows some flexibility in
@@ -99,14 +104,15 @@ class BSplineFamily(BasisFamily):
             elif all([isinstance(v, allowed_types) for v in values]):
                 # List of values => make sure it is the right size
                 if len(values) != length:
-                    raise ValueError(f"length of '{name}' does not match n")
+                    raise ValueError(f"length of '{name}' does not match"
+                                     f" number of variables")
             else:
                 raise ValueError(f"could not parse '{name}' keyword")
 
             # Check to make sure the values are OK
             if values is not None and any([val < minimum for val in values]):
                 raise ValueError(
-                    f"invalid value for {name}; must be at least {minimum}")
+                    f"invalid value for '{name}'; must be at least {minimum}")
 
             return values
 
@@ -123,25 +129,23 @@ class BSplineFamily(BasisFamily):
         if any([degree[i] - smoothness[i] < 1 for i in range(nvars)]):
             raise ValueError("degree must be greater than smoothness")
 
-        # Store the parameters and process them in call_ntg()
-        self.nvars = nvars
+        # Store the parameters for the spline (self.nvars already stored)
         self.breakpoints = breakpoints
         self.degree = degree
         self.smoothness = smoothness
-        self.nintervals = breakpoints.size - 1
 
         #
         # Compute parameters for a SciPy BSpline object
         #
-        # To create a B-spline, we need to compute the knot points, keeping
-        # track of the use of repeated knot points at the initial knot and
+        # To create a B-spline, we need to compute the knotpoints, keeping
+        # track of the use of repeated knotpoints at the initial knot and
         # final knot as well as repeated knots at intermediate points
         # depending on the desired smoothness.
         #
 
         # Store the coefficients for each output (useful later)
         self.coef_offset, self.coef_length, offset = [], [], 0
-        for i in range(self.nvars):
+        for i in range(nvars):
             # Compute number of coefficients for the piecewise polynomial
             ncoefs = (self.degree[i] + 1) * (len(self.breakpoints) - 1) - \
                 (self.smoothness[i] + 1) * (len(self.breakpoints) - 2)
@@ -151,48 +155,43 @@ class BSplineFamily(BasisFamily):
             offset += ncoefs
         self.N = offset         # save the total number of coefficients
 
-        # Create knot points for each spline variable
+        # Create knotpoints for each spline variable
         # TODO: extend to multi-dimensional breakpoints
         self.knotpoints = []
-        for i in range(self.nvars):
+        for i in range(nvars):
             # Allocate space for the knotpoints
             self.knotpoints.append(np.empty(
                 (self.degree[i] + 1) + (len(self.breakpoints) - 2) * \
                 (self.degree[i] - self.smoothness[i]) + (self.degree[i] + 1)))
 
-            # Initial knot points
+            # Initial knotpoints (multiplicity = order)
             self.knotpoints[i][0:self.degree[i] + 1] = self.breakpoints[0]
             offset = self.degree[i] + 1
 
-            # Interior knot points
+            # Interior knotpoints (multiplicity = degree - smoothness)
             nknots = self.degree[i] - self.smoothness[i]
             assert nknots > 0           # just in case
             for j in range(1, self.breakpoints.size - 1):
                 self.knotpoints[i][offset:offset+nknots] = self.breakpoints[j]
                 offset += nknots
 
-            # Final knot point
+            # Final knotpoint (multiplicity = order)
             self.knotpoints[i][offset:offset + self.degree[i] + 1] = \
                 self.breakpoints[-1]
 
-    def eval(self, coefs, tlist):
-        return np.array([
-            BSpline(self.knotpoints[i],
-                    coefs[self.coef_offset[i]:
-                          self.coef_offset[i] + self.coef_length[i]],
-                    self.degree[i])(tlist)
-            for i in range(self.nvars)])
-
     # Compute the kth derivative of the ith basis function at time t
-    def eval_deriv(self, i, k, t, squeeze=True):
+    def eval_deriv(self, i, k, t, var=None):
         """Evaluate the kth derivative of the ith basis function at time t."""
-        if self.nvars > 1 or not squeeze:
-            raise NotImplementedError(
-                "derivatives of multi-variable splines not yet supported")
+        if self.nvars is None or (self.nvars == 1 and var is None):
+            # Use same variable for all requests
+            var = 0
+        elif self.nvars > 1 and var is None:
+            raise SystemError(
+                "scalar variable call to multi-variable splines")
 
         # Create a coefficient vector for this spline
-        coefs = np.zeros(self.coef_length[0]); coefs[i] = 1
+        coefs = np.zeros(self.coef_length[var]); coefs[i] = 1
 
         # Evaluate the derivative of the spline at the desired point in time
-        return BSpline(self.knotpoints[0], coefs,
-                       self.degree[0]).derivative(k)(t)
+        return BSpline(self.knotpoints[var], coefs,
+                       self.degree[var]).derivative(k)(t)
