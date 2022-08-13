@@ -233,6 +233,104 @@ class TestFlatSys:
         np.testing.assert_almost_equal(x_const, x_nlconst)
         np.testing.assert_almost_equal(u_const, u_nlconst)
 
+    @pytest.mark.parametrize("basis", [
+        # fs.PolyFamily(8),
+        fs.BSplineFamily([0, 3, 7, 10], 5, 2)])
+    def test_flat_solve_ocp(self, basis):
+        # Double integrator system
+        sys = ct.ss([[0, 1], [0, 0]], [[0], [1]], [[1, 0]], 0)
+        flat_sys = fs.LinearFlatSystem(sys)
+
+        # Define the endpoints of the trajectory
+        x0 = [1, 0]; u0 = [0]
+        xf = [-1, 0]; uf = [0]
+        Tf = 10
+        T = np.linspace(0, Tf, 100)
+
+        # Find trajectory between initial and final conditions
+        traj = fs.point_to_point(
+            flat_sys, Tf, x0, u0, xf, uf, basis=basis)
+        x, u = traj.eval(T)
+
+        np.testing.assert_array_almost_equal(x0, x[:, 0])
+        np.testing.assert_array_almost_equal(u0, u[:, 0])
+        np.testing.assert_array_almost_equal(xf, x[:, -1])
+        np.testing.assert_array_almost_equal(uf, u[:, -1])
+
+        # Solve with a terminal cost function
+        timepts = np.linspace(0, Tf, 10)
+        terminal_cost = opt.quadratic_cost(
+            flat_sys, 1e3, 1e3, x0=xf, u0=uf)
+
+        traj_cost = fs.solve_flat_ocp(
+            flat_sys, timepts, x0, u0,
+            terminal_cost=terminal_cost, basis=basis)
+
+        # Verify that the trajectory computation is correct
+        x_cost, u_cost = traj_cost.eval(T)
+        np.testing.assert_array_almost_equal(x0, x_cost[:, 0])
+        np.testing.assert_array_almost_equal(u0, u_cost[:, 0])
+        np.testing.assert_array_almost_equal(xf, x_cost[:, -1])
+        np.testing.assert_array_almost_equal(uf, u_cost[:, -1])
+
+        # Solve with trajectory and terminal cost functions
+        trajectory_cost = opt.quadratic_cost(flat_sys, 0, 1, x0=xf, u0=uf)
+
+        traj_cost = fs.solve_flat_ocp(
+            flat_sys, timepts, x0, u0, terminal_cost=terminal_cost,
+            trajectory_cost=trajectory_cost, basis=basis)
+
+        # Verify that the trajectory computation is correct
+        x_cost, u_cost = traj_cost.eval(T)
+        np.testing.assert_array_almost_equal(x0, x_cost[:, 0])
+        np.testing.assert_array_almost_equal(u0, u_cost[:, 0])
+
+        # Make sure we got close on the terminal condition
+        assert all(np.abs(x_cost[:, -1] - xf) < 0.1)
+
+        # Make sure that we got a different answer than before
+        assert np.any(np.abs(x - x_cost) > 0.1)
+
+        # Re-solve with constraint on the y deviation
+        lb, ub = [-2, np.min(x_cost[1])*0.95], [2, 1]
+        constraints = [opt.state_range_constraint(flat_sys, lb, ub)]
+
+        # Make sure that the previous solution violated at least one constraint
+        assert np.any(x_cost[0, :] < lb[0]) or np.any(x_cost[0, :] > ub[0]) \
+            or np.any(x_cost[1, :] < lb[1]) or np.any(x_cost[1, :] > ub[1])
+
+        traj_const = fs.solve_flat_ocp(
+            flat_sys, timepts, x0, u0,
+            terminal_cost=terminal_cost, trajectory_cost=trajectory_cost,
+            trajectory_constraints=constraints, basis=basis,
+        )
+
+        # Verify that the trajectory computation is correct
+        x_const, u_const = traj_const.eval(timepts)
+        np.testing.assert_array_almost_equal(x0, x_const[:, 0])
+        np.testing.assert_array_almost_equal(u0, u_const[:, 0])
+
+        # Make sure we got close on the terminal condition
+        assert all(np.abs(x_cost[:, -1] - xf) < 0.1)
+
+        # Make sure that the solution respects the bounds (with some slop)
+        for i in range(x_const.shape[0]):
+            assert np.all(x_const[i] >= lb[i] * 1.02)
+            assert np.all(x_const[i] <= ub[i] * 1.02)
+
+        # Solve the same problem with a nonlinear constraint type
+        # Use alternative keywords as well
+        nl_constraints = [
+            (sp.optimize.NonlinearConstraint, lambda x, u: x, lb, ub)]
+        traj_nlconst = fs.solve_flat_ocp(
+            flat_sys, timepts, x0, u0,
+            cost=trajectory_cost, terminal_cost=terminal_cost,
+            constraints=nl_constraints, basis=basis,
+        )
+        x_nlconst, u_nlconst = traj_nlconst.eval(timepts)
+        np.testing.assert_almost_equal(x_const, x_nlconst)
+        np.testing.assert_almost_equal(u_const, u_nlconst)
+
     def test_bezier_basis(self):
         bezier = fs.BezierFamily(4)
         time = np.linspace(0, 1, 100)

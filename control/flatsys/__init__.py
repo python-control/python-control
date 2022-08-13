@@ -62,4 +62,4 @@ from .flatsys import FlatSystem
 from .linflat import LinearFlatSystem
 
 # Package functions
-from .flatsys import point_to_point
+from .flatsys import point_to_point, solve_flat_ocp
