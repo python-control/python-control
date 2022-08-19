@@ -74,12 +74,13 @@ def vehicle_update(t, x, u, params):
     return dx
 
 # Plot the trajectory in xy coordinates
-def plot_results(t, x, ud):
+def plot_results(t, x, ud, rescale=True):
     plt.subplot(4, 1, 2)
     plt.plot(x[0], x[1])
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
-    plt.axis([x0[0], xf[0], x0[1]-1, xf[1]+1])
+    if rescale:
+        plt.axis([x0[0], xf[0], x0[1]-1, xf[1]+1])
 
     # Time traces of the state and input
     plt.subplot(2, 4, 5)
@@ -94,7 +95,8 @@ def plot_results(t, x, ud):
     plt.plot(t, ud[0])
     plt.xlabel('Time t [sec]')
     plt.ylabel('v [m/s]')
-    plt.axis([0, Tf, u0[0] - 1, uf[0] + 1])
+    if rescale:
+        plt.axis([0, Tf, u0[0] - 1, uf[0] + 1])
 
     plt.subplot(2, 4, 8)
     plt.plot(t, ud[1])
@@ -121,11 +123,11 @@ Tf = 4
 poly = fs.PolyFamily(6)
 
 # Find a trajectory between the initial condition and the final condition
-traj = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
+traj1 = fs.point_to_point(vehicle_flat, Tf, x0, u0, xf, uf, basis=poly)
 
 # Create the desired trajectory between the initial and final condition
 T = np.linspace(0, Tf, 500)
-xd, ud = traj.eval(T)
+xd, ud = traj1.eval(T)
 
 # Simulation the open system dynamics with the full input
 t, y, x = ct.input_output_response(
@@ -149,10 +151,10 @@ traj_cost = opt.quadratic_cost(
     vehicle_flat, np.diag([0, 0.1, 0]), np.diag([0.1, 1]), x0=xf, u0=uf)
 
 # Solve for an optimal solution
-traj = fs.point_to_point(
+traj2 = fs.point_to_point(
     vehicle_flat, timepts, x0, u0, xf, uf, cost=traj_cost, basis=basis,
 )
-xd, ud = traj.eval(T)
+xd, ud = traj2.eval(T)
 
 plt.figure(2)
 plt.suptitle("Lane change with lateral error + steering penalties")
@@ -164,19 +166,62 @@ plot_results(T, xd, ud)
 # Resolve the problem with constraints on the inputs
 #
 
+# Constraint the input values
 constraints = [
     opt.input_range_constraint(vehicle_flat, [8, -0.1], [12, 0.1]) ]
 
+# TEST: Change the basis to use B-splines
+basis = fs.BSplineFamily([0, Tf/2, Tf], 6)
+
 # Solve for an optimal solution
-traj = fs.point_to_point(
+traj3 = fs.point_to_point(
     vehicle_flat, timepts, x0, u0, xf, uf, cost=traj_cost,
     constraints=constraints, basis=basis,
 )
-xd, ud = traj.eval(T)
+xd, ud = traj3.eval(T)
 
 plt.figure(3)
 plt.suptitle("Lane change with penalty + steering constraints")
 plot_results(T, xd, ud)
+
+# Show the results unless we are running in batch mode
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    plt.show()
+
+
+#
+# Approach #4: optimal trajectory, final cost with trajectory constraints
+#
+# Resolve the problem with constraints on the inputs and also replacing the
+# point to point problem with one using a terminal cost to set the final
+# state.
+#
+
+# Define the cost function (mainly penalize steering angle)
+traj_cost = opt.quadratic_cost(
+    vehicle_flat, None, np.diag([0.1, 10]), x0=xf, u0=uf)
+
+# Set terminal cost to bring us close to xf
+terminal_cost = opt.quadratic_cost(vehicle_flat, 1e3 * np.eye(3), None, x0=xf)
+
+# Change the basis to use B-splines
+basis = fs.BSplineFamily([0, Tf/2, Tf], [4, 6], vars=2)
+
+# Use a straight line as an initial guess for the trajectory
+initial_guess = np.array(
+    [x0[i] + (xf[i] - x0[i]) * timepts/Tf for i in (0, 1)])
+
+# Solve for an optimal solution
+traj4 = fs.solve_flat_ocp(
+    vehicle_flat, timepts, x0, u0, cost=traj_cost, constraints=constraints,
+    terminal_cost=terminal_cost, basis=basis, initial_guess=initial_guess,
+    # minimize_kwargs={'method': 'trust-constr'},
+)
+xd, ud = traj4.eval(T)
+
+plt.figure(4)
+plt.suptitle("Lane change with terminal cost + steering constraints")
+plot_results(T, xd, ud, rescale=False)  # TODO: remove rescale
 
 # Show the results unless we are running in batch mode
 if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:

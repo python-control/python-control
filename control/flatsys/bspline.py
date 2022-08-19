@@ -179,6 +179,10 @@ class BSplineFamily(BasisFamily):
             self.knotpoints[i][offset:offset + self.degree[i] + 1] = \
                 self.breakpoints[-1]
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: nvars={self.nvars}, ' + \
+            f'degree={self.degree}, smoothness={self.smoothness}>'
+
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):
         """Evaluate the kth derivative of the ith basis function at time t."""

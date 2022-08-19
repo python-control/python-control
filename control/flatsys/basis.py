@@ -64,6 +64,10 @@ class BasisFamily:
         self.coef_offset = [0]        # coefficient offset for each variable
         self.coef_length = [N]        # coefficient length for each variable
 
+    def __repr__(self):
+        return f'<{self.__class__.__name__}: nvars={self.nvars}, ' + \
+            f'N={self.N}>'
+
     def __call__(self, i, t, var=None):
         """Evaluate the ith basis function at a point in time"""
         return self.eval_deriv(i, 0, t, var=var)

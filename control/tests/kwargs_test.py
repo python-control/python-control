@@ -2,7 +2,7 @@
 # RMM, 20 Mar 2022
 #
 # Allowing unrecognized keywords to be passed to a function without
-# generating and error message can generate annoying bugs, since you
+# generating an error message can generate annoying bugs, since you
 # sometimes think you are telling the function to do something and actually
 # you have a misspelling or other error and your input is being ignored.
 #
@@ -190,6 +190,8 @@ kwarg_unittest = {
     'tf2ss' : test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
+    'flatsys.solve_flat_ocp':
+        flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,

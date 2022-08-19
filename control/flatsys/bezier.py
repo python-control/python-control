@@ -78,6 +78,7 @@ class BezierFamily(BasisFamily):
         # Return the kth derivative of the ith Bezier basis function
         return binom(n, i) * sum([
             (-1)**(j-i) *
-            binom(n-i, j-i) * factorial(j)/factorial(j-k) * np.power(u, j-k)
+            binom(n-i, j-i) * factorial(j)/factorial(j-k) * \
+            np.power(u, j-k) / np.power(self.T, k)
             for j in range(max(i, k), n+1)
         ])

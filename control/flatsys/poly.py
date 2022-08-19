@@ -50,12 +50,14 @@ class PolyFamily(BasisFamily):
          \phi_i(t) = t^i
 
     """
-    def __init__(self, N):
+    def __init__(self, N, T=1.):
         """Create a polynomial basis of order N."""
         super(PolyFamily, self).__init__(N)
+        self.T = T
 
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):
         """Evaluate the kth derivative of the ith basis function at time t."""
         if (i < k): return 0;           # higher derivative than power
-        return factorial(i)/factorial(i-k) * np.power(t, i-k)
+        return factorial(i)/factorial(i-k) * \
+            np.power(t/self.T, i-k) / np.power(self.T, k)

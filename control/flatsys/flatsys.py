@@ -426,14 +426,14 @@ def point_to_point(
     if rank < Z.size:
         warnings.warn("basis too small; solution may not exist")
 
-    # Precompute the collocation matrix the defines the flag at timepts
-    Mt_list = []
-    for t in timepts:
-        Mt_list.append(_basis_flag_matrix(sys, basis, zflag_T0, t))
-
     if cost is not None or trajectory_constraints is not None:
         # Search over the null space to minimize cost/satisfy constraints
         N = sp.linalg.null_space(M)
+
+        # Precompute the collocation matrix the defines the flag at timepts
+        Mt_list = []
+        for t in timepts[1:-1]:
+            Mt_list.append(_basis_flag_matrix(sys, basis, zflag_T0, t))
 
         # Define a function to evaluate the cost along a trajectory
         def traj_cost(null_coeffs):
@@ -441,9 +441,8 @@ def point_to_point(
             coeffs = alpha + N @ null_coeffs
 
             # Evaluate the costs at the listed time points
-            # TODO: store Mt ahead of time, since it doesn't change
             costval = 0
-            for i, t in enumerate(timepts):
+            for i, t in enumerate(timepts[1:-1]):
                 M_t = Mt_list[i]
 
                 # Compute flag at this time point
@@ -453,7 +452,7 @@ def point_to_point(
                 x, u = sys.reverse(zflag, params)
 
                 # Evaluate the cost at this time point
-                costval += cost(x, u)
+                costval += cost(x, u) * (timepts[i+1] - timepts[i])
             return costval
 
         # If no cost given, override with magnitude of the coefficients
@@ -480,7 +479,7 @@ def point_to_point(
 
                 # Evaluate the constraints at the listed time points
                 values = []
-                for i, t in enumerate(timepts):
+                for i, t in enumerate(timepts[1:-1]):
                     # Calculate the states and inputs for the flat output
                     M_t = Mt_list[i]
 
@@ -504,7 +503,7 @@ def point_to_point(
 
             # Store upper and lower bounds
             const_lb, const_ub = [], []
-            for t in timepts:
+            for t in timepts[1:-1]:
                 for type, fun, lb, ub in traj_constraints:
                     const_lb.append(lb)
                     const_ub.append(ub)
@@ -514,9 +513,6 @@ def point_to_point(
             # Store the constraint as a nonlinear constraint
             minimize_constraints = [sp.optimize.NonlinearConstraint(
                 traj_const, const_lb, const_ub)]
-
-        # Add initial and terminal constraints
-        # minimize_constraints += [sp.optimize.LinearConstraint(M, Z, Z)]
 
         # Process the initial condition
         if initial_guess is None:
@@ -528,12 +524,13 @@ def point_to_point(
         res = sp.optimize.minimize(
             traj_cost, initial_guess, constraints=minimize_constraints,
             **minimize_kwargs)
-        if res.success:
-            alpha += N @ res.x
-        else:
-            raise RuntimeError(
-                "Unable to solve optimal control problem\n" +
-                "scipy.optimize.minimize returned " + res.message)
+        alpha += N @ res.x
+
+        # See if we got an answer
+        if not res.success:
+            warnings.warn(
+                "unable to solve optimal control problem\n"
+                f"scipy.optimize.minimize: '{res.message}'", UserWarning)
 
     #
     # Transform the trajectory from flat outputs to states and inputs
@@ -541,6 +538,11 @@ def point_to_point(
 
     # Create a trajectory object to store the result
     systraj = SystemTrajectory(sys, basis, params=params)
+    if cost is not None or trajectory_constraints is not None:
+        # Store the result of the optimization
+        systraj.cost = res.fun
+        systraj.success = res.success
+        systraj.message = res.message
 
     # Store the flag lengths and coefficients
     # TODO: make this more pythonic
@@ -560,7 +562,7 @@ def point_to_point(
 
 # Solve a point to point trajectory generation problem for a flat system
 def solve_flat_ocp(
-        sys, timepts, x0=0, u0=0, basis=None, trajectory_cost=None,
+        sys, timepts, x0=0, u0=0, trajectory_cost=None, basis=None,
         terminal_cost=None, trajectory_constraints=None,
         initial_guess=None, params=None, **kwargs):
     """Compute trajectory between an initial and final conditions.
@@ -619,6 +621,9 @@ def solve_flat_ocp(
 
         The constraints are applied at each time point along the trajectory.
 
+    initial_guess : 2D array_like, optional
+        Initial guess for the optimal trajectory of the flat outputs.
+
     minimize_kwargs : str, optional
         Pass additional keywords to :func:`scipy.optimize.minimize`.
 
@@ -631,9 +636,14 @@ def solve_flat_ocp(
 
     Notes
     -----
-    Additional keyword parameters can be used to fine tune the behavior of
-    the underlying optimization function.  See `minimize_*` keywords in
-    :func:`OptimalControlProblem` for more information.
+    1. Additional keyword parameters can be used to fine tune the behavior
+       of the underlying optimization function.  See `minimize_*` keywords
+       in :func:`OptimalControlProblem` for more information.
+
+    2. The return data structure includes the following additional attributes:
+           * success : bool indicating whether the optimization succeeded
+           * cost : computed cost of the returned trajectory
+           * message : message returned by optimization if success if False
 
     """
     #
@@ -705,7 +715,7 @@ def solve_flat_ocp(
     # essentially amounts to evaluating the basis functions and their
     # derivatives at the initial conditions.
 
-    # Compute the flags for the initial and final states
+    # Compute the flag for the initial state
     M_T0 = _basis_flag_matrix(sys, basis, zflag_T0, T0)
 
     #
@@ -752,7 +762,7 @@ def solve_flat_ocp(
 
                 # Evaluate the cost at this time point
                 # TODO: make use of time interval
-                costval += trajectory_cost(x, u)
+                costval += trajectory_cost(x, u) * (timepts[i+1] - timepts[i])
 
         # Evaluate the terminal_cost
         if terminal_cost is not None:
@@ -821,22 +831,37 @@ def solve_flat_ocp(
     # Add initial and terminal constraints
     # minimize_constraints += [sp.optimize.LinearConstraint(M, Z, Z)]
 
-    # Process the initial condition
+    # Process the initial guess
     if initial_guess is None:
-        initial_guess = np.zeros(M_T0.shape[1] - M_T0.shape[0])
+        initial_coefs = np.ones(M_T0.shape[1] - M_T0.shape[0])
     else:
-        raise NotImplementedError("Initial guess not yet implemented.")
+        # Compute the map from coefficients to flat outputs
+        initial_coefs = []
+        for i in range(sys.ninputs):
+            M_z = np.array([
+                basis.eval_deriv(j, 0, timepts, var=i)
+                for j in range(basis.var_ncoefs(i))]).transpose()
+
+            # Compute the parameters that give the best least squares fit
+            coefs, _, _, _ = np.linalg.lstsq(
+                M_z, initial_guess[i], rcond=None)
+            initial_coefs.append(coefs)
+        initial_coefs = np.hstack(initial_coefs)
+
+        # Project the parameters onto the independent variables
+        initial_coefs, _, _, _ = np.linalg.lstsq(N, initial_coefs, rcond=None)
 
     # Find the optimal solution
     res = sp.optimize.minimize(
-        traj_cost, initial_guess, constraints=minimize_constraints,
+        traj_cost, initial_coefs, constraints=minimize_constraints,
         **minimize_kwargs)
-    if res.success:
-        alpha += N @ res.x
-    else:
-        raise RuntimeError(
-            "Unable to solve optimal control problem\n" +
-            "scipy.optimize.minimize returned " + res.message)
+    alpha += N @ res.x
+
+    # See if we got an answer
+    if not res.success:
+        warnings.warn(
+            "unable to solve optimal control problem\n"
+            f"scipy.optimize.minimize: '{res.message}'", UserWarning)
 
     #
     # Transform the trajectory from flat outputs to states and inputs
@@ -844,6 +869,9 @@ def solve_flat_ocp(
 
     # Create a trajectory object to store the result
     systraj = SystemTrajectory(sys, basis, params=params)
+    systraj.cost = res.fun
+    systraj.success = res.success
+    systraj.message = res.message
 
     # Store the flag lengths and coefficients
     # TODO: make this more pythonic
