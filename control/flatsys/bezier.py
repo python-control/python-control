@@ -48,15 +48,23 @@ class BezierFamily(BasisFamily):
     This class represents the family of polynomials of the form
 
     .. math::
-         \phi_i(t) = \sum_{i=0}^n {n \choose i}
-             \left( \frac{t}{T_\text{f}} - t \right)^{n-i}
-             \left( \frac{t}{T_f} \right)^i
+         \phi_i(t) = \sum_{i=0}^N {N \choose i}
+             \left( \frac{t}{T} - t \right)^{N-i}
+             \left( \frac{t}{T} \right)^i
+
+    Parameters
+    ----------
+    N : int
+        Degree of the Bezier curve.
+
+    T : float
+        Final time (used for rescaling).
 
     """
     def __init__(self, N, T=1):
         """Create a polynomial basis of order N."""
         super(BezierFamily, self).__init__(N)
-        self.T = T                      # save end of time interval
+        self.T = float(T)       # save end of time interval
 
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):

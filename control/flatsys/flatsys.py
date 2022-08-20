@@ -61,8 +61,10 @@ class FlatSystem(NonlinearIOSystem):
     ----------
     forward : callable
         A function to compute the flat flag given the states and input.
+
     reverse : callable
         A function to compute the states and input given the flat flag.
+
     updfcn : callable, optional
         Function returning the state update function
 
@@ -73,6 +75,7 @@ class FlatSystem(NonlinearIOSystem):
         time, and `param` is an optional dict containing the values of
         parameters used by the function.  If not specified, the state
         space update will be computed using the flat system coordinates.
+
     outfcn : callable
         Function returning the output at the given state
 
@@ -80,6 +83,7 @@ class FlatSystem(NonlinearIOSystem):
 
         where the arguments are the same as for `upfcn`.  If not
         specified, the output will be the flat outputs.
+
     inputs : int, list of str, or None
         Description of the system inputs.  This can be given as an integer
         count or as a list of strings that name the individual signals.
@@ -88,19 +92,24 @@ class FlatSystem(NonlinearIOSystem):
         this parameter is not given or given as `None`, the relevant
         quantity will be determined when possible based on other
         information provided to functions using the system.
+
     outputs : int, list of str, or None
         Description of the system outputs.  Same format as `inputs`.
+
     states : int, list of str, or None
         Description of the system states.  Same format as `inputs`.
+
     dt : None, True or float, optional
         System timebase.  None (default) indicates continuous
         time, True indicates discrete time with undefined sampling
         time, positive number is discrete time with specified
         sampling time.
+
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation
         functions for the system as default values, overriding internal
         defaults.
+
     name : string, optional
         System name (used for specifying signals)
 
@@ -638,7 +647,7 @@ def solve_flat_ocp(
     -----
     1. Additional keyword parameters can be used to fine tune the behavior
        of the underlying optimization function.  See `minimize_*` keywords
-       in :func:`OptimalControlProblem` for more information.
+       in :func:`~control.optimal.OptimalControlProblem` for more information.
 
     2. The return data structure includes the following additional attributes:
            * success : bool indicating whether the optimization succeeded

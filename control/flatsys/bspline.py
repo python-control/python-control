@@ -14,40 +14,35 @@ class BSplineFamily(BasisFamily):
     """B-spline basis functions.
 
     This class represents a B-spline basis for piecewise polynomials defined
-    across a set of breakpoints with given order and smoothness.
+    across a set of breakpoints with given degree and smoothness.  On each
+    interval between two breakpoints, we have a polynomial of a given degree
+    and the spline is continuous up to a given smoothness at interior
+    breakpoints.
+
+    Parameters
+    ----------
+    breakpoints : 1D array or 2D array of float
+        The breakpoints for the spline(s).
+
+    degree : int or list of ints
+        For each spline variable, the degree of the polynomial between
+        breakpoints.  If a single number is given and more than one spline
+        variable is specified, the same degree is used for each spline
+        variable.
+
+    smoothness : int or list of ints
+        For each spline variable, the smoothness at breakpoints (number of
+        derivatives that should match).
+
+    vars : None or int, optional
+        The number of spline variables.  If specified as None (default),
+        then the spline basis describes a single variable, with no indexing.
+        If the number of spine variables is > 0, then the spline basis is
+        index using the `var` keyword.
 
     """
     def __init__(self, breakpoints, degree, smoothness=None, vars=None):
-        """Create a B-spline basis for piecewise smooth polynomials
-
-        Define B-spline polynomials for a set of one or more variables.
-        B-splines are used as a basis for a set of piecewise smooth
-        polynomials joined at breakpoints. On each interval we have a
-        polynomial of a given order and the spline is continuous up to a
-        given smoothness at interior breakpoints.
-
-        Parameters
-        ----------
-        breakpoints : 1D array or 2D array of float
-            The breakpoints for the spline(s).
-
-        degree : int or list of ints
-            For each spline variable, the degree of the polynomial between
-            break points.  If a single number is given and more than one
-            spline variable is specified, the same order is used for each
-            spline variable.
-
-        smoothness : int or list of ints
-            For each spline variable, the smoothness at breakpoints (number
-            of derivatives that should match).
-
-        vars : None or int, optional
-            The number of spline variables.  If specified as None (default),
-            then the spline basis describes a single variable, with no
-            indexing.  If the number of spine variables is > 0, then the
-            spline basis is index using the `var` keyword.
-
-        """
+        """Create a B-spline basis for piecewise smooth polynomials."""
         # Process the breakpoints for the spline */
         breakpoints = np.array(breakpoints, dtype=float)
         if breakpoints.ndim == 2:
@@ -71,11 +66,11 @@ class BSplineFamily(BasisFamily):
             self.nvars = nvars
 
         #
-        # Process B-spline parameters (order, smoothness)
+        # Process B-spline parameters (degree, smoothness)
         #
         # B-splines are defined on a set of intervals separated by
         # breakpoints.  On each interval we have a polynomial of a certain
-        # order and the spline is continuous up to a given smoothness at
+        # degree and the spline is continuous up to a given smoothness at
         # breakpoints.  The code in this section allows some flexibility in
         # the way that all of this information is supplied, including using
         # scalar values for parameters (which are then broadcast to each
@@ -83,7 +78,7 @@ class BSplineFamily(BasisFamily):
         # information, when possible.
         #
 
-        # Utility function for broadcasting spline params (order, smoothness)
+        # Utility function for broadcasting spline params (degree, smoothness)
         def process_spline_parameters(
             values, length, allowed_types, minimum=0,
             default=None, name='unknown'):

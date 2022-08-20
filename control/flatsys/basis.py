@@ -79,6 +79,7 @@ class BasisFamily:
         return self.N if self.nvars is None else self.coef_length[var]
 
     def eval(self, coeffs, tlist, var=None):
+        """Compute function values given the coefficients and time points."""
         if self.nvars is None and var != None:
             raise SystemError("multi-variable call to a scalar basis")
 
@@ -108,4 +109,5 @@ class BasisFamily:
                 for t in tlist])
 
     def eval_deriv(self, i, j, t, var=None):
+        """Evaluate the kth derivative of the ith basis function at time t."""
         raise NotImplementedError("Internal error; improper basis functions")

@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 import scipy as sp
 import re
+import warnings
 
 import control as ct
 import control.flatsys as fs
@@ -590,8 +591,10 @@ class TestFlatSys:
         cost_fcn = opt.quadratic_cost(
             flat_sys, np.diag([1, 1]), 1, x0=xf, u0=uf)
 
-        # Solving without basis specified should be OK
-        traj = fs.solve_flat_ocp(flat_sys, timepts, x0, u0, cost_fcn)
+        # Solving without basis specified should be OK (may generate warning)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            traj = fs.solve_flat_ocp(flat_sys, timepts, x0, u0, cost_fcn)
         x, u = traj.eval(timepts)
         np.testing.assert_array_almost_equal(x0, x[:, 0])
         if not traj.success:
