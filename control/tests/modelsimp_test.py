@@ -182,17 +182,33 @@ class TestModelsimp:
         B = matarrayin([[2.], [0.], [0.], [0.]])
         C = matarrayin([[0.5, 0.6875, 0.7031, 0.5]])
         D = matarrayin([[0.]])
+        
         sys = StateSpace(A, B, C, D)
         orders = 2
         rsys = balred(sys, orders, method='truncate')
+        Ar, Br, Cr, Dr = rsys.A, rsys.B, rsys.C, rsys.D
+
+        # Result from MATLAB
         Artrue = np.array([[-1.958, -1.194], [-1.194, -0.8344]])
         Brtrue = np.array([[0.9057], [0.4068]])
         Crtrue = np.array([[0.9057, 0.4068]])
         Drtrue = np.array([[0.]])
-        np.testing.assert_array_almost_equal(rsys.A, Artrue, decimal=2)
-        np.testing.assert_array_almost_equal(rsys.B, Brtrue, decimal=4)
-        np.testing.assert_array_almost_equal(rsys.C, Crtrue, decimal=4)
-        np.testing.assert_array_almost_equal(rsys.D, Drtrue, decimal=4)
+
+        # Look for possible changes in state in slycot
+        T1 = np.array([[1, 0], [0, -1]])
+        T2 = np.array([[-1, 0], [0, 1]])
+        T3 = np.array([[0, 1], [1, 0]])
+        for T in (T1, T2, T3):
+            if np.allclose(T @ Ar @ T, Artrue, atol=1e-2, rtol=1e-2):
+                # Apply a similarity transformation
+                Ar, Br, Cr = T @ Ar @ T, T @ Br, Cr @ T
+                break
+            
+        # Make sure we got the correct answer
+        np.testing.assert_array_almost_equal(Ar, Artrue, decimal=2)
+        np.testing.assert_array_almost_equal(Br, Brtrue, decimal=4)
+        np.testing.assert_array_almost_equal(Cr, Crtrue, decimal=4)
+        np.testing.assert_array_almost_equal(Dr, Drtrue, decimal=4)
 
     @slycotonly
     def testBalredMatchDC(self, matarrayin):
@@ -207,16 +223,32 @@ class TestModelsimp:
         B = matarrayin([[2.], [0.], [0.], [0.]])
         C = matarrayin([[0.5, 0.6875, 0.7031, 0.5]])
         D = matarrayin([[0.]])
+        
         sys = StateSpace(A, B, C, D)
         orders = 2
         rsys = balred(sys,orders,method='matchdc')
+        Ar, Br, Cr, Dr = rsys.A, rsys.B, rsys.C, rsys.D
+        
+        # Result from MATLAB
         Artrue = np.array(
             [[-4.43094773, -4.55232904],
              [-4.55232904, -5.36195206]])
         Brtrue = np.array([[1.36235673], [1.03114388]])
         Crtrue = np.array([[1.36235673, 1.03114388]])
         Drtrue = np.array([[-0.08383902]])
-        np.testing.assert_array_almost_equal(rsys.A, Artrue, decimal=2)
-        np.testing.assert_array_almost_equal(rsys.B, Brtrue, decimal=4)
-        np.testing.assert_array_almost_equal(rsys.C, Crtrue, decimal=4)
-        np.testing.assert_array_almost_equal(rsys.D, Drtrue, decimal=4)
+        
+        # Look for possible changes in state in slycot
+        T1 = np.array([[1, 0], [0, -1]])
+        T2 = np.array([[-1, 0], [0, 1]])
+        T3 = np.array([[0, 1], [1, 0]])
+        for T in (T1, T2, T3):
+            if np.allclose(T @ Ar @ T, Artrue, atol=1e-2, rtol=1e-2):
+                # Apply a similarity transformation
+                Ar, Br, Cr = T @ Ar @ T, T @ Br, Cr @ T
+                break
+            
+        # Make sure we got the correct answer
+        np.testing.assert_array_almost_equal(Ar, Artrue, decimal=2)
+        np.testing.assert_array_almost_equal(Br, Brtrue, decimal=4)
+        np.testing.assert_array_almost_equal(Cr, Crtrue, decimal=4)
+        np.testing.assert_array_almost_equal(Dr, Drtrue, decimal=4)
