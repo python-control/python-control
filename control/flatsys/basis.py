@@ -36,6 +36,8 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 
+import numpy as np
+
 
 # Basis family class (for use as a base class)
 class BasisFamily:
@@ -86,16 +88,24 @@ class BasisFamily:
                 sum([coeffs[i] * self(i, t) for i in range(self.N)])
                 for t in tlist]
 
-        else:
-            # Multi-variable basis
+        elif var is None:
+            # Multi-variable basis with single list of coefficients
             values = np.empty((self.nvars, tlist.size))
+            offset = 0
             for j in range(self.nvars):
                 coef_len = self.var_ncoefs(j)
                 values[j] = np.array([
-                    sum([coeffs[i] * self(i, t, var=j)
+                    sum([coeffs[offset + i] * self(i, t, var=j)
                          for i in range(coef_len)])
                     for t in tlist])
+                offset += coef_len
             return values
+
+        else:
+            return np.array([
+                sum([coeffs[i] * self(i, t, var=var)
+                     for i in range(self.var_ncoefs(var))])
+                for t in tlist])
 
     def eval_deriv(self, i, j, t, var=None):
         raise NotImplementedError("Internal error; improper basis functions")

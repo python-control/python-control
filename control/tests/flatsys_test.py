@@ -313,7 +313,7 @@ class TestFlatSys:
         np.testing.assert_array_almost_equal(uf, u_const[:, -1])
 
         # Make sure that the solution respects the bounds (with some slop)
-        for i in range(x_const.shape[0]): 
+        for i in range(x_const.shape[0]):
             assert all(lb[i] - x_const[i] < rtol * abs(lb[i]) + atol)
             assert all(x_const[i] - ub[i] < rtol * abs(ub[i]) + atol)
 
@@ -673,3 +673,43 @@ class TestFlatSys:
         np.testing.assert_equal(T, response.time)
         np.testing.assert_equal(u, response.inputs)
         np.testing.assert_equal(x, response.states)
+
+    @pytest.mark.parametrize(
+        "basis",
+        [fs.PolyFamily(4),
+         fs.BezierFamily(4),
+         fs.BSplineFamily([0, 1], 4),
+         fs.BSplineFamily([0, 1], 4, vars=2),
+         fs.BSplineFamily([0, 1], [4, 3], [2, 1], vars=2),
+        ])
+    def test_basis_class(self, basis):
+        timepts = np.linspace(0, 1, 10)
+
+        if basis.nvars is None:
+            # Evaluate function on basis vectors
+            for j in range(basis.N):
+                coefs = np.zeros(basis.N)
+                coefs[j] = 1
+                np.testing.assert_equal(
+                    basis.eval(coefs, timepts),
+                    basis.eval_deriv(j, 0, timepts))
+        else:
+            # Evaluate each variable on basis vectors
+            for i in range(basis.nvars):
+                for j in range(basis.var_ncoefs(i)):
+                    coefs = np.zeros(basis.var_ncoefs(i))
+                    coefs[j] = 1
+                    np.testing.assert_equal(
+                        basis.eval(coefs, timepts, var=i),
+                        basis.eval_deriv(j, 0, timepts, var=i))
+
+            # Evaluate multi-variable output
+            offset = 0
+            for i in range(basis.nvars):
+                for j in range(basis.var_ncoefs(i)):
+                    coefs = np.zeros(basis.N)
+                    coefs[offset] = 1
+                    np.testing.assert_equal(
+                        basis.eval(coefs, timepts)[i],
+                        basis.eval_deriv(j, 0, timepts, var=i))
+                    offset += 1
