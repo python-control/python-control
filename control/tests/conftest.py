@@ -1,13 +1,11 @@
 """conftest.py - pytest local plugins and fixtures"""
 
 import os
-import sys
 from contextlib import contextmanager
 
 import matplotlib as mpl
 import numpy as np
 import pytest
-import scipy as sp
 
 import control
 
@@ -45,7 +43,7 @@ def control_defaults():
                 params=[pytest.param("arrayout", marks=matrixerrorfilter),
                         pytest.param("matrixout", marks=matrixfilter)])
 def matarrayout(request):
-    """Switch the config to use np.ndarray and np.matrix as returns"""
+    """Switch the config to use np.ndarray and np.matrix as returns."""
     restore = control.config.defaults['statesp.use_numpy_matrix']
     control.use_numpy_matrix(request.param == "matrixout", warn=False)
     yield
@@ -53,7 +51,7 @@ def matarrayout(request):
 
 
 def ismatarrayout(obj):
-    """Test if the returned object has the correct type as configured
+    """Test if the returned object has the correct type as configured.
 
     note that isinstance(np.matrix(obj), np.ndarray) is True
     """
@@ -63,7 +61,7 @@ def ismatarrayout(obj):
 
 
 def asmatarrayout(obj):
-    """Return a object according to the configured default"""
+    """Return a object according to the configured default."""
     use_matrix = control.config.defaults['statesp.use_numpy_matrix']
     matarray = np.asmatrix if use_matrix else np.asarray
     return matarray(obj)
@@ -71,7 +69,7 @@ def asmatarrayout(obj):
 
 @contextmanager
 def check_deprecated_matrix():
-    """Check that a call produces a deprecation warning because of np.matrix"""
+    """Check that a call produces a deprecation warning because of np.matrix."""
     use_matrix = control.config.defaults['statesp.use_numpy_matrix']
     if use_matrix:
         with pytest.deprecated_call():
@@ -94,13 +92,13 @@ def check_deprecated_matrix():
                           False)]
                         if usebydefault or TEST_MATRIX_AND_ARRAY])
 def matarrayin(request):
-    """Use array and matrix to construct input data in tests"""
+    """Use array and matrix to construct input data in tests."""
     return request.param
 
 
 @pytest.fixture(scope="function")
 def editsdefaults():
-    """Make sure any changes to the defaults only last during a test"""
+    """Make sure any changes to the defaults only last during a test."""
     restore = control.config.defaults.copy()
     yield
     control.config.defaults = restore.copy()

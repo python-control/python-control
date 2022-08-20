@@ -6,6 +6,7 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-timeout
+  - pytest-xvfb
   - numpy
   - matplotlib
   - scipy
