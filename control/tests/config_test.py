@@ -8,7 +8,6 @@ This test suite checks the functionality of the config module
 from math import pi, log10
 
 import matplotlib.pyplot as plt
-from matplotlib.testing.decorators import cleanup as mplcleanup
 import numpy as np
 import pytest
 
@@ -18,7 +17,6 @@ import control as ct
 @pytest.mark.usefixtures("editsdefaults")  # makes sure to reset the defaults
                                            # to the test configuration
 class TestConfig:
-
     # Create a simple second order system to use for testing
     sys = ct.tf([10], [1, 2, 1])
 
@@ -28,8 +26,7 @@ class TestConfig:
         assert ct.config.defaults['freqplot.deg'] == 2
         assert ct.config.defaults['freqplot.Hz'] is None
 
-    @mplcleanup
-    def test_get_param(self):
+    def test_get_param(self, mplcleanup):
         assert ct.config._get_param('freqplot', 'dB')\
             == ct.config.defaults['freqplot.dB']
         assert ct.config._get_param('freqplot', 'dB', 1) == 1
@@ -92,8 +89,7 @@ class TestConfig:
             assert ct.config.defaults['bode.Hz'] \
                 == ct.config.defaults['freqplot.Hz']
 
-    @mplcleanup
-    def test_fbs_bode(self):
+    def test_fbs_bode(self, mplcleanup):
         ct.use_fbs_defaults()
 
         # Generate a Bode plot
@@ -137,8 +133,7 @@ class TestConfig:
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
-    @mplcleanup
-    def test_matlab_bode(self):
+    def test_matlab_bode(self, mplcleanup):
         ct.use_matlab_defaults()
 
         # Generate a Bode plot
@@ -182,8 +177,7 @@ class TestConfig:
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
-    @mplcleanup
-    def test_custom_bode_default(self):
+    def test_custom_bode_default(self, mplcleanup):
         ct.config.defaults['freqplot.dB'] = True
         ct.config.defaults['freqplot.deg'] = True
         ct.config.defaults['freqplot.Hz'] = True
@@ -204,8 +198,7 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
-    @mplcleanup
-    def test_bode_number_of_samples(self):
+    def test_bode_number_of_samples(self, mplcleanup):
         # Set the number of samples (default is 50, from np.logspace)
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
         assert len(mag_ret) == 87
@@ -219,8 +212,7 @@ class TestConfig:
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
         assert len(mag_ret) == 87
 
-    @mplcleanup
-    def test_bode_feature_periphery_decade(self):
+    def test_bode_feature_periphery_decade(self, mplcleanup):
         # Generate a sample Bode plot to figure out the range it uses
         ct.reset_defaults()     # Make sure starting state is correct
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=False)
