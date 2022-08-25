@@ -348,6 +348,25 @@ class TestMatlab:
         yout, _t, _xout = lsim(mimo.ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
+    def test_lsim_mimo_dtime(self):
+        # https://github.com/python-control/python-control/issues/764
+        time = np.linspace(0.0, 511.0e-6, 512)
+        DAC = np.sin(time)
+        ADC = np.cos(time)
+
+        input_Kalman = np.transpose(
+            np.concatenate(([[DAC]], [[ADC]]), axis=1)[0])
+        Af = [[0.45768416, -0.42025511], [-0.43354791, 0.51961178]]
+        Bf = [[2.84368641, 52.05922305], [-1.47286557, -19.94861943]]
+        Cf = [[1.0, 0.0], [0.0, 1.0]]
+        Df = [[0.0, 0.0], [0.0, 0.0]]
+
+        ss_Kalman = ss(Af, Bf, Cf, Df, 1.0e-6)
+        y_est, t, x_est = lsim(ss_Kalman, input_Kalman, time)
+        assert y_est.shape == (time.size, ss_Kalman.ninputs)
+        assert t.shape == (time.size, )
+        assert x_est.shape == (time.size, ss_Kalman.nstates)
+
     def testMargin(self, siso):
         """Test margin()"""
         #! TODO: check results to make sure they are OK

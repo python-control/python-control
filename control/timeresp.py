@@ -972,11 +972,6 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             dt = 1. if sys.dt in [True, None] else sys.dt
             T = np.array(range(n_steps)) * dt
         else:
-            # Make sure the input vector and time vector have same length
-            if (U.ndim == 1 and U.shape[0] != T.shape[0]) or \
-                    (U.ndim > 1 and U.shape[1] != T.shape[0]):
-                raise ValueError('Parameter ``T`` must have same elements as'
-                                 ' the number of columns in input array ``U``')
             if U.ndim == 0:
                 U = np.full((n_inputs, T.shape[0]), U)
     else:
