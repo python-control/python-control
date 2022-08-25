@@ -208,7 +208,6 @@ class TestMatlab:
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
-    @slycotonly
     def testStep_mimo(self, mimo):
         """Test step for MIMO system"""
         sys = mimo.ss1
@@ -267,7 +266,6 @@ class TestMatlab:
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
-    @slycotonly
     def testImpulse_mimo(self, mimo):
         """Test impulse() for MIMO system"""
         t = np.linspace(0, 1, 10)
@@ -296,7 +294,6 @@ class TestMatlab:
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
-    @slycotonly
     def testInitial_mimo(self, mimo):
         """Test initial() for MIMO system"""
         t = np.linspace(0, 1, 10)
@@ -333,7 +330,6 @@ class TestMatlab:
         yout, _t, _xout = lsim(siso.ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
-    @slycotonly
     def testLsim_mimo(self, mimo):
         """Test lsim() for MIMO system.
 
@@ -582,7 +578,6 @@ class TestMatlab:
         for i in range(len(ssdata_1)):
             np.testing.assert_array_almost_equal(ssdata_1[i], ssdata_2[i])
 
-    @slycotonly
     def testMIMOssdata(self, mimo):
         """Test ssdata() MIMO"""
         m = (mimo.ss1.A, mimo.ss1.B, mimo.ss1.C, mimo.ss1.D)
