@@ -208,7 +208,6 @@ class TestMatlab:
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
-    @slycotonly
     def testStep_mimo(self, mimo):
         """Test step for MIMO system"""
         sys = mimo.ss1
@@ -267,7 +266,6 @@ class TestMatlab:
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
-    @slycotonly
     def testImpulse_mimo(self, mimo):
         """Test impulse() for MIMO system"""
         t = np.linspace(0, 1, 10)
@@ -296,7 +294,6 @@ class TestMatlab:
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
-    @slycotonly
     def testInitial_mimo(self, mimo):
         """Test initial() for MIMO system"""
         t = np.linspace(0, 1, 10)
@@ -333,7 +330,6 @@ class TestMatlab:
         yout, _t, _xout = lsim(siso.ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
 
-    @slycotonly
     def testLsim_mimo(self, mimo):
         """Test lsim() for MIMO system.
 
@@ -351,6 +347,25 @@ class TestMatlab:
                              [0.1645, 47.1599], [-0.1391, 48.9776]])
         yout, _t, _xout = lsim(mimo.ss1, u, t, x0)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
+
+    def test_lsim_mimo_dtime(self):
+        # https://github.com/python-control/python-control/issues/764
+        time = np.linspace(0.0, 511.0e-6, 512)
+        DAC = np.sin(time)
+        ADC = np.cos(time)
+
+        input_Kalman = np.transpose(
+            np.concatenate(([[DAC]], [[ADC]]), axis=1)[0])
+        Af = [[0.45768416, -0.42025511], [-0.43354791, 0.51961178]]
+        Bf = [[2.84368641, 52.05922305], [-1.47286557, -19.94861943]]
+        Cf = [[1.0, 0.0], [0.0, 1.0]]
+        Df = [[0.0, 0.0], [0.0, 0.0]]
+
+        ss_Kalman = ss(Af, Bf, Cf, Df, 1.0e-6)
+        y_est, t, x_est = lsim(ss_Kalman, input_Kalman, time)
+        assert y_est.shape == (time.size, ss_Kalman.ninputs)
+        assert t.shape == (time.size, )
+        assert x_est.shape == (time.size, ss_Kalman.nstates)
 
     def testMargin(self, siso):
         """Test margin()"""
@@ -582,7 +597,6 @@ class TestMatlab:
         for i in range(len(ssdata_1)):
             np.testing.assert_array_almost_equal(ssdata_1[i], ssdata_2[i])
 
-    @slycotonly
     def testMIMOssdata(self, mimo):
         """Test ssdata() MIMO"""
         m = (mimo.ss1.A, mimo.ss1.B, mimo.ss1.C, mimo.ss1.D)

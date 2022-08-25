@@ -698,10 +698,10 @@ class TestTimeresp:
         """Test invalid parameters dtime with sys.dt > 0."""
         with pytest.raises(ValueError, match="can't both be zero"):
             forced_response(tsystem.sys)
-        with pytest.raises(ValueError, match="must have same elements"):
+        with pytest.raises(ValueError, match="Parameter ``U``: Wrong shape"):
             forced_response(tsystem.sys,
                             T=tsystem.t, U=np.random.randn(1, 12))
-        with pytest.raises(ValueError, match="must have same elements"):
+        with pytest.raises(ValueError, match="Parameter ``U``: Wrong shape"):
             forced_response(tsystem.sys,
                             T=tsystem.t, U=np.random.randn(12))
         with pytest.raises(ValueError, match="must match sampling time"):
