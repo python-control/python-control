@@ -66,6 +66,6 @@ class PolyFamily(BasisFamily):
     # Compute the kth derivative of the ith basis function at time t
     def eval_deriv(self, i, k, t, var=None):
         """Evaluate the kth derivative of the ith basis function at time t."""
-        if (i < k): return 0;           # higher derivative than power
+        if (i < k): return 0 * t        # higher derivative than power
         return factorial(i)/factorial(i-k) * \
             np.power(t/self.T, i-k) / np.power(self.T, k)

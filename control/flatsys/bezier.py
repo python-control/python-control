@@ -73,7 +73,7 @@ class BezierFamily(BasisFamily):
             raise ValueError("Basis function index too high")
         elif k >= self.N:
             # Higher order derivatives are zero
-            return np.zeros(t.shape)
+            return 0 * t
 
         # Compute the variables used in Bezier curve formulas
         n = self.N - 1
