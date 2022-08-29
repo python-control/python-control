@@ -300,8 +300,9 @@ def test_terminal_constraints(sys_args):
     np.testing.assert_almost_equal(res.inputs, u1)
 
     # Re-run using a basis function and see if we get the same answer
-    res = opt.solve_ocp(sys, time, x0, cost, terminal_constraints=final_point,
-                        basis=flat.BezierFamily(8, Tf))
+    res = opt.solve_ocp(
+        sys, time, x0, cost, terminal_constraints=final_point,
+        basis=flat.BezierFamily(8, Tf))
 
     # Final point doesn't affect cost => don't need to test
     np.testing.assert_almost_equal(
@@ -471,8 +472,12 @@ def test_ocp_argument_errors():
             sys, time, x0, cost, terminal_constraints=constraints)
 
 
-def test_optimal_basis_simple():
-    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+@pytest.mark.parametrize("basis", [
+    flat.PolyFamily(4), flat.PolyFamily(6),
+    flat.BezierFamily(4), flat.BSplineFamily([0, 4, 8], 6)
+    ])
+def test_optimal_basis_simple(basis):
+    sys = ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1)
 
     # State and input constraints
     constraints = [
@@ -492,7 +497,7 @@ def test_optimal_basis_simple():
     # Basic optimal control problem
     res1 = opt.solve_ocp(
         sys, time, x0, cost, constraints,
-        basis=flat.BezierFamily(4, Tf), return_x=True)
+        terminal_cost=cost, basis=basis, return_x=True)
     assert res1.success
 
     # Make sure the constraints were satisfied
@@ -503,14 +508,14 @@ def test_optimal_basis_simple():
     # Pass an initial guess and rerun
     res2 = opt.solve_ocp(
         sys, time, x0, cost, constraints, initial_guess=0.99*res1.inputs,
-        basis=flat.BezierFamily(4, Tf), return_x=True)
+        terminal_cost=cost, basis=basis, return_x=True)
     assert res2.success
     np.testing.assert_allclose(res2.inputs, res1.inputs, atol=0.01, rtol=0.01)
 
     # Run with logging turned on for code coverage
     res3 = opt.solve_ocp(
-        sys, time, x0, cost, constraints,
-        basis=flat.BezierFamily(4, Tf), return_x=True, log=True)
+        sys, time, x0, cost, constraints, terminal_cost=cost,
+        basis=basis, return_x=True, log=True)
     assert res3.success
     np.testing.assert_almost_equal(res3.inputs, res1.inputs, decimal=3)
 
