@@ -154,6 +154,14 @@ class OptimalControlProblem():
         self.minimize_kwargs.update(kwargs.pop(
             'minimize_kwargs', config.defaults['optimal.minimize_kwargs']))
 
+        # Check to make sure arguments for discrete-time systems are OK
+        if sys.isdtime(strict=True):
+            if self.solve_ivp_kwargs['method'] is not None or \
+                 len(self.solve_ivp_kwargs) > 1:
+                raise TypeError(
+                    "solve_ivp method, kwargs not allowed for"
+                    " discrete time systems")
+
         # Make sure there were no extraneous keywords
         if kwargs:
             raise TypeError("unrecognized keyword(s): ", str(kwargs))

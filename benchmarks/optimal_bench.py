@@ -89,7 +89,8 @@ def time_optimal_lq_basis(basis_name, basis_size, npoints):
     basis = get_basis(basis_name, basis_size, Tf)
 
     res = opt.solve_ocp(
-        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost, 
+        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
+        basis=basis,
     )
     # Only count this as a benchmark if we converged
     assert res.success
@@ -130,7 +131,7 @@ def time_optimal_lq_methods(integrator_name, minimizer_name):
     basis = get_basis('poly', 12, Tf)
 
     res = opt.solve_ocp(
-        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost, 
+        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
         solve_ivp_method=integrator[0], solve_ivp_kwargs=integrator[1],
         minimize_method=minimizer[0], minimize_options=minimizer[1],
     )
@@ -179,7 +180,7 @@ def time_optimal_lq_size(nstates, ninputs, npoints):
     timepts = np.linspace(0, Tf, npoints)
 
     res = opt.solve_ocp(
-        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost, 
+        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
     )
     # Only count this as a benchmark if we converged
     assert res.success
@@ -187,13 +188,13 @@ def time_optimal_lq_size(nstates, ninputs, npoints):
 # Parameterize the test against different choices of integrator and minimizer
 time_optimal_lq_size.param_names = ['nstates', 'ninputs', 'npoints']
 time_optimal_lq_size.params = ([1, 2, 4], [1, 2, 4], [5, 10, 20])
-    
+
 
 #
 # Aircraft MPC example (from multi-parametric toolbox)
 #
 
-def time_aircraft_mpc():
+def time_discrete_aircraft_mpc(minimizer_name):
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
     A = [[0.99, 0.01, 0.18, -0.09,   0],
@@ -228,9 +229,18 @@ def time_aircraft_mpc():
     R = np.diag([3, 2])
     cost = opt.quadratic_cost(model, Q, R, x0=xd, u0=ud)
 
+    # Set the time horizon and time points
+    Tf = 3
+    timepts = np.arange(0, 6) * 0.2
+
+    # Get the minimizer parameters to use
+    minimizer = minimizer_table[minimizer_name]
+
     # online MPC controller object is constructed with a horizon 6
     ctrl = opt.create_mpc_iosystem(
-        model, np.arange(0, 6) * 0.2, cost, constraints)
+        model, timepts, cost, constraints,
+        minimize_method=minimizer[0], minimize_options=minimizer[1],
+    )
 
     # Define an I/O system implementing model predictive control
     loop = ct.feedback(sys, ctrl, 1)
@@ -245,3 +255,8 @@ def time_aircraft_mpc():
     # Make sure the system converged to the desired state
     np.testing.assert_allclose(
         xout[0:sys.nstates, -1], xd, atol=0.1, rtol=0.01)
+
+# Parameterize the test against different choices of minimizer and basis
+time_discrete_aircraft_mpc.param_names = ['minimizer']
+time_discrete_aircraft_mpc.params = (
+    ['trust', 'trust_bigstep', 'SLSQP', 'SLSQP_bigstep', 'COBYLA'])

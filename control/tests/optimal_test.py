@@ -471,6 +471,15 @@ def test_ocp_argument_errors():
         res = opt.solve_ocp(
             sys, time, x0, cost, terminal_constraints=constraints)
 
+    # Discrete time system checks: solve_ivp keywords not allowed
+    sys = ct.rss(2, 1, 1, dt=True)
+    with pytest.raises(TypeError, match="solve_ivp method, kwargs not allowed"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, solve_ivp_method='LSODA')
+    with pytest.raises(TypeError, match="solve_ivp method, kwargs not allowed"):
+        res = opt.solve_ocp(
+            sys, time, x0, cost, solve_ivp_kwargs={'eps': 0.1})
+
 
 @pytest.mark.parametrize("basis", [
     flat.PolyFamily(4), flat.PolyFamily(6),
