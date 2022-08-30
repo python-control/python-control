@@ -46,7 +46,9 @@ trajectory between two endpoints, written in terms of a set of basis functions
 defined using the :class:`~control.flatsys.BasisFamily` class.  The resulting
 trajectory is return as a :class:`~control.flatsys.SystemTrajectory` object
 and can be evaluated using the :func:`~control.flatsys.SystemTrajectory.eval`
-member function.
+member function.  Alternatively, the :func:`~control.flatsys.solve_flat_ocp`
+function can be used to solve an optimal control problem with trajectory and
+final costs or constraints.
 
 """
 
@@ -54,6 +56,7 @@ member function.
 from .basis import BasisFamily
 from .poly import PolyFamily
 from .bezier import BezierFamily
+from .bspline import BSplineFamily
 
 # Classes
 from .systraj import SystemTrajectory
@@ -61,4 +64,4 @@ from .flatsys import FlatSystem
 from .linflat import LinearFlatSystem
 
 # Package functions
-from .flatsys import point_to_point
+from .flatsys import point_to_point, solve_flat_ocp

@@ -64,17 +64,17 @@ trajectory of the system.  We can parameterize the flat output trajectory
 using a set of smooth basis functions :math:`\psi_i(t)`:
 
 .. math::
-  z(t) = \sum_{i=1}^N \alpha_i \psi_i(t), \qquad \alpha_i \in R
+  z(t) = \sum_{i=1}^N c_i \psi_i(t), \qquad c_i \in R
 
-We seek a set of coefficients :math:`\alpha_i`, :math:`i = 1, \dots, N` such
+We seek a set of coefficients :math:`c_i`, :math:`i = 1, \dots, N` such
 that :math:`z(t)` satisfies the boundary conditions for :math:`x(0)` and
 :math:`x(T)`.  The derivatives of the flat output can be computed in terms of
 the derivatives of the basis functions:
 
 .. math::
-  \dot z(t) &= \sum_{i=1}^N \alpha_i \dot \psi_i(t) \\
+  \dot z(t) &= \sum_{i=1}^N c_i \dot \psi_i(t) \\
   &\,\vdots \\
-  \dot z^{(q)}(t) &= \sum_{i=1}^N \alpha_i \psi^{(q)}_i(t).
+  \dot z^{(q)}(t) &= \sum_{i=1}^N c_i \psi^{(q)}_i(t).
 
 We can thus write the conditions on the flat outputs and their
 derivatives as
@@ -90,7 +90,7 @@ derivatives as
     \vdots & \vdots & & \vdots \\
     \psi^{(q)}_1(T) & \psi^{(q)}_2(T) & \dots & \psi^{(q)}_N(T) \\
   \end{bmatrix}
-  \begin{bmatrix} \alpha_1 \\ \vdots \\ \alpha_N \end{bmatrix} =
+  \begin{bmatrix} c_1 \\ \vdots \\ c_N \end{bmatrix} =
   \begin{bmatrix}
     z(0) \\ \dot z(0) \\ \vdots \\ z^{(q)}(0) \\[1ex]
     z(T) \\ \dot z(T) \\ \vdots \\ z^{(q)}(T) \\
@@ -99,7 +99,7 @@ derivatives as
 This equation is a *linear* equation of the form 
 
 .. math::
-   M \alpha = \begin{bmatrix} \bar z(0) \\ \bar z(T) \end{bmatrix}
+   M c = \begin{bmatrix} \bar z(0) \\ \bar z(T) \end{bmatrix}
 
 where :math:`\bar z` is called the *flat flag* for the system.
 Assuming that :math:`M` has a sufficient number of columns and that it is full
@@ -139,22 +139,28 @@ For a linear system, a flat system representation can be generated using the
 
 For more general systems, the `FlatSystem` object must be created manually::
 
-    sys = control.flatsys.FlatSystem(nstate, ninputs, forward, reverse)
+    sys = control.flatsys.FlatSystem(
+        forward, reverse, states=['x1', ..., 'xn'], inputs=['u1', ..., 'um'])
 
 In addition to the flat system description, a set of basis functions
-:math:`\phi_i(t)` must be chosen.  The `FlatBasis` class is used to represent
-the basis functions.  A polynomial basis function of the form 1, :math:`t`,
-:math:`t^2`, ... can be computed using the `PolyBasis` class, which is
-initialized by passing the desired order of the polynomial basis set::
+:math:`\phi_i(t)` must be chosen.  The `FlatBasis` class is used to
+represent the basis functions.  A polynomial basis function of the
+form 1, :math:`t`, :math:`t^2`, ... can be computed using the
+:class:`~control.flatsys.PolyFamily` class, which is initialized by
+passing the desired order of the polynomial basis set::
 
-    polybasis = control.flatsys.PolyBasis(N)
+    basis = control.flatsys.PolyFamily(N)
+
+Additional basis function families include Bezier curves
+(:class:`~control.flatsys.BezierFamily`) and B-splines
+(:class:`~control.flatsys.BSplineFamily`).
 
 Once the system and basis function have been defined, the
 :func:`~control.flatsys.point_to_point` function can be used to compute a
 trajectory between initial and final states and inputs::
 
     traj = control.flatsys.point_to_point(
-        sys, Tf, x0, u0, xf, uf, basis=polybasis)
+        sys, Tf, x0, u0, xf, uf, basis=basis)
 
 The returned object has class :class:`~control.flatsys.SystemTrajectory` and
 can be used to compute the state and input trajectory between the initial and
@@ -169,6 +175,18 @@ The :func:`~control.flatsys.point_to_point` function also allows the
 specification of a cost function and/or constraints, in the same
 format as :func:`~control.optimal.solve_ocp`.
 
+The :func:`~control.flatsys.solve_flat_ocp` function can be used to
+solve an optimal control problem without a final state::
+
+    traj = control.flatsys.solve_flat_ocp(
+        sys, timepts, x0, u0, cost, basis=basis)
+
+The `cost` parameter is a function function with call signature
+`cost(x, u)` and should return the (incremental) cost at the given
+state, and input.  It will be evaluated at each point in the `timepts`
+vector.  The `terminal_cost` parameter can be used to specify a cost
+function for the final point in the trajectory.
+
 Example
 =======
 
@@ -179,7 +197,9 @@ derived *Feedback Systems* by Astrom and Murray, Example 3.11.
 
 .. code-block:: python
 
+    import control as ct
     import control.flatsys as fs
+    import numpy as np
 
     # Function to take states, inputs and return the flat flag
     def vehicle_flat_forward(x, u, params={}):
@@ -228,7 +248,8 @@ derived *Feedback Systems* by Astrom and Murray, Example 3.11.
         return x, u
 
     vehicle_flat = fs.FlatSystem(
-        3, 2, forward=vehicle_flat_forward, reverse=vehicle_flat_reverse)
+        vehicle_flat_forward, vehicle_flat_reverse,
+	inputs=('v', 'delta'), outputs=('x', 'y'), states=('x', 'y', 'theta'))
 
 To find a trajectory from an initial state :math:`x_0` to a final state
 :math:`x_\text{f}` in time :math:`T_\text{f}` we solve a point-to-point
@@ -253,6 +274,33 @@ the endpoints.
     t = np.linspace(0, Tf, 100)
     x, u = traj.eval(t)
 
+Alternatively, we can solve an optimal control problem in which we
+minimize a cost function along the trajectory as well as a terminal
+cost:`
+
+.. code-block:: python
+
+    # Define the cost along the trajectory: penalize steering angle
+    traj_cost = ct.optimal.quadratic_cost(
+        vehicle_flat, None, np.diag([0.1, 10]), u0=uf)
+
+    # Define the terminal cost: penalize distance from the end point
+    term_cost = ct.optimal.quadratic_cost(
+        vehicle_flat, np.diag([1e3, 1e3, 1e3]), None, x0=xf)
+
+    # Use a straight line as the initial guess
+    timepts = np.linspace(0, Tf, 10)
+    initial_guess = np.array(
+        [x0[i] + (xf[i] - x0[i]) * timepts/Tf for i in (0, 1)])
+
+    # Solve the optimal control problem, evaluating cost at timepts
+    bspline = fs.BSplineFamily([0, Tf/2, Tf], 4)
+    traj = fs.solve_flat_ocp(
+        vehicle_flat, timepts, x0, u0, traj_cost,
+	terminal_cost=term_cost, initial_guess=initial_guess, basis=bspline)
+
+    x, u = traj.eval(t)
+
 Module classes and functions
 ============================
 
@@ -262,6 +310,7 @@ Module classes and functions
 
    ~control.flatsys.BasisFamily
    ~control.flatsys.BezierFamily
+   ~control.flatsys.BSplineFamily
    ~control.flatsys.FlatSystem
    ~control.flatsys.LinearFlatSystem
    ~control.flatsys.PolyFamily
@@ -271,3 +320,4 @@ Module classes and functions
    :toctree: generated/
 
    ~control.flatsys.point_to_point
+   ~control.flatsys.solve_flat_ocp

@@ -47,15 +47,25 @@ class PolyFamily(BasisFamily):
     This class represents the family of polynomials of the form
 
     .. math::
-         \phi_i(t) = t^i
+         \phi_i(t) = \left( \frac{t}{T} \right)^i
+
+    Parameters
+    ----------
+    N : int
+        Degree of the Bezier curve.
+
+    T : float
+        Final time (used for rescaling).
 
     """
-    def __init__(self, N):
+    def __init__(self, N, T=1):
         """Create a polynomial basis of order N."""
         super(PolyFamily, self).__init__(N)
+        self.T = float(T)       # save end of time interval
 
     # Compute the kth derivative of the ith basis function at time t
-    def eval_deriv(self, i, k, t):
+    def eval_deriv(self, i, k, t, var=None):
         """Evaluate the kth derivative of the ith basis function at time t."""
         if (i < k): return 0;           # higher derivative than power
-        return factorial(i)/factorial(i-k) * np.power(t, i-k)
+        return factorial(i)/factorial(i-k) * \
+            np.power(t/self.T, i-k) / np.power(self.T, k)

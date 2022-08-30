@@ -268,17 +268,16 @@ class OptimalControlProblem():
             start_time = time.process_time()
             logging.info("_cost_function called at: %g", start_time)
 
-        # Retrieve the initial state and reshape the input vector
+        # Retrieve the saved initial state
         x = self.x
-        coeffs = coeffs.reshape((self.system.ninputs, -1))
 
-        # Compute time points (if basis present)
+        # Compute inputs
         if self.basis:
             if self.log:
                 logging.debug("coefficients = " + str(coeffs))
             inputs = self._coeffs_to_inputs(coeffs)
         else:
-            inputs = coeffs
+            inputs = coeffs.reshape((self.system.ninputs, -1))
 
         # See if we already have a simulation for this condition
         if np.array_equal(coeffs, self.last_coeffs) and \
@@ -391,15 +390,14 @@ class OptimalControlProblem():
             start_time = time.process_time()
             logging.info("_constraint_function called at: %g", start_time)
 
-        # Retrieve the initial state and reshape the input vector
+        # Retrieve the initial state
         x = self.x
-        coeffs = coeffs.reshape((self.system.ninputs, -1))
 
-        # Compute time points (if basis present)
+        # Compute input at time points
         if self.basis:
             inputs = self._coeffs_to_inputs(coeffs)
         else:
-            inputs = coeffs
+            inputs = coeffs.reshape((self.system.ninputs, -1))
 
         # See if we already have a simulation for this condition
         if np.array_equal(coeffs, self.last_coeffs) \
@@ -473,15 +471,14 @@ class OptimalControlProblem():
             start_time = time.process_time()
             logging.info("_eqconst_function called at: %g", start_time)
 
-        # Retrieve the initial state and reshape the input vector
+        # Retrieve the initial state
         x = self.x
-        coeffs = coeffs.reshape((self.system.ninputs, -1))
 
-        # Compute time points (if basis present)
+        # Compute input at time points
         if self.basis:
             inputs = self._coeffs_to_inputs(coeffs)
         else:
-            inputs = coeffs
+            inputs = coeffs.reshape((self.system.ninputs, -1))
 
         # See if we already have a simulation for this condition
         if np.array_equal(coeffs, self.last_coeffs) and \
@@ -609,34 +606,36 @@ class OptimalControlProblem():
             return inputs
 
         # Solve least squares problems (M x = b) for coeffs on each input
-        coeffs = np.zeros((self.system.ninputs, self.basis.N))
+        coeffs = []
         for i in range(self.system.ninputs):
             # Set up the matrices to get inputs
-            M = np.zeros((self.timepts.size, self.basis.N))
+            M = np.zeros((self.timepts.size, self.basis.var_ncoefs(i)))
             b = np.zeros(self.timepts.size)
 
             # Evaluate at each time point and for each basis function
             # TODO: vectorize
             for j, t in enumerate(self.timepts):
-                for k in range(self.basis.N):
+                for k in range(self.basis.var_ncoefs(i)):
                     M[j, k] = self.basis(k, t)
-                    b[j] = inputs[i, j]
+                b[j] = inputs[i, j]
 
             # Solve a least squares problem for the coefficients
             alpha, residuals, rank, s = np.linalg.lstsq(M, b, rcond=None)
-            coeffs[i, :] = alpha
+            coeffs.append(alpha)
 
-        return coeffs
+        return np.hstack(coeffs)
 
     # Utility function to convert coefficient vector to input vector
     def _coeffs_to_inputs(self, coeffs):
         # TODO: vectorize
         inputs = np.zeros((self.system.ninputs, self.timepts.size))
-        for i, t in enumerate(self.timepts):
-            for k in range(self.basis.N):
-                phi_k = self.basis(k, t)
-                for inp in range(self.system.ninputs):
-                    inputs[inp, i] += coeffs[inp, k] * phi_k
+        offset = 0
+        for i in range(self.system.ninputs):
+            length = self.basis.var_ncoefs(i)
+            for j, t in enumerate(self.timepts):
+                for k in range(length):
+                    inputs[i, j] += coeffs[offset + k] * self.basis(k, t)
+            offset += length
         return inputs
 
     #
@@ -680,7 +679,7 @@ class OptimalControlProblem():
 
     # Compute the optimal trajectory from the current state
     def compute_trajectory(
-            self, x, squeeze=None, transpose=None, return_states=None,
+            self, x, squeeze=None, transpose=None, return_states=True,
             initial_guess=None, print_summary=True, **kwargs):
         """Compute the optimal input at state x
 
@@ -689,8 +688,7 @@ class OptimalControlProblem():
         x : array-like or number, optional
             Initial state for the system.
         return_states : bool, optional
-            If True, return the values of the state at each time (default =
-            False).
+            If True (default), return the values of the state at each time.
         squeeze : bool, optional
             If True and if the system has a single output, return the system
             output as a 1D array rather than a 2D array.  If False, return the
@@ -837,7 +835,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
     """
     def __init__(
-            self, ocp, res, return_states=False, print_summary=False,
+            self, ocp, res, return_states=True, print_summary=False,
             transpose=None, squeeze=None):
         """Create a OptimalControlResult object"""
 
@@ -848,14 +846,11 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         # Remember the optimal control problem that we solved
         self.problem = ocp
 
-        # Reshape and process the input vector
-        coeffs = res.x.reshape((ocp.system.ninputs, -1))
-
-        # Compute time points (if basis present)
+        # Compute input at time points
         if ocp.basis:
-            inputs = ocp._coeffs_to_inputs(coeffs)
+            inputs = ocp._coeffs_to_inputs(res.x)
         else:
-            inputs = coeffs
+            inputs = res.x.reshape((ocp.system.ninputs, -1))
 
         # See if we got an answer
         if not res.success:
@@ -894,7 +889,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 def solve_ocp(
         sys, horizon, X0, cost, trajectory_constraints=None, terminal_cost=None,
         terminal_constraints=[], initial_guess=None, basis=None, squeeze=None,
-        transpose=None, return_states=False, log=False, **kwargs):
+        transpose=None, return_states=True, log=False, **kwargs):
 
     """Compute the solution to an optimal control problem
 
@@ -949,7 +944,7 @@ def solve_ocp(
         If `True`, turn on logging messages (using Python logging module).
 
     return_states : bool, optional
-        If True, return the values of the state at each time (default = False).
+        If True, return the values of the state at each time (default = True).
 
     squeeze : bool, optional
         If True and if the system has a single output, return the system
