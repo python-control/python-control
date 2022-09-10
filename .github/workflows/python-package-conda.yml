@@ -50,14 +50,14 @@ jobs:
     - name: Install optional dependencies
       shell: bash -l {0}
       run: |
+        if [[ '${{matrix.cvxopt}}' == 'conda' ]]; then
+          mamba install cvxopt
+        fi
         if [[ '${{matrix.slycot}}' == 'conda' ]]; then
           mamba install slycot
         fi
         if [[ '${{matrix.pandas}}' == 'conda' ]]; then
           mamba install pandas
-        fi
-        if [[ '${{matrix.cvxopt}}' == 'conda' ]]; then
-          mamba install cvxopt
         fi
 
     - name: Test with pytest
