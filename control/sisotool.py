@@ -15,7 +15,7 @@ import warnings
 def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
              plotstr_rlocus='C0', rlocus_grid=False, omega=None, dB=None,
              Hz=None, deg=None, omega_limits=None, omega_num=None,
-             margins_bode=True, tvect=None):
+             margins_bode=True, tvect=None, figsize=None, dpi=None):
     """
     Sisotool style collection of plots inspired by MATLAB's sisotool.
     The left two plots contain the bode magnitude and phase diagrams.
@@ -66,6 +66,10 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
         If True, plot gain and phase margin in the bode plot
     tvect : list or ndarray, optional
         List of timesteps to use for closed loop step response
+    figsize: tuple or list, optional
+        Figure size in x and y directions
+    dpi: int, optional
+        Dots per inch. Change the figure resolution
 
     Examples
     --------
@@ -85,7 +89,7 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
     fig = plt.gcf()
     if fig.canvas.manager.get_window_title() != 'Sisotool':
         plt.close(fig)
-        fig,axes = plt.subplots(2, 2)
+        fig,axes = plt.subplots(2, 2, figsize = figsize, dpi = dpi)
         fig.canvas.manager.set_window_title('Sisotool')
 
     # Extract bode plot parameters
