@@ -1779,6 +1779,9 @@ def input_output_response(
     else:
         noutputs = sys.noutputs
 
+    # Update the parameter values
+    sys._update_params(params)
+    
     #
     # Define a function to evaluate the input at an arbitrary time
     #
@@ -1815,9 +1818,6 @@ def input_output_response(
             t_eval, y, None, u, issiso=sys.issiso(),
             output_labels=sys.output_index, input_labels=sys.input_index,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
-
-    # Update the parameter values
-    sys._update_params(params)
 
     # Create a lambda function for the right hand side
     def ivp_rhs(t, x):
