@@ -281,7 +281,7 @@ def ispassive(sys, ofp_index=0, ifp_index=0):
     guaranteed to have an output of True (the system might not be passive with
     both indices at the same time).
 
-    For more details, see [1].
+    For more details, see [1]_.
 
     References
     ----------
