@@ -75,79 +75,74 @@ def test_kwarg_search(module, prefix):
             test_kwarg_search(obj, prefix + obj.__name__ + '.')
 
 
-@pytest.mark.usefixtures('editsdefaults')
-def test_unrecognized_kwargs():
+@pytest.mark.parametrize(
+    "function, nsssys, ntfsys, moreargs, kwargs",
+    [(control.dlqe, 1, 0, ([[1]], [[1]]), {}),
+     (control.dlqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
+     (control.drss, 0, 0, (2, 1, 1), {}),
+     (control.input_output_response, 1, 0, ([0, 1, 2], [1, 1, 1]), {}),
+     (control.lqe, 1, 0, ([[1]], [[1]]), {}),
+     (control.lqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
+     (control.linearize, 1, 0, (0, 0), {}),
+     (control.pzmap, 1, 0, (), {}),
+     (control.rlocus, 0, 1, ( ), {}),
+     (control.root_locus, 0, 1, ( ), {}),
+     (control.rss, 0, 0, (2, 1, 1), {}),
+     (control.set_defaults, 0, 0, ('control',), {'default_dt': True}),
+     (control.ss, 0, 0, (0, 0, 0, 0), {'dt': 1}),
+     (control.ss2io, 1, 0,  (), {}),
+     (control.ss2tf, 1, 0, (), {}),
+     (control.summing_junction, 0, 0, (2,), {}),
+     (control.tf, 0, 0, ([1], [1, 1]), {}),
+     (control.tf2io, 0, 1, (), {}),
+     (control.tf2ss, 0, 1, (), {}),
+     (control.InputOutputSystem, 0, 0, (),
+      {'inputs': 1, 'outputs': 1, 'states': 1}),
+     (control.InputOutputSystem.linearize, 1, 0, (0, 0), {}),
+     (control.StateSpace, 0, 0, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
+     (control.TransferFunction, 0, 0, ([1], [1, 1]), {})]
+)
+def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
+                             mplcleanup, editsdefaults):
+    # Create SISO systems for use in parameterized tests
+    sssys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
+    tfsys = control.tf([1], [1, 1])
+
+    args = (sssys, )*nsssys + (tfsys, )*ntfsys + moreargs
+
+    # Call the function normally and make sure it works
+    function(*args, **kwargs)
+
+    # Now add an unrecognized keyword and make sure there is an error
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        function(*args, **kwargs, unknown=None)
+
+
+@pytest.mark.parametrize(
+    "function, nsysargs, moreargs, kwargs",
+    [(control.bode, 1, (), {}),
+     (control.bode_plot, 1, (), {}),
+     (control.describing_function_plot, 1,
+      (control.descfcn.saturation_nonlinearity(1), [1, 2, 3, 4]), {}),
+     (control.gangof4, 2, (), {}),
+     (control.gangof4_plot, 2, (), {}),
+     (control.nyquist, 1, (), {}),
+     (control.nyquist_plot, 1, (), {}),
+     (control.singular_values_plot, 1, (), {})]
+)
+def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
     # Create a SISO system for use in parameterized tests
     sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
 
-    table = [
-        [control.dlqe, (sys, [[1]], [[1]]), {}],
-        [control.dlqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
-        [control.drss, (2, 1, 1), {}],
-        [control.input_output_response, (sys, [0, 1, 2], [1, 1, 1]), {}],
-        [control.lqe, (sys, [[1]], [[1]]), {}],
-        [control.lqr, (sys, [[1, 0], [0, 1]], [[1]]), {}],
-        [control.linearize, (sys, 0, 0), {}],
-        [control.pzmap, (sys,), {}],
-        [control.rlocus, (control.tf([1], [1, 1]), ), {}],
-        [control.root_locus, (control.tf([1], [1, 1]), ), {}],
-        [control.rss, (2, 1, 1), {}],
-        [control.set_defaults, ('control',), {'default_dt': True}],
-        [control.ss, (0, 0, 0, 0), {'dt': 1}],
-        [control.ss2io, (sys,), {}],
-        [control.ss2tf, (sys,), {}],
-        [control.summing_junction, (2,), {}],
-        [control.tf, ([1], [1, 1]), {}],
-        [control.tf2io, (control.tf([1], [1, 1]),), {}],
-        [control.tf2ss, (control.tf([1], [1, 1]),), {}],
-        [control.InputOutputSystem, (),
-         {'inputs': 1, 'outputs': 1, 'states': 1}],
-        [control.InputOutputSystem.linearize, (sys, 0, 0), {}],
-        [control.StateSpace, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}],
-        [control.TransferFunction, ([1], [1, 1]), {}],
-    ]
+    # Call the function normally and make sure it works
+    args = (sys, )*nsysargs + moreargs
+    function(*args, **kwargs)
 
-    for function, args, kwargs in table:
-        # Call the function normally and make sure it works
-        function(*args, **kwargs)
+    # Now add an unrecognized keyword and make sure there is an error
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
+        function(*args, **kwargs, unknown=None)
 
-        # Now add an unrecognized keyword and make sure there is an error
-        with pytest.raises(TypeError, match="unrecognized keyword"):
-            function(*args, **kwargs, unknown=None)
-
-        # If we opened any figures, close them to avoid matplotlib warnings
-        if plt.gca():
-            plt.close('all')
-
-
-def test_matplotlib_kwargs():
-    # Create a SISO system for use in parameterized tests
-    sys = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
-    ctl = control.ss([[-1, 1], [0, -1]], [[0], [1]], [[1, 0]], 0, dt=None)
-
-    table = [
-        [control.bode, (sys, ), {}],
-        [control.bode_plot, (sys, ), {}],
-        [control.describing_function_plot,
-         (sys, control.descfcn.saturation_nonlinearity(1), [1, 2, 3, 4]), {}],
-        [control.gangof4, (sys, ctl), {}],
-        [control.gangof4_plot, (sys, ctl), {}],
-        [control.nyquist, (sys, ), {}],
-        [control.nyquist_plot, (sys, ), {}],
-        [control.singular_values_plot, (sys, ), {}],
-    ]
-
-    for function, args, kwargs in table:
-        # Call the function normally and make sure it works
-        function(*args, **kwargs)
-
-        # Now add an unrecognized keyword and make sure there is an error
-        with pytest.raises(AttributeError, match="has no property"):
-            function(*args, **kwargs, unknown=None)
-
-        # If we opened any figures, close them to avoid matplotlib warnings
-        if plt.gca():
-            plt.close('all')
 
 
 #
