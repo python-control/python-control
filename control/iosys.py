@@ -2242,7 +2242,7 @@ def ss(*args, **kwargs):
         Convert a linear system into space system form. Always creates a
         new system, even if sys is already a state space system.
 
-    ``ss(updfcn, outfucn)```
+    ``ss(updfcn, outfucn)``
         Create a nonlinear input/output system with update function ``updfcn``
         and output function ``outfcn``.  See :class:`NonlinearIOSystem` for
         more information.
@@ -2269,8 +2269,7 @@ def ss(*args, **kwargs):
         Everything that the constructor of :class:`numpy.matrix` accepts is
         permissible here too.
 
-    ``ss(args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'],
-         states=['x1', ..., 'xn'])
+    ``ss(args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
         Create a system with named input, output, and state signals.
 
     Parameters
