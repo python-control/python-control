@@ -213,6 +213,8 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     derivative terms are given instead by Kp, Ki*dt/2*(z+1)/(z-1), and
     Kd/dt*(z-1)/z, respectively.
 
+    ::
+
           ------> C_ff ------    d
           |                 |    |
       r   |     e           V    V  u         y

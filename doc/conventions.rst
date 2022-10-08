@@ -29,7 +29,7 @@ of linear time-invariant (LTI) systems:
 
 where u is the input, y is the output, and x is the state.
 
-To create a state space system, use the :fun:`ss` function:
+To create a state space system, use the :func:`ss` function:
 
   sys = ct.ss(A, B, C, D)
 
