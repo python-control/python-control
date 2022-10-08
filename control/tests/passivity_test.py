@@ -1,5 +1,5 @@
 '''
-Author: Mark Yeatman  
+Author: Mark Yeatman
 Date: May 30, 2022
 '''
 import pytest
@@ -99,20 +99,17 @@ D = numpy.array([[1.5]])
 
 
 @pytest.mark.parametrize(
-    "test_input,expected",
+    "systemmatrices, expected",
     [((A, B, C, D*0.0), True),
      ((A_d, B, C, D), True),
-     ((A*1e12, B, C, D*0), True),
+     pytest.param((A*1e12, B, C, D*0), True,
+                  marks=pytest.mark.xfail(reason="gh-761")),
      ((A, B*0, C*0, D), True),
      ((A*0, B, C, D), True),
      ((A*0, B*0, C*0, D*0), True)])
-def test_ispassive_edge_cases(test_input, expected):
-    A = test_input[0]
-    B = test_input[1]
-    C = test_input[2]
-    D = test_input[3]
-    sys = ss(A, B, C, D)
-    assert(passivity.ispassive(sys) == expected)
+def test_ispassive_edge_cases(systemmatrices, expected):
+    sys = ss(*systemmatrices)
+    assert passivity.ispassive(sys) == expected
 
 
 def test_rho_and_nu_are_none():
