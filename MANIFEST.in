@@ -1,5 +1,4 @@
 include examples/*.py
-include tests/*.py
 include README.rst
 include ChangeLog
 include Pending
