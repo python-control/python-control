@@ -519,7 +519,7 @@ class StateSpace(LTI):
         s : string with LaTeX representation of model
         """
         lines = [
-            r'\[',
+            r'$$',
             (r'\left('
              + r'\begin{array}'
              + r'{' + 'rll' * self.ninputs + '}')
@@ -533,7 +533,7 @@ class StateSpace(LTI):
             r'\end{array}'
             r'\right)'
             + self._latex_dt(),
-            r'\]'])
+            r'$$'])
 
         return '\n'.join(lines)
 
@@ -551,7 +551,7 @@ class StateSpace(LTI):
             return self._latex_partitioned_stateless()
 
         lines = [
-            r'\[',
+            r'$$',
             (r'\left('
              + r'\begin{array}'
              + r'{' + 'rll' * self.nstates + '|' + 'rll' * self.ninputs + '}')
@@ -571,7 +571,7 @@ class StateSpace(LTI):
             r'\end{array}'
             + r'\right)'
             + self._latex_dt(),
-            r'\]'])
+            r'$$'])
 
         return '\n'.join(lines)
 
@@ -585,7 +585,7 @@ class StateSpace(LTI):
         s : string with LaTeX representation of model
         """
         lines = [
-            r'\[',
+            r'$$',
             r'\begin{array}{ll}',
             ]
 
@@ -615,7 +615,7 @@ class StateSpace(LTI):
         lines.extend([
             r'\end{array}'
             + self._latex_dt(),
-            r'\]'])
+            r'$$'])
 
         return '\n'.join(lines)
 
