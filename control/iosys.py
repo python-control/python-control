@@ -149,6 +149,7 @@ class InputOutputSystem(NamedIOSystem):
 
         # default parameters
         self.params = params.copy()
+        self._current_params = self.params.copy()
 
     def __mul__(sys2, sys1):
         """Multiply two input/output systems (series interconnection)"""
@@ -804,7 +805,7 @@ class NonlinearIOSystem(InputOutputSystem):
             f"Output: {self.outfcn}"
 
     # Return the value of a static nonlinear system
-    def __call__(sys, u, params=None, squeeze=None):
+    def __call__(sys, u, params={}, squeeze=None):
         """Evaluate a (static) nonlinearity at a given input value
 
         If a nonlinear I/O system has no internal state, then evaluating the
@@ -830,12 +831,8 @@ class NonlinearIOSystem(InputOutputSystem):
                 "function evaluation is only supported for static "
                 "input/output systems")
 
-        # If we received any parameters, update them before calling _out()
-        if params is not None:
-            sys._update_params(params)
-
         # Evaluate the function on the argument
-        out = sys._out(0, np.array((0,)), np.asarray(u))
+        out = sys._out(0, np.array((0,)), np.asarray(u), params)
         _, out = _process_time_response(
             None, out, issiso=sys.issiso(), squeeze=squeeze)
         return out
