@@ -386,6 +386,9 @@ class StateSpace(LTI):
         # Check for states that don't do anything, and remove them
         if remove_useless_states:
             self._remove_useless_states()
+        # params for compatibility with LinearICSystems
+        self.params = {} 
+        self._current_params = self.params.copy() 
 
     #
     # Class attributes
@@ -1388,8 +1391,22 @@ class StateSpace(LTI):
             scalar is returned.
         """
         return self._dcgain(warn_infinite)
+    
+    def _rhs(self, t, x, u=None, params={}):
+        """Compute the right hand side of the differential or difference 
+        equation for the system. Please :meth:`dynamics` for a more user-
+        friendly interface. """
 
-    def dynamics(self, t, x, u=None):
+        x = np.reshape(x, (-1, 1))  # force to a column in case matrix
+        if u is None: # received t and x, but ignore t
+            output = self.A @ x
+        else:  # received t, x, and u, ignore t
+            u = np.reshape(u, (-1, 1))  # force to column in case matrix
+            output = self.A @ x + self.B @ u  
+
+        return output.reshape((-1,)) # return as row vector
+
+    def dynamics(self, t, x, u=None, params={}):
         """Compute the dynamics of the system
 
         Given input `u` and state `x`, returns the dynamics of the state-space
@@ -1417,25 +1434,35 @@ class StateSpace(LTI):
             current state
         u : array_like (optional)
             input, zero if omitted
+        params : dict (optional)
+            included for compatibility but ignored for :class:`StateSpace` systems
 
         Returns
         -------
         dx/dt or x[t+dt] : ndarray
 
         """
-        x = np.reshape(x, (-1, 1))  # force to a column in case matrix
+        # chechs
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
-        if u is None:
-            return (self.A @ x).reshape((-1,))  # return as row vector
-        else:  # received t, x, and u, ignore t
-            u = np.reshape(u, (-1, 1))  # force to column in case matrix
+        if u is not None: 
             if np.size(u) != self.ninputs:
-                raise ValueError("len(u) must be equal to number of inputs")
-            return (self.A @ x).reshape((-1,)) \
-                + (self.B @ u).reshape((-1,))  # return as row vector
+                    raise ValueError("len(u) must be equal to number of inputs")
+        return self._rhs(t, x, u, params)
+        
+    def _out(self, t, x, u=None, params={}):
+        """Compute the output of the system system. Please :meth:`dynamics` 
+        for a more user-friendly interface. """
 
-    def output(self, t, x, u=None):
+        x = np.reshape(x, (-1, 1))  # force to a column in case matrix
+        if u is None:
+            y = self.C @ x
+        else:  # received t, x, and u, ignore t
+            u = np.reshape(u, (-1, 1)) # force to a column in case matrix
+            y = self.C @ x + self.D @ u 
+        return y.reshape((-1,))  # return as row vector
+
+    def output(self, t, x, u=None, params={}):
         """Compute the output of the system
 
         Given input `u` and state `x`, returns the output `y` of the
@@ -1465,19 +1492,19 @@ class StateSpace(LTI):
         -------
         y : ndarray
         """
-        x = np.reshape(x, (-1, 1))  # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
-
-        if u is None:
-            return (self.C @ x).reshape((-1,))  # return as row vector
-        else:  # received t, x, and u, ignore t
-            u = np.reshape(u, (-1, 1))  # force to a column in case matrix
+        if u is not None: 
             if np.size(u) != self.ninputs:
                 raise ValueError("len(u) must be equal to number of inputs")
-            return (self.C @ x).reshape((-1,)) \
-                + (self.D @ u).reshape((-1,))  # return as row vector
+        return self._out(t, x, u, params)
+    
+    def _update_params(self, params={}, warning=False):
+        # Parameters not supported; issue a warning
+        if params and warning:
+            warn("Parameters passed to StateSpace system are ignored.")
 
+        
     def _isstatic(self):
         """True if and only if the system has no dynamics, that is,
         if A and B are zero. """
