@@ -66,6 +66,10 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
 
+        # Make sure that a combination of a LinearIOSystem and a StateSpace 
+        # system results in a LinearIOSystem
+        assert isinstance(linsys*iosys, ios.LinearIOSystem) 
+
     def test_tf2io(self, tsys):
         # Create a transfer function from the state space system
         linsys = tsys.siso_linsys
