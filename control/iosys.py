@@ -114,12 +114,12 @@ class InputOutputSystem(NamedIOSystem):
     The :class:`~control.InputOuputSystem` class (and its subclasses) makes
     use of two special methods for implementing much of the work of the class:
 
-    * _rhs(t, x, u): compute the right hand side of the differential or
-      difference equation for the system.  This must be specified by the
+    * _rhs(t, x, u, params={}): compute the right hand side of the differential 
+      or difference equation for the system.  This must be specified by the
       subclass for the system.
 
-    * _out(t, x, u): compute the output for the current state of the system.
-      The default is to return the entire system state.
+    * _out(t, x, u, params={}): compute the output for the current state of the 
+      system. The default is to return the entire system state.
 
     """
 
@@ -369,7 +369,7 @@ class InputOutputSystem(NamedIOSystem):
         NotImplemented("Evaluation not implemented for system of type ",
                        type(self))
 
-    def dynamics(self, t, x, u):
+    def dynamics(self, t, x, u, params={}):
         """Compute the dynamics of a differential or difference equation.
 
         Given time `t`, input `u` and state `x`, returns the value of the
@@ -395,12 +395,15 @@ class InputOutputSystem(NamedIOSystem):
             current state
         u : array_like
             input
+        params : dict (optional)
+            system parameters
+
 
         Returns
         -------
         dx/dt or x[t+dt] : ndarray
         """
-        return self._rhs(t, x, u)
+        return self._rhs(t, x, u, params=params)
 
     def _out(self, t, x, u, params={}):
         """Evaluate the output of a system at a given state, input, and time
@@ -414,7 +417,7 @@ class InputOutputSystem(NamedIOSystem):
         # If no output function was defined in subclass, return state
         return x
 
-    def output(self, t, x, u):
+    def output(self, t, x, u, params={}):
         """Compute the output of the system
 
         Given time `t`, input `u` and state `x`, returns the output of the
@@ -432,12 +435,14 @@ class InputOutputSystem(NamedIOSystem):
             current state
         u : array_like
             input
+        params : dict (optional)
+            system parameters
 
         Returns
         -------
         y : ndarray
         """
-        return self._out(t, x, u)
+        return self._out(t, x, u, params=params)
 
     def feedback(self, other=1, sign=-1, params={}):
         """Feedback interconnection between two input/output systems
@@ -673,13 +678,13 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         if params and warning:
             warn("Parameters passed to LinearIOSystems are ignored.")
 
-    def _rhs(self, t, x, u):
+    def _rhs(self, t, x, u, params={}):
         # Convert input to column vector and then change output to 1D array
         xdot = self.A @ np.reshape(x, (-1, 1)) \
                + self.B @ np.reshape(u, (-1, 1))
         return np.array(xdot).reshape((-1,))
 
-    def _out(self, t, x, u):
+    def _out(self, t, x, u, params={}):
         # Convert input to column vector and then change output to 1D array
         y = self.C @ np.reshape(x, (-1, 1)) \
             + self.D @ np.reshape(u, (-1, 1))
@@ -840,13 +845,17 @@ class NonlinearIOSystem(InputOutputSystem):
         self._current_params = self.params.copy()
         self._current_params.update(params)
 
-    def _rhs(self, t, x, u):
-        xdot = self.updfcn(t, x, u, self._current_params) \
+    def _rhs(self, t, x, u, params={}):
+        current_params = self._current_params.copy()
+        current_params.update(params)
+        xdot = self.updfcn(t, x, u, current_params) \
             if self.updfcn is not None else []
         return np.array(xdot).reshape((-1,))
 
-    def _out(self, t, x, u):
-        y = self.outfcn(t, x, u, self._current_params) \
+    def _out(self, t, x, u, params={}):
+        current_params = self._current_params.copy()
+        current_params.update(params)
+        y = self.outfcn(t, x, u, current_params) \
             if self.outfcn is not None else x
         return np.array(y).reshape((-1,))
 
@@ -1018,7 +1027,7 @@ class InterconnectedSystem(InputOutputSystem):
             local.update(params)        # update with locally passed parameters
             sys._update_params(local, warning=warning)
 
-    def _rhs(self, t, x, u):
+    def _rhs(self, t, x, u, params={}):
         # Make sure state and input are vectors
         x = np.array(x, ndmin=1)
         u = np.array(u, ndmin=1)
@@ -1031,10 +1040,12 @@ class InterconnectedSystem(InputOutputSystem):
         state_index, input_index = 0, 0         # Start at the beginning
         for sys in self.syslist:
             # Update the right hand side for this subsystem
+            sys_params = sys._current_params.copy()
+            sys_params.update(params)
             if sys.nstates != 0:
                 xdot[state_index:state_index + sys.nstates] = sys._rhs(
                     t, x[state_index:state_index + sys.nstates],
-                    ulist[input_index:input_index + sys.ninputs])
+                    ulist[input_index:input_index + sys.ninputs], sys_params)
 
             # Update the state and input index counters
             state_index += sys.nstates
@@ -1042,7 +1053,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         return xdot
 
-    def _out(self, t, x, u):
+    def _out(self, t, x, u, params={}):
         # Make sure state and input are vectors
         x = np.array(x, ndmin=1)
         u = np.array(u, ndmin=1)
@@ -2838,7 +2849,7 @@ def interconnect(syslist, connections=None, inplist=[], outlist=[], params={},
         newsys.check_unused_signals(ignore_inputs, ignore_outputs)
 
     # If all subsystems are linear systems, maintain linear structure
-    if all([isinstance(sys, LinearIOSystem) for sys in syslist]):
+    if all([isinstance(sys, (LinearIOSystem, StateSpace)) for sys in syslist]):
         return LinearICSystem(newsys, None)
 
     return newsys
