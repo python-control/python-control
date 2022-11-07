@@ -386,7 +386,7 @@ class StateSpace(LTI):
         # Check for states that don't do anything, and remove them
         if remove_useless_states:
             self._remove_useless_states()
-        # params for compatibility with LinearICSystems
+        # params for compatibility with LinearIOSystems
         self.params = {} 
         self._current_params = self.params.copy() 
 
