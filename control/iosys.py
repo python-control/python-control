@@ -679,17 +679,9 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         if params and warning:
             warn("Parameters passed to LinearIOSystems are ignored.")
 
-    def _rhs(self, t, x, u, params={}):
-        # Convert input to column vector in case A, B are numpy matrix
-        output = self.A @ np.reshape(x, (-1, 1)) \
-               + self.B @ np.reshape(u, (-1, 1))
-        return np.array(output).reshape((-1,)) # change output to 1D array
-
-    def _out(self, t, x, u, params={}):
-        # Convert input to column vector in case A, B are numpy matrix
-        y = self.C @ np.reshape(x, (-1, 1)) \
-            + self.D @ np.reshape(u, (-1, 1))
-        return np.array(y).reshape((-1,)) # change output to 1D array
+    # inherit methods as necessary
+    _rhs = StateSpace._rhs
+    _out = StateSpace._out
 
     def __repr__(self):
         # Need to define so that I/O system gets used instead of StateSpace
