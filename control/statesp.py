@@ -346,9 +346,8 @@ class StateSpace(LTI):
             defaults = args[0] if len(args) == 1 else \
                 {'inputs': D.shape[1], 'outputs': D.shape[0],
                  'states': A.shape[0]}
-            static = (A.size == 0)
             name, inputs, outputs, states, dt = _process_namedio_keywords(
-                kwargs, defaults, static=static, end=True)
+                kwargs, defaults, static=self._isstatic(), end=True)
 
             # Initialize LTI (NamedIOSystem) object
             super().__init__(
