@@ -894,6 +894,12 @@ class InterconnectedSystem(InputOutputSystem):
 
         # Go through the system list and keep track of counts, offsets
         for sysidx, sys in enumerate(syslist):
+            # If we were passed a SS or TF system, convert to LinearIOSystem
+            if isinstance(sys, (StateSpace, TransferFunction)) and \
+               not isinstance(sys, LinearIOSystem):
+                sys = LinearIOSystem(sys)
+                syslist[sysidx] = sys
+
             # Make sure time bases are consistent
             dt = common_timebase(dt, sys.dt)
 
@@ -1781,7 +1787,7 @@ def input_output_response(
 
     # Update the parameter values
     sys._update_params(params)
-    
+
     #
     # Define a function to evaluate the input at an arbitrary time
     #
