@@ -19,7 +19,9 @@ def sys_dict():
     sdict['frd'] = ct.frd([10+0j, 9 + 1j, 8 + 2j, 7 + 3j], [1, 2, 3, 4])
     sdict['lio'] = ct.LinearIOSystem(ct.ss([[-1]], [[5]], [[5]], [[0]]))
     sdict['ios'] = ct.NonlinearIOSystem(
-        sdict['lio']._rhs, sdict['lio']._out, inputs=1, outputs=1, states=1)
+        lambda t, x, u, params: sdict['lio']._rhs(t, x, u),
+        lambda t, x, u, params: sdict['lio']._out(t, x, u),
+        inputs=1, outputs=1, states=1)
     sdict['arr'] = np.array([[2.0]])
     sdict['flt'] = 3.
     return sdict
@@ -226,4 +228,12 @@ def test_interconnect(
             result = ct.interconnect(syslist, connections, inplist, outlist)
     else:
             result = ct.interconnect(syslist, connections, inplist, outlist)
+
+            # Make sure the type is correct
             assert isinstance(result, type_dict[expected])
+
+            # Make sure we can evaluate the dynamics
+            np.testing.assert_equal(
+                result.dynamics(
+                    0, np.zeros(result.nstates), np.zeros(result.ninputs)),
+                np.zeros(result.nstates))

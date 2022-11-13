@@ -357,7 +357,7 @@ class InputOutputSystem(NamedIOSystem):
         if warning:
             warn("Parameters passed to InputOutputSystem ignored.")
 
-    def _rhs(self, t, x, u, params={}):
+    def _rhs(self, t, x, u):
         """Evaluate right hand side of a differential or difference equation.
 
         Private function used to compute the right hand side of an
@@ -369,7 +369,7 @@ class InputOutputSystem(NamedIOSystem):
         NotImplemented("Evaluation not implemented for system of type ",
                        type(self))
 
-    def dynamics(self, t, x, u):
+    def dynamics(self, t, x, u, params={}):
         """Compute the dynamics of a differential or difference equation.
 
         Given time `t`, input `u` and state `x`, returns the value of the
@@ -400,9 +400,10 @@ class InputOutputSystem(NamedIOSystem):
         -------
         dx/dt or x[t+dt] : ndarray
         """
+        self._update_params(params)
         return self._rhs(t, x, u)
 
-    def _out(self, t, x, u, params={}):
+    def _out(self, t, x, u):
         """Evaluate the output of a system at a given state, input, and time
 
         Private function used to compute the output of of an input/output
@@ -414,7 +415,7 @@ class InputOutputSystem(NamedIOSystem):
         # If no output function was defined in subclass, return state
         return x
 
-    def output(self, t, x, u):
+    def output(self, t, x, u, params={}):
         """Compute the output of the system
 
         Given time `t`, input `u` and state `x`, returns the output of the
@@ -437,6 +438,7 @@ class InputOutputSystem(NamedIOSystem):
         -------
         y : ndarray
         """
+        self._update_params(params)
         return self._out(t, x, u)
 
     def feedback(self, other=1, sign=-1, params={}):
@@ -2248,7 +2250,7 @@ def ss(*args, **kwargs):
         Convert a linear system into space system form. Always creates a
         new system, even if sys is already a state space system.
 
-    ``ss(updfcn, outfucn)``
+    ``ss(updfcn, outfcn)``
         Create a nonlinear input/output system with update function ``updfcn``
         and output function ``outfcn``.  See :class:`NonlinearIOSystem` for
         more information.
