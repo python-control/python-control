@@ -399,25 +399,6 @@ class TestStateSpace:
             mag, phase, omega = sys.freqresp(true_omega)
             np.testing.assert_almost_equal(mag, true_mag)
 
-    def test__isstatic(self):
-        A0 = np.zeros((2,2))
-        A1 = A0.copy()
-        A1[0,1] = 1.1
-        B0 = np.zeros((2,1))
-        B1 = B0.copy()
-        B1[0,0] = 1.3
-        C0 = A0
-        C1 = np.eye(2)
-        D0 = 0
-        D1 = np.ones((2,1))
-        assert StateSpace(A0, B0, C1, D1)._isstatic()
-        assert not StateSpace(A1, B0, C1, D1)._isstatic()
-        assert not StateSpace(A0, B1, C1, D1)._isstatic()
-        assert not StateSpace(A1, B1, C1, D1)._isstatic()
-        assert StateSpace(A0, B0, C0, D0)._isstatic()
-        assert StateSpace(A0, B0, C0, D1)._isstatic()
-        assert StateSpace(A0, B0, C1, D0)._isstatic()
-
     @slycotonly
     def test_minreal(self):
         """Test a minreal model reduction."""
@@ -1158,3 +1139,17 @@ class TestLinfnorm:
         gpeak, fpeak = linfnorm(sys)
         np.testing.assert_allclose(gpeak, refgpeak)
         np.testing.assert_allclose(fpeak, reffpeak)
+
+@pytest.mark.parametrize("args, static", [
+    (([], [], [], 1), True),       # ctime, empty state
+    (([], [], [], 1, 1), True),    # dtime, empty state
+    ((0, 0, 0, 1), False),         # ctime, unused state
+    ((-1, 0, 0, 1), False),        # ctime, exponential decay
+    ((-1, 0, 0, 0), False),        # ctime, no input, no output
+    ((0, 0, 0, 1, 1), False),      # dtime, integrator
+    ((1, 0, 0, 1, 1), False),      # dtime, unused state
+    ((0, 0, 0, 1, None), False),   # unspecified, unused state
+])
+def test_isstatic(args, static):
+    sys = ct.StateSpace(*args)
+    assert sys._isstatic() == static
