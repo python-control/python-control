@@ -1389,7 +1389,7 @@ class StateSpace(LTI):
         """
         return self._dcgain(warn_infinite)
 
-    def dynamics(self, t, x, u=None):
+    def dynamics(self, t, x, u=None, params=None):
         """Compute the dynamics of the system
 
         Given input `u` and state `x`, returns the dynamics of the state-space
@@ -1423,6 +1423,9 @@ class StateSpace(LTI):
         dx/dt or x[t+dt] : ndarray
 
         """
+        if params is not None:
+            warn("params keyword ignored for StateSpace object")
+
         x = np.reshape(x, (-1, 1))  # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")
@@ -1435,7 +1438,7 @@ class StateSpace(LTI):
             return (self.A @ x).reshape((-1,)) \
                 + (self.B @ u).reshape((-1,))  # return as row vector
 
-    def output(self, t, x, u=None):
+    def output(self, t, x, u=None, params=None):
         """Compute the output of the system
 
         Given input `u` and state `x`, returns the output `y` of the
@@ -1465,6 +1468,9 @@ class StateSpace(LTI):
         -------
         y : ndarray
         """
+        if params is not None:
+            warn("params keyword ignored for StateSpace object")
+
         x = np.reshape(x, (-1, 1))  # force to a column in case matrix
         if np.size(x) != self.nstates:
             raise ValueError("len(x) must be equal to number of states")

@@ -376,12 +376,12 @@ class InputOutputSystem(NamedIOSystem):
         right hand side of the dynamical system. If the system is continuous,
         returns the time derivative
 
-            dx/dt = f(t, x, u, params)
+            dx/dt = f(t, x, u[, params])
 
         where `f` is the system's (possibly nonlinear) dynamics function.
         If the system is discrete-time, returns the next value of `x`:
 
-            x[t+dt] = f(t, x[t], u[t], params)
+            x[t+dt] = f(t, x[t], u[t][, params])
 
         where `t` is a scalar.
 
