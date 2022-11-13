@@ -376,16 +376,17 @@ class InputOutputSystem(NamedIOSystem):
         right hand side of the dynamical system. If the system is continuous,
         returns the time derivative
 
-            dx/dt = f(t, x, u)
+            dx/dt = f(t, x, u, params)
 
         where `f` is the system's (possibly nonlinear) dynamics function.
         If the system is discrete-time, returns the next value of `x`:
 
-            x[t+dt] = f(t, x[t], u[t])
+            x[t+dt] = f(t, x[t], u[t], params)
 
-        Where `t` is a scalar.
+        where `t` is a scalar.
 
-        The inputs `x` and `u` must be of the correct length.
+        The inputs `x` and `u` must be of the correct length.  The `params`
+        argument is an optional dictionary of parameter values.
 
         Parameters
         ----------
@@ -395,6 +396,8 @@ class InputOutputSystem(NamedIOSystem):
             current state
         u : array_like
             input
+        params : dict (optional)
+            system parameter values
 
         Returns
         -------
@@ -421,7 +424,7 @@ class InputOutputSystem(NamedIOSystem):
         Given time `t`, input `u` and state `x`, returns the output of the
         system:
 
-            y = g(t, x, u)
+            y = g(t, x, u[, params])
 
         The inputs `x` and `u` must be of the correct length.
 
@@ -433,6 +436,8 @@ class InputOutputSystem(NamedIOSystem):
             current state
         u : array_like
             input
+        params : dict (optional)
+            system parameter values
 
         Returns
         -------
