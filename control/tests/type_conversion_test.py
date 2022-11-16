@@ -19,7 +19,9 @@ def sys_dict():
     sdict['frd'] = ct.frd([10+0j, 9 + 1j, 8 + 2j, 7 + 3j], [1, 2, 3, 4])
     sdict['lio'] = ct.LinearIOSystem(ct.ss([[-1]], [[5]], [[5]], [[0]]))
     sdict['ios'] = ct.NonlinearIOSystem(
-        sdict['lio']._rhs, sdict['lio']._out, inputs=1, outputs=1, states=1)
+        lambda t, x, u, params: sdict['lio']._rhs(t, x, u),
+        lambda t, x, u, params: sdict['lio']._out(t, x, u),
+        inputs=1, outputs=1, states=1)
     sdict['arr'] = np.array([[2.0]])
     sdict['flt'] = 3.
     return sdict
@@ -59,7 +61,7 @@ type_dict = {
 rtype_list =           ['ss',  'tf', 'frd', 'lio', 'ios', 'arr', 'flt']
 conversion_table = [
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('add',     'ss',  ['ss',  'ss',  'frd', 'ss',  'ios', 'ss',  'ss' ]),
+    ('add',     'ss',  ['ss',  'ss',  'frd', 'lio', 'ios', 'ss',  'ss' ]),
     ('add',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('add',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('add',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
@@ -68,7 +70,7 @@ conversion_table = [
     ('add',     'flt', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('sub',     'ss',  ['ss',  'ss',  'frd', 'ss',  'ios', 'ss',  'ss' ]),
+    ('sub',     'ss',  ['ss',  'ss',  'frd', 'lio', 'ios', 'ss',  'ss' ]),
     ('sub',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('sub',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('sub',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
@@ -77,7 +79,7 @@ conversion_table = [
     ('sub',     'flt', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('mul',     'ss',  ['ss',  'ss',  'frd', 'ss',  'ios', 'ss',  'ss' ]),
+    ('mul',     'ss',  ['ss',  'ss',  'frd', 'lio', 'ios', 'ss',  'ss' ]),
     ('mul',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('mul',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('mul',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
@@ -191,3 +193,47 @@ def test_binary_op_type_conversions(opname, ltype, rtype, sys_dict):
         assert len(result.output_labels) == result.noutputs
         if result.nstates is not None:
             assert len(result.state_labels) == result.nstates
+
+@pytest.mark.parametrize(
+    "typelist, connections, inplist, outlist, expected", [
+        (['lio', 'lio'], [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'lio'),
+        (['lio', 'ss'],  [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'lio'),
+        (['ss',  'lio'], [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'lio'),
+        (['ss',  'ss'],  [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'lio'),
+        (['lio', 'tf'],  [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'lio'),
+        (['lio', 'frd'], [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'E'),
+        (['ios', 'ios'], [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'ios'),
+        (['lio', 'ios'], [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'ios'),
+        (['ss',  'ios'], [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'ios'),
+        (['tf',  'ios'], [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'ios'),
+        (['lio', 'ss', 'tf'],
+         [[(1, 0), (0, 0)], [(2, 0), (1, 0)]], [[(0, 0)]], [[(2, 0)]], 'lio'),
+        (['ios', 'ss', 'tf'],
+         [[(1, 0), (0, 0)], [(2, 0), (1, 0)]], [[(0, 0)]], [[(2, 0)]], 'ios'),
+    ])
+def test_interconnect(
+        typelist, connections, inplist, outlist, expected, sys_dict):
+    # Create the system list
+    syslist = [sys_dict[_type] for _type in typelist]
+
+    # Make copies of any duplicates
+    for sysidx, sys in enumerate(syslist):
+        if sys == syslist[0]:
+            syslist[sysidx] = sys.copy()
+
+    # Make sure we get the right result
+    if expected == 'E' or expected[0] == 'x':
+        # Exception expected
+        with pytest.raises(TypeError):
+            result = ct.interconnect(syslist, connections, inplist, outlist)
+    else:
+            result = ct.interconnect(syslist, connections, inplist, outlist)
+
+            # Make sure the type is correct
+            assert isinstance(result, type_dict[expected])
+
+            # Make sure we can evaluate the dynamics
+            np.testing.assert_equal(
+                result.dynamics(
+                    0, np.zeros(result.nstates), np.zeros(result.ninputs)),
+                np.zeros(result.nstates))
