@@ -1140,6 +1140,7 @@ class TestLinfnorm:
         np.testing.assert_allclose(gpeak, refgpeak)
         np.testing.assert_allclose(fpeak, reffpeak)
 
+
 @pytest.mark.parametrize("args, static", [
     (([], [], [], 1), True),       # ctime, empty state
     (([], [], [], 1, 1), True),    # dtime, empty state
@@ -1153,3 +1154,13 @@ class TestLinfnorm:
 def test_isstatic(args, static):
     sys = ct.StateSpace(*args)
     assert sys._isstatic() == static
+
+# Make sure that using params for StateSpace objects generates a warning
+def test_params_warning():
+    sys = StateSpace(-1, 1, 1, 0)
+
+    with pytest.warns(UserWarning, match="params keyword ignored"):
+        sys.dynamics(0, [0], [0], {'k': 5})
+
+    with pytest.warns(UserWarning, match="params keyword ignored"):
+        sys.output(0, [0], [0], {'k': 5})
