@@ -41,6 +41,9 @@ class TestIOSys:
             [[-1, 1], [0, -2]], [[0, 1], [1, 0]],
             [[1, 0], [0, 1]], np.zeros((2, 2)))
 
+        # Create a static gain linear system
+        T.staticgain = ct.StateSpace([], [], [], 1)
+
         # Create simulation parameters
         T.T = np.linspace(0, 10, 100)
         T.U = np.sin(T.T)
@@ -51,7 +54,7 @@ class TestIOSys:
     def test_linear_iosys(self, tsys):
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
-        iosys = ios.LinearIOSystem(linsys)
+        iosys = ios.LinearIOSystem(linsys).copy()
 
         # Make sure that the right hand side matches linear system
         for x, u in (([0, 0], 0), ([1, 0], 0), ([0, 1], 0), ([0, 0], 1)):
@@ -65,6 +68,11 @@ class TestIOSys:
         ios_t, ios_y = ios.input_output_response(iosys, T, U, X0)
         np.testing.assert_array_almost_equal(lti_t, ios_t)
         np.testing.assert_allclose(lti_y, ios_y, atol=0.002, rtol=0.)
+
+        # Make sure that a static linear system has dt=None
+        # and otherwise dt is as specified
+        assert ios.LinearIOSystem(tsys.staticgain).dt is None
+        assert ios.LinearIOSystem(tsys.staticgain, dt=.1).dt == .1
 
     def test_tf2io(self, tsys):
         # Create a transfer function from the state space system

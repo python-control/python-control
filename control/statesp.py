@@ -326,7 +326,7 @@ class StateSpace(LTI):
             D = np.zeros((C.shape[0], B.shape[1]))
         D = _ssmatrix(D)
 
-        # Matrices definining the linear system
+        # Matrices defining the linear system
         self.A = A
         self.B = B
         self.C = C
@@ -346,9 +346,8 @@ class StateSpace(LTI):
             defaults = args[0] if len(args) == 1 else \
                 {'inputs': D.shape[1], 'outputs': D.shape[0],
                  'states': A.shape[0]}
-            static = (A.size == 0)
             name, inputs, outputs, states, dt = _process_namedio_keywords(
-                kwargs, defaults, static=static, end=True)
+                kwargs, defaults, static=(A.size == 0), end=True)
 
             # Initialize LTI (NamedIOSystem) object
             super().__init__(
@@ -1483,11 +1482,6 @@ class StateSpace(LTI):
                 raise ValueError("len(u) must be equal to number of inputs")
             return (self.C @ x).reshape((-1,)) \
                 + (self.D @ u).reshape((-1,))  # return as row vector
-
-    def _isstatic(self):
-        """True if and only if the system has no dynamics, that is,
-        if A and B are zero. """
-        return not np.any(self.A) and not np.any(self.B)
 
 
 # TODO: add discrete time check
