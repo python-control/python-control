@@ -890,7 +890,7 @@ class InterconnectedSystem(InputOutputSystem):
             kwargs, defaults, end=True)
 
         # Initialize the system list and index
-        self.syslist = syslist
+        self.syslist = list(syslist) # insure modifications can be made
         self.syslist_index = {}
 
         # Initialize the input, output, and state counts, indices
@@ -903,12 +903,12 @@ class InterconnectedSystem(InputOutputSystem):
         sysname_count_dct = {}
 
         # Go through the system list and keep track of counts, offsets
-        for sysidx, sys in enumerate(syslist):
+        for sysidx, sys in enumerate(self.syslist):
             # If we were passed a SS or TF system, convert to LinearIOSystem
             if isinstance(sys, (StateSpace, TransferFunction)) and \
                not isinstance(sys, LinearIOSystem):
-                sys = LinearIOSystem(sys)
-                syslist[sysidx] = sys
+                sys = LinearIOSystem(sys, name=sys.name)
+                self.syslist[sysidx] = sys
 
             # Make sure time bases are consistent
             dt = common_timebase(dt, sys.dt)
@@ -2850,12 +2850,12 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
         inputs=inputs, outputs=outputs, states=states,
         params=params, dt=dt, name=name, warn_duplicate=warn_duplicate)
 
-    # check for implicity dropped signals
+    # check for implicitly dropped signals
     if check_unused:
         newsys.check_unused_signals(ignore_inputs, ignore_outputs)
 
     # If all subsystems are linear systems, maintain linear structure
-    if all([isinstance(sys, LinearIOSystem) for sys in syslist]):
+    if all([isinstance(sys, LinearIOSystem) for sys in newsys.syslist]):
         return LinearICSystem(newsys, None)
 
     return newsys

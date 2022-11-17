@@ -1454,6 +1454,11 @@ def test_linear_interconnection():
         inputs = ('u[0]', 'u[1]'),
         outputs = ('y[0]', 'y[1]'),
         name = 'sys2')
+    tf_siso = ct.tf(1, [0.1, 1])
+    ss_siso = ct.ss(1, 2, 1, 1)
+    nl_siso = ios.NonlinearIOSystem(
+        lambda t, x, u, params: x*x, 
+        lambda t, x, u, params: u*x, states=1, inputs=1, outputs=1)
 
     # Create a "regular" InterconnectedSystem
     nl_connect = ios.interconnect(
@@ -1500,6 +1505,18 @@ def test_linear_interconnection():
     np.testing.assert_array_almost_equal(io_connect.C, ss_connect.C)
     np.testing.assert_array_almost_equal(io_connect.D, ss_connect.D)
 
+    # make sure interconnections of linear systems are linear and 
+    # if a nonlinear system is included then system is nonlinear
+    assert isinstance(ss_siso*ss_siso, ios.LinearIOSystem)
+    assert isinstance(tf_siso*ss_siso, ios.LinearIOSystem)
+    assert isinstance(ss_siso*tf_siso, ios.LinearIOSystem)
+    assert ~isinstance(ss_siso*nl_siso, ios.LinearIOSystem)
+    assert ~isinstance(nl_siso*ss_siso, ios.LinearIOSystem)
+    assert ~isinstance(nl_siso*nl_siso, ios.LinearIOSystem)
+    assert ~isinstance(tf_siso*nl_siso, ios.LinearIOSystem)
+    assert ~isinstance(nl_siso*tf_siso, ios.LinearIOSystem)
+    assert ~isinstance(nl_siso*nl_siso, ios.LinearIOSystem)
+    
 
 def predprey(t, x, u, params={}):
     """Predator prey dynamics"""
