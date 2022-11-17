@@ -230,3 +230,25 @@ def test_string_inputoutput():
 
     P_s2 = ct.interconnect([P1_iosys, P2_iosys], inputs=['u1'], output='y2')
     assert P_s2.output_index == {'y2' : 0}
+
+def test_linear_interconnect():
+    tf_ctrl = ct.tf(1, (10.1, 1), inputs='e', outputs='u')
+    tf_plant = ct.tf(1, (10.1, 1), inputs='u', outputs='y')
+    ss_ctrl = ct.ss(1, 2, 1, 2, inputs='e', outputs='u')
+    ss_plant = ct.ss(1, 2, 1, 2, inputs='u', outputs='y')
+    nl_ctrl = ct.NonlinearIOSystem(
+        lambda t, x, u, params: x*x, 
+        lambda t, x, u, params: u*x, states=1, inputs='e', outputs='u')
+    nl_plant = ct.NonlinearIOSystem(
+        lambda t, x, u, params: x*x, 
+        lambda t, x, u, params: u*x, states=1, inputs='u', outputs='y')
+
+    assert isinstance(ct.interconnect((tf_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    assert isinstance(ct.interconnect((ss_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    assert isinstance(ct.interconnect((tf_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    assert isinstance(ct.interconnect((ss_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    
+    assert ~isinstance(ct.interconnect((nl_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    assert ~isinstance(ct.interconnect((nl_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    assert ~isinstance(ct.interconnect((ss_ctrl, nl_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    assert ~isinstance(ct.interconnect((tf_ctrl, nl_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
