@@ -142,11 +142,11 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
         return np.reshape(x, self.nstates), np.reshape(u, self.ninputs)
 
     # Update function
-    def _rhs(self, t, x, u, params={}):
+    def _rhs(self, t, x, u):
         # Use LinearIOSystem._rhs instead of default (MRO) NonlinearIOSystem
         return LinearIOSystem._rhs(self, t, x, u)
 
     # output function
-    def _out(self, t, x, u, params={}):
+    def _out(self, t, x, u):
         # Use LinearIOSystem._out instead of default (MRO) NonlinearIOSystem
         return LinearIOSystem._out(self, t, x, u)
