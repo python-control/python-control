@@ -12,7 +12,7 @@ jobs:
       with:
         path: python-control
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
     - name: Install Python dependencies and test tools
       run: pip install -v -e './python-control[test]'
 
