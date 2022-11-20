@@ -3,7 +3,7 @@ name: Setup, Examples, Notebooks
 on: [push, pull_request]
 
 jobs:
-  build-linux:
+  install-examples:
     runs-on: ubuntu-latest
 
     steps:

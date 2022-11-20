@@ -3,7 +3,7 @@ name: Conda-based pytest
 on: [push, pull_request]
 
 jobs:
-  test-linux:
+  test-linux-conda:
     name: >
       Py${{ matrix.python-version }};
       ${{ matrix.slycot || 'no' }} Slycot;
@@ -75,7 +75,7 @@ jobs:
 
   coveralls:
     name: coveralls completion
-    needs: test-linux
+    needs: test-linux-conda
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
