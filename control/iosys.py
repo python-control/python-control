@@ -366,8 +366,8 @@ class InputOutputSystem(NamedIOSystem):
         you may want to use :meth:`dynamics`.
 
         """
-        NotImplemented("Evaluation not implemented for system of type ",
-                       type(self))
+        raise NotImplementedError("Evaluation not implemented for system of type ",
+                                  type(self))
 
     def dynamics(self, t, x, u, params=None):
         """Compute the dynamics of a differential or difference equation.
