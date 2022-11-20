@@ -381,17 +381,8 @@ def test_optimal_logging(capsys):
 @pytest.mark.parametrize("fun, args, exception, match", [
     [opt.quadratic_cost, (np.zeros((2, 3)), np.eye(2)), ValueError,
      "Q matrix is the wrong shape"],
-    [opt.quadratic_cost, (np.eye(2), 1), ValueError,
+    [opt.quadratic_cost, (np.eye(2), np.eye(2, 3)), ValueError,
      "R matrix is the wrong shape"],
-])
-def test_constraint_constructor_errors(fun, args, exception, match):
-    """Test various error conditions for constraint constructors"""
-    sys = ct.ss2io(ct.rss(2, 2, 2))
-    with pytest.raises(exception, match=match):
-        fun(sys, *args)
-
-
-@pytest.mark.parametrize("fun, args, exception, match", [
     [opt.input_poly_constraint, (np.zeros((2, 3)), [0, 0]), ValueError,
      "polytope matrix must match number of inputs"],
     [opt.output_poly_constraint, (np.zeros((2, 3)), [0, 0]), ValueError,
