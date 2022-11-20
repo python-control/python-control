@@ -20,8 +20,6 @@ from . import config
 from .exception import ControlNotImplemented
 from .timeresp import TimeResponseData
 
-__all__ = ['find_optimal_input']
-
 # Define module default parameter values
 _optimal_defaults = {
     'optimal.minimize_method': None,

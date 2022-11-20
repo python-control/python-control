@@ -476,7 +476,7 @@ def markov(Y, U, m=None, transpose=False):
 
     # Make sure there is enough data to compute parameters
     if m > n:
-        warn.warning("Not enough data for requested number of parameters")
+        warnings.warn("Not enough data for requested number of parameters")
 
     #
     # Original algorithm (with mapping to standard order)

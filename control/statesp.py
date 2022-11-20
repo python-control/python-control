@@ -59,6 +59,8 @@ import scipy.linalg
 from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
+
+from .exception import ControlSlycot
 from .frdata import FrequencyResponseData
 from .lti import LTI, _process_frequency_response
 from .namedio import common_timebase, isdtime
