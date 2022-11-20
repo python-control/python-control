@@ -38,6 +38,10 @@ def test_kwarg_search(module, prefix):
             # Skip anything that isn't part of the control package
             continue
 
+        # Look for classes and then check member functions
+        if inspect.isclass(obj):
+            test_kwarg_search(obj, prefix + obj.__name__ + '.')
+
         # Only look for functions with keyword arguments
         if not inspect.isfunction(obj):
             continue
@@ -69,10 +73,6 @@ def test_kwarg_search(module, prefix):
                 warnings.warn(
                     f"'unrecognized keyword' not found in unit test "
                     f"for {name}")
-
-        # Look for classes and then check member functions
-        if inspect.isclass(obj):
-            test_kwarg_search(obj, prefix + obj.__name__ + '.')
 
 
 @pytest.mark.parametrize(
@@ -201,3 +201,66 @@ kwarg_unittest = {
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TransferFunction.__init__': test_unrecognized_kwargs,
 }
+
+#
+# Look for keywords with mutable defaults
+#
+# This test goes through every function and looks for signatures that have a
+# default value for a keyword that is mutable.  An error is generated unless
+# the function is listed in the `mutable_ok` set (which should only be used
+# for cases were the code has been explicitly checked to make sure that the
+# value of the mutable is not modified in the code).
+#
+mutable_ok = {                                          # initial and date
+    control.flatsys.SystemTrajectory.__init__,          # RMM, 18 Nov 2022
+    control.freqplot._add_arrows_to_line2D,             # RMM, 18 Nov 2022
+    control.namedio._process_dt_keyword,                # RMM, 13 Nov 2022
+    control.namedio._process_namedio_keywords,          # RMM, 18 Nov 2022
+    control.optimal.OptimalControlProblem.__init__,     # RMM, 18 Nov 2022
+    control.optimal.solve_ocp,                          # RMM, 18 Nov 2022
+    control.optimal.create_mpc_iosystem,                # RMM, 18 Nov 2022
+}
+
+@pytest.mark.parametrize("module", [control, control.flatsys])
+def test_mutable_defaults(module, recurse=True):
+    # Look through every object in the package
+    for name, obj in inspect.getmembers(module):
+        # Skip anything that is outside of this module
+        if inspect.getmodule(obj) is not None and \
+           not inspect.getmodule(obj).__name__.startswith('control'):
+            # Skip anything that isn't part of the control package
+            continue
+
+        # Look for classes and then check member functions
+        if inspect.isclass(obj):
+            test_mutable_defaults(obj, True)
+
+        # Look for modules and check for internal functions (w/ no recursion)
+        if inspect.ismodule(obj) and recurse:
+            test_mutable_defaults(obj, False)
+
+        # Only look at functions and skip any that are marked as OK
+        if not inspect.isfunction(obj) or obj in mutable_ok:
+            continue
+
+        # Get the signature for the function
+        sig = inspect.signature(obj)
+
+        # Skip anything that is inherited
+        if inspect.isclass(module) and obj.__name__ not in module.__dict__:
+            continue
+
+        # See if there is a variable keyword argument
+        for argname, par in sig.parameters.items():
+            if par.default is inspect._empty or \
+               not par.kind == inspect.Parameter.KEYWORD_ONLY and \
+               not par.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                continue
+
+            # Check to see if the default value is mutable
+            if par.default is not None and not \
+               isinstance(par.default, (bool, int, float, tuple, str)):
+                pytest.fail(
+                    f"function '{obj.__name__}' in module '{module.__name__}'"
+                    f" has mutable default for keyword '{par.name}'")
+

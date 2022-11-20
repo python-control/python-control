@@ -1584,7 +1584,7 @@ class LinearICSystem(InterconnectedSystem, LinearIOSystem):
 def input_output_response(
         sys, T, U=0., X0=0, params=None,
         transpose=False, return_x=False, squeeze=None,
-        solve_ivp_kwargs={}, t_eval='T', **kwargs):
+        solve_ivp_kwargs=None, t_eval='T', **kwargs):
     """Compute the output response of a system to a given input.
 
     Simulate a dynamical system with a given input and return its output
@@ -1650,7 +1650,7 @@ def input_output_response(
     solve_ivp_method : str, optional
         Set the method used by :func:`scipy.integrate.solve_ivp`.  Defaults
         to 'RK45'.
-    solve_ivp_kwargs : str, optional
+    solve_ivp_kwargs : dict, optional
         Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
 
     Raises
@@ -1676,6 +1676,7 @@ def input_output_response(
     #
 
     # Figure out the method to be used
+    solve_ivp_kwargs = solve_ivp_kwargs.copy() if solve_ivp_kwargs else {}
     if kwargs.get('solve_ivp_method', None):
         if kwargs.get('method', None):
             raise ValueError("ivp_method specified more than once")

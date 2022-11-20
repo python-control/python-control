@@ -142,7 +142,7 @@ class FlatSystem(NonlinearIOSystem):
                  forward, reverse,              # flat system
                  updfcn=None, outfcn=None,      # I/O system
                  inputs=None, outputs=None,
-                 states=None, params={}, dt=None, name=None):
+                 states=None, params=None, dt=None, name=None):
         """Create a differentially flat I/O system.
 
         The FlatIOSystem constructor is used to create an input/output system
@@ -171,7 +171,7 @@ class FlatSystem(NonlinearIOSystem):
             + f"Forward: {self.forward}\n" \
             + f"Reverse: {self.reverse}"
 
-    def forward(self, x, u, params={}):
+    def forward(self, x, u, params=None):
 
         """Compute the flat flag given the states and input.
 
@@ -200,7 +200,7 @@ class FlatSystem(NonlinearIOSystem):
         """
         raise NotImplementedError("internal error; forward method not defined")
 
-    def reverse(self, zflag, params={}):
+    def reverse(self, zflag, params=None):
         """Compute the states and input given the flat flag.
 
         Parameters
@@ -224,18 +224,18 @@ class FlatSystem(NonlinearIOSystem):
         """
         raise NotImplementedError("internal error; reverse method not defined")
 
-    def _flat_updfcn(self, t, x, u, params={}):
+    def _flat_updfcn(self, t, x, u, params=None):
         # TODO: implement state space update using flat coordinates
         raise NotImplementedError("update function for flat system not given")
 
-    def _flat_outfcn(self, t, x, u, params={}):
+    def _flat_outfcn(self, t, x, u, params=None):
         # Return the flat output
         zflag = self.forward(x, u, params)
         return np.array([zflag[i][0] for i in range(len(zflag))])
 
 
 # Utility function to compute flag matrix given a basis
-def _basis_flag_matrix(sys, basis, flag, t, params={}):
+def _basis_flag_matrix(sys, basis, flag, t):
     """Compute the matrix of basis functions and their derivatives
 
     This function computes the matrix ``M`` that is used to solve for the
