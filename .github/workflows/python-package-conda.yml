@@ -3,7 +3,7 @@ name: Conda-based pytest
 on: [push, pull_request]
 
 jobs:
-  test-linux:
+  test-linux-conda:
     name: >
       Py${{ matrix.python-version }};
       ${{ matrix.slycot || 'no' }} Slycot;
@@ -17,14 +17,14 @@ jobs:
       max-parallel: 5
       fail-fast: false
       matrix:
-        python-version: ['3.7', '3.10']
+        python-version: ['3.8', '3.11']
         slycot: ["", "conda"]
         pandas: [""]
         cvxopt: ["", "conda"]
         mplbackend: [""]
         array-and-matrix: [0]
         include:
-          - python-version: '3.10'
+          - python-version: '3.11'
             slycot: conda
             pandas: conda
             cvxopt: conda
@@ -75,7 +75,7 @@ jobs:
 
   coveralls:
     name: coveralls completion
-    needs: test-linux
+    needs: test-linux-conda
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
