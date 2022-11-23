@@ -288,7 +288,7 @@ def use_legacy_defaults(version):
         set_defaults('control', default_dt=None)
 
         # changed iosys naming conventions
-        set_defaults('iosys', state_name_delim='.',
+        set_defaults('namedio', state_name_delim='.',
                      duplicate_system_name_prefix='copy of ',
                      duplicate_system_name_suffix='',
                      linearized_system_name_prefix='',

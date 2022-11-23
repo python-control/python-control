@@ -198,8 +198,10 @@ kwarg_unittest = {
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
+    'StateSpace.sample': test_unrecognized_kwargs, 
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TransferFunction.__init__': test_unrecognized_kwargs,
+    'TransferFunction.sample': test_unrecognized_kwargs, 
 }
 
 #

@@ -2204,7 +2204,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     ---------------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the origional
-        system inputs are used.  See :class:`InputOutputSystem` for more
+        system inputs are used.  See :class:`NamedIOSystem` for more
         information.
     outputs : int, list of str or None, optional
         Description of the system outputs.  Same format as `inputs`.

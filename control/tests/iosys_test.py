@@ -216,7 +216,7 @@ class TestIOSys:
     @pytest.mark.usefixtures("editsdefaults")
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True,
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True,
                                       name='linearized')
         assert linearized.name == 'linearized'
         assert linearized.find_input('v') == 0
@@ -228,17 +228,17 @@ class TestIOSys:
         assert linearized.find_state('theta') == 2
 
         # If we copy signal names w/out a system name, append '$linearized'
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
         assert linearized.name == kincar.name + '$linearized'
 
         # Test legacy version as well
         ct.use_legacy_defaults('0.8.4')
         ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
         assert linearized.name == kincar.name + '_linearized'
 
         # If copy is False, signal names should not be copied
-        lin_nocopy = kincar.linearize(0, 0, copy=False)
+        lin_nocopy = kincar.linearize(0, 0, copy_names=False)
         assert lin_nocopy.find_input('v') is None
         assert lin_nocopy.find_output('x') is None
         assert lin_nocopy.find_state('x') is None

@@ -104,6 +104,8 @@ class NamedIOSystem(object):
         in case a specific name (e.g. append 'linearized') is desired. """
         if name is None: 
             self.name = sys.name
+        else:
+            self.name = name
         self.ninputs, self.input_index = \
             sys.ninputs, sys.input_index.copy()
         self.noutputs, self.output_index = \
