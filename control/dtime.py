@@ -47,7 +47,8 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 
 """
 
-from .namedio import isctime
+from .namedio import isctime, _process_namedio_keywords
+from .iosys import ss 
 from .statesp import StateSpace
 
 __all__ = ['sample_system', 'c2d']
@@ -92,9 +93,10 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None):
     # Make sure we have a continuous time system
     if not isctime(sysc):
         raise ValueError("First argument must be continuous time system")
-
-    return sysc.sample(Ts,
-        method=method, alpha=alpha, prewarp_frequency=prewarp_frequency)
+    name, inputs, outputs, states, _ = _process_namedio_keywords(defaults=sysc)
+    return ss(sysc.sample(Ts,
+        method=method, alpha=alpha, prewarp_frequency=prewarp_frequency), 
+        name=name, inputs=inputs, outputs=outputs, states=states)
 
 
 def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
