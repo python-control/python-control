@@ -12,7 +12,18 @@ from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
            'isdtime', 'isctime']
-
+# Define module default parameter values
+_namedio_defaults = {
+    'namedio.state_name_delim': '_',
+    'namedio.duplicate_system_name_prefix': '',
+    'namedio.duplicate_system_name_suffix': '$copy',
+    'namedio.linearized_system_name_prefix': '',
+    'namedio.linearized_system_name_suffix': '$linearized',
+    'namedio.sampled_system_name_prefix': '',
+    'namedio.sampled_system_name_suffix': '$sampled'
+}
+    
+    
 class NamedIOSystem(object):
     def __init__(
             self, name=None, inputs=None, outputs=None, states=None, **kwargs):
@@ -88,14 +99,26 @@ class NamedIOSystem(object):
     def _find_signal(self, name, sigdict):
         return sigdict.get(name, None)
 
+    def _copy_names(self, sys, name=None):
+        """copy the signal and system name of sys. Name is given as a keyword
+        in case a specific name (e.g. append 'linearized') is desired. """
+        if name is None: 
+            self.name = sys.name
+        self.ninputs, self.input_index = \
+            sys.ninputs, sys.input_index.copy()
+        self.noutputs, self.output_index = \
+            sys.noutputs, sys.output_index.copy()
+        self.nstates, self.state_index = \
+            sys.nstates, sys.state_index.copy()
+
     def copy(self, name=None, use_prefix_suffix=True):
         """Make a copy of an input/output system
 
         A copy of the system is made, with a new name.  The `name` keyword
         can be used to specify a specific name for the system.  If no name
         is given and `use_prefix_suffix` is True, the name is constructed
-        by prepending config.defaults['iosys.duplicate_system_name_prefix']
-        and appending config.defaults['iosys.duplicate_system_name_suffix'].
+        by prepending config.defaults['namedio.duplicate_system_name_prefix']
+        and appending config.defaults['namedio.duplicate_system_name_suffix'].
         Otherwise, a generic system name of the form `sys[<id>]` is used,
         where `<id>` is based on an internal counter.
 
@@ -106,8 +129,8 @@ class NamedIOSystem(object):
         # Update the system name
         if name is None and use_prefix_suffix:
             # Get the default prefix and suffix to use
-            dup_prefix = config.defaults['iosys.duplicate_system_name_prefix']
-            dup_suffix = config.defaults['iosys.duplicate_system_name_suffix']
+            dup_prefix = config.defaults['namedio.duplicate_system_name_prefix']
+            dup_suffix = config.defaults['namedio.duplicate_system_name_suffix']
             newsys.name = self._name_or_default(
                 dup_prefix + self.name + dup_suffix)
         else:

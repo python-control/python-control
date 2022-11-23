@@ -97,6 +97,9 @@ def reset_defaults():
     from .rlocus import _rlocus_defaults
     defaults.update(_rlocus_defaults)
 
+    from .namedio import _namedio_defaults
+    defaults.update(_namedio_defaults)
+
     from .xferfcn import _xferfcn_defaults
     defaults.update(_xferfcn_defaults)
 
