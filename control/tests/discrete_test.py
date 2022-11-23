@@ -446,3 +446,16 @@ class TestDiscrete:
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
+    
+    def test_signal_names(self, tsys):
+        "test that signal names are preserved in conversion to discrete-time"
+        ssc = StateSpace(tsys.siso_ss1c, 
+            inputs='u', outputs='y', states=['a', 'b', 'c']) 
+        ssd = ssc.sample(0.1)
+        tfc = TransferFunction(tsys.siso_tf1c, inputs='u', outputs='y')
+        tfd = tfc.sample(0.1)
+        assert ssd.input_labels == ['u']
+        assert ssd.state_labels == ['a', 'b', 'c']
+        assert ssd.output_labels == ['y']
+        assert tfd.input_labels == ['u']
+        assert tfd.output_labels == ['y']

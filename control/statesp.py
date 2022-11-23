@@ -1347,14 +1347,17 @@ class StateSpace(LTI):
         if not self.isctime():
             raise ValueError("System must be continuous time system")
 
-        sys = (self.A, self.B, self.C, self.D)
         if (method == 'bilinear' or (method == 'gbt' and alpha == 0.5)) and \
                 prewarp_frequency is not None:
             Twarp = 2 * np.tan(prewarp_frequency * Ts/2)/prewarp_frequency
         else:
             Twarp = Ts
+        sys = (self.A, self.B, self.C, self.D)
         Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
-        return StateSpace(Ad, Bd, C, D, Ts)
+        # get and pass along same signal names
+        _, inputs, outputs, states, _ = _process_namedio_keywords(defaults=self)
+        return StateSpace(Ad, Bd, C, D, Ts, 
+            inputs=inputs, outputs=outputs, states=states)
 
     def dcgain(self, warn_infinite=False):
         """Return the zero-frequency gain

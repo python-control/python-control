@@ -1149,7 +1149,10 @@ class TransferFunction(LTI):
         else:
             Twarp = Ts
         numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
-        return TransferFunction(numd[0, :], dend, Ts)
+        # get and pass along same signal names
+        _, inputs, outputs, _, _ = _process_namedio_keywords(defaults=self)
+        return TransferFunction(numd[0, :], dend, Ts,
+            inputs=inputs, outputs=outputs)
 
     def dcgain(self, warn_infinite=False):
         """Return the zero-frequency (or DC) gain
