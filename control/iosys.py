@@ -565,8 +565,7 @@ class InputOutputSystem(NamedIOSystem):
 
         # Create the state space system
         linsys = LinearIOSystem(
-            StateSpace(A, B, C, D, self.dt, remove_useless_states=False),
-            name=name, **kwargs)
+            StateSpace(A, B, C, D, self.dt, remove_useless_states=False))
 
         # Set the system name, inputs, outputs, and states
         if copy_names:
@@ -576,6 +575,7 @@ class InputOutputSystem(NamedIOSystem):
                     self.name + \
                     config.defaults['namedio.linearized_system_name_suffix']
             linsys._copy_names(self, name=name)
+        linsys = LinearIOSystem(linsys, name=name, **kwargs)
         return linsys
 
 

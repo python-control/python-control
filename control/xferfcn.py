@@ -1185,9 +1185,9 @@ class TransferFunction(LTI):
                     config.defaults['namedio.sampled_system_name_suffix']
             sysd._copy_names(self, name=name)
         # pass desired signal names if names were provided        
-        sysd = TransferFunction(sysd, **kwargs)
+        sysd = TransferFunction(sysd, name=name, **kwargs)
         return sysd
-        
+
     def dcgain(self, warn_infinite=False):
         """Return the zero-frequency (or DC) gain
 

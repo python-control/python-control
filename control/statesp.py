@@ -1387,7 +1387,7 @@ class StateSpace(LTI):
                     config.defaults['namedio.sampled_system_name_suffix']
             sysd._copy_names(self, name=name)
         # pass desired signal names if names were provided        
-        sysd = StateSpace(sysd, **kwargs)
+        sysd = StateSpace(sysd, name=name, **kwargs)
         return sysd
 
     def dcgain(self, warn_infinite=False):
