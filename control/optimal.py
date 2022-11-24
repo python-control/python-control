@@ -65,6 +65,9 @@ class OptimalControlProblem():
         inputs should either be a 2D vector of shape (ninputs, horizon)
         or a 1D input of shape (ninputs,) that will be broadcast by
         extension of the time axis.
+    method : string, optional
+        Method to use for carrying out the optimization.  Currently only
+        'shooting' is supported.
     log : bool, optional
         If `True`, turn on logging messages (using Python logging module).
         Use ``logging.basicConfig`` to enable logging output (e.g., to a file).
@@ -79,6 +82,9 @@ class OptimalControlProblem():
 
     Additional parameters
     ---------------------
+    basis : BasisFamily, optional
+        Use the given set of basis functions for the inputs instead of
+        setting the value of the input at each point in the timepts vector.
     solve_ivp_method : str, optional
         Set the method used by :func:`scipy.integrate.solve_ivp`.
     solve_ivp_kwargs : str, optional
@@ -127,7 +133,7 @@ class OptimalControlProblem():
     def __init__(
             self, sys, timepts, integral_cost, trajectory_constraints=[],
             terminal_cost=None, terminal_constraints=[], initial_guess=None,
-            basis=None, log=False, **kwargs):
+            method='shooting', basis=None, log=False, **kwargs):
         """Set up an optimal control problem."""
         # Save the basic information for use later
         self.system = sys
@@ -136,6 +142,13 @@ class OptimalControlProblem():
         self.terminal_cost = terminal_cost
         self.terminal_constraints = terminal_constraints
         self.basis = basis
+
+        # Keep track of what type of method we are using
+        if method not in {'shooting', 'collocation'}:
+            raise NotImplementedError(f"Unkown method {method}")
+        else:
+            self.shooting = method in {'shooting'}
+            self.collocation = method in {'collocation'}
 
         # Process keyword arguments
         self.solve_ivp_kwargs = {}
@@ -206,6 +219,7 @@ class OptimalControlProblem():
         constraint_lb, constraint_ub, eqconst_value = [], [], []
 
         # Go through each time point and stack the bounds
+        # TODO: for collocation method, keep track of linear vs nonlinear
         for t in self.timepts:
             for type, fun, lb, ub in self.trajectory_constraints:
                 if np.all(lb == ub):
@@ -241,6 +255,11 @@ class OptimalControlProblem():
             self.constraints.append(sp.optimize.NonlinearConstraint(
                 self._eqconst_function, self.eqconst_value,
                 self.eqconst_value))
+        if self.collocation:
+            # Add the collocation constraints
+            colloc_zeros = np.zeros((self.timepts.size - 1) * sys.nstates)
+            self.constraints.append(sp.optimize.NonlinearConstraint(
+                self._collocation_constraint, colloc_zeros, colloc_zeros))
 
         # Process the initial guess
         self.initial_guess = self._process_initial_guess(initial_guess)
@@ -274,40 +293,8 @@ class OptimalControlProblem():
             start_time = time.process_time()
             logging.info("_cost_function called at: %g", start_time)
 
-        # Retrieve the saved initial state
-        x = self.x
-
-        # Compute inputs
-        if self.basis:
-            if self.log:
-                logging.debug("coefficients = " + str(coeffs))
-            inputs = self._coeffs_to_inputs(coeffs)
-        else:
-            inputs = coeffs.reshape((self.system.ninputs, -1))
-
-        # See if we already have a simulation for this condition
-        if np.array_equal(coeffs, self.last_coeffs) and \
-           np.array_equal(x, self.last_x):
-            states = self.last_states
-        else:
-            if self.log:
-                logging.debug("calling input_output_response from state\n"
-                              + str(x))
-                logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
-
-            # Simulate the system to get the state
-            # TODO: try calling solve_ivp directly for better speed?
-            _, _, states = ct.input_output_response(
-                self.system, self.timepts, inputs, x, return_x=True,
-                solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
-            self.system_simulations += 1
-            self.last_x = x
-            self.last_coeffs = coeffs
-            self.last_states = states
-
-            if self.log:
-                logging.debug("input_output_response returned states\n"
-                              + str(states))
+        # Compute the states and inputs
+        states, inputs = self._compute_states_inputs(coeffs)
 
         # Trajectory cost
         if ct.isctime(self.system):
@@ -380,12 +367,15 @@ class OptimalControlProblem():
     # holds at a specific point in time, and implements the original
     # constraint.
     #
-    # To do this, we basically create a function that simulates the system
-    # dynamics and returns a vector of values corresponding to the value of
-    # the function at each time.  The class initialization methods takes
-    # care of replicating the upper and lower bounds for each point in time
-    # so that the SciPy optimization algorithm can do the proper
-    # evaluation.
+    # For collocation methods, we can directly evaluate the constraints at
+    # the collocation points.
+    #
+    # For shooting methods, we do this by creating a function that
+    # simulates the system dynamics and returns a vector of values
+    # corresponding to the value of the function at each time.  The
+    # class initialization methods takes care of replicating the upper
+    # and lower bounds for each point in time so that the SciPy
+    # optimization algorithm can do the proper evaluation.
     #
     # In addition, since SciPy's optimization function does not allow us to
     # pass arguments to the constraint function, we have to store the initial
@@ -396,35 +386,12 @@ class OptimalControlProblem():
             start_time = time.process_time()
             logging.info("_constraint_function called at: %g", start_time)
 
-        # Retrieve the initial state
-        x = self.x
+        # Compute the states and inputs
+        states, inputs = self._compute_states_inputs(coeffs)
 
-        # Compute input at time points
-        if self.basis:
-            inputs = self._coeffs_to_inputs(coeffs)
-        else:
-            inputs = coeffs.reshape((self.system.ninputs, -1))
-
-        # See if we already have a simulation for this condition
-        if np.array_equal(coeffs, self.last_coeffs) \
-           and np.array_equal(x, self.last_x):
-            states = self.last_states
-        else:
-            if self.log:
-                logging.debug("calling input_output_response from state\n"
-                              + str(x))
-                logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
-
-            # Simulate the system to get the state
-            _, _, states = ct.input_output_response(
-                self.system, self.timepts, inputs, x, return_x=True,
-                solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
-            self.system_simulations += 1
-            self.last_x = x
-            self.last_coeffs = coeffs
-            self.last_states = states
-
+        #
         # Evaluate the constraint function along the trajectory
+        #
         value = []
         for i, t in enumerate(self.timepts):
             for ctype, fun, lb, ub in self.trajectory_constraints:
@@ -477,37 +444,8 @@ class OptimalControlProblem():
             start_time = time.process_time()
             logging.info("_eqconst_function called at: %g", start_time)
 
-        # Retrieve the initial state
-        x = self.x
-
-        # Compute input at time points
-        if self.basis:
-            inputs = self._coeffs_to_inputs(coeffs)
-        else:
-            inputs = coeffs.reshape((self.system.ninputs, -1))
-
-        # See if we already have a simulation for this condition
-        if np.array_equal(coeffs, self.last_coeffs) and \
-           np.array_equal(x, self.last_x):
-            states = self.last_states
-        else:
-            if self.log:
-                logging.debug("calling input_output_response from state\n"
-                              + str(x))
-                logging.debug("initial input[0:3] =\n" + str(inputs[:, 0:3]))
-
-            # Simulate the system to get the state
-            _, _, states = ct.input_output_response(
-                self.system, self.timepts, inputs, x, return_x=True,
-                solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
-            self.system_simulations += 1
-            self.last_x = x
-            self.last_coeffs = coeffs
-            self.last_states = states
-
-            if self.log:
-                logging.debug("input_output_response returned states\n"
-                              + str(states))
+        # Compute the states and inputs
+        states, inputs = self._compute_states_inputs(coeffs)
 
         # Evaluate the constraint function along the trajectory
         value = []
@@ -538,6 +476,10 @@ class OptimalControlProblem():
                 # Checked above => we should never get here
                 raise TypeError("unknown constraint type {ctype}")
 
+        # Add the collocation constraints
+        if self.collocation:
+            raise NotImplementedError("collocation not yet implemented")
+
         # Update statistics
         self.eqconst_evaluations += 1
         if self.log:
@@ -555,6 +497,12 @@ class OptimalControlProblem():
         # Return the value of the constraint function
         return np.hstack(value)
 
+    def _collocation_constraints(self, coeffs):
+        # Compute the states and inputs
+        states, inputs = self._compute_states_inputs(coeffs)
+
+        raise NotImplementedError("collocation not yet implemented")
+
     #
     # Initial guess
     #
@@ -566,8 +514,10 @@ class OptimalControlProblem():
     # vector.  If a basis is specified, this is converted to coefficient
     # values (which are generally of smaller dimension).
     #
+    # TODO: figure out how to modify this for collocation
+    #
     def _process_initial_guess(self, initial_guess):
-        if initial_guess is not None:
+        if self.shooting and initial_guess is not None:
             # Convert to a 1D array (or higher)
             initial_guess = np.atleast_1d(initial_guess)
 
@@ -592,10 +542,15 @@ class OptimalControlProblem():
             # Reshape for use by scipy.optimize.minimize()
             return initial_guess.reshape(-1)
 
-        # Default is zero
-        return np.zeros(
-            self.system.ninputs *
-            (self.timepts.size if self.basis is None else self.basis.N))
+        elif self.collocation and initial_guess is not None:
+            raise NotImplementedError("collocation not yet implemented")
+
+        # Default is no initial guess
+        input_size = self.system.ninputs * \
+            (self.timepts.size if self.basis is None else self.basis.N)
+        state_size = 0 if not self.collocation else \
+            (self.timepts.size - 1) * self.sys.nstates
+        return np.zeros(input_size + state_size)
 
     #
     # Utility function to convert input vector to coefficient vector
@@ -678,6 +633,62 @@ class OptimalControlProblem():
         print("* System simulations:", self.system_simulations)
         if reset:
             self._reset_statistics(self.log)
+
+    #
+    # Compute the states and inputs from the coefficient vector
+    #
+    # These internal functions return the states and inputs at the
+    # collocation points given the ceofficient (optimizer state) vector.
+    # They keep track of whether a shooting method is being used or not and
+    # simulate the dynamis of needed.
+    #
+
+    # Compute the states and inputs from the coefficients
+    def _compute_states_inputs(self, coeffs):
+        #
+        # Compute out the states and inputs
+        #
+        if self.collocation:
+            # States are appended to end of (input) coefficients
+            states = coeffs[-self.sys.nstates * self.timepts.size:0]
+            coeffs = coeffs[0:-self.sys.nstates * self.timepts.size]
+        
+        # Compute input at time points
+        if self.basis:
+            inputs = self._coeffs_to_inputs(coeffs)
+        else:
+            inputs = coeffs.reshape((self.system.ninputs, -1))
+
+        if self.shooting:
+            # See if we already have a simulation for this condition
+            if np.array_equal(coeffs, self.last_coeffs) \
+               and np.array_equal(self.x, self.last_x):
+                states = self.last_states
+            else:
+                states = self._simulate_states(self.x, inputs)
+                self.last_x = self.x
+                self.last_states = states
+                self.last_coeffs = coeffs
+
+        return states, inputs
+
+    # Simulate the system dynamis to retrieve the state
+    def _simulate_states(self, x0, inputs):
+        if self.log:
+            logging.debug(
+                "calling input_output_response from state\n" + str(x0))
+            logging.debug("input =\n" + str(inputs))
+
+        # Simulate the system to get the state
+        _, _, states = ct.input_output_response(
+            self.system, self.timepts, inputs, x0, return_x=True,
+            solve_ivp_kwargs=self.solve_ivp_kwargs, t_eval=self.timepts)
+        self.system_simulations += 1
+
+        if self.log:
+            logging.debug(
+                "input_output_response returned states\n" + str(states))
+        return states
 
     #
     # Optimal control computations
@@ -992,7 +1003,7 @@ def solve_ocp(
     Notes
     -----
     Additional keyword parameters can be used to fine tune the behavior of
-    the underlying optimization and integrations functions.  See
+    the underlying optimization and integration functions.  See
     :func:`OptimalControlProblem` for more information.
 
     """
