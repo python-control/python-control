@@ -2138,10 +2138,15 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
             dx = sys._rhs(t, x, u) - dx0
             if dtime:
                 dx -= x           # TODO: check
-            dy = sys._out(t, x, u) - y0
 
-            # Map the results into the constrained variables
-            return np.concatenate((dx[deriv_vars], dy[output_vars]), axis=0)
+            # If no y0 is given, don't evaluate the output function
+            if y0 is None:
+                return dx[deriv_vars]
+            else:
+                dy = sys._out(t, x, u) - y0
+
+                # Map the results into the constrained variables
+                return np.concatenate((dx[deriv_vars], dy[output_vars]), axis=0)
 
         # Set the initial condition for the root finding algorithm
         z0 = np.concatenate((x[state_vars], u[input_vars]), axis=0)

@@ -822,6 +822,17 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
 
+        # The same test as previous, but now all constraints are in the state vector
+        nlsys_full = ios.NonlinearIOSystem(pvtol_full, None)
+        xeq, ueq, result = ios.find_eqpt(
+            nlsys_full, [0, 0, 0.1, 0.1, 0, 0], [0.01, 4*9.8],
+            idx=[2, 3, 4, 5], ix=[0, 1, 2, 3], return_result=True)
+        assert result.success
+        np.testing.assert_array_almost_equal(
+            nlsys_full._out(0, xeq, ueq)[[2, 3]], [0.1, 0.1], decimal=5)
+        np.testing.assert_array_almost_equal(
+            nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
+
         # Fix one input and vary the other
         nlsys_full = ios.NonlinearIOSystem(pvtol_full, None)
         xeq, ueq, result = ios.find_eqpt(
