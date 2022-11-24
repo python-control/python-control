@@ -568,7 +568,7 @@ class InputOutputSystem(NamedIOSystem):
             StateSpace(A, B, C, D, self.dt, remove_useless_states=False))
 
         # Set the system name, inputs, outputs, and states
-        if copy in kwargs:
+        if 'copy' in kwargs:
             copy_names = kwargs.pop('copy')
             warn("keyword 'copy' is deprecated. please use 'copy_names'",
                 DeprecationWarning)
