@@ -21,7 +21,9 @@ from .exception import ControlNotImplemented
 from .timeresp import TimeResponseData
 
 # Define module default parameter values
+_optimal_trajectory_methods = {'shooting', 'collocation'}
 _optimal_defaults = {
+    'optimal.trajectory_method': 'shooting',
     'optimal.minimize_method': None,
     'optimal.minimize_options': {},
     'optimal.minimize_kwargs': {},
@@ -65,9 +67,11 @@ class OptimalControlProblem():
         inputs should either be a 2D vector of shape (ninputs, horizon)
         or a 1D input of shape (ninputs,) that will be broadcast by
         extension of the time axis.
-    method : string, optional
-        Method to use for carrying out the optimization.  Currently only
-        'shooting' is supported.
+    trajectory_method : string, optional
+        Method to use for carrying out the optimization. Currently supported
+        methods are 'shooting' and 'collocation' (continuous time only). The
+        default value is 'shooting' for discrete time systems and
+        'collocation' for continuous time systems
     log : bool, optional
         If `True`, turn on logging messages (using Python logging module).
         Use ``logging.basicConfig`` to enable logging output (e.g., to a file).
@@ -133,7 +137,7 @@ class OptimalControlProblem():
     def __init__(
             self, sys, timepts, integral_cost, trajectory_constraints=[],
             terminal_cost=None, terminal_constraints=[], initial_guess=None,
-            method='shooting', basis=None, log=False, **kwargs):
+            trajectory_method=None, basis=None, log=False, **kwargs):
         """Set up an optimal control problem."""
         # Save the basic information for use later
         self.system = sys
@@ -144,11 +148,15 @@ class OptimalControlProblem():
         self.basis = basis
 
         # Keep track of what type of method we are using
-        if method not in {'shooting', 'collocation'}:
+        if trajectory_method is None:
+            # TODO: change default
+            # trajectory_method = 'collocation' if sys.isctime() else 'shooting'
+            trajectory_method = 'shooting' if sys.isctime() else 'shooting'
+        elif trajectory_method not in _optimal_trajectory_methods:
             raise NotImplementedError(f"Unkown method {method}")
-        else:
-            self.shooting = method in {'shooting'}
-            self.collocation = method in {'collocation'}
+
+        self.shooting = trajectory_method in {'shooting'}
+        self.collocation = trajectory_method in {'collocation'}
 
         # Process keyword arguments
         self.solve_ivp_kwargs = {}
@@ -257,9 +265,13 @@ class OptimalControlProblem():
                 self.eqconst_value))
         if self.collocation:
             # Add the collocation constraints
-            colloc_zeros = np.zeros((self.timepts.size - 1) * sys.nstates)
+            colloc_zeros = np.zeros(sys.nstates * self.timepts.size)
+            self.colloc_vals = np.zeros((sys.nstates, self.timepts.size))
             self.constraints.append(sp.optimize.NonlinearConstraint(
                 self._collocation_constraint, colloc_zeros, colloc_zeros))
+
+        # Initialize run-time statistics
+        self._reset_statistics(log)
 
         # Process the initial guess
         self.initial_guess = self._process_initial_guess(initial_guess)
@@ -267,9 +279,6 @@ class OptimalControlProblem():
         # Store states, input, used later to minimize re-computation
         self.last_x = np.full(self.system.nstates, np.nan)
         self.last_coeffs = np.full(self.initial_guess.shape, np.nan)
-
-        # Reset run-time statistics
-        self._reset_statistics(log)
 
         # Log information
         if log:
@@ -476,10 +485,6 @@ class OptimalControlProblem():
                 # Checked above => we should never get here
                 raise TypeError("unknown constraint type {ctype}")
 
-        # Add the collocation constraints
-        if self.collocation:
-            raise NotImplementedError("collocation not yet implemented")
-
         # Update statistics
         self.eqconst_evaluations += 1
         if self.log:
@@ -497,11 +502,32 @@ class OptimalControlProblem():
         # Return the value of the constraint function
         return np.hstack(value)
 
-    def _collocation_constraints(self, coeffs):
+    def _collocation_constraint(self, coeffs):
         # Compute the states and inputs
         states, inputs = self._compute_states_inputs(coeffs)
 
-        raise NotImplementedError("collocation not yet implemented")
+        if self.system.isctime():
+            # Compute the collocation constraints
+            for i, t in enumerate(self.timepts):
+                if i == 0:
+                    # Initial condition constraint (self.x = initial point)
+                    self.colloc_vals[:, 0] = states[:, 0] - self.x
+                    fk = self.system._rhs(
+                        self.timepts[0], states[:, 0], inputs[:, 0])
+                    continue
+
+                # M. Kelly, SIAM Review (2017), equation (3.2), i = k+1
+                # x[k+1] - x[k] = 0.5 hk (f(x[k+1], u[k+1] + f(x[k], u[k]))
+                fkp1 = self.system._rhs(t, states[:, i], inputs[:, i])
+                self.colloc_vals[:, i] = states[:, i] - states[:, i-1] - \
+                    0.5 * (self.timepts[i] - self.timepts[i-1]) * (fkp1 + fk)
+                fk = fkp1
+        else:
+            raise NotImplementedError(
+                "collocation not yet implemented for discrete time systems")
+
+        # Return the value of the constraint function
+        return self.colloc_vals.reshape(-1)
 
     #
     # Initial guess
@@ -517,40 +543,61 @@ class OptimalControlProblem():
     # TODO: figure out how to modify this for collocation
     #
     def _process_initial_guess(self, initial_guess):
-        if self.shooting and initial_guess is not None:
-            # Convert to a 1D array (or higher)
-            initial_guess = np.atleast_1d(initial_guess)
+        # Sort out the input guess and the state guess
+        if self.collocation and initial_guess is not None and \
+           isinstance(initial_guess, tuple):
+            state_guess, input_guess = initial_guess
+        else:
+            state_guess, input_guess = None, initial_guess
 
-            # See whether we got entire guess or just first time point
-            if initial_guess.ndim == 1:
-                # Broadcast inputs to entire time vector
-                try:
-                    initial_guess = np.broadcast_to(
-                        initial_guess.reshape(-1, 1),
-                        (self.system.ninputs, self.timepts.size))
-                except ValueError:
-                    raise ValueError("initial guess is the wrong shape")
-
-            elif initial_guess.shape != \
-                 (self.system.ninputs, self.timepts.size):
-                raise ValueError("initial guess is the wrong shape")
+        # Process the input guess
+        if input_guess is not None:
+            input_guess = self._broadcast_initial_guess(
+                input_guess, (self.system.ninputs, self.timepts.size))
 
             # If we were given a basis, project onto the basis elements
             if self.basis is not None:
-                initial_guess = self._inputs_to_coeffs(initial_guess)
+                input_guess = self._inputs_to_coeffs(input_guess)
+        else:
+            input_guess = np.zeros(
+                self.system.ninputs *
+                (self.timepts.size if self.basis is None else self.basis.N))
+
+        # Process the state guess
+        if self.collocation:
+            if state_guess is None:
+                # Run a simulation to get the initial guess
+                inputs = input_guess.reshape(self.system.ninputs, -1)
+                state_guess = self._simulate_states(
+                    np.zeros(self.system.nstates), inputs)
+            else:
+                state_guess = self._broadcast_initial_guess(
+                    state_guess, (self.system.nstates, self.timepts.size))
 
             # Reshape for use by scipy.optimize.minimize()
-            return initial_guess.reshape(-1)
+            return np.hstack([
+                input_guess.reshape(-1), state_guess.reshape(-1)])
+        else:
+            # Reshape for use by scipy.optimize.minimize()
+            return input_guess.reshape(-1)
 
-        elif self.collocation and initial_guess is not None:
-            raise NotImplementedError("collocation not yet implemented")
+    def _broadcast_initial_guess(self, initial_guess, shape):
+        # Convert to a 1D array (or higher)
+        initial_guess = np.atleast_1d(initial_guess)
 
-        # Default is no initial guess
-        input_size = self.system.ninputs * \
-            (self.timepts.size if self.basis is None else self.basis.N)
-        state_size = 0 if not self.collocation else \
-            (self.timepts.size - 1) * self.sys.nstates
-        return np.zeros(input_size + state_size)
+        # See whether we got entire guess or just first time point
+        if initial_guess.ndim == 1:
+            # Broadcast inputs to entire time vector
+            try:
+                initial_guess = np.broadcast_to(
+                    initial_guess.reshape(-1, 1), shape)
+            except ValueError:
+                raise ValueError("initial guess is the wrong shape")
+
+        elif initial_guess.shape != shape:
+            raise ValueError("initial guess is the wrong shape")
+
+        return initial_guess
 
     #
     # Utility function to convert input vector to coefficient vector
@@ -650,9 +697,10 @@ class OptimalControlProblem():
         #
         if self.collocation:
             # States are appended to end of (input) coefficients
-            states = coeffs[-self.sys.nstates * self.timepts.size:0]
-            coeffs = coeffs[0:-self.sys.nstates * self.timepts.size]
-        
+            states = coeffs[-self.system.nstates * self.timepts.size:].reshape(
+                self.system.nstates, -1)
+            coeffs = coeffs[:-self.system.nstates * self.timepts.size]
+
         # Compute input at time points
         if self.basis:
             inputs = self._coeffs_to_inputs(coeffs)
@@ -863,11 +911,8 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
         # Remember the optimal control problem that we solved
         self.problem = ocp
 
-        # Compute input at time points
-        if ocp.basis:
-            inputs = ocp._coeffs_to_inputs(res.x)
-        else:
-            inputs = res.x.reshape((ocp.system.ninputs, -1))
+        # Parse the optimization variables into states and inputs
+        states, inputs = ocp._compute_states_inputs(res.x)
 
         # See if we got an answer
         if not res.success:
@@ -885,6 +930,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
         if return_states and inputs.shape[1] == ocp.timepts.shape[0]:
             # Simulate the system if we need the state back
+            # TODO: this is probably not needed due to compute_states_inputs()
             _, _, states = ct.input_output_response(
                 ocp.system, ocp.timepts, inputs, ocp.x, return_x=True,
                 solve_ivp_kwargs=ocp.solve_ivp_kwargs, t_eval=ocp.timepts)
@@ -1017,7 +1063,7 @@ def solve_ocp(
         'optimal', 'return_x', kwargs, return_states, pop=True)
 
     # Process (legacy) method keyword
-    if kwargs.get('method'):
+    if kwargs.get('method') and method not in optimal_methods:
         if kwargs.get('minimize_method'):
             raise ValueError("'minimize_method' specified more than once")
         kwargs['minimize_method'] = kwargs.pop('method')
