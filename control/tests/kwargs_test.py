@@ -183,6 +183,7 @@ kwarg_unittest = {
     'tf': test_unrecognized_kwargs,
     'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,
+    'sample_system' : test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'flatsys.solve_flat_ocp':

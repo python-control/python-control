@@ -6,7 +6,7 @@
 # and other similar classes to allow naming of signals.
 
 import numpy as np
-from copy import copy
+from copy import deepcopy
 from warnings import warn
 from . import config
 
@@ -99,13 +99,10 @@ class NamedIOSystem(object):
     def _find_signal(self, name, sigdict):
         return sigdict.get(name, None)
 
-    def _copy_names(self, sys, name=None):
+    def _copy_names(self, sys):
         """copy the signal and system name of sys. Name is given as a keyword
         in case a specific name (e.g. append 'linearized') is desired. """
-        if name is None: 
-            self.name = sys.name
-        else:
-            self.name = name
+        self.name = sys.name
         self.ninputs, self.input_index = \
             sys.ninputs, sys.input_index.copy()
         self.noutputs, self.output_index = \
@@ -126,7 +123,7 @@ class NamedIOSystem(object):
 
         """
         # Create a copy of the system
-        newsys = copy(self)
+        newsys = deepcopy(self)
 
         # Update the system name
         if name is None and use_prefix_suffix:

@@ -231,12 +231,6 @@ class TestIOSys:
         linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
         assert linearized.name == kincar.name + '$linearized'
 
-        # Test legacy version as well
-        ct.use_legacy_defaults('0.8.4')
-        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
-        assert linearized.name == kincar.name + '_linearized'
-
         # If copy is False, signal names should not be copied
         lin_nocopy = kincar.linearize(0, 0, copy_names=False)
         assert lin_nocopy.find_input('v') is None
@@ -256,6 +250,12 @@ class TestIOSys:
         assert linearized_newnames.find_output('y2') == 1
         assert linearized_newnames.find_output('x') is None
         assert linearized_newnames.find_output('y') is None
+
+        # Test legacy version as well
+        ct.use_legacy_defaults('0.8.4')
+        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
+        assert linearized.name == kincar.name + '_linearized'
 
     def test_connect(self, tsys):
         # Define a couple of (linear) systems to interconnection

@@ -1090,7 +1090,7 @@ class TransferFunction(LTI):
 
         return num, den, denorder
 
-    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None, 
+    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
                name=None, copy_names=True, **kwargs):
         """Convert a continuous-time system to discrete time
 
@@ -1119,19 +1119,17 @@ class TransferFunction(LTI):
             time system's magnitude and phase (the gain=1 crossover frequency,
             for example). Should only be specified with method='bilinear' or
             'gbt' with alpha=0.5 and ignored otherwise.
-        copy_names : bool, Optional
-            If `copy_names` is True, copy the names of the input signals, output 
-            signals, and states to the sampled system.  If `name` is not 
-            specified, the system name is set to the input system name with the 
-            string '_sampled' appended.
         name : string, optional
             Set the name of the sampled system.  If not specified and
-            if `copy` is `False`, a generic name <sys[id]> is generated
-            with a unique integer id.  If `copy` is `True`, the new system
+            if `copy_names` is `False`, a generic name <sys[id]> is generated
+            with a unique integer id.  If `copy_names` is `True`, the new system
             name is determined by adding the prefix and suffix strings in
             config.defaults['namedio.sampled_system_name_prefix'] and
             config.defaults['namedio.sampled_system_name_suffix'], with the
             default being to add the suffix '$sampled'.
+        copy_names : bool, Optional
+            If True, copy the names of the input signals, output
+            signals, and states to the sampled system.
 
         Returns
         -------
@@ -1146,8 +1144,6 @@ class TransferFunction(LTI):
             information.
         outputs : int, list of str or None, optional
             Description of the system outputs.  Same format as `inputs`.
-        states : int, list of str, or None, optional
-            Description of the system states.  Same format as `inputs`.
 
         Notes
         -----
@@ -1178,15 +1174,16 @@ class TransferFunction(LTI):
         sysd = TransferFunction(numd[0, :], dend, Ts)
         # copy over the system name, inputs, outputs, and states
         if copy_names:
+            sysd._copy_names(self)
             if name is None:
-                name = \
+                sysd.name = \
                     config.defaults['namedio.sampled_system_name_prefix'] +\
-                    self.name + \
+                    sysd.name + \
                     config.defaults['namedio.sampled_system_name_suffix']
-            sysd._copy_names(self, name=name)
-        # pass desired signal names if names were provided        
-        sysd = TransferFunction(sysd, name=name, **kwargs)
-        return sysd
+            else:
+                sysd.name = name
+        # pass desired signal names if names were provided
+        return TransferFunction(sysd, name=name, **kwargs)
 
     def dcgain(self, warn_infinite=False):
         """Return the zero-frequency (or DC) gain

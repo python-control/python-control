@@ -568,16 +568,23 @@ class InputOutputSystem(NamedIOSystem):
             StateSpace(A, B, C, D, self.dt, remove_useless_states=False))
 
         # Set the system name, inputs, outputs, and states
-        if copy_names:
-            if name is None:
-                name = \
-                    config.defaults['namedio.linearized_system_name_prefix'] +\
-                    self.name + \
-                    config.defaults['namedio.linearized_system_name_suffix']
-            linsys._copy_names(self, name=name)
-        linsys = LinearIOSystem(linsys, name=name, **kwargs)
-        return linsys
+        if copy in kwargs:
+            copy_names = kwargs.pop('copy')
+            warn("keyword 'copy' is deprecated. please use 'copy_names'",
+                DeprecationWarning)
 
+        if copy_names:
+            linsys._copy_names(self)
+            if name is None:
+                linsys.name = \
+                    config.defaults['namedio.linearized_system_name_prefix']+\
+                    linsys.name+\
+                    config.defaults['namedio.linearized_system_name_suffix']
+            else:
+                linsys.name = name
+
+        # re-init to include desired signal names if names were provided
+        return LinearIOSystem(linsys, **kwargs)
 
 class LinearIOSystem(InputOutputSystem, StateSpace):
     """Input/output representation of a linear (state space) system.
@@ -2180,19 +2187,17 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
-    copy_names : bool, Optional
-        If `copy_names` is True, copy the names of the input signals, output 
-        signals, and states to the linearized system.  If `name` is not 
-        specified, the system name is set to the input system name with the 
-        string '_linearized' appended.
     name : string, optional
         Set the name of the linearized system.  If not specified and
-        if `copy` is `False`, a generic name <sys[id]> is generated
-        with a unique integer id.  If `copy` is `True`, the new system
+        if `copy_names` is `False`, a generic name <sys[id]> is generated
+        with a unique integer id.  If `copy_names` is `True`, the new system
         name is determined by adding the prefix and suffix strings in
         config.defaults['namedio.linearized_system_name_prefix'] and
         config.defaults['namedio.linearized_system_name_suffix'], with the
         default being to add the suffix '$linearized'.
+    copy_names : bool, Optional
+        If True, Copy the names of the input signals, output signals, and
+        states to the linearized system.
 
     Returns
     -------
