@@ -147,11 +147,10 @@ class OptimalControlProblem():
         self.terminal_constraints = terminal_constraints
         self.basis = basis
 
-        # Keep track of what type of method we are using
+        # Keep track of what type of trajector method we are using
         if trajectory_method is None:
             # TODO: change default
-            # trajectory_method = 'collocation' if sys.isctime() else 'shooting'
-            trajectory_method = 'shooting' if sys.isctime() else 'shooting'
+            trajectory_method = 'collocation' if sys.isctime() else 'shooting'
         elif trajectory_method not in _optimal_trajectory_methods:
             raise NotImplementedError(f"Unkown method {method}")
 
@@ -422,9 +421,9 @@ class OptimalControlProblem():
                 # Skip equality constraints
                 continue
             elif ctype == opt.LinearConstraint:
-                value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
+                value.append(fun @ np.hstack([states[:, -1], inputs[:, -1]]))
             elif ctype == opt.NonlinearConstraint:
-                value.append(fun(states[:, i], inputs[:, i]))
+                value.append(fun(states[:, -1], inputs[:, -1]))
             else:      # pragma: no cover
                 # Checked above => we should never get here
                 raise TypeError(f"unknown constraint type {ctype}")
@@ -478,9 +477,9 @@ class OptimalControlProblem():
                 # Skip inequality constraints
                 continue
             elif ctype == opt.LinearConstraint:
-                value.append(fun @ np.hstack([states[:, i], inputs[:, i]]))
+                value.append(fun @ np.hstack([states[:, -1], inputs[:, -1]]))
             elif ctype == opt.NonlinearConstraint:
-                value.append(fun(states[:, i], inputs[:, i]))
+                value.append(fun(states[:, -1], inputs[:, -1]))
             else:      # pragma: no cover
                 # Checked above => we should never get here
                 raise TypeError("unknown constraint type {ctype}")
@@ -567,7 +566,10 @@ class OptimalControlProblem():
         if self.collocation:
             if state_guess is None:
                 # Run a simulation to get the initial guess
-                inputs = input_guess.reshape(self.system.ninputs, -1)
+                if self.basis:
+                    inputs = self._coeffs_to_inputs(input_guess)
+                else:
+                    inputs = input_guess.reshape(self.system.ninputs, -1)
                 state_guess = self._simulate_states(
                     np.zeros(self.system.nstates), inputs)
             else:
