@@ -494,12 +494,12 @@ def test_ocp_argument_errors():
 
     # Unrecognized trajectory constraint type
     constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
-    with pytest.raises(TypeError, match="unknown constraint type"):
+    with pytest.raises(TypeError, match="unknown trajectory constraint type"):
         res = opt.solve_ocp(
             sys, time, x0, cost, trajectory_constraints=constraints)
 
     # Unrecognized terminal constraint type
-    with pytest.raises(TypeError, match="unknown constraint type"):
+    with pytest.raises(TypeError, match="unknown terminal constraint type"):
         res = opt.solve_ocp(
             sys, time, x0, cost, terminal_constraints=constraints)
 
@@ -609,28 +609,28 @@ def test_equality_constraints():
 
     # Try passing and unknown constraint type
     final_point = [(None, final_point_eval, [0, 0], [0, 0])]
-    with pytest.raises(TypeError, match="unknown constraint type"):
+    with pytest.raises(TypeError, match="unknown terminal constraint type"):
         optctrl = opt.OptimalControlProblem(
             sys, time, cost, terminal_constraints=final_point)
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
 
 
 @pytest.mark.parametrize(
-    "method, npts, initial_guess", [
-        # ('shooting', 3, None),                # doesn't converge
-        # ('shooting', 3, 'zero'),              # doesn't converge
-        ('shooting', 3, 'u0'),                  # github issue #782
-        # ('shooting', 3, 'input'),             # precision loss
-        # ('shooting', 5, 'input'),             # precision loss
-        # ('collocation', 3, 'u0'),             # doesn't converge
-        ('collocation', 5, 'u0'),               # from documenentation
-        ('collocation', 5, 'input'),
-        ('collocation', 10, 'input'),
-        ('collocation', 10, 'u0'),
-        ('collocation', 10, 'state'),
-        ('collocation', 20, 'state'),
+    "method, npts, initial_guess, fail", [
+        ('shooting', 3, None, 'xfail'),         # doesn't converge
+        ('shooting', 3, 'zero', 'xfail'),       # doesn't converge
+        ('shooting', 3, 'u0', None),            # github issue #782
+        ('shooting', 3, 'input', 'endpoint'),   # doesn't converge to optimal
+        ('shooting', 5, 'input', 'endpoint'),   # doesn't converge to optimal
+        ('collocation', 3, 'u0', 'endpoint'),   # doesn't converge to optimal
+        ('collocation', 5, 'u0', 'endpoint'),
+        ('collocation', 5, 'input', 'openloop'),# open loop sim fails
+        ('collocation', 10, 'input', None),
+        ('collocation', 10, 'u0', None),        # from documenentation
+        ('collocation', 10, 'state', None),
+        ('collocation', 20, 'state', None),
     ])
-def test_optimal_doc(method, npts, initial_guess):
+def test_optimal_doc(method, npts, initial_guess, fail):
     """Test optimal control problem from documentation"""
     def vehicle_update(t, x, u, params):
         # Get the parameters for the model
@@ -698,25 +698,35 @@ def test_optimal_doc(method, npts, initial_guess):
 
     # Solve the optimal control problem
     result = opt.solve_ocp(
-        vehicle, timepts, x0, traj_cost, trajectory_method=method,
-        # minimize_method='COBYLA', # SLSQP',
-        # constraints,
+        vehicle, timepts, x0, traj_cost, constraints,
         terminal_cost=term_cost, initial_guess=initial_guess,
+        trajectory_method=method,
+        # minimize_method='COBYLA', # SLSQP',
     )
 
-    # Make sure we got a successful result (or precision loss error)
-    assert result.success or result.status == 2
+    if fail == 'xfail':
+        assert not result.success
+        pytest.xfail("optimization fails to converge")
+    elif fail == 'precision':
+        assert result.status == 2
+        pytest.xfail("optimization precision not achieved")
+    else:
+        # Make sure the optimization was successful
+        assert result.success
 
-    # Make sure the resulting trajectory generated a good solution
-    resp = ct.input_output_response(
-        vehicle, timepts, result.inputs, x0,
-        t_eval=np.linspace(0, Tf, 10))
-    t, y = resp
+        # Make sure we started and stopped at the right spot
+        if fail == 'endpoint':
+            pytest.xfail("optimization does not converge to endpoint")
+        else:
+            np.testing.assert_almost_equal(result.states[:, 0], x0, decimal=4)
 
-    assert abs(y[0, 0] - x0[0]) < 0.01
-    assert abs((y[1, 0] - x0[1]) / x0[1]) < 0.01
-    assert abs(y[2, 0]) < 0.01
-
-    assert abs((y[0, -1] - xf[0]) / xf[0]) < 0.12
-    assert abs((y[1, -1] - xf[1]) / xf[1]) < 0.12
-    assert abs(y[2, -1]) < 0.1
+            # Simulate the trajectory to make sure it looks OK
+            resp = ct.input_output_response(
+                vehicle, timepts, result.inputs, x0,
+                t_eval=np.linspace(0, Tf, 10))
+            t, y = resp
+            if fail == 'openloop':
+                with pytest.raises(AssertionError):
+                    np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)
+            else:
+                np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)

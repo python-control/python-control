@@ -23,7 +23,6 @@ from .timeresp import TimeResponseData
 # Define module default parameter values
 _optimal_trajectory_methods = {'shooting', 'collocation'}
 _optimal_defaults = {
-    'optimal.trajectory_method': 'shooting',
     'optimal.minimize_method': None,
     'optimal.minimize_options': {},
     'optimal.minimize_kwargs': {},
@@ -147,9 +146,8 @@ class OptimalControlProblem():
         self.terminal_constraints = terminal_constraints
         self.basis = basis
 
-        # Keep track of what type of trajector method we are using
+        # Keep track of what type of trajectory method we are using
         if trajectory_method is None:
-            # TODO: change default
             trajectory_method = 'collocation' if sys.isctime() else 'shooting'
         elif trajectory_method not in _optimal_trajectory_methods:
             raise NotImplementedError(f"Unkown method {method}")
@@ -185,30 +183,23 @@ class OptimalControlProblem():
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
         # Process trajectory constraints
-        if isinstance(trajectory_constraints, tuple):
-            self.trajectory_constraints = [trajectory_constraints]
-        elif not isinstance(trajectory_constraints, list):
-            raise TypeError("trajectory constraints must be a list")
-        else:
-            self.trajectory_constraints = trajectory_constraints
+        def _process_constraints(constraint_list, name):
+            if isinstance(constraint_list, tuple):
+                constraint_list = [constraint_list]
+            elif not isinstance(constraint_list, list):
+                raise TypeError(f"{name} constraints must be a list")
 
-        # Make sure that we recognize all of the constraint types
-        for ctype, fun, lb, ub in self.trajectory_constraints:
-            if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
-                raise TypeError(f"unknown constraint type {ctype}")
+            # Make sure that we recognize all of the constraint types
+            for ctype, fun, lb, ub in constraint_list:
+                if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
+                    raise TypeError(f"unknown {name} constraint type {ctype}")
 
-        # Process terminal constraints
-        if isinstance(terminal_constraints, tuple):
-            self.terminal_constraints = [terminal_constraints]
-        elif not isinstance(terminal_constraints, list):
-            raise TypeError("terminal constraints must be a list")
-        else:
-            self.terminal_constraints = terminal_constraints
+            return constraint_list
 
-        # Make sure that we recognize all of the constraint types
-        for ctype, fun, lb, ub in self.terminal_constraints:
-            if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
-                raise TypeError(f"unknown constraint type {ctype}")
+        self.trajectory_constraints = _process_constraints(
+            trajectory_constraints, "trajectory")
+        self.terminal_constraints = _process_constraints(
+            terminal_constraints, "terminal")
 
         #
         # Compute and store constraints
@@ -223,10 +214,13 @@ class OptimalControlProblem():
         # is consistent with the `_constraint_function` that is used at
         # evaluation time.
         #
+        # TODO: when using the collocation method, linear constraints on the
+        # states and inputs can potentially maintain their linear structure
+        # rather than being converted to nonlinear constraints.
+        #
         constraint_lb, constraint_ub, eqconst_value = [], [], []
 
         # Go through each time point and stack the bounds
-        # TODO: for collocation method, keep track of linear vs nonlinear
         for t in self.timepts:
             for type, fun, lb, ub in self.trajectory_constraints:
                 if np.all(lb == ub):
@@ -253,15 +247,19 @@ class OptimalControlProblem():
         self.eqconst_value = np.hstack(eqconst_value) if eqconst_value else []
 
         # Create the constraints (inequality and equality)
+        # TODO: for collocation method, keep track of linear vs nonlinear
         self.constraints = []
+
         if len(self.constraint_lb) != 0:
             self.constraints.append(sp.optimize.NonlinearConstraint(
                 self._constraint_function, self.constraint_lb,
                 self.constraint_ub))
+
         if len(self.eqconst_value) != 0:
             self.constraints.append(sp.optimize.NonlinearConstraint(
                 self._eqconst_function, self.eqconst_value,
                 self.eqconst_value))
+
         if self.collocation:
             # Add the collocation constraints
             colloc_zeros = np.zeros(sys.nstates * self.timepts.size)
@@ -275,7 +273,7 @@ class OptimalControlProblem():
         # Process the initial guess
         self.initial_guess = self._process_initial_guess(initial_guess)
 
-        # Store states, input, used later to minimize re-computation
+        # Store states, input (used later to minimize re-computation)
         self.last_x = np.full(self.system.nstates, np.nan)
         self.last_coeffs = np.full(self.initial_guess.shape, np.nan)
 
@@ -286,10 +284,14 @@ class OptimalControlProblem():
     #
     # Cost function
     #
-    # Given the input U = [u[0], ... u[N]], we need to compute the cost of
-    # the trajectory generated by that input.  This means we have to
-    # simulate the system to get the state trajectory X = [x[0], ...,
-    # x[N]] and then compute the cost at each point:
+    # For collocation methods we are given the states and inputs at each
+    # time point and we use a trapezoidal approximation to compute the
+    # integral cost, then add on the terminal cost.
+    #
+    # For shooting methods, given the input U = [u[0], ... u[N]] we need to
+    # compute the cost of the trajectory generated by that input.  This
+    # means we have to simulate the system to get the state trajectory X =
+    # [x[0], ..., x[N]] and then compute the cost at each point:
     #
     #   cost = sum_k integral_cost(x[k], u[k]) + terminal_cost(x[N], u[N])
     #
@@ -362,11 +364,12 @@ class OptimalControlProblem():
     #   is called at each point along the trajectory and compared against the
     #   upper and lower bounds.
     #
-    # * If the upper and lower bound for the constraint are identical, then we
-    #   separate out the evaluation into two different constraints, which
-    #   allows the SciPy optimizers to be more efficient (and stops them from
-    #   generating a warning about mixed constraints).  This is handled
-    #   through the use of the `_eqconst_function` and `eqconst_value` members.
+    # * If the upper and lower bound for the constraint are identical, then
+    #   we separate out the evaluation into two different constraints, which
+    #   allows the SciPy optimizers to be more efficient (and stops them
+    #   from generating a warning about mixed constraints).  This is handled
+    #   through the use of the `_eqconst_function` and `eqconst_value`
+    #   members.
     #
     # In both cases, the constraint is specified at a single point, but we
     # extend this to apply to each point in the trajectory.  This means
@@ -378,16 +381,12 @@ class OptimalControlProblem():
     # For collocation methods, we can directly evaluate the constraints at
     # the collocation points.
     #
-    # For shooting methods, we do this by creating a function that
-    # simulates the system dynamics and returns a vector of values
-    # corresponding to the value of the function at each time.  The
-    # class initialization methods takes care of replicating the upper
-    # and lower bounds for each point in time so that the SciPy
-    # optimization algorithm can do the proper evaluation.
-    #
-    # In addition, since SciPy's optimization function does not allow us to
-    # pass arguments to the constraint function, we have to store the initial
-    # state prior to optimization and retrieve it here.
+    # For shooting methods, we do this by creating a function that simulates
+    # the system dynamics and returns a vector of values corresponding to
+    # the value of the function at each time.  The class initialization
+    # methods takes care of replicating the upper and lower bounds for each
+    # point in time so that the SciPy optimization algorithm can do the
+    # proper evaluation.
     #
     def _constraint_function(self, coeffs):
         if self.log:
@@ -437,8 +436,7 @@ class OptimalControlProblem():
                 "_constraint_function elapsed time: %g",
                 stop_time - start_time)
 
-        # Debugging information
-        if self.log:
+            # Debugging information
             logging.debug(
                 "constraint values\n" + str(value) + "\n" +
                 "lb, ub =\n" + str(self.constraint_lb) + "\n" +
@@ -492,8 +490,7 @@ class OptimalControlProblem():
             logging.info(
                 "_eqconst_function elapsed time: %g", stop_time - start_time)
 
-        # Debugging information
-        if self.log:
+            # Debugging information
             logging.debug(
                 "eqconst values\n" + str(value) + "\n" +
                 "desired =\n" + str(self.eqconst_value))
@@ -515,7 +512,7 @@ class OptimalControlProblem():
                         self.timepts[0], states[:, 0], inputs[:, 0])
                     continue
 
-                # M. Kelly, SIAM Review (2017), equation (3.2), i = k+1
+                # From M. Kelly, SIAM Review (2017), equation (3.2), i = k+1
                 # x[k+1] - x[k] = 0.5 hk (f(x[k+1], u[k+1] + f(x[k], u[k]))
                 fkp1 = self.system._rhs(t, states[:, i], inputs[:, i])
                 self.colloc_vals[:, i] = states[:, i] - states[:, i-1] - \
@@ -529,17 +526,19 @@ class OptimalControlProblem():
         return self.colloc_vals.reshape(-1)
 
     #
-    # Initial guess
+    # Initial guess processing
     #
     # We store an initial guess in case it is not specified later.  Note
     # that create_mpc_iosystem() will reset the initial guess based on
     # the current state of the MPC controller.
     #
-    # Note: the initial guess is passed as the inputs at the given time
+    # The functions below are used to process the initial guess, which can
+    # either consist of an input only (for shooting methods) or an input
+    # and/or state trajectory (for collocaiton methods).
+    #
+    # Note: The initial input guess is passed as the inputs at the given time
     # vector.  If a basis is specified, this is converted to coefficient
     # values (which are generally of smaller dimension).
-    #
-    # TODO: figure out how to modify this for collocation
     #
     def _process_initial_guess(self, initial_guess):
         # Sort out the input guess and the state guess
@@ -583,6 +582,7 @@ class OptimalControlProblem():
             # Reshape for use by scipy.optimize.minimize()
             return input_guess.reshape(-1)
 
+    # Utility function to broadcast an initial guess to the right shape
     def _broadcast_initial_guess(self, initial_guess, shape):
         # Convert to a 1D array (or higher)
         initial_guess = np.atleast_1d(initial_guess)
@@ -604,11 +604,11 @@ class OptimalControlProblem():
     #
     # Utility function to convert input vector to coefficient vector
     #
-    # Initially guesses from the user are passed as input vectors as a
+    # Initial guesses from the user are passed as input vectors as a
     # function of time, but internally we store the guess in terms of the
     # basis coefficients.  We do this by solving a least squares problem to
-    # find coefficients that match the input functions at the time points (as
-    # much as possible, if the problem is under-determined).
+    # find coefficients that match the input functions at the time points
+    # (as much as possible, if the problem is under-determined).
     #
     def _inputs_to_coeffs(self, inputs):
         # If there is no basis function, just return inputs as coeffs
@@ -638,6 +638,7 @@ class OptimalControlProblem():
     # Utility function to convert coefficient vector to input vector
     def _coeffs_to_inputs(self, coeffs):
         # TODO: vectorize
+        # TODO: use BasisFamily eval() method (if more efficient)?
         inputs = np.zeros((self.system.ninputs, self.timepts.size))
         offset = 0
         for i in range(self.system.ninputs):
@@ -689,7 +690,7 @@ class OptimalControlProblem():
     # These internal functions return the states and inputs at the
     # collocation points given the ceofficient (optimizer state) vector.
     # They keep track of whether a shooting method is being used or not and
-    # simulate the dynamis of needed.
+    # simulate the dynamics if needed.
     #
 
     # Compute the states and inputs from the coefficients
@@ -738,6 +739,7 @@ class OptimalControlProblem():
         if self.log:
             logging.debug(
                 "input_output_response returned states\n" + str(states))
+
         return states
 
     #
@@ -930,16 +932,6 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
             ocp._print_statistics()
             print("* Final cost:", self.cost)
 
-        if return_states and inputs.shape[1] == ocp.timepts.shape[0]:
-            # Simulate the system if we need the state back
-            # TODO: this is probably not needed due to compute_states_inputs()
-            _, _, states = ct.input_output_response(
-                ocp.system, ocp.timepts, inputs, ocp.x, return_x=True,
-                solve_ivp_kwargs=ocp.solve_ivp_kwargs, t_eval=ocp.timepts)
-            ocp.system_simulations += 1
-        else:
-            states = None
-
         # Process data as a time response (with "outputs" = inputs)
         response = TimeResponseData(
             ocp.timepts, inputs, states, issiso=ocp.system.issiso(),
@@ -1065,10 +1057,22 @@ def solve_ocp(
         'optimal', 'return_x', kwargs, return_states, pop=True)
 
     # Process (legacy) method keyword
-    if kwargs.get('method') and method not in optimal_methods:
-        if kwargs.get('minimize_method'):
-            raise ValueError("'minimize_method' specified more than once")
-        kwargs['minimize_method'] = kwargs.pop('method')
+    if kwargs.get('method'):
+        method = kwargs.pop('method')
+        if method not in optimal_methods:
+            if kwargs.get('minimize_method'):
+                raise ValueError("'minimize_method' specified more than once")
+            warnings.warn(
+                "'method' parameter is deprecated; assuming minimize_method",
+                DeprecationWarning)
+            kwargs['minimize_method'] = method
+        else:
+            if kwargs.get('trajectory_method'):
+                raise ValueError("'trajectory_method' specified more than once")
+            warnings.warn(
+                "'method' parameter is deprecated; assuming trajectory_method",
+                DeprecationWarning)
+            kwargs['trajectory_method'] = method
 
     # Set up the optimal control problem
     ocp = OptimalControlProblem(

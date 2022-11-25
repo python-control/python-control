@@ -215,8 +215,8 @@ moving from the point x = 0 m, y = -2 m, :math:`\theta` = 0 to the point x =
 100 m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and with a
 with a starting and ending velocity of 10 m/s::
 
-  x0 = [0., -2., 0.]; u0 = [10., 0.]
-  xf = [100., 2., 0.]; uf = [10., 0.]
+  x0 = np.array([0., -2., 0.]); u0 = np.array([10., 0.])
+  xf = np.array([100., 2., 0.]); uf = np.array([10., 0.])
   Tf = 10
 
 To set up the optimal control problem we design a cost function that
