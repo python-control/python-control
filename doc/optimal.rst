@@ -283,7 +283,7 @@ If you are getting errors when solving optimal control problems or your
 solutions do not seem close to optimal, here are a few things to try:
 
 * Less is more: try using a smaller number of time points in your
-  optimiation.  The default optimal control problem formulation uses the
+  optimization.  The default optimal control problem formulation uses the
   value of the inputs at each time point as a free variable and this can
   generate a large number of parameters quickly.  Often you can find very
   good solutions with a small number of free variables (the example above
