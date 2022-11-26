@@ -64,7 +64,7 @@ def test_finite_horizon_simple(method):
 
     # State and input constraints
     constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -1], [5, 5, 1]),
     ]
 
     # Quadratic state and input penalty
@@ -148,7 +148,7 @@ def test_discrete_lqr():
 
     # Add state and input constraints
     trajectory_constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -.5], [5, 5, 0.5]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -.5], [5, 5, 0.5]),
     ]
 
     # Re-solve
@@ -461,7 +461,7 @@ def test_ocp_argument_errors():
 
     # State and input constraints
     constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -1], [5, 5, 1]),
     ]
 
     # Quadratic state and input penalty
@@ -522,7 +522,7 @@ def test_optimal_basis_simple(basis):
 
     # State and input constraints
     constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -1], [5, 5, 1]),
     ]
 
     # Quadratic state and input penalty
@@ -594,7 +594,7 @@ def test_equality_constraints():
     def final_point_eval(x, u):
         return x
     final_point = [
-        (sp.optimize.NonlinearConstraint, final_point_eval, [0, 0], [0, 0])]
+        sp.optimize.NonlinearConstraint(final_point_eval, [0, 0], [0, 0])]
 
     optctrl = opt.OptimalControlProblem(
         sys, time, cost, terminal_constraints=final_point)

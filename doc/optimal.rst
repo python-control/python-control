@@ -125,16 +125,16 @@ parameter can be used to specify a cost function for the final point in the
 trajectory.
 
 The `constraints` parameter is a list of constraints similar to that used by
-the :func:`scipy.optimize.minimize` function.  Each constraint is a tuple of
-one of the following forms::
+the :func:`scipy.optimize.minimize` function.  Each constraint is specified
+using one of the following forms::
 
-  (LinearConstraint, A, lb, ub)
-  (NonlinearConstraint, f, lb, ub)
+  LinearConstraint(A, lb, ub)
+  NonlinearConstraint(f, lb, ub)
 
 For a linear constraint, the 2D array `A` is multiplied by a vector
 consisting of the current state `x` and current input `u` stacked
-vertically, then compared with the upper and lower bound.  This constrain is
-satisfied if
+vertically, then compared with the upper and lower bound.  This constraint
+is satisfied if
 
 .. code:: python
 

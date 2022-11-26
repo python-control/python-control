@@ -50,32 +50,33 @@ class OptimalControlProblem():
     integral_cost : callable
         Function that returns the integral cost given the current state
         and input.  Called as integral_cost(x, u).
-    trajectory_constraints : list of tuples, optional
+    trajectory_constraints : list of constraints, optional
        List of constraints that should hold at each point in the time
-       vector.  Each element of the list should consist of a tuple with
-       first element given by :meth:`~scipy.optimize.LinearConstraint` or
-       :meth:`~scipy.optimize.NonlinearConstraint` and the remaining
-       elements of the tuple are the arguments that would be passed to
-       those functions.  The constraints will be applied at each time
-       point along the trajectory.
+       vector.  Each element of the list should be an object of type
+       :class:`~scipy.optimize.LinearConstraint` with arguments `(A, lb,
+       ub)` or :class:`~scipy.optimize.NonlinearConstraint` with arguments
+       `(fun, lb, ub)`.  The constraints will be applied at each time point
+       along the trajectory.
     terminal_cost : callable, optional
         Function that returns the terminal cost given the current state
         and input.  Called as terminal_cost(x, u).
-    initial_guess : 1D or 2D array_like
-        Initial inputs to use as a guess for the optimal input.  The
-        inputs should either be a 2D vector of shape (ninputs, horizon)
-        or a 1D input of shape (ninputs,) that will be broadcast by
-        extension of the time axis.
     trajectory_method : string, optional
         Method to use for carrying out the optimization. Currently supported
         methods are 'shooting' and 'collocation' (continuous time only). The
         default value is 'shooting' for discrete time systems and
         'collocation' for continuous time systems
+    initial_guess : (tuple of) 1D or 2D array_like
+        Initial states and/or inputs to use as a guess for the optimal
+        trajectory.  For shooting methods, an array of inputs for each time
+        point should be specified.  For collocation methods, the initial
+        guess is either the input vector or a tuple consisting guesses for
+        the state and the input.  Guess should either be a 2D vector of
+        shape (ninputs, ntimepts) or a 1D input of shape (ninputs,) that
+        will be broadcast by extension of the time axis.
     log : bool, optional
         If `True`, turn on logging messages (using Python logging module).
-        Use ``logging.basicConfig`` to enable logging output (e.g., to a file).
-    kwargs : dict, optional
-        Additional parameters (passed to :func:`scipy.optimal.minimize`).
+        Use :py:func:`logging.basicConfig` to enable logging output
+        (e.g., to a file).
 
     Returns
     -------
@@ -83,11 +84,14 @@ class OptimalControlProblem():
         Optimal control problem object, to be used in computing optimal
         controllers.
 
-    Additional parameters
-    ---------------------
+    Other Parameters
+    ----------------
     basis : BasisFamily, optional
         Use the given set of basis functions for the inputs instead of
         setting the value of the input at each point in the timepts vector.
+    terminal_constraints : list of constraints, optional
+        List of constraints that should hold at the terminal point in time,
+        in the same form as `trajectory_constraints`.
     solve_ivp_method : str, optional
         Set the method used by :func:`scipy.integrate.solve_ivp`.
     solve_ivp_kwargs : str, optional
@@ -181,20 +185,6 @@ class OptimalControlProblem():
         # Make sure there were no extraneous keywords
         if kwargs:
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
-
-        # Process trajectory constraints
-        def _process_constraints(constraint_list, name):
-            if isinstance(constraint_list, tuple):
-                constraint_list = [constraint_list]
-            elif not isinstance(constraint_list, list):
-                raise TypeError(f"{name} constraints must be a list")
-
-            # Make sure that we recognize all of the constraint types
-            for ctype, fun, lb, ub in constraint_list:
-                if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
-                    raise TypeError(f"unknown {name} constraint type {ctype}")
-
-            return constraint_list
 
         self.trajectory_constraints = _process_constraints(
             trajectory_constraints, "trajectory")
@@ -1017,9 +1007,6 @@ def solve_ocp(
         If True, assume that 2D input arrays are transposed from the standard
         format.  Used to convert MATLAB-style inputs to our format.
 
-    kwargs : dict, optional
-        Additional parameters (passed to :func:`scipy.optimal.minimize`).
-
     Returns
     -------
     res : OptimalControlResult
@@ -1456,3 +1443,45 @@ def output_range_constraint(sys, lb, ub):
 
     # Return a nonlinear constraint object based on the polynomial
     return (opt.NonlinearConstraint, _evaluate_output_range_constraint, lb, ub)
+
+#
+# Utility functions
+#
+
+#
+# Process trajectory constraints
+#
+# Constraints were originally specified as a tuple with the type of
+# constraint followed by the arguments.  However, they are now specified
+# directly as SciPy constraint objects.
+#
+# The _process_constraints() function will covert everything to a consistent
+# internal representation (currently a tuple with the constraint type as the
+# first element.
+#
+def _process_constraints(clist, name):
+    if isinstance(
+            clist, (tuple, opt.LinearConstraint, opt.NonlinearConstraint)):
+        clist = [clist]
+    elif not isinstance(clist, list):
+        raise TypeError(f"{name} constraints must be a list")
+
+    # Process individual list elements
+    constraint_list = []
+    for constraint in clist:
+        if isinstance(constraint, tuple):
+            # Original style of constraint
+            ctype, fun, lb, ub = constraint
+            if not ctype in [opt.LinearConstraint, opt.NonlinearConstraint]:
+                raise TypeError(f"unknown {name} constraint type {ctype}")
+            constraint_list.append(constraint)
+        elif isinstance(constraint, opt.LinearConstraint):
+            constraint_list.append(
+                (opt.LinearConstraint, constraint.A,
+                 constraint.lb, constraint.ub))
+        elif isinstance(constraint, opt.NonlinearConstraint):
+            constraint_list.append(
+                (opt.NonlinearConstraint, constraint.fun,
+                 constraint.lb, constraint.ub))
+
+    return constraint_list
