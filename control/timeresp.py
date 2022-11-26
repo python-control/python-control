@@ -642,7 +642,7 @@ class TimeResponseData:
     # Convert to pandas
     def to_pandas(self):
         if not pandas_check():
-            ImportError('pandas not installed')
+            raise ImportError("pandas not installed")
         import pandas
 
         # Create a dict for setting up the data frame
