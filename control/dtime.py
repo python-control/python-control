@@ -53,7 +53,8 @@ from .statesp import StateSpace
 __all__ = ['sample_system', 'c2d']
 
 # Sample a continuous time system
-def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None):
+def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
+        name=None, copy_names=True, **kwargs):
     """
     Convert a continuous time system to discrete time by sampling
 
@@ -72,11 +73,34 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None):
     prewarp_frequency : float within [0, infinity)
         The frequency [rad/s] at which to match with the input continuous-
         time system's magnitude and phase (only valid for method='bilinear')
+    name : string, optional
+        Set the name of the sampled system.  If not specified and
+        if `copy_names` is `False`, a generic name <sys[id]> is generated
+        with a unique integer id.  If `copy_names` is `True`, the new system
+        name is determined by adding the prefix and suffix strings in
+        config.defaults['namedio.sampled_system_name_prefix'] and
+        config.defaults['namedio.sampled_system_name_suffix'], with the
+        default being to add the suffix '$sampled'.
+    copy_names : bool, Optional
+        If True, copy the names of the input signals, output
+        signals, and states to the sampled system.
 
     Returns
     -------
     sysd : linsys
         Discrete time system, with sampling rate Ts
+
+    Additional Parameters
+    ---------------------
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  If not specified, the origional
+        system inputs are used.  See :class:`NamedIOSystem` for more
+        information.
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`. Only
+        available if the system is :class:`StateSpace`.
 
     Notes
     -----
@@ -94,7 +118,8 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None):
         raise ValueError("First argument must be continuous time system")
 
     return sysc.sample(Ts,
-        method=method, alpha=alpha, prewarp_frequency=prewarp_frequency)
+        method=method, alpha=alpha, prewarp_frequency=prewarp_frequency,
+        name=name, copy_names=copy_names, **kwargs)
 
 
 def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):

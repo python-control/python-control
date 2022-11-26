@@ -1090,7 +1090,8 @@ class TransferFunction(LTI):
 
         return num, den, denorder
 
-    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None):
+    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
+               name=None, copy_names=True, **kwargs):
         """Convert a continuous-time system to discrete time
 
         Creates a discrete-time system from a continuous-time system by
@@ -1118,11 +1119,31 @@ class TransferFunction(LTI):
             time system's magnitude and phase (the gain=1 crossover frequency,
             for example). Should only be specified with method='bilinear' or
             'gbt' with alpha=0.5 and ignored otherwise.
+        name : string, optional
+            Set the name of the sampled system.  If not specified and
+            if `copy_names` is `False`, a generic name <sys[id]> is generated
+            with a unique integer id.  If `copy_names` is `True`, the new system
+            name is determined by adding the prefix and suffix strings in
+            config.defaults['namedio.sampled_system_name_prefix'] and
+            config.defaults['namedio.sampled_system_name_suffix'], with the
+            default being to add the suffix '$sampled'.
+        copy_names : bool, Optional
+            If True, copy the names of the input signals, output
+            signals, and states to the sampled system.
 
         Returns
         -------
         sysd : TransferFunction system
-            Discrete time system, with sample period Ts
+            Discrete-time system, with sample period Ts
+
+        Additional Parameters
+        ---------------------
+        inputs : int, list of str or None, optional
+            Description of the system inputs.  If not specified, the origional
+            system inputs are used.  See :class:`NamedIOSystem` for more
+            information.
+        outputs : int, list of str or None, optional
+            Description of the system outputs.  Same format as `inputs`.
 
         Notes
         -----
@@ -1149,7 +1170,20 @@ class TransferFunction(LTI):
         else:
             Twarp = Ts
         numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
-        return TransferFunction(numd[0, :], dend, Ts)
+
+        sysd = TransferFunction(numd[0, :], dend, Ts)
+        # copy over the system name, inputs, outputs, and states
+        if copy_names:
+            sysd._copy_names(self)
+            if name is None:
+                sysd.name = \
+                    config.defaults['namedio.sampled_system_name_prefix'] +\
+                    sysd.name + \
+                    config.defaults['namedio.sampled_system_name_suffix']
+            else:
+                sysd.name = name
+        # pass desired signal names if names were provided
+        return TransferFunction(sysd, name=name, **kwargs)
 
     def dcgain(self, warn_infinite=False):
         """Return the zero-frequency (or DC) gain

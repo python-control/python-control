@@ -47,13 +47,7 @@ __all__ = ['InputOutputSystem', 'LinearIOSystem', 'NonlinearIOSystem',
            'interconnect', 'summing_junction']
 
 # Define module default parameter values
-_iosys_defaults = {
-    'iosys.state_name_delim': '_',
-    'iosys.duplicate_system_name_prefix': '',
-    'iosys.duplicate_system_name_suffix': '$copy',
-    'iosys.linearized_system_name_prefix': '',
-    'iosys.linearized_system_name_suffix': '$linearized'
-}
+_iosys_defaults = {}
 
 
 class InputOutputSystem(NamedIOSystem):
@@ -515,7 +509,7 @@ class InputOutputSystem(NamedIOSystem):
         return newsys
 
     def linearize(self, x0, u0, t=0, params=None, eps=1e-6,
-                  name=None, copy=False, **kwargs):
+                  name=None, copy_names=False, **kwargs):
         """Linearize an input/output system at a given state and input.
 
         Return the linearization of an input/output system at a given state
@@ -571,25 +565,26 @@ class InputOutputSystem(NamedIOSystem):
 
         # Create the state space system
         linsys = LinearIOSystem(
-            StateSpace(A, B, C, D, self.dt, remove_useless_states=False),
-            name=name, **kwargs)
+            StateSpace(A, B, C, D, self.dt, remove_useless_states=False))
 
-        # Set the names the system, inputs, outputs, and states
-        if copy:
+        # Set the system name, inputs, outputs, and states
+        if 'copy' in kwargs:
+            copy_names = kwargs.pop('copy')
+            warn("keyword 'copy' is deprecated. please use 'copy_names'",
+                DeprecationWarning)
+
+        if copy_names:
+            linsys._copy_names(self)
             if name is None:
                 linsys.name = \
-                    config.defaults['iosys.linearized_system_name_prefix'] + \
-                    self.name + \
-                    config.defaults['iosys.linearized_system_name_suffix']
-            linsys.ninputs, linsys.input_index = self.ninputs, \
-                self.input_index.copy()
-            linsys.noutputs, linsys.output_index = \
-                self.noutputs, self.output_index.copy()
-            linsys.nstates, linsys.state_index = \
-                self.nstates, self.state_index.copy()
+                    config.defaults['namedio.linearized_system_name_prefix']+\
+                    linsys.name+\
+                    config.defaults['namedio.linearized_system_name_suffix']
+            else:
+                linsys.name = name
 
-        return linsys
-
+        # re-init to include desired signal names if names were provided
+        return LinearIOSystem(linsys, **kwargs)
 
 class LinearIOSystem(InputOutputSystem, StateSpace):
     """Input/output representation of a linear (state space) system.
@@ -966,7 +961,7 @@ class InterconnectedSystem(InputOutputSystem):
 
         if states is None:
             states = []
-            state_name_delim = config.defaults['iosys.state_name_delim']
+            state_name_delim = config.defaults['namedio.state_name_delim']
             for sys, sysname in sysobj_name_dct.items():
                 states += [sysname + state_name_delim +
                            statename for statename in sys.state_index.keys()]
@@ -2197,19 +2192,17 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     params : dict, optional
         Parameter values for the systems.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
-    copy : bool, Optional
-        If `copy` is True, copy the names of the input signals, output signals,
-        and states to the linearized system.  If `name` is not specified,
-        the system name is set to the input system name with the string
-        '_linearized' appended.
     name : string, optional
         Set the name of the linearized system.  If not specified and
-        if `copy` is `False`, a generic name <sys[id]> is generated
-        with a unique integer id.  If `copy` is `True`, the new system
+        if `copy_names` is `False`, a generic name <sys[id]> is generated
+        with a unique integer id.  If `copy_names` is `True`, the new system
         name is determined by adding the prefix and suffix strings in
-        config.defaults['iosys.linearized_system_name_prefix'] and
-        config.defaults['iosys.linearized_system_name_suffix'], with the
+        config.defaults['namedio.linearized_system_name_prefix'] and
+        config.defaults['namedio.linearized_system_name_suffix'], with the
         default being to add the suffix '$linearized'.
+    copy_names : bool, Optional
+        If True, Copy the names of the input signals, output signals, and
+        states to the linearized system.
 
     Returns
     -------
@@ -2221,7 +2214,7 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     ---------------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the origional
-        system inputs are used.  See :class:`InputOutputSystem` for more
+        system inputs are used.  See :class:`NamedIOSystem` for more
         information.
     outputs : int, list of str or None, optional
         Description of the system outputs.  Same format as `inputs`.
@@ -2733,8 +2726,8 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
     If a system is duplicated in the list of systems to be connected,
     a warning is generated and a copy of the system is created with the
     name of the new system determined by adding the prefix and suffix
-    strings in config.defaults['iosys.linearized_system_name_prefix']
-    and config.defaults['iosys.linearized_system_name_suffix'], with the
+    strings in config.defaults['namedio.linearized_system_name_prefix']
+    and config.defaults['namedio.linearized_system_name_suffix'], with the
     default being to add the suffix '$copy'$ to the system name.
 
     It is possible to replace lists in most of arguments with tuples instead,

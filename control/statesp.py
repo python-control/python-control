@@ -63,8 +63,8 @@ from warnings import warn
 from .exception import ControlSlycot
 from .frdata import FrequencyResponseData
 from .lti import LTI, _process_frequency_response
-from .namedio import common_timebase, isdtime
-from .namedio import _process_namedio_keywords
+from .namedio import common_timebase, isdtime, _process_namedio_keywords, \
+    _process_dt_keyword
 from . import config
 from copy import deepcopy
 
@@ -359,7 +359,7 @@ class StateSpace(LTI):
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
         # Reset shapes (may not be needed once np.matrix support is removed)
-        if 0 == self.nstates:
+        if self._isstatic():
             # static gain
             # matrix's default "empty" shape is 1x0
             A.shape = (0, 0)
@@ -1298,7 +1298,8 @@ class StateSpace(LTI):
         return StateSpace(self.A, self.B[:, j], self.C[i, :],
                           self.D[i, j], self.dt)
 
-    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None):
+    def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
+               name=None, copy_names=True, **kwargs):
         """Convert a continuous time system to discrete time
 
         Creates a discrete-time system from a continuous-time system by
@@ -1317,22 +1318,42 @@ class StateSpace(LTI):
               alpha=0)
             * backward_diff: Backwards differencing ("gbt" with alpha=1.0)
             * zoh: zero-order hold (default)
-
         alpha : float within [0, 1]
             The generalized bilinear transformation weighting parameter, which
             should only be specified with method="gbt", and is ignored
             otherwise
-
         prewarp_frequency : float within [0, infinity)
             The frequency [rad/s] at which to match with the input continuous-
             time system's magnitude and phase (the gain=1 crossover frequency,
             for example). Should only be specified with method='bilinear' or
             'gbt' with alpha=0.5 and ignored otherwise.
+        name : string, optional
+            Set the name of the sampled system.  If not specified and
+            if `copy_names` is `False`, a generic name <sys[id]> is generated
+            with a unique integer id.  If `copy_names` is `True`, the new system
+            name is determined by adding the prefix and suffix strings in
+            config.defaults['namedio.sampled_system_name_prefix'] and
+            config.defaults['namedio.sampled_system_name_suffix'], with the
+            default being to add the suffix '$sampled'.
+        copy_names : bool, Optional
+            If True, copy the names of the input signals, output
+            signals, and states to the sampled system.
 
         Returns
         -------
         sysd : StateSpace
-            Discrete time system, with sampling rate Ts
+            Discrete-time system, with sampling rate Ts
+
+        Additional Parameters
+        ---------------------
+        inputs : int, list of str or None, optional
+            Description of the system inputs.  If not specified, the origional
+            system inputs are used.  See :class:`InputOutputSystem` for more
+            information.
+        outputs : int, list of str or None, optional
+            Description of the system outputs.  Same format as `inputs`.
+        states : int, list of str, or None, optional
+            Description of the system states.  Same format as `inputs`.
 
         Notes
         -----
@@ -1347,14 +1368,26 @@ class StateSpace(LTI):
         if not self.isctime():
             raise ValueError("System must be continuous time system")
 
-        sys = (self.A, self.B, self.C, self.D)
         if (method == 'bilinear' or (method == 'gbt' and alpha == 0.5)) and \
                 prewarp_frequency is not None:
             Twarp = 2 * np.tan(prewarp_frequency * Ts/2)/prewarp_frequency
         else:
             Twarp = Ts
+        sys = (self.A, self.B, self.C, self.D)
         Ad, Bd, C, D, _ = cont2discrete(sys, Twarp, method, alpha)
-        return StateSpace(Ad, Bd, C, D, Ts)
+        sysd = StateSpace(Ad, Bd, C, D, Ts)
+        # copy over the system name, inputs, outputs, and states
+        if copy_names:
+            sysd._copy_names(self)
+            if name is None:
+                sysd.name = \
+                    config.defaults['namedio.sampled_system_name_prefix'] +\
+                    sysd.name + \
+                    config.defaults['namedio.sampled_system_name_suffix']
+            else:
+                sysd.name = name
+        # pass desired signal names if names were provided
+        return StateSpace(sysd, **kwargs)
 
     def dcgain(self, warn_infinite=False):
         """Return the zero-frequency gain

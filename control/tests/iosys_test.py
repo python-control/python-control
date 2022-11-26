@@ -216,7 +216,7 @@ class TestIOSys:
     @pytest.mark.usefixtures("editsdefaults")
     def test_linearize_named_signals(self, kincar):
         # Full form of the call
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True,
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True,
                                       name='linearized')
         assert linearized.name == 'linearized'
         assert linearized.find_input('v') == 0
@@ -228,20 +228,34 @@ class TestIOSys:
         assert linearized.find_state('theta') == 2
 
         # If we copy signal names w/out a system name, append '$linearized'
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
         assert linearized.name == kincar.name + '$linearized'
+
+        # If copy is False, signal names should not be copied
+        lin_nocopy = kincar.linearize(0, 0, copy_names=False)
+        assert lin_nocopy.find_input('v') is None
+        assert lin_nocopy.find_output('x') is None
+        assert lin_nocopy.find_state('x') is None
+
+        # if signal names are provided, they should override those of kincar
+        linearized_newnames = kincar.linearize([0, 0, 0], [0, 0], 
+            name='linearized',
+            copy_names=True, inputs=['v2', 'phi2'], outputs=['x2','y2'])
+        assert linearized_newnames.name == 'linearized'
+        assert linearized_newnames.find_input('v2') == 0
+        assert linearized_newnames.find_input('phi2') == 1
+        assert linearized_newnames.find_input('v') is None
+        assert linearized_newnames.find_input('phi') is None
+        assert linearized_newnames.find_output('x2') == 0
+        assert linearized_newnames.find_output('y2') == 1
+        assert linearized_newnames.find_output('x') is None
+        assert linearized_newnames.find_output('y') is None
 
         # Test legacy version as well
         ct.use_legacy_defaults('0.8.4')
         ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy=True)
+        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
         assert linearized.name == kincar.name + '_linearized'
-
-        # If copy is False, signal names should not be copied
-        lin_nocopy = kincar.linearize(0, 0, copy=False)
-        assert lin_nocopy.find_input('v') is None
-        assert lin_nocopy.find_output('x') is None
-        assert lin_nocopy.find_state('x') is None
 
     def test_connect(self, tsys):
         # Define a couple of (linear) systems to interconnection

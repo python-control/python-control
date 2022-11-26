@@ -183,6 +183,7 @@ kwarg_unittest = {
     'tf': test_unrecognized_kwargs,
     'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,
+    'sample_system' : test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'flatsys.solve_flat_ocp':
@@ -198,8 +199,10 @@ kwarg_unittest = {
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
+    'StateSpace.sample': test_unrecognized_kwargs, 
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TransferFunction.__init__': test_unrecognized_kwargs,
+    'TransferFunction.sample': test_unrecognized_kwargs, 
 }
 
 #

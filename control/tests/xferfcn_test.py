@@ -986,6 +986,37 @@ class TestXferFcn:
                 np.testing.assert_array_almost_equal(H.num[p][m], H2.num[p][m])
                 np.testing.assert_array_almost_equal(H.den[p][m], H2.den[p][m])
             assert H.dt == H2.dt
+    
+    def test_sample_named_signals(self):
+        sysc = ct.TransferFunction(1.1, (1, 2), inputs='u', outputs='y')
+
+        # Full form of the call
+        sysd = sysc.sample(0.1, name='sampled')
+        assert sysd.name == 'sampled'
+        assert sysd.find_input('u') == 0
+        assert sysd.find_output('y') == 0
+
+        # If we copy signal names w/out a system name, append '$sampled'
+        sysd = sysc.sample(0.1)
+        assert sysd.name == sysc.name + '$sampled'
+
+        # If copy is False, signal names should not be copied
+        sysd_nocopy = sysc.sample(0.1, copy_names=False)
+        assert sysd_nocopy.find_input('u') is None
+        assert sysd_nocopy.find_output('y') is None
+
+        # if signal names are provided, they should override those of sysc
+        sysd_newnames = sysc.sample(0.1, inputs='v', outputs='x')
+        assert sysd_newnames.find_input('v') == 0
+        assert sysd_newnames.find_input('u') is None
+        assert sysd_newnames.find_output('x') == 0
+        assert sysd_newnames.find_output('y') is None
+        # test just one name
+        sysd_newnames = sysc.sample(0.1, inputs='v')
+        assert sysd_newnames.find_input('v') == 0
+        assert sysd_newnames.find_input('u') is None
+        assert sysd_newnames.find_output('y') == 0
+        assert sysd_newnames.find_output('x') is None
 
 
 class TestLTIConverter:

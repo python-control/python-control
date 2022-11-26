@@ -446,3 +446,59 @@ class TestDiscrete:
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
+    
+    def test_signal_names(self, tsys):
+        "test that signal names are preserved in conversion to discrete-time"
+        ssc = StateSpace(tsys.siso_ss1c, 
+            inputs='u', outputs='y', states=['a', 'b', 'c']) 
+        ssd = ssc.sample(0.1)
+        tfc = TransferFunction(tsys.siso_tf1c, inputs='u', outputs='y')
+        tfd = tfc.sample(0.1)
+        assert ssd.input_labels == ['u']
+        assert ssd.state_labels == ['a', 'b', 'c']
+        assert ssd.output_labels == ['y']
+        assert tfd.input_labels == ['u']
+        assert tfd.output_labels == ['y']
+
+        ssd = sample_system(ssc, 0.1)
+        tfd = sample_system(tfc, 0.1)
+        assert ssd.input_labels == ['u']
+        assert ssd.state_labels == ['a', 'b', 'c']
+        assert ssd.output_labels == ['y']
+        assert tfd.input_labels == ['u']
+        assert tfd.output_labels == ['y']
+    
+        # system names and signal name override
+        sysc = StateSpace(1.1, 1, 1, 1, inputs='u', outputs='y', states='a')
+
+        sysd = sample_system(sysc, 0.1, name='sampled')
+        assert sysd.name == 'sampled'
+        assert sysd.find_input('u') == 0
+        assert sysd.find_output('y') == 0
+        assert sysd.find_state('a') == 0
+
+        # If we copy signal names w/out a system name, append '$sampled'
+        sysd = sample_system(sysc, 0.1)
+        assert sysd.name == sysc.name + '$sampled'
+
+        # If copy is False, signal names should not be copied
+        sysd_nocopy = sample_system(sysc, 0.1, copy_names=False)
+        assert sysd_nocopy.find_input('u') is None
+        assert sysd_nocopy.find_output('y') is None
+        assert sysd_nocopy.find_state('a') is None
+
+        # if signal names are provided, they should override those of sysc
+        sysd_newnames = sample_system(sysc, 0.1, 
+            inputs='v', outputs='x', states='b')
+        assert sysd_newnames.find_input('v') == 0
+        assert sysd_newnames.find_input('u') is None
+        assert sysd_newnames.find_output('x') == 0
+        assert sysd_newnames.find_output('y') is None
+        assert sysd_newnames.find_state('b') == 0
+        assert sysd_newnames.find_state('a') is None        
+        # test just one name
+        sysd_newnames = sample_system(sysc, 0.1, inputs='v')
+        assert sysd_newnames.find_input('v') == 0
+        assert sysd_newnames.find_input('u') is None
+        assert sysd_newnames.find_output('y') == 0
+        assert sysd_newnames.find_output('x') is None
