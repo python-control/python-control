@@ -654,6 +654,11 @@ def solve_flat_ocp(
            * cost : computed cost of the returned trajectory
            * message : message returned by optimization if success if False
 
+    3. A common failure in solving optimal control problem is that the
+       default initial guess violates the constraints and the optimizer
+       can't find a feasible solution.  Using the `initial_guess` parameter
+       can often be used to overcome these errors.
+
     """
     #
     # Make sure the problem is one that we can handle

@@ -11,6 +11,10 @@ import control as ct
 import control.flatsys as flat
 import control.optimal as opt
 
+#
+# System setup: vehicle steering (bicycle model)
+#
+
 # Vehicle steering dynamics
 def vehicle_update(t, x, u, params):
     # Get the parameters for the model
@@ -67,11 +71,28 @@ Tf = 10
 # Define the time points where the cost/constraints will be evaluated
 timepts = np.linspace(0, Tf, 10, endpoint=True)
 
-def time_steering_point_to_point(basis_name, basis_size):
-    if basis_name == 'poly':
-        basis = flat.PolyFamily(basis_size)
-    elif basis_name == 'bezier':
-        basis = flat.BezierFamily(basis_size)
+#
+# Benchmark test parameters
+#
+
+basis_params = (['poly', 'bezier', 'bspline'], [8, 10, 12])
+basis_param_names = ["basis", "size"]
+
+def get_basis(name, size):
+    if name == 'poly':
+        basis = flat.PolyFamily(size, T=Tf)
+    elif name == 'bezier':
+        basis = flat.BezierFamily(size, T=Tf)
+    elif name == 'bspline':
+        basis = flat.BSplineFamily([0, Tf/2, Tf], size)
+    return basis
+
+#
+# Benchmarks
+#
+
+def time_point_to_point(basis_name, basis_size):
+    basis = get_basis(basis_name, basis_size)
 
     # Find trajectory between initial and final conditions
     traj = flat.point_to_point(vehicle, Tf, x0, u0, xf, uf, basis=basis)
@@ -80,13 +101,16 @@ def time_steering_point_to_point(basis_name, basis_size):
     x, u = traj.eval([0, Tf])
     np.testing.assert_array_almost_equal(x0, x[:, 0])
     np.testing.assert_array_almost_equal(u0, u[:, 0])
-    np.testing.assert_array_almost_equal(xf, x[:, 1])
-    np.testing.assert_array_almost_equal(uf, u[:, 1])
+    np.testing.assert_array_almost_equal(xf, x[:, -1])
+    np.testing.assert_array_almost_equal(uf, u[:, -1])
 
-time_steering_point_to_point.params = (['poly', 'bezier'], [6, 8])
-time_steering_point_to_point.param_names = ["basis", "size"]        
+time_point_to_point.params = basis_params
+time_point_to_point.param_names = basis_param_names
 
-def time_steering_cost():
+
+def time_point_to_point_with_cost(basis_name, basis_size):
+    basis = get_basis(basis_name, basis_size)
+
     # Define cost and constraints
     traj_cost = opt.quadratic_cost(
         vehicle, None, np.diag([0.1, 1]), u0=uf)
@@ -95,13 +119,47 @@ def time_steering_cost():
 
     traj = flat.point_to_point(
         vehicle, timepts, x0, u0, xf, uf,
-        cost=traj_cost, constraints=constraints, basis=flat.PolyFamily(8)
+        cost=traj_cost, constraints=constraints, basis=basis,
     )
 
     # Verify that the trajectory computation is correct
     x, u = traj.eval([0, Tf])
     np.testing.assert_array_almost_equal(x0, x[:, 0])
     np.testing.assert_array_almost_equal(u0, u[:, 0])
-    np.testing.assert_array_almost_equal(xf, x[:, 1])
-    np.testing.assert_array_almost_equal(uf, u[:, 1])
+    np.testing.assert_array_almost_equal(xf, x[:, -1])
+    np.testing.assert_array_almost_equal(uf, u[:, -1])
 
+time_point_to_point_with_cost.params = basis_params
+time_point_to_point_with_cost.param_names = basis_param_names
+
+
+def time_solve_flat_ocp_terminal_cost(method, basis_name, basis_size):
+    basis = get_basis(basis_name, basis_size)
+
+    # Define cost and constraints
+    traj_cost = opt.quadratic_cost(
+        vehicle, None, np.diag([0.1, 1]), u0=uf)
+    term_cost = opt.quadratic_cost(
+        vehicle, np.diag([1e3, 1e3, 1e3]), None, x0=xf)
+    constraints = [
+        opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+
+    # Initial guess = straight line
+    initial_guess = np.array(
+        [x0[i] + (xf[i] - x0[i]) * timepts/Tf for i in (0, 1)])
+
+    traj = flat.solve_flat_ocp(
+        vehicle, timepts, x0, u0, basis=basis, initial_guess=initial_guess,
+        trajectory_cost=traj_cost, constraints=constraints,
+        terminal_cost=term_cost, minimize_method=method,
+    )
+
+    # Verify that the trajectory computation is correct
+    x, u = traj.eval([0, Tf])
+    np.testing.assert_array_almost_equal(x0, x[:, 0])
+    np.testing.assert_array_almost_equal(xf, x[:, -1], decimal=2)
+
+time_solve_flat_ocp_terminal_cost.params = tuple(
+    [['slsqp', 'trust-constr']] + list(basis_params))
+time_solve_flat_ocp_terminal_cost.param_names = tuple(
+    ['method'] + basis_param_names)

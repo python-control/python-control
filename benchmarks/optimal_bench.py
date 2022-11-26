@@ -8,165 +8,193 @@
 import numpy as np
 import math
 import control as ct
-import control.flatsys as flat
+import control.flatsys as fs
 import control.optimal as opt
 
-# Vehicle steering dynamics
-def vehicle_update(t, x, u, params):
-    # Get the parameters for the model
-    l = params.get('wheelbase', 3.)         # vehicle wheelbase
-    phimax = params.get('maxsteer', 0.5)    # max steering angle (rad)
-
-    # Saturate the steering input (use min/max instead of clip for speed)
-    phi = max(-phimax, min(u[1], phimax))
-
-    # Return the derivative of the state
-    return np.array([
-        math.cos(x[2]) * u[0],            # xdot = cos(theta) v
-        math.sin(x[2]) * u[0],            # ydot = sin(theta) v
-        (u[0] / l) * math.tan(phi)        # thdot = v/l tan(phi)
-    ])
-
-def vehicle_output(t, x, u, params):
-    return x                            # return x, y, theta (full state)
-
-vehicle = ct.NonlinearIOSystem(
-    vehicle_update, vehicle_output, states=3, name='vehicle',
-    inputs=('v', 'phi'), outputs=('x', 'y', 'theta'))
-
-# Initial and final conditions
-x0 = [0., -2., 0.]; u0 = [10., 0.]
-xf = [100., 2., 0.]; uf = [10., 0.]
-Tf = 10
-
-# Define the time horizon (and spacing) for the optimization
-horizon = np.linspace(0, Tf, 10, endpoint=True)
-
-# Provide an intial guess (will be extended to entire horizon)
-bend_left = [10, 0.01]          # slight left veer
-
-def time_steering_integrated_cost():
-    # Set up the cost functions
-    Q = np.diag([.1, 10, .1])     # keep lateral error low
-    R = np.diag([.1, 1])          # minimize applied inputs
-    quad_cost = opt.quadratic_cost(
-        vehicle, Q, R, x0=xf, u0=uf)
-
-    res = opt.solve_ocp(
-        vehicle, horizon, x0, quad_cost,
-        initial_guess=bend_left, print_summary=False,
-        # solve_ivp_kwargs={'atol': 1e-2, 'rtol': 1e-2},
-        minimize_method='trust-constr',
-        minimize_options={'finite_diff_rel_step': 0.01},
-    )
-
-    # Only count this as a benchmark if we converged
-    assert res.success
-
-def time_steering_terminal_cost():
-    # Define cost and constraints
-    traj_cost = opt.quadratic_cost(
-        vehicle, None, np.diag([0.1, 1]), u0=uf)
-    term_cost = opt.quadratic_cost(
-        vehicle, np.diag([1, 10, 10]), None, x0=xf)
-    constraints = [
-        opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
-
-    res = opt.solve_ocp(
-        vehicle, horizon, x0, traj_cost, constraints,
-        terminal_cost=term_cost, initial_guess=bend_left, print_summary=False,
-        solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
-        # minimize_method='SLSQP', minimize_options={'eps': 0.01}
-        minimize_method='trust-constr',
-        minimize_options={'finite_diff_rel_step': 0.01},
-    )
-    # Only count this as a benchmark if we converged
-    assert res.success
+#
+# Benchmark test parameters
+#
 
 # Define integrator and minimizer methods and options/keywords
 integrator_table = {
-    'RK23_default': ('RK23', {'atol': 1e-4, 'rtol': 1e-2}),
-    'RK23_sloppy': ('RK23', {}),
-    'RK45_default': ('RK45', {}),
+    'default': (None, {}),
+    'RK23': ('RK23', {}),
+    'RK23_sloppy': ('RK23', {'atol': 1e-4, 'rtol': 1e-2}),
+    'RK45': ('RK45', {}),
+    'RK45': ('RK45', {}),
     'RK45_sloppy': ('RK45', {'atol': 1e-4, 'rtol': 1e-2}),
+    'LSODA': ('LSODA', {}),
 }
 
 minimizer_table = {
-    'trust_default': ('trust-constr', {}),
+    'default': (None, {}),
+    'trust': ('trust-constr', {}),
     'trust_bigstep': ('trust-constr', {'finite_diff_rel_step': 0.01}),
-    'SLSQP_default': ('SLSQP', {}),
+    'SLSQP': ('SLSQP', {}),
     'SLSQP_bigstep': ('SLSQP', {'eps': 0.01}),
+    'COBYLA': ('COBYLA', {}),
 }
 
+# Utility function to create a basis of a given size
+def get_basis(name, size, Tf):
+    if name == 'poly':
+        basis = fs.PolyFamily(size, T=Tf)
+    elif name == 'bezier':
+        basis = fs.BezierFamily(size, T=Tf)
+    elif name == 'bspline':
+        basis = fs.BSplineFamily([0, Tf/2, Tf], size)
+    return basis
 
-def time_steering_terminal_constraint(integrator_name, minimizer_name):
+
+#
+# Optimal trajectory generation with linear quadratic cost
+#
+
+def time_optimal_lq_basis(basis_name, basis_size, npoints):
+    # Create a sufficiently controllable random system to control
+    ntrys = 20
+    while ntrys > 0:
+        # Create a random system
+        sys = ct.rss(2, 2, 2)
+
+        # Compute the controllability Gramian
+        Wc = ct.gram(sys, 'c')
+
+        # Make sure the condition number is reasonable
+        if np.linalg.cond(Wc) < 1e6:
+            break
+
+        ntrys -= 1
+    assert ntrys > 0            # Something wrong if we needed > 20 tries
+
+    # Define cost functions
+    Q = np.eye(sys.nstates)
+    R = np.eye(sys.ninputs) * 10
+
+    # Figure out the LQR solution (for terminal cost)
+    K, S, E = ct.lqr(sys, Q, R)
+
+    # Define the cost functions
+    traj_cost = opt.quadratic_cost(sys, Q, R)
+    term_cost = opt.quadratic_cost(sys, S, None)
+    constraints = opt.input_range_constraint(
+        sys, -np.ones(sys.ninputs), np.ones(sys.ninputs))
+
+    # Define the initial condition, time horizon, and time points
+    x0 = np.ones(sys.nstates)
+    Tf = 10
+    timepts = np.linspace(0, Tf, npoints)
+
+    # Create the basis function to use
+    basis = get_basis(basis_name, basis_size, Tf)
+
+    res = opt.solve_ocp(
+        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
+        basis=basis,
+    )
+    # Only count this as a benchmark if we converged
+    assert res.success
+
+# Parameterize the test against different choices of integrator and minimizer
+time_optimal_lq_basis.param_names = ['basis', 'size', 'npoints']
+time_optimal_lq_basis.params = (
+    ['poly', 'bezier', 'bspline'], [8, 10, 12], [5, 10, 20])
+
+
+def time_optimal_lq_methods(integrator_name, minimizer_name):
     # Get the integrator and minimizer parameters to use
     integrator = integrator_table[integrator_name]
     minimizer = minimizer_table[minimizer_name]
 
-    # Input cost and terminal constraints
-    R = np.diag([1, 1])                 # minimize applied inputs
-    cost = opt.quadratic_cost(vehicle, np.zeros((3,3)), R, u0=uf)
-    constraints = [
-        opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
-    terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
+    # Create a random system to control
+    sys = ct.rss(2, 1, 1)
+
+    # Define cost functions
+    Q = np.eye(sys.nstates)
+    R = np.eye(sys.ninputs) * 10
+
+    # Figure out the LQR solution (for terminal cost)
+    K, S, E = ct.lqr(sys, Q, R)
+
+    # Define the cost functions
+    traj_cost = opt.quadratic_cost(sys, Q, R)
+    term_cost = opt.quadratic_cost(sys, S, None)
+    constraints = opt.input_range_constraint(
+        sys, -np.ones(sys.ninputs), np.ones(sys.ninputs))
+
+    # Define the initial condition, time horizon, and time points
+    x0 = np.ones(sys.nstates)
+    Tf = 10
+    timepts = np.linspace(0, Tf, 20)
+
+    # Create the basis function to use
+    basis = get_basis('poly', 12, Tf)
 
     res = opt.solve_ocp(
-        vehicle, horizon, x0, cost, constraints,
-        terminal_constraints=terminal, initial_guess=bend_left, log=False,
+        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
         solve_ivp_method=integrator[0], solve_ivp_kwargs=integrator[1],
         minimize_method=minimizer[0], minimize_options=minimizer[1],
     )
     # Only count this as a benchmark if we converged
     assert res.success
 
-# Reset the timeout value to allow for longer runs
-time_steering_terminal_constraint.timeout = 120
-
 # Parameterize the test against different choices of integrator and minimizer
-time_steering_terminal_constraint.param_names = ['integrator', 'minimizer']
-time_steering_terminal_constraint.params = (
-    ['RK23_default', 'RK23_sloppy', 'RK45_default', 'RK45_sloppy'],
-    ['trust_default', 'trust_bigstep', 'SLSQP_default', 'SLSQP_bigstep']
-)
+time_optimal_lq_methods.param_names = ['integrator', 'minimizer']
+time_optimal_lq_methods.params = (
+    ['RK23', 'RK45', 'LSODA'], ['trust', 'SLSQP', 'COBYLA'])
 
-def time_steering_bezier_basis(nbasis, ntimes):
-    # Set up costs and constriants
-    Q = np.diag([.1, 10, .1])           # keep lateral error low
-    R = np.diag([1, 1])                 # minimize applied inputs
-    cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
-    constraints = [ opt.input_range_constraint(vehicle, [0, -0.1], [20, 0.1]) ]
-    terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
 
-    # Set up horizon
-    horizon = np.linspace(0, Tf, ntimes, endpoint=True)
+def time_optimal_lq_size(nstates, ninputs, npoints):
+    # Create a sufficiently controllable random system to control
+    ntrys = 20
+    while ntrys > 0:
+        # Create a random system
+        sys = ct.rss(nstates, ninputs, ninputs)
 
-    # Set up the optimal control problem
+        # Compute the controllability Gramian
+        Wc = ct.gram(sys, 'c')
+
+        # Make sure the condition number is reasonable
+        if np.linalg.cond(Wc) < 1e6:
+            break
+
+        ntrys -= 1
+    assert ntrys > 0            # Something wrong if we needed > 20 tries
+
+    # Define cost functions
+    Q = np.eye(sys.nstates)
+    R = np.eye(sys.ninputs) * 10
+
+    # Figure out the LQR solution (for terminal cost)
+    K, S, E = ct.lqr(sys, Q, R)
+
+    # Define the cost functions
+    traj_cost = opt.quadratic_cost(sys, Q, R)
+    term_cost = opt.quadratic_cost(sys, S, None)
+    constraints = opt.input_range_constraint(
+        sys, -np.ones(sys.ninputs), np.ones(sys.ninputs))
+
+    # Define the initial condition, time horizon, and time points
+    x0 = np.ones(sys.nstates)
+    Tf = 10
+    timepts = np.linspace(0, Tf, npoints)
+
     res = opt.solve_ocp(
-        vehicle, horizon, x0, cost,
-        constraints,
-        terminal_constraints=terminal,
-        initial_guess=bend_left,
-        basis=flat.BezierFamily(nbasis, T=Tf),
-        # solve_ivp_kwargs={'atol': 1e-4, 'rtol': 1e-2},
-        minimize_method='trust-constr',
-        minimize_options={'finite_diff_rel_step': 0.01},
-        # minimize_method='SLSQP', minimize_options={'eps': 0.01},
-        return_states=True, print_summary=False
+        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
     )
-    t, u, x = res.time, res.inputs, res.states
-
-    # Make sure we found a valid solution
+    # Only count this as a benchmark if we converged
     assert res.success
 
-# Reset the timeout value to allow for longer runs
-time_steering_bezier_basis.timeout = 120
+# Parameterize the test against different choices of integrator and minimizer
+time_optimal_lq_size.param_names = ['nstates', 'ninputs', 'npoints']
+time_optimal_lq_size.params = ([1, 2, 4], [1, 2, 4], [5, 10, 20])
 
-# Set the parameter values for the number of times and basis vectors
-time_steering_bezier_basis.param_names = ['nbasis', 'ntimes']
-time_steering_bezier_basis.params = ([2, 4, 6], [5, 10, 20])
 
-def time_aircraft_mpc():
+#
+# Aircraft MPC example (from multi-parametric toolbox)
+#
+
+def time_discrete_aircraft_mpc(minimizer_name):
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
     A = [[0.99, 0.01, 0.18, -0.09,   0],
@@ -201,9 +229,18 @@ def time_aircraft_mpc():
     R = np.diag([3, 2])
     cost = opt.quadratic_cost(model, Q, R, x0=xd, u0=ud)
 
+    # Set the time horizon and time points
+    Tf = 3
+    timepts = np.arange(0, 6) * 0.2
+
+    # Get the minimizer parameters to use
+    minimizer = minimizer_table[minimizer_name]
+
     # online MPC controller object is constructed with a horizon 6
     ctrl = opt.create_mpc_iosystem(
-        model, np.arange(0, 6) * 0.2, cost, constraints)
+        model, timepts, cost, constraints,
+        minimize_method=minimizer[0], minimize_options=minimizer[1],
+    )
 
     # Define an I/O system implementing model predictive control
     loop = ct.feedback(sys, ctrl, 1)
@@ -218,3 +255,8 @@ def time_aircraft_mpc():
     # Make sure the system converged to the desired state
     np.testing.assert_allclose(
         xout[0:sys.nstates, -1], xd, atol=0.1, rtol=0.01)
+
+# Parameterize the test against different choices of minimizer and basis
+time_discrete_aircraft_mpc.param_names = ['minimizer']
+time_discrete_aircraft_mpc.params = (
+    ['trust', 'trust_bigstep', 'SLSQP', 'SLSQP_bigstep', 'COBYLA'])

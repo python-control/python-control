@@ -464,6 +464,26 @@ class TestFlatSys:
         with pytest.raises(ValueError, match="index too high"):
             bezier.eval_deriv(4, 0, time)
 
+    @pytest.mark.parametrize("basis, degree, T", [
+        (fs.PolyFamily(4), 4, 1),
+        (fs.PolyFamily(4, 100), 4, 100),
+        (fs.BezierFamily(4), 4, 1),
+        (fs.BezierFamily(4, 100), 4, 100),
+        (fs.BSplineFamily([0, 0.5, 1], 4), 3, 1),
+        (fs.BSplineFamily([0, 50, 100], 4), 3, 100),
+    ])
+    def test_basis_derivs(self, basis, degree, T):
+        """Make sure that that basis function derivates are correct"""
+        timepts = np.linspace(0, T, 10000)
+        dt = timepts[1] - timepts[0]
+        for i in range(basis.N):
+            for j in range(degree-1):
+                # Compare numerical and analytical derivative
+                np.testing.assert_allclose(
+                    np.diff(basis.eval_deriv(i, j, timepts)) / dt,
+                    basis.eval_deriv(i, j+1, timepts)[0:-1],
+                    atol=1e-2, rtol=1e-4)
+
     def test_point_to_point_errors(self):
         """Test error and warning conditions in point_to_point()"""
         # Double integrator system

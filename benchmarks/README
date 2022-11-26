@@ -11,7 +11,7 @@ you can use the following command from the root directory of the repository:
 
   PYTHONPATH=`pwd` asv run --python=python
 
-You can also run benchmarks against specific commits usuing
+You can also run benchmarks against specific commits using
 
   asv run <range>
 

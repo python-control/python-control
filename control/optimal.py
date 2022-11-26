@@ -152,6 +152,14 @@ class OptimalControlProblem():
         self.minimize_kwargs.update(kwargs.pop(
             'minimize_kwargs', config.defaults['optimal.minimize_kwargs']))
 
+        # Check to make sure arguments for discrete-time systems are OK
+        if sys.isdtime(strict=True):
+            if self.solve_ivp_kwargs['method'] is not None or \
+                 len(self.solve_ivp_kwargs) > 1:
+                raise TypeError(
+                    "solve_ivp method, kwargs not allowed for"
+                    " discrete time systems")
+
         # Make sure there were no extraneous keywords
         if kwargs:
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
@@ -887,7 +895,8 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 def solve_ocp(
         sys, horizon, X0, cost, trajectory_constraints=None, terminal_cost=None,
         terminal_constraints=[], initial_guess=None, basis=None, squeeze=None,
-        transpose=None, return_states=True, log=False, **kwargs):
+        transpose=None, return_states=True, print_summary=True, log=False,
+        **kwargs):
 
     """Compute the solution to an optimal control problem
 
@@ -940,6 +949,9 @@ def solve_ocp(
 
     log : bool, optional
         If `True`, turn on logging messages (using Python logging module).
+
+    print_summary : bool, optional
+        If `True` (default), print a short summary of the computation.
 
     return_states : bool, optional
         If True, return the values of the state at each time (default = True).
@@ -1007,7 +1019,8 @@ def solve_ocp(
 
     # Solve for the optimal input from the current state
     return ocp.compute_trajectory(
-        X0, squeeze=squeeze, transpose=transpose, return_states=return_states)
+        X0, squeeze=squeeze, transpose=transpose, print_summary=print_summary,
+        return_states=return_states)
 
 
 # Create a model predictive controller for an optimal control problem
