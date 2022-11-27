@@ -35,6 +35,7 @@ minimizer_table = {
     'COBYLA': ('COBYLA', {}),
 }
 
+
 # Utility function to create a basis of a given size
 def get_basis(name, size, Tf):
     if name == 'poly':
@@ -43,14 +44,13 @@ def get_basis(name, size, Tf):
         basis = fs.BezierFamily(size, T=Tf)
     elif name == 'bspline':
         basis = fs.BSplineFamily([0, Tf/2, Tf], size)
+    else:
+        basis = None
     return basis
 
 
-#
-# Optimal trajectory generation with linear quadratic cost
-#
-
-def time_optimal_lq_basis(basis_name, basis_size, npoints):
+# Assess performance as a function of basis type and size
+def time_optimal_lq_basis(basis_name, basis_size, npoints, method):
     # Create a sufficiently controllable random system to control
     ntrys = 20
     while ntrys > 0:
@@ -90,18 +90,20 @@ def time_optimal_lq_basis(basis_name, basis_size, npoints):
 
     res = opt.solve_ocp(
         sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
-        basis=basis,
+        basis=basis, trajectory_method=method,
     )
     # Only count this as a benchmark if we converged
     assert res.success
 
 # Parameterize the test against different choices of integrator and minimizer
-time_optimal_lq_basis.param_names = ['basis', 'size', 'npoints']
+time_optimal_lq_basis.param_names = ['basis', 'size', 'npoints', 'method']
 time_optimal_lq_basis.params = (
-    ['poly', 'bezier', 'bspline'], [8, 10, 12], [5, 10, 20])
+    [None, 'poly', 'bezier', 'bspline'],
+    [4, 8], [5, 10], ['shooting', 'collocation'])
 
 
-def time_optimal_lq_methods(integrator_name, minimizer_name):
+# Assess performance as a function of optimization and integration methods
+def time_optimal_lq_methods(integrator_name, minimizer_name, method):
     # Get the integrator and minimizer parameters to use
     integrator = integrator_table[integrator_name]
     minimizer = minimizer_table[minimizer_name]
@@ -134,17 +136,20 @@ def time_optimal_lq_methods(integrator_name, minimizer_name):
         sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
         solve_ivp_method=integrator[0], solve_ivp_kwargs=integrator[1],
         minimize_method=minimizer[0], minimize_options=minimizer[1],
+        trajectory_method=method,
     )
     # Only count this as a benchmark if we converged
     assert res.success
 
 # Parameterize the test against different choices of integrator and minimizer
-time_optimal_lq_methods.param_names = ['integrator', 'minimizer']
+time_optimal_lq_methods.param_names = ['integrator', 'minimizer', 'method']
 time_optimal_lq_methods.params = (
-    ['RK23', 'RK45', 'LSODA'], ['trust', 'SLSQP', 'COBYLA'])
+    ['RK23', 'RK45', 'LSODA'], ['trust', 'SLSQP', 'COBYLA'],
+    ['shooting', 'collocation'])
 
 
-def time_optimal_lq_size(nstates, ninputs, npoints):
+# Assess performance as a function system size
+def time_optimal_lq_size(nstates, ninputs, npoints, method):
     # Create a sufficiently controllable random system to control
     ntrys = 20
     while ntrys > 0:
@@ -181,19 +186,18 @@ def time_optimal_lq_size(nstates, ninputs, npoints):
 
     res = opt.solve_ocp(
         sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
+        trajectory_method=method,
     )
     # Only count this as a benchmark if we converged
     assert res.success
 
 # Parameterize the test against different choices of integrator and minimizer
-time_optimal_lq_size.param_names = ['nstates', 'ninputs', 'npoints']
-time_optimal_lq_size.params = ([1, 2, 4], [1, 2, 4], [5, 10, 20])
+time_optimal_lq_size.param_names = ['nstates', 'ninputs', 'npoints', 'method']
+time_optimal_lq_size.params = (
+    [2, 4], [2, 4], [10, 20], ['shooting', 'collocation'])
 
 
-#
 # Aircraft MPC example (from multi-parametric toolbox)
-#
-
 def time_discrete_aircraft_mpc(minimizer_name):
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
