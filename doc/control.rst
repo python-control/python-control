@@ -20,6 +20,8 @@ System creation
     frd
     rss
     drss
+    NonlinearIOSystem
+
 
 System interconnections
 =======================
@@ -32,9 +34,8 @@ System interconnections
     negate
     parallel
     series
+    interconnect
 
-See also the :ref:`iosys-module` module, which can be used to create and
-interconnect nonlinear input/output systems.
 
 Frequency domain plotting
 =========================
@@ -78,8 +79,9 @@ Control system analysis
 
     dcgain
     describing_function
-    evalfr
-    freqresp
+    frequency_response
+    TransferFunction.__call__
+    StateSpace.__call__
     get_input_ff_index
     get_output_fb_index
     ispassive
@@ -141,7 +143,6 @@ Nonlinear system support
 
     describing_function
     find_eqpt
-    interconnect
     linearize
     input_output_response
     ss2io

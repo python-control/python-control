@@ -88,7 +88,9 @@ __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
 
 def lyap(A, Q, C=None, E=None, method=None):
-    """X = lyap(A, Q) solves the continuous-time Lyapunov equation
+    """Solves the continuous-time Lyapunov equation
+
+    X = lyap(A, Q) solves
 
         :math:`A X + X A^T + Q = 0`
 
@@ -217,7 +219,9 @@ def lyap(A, Q, C=None, E=None, method=None):
 
 
 def dlyap(A, Q, C=None, E=None, method=None):
-    """dlyap(A, Q) solves the discrete-time Lyapunov equation
+    """Solves the discrete-time Lyapunov equation
+
+    X = dlyap(A, Q) solves
 
         :math:`A X A^T - X + Q = 0`
 
@@ -348,8 +352,9 @@ def dlyap(A, Q, C=None, E=None, method=None):
 
 def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
          A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
-    """X, L, G = care(A, B, Q, R=None) solves the continuous-time
-    algebraic Riccati equation
+    """Solves the continuous-time algebraic Riccati equation
+
+    X, L, G = care(A, B, Q, R=None) solves
 
         :math:`A^T X + X A - X B R^{-1} B^T X + Q = 0`
 
@@ -505,8 +510,10 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
 
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
          A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
-    """X, L, G = dare(A, B, Q, R) solves the discrete-time algebraic Riccati
+    """Solves the discrete-time algebraic Riccati
     equation
+
+    X, L, G = dare(A, B, Q, R) solves
 
         :math:`A^T X A - X - A^T X B (B^T X B + R)^{-1} B^T X A + Q = 0`
 

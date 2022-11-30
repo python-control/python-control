@@ -807,7 +807,7 @@ class StateSpace(LTI):
             "StateSpace.__rdiv__ is not implemented yet.")
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
-        """Evaluate system's transfer function at complex frequency.
+        """Evaluate system's frequency response at complex frequencies.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.

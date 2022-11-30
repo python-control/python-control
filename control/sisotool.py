@@ -209,10 +209,6 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
 
     C_f = Kp + Ki/s + Kd*s/(tau*s + 1).
 
-    If `plant` is a discrete-time system, then the proportional, integral, and
-    derivative terms are given instead by Kp, Ki*dt/2*(z+1)/(z-1), and
-    Kd/dt*(z-1)/z, respectively.
-
     ::
 
           ------> C_ff ------    d
@@ -223,6 +219,10 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
               |             |                 |
               |             ----- C_b <-------|
               ---------------------------------
+
+    If `plant` is a discrete-time system, then the proportional, integral, and
+    derivative terms are given instead by Kp, Ki*dt/2*(z+1)/(z-1), and
+    Kd/dt*(z-1)/z, respectively.
 
     It is also possible to move the derivative term into the feedback path
     `C_b` using `derivative_in_feedback_path=True`. This may be desired to
