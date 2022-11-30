@@ -1338,14 +1338,6 @@ class StateSpace(LTI):
         copy_names : bool, Optional
             If True, copy the names of the input signals, output
             signals, and states to the sampled system.
-
-        Returns
-        -------
-        sysd : StateSpace
-            Discrete-time system, with sampling rate Ts
-
-        Additional Parameters
-        ---------------------
         inputs : int, list of str or None, optional
             Description of the system inputs.  If not specified, the origional
             system inputs are used.  See :class:`InputOutputSystem` for more
@@ -1354,6 +1346,11 @@ class StateSpace(LTI):
             Description of the system outputs.  Same format as `inputs`.
         states : int, list of str, or None, optional
             Description of the system states.  Same format as `inputs`.
+
+        Returns
+        -------
+        sysd : StateSpace
+            Discrete-time system, with sampling rate Ts
 
         Notes
         -----
@@ -1520,6 +1517,7 @@ class StateSpace(LTI):
 
 
 # TODO: add discrete time check
+# TODO: copy signal names
 def _convert_to_statespace(sys):
     """Convert a system to state space form (if needed).
 
