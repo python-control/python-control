@@ -44,6 +44,9 @@ The Python Control Systems Library :mod:`control` provides common functions
 for analyzing and designing feedback control systems.
 """
 
+# Import MATLAB-like functions that are defined in other packages
+from scipy.signal import zpk2ss, ss2zpk, tf2zpk, zpk2tf
+
 # Import functions from within the control system library
 # Note: the functions we use are specified as __all__ variables in the modules
 from .bdalg import *

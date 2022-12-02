@@ -193,3 +193,13 @@ Utility functions and conversions
     use_fbs_defaults
     use_matlab_defaults
     use_numpy_matrix
+
+Functions imported from other modules
+=====================================
+.. autosummary::
+
+   ~scipy.signal.ss2zpk
+   ~scipy.signal.tf2zpk
+   ~scipy.signal.zpk2ss
+   ~scipy.signal.zpk2tf
+
