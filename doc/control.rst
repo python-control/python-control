@@ -116,10 +116,10 @@ Control system synthesis
 
     acker
     create_statefbk_iosystem
-    dlqr
     h2syn
     hinfsyn
     lqr
+    dlqr
     mixsyn
     place
     rootlocus_pid_designer
@@ -157,8 +157,8 @@ Stochastic system support
 
     correlation
     create_estimator_iosystem
-    dlqe
     lqe
+    dlqe
     white_noise
 
 .. _utility-and-conversions:
@@ -194,3 +194,5 @@ Utility functions and conversions
     use_fbs_defaults
     use_matlab_defaults
     use_numpy_matrix
+
+
