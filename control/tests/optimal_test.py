@@ -16,16 +16,55 @@ from control.tests.conftest import slycotonly
 from numpy.lib import NumpyVersion
 
 
-def test_finite_horizon_simple():
-    # Define a linear system with constraints
+@pytest.mark.parametrize("method, npts", [
+    ('shooting', 5),
+    ('collocation', 20),
+])
+def test_continuous_lqr(method, npts):
+    # Create a lightly dampled, second order system
+    sys = ct.ss([[0, 1], [-0.1, -0.01]], [[0], [1]], [[1, 0]], 0)
+
+    # Define cost functions
+    Q = np.eye(sys.nstates)
+    R = np.eye(sys.ninputs) * 10
+
+    # Figure out the LQR solution (for terminal cost)
+    K, S, E = ct.lqr(sys, Q, R)
+
+    # Define the cost functions
+    traj_cost = opt.quadratic_cost(sys, Q, R)
+    term_cost = opt.quadratic_cost(sys, S, None)
+    constraints = opt.input_range_constraint(
+        sys, -np.ones(sys.ninputs), np.ones(sys.ninputs))
+
+    # Define the initial condition, time horizon, and time points
+    x0 = np.ones(sys.nstates)
+    Tf = 10
+    timepts = np.linspace(0, Tf, npts)
+
+    res = opt.solve_ocp(
+        sys, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
+        trajectory_method=method
+    )
+
+    # Make sure the optimization was successful
+    assert res.success
+
+    # Make sure we were reasonable close to the optimal cost
+    assert res.cost / (x0 @ S @ x0) < 1.2       # shouldn't be too far off
+
+
+@pytest.mark.parametrize("method", ['shooting']) # TODO: add 'collocation'
+def test_finite_horizon_simple(method):
+    # Define a (discrete time) linear system with constraints
     # Source: https://www.mpt3.org/UI/RegulationProblem
 
-    # LTI prediction model
+    # LTI prediction model (discrete time)
     sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
 
     # State and input constraints
     constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -1], [5, 5, 1]),
     ]
 
     # Quadratic state and input penalty
@@ -40,6 +79,7 @@ def test_finite_horizon_simple():
     # Retrieve the full open-loop predictions
     res = opt.solve_ocp(
         sys, time, x0, cost, constraints, squeeze=True,
+        trajectory_method=method,
         terminal_cost=cost)     # include to match MPT3 formulation
     t, u_openloop = res.time, res.inputs
     np.testing.assert_almost_equal(
@@ -108,7 +148,7 @@ def test_discrete_lqr():
 
     # Add state and input constraints
     trajectory_constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -.5], [5, 5, 0.5]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -.5], [5, 5, 0.5]),
     ]
 
     # Re-solve
@@ -297,7 +337,8 @@ def test_terminal_constraints(sys_args):
 
     # Re-run using initial guess = optional and make sure nothing changes
     res = optctrl.compute_trajectory(x0, initial_guess=u1)
-    np.testing.assert_almost_equal(res.inputs, u1)
+    np.testing.assert_almost_equal(res.inputs, u1, decimal=2)
+    np.testing.assert_almost_equal(res.states, x1, decimal=4)
 
     # Re-run using a basis function and see if we get the same answer
     res = opt.solve_ocp(
@@ -326,7 +367,7 @@ def test_terminal_constraints(sys_args):
 
         # Not all configurations are able to converge (?)
         if res.success:
-            np.testing.assert_almost_equal(x2[:,-1], 0)
+            np.testing.assert_almost_equal(x2[:,-1], 0, decimal=5)
 
             # Make sure that it is *not* a straight line path
             assert np.any(np.abs(x2 - x1) > 0.1)
@@ -420,7 +461,7 @@ def test_ocp_argument_errors():
 
     # State and input constraints
     constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -1], [5, 5, 1]),
     ]
 
     # Quadratic state and input penalty
@@ -453,12 +494,12 @@ def test_ocp_argument_errors():
 
     # Unrecognized trajectory constraint type
     constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
-    with pytest.raises(TypeError, match="unknown constraint type"):
+    with pytest.raises(TypeError, match="unknown trajectory constraint type"):
         res = opt.solve_ocp(
             sys, time, x0, cost, trajectory_constraints=constraints)
 
     # Unrecognized terminal constraint type
-    with pytest.raises(TypeError, match="unknown constraint type"):
+    with pytest.raises(TypeError, match="unknown terminal constraint type"):
         res = opt.solve_ocp(
             sys, time, x0, cost, terminal_constraints=constraints)
 
@@ -481,7 +522,7 @@ def test_optimal_basis_simple(basis):
 
     # State and input constraints
     constraints = [
-        (sp.optimize.LinearConstraint, np.eye(3), [-5, -5, -1], [5, 5, 1]),
+        sp.optimize.LinearConstraint(np.eye(3), [-5, -5, -1], [5, 5, 1]),
     ]
 
     # Quadratic state and input penalty
@@ -553,7 +594,7 @@ def test_equality_constraints():
     def final_point_eval(x, u):
         return x
     final_point = [
-        (sp.optimize.NonlinearConstraint, final_point_eval, [0, 0], [0, 0])]
+        sp.optimize.NonlinearConstraint(final_point_eval, [0, 0], [0, 0])]
 
     optctrl = opt.OptimalControlProblem(
         sys, time, cost, terminal_constraints=final_point)
@@ -568,13 +609,28 @@ def test_equality_constraints():
 
     # Try passing and unknown constraint type
     final_point = [(None, final_point_eval, [0, 0], [0, 0])]
-    with pytest.raises(TypeError, match="unknown constraint type"):
+    with pytest.raises(TypeError, match="unknown terminal constraint type"):
         optctrl = opt.OptimalControlProblem(
             sys, time, cost, terminal_constraints=final_point)
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
 
 
-def test_optimal_doc():
+@pytest.mark.parametrize(
+    "method, npts, initial_guess, fail", [
+        ('shooting', 3, None, 'xfail'),         # doesn't converge
+        ('shooting', 3, 'zero', 'xfail'),       # doesn't converge
+        ('shooting', 3, 'u0', None),            # github issue #782
+        ('shooting', 3, 'input', 'endpoint'),   # doesn't converge to optimal
+        ('shooting', 5, 'input', 'endpoint'),   # doesn't converge to optimal
+        ('collocation', 3, 'u0', 'endpoint'),   # doesn't converge to optimal
+        ('collocation', 5, 'u0', 'endpoint'),
+        ('collocation', 5, 'input', 'openloop'),# open loop sim fails
+        ('collocation', 10, 'input', None),
+        ('collocation', 10, 'u0', None),        # from documenentation
+        ('collocation', 10, 'state', None),
+        ('collocation', 20, 'state', None),
+    ])
+def test_optimal_doc(method, npts, initial_guess, fail):
     """Test optimal control problem from documentation"""
     def vehicle_update(t, x, u, params):
         # Get the parameters for the model
@@ -600,8 +656,8 @@ def test_optimal_doc():
         inputs=('v', 'phi'), outputs=('x', 'y', 'theta'))
 
     # Define the initial and final points and time interval
-    x0 = [0., -2., 0.]; u0 = [10., 0.]
-    xf = [100., 2., 0.]; uf = [10., 0.]
+    x0 = np.array([0., -2., 0.]); u0 = np.array([10., 0.])
+    xf = np.array([100., 2., 0.]); uf = np.array([10., 0.])
     Tf = 10
 
     # Define the cost functions
@@ -614,17 +670,63 @@ def test_optimal_doc():
     # Define the constraints
     constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
 
-    # Solve the optimal control problem
-    horizon = np.linspace(0, Tf, 3, endpoint=True)
-    result = opt.solve_ocp(
-        vehicle, horizon, x0, traj_cost, constraints,
-        terminal_cost= term_cost, initial_guess=u0)
+    # Define an initial guess at the trajectory
+    timepts = np.linspace(0, Tf, npts, endpoint=True)
+    if initial_guess == 'zero':
+        initial_guess = 0
 
-    # Make sure the resulting trajectory generate a good solution
-    resp = ct.input_output_response(
-        vehicle, horizon, result.inputs, x0,
-        t_eval=np.linspace(0, Tf, 10))
-    t, y = resp
-    assert (y[0, -1] - xf[0]) / xf[0] < 0.01
-    assert (y[1, -1] - xf[1]) / xf[1] < 0.01
-    assert y[2, -1] < 0.1
+    elif initial_guess == 'u0':
+        initial_guess = u0
+
+    elif initial_guess == 'input':
+        # Velocity = constant that gets us from start to end
+        initial_guess = np.zeros((vehicle.ninputs, timepts.size))
+        initial_guess[0, :] = (xf[0] - x0[0]) / Tf
+
+        # Steering = rate required to turn to proper slope in first segment
+        straight_seg_length = timepts[-2] - timepts[1]
+        curved_seg_length = (Tf - straight_seg_length)/2
+        approximate_angle = math.atan2(xf[1] - x0[1], xf[0] - x0[0])
+        initial_guess[1, 0] = approximate_angle / (timepts[1] - timepts[0])
+        initial_guess[1, -1] = -approximate_angle / (timepts[-1] - timepts[-2])
+
+    elif initial_guess == 'state':
+        input_guess = np.outer(u0, np.ones((1, npts)))
+        state_guess = np.array([
+            x0 + (xf - x0) * time/Tf for time in timepts]).transpose()
+        initial_guess = (state_guess, input_guess)
+
+    # Solve the optimal control problem
+    result = opt.solve_ocp(
+        vehicle, timepts, x0, traj_cost, constraints,
+        terminal_cost=term_cost, initial_guess=initial_guess,
+        trajectory_method=method,
+        # minimize_method='COBYLA', # SLSQP',
+    )
+
+    if fail == 'xfail':
+        assert not result.success
+        pytest.xfail("optimization fails to converge")
+    elif fail == 'precision':
+        assert result.status == 2
+        pytest.xfail("optimization precision not achieved")
+    else:
+        # Make sure the optimization was successful
+        assert result.success
+
+        # Make sure we started and stopped at the right spot
+        if fail == 'endpoint':
+            pytest.xfail("optimization does not converge to endpoint")
+        else:
+            np.testing.assert_almost_equal(result.states[:, 0], x0, decimal=4)
+
+            # Simulate the trajectory to make sure it looks OK
+            resp = ct.input_output_response(
+                vehicle, timepts, result.inputs, x0,
+                t_eval=np.linspace(0, Tf, 10))
+            t, y = resp
+            if fail == 'openloop':
+                with pytest.raises(AssertionError):
+                    np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)
+            else:
+                np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)

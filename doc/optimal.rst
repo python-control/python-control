@@ -112,29 +112,29 @@ problem into a standard optimization problem that can be solved by
 :func:`scipy.optimize.minimize`.  The optimal control problem can be solved
 by using the :func:`~control.obc.solve_ocp` function::
 
-  res = obc.solve_ocp(sys, horizon, X0, cost, constraints)
+  res = obc.solve_ocp(sys, timepts, X0, cost, constraints)
 
 The `sys` parameter should be an :class:`~control.InputOutputSystem` and the
-`horizon` parameter should represent a time vector that gives the list of
+`timepts` parameter should represent a time vector that gives the list of
 times at which the cost and constraints should be evaluated.
 
 The `cost` function has call signature `cost(t, x, u)` and should return the
 (incremental) cost at the given time, state, and input.  It will be
-evaluated at each point in the `horizon` vector.  The `terminal_cost`
+evaluated at each point in the `timepts` vector.  The `terminal_cost`
 parameter can be used to specify a cost function for the final point in the
 trajectory.
 
 The `constraints` parameter is a list of constraints similar to that used by
-the :func:`scipy.optimize.minimize` function.  Each constraint is a tuple of
-one of the following forms::
+the :func:`scipy.optimize.minimize` function.  Each constraint is specified
+using one of the following forms::
 
-  (LinearConstraint, A, lb, ub)
-  (NonlinearConstraint, f, lb, ub)
+  LinearConstraint(A, lb, ub)
+  NonlinearConstraint(f, lb, ub)
 
 For a linear constraint, the 2D array `A` is multiplied by a vector
 consisting of the current state `x` and current input `u` stacked
-vertically, then compared with the upper and lower bound.  This constrain is
-satisfied if
+vertically, then compared with the upper and lower bound.  This constraint
+is satisfied if
 
 .. code:: python
 
@@ -157,7 +157,7 @@ that has the following elements:
   * `res.success`: `True` if the optimization was successfully solved
   * `res.inputs`: optimal input
   * `res.states`: state trajectory (if `return_x` was `True`)
-  * `res.time`: copy of the time horizon vector
+  * `res.time`: copy of the time timepts vector
 
 In addition, the results from :func:`scipy.optimize.minimize` are also
 available.
@@ -215,8 +215,8 @@ moving from the point x = 0 m, y = -2 m, :math:`\theta` = 0 to the point x =
 100 m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and with a
 with a starting and ending velocity of 10 m/s::
 
-  x0 = [0., -2., 0.]; u0 = [10., 0.]
-  xf = [100., 2., 0.]; uf = [10., 0.]
+  x0 = np.array([0., -2., 0.]); u0 = np.array([10., 0.])
+  xf = np.array([100., 2., 0.]); uf = np.array([10., 0.])
   Tf = 10
 
 To set up the optimal control problem we design a cost function that
@@ -235,16 +235,16 @@ and constrain the velocity to be in the range of 9 m/s to 11 m/s::
 
 Finally, we solve for the optimal inputs::
 
-  horizon = np.linspace(0, Tf, 3, endpoint=True)
+  timepts = np.linspace(0, Tf, 10, endpoint=True)
   result = opt.solve_ocp(
-      vehicle, horizon, x0, traj_cost, constraints,
+      vehicle, timepts, x0, traj_cost, constraints,
       terminal_cost=term_cost, initial_guess=u0)
 
 Plotting the results::
 
   # Simulate the system dynamics (open loop)
   resp = ct.input_output_response(
-      vehicle, horizon, result.inputs, x0,
+      vehicle, timepts, result.inputs, x0,
       t_eval=np.linspace(0, Tf, 100))
   t, y, u = resp.time, resp.outputs, resp.inputs
 
@@ -262,7 +262,7 @@ Plotting the results::
 
   plt.subplot(3, 1, 3)
   plt.plot(t, u[1])
-  plt.axis([0, 10, -0.01, 0.01])
+  plt.axis([0, 10, -0.015, 0.015])
   plt.xlabel("t [sec]")
   plt.ylabel("u2 [rad/s]")
 
@@ -281,6 +281,11 @@ The python-control optimization module makes use of the SciPy optimization
 toolbox and it can sometimes be tricky to get the optimization to converge.
 If you are getting errors when solving optimal control problems or your
 solutions do not seem close to optimal, here are a few things to try:
+
+* The initial guess matters: providing a reasonable initial guess is often
+  needed in order for the optimizer to find a good answer.  For an optimal
+  control problem that uses a larger terminal cost to get to a neighborhood
+  of a final point, a straight line in the state space often works well.
 
 * Less is more: try using a smaller number of time points in your
   optimization.  The default optimal control problem formulation uses the
