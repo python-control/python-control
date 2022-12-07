@@ -9,6 +9,7 @@ from .iosys import ss
 from .bdalg import append, connect
 from .iosys import tf2io, ss2io, summing_junction, interconnect
 from control.statesp import _convert_to_statespace, StateSpace
+import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 
@@ -101,6 +102,9 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
         'margins': margins_bode
     }
 
+    # make sure kvect is an array
+    if kvect is not None and ~hasattr(kvect, '__len__'):
+        kvect = np.atleast_1d(kvect)
     # First time call to setup the bode and step response plots
     _SisotoolUpdate(sys, fig,
         1 if kvect is None else kvect[0], bode_plot_params)

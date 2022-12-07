@@ -136,6 +136,16 @@ class TestSisotool:
                            bode_plot_params=dict(), tvect=tvect)
         assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 
+    @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
+                        reason="Requires the zoom toolbar")
+    def test_sisotool_kvect(self, tsys):
+        # test supply kvect
+        kvect = np.linspace(0, 1, 10)
+        # check if it can receive an array
+        sisotool(tsys, kvect=kvect)
+        # check if it can receive a singleton
+        sisotool(tsys, kvect=1)
+
 
     def test_sisotool_mimo(self,  sys222, sys221):
         # a 2x2 should not raise an error:
