@@ -54,6 +54,12 @@ class TestRootLocus:
         np.testing.assert_allclose(klist, k_out)
         self.check_cl_poles(sys, roots, klist)
 
+        # now check with plotting
+        roots, k_out = root_locus(sys, klist)
+        np.testing.assert_equal(len(roots), len(klist))
+        np.testing.assert_allclose(klist, k_out)
+        self.check_cl_poles(sys, roots, klist)
+
     def test_without_gains(self, sys):
         roots, kvect = root_locus(sys, plot=False)
         self.check_cl_poles(sys, roots, kvect)
