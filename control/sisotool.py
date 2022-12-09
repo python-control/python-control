@@ -9,14 +9,19 @@ from .iosys import ss
 from .bdalg import append, connect
 from .iosys import tf2io, ss2io, summing_junction, interconnect
 from control.statesp import _convert_to_statespace, StateSpace
+from . import config
 import numpy as np
 import matplotlib.pyplot as plt
 import warnings
 
-def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
+_sisotool_defaults = {
+    'sisotool.initial_gain': 1
+}
+
+def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
              plotstr_rlocus='C0', rlocus_grid=False, omega=None, dB=None,
              Hz=None, deg=None, omega_limits=None, omega_num=None,
-             margins_bode=True, tvect=None):
+             margins_bode=True, tvect=None, kvect=None):
     """
     Sisotool style collection of plots inspired by MATLAB's sisotool.
     The left two plots contain the bode magnitude and phase diagrams.
@@ -42,13 +47,9 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
         feedforward controller and multiply them into your plant's second
         input. It is also possible to accomodate a system with a gain in the
         feedback.
-    kvect : float or array_like, optional
-        List of gains to use for plotting root locus. If only one value is
-        provided, the set of gains in the root locus plot is calculated
-        automatically, and kvect is interpreted as if it was the value of
-        the gain associated with the first mouse click on the root locus
-        plot. This is useful if it is not possible to use interactive
-        plotting.
+    initial_gain : float, optional
+        Initial gain to use for plotting root locus. Defaults to 1
+        (config.defaults['sisotool.initial_gain']).
     xlim_rlocus : tuple or list, optional
         control of x-axis range, normally with tuple
         (see :doc:`matplotlib:api/axes_api`).
@@ -112,15 +113,19 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
         'margins': margins_bode
     }
 
-    # make sure kvect is an array
-    if kvect is not None and ~hasattr(kvect, '__len__'):
-        kvect = np.atleast_1d(kvect)
+    # Check to see if legacy 'PrintGain' keyword was used
+    if kvect is not None:
+        warnings.warn("'kvect' keyword is deprecated in sisotool; "
+                      "use 'initial_gain' instead", FutureWarning)
+        initial_gain = np.atleast1d(kvect)[0]
+    initial_gain = config._get_param('sisotool', 'initial_gain',
+            initial_gain, _sisotool_defaults)
+
     # First time call to setup the bode and step response plots
-    _SisotoolUpdate(sys, fig,
-        1 if kvect is None else kvect[0], bode_plot_params)
+    _SisotoolUpdate(sys, fig, initial_gain, bode_plot_params)
 
     # Setup the root-locus plot window
-    root_locus(sys[0,0], kvect=kvect, xlim=xlim_rlocus,
+    root_locus(sys, initial_gain=initial_gain, xlim=xlim_rlocus,
         ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
         fig=fig, bode_plot_params=bode_plot_params, tvect=tvect, sisotool=True)
 

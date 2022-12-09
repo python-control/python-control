@@ -61,6 +61,7 @@ from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate
 from .grid import sgrid, zgrid
 from . import config
+import warnings
 
 __all__ = ['root_locus', 'rlocus']
 
@@ -76,7 +77,7 @@ _rlocus_defaults = {
 # Main function: compute a root locus diagram
 def root_locus(sys, kvect=None, xlim=None, ylim=None,
                plotstr=None, plot=True, print_gain=None, grid=None, ax=None,
-               **kwargs):
+               initial_gain=None, **kwargs):
 
     """Root locus plot
 
@@ -88,8 +89,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     ----------
     sys : LTI object
         Linear input/output systems (SISO only, for now).
-    kvect : float or array_like, optional
-        List of gains to use in computing diagram.
+    kvect : array_like, optional
+        Gains to use in computing plot of closed-loop poles.
     xlim : tuple or list, optional
         Set limits of x axis, normally with tuple
         (see :doc:`matplotlib:api/axes_api`).
@@ -107,6 +108,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         If True plot omega-damping grid.  Default is False.
     ax : :class:`matplotlib.axes.Axes`
         Axes on which to create root locus plot
+    initial_gain : float, optional
+        Used by :func:`sisotool` to indicate initial gain.
 
     Returns
     -------
@@ -126,7 +129,6 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     """
     # Check to see if legacy 'Plot' keyword was used
     if 'Plot' in kwargs:
-        import warnings
         warnings.warn("'Plot' keyword is deprecated in root_locus; "
                       "use 'plot'", FutureWarning)
         # Map 'Plot' keyword to 'plot' keyword
@@ -134,7 +136,6 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
 
     # Check to see if legacy 'PrintGain' keyword was used
     if 'PrintGain' in kwargs:
-        import warnings
         warnings.warn("'PrintGain' keyword is deprecated in root_locus; "
                       "use 'print_gain'", FutureWarning)
         # Map 'PrintGain' keyword to 'print_gain' keyword
@@ -146,12 +147,17 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     print_gain = config._get_param(
         'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
-    if not sys.issiso():
+    # Check for sisotool mode
+    sisotool = kwargs.get('sisotool', False)
+
+    # make sure siso. sisotool has different requirements
+    if not sys.issiso() and not sisotool:
         raise ControlMIMONotImplemented(
             'sys must be single-input single-output (SISO)')
 
+    sys_loop = sys[0,0]
     # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(sys)
+    (nump, denp) = _systopoly1d(sys_loop)
 
     # if discrete-time system and if xlim and ylim are not given,
     #  that we a view of the unit circle
@@ -161,16 +167,16 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         xlim = (-1.3, 1.3)
 
     if kvect is None:
-        start_roots = _RLFindRoots(nump, denp, 1)
         kvect, root_array, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
+        recompute_on_zoom = True
     else:
         kvect = np.atleast_1d(kvect)
-        start_roots = _RLFindRoots(nump, denp, kvect[0])
         root_array = _RLFindRoots(nump, denp, kvect)
         root_array = _RLSortRoots(root_array)
+        recompute_on_zoom = False
 
-    # Check for sisotool mode
-    sisotool = False if 'sisotool' not in kwargs else True
+    if sisotool:
+        start_roots = _RLFindRoots(nump, denp, initial_gain)
 
     # Make sure there were no extraneous keywords
     if not sisotool and kwargs:
@@ -204,7 +210,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                 zeta = -1 * s.real / abs(s)
             fig.suptitle(
                 "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-                (s.real, s.imag, kvect[0], zeta),
+                (s.real, s.imag, initial_gain, zeta),
                 fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
             fig.canvas.mpl_connect(
                 'button_release_event',
@@ -214,14 +220,16 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                         bode_plot_params=kwargs['bode_plot_params'],
                         tvect=kwargs['tvect']))
 
-        # zoom update on xlim/ylim changed, only then data on new limits
-        # is available, i.e., cannot combine with _RLClickDispatcher
-        dpfun = partial(
-            _RLZoomDispatcher, sys=sys, ax_rlocus=ax, plotstr=plotstr)
-        # TODO: the next too lines seem to take a long time to execute
-        # TODO: is there a way to speed them up?  (RMM, 6 Jun 2019)
-        ax.callbacks.connect('xlim_changed', dpfun)
-        ax.callbacks.connect('ylim_changed', dpfun)
+
+        if recompute_on_zoom:
+            # update gains and roots when xlim/ylim change. Only then are
+            # data on available. I.e., cannot combine with _RLClickDispatcher
+            dpfun = partial(
+                _RLZoomDispatcher, sys=sys, ax_rlocus=ax, plotstr=plotstr)
+            # TODO: the next too lines seem to take a long time to execute
+            # TODO: is there a way to speed them up?  (RMM, 6 Jun 2019)
+            ax.callbacks.connect('xlim_changed', dpfun)
+            ax.callbacks.connect('ylim_changed', dpfun)
 
         # plot open loop poles
         poles = array(denp.r)
@@ -552,7 +560,8 @@ def _RLSortRoots(roots):
 
 def _RLZoomDispatcher(event, sys, ax_rlocus, plotstr):
     """Rootlocus plot zoom dispatcher"""
-    nump, denp = _systopoly1d(sys)
+    sys_loop = sys[0,0]
+    nump, denp = _systopoly1d(sys_loop)
     xlim, ylim = ax_rlocus.get_xlim(), ax_rlocus.get_ylim()
 
     kvect, mymat, xlim, ylim = _default_gains(
@@ -584,7 +593,8 @@ def _RLClickDispatcher(event, sys, fig, ax_rlocus, plotstr, sisotool=False,
 
 def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
     """Display root-locus gain feedback point for clicks on root-locus plot"""
-    (nump, denp) = _systopoly1d(sys)
+    sys_loop = sys[0,0]
+    (nump, denp) = _systopoly1d(sys_loop)
 
     xlim = ax_rlocus.get_xlim()
     ylim = ax_rlocus.get_ylim()
@@ -595,10 +605,10 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
     # Catch type error when event click is in the figure but not in an axis
     try:
         s = complex(event.xdata, event.ydata)
-        K = -1. / sys(s)
-        K_xlim = -1. / sys(
+        K = -1. / sys_loop(s)
+        K_xlim = -1. / sys_loop(
             complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
-        K_ylim = -1. / sys(
+        K_ylim = -1. / sys_loop(
             complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
 
     except TypeError:
