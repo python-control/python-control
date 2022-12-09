@@ -117,7 +117,7 @@ def nyquist(*args, **kwargs):
 def _parse_freqplot_args(*args):
     """Parse arguments to frequency plot routines (bode, nyquist)"""
     syslist, plotstyle, omega, other = [], [], None, {}
-    i = 0;
+    i = 0
     while i < len(args):
         # Check to see if this is a system of some sort
         if issys(args[i]):

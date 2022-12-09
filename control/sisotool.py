@@ -37,8 +37,13 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
         the step response. This allows you to see the step responses of more
         complex systems, for example, systems with a feedforward path into the
         plant or in which the gain appears in the feedback path.
-    kvect : list or ndarray, optional
-        List of gains to use for plotting root locus
+    kvect : float or array_like, optional
+        List of gains to use for plotting root locus. If only one value is
+        provided, the set of gains in the root locus plot is calculated
+        automatically, and kvect is interpreted as if it was the value of
+        the gain associated with the first mouse click on the root locus
+        plot. This is useful if it is not possible to use interactive
+        plotting.
     xlim_rlocus : tuple or list, optional
         control of x-axis range, normally with tuple
         (see :doc:`matplotlib:api/axes_api`).
