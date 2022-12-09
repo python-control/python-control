@@ -117,7 +117,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     if kvect is not None:
         warnings.warn("'kvect' keyword is deprecated in sisotool; "
                       "use 'initial_gain' instead", FutureWarning)
-        initial_gain = np.atleast1d(kvect)[0]
+        initial_gain = np.atleast_1d(kvect)[0]
     initial_gain = config._get_param('sisotool', 'initial_gain',
             initial_gain, _sisotool_defaults)
 
