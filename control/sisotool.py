@@ -29,14 +29,19 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
     sys : LTI object
         Linear input/output systems. If sys is SISO, use the same
         system for the root locus and step response. If it is desired to
-        see a different step response than feedback(K*loop,1), sys can be
-        provided as a two-input, two-output system (e.g. by using
-        :func:`bdgalg.connect' or :func:`iosys.interconnect`). Sisotool
-        inserts the negative of the selected gain K between the first output
-        and first input and uses the second input and output for computing
-        the step response. This allows you to see the step responses of more
-        complex systems, for example, systems with a feedforward path into the
-        plant or in which the gain appears in the feedback path.
+        see a different step response than feedback(K*sys,1), such as a
+        disturbance response, sys can be provided as a two-input, two-output
+        system (e.g. by using :func:`bdgalg.connect' or
+        :func:`iosys.interconnect`). For two-input, two-output
+        system, sisotool inserts the negative of the selected gain K between
+        the first output and first input and uses the second input and output
+        for computing the step response. To see the disturbance response,
+        configure your plant to have as its second input the disturbance input.
+        To view the step response with a feedforward controller, give your
+        plant two identical inputs, and sum your feedback controller and your
+        feedforward controller and multiply them into your plant's second
+        input. It is also possible to accomodate a system with a gain in the
+        feedback.
     kvect : float or array_like, optional
         List of gains to use for plotting root locus. If only one value is
         provided, the set of gains in the root locus plot is calculated
@@ -115,7 +120,7 @@ def sisotool(sys, kvect=None, xlim_rlocus=None, ylim_rlocus=None,
         1 if kvect is None else kvect[0], bode_plot_params)
 
     # Setup the root-locus plot window
-    root_locus(sys, kvect=kvect, xlim=xlim_rlocus,
+    root_locus(sys[0,0], kvect=kvect, xlim=xlim_rlocus,
         ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
         fig=fig, bode_plot_params=bode_plot_params, tvect=tvect, sisotool=True)
 

@@ -88,7 +88,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     ----------
     sys : LTI object
         Linear input/output systems (SISO only, for now).
-    kvect : list or ndarray, optional
+    kvect : float or array_like, optional
         List of gains to use in computing diagram.
     xlim : tuple or list, optional
         Set limits of x axis, normally with tuple
@@ -110,10 +110,11 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
 
     Returns
     -------
-    rlist : ndarray
-        Computed root locations, given as a 2D array
-    klist : ndarray or list
-        Gains used.  Same as klist keyword argument if provided.
+    roots : ndarray
+        Closed-loop root locations, arranged in which each row corresponds
+        to a gain in gains
+    gains : ndarray
+        Gains used.  Same as kvect keyword argument if provided.
 
     Notes
     -----
@@ -145,10 +146,12 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     print_gain = config._get_param(
         'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
-    sys_loop = sys if sys.issiso() else sys[0, 0]
+    if not sys.issiso():
+        raise ControlMIMONotImplemented(
+            'sys must be single-input single-output (SISO)')
 
     # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(sys_loop)
+    (nump, denp) = _systopoly1d(sys)
 
     # if discrete-time system and if xlim and ylim are not given,
     #  that we a view of the unit circle
@@ -158,12 +161,13 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         xlim = (-1.3, 1.3)
 
     if kvect is None:
-        start_mat = _RLFindRoots(nump, denp, [1])
-        kvect, mymat, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
+        start_roots = _RLFindRoots(nump, denp, 1)
+        kvect, root_array, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
     else:
-        start_mat = _RLFindRoots(nump, denp, [kvect[0]])
-        mymat = _RLFindRoots(nump, denp, kvect)
-        mymat = _RLSortRoots(mymat)
+        kvect = np.atleast_1d(kvect)
+        start_roots = _RLFindRoots(nump, denp, kvect[0])
+        root_array = _RLFindRoots(nump, denp, kvect)
+        root_array = _RLSortRoots(root_array)
 
     # Check for sisotool mode
     sisotool = False if 'sisotool' not in kwargs else True
@@ -190,10 +194,10 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                         ax_rlocus=fig.axes[0], plotstr=plotstr))
         elif sisotool:
             fig.axes[1].plot(
-                [root.real for root in start_mat],
-                [root.imag for root in start_mat],
+                [root.real for root in start_roots],
+                [root.imag for root in start_roots],
                 marker='s', markersize=6, zorder=20, color='k', label='gain_point')
-            s = start_mat[0][0]
+            s = start_roots[0][0]
             if isdtime(sys, strict=True):
                 zeta = -np.cos(np.angle(np.log(s)))
             else:
@@ -229,7 +233,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             ax.plot(real(zeros), imag(zeros), 'o')
 
         # Now plot the loci
-        for index, col in enumerate(mymat.T):
+        for index, col in enumerate(root_array.T):
             ax.plot(real(col), imag(col), plotstr, label='rootlocus')
 
         # Set up plot axes and labels
@@ -257,7 +261,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                     (0, 0), radius=1.0, linestyle=':', edgecolor='k',
                     linewidth=0.75, fill=False, zorder=-20))
 
-    return mymat, kvect
+    return root_array, kvect
 
 
 def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
@@ -509,28 +513,27 @@ def _RLFindRoots(nump, denp, kvect):
     """Find the roots for the root locus."""
     # Convert numerator and denominator to polynomials if they aren't
     roots = []
-    for k in np.array(kvect, ndmin=1):
+    for k in np.atleast_1d(kvect):
         curpoly = denp + k * nump
         curroots = curpoly.r
         if len(curroots) < denp.order:
             # if I have fewer poles than open loop, it is because i have
             # one at infinity
-            curroots = np.insert(curroots, len(curroots), np.inf)
+            curroots = np.append(curroots, np.inf)
 
         curroots.sort()
         roots.append(curroots)
 
-    mymat = row_stack(roots)
-    return mymat
+    return row_stack(roots)
 
 
-def _RLSortRoots(mymat):
-    """Sort the roots from sys._RLFindRoots, so that the root
+def _RLSortRoots(roots):
+    """Sort the roots from _RLFindRoots, so that the root
     locus doesn't show weird pseudo-branches as roots jump from
     one branch to another."""
 
-    sorted = zeros_like(mymat)
-    for n, row in enumerate(mymat):
+    sorted = zeros_like(roots)
+    for n, row in enumerate(roots):
         if n == 0:
             sorted[n, :] = row
         else:
@@ -539,7 +542,7 @@ def _RLSortRoots(mymat):
             # previous row
             available = list(range(len(prevrow)))
             for elem in row:
-                evect = elem-prevrow[available]
+                evect = elem - prevrow[available]
                 ind1 = abs(evect).argmin()
                 ind = available.pop(ind1)
                 sorted[n, ind] = elem
@@ -549,9 +552,7 @@ def _RLSortRoots(mymat):
 
 def _RLZoomDispatcher(event, sys, ax_rlocus, plotstr):
     """Rootlocus plot zoom dispatcher"""
-    sys_loop = sys if sys.issiso() else sys[0,0]
-
-    nump, denp = _systopoly1d(sys_loop)
+    nump, denp = _systopoly1d(sys)
     xlim, ylim = ax_rlocus.get_xlim(), ax_rlocus.get_ylim()
 
     kvect, mymat, xlim, ylim = _default_gains(
@@ -583,9 +584,7 @@ def _RLClickDispatcher(event, sys, fig, ax_rlocus, plotstr, sisotool=False,
 
 def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
     """Display root-locus gain feedback point for clicks on root-locus plot"""
-    sys_loop = sys if sys.issiso() else sys[0,0]
-
-    (nump, denp) = _systopoly1d(sys_loop)
+    (nump, denp) = _systopoly1d(sys)
 
     xlim = ax_rlocus.get_xlim()
     ylim = ax_rlocus.get_ylim()
@@ -596,10 +595,10 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
     # Catch type error when event click is in the figure but not in an axis
     try:
         s = complex(event.xdata, event.ydata)
-        K = -1. / sys_loop(s)
-        K_xlim = -1. / sys_loop(
+        K = -1. / sys(s)
+        K_xlim = -1. / sys(
             complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
-        K_ylim = -1. / sys_loop(
+        K_ylim = -1. / sys(
             complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
 
     except TypeError:
