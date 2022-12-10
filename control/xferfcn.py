@@ -702,10 +702,6 @@ class TransferFunction(LTI):
 
         return TransferFunction(num, den, dt)
 
-    # TODO: Remove when transition to python3 complete
-    def __div__(self, other):
-        return TransferFunction.__truediv__(self, other)
-
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
@@ -723,10 +719,6 @@ class TransferFunction(LTI):
                 "for SISO systems.")
 
         return other / self
-
-    # TODO: Remove when transition to python3 complete
-    def __rdiv__(self, other):
-        return TransferFunction.__rtruediv__(self, other)
 
     def __pow__(self, other):
         if not type(other) == int:
