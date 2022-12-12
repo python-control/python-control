@@ -14,7 +14,6 @@ try:
 except ImportError:
     cvx = None
 
-eps = np.nextafter(0, 1)
 
 __all__ = ["get_output_fb_index", "get_input_ff_index",  "ispassive",
            "solve_passivity_LMI"]
@@ -28,8 +27,8 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     passive. Inputs of None for `rho` or `nu` indicate that the function should
     solve for that index (they are mutually exclusive, they can't both be
     None, otherwise you're trying to solve a nonconvex bilinear matrix
-    inequality.) The last element of `solution` is either the output or input
-    passivity index, for `rho` = None and  `nu` = None respectively.
+    inequality.) The last element of the output `solution` is either the output or input
+    passivity index, for `rho` = None and `nu` = None respectively.
 
     The sources for the algorithm are:
 
@@ -74,11 +73,8 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     D = sys.D
 
     # account for strictly proper systems
-    [n, m] = D.shape
-    D = D + eps * np.eye(n, m)
-
+    [_, m] = D.shape
     [n, _] = A.shape
-    A = A - eps*np.eye(n)
 
     def make_LMI_matrix(P, rho, nu, one):
         q = sys.noutputs
@@ -113,7 +109,7 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
                     P[i, j] = 1
                     P[j, i] = 1
                     matrix_list.append(make_LMI_matrix(P, 0, 0, 0).flatten())
-        zeros = eps*np.eye(n)
+        zeros = 0.0*np.eye(n)
         if rho is None:
             matrix_list.append(make_LMI_matrix(zeros, 1, 0, 0).flatten())
         elif nu is None:
@@ -149,9 +145,9 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
     if rho is not None and nu is not None:
         sys_constants = -make_LMI_matrix(np.zeros_like(A), rho, nu, 1.0)
     elif rho is not None:
-        sys_constants = -make_LMI_matrix(np.zeros_like(A), rho, eps, 1.0)
+        sys_constants = -make_LMI_matrix(np.zeros_like(A), rho, 0.0, 1.0)
     elif nu is not None:
-        sys_constants = -make_LMI_matrix(np.zeros_like(A), eps, nu, 1.0)
+        sys_constants = -make_LMI_matrix(np.zeros_like(A), 0.0, nu, 1.0)
 
     sys_coefficents = np.vstack(sys_matrix_list).T
 
@@ -174,8 +170,18 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
 
     # crunch feasibility solution
     cvx.solvers.options['show_progress'] = False
-    sol = cvx.solvers.sdp(c, Gs=Gs, hs=hs)
-    return sol["x"]
+    try:
+        sol = cvx.solvers.sdp(c, Gs=Gs, hs=hs)
+        return sol["x"]
+
+    except ZeroDivisionError as e:
+        print(e)
+        print(
+            """The system is probably ill conditioned.
+            Consider perturbing the system matrices a small amount."""
+        )
+        raise(ZeroDivisionError)
+
 
 
 def get_output_fb_index(sys):
@@ -194,7 +200,7 @@ def get_output_fb_index(sys):
     float
         The OFP index
     """
-    sol = solve_passivity_LMI(sys, nu=eps)
+    sol = solve_passivity_LMI(sys, nu=0.0)
     if sol is None:
         raise RuntimeError("LMI passivity problem is infeasible")
     else:
@@ -218,7 +224,7 @@ def get_input_ff_index(sys):
     float
         The IFP index
     """
-    sol = solve_passivity_LMI(sys, rho=eps)
+    sol = solve_passivity_LMI(sys, rho=0.0)
     if sol is None:
         raise RuntimeError("LMI passivity problem is infeasible")
     else:
