@@ -31,10 +31,10 @@ System interconnections
     append
     connect
     feedback
+    interconnect
     negate
     parallel
     series
-    interconnect
 
 
 Frequency domain plotting
@@ -80,8 +80,6 @@ Control system analysis
     dcgain
     describing_function
     frequency_response
-    TransferFunction.__call__
-    StateSpace.__call__
     get_input_ff_index
     get_output_fb_index
     ispassive
@@ -93,6 +91,8 @@ Control system analysis
     pzmap
     root_locus
     sisotool
+    StateSpace.__call__
+    TransferFunction.__call__
 
 
 
@@ -102,10 +102,10 @@ Matrix computations
    :toctree: generated/
 
     care
-    dare
-    lyap
-    dlyap
     ctrb
+    dare
+    dlyap
+    lyap
     obsv
     gram
 
@@ -116,10 +116,10 @@ Control system synthesis
 
     acker
     create_statefbk_iosystem
+    dlqr
     h2syn
     hinfsyn
     lqr
-    dlqr
     mixsyn
     place
     rootlocus_pid_designer
@@ -157,8 +157,8 @@ Stochastic system support
 
     correlation
     create_estimator_iosystem
-    lqe
     dlqe
+    lqe
     white_noise
 
 .. _utility-and-conversions:

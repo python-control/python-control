@@ -2203,6 +2203,15 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     copy_names : bool, Optional
         If True, Copy the names of the input signals, output signals, and
         states to the linearized system.
+
+    Returns
+    -------
+    ss_sys : LinearIOSystem
+        The linearization of the system, as a :class:`~control.LinearIOSystem`
+        object (which is also a :class:`~control.StateSpace` object.
+
+    Other Parameters
+    ----------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the origional
         system inputs are used.  See :class:`InputOutputSystem` for more
@@ -2211,13 +2220,6 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
         Description of the system outputs.  Same format as `inputs`.
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`.
-
-    Returns
-    -------
-    ss_sys : LinearIOSystem
-        The linearization of the system, as a :class:`~control.LinearIOSystem`
-        object (which is also a :class:`~control.StateSpace` object.
-
     """
     if not isinstance(sys, InputOutputSystem):
         raise TypeError("Can only linearize InputOutputSystem types")

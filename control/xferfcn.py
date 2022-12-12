@@ -1130,17 +1130,20 @@ class TransferFunction(LTI):
         copy_names : bool, Optional
             If True, copy the names of the input signals, output
             signals, and states to the sampled system.
+
+        Returns
+        -------
+        sysd : TransferFunction system
+            Discrete-time system, with sample period Ts
+
+        Other Parameters
+        ----------------
         inputs : int, list of str or None, optional
             Description of the system inputs.  If not specified, the origional
             system inputs are used.  See :class:`InputOutputSystem` for more
             information.
         outputs : int, list of str or None, optional
             Description of the system outputs.  Same format as `inputs`.
-
-        Returns
-        -------
-        sysd : TransferFunction system
-            Discrete-time system, with sample period Ts
 
         Notes
         -----
@@ -1582,7 +1585,7 @@ def tf(*args, **kwargs):
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
-
+# TODO: copy signal names
 def ss2tf(*args, **kwargs):
     """ss2tf(sys)
 

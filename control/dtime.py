@@ -84,6 +84,14 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     copy_names : bool, Optional
         If True, copy the names of the input signals, output
         signals, and states to the sampled system.
+
+    Returns
+    -------
+    sysd : linsys
+        Discrete time system, with sampling rate Ts
+
+    Other Parameters
+    ----------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the origional
         system inputs are used.  See :class:`InputOutputSystem` for more
@@ -93,11 +101,6 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`. Only
         available if the system is :class:`StateSpace`.
-
-    Returns
-    -------
-    sysd : linsys
-        Discrete time system, with sampling rate Ts
 
     Notes
     -----
