@@ -39,7 +39,7 @@ Features
 - Time response: initial, step, impulse
 - Frequency response: Bode, Nyquist, and Nichols plots
 - Control analysis: stability, reachability, observability, stability margins, root locus
-- Control design: eigenvalue placement, linear quadratic regulator, sisotool, hinfsyn
+- Control design: eigenvalue placement, linear quadratic regulator, sisotool, hinfsyn, rootlocus_pid_designer
 - Estimator design: linear quadratic estimator (Kalman filter)
 - Nonlinear systems: optimization-based control, describing functions, differential flatness
 
@@ -106,12 +106,12 @@ toplevel `python-control` directory::
 Article and Citation Information
 ================================
 
-A `2021 article <https://ieeexplore.ieee.org/abstract/document/9683368>`_ about the library is available on IEEE Explore. If the Python Control Systems Library helped you in your research, please cite::
+An `article <https://ieeexplore.ieee.org/abstract/document/9683368>`_ about the library is available on IEEE Explore. If the Python Control Systems Library helped you in your research, please cite::
 
   @inproceedings{python-control2021,
-    title={The python control systems library (python-control)},
+    title={The Python Control Systems Library (python-control)},
     author={Fuller, Sawyer and Greiner, Ben and Moore, Jason and Murray, Richard and van Paassen, Ren{\'e} and Yorke, Rory},
-    booktitle={2021 60th IEEE Conference on Decision and Control (CDC)},
+    booktitle={60th IEEE Conference on Decision and Control (CDC)},
     pages={4875--4881},
     year={2021},
     organization={IEEE}
