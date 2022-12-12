@@ -2428,7 +2428,10 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
 
 
 def drss(*args, **kwargs):
-    """Create a stable, discrete-time, random state space system
+    """
+    drss([states, outputs, inputs, strictly_proper])
+
+    Create a stable, discrete-time, random state space system
 
     Create a stable *discrete time* random state space object.  This
     function calls :func:`rss` using either the `dt` keyword provided by
@@ -2466,7 +2469,7 @@ ss2io.__doc__ = LinearIOSystem.__init__.__doc__
 
 # Convert a transfer function into an input/output system (wrapper)
 def tf2io(*args, **kwargs):
-    """tf2io(sys)
+    """tf2io(sys[, ...])
 
     Convert a transfer function into an I/O system
 
