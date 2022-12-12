@@ -31,20 +31,17 @@ Try out the examples in the examples folder using the binder service.
  :target: https://mybinder.org/v2/gh/python-control/python-control/HEAD
 
 
-
-
-
 Features
 --------
 
 - Linear input/output systems in state-space and frequency domain
-- Block diagram algebra: serial, parallel, and feedback interconnections
+- Block diagram algebra: serial, parallel, feedback, and other interconnections
 - Time response: initial, step, impulse
-- Frequency response: Bode and Nyquist plots
-- Control analysis: stability, reachability, observability, stability margins
-- Control design: eigenvalue placement, linear quadratic regulator
+- Frequency response: Bode, Nyquist, and Nichols plots
+- Control analysis: stability, reachability, observability, stability margins, root locus
+- Control design: eigenvalue placement, linear quadratic regulator, sisotool, hinfsyn, rootlocus_pid_designer
 - Estimator design: linear quadratic estimator (Kalman filter)
-
+- Nonlinear systems: optimization-based control, describing functions, differential flatness
 
 Links
 =====
@@ -105,6 +102,22 @@ from the github repository or archive, unpack, and run from within the
 toplevel `python-control` directory::
 
   pip install .
+  
+Article and Citation Information
+================================
+
+An `article <https://ieeexplore.ieee.org/abstract/document/9683368>`_ about the library is available on IEEE Explore. If the Python Control Systems Library helped you in your research, please cite::
+
+  @inproceedings{python-control2021,
+    title={The Python Control Systems Library (python-control)},
+    author={Fuller, Sawyer and Greiner, Ben and Moore, Jason and Murray, Richard and van Paassen, Ren{\'e} and Yorke, Rory},
+    booktitle={60th IEEE Conference on Decision and Control (CDC)},
+    pages={4875--4881},
+    year={2021},
+    organization={IEEE}
+  }
+
+or the GitHub site: https://github.com/python-control/python-control
 
 
 Development
