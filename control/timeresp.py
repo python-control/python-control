@@ -1796,7 +1796,8 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     -----
     This function uses the `forced_response` function to compute the time
     response. For continuous time systems, the initial condition is altered to
-    account for the initial impulse.
+    account for the initial impulse. For discrete-time aystems, the impulse is 
+    sized so that it has unit area.
 
     Examples
     --------
