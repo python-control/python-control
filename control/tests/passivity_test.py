@@ -100,12 +100,11 @@ D = numpy.array([[1.5]])
 
 @pytest.mark.parametrize(
     "system_matrices, expected",
-    [((A, B, C, D*1e-8), True),
+    [((A, B, C, D*0), True),
      ((A_d, B, C, D), True),
-     pytest.param((A*1e8, B, C, D*1e-8), True),
-     ((A, B*1e-8, C*1e-8, D), True),
-     ((A*1e-8, B, C, D), True),
-     ((A*1e-8, B*1e-8, C*1e-8, D*1e-8), True)])
+     ((A, B*0, C*0, D), True),
+     ((A*0, B, C, D), True),
+     ((A*0, B*0, C*0, D*0), True)])
 def test_ispassive_edge_cases(system_matrices, expected):
     sys = ss(*system_matrices)
     assert passivity.ispassive(sys) == expected
