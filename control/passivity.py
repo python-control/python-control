@@ -175,12 +175,9 @@ def solve_passivity_LMI(sys, rho=None, nu=None):
         return sol["x"]
 
     except ZeroDivisionError as e:
-        print(e)
-        print(
-            """The system is probably ill conditioned.
-            Consider perturbing the system matrices a small amount."""
-        )
-        raise(ZeroDivisionError)
+        raise ValueError("The system is probably ill conditioned. "
+                         "Consider perturbing the system matrices by a small amount."
+        ) from e
 
 
 
