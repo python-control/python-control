@@ -136,6 +136,13 @@ class TestSisotool:
                            bode_plot_params=dict(), tvect=tvect)
         assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 
+    @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
+                        reason="Requires the zoom toolbar")
+    def test_sisotool_initial_gain(self, tsys):
+        sisotool(tsys, initial_gain=1.2)
+        # kvect keyword should give deprecation warning
+        with pytest.warns(FutureWarning):
+            sisotool(tsys, kvect=1.2)
 
     def test_sisotool_mimo(self,  sys222, sys221):
         # a 2x2 should not raise an error:

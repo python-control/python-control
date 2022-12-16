@@ -97,6 +97,9 @@ def reset_defaults():
     from .rlocus import _rlocus_defaults
     defaults.update(_rlocus_defaults)
 
+    from .sisotool import _sisotool_defaults
+    defaults.update(_sisotool_defaults)
+
     from .namedio import _namedio_defaults
     defaults.update(_namedio_defaults)
 
