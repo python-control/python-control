@@ -347,7 +347,9 @@ class InputOutputSystem(NamedIOSystem):
         return newsys
 
     def __truediv__(sys2, sys1):
-        """Multiply two input/output systems (series interconnection)"""
+        """Division of input/output systems
+
+        Only division by scalars and arrays of scalars is supported"""
         # Note: order of arguments is flipped so that self = sys2,
         # corresponding to the ordering convention of sys2 * sys1
 

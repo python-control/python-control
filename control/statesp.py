@@ -796,7 +796,11 @@ class StateSpace(LTI):
 
     # TODO: general __truediv__, and  __rtruediv__; requires descriptor system support
     def __truediv__(self, other):
-        """Divide a StateSpace object; only division by scalars is supported"""
+        """Division of StateSpace systems
+
+        Only division by TFs, FRDs, scalars, and arrays of scalars is
+        supported.
+        """
         if not isinstance(other, (LTI, NamedIOSystem)):
             return self * (1/other)
         else:
