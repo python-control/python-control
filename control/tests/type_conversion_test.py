@@ -88,11 +88,11 @@ conversion_table = [
     ('mul',     'flt', ['ss',  'tf',  'frd', 'lio', 'ios', 'arr', 'flt']),
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
-    ('truediv', 'ss',  ['xs',  'tf',  'frd', 'xio', 'xos', 'xs',  'xs' ]),
+    ('truediv', 'ss',  ['xs',  'tf',  'frd', 'xio', 'xos', 'ss',  'ss' ]),
     ('truediv', 'tf',  ['tf',  'tf',  'xrd', 'tf',  'xos', 'tf',  'tf' ]),
     ('truediv', 'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
-    ('truediv', 'lio', ['xio', 'tf',  'frd', 'xio', 'xio', 'xio', 'xio']),
-    ('truediv', 'ios', ['xos', 'xos', 'E',   'xos', 'xos'  'xos', 'xos']),
+    ('truediv', 'lio', ['xio', 'tf',  'frd', 'xio', 'xio', 'lio', 'lio']),
+    ('truediv', 'ios', ['xos', 'xos', 'E',   'xos', 'xos', 'ios', 'ios']),
     ('truediv', 'arr', ['xs',  'tf',  'frd', 'xio', 'xos', 'arr', 'arr']),
     ('truediv', 'flt', ['xs',  'tf',  'frd', 'xio', 'xos', 'arr', 'flt'])]
 

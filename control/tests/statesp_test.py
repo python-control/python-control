@@ -333,6 +333,17 @@ class TestStateSpace:
         np.testing.assert_array_almost_equal(sys.C, C)
         np.testing.assert_array_almost_equal(sys.D, D)
 
+    @pytest.mark.parametrize("k", [2, -3.141, np.float32(2.718), np.array([[4.321], [5.678]])])
+    def test_truediv_ss_scalar(self, sys322, k):
+        """Divide SS by scalar."""
+        sys = sys322 / k
+        syscheck = sys322 * (1/k)
+
+        np.testing.assert_array_almost_equal(sys.A, syscheck.A)
+        np.testing.assert_array_almost_equal(sys.B, syscheck.B)
+        np.testing.assert_array_almost_equal(sys.C, syscheck.C)
+        np.testing.assert_array_almost_equal(sys.D, syscheck.D)
+
     @pytest.mark.parametrize("omega, resp",
                              [(1.,
                                np.array([[ 4.37636761e-05-0.01522976j,

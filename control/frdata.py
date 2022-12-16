@@ -408,10 +408,6 @@ class FrequencyResponseData(LTI):
                    smooth=(self.ifunc is not None) and
                           (other.ifunc is not None))
 
-    # TODO: Remove when transition to python3 complete
-    def __div__(self, other):
-        return self.__truediv__(other)
-
     # TODO: Division of MIMO transfer function objects is not written yet.
     def __rtruediv__(self, other):
         """Right divide two LTI objects."""
@@ -428,10 +424,6 @@ class FrequencyResponseData(LTI):
                 "SISO systems.")
 
         return other / self
-
-    # TODO: Remove when transition to python3 complete
-    def __rdiv__(self, other):
-        return self.__rtruediv__(other)
 
     def __pow__(self, other):
         if not type(other) == int:

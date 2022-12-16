@@ -64,7 +64,7 @@ from .exception import ControlSlycot
 from .frdata import FrequencyResponseData
 from .lti import LTI, _process_frequency_response
 from .namedio import common_timebase, isdtime, _process_namedio_keywords, \
-    _process_dt_keyword
+    _process_dt_keyword, NamedIOSystem
 from . import config
 from copy import deepcopy
 
@@ -794,17 +794,18 @@ class StateSpace(LTI):
             pass
         raise TypeError("can't interconnect systems")
 
-    # TODO: __div__ and __rdiv__ are not written yet.
-    def __div__(self, other):
-        """Divide two LTI systems."""
+    # TODO: general __truediv__, and  __rtruediv__; requires descriptor system support
+    def __truediv__(self, other):
+        """Division of StateSpace systems
 
-        raise NotImplementedError("StateSpace.__div__ is not implemented yet.")
+        Only division by TFs, FRDs, scalars, and arrays of scalars is
+        supported.
+        """
+        if not isinstance(other, (LTI, NamedIOSystem)):
+            return self * (1/other)
+        else:
+            return NotImplemented
 
-    def __rdiv__(self, other):
-        """Right divide two LTI systems."""
-
-        raise NotImplementedError(
-            "StateSpace.__rdiv__ is not implemented yet.")
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's transfer function at complex frequency.

@@ -346,6 +346,19 @@ class InputOutputSystem(NamedIOSystem):
         # Return the newly created system
         return newsys
 
+    def __truediv__(sys2, sys1):
+        """Division of input/output systems
+
+        Only division by scalars and arrays of scalars is supported"""
+        # Note: order of arguments is flipped so that self = sys2,
+        # corresponding to the ordering convention of sys2 * sys1
+
+        if not isinstance(sys1, (LTI, NamedIOSystem)):
+            return sys2 * (1/sys1)
+        else:
+            return NotImplemented
+
+
     # Update parameters used for _rhs, _out (used by subclasses)
     def _update_params(self, params, warning=False):
         if warning:
