@@ -20,6 +20,8 @@ System creation
     frd
     rss
     drss
+    NonlinearIOSystem
+
 
 System interconnections
 =======================
@@ -29,12 +31,11 @@ System interconnections
     append
     connect
     feedback
+    interconnect
     negate
     parallel
     series
 
-See also the :ref:`iosys-module` module, which can be used to create and
-interconnect nonlinear input/output systems.
 
 Frequency domain plotting
 =========================
@@ -78,8 +79,7 @@ Control system analysis
 
     dcgain
     describing_function
-    evalfr
-    freqresp
+    frequency_response
     get_input_ff_index
     get_output_fb_index
     ispassive
@@ -91,6 +91,8 @@ Control system analysis
     pzmap
     root_locus
     sisotool
+    StateSpace.__call__
+    TransferFunction.__call__
 
 
 
@@ -100,10 +102,10 @@ Matrix computations
    :toctree: generated/
 
     care
-    dare
-    lyap
-    dlyap
     ctrb
+    dare
+    dlyap
+    lyap
     obsv
     gram
 
@@ -141,7 +143,6 @@ Nonlinear system support
 
     describing_function
     find_eqpt
-    interconnect
     linearize
     input_output_response
     ss2io
@@ -193,3 +194,5 @@ Utility functions and conversions
     use_fbs_defaults
     use_matlab_defaults
     use_numpy_matrix
+
+

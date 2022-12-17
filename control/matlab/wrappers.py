@@ -178,8 +178,7 @@ ngrid.__doc__ = nichols_grid.__doc__
 
 
 def dcgain(*args):
-    '''
-    Compute the gain of the system in steady state.
+    '''Compute the gain of the system in steady state
 
     The function takes either 1, 2, 3, or 4 parameters:
 

@@ -90,11 +90,11 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     sysd : linsys
         Discrete time system, with sampling rate Ts
 
-    Additional Parameters
-    ---------------------
+    Other Parameters
+    ----------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the origional
-        system inputs are used.  See :class:`NamedIOSystem` for more
+        system inputs are used.  See :class:`InputOutputSystem` for more
         information.
     outputs : int, list of str or None, optional
         Description of the system outputs.  Same format as `inputs`.

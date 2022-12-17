@@ -7,8 +7,7 @@ Note that the return arguments are different than in the standard control packag
 __all__ = ['step', 'stepinfo', 'impulse', 'initial', 'lsim']
 
 def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
-    '''
-    Step response of a linear system
+    '''Step response of a linear system
 
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation.  Optionally, one output may be
@@ -20,19 +19,14 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     ----------
     sys: StateSpace, or TransferFunction
         LTI system to simulate
-
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-
     X0: array-like or number, optional
         Initial condition (default = 0)
-
         Numbers are converted to constant arrays with the correct shape.
-
     input: int
         Index of the input that will be used in this simulation.
-
     output: int
         If given, index of the output that is returned by this simulation.
 
@@ -40,13 +34,10 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     -------
     yout: array
         Response of the system
-
     T: array
         Time values of the output
-
     xout: array (if selected)
         Individual response of each x variable
-
 
 
     See Also
@@ -67,8 +58,7 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
 
 def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
              RiseTimeLimits=(0.1, 0.9)):
-    """
-    Step response characteristics (Rise time, Settling Time, Peak and others).
+    """Step response characteristics (Rise time, Settling Time, Peak and others)
 
     Parameters
     ----------
@@ -137,8 +127,7 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
     return S
 
 def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
-    '''
-    Impulse response of a linear system
+    '''Impulse response of a linear system
 
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation.  Optionally, one output may be
@@ -150,19 +139,15 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     ----------
     sys: StateSpace, TransferFunction
         LTI system to simulate
-
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-
     X0: array-like or number, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
-
     input: int
         Index of the input that will be used in this simulation.
-
     output: int
         Index of the output that will be used in this simulation.
 
@@ -170,10 +155,8 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     -------
     yout: array
         Response of the system
-
     T: array
         Time values of the output
-
     xout: array (if selected)
         Individual response of each x variable
 
@@ -193,8 +176,7 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
 def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
-    '''
-    Initial condition response of a linear system
+    '''Initial condition response of a linear system
 
     If the system has multiple outputs (?IMO), optionally, one output
     may be selected. If no selection is made for the output, all
@@ -204,20 +186,16 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
     ----------
     sys: StateSpace, or TransferFunction
         LTI system to simulate
-
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-
     X0: array-like object or number, optional
         Initial condition (default = 0)
 
         Numbers are converted to constant arrays with the correct shape.
-
     input: int
         This input is ignored, but present for compatibility with step
         and impulse.
-
     output: int
         If given, index of the output that is returned by this simulation.
 
@@ -225,10 +203,8 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
     -------
     yout: array
         Response of the system
-
     T: array
         Time values of the output
-
     xout: array (if selected)
         Individual response of each x variable
 
@@ -250,8 +226,7 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
 
 def lsim(sys, U=0., T=None, X0=0.):
-    '''
-    Simulate the output of a linear system.
+    '''Simulate the output of a linear system
 
     As a convenience for parameters `U`, `X0`:
     Numbers (scalars) are converted to constant arrays with the correct shape.
@@ -261,16 +236,13 @@ def lsim(sys, U=0., T=None, X0=0.):
     ----------
     sys: LTI (StateSpace, or TransferFunction)
         LTI system to simulate
-
     U: array-like or number, optional
         Input array giving input at each time `T` (default = 0).
 
         If `U` is ``None`` or ``0``, a special algorithm is used. This special
         algorithm is faster than the general algorithm, which is used otherwise.
-
     T: array-like, optional for discrete LTI `sys`
         Time steps at which the input is defined; values must be evenly spaced.
-
     X0: array-like or number, optional
         Initial condition (default = 0).
 

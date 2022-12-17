@@ -2223,17 +2223,16 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
         The linearization of the system, as a :class:`~control.LinearIOSystem`
         object (which is also a :class:`~control.StateSpace` object.
 
-    Additional Parameters
-    ---------------------
+    Other Parameters
+    ----------------
     inputs : int, list of str or None, optional
         Description of the system inputs.  If not specified, the origional
-        system inputs are used.  See :class:`NamedIOSystem` for more
+        system inputs are used.  See :class:`InputOutputSystem` for more
         information.
     outputs : int, list of str or None, optional
         Description of the system outputs.  Same format as `inputs`.
     states : int, list of str, or None, optional
         Description of the system states.  Same format as `inputs`.
-
     """
     if not isinstance(sys, InputOutputSystem):
         raise TypeError("Can only linearize InputOutputSystem types")
@@ -2442,7 +2441,10 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
 
 
 def drss(*args, **kwargs):
-    """Create a stable, discrete-time, random state space system
+    """
+    drss([states, outputs, inputs, strictly_proper])
+
+    Create a stable, discrete-time, random state space system
 
     Create a stable *discrete time* random state space object.  This
     function calls :func:`rss` using either the `dt` keyword provided by
@@ -2480,7 +2482,7 @@ ss2io.__doc__ = LinearIOSystem.__init__.__doc__
 
 # Convert a transfer function into an input/output system (wrapper)
 def tf2io(*args, **kwargs):
-    """tf2io(sys)
+    """tf2io(sys[, ...])
 
     Convert a transfer function into an I/O system
 
@@ -2729,8 +2731,8 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
     :func:`~control.summing_block` function and the ability to automatically
     interconnect signals with the same names:
 
-    >>> P = control.tf2io(control.tf(1, [1, 0]), inputs='u', outputs='y')
-    >>> C = control.tf2io(control.tf(10, [1, 1]), inputs='e', outputs='u')
+    >>> P = control.tf(1, [1, 0], inputs='u', outputs='y')
+    >>> C = control.tf(10, [1, 1], inputs='e', outputs='u')
     >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
     >>> T = control.interconnect([P, C, sumblk], inputs='r', outputs='y')
 

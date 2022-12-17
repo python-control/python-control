@@ -808,7 +808,7 @@ class StateSpace(LTI):
 
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
-        """Evaluate system's transfer function at complex frequency.
+        """Evaluate system's frequency response at complex frequencies.
 
         Returns the complex frequency response `sys(x)` where `x` is `s` for
         continuous-time systems and `z` for discrete-time systems.
@@ -1345,8 +1345,8 @@ class StateSpace(LTI):
         sysd : StateSpace
             Discrete-time system, with sampling rate Ts
 
-        Additional Parameters
-        ---------------------
+        Other Parameters
+        ----------------
         inputs : int, list of str or None, optional
             Description of the system inputs.  If not specified, the origional
             system inputs are used.  See :class:`InputOutputSystem` for more
@@ -1521,6 +1521,7 @@ class StateSpace(LTI):
 
 
 # TODO: add discrete time check
+# TODO: copy signal names
 def _convert_to_statespace(sys):
     """Convert a system to state space form (if needed).
 

@@ -86,6 +86,9 @@ Compensator design
    sisotool
    place
    lqr
+   dlqr
+   lqe
+   dlqe
 
 State-space (SS) models
 =======================
