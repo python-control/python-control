@@ -84,7 +84,7 @@ from ..margins import margin
 from ..rlocus import rlocus
 from ..dtime import c2d
 from ..sisotool import sisotool
-from ..stochsys import *
+from ..stochsys import lqe, dlqe
 
 # Functions that are renamed in MATLAB
 pole, zero = poles, zeros
