@@ -96,6 +96,7 @@ def test_kwarg_search(module, prefix):
      (control.tf, 0, 0, ([1], [1, 1]), {}),
      (control.tf2io, 0, 1, (), {}),
      (control.tf2ss, 0, 1, (), {}),
+     (control.zpk, 0, 0, ([1], [2, 3], 4), {}),
      (control.InputOutputSystem, 0, 0, (),
       {'inputs': 1, 'outputs': 1, 'states': 1}),
      (control.InputOutputSystem.linearize, 1, 0, (0, 0), {}),
@@ -184,6 +185,7 @@ kwarg_unittest = {
     'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,
     'sample_system' : test_unrecognized_kwargs,
+    'zpk': test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'flatsys.solve_flat_ocp':

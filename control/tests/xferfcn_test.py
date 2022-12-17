@@ -8,7 +8,8 @@ import pytest
 import operator
 
 import control as ct
-from control import StateSpace, TransferFunction, rss, ss2tf, evalfr
+from control import StateSpace, TransferFunction, rss, evalfr
+from control import ss, ss2tf, tf, tf2ss
 from control import isctime, isdtime, sample_system, defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
@@ -986,7 +987,7 @@ class TestXferFcn:
                 np.testing.assert_array_almost_equal(H.num[p][m], H2.num[p][m])
                 np.testing.assert_array_almost_equal(H.den[p][m], H2.den[p][m])
             assert H.dt == H2.dt
-    
+
     def test_sample_named_signals(self):
         sysc = ct.TransferFunction(1.1, (1, 2), inputs='u', outputs='y')
 
@@ -1073,3 +1074,72 @@ def test_xferfcn_ndarray_precedence(op, tf, arr):
     # Apply the operator to the array and transfer function
     result = op(arr, tf)
     assert isinstance(result, ct.TransferFunction)
+
+
+@pytest.mark.parametrize(
+    "zeros, poles, gain, args, kwargs", [
+        ([], [-1], 1, [], {}),
+        ([1, 2], [-1, -2, -3], 5, [], {}),
+        ([1, 2], [-1, -2, -3], 5, [], {'name': "sys"}),
+        ([1, 2], [-1, -2, -3], 5, [], {'inputs': ["in"], 'outputs': ["out"]}),
+        ([1, 2], [-1, -2, -3], 5, [0.1], {}),
+        (np.array([1, 2]), np.array([-1, -2, -3]), 5, [], {}),
+])
+def test_zpk(zeros, poles, gain, args, kwargs):
+    # Create the transfer function
+    sys = ct.zpk(zeros, poles, gain, *args, **kwargs)
+
+    # Make sure the poles and zeros match
+    np.testing.assert_equal(sys.zeros().sort(), zeros.sort())
+    np.testing.assert_equal(sys.poles().sort(), poles.sort())
+
+    # Check to make sure the gain is OK
+    np.testing.assert_almost_equal(
+        gain, sys(0) * np.prod(-sys.poles()) / np.prod(-sys.zeros()))
+
+    # Check time base
+    if args:
+        assert sys.dt == args[0]
+
+    # Check inputs, outputs, name
+    input_labels = kwargs.get('inputs', [])
+    for i, label in enumerate(input_labels):
+        assert sys.input_labels[i] == label
+
+    output_labels = kwargs.get('outputs', [])
+    for i, label in enumerate(output_labels):
+        assert sys.output_labels[i] == label
+
+    if kwargs.get('name'):
+        assert sys.name == kwargs.get('name')
+
+@pytest.mark.parametrize("create, args, kwargs, convert", [
+    (StateSpace, ([-1], [1], [1], [0]), {}, ss2tf),
+    (StateSpace, ([-1], [1], [1], [0]), {}, ss),
+    (StateSpace, ([-1], [1], [1], [0]), {}, tf),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs='i', outputs='o'), ss2tf),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs=1, outputs=1), ss2tf),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs='i', outputs='o'), ss),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs='i', outputs='o'), tf),
+    (TransferFunction, ([1], [1, 1]), {}, tf2ss),
+    (TransferFunction, ([1], [1, 1]), {}, tf),
+    (TransferFunction, ([1], [1, 1]), {}, ss),
+    (TransferFunction, ([1], [1, 1]), dict(inputs='i', outputs='o'), tf2ss),
+    (TransferFunction, ([1], [1, 1]), dict(inputs=1, outputs=1), tf2ss),
+    (TransferFunction, ([1], [1, 1]), dict(inputs='i', outputs='o'), tf),
+    (TransferFunction, ([1], [1, 1]), dict(inputs='i', outputs='o'), ss),
+])
+def test_copy_names(create, args, kwargs, convert):
+    # Convert a system with no renaming
+    sys = create(*args, **kwargs)
+    cpy = convert(sys)
+
+    assert cpy.input_labels == sys.input_labels
+    assert cpy.input_labels == sys.input_labels
+    if cpy.nstates is not None and sys.nstates is not None:
+        assert cpy.state_labels == sys.state_labels
+
+    # Relabel inputs and outputs
+    cpy = convert(sys, inputs='myin', outputs='myout')
+    assert cpy.input_labels == ['myin']
+    assert cpy.output_labels == ['myout']

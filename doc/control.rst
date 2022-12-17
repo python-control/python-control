@@ -18,6 +18,7 @@ System creation
     ss
     tf
     frd
+    zpk
     rss
     drss
     NonlinearIOSystem

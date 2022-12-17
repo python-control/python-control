@@ -115,7 +115,7 @@ Creating linear models
 
 ==  ==========================  ============================================
 \*  :func:`tf`                  create transfer function (TF) models
-\   zpk                         create zero/pole/gain (ZPK) models.
+\*  :func:`zpk`                 create zero/pole/gain (ZPK) models.
 \*  :func:`ss`                  create state-space (SS) models
 \   dss                         create descriptor state-space models
 \   delayss                     create state-space models with delayed terms

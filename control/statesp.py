@@ -1521,7 +1521,6 @@ class StateSpace(LTI):
 
 
 # TODO: add discrete time check
-# TODO: copy signal names
 def _convert_to_statespace(sys):
     """Convert a system to state space form (if needed).
 

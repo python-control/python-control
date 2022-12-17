@@ -65,7 +65,7 @@ from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from . import config
 
-__all__ = ['TransferFunction', 'tf', 'ss2tf', 'tfdata']
+__all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 
 
 # Define module default parameter values
@@ -796,7 +796,7 @@ class TransferFunction(LTI):
         """Compute the zeros of a transfer function."""
         if self.ninputs > 1 or self.noutputs > 1:
             raise NotImplementedError(
-                "TransferFunction.zero is currently only implemented "
+                "TransferFunction.zeros is currently only implemented "
                 "for SISO systems.")
         else:
             # for now, just give zeros of a SISO tf
@@ -1424,16 +1424,13 @@ def _convert_to_transfer_function(sys, inputs=1, outputs=1):
                 num = squeeze(num)  # Convert to 1D array
                 den = squeeze(den)  # Probably not needed
 
-        return TransferFunction(
-            num, den, sys.dt, inputs=sys.input_labels,
-            outputs=sys.output_labels)
+        return TransferFunction(num, den, sys.dt)
 
     elif isinstance(sys, (int, float, complex, np.number)):
         num = [[[sys] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
 
-        return TransferFunction(
-            num, den, inputs=inputs, outputs=outputs)
+        return TransferFunction(num, den)
 
     elif isinstance(sys, FrequencyResponseData):
         raise TypeError("Can't convert given FRD to TransferFunction system.")
@@ -1577,8 +1574,54 @@ def tf(*args, **kwargs):
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
-# TODO: copy signal names
+
+def zpk(zeros, poles, gain, *args, **kwargs):
+    """zpk(zeros, poles, gain[, dt])
+
+    Create a transfer function from zeros, poles, gain.
+
+    Given a list of zeros z_i, poles p_j, and gain k, return the transfer
+    function:
+
+    .. math::
+      H(s) = k \\frac{(s - z_1) (s - z_2) \\cdots (s - z_m)}
+                     {(s - p_1) (s - p_2) \\cdots (s - p_n)}
+
+    Parameters
+    ----------
+    zeros : array_like
+        Array containing the location of zeros.
+    poles : array_like
+        Array containing the location of zeros.
+    gain : float
+        System gain
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous
+        time, True indicates discrete time with unspecified sampling
+        time, positive number is discrete time with specified
+        sampling time, None indicates unspecified timebase (either
+        continuous or discrete time).
+    inputs, outputs, states : str, or list of str, optional
+        List of strings that name the individual signals.  If this parameter
+        is not given or given as `None`, the signal names will be of the
+        form `s[i]` (where `s` is one of `u`, `y`, or `x`). See
+        :class:`InputOutputSystem` for more information.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
+    Returns
+    -------
+    out: :class:`TransferFunction`
+        Transfer function with given zeros, poles, and gain.
+
+    """
+    num, den = zpk2tf(zeros, poles, gain)
+    return TransferFunction(num, den, *args, **kwargs)
+
+
 def ss2tf(*args, **kwargs):
+
     """ss2tf(sys)
 
     Transform a state space system to a transfer function.
@@ -1658,6 +1701,11 @@ def ss2tf(*args, **kwargs):
     if len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
+            kwargs = kwargs.copy()
+            if not kwargs.get('inputs'):
+                kwargs['inputs'] = sys.input_labels
+            if not kwargs.get('outputs'):
+                kwargs['outputs'] = sys.output_labels
             return TransferFunction(
                 _convert_to_transfer_function(sys), **kwargs)
         else:
