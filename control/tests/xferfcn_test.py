@@ -8,7 +8,8 @@ import pytest
 import operator
 
 import control as ct
-from control import StateSpace, TransferFunction, rss, ss2tf, evalfr
+from control import StateSpace, TransferFunction, rss, evalfr
+from control import ss, ss2tf, tf, tf2ss
 from control import isctime, isdtime, sample_system, defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
@@ -1111,3 +1112,34 @@ def test_zpk(zeros, poles, gain, args, kwargs):
 
     if kwargs.get('name'):
         assert sys.name == kwargs.get('name')
+
+@pytest.mark.parametrize("create, args, kwargs, convert", [
+    (StateSpace, ([-1], [1], [1], [0]), {}, ss2tf),
+    (StateSpace, ([-1], [1], [1], [0]), {}, ss),
+    (StateSpace, ([-1], [1], [1], [0]), {}, tf),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs='i', outputs='o'), ss2tf),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs=1, outputs=1), ss2tf),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs='i', outputs='o'), ss),
+    (StateSpace, ([-1], [1], [1], [0]), dict(inputs='i', outputs='o'), tf),
+    (TransferFunction, ([1], [1, 1]), {}, tf2ss),
+    (TransferFunction, ([1], [1, 1]), {}, tf),
+    (TransferFunction, ([1], [1, 1]), {}, ss),
+    (TransferFunction, ([1], [1, 1]), dict(inputs='i', outputs='o'), tf2ss),
+    (TransferFunction, ([1], [1, 1]), dict(inputs=1, outputs=1), tf2ss),
+    (TransferFunction, ([1], [1, 1]), dict(inputs='i', outputs='o'), tf),
+    (TransferFunction, ([1], [1, 1]), dict(inputs='i', outputs='o'), ss),
+])
+def test_copy_names(create, args, kwargs, convert):
+    # Convert a system with no renaming
+    sys = create(*args, **kwargs)
+    cpy = convert(sys)
+
+    assert cpy.input_labels == sys.input_labels
+    assert cpy.input_labels == sys.input_labels
+    if cpy.nstates is not None and sys.nstates is not None:
+        assert cpy.state_labels == sys.state_labels
+
+    # Relabel inputs and outputs
+    cpy = convert(sys, inputs='myin', outputs='myout')
+    assert cpy.input_labels == ['myin']
+    assert cpy.output_labels == ['myout']

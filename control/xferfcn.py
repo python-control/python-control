@@ -1424,16 +1424,13 @@ def _convert_to_transfer_function(sys, inputs=1, outputs=1):
                 num = squeeze(num)  # Convert to 1D array
                 den = squeeze(den)  # Probably not needed
 
-        return TransferFunction(
-            num, den, sys.dt, inputs=sys.input_labels,
-            outputs=sys.output_labels)
+        return TransferFunction(num, den, sys.dt)
 
     elif isinstance(sys, (int, float, complex, np.number)):
         num = [[[sys] for j in range(inputs)] for i in range(outputs)]
         den = [[[1] for j in range(inputs)] for i in range(outputs)]
 
-        return TransferFunction(
-            num, den, inputs=inputs, outputs=outputs)
+        return TransferFunction(num, den)
 
     elif isinstance(sys, FrequencyResponseData):
         raise TypeError("Can't convert given FRD to TransferFunction system.")
@@ -1623,7 +1620,6 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     return TransferFunction(num, den, *args, **kwargs)
 
 
-# TODO: copy signal names
 def ss2tf(*args, **kwargs):
 
     """ss2tf(sys)
@@ -1705,6 +1701,11 @@ def ss2tf(*args, **kwargs):
     if len(args) == 1:
         sys = args[0]
         if isinstance(sys, StateSpace):
+            kwargs = kwargs.copy()
+            if not kwargs.get('inputs'):
+                kwargs['inputs'] = sys.input_labels
+            if not kwargs.get('outputs'):
+                kwargs['outputs'] = sys.output_labels
             return TransferFunction(
                 _convert_to_transfer_function(sys), **kwargs)
         else:
