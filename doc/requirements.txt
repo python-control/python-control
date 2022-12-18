@@ -6,3 +6,4 @@ sphinx_rtd_theme
 numpydoc
 ipykernel
 nbsphinx
+docutils==0.16 # pin until sphinx_rtd_theme is compatible with 0.17 or later
