@@ -52,8 +52,8 @@ class TestPade:
         refnum /= refden[0]
         refden /= refden[0]
         num, den = pade(T, dendeg, numdeg)
-        np.testing.assert_array_almost_equal_nulp(refden, den, nulp=2)
-        np.testing.assert_array_almost_equal_nulp(refnum, num, nulp=2)
+        np.testing.assert_array_almost_equal_nulp(refden, den, nulp=4)
+        np.testing.assert_array_almost_equal_nulp(refnum, num, nulp=4)
 
     def testErrors(self):
         "ValueError raised for invalid arguments"
