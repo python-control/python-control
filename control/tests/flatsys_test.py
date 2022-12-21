@@ -693,9 +693,9 @@ class TestFlatSys:
 
         # Recompute using response()
         response = traj.response(T, squeeze=False)
-        np.testing.assert_equal(T, response.time)
-        np.testing.assert_equal(u, response.inputs)
-        np.testing.assert_equal(x, response.states)
+        np.testing.assert_array_almost_equal(T, response.time)
+        np.testing.assert_array_almost_equal(u, response.inputs)
+        np.testing.assert_array_almost_equal(x, response.states)
 
     @pytest.mark.parametrize(
         "basis",
@@ -713,7 +713,7 @@ class TestFlatSys:
             for j in range(basis.N):
                 coefs = np.zeros(basis.N)
                 coefs[j] = 1
-                np.testing.assert_equal(
+                np.testing.assert_array_almost_equal(
                     basis.eval(coefs, timepts),
                     basis.eval_deriv(j, 0, timepts))
         else:
@@ -722,7 +722,7 @@ class TestFlatSys:
                 for j in range(basis.var_ncoefs(i)):
                     coefs = np.zeros(basis.var_ncoefs(i))
                     coefs[j] = 1
-                    np.testing.assert_equal(
+                    np.testing.assert_array_almost_equal(
                         basis.eval(coefs, timepts, var=i),
                         basis.eval_deriv(j, 0, timepts, var=i))
 
@@ -732,7 +732,7 @@ class TestFlatSys:
                 for j in range(basis.var_ncoefs(i)):
                     coefs = np.zeros(basis.N)
                     coefs[offset] = 1
-                    np.testing.assert_equal(
+                    np.testing.assert_array_almost_equal(
                         basis.eval(coefs, timepts)[i],
                         basis.eval_deriv(j, 0, timepts, var=i))
                     offset += 1
