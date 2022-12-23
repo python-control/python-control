@@ -1,5 +1,6 @@
 name: test-env
 dependencies:
+  - conda-build  # for conda index
   - pip
   - coverage
   - coveralls

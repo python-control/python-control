@@ -89,6 +89,57 @@ jobs:
           path: slycot-wheels
 
 
+  build-conda:
+    name: Build conda Py${{ matrix.python }}, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+        fail-fast: false
+        matrix:
+          os:
+            - 'ubuntu'
+            - 'macos'
+            - 'windows'
+          python:
+            - '3.9'
+            - '3.11'
+
+    steps:
+      - name: Checkout Slycot
+        uses: actions/checkout@v3
+        with:
+          repository: python-control/Slycot
+          fetch-depth: 0
+          submodules: 'recursive'
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python }}
+          activate-environment: build-env
+          environment-file: .github/conda-env/build-env.yml
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          auto-update-conda: false
+          auto-activate-base: false
+      - name: Conda build
+        shell: bash -l {0}
+        run: |
+          set -e
+          numpyversion=$(python -c 'import numpy; print(numpy.version.version)')
+          conda mambabuild --python "${{ matrix.python }}" --numpy $numpyversion conda-recipe
+          # preserve directory structure for custom conda channel
+          find "${CONDA_PREFIX}/conda-bld" -maxdepth 2 -name 'slycot*.tar.bz2' | while read -r conda_pkg; do
+            conda_platform=$(basename $(dirname "${conda_pkg}"))
+            mkdir -p "slycot-conda-pkgs/${conda_platform}"
+            cp "${conda_pkg}" "slycot-conda-pkgs/${conda_platform}/"
+          done
+      - name: Save to local conda pkg channel
+        uses: actions/upload-artifact@v3
+        with:
+          name: slycot-conda-pkgs
+          path: slycot-conda-pkgs
+
+
   create-wheel-test-matrix:
     name: Create wheel test matrix
     runs-on: ubuntu-latest
@@ -106,6 +157,25 @@ jobs:
           path: slycot-wheels
       - id: set-matrix
         run: echo "matrix=$(python3 .github/scripts/set-pip-test-matrix.py)" >> $GITHUB_OUTPUT
+
+
+  create-conda-test-matrix:
+    name: Create conda test matrix
+    runs-on: ubuntu-latest
+    needs: build-conda
+    if: always()  # run tests for all successful builds, even if others failed
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout python-control
+        uses: actions/checkout@v3
+      - name: Download conda packages
+        uses: actions/download-artifact@v3
+        with:
+          name: slycot-conda-pkgs
+          path: slycot-conda-pkgs
+      - id: set-matrix
+        run: echo "matrix=$(python3 .github/scripts/set-conda-test-matrix.py)" >> $GITHUB_OUTPUT
 
 
   test-wheel:
@@ -174,3 +244,72 @@ jobs:
           pip show slycot
       - name: Test with pytest
         run: pytest -v control/tests
+
+
+  test-conda:
+    name: Test conda ${{ matrix.packagekey }}, ${{matrix.blas_lib}} BLAS lib ${{ matrix.failok }}
+    needs: create-conda-test-matrix
+    runs-on: ${{ matrix.os }}-latest
+    continue-on-error: ${{ matrix.failok == 'FAILOK' }}
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.create-conda-test-matrix.outputs.matrix) }}
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout Slycot
+        uses: actions/checkout@v3
+        with:
+          repository: 'python-control/Slycot'
+          path: slycot-src
+      - name: Checkout python-control
+        uses: actions/checkout@v3
+      - name: Setup macOS
+        if: matrix.os == 'macos'
+        run: brew install coreutils
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python }}
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          activate-environment: test-env
+          environment-file: .github/conda-env/test-env.yml
+          channel-priority: strict
+          auto-activate-base: false
+      - name: Download conda packages
+        uses: actions/download-artifact@v3
+        with:
+          name: slycot-conda-pkgs
+          path: slycot-conda-pkgs
+      - name: Install Conda package
+        run: |
+          set -e
+          case ${{ matrix.blas_lib }} in
+            unset        ) # the conda-forge default (os dependent)
+              mamba install libblas libcblas liblapack
+              ;;
+            Generic      )
+              mamba install 'libblas=*=*netlib' 'libcblas=*=*netlib' 'liblapack=*=*netlib'
+              echo "libblas * *netlib" >> $CONDA_PREFIX/conda-meta/pinned
+              ;;
+            OpenBLAS     )
+              mamba install 'libblas=*=*openblas' openblas
+              echo "libblas * *openblas" >> $CONDA_PREFIX/conda-meta/pinned
+              ;;
+            Intel10_64lp )
+              mamba install 'libblas=*=*mkl' mkl
+              echo "libblas * *mkl" >> $CONDA_PREFIX/conda-meta/pinned
+              ;;
+          esac
+          conda index --no-progress ./slycot-conda-pkgs
+          mamba install -c ./slycot-conda-pkgs slycot
+          conda list
+      - name: Test with pytest
+        run: JOBNAME=$JOBNAME pytest control/tests
+        env:
+          JOBNAME: ${{ matrix.packagekey }} ${{ matrix.blas_lib }}
