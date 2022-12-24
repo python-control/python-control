@@ -13,6 +13,8 @@ import pytest
 import scipy as sp
 import re
 import warnings
+import os
+import platform
 
 import control as ct
 import control.flatsys as fs
@@ -201,9 +203,26 @@ class TestFlatSys:
             minimize_kwargs={'method': method},
         )
         xd, ud = traj_ocp.eval(timepts)
+
         if not traj_ocp.success:
-            # If unsuccessful, make sure the error is just about precision
-            assert re.match(".*precision loss.*", traj_ocp.message) is not None
+            # Known failure cases
+            if re.match(".*precision loss.*", traj_ocp.message):
+                pytest.xfail("precision loss in some configurations")
+
+            elif re.match("Iteration limit.*", traj_ocp.message) and \
+                 re.match("ubuntu-3.* Generic", os.getenv('JOBNAME')) and \
+                 np.__version__ == '1.24.0':
+                pytest.xfail("gh820: iteration limit exceeded")
+
+            else:
+                # Dump out information to allow creation of an exception
+                print("Platform: ", platform.platform())
+                print("Python: ", platform.python_version())
+                np.show_config()
+                print("JOBNAME: ", os.getenv('JOBNAME'))
+
+                pytest.fail(
+                    "unknown failure; view output to identify configuration")
 
         # Make sure the constraints are satisfied
         if input_constraints:

@@ -1,0 +1,323 @@
+name: OS/BLAS test matrix
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/os-blas-test-matrix.yml
+      - .github/scripts/set-conda-test-matrix.py
+      - .github/scripts/set-conda-pip-matrix.py
+      - .github/conda-env/build-env.yml
+      - .github/conda-env/test-env.yml
+      
+jobs:
+  build-pip:
+    name: Build pip Py${{ matrix.python }}, ${{ matrix.os }}, ${{ matrix.bla_vendor}} BLA_VENDOR
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+        fail-fast: false
+        matrix:
+            os:
+              - 'ubuntu'
+              - 'macos'
+            python:
+              - '3.8'
+              - '3.11'
+            bla_vendor: [ 'unset' ]
+            include:
+              - os: 'ubuntu'
+                python: '3.11'
+                bla_vendor: 'Generic'
+              - os: 'ubuntu'
+                python: '3.11'
+                bla_vendor: 'OpenBLAS'
+              - os: 'macos'
+                python: '3.11'
+                bla_vendor: 'Apple'
+              - os: 'macos'
+                python: '3.11'
+                bla_vendor: 'Generic'
+              - os: 'macos'
+                python: '3.11'
+                bla_vendor: 'OpenBLAS'
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Checkout Slycot
+        uses: actions/checkout@v3
+        with:
+          repository: python-control/Slycot
+          fetch-depth: 0
+          submodules: 'recursive'
+      - name: Setup Ubuntu
+        if: matrix.os == 'ubuntu'
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install gfortran cmake --fix-missing
+          case ${{ matrix.bla_vendor }} in
+            unset | Generic )  sudo apt-get -y install libblas-dev liblapack-dev ;;
+            OpenBLAS        ) sudo apt-get -y install libopenblas-dev ;;
+            *)
+              echo "bla_vendor option ${{ matrix.bla_vendor }} not supported"
+              exit 1 ;;
+          esac
+      - name: Setup macOS
+        if: matrix.os == 'macos'
+        run: |
+          case ${{ matrix.bla_vendor }} in
+            unset | Generic | Apple ) ;; # Found in system
+            OpenBLAS )
+              brew install openblas
+              echo "BLAS_ROOT=/usr/local/opt/openblas/" >> $GITHUB_ENV
+              echo "LAPACK_ROOT=/usr/local/opt/openblas/" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "bla_vendor option ${{ matrix.bla_vendor }} not supported"
+              exit 1 ;;
+          esac
+          echo "FC=gfortran-11" >> $GITHUB_ENV
+      - name: Build wheel
+        env:
+          BLA_VENDOR: ${{ matrix.bla_vendor }}
+          CMAKE_GENERATOR: Unix Makefiles
+        run: |
+          if [[ $BLA_VENDOR = unset ]]; then unset BLA_VENDOR; fi
+          python -m pip install --upgrade pip
+          pip wheel -v -w . .
+          wheeldir=slycot-wheels/${{ matrix.os }}-${{ matrix.python }}-${{ matrix.bla_vendor }}
+          mkdir -p ${wheeldir}
+          cp ./slycot*.whl ${wheeldir}/
+      - name: Save wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: slycot-wheels
+          path: slycot-wheels
+
+
+  build-conda:
+    name: Build conda Py${{ matrix.python }}, ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
+    strategy:
+        fail-fast: false
+        matrix:
+          os:
+            - 'ubuntu'
+            - 'macos'
+            - 'windows'
+          python:
+            - '3.9'
+            - '3.11'
+
+    steps:
+      - name: Checkout Slycot
+        uses: actions/checkout@v3
+        with:
+          repository: python-control/Slycot
+          fetch-depth: 0
+          submodules: 'recursive'
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python }}
+          activate-environment: build-env
+          environment-file: .github/conda-env/build-env.yml
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          channel-priority: strict
+          auto-update-conda: false
+          auto-activate-base: false
+      - name: Conda build
+        shell: bash -l {0}
+        run: |
+          set -e
+          numpyversion=$(python -c 'import numpy; print(numpy.version.version)')
+          conda mambabuild --python "${{ matrix.python }}" --numpy $numpyversion conda-recipe
+          # preserve directory structure for custom conda channel
+          find "${CONDA_PREFIX}/conda-bld" -maxdepth 2 -name 'slycot*.tar.bz2' | while read -r conda_pkg; do
+            conda_platform=$(basename $(dirname "${conda_pkg}"))
+            mkdir -p "slycot-conda-pkgs/${conda_platform}"
+            cp "${conda_pkg}" "slycot-conda-pkgs/${conda_platform}/"
+          done
+      - name: Save to local conda pkg channel
+        uses: actions/upload-artifact@v3
+        with:
+          name: slycot-conda-pkgs
+          path: slycot-conda-pkgs
+
+
+  create-wheel-test-matrix:
+    name: Create wheel test matrix
+    runs-on: ubuntu-latest
+    needs: build-pip
+    if: always()  # run tests for all successful builds, even if others failed
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout python-control
+        uses: actions/checkout@v3
+      - name: Download wheels (if any)
+        uses: actions/download-artifact@v3
+        with:
+          name: slycot-wheels
+          path: slycot-wheels
+      - id: set-matrix
+        run: echo "matrix=$(python3 .github/scripts/set-pip-test-matrix.py)" >> $GITHUB_OUTPUT
+
+
+  create-conda-test-matrix:
+    name: Create conda test matrix
+    runs-on: ubuntu-latest
+    needs: build-conda
+    if: always()  # run tests for all successful builds, even if others failed
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout python-control
+        uses: actions/checkout@v3
+      - name: Download conda packages
+        uses: actions/download-artifact@v3
+        with:
+          name: slycot-conda-pkgs
+          path: slycot-conda-pkgs
+      - id: set-matrix
+        run: echo "matrix=$(python3 .github/scripts/set-conda-test-matrix.py)" >> $GITHUB_OUTPUT
+
+
+  test-wheel:
+    name: Test wheel ${{ matrix.packagekey }}, ${{matrix.blas_lib}} BLAS lib ${{ matrix.failok }}
+    needs: create-wheel-test-matrix
+    runs-on: ${{ matrix.os }}-latest
+    continue-on-error: ${{ matrix.failok == 'FAILOK' }}
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.create-wheel-test-matrix.outputs.matrix) }}
+
+    steps:
+      - name: Checkout Slycot
+        uses: actions/checkout@v3
+        with:
+          repository: 'python-control/Slycot'
+          path: slycot-src
+      - name: Checkout python-control
+        uses: actions/checkout@v3
+        with:
+          repository: 'python-control/python-control'
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Setup Ubuntu
+        if: matrix.os == 'ubuntu'
+        run: |
+          set -xe
+          sudo apt-get -y update
+          case ${{ matrix.blas_lib }} in
+            Generic )  sudo apt-get -y install libblas3 liblapack3 ;;
+            unset | OpenBLAS        ) sudo apt-get -y install libopenblas-base ;;
+            *)
+              echo "BLAS ${{ matrix.blas_lib }} not supported for wheels on Ubuntu"
+              exit 1 ;;
+          esac
+          update-alternatives --display libblas.so.3-x86_64-linux-gnu
+          update-alternatives --display liblapack.so.3-x86_64-linux-gnu
+      - name: Setup macOS
+        if: matrix.os == 'macos'
+        run: |
+          set -xe
+          brew install coreutils
+          case ${{ matrix.blas_lib }} in
+            unset | Generic | Apple ) ;; # system provided (Uses Apple Accelerate Framework)
+            OpenBLAS )
+              brew install openblas
+              echo "DYLIB_LIBRARY_PATH=/usr/local/opt/openblas/lib" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "BLAS option ${{ matrix.blas_lib }} not supported for wheels on MacOS"
+              exit 1 ;;
+          esac
+      - name: Download wheels
+        uses: actions/download-artifact@v3
+        with:
+          name: slycot-wheels
+          path: slycot-wheels
+      - name: Install Wheel
+        run: |
+          python -m pip install --upgrade pip
+          pip install matplotlib scipy pytest pytest-cov pytest-timeout coverage coveralls
+          pip install slycot-wheels/${{ matrix.packagekey }}/slycot*.whl
+          pip show slycot
+      - name: Test with pytest
+        run: pytest -v control/tests
+
+
+  test-conda:
+    name: Test conda ${{ matrix.packagekey }}, ${{matrix.blas_lib}} BLAS lib ${{ matrix.failok }}
+    needs: create-conda-test-matrix
+    runs-on: ${{ matrix.os }}-latest
+    continue-on-error: ${{ matrix.failok == 'FAILOK' }}
+
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.create-conda-test-matrix.outputs.matrix) }}
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout Slycot
+        uses: actions/checkout@v3
+        with:
+          repository: 'python-control/Slycot'
+          path: slycot-src
+      - name: Checkout python-control
+        uses: actions/checkout@v3
+      - name: Setup macOS
+        if: matrix.os == 'macos'
+        run: brew install coreutils
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: ${{ matrix.python }}
+          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          activate-environment: test-env
+          environment-file: .github/conda-env/test-env.yml
+          channel-priority: strict
+          auto-activate-base: false
+      - name: Download conda packages
+        uses: actions/download-artifact@v3
+        with:
+          name: slycot-conda-pkgs
+          path: slycot-conda-pkgs
+      - name: Install Conda package
+        run: |
+          set -e
+          case ${{ matrix.blas_lib }} in
+            unset        ) # the conda-forge default (os dependent)
+              mamba install libblas libcblas liblapack
+              ;;
+            Generic      )
+              mamba install 'libblas=*=*netlib' 'libcblas=*=*netlib' 'liblapack=*=*netlib'
+              echo "libblas * *netlib" >> $CONDA_PREFIX/conda-meta/pinned
+              ;;
+            OpenBLAS     )
+              mamba install 'libblas=*=*openblas' openblas
+              echo "libblas * *openblas" >> $CONDA_PREFIX/conda-meta/pinned
+              ;;
+            Intel10_64lp )
+              mamba install 'libblas=*=*mkl' mkl
+              echo "libblas * *mkl" >> $CONDA_PREFIX/conda-meta/pinned
+              ;;
+          esac
+          conda index --no-progress ./slycot-conda-pkgs
+          mamba install -c ./slycot-conda-pkgs slycot
+          conda list
+      - name: Test with pytest
+        run: JOBNAME=$JOBNAME pytest control/tests
+        env:
+          JOBNAME: ${{ matrix.packagekey }} ${{ matrix.blas_lib }}
