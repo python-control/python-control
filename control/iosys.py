@@ -2010,11 +2010,6 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
     if np.isscalar(y0):
         y0 = np.ones((ninputs,)) * y0
 
-    # Discrete-time not yet supported
-    if isdtime(sys, strict=True):
-        raise NotImplementedError(
-            "Discrete time systems are not yet supported.")
-
     # Make sure the input arguments match the sizes of the system
     if len(x0) != nstates or \
        (u0 is not None and len(u0) != ninputs) or \
@@ -2030,18 +2025,28 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
         # Special cases: either inputs or outputs are constrained
         if y0 is None:
             # Take u0 as fixed and minimize over x
-            # TODO: update to allow discrete time systems
-            def ode_rhs(z): return sys._rhs(t, z, u0)
-            result = root(ode_rhs, x0)
+            if sys.isdtime(strict=True):
+                def state_rhs(z): return sys._rhs(t, z, u0) - z
+            else:
+                def state_rhs(z): return sys._rhs(t, z, u0)
+
+            result = root(state_rhs, x0)
             z = (result.x, u0, sys._out(t, result.x, u0))
+
         else:
             # Take y0 as fixed and minimize over x and u
-            def rootfun(z):
-                # Split z into x and u
-                x, u = np.split(z, [nstates])
-                # TODO: update to allow discrete time systems
-                return np.concatenate(
-                    (sys._rhs(t, x, u), sys._out(t, x, u) - y0), axis=0)
+            if sys.isdtime(strict=True):
+                def rootfun(z):
+                    x, u = np.split(z, [nstates])
+                    return np.concatenate(
+                        (sys._rhs(t, x, u) - x, sys._out(t, x, u) - y0),
+                        axis=0)
+            else:
+                def rootfun(z):
+                    x, u = np.split(z, [nstates])
+                    return np.concatenate(
+                        (sys._rhs(t, x, u), sys._out(t, x, u) - y0), axis=0)
+
             z0 = np.concatenate((x0, u0), axis=0)   # Put variables together
             result = root(rootfun, z0)              # Find the eq point
             x, u = np.split(result.x, [nstates])    # Split result back in two
@@ -2135,7 +2140,6 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
 
         # Keep track of the number of states in the set of free variables
         nstate_vars = len(state_vars)
-        dtime = isdtime(sys, strict=True)
 
         def rootfun(z):
             # Map the vector of values into the states and inputs
@@ -2144,8 +2148,8 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
 
             # Compute the update and output maps
             dx = sys._rhs(t, x, u) - dx0
-            if dtime:
-                dx -= x           # TODO: check
+            if sys.isdtime(strict=True):
+                dx -= x
 
             # If no y0 is given, don't evaluate the output function
             if y0 is None:

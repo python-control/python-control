@@ -10,9 +10,10 @@ created for that purpose.
 
 import re
 import warnings
+import pytest
 
 import numpy as np
-import pytest
+from math import sqrt
 
 import control as ct
 from control import iosys as ios
@@ -238,7 +239,7 @@ class TestIOSys:
         assert lin_nocopy.find_state('x') is None
 
         # if signal names are provided, they should override those of kincar
-        linearized_newnames = kincar.linearize([0, 0, 0], [0, 0], 
+        linearized_newnames = kincar.linearize([0, 0, 0], [0, 0],
             name='linearized',
             copy_names=True, inputs=['v2', 'phi2'], outputs=['x2','y2'])
         assert linearized_newnames.name == 'linearized'
@@ -766,8 +767,8 @@ class TestIOSys:
         np.testing.assert_allclose(ios_t, lin_t,atol=0.002,rtol=0.)
         np.testing.assert_allclose(ios_y, lin_y,atol=0.002,rtol=0.)
 
-    def test_find_eqpts(self, tsys):
-        """Test find_eqpt function"""
+    def test_find_eqpts_dfan(self, tsys):
+        """Test find_eqpt function on dfan example"""
         # Simple equilibrium point with no inputs
         nlsys = ios.NonlinearIOSystem(predprey)
         xeq, ueq, result = ios.find_eqpt(
@@ -836,7 +837,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(
             nlsys_full._rhs(0, xeq, ueq)[-4:], np.zeros((4,)), decimal=5)
 
-        # The same test as previous, but now all constraints are in the state vector
+        # Same test as before, but now all constraints are in the state vector
         nlsys_full = ios.NonlinearIOSystem(pvtol_full, None)
         xeq, ueq, result = ios.find_eqpt(
             nlsys_full, [0, 0, 0.1, 0.1, 0, 0], [0.01, 4*9.8],
@@ -1482,7 +1483,7 @@ def test_linear_interconnection():
     tf_siso = ct.tf(1, [0.1, 1])
     ss_siso = ct.ss(1, 2, 1, 1)
     nl_siso = ios.NonlinearIOSystem(
-        lambda t, x, u, params: x*x, 
+        lambda t, x, u, params: x*x,
         lambda t, x, u, params: u*x, states=1, inputs=1, outputs=1)
 
     # Create a "regular" InterconnectedSystem
@@ -1530,7 +1531,7 @@ def test_linear_interconnection():
     np.testing.assert_array_almost_equal(io_connect.C, ss_connect.C)
     np.testing.assert_array_almost_equal(io_connect.D, ss_connect.D)
 
-    # make sure interconnections of linear systems are linear and 
+    # make sure interconnections of linear systems are linear and
     # if a nonlinear system is included then system is nonlinear
     assert isinstance(ss_siso*ss_siso, ios.LinearIOSystem)
     assert isinstance(tf_siso*ss_siso, ios.LinearIOSystem)
@@ -1541,7 +1542,7 @@ def test_linear_interconnection():
     assert ~isinstance(tf_siso*nl_siso, ios.LinearIOSystem)
     assert ~isinstance(nl_siso*tf_siso, ios.LinearIOSystem)
     assert ~isinstance(nl_siso*nl_siso, ios.LinearIOSystem)
-    
+
 
 def predprey(t, x, u, params={}):
     """Predator prey dynamics"""
@@ -1898,3 +1899,73 @@ def test_rss():
     with pytest.warns(UserWarning, match="may be interpreted as continuous"):
         sys = ct.drss(2, 1, 1, dt=None)
         assert np.all(np.abs(sys.poles()) < 1)
+
+
+def eqpt_rhs(t, x, u, params):
+    return np.array([x[0]/2 + u[0], x[0] - x[1]**2 + u[1], x[1] - x[2]])
+
+def eqpt_out(t, x, u, params):
+    return np.array([x[0], x[1] + u[1]])
+
+@pytest.mark.parametrize(
+    "x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect", [
+        # Equilibrium points with input given
+        (0, None, 0, None, None, None, None, None, 0, [0, 0, 0], [0, 0]),
+        (0, None, 0, None, None, None, None, None, None, [0, 0, 0], [0, 0]),
+        ([0.9, 0.9, 0.9], None, [-1, 0], None, None, None, None, None, 0,
+         [2, sqrt(2), sqrt(2)], [-1, 0]),
+        ([0.9, -0.9, 0.9], None, [-1, 0], None, None, None, None, None, 0,
+         [2, -sqrt(2), -sqrt(2)], [-1, 0]),     # same input, different eqpt
+        (0, None, 0, None, None, None, None, None, 1, [0, 0, 0], [0, 0]), #DT
+        (0, None, [-1, 0], None, None, None, None, None, 1, None, None),  #DT
+        ([0, -0.1, 0], None, [0, -0.25], None, None, None, None, None, 1, #DT
+         [0, -0.5, -0.25], [0, -0.25]),
+
+        # Equilibrium points with output given
+        ([0.9, 0.9, 0.9], None, [-0.9, 0], None, [2, sqrt(2)], None, None,
+         None, 0, [2, sqrt(2), sqrt(2)], [-1, 0]),
+        (0, None, [0, -0.25], None, [0, -0.75], None, None, None, 1,      #DT
+         [0, -0.5, -0.25], [0, -0.25]),
+
+        # Equilibrium points with mixture of inputs and outputs given
+        ([0.9, 0.9, 0.9], None, [-1, 0], [0], [2, sqrt(2)], [1], None,
+         None, 0, [2, sqrt(2), sqrt(2)], [-1, 0]),
+        (0, None, [0, -0.22], [0], [0, -0.75], [1], None, None, 1,        #DT
+         [0, -0.5, -0.25], [0, -0.25]),
+    ])
+
+def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
+    sys = ct.NonlinearIOSystem(
+        eqpt_rhs, eqpt_out, dt=dt, states=3, inputs=2, outputs=2)
+
+    xeq, ueq = ct.find_eqpt(
+        sys, x0, u0, y0, ix=ix, iu=iu, iy=iy, dx0=dx0, idx=idx)
+
+    # If no equilibrium points, skip remaining tests
+    if x_expect is None:
+        assert xeq is None
+        assert ueq is None
+        return
+
+    # Make sure we are at an appropriate equilibrium point
+    if dt is None or dt == 0:
+        # Continuous time system
+        np.testing.assert_allclose(eqpt_rhs(0, xeq, ueq, {}), 0, atol=1e-6)
+        if y0 is not None:
+            y0 = np.array(y0)
+            iy = np.s_[:] if iy is None else np.array(iy)
+            np.testing.assert_allclose(
+                eqpt_out(0, xeq, ueq, {})[iy], y0[iy], atol=1e-6)
+
+    else:
+        # Discrete time system
+        np.testing.assert_allclose(eqpt_rhs(0, xeq, ueq, {}), xeq, atol=1e-6)
+        if y0 is not None:
+            y0 = np.array(y0)
+            iy = np.s_[:] if iy is None else np.array(iy)
+            np.testing.assert_allclose(
+                eqpt_out(0, xeq, ueq, {})[iy], y0[iy], atol=1e-6)
+
+    # Check that we got the expected result as well
+    np.testing.assert_allclose(np.array(xeq), x_expect, atol=1e-6)
+    np.testing.assert_allclose(np.array(ueq), u_expect, atol=1e-6)
