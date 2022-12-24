@@ -1,7 +1,15 @@
 name: OS/BLAS test matrix
 
-on: pull_request
-
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/os-blas-test-matrix.yml
+      - .github/scripts/set-conda-test-matrix.py
+      - .github/scripts/set-conda-pip-matrix.py
+      - .github/conda-env/build-env.yml
+      - .github/conda-env/test-env.yml
+      
 jobs:
   build-pip:
     name: Build pip Py${{ matrix.python }}, ${{ matrix.os }}, ${{ matrix.bla_vendor}} BLA_VENDOR
