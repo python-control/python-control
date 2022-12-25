@@ -210,7 +210,7 @@ class TestFlatSys:
                 pytest.xfail("precision loss in some configurations")
 
             elif re.match("Iteration limit.*", traj_ocp.message) and \
-                 re.match("ubuntu-3.* Generic", os.getenv('JOBNAME')) and \
+                 re.match("ubuntu-3.* Generic", os.getenv('JOBNAME', '')) and \
                  np.__version__ == '1.24.0':
                 pytest.xfail("gh820: iteration limit exceeded")
 
