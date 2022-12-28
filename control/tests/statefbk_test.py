@@ -849,7 +849,8 @@ def test_gainsched_unicycle(unicycle, method):
     # Make sure that gains are different from 'nearest'
     if method is not None and method != 'nearest':
         ctrl_nearest, clsys_nearest = ct.create_statefbk_iosystem(
-            unicycle, (gains, points, 'nearest'), gainsched_indices=[3, 2])
+            unicycle, (gains, points, 'nearest'),
+            gainsched_indices=['ud[0]', 2])
         nearest_lin = clsys_nearest.linearize(xe, [xd, ud])
         assert not np.allclose(
             np.sort(clsys_lin.poles()), np.sort(nearest_lin.poles()), rtol=1e-2)
@@ -880,7 +881,8 @@ def test_gainsched_unicycle(unicycle, method):
 
     # Create gain scheduled controller
     ctrl, clsys = ct.create_statefbk_iosystem(
-        unicycle, (gains, points), gainsched_indices=[3, 7])
+        unicycle, (gains, points),
+        ud_labels=['vd', 'phid'], gainsched_indices=['vd', 'theta'])
 
     # Check the gain at the selected points
     for speed, angle in points:
@@ -903,3 +905,43 @@ def test_gainsched_unicycle(unicycle, method):
     resp = ct.input_output_response(clsys, timepts, [Xd, Ud], X0)
     np.testing.assert_allclose(
         resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
+
+def test_gainsched_errors(unicycle):
+    # Set up gain schedule (same as previous test)
+    speeds = [1, 5, 10]
+    angles = np.linspace(0, pi/2, 4)
+    points = list(itertools.product(speeds, angles))
+
+    Q = np.identity(unicycle.nstates)
+    R = np.identity(unicycle.ninputs)
+    gains = [np.array(ct.lqr(unicycle.linearize(
+        [0, 0, angle], [speed, 0]), Q, R)[0]) for speed, angle in points]
+
+    # Make sure the generic case works OK
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle, (gains, points), gainsched_indices=[3, 2])
+    xd, ud = np.array([0, 0, angles[0]]), np.array([speeds[0], 0])
+    ctrl_lin = ctrl.linearize([], [xd, ud, xd*0])
+    K, S, E = ct.lqr(unicycle.linearize(xd, ud), Q, R)
+    np.testing.assert_allclose(
+        ctrl_lin.D[-xd.size:, -xd.size:], -K, rtol=1e-2)
+
+    # Wrong type of gain schedule argument
+    with pytest.raises(ControlArgument, match="gain must be an array"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, [gains, points], gainsched_indices=[3, 2])
+
+    # Mismatched dimensions for gains and points
+    with pytest.raises(ControlArgument, match="length of gainsched_indices"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, [speeds]), gainsched_indices=[3, 2])
+
+    # Unknown gain scheduling variable label
+    with pytest.raises(ValueError, match=".* not in list"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, points), gainsched_indices=['stuff', 2])
+
+    # Unknown gain scheduling method
+    with pytest.raises(ControlArgument, match="unknown gain scheduling method"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, points, 'stuff'), gainsched_indices=[3, 2])

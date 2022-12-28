@@ -788,6 +788,9 @@ def create_statefbk_iosystem(
         # Generate the list of labels using the argument as a format string
         ud_labels = [ud_labels.format(i=i) for i in range(sys.ninputs)]
 
+    # Create the string of labels for the control system
+    input_labels = xd_labels + ud_labels + estimator.output_labels
+
     # Process gainscheduling variables, if present
     if gainsched:
         # Create a copy of the scheduling variable indices (default = empty)
@@ -797,10 +800,13 @@ def create_statefbk_iosystem(
         # Make sure the scheduling variable indices are the right length
         if len(gainsched_indices) != points.shape[1]:
             raise ControlArgument(
-                "Length of gainsched_indices must match dimension of"
+                "length of gainsched_indices must match dimension of"
                 " scheduling variables")
 
-        # TODO: Process scheduling variables
+        # Process scheduling variables
+        for i, idx in enumerate(gainsched_indices):
+            if isinstance(idx, str):
+                gainsched_indices[i] = input_labels.index(gainsched_indices[i])
 
         # Create interpolating function
         if method == 'nearest':
@@ -855,9 +861,8 @@ def create_statefbk_iosystem(
         params = {} if gainsched else {'K': K}
         ctrl = NonlinearIOSystem(
             _control_update, _control_output, name='control',
-            inputs=xd_labels + ud_labels + estimator.output_labels,
-            outputs=list(sys.input_index.keys()), params=params,
-            states=nintegrators)
+            inputs=input_labels, outputs=list(sys.input_index.keys()),
+            params=params, states=nintegrators)
 
     elif type == 'linear' or type is None:
         # Create the matrices implementing the controller
