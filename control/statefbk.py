@@ -802,6 +802,26 @@ def create_statefbk_iosystem(
 
         # TODO: Process scheduling variables
 
+        # Create interpolating function
+        if method == 'nearest':
+            _interp = sp.interpolate.NearestNDInterpolator(points, gains)
+            _nearest = _interp
+        elif method == 'linear':
+            _interp = sp.interpolate.LinearNDInterpolator(points, gains)
+            _nearest = sp.interpolate.NearestNDInterpolator(points, gains)
+        elif method == 'cubic':
+            _interp = sp.interpolate.CloughTocher2DInterpolator(points, gains)
+            _nearest = sp.interpolate.NearestNDInterpolator(points, gains)
+        else:
+            raise ControlArgument(
+                f"unknown gain scheduling method '{method}'")
+
+        def _compute_gain(mu):
+            K = _interp(mu)
+            if np.isnan(K).any():
+                K = _nearest(mu)
+            return K
+
     # Define the controller system
     if type == 'nonlinear':
         # Create an I/O system for the state feedback gains
@@ -813,19 +833,10 @@ def create_statefbk_iosystem(
             # Compute the integral error in the xy coordinates
             return C @ (x_vec - xd_vec)
 
-        def _compute_gain(mu, gains_, points_):
-            K = np.array([
-                [sp.interpolate.griddata(
-                    points_, gains_[:, i, j], mu, method=method).item()
-                 for j in range(gains_.shape[2])]
-                for i in range(gains_.shape[1])
-            ])
-            return K
-
         def _control_output(t, states, inputs, params):
             if gainsched:
                 mu = inputs[gainsched_indices]
-                K_ = _compute_gain(mu, gains, points)
+                K_ = _compute_gain(mu)
             else:
                 K_ = params.get('K')
 

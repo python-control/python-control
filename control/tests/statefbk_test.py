@@ -799,18 +799,18 @@ def unicycle():
 
 from math import pi
 
-@pytest.mark.parametrize("method", [None, 'nearest'])
+@pytest.mark.parametrize("method", [None, 'nearest', 'linear', 'cubic'])
 def test_gainsched_unicycle(unicycle, method):
     # Speeds and angles at which to compute the gains
     speeds = [1, 5, 10]
-    angles = -pi + np.linspace(0, 2*pi, 10)
+    angles = np.linspace(0, pi/2, 4)
     points = list(itertools.product(speeds, angles))
 
     # Gains for each speed (using LQR controller)
     Q = np.identity(unicycle.nstates)
     R = np.identity(unicycle.ninputs)
-    gains = [ct.lqr(unicycle.linearize(
-        [0, 0, angle], [speed, 0]), Q, R)[0] for speed, angle in points]
+    gains = [np.array(ct.lqr(unicycle.linearize(
+        [0, 0, angle], [speed, 0]), Q, R)[0]) for speed, angle in points]
 
     #
     # Schedule on desired speed and angle
@@ -836,13 +836,28 @@ def test_gainsched_unicycle(unicycle, method):
 
         # Check the closed loop system at the scheduling points
         clsys_lin = clsys.linearize(xe, [xd, ud])
-        np.testing.assert_allclose(np.sort(
-            clsys_lin.poles()), np.sort(E), rtol=1e-2)
+        np.testing.assert_allclose(
+            np.sort(clsys_lin.poles()), np.sort(E), rtol=1e-2)
+
+    # Check the gain at an intermediate point and confirm stability
+    speed, angle = 2, pi/3
+    xe, ue = np.array([0, 0, angle]), np.array([speed, 0])
+    xd, ud = np.array([0, 0, angle]), np.array([speed, 0])
+    clsys_lin = clsys.linearize(xe, [xd, ud])
+    assert np.all(np.real(clsys_lin.poles()) < 0)
+
+    # Make sure that gains are different from 'nearest'
+    if method is not None and method != 'nearest':
+        ctrl_nearest, clsys_nearest = ct.create_statefbk_iosystem(
+            unicycle, (gains, points, 'nearest'), gainsched_indices=[3, 2])
+        nearest_lin = clsys_nearest.linearize(xe, [xd, ud])
+        assert not np.allclose(
+            np.sort(clsys_lin.poles()), np.sort(nearest_lin.poles()), rtol=1e-2)
 
     # Run a simulation following a curved path
     T = 10                      # length of the trajectory [sec]
     r = 10                      # radius of the circle [m]
-    timepts = np.linspace(0, T, 100)
+    timepts = np.linspace(0, T, 50)
     Xd = np.vstack([
         r * np.cos(timepts/T * pi/2 + 3*pi/2),
         r * np.sin(timepts/T * pi/2 + 3*pi/2) + r,
@@ -885,20 +900,6 @@ def test_gainsched_unicycle(unicycle, method):
             clsys_lin.poles()), np.sort(E), rtol=1e-2)
 
     # Run a simulation following a curved path
-    T = 10                      # length of the trajectory [sec]
-    r = 10                      # radius of the circle [m]
-    timepts = np.linspace(0, T, 100)
-    Xd = np.vstack([
-        r * np.cos(timepts/T * pi/2 + 3*pi/2),
-        r * np.sin(timepts/T * pi/2 + 3*pi/2) + r,
-        timepts/T * pi/2
-    ])
-    Ud = np.vstack([
-        np.ones_like(timepts) * (r * pi/2) / T,
-        np.ones_like(timepts) * (pi / 2) / T
-    ])
-    X0 = Xd[:, 0] + np.array([-0.1, -0.1, -0.1])
-
     resp = ct.input_output_response(clsys, timepts, [Xd, Ud], X0)
     np.testing.assert_allclose(
         resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
