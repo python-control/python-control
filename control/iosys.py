@@ -1994,6 +1994,14 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
         If `return_result` is True, returns the `result` from the
         :func:`scipy.optimize.root` function.
 
+    Notes
+    -----
+    For continuous time systems, equilibrium points are defined as points for
+    which the right hand side of the differential equation is zero:
+    :math:`f(t, x_e, u_e) = 0`. For discrete time systems, equilibrium points
+    are defined as points for which the right hand side of the difference
+    equation returns the current state: :math:`f(t, x_e, u_e) = x_e`.
+
     """
     from scipy.optimize import root
 
