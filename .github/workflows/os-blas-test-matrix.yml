@@ -251,7 +251,9 @@ jobs:
           pip install slycot-wheels/${{ matrix.packagekey }}/slycot*.whl
           pip show slycot
       - name: Test with pytest
-        run: pytest -v control/tests
+        run: JOBNAME="$JOBNAME" pytest control/tests
+        env:
+          JOBNAME: wheel ${{ matrix.packagekey }} ${{ matrix.blas_lib }}
 
 
   test-conda:
@@ -318,6 +320,6 @@ jobs:
           mamba install -c ./slycot-conda-pkgs slycot
           conda list
       - name: Test with pytest
-        run: JOBNAME=$JOBNAME pytest control/tests
+        run: JOBNAME="$JOBNAME" pytest control/tests
         env:
-          JOBNAME: ${{ matrix.packagekey }} ${{ matrix.blas_lib }}
+          JOBNAME: conda ${{ matrix.packagekey }} ${{ matrix.blas_lib }}

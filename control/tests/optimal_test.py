@@ -626,7 +626,7 @@ def test_equality_constraints():
         ('collocation', 5, 'u0', 'endpoint'),
         ('collocation', 5, 'input', 'openloop'),# open loop sim fails
         ('collocation', 10, 'input', None),
-        ('collocation', 10, 'u0', None),        # from documenentation
+        ('collocation', 10, 'u0', None),        # from documentation
         ('collocation', 10, 'state', None),
         ('collocation', 20, 'state', None),
     ])
@@ -716,9 +716,11 @@ def test_optimal_doc(method, npts, initial_guess, fail):
 
         # Make sure we started and stopped at the right spot
         if fail == 'endpoint':
+            assert not np.allclose(result.states[:, -1], xf, rtol=1e-4)
             pytest.xfail("optimization does not converge to endpoint")
         else:
             np.testing.assert_almost_equal(result.states[:, 0], x0, decimal=4)
+            np.testing.assert_almost_equal(result.states[:, -1], xf, decimal=2)
 
             # Simulate the trajectory to make sure it looks OK
             resp = ct.input_output_response(
