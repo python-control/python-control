@@ -41,6 +41,7 @@
 
 # External packages and modules
 import numpy as np
+import scipy as sp
 
 from . import statesp
 from .mateqn import care, dare, _check_shape
@@ -71,7 +72,7 @@ except ImportError:
     sb03od = None
 
 
-__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr', 
+__all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr',
            'dlqr', 'acker', 'create_statefbk_iosystem']
 
 
@@ -600,8 +601,8 @@ def dlqr(*args, **kwargs):
 
 # Function to create an I/O sytems representing a state feedback controller
 def create_statefbk_iosystem(
-        sys, K, integral_action=None, xd_labels='xd[{i}]', ud_labels='ud[{i}]',
-        estimator=None, type='linear'):
+        sys, gain, integral_action=None, estimator=None, type=None,
+        xd_labels='xd[{i}]', ud_labels='ud[{i}]', gainsched_indices=None):
     """Create an I/O system using a (full) state feedback controller
 
     This function creates an input/output system that implements a
@@ -617,26 +618,46 @@ def create_statefbk_iosystem(
     feedback gain (eg, from LQR).  The function returns the controller
     ``ctrl`` and the closed loop systems ``clsys``, both as I/O systems.
 
+    A gain scheduled controller can also be created, by passing a list of
+    gains and a corresponding list of values of a set of scheduling
+    variables.  In this case, the controller has the form
+
+        u = ud - K_p(mu) (x - xd) - K_i(mu) integral(C x - C x_d)
+
+    where mu represents the scheduling variable.
+
     Parameters
     ----------
     sys : InputOutputSystem
         The I/O system that represents the process dynamics.  If no estimator
         is given, the output of this system should represent the full state.
 
-    K : ndarray
-        The state feedback gain.  This matrix defines the gains to be
-        applied to the system.  If ``integral_action`` is None, then the
-        dimensions of this array should be (sys.ninputs, sys.nstates).  If
-        `integral action` is set to a matrix or a function, then additional
-        columns represent the gains of the integral states of the
-        controller.
+    gain : ndarray or tuple
+        If a array is give, it represents the state feedback gain (K).
+        This matrix defines the gains to be applied to the system.  If
+        ``integral_action`` is None, then the dimensions of this array
+        should be (sys.ninputs, sys.nstates).  If `integral action` is
+        set to a matrix or a function, then additional columns
+        represent the gains of the integral states of the controller.
+
+        If a tuple is given, then it specifies a gain schedule.  The
+        tuple should be of the form
+
+            (gains, points[, method])
+
+        where gains is a list of gains :math:`K_j` and points is a list of
+        values :math:`\\mu_j` at which the gains are computed.  If `method`
+        is specified, it is passed to :func:`scipy.interpolate.griddata` to
+        specify the method of interpolation.  Possible values include
+        `linear`, `nearest`, and `cubic`.
 
     xd_labels, ud_labels : str or list of str, optional
         Set the name of the signals to use for the desired state and inputs.
         If a single string is specified, it should be a format string using
-        the variable ``i`` as an index.  Otherwise, a list of strings matching
-        the size of xd and ud, respectively, should be used.  Default is
-        ``'xd[{i}]'`` for xd_labels and ``'xd[{i}]'`` for ud_labels.
+        the variable ``i`` as an index.  Otherwise, a list of strings
+        matching the size of xd and ud, respectively, should be used.
+        Default is ``'xd[{i}]'`` for xd_labels and ``'ud[{i}]'`` for
+        ud_labels.
 
     integral_action : None, ndarray, or func, optional
         If this keyword is specified, the controller can include integral
@@ -650,30 +671,48 @@ def create_statefbk_iosystem(
         ``K`` matrix.
 
     estimator : InputOutputSystem, optional
-        If an estimator is provided, using the states of the estimator as
+        If an estimator is provided, use the states of the estimator as
         the system inputs for the controller.
 
-    type : 'nonlinear' or 'linear', optional
-        Set the type of controller to create. The default is a linear
-        controller implementing the LQR regulator. If the type is 'nonlinear',
-        a :class:NonlinearIOSystem is created instead, with the gain ``K`` as
-        a parameter (allowing modifications of the gain at runtime).
+    gainsched_indices : list of integers, optional
+        If a gain scheduled controller is specified, specify the indices of
+        the controller input to use for scheduling the gain.  The input to
+        the controller is the desired state xd, the desired input ud, and
+        either the system state x or the system output y (if an estimator is
+        given).
+
+    type : 'linear' or 'nonlinear', optional
+        Set the type of controller to create. The default for a linear gain
+        is a linear controller implementing the LQR regulator. If the type
+        is 'nonlinear', a :class:NonlinearIOSystem is created instead, with
+        the gain ``K`` as a parameter (allowing modifications of the gain at
+        runtime).  If the gain parameter is a tuple, the a nonlinear,
+        gain-scheduled controller is created.
 
     Returns
     -------
     ctrl : InputOutputSystem
         Input/output system representing the controller.  This system takes
-        as inputs the desired state xd, the desired input ud, and the system
-        state x.  It outputs the controller action u according to the
-        formula u = ud - K(x - xd).  If the keyword `integral_action` is
-        specified, then an additional set of integrators is included in the
-        control system (with the gain matrix K having the integral gains
-        appended after the state gains).
+        as inputs the desired state xd, the desired input ud, and either the
+        system state x or the system output y (if an estimator is given).
+        It outputs the controller action u according to the formula u = ud -
+        K(x - xd).  If the keyword `integral_action` is specified, then an
+        additional set of integrators is included in the control system
+        (with the gain matrix K having the integral gains appended after the
+        state gains).  If a gain scheduled controller is specified, the gain
+        (proportional and integral) are evaluated using the input mu.
 
     clsys : InputOutputSystem
         Input/output system representing the closed loop system.  This
-        systems takes as inputs the desired trajectory (xd, ud) and outputs
-        the system state x and the applied input u (vertically stacked).
+        systems takes as inputs the desired trajectory (xd, ud) along with
+        any unassigned gain scheduling values mu and outputs the system
+        state x and the applied input u (vertically stacked).
+
+    Notes
+    -----
+    1. If the gain scheduling variable labes are set to the names of system
+       states, inputs, or outputs or desired states or inputs, then the
+       scheduling variables are internally connected to those variables.
 
     """
     # Make sure that we were passed an I/O system as an input
@@ -709,52 +748,104 @@ def create_statefbk_iosystem(
         C = np.zeros((0, sys.nstates))
 
     # Check to make sure that state feedback has the right shape
-    if not isinstance(K, np.ndarray) or \
-       K.shape != (sys.ninputs, estimator.noutputs + nintegrators):
+    if isinstance(gain, np.ndarray):
+        K = gain
+        if K.shape != (sys.ninputs, estimator.noutputs + nintegrators):
+            raise ControlArgument(
+                f'Control gain must be an array of size {sys.ninputs}'
+                f'x {sys.nstates}' +
+                (f'+{nintegrators}' if nintegrators > 0 else ''))
+        gainsched = False
+
+    elif isinstance(gain, tuple):
+        # Check for gain scheduled controller
+        gains, points = gain[0:2]
+        method = 'nearest' if len(gain) < 3 else gain[2]
+
+        # Stack gains and points if past as a list
+        gains = np.stack(gains)
+        points = np.stack(points)
+        gainsched=True
+
+    else:
+        raise ControlArgument("gain must be an array or a tuple")
+
+    # Decide on the type of system to create
+    if gainsched and type == 'linear':
         raise ControlArgument(
-            f'Control gain must be an array of size {sys.ninputs}'
-            f'x {sys.nstates}' +
-            (f'+{nintegrators}' if nintegrators > 0 else ''))
+            "type 'linear' not allowed for gain scheduled controller")
+    elif type is None:
+        type = 'nonlinear' if gainsched else 'linear'
+    elif type not in {'linear', 'nonlinear'}:
+        raise ControlArgument(f"unknown type '{type}'")
 
     # Figure out the labels to use
     if isinstance(xd_labels, str):
-        # Gnerate the list of labels using the argument as a format string
+        # Generate the list of labels using the argument as a format string
         xd_labels = [xd_labels.format(i=i) for i in range(sys.nstates)]
 
     if isinstance(ud_labels, str):
-        # Gnerate the list of labels using the argument as a format string
+        # Generate the list of labels using the argument as a format string
         ud_labels = [ud_labels.format(i=i) for i in range(sys.ninputs)]
+
+    # Process gainscheduling variables, if present
+    if gainsched:
+        # Create a copy of the scheduling variable indices (default = empty)
+        gainsched_indices = [] if gainsched_indices is None \
+            else list(gainsched_indices)
+
+        # Make sure the scheduling variable indices are the right length
+        if len(gainsched_indices) != points.shape[1]:
+            raise ControlArgument(
+                "Length of gainsched_indices must match dimension of"
+                " scheduling variables")
+
+        # TODO: Process scheduling variables
 
     # Define the controller system
     if type == 'nonlinear':
         # Create an I/O system for the state feedback gains
-        def _control_update(t, x, inputs, params):
+        def _control_update(t, states, inputs, params):
             # Split input into desired state, nominal input, and current state
             xd_vec = inputs[0:sys.nstates]
             x_vec = inputs[-estimator.nstates:]
 
             # Compute the integral error in the xy coordinates
-            return C @ x_vec - C @ xd_vec
+            return C @ (x_vec - xd_vec)
 
-        def _control_output(t, e, z, params):
-            K = params.get('K')
+        def _compute_gain(mu, gains_, points_):
+            K = np.array([
+                [sp.interpolate.griddata(
+                    points_, gains_[:, i, j], mu, method=method).item()
+                 for j in range(gains_.shape[2])]
+                for i in range(gains_.shape[1])
+            ])
+            return K
+
+        def _control_output(t, states, inputs, params):
+            if gainsched:
+                mu = inputs[gainsched_indices]
+                K_ = _compute_gain(mu, gains, points)
+            else:
+                K_ = params.get('K')
 
             # Split input into desired state, nominal input, and current state
-            xd_vec = z[0:sys.nstates]
-            ud_vec = z[sys.nstates:sys.nstates + sys.ninputs]
-            x_vec = z[-sys.nstates:]
+            xd_vec = inputs[0:sys.nstates]
+            ud_vec = inputs[sys.nstates:sys.nstates + sys.ninputs]
+            x_vec = inputs[-sys.nstates:]
 
             # Compute the control law
-            u = ud_vec - K[:, 0:sys.nstates] @ (x_vec - xd_vec)
+            u = ud_vec - K_[:, 0:sys.nstates] @ (x_vec - xd_vec)
             if nintegrators > 0:
-                u -= K[:, sys.nstates:] @ e
+                u -= K_[:, sys.nstates:] @ states
 
             return u
 
+        params = {} if gainsched else {'K': K}
         ctrl = NonlinearIOSystem(
             _control_update, _control_output, name='control',
             inputs=xd_labels + ud_labels + estimator.output_labels,
-            outputs=list(sys.input_index.keys()), params={'K': K},
+            outputs=list(sys.input_index.keys()), params=params,
             states=nintegrators)
 
     elif type == 'linear' or type is None:

@@ -536,6 +536,10 @@ class InputOutputSystem(NamedIOSystem):
         # functions.
         #
 
+        # If x0 and u0 are specified as lists, concatenate the elements
+        x0 = _concatenate_list_elements(x0, 'x0')
+        u0 = _concatenate_list_elements(u0, 'u0')
+
         # Figure out dimensions if they were not specified.
         nstates = _find_size(self.nstates, x0)
         ninputs = _find_size(self.ninputs, u0)
@@ -1758,14 +1762,7 @@ def input_output_response(
     ninputs = U.shape[0]
 
     # If we were passed a list of initial states, concatenate them
-    if isinstance(X0, (tuple, list)):
-        X0_list = []
-        for i, x0 in enumerate(X0):
-            x0 = np.array(x0).reshape(-1)       # convert everyting to 1D array
-            X0_list += x0.tolist()              # add elements to initial state
-
-        # Save the newly created input vector
-        X0 = np.array(X0_list)
+    X0 = _concatenate_list_elements(X0, 'X0')
 
     # If the initial state is too short, make it longer (NB: sys.nstates
     # could be None if nstates comes from size of initial condition)
@@ -2376,6 +2373,19 @@ def ss(*args, **kwargs):
 
     return sys
 
+
+# Utility function to allow lists states, inputs
+def _concatenate_list_elements(X, name='X'):
+    # If we were passed a list, concatenate the elements together
+    if isinstance(X, (tuple, list)):
+        X_list = []
+        for i, x in enumerate(X):
+            x = np.array(x).reshape(-1)         # convert everyting to 1D array
+            X_list += x.tolist()                # add elements to initial state
+        return np.array(X_list)
+
+    # Otherwise, do nothing
+    return X
 
 def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
     """Create a stable random state space object.

@@ -1187,7 +1187,7 @@ class TestIOSys:
             assert "copy of namedsys.x0" in same_name_series.state_index
 
     def test_named_signals_linearize_inconsistent(self, tsys):
-        """Mare sure that providing inputs or outputs not consistent with
+        """Make sure that providing inputs or outputs not consistent with
            updfcn or outfcn fail
         """
 
@@ -1231,6 +1231,17 @@ class TestIOSys:
                        ([0, 0], [0, 0, 0])]:
             with pytest.raises(ValueError):
                 sys2.linearize(x0, u0)
+
+    def test_linearize_concatenation(self, kincar):
+        # Create a simple nonlinear system to check (kinematic car)
+        iosys = kincar
+        linearized = iosys.linearize([0, np.array([0, 0])], [0, 0])
+        np.testing.assert_array_almost_equal(linearized.A, np.zeros((3,3)))
+        np.testing.assert_array_almost_equal(
+            linearized.B, [[1, 0], [0, 0], [0, 1]])
+        np.testing.assert_array_almost_equal(
+            linearized.C, [[1, 0, 0], [0, 1, 0]])
+        np.testing.assert_array_almost_equal(linearized.D, np.zeros((2,2)))
 
     def test_lineariosys_statespace(self, tsys):
         """Make sure that a LinearIOSystem is also a StateSpace object"""

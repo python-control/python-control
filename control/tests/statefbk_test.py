@@ -5,6 +5,8 @@ RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 
 import numpy as np
 import pytest
+import itertools
+from math import pi, atan
 
 import control as ct
 from control import lqe, dlqe, poles, rss, ss, tf
@@ -777,3 +779,126 @@ class TestStatefbk:
         with pytest.raises(ControlArgument, match="must be an array of size"):
             ctrl, clsys = ct.create_statefbk_iosystem(
                 sys, K, integral_action=C_int)
+
+
+# Kinematic car example for testing gain scheduling
+@pytest.fixture
+def unicycle():
+    # Create a simple nonlinear system to check (kinematic car)
+    def unicycle_update(t, x, u, params):
+        return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
+
+    def unicycle_output(t, x, u, params):
+        return x
+
+    return ct.NonlinearIOSystem(
+        unicycle_update, unicycle_output,
+        inputs = ['v', 'phi'],
+        outputs = ['x', 'y', 'theta'],
+        states = ['x_', 'y_', 'theta_'])
+
+from math import pi
+
+@pytest.mark.parametrize("method", [None, 'nearest'])
+def test_gainsched_unicycle(unicycle, method):
+    # Speeds and angles at which to compute the gains
+    speeds = [1, 5, 10]
+    angles = -pi + np.linspace(0, 2*pi, 10)
+    points = list(itertools.product(speeds, angles))
+
+    # Gains for each speed (using LQR controller)
+    Q = np.identity(unicycle.nstates)
+    R = np.identity(unicycle.ninputs)
+    gains = [ct.lqr(unicycle.linearize(
+        [0, 0, angle], [speed, 0]), Q, R)[0] for speed, angle in points]
+
+    #
+    # Schedule on desired speed and angle
+    #
+
+    # Create gain scheduled controller
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle,
+        (gains, points) if method is None else (gains, points, method),
+        gainsched_indices=[3, 2])
+
+    # Check the gain at the selected points
+    for speed, angle in points:
+        # Figure out the desired state and input
+        xe, ue = np.array([0, 0, angle]), np.array([speed, 0])
+        xd, ud = np.array([0, 0, angle]), np.array([speed, 0])
+
+        # Check the control system at the scheduling points
+        ctrl_lin = ctrl.linearize([], [xd, ud, xe*0])
+        K, S, E = ct.lqr(unicycle.linearize(xd, ud), Q, R)
+        np.testing.assert_allclose(
+            ctrl_lin.D[-xe.size:, -xe.size:], -K, rtol=1e-2)
+
+        # Check the closed loop system at the scheduling points
+        clsys_lin = clsys.linearize(xe, [xd, ud])
+        np.testing.assert_allclose(np.sort(
+            clsys_lin.poles()), np.sort(E), rtol=1e-2)
+
+    # Run a simulation following a curved path
+    T = 10                      # length of the trajectory [sec]
+    r = 10                      # radius of the circle [m]
+    timepts = np.linspace(0, T, 100)
+    Xd = np.vstack([
+        r * np.cos(timepts/T * pi/2 + 3*pi/2),
+        r * np.sin(timepts/T * pi/2 + 3*pi/2) + r,
+        timepts/T * pi/2
+    ])
+    Ud = np.vstack([
+        np.ones_like(timepts) * (r * pi/2) / T,
+        np.ones_like(timepts) * (pi / 2) / T
+    ])
+    X0 = Xd[:, 0] + np.array([-0.1, -0.1, -0.1])
+
+    resp = ct.input_output_response(clsys, timepts, [Xd, Ud], X0)
+    # plt.plot(resp.states[0], resp.states[1])
+    np.testing.assert_allclose(
+        resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
+
+    #
+    # Schedule on actual speed
+    #
+
+    # Create gain scheduled controller
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle, (gains, points), gainsched_indices=[3, 7])
+
+    # Check the gain at the selected points
+    for speed, angle in points:
+        # Figure out the desired state and input
+        xe, ue = np.array([0, 0, angle]), np.array([speed, 0])
+        xd, ud = np.array([0, 0, angle]), np.array([speed, 0])
+
+        # Check the control system at the scheduling points
+        ctrl_lin = ctrl.linearize([], [xd*0, ud, xe])
+        K, S, E = ct.lqr(unicycle.linearize(xe, ue), Q, R)
+        np.testing.assert_allclose(
+            ctrl_lin.D[-xe.size:, -xe.size:], -K, rtol=1e-2)
+
+        # Check the closed loop system at the scheduling points
+        clsys_lin = clsys.linearize(xe, [xd, ud])
+        np.testing.assert_allclose(np.sort(
+            clsys_lin.poles()), np.sort(E), rtol=1e-2)
+
+    # Run a simulation following a curved path
+    T = 10                      # length of the trajectory [sec]
+    r = 10                      # radius of the circle [m]
+    timepts = np.linspace(0, T, 100)
+    Xd = np.vstack([
+        r * np.cos(timepts/T * pi/2 + 3*pi/2),
+        r * np.sin(timepts/T * pi/2 + 3*pi/2) + r,
+        timepts/T * pi/2
+    ])
+    Ud = np.vstack([
+        np.ones_like(timepts) * (r * pi/2) / T,
+        np.ones_like(timepts) * (pi / 2) / T
+    ])
+    X0 = Xd[:, 0] + np.array([-0.1, -0.1, -0.1])
+
+    resp = ct.input_output_response(clsys, timepts, [Xd, Ud], X0)
+    np.testing.assert_allclose(
+        resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
