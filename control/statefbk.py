@@ -676,17 +676,17 @@ def create_statefbk_iosystem(
         If a gain scheduled controller is specified, specify the indices of
         the controller input to use for scheduling the gain. The input to
         the controller is the desired state xd, the desired input ud, and
-        either the system state x or the system output y (if an estimator is
+        the system state x (or state estimate xhat, if an estimator is
         given). The indices can either be specified as integer offsets into
         the input vector or as strings matching the signal names of the
         input vector.
 
     gainsched_method : str, optional
-        The method to use for gain scheduling.  Possible values include
-        `linear` (default), `nearest`, and `cubic`.  More information is
-        available in :func:`scipy.interpolate.griddata`. For points outside
-        of the convex hull of the scheduling points, the gain at the nearest
-        point is used.
+        The method to use for gain scheduling.  Possible values are 'linear'
+        (default), 'nearest', and 'cubic'.  More information is available in
+        :func:`scipy.interpolate.griddata`. For points outside of the convex
+        hull of the scheduling points, the gain at the nearest point is
+        used.
 
     type : 'linear' or 'nonlinear', optional
         Set the type of controller to create. The default for a linear gain
@@ -700,20 +700,21 @@ def create_statefbk_iosystem(
     -------
     ctrl : InputOutputSystem
         Input/output system representing the controller.  This system takes
-        as inputs the desired state xd, the desired input ud, and either the
-        system state x or the estimated state xhat.  It outputs the
-        controller action u according to the formula u = ud - K(x - xd).  If
-        the keyword `integral_action` is specified, then an additional set
-        of integrators is included in the control system (with the gain
-        matrix K having the integral gains appended after the state gains).
-        If a gain scheduled controller is specified, the gain (proportional
-        and integral) are evaluated using the scheduling variables specified
-        by ``gainsched_indices``.
+        as inputs the desired state ``xd``, the desired input ``ud``, and
+        either the system state ``x`` or the estimated state ``xhat``.  It
+        outputs the controller action u according to the formula :math:`u =
+        u_d - K(x - x_d)`.  If the keyword ``integral_action`` is specified,
+        then an additional set of integrators is included in the control
+        system (with the gain matrix ``K`` having the integral gains
+        appended after the state gains).  If a gain scheduled controller is
+        specified, the gain (proportional and integral) are evaluated using
+        the scheduling variables specified by ``gainsched_indices``.
 
     clsys : InputOutputSystem
         Input/output system representing the closed loop system.  This
-        systems takes as inputs the desired trajectory (xd, ud) and outputs
-        the system state x and the applied input u (vertically stacked).
+        systems takes as inputs the desired trajectory ``(xd, ud)`` and
+        outputs the system state ``x`` and the applied input ``u``
+        (vertically stacked).
 
     Other Parameters
     ----------------

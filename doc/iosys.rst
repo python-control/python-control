@@ -308,8 +308,12 @@ and the control action will be given by
   u = u_\text{d} - K\text{p} (x - x_\text{d}) -
       K_\text{i} \int C (x - x_\text{d}) dt.
 
-(If an estimator is specified, :math:`\hat x` will be used in place of
-:math:`x`.)
+If `integral_action` is a function `h`, that function will be called
+with the signature `h(t, x, u, params)` to obtain the outputs that
+should be integrated.  The number of outputs that are to be integrated
+must match the number of additional columns in the `K` matrix.  If an
+estimator is specified, :math:`\hat x` will be used in place of
+:math:`x`.
 
 Finally, gain scheduling on the desired state, desired input, or
 system state can be implemented by setting the gain to a 2-tuple
