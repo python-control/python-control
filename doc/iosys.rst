@@ -73,18 +73,18 @@ We begin by defining the dynamics of the system
       d = params.get('d', 0.56)
       k = params.get('k', 125)
       r = params.get('r', 1.6)
-      
+
       # Map the states into local variable names
       H = x[0]
       L = x[1]
 
       # Compute the control action (only allow addition of food)
       u_0 = u if u > 0 else 0
-  
+
       # Compute the discrete updates
       dH = (r + u_0) * H * (1 - H/k) - (a * H * L)/(c + H)
       dL = b * (a * H *  L)/(c + H) - d * L
-  
+
       return [dH, dL]
 
 We now create an input/output system using these dynamics:
@@ -105,10 +105,10 @@ of the system:
 
   X0 = [25, 20]                 # Initial H, L
   T = np.linspace(0, 70, 500)   # Simulation 70 years of time
-  
+
   # Simulate the system
   t, y = ct.input_output_response(io_predprey, T, 0, X0)
-  
+
   # Plot the response
   plt.figure(1)
   plt.plot(t, y[0])
@@ -168,14 +168,14 @@ function:
     inplist=['control.Ld'],
     outlist=['predprey.H', 'predprey.L', 'control.y[0]']
   )
-       
+
 Finally, we simulate the closed loop system:
 
 .. code-block:: python
 
   # Simulate the system
   t, y = ct.input_output_response(io_closed, T, 30, [15, 20])
-  
+
   # Plot the response
   plt.figure(2)
   plt.subplot(2, 1, 1)
@@ -198,7 +198,7 @@ Summing junction
 
 The :func:`~control.summing_junction` function can be used to create an
 input/output system that takes the sum of an arbitrary number of inputs.  For
-ezample, to create an input/output system that takes the sum of three inputs,
+example, to create an input/output system that takes the sum of three inputs,
 use the command
 
 .. code-block:: python
@@ -255,6 +255,86 @@ listed in ``inplist`` or ``outlist`` (corresponding to the inputs and outputs
 of the interconnected system) is not found, but inputs and outputs of
 individual systems that are not connected to other systems are left
 unconnected (so be careful!).
+
+Automated creation of state feedback systems
+--------------------------------------------
+
+The :func:`~control.create_statefbk_iosystem` function can be used to
+create an I/O system consisting of a state feedback gain (with
+optional integral action and gain scheduling) and an estimator.  A
+basic state feedback controller of the form
+
+.. math::
+
+  u = u_\text{d} - K (x - x_\text{d})
+
+can be created with the command::
+
+  ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
+
+where `sys` is the process dynamics and `K` is the state feedback gain
+(e.g., from LQR).  The function returns the controller `ctrl` and the
+closed loop systems `clsys`, both as I/O systems.  The input to the
+controller is the vector of desired states :math:`x_\text{d}`, desired
+inputs :math:`u_\text{d}`, and system states :math:`x`.
+
+If the full system state is not available, the output of a state
+estimator can be used to construct the controller using the command::
+
+  ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=estim)
+
+where `estim` is the state estimator I/O system.  The controller will
+have the same form as above, but with the system state :math:`x`
+replaced by the estimated state :math:`\hat x` (output of `estim`).
+The closed loop controller will include both the state feedback and
+the estimator.
+
+Integral action can be included using the `integral_action` keyword.
+The value of this keyword can either be an matrix (ndarray) or a
+function.  If a matrix :math:`C` is specified, the difference between
+the desired state and system state will be multiplied by this matrix
+and integrated.  The controller gain should then consist of a set of
+proportional gains :math:`K_\text{p}` and integral gains
+:math:`K_\text{i}` with
+
+.. math::
+
+   K = \begin{bmatrix} K_\text{p} \\ K_\text{i} \end{bmatrix}
+
+and the control action will be given by
+
+.. math::
+
+  u = u_\text{d} - K\text{p} (x - x_\text{d}) -
+      K_\text{i} \int C (x - x_\text{d}) dt.
+
+(If an estimator is specified, :math:`\hat x` will be used in place of
+:math:`x`.)
+
+Finally, gain scheduling on the desired state, desired input, or
+system state can be implemented by setting the gain to a 2-tuple
+consisting of a list of gains and a list of points at which the gains
+were computed, as well as a description of the scheduling variables::
+
+  ctrl, clsys = ct.create_statefbk_iosystem(
+      sys, ([g1, ..., gN], [p1, ..., pN]), gainsched_indices=[s1, ..., sq])
+
+The list of indices can either be integers indicating the offset into
+the controller input vector :math:`(x_\text{d}, u_\text{d}, x)` or a
+list of strings matching the names of the input signals.  The
+controller implemented in this case has the form
+
+.. math::
+
+  u = u_\text{d} - K(\mu) (x - x_\text{d})
+
+where :math:`\mu` represents the scheduling variables.  See
+:ref:`steering-gainsched.py` for an example implementation of a gain
+scheduled controller (in the alternative formulation section at the
+bottom of the file).
+
+Integral action and state estimation can also be used with gain
+scheduled controllers.
 
 
 Module classes and functions

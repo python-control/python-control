@@ -1,3 +1,5 @@
+.. _steering-gainsched.py:
+
 Gain scheduled control for vehicle steeering (I/O system)
 ---------------------------------------------------------
 

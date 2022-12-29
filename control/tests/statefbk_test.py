@@ -799,7 +799,7 @@ def unicycle():
 
 from math import pi
 
-@pytest.mark.parametrize("method", [None, 'nearest', 'linear', 'cubic'])
+@pytest.mark.parametrize("method", ['nearest', 'linear', 'cubic'])
 def test_gainsched_unicycle(unicycle, method):
     # Speeds and angles at which to compute the gains
     speeds = [1, 5, 10]
@@ -818,9 +818,8 @@ def test_gainsched_unicycle(unicycle, method):
 
     # Create gain scheduled controller
     ctrl, clsys = ct.create_statefbk_iosystem(
-        unicycle,
-        (gains, points) if method is None else (gains, points, method),
-        gainsched_indices=[3, 2])
+        unicycle, (gains, points),
+        gainsched_indices=[3, 2], gainsched_method=method)
 
     # Check the gain at the selected points
     for speed, angle in points:
@@ -849,8 +848,8 @@ def test_gainsched_unicycle(unicycle, method):
     # Make sure that gains are different from 'nearest'
     if method is not None and method != 'nearest':
         ctrl_nearest, clsys_nearest = ct.create_statefbk_iosystem(
-            unicycle, (gains, points, 'nearest'),
-            gainsched_indices=['ud[0]', 2])
+            unicycle, (gains, points),
+            gainsched_indices=['ud[0]', 2], gainsched_method='nearest')
         nearest_lin = clsys_nearest.linearize(xe, [xd, ud])
         assert not np.allclose(
             np.sort(clsys_lin.poles()), np.sort(nearest_lin.poles()), rtol=1e-2)
@@ -931,6 +930,11 @@ def test_gainsched_errors(unicycle):
         ctrl, clsys = ct.create_statefbk_iosystem(
             unicycle, [gains, points], gainsched_indices=[3, 2])
 
+    # Wrong number of gain schedule argument
+    with pytest.raises(ControlArgument, match="gain must be a 2-tuple"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, speeds, angles), gainsched_indices=[3, 2])
+
     # Mismatched dimensions for gains and points
     with pytest.raises(ControlArgument, match="length of gainsched_indices"):
         ctrl, clsys = ct.create_statefbk_iosystem(
@@ -944,4 +948,5 @@ def test_gainsched_errors(unicycle):
     # Unknown gain scheduling method
     with pytest.raises(ControlArgument, match="unknown gain scheduling method"):
         ctrl, clsys = ct.create_statefbk_iosystem(
-            unicycle, (gains, points, 'stuff'), gainsched_indices=[3, 2])
+            unicycle, (gains, points),
+            gainsched_indices=[3, 2], gainsched_method='unknown')

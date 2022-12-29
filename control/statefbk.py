@@ -602,7 +602,9 @@ def dlqr(*args, **kwargs):
 # Function to create an I/O sytems representing a state feedback controller
 def create_statefbk_iosystem(
         sys, gain, integral_action=None, estimator=None, type=None,
-        xd_labels='xd[{i}]', ud_labels='ud[{i}]', gainsched_indices=None):
+        xd_labels='xd[{i}]', ud_labels='ud[{i}]', gainsched_indices=None,
+        gainsched_method='linear', name=None, inputs=None, outputs=None,
+        states=None):
     """Create an I/O system using a (full) state feedback controller
 
     This function creates an input/output system that implements a
@@ -640,16 +642,11 @@ def create_statefbk_iosystem(
         set to a matrix or a function, then additional columns
         represent the gains of the integral states of the controller.
 
-        If a tuple is given, then it specifies a gain schedule.  The
-        tuple should be of the form
-
-            (gains, points[, method])
-
-        where gains is a list of gains :math:`K_j` and points is a list of
-        values :math:`\\mu_j` at which the gains are computed.  If `method`
-        is specified, it is passed to :func:`scipy.interpolate.griddata` to
-        specify the method of interpolation.  Possible values include
-        `linear`, `nearest`, and `cubic`.
+        If a tuple is given, then it specifies a gain schedule.  The tuple
+        should be of the form ``(gains, points)`` where gains is a list of
+        gains :math:`K_j` and points is a list of values :math:`\\mu_j` at
+        which the gains are computed.  The `gainsched_indices` parameter
+        should be used to specify the scheduling variables.
 
     xd_labels, ud_labels : str or list of str, optional
         Set the name of the signals to use for the desired state and inputs.
@@ -657,12 +654,13 @@ def create_statefbk_iosystem(
         the variable ``i`` as an index.  Otherwise, a list of strings
         matching the size of xd and ud, respectively, should be used.
         Default is ``'xd[{i}]'`` for xd_labels and ``'ud[{i}]'`` for
-        ud_labels.
+        ud_labels.  These settings can also be overriden using the `inputs`
+        keyword.
 
     integral_action : None, ndarray, or func, optional
         If this keyword is specified, the controller can include integral
-        action in addition to state feedback.  If ``integral_action`` is an
-        ndarray, it will be multiplied by the current and desired state to
+        action in addition to state feedback.  If ``integral_action`` is a
+        matrix, it will be multiplied by the current and desired state to
         generate the error for the internal integrator states of the control
         law.  If ``integral_action`` is a function ``h``, that function will
         be called with the signature h(t, x, u, params) to obtain the
@@ -674,19 +672,28 @@ def create_statefbk_iosystem(
         If an estimator is provided, use the states of the estimator as
         the system inputs for the controller.
 
-    gainsched_indices : list of integers, optional
+    gainsched_indices : list of int or str, optional
         If a gain scheduled controller is specified, specify the indices of
-        the controller input to use for scheduling the gain.  The input to
+        the controller input to use for scheduling the gain. The input to
         the controller is the desired state xd, the desired input ud, and
         either the system state x or the system output y (if an estimator is
-        given).
+        given). The indices can either be specified as integer offsets into
+        the input vector or as strings matching the signal names of the
+        input vector.
+
+    gainsched_method : str, optional
+        The method to use for gain scheduling.  Possible values include
+        `linear` (default), `nearest`, and `cubic`.  More information is
+        available in :func:`scipy.interpolate.griddata`. For points outside
+        of the convex hull of the scheduling points, the gain at the nearest
+        point is used.
 
     type : 'linear' or 'nonlinear', optional
         Set the type of controller to create. The default for a linear gain
         is a linear controller implementing the LQR regulator. If the type
         is 'nonlinear', a :class:NonlinearIOSystem is created instead, with
         the gain ``K`` as a parameter (allowing modifications of the gain at
-        runtime).  If the gain parameter is a tuple, the a nonlinear,
+        runtime). If the gain parameter is a tuple, then a nonlinear,
         gain-scheduled controller is created.
 
     Returns
@@ -694,25 +701,30 @@ def create_statefbk_iosystem(
     ctrl : InputOutputSystem
         Input/output system representing the controller.  This system takes
         as inputs the desired state xd, the desired input ud, and either the
-        system state x or the system output y (if an estimator is given).
-        It outputs the controller action u according to the formula u = ud -
-        K(x - xd).  If the keyword `integral_action` is specified, then an
-        additional set of integrators is included in the control system
-        (with the gain matrix K having the integral gains appended after the
-        state gains).  If a gain scheduled controller is specified, the gain
-        (proportional and integral) are evaluated using the input mu.
+        system state x or the estimated state xhat.  It outputs the
+        controller action u according to the formula u = ud - K(x - xd).  If
+        the keyword `integral_action` is specified, then an additional set
+        of integrators is included in the control system (with the gain
+        matrix K having the integral gains appended after the state gains).
+        If a gain scheduled controller is specified, the gain (proportional
+        and integral) are evaluated using the scheduling variables specified
+        by ``gainsched_indices``.
 
     clsys : InputOutputSystem
         Input/output system representing the closed loop system.  This
-        systems takes as inputs the desired trajectory (xd, ud) along with
-        any unassigned gain scheduling values mu and outputs the system
-        state x and the applied input u (vertically stacked).
+        systems takes as inputs the desired trajectory (xd, ud) and outputs
+        the system state x and the applied input u (vertically stacked).
 
-    Notes
-    -----
-    1. If the gain scheduling variable labes are set to the names of system
-       states, inputs, or outputs or desired states or inputs, then the
-       scheduling variables are internally connected to those variables.
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals of the transformed
+        system.  If not given, the inputs and outputs are the same as the
+        original system.
+    
+    name : string, optional
+        System name. If unspecified, a generic name <sys[id]> is generated
+        with a unique integer id.
 
     """
     # Make sure that we were passed an I/O system as an input
@@ -759,8 +771,9 @@ def create_statefbk_iosystem(
 
     elif isinstance(gain, tuple):
         # Check for gain scheduled controller
+        if len(gain) != 2:
+            raise ControlArgument("gain must be a 2-tuple for gain scheduling")
         gains, points = gain[0:2]
-        method = 'nearest' if len(gain) < 3 else gain[2]
 
         # Stack gains and points if past as a list
         gains = np.stack(gains)
@@ -788,8 +801,13 @@ def create_statefbk_iosystem(
         # Generate the list of labels using the argument as a format string
         ud_labels = [ud_labels.format(i=i) for i in range(sys.ninputs)]
 
-    # Create the string of labels for the control system
-    input_labels = xd_labels + ud_labels + estimator.output_labels
+    # Create the signal and system names
+    if inputs is None:
+        inputs = xd_labels + ud_labels + estimator.output_labels
+    if outputs is None:
+        outputs = list(sys.input_index.keys())
+    if states is None:
+        states = nintegrators
 
     # Process gainscheduling variables, if present
     if gainsched:
@@ -806,21 +824,22 @@ def create_statefbk_iosystem(
         # Process scheduling variables
         for i, idx in enumerate(gainsched_indices):
             if isinstance(idx, str):
-                gainsched_indices[i] = input_labels.index(gainsched_indices[i])
+                gainsched_indices[i] = inputs.index(gainsched_indices[i])
 
         # Create interpolating function
-        if method == 'nearest':
+        if gainsched_method == 'nearest':
             _interp = sp.interpolate.NearestNDInterpolator(points, gains)
-            _nearest = _interp
-        elif method == 'linear':
+            def _nearest(mu):
+                raise SystemError(f"could not find nearest gain at mu = {mu}")
+        elif gainsched_method == 'linear':
             _interp = sp.interpolate.LinearNDInterpolator(points, gains)
             _nearest = sp.interpolate.NearestNDInterpolator(points, gains)
-        elif method == 'cubic':
+        elif gainsched_method == 'cubic':
             _interp = sp.interpolate.CloughTocher2DInterpolator(points, gains)
             _nearest = sp.interpolate.NearestNDInterpolator(points, gains)
         else:
             raise ControlArgument(
-                f"unknown gain scheduling method '{method}'")
+                f"unknown gain scheduling method '{gainsched_method}'")
 
         def _compute_gain(mu):
             K = _interp(mu)
@@ -860,9 +879,8 @@ def create_statefbk_iosystem(
 
         params = {} if gainsched else {'K': K}
         ctrl = NonlinearIOSystem(
-            _control_update, _control_output, name='control',
-            inputs=input_labels, outputs=list(sys.input_index.keys()),
-            params=params, states=nintegrators)
+            _control_update, _control_output, name=name, inputs=inputs,
+            outputs=outputs, states=states, params=params)
 
     elif type == 'linear' or type is None:
         # Create the matrices implementing the controller
@@ -879,9 +897,8 @@ def create_statefbk_iosystem(
         ])
 
         ctrl = ss(
-            A_lqr, B_lqr, C_lqr, D_lqr, dt=sys.dt, name='control',
-            inputs=xd_labels + ud_labels + estimator.output_labels,
-            outputs=list(sys.input_index.keys()), states=nintegrators)
+            A_lqr, B_lqr, C_lqr, D_lqr, dt=sys.dt, name=name,
+            inputs=inputs, outputs=outputs, states=states)
 
     else:
         raise ControlArgument(f"unknown type '{type}'")
@@ -890,7 +907,7 @@ def create_statefbk_iosystem(
     closed = interconnect(
         [sys, ctrl] if estimator == sys else [sys, ctrl, estimator],
         name=sys.name + "_" + ctrl.name,
-        inplist=xd_labels + ud_labels, inputs=xd_labels + ud_labels,
+        inplist=inputs[:-sys.nstates], inputs=inputs[:-sys.nstates],
         outlist=sys.output_labels + sys.input_labels,
         outputs=sys.output_labels + sys.input_labels
     )
