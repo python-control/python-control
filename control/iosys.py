@@ -1618,6 +1618,10 @@ def input_output_response(
         number of states in the system, the initial condition will be padded
         with zeros.
 
+    t_eval : array-list, optional
+        List of times at which the time response should be computed.
+        Defaults to ``T``.
+
     return_x : bool, optional
         If True, return the state vector when assigning to a tuple (default =
         False).  See :func:`forced_response` for more details.
