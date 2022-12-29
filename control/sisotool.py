@@ -285,7 +285,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         Whether to create Sisotool interactive plot.
 
     Returns
-    ----------
+    -------
     closedloop : class:`StateSpace` system
         The closed-loop system using initial gains.
 

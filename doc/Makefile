@@ -20,5 +20,5 @@ classes.pdf: classes.fig;	fig2dev -Lpdf $< $@
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html pdf: Makefile $(FIGS)
+html pdf clean: Makefile $(FIGS)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

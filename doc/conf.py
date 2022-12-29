@@ -30,7 +30,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # -- Project information -----------------------------------------------------
 
 project = u'Python Control Systems Library'
-copyright = u'2020, python-control.org'
+copyright = u'2022, python-control.org'
 author = u'Python Control Developers'
 
 # Version information - read from the source code
@@ -56,7 +56,7 @@ needs_sphinx = '3.1'
 extensions = [
     'sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx', 'sphinx.ext.imgmath',
-    'sphinx.ext.autosummary', 'nbsphinx',
+    'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc', 'sphinx.ext.linkcode'
 ]
 
 # scan documents for autosummary directives and generate stub pages for each.
@@ -139,6 +139,80 @@ html_theme = 'sphinx_rtd_theme'
 #
 # html_sidebars = {}
 
+# -----------------------------------------------------------------------------
+# Source code links (from numpy)
+# -----------------------------------------------------------------------------
+
+import inspect
+from os.path import relpath, dirname
+
+def linkcode_resolve(domain, info):
+    """
+    Determine the URL corresponding to Python object
+    """
+    if domain != 'py':
+        return None
+
+    modname = info['module']
+    fullname = info['fullname']
+
+    submod = sys.modules.get(modname)
+    if submod is None:
+        return None
+
+    obj = submod
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except Exception:
+            return None
+
+    # strip decorators, which would resolve to the source of the decorator
+    # possibly an upstream bug in getsourcefile, bpo-1764286
+    try:
+        unwrap = inspect.unwrap
+    except AttributeError:
+        pass
+    else:
+        obj = unwrap(obj)
+
+    # Get the filename for the function
+    try:
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        return None
+
+    # Ignore re-exports as their source files are not within the numpy repo
+    module = inspect.getmodule(obj)
+    if module is not None and not module.__name__.startswith("control"):
+        return None
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+    except Exception:
+        lineno = None
+
+    fn = relpath(fn, start=dirname(control.__file__))
+
+    if lineno:
+        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
+    else:
+        linespec = ""
+
+    base_url = "https://github.com/python-control/python-control/blob/"
+    if 'dev' in control.__version__ or 'post' in control.__version__:
+        return base_url + "main/control/%s%s" % (fn, linespec)
+    else:
+        return base_url + "%s/control/%s%s" % (
+           control.__version__, fn, linespec)
+
+# Don't automaticall show all members of class in Methods & Attributes section
+numpydoc_show_class_members = False
+
+# Don't create a Sphinx TOC for the lists of class methods and attributes
+numpydoc_class_members_toctree = False
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
