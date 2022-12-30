@@ -5,6 +5,8 @@ RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 
 import numpy as np
 import pytest
+import itertools
+from math import pi, atan
 
 import control as ct
 from control import lqe, dlqe, poles, rss, ss, tf
@@ -777,3 +779,201 @@ class TestStatefbk:
         with pytest.raises(ControlArgument, match="must be an array of size"):
             ctrl, clsys = ct.create_statefbk_iosystem(
                 sys, K, integral_action=C_int)
+
+
+# Kinematic car example for testing gain scheduling
+@pytest.fixture
+def unicycle():
+    # Create a simple nonlinear system to check (kinematic car)
+    def unicycle_update(t, x, u, params):
+        return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
+
+    def unicycle_output(t, x, u, params):
+        return x
+
+    return ct.NonlinearIOSystem(
+        unicycle_update, unicycle_output,
+        inputs = ['v', 'phi'],
+        outputs = ['x', 'y', 'theta'],
+        states = ['x_', 'y_', 'theta_'])
+
+from math import pi
+
+@pytest.mark.parametrize("method", ['nearest', 'linear', 'cubic'])
+def test_gainsched_unicycle(unicycle, method):
+    # Speeds and angles at which to compute the gains
+    speeds = [1, 5, 10]
+    angles = np.linspace(0, pi/2, 4)
+    points = list(itertools.product(speeds, angles))
+
+    # Gains for each speed (using LQR controller)
+    Q = np.identity(unicycle.nstates)
+    R = np.identity(unicycle.ninputs)
+    gains = [np.array(ct.lqr(unicycle.linearize(
+        [0, 0, angle], [speed, 0]), Q, R)[0]) for speed, angle in points]
+
+    #
+    # Schedule on desired speed and angle
+    #
+
+    # Create gain scheduled controller
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle, (gains, points),
+        gainsched_indices=[3, 2], gainsched_method=method)
+
+    # Check the gain at the selected points
+    for speed, angle in points:
+        # Figure out the desired state and input
+        xe, ue = np.array([0, 0, angle]), np.array([speed, 0])
+        xd, ud = np.array([0, 0, angle]), np.array([speed, 0])
+
+        # Check the control system at the scheduling points
+        ctrl_lin = ctrl.linearize([], [xd, ud, xe*0])
+        K, S, E = ct.lqr(unicycle.linearize(xd, ud), Q, R)
+        np.testing.assert_allclose(
+            ctrl_lin.D[-xe.size:, -xe.size:], -K, rtol=1e-2)
+
+        # Check the closed loop system at the scheduling points
+        clsys_lin = clsys.linearize(xe, [xd, ud])
+        np.testing.assert_allclose(
+            np.sort(clsys_lin.poles()), np.sort(E), rtol=1e-2)
+
+    # Check the gain at an intermediate point and confirm stability
+    speed, angle = 2, pi/3
+    xe, ue = np.array([0, 0, angle]), np.array([speed, 0])
+    xd, ud = np.array([0, 0, angle]), np.array([speed, 0])
+    clsys_lin = clsys.linearize(xe, [xd, ud])
+    assert np.all(np.real(clsys_lin.poles()) < 0)
+
+    # Make sure that gains are different from 'nearest'
+    if method is not None and method != 'nearest':
+        ctrl_nearest, clsys_nearest = ct.create_statefbk_iosystem(
+            unicycle, (gains, points),
+            gainsched_indices=['ud[0]', 2], gainsched_method='nearest')
+        nearest_lin = clsys_nearest.linearize(xe, [xd, ud])
+        assert not np.allclose(
+            np.sort(clsys_lin.poles()), np.sort(nearest_lin.poles()), rtol=1e-2)
+
+    # Run a simulation following a curved path
+    T = 10                      # length of the trajectory [sec]
+    r = 10                      # radius of the circle [m]
+    timepts = np.linspace(0, T, 50)
+    Xd = np.vstack([
+        r * np.cos(timepts/T * pi/2 + 3*pi/2),
+        r * np.sin(timepts/T * pi/2 + 3*pi/2) + r,
+        timepts/T * pi/2
+    ])
+    Ud = np.vstack([
+        np.ones_like(timepts) * (r * pi/2) / T,
+        np.ones_like(timepts) * (pi / 2) / T
+    ])
+    X0 = Xd[:, 0] + np.array([-0.1, -0.1, -0.1])
+
+    resp = ct.input_output_response(clsys, timepts, [Xd, Ud], X0)
+    # plt.plot(resp.states[0], resp.states[1])
+    np.testing.assert_allclose(
+        resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
+
+    #
+    # Schedule on actual speed
+    #
+
+    # Create gain scheduled controller
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle, (gains, points),
+        ud_labels=['vd', 'phid'], gainsched_indices=['vd', 'theta'])
+
+    # Check the gain at the selected points
+    for speed, angle in points:
+        # Figure out the desired state and input
+        xe, ue = np.array([0, 0, angle]), np.array([speed, 0])
+        xd, ud = np.array([0, 0, angle]), np.array([speed, 0])
+
+        # Check the control system at the scheduling points
+        ctrl_lin = ctrl.linearize([], [xd*0, ud, xe])
+        K, S, E = ct.lqr(unicycle.linearize(xe, ue), Q, R)
+        np.testing.assert_allclose(
+            ctrl_lin.D[-xe.size:, -xe.size:], -K, rtol=1e-2)
+
+        # Check the closed loop system at the scheduling points
+        clsys_lin = clsys.linearize(xe, [xd, ud])
+        np.testing.assert_allclose(np.sort(
+            clsys_lin.poles()), np.sort(E), rtol=1e-2)
+
+    # Run a simulation following a curved path
+    resp = ct.input_output_response(clsys, timepts, [Xd, Ud], X0)
+    np.testing.assert_allclose(
+        resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
+
+
+def test_gainsched_default_indices():
+    # Define a linear system to test
+    sys = ct.ss([[-1, 0.1], [0, -2]], [[0], [1]], np.eye(2), 0)
+
+    # Define gains at origin + corners of unit cube
+    points = [[0, 0]] + list(itertools.product([-1, 1], [-1, 1]))
+
+    # Define gain to be constant
+    K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+    gains = [K for p in points]
+
+    # Define the paramters for the simulations
+    timepts = np.linspace(0, 10, 100)
+    X0 = np.ones(sys.nstates) * 0.9
+
+    # Create a controller and simulate the initial response
+    gs_ctrl, gs_clsys = ct.create_statefbk_iosystem(sys, (gains, points))
+    gs_resp = ct.input_output_response(gs_clsys, timepts, 0, X0)
+
+    # Verify that we get the same result as a constant gain
+    ck_clsys = ct.ss(sys.A - sys.B @ K, sys.B, sys.C, 0)
+    ck_resp = ct.input_output_response(ck_clsys, timepts, 0, X0)
+
+    np.testing.assert_allclose(gs_resp.states, ck_resp.states)
+
+
+def test_gainsched_errors(unicycle):
+    # Set up gain schedule (same as previous test)
+    speeds = [1, 5, 10]
+    angles = np.linspace(0, pi/2, 4)
+    points = list(itertools.product(speeds, angles))
+
+    Q = np.identity(unicycle.nstates)
+    R = np.identity(unicycle.ninputs)
+    gains = [np.array(ct.lqr(unicycle.linearize(
+        [0, 0, angle], [speed, 0]), Q, R)[0]) for speed, angle in points]
+
+    # Make sure the generic case works OK
+    ctrl, clsys = ct.create_statefbk_iosystem(
+        unicycle, (gains, points), gainsched_indices=[3, 2])
+    xd, ud = np.array([0, 0, angles[0]]), np.array([speeds[0], 0])
+    ctrl_lin = ctrl.linearize([], [xd, ud, xd*0])
+    K, S, E = ct.lqr(unicycle.linearize(xd, ud), Q, R)
+    np.testing.assert_allclose(
+        ctrl_lin.D[-xd.size:, -xd.size:], -K, rtol=1e-2)
+
+    # Wrong type of gain schedule argument
+    with pytest.raises(ControlArgument, match="gain must be an array"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, [gains, points], gainsched_indices=[3, 2])
+
+    # Wrong number of gain schedule argument
+    with pytest.raises(ControlArgument, match="gain must be a 2-tuple"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, speeds, angles), gainsched_indices=[3, 2])
+
+    # Mismatched dimensions for gains and points
+    with pytest.raises(ControlArgument, match="length of gainsched_indices"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, [speeds]), gainsched_indices=[3, 2])
+
+    # Unknown gain scheduling variable label
+    with pytest.raises(ValueError, match=".* not in list"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, points), gainsched_indices=['stuff', 2])
+
+    # Unknown gain scheduling method
+    with pytest.raises(ControlArgument, match="unknown gain scheduling method"):
+        ctrl, clsys = ct.create_statefbk_iosystem(
+            unicycle, (gains, points),
+            gainsched_indices=[3, 2], gainsched_method='unknown')

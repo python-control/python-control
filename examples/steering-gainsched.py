@@ -70,7 +70,7 @@ def control_output(t, x, u, params):
     latpole1 = params.get('latpole1', -1/2 + sqrt(-7)/2)
     latpole2 = params.get('latpole2', -1/2 - sqrt(-7)/2)
     l = params.get('wheelbase', 3)
-    
+
     # Extract the system inputs
     ex, ey, etheta, vd, phid = u
 
@@ -85,7 +85,7 @@ def control_output(t, x, u, params):
     else:
         # We aren't moving, so don't turn the steering wheel
         phi = phid
-    
+
     return  np.array([v, phi])
 
 # Define the controller as an input/output system
@@ -135,7 +135,7 @@ trajgen = ct.NonlinearIOSystem(
 #                          +----------- [-1] -----------+
 #
 # We construct the system using the InterconnectedSystem constructor and using
-# signal labels to keep track of everything.  
+# signal labels to keep track of everything.
 
 steering = ct.interconnect(
     # List of subsystems
@@ -186,8 +186,93 @@ for vref in [8, 10, 12]:
     plt.plot([0, 5], [vref, vref], 'k--')
 
     # Plot the system output
-    y_line, = plt.plot(tout, yout[y_index, :], 'r')  # lateral position
-    v_line, = plt.plot(tout, yout[v_index, :], 'b')  # vehicle velocity
+    y_line, = plt.plot(tout, yout[y_index], 'r')  # lateral position
+    v_line, = plt.plot(tout, yout[v_index], 'b')  # vehicle velocity
+
+# Add axis labels
+plt.xlabel('Time (s)')
+plt.ylabel('x vel (m/s), y pos (m)')
+plt.legend((v_line, y_line), ('v', 'y'), loc='center right', frameon=False)
+
+#
+# Alternative formulation, using create_statefbk_iosystem()
+#
+# A different way to implement gain scheduling is to use the gain scheduling
+# functionality built into the create_statefbk_iosystem() function, where we
+# pass a table of gains instead of a single gain.  To generate a more
+# interesting plot, we scale the feedforward input to generate some error.
+#
+
+import itertools
+from math import pi
+
+# Define the points for the scheduling variables
+speeds = [1, 10, 20]
+angles = np.linspace(-pi, pi, 4)
+points = list(itertools.product(speeds, angles))
+
+# Create controllers at each scheduling point
+Q = np.diag([1, 1, 1])
+R = np.diag([0.1, 0.1])
+gains = [np.array(ct.lqr(vehicle.linearize(
+    [0, 0, angle], [speed, 0]), Q, R)[0]) for speed, angle in points]
+
+# Create the gain scheduled system
+controller, _ = ct.create_statefbk_iosystem(
+    vehicle, (gains, points), name='controller', ud_labels=['vd', 'phid'],
+    gainsched_indices=['vd', 'theta'], gainsched_method='linear')
+
+# Connect everything together (note that controller inputs are different
+steering = ct.interconnect(
+    # List of subsystems
+    (trajgen, controller, vehicle), name='steering',
+
+    # Interconnections between  subsystems
+    connections=(
+        ['controller.xd[0]', 'trajgen.xd'],
+        ['controller.xd[1]', 'trajgen.yd'],
+        ['controller.xd[2]', 'trajgen.thetad'],
+        ['controller.x', 'vehicle.x'],
+        ['controller.y', 'vehicle.y'],
+        ['controller.theta', 'vehicle.theta'],
+        ['controller.vd', ('trajgen', 'vd', 0.2)],      # create error
+        ['controller.phid', 'trajgen.phid'],
+        ['vehicle.v', 'controller.v'],
+        ['vehicle.phi', 'controller.phi']
+    ),
+
+    # System inputs
+    inplist=['trajgen.vref', 'trajgen.yref'],
+    inputs=['yref', 'vref'],
+
+    #  System outputs
+    outlist=['vehicle.x', 'vehicle.y', 'vehicle.theta', 'controller.v',
+             'controller.phi'],
+    outputs=['x', 'y', 'theta', 'v', 'phi']
+)
+
+# Plot the results to compare to the previous case
+plt.figure();
+
+# Plot the reference trajectory for the y position
+plt.plot([0, 5], [yref, yref], 'k--')
+
+# Find the signals we want to plot
+y_index = steering.find_output('y')
+v_index = steering.find_output('v')
+
+# Do an iteration through different speeds
+for vref in [8, 10, 12]:
+    # Simulate the closed loop controller response
+    tout, yout = ct.input_output_response(
+        steering, T, [vref * np.ones(len(T)), yref * np.ones(len(T))])
+
+    # Plot the reference speed
+    plt.plot([0, 5], [vref, vref], 'k--')
+
+    # Plot the system output
+    y_line, = plt.plot(tout, yout[y_index], 'r')  # lateral position
+    v_line, = plt.plot(tout, yout[v_index], 'b')  # vehicle velocity
 
 # Add axis labels
 plt.xlabel('Time (s)')
