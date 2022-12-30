@@ -20,7 +20,7 @@ import numpy as np
 import scipy as sp
 from math import sqrt
 
-from .iosys import InputOutputSystem, NonlinearIOSystem
+from .iosys import InputOutputSystem, LinearIOSystem, NonlinearIOSystem
 from .lti import LTI
 from .namedio import isctime, isdtime
 from .mateqn import care, dare, _check_shape
@@ -384,8 +384,8 @@ def create_estimator_iosystem(
     """
 
     # Make sure that we were passed an I/O system as an input
-    if not isinstance(sys, InputOutputSystem):
-        raise ControlArgument("Input system must be I/O system")
+    if not isinstance(sys, LinearIOSystem):
+        raise ControlArgument("Input system must be a linear I/O system")
 
     # Extract the matrices that we need for easy reference
     A, B = sys.A, sys.B
@@ -409,7 +409,7 @@ def create_estimator_iosystem(
     # Initialize the covariance matrix
     if P0 is None:
         # Initalize P0 to the steady state value
-        _, P0, _ = lqe(A, G, C, QN, RN)
+        L0, P0, _ = lqe(A, G, C, QN, RN)
 
     # Figure out the labels to use
     if isinstance(state_labels, str):
@@ -432,16 +432,17 @@ def create_estimator_iosystem(
         sensor_labels = [sensor_labels.format(i=i) for i in range(C.shape[0])]
 
     if isctime(sys):
-        raise NotImplementedError("continuous time not yet implemented")
-
-    else:
         # Create an I/O system for the state feedback gains
         # Note: reshape vectors into column vectors for legacy np.matrix
+
+        R_inv = np.linalg.inv(RN)
+        Reps_inv = C.T @ R_inv @ C
+
         def _estim_update(t, x, u, params):
             # See if we are estimating or predicting
             correct = params.get('correct', True)
 
-            # Get the state of the estimator 
+            # Get the state of the estimator
             xhat = x[0:sys.nstates].reshape(-1, 1)
             P = x[sys.nstates:].reshape(sys.nstates, sys.nstates)
 
@@ -449,7 +450,36 @@ def create_estimator_iosystem(
             y = u[0:C.shape[0]].reshape(-1, 1)
             u = u[C.shape[0]:].reshape(-1, 1)
 
-            # Compute the optimal again
+            # Compute the optimal gain
+            L = P @ C.T @ R_inv
+
+            # Update the state estimate
+            dxhat = A @ xhat + B @ u            # prediction
+            if correct:
+                dxhat -= L @ (C @ xhat - y)     # correction
+
+            # Update the covariance
+            dP = A @ P + P @ A.T + G @ QN @ G.T
+            if correct:
+                dP -= P @ Reps_inv @ P
+
+            # Return the update
+            return np.hstack([dxhat.reshape(-1), dP.reshape(-1)])
+
+    else:
+        def _estim_update(t, x, u, params):
+            # See if we are estimating or predicting
+            correct = params.get('correct', True)
+
+            # Get the state of the estimator
+            xhat = x[0:sys.nstates].reshape(-1, 1)
+            P = x[sys.nstates:].reshape(sys.nstates, sys.nstates)
+
+            # Extract the inputs to the estimator
+            y = u[0:C.shape[0]].reshape(-1, 1)
+            u = u[C.shape[0]:].reshape(-1, 1)
+
+            # Compute the optimal gain
             Reps_inv = np.linalg.inv(RN + C @ P @ C.T)
             L = A @ P @ C.T @ Reps_inv
 
@@ -466,8 +496,8 @@ def create_estimator_iosystem(
             # Return the update
             return np.hstack([dxhat.reshape(-1), dP.reshape(-1)])
 
-        def _estim_output(t, x, u, params):
-            return x[0:sys.nstates]
+    def _estim_output(t, x, u, params):
+        return x[0:sys.nstates]
 
     # Define the estimator system
     return NonlinearIOSystem(
