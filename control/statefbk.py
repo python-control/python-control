@@ -679,7 +679,7 @@ def create_statefbk_iosystem(
         the system state x (or state estimate xhat, if an estimator is
         given). The indices can either be specified as integer offsets into
         the input vector or as strings matching the signal names of the
-        input vector.
+        input vector. The default is to use the desire state xd.
 
     gainsched_method : str, optional
         The method to use for gain scheduling.  Possible values are 'linear'
@@ -812,8 +812,8 @@ def create_statefbk_iosystem(
 
     # Process gainscheduling variables, if present
     if gainsched:
-        # Create a copy of the scheduling variable indices (default = empty)
-        gainsched_indices = [] if gainsched_indices is None \
+        # Create a copy of the scheduling variable indices (default = xd)
+        gainsched_indices = range(sys.nstates) if gainsched_indices is None \
             else list(gainsched_indices)
 
         # Make sure the scheduling variable indices are the right length

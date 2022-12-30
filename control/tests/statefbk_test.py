@@ -905,6 +905,33 @@ def test_gainsched_unicycle(unicycle, method):
     np.testing.assert_allclose(
         resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
 
+
+def test_gainsched_default_indices():
+    # Define a linear system to test
+    sys = ct.ss([[-1, 0.1], [0, -2]], [[0], [1]], np.eye(2), 0)
+
+    # Define gains at origin + corners of unit cube
+    points = [[0, 0]] + list(itertools.product([-1, 1], [-1, 1]))
+
+    # Define gain to be constant
+    K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+    gains = [K for p in points]
+
+    # Define the paramters for the simulations
+    timepts = np.linspace(0, 10, 100)
+    X0 = np.ones(sys.nstates) * 0.9
+
+    # Create a controller and simulate the initial response
+    gs_ctrl, gs_clsys = ct.create_statefbk_iosystem(sys, (gains, points))
+    gs_resp = ct.input_output_response(gs_clsys, timepts, 0, X0)
+
+    # Verify that we get the same result as a constant gain
+    ck_clsys = ct.ss(sys.A - sys.B @ K, sys.B, sys.C, 0)
+    ck_resp = ct.input_output_response(ck_clsys, timepts, 0, X0)
+
+    np.testing.assert_allclose(gs_resp.states, ck_resp.states)
+
+
 def test_gainsched_errors(unicycle):
     # Set up gain schedule (same as previous test)
     speeds = [1, 5, 10]
