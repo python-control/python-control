@@ -314,7 +314,13 @@ def create_estimator_iosystem(
     """Create an I/O system implementing a linqear quadratic estimator
 
     This function creates an input/output system that implements a
-    state estimator of the form
+    continuous time state estimator of the form
+
+        \dot xhat = A x + B u - L (C xhat - y)
+        \dot P = A P + P A^T + F QN F^T - P C^T RN^{-1} C P
+        L = P C^T RN^{-1}
+
+    or a discrete time state estimator of the form
 
         xhat[k + 1] = A x[k] + B u[k] - L (C xhat[k] - y[k])
         P[k + 1] = A P A^T + F QN F^T - A P C^T Reps^{-1} C P A
@@ -359,8 +365,9 @@ def create_estimator_iosystem(
     Returns
     -------
     estim : InputOutputSystem
-        Input/output system representing the estimator.  This system takes the
-        system input and output and generates the estimated state.
+        Input/output system representing the estimator.  This system takes
+        the system output y and input u and generates the estimated state
+        xhat.
 
     Notes
     -----
