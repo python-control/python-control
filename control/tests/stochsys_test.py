@@ -199,6 +199,7 @@ def test_estimator_iosys_ctime(sys_args):
     # Compute the system response and the optimal covariance
     sys_resp = ct.input_output_response(nl_sys, timepts, U, X0)
     _, Pf, _ = ct.lqe(sys, QN, RN)
+    Pf = np.array(Pf)           # convert from matrix, if needed
 
     # Make sure that we converge to the optimal estimate
     estim_resp = ct.input_output_response(
