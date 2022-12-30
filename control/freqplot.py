@@ -589,8 +589,8 @@ def nyquist_plot(
         if `return_contour` is Tue.  To obtain the Nyquist curve values,
         evaluate system(s) along contour.
 
-    Additional Parameters
-    ---------------------
+    Other Parameters
+    ----------------
     arrows : int or 1D/2D array of floats, optional
         Specify the number of arrows to plot on the Nyquist curve.  If an
         integer is passed. that number of equally spaced arrows will be

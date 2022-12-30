@@ -126,10 +126,6 @@ def place(A, B, p):
     --------
     place_varga, acker
 
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
     """
     from scipy.signal import place_poles
 

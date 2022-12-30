@@ -236,8 +236,8 @@ def describing_function_plot(
         given by the first value of the tuple and frequency given by the
         second value.
 
-    Example
-    -------
+    Examples
+    --------
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
     >>> F_saturation = ct.descfcn.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)

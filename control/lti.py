@@ -304,8 +304,12 @@ def damp(sys, doprint=True):
     poles: array
         Pole locations
 
-    Algorithm
-    ---------
+    See Also
+    --------
+    pole
+
+    Notes
+    -----
     If the system is continuous,
         wn = abs(poles)
         Z  = -real(poles)/poles.
@@ -320,9 +324,6 @@ def damp(sys, doprint=True):
         wn = abs(s)
         Z = -real(s)/wn.
 
-    See Also
-    --------
-    pole
     """
     wn, damping, poles = sys.damp()
     if doprint:

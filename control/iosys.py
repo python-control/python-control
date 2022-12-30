@@ -1618,6 +1618,10 @@ def input_output_response(
         number of states in the system, the initial condition will be padded
         with zeros.
 
+    t_eval : array-list, optional
+        List of times at which the time response should be computed.
+        Defaults to ``T``.
+
     return_x : bool, optional
         If True, return the state vector when assigning to a tuple (default =
         False).  See :func:`forced_response` for more details.
@@ -2725,8 +2729,8 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
         generated and if `True` then warnings are always generated.
 
 
-    Example
-    -------
+    Examples
+    --------
     >>> P = control.LinearIOSystem(
     >>>        control.rss(2, 2, 2, strictly_proper=True), name='P')
     >>> C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
@@ -2926,8 +2930,8 @@ def summing_junction(
         Linear input/output system object with no states and only a direct
         term that implements the summing junction.
 
-    Example
-    -------
+    Examples
+    --------
     >>> P = control.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
     >>> C = control.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
     >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
