@@ -7,6 +7,7 @@ from control.tests.conftest import asmatarrayout
 
 import control as ct
 from control import lqe, dlqe, rss, drss, tf, ss, ControlArgument, slycot_check
+from math import log, pi
 
 # Utility function to check LQE answer
 def check_LQE(L, P, poles, G, QN, RN):
@@ -48,7 +49,7 @@ def test_lqe_call_format(cdlqe):
 
     # Standard calling format
     Lref, Pref, Eref = cdlqe(sys.A, sys.B, sys.C, Q, R)
-    
+
     # Call with system instead of matricees
     L, P, E = cdlqe(sys, Q, R)
     np.testing.assert_almost_equal(Lref, L)
@@ -58,15 +59,15 @@ def test_lqe_call_format(cdlqe):
     # Make sure we get an error if we specify N
     with pytest.raises(ct.ControlNotImplemented):
         L, P, E = cdlqe(sys, Q, R, N)
-        
+
     # Inconsistent system dimensions
     with pytest.raises(ct.ControlDimension, match="Incompatible"):
         L, P, E = cdlqe(sys.A, sys.C, sys.B, Q, R)
-        
+
     # Incorrect covariance matrix dimensions
     with pytest.raises(ct.ControlDimension, match="Incompatible"):
         L, P, E = cdlqe(sys.A, sys.B, sys.C, R, Q)
-        
+
     # Too few input arguments
     with pytest.raises(ct.ControlArgument, match="not enough input"):
         L, P, E = cdlqe(sys.A, sys.C)
@@ -99,14 +100,14 @@ def test_lqe_discrete():
     np.testing.assert_almost_equal(K_csys, K_expl)
     np.testing.assert_almost_equal(S_csys, S_expl)
     np.testing.assert_almost_equal(E_csys, E_expl)
-    
+
     # Calling lqe() with a discrete time system should call dlqe()
     K_lqe, S_lqe, E_lqe = ct.lqe(dsys, Q, R)
     K_dlqe, S_dlqe, E_dlqe = ct.dlqe(dsys, Q, R)
     np.testing.assert_almost_equal(K_lqe, K_dlqe)
     np.testing.assert_almost_equal(S_lqe, S_dlqe)
     np.testing.assert_almost_equal(E_lqe, E_dlqe)
-    
+
     # Calling lqe() with no timebase should call lqe()
     asys = ct.ss(csys.A, csys.B, csys.C, csys.D, dt=None)
     K_asys, S_asys, E_asys = ct.lqe(asys, Q, R)
@@ -114,11 +115,11 @@ def test_lqe_discrete():
     np.testing.assert_almost_equal(K_asys, K_expl)
     np.testing.assert_almost_equal(S_asys, S_expl)
     np.testing.assert_almost_equal(E_asys, E_expl)
-    
+
     # Calling dlqe() with a continuous time system should raise an error
     with pytest.raises(ControlArgument, match="called with a continuous"):
         K, S, E = ct.dlqe(csys, Q, R)
-        
+
 def test_estimator_iosys():
     sys = ct.drss(4, 2, 2, strictly_proper=True)
 
@@ -129,7 +130,7 @@ def test_estimator_iosys():
     QN = np.eye(sys.ninputs)
     RN = np.eye(sys.noutputs)
     estim = ct.create_estimator_iosystem(sys, QN, RN, P0)
-        
+
     ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=estim)
 
     # Extract the elements of the estimator
@@ -162,20 +163,76 @@ def test_estimator_iosys():
     np.testing.assert_almost_equal(cls.D, D_clchk)
 
 
+@pytest.mark.parametrize("sys_args", [
+    ([[-1]], [[1]], [[1]], 0),                          # scalar system
+    ([[-1, 0.1], [0, -2]], [[0], [1]], [[1, 0]], 0),    # SISO, 2 state
+    ([[-1, 0.1], [0, -2]], [[1, 0], [0, 1]], [[1, 0]], 0),    # 2i, 1o, 2s
+    ([[-1, 0.1, 0.1], [0, -2, 0], [0.1, 0, -3]],        # 2i, 2o, 3s
+     [[1, 0], [0, 0.1], [0, 1]],
+     [[1, 0, 0.1], [0, 1, 0.1]], 0),
+])
+def test_estimator_iosys_ctime(sys_args):
+    # Define the system we want to test
+    sys = ct.ss(*sys_args)
+    T = 10 * log(1e-2) / np.max(sys.poles().real)
+    assert T > 0
+
+    # Create nonlinear version of the system to match integration methods
+    nl_sys = ct.NonlinearIOSystem(
+        lambda t, x, u, params : sys.A @ x + sys.B @ u,
+        lambda t, x, u, params : sys.C @ x + sys.D @ u,
+        inputs=sys.ninputs, outputs=sys.noutputs, states=sys.nstates)
+
+    # Define an initial condition, inputs (small, to avoid integration errors)
+    timepts = np.linspace(0, T, 500)
+    U = 2e-2 * np.array([np.sin(timepts + i*pi/3) for i in range(sys.ninputs)])
+    X0 = np.ones(sys.nstates)
+
+    # Set up the parameters for the filter
+    P0 = np.eye(sys.nstates)
+    QN = np.eye(sys.ninputs)
+    RN = np.eye(sys.noutputs)
+
+    # Construct the estimator
+    estim = ct.create_estimator_iosystem(sys, QN, RN)
+
+    # Compute the system response and the optimal covariance
+    sys_resp = ct.input_output_response(nl_sys, timepts, U, X0)
+    _, Pf, _ = ct.lqe(sys, QN, RN)
+    Pf = np.array(Pf)           # convert from matrix, if needed
+
+    # Make sure that we converge to the optimal estimate
+    estim_resp = ct.input_output_response(
+        estim, timepts, [sys_resp.outputs, U], [0*X0, P0])
+    np.testing.assert_allclose(
+        estim_resp.states[0:sys.nstates, -1], sys_resp.states[:, -1],
+        atol=1e-6, rtol=1e-3)
+    np.testing.assert_allclose(
+        estim_resp.states[sys.nstates:, -1], Pf.reshape(-1),
+        atol=1e-6, rtol=1e-3)
+
+    # Make sure that optimal estimate is an eq pt
+    ss_resp = ct.input_output_response(
+        estim, timepts, [sys_resp.outputs, U], [X0, Pf])
+    np.testing.assert_allclose(
+        ss_resp.states[sys.nstates:],
+        np.outer(Pf.reshape(-1), np.ones_like(timepts)),
+        atol=1e-4, rtol=1e-2)
+    np.testing.assert_allclose(
+        ss_resp.states[0:sys.nstates], sys_resp.states,
+        atol=1e-4, rtol=1e-2)
+
+
 def test_estimator_errors():
     sys = ct.drss(4, 2, 2, strictly_proper=True)
     P0 = np.eye(sys.nstates)
     QN = np.eye(sys.ninputs)
     RN = np.eye(sys.noutputs)
 
-    with pytest.raises(ct.ControlArgument, match="Input system must be I/O"):
+    with pytest.raises(ct.ControlArgument, match=".* system must be a linear"):
         sys_tf = ct.tf([1], [1, 1], dt=True)
         estim = ct.create_estimator_iosystem(sys_tf, QN, RN)
-            
-    with pytest.raises(NotImplementedError, match="continuous time not"):
-        sys_ct = ct.rss(4, 2, 2, strictly_proper=True)
-        estim = ct.create_estimator_iosystem(sys_ct, QN, RN)
-            
+
     with pytest.raises(ValueError, match="output must be full state"):
         C = np.eye(2, 4)
         estim = ct.create_estimator_iosystem(sys, QN, RN, C=C)
@@ -246,7 +303,7 @@ def test_correlation():
     # Try passing a second argument
     tau, Rneg = ct.correlation(T, V, -V)
     np.testing.assert_equal(Rtau, -Rneg)
-    
+
     # Test error conditions
     with pytest.raises(ValueError, match="Time vector T must be 1D"):
         tau, Rtau = ct.correlation(V, V)
