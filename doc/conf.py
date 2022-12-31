@@ -202,7 +202,7 @@ def linkcode_resolve(domain, info):
         linespec = ""
 
     base_url = "https://github.com/python-control/python-control/blob/"
-    if 'dev' in control.__version__ or 'post' in control.__version__:
+    if 'dev' in control.__version__:
         return base_url + "main/control/%s%s" % (fn, linespec)
     else:
         return base_url + "%s/control/%s%s" % (
