@@ -79,7 +79,7 @@ from .exception import *
 
 # Version information
 try:
-    from ._version import __version__, __commit__
+    from ._version import __version__
 except ImportError:
     __version__ = "dev"
 
