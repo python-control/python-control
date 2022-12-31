@@ -158,8 +158,10 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
     ax_phase.set_xlabel(ax_phase.get_xlabel(),fontsize=label_font_size)
     ax_phase.set_ylabel(ax_phase.get_ylabel(),fontsize=label_font_size)
     ax_phase.get_xaxis().set_label_coords(0.5, -0.15)
-    ax_phase.get_shared_x_axes().join(ax_phase, ax_mag)
     ax_phase.tick_params(axis='both', which='major', labelsize=label_font_size)
+
+    if not ax_phase.get_shared_x_axes().joined(ax_phase, ax_mag):
+        ax_phase.sharex(ax_mag)
 
     ax_step.set_title('Step response',fontsize = title_font_size)
     ax_step.set_xlabel('Time (seconds)',fontsize=label_font_size)
