@@ -164,19 +164,19 @@ def _f2s(f):
 
 
 class StateSpace(LTI):
-    """StateSpace(A, B, C, D[, dt])
+    r"""StateSpace(A, B, C, D[, dt])
 
     A class for representing state-space models.
 
     The StateSpace class is used to represent state-space realizations of
     linear time-invariant (LTI) systems:
-
+    
     .. math::
-        dx/dt = A x + B u
+    
+          dx/dt &= A x + B u \\
+              y &= C x + D u
 
-        y = C x + D u
-
-    where u is the input, y is the output, and x is the state.
+    where `u` is the input, `y` is the output, and `x` is the state.
 
     Parameters
     ----------

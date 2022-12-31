@@ -311,28 +311,32 @@ def create_estimator_iosystem(
         sys, QN, RN, P0=None, G=None, C=None,
         state_labels='xhat[{i}]', output_labels='xhat[{i}]',
         covariance_labels='P[{i},{j}]', sensor_labels=None):
-    """Create an I/O system implementing a linqear quadratic estimator
+    r"""Create an I/O system implementing a linear quadratic estimator
 
     This function creates an input/output system that implements a
     continuous time state estimator of the form
 
-        \dot xhat = A x + B u - L (C xhat - y)
-        \dot P = A P + P A^T + F QN F^T - P C^T RN^{-1} C P
-        L = P C^T RN^{-1}
+    .. math::
+    
+        d \hat{x}/dt &= A \hat{x} + B u - L (C \hat{x} - y) \\
+           dP/dt &= A P + P A^T + F Q_N F^T - P C^T R_N^{-1} C P \\
+               L &= P C^T R_N^{-1} 
 
     or a discrete time state estimator of the form
 
-        xhat[k + 1] = A x[k] + B u[k] - L (C xhat[k] - y[k])
-        P[k + 1] = A P A^T + F QN F^T - A P C^T Reps^{-1} C P A
-        L = A P C^T Reps^{-1}
+    .. math::
+    
+        \hat{x}[k+1] &= A \hat{x}[k] + B u[k] - L (C \hat{x}[k] - y[k]) \\
+               P[k+1] &= A P A^T + F Q_N F^T - A P C^T R_e^{-1} C P A \\
+                    L &= A P C^T R_e^{-1}
 
-    where Reps = RN + C P C^T.  It can be called in the form
+    where :math:`R_e = R_N + C P C^T`.  It can be called in the form::
 
         estim = ct.create_estimator_iosystem(sys, QN, RN)
 
-    where ``sys`` is the process dynamics and QN and RN are the covariance
+    where `sys` is the process dynamics and `QN` and `RN` are the covariance
     of the disturbance noise and sensor noise.  The function returns the
-    estimator ``estim`` as I/O system with a parameter ``correct`` that can
+    estimator `estim` as I/O system with a parameter `correct` that can
     be used to turn off the correction term in the estimation (for forward
     predictions).
 
@@ -356,8 +360,8 @@ def create_estimator_iosystem(
     {state, covariance, sensor, output}_labels : str or list of str, optional
         Set the name of the signals to use for the internal state, covariance,
         sensors, and outputs (state estimate).  If a single string is
-        specified, it should be a format string using the variable ``i`` as an
-        index (or ``i`` and ``j`` for covariance).  Otherwise, a list of
+        specified, it should be a format string using the variable `i` as an
+        index (or `i` and `j` for covariance).  Otherwise, a list of
         strings matching the size of the respective signal should be used.
         Default is ``'xhat[{i}]'`` for state and output labels, ``'y[{i}]'``
         for output labels and ``'P[{i},{j}]'`` for covariance labels.
@@ -372,18 +376,18 @@ def create_estimator_iosystem(
     Notes
     -----
     This function can be used with the ``create_statefbk_iosystem()`` function
-    to create a closed loop, output-feedback, state space controller:
+    to create a closed loop, output-feedback, state space controller::
 
         K, _, _ = ct.lqr(sys, Q, R)
         est = ct.create_estimator_iosystem(sys, QN, RN, P0)
         ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=est)
 
-    The estimator can also be run on its own to process a noisy signal:
+    The estimator can also be run on its own to process a noisy signal::
 
         resp = ct.input_output_response(est, T, [Y, U], [X0, P0])
 
     If desired, the ``correct`` parameter can be set to ``False`` to allow
-    prediction with no additional sensor information:
+    prediction with no additional sensor information::
 
         resp = ct.input_output_response(
            est, T, 0, [X0, P0], param={'correct': False)

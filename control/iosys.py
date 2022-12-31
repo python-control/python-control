@@ -2273,7 +2273,7 @@ def _find_size(sysval, vecval):
 
 # Define a state space object that is an I/O system
 def ss(*args, **kwargs):
-    """ss(A, B, C, D[, dt])
+    r"""ss(A, B, C, D[, dt])
 
     Create a state space system.
 
@@ -2293,18 +2293,18 @@ def ss(*args, **kwargs):
         output equations:
 
         .. math::
-            \\dot x = A \\cdot x + B \\cdot u
 
-            y = C \\cdot x + D \\cdot u
+            dx/dt &= A x + B u \\
+                y &= C x + D  u
 
     ``ss(A, B, C, D, dt)``
         Create a discrete-time state space system from the matrices of
         its state and output equations:
 
         .. math::
-            x[k+1] = A \\cdot x[k] + B \\cdot u[k]
 
-            y[k] = C \\cdot x[k] + D \\cdot u[ki]
+            x[k+1] &= A x[k] + B u[k] \\
+              y[k] &= C x[k] + D u[k]
 
         The matrices can be given as *array like* data types or strings.
         Everything that the constructor of :class:`numpy.matrix` accepts is
