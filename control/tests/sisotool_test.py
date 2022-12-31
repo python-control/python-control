@@ -83,6 +83,12 @@ class TestSisotool:
             'margins': True
         }
 
+        # Check that the xaxes of the bode plot are shared before the rlocus click
+        assert ax_mag.get_xlim() == ax_phase.get_xlim()
+        ax_mag.set_xlim(2, 12)
+        assert ax_mag.get_xlim() == (2, 12)
+        assert ax_phase.get_xlim() == (2, 12)
+
         # Move the rootlocus to another point
         event = type('test', (object,), {'xdata': 2.31206868287,
                                          'ydata': 15.5983051046,
@@ -115,6 +121,12 @@ class TestSisotool:
              2.4676, 2.3606])
         assert_array_almost_equal(
             ax_step.lines[0].get_data()[1][:10], step_response_moved, 4)
+
+        # Check that the xaxes of the bode plot are still shared after the rlocus click
+        assert ax_mag.get_xlim() == ax_phase.get_xlim()
+        ax_mag.set_xlim(3, 13)
+        assert ax_mag.get_xlim() == (3, 13)
+        assert ax_phase.get_xlim() == (3, 13)
 
     @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
                         reason="Requires the zoom toolbar")
