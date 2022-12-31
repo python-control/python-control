@@ -11,6 +11,7 @@ name = "control"
 description = "Python Control Systems Library"
 authors = [{name = "Python Control Developers", email = "python-control-developers@lists.sourceforge.net"}]
 license = {text = "BSD-3-Clause"}
+readme = "README.rst"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
