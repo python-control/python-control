@@ -45,7 +45,7 @@ slycot = [ "slycot>=0.4.0" ]
 cvxopt = [ "cvxopt>=1.2.0" ]
 
 [project.urls]
-homepage = "https//python-control.org"
+homepage = "https://python-control.org"
 source = "https://github.com/python-control/python-control"
 
 [tool.setuptools_scm]
