@@ -158,6 +158,7 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 kwarg_unittest = {
     'bode': test_matplotlib_kwargs,
     'bode_plot': test_matplotlib_kwargs,
+    'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_iosys,
     'describing_function_plot': test_matplotlib_kwargs,
     'dlqe': test_unrecognized_kwargs,
     'dlqr': test_unrecognized_kwargs,
