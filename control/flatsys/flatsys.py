@@ -436,6 +436,12 @@ def point_to_point(
         warnings.warn("basis too small; solution may not exist")
 
     if cost is not None or trajectory_constraints is not None:
+        # Make sure that we have enough timepoints to evaluate
+        if timepts.size < 3:
+            raise ControlArgument(
+                "There must be at least three time points if trajectory"
+                " cost or constraints are specified")
+
         # Search over the null space to minimize cost/satisfy constraints
         N = sp.linalg.null_space(M)
 
