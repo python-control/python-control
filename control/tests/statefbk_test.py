@@ -924,6 +924,34 @@ def test_gainsched_unicycle(unicycle, method):
         resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
 
 
+@pytest.mark.parametrize("method", ['nearest', 'linear', 'cubic'])
+def test_gainsched_1d(method):
+    # Define a linear system to test
+    sys = ct.ss([[-1, 0.1], [0, -2]], [[0], [1]], np.eye(2), 0)
+
+    # Define gains for the first state only
+    points = [-1, 0, 1]
+
+    # Define gain to be constant
+    K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+    gains = [K for p in points]
+
+    # Define the paramters for the simulations
+    timepts = np.linspace(0, 10, 100)
+    X0 = np.ones(sys.nstates) * 1.1     # Start outside defined range
+
+    # Create a controller and simulate the initial response
+    gs_ctrl, gs_clsys = ct.create_statefbk_iosystem(
+        sys, (gains, points), gainsched_indices=[0])
+    gs_resp = ct.input_output_response(gs_clsys, timepts, 0, X0)
+
+    # Verify that we get the same result as a constant gain
+    ck_clsys = ct.ss(sys.A - sys.B @ K, sys.B, sys.C, 0)
+    ck_resp = ct.input_output_response(ck_clsys, timepts, 0, X0)
+
+    np.testing.assert_allclose(gs_resp.states, ck_resp.states)
+
+
 def test_gainsched_default_indices():
     # Define a linear system to test
     sys = ct.ss([[-1, 0.1], [0, -2]], [[0], [1]], np.eye(2), 0)
@@ -937,7 +965,7 @@ def test_gainsched_default_indices():
 
     # Define the paramters for the simulations
     timepts = np.linspace(0, 10, 100)
-    X0 = np.ones(sys.nstates) * 0.9
+    X0 = np.ones(sys.nstates) * 1.1     # Start outside defined range
 
     # Create a controller and simulate the initial response
     gs_ctrl, gs_clsys = ct.create_statefbk_iosystem(sys, (gains, points))

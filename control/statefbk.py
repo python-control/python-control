@@ -826,6 +826,10 @@ def create_statefbk_iosystem(
         gainsched_indices = range(sys.nstates) if gainsched_indices is None \
             else list(gainsched_indices)
 
+        # If points is a 1D list, convert to 2D
+        if points.ndim == 1:
+            points = points.reshape(-1, 1)
+
         # Make sure the scheduling variable indices are the right length
         if len(gainsched_indices) != points.shape[1]:
             raise ControlArgument(
@@ -838,7 +842,12 @@ def create_statefbk_iosystem(
                 gainsched_indices[i] = inputs.index(gainsched_indices[i])
 
         # Create interpolating function
-        if gainsched_method == 'nearest':
+        if points.shape[1] < 2:
+            _interp = sp.interpolate.interp1d(
+                points[:, 0], gains, axis=0, kind=gainsched_method)
+            _nearest = sp.interpolate.interp1d(
+                points[:, 0], gains, axis=0, kind='nearest')
+        elif gainsched_method == 'nearest':
             _interp = sp.interpolate.NearestNDInterpolator(points, gains)
             def _nearest(mu):
                 raise SystemError(f"could not find nearest gain at mu = {mu}")
