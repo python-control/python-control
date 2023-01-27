@@ -79,13 +79,13 @@ We begin by defining the dynamics of the system
       L = x[1]
 
       # Compute the control action (only allow addition of food)
-      u_0 = u if u > 0 else 0
+      u_0 = u[0] if u[0] > 0 else 0
 
       # Compute the discrete updates
       dH = (r + u_0) * H * (1 - H/k) - (a * H * L)/(c + H)
       dL = b * (a * H *  L)/(c + H) - d * L
 
-      return [dH, dL]
+      return np.array([dH, dL])
 
 We now create an input/output system using these dynamics:
 
