@@ -7,26 +7,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Check out the python-control sources
+      uses: actions/checkout@v3
+    - name: Set up conda using the preinstalled GHA Miniconda
+      run: echo $CONDA/bin >> $GITHUB_PATH
     - name: Install Python dependencies from conda-forge
       run: |
-        # Set up conda using the preinstalled GHA Miniconda environment
-        echo $CONDA/bin >> $GITHUB_PATH
-        conda config --add channels conda-forge
-        conda config --set channel_priority strict
-
-        # Install build tools
-        conda install pip setuptools setuptools-scm
-
-        # Install python-control dependencies and extras
-        conda install numpy matplotlib scipy
-        conda install slycot pmw jupyter
+        conda create \
+           --name control-examples-env \
+           --channel conda-forge \
+           --strict-channel-priority \
+           --quiet --yes \
+           pip setuptools setuptools-scm \
+           numpy matplotlib scipy \
+           slycot pmw jupyter
 
     - name: Install from source
-      run: pip install .
+      run: |
+        conda run -n control-examples-env pip install .
 
     - name: Run examples
       run: |
         cd examples
-        ./run_examples.sh
-        ./run_notebooks.sh
+        conda run -n control-examples-env ./run_examples.sh
+        conda run -n control-examples-env ./run_notebooks.sh
