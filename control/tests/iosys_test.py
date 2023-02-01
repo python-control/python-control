@@ -1619,6 +1619,27 @@ def secord_output(t, x, u, params={}):
     return np.array([x[0]])
 
 
+def test_interconnect_name():
+    g = ct.LinearIOSystem(ct.ss(-1,1,1,0),
+                          inputs=['u'],
+                          outputs=['y'],
+                          name='g')
+    k = ct.LinearIOSystem(ct.ss(0,10,2,0),
+                          inputs=['e'],
+                          outputs=['z'],
+                          name='k')
+    h = ct.interconnect([g,k],
+                            inputs=['u','e'],
+                            outputs=['y','z'])
+    assert re.match(r'sys\[\d+\]', h.name), f"Interconnect default name does not match 'sys[]' pattern, got '{h.name}'"
+
+    h = ct.interconnect([g,k],
+                            inputs=['u','e'],
+                            outputs=['y','z'],
+                            name='ic_system')
+    assert h.name == 'ic_system', f"Interconnect name excpected 'ic_system', got '{h.name}'"
+
+
 def test_interconnect_unused_input():
     # test that warnings about unused inputs are reported, or not,
     # as required
