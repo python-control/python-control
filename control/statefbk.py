@@ -338,12 +338,13 @@ def lqr(*args, **kwargs):
     N : 2D array, optional
         Cross weight matrix
     integral_action : ndarray, optional
-        If this keyword is specified, the controller includes integral action
-        in addition to state feedback.  The value of the `integral_action``
-        keyword should be an ndarray that will be multiplied by the current to
-        generate the error for the internal integrator states of the control
-        law.  The number of outputs that are to be integrated must match the
-        number of additional rows and columns in the ``Q`` matrix.
+        If this keyword is specified, the controller includes integral
+        action in addition to state feedback.  The value of the
+        `integral_action`` keyword should be an ndarray that will be
+        multiplied by the current state to generate the error for the
+        internal integrator states of the control law.  The number of
+        outputs that are to be integrated must match the number of
+        additional rows and columns in the ``Q`` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -487,12 +488,13 @@ def dlqr(*args, **kwargs):
     N : 2D array, optional
         Cross weight matrix
     integral_action : ndarray, optional
-        If this keyword is specified, the controller includes integral action
-        in addition to state feedback.  The value of the `integral_action``
-        keyword should be an ndarray that will be multiplied by the current to
-        generate the error for the internal integrator states of the control
-        law.  The number of outputs that are to be integrated must match the
-        number of additional rows and columns in the ``Q`` matrix.
+        If this keyword is specified, the controller includes integral
+        action in addition to state feedback.  The value of the
+        `integral_action`` keyword should be an ndarray that will be
+        multiplied by the current state to generate the error for the
+        internal integrator states of the control law.  The number of
+        outputs that are to be integrated must match the number of
+        additional rows and columns in the ``Q`` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -520,6 +522,7 @@ def dlqr(*args, **kwargs):
     --------
     >>> K, S, E = dlqr(dsys, Q, R, [N])
     >>> K, S, E = dlqr(A, B, Q, R, [N])
+
     """
 
     #
@@ -654,16 +657,12 @@ def create_statefbk_iosystem(
         ud_labels.  These settings can also be overriden using the `inputs`
         keyword.
 
-    integral_action : None, ndarray, or func, optional
+    integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral
-        action in addition to state feedback.  If ``integral_action`` is a
-        matrix, it will be multiplied by the current and desired state to
-        generate the error for the internal integrator states of the control
-        law.  If ``integral_action`` is a function ``h``, that function will
-        be called with the signature h(t, x, u, params) to obtain the
-        outputs that should be integrated.  The number of outputs that are
-        to be integrated must match the number of additional columns in the
-        ``K`` matrix.
+        action in addition to state feedback.  The value of the
+        `integral_action`` keyword should be an ndarray that will be
+        multiplied by the current and desired state to generate the error
+        for the internal integrator states of the control law.
 
     estimator : InputOutputSystem, optional
         If an estimator is provided, use the states of the estimator as
