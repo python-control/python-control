@@ -42,6 +42,7 @@
 # External packages and modules
 import numpy as np
 import scipy as sp
+import warnings
 
 from . import statesp
 from .mateqn import care, dare, _check_shape
@@ -597,10 +598,10 @@ def dlqr(*args, **kwargs):
 
 # Function to create an I/O sytems representing a state feedback controller
 def create_statefbk_iosystem(
-        sys, gain, integral_action=None, estimator=None, type=None,
+        sys, gain, integral_action=None, estimator=None, controller_type=None,
         xd_labels='xd[{i}]', ud_labels='ud[{i}]', gainsched_indices=None,
         gainsched_method='linear', name=None, inputs=None, outputs=None,
-        states=None):
+        states=None, **kwargs):
     """Create an I/O system using a (full) state feedback controller
 
     This function creates an input/output system that implements a
@@ -684,7 +685,7 @@ def create_statefbk_iosystem(
         hull of the scheduling points, the gain at the nearest point is
         used.
 
-    type : 'linear' or 'nonlinear', optional
+    controller_type : 'linear' or 'nonlinear', optional
         Set the type of controller to create. The default for a linear gain
         is a linear controller implementing the LQR regulator. If the type
         is 'nonlinear', a :class:NonlinearIOSystem is created instead, with
@@ -727,6 +728,18 @@ def create_statefbk_iosystem(
     # Make sure that we were passed an I/O system as an input
     if not isinstance(sys, InputOutputSystem):
         raise ControlArgument("Input system must be I/O system")
+
+    # Process (legacy) keywords
+    if kwargs.get('type') is not None:
+        warnings.warn(
+            "keyword 'type' is deprecated; use 'controller_type'",
+            DeprecationWarning)
+        if controller_type is not None:
+            raise ControlArgument(
+                "duplicate keywords 'type` and 'controller_type'")
+        controller_type = kwargs.pop('type')
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # See whether we were give an estimator
     if estimator is not None:
@@ -781,13 +794,14 @@ def create_statefbk_iosystem(
         raise ControlArgument("gain must be an array or a tuple")
 
     # Decide on the type of system to create
-    if gainsched and type == 'linear':
+    if gainsched and controller_type == 'linear':
         raise ControlArgument(
-            "type 'linear' not allowed for gain scheduled controller")
-    elif type is None:
-        type = 'nonlinear' if gainsched else 'linear'
-    elif type not in {'linear', 'nonlinear'}:
-        raise ControlArgument(f"unknown type '{type}'")
+            "controller_type 'linear' not allowed for"
+            " gain scheduled controller")
+    elif controller_type is None:
+        controller_type = 'nonlinear' if gainsched else 'linear'
+    elif controller_type not in {'linear', 'nonlinear'}:
+        raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Figure out the labels to use
     if isinstance(xd_labels, str):
@@ -845,7 +859,7 @@ def create_statefbk_iosystem(
             return K
 
     # Define the controller system
-    if type == 'nonlinear':
+    if controller_type == 'nonlinear':
         # Create an I/O system for the state feedback gains
         def _control_update(t, states, inputs, params):
             # Split input into desired state, nominal input, and current state
@@ -879,7 +893,7 @@ def create_statefbk_iosystem(
             _control_update, _control_output, name=name, inputs=inputs,
             outputs=outputs, states=states, params=params)
 
-    elif type == 'linear' or type is None:
+    elif controller_type == 'linear' or controller_type is None:
         # Create the matrices implementing the controller
         if isctime(sys):
             # Continuous time: integrator
@@ -898,7 +912,7 @@ def create_statefbk_iosystem(
             inputs=inputs, outputs=outputs, states=states)
 
     else:
-        raise ControlArgument(f"unknown type '{type}'")
+        raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Define the closed loop system
     closed = interconnect(

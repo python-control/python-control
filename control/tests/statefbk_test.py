@@ -6,6 +6,7 @@ RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 import numpy as np
 import pytest
 import itertools
+import warnings
 from math import pi, atan
 
 import control as ct
@@ -569,7 +570,12 @@ class TestStatefbk:
 
         # Create an I/O system for the controller
         ctrl, clsys = ct.create_statefbk_iosystem(
-            sys, K, integral_action=C_int, estimator=est, type=type)
+            sys, K, integral_action=C_int, estimator=est,
+            controller_type=type, name=type)
+
+        # Make sure the name got set correctly
+        if type is not None:
+            assert ctrl.name == type
 
         # If we used a nonlinear controller, linearize it for testing
         if type == 'nonlinear':
@@ -763,8 +769,20 @@ class TestStatefbk:
         with pytest.raises(ControlArgument, match="gain must be an array"):
             ctrl, clsys = ct.create_statefbk_iosystem(sys, "bad argument")
 
-        with pytest.raises(ControlArgument, match="unknown type"):
-            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, type=1)
+        with pytest.warns(DeprecationWarning, match="'type' is deprecated"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, type='nonlinear')
+
+        with pytest.raises(ControlArgument, match="duplicate keywords"):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                ctrl, clsys = ct.create_statefbk_iosystem(
+                    sys, K, type='nonlinear', controller_type='nonlinear')
+
+        with pytest.raises(TypeError, match="unrecognized keywords"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, typo='nonlinear')
+
+        with pytest.raises(ControlArgument, match="unknown controller_type"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, controller_type=1)
 
         # Errors involving integral action
         C_int = np.eye(2, 4)
