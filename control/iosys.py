@@ -2840,17 +2840,17 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
         # Check for signal names without a system name
         if isinstance(signal, str) and len(signal.split('.')) == 1:
             # Get the signal name
-            name = signal[1:] if signal[0] == '-' else signal
+            signal_name = signal[1:] if signal[0] == '-' else signal
             sign = '-' if signal[0] == '-' else ""
 
             # Look for the signal name as a system input
             for sys in syslist:
-                if name in sys.input_index.keys():
-                    connection.append(sign + sys.name + "." + name)
+                if signal_name in sys.input_index.keys():
+                    connection.append(sign + sys.name + "." + signal_name)
 
             # Make sure we found the name
             if len(connection) == 0:
-                raise ValueError("could not find signal %s" % name)
+                raise ValueError("could not find signal %s" % signal_name)
             else:
                 new_inplist.append(connection)
         else:
@@ -2868,17 +2868,17 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
         # Check for signal names without a system name
         if isinstance(signal, str) and len(signal.split('.')) == 1:
             # Get the signal name
-            name = signal[1:] if signal[0] == '-' else signal
+            signal_name = signal[1:] if signal[0] == '-' else signal
             sign = '-' if signal[0] == '-' else ""
 
             # Look for the signal name as a system output
             for sys in syslist:
-                if name in sys.output_index.keys():
-                    connection.append(sign + sys.name + "." + name)
+                if signal_name in sys.output_index.keys():
+                    connection.append(sign + sys.name + "." + signal_name)
 
             # Make sure we found the name
             if len(connection) == 0:
-                raise ValueError("could not find signal %s" % name)
+                raise ValueError("could not find signal %s" % signal_name)
             else:
                 new_outlist.append(connection)
         else:
