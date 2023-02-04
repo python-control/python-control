@@ -718,7 +718,7 @@ def create_statefbk_iosystem(
         List of strings that name the individual signals of the transformed
         system.  If not given, the inputs and outputs are the same as the
         original system.
-    
+
     name : string, optional
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.
@@ -750,6 +750,12 @@ def create_statefbk_iosystem(
         # TODO: check to make sure output map is the identity
         raise ControlArgument("System output must be the full state")
     else:
+        # Issue a warning if we can't verify state output
+        if (isinstance(sys, NonlinearIOSystem) and sys.outfcn is not None) or \
+           (isinstance(sys, StateSpace) and
+            not (np.all(sys.C == np.eye(sys.nstates)) and np.all(sys.D == 0))):
+            warnings.warn("cannot verify system output is system state")
+
         # Use the system directly instead of an estimator
         estimator = sys
 

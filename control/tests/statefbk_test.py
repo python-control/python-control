@@ -754,6 +754,12 @@ class TestStatefbk:
         sys = ct.rss(4, 4, 2, strictly_proper=True)
         K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
 
+        with pytest.warns(UserWarning, match="cannot verify system output"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
+
+        # reset the system output
+        sys.C = np.eye(sys.nstates)
+
         with pytest.raises(ControlArgument, match="must be I/O system"):
             sys_tf = ct.tf([1], [1, 1])
             ctrl, clsys = ct.create_statefbk_iosystem(sys_tf, K)
@@ -806,11 +812,8 @@ def unicycle():
     def unicycle_update(t, x, u, params):
         return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
 
-    def unicycle_output(t, x, u, params):
-        return x
-
     return ct.NonlinearIOSystem(
-        unicycle_update, unicycle_output,
+        unicycle_update, None,
         inputs = ['v', 'phi'],
         outputs = ['x', 'y', 'theta'],
         states = ['x_', 'y_', 'theta_'])
