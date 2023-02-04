@@ -778,7 +778,7 @@ class TestStatefbk:
                 ctrl, clsys = ct.create_statefbk_iosystem(
                     sys, K, type='nonlinear', controller_type='nonlinear')
 
-        with pytest.raises(TypeError, match="unrecognized keywords"):
+        with pytest.raises(TypeError, match="unrecognized keyword"):
             ctrl, clsys = ct.create_statefbk_iosystem(sys, K, typo='nonlinear')
 
         with pytest.raises(ControlArgument, match="unknown controller_type"):

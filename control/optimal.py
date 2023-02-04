@@ -18,7 +18,6 @@ import time
 
 from . import config
 from .exception import ControlNotImplemented
-from .timeresp import TimeResponseData
 
 # Define module default parameter values
 _optimal_trajectory_methods = {'shooting', 'collocation'}
@@ -140,7 +139,8 @@ class OptimalControlProblem():
     def __init__(
             self, sys, timepts, integral_cost, trajectory_constraints=[],
             terminal_cost=None, terminal_constraints=[], initial_guess=None,
-            trajectory_method=None, basis=None, log=False, **kwargs):
+            trajectory_method=None, basis=None, log=False, kwargs_check=True,
+            **kwargs):
         """Set up an optimal control problem."""
         # Save the basic information for use later
         self.system = sys
@@ -183,7 +183,7 @@ class OptimalControlProblem():
                     " discrete time systems")
 
         # Make sure there were no extraneous keywords
-        if kwargs:
+        if kwargs_check and kwargs:
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
         self.trajectory_constraints = _process_constraints(
@@ -829,7 +829,7 @@ class OptimalControlProblem():
         return res.inputs[:, 0]
 
     # Create an input/output system implementing an MPC controller
-    def create_mpc_iosystem(self):
+    def create_mpc_iosystem(self, **kwargs):
         """Create an I/O system implementing an MPC controller"""
         # Check to make sure we are in discrete time
         if self.system.dt == 0:
@@ -857,11 +857,17 @@ class OptimalControlProblem():
             res = self.compute_trajectory(u, print_summary=False)
             return res.inputs[:, 0]
 
+        # Define signal names, if they are not already given
+        if not kwargs.get('inputs'):
+            kwargs['inputs'] = self.system.state_labels
+        if not kwargs.get('outputs'):
+            kwargs['outputs'] = self.system.input_labels
+        if not kwargs.get('states'):
+            kwargs['states'] = self.system.ninputs * \
+                (self.timepts.size if self.basis is None else self.basis.N)
+
         return ct.NonlinearIOSystem(
-            _update, _output, dt=self.system.dt,
-            inputs=self.system.nstates, outputs=self.system.ninputs,
-            states=self.system.ninputs * \
-                (self.timepts.size if self.basis is None else self.basis.N))
+            _update, _output, dt=self.system.dt, **kwargs)
 
 
 # Optimal control result
@@ -923,7 +929,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
             print("* Final cost:", self.cost)
 
         # Process data as a time response (with "outputs" = inputs)
-        response = TimeResponseData(
+        response = ct.TimeResponseData(
             ocp.timepts, inputs, states, issiso=ocp.system.issiso(),
             transpose=transpose, return_x=return_states, squeeze=squeeze)
 
@@ -1129,10 +1135,10 @@ def create_mpc_iosystem(
     ocp = OptimalControlProblem(
         sys, horizon, cost, trajectory_constraints=constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
-        log=log, **kwargs)
+        log=log, kwargs_check=False, **kwargs)
 
     # Return an I/O system implementing the model predictive controller
-    return ocp.create_mpc_iosystem()
+    return ocp.create_mpc_iosystem(**kwargs)
 
 
 #

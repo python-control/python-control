@@ -214,6 +214,35 @@ def test_mpc_iosystem_aircraft():
         xout[0:sys.nstates, -1], xd, atol=0.1, rtol=0.01)
 
 
+def test_mpc_iosystem_rename():
+    # Create a discrete time system (double integrator) + cost function
+    sys = ct.ss([[1, 1], [0, 1]], [[0], [1]], np.eye(2), 0, dt=True)
+    cost = opt.quadratic_cost(sys, np.eye(2), np.eye(1))
+    timepts = np.arange(0, 5)
+
+    # Create the default optimal control problem and check labels
+    mpc = opt.create_mpc_iosystem(sys, timepts, cost)
+    assert mpc.input_labels == sys.state_labels
+    assert mpc.output_labels == sys.input_labels
+
+    # Change the signal names
+    input_relabels = ['x1', 'x2']
+    output_relabels = ['u']
+    state_relabels = [f'x_[{i}]' for i in timepts]
+    mpc_relabeled = opt.create_mpc_iosystem(
+        sys, timepts, cost, inputs=input_relabels, outputs=output_relabels,
+        states=state_relabels, name='mpc_relabeled')
+    assert mpc_relabeled.input_labels == input_relabels
+    assert mpc_relabeled.output_labels == output_relabels
+    assert mpc_relabeled.state_labels == state_relabels
+    assert mpc_relabeled.name == 'mpc_relabeled'
+
+    # Make sure that unknown keywords are caught
+    # Unrecognized arguments
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        mpc = opt.create_mpc_iosystem(sys, timepts, cost, unknown=None)
+
+
 def test_mpc_iosystem_continuous():
     # Create a random state space system
     sys = ct.rss(2, 1, 1)
@@ -492,6 +521,14 @@ def test_ocp_argument_errors():
         res = opt.solve_ocp(
             sys, time, x0, cost, constraints, terminal_constraint=None)
 
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ocp = opt.OptimalControlProblem(
+            sys, time, x0, cost, constraints, terminal_constraint=None)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ocp = opt.OptimalControlProblem(sys, time, cost, constraints)
+        ocp.compute_trajectory(x0, unknown=None)
+            
     # Unrecognized trajectory constraint type
     constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
     with pytest.raises(TypeError, match="unknown trajectory constraint type"):

@@ -22,12 +22,13 @@ import control.flatsys
 import control.tests.flatsys_test as flatsys_test
 import control.tests.frd_test as frd_test
 import control.tests.interconnect_test as interconnect_test
+import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.trdata_test as trdata_test
 
 
 @pytest.mark.parametrize("module, prefix", [
-    (control, ""), (control.flatsys, "flatsys.")
+    (control, ""), (control.flatsys, "flatsys."), (control.optimal, "optimal.")
 ])
 def test_kwarg_search(module, prefix):
     # Look through every object in the package
@@ -158,7 +159,7 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 kwarg_unittest = {
     'bode': test_matplotlib_kwargs,
     'bode_plot': test_matplotlib_kwargs,
-    'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_iosys,
+    'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,
     'dlqe': test_unrecognized_kwargs,
     'dlqr': test_unrecognized_kwargs,
@@ -191,6 +192,8 @@ kwarg_unittest = {
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'flatsys.solve_flat_ocp':
         flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
+    'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
+    'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
@@ -205,7 +208,13 @@ kwarg_unittest = {
     'StateSpace.sample': test_unrecognized_kwargs, 
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TransferFunction.__init__': test_unrecognized_kwargs,
-    'TransferFunction.sample': test_unrecognized_kwargs, 
+    'TransferFunction.sample': test_unrecognized_kwargs,
+    'optimal.OptimalControlProblem.__init__':
+        optimal_test.test_ocp_argument_errors,
+    'optimal.OptimalControlProblem.compute_trajectory':
+        optimal_test.test_ocp_argument_errors,
+    'optimal.OptimalControlProblem.create_mpc_iosystem':
+        optimal_test.test_mpc_iosystem_rename,
 }
 
 #
