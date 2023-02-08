@@ -940,7 +940,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def solve_ocp(
-        sys, horizon, X0, cost, trajectory_constraints=None, terminal_cost=None,
+        sys, timepts, X0, cost, trajectory_constraints=None, terminal_cost=None,
         terminal_constraints=[], initial_guess=None, basis=None, squeeze=None,
         transpose=None, return_states=True, print_summary=True, log=False,
         **kwargs):
@@ -952,7 +952,7 @@ def solve_ocp(
     sys : InputOutputSystem
         I/O system for which the optimal input will be computed.
 
-    horizon : 1D array_like
+    timepts : 1D array_like
         List of times at which the optimal input should be computed.
 
     X0: array-like or number, optional
@@ -990,9 +990,9 @@ def solve_ocp(
 
     initial_guess : 1D or 2D array_like
         Initial inputs to use as a guess for the optimal input.  The inputs
-        should either be a 2D vector of shape (ninputs, horizon) or a 1D
-        input of shape (ninputs,) that will be broadcast by extension of the
-        time axis.
+        should either be a 2D vector of shape (ninputs, len(timepts)) or a
+        1D input of shape (ninputs,) that will be broadcast by extension of
+        the time axis.
 
     log : bool, optional
         If `True`, turn on logging messages (using Python logging module).
@@ -1069,7 +1069,7 @@ def solve_ocp(
 
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
-        sys, horizon, cost, trajectory_constraints=trajectory_constraints,
+        sys, timepts, cost, trajectory_constraints=trajectory_constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
         initial_guess=initial_guess, basis=basis, log=log, **kwargs)
 
@@ -1081,12 +1081,12 @@ def solve_ocp(
 
 # Create a model predictive controller for an optimal control problem
 def create_mpc_iosystem(
-        sys, horizon, cost, constraints=[], terminal_cost=None,
+        sys, timepts, cost, constraints=[], terminal_cost=None,
         terminal_constraints=[], log=False, **kwargs):
     """Create a model predictive I/O control system
 
     This function creates an input/output system that implements a model
-    predictive control for a system given the time horizon, cost function and
+    predictive control for a system given the time points, cost function and
     constraints that define the finite-horizon optimization that should be
     carried out at each state.
 
@@ -1095,7 +1095,7 @@ def create_mpc_iosystem(
     sys : InputOutputSystem
         I/O system for which the optimal input will be computed.
 
-    horizon : 1D array_like
+    timepts : 1D array_like
         List of times at which the optimal input should be computed.
 
     cost : callable
@@ -1133,7 +1133,7 @@ def create_mpc_iosystem(
     """
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
-        sys, horizon, cost, trajectory_constraints=constraints,
+        sys, timepts, cost, trajectory_constraints=constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
         log=log, kwargs_check=False, **kwargs)
 
