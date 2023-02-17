@@ -1024,9 +1024,11 @@ def nyquist_plot(
             # Plot the scaled sections of the curve (changing linestyle)
             x_scl = np.ma.masked_where(scale_mask, resp.real)
             y_scl = np.ma.masked_where(scale_mask, resp.imag)
-            plt.plot(
-                x_scl * (1 + curve_offset), y_scl * (1 + curve_offset),
-                primary_style[1], color=c, **kwargs)
+            if x_scl.count() >= 1 and y_scl.count() >= 1:
+                plt.plot(
+                    x_scl * (1 + curve_offset),
+                    y_scl * (1 + curve_offset),
+                    primary_style[1], color=c, **kwargs)
 
             # Plot the primary curve (invisible) for setting arrows
             x, y = resp.real.copy(), resp.imag.copy()
@@ -1044,10 +1046,11 @@ def nyquist_plot(
                 # Plot the regular and scaled segments
                 plt.plot(
                     x_reg, -y_reg, mirror_style[0], color=c, **kwargs)
-                plt.plot(
-                    x_scl * (1 - curve_offset),
-                    -y_scl * (1 - curve_offset),
-                    mirror_style[1], color=c, **kwargs)
+                if x_scl.count() >= 1 and y_scl.count() >= 1:
+                    plt.plot(
+                        x_scl * (1 - curve_offset),
+                        -y_scl * (1 - curve_offset),
+                        mirror_style[1], color=c, **kwargs)
 
                 # Add the arrows (on top of an invisible contour)
                 x, y = resp.real.copy(), resp.imag.copy()
