@@ -375,6 +375,18 @@ def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
     assert(max(phase) <= max_phase)
 
 
+def test_phase_wrap_multiple_systems():
+    G = ctrl.zpk([],[1,1], gain=1)
+
+    mag, phase, omega = ctrl.bode(G)
+    assert(np.min(phase) >= -2*np.pi)
+    assert(np.max(phase) <= -1*np.pi)
+
+    mag, phase, omega = ctrl.bode((G,G))
+    assert(np.min(phase) >= -2*np.pi)
+    assert(np.max(phase) <= -1*np.pi)
+
+
 def test_freqresp_warn_infinite():
     """Test evaluation warnings for transfer functions w/ pole at the origin"""
     sys_finite = ctrl.tf([1], [1, 0.01])

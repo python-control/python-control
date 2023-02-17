@@ -276,18 +276,18 @@ def bode_plot(syslist, omega=None,
             if initial_phase is None:
                 # Start phase in the range 0 to -360 w/ initial phase = -180
                 # If wrap_phase is true, use 0 instead (phase \in (-pi, pi])
-                initial_phase = -math.pi if wrap_phase is not True else 0
+                initial_phase_value = -math.pi if wrap_phase is not True else 0
             elif isinstance(initial_phase, (int, float)):
                 # Allow the user to override the default calculation
                 if deg:
-                    initial_phase = initial_phase/180. * math.pi
+                    initial_phase_value = initial_phase/180. * math.pi
             else:
                 raise ValueError("initial_phase must be a number.")
 
             # Shift the phase if needed
-            if abs(phase[0] - initial_phase) > math.pi:
+            if abs(phase[0] - initial_phase_value) > math.pi:
                 phase -= 2*math.pi * \
-                    round((phase[0] - initial_phase) / (2*math.pi))
+                    round((phase[0] - initial_phase_value) / (2*math.pi))
 
             # Phase wrapping
             if wrap_phase is False:
