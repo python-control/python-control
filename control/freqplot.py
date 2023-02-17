@@ -281,6 +281,9 @@ def bode_plot(syslist, omega=None,
                 # Allow the user to override the default calculation
                 if deg:
                     initial_phase_value = initial_phase/180. * math.pi
+                else:
+                    initial_phase_value = initial_phase
+
             else:
                 raise ValueError("initial_phase must be a number.")
 
