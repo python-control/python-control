@@ -378,11 +378,11 @@ def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
 def test_phase_wrap_multiple_systems():
     sys_unstable = ctrl.zpk([],[1,1], gain=1)
 
-    mag, phase, omega = ctrl.bode(sys_unstable)
+    mag, phase, omega = ctrl.bode(sys_unstable, plot=False)
     assert(np.min(phase) >= -2*np.pi)
     assert(np.max(phase) <= -1*np.pi)
 
-    mag, phase, omega = ctrl.bode((sys_unstable, sys_unstable))
+    mag, phase, omega = ctrl.bode((sys_unstable, sys_unstable), plot=False)
     assert(np.min(phase) >= -2*np.pi)
     assert(np.max(phase) <= -1*np.pi)
 
