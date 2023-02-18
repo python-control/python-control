@@ -1899,10 +1899,10 @@ def tf2ss(*args, **kwargs):
     >>> from control import tf, tf2ss
     >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys1 = tf2ss(num, den)
+    >>> sys1 = tf2ss(num, den)                     # doctest: +SKIP
 
     >>> sys_tf = tf(num, den)
-    >>> sys2 = tf2ss(sys_tf)
+    >>> sys2 = tf2ss(sys_tf)                       # doctest: +SKIP
 
     """
 

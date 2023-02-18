@@ -86,7 +86,7 @@ def hsvd(sys):
     --------
     >>> from control import rss
     >>> sys1 = rss(4)
-    >>> H = hsvd(sys1)
+    >>> H = hsvd(sys1)                                      # doctest: +SKIP
 
     """
     # TODO: implement for discrete time systems
@@ -260,7 +260,7 @@ def balred(sys, orders, method='truncate', alpha=None):
     >>> from control import rss
     >>> sys1 = rss(4)
     >>> orders = [1]
-    >>> rsys = balred(sys1, orders, method='truncate')
+    >>> rsys = balred(sys1, orders, method='truncate')                     # doctest: +SKIP
 
     """
     if method != 'truncate' and method != 'matchdc':

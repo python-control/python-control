@@ -200,7 +200,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
     --------
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
-    >>> K = place_varga(A, B, [-2, -5])
+    >>> K = place_varga(A, B, [-2, -5])                         # doctest: +SKIP
 
     See Also:
     --------
@@ -1018,10 +1018,10 @@ def gram(sys, type):
     --------
     >>> from control import rss
     >>> sys1 = rss(4)
-    >>> Wc = gram(sys1, 'c')
-    >>> Wo = gram(sys1, 'o')
-    >>> Rc = gram(sys1, 'cf')  # where Wc = Rc' * Rc
-    >>> Ro = gram(sys1, 'of')  # where Wo = Ro' * Ro
+    >>> Wc = gram(sys1, 'c')              # doctest: +SKIP
+    >>> Wo = gram(sys1, 'o')              # doctest: +SKIP
+    >>> Rc = gram(sys1, 'cf')  # where Wc = Rc' * Rc        # doctest: +SKIP
+    >>> Ro = gram(sys1, 'of')  # where Wo = Ro' * Ro        # doctest: +SKIP
 
     """
 

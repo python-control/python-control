@@ -388,8 +388,9 @@ def evalfr(sys, x, squeeze=None):
     --------
     >>> from control.iosys import ss
     >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> evalfr(sys1, 1j)
-    (44.8-21.4j)
+    >>> frequency = evalfr(sys1, 1j)
+    >>> print(f"{frequency:.1f}")
+    44.8-21.4j
     >>> # This is the transfer function matrix evaluated at s = i.
 
     .. todo:: Add example with MIMO system
