@@ -276,18 +276,21 @@ def bode_plot(syslist, omega=None,
             if initial_phase is None:
                 # Start phase in the range 0 to -360 w/ initial phase = -180
                 # If wrap_phase is true, use 0 instead (phase \in (-pi, pi])
-                initial_phase = -math.pi if wrap_phase is not True else 0
+                initial_phase_value = -math.pi if wrap_phase is not True else 0
             elif isinstance(initial_phase, (int, float)):
                 # Allow the user to override the default calculation
                 if deg:
-                    initial_phase = initial_phase/180. * math.pi
+                    initial_phase_value = initial_phase/180. * math.pi
+                else:
+                    initial_phase_value = initial_phase
+
             else:
                 raise ValueError("initial_phase must be a number.")
 
             # Shift the phase if needed
-            if abs(phase[0] - initial_phase) > math.pi:
+            if abs(phase[0] - initial_phase_value) > math.pi:
                 phase -= 2*math.pi * \
-                    round((phase[0] - initial_phase) / (2*math.pi))
+                    round((phase[0] - initial_phase_value) / (2*math.pi))
 
             # Phase wrapping
             if wrap_phase is False:
@@ -1021,9 +1024,11 @@ def nyquist_plot(
             # Plot the scaled sections of the curve (changing linestyle)
             x_scl = np.ma.masked_where(scale_mask, resp.real)
             y_scl = np.ma.masked_where(scale_mask, resp.imag)
-            plt.plot(
-                x_scl * (1 + curve_offset), y_scl * (1 + curve_offset),
-                primary_style[1], color=c, **kwargs)
+            if x_scl.count() >= 1 and y_scl.count() >= 1:
+                plt.plot(
+                    x_scl * (1 + curve_offset),
+                    y_scl * (1 + curve_offset),
+                    primary_style[1], color=c, **kwargs)
 
             # Plot the primary curve (invisible) for setting arrows
             x, y = resp.real.copy(), resp.imag.copy()
@@ -1041,10 +1046,11 @@ def nyquist_plot(
                 # Plot the regular and scaled segments
                 plt.plot(
                     x_reg, -y_reg, mirror_style[0], color=c, **kwargs)
-                plt.plot(
-                    x_scl * (1 - curve_offset),
-                    -y_scl * (1 - curve_offset),
-                    mirror_style[1], color=c, **kwargs)
+                if x_scl.count() >= 1 and y_scl.count() >= 1:
+                    plt.plot(
+                        x_scl * (1 - curve_offset),
+                        -y_scl * (1 - curve_offset),
+                        mirror_style[1], color=c, **kwargs)
 
                 # Add the arrows (on top of an invisible contour)
                 x, y = resp.real.copy(), resp.imag.copy()
