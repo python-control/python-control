@@ -56,8 +56,6 @@ from .exception import ControlMIMONotImplemented
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
 from . import config
-from .iosys import ss
-from .xferfcn import tf
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot', 'singular_values_plot',
            'bode', 'nyquist', 'gangof4']
@@ -176,8 +174,13 @@ def bode_plot(syslist, omega=None,
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> mag, phase, omega = bode(sys)
+    >>> from control import bode, ss
+    >>> sys_1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> mag_1, phs_1, omega_1 = bode(sys_1)
+    >>> omega_1.max()
+    100.0
+    >>> omega_1.min()
+    0.1
 
     """
     # Make a copy of the kwargs dictionary since we will modify it
@@ -694,8 +697,10 @@ def nyquist_plot(
 
     Examples
     --------
-    >>> sys = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
-    >>> count = nyquist_plot(sys)
+    >>> from control import nyquist_plot, ss
+    >>> sys_1 = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> nyquist_plot(sys_1)
+    0
 
     """
     # Check to see if legacy 'Plot' keyword was used
@@ -1404,14 +1409,19 @@ def singular_values_plot(syslist, omega=None,
     Examples
     --------
     >>> import numpy as np
+    >>> from control import singular_values_plot, tf
+
     >>> den = [75, 1]
-    >>> sys = tf(
-    ...    [[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
-    >>> omega = np.logspace(-4, 1, 1000)
-    >>> sigma, omega = singular_values_plot(sys, plot=True)
-    >>> singular_values_plot(sys, 0.0, plot=False)
-    (array([[197.20868123],
-           [  1.39141948]]), array([0.]))
+    >>> sys_1 = tf([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
+
+    >>> omega_1 = np.logspace(-4, 1, 1000)
+    >>> sigma_1, omega_1 = singular_values_plot(sys_1, omega=omega_1, plot=False)
+    >>> print(f"{sigma_1.max():.3f}")
+    197.203
+
+    >>> sigma_2, omega_2 = singular_values_plot(sys_1, 0.0, plot=False)
+    >>> print(f"{sigma_2.max():.3f}")
+    197.209
 
     """
 
@@ -1627,8 +1637,11 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> omega = _default_frequency_range(sys)
+    >>> from control import ss
+    >>> sys_1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> omega_1 = _default_frequency_range(sys_1)
+    >>> omega_1.shape
+    (1000,)
 
     """
     # Set default values for options

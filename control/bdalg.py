@@ -57,7 +57,6 @@ import numpy as np
 from . import xferfcn
 from . import statesp
 from . import frdata
-from .iosys import ss, rss
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
@@ -100,12 +99,17 @@ def series(sys1, *sysn):
 
     Examples
     --------
-    >>> sys1 = rss(1)
-    >>> sys2 = rss(2)
-    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1
+    >>> from control import rss, series
+    >>> sys_1 = rss(1)
+    >>> sys_2 = rss(2)
+    >>> sys_3 = series(sys_1, sys_2) # Same as sys3 = sys2 * sys1
+    >>> sys_3.ninputs, sys_3.noutputs, sys_3.nstates
+    (1, 1, 3)
 
-    >>> sys4 = rss(3)
-    >>> sys5 = series(sys1, sys2, sys3, sys4) # More systems
+    >>> sys_4 = rss(3)
+    >>> sys_5 = series(sys_1, sys_2, sys_3, sys_4) # More systems
+    >>> sys_5.ninputs, sys_5.noutputs, sys_5.nstates
+    (1, 1, 9)
 
     """
     from functools import reduce
@@ -150,12 +154,17 @@ def parallel(sys1, *sysn):
 
     Examples
     --------
-    >>> sys1 = rss(2)
-    >>> sys2 = rss(3)
-    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2
+    >>> from control import parallel, rss
+    >>> sys_1 = rss(1)
+    >>> sys_2 = rss(2)
+    >>> sys_3 = parallel(sys_1, sys_2) # Same as sys3 = sys1 + sys2
+    >>> sys_3.ninputs, sys_3.noutputs, sys_3.nstates
+    (1, 1, 3)
 
-    >>> sys4 = rss(4)
-    >>> sys5 = parallel(sys1, sys2, sys3, sys4) # More systems
+    >>> sys_4 = rss(3)
+    >>> sys_5 = parallel(sys_1, sys_2, sys_3, sys_4) # More systems
+    >>> sys_5.ninputs, sys_3.noutputs, sys_3.nstates
+    (1, 1, 3)
 
     """
     from functools import reduce
@@ -181,8 +190,11 @@ def negate(sys):
 
     Examples
     --------
-    >>> sys1 = rss(2)
-    >>> sys2 = negate(sys1) # Same as sys2 = -sys1.
+    >>> from control import negate, rss
+    >>> sys_1 = rss(2)
+    >>> sys_2 = negate(sys_1)  # Same as sys2 = -sys1.
+    >>> sys_2.ninputs, sys_2.noutputs, sys_2.nstates
+    (1, 1, 2)
 
     """
     return -sys
@@ -286,9 +298,12 @@ def append(*sys):
 
     Examples
     --------
-    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6., 8]], [[9.]])
-    >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
-    >>> sys = append(sys1, sys2)
+    >>> from control import append, rss
+    >>> sys_1 = rss(1)
+    >>> sys_2 = rss(2)
+    >>> sys_3 = append(sys_1, sys_2)
+    >>> sys_3.ninputs, sys_3.noutputs, sys_3.nstates
+    (2, 2, 3)
 
     """
     s1 = statesp._convert_to_statespace(sys[0])
@@ -331,11 +346,17 @@ def connect(sys, Q, inputv, outputv):
 
     Examples
     --------
-    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6, 8]], [[9.]])
-    >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
-    >>> sys = append(sys1, sys2)
+    >>> from control import append, connect, rss
+    >>> sys_1 = rss(1)
+    >>> sys_2 = rss(2)
+    >>> sys_3 = append(sys_1, sys_2)
+    >>> sys_3.ninputs, sys_3.noutputs, sys_3.nstates
+    (2, 2, 3)
+
     >>> Q = [[1, 2], [2, -1]]  # negative feedback interconnection
-    >>> sysc = connect(sys, Q, [2], [1, 2])
+    >>> sys_c = connect(sys_3, Q, [2], [1, 2])
+    >>> sys_c.ninputs, sys_3.noutputs, sys_3.nstates
+    (1, 2, 3)
 
     Notes
     -----

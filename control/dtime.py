@@ -48,7 +48,6 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 """
 
 from .namedio import isctime
-from .xferfcn import tf
 
 __all__ = ['sample_system', 'c2d']
 
@@ -109,8 +108,19 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
 
     Examples
     --------
-    >>> sysc = tf([1], [1, 2, 1])
-    >>> sysd = sample_system(sysc, 1, method='bilinear')
+    >>> from control import sample_system, tf, timebase
+    >>> sys_c = tf([1], [1, 2, 1])
+    >>> sys_c.isctime()
+    True
+    >>> timebase(sys_c)
+    0.0
+
+    >>> sys_d = sample_system(sys_c, 1, method='bilinear')
+    >>> sys_d.isdtime()
+    True
+    >>> timebase(sys_d)
+    1.0
+
     """
 
     # Make sure we have a continuous time system
@@ -150,8 +160,19 @@ def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
 
     Examples
     --------
-    >>> sysc = tf([1], [1, 2, 1])
-    >>> sysd = c2d(sysc, 1, method='bilinear')
+    >>> from control import c2d, tf, timebase
+    >>> sys_c = tf([1], [1, 2, 1])
+    >>> sys_c.isctime()
+    True
+    >>> timebase(sys_c)
+    0.0
+
+    >>> sys_d = c2d(sys_c, 1, method='bilinear')
+    >>> sys_d.isdtime()
+    True
+    >>> timebase(sys_d)
+    1.0
+
     """
 
     #  Call the sample_system() function to do the work

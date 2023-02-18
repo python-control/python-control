@@ -19,7 +19,6 @@ import scipy
 from warnings import warn
 
 from .freqplot import nyquist_plot
-from .xferfcn import tf
 
 __all__ = ['describing_function', 'describing_function_plot',
            'DescribingFunctionNonlinearity', 'friction_backlash_nonlinearity',
@@ -239,6 +238,7 @@ def describing_function_plot(
 
     Examples
     --------
+    >>> from control import describing_function_plot, saturation_nonlinearity, tf
     >>> H_simple = tf([8], [1, 2, 2, 1])
     >>> F_saturation = saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
