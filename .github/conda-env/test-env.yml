@@ -10,5 +10,5 @@ dependencies:
   - pytest-timeout
   - pytest-xvfb
   - numpy
-  - matplotlib
+  - matplotlib==3.6.3   # 3.7.0 breaks, can be removed when fixed
   - scipy
