@@ -4,6 +4,7 @@ dependencies:
   - pip
   - coverage
   - coveralls
+  - doctest
   - pytest
   - pytest-cov
   - pytest-timeout
