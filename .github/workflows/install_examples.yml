@@ -19,7 +19,7 @@ jobs:
            --strict-channel-priority \
            --quiet --yes \
            pip setuptools setuptools-scm \
-           numpy matplotlib scipy \
+           numpy matplotlib==3.6.3 scipy \
            slycot pmw jupyter
 
     - name: Install from source
