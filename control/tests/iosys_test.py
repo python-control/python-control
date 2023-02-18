@@ -1683,7 +1683,6 @@ def test_interconnect_unused_input():
         h = ct.interconnect([g,s,k],
                             connections=False)
 
-
     # warn if explicity ignored input in fact used
     with pytest.warns(
             UserWarning,
@@ -1779,6 +1778,42 @@ def test_interconnect_unused_output():
                             inputs=['r'],
                             outputs=['y'],
                             ignore_outputs=['v'])
+
+
+def test_interconnect_add_unused():
+    P = ct.ss(
+        [[-1]], [[1, -1]], [[-1], [1]], 0,
+        inputs=['u1', 'u2'], outputs=['y1','y2'], name='g')
+    S = ct.summing_junction(inputs=['r','-y1'], outputs=['e'], name='s')
+    C = ct.ss(0, 10, 2, 0, inputs=['e'], outputs=['u1'], name='k')
+
+    # Try a normal interconnection
+    G1 = ct.interconnect(
+        [P, S, C], inputs=['r', 'u2'], outputs=['y1', 'y2'])
+
+    # Same system, but using add_unused
+    G2 = ct.interconnect(
+        [P, S, C], inputs=['r'], outputs=['y1'], add_unused=True)
+    assert G2.input_labels == G1.input_labels
+    assert G2.input_offset == G1.input_offset
+    assert G2.output_labels == G1.output_labels
+    assert G2.output_offset == G1.output_offset
+
+    # Ignore one of the inputs
+    G3 = ct.interconnect(
+        [P, S, C], inputs=['r'], outputs=['y1'], add_unused=True,
+        ignore_inputs=['u2'])
+    assert G3.input_labels == G1.input_labels[0:1]
+    assert G3.output_labels == G1.output_labels
+    assert G3.output_offset == G1.output_offset
+
+    # Ignore one of the outputs
+    G4 = ct.interconnect(
+        [P, S, C], inputs=['r'], outputs=['y1'], add_unused=True,
+        ignore_outputs=['y2'])
+    assert G4.input_labels == G1.input_labels
+    assert G4.input_offset == G1.input_offset
+    assert G4.output_labels == G1.output_labels[0:1]
 
 
 def test_input_output_broadcasting():

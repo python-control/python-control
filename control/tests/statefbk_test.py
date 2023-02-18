@@ -628,6 +628,54 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(clsys.C, Cc)
         np.testing.assert_array_almost_equal(clsys.D, Dc)
 
+    def test_statefbk_iosys_unused(self):
+        # Create a base system to work with
+        sys = ct.rss(2, 1, 1, strictly_proper=True)
+
+        # Create a system with extra input
+        aug = ct.rss(2, inputs=[sys.input_labels[0], 'd'],
+                     outputs=sys.output_labels, strictly_proper=True,)
+        aug.A = sys.A
+        aug.B[:, 0:1] = sys.B
+
+        # Create an estimator
+        est = ct.create_estimator_iosystem(
+            sys, np.eye(sys.ninputs), np.eye(sys.noutputs))
+
+        # Design an LQR controller
+        K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+
+        # Create a baseline I/O control system
+        ctrl0, clsys0 = ct.create_statefbk_iosystem(sys, K, estimator=est)
+        clsys0_lin = clsys0.linearize(0, 0)
+
+        # Create an I/O system with additional inputs
+        ctrl1, clsys1 = ct.create_statefbk_iosystem(
+            aug, K, estimator=est, control_indices=[0])
+        clsys1_lin = clsys1.linearize(0, 0)
+
+        # Make sure the extra inputs are there
+        assert aug.input_labels[1] not in clsys0.input_labels
+        assert aug.input_labels[1] in clsys1.input_labels
+        np.testing.assert_allclose(clsys0_lin.A, clsys1_lin.A)
+
+        # Switch around which input we use
+        aug = ct.rss(2, inputs=['d', sys.input_labels[0]],
+                     outputs=sys.output_labels, strictly_proper=True,)
+        aug.A = sys.A
+        aug.B[:, 1:2] = sys.B
+
+        # Create an I/O system with additional inputs
+        ctrl2, clsys2 = ct.create_statefbk_iosystem(
+            aug, K, estimator=est, control_indices=[1])
+        clsys2_lin = clsys2.linearize(0, 0)
+
+        # Make sure the extra inputs are there
+        assert aug.input_labels[0] not in clsys0.input_labels
+        assert aug.input_labels[0] in clsys1.input_labels
+        np.testing.assert_allclose(clsys0_lin.A, clsys2_lin.A)
+
+
     def test_lqr_integral_continuous(self):
         # Generate a continuous time system for testing
         sys = ct.rss(4, 4, 2, strictly_proper=True)
@@ -764,11 +812,13 @@ class TestStatefbk:
             sys_tf = ct.tf([1], [1, 1])
             ctrl, clsys = ct.create_statefbk_iosystem(sys_tf, K)
 
-        with pytest.raises(ControlArgument, match="output size must match"):
+        with pytest.raises(ControlArgument,
+                           match="estimator output must include the full"):
             est = ct.rss(3, 3, 2)
             ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=est)
 
-        with pytest.raises(ControlArgument, match="must be the full state"):
+        with pytest.raises(ControlArgument,
+                           match="system output must include the full state"):
             sys_nf = ct.rss(4, 3, 2, strictly_proper=True)
             ctrl, clsys = ct.create_statefbk_iosystem(sys_nf, K)
 

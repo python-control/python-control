@@ -1373,13 +1373,11 @@ class InterconnectedSystem(InputOutputSystem):
         -------
 
         unused_inputs : dict
-
           A mapping from tuple of indices (isys, isig) to string
           '{sys}.{sig}', for all unused subsystem inputs.
 
         unused_outputs : dict
-
-          A mapping from tuple of indices (isys, isig) to string
+          A mapping from tuple of indices (osys, osig) to string
           '{sys}.{sig}', for all unused subsystem outputs.
 
         """
@@ -1433,10 +1431,13 @@ class InterconnectedSystem(InputOutputSystem):
                 for sig, isig in sys.output_index.items()
                 if sig == (basename)}
 
-    def check_unused_signals(self, ignore_inputs=None, ignore_outputs=None):
+    def check_unused_signals(
+            self, ignore_inputs=None, ignore_outputs=None, warning=True):
         """Check for unused subsystem inputs and outputs
 
-        If any unused inputs or outputs are found, emit a warning.
+        Check to see if there are any unused signals and return a list of
+        unused input and output signal descriptions.  If `warning` is True
+        and any unused inputs or outputs are found, emit a warning.
 
         Parameters
         ----------
@@ -1453,6 +1454,16 @@ class InterconnectedSystem(InputOutputSystem):
 
           If the 'sig' form is used, all subsystem outputs with that
           name are considered ignored.
+
+        Returns
+        -------
+        dropped_inputs: list of tuples
+            A list of the dropped input signals, with each element of the
+            list in the form of (isys, isig).
+
+        dropped_outputs: list of tuples
+            A list of the dropped output signals, with each element of the
+            list in the form of (osys, osig).
 
         """
 
@@ -1477,7 +1488,7 @@ class InterconnectedSystem(InputOutputSystem):
                 ignore_input_map[self._parse_signal(
                     ignore_input, 'input')[:2]] = ignore_input
 
-        # (isys, isig) -> signal-spec
+        # (osys, osig) -> signal-spec
         ignore_output_map = {}
         for ignore_output in ignore_outputs:
             if isinstance(ignore_output, str) and '.' not in ignore_output:
@@ -1496,29 +1507,31 @@ class InterconnectedSystem(InputOutputSystem):
         used_ignored_inputs = set(ignore_input_map) - set(unused_inputs)
         used_ignored_outputs = set(ignore_output_map) - set(unused_outputs)
 
-        if dropped_inputs:
+        if warning and dropped_inputs:
             msg = ('Unused input(s) in InterconnectedSystem: '
                    + '; '.join(f'{inp}={unused_inputs[inp]}'
                                for inp in dropped_inputs))
             warn(msg)
 
-        if dropped_outputs:
+        if warning and dropped_outputs:
             msg = ('Unused output(s) in InterconnectedSystem: '
                    + '; '.join(f'{out} : {unused_outputs[out]}'
                                for out in dropped_outputs))
             warn(msg)
 
-        if used_ignored_inputs:
+        if warning and used_ignored_inputs:
             msg = ('Input(s) specified as ignored is (are) used: '
                    + '; '.join(f'{inp} : {ignore_input_map[inp]}'
                                for inp in used_ignored_inputs))
             warn(msg)
 
-        if used_ignored_outputs:
+        if warning and used_ignored_outputs:
             msg = ('Output(s) specified as ignored is (are) used: '
                    + '; '.join(f'{out}={ignore_output_map[out]}'
                                for out in used_ignored_outputs))
             warn(msg)
+
+        return dropped_inputs, dropped_outputs
 
 
 class LinearICSystem(InterconnectedSystem, LinearIOSystem):
@@ -2580,9 +2593,10 @@ def tf2io(*args, **kwargs):
 
 
 # Function to create an interconnected system
-def interconnect(syslist, connections=None, inplist=None, outlist=None,
-                 params=None, check_unused=True, ignore_inputs=None,
-                 ignore_outputs=None, warn_duplicate=None, **kwargs):
+def interconnect(
+        syslist, connections=None, inplist=None, outlist=None, params=None,
+        check_unused=True, add_unused=False, ignore_inputs=None,
+        ignore_outputs=None, warn_duplicate=None, **kwargs):
     """Interconnect a set of input/output systems.
 
     This function creates a new system that is an interconnection of a set of
@@ -2653,8 +2667,8 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
         the system input connects to only one subsystem input, a single input
         specification can be given (without the inner list).
 
-        If omitted, the input map can be specified using the
-        :func:`~control.InterconnectedSystem.set_input_map` method.
+        If omitted the `input` parameter will be used to identify the list
+        of input signals to the overall system.
 
     outlist : list of output connections, optional
         List of connections for how the outputs from the subsystems are mapped
@@ -2886,9 +2900,29 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
     outlist = new_outlist
 
     newsys = InterconnectedSystem(
-        syslist, connections=connections, inplist=inplist, outlist=outlist,
-        inputs=inputs, outputs=outputs, states=states,
+        syslist, connections=connections, inplist=inplist,
+        outlist=outlist, inputs=inputs, outputs=outputs, states=states,
         params=params, dt=dt, name=name, warn_duplicate=warn_duplicate)
+
+    # See if we should add any signals
+    if add_unused:
+        # Get all unused signals
+        dropped_inputs, dropped_outputs = newsys.check_unused_signals(
+            ignore_inputs, ignore_outputs, warning=False)
+
+        # Add on any unused signals that we aren't ignoring
+        for isys, isig in dropped_inputs:
+            inplist.append((isys, isig))
+            inputs.append(newsys.syslist[isys].input_labels[isig])
+        for osys, osig in dropped_outputs:
+            outlist.append((osys, osig))
+            outputs.append(newsys.syslist[osys].output_labels[osig])
+
+        # Rebuild the system with new inputs/outputs
+        newsys = InterconnectedSystem(
+            syslist, connections=connections, inplist=inplist,
+            outlist=outlist, inputs=inputs, outputs=outputs, states=states,
+            params=params, dt=dt, name=name, warn_duplicate=warn_duplicate)
 
     # check for implicitly dropped signals
     if check_unused:
