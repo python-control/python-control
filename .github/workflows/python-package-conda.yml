@@ -65,7 +65,7 @@ jobs:
       env:
         PYTHON_CONTROL_ARRAY_AND_MATRIX: ${{ matrix.array-and-matrix }}
         MPLBACKEND: ${{ matrix.mplbackend }}
-      run: pytest -v --cov=control --cov-config=.coveragerc control/tests
+      run: pytest -v --cov=control --cov-config=.coveragerc control
 
     - name: Coveralls parallel
       # https://github.com/coverallsapp/github-action
