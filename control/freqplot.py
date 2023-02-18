@@ -177,9 +177,9 @@ def bode_plot(syslist, omega=None,
     >>> from control import bode, ss
     >>> sys_1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag_1, phs_1, omega_1 = bode(sys_1)
-    >>> omega_1.max()
+    >>> print(f"{omega_1.max():.1f}")
     100.0
-    >>> omega_1.min()
+    >>> print(f"{omega_1.min():.1f}")
     0.1
 
     """

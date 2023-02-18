@@ -112,13 +112,13 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     >>> sys_c = tf([1], [1, 2, 1])
     >>> sys_c.isctime()
     True
-    >>> timebase(sys_c)
+    >>> print(f"{timebase(sys_c):.1f}")
     0.0
 
     >>> sys_d = sample_system(sys_c, 1, method='bilinear')
     >>> sys_d.isdtime()
     True
-    >>> timebase(sys_d)
+    >>> print(f"{timebase(sys_d):.1f}")
     1.0
 
     """
@@ -164,13 +164,13 @@ def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
     >>> sys_c = tf([1], [1, 2, 1])
     >>> sys_c.isctime()
     True
-    >>> timebase(sys_c)
+    >>> print(f"{timebase(sys_c):.1f}")
     0.0
 
     >>> sys_d = c2d(sys_c, 1, method='bilinear')
     >>> sys_d.isdtime()
     True
-    >>> timebase(sys_d)
+    >>> print(f"{timebase(sys_d):.1f}")
     1.0
 
     """

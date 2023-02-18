@@ -679,8 +679,8 @@ def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
     >>> frd = _convert_to_FRD(3., omegas) # Assumes inputs = outputs = 1
     >>> len(frd.response[0][0])
     20
-    >>> frd.response[0][0][0]
-    (3+0j)
+    >>> print(f"{frd.response[0][0][0]:.1f}")
+    3.0+0.0j
 
     >>> frd = _convert_to_FRD(1., omegas, inputs=3, outputs=2)
 
