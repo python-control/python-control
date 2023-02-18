@@ -84,7 +84,9 @@ def hsvd(sys):
 
     Examples
     --------
-    >>> H = hsvd(sys)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> H = hsvd(sys1)
 
     """
     # TODO: implement for discrete time systems
@@ -135,7 +137,7 @@ def modred(sys, ELIM, method='matchdc'):
 
     Examples
     --------
-    >>> rsys = modred(sys, ELIM, method='truncate')
+    >>> rsys = modred(sys, ELIM, method='truncate')    # doctest: +SKIP
     """
 
     # Check for ss system object, need a utility for this?
@@ -255,7 +257,10 @@ def balred(sys, orders, method='truncate', alpha=None):
 
     Examples
     --------
-    >>> rsys = balred(sys, orders, method='truncate')
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> orders = [1]
+    >>> rsys = balred(sys1, orders, method='truncate')
 
     """
     if method != 'truncate' and method != 'matchdc':
@@ -386,7 +391,7 @@ def era(YY, m, n, nin, nout, r):
 
     Examples
     --------
-    >>> rsys = era(YY, m, n, nin, nout, r)
+    >>> rsys = era(YY, m, n, nin, nout, r)    # doctest: +SKIP
 
     """
     raise NotImplementedError('This function is not implemented yet.')
@@ -446,9 +451,11 @@ def markov(Y, U, m=None, transpose=False):
 
     Examples
     --------
-    >>> T = numpy.linspace(0, 10, 100)
-    >>> U = numpy.ones((1, 100))
-    >>> T, Y, _ = forced_response(tf([1], [1, 0.5], True), T, U)
+    >>> import numpy as np
+    >>> from control import forced_response, markov, tf
+    >>> T = np.linspace(0, 10, 100)
+    >>> U = np.ones((1, 100))
+    >>> T, Y = forced_response(tf([1], [1, 0.5], True), T, U)
     >>> H = markov(Y, U, 3, transpose=False)
 
     """

@@ -373,8 +373,8 @@ def lqr(*args, **kwargs):
 
     Examples
     --------
-    >>> K, S, E = lqr(sys, Q, R, [N])
-    >>> K, S, E = lqr(A, B, Q, R, [N])
+    >>> K, S, E = lqr(sys, Q, R, [N])              # doctest: +SKIP
+    >>> K, S, E = lqr(A, B, Q, R, [N])             # doctest: +SKIP
 
     """
     #
@@ -517,8 +517,8 @@ def dlqr(*args, **kwargs):
 
     Examples
     --------
-    >>> K, S, E = dlqr(dsys, Q, R, [N])
-    >>> K, S, E = dlqr(A, B, Q, R, [N])
+    >>> K, S, E = dlqr(dsys, Q, R, [N])                # doctest: +SKIP
+    >>> K, S, E = dlqr(A, B, Q, R, [N])                # doctest: +SKIP
     """
 
     #
@@ -931,7 +931,7 @@ def ctrb(A, B):
 
     Examples
     --------
-    >>> C = ctrb(A, B)
+    >>> C = ctrb(A, B)           # doctest: +SKIP
 
     """
 
@@ -967,7 +967,7 @@ def obsv(A, C):
 
     Examples
     --------
-    >>> O = obsv(A, C)
+    >>> O = obsv(A, C)        # doctest: +SKIP
     """
 
     # Convert input parameters to matrices (if they aren't already)
@@ -1016,10 +1016,12 @@ def gram(sys, type):
 
     Examples
     --------
-    >>> Wc = gram(sys, 'c')
-    >>> Wo = gram(sys, 'o')
-    >>> Rc = gram(sys, 'cf'), where Wc = Rc' * Rc
-    >>> Ro = gram(sys, 'of'), where Wo = Ro' * Ro
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> Wc = gram(sys1, 'c')
+    >>> Wo = gram(sys1, 'o')
+    >>> Rc = gram(sys1, 'cf')  # where Wc = Rc' * Rc
+    >>> Ro = gram(sys1, 'of')  # where Wo = Ro' * Ro
 
     """
 

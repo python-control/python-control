@@ -19,6 +19,7 @@ import scipy
 from warnings import warn
 
 from .freqplot import nyquist_plot
+from .xferfcn import tf
 
 __all__ = ['describing_function', 'describing_function_plot',
            'DescribingFunctionNonlinearity', 'friction_backlash_nonlinearity',
@@ -238,12 +239,12 @@ def describing_function_plot(
 
     Examples
     --------
-    >>> H_simple = ct.tf([8], [1, 2, 2, 1])
-    >>> F_saturation = ct.descfcn.saturation_nonlinearity(1)
+    >>> H_simple = tf([8], [1, 2, 2, 1])
+    >>> F_saturation = saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> ct.describing_function_plot(H_simple, F_saturation, amp)
-    [(3.344008947853124, 1.414213099755523)]
-
+    >>> amplitude, frequency = describing_function_plot(H_simple, F_saturation, amp)[0]
+    >>> print(f"{amplitude:.3f}, {frequency:.3f}")
+    3.344, 1.414
     """
     # Decide whether to turn on warnings or not
     if warn is None:

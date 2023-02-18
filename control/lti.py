@@ -386,9 +386,10 @@ def evalfr(sys, x, squeeze=None):
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> evalfr(sys, 1j)
-    array([[ 44.8-21.4j]])
+    >>> from control.iosys import ss
+    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> evalfr(sys1, 1j)
+    (44.8-21.4j)
     >>> # This is the transfer function matrix evaluated at s = i.
 
     .. todo:: Add example with MIMO system
@@ -449,12 +450,15 @@ def frequency_response(sys, omega, squeeze=None):
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
+    >>> from control.iosys import ss
+    >>> sys1 = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> mag, phase, omega = freqresp(sys1, [0.1, 1., 10.])
     >>> mag
-    array([[[ 58.8576682 ,  49.64876635,  13.40825927]]])
+    array([58.8576682 , 49.64876635, 13.40825927])
     >>> phase
-    array([[[-0.05408304, -0.44563154, -0.66837155]]])
+    array([-0.05408304, -0.44563154, -0.66837155])
+    >>> omega
+    array([ 0.1,  1. , 10. ])
 
     .. todo::
         Add example with MIMO system

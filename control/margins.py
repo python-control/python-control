@@ -57,6 +57,7 @@ from .namedio import issiso
 from . import frdata
 from . import freqplot
 from .exception import ControlMIMONotImplemented
+from .xferfcn import tf
 
 __all__ = ['stability_margins', 'phase_crossover_frequencies', 'margin']
 
@@ -476,9 +477,9 @@ def phase_crossover_frequencies(sys):
 
     Examples
     --------
-    >>> tf = TransferFunction([1], [1, 2, 3, 4])
-    >>> phase_crossover_frequencies(tf)
-    (array([ 1.73205081,  0.        ]), array([-0.5 ,  0.25]))
+    >>> tf1 = tf([1], [1, 2, 3, 4])
+    >>> phase_crossover_frequencies(tf1)
+    (array([1.73205081, 0.        ]), array([-0.5 ,  0.25]))
     """
     # Convert to a transfer function
     tf = xferfcn._convert_to_transfer_function(sys)

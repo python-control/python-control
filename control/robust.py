@@ -70,7 +70,7 @@ def h2syn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> K = h2syn(P,nmeas,ncon)
+    >>> K = h2syn(P,nmeas,ncon)   # doctest: +SKIP
 
     """
     # Check for ss system object, need a utility for this?
@@ -134,7 +134,7 @@ def hinfsyn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> K, CL, gam, rcond = hinfsyn(P,nmeas,ncon)
+    >>> K, CL, gam, rcond = hinfsyn(P,nmeas,ncon)  # doctest: +SKIP
 
     """
 

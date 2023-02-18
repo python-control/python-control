@@ -110,7 +110,7 @@ class TransferFunction(LTI):
     The attribues 'num' and 'den' are 2-D lists of arrays containing MIMO
     numerator and denominator coefficients.  For example,
 
-    >>> num[2][5] = numpy.array([1., 4., 8.])
+    >>> num[2][5] = numpy.array([1., 4., 8.])    # doctest: +SKIP
 
     means that the numerator of the transfer function from the 6th input to
     the 3rd output is set to s^2 + 4s + 8.
@@ -874,8 +874,8 @@ class TransferFunction(LTI):
 
         For instance,
 
-        >>> out = tfobject.returnScipySignalLTI()
-        >>> out[3][5]
+        >>> out = tfobject.returnScipySignalLTI()    # doctest: +SKIP
+        >>> out[3][5]                                # doctest: +SKIP
 
         is a :class:`scipy.signal.lti` object corresponding to the
         transfer function from the 6th input to the 4th output.
@@ -963,7 +963,9 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> num, den, denorder = sys._common_den()
+        >>> from control import rss, ss2tf
+        >>> sys1 = ss2tf(rss(4))
+        >>> num, den, denorder = sys1._common_den()
 
         """
 
@@ -1541,6 +1543,7 @@ def tf(*args, **kwargs):
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
 
     >>> # Convert a StateSpace to a TransferFunction object.
+    >>> from control import ss
     >>> sys_ss = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> sys2 = tf(sys1)
 
@@ -1682,6 +1685,7 @@ def ss2tf(*args, **kwargs):
 
     Examples
     --------
+    >>> from control import ss, ss2tf
     >>> A = [[1., -2], [3, -4]]
     >>> B = [[5.], [7]]
     >>> C = [[6., 8]]

@@ -54,9 +54,10 @@ $Id$
 """
 
 import numpy as np
-from . import xferfcn as tf
-from . import statesp as ss
-from . import frdata as frd
+from . import xferfcn
+from . import statesp
+from . import frdata
+from .iosys import ss, rss
 
 __all__ = ['series', 'parallel', 'negate', 'feedback', 'append', 'connect']
 
@@ -99,8 +100,11 @@ def series(sys1, *sysn):
 
     Examples
     --------
+    >>> sys1 = rss(1)
+    >>> sys2 = rss(2)
     >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1
 
+    >>> sys4 = rss(3)
     >>> sys5 = series(sys1, sys2, sys3, sys4) # More systems
 
     """
@@ -146,8 +150,11 @@ def parallel(sys1, *sysn):
 
     Examples
     --------
+    >>> sys1 = rss(2)
+    >>> sys2 = rss(3)
     >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2
 
+    >>> sys4 = rss(4)
     >>> sys5 = parallel(sys1, sys2, sys3, sys4) # More systems
 
     """
@@ -174,6 +181,7 @@ def negate(sys):
 
     Examples
     --------
+    >>> sys1 = rss(2)
     >>> sys2 = negate(sys1) # Same as sys2 = -sys1.
 
     """
@@ -231,26 +239,26 @@ def feedback(sys1, sys2=1, sign=-1):
 
     # Check for correct input types.
     if not isinstance(sys1, (int, float, complex, np.number,
-                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
+                             xferfcn.TransferFunction, statesp.StateSpace, frdata.FRD)):
         raise TypeError("sys1 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
     if not isinstance(sys2, (int, float, complex, np.number,
-                             tf.TransferFunction, ss.StateSpace, frd.FRD)):
+                             xferfcn.TransferFunction, statesp.StateSpace, frdata.FRD)):
         raise TypeError("sys2 must be a TransferFunction, StateSpace " +
                         "or FRD object, or a scalar.")
 
     # If sys1 is a scalar, convert it to the appropriate LTI type so that we can
     # its feedback member function.
     if isinstance(sys1, (int, float, complex, np.number)):
-        if isinstance(sys2, tf.TransferFunction):
-            sys1 = tf._convert_to_transfer_function(sys1)
-        elif isinstance(sys2, ss.StateSpace):
-            sys1 = ss._convert_to_statespace(sys1)
-        elif isinstance(sys2, frd.FRD):
-            sys1 = frd._convert_to_FRD(sys1, sys2.omega)
+        if isinstance(sys2, xferfcn.TransferFunction):
+            sys1 = xferfcn._convert_to_transfer_function(sys1)
+        elif isinstance(sys2, statesp.StateSpace):
+            sys1 = statesp._convert_to_statespace(sys1)
+        elif isinstance(sys2, frdata.FRD):
+            sys1 = frdata._convert_to_FRD(sys1, sys2.omega)
         else: # sys2 is a scalar.
-            sys1 = tf._convert_to_transfer_function(sys1)
-            sys2 = tf._convert_to_transfer_function(sys2)
+            sys1 = xferfcn._convert_to_transfer_function(sys1)
+            sys2 = xferfcn._convert_to_transfer_function(sys2)
 
     return sys1.feedback(sys2, sign)
 
@@ -283,7 +291,7 @@ def append(*sys):
     >>> sys = append(sys1, sys2)
 
     """
-    s1 = ss._convert_to_statespace(sys[0])
+    s1 = statesp._convert_to_statespace(sys[0])
     for s in sys[1:]:
         s1 = s1.append(s)
     return s1

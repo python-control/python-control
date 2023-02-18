@@ -916,7 +916,11 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     Examples
     --------
-    >>> T, yout, xout = forced_response(sys, T, u, X0)
+    >>> import numpy as np
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> T = np.linspace(0,10)
+    >>> T, yout = forced_response(sys1, T=T)
 
     See :ref:`time-series-convention` and
     :ref:`package-configuration-parameters`.
@@ -1328,7 +1332,9 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Examples
     --------
-    >>> T, yout = step_response(sys, T, X0)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> T, yout = step_response(sys1)
 
     """
     # Create the time and input vectors
@@ -1686,7 +1692,9 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     Examples
     --------
-    >>> T, yout = initial_response(sys, T, X0)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> T, yout = initial_response(sys1)
 
     """
     squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
@@ -1801,7 +1809,9 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Examples
     --------
-    >>> T, yout = impulse_response(sys, T, X0)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> T, yout = impulse_response(sys1)
 
     """
     # Convert to state space so that we can simulate

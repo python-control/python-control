@@ -48,7 +48,7 @@ $Id: dtime.py 185 2012-08-30 05:44:32Z murrayrm $
 """
 
 from .namedio import isctime
-from .statesp import StateSpace
+from .xferfcn import tf
 
 __all__ = ['sample_system', 'c2d']
 
@@ -109,7 +109,7 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
 
     Examples
     --------
-    >>> sysc = TransferFunction([1], [1, 2, 1])
+    >>> sysc = tf([1], [1, 2, 1])
     >>> sysd = sample_system(sysc, 1, method='bilinear')
     """
 
@@ -150,8 +150,8 @@ def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
 
     Examples
     --------
-    >>> sysc = TransferFunction([1], [1, 2, 1])
-    >>> sysd = sample_system(sysc, 1, method='bilinear')
+    >>> sysc = tf([1], [1, 2, 1])
+    >>> sysd = c2d(sysc, 1, method='bilinear')
     """
 
     #  Call the sample_system() function to do the work

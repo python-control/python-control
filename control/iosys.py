@@ -36,7 +36,7 @@ from .namedio import NamedIOSystem, _process_signal_list, \
     _process_namedio_keywords, isctime, isdtime, common_timebase
 from .statesp import StateSpace, tf2ss, _convert_to_statespace
 from .statesp import _rss_generate
-from .xferfcn import TransferFunction
+from .xferfcn import TransferFunction, tf
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData
 from . import config
@@ -2353,7 +2353,7 @@ def ss(*args, **kwargs):
     Examples
     --------
     >>> # Create a Linear I/O system object from from for matrices
-    >>> sys1 = ss([[1, -2], [3 -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> sys1 = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
 
     >>> # Convert a TransferFunction to a StateSpace object.
     >>> sys_tf = tf([2.], [1., 3])
@@ -2741,26 +2741,28 @@ def interconnect(syslist, connections=None, inplist=None, outlist=None,
 
     Examples
     --------
-    >>> P = control.LinearIOSystem(
-    >>>        control.rss(2, 2, 2, strictly_proper=True), name='P')
-    >>> C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
-    >>> T = control.interconnect(
-    >>>     [P, C],
-    >>>     connections = [
-    >>>       ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
-    >>>       ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
-    >>>     inplist = ['C.u[0]', 'C.u[1]'],
-    >>>     outlist = ['P.y[0]', 'P.y[1]'],
-    >>> )
+    >>> P = LinearIOSystem(
+    ...     rss(2, 2, 2, strictly_proper=True), name='P')
+    >>> C = LinearIOSystem(rss(2, 2, 2), name='C')
+    >>> T = interconnect(
+    ...     [P, C],
+    ...     connections = [
+    ...         ['P.u[0]', 'C.y[0]'],
+    ...         ['P.u[1]', 'C.y[1]'],
+    ...         ['C.u[0]', '-P.y[0]'],
+    ...         ['C.u[1]', '-P.y[1]']],
+    ...     inplist = ['C.u[0]', 'C.u[1]'],
+    ...     outlist = ['P.y[0]', 'P.y[1]']
+    ... )
 
     For a SISO system, this example can be simplified by using the
     :func:`~control.summing_block` function and the ability to automatically
     interconnect signals with the same names:
 
-    >>> P = control.tf(1, [1, 0], inputs='u', outputs='y')
-    >>> C = control.tf(10, [1, 1], inputs='e', outputs='u')
-    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
-    >>> T = control.interconnect([P, C, sumblk], inputs='r', outputs='y')
+    >>> P = tf(1, [1, 0], inputs='u', outputs='y')
+    >>> C = tf(10, [1, 1], inputs='e', outputs='u')
+    >>> sumblk =summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = interconnect([P, C, sumblk], inputs='r', outputs='y')
 
     Notes
     -----
@@ -2942,10 +2944,10 @@ def summing_junction(
 
     Examples
     --------
-    >>> P = control.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
-    >>> C = control.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
-    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
-    >>> T = control.interconnect((P, C, sumblk), inputs='r', outputs='y')
+    >>> P = tf2io(tf(1, [1, 0]), inputs='u', outputs='y')
+    >>> C = tf2io(tf(10, [1, 1]), inputs='e', outputs='u')
+    >>> sumblk = summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = interconnect((P, C, sumblk), inputs='r', outputs='y')
 
     """
     # Utility function to parse input and output signal lists

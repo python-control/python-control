@@ -46,7 +46,9 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
 
     Examples
     --------
-    >>> yout, T = step(sys, T, X0)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> yout, T = step(sys1)
     '''
     from ..timeresp import step_response
 
@@ -115,7 +117,9 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
 
     Examples
     --------
-    >>> S = stepinfo(sys, T)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> S = stepinfo(sys1)
     """
     from ..timeresp import step_info
 
@@ -166,7 +170,9 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
 
     Examples
     --------
-    >>> yout, T = impulse(sys, T)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> yout, T = impulse(sys1)
     '''
     from ..timeresp import impulse_response
 
@@ -214,7 +220,9 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
     Examples
     --------
-    >>> yout, T = initial(sys, T, X0)
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> yout, T = initial(sys1)
 
     '''
     from ..timeresp import initial_response
@@ -261,7 +269,11 @@ def lsim(sys, U=0., T=None, X0=0.):
 
     Examples
     --------
-    >>> yout, T, xout = lsim(sys, U, T, X0)
+    >>> import numpy as np
+    >>> from control import rss
+    >>> sys1 = rss(4)
+    >>> T = np.linspace(0,10)
+    >>> yout, T, xout = lsim(sys1, T=T)
     '''
     from ..timeresp import forced_response
 

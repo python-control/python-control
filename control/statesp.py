@@ -1217,8 +1217,8 @@ class StateSpace(LTI):
 
         For instance,
 
-        >>> out = ssobject.returnScipySignalLTI()
-        >>> out[3][5]
+        >>> out = ssobject.returnScipySignalLTI()               # doctest: +SKIP
+        >>> out[3][5]                                           # doctest: +SKIP
 
         is a :class:`scipy.signal.lti` object corresponding to the transfer
         function from the 6th input to the 4th output.
@@ -1529,8 +1529,8 @@ def _convert_to_statespace(sys):
     returned.  If sys is a scalar, then the number of inputs and outputs can
     be specified manually, as in:
 
-    >>> sys = _convert_to_statespace(3.) # Assumes inputs = outputs = 1
-    >>> sys = _convert_to_statespace(1., inputs=3, outputs=2)
+    >>> sys = _convert_to_statespace(3.) # Assumes inputs = outputs = 1         # doctest: +SKIP
+    >>> sys = _convert_to_statespace(1., inputs=3, outputs=2)                   # doctest: +SKIP
 
     In the latter example, A = B = C = 0 and D = [[1., 1., 1.]
                                                   [1., 1., 1.]].
@@ -1896,6 +1896,7 @@ def tf2ss(*args, **kwargs):
 
     Examples
     --------
+    >>> from control import tf, tf2ss
     >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
     >>> sys1 = tf2ss(num, den)

@@ -102,7 +102,7 @@ class FrequencyResponseData(LTI):
     second dimension corresponding to the input index, and the 3rd dimension
     corresponding to the frequency points in omega.  For example,
 
-    >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
+    >>> frdata[2,5,:] = np.array([1., 0.8-0.2j, 0.2-0.8j])     # doctest: +SKIP
 
     means that the frequency response from the 6th input to the 3rd output at
     the frequencies defined in omega is set to the array above, i.e. the rows
@@ -673,8 +673,9 @@ def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
     scalar, then the number of inputs and outputs can be specified
     manually, as in:
 
+    >>> omega = np.logspace(-1, 1)
     >>> frd = _convert_to_FRD(3., omega) # Assumes inputs = outputs = 1
-    >>> frd = _convert_to_FRD(1., omegs, inputs=3, outputs=2)
+    >>> frd = _convert_to_FRD(1., omega, inputs=3, outputs=2)
 
     In the latter example, sys's matrix transfer function is [[1., 1., 1.]
                                                               [1., 1., 1.]].
