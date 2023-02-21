@@ -110,7 +110,7 @@ class TransferFunction(LTI):
     The attribues 'num' and 'den' are 2-D lists of arrays containing MIMO
     numerator and denominator coefficients.  For example,
 
-    >>> num[2][5] = numpy.array([1., 4., 8.])
+    >>> num[2][5] = numpy.array([1., 4., 8.])                   # doctest: +SKIP
 
     means that the numerator of the transfer function from the 6th input to
     the 3rd output is set to s^2 + 4s + 8.
@@ -140,6 +140,8 @@ class TransferFunction(LTI):
     represent the differentiation and delay operators in continuous and
     discrete time.  These can be used to create variables that allow algebraic
     creation of transfer functions.  For example,
+
+    >>> from control import TransferFunction
 
     >>> s = TransferFunction.s
     >>> G = (s + 1)/(s**2 + 2*s + 1)
@@ -874,8 +876,8 @@ class TransferFunction(LTI):
 
         For instance,
 
-        >>> out = tfobject.returnScipySignalLTI()
-        >>> out[3][5]
+        >>> out = tfobject.returnScipySignalLTI()               # doctest: +SKIP
+        >>> out[3][5]                                           # doctest: +SKIP
 
         is a :class:`scipy.signal.lti` object corresponding to the
         transfer function from the 6th input to the 4th output.
@@ -963,7 +965,7 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> num, den, denorder = sys._common_den()
+        >>> num, den, denorder = sys._common_den()              # doctest: +SKIP
 
         """
 
@@ -1145,7 +1147,9 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> sys = TransferFunction(1, [1,1])
+        >>> from control import tf
+
+        >>> sys = tf(1, [1,1])
         >>> sysd = sys.sample(0.5, method='bilinear')
 
         """
@@ -1202,6 +1206,14 @@ class TransferFunction(LTI):
             For real valued systems, the empty imaginary part of the
             complex zero-frequency response is discarded and a real array or
             scalar is returned.
+
+        Examples
+        --------
+        >>> from control import tf
+        >>> G = tf([1],[1, 4])
+        >>> G.dcgain()
+        0.25
+
         """
         return self._dcgain(warn_infinite)
 
@@ -1230,8 +1242,8 @@ class TransferFunction(LTI):
     #:
     #: Example
     #: -------
-    #: >>> s = TransferFunction.s
-    #: >>> G  = (s + 1)/(s**2 + 2*s + 1)
+    #: >>> s = TransferFunction.s                               # doctest: +SKIP
+    #: >>> G  = (s + 1)/(s**2 + 2*s + 1)                        # doctest: +SKIP
     #:
     #: :meta hide-value:
     s = None
@@ -1243,8 +1255,8 @@ class TransferFunction(LTI):
     #:
     #: Example
     #: -------
-    #: >>> z = TransferFunction.z
-    #: >>> G  = 2 * z / (4 * z**3 + 3*z - 1)
+    #: >>> z = TransferFunction.z                               # doctest: +SKIP
+    #: >>> G  = 2 * z / (4 * z**3 + 3*z - 1)                    # doctest: +SKIP
     #:
     #: :meta hide-value:
     z = None
@@ -1529,6 +1541,8 @@ def tf(*args, **kwargs):
 
     Examples
     --------
+    >>> from control import tf, ss
+
     >>> # Create a MIMO transfer function object
     >>> # The transfer function from the 2nd input to the 1st output is
     >>> # (3s + 4) / (6s^2 + 5s + 4).
@@ -1682,6 +1696,8 @@ def ss2tf(*args, **kwargs):
 
     Examples
     --------
+    >>> from control import ss, ss2tf
+
     >>> A = [[1., -2], [3, -4]]
     >>> B = [[5.], [7]]
     >>> C = [[6., 8]]

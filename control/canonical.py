@@ -36,6 +36,28 @@ def canonical_form(xsys, form='reachable'):
         System in desired canonical form, with state 'z'
     T : (M, M) real ndarray
         Coordinate transformation matrix, z = T * x
+
+    Examples
+    --------
+    >>> from control import canonical_form, tf, tf2ss
+
+    >>> G = tf([1],[1, 3, 2])
+    >>> Gs = tf2ss(G)
+
+    >>> Gc, T = canonical_form(Gs)  # default reachable
+    >>> Gc.B                                                    # doctest: +SKIP
+    matrix([[1.],
+            [0.]])
+
+    >>> Gc, T = canonical_form(Gs, 'observable')
+    >>> Gc.C                                                    # doctest: +SKIP
+    matrix([[1., 0.]])
+
+    >>> Gc, T = canonical_form(Gs, 'modal')
+    >>> Gc.A                                                    # doctest: +SKIP
+    matrix([[-2.,  0.],
+            [ 0., -1.]])
+
     """
 
     # Call the appropriate tranformation function
@@ -65,6 +87,19 @@ def reachable_form(xsys):
         System in reachable canonical form, with state `z`
     T : (M, M) real ndarray
         Coordinate transformation: z = T * x
+
+    Examples
+    --------
+    >>> from control import reachable_form, tf, tf2ss
+
+    >>> G = tf([1],[1, 3, 2])
+    >>> Gs = tf2ss(G)
+
+    >>> Gc, T = reachable_form(Gs)  # default reachable
+    >>> Gc.B                                                    # doctest: +SKIP
+    matrix([[1.],
+            [0.]])
+
     """
     # Check to make sure we have a SISO system
     if not issiso(xsys):
@@ -119,6 +154,18 @@ def observable_form(xsys):
         System in observable canonical form, with state `z`
     T : (M, M) real ndarray
         Coordinate transformation: z = T * x
+
+    Examples
+    --------
+    >>> from control import observable_form, tf, tf2ss
+
+    >>> G = tf([1],[1, 3, 2])
+    >>> Gs = tf2ss(G)
+
+    >>> Gc, T = observable_form(Gs)
+    >>> Gc.C                                                    # doctest: +SKIP
+    matrix([[1., 0.]])
+
     """
     # Check to make sure we have a SISO system
     if not issiso(xsys):
@@ -176,6 +223,24 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     -------
     zsys : StateSpace object
         System in transformed coordinates, with state 'z'
+
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from control import similarity_transform, tf, tf2ss
+
+    >>> G = tf([1],[1, 3, 2])
+    >>> Gs = tf2ss(G)
+    >>> Gs.A                                                    # doctest: +SKIP
+    matrix([[-3., -2.],
+            [ 1.,  0.]])
+
+    >>> T = np.array([[0,1],[1,0]])
+    >>> Gt = similarity_transform(Gs, T)
+    >>> Gt.A                                                    # doctest: +SKIP
+    matrix([[ 0.,  1.],
+            [-2., -3.]])
 
     """
     # Create a new system, starting with a copy of the old one
@@ -370,6 +435,18 @@ def bdschur(a, condmax=None, sort=None):
     If `sort` is 'discrete', the blocks are sorted as for
     'continuous', but applied to log of eigenvalues
     (i.e., continuous-equivalent eigenvalues).
+
+    Examples
+    --------
+    >>> from control import bdschur, tf, tf2ss
+
+    >>> G = tf([1],[1, 3, 2])
+    >>> Gs = tf2ss(G)
+    >>> amodal, tmodal, blksizes = bdschur(Gs.A)
+    >>> amodal                                                   #doctest: +SKIP
+    array([[-2.,  0.],
+           [ 0., -1.]])
+
     """
     if condmax is None:
         condmax = np.finfo(np.float64).eps ** -0.5
@@ -436,6 +513,19 @@ def modal_form(xsys, condmax=None, sort=False):
         System in modal canonical form, with state `z`
     T : (M, M) ndarray
         Coordinate transformation: z = T * x
+
+    Examples
+    --------
+    >>> from control import modal_form, tf, tf2ss
+
+    >>> G = tf([1],[1, 3, 2])
+    >>> Gs = tf2ss((G))
+
+    >>> Gc, T = modal_form(Gs)  # default reachable
+    >>> Gc.A                                                    # doctest: +SKIP
+    matrix([[-2.,  0.],
+            [ 0., -1.]])
+
     """
 
     if sort:

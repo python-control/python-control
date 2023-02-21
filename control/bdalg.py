@@ -99,9 +99,19 @@ def series(sys1, *sysn):
 
     Examples
     --------
-    >>> sys3 = series(sys1, sys2) # Same as sys3 = sys2 * sys1
+    >>> from control import rss, series
 
-    >>> sys5 = series(sys1, sys2, sys3, sys4) # More systems
+    >>> G1 = rss(3)
+    >>> G2 = rss(4)
+    >>> G = series(G1, G2) # Same as sys3 = sys2 * sys1
+    >>> G.ninputs, G.noutputs, G.nstates
+    (1, 1, 7)
+
+    >>> G1 = rss(2, inputs=2, outputs=3)
+    >>> G2 = rss(3, inputs=3, outputs=1)
+    >>> G = series(G1, G2) # Same as sys3 = sys2 * sys1
+    >>> G.ninputs, G.noutputs, G.nstates
+    (2, 1, 5)
 
     """
     from functools import reduce
@@ -146,9 +156,19 @@ def parallel(sys1, *sysn):
 
     Examples
     --------
-    >>> sys3 = parallel(sys1, sys2) # Same as sys3 = sys1 + sys2
+    >>> from control import parallel, rss
 
-    >>> sys5 = parallel(sys1, sys2, sys3, sys4) # More systems
+    >>> G1 = rss(3)
+    >>> G2 = rss(4)
+    >>> G = parallel(G1, G2) # Same as sys3 = sys1 + sys2
+    >>> G.ninputs, G.noutputs, G.nstates
+    (1, 1, 7)
+
+    >>> G1 = rss(3, inputs=3, outputs=4)
+    >>> G2 = rss(4, inputs=3, outputs=4)
+    >>> G = parallel(G1, G2)  # Add another system
+    >>> G.ninputs, G.noutputs, G.nstates
+    (3, 4, 7)
 
     """
     from functools import reduce
@@ -174,7 +194,15 @@ def negate(sys):
 
     Examples
     --------
-    >>> sys2 = negate(sys1) # Same as sys2 = -sys1.
+    >>> from control import negate, tf
+
+    >>> G = tf([2],[1, 1])
+    >>> G.dcgain() > 0
+    True
+
+    >>> Gn = negate(G) # Same as sys2 = -sys1.
+    >>> Gn.dcgain() < 0
+    True
 
     """
     return -sys
@@ -221,6 +249,16 @@ def feedback(sys1, sys2=1, sign=-1):
     object.  If `sys1` is a scalar, then it is converted to `sys2`'s type, and
     the corresponding feedback function is used.  If `sys1` and `sys2` are both
     scalars, then TransferFunction.feedback is used.
+
+    Examples
+    --------
+    >>> from control import feedback, rss
+
+    >>> G = rss(3, inputs=2, outputs=5)
+    >>> C = rss(4, inputs=5, outputs=2)
+    >>> T = feedback(G, C, sign=1)
+    >>> T.ninputs, T.noutputs, T.nstates
+    (2, 5, 7)
 
     """
     # Allow anything with a feedback function to call that function
@@ -278,9 +316,19 @@ def append(*sys):
 
     Examples
     --------
-    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6., 8]], [[9.]])
-    >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
-    >>> sys = append(sys1, sys2)
+    >>> from control import append, rss
+    >>> G1 = rss(3)
+
+    >>> G2 = rss(4)
+    >>> G = append(G1, G2)
+    >>> G.ninputs, G.noutputs, G.nstates
+    (2, 2, 7)
+
+    >>> G1 = rss(3, inputs=2, outputs=4)
+    >>> G2 = rss(4, inputs=1, outputs=4)
+    >>> G = append(G1, G2)
+    >>> G.ninputs, G.noutputs, G.nstates
+    (3, 8, 7)
 
     """
     s1 = ss._convert_to_statespace(sys[0])
@@ -323,11 +371,13 @@ def connect(sys, Q, inputv, outputv):
 
     Examples
     --------
-    >>> sys1 = ss([[1., -2], [3., -4]], [[5.], [7]], [[6, 8]], [[9.]])
-    >>> sys2 = ss([[-1.]], [[1.]], [[1.]], [[0.]])
-    >>> sys = append(sys1, sys2)
-    >>> Q = [[1, 2], [2, -1]]  # negative feedback interconnection
-    >>> sysc = connect(sys, Q, [2], [1, 2])
+    >>> from control import append, connect, rss
+
+    >>> G = rss(7, inputs=2, outputs=2)
+    >>> K = [[1, 2], [2, -1]]  # negative feedback interconnection
+    >>> T = connect(G, K, [2], [1, 2])
+    >>> T.ninputs, T.noutputs, T.nstates
+    (1, 2, 7)
 
     Notes
     -----

@@ -120,6 +120,17 @@ def describing_function(
     TypeError
         If A[i] < 0 or if A[i] = 0 and the function F(0) is non-zero.
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from control import describing_function
+
+    >>> F = lambda x: np.exp(-x)      # Basic diode description
+    >>> A = np.logspace(-1, 1, 20)    # Amplitudes from 0.1 to 10.0
+    >>> df_values = describing_function(F, A)
+    >>> len(df_values)
+    20
+
     """
     # If there is an analytical solution, trying using that first
     if try_method and hasattr(F, 'describing_function'):
@@ -238,11 +249,15 @@ def describing_function_plot(
 
     Examples
     --------
-    >>> H_simple = ct.tf([8], [1, 2, 2, 1])
-    >>> F_saturation = ct.descfcn.saturation_nonlinearity(1)
+    >>> import numpy as np
+    >>> from control import describing_function_plot, saturation_nonlinearity, tf
+
+    >>> H_simple = tf([8], [1, 2, 2, 1])
+    >>> F_saturation = saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> ct.describing_function_plot(H_simple, F_saturation, amp)
-    [(3.344008947853124, 1.414213099755523)]
+    >>> points = describing_function_plot(H_simple, F_saturation, amp)
+    >>> len(points)
+    1
 
     """
     # Decide whether to turn on warnings or not
@@ -354,6 +369,19 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
     functions will not have zero bias and hence care must be taken in using
     the nonlinearity for analysis.
 
+    Examples
+    --------
+    >>> from control import saturation_nonlinearity
+
+    >>> nl = saturation_nonlinearity(5)
+    >>> f = lambda x: round(nl(x))
+    >>> f(1)
+    1
+    >>> f(10)
+    5
+    >>> f(-10)
+    -5
+
     """
     def __init__(self, ub=1, lb=None):
         # Create the describing function nonlinearity object
@@ -406,6 +434,23 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
     The output of this function is `b` if `x > c` and `-b` if `x < -c`.  For
     `-c <= x <= c`, the value depends on the branch of the hysteresis loop (as
     illustrated in Figure 10.20 of FBS2e).
+
+    Examples
+    --------
+    >>> from control import relay_hysteresis_nonlinearity
+
+    >>> nl = relay_hysteresis_nonlinearity(1, 2)
+    >>> f = lambda x: round(nl(x))
+    >>> f(0)
+    -1
+    >>> f(1)  # not enough for switching on
+    -1
+    >>> f(5)
+    1
+    >>> f(-1)  # not enough for switching off
+    1
+    >>> f(-5)
+    -1
 
     """
     def __init__(self, b, c):
@@ -461,6 +506,25 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
     mechanism with backlash.  If the new input is within `b/2` of the current
     center, the output is unchanged.  Otherwise, the output is given by the
     input shifted by `b/2`.
+
+    Examples
+    --------
+    >>> from control import friction_backlash_nonlinearity
+
+    >>> nl = friction_backlash_nonlinearity(2)  # backlash of +/- 1
+    >>> f = lambda x: round(nl(x))
+    >>> f(0)
+    0
+    >>> f(1)  # not enough to overcome backlash
+    0
+    >>> f(2)
+    1
+    >>> f(1)
+    1
+    >>> f(0)  # not enough to overcome backlash
+    1
+    >>> f(-1)
+    0
 
     """
 

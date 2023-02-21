@@ -916,7 +916,12 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     Examples
     --------
-    >>> T, yout, xout = forced_response(sys, T, u, X0)
+    >>> import numpy as np
+    >>> from control import forced_response, rss
+
+    >>> G = rss(4)
+    >>> T = np.linspace(0,10)
+    >>> T, yout = forced_response(G, T=T)
 
     See :ref:`time-series-convention` and
     :ref:`package-configuration-parameters`.
@@ -1328,7 +1333,10 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Examples
     --------
-    >>> T, yout = step_response(sys, T, X0)
+    >>> from control import step_response, rss
+
+    >>> G = rss(4)
+    >>> T, yout = step_response(G)
 
     """
     # Create the time and input vectors
@@ -1441,6 +1449,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     Examples
     --------
     >>> from control import step_info, TransferFunction
+
     >>> sys = TransferFunction([-1, 1], [1, 1, 1])
     >>> S = step_info(sys)
     >>> for k in S:
@@ -1462,6 +1471,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
 
     >>> from numpy import sqrt
     >>> from control import step_info, StateSpace
+
     >>> sys = StateSpace([[-1., -1.],
     ...                   [1., 0.]],
     ...                  [[-1./sqrt(2.), 1./sqrt(2.)],
@@ -1686,7 +1696,10 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     Examples
     --------
-    >>> T, yout = initial_response(sys, T, X0)
+    >>> from control import initial_response, rss
+
+    >>> G = rss(4)
+    >>> T, yout = initial_response(G)
 
     """
     squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
@@ -1801,7 +1814,10 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Examples
     --------
-    >>> T, yout = impulse_response(sys, T, X0)
+    >>> from control import impulse_response, rss
+
+    >>> G = rss(4)
+    >>> T, yout = impulse_response(G)
 
     """
     # Convert to state space so that we can simulate

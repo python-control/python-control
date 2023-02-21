@@ -66,9 +66,20 @@ def unwrap(angle, period=2*math.pi):
     Examples
     --------
     >>> import numpy as np
-    >>> theta = [5.74, 5.97, 6.19, 0.13, 0.35, 0.57]
-    >>> unwrap(theta, period=2 * np.pi)
-    [5.74, 5.97, 6.19, 6.413185307179586, 6.633185307179586, 6.8531853071795865]
+    >>> from control import unwrap
+    >>> from pprint import pprint
+
+    >>> # Already continuous
+    >>> theta1 = np.array([1.0, 1.5, 2.0, 2.5, 3.0]) * np.pi
+    >>> theta2 = unwrap(theta1)
+    >>> theta2/np.pi                                            # doctest: +SKIP
+    array([1. , 1.5, 2. , 2.5, 3. ])
+
+    >>> # Wrapped, discontinuous
+    >>> theta1 = np.array([1.0, 1.5, 0.0, 0.5, 1.0]) * np.pi
+    >>> theta2 = unwrap(theta1)
+    >>> theta2/np.pi                                            # doctest: +SKIP
+    array([1. , 1.5, 2. , 2.5, 3. ])
 
     """
     dangle = np.diff(angle)
@@ -78,7 +89,22 @@ def unwrap(angle, period=2*math.pi):
     return angle
 
 def issys(obj):
-    """Return True if an object is a system, otherwise False"""
+    """Return True if an object is a Linear Time Invariant (LTI) system,
+    otherwise False
+
+    Examples
+    --------
+    >>> from control import issys, tf, InputOutputSystem, LinearIOSystem
+
+    >>> G = tf([1],[1, 1])
+    >>> issys(G)
+    True
+
+    >>> K = InputOutputSystem()   # Not necessarily LTI!
+    >>> issys(K)
+    False
+
+    """
     return isinstance(obj, lti.LTI)
 
 def db2mag(db):
@@ -97,6 +123,17 @@ def db2mag(db):
     -------
     mag : float or ndarray
         corresponding magnitudes
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from control import db2mag
+
+    >>> db2mag(-40.0)                                           # doctest: +SKIP
+    0.01
+
+    >>> db2mag(np.array([0, -20]))                              # doctest: +SKIP
+    array([1. , 0.1])
 
     """
     return 10. ** (db / 20.)
@@ -117,6 +154,17 @@ def mag2db(mag):
     -------
     db : float or ndarray
         corresponding values in decibels
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from control import mag2db
+
+    >>> mag2db(10.0)                                            # doctest: +SKIP
+    20.0
+
+    >>> mag2db(np.array([1, 0.01]))                             # doctest: +SKIP
+    array([  0., -40.])
 
     """
     return 20. * np.log10(mag)

@@ -24,7 +24,7 @@ The following figure illustrates the relationship between the classes and
 some of the functions that can be used to convert objects from one class to
 another:
 
-.. image:: classes.pdf
+.. image:: classes.png
   :width: 800
 
 |

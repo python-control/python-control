@@ -120,6 +120,8 @@ def place(A, B, p):
 
     Examples
     --------
+    >>> from control import place
+
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
     >>> K = place(A, B, [-2, -5])
@@ -375,8 +377,8 @@ def lqr(*args, **kwargs):
 
     Examples
     --------
-    >>> K, S, E = lqr(sys, Q, R, [N])
-    >>> K, S, E = lqr(A, B, Q, R, [N])
+    >>> K, S, E = lqr(sys, Q, R, [N])                           # doctest: +SKIP
+    >>> K, S, E = lqr(A, B, Q, R, [N])                          # doctest: +SKIP
 
     """
     #
@@ -520,9 +522,8 @@ def dlqr(*args, **kwargs):
 
     Examples
     --------
-    >>> K, S, E = dlqr(dsys, Q, R, [N])
-    >>> K, S, E = dlqr(A, B, Q, R, [N])
-
+    >>> K, S, E = dlqr(dsys, Q, R, [N])                         # doctest: +SKIP
+    >>> K, S, E = dlqr(A, B, Q, R, [N])                         # doctest: +SKIP
     """
 
     #
@@ -993,7 +994,13 @@ def ctrb(A, B):
 
     Examples
     --------
-    >>> C = ctrb(A, B)
+    >>> import numpy as np
+    >>> from control import ctrb, tf, tf2ss
+
+    >>> G = tf2ss(tf([1],[1, 2, 3]))
+    >>> C = ctrb(G.A, G.B)
+    >>> np.linalg.matrix_rank(C)
+    2
 
     """
 
@@ -1029,7 +1036,14 @@ def obsv(A, C):
 
     Examples
     --------
-    >>> O = obsv(A, C)
+    >>> import numpy as np
+    >>> from control import obsv, tf, tf2ss
+
+    >>> G = tf2ss(tf([1],[1, 2, 3]))
+    >>> C = obsv(G.A, G.C)
+    >>> np.linalg.matrix_rank(C)
+    2
+
     """
 
     # Convert input parameters to matrices (if they aren't already)
@@ -1078,10 +1092,13 @@ def gram(sys, type):
 
     Examples
     --------
-    >>> Wc = gram(sys, 'c')
-    >>> Wo = gram(sys, 'o')
-    >>> Rc = gram(sys, 'cf'), where Wc = Rc' * Rc
-    >>> Ro = gram(sys, 'of'), where Wo = Ro' * Ro
+    >>> from control import gram, rss
+
+    >>> G = rss(4)
+    >>> Wc = gram(G, 'c')
+    >>> Wo = gram(G, 'o')
+    >>> Rc = gram(G, 'cf')  # where Wc = Rc' * Rc
+    >>> Ro = gram(G, 'of')  # where Wo = Ro' * Ro
 
     """
 

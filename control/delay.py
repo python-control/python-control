@@ -74,6 +74,20 @@ def pade(T, n=1, numdeg=None):
          Ed. pp. 572-574
       2. M. Vajta, "Some remarks on Padé-approximations",
          3rd TEMPUS-INTCOM Symposium
+
+    Examples
+    --------
+    >>> from control import pade
+
+    >>> delay = 1
+    >>> num, den = pade(delay, 5)
+    >>> len(num), len(den)
+    (6, 6)
+
+    >>> num, den = pade(delay, 5, -2)
+    >>> len(num), len(den)
+    (4, 6)
+
     """
     if numdeg is None:
         numdeg = n
