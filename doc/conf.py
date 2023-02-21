@@ -56,7 +56,8 @@ needs_sphinx = '3.1'
 extensions = [
     'sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx', 'sphinx.ext.imgmath',
-    'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc', 'sphinx.ext.linkcode'
+    'sphinx.ext.autosummary', 'nbsphinx', 'numpydoc',
+    'sphinx.ext.linkcode', 'sphinx.ext.doctest'
 ]
 
 # scan documents for autosummary directives and generate stub pages for each.

@@ -15,10 +15,11 @@ help:
 .PHONY: help Makefile
 
 # Rules to create figures
-FIGS = classes.pdf
-classes.pdf: classes.fig;	fig2dev -Lpdf $< $@
+FIGS = classes.png
+classes.png: classes.fig
+	fig2dev -Lpng $< $@
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html pdf clean: Makefile $(FIGS)
+html pdf clean doctest: Makefile $(FIGS)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
