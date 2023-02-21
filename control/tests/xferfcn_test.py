@@ -908,24 +908,96 @@ class TestXferFcn:
 
     @pytest.mark.parametrize(
         "zeros, poles, gain, output",
-        [([0], [-1], 1, "\n  s\n-----\ns + 1\n"),
-         ([-1], [-1], 1, "\ns + 1\n-----\ns + 1\n"),
-         ([-1], [1], 1, "\ns + 1\n-----\ns - 1\n"),
-         ([1], [-1], 1, "\ns - 1\n-----\ns + 1\n"),
-         ([-1], [-1], 2, "\n2 (s + 1)\n---------\n  s + 1\n"),
-         ([-1], [-1], 0, "\n0\n-\n1\n"),
-         ([-1], [1j, -1j], 1, "\n      s + 1\n-----------------\n(s - 1j) (s + 1j)\n"),
-         ([4j, -4j], [2j, -2j], 2, "\n2 (s - 4j) (s + 4j)\n-------------------\n (s - 2j) (s + 2j)\n"),
-         ([1j, -1j], [-1, -4], 2, "\n2 (s - 1j) (s + 1j)\n-------------------\n  (s + 1) (s + 4)\n"),
-         ([1], [-1 + 1j, -1 - 1j], 1, "\n          s - 1\n-------------------------\n(s + (1-1j)) (s + (1+1j))\n"),
-         ([1], [1 + 1j, 1 - 1j], 1, "\n          s - 1\n-------------------------\n(s - (1+1j)) (s - (1-1j))\n"),
+        [([0], [-1], 1,
+          '\n'
+          '  s\n'
+          '-----\n'
+          's + 1\n'),
+         ([-1], [-1], 1,
+          '\n'
+          's + 1\n'
+          '-----\n'
+          's + 1\n'),
+         ([-1], [1], 1,
+          '\n'
+          's + 1\n'
+          '-----\n'
+          's - 1\n'),
+         ([1], [-1], 1,
+          '\n'
+          's - 1\n'
+          '-----\n'
+          's + 1\n'),
+         ([-1], [-1], 2,
+          '\n'
+          '2 (s + 1)\n'
+          '---------\n'
+          '  s + 1\n'),
+         ([-1], [-1], 0,
+          '\n'
+          '0\n'
+          '-\n'
+          '1\n'),
+         ([-1], [1j, -1j], 1,
+          '\n'
+          '      s + 1\n'
+          '-----------------\n'
+          '(s - 1j) (s + 1j)\n'),
+         ([4j, -4j], [2j, -2j], 2,
+          '\n'
+          '2 (s - 4j) (s + 4j)\n'
+          '-------------------\n'
+          ' (s - 2j) (s + 2j)\n'),
+         ([1j, -1j], [-1, -4], 2,
+          '\n'
+          '2 (s - 1j) (s + 1j)\n'
+          '-------------------\n'
+          '  (s + 1) (s + 4)\n'),
+         ([1], [-1 + 1j, -1 - 1j], 1,
+          '\n'
+          '          s - 1\n'
+          '-------------------------\n'
+          '(s + (1-1j)) (s + (1+1j))\n'),
+         ([1], [1 + 1j, 1 - 1j], 1,
+          '\n'
+          '          s - 1\n'
+          '-------------------------\n'
+          '(s - (1+1j)) (s - (1-1j))\n'),
          ])
     def test_printing_zpk(self, zeros, poles, gain, output):
         """Test _tf_polynomial_to_string for constant systems"""
         G = zpk(zeros, poles, gain)
-        print(G)
         res = G.to_zpk()
-        print(res)
+        assert res == output
+
+    @pytest.mark.parametrize(
+        "num, den, output",
+        [([[[11], [21]], [[12], [22]]],
+         [[[1, -3, 2], [1, 1, -6]], [[1, 0, 1], [1, -1, -20]]],
+         ('\n'
+          'Input 1 to output 1:\n'
+          '      11\n'
+          '---------------\n'
+          '(s - 2) (s - 1)\n'
+          '\n'
+          'Input 1 to output 2:\n'
+          '       12\n'
+          '-----------------\n'
+          '(s - 1j) (s + 1j)\n'
+          '\n'
+          'Input 2 to output 1:\n'
+          '      21\n'
+          '---------------\n'
+          '(s - 2) (s + 3)\n'
+          '\n'
+          'Input 2 to output 2:\n'
+          '      22\n'
+          '---------------\n'
+          '(s - 5) (s + 4)\n'))])
+    def test_printing_zpk_mimo(self, num, den, output):
+        """Test _tf_polynomial_to_string for constant systems"""
+        G = tf(num, den)
+        res = G.to_zpk()
         assert res == output
 
     def test_printing_zpk_invalid(self):
