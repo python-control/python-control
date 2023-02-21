@@ -505,9 +505,13 @@ class TransferFunction(LTI):
                 if abs(polygain) == 0 and abs(dcgain) == 0:
                     k = 1
                 else:
+                    if abs(polygain) == 0:
+                        raise ValueError(
+                            f"Transfer function has infinite gain. "
+                            "Please check polynomials.")
                     k = dcgain/polygain
                 if not np.isreal(k):
-                    raise ValueError("Transfer function has complex valued gain. "
+                    raise ValueError(f"Transfer function has complex valued gain (k = {k}). "
                                      "Please check polynomials for non-complimentary poles.")
 
                 k = np.abs(k)
