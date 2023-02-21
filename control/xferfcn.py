@@ -502,6 +502,11 @@ class TransferFunction(LTI):
 
                 polygain = np.prod(num_roots) / np.prod(den_roots)
 
+                # Round imaginary part down to zero for values close to
+                # precision to prevent small errors to mess up things.
+                polygain = complex(polygain.real,
+                                   round(polygain.imag, 12))
+
                 if abs(polygain) == 0 and abs(dcgain) == 0:
                     k = 1
                 else:
