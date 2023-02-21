@@ -9,7 +9,7 @@ import operator
 
 import control as ct
 from control import StateSpace, TransferFunction, rss, evalfr
-from control import ss, ss2tf, tf, tf2ss
+from control import ss, ss2tf, tf, tf2ss, zpk
 from control import isctime, isdtime, sample_system, defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
@@ -905,6 +905,33 @@ class TestXferFcn:
         sys = ss2tf(rss(4, 2, 3))
         assert isinstance(str(sys), str)
         assert isinstance(sys._repr_latex_(), str)
+
+    @pytest.mark.parametrize(
+        "zeros, poles, gain, output",
+        [([0], [-1], 1, "\n  s\n-----\ns + 1\n"),
+         ([-1], [-1], 1, "\ns + 1\n-----\ns + 1\n"),
+         ([-1], [1], 1, "\ns + 1\n-----\ns - 1\n"),
+         ([1], [-1], 1, "\ns - 1\n-----\ns + 1\n"),
+         ([-1], [-1], 2, "\n2 (s + 1)\n---------\n  s + 1\n"),
+         ([-1], [-1], 0, "\n0\n-\n1\n"),
+         ([-1], [1j, -1j], 1, "\n      s + 1\n-----------------\n(s - 1j) (s + 1j)\n"),
+         ([4j, -4j], [2j, -2j], 2, "\n2 (s - 4j) (s + 4j)\n-------------------\n (s - 2j) (s + 2j)\n"),
+         ([1j, -1j], [-1, -4], 2, "\n2 (s - 1j) (s + 1j)\n-------------------\n  (s + 1) (s + 4)\n"),
+         ([1], [-1 + 1j, -1 - 1j], 1, "\n          s - 1\n-------------------------\n(s + (1-1j)) (s + (1+1j))\n"),
+         ([1], [1 + 1j, 1 - 1j], 1, "\n          s - 1\n-------------------------\n(s - (1+1j)) (s - (1-1j))\n"),
+         ])
+    def test_printing_zpk(self, zeros, poles, gain, output):
+        """Test _tf_polynomial_to_string for constant systems"""
+        G = zpk(zeros, poles, gain)
+        print(G)
+        res = G.to_zpk()
+        print(res)
+        assert res == output
+
+    def test_printing_zpk_invalid(self):
+        G = tf([1], [1 + 1j])
+        with pytest.raises(ValueError, match='complex valued'):
+            G.to_zpk()
 
     @slycotonly
     def test_size_mismatch(self):

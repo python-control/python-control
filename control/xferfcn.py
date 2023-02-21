@@ -468,6 +468,73 @@ class TransferFunction(LTI):
 
         return outstr
 
+    def to_zpk(self, var=None):
+        """Return string representation of the transfer function as factorized
+        polynomials.
+
+        Examples
+        --------
+        >>> from control import tf
+        >>> G = tf([1],[1, -2, 1])
+        >>> G.to_zpk()
+               1
+        ---------------
+        (s - 1) (s - 1)
+
+        """
+
+        mimo = self.ninputs > 1 or self.noutputs > 1
+        if var is None:
+            # TODO: replace with standard calls to lti functions
+            var = 's' if self.dt is None or self.dt == 0 else 'z'
+        outstr = ""
+
+        for i in range(self.ninputs):
+            for j in range(self.noutputs):
+                if mimo:
+                    outstr += "\nInput %i to output %i:" % (i + 1, j + 1)
+
+                # Convert the numerator and denominator polynomials to strings.
+                dcgain = self.num[j][i][-1] / self.den[j][i][-1]
+
+                num_roots = roots(self.num[j][i]).astype(complex)
+                den_roots = roots(self.den[j][i]).astype(complex)
+
+                polygain = np.prod(num_roots) / np.prod(den_roots)
+
+                if abs(polygain) == 0 and abs(dcgain) == 0:
+                    k = 1
+                else:
+                    k = dcgain/polygain
+                if not np.isreal(k):
+                    raise ValueError("Transfer function has complex valued gain. "
+                                     "Please check polynomials for non-complimentary poles.")
+
+                k = np.abs(k)
+
+                numstr = _tf_factorized_polynomial_to_string(num_roots, gain=k, var=var)
+                denstr = _tf_factorized_polynomial_to_string(den_roots, var=var)
+
+                # Figure out the length of the separating line
+                dashcount = max(len(numstr), len(denstr))
+                dashes = '-' * dashcount
+
+                # Center the numerator or denominator
+                if len(numstr) < dashcount:
+                    numstr = ' ' * ((dashcount - len(numstr)) // 2) + numstr
+                if len(denstr) < dashcount:
+                    denstr = ' ' * ((dashcount - len(denstr)) // 2) + denstr
+
+                outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
+
+        # See if this is a discrete time system with specific sampling time
+        if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
+            # TODO: replace with standard calls to lti functions
+            outstr += "\ndt = " + self.dt.__str__() + "\n"
+
+        return outstr
+
+
     # represent to implement a re-loadable version
     def __repr__(self):
         """Print transfer function in loadable form"""
@@ -1322,6 +1389,49 @@ def _tf_polynomial_to_string(coeffs, var='s'):
             thestr = newstr
     return thestr
 
+
+def _tf_factorized_polynomial_to_string(roots, gain=1, var='s'):
+    """Convert a factorized polynomial to a string"""
+
+    if roots.size == 0:
+        return f"{gain:.4g}"
+
+    factors = []
+    for root in sorted(roots, reverse=True):
+        if np.isreal(root):
+            if root == 0:
+                factor = f"{var}"
+                factors.append(factor)
+            elif root > 0:
+                factor = f"{var} - {np.abs(root):.4g}"
+                factors.append(factor)
+            else:
+                factor = f"{var} + {np.abs(root):.4g}"
+                factors.append(factor)
+        elif np.isreal(root * 1j):
+            if root.imag > 0:
+                factor = f"{var} - {np.abs(root):.4g}j"
+                factors.append(factor)
+            else:
+                factor = f"{var} + {np.abs(root):.4g}j"
+                factors.append(factor)
+        else:
+            if root.real > 0:
+                factor = f"{var} - ({root:.4g})"
+                factors.append(factor)
+            else:
+                factor = f"{var} + ({-root:.4g})"
+                factors.append(factor)
+
+
+    multiplier = ''
+    if round(gain, 4) != 1.0:
+        multiplier = f"{gain:.4g} "
+
+    if len(factors) > 1 or multiplier:
+        factors = [f"({factor})" for factor in factors]
+
+    return multiplier + " ".join(factors)
 
 def _tf_string_to_latex(thestr, var='s'):
     """ make sure to superscript all digits in a polynomial string
