@@ -260,7 +260,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             if isdtime(sys, strict=True):
                 zgrid(ax=ax)
             else:
-                _sgrid_func(fig=fig if sisotool else None)
+                _sgrid_func(ax)
         else:
             ax.axhline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
             ax.axvline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
@@ -660,13 +660,7 @@ def _removeLine(label, ax):
             del line
 
 
-def _sgrid_func(fig=None, zeta=None, wn=None):
-    if fig is None:
-        fig = plt.gcf()
-        ax = fig.gca()
-    else:
-        ax = fig.axes[1]
-
+def _sgrid_func(ax, zeta=None, wn=None):
     # Get locator function for x-axis, y-axis tick marks
     xlocator = ax.get_xaxis().get_major_locator()
     ylocator = ax.get_yaxis().get_major_locator()
