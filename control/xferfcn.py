@@ -455,17 +455,17 @@ class TransferFunction(LTI):
             var = 's' if self.isctime() else 'z'
         outstr = ""
 
-        for i in range(self.ninputs):
-            for j in range(self.noutputs):
+        for ni in range(self.ninputs):
+            for no in range(self.noutputs):
                 if mimo:
-                    outstr += "\nInput %i to output %i:" % (i + 1, j + 1)
+                    outstr += "\nInput %i to output %i:" % (ni + 1, no + 1)
 
                 # Convert the numerator and denominator polynomials to strings.
                 if self.display_format == 'poly':
-                    numstr = _tf_polynomial_to_string(self.num[j][i], var=var)
-                    denstr = _tf_polynomial_to_string(self.den[j][i], var=var)
+                    numstr = _tf_polynomial_to_string(self.num[no][ni], var=var)
+                    denstr = _tf_polynomial_to_string(self.den[no][ni], var=var)
                 elif self.display_format == 'zpk':
-                    z, p, k = tf2zpk(self.num[j][i], self.den[j][i])
+                    z, p, k = tf2zpk(self.num[j][i], self.den[no][ni])
                     numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
@@ -505,7 +505,7 @@ class TransferFunction(LTI):
     def _repr_latex_(self, var=None):
         """LaTeX representation of transfer function, for Jupyter notebook"""
 
-        mimo = self.ninputs > 1 or self.noutputs > 1
+        mimo = not self.issiso()
 
         if var is None:
             # ! TODO: replace with standard calls to lti functions
@@ -516,14 +516,14 @@ class TransferFunction(LTI):
         if mimo:
             out.append(r"\begin{bmatrix}")
 
-        for i in range(self.noutputs):
-            for j in range(self.ninputs):
+        for no in range(self.noutputs):
+            for ni in range(self.ninputs):
                 # Convert the numerator and denominator polynomials to strings.
                 if self.display_format == 'poly':
-                    numstr = _tf_polynomial_to_string(self.num[j][i], var=var)
-                    denstr = _tf_polynomial_to_string(self.den[j][i], var=var)
+                    numstr = _tf_polynomial_to_string(self.num[no][ni], var=var)
+                    denstr = _tf_polynomial_to_string(self.den[no][ni], var=var)
                 elif self.display_format == 'zpk':
-                    z, p, k = tf2zpk(self.num[j][i], self.den[j][i])
+                    z, p, k = tf2zpk(self.num[no][ni], self.den[no][ni])
                     numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
