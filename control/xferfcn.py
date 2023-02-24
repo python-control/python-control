@@ -94,7 +94,7 @@ class TransferFunction(LTI):
         continuous or discrete time).
     display_format: None, 'poly' or 'zpk'
         Set the display format used in printing the TransferFunction object.
-		Default behavior is polynomial display.
+        Default behavior is polynomial display.
 
     Attributes
     ----------
@@ -487,7 +487,6 @@ class TransferFunction(LTI):
 
         return outstr
 
-
     # represent to implement a re-loadable version
     def __repr__(self):
         """Print transfer function in loadable form"""
@@ -532,7 +531,7 @@ class TransferFunction(LTI):
 
                 out += [r"\frac{", numstr, "}{", denstr, "}"]
 
-                if mimo and no < self.noutputs - 1:
+                if mimo and ni < self.ninputs - 1:
                     out.append("&")
 
             if mimo:
@@ -1691,11 +1690,11 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     Examples
     --------
         >>> from control import tf
-        >>> G = zpk([1],[2, 3], gain=6)
+        >>> G = zpk([1],[2, 3], gain=1)
         >>> G
              s - 1
         ---------------
-        (s - 2) (s - )
+        (s - 2) (s - 3)
     """
     num, den = zpk2tf(zeros, poles, gain)
     if 'display_format' not in kwargs:
