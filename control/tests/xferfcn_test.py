@@ -967,7 +967,7 @@ class TestXferFcn:
     def test_printing_zpk(self, zeros, poles, gain, output):
         """Test _tf_polynomial_to_string for constant systems"""
         G = zpk(zeros, poles, gain)
-        res = G.to_zpk()
+        res = str(G)
         assert res == output
 
     @pytest.mark.parametrize(
@@ -996,14 +996,9 @@ class TestXferFcn:
           '(s - 5) (s + 4)\n'))])
     def test_printing_zpk_mimo(self, num, den, output):
         """Test _tf_polynomial_to_string for constant systems"""
-        G = tf(num, den)
-        res = G.to_zpk()
+        G = tf(num, den, display_format='zpk')
+        res = str(G)
         assert res == output
-
-    def test_printing_zpk_invalid(self):
-        G = tf([1], [1 + 1j])
-        with pytest.raises(ValueError, match='complex valued'):
-            G.to_zpk()
 
     @slycotonly
     def test_size_mismatch(self):

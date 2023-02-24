@@ -92,6 +92,9 @@ class TransferFunction(LTI):
         time, positive number is discrete time with specified
         sampling time, None indicates unspecified timebase (either
         continuous or discrete time).
+    display_format: None, 'poly' or 'zpk'
+        Set the display format used in printing the TransferFunction object.
+		Default behavior is polynomial display.
 
     Attributes
     ----------
@@ -149,7 +152,7 @@ class TransferFunction(LTI):
     # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
     __array_priority__ = 11     # override ndarray and matrix types
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, display_format=None, **kwargs):
         """TransferFunction(num, den[, dt])
 
         Construct a transfer function.
@@ -198,6 +201,14 @@ class TransferFunction(LTI):
         #
         # Process keyword arguments
         #
+        if display_format is None:
+            display_format = 'poly'
+
+        if display_format not in ('poly', 'zpk'):
+            raise ValueError("display_format must be 'poly' or 'zpk',"
+                             " got '%s'" % display_format)
+
+        self.display_format = display_format
 
         # Determine if the transfer function is static (needed for dt)
         static = True
@@ -432,61 +443,16 @@ class TransferFunction(LTI):
         [self.num, self.den] = data
 
     def __str__(self, var=None):
-        """String representation of the transfer function."""
+        """String representation of the transfer function.
 
-        mimo = self.ninputs > 1 or self.noutputs > 1
-        if var is None:
-            # TODO: replace with standard calls to lti functions
-            var = 's' if self.dt is None or self.dt == 0 else 'z'
-        outstr = ""
-
-        for i in range(self.ninputs):
-            for j in range(self.noutputs):
-                if mimo:
-                    outstr += "\nInput %i to output %i:" % (i + 1, j + 1)
-
-                # Convert the numerator and denominator polynomials to strings.
-                numstr = _tf_polynomial_to_string(self.num[j][i], var=var)
-                denstr = _tf_polynomial_to_string(self.den[j][i], var=var)
-
-                # Figure out the length of the separating line
-                dashcount = max(len(numstr), len(denstr))
-                dashes = '-' * dashcount
-
-                # Center the numerator or denominator
-                if len(numstr) < dashcount:
-                    numstr = ' ' * ((dashcount - len(numstr)) // 2) + numstr
-                if len(denstr) < dashcount:
-                    denstr = ' ' * ((dashcount - len(denstr)) // 2) + denstr
-
-                outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
-
-        # See if this is a discrete time system with specific sampling time
-        if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
-            # TODO: replace with standard calls to lti functions
-            outstr += "\ndt = " + self.dt.__str__() + "\n"
-
-        return outstr
-
-    def to_zpk(self, var=None):
-        """Return string representation of the transfer function as factorized
-        polynomials.
-
-        Examples
-        --------
-        >>> from control import tf
-        >>> G = tf([1],[1, -2, 1])
-        >>> G.to_zpk()
-               1
-        ---------------
-        (s - 1) (s - 1)
+        Based on the display_format property, the output will be formatted as
+        either polynomials or in zpk form.
 
         """
 
-        mimo = self.ninputs > 1 or self.noutputs > 1
+        mimo = not self.issiso()
         if var is None:
-            # TODO: replace with standard calls to lti functions
-            var = 's' if self.dt is None or self.dt == 0 else 'z'
+            var = 's' if self.isctime() else 'z'
         outstr = ""
 
         for i in range(self.ninputs):
@@ -495,34 +461,13 @@ class TransferFunction(LTI):
                     outstr += "\nInput %i to output %i:" % (i + 1, j + 1)
 
                 # Convert the numerator and denominator polynomials to strings.
-                dcgain = self.num[j][i][-1] / self.den[j][i][-1]
-
-                num_roots = roots(self.num[j][i]).astype(complex)
-                den_roots = roots(self.den[j][i]).astype(complex)
-
-                polygain = np.prod(num_roots) / np.prod(den_roots)
-
-                # Round imaginary part down to zero for values close to
-                # precision to prevent small errors to mess up things.
-                polygain = complex(polygain.real,
-                                   round(polygain.imag, 12))
-
-                if abs(polygain) == 0 and abs(dcgain) == 0:
-                    k = 1
-                else:
-                    if abs(polygain) == 0:
-                        raise ValueError(
-                            f"Transfer function has infinite gain. "
-                            "Please check polynomials.")
-                    k = dcgain/polygain
-                if not np.isreal(k):
-                    raise ValueError(f"Transfer function has complex valued gain (k = {k}). "
-                                     "Please check polynomials for non-complimentary poles.")
-
-                k = np.abs(k)
-
-                numstr = _tf_factorized_polynomial_to_string(num_roots, gain=k, var=var)
-                denstr = _tf_factorized_polynomial_to_string(den_roots, var=var)
+                if self.display_format == 'poly':
+                    numstr = _tf_polynomial_to_string(self.num[j][i], var=var)
+                    denstr = _tf_polynomial_to_string(self.den[j][i], var=var)
+                elif self.display_format == 'zpk':
+                    z, p, k = tf2zpk(self.num[j][i], self.den[j][i])
+                    numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
+                    denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
                 # Figure out the length of the separating line
                 dashcount = max(len(numstr), len(denstr))
@@ -538,8 +483,7 @@ class TransferFunction(LTI):
 
         # See if this is a discrete time system with specific sampling time
         if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
-            # TODO: replace with standard calls to lti functions
-            outstr += "\ndt = " + self.dt.__str__() + "\n"
+            outstr += "\ndt = " + str(self.dt) + "\n"
 
         return outstr
 
@@ -575,8 +519,13 @@ class TransferFunction(LTI):
         for i in range(self.noutputs):
             for j in range(self.ninputs):
                 # Convert the numerator and denominator polynomials to strings.
-                numstr = _tf_polynomial_to_string(self.num[i][j], var=var)
-                denstr = _tf_polynomial_to_string(self.den[i][j], var=var)
+                if self.display_format == 'poly':
+                    numstr = _tf_polynomial_to_string(self.num[j][i], var=var)
+                    denstr = _tf_polynomial_to_string(self.den[j][i], var=var)
+                elif self.display_format == 'zpk':
+                    z, p, k = tf2zpk(self.num[j][i], self.den[j][i])
+                    numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
+                    denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
                 numstr = _tf_string_to_latex(numstr, var=var)
                 denstr = _tf_string_to_latex(denstr, var=var)
@@ -1432,7 +1381,6 @@ def _tf_factorized_polynomial_to_string(roots, gain=1, var='s'):
                 factor = f"{var} + ({-root:.4g})"
                 factors.append(factor)
 
-
     multiplier = ''
     if round(gain, 4) != 1.0:
         multiplier = f"{gain:.4g} "
@@ -1605,6 +1553,9 @@ def tf(*args, **kwargs):
         Polynomial coefficients of the numerator
     den: array_like, or list of list of array_like
         Polynomial coefficients of the denominator
+    display_format: None, 'poly' or 'zpk'
+        Set the display format used in printing the TransferFunction object.
+        Default behavior is polynomial display.
 
     Returns
     -------
@@ -1657,7 +1608,7 @@ def tf(*args, **kwargs):
 
     >>> # Create a variable 's' to allow algebra operations for SISO systems
     >>> s = tf('s')
-    >>> G  = (s + 1)/(s**2 + 2*s + 1)
+    >>> G  = (s + 1) / (s**2 + 2*s + 1)
 
     >>> # Convert a StateSpace to a TransferFunction object.
     >>> sys_ss = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
@@ -1728,14 +1679,27 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
+    display_format: None, 'poly' or 'zpk'
+        Set the display format used in printing the TransferFunction object.
+        Default behavior is zpk display.
 
     Returns
     -------
     out: :class:`TransferFunction`
         Transfer function with given zeros, poles, and gain.
 
+    Examples
+    --------
+        >>> from control import tf
+        >>> G = zpk([1],[2, 3], gain=6)
+        >>> G
+             s - 1
+        ---------------
+        (s - 2) (s - )
     """
     num, den = zpk2tf(zeros, poles, gain)
+    if 'display_format' not in kwargs:
+        kwargs['display_format'] = 'zpk'
     return TransferFunction(num, den, *args, **kwargs)
 
 

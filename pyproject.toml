@@ -53,7 +53,7 @@ source = "https://github.com/python-control/python-control"
 write_to = "control/_version.py"
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+addopts = "-ra --ff -x"
 filterwarnings = [
     "error:.*matrix subclass:PendingDeprecationWarning",
 ]
