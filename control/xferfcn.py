@@ -69,7 +69,9 @@ __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 
 
 # Define module default parameter values
-_xferfcn_defaults = {}
+_xferfcn_defaults = {
+    'xferfcn.display_format': 'poly',
+}
 
 
 class TransferFunction(LTI):
@@ -94,7 +96,8 @@ class TransferFunction(LTI):
         continuous or discrete time).
     display_format: None, 'poly' or 'zpk'
         Set the display format used in printing the TransferFunction object.
-        Default behavior is polynomial display.
+        Default behavior is polynomial display and can be changed by
+        changing config.defaults['xferfcn.display_format'].
 
     Attributes
     ----------
@@ -152,7 +155,7 @@ class TransferFunction(LTI):
     # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
     __array_priority__ = 11     # override ndarray and matrix types
 
-    def __init__(self, *args, display_format=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         """TransferFunction(num, den[, dt])
 
         Construct a transfer function.
@@ -201,14 +204,17 @@ class TransferFunction(LTI):
         #
         # Process keyword arguments
         #
-        if display_format is None:
-            display_format = 'poly'
+        # During module init, TransferFunction.s and TransferFunction.z
+        # get initialized when defaults are not fully initialized yet.
+        # Use 'poly' in these cases.
 
-        if display_format not in ('poly', 'zpk'):
+        self.display_format = kwargs.pop(
+            'display_format',
+            config.defaults.get('xferfcn.display_format', 'poly'))
+
+        if self.display_format not in ('poly', 'zpk'):
             raise ValueError("display_format must be 'poly' or 'zpk',"
-                             " got '%s'" % display_format)
-
-        self.display_format = display_format
+                             " got '%s'" % self.display_format)
 
         # Determine if the transfer function is static (needed for dt)
         static = True
@@ -447,9 +453,7 @@ class TransferFunction(LTI):
 
         Based on the display_format property, the output will be formatted as
         either polynomials or in zpk form.
-
         """
-
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
@@ -481,8 +485,8 @@ class TransferFunction(LTI):
 
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
 
-        # See if this is a discrete time system with specific sampling time
-        if not (self.dt is None) and type(self.dt) != bool and self.dt > 0:
+        # If this is a strict discrete time system, print the sampling time
+        if self.isdtime(strict=True):
             outstr += "\ndt = " + str(self.dt) + "\n"
 
         return outstr
@@ -1554,7 +1558,8 @@ def tf(*args, **kwargs):
         Polynomial coefficients of the denominator
     display_format: None, 'poly' or 'zpk'
         Set the display format used in printing the TransferFunction object.
-        Default behavior is polynomial display.
+        Default behavior is polynomial display and can be changed by
+        changing config.defaults['xferfcn.display_format']..
 
     Returns
     -------
@@ -1680,7 +1685,8 @@ def zpk(zeros, poles, gain, *args, **kwargs):
         name <sys[id]> is generated with a unique integer id.
     display_format: None, 'poly' or 'zpk'
         Set the display format used in printing the TransferFunction object.
-        Default behavior is zpk display.
+        Default behavior is polynomial display and can be changed by
+        changing config.defaults['xferfcn.display_format'].
 
     Returns
     -------
@@ -1690,15 +1696,13 @@ def zpk(zeros, poles, gain, *args, **kwargs):
     Examples
     --------
         >>> from control import tf
-        >>> G = zpk([1],[2, 3], gain=1)
+        >>> G = zpk([1],[2, 3], gain=1, display_format='zpk')
         >>> G
              s - 1
         ---------------
         (s - 2) (s - 3)
     """
     num, den = zpk2tf(zeros, poles, gain)
-    if 'display_format' not in kwargs:
-        kwargs['display_format'] = 'zpk'
     return TransferFunction(num, den, *args, **kwargs)
 
 
