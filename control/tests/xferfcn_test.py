@@ -966,7 +966,7 @@ class TestXferFcn:
          ])
     def test_printing_zpk(self, zeros, poles, gain, output):
         """Test _tf_polynomial_to_string for constant systems"""
-        G = zpk(zeros, poles, gain)
+        G = zpk(zeros, poles, gain, display_format='zpk')
         res = str(G)
         assert res == output
 

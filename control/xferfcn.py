@@ -486,7 +486,7 @@ class TransferFunction(LTI):
                 outstr += "\n" + numstr + "\n" + dashes + "\n" + denstr + "\n"
 
         # If this is a strict discrete time system, print the sampling time
-        if self.isdtime(strict=True):
+        if type(self.dt) != bool and self.isdtime(strict=True):
             outstr += "\ndt = " + str(self.dt) + "\n"
 
         return outstr
