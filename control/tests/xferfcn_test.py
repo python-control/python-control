@@ -10,7 +10,8 @@ import operator
 import control as ct
 from control import StateSpace, TransferFunction, rss, evalfr
 from control import ss, ss2tf, tf, tf2ss, zpk
-from control import isctime, isdtime, sample_system, defaults, reset_defaults
+from control import isctime, isdtime, sample_system
+from control import defaults, reset_defaults, set_defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
 from control.tests.conftest import slycotonly, matrixfilter
@@ -990,8 +991,9 @@ class TestXferFcn:
          ])
     def test_printing_zpk_format(self, zeros, poles, gain, format, output):
         """Test _tf_polynomial_to_string for constant systems"""
-        defaults['xferfcn.floating_point_format'] = format
         G = tf([1], [1,2,3], display_format='zpk')
+
+        set_defaults('xferfcn', floating_point_format=format)
         res = str(G)
         reset_defaults()
 

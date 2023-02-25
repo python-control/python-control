@@ -78,6 +78,7 @@ def _float2str(value):
     formatter = "{:" + config.defaults.get('xferfcn.floating_point_format', ':.4g') + "}"
     return formatter.format(value)
 
+
 class TransferFunction(LTI):
     """TransferFunction(num, den[, dt])
 
