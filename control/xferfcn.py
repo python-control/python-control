@@ -71,8 +71,12 @@ __all__ = ['TransferFunction', 'tf', 'zpk', 'ss2tf', 'tfdata']
 # Define module default parameter values
 _xferfcn_defaults = {
     'xferfcn.display_format': 'poly',
+    'xferfcn.floating_point_format': '.4g'
 }
 
+def _float2str(value):
+    formatter = "{:" + config.defaults.get('xferfcn.floating_point_format', ':.4g') + "}"
+    return formatter.format(value)
 
 class TransferFunction(LTI):
     """TransferFunction(num, den[, dt])
@@ -1313,7 +1317,7 @@ def _tf_polynomial_to_string(coeffs, var='s'):
     N = len(coeffs) - 1
 
     for k in range(len(coeffs)):
-        coefstr = '%.4g' % abs(coeffs[k])
+        coefstr = _float2str(abs(coeffs[k]))
         power = (N - k)
         if power == 0:
             if coefstr != '0':
@@ -1355,7 +1359,7 @@ def _tf_factorized_polynomial_to_string(roots, gain=1, var='s'):
     """Convert a factorized polynomial to a string"""
 
     if roots.size == 0:
-        return f"{gain:.4g}"
+        return _float2str(gain)
 
     factors = []
     for root in sorted(roots, reverse=True):
@@ -1364,29 +1368,29 @@ def _tf_factorized_polynomial_to_string(roots, gain=1, var='s'):
                 factor = f"{var}"
                 factors.append(factor)
             elif root > 0:
-                factor = f"{var} - {np.abs(root):.4g}"
+                factor = f"{var} - {_float2str(np.abs(root))}"
                 factors.append(factor)
             else:
-                factor = f"{var} + {np.abs(root):.4g}"
+                factor = f"{var} + {_float2str(np.abs(root))}"
                 factors.append(factor)
         elif np.isreal(root * 1j):
             if root.imag > 0:
-                factor = f"{var} - {np.abs(root):.4g}j"
+                factor = f"{var} - {_float2str(np.abs(root))}j"
                 factors.append(factor)
             else:
-                factor = f"{var} + {np.abs(root):.4g}j"
+                factor = f"{var} + {_float2str(np.abs(root))}j"
                 factors.append(factor)
         else:
             if root.real > 0:
-                factor = f"{var} - ({root:.4g})"
+                factor = f"{var} - ({_float2str(root)})"
                 factors.append(factor)
             else:
-                factor = f"{var} + ({-root:.4g})"
+                factor = f"{var} + ({_float2str(-root)})"
                 factors.append(factor)
 
     multiplier = ''
     if round(gain, 4) != 1.0:
-        multiplier = f"{gain:.4g} "
+        multiplier = _float2str(gain) + " "
 
     if len(factors) > 1 or multiplier:
         factors = [f"({factor})" for factor in factors]

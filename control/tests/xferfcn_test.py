@@ -10,7 +10,7 @@ import operator
 import control as ct
 from control import StateSpace, TransferFunction, rss, evalfr
 from control import ss, ss2tf, tf, tf2ss, zpk
-from control import isctime, isdtime, sample_system, defaults
+from control import isctime, isdtime, sample_system, defaults, reset_defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
 from control.tests.conftest import slycotonly, matrixfilter
@@ -968,6 +968,33 @@ class TestXferFcn:
         """Test _tf_polynomial_to_string for constant systems"""
         G = zpk(zeros, poles, gain, display_format='zpk')
         res = str(G)
+        assert res == output
+
+    @pytest.mark.parametrize(
+        "zeros, poles, gain, format, output",
+        [([1], [1 + 1j, 1 - 1j], 1, ".2f",
+          '\n'
+          '                1.00\n'
+          '-------------------------------------\n'
+          '(s + (1.00-1.41j)) (s + (1.00+1.41j))\n'),
+         ([1], [1 + 1j, 1 - 1j], 1, ".3f",
+          '\n'
+           '                  1.000\n'
+           '-----------------------------------------\n'
+           '(s + (1.000-1.414j)) (s + (1.000+1.414j))\n'),
+         ([1], [1 + 1j, 1 - 1j], 1, ".6g",
+          '\n'
+          '                  1\n'
+          '-------------------------------------\n'
+          '(s + (1-1.41421j)) (s + (1+1.41421j))\n')
+         ])
+    def test_printing_zpk_format(self, zeros, poles, gain, format, output):
+        """Test _tf_polynomial_to_string for constant systems"""
+        defaults['xferfcn.floating_point_format'] = format
+        G = tf([1], [1,2,3], display_format='zpk')
+        res = str(G)
+        reset_defaults()
+
         assert res == output
 
     @pytest.mark.parametrize(
