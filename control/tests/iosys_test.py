@@ -2036,3 +2036,14 @@ def test_find_eqpt(x0, ix, u0, iu, y0, iy, dx0, idx, dt, x_expect, u_expect):
     # Check that we got the expected result as well
     np.testing.assert_allclose(np.array(xeq), x_expect, atol=1e-6)
     np.testing.assert_allclose(np.array(ueq), u_expect, atol=1e-6)
+
+def test_iosys_sample():
+    csys = ct.rss(2, 1, 1)
+    dsys = csys.sample(0.1)
+    assert isinstance(dsys, ct.LinearIOSystem)
+    assert dsys.dt == 0.1
+
+    csys = ct.rss(2, 1, 1)
+    dsys = ct.sample_system(csys, 0.1)
+    assert isinstance(dsys, ct.LinearIOSystem)
+    assert dsys.dt == 0.1

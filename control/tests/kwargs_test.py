@@ -86,8 +86,8 @@ def test_kwarg_search(module, prefix):
      (control.lqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.linearize, 1, 0, (0, 0), {}),
      (control.pzmap, 1, 0, (), {}),
-     (control.rlocus, 0, 1, ( ), {}),
-     (control.root_locus, 0, 1, ( ), {}),
+     (control.rlocus, 0, 1, (), {}),
+     (control.root_locus, 0, 1, (), {}),
      (control.rss, 0, 0, (2, 1, 1), {}),
      (control.set_defaults, 0, 0, ('control',), {'default_dt': True}),
      (control.ss, 0, 0, (0, 0, 0, 0), {'dt': 1}),
@@ -101,7 +101,9 @@ def test_kwarg_search(module, prefix):
      (control.InputOutputSystem, 0, 0, (),
       {'inputs': 1, 'outputs': 1, 'states': 1}),
      (control.InputOutputSystem.linearize, 1, 0, (0, 0), {}),
-     (control.StateSpace, 0, 0, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
+     (control.LinearIOSystem.sample, 1, 0, (0.1,), {}),
+     (control.StateSpace, 0, 0,
+      ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
      (control.TransferFunction, 0, 0, ([1], [1, 1]), {})]
 )
 def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
@@ -202,6 +204,7 @@ kwarg_unittest = {
         interconnect_test.test_interconnect_exceptions,
     'LinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
+    'LinearIOSystem.sample': test_unrecognized_kwargs,
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,

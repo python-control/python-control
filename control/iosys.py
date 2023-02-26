@@ -676,6 +676,12 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
         StateSpace.__init__(
             self, linsys, remove_useless_states=False, init_namedio=False)
 
+    # When sampling a LinearIO system, return a LinearIOSystem
+    def sample(self, *args, **kwargs):
+        return LinearIOSystem(StateSpace.sample(self, *args, **kwargs))
+
+    sample.__doc__ = StateSpace.sample.__doc__
+
     # The following text needs to be replicated from StateSpace in order for
     # this entry to show up properly in sphinx doccumentation (not sure why,
     # but it was the only way to get it to work).
