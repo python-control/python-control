@@ -101,7 +101,8 @@ def editsdefaults():
     """Make sure any changes to the defaults only last during a test."""
     restore = control.config.defaults.copy()
     yield
-    control.config.defaults = restore.copy()
+    control.config.defaults.clear()
+    control.config.defaults.update(restore)
 
 
 @pytest.fixture(scope="function")
