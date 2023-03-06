@@ -354,8 +354,8 @@ def create_estimator_iosystem(
         Disturbance matrix describing how the disturbances enters the
         dynamics.  Defaults to sys.B.
     C : ndarray, optional
-        If the system has all full states output, define the measured values
-        to be used by the estimator.  Otherwise, use the system output as the
+        If the system has full state output, define the measured values to
+        be used by the estimator.  Otherwise, use the system output as the
         measured values.
     {state, covariance, sensor, output}_labels : str or list of str, optional
         Set the name of the signals to use for the internal state, covariance,

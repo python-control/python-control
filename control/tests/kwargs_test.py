@@ -196,6 +196,7 @@ kwarg_unittest = {
         flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
+    'optimal.solve_oep': optimal_test.test_oep_argument_errors,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
@@ -217,7 +218,9 @@ kwarg_unittest = {
     'optimal.OptimalControlProblem.compute_trajectory':
         optimal_test.test_ocp_argument_errors,
     'optimal.OptimalControlProblem.create_mpc_iosystem':
-        optimal_test.test_mpc_iosystem_rename,
+        optimal_test.test_ocp_argument_errors,
+    'optimal.OptimalEstimationProblem.__init__':
+        optimal_test.test_oep_argument_errors,
 }
 
 #
@@ -234,9 +237,6 @@ mutable_ok = {                                          # initial and date
     control.freqplot._add_arrows_to_line2D,             # RMM, 18 Nov 2022
     control.namedio._process_dt_keyword,                # RMM, 13 Nov 2022
     control.namedio._process_namedio_keywords,          # RMM, 18 Nov 2022
-    control.optimal.OptimalControlProblem.__init__,     # RMM, 18 Nov 2022
-    control.optimal.solve_ocp,                          # RMM, 18 Nov 2022
-    control.optimal.create_mpc_iosystem,                # RMM, 18 Nov 2022
 }
 
 @pytest.mark.parametrize("module", [control, control.flatsys])

@@ -529,7 +529,7 @@ def test_ocp_argument_errors():
     with pytest.raises(TypeError, match="unrecognized keyword"):
         ocp = opt.OptimalControlProblem(sys, time, cost, constraints)
         ocp.compute_trajectory(x0, unknown=None)
-            
+
     # Unrecognized trajectory constraint type
     constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
     with pytest.raises(TypeError, match="unknown trajectory constraint type"):
@@ -771,3 +771,18 @@ def test_optimal_doc(method, npts, initial_guess, fail):
                     np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)
             else:
                 np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)
+
+
+def test_oep_argument_errors():
+    sys = ct.rss(4, 2, 2)
+    timepts = np.linspace(0, 1, 10)
+    Y = np.zeros((2, timepts.size))
+    U = np.zeros_like(timepts)
+    cost = opt.gaussian_likelihood_cost(sys, np.eye(1), np.eye(2))
+
+    # Unrecognized arguments
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        res = opt.solve_oep(sys, timepts, Y, U, cost, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        oep = opt.OptimalEstimationProblem(sys, timepts, cost, unknown=True)
