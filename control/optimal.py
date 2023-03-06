@@ -1479,8 +1479,6 @@ class OptimalEstimationProblem():
     #
     # Initial guess processing
     #
-    # TODO: Not implemented
-    #
     def _process_initial_guess(self, initial_guess):
         if initial_guess is None:
             return np.zeros(
@@ -1542,8 +1540,6 @@ class OptimalEstimationProblem():
     #
     # Optimal estimate computations
     #
-
-    # Compute the optimal trajectory from the current state
     def compute_estimate(
             self, Y, U, X0=None, initial_guess=None,
             squeeze=None, print_summary=True):
@@ -1611,6 +1607,10 @@ class OptimalEstimationProblem():
     # This function creates an input/output system that has internal state
     # xhat, u, v, y for all previous time points.  When the system update
     # function is called,
+    #
+    # TODO: change input arguments to use control_indices, similar to
+    # create_statefbk_iosystem.
+    #
     def create_mhe_iosystem(
             self, nd, output_labels='xhat[{i}]', sensor_labels=None):
         """Create an I/O system implementing an MPC controller

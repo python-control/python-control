@@ -307,6 +307,11 @@ def dlqe(*args, **kwargs):
 
 
 # Function to create an estimator
+#
+# TODO: add `control_indices` keyword to match create_mhe_iosystem (?)
+# TODO: change name to create_kalmanestimaor_iosystem (?)
+# TODO: create predictor/corrector, UKF, and other variants (?)
+#
 def create_estimator_iosystem(
         sys, QN, RN, P0=None, G=None, C=None,
         state_labels='xhat[{i}]', output_labels='xhat[{i}]',
@@ -317,15 +322,15 @@ def create_estimator_iosystem(
     continuous time state estimator of the form
 
     .. math::
-    
+
         d \hat{x}/dt &= A \hat{x} + B u - L (C \hat{x} - y) \\
            dP/dt &= A P + P A^T + F Q_N F^T - P C^T R_N^{-1} C P \\
-               L &= P C^T R_N^{-1} 
+               L &= P C^T R_N^{-1}
 
     or a discrete time state estimator of the form
 
     .. math::
-    
+
         \hat{x}[k+1] &= A \hat{x}[k] + B u[k] - L (C \hat{x}[k] - y[k]) \\
                P[k+1] &= A P A^T + F Q_N F^T - A P C^T R_e^{-1} C P A \\
                     L &= A P C^T R_e^{-1}
