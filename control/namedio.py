@@ -584,3 +584,23 @@ def _process_signal_list(signals, prefix='s'):
 
     else:
         raise TypeError("Can't parse signal list %s" % str(signals))
+
+
+# Utility function to process signal indices
+def _process_indices(arg, name, labels, default=None):
+    arg = default if arg is None else arg
+    if arg is None:
+        return None;
+
+    if isinstance(arg, int):
+        return range(arg)
+    elif isinstance(arg, slice):
+        return arg
+    elif isinstance(arg, list):
+        arg=arg.copy()
+        for i, idx in enumerate(arg):
+            if isinstance(idx, str):
+                arg[i] = labels.index(arg[i])
+        return arg
+    else:
+        raise ValueError(f"invalid argument for {name}_indices")

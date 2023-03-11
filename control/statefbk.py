@@ -48,7 +48,7 @@ from . import statesp
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
 from .lti import LTI
-from .namedio import isdtime, isctime
+from .namedio import isdtime, isctime, _process_indices
 from .iosys import InputOutputSystem, NonlinearIOSystem, LinearIOSystem, \
     interconnect, ss
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
@@ -668,14 +668,16 @@ def create_statefbk_iosystem(
         If an estimator is provided, use the states of the estimator as
         the system inputs for the controller.
 
-    gainsched_indices : list of int or str, optional
+    gainsched_indices : int, slice, or list of int or str, optional
         If a gain scheduled controller is specified, specify the indices of
         the controller input to use for scheduling the gain. The input to
         the controller is the desired state xd, the desired input ud, and
         the system state x (or state estimate xhat, if an estimator is
-        given). The indices can either be specified as integer offsets into
-        the input vector or as strings matching the signal names of the
-        input vector. The default is to use the desire state xd.
+        given). If value is an integer `q`, the first `q` values of the
+        [xd, ud, x] vector are used.  Otherwise, the value should be a
+        slice or a list of indices.  The list of indices can be specified
+        as either integer offsets or as signal names.  The default is to
+        use the desire state xd.
 
     gainsched_method : str, optional
         The method to use for gain scheduling.  Possible values are 'linear'
@@ -714,19 +716,21 @@ def create_statefbk_iosystem(
 
     Other Parameters
     ----------------
-    control_indices : list of int or str, optional
+    control_indices : int, slice, or list of int or str, optional
         Specify the indices of the system inputs that should be determined
-        by the state feedback controller.  If not specified, defaults to
-        the first `m` system inputs, where `m` is determined by the shape
-        of the gain matrix, with the remaining inputs remaining as inputs
-        to the overall closed loop system.
+        by the state feedback controller.  If value is an integer `m`, the
+        first `m` system inputs are used.  Otherwise, the value should be a
+        slice or a list of indices.  The list of indices can be specified
+        as either integer offsets or as system input signal names.  If not
+        specified, defaults to the system inputs.
 
-    state_indices : list of int or str, optional
-        Specify the indices of the system (or estimator) outputs that
-        should be used by the state feedback controller.  If not specified,
-        defaults to the first `n` system/estimator outputs, where `n` is
-        determined by the shape of the gain matrix, with the remaining
-        outputs remaining as outputs to the overall closed loop system.
+    state_indices : int, slice, or list of int or str, optional
+        Specify the indices of the system (or estimator) outputs that should
+        be used by the state feedback controller.  If value is an integer
+        `n`, the first `n` system states are used.  Otherwise, the value
+        should be a slice or a list of indices.  The list of indices can be
+        specified as either integer offsets or as estimator/system output
+        signal names.  If not specified, defaults to the system states.
 
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals of the transformed
@@ -755,11 +759,8 @@ def create_statefbk_iosystem(
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Figure out what inputs to the system to use
-    control_indices = range(sys.ninputs) if control_indices is None \
-            else list(control_indices)
-    for i, idx in enumerate(control_indices):
-        if isinstance(idx, str):
-            control_indices[i] = sys.input_labels.index(control_indices[i])
+    control_indices = _process_indices(
+        control_indices, 'control', sys.input_labels, sys.ninputs)
     sys_ninputs = len(control_indices)
 
     # Decide what system is going to pass the states to the controller
@@ -767,11 +768,8 @@ def create_statefbk_iosystem(
         estimator = sys
 
     # Figure out what outputs (states) from the system/estimator to use
-    state_indices = range(sys.nstates) if state_indices is None \
-            else list(state_indices)
-    for i, idx in enumerate(state_indices):
-        if isinstance(idx, str):
-            state_indices[i] = estimator.state_labels.index(state_indices[i])
+    state_indices = _process_indices(
+        state_indices, 'state', estimator.state_labels, sys.nstates)
     sys_nstates = len(state_indices)
 
     # Make sure the system/estimator states are proper dimension
@@ -858,8 +856,8 @@ def create_statefbk_iosystem(
     # Process gainscheduling variables, if present
     if gainsched:
         # Create a copy of the scheduling variable indices (default = xd)
-        gainsched_indices = range(sys_nstates) if gainsched_indices is None \
-            else list(gainsched_indices)
+        gainsched_indices = _process_indices(
+            gainsched_indices, 'gainsched', inputs, sys_nstates)
 
         # If points is a 1D list, convert to 2D
         if points.ndim == 1:
@@ -870,11 +868,6 @@ def create_statefbk_iosystem(
             raise ControlArgument(
                 "length of gainsched_indices must match dimension of"
                 " scheduling variables")
-
-        # Process scheduling variables
-        for i, idx in enumerate(gainsched_indices):
-            if isinstance(idx, str):
-                gainsched_indices[i] = inputs.index(gainsched_indices[i])
 
         # Create interpolating function
         if points.shape[1] < 2:
