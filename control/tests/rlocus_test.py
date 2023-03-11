@@ -64,6 +64,7 @@ class TestRootLocus:
         roots, kvect = root_locus(sys, plot=False)
         self.check_cl_poles(sys, roots, kvect)
 
+    @pytest.mark.slow
     @pytest.mark.parametrize('grid', [None, True, False])
     def test_root_locus_plot_grid(self, sys, grid):
         rlist, klist = root_locus(sys, grid=grid)

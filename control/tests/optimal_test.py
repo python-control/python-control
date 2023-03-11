@@ -160,6 +160,7 @@ def test_discrete_lqr():
     assert np.any(np.abs(res1.inputs - res2.inputs) > 0.1)
 
 
+@pytest.mark.slow
 def test_mpc_iosystem_aircraft():
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
@@ -652,6 +653,7 @@ def test_equality_constraints():
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "method, npts, initial_guess, fail", [
         ('shooting', 3, None, 'xfail'),         # doesn't converge
