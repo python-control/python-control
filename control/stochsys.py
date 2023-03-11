@@ -22,7 +22,7 @@ from math import sqrt
 
 from .iosys import InputOutputSystem, LinearIOSystem, NonlinearIOSystem
 from .lti import LTI
-from .namedio import isctime, isdtime
+from .namedio import isctime, isdtime, _process_indices
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
@@ -314,6 +314,7 @@ def dlqe(*args, **kwargs):
 #
 def create_estimator_iosystem(
         sys, QN, RN, P0=None, G=None, C=None,
+        control_indices=None, disturbance_indices=None,
         state_labels='xhat[{i}]', output_labels='xhat[{i}]',
         covariance_labels='P[{i},{j}]', sensor_labels=None):
     r"""Create an I/O system implementing a linear quadratic estimator
@@ -347,9 +348,10 @@ def create_estimator_iosystem(
 
     Parameters
     ----------
-    sys : InputOutputSystem
-        The I/O system that represents the process dynamics.  If no estimator
-        is given, the output of this system should represent the full state.
+    sys : LinearIOSystem
+        The linear I/O system that represents the process dynamics.  If no
+        estimator is given, the output of this system should represent the
+        full state.
     QN, RN : ndarray
         Process and sensor noise covariance matrices.
     P0 : ndarray, optional
@@ -362,14 +364,6 @@ def create_estimator_iosystem(
         If the system has full state output, define the measured values to
         be used by the estimator.  Otherwise, use the system output as the
         measured values.
-    {state, covariance, sensor, output}_labels : str or list of str, optional
-        Set the name of the signals to use for the internal state, covariance,
-        sensors, and outputs (state estimate).  If a single string is
-        specified, it should be a format string using the variable `i` as an
-        index (or `i` and `j` for covariance).  Otherwise, a list of
-        strings matching the size of the respective signal should be used.
-        Default is ``'xhat[{i}]'`` for state and output labels, ``'y[{i}]'``
-        for output labels and ``'P[{i},{j}]'`` for covariance labels.
 
     Returns
     -------
@@ -377,6 +371,47 @@ def create_estimator_iosystem(
         Input/output system representing the estimator.  This system takes
         the system output y and input u and generates the estimated state
         xhat.
+
+    Other Parameters
+    ----------------
+    control_indices : int, slice, or list of int or string, optional
+        Specify the indices in the system input vector that correspond to
+        the control inputs.  These inputs will be used as known control
+        inputs for the estimator. If value is an integer `m`, the first `m`
+        system inputs are used.  Otherwise, the value should be a slice or
+        a list of indices.  The list of indices can be specified as either
+        integer offsets or as system input signal names.  If not specified,
+        defaults to the system inputs.
+    disturbance_indices : int, list of int, or slice, optional
+        Specify the indices in the system input vector that correspond to
+        the unknown disturbances.  These inputs are assumed to be white
+        noise with noise intensity QN.  If value is an integer `m`, the
+        last `m` system inputs are used.  Otherwise, the value should be a
+        slice or a list of indices.  The list of indices can be specified
+        as either integer offsets or as system input signal names.  If not
+        specified, the disturbances are assumed to be added to the system
+        inputs.
+    state_labels : str or list of str, optional
+        Set the names of the internal state estimate variables.  If a
+        single string is specified, it should be a format string using the
+        variable `i` as an index.  Otherwise, a list of strings matching
+        the number of system states should be used.  Default is "xhat[{i}]".
+    covariance_labels : str or list of str, optional
+        Set the name of the the covariance state variables.  If a single
+        string is specified, it should be a format string using the
+        variables `i` and `j` as indices.  Otherwise, a list of strings
+        matching the size of the covariance matrix should be used.  Default
+        is "P[{i},{j}]".
+    sensor_labels : str or list of str, optional
+        Set the name of the sensor signals (estimator inputs).  If
+        specified, it should be a format string using the variable `i` as
+        an index.  Otherwise, a list of strings matching the size of the
+        measured system outputs should be used.  Default is "y[{i}]".
+    output_labels : str or list of str, optional
+        Set the name of the estimator outputs (state estimate).  If a
+        single string is specified, it should be a format string using the
+        variable `i` as an index.  Otherwise, a list of strings matching
+        the size of the system state should be used.  Default is "xhat[{i}]".
 
     Notes
     -----
@@ -403,11 +438,45 @@ def create_estimator_iosystem(
     if not isinstance(sys, LinearIOSystem):
         raise ControlArgument("Input system must be a linear I/O system")
 
-    # Extract the matrices that we need for easy reference
-    A, B = sys.A, sys.B
+    # Set the state matrix for later use
+    A = sys.A
 
-    # Set the disturbance and output matrices
-    G = sys.B if G is None else G
+    # Set the disturbance matrices (indices take priority over G)
+    ctrl_idx = _process_indices(
+        control_indices, 'control', sys.input_labels, sys.ninputs)
+
+    if disturbance_indices is None and control_indices is not None:
+        # Disturbance indices are the complement of control indices
+        dist_idx = [i for i in range(sys.ninputs) if i not in ctrl_idx]
+        if G is not None:
+            warn("'control_indices' and 'G' both specified; ignoring 'G'")
+        G = sys.B[:, dist_idx]
+
+    elif disturbance_indices is not None:
+        if G is not None:
+            warn("'disturbance_indices' and 'G' both specified; ignoring 'G'")
+
+        # If passed an integer, count from the end of the input vector
+        arg = -disturbance_indices if isinstance(disturbance_indices, int) \
+            else disturbance_indices
+
+        dist_idx = _process_indices(
+            arg, 'disturbance', sys.input_labels, sys.ninputs)
+        G = sys.B[:, dist_idx]
+
+        # Set control indices to complement disturbance indices, if needed
+        if control_indices is None:
+            ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
+
+    elif G is None:
+        G = sys.B
+
+    # Set the input and direct matrices
+    B = sys.B[:, ctrl_idx]
+    if not np.allclose(sys.D, 0):
+        raise NotImplemented("nonzero 'D' matrix not yet implemented")
+
+    # Set the output matrices
     if C is not None:
         # Make sure that we have the full system output
         if not np.array_equal(sys.C, np.eye(sys.nstates)):
@@ -425,7 +494,7 @@ def create_estimator_iosystem(
     # Initialize the covariance matrix
     if P0 is None:
         # Initalize P0 to the steady state value
-        L0, P0, _ = lqe(A, G, C, QN, RN)
+        _, P0, _ = lqe(A, G, C, QN, RN)
 
     # Figure out the labels to use
     if isinstance(state_labels, str):
@@ -446,6 +515,10 @@ def create_estimator_iosystem(
     if isinstance(sensor_labels, str):
         # Generate the list of labels using the argument as a format string
         sensor_labels = [sensor_labels.format(i=i) for i in range(C.shape[0])]
+
+    # Set the input labels based on the system input
+    # TODO: allow these to be overriden
+    input_labels = [sys.input_labels[i] for i in ctrl_idx]
 
     if isctime(sys):
         # Create an I/O system for the state feedback gains
@@ -470,7 +543,7 @@ def create_estimator_iosystem(
             L = P @ C.T @ R_inv
 
             # Update the state estimate
-            dxhat = A @ xhat + B @ u            # prediction
+            dxhat = A @ xhat + B @ u                    # prediction
             if correct:
                 dxhat -= L @ (C @ xhat - y)     # correction
 
@@ -500,7 +573,7 @@ def create_estimator_iosystem(
             L = A @ P @ C.T @ Reps_inv
 
             # Update the state estimate
-            dxhat = A @ xhat + B @ u            # prediction
+            dxhat = A @ xhat + B @ u                    # prediction
             if correct:
                 dxhat -= L @ (C @ xhat - y)     # correction
 
@@ -518,7 +591,7 @@ def create_estimator_iosystem(
     # Define the estimator system
     return NonlinearIOSystem(
         _estim_update, _estim_output, states=state_labels + covariance_labels,
-        inputs=sensor_labels + sys.input_labels, outputs=output_labels,
+        inputs=sensor_labels + input_labels, outputs=output_labels,
         dt=sys.dt)
 
 

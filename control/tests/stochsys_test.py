@@ -319,6 +319,7 @@ def test_correlation():
         T = np.logspace(0, 2, T.size)
         tau, Rtau = ct.correlation(T, V)
 
+@pytest.mark.slow
 @pytest.mark.parametrize('dt', [0, 1])
 def test_oep(dt):
     # Define the system to test, with additional input
@@ -455,6 +456,7 @@ def test_oep(dt):
         est3.states[:, -1], res3.states[:, -1], atol=1e-1, rtol=1e-2)
 
 
+@pytest.mark.slow
 def test_mhe():
     # Define the system to test, with additional input
     csys = ct.ss(
@@ -495,3 +497,62 @@ def test_mhe():
 
     # Make sure the estimated state is close to the actual state
     np.testing.assert_allclose(estp.outputs, resp.states, atol=1e-2, rtol=1e-4)
+
+@pytest.mark.parametrize("ctrl_indices, dist_indices", [
+    (slice(0, 3), None),
+    (3, None),
+    (None, 2),
+    ([0, 1, 4], None),
+    (['u[0]', 'u[1]', 'u[4]'], None),
+    (['u[0]', 'u[1]', 'u[4]'], ['u[1]', 'u[3]']),
+    (slice(0, 3), slice(3, 5))
+])
+def test_indices(ctrl_indices, dist_indices):
+    # Define a system with inputs (0:3), disturbances (3:5), and noise (5, 7)
+    ninputs = 3
+    nstates = ninputs + 1
+    ndisturbances = 2
+    noutputs = 2
+    nnoises = 0
+    # TODO: remove strictly proper
+    sys = ct.rss(nstates, noutputs, ninputs + ndisturbances + nnoises, strictly_proper=True)
+
+    # Create a system whose state we want to estimate
+    if ctrl_indices is not None:
+        ctrl_idx = ct.namedio._process_indices(
+            ctrl_indices, 'control', sys.input_labels, sys.ninputs)
+    else:
+        arg = -dist_indices if isinstance(dist_indices, int) else dist_indices
+        dist_idx = ct.namedio._process_indices(
+            arg, 'disturbance', sys.input_labels, sys.ninputs)
+        ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
+    sysm = ct.ss(sys.A, sys.B[:, ctrl_idx], sys.C, sys.D[:, ctrl_idx])
+
+    # Set the simulation time based on the slowest system pole
+    from math import log
+    T = 10 / min(-sys.poles().real)
+
+    # Generate a system response with no disturbances
+    timepts = np.linspace(0, T, 50)
+    U = np.vstack([np.sin(timepts + i) for i in range(ninputs)])
+    resp = ct.input_output_response(
+        sysm, timepts, U, np.zeros(nstates),
+        solve_ivp_kwargs={'method': 'RK45', 'max_step': 0.01,
+                          'atol': 1, 'rtol': 1})
+    Y = resp.outputs
+
+    # Create an estimator
+    QN = np.eye(ndisturbances)
+    RN = np.eye(noutputs)
+    P0 = np.eye(nstates)
+    estim = ct.create_estimator_iosystem(
+        sys, QN, RN, control_indices=ctrl_indices,
+        disturbance_indices=dist_indices)
+
+    # Run estimator (no prediction + same solve_ivp params => should be exact)
+    resp_estim = ct.input_output_response(
+        estim, timepts, [Y, U], [np.zeros(nstates), P0],
+        solve_ivp_kwargs={'method': 'RK45', 'max_step': 0.01,
+                          'atol': 1, 'rtol': 1},
+            params={'correct': False})
+    np.testing.assert_allclose(resp.states, resp_estim.outputs, rtol=1e-2)

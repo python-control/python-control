@@ -22,8 +22,8 @@ _namedio_defaults = {
     'namedio.sampled_system_name_prefix': '',
     'namedio.sampled_system_name_suffix': '$sampled'
 }
-    
-    
+
+
 class NamedIOSystem(object):
     def __init__(
             self, name=None, inputs=None, outputs=None, states=None, **kwargs):
@@ -586,21 +586,46 @@ def _process_signal_list(signals, prefix='s'):
         raise TypeError("Can't parse signal list %s" % str(signals))
 
 
+#
 # Utility function to process signal indices
-def _process_indices(arg, name, labels, default=None):
-    arg = default if arg is None else arg
-    if arg is None:
-        return None;
+#
+# Signal indices can be specified in one of four ways:
+#
+# 1. As a positive integer 'm', in which case we return a list
+#    corresponding to the first 'm' elements of a range of a given length
+#
+# 2. As a negative integer '-m', in which case we return a list
+#    corresponding to the last 'm' elements of a range of a given length
+#
+# 3. As a slice, in which case we return the a list corresponding to the
+#    indices specified by the slice of a range of a given length
+#
+# 4. As a list of ints or strings specifying specific indices.  Strings are
+#    compared to a list of labels to determine the index.
+#
+def _process_indices(arg, name, labels, length):
+    # Default is to return indices up to a certain length
+    arg = length if arg is None else arg
 
     if isinstance(arg, int):
-        return range(arg)
+        # Return the start or end of the list of possible indices
+        return list(range(arg)) if arg > 0 else list(range(length))[arg:]
+
     elif isinstance(arg, slice):
-        return arg
+        # Return the indices referenced by the slice
+        return list(range(length))[arg]
+
     elif isinstance(arg, list):
+        # Make sure the length is OK
+        if len(arg) > length:
+            raise ValueError(
+                f"{name}_indices list is too long; max length = {length}")
+
+        # Return the list, replacing strings with corresponding indices
         arg=arg.copy()
         for i, idx in enumerate(arg):
             if isinstance(idx, str):
                 arg[i] = labels.index(arg[i])
         return arg
-    else:
-        raise ValueError(f"invalid argument for {name}_indices")
+
+    raise ValueError(f"invalid argument for {name}_indices")
