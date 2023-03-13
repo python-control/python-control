@@ -230,6 +230,9 @@ def test_estimator_errors():
     QN = np.eye(sys.ninputs)
     RN = np.eye(sys.noutputs)
 
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        estim = ct.create_estimator_iosystem(sys, QN, RN, unknown=True)
+
     with pytest.raises(ct.ControlArgument, match=".* system must be a linear"):
         sys_tf = ct.tf([1], [1, 1], dt=True)
         estim = ct.create_estimator_iosystem(sys_tf, QN, RN)
@@ -517,6 +520,7 @@ def test_mhe():
     # Make sure the estimated state is close to the actual state
     np.testing.assert_allclose(estp.outputs, resp.states, atol=1e-2, rtol=1e-4)
 
+@pytest.mark.slow
 @pytest.mark.parametrize("ctrl_indices, dist_indices", [
     (slice(0, 3), None),
     (3, None),

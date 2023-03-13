@@ -666,3 +666,21 @@ def _process_control_disturbance_indices(
         ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
 
     return ctrl_idx, dist_idx
+
+
+# Process labels
+def _process_labels(labels, name, default):
+    if isinstance(labels, str):
+        labels = [labels.format(i=i) for i in range(len(default))]
+
+    if labels is None:
+        labels = default
+    elif isinstance(labels, list):
+        if len(labels) != len(default):
+            raise ValueError(
+                f"incorrect length of {name}_labels: {len(labels)}"
+                f" instead of {len(default)}")
+    else:
+        raise ValueError(f"{name}_labels should be a string or a list")
+
+    return labels

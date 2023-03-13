@@ -18,7 +18,9 @@ import time
 
 from . import config
 from .exception import ControlNotImplemented
-from .namedio import _process_indices, _process_control_disturbance_indices
+from .namedio import _process_indices, _process_labels, \
+    _process_control_disturbance_indices
+
 
 # Define module default parameter values
 _optimal_trajectory_methods = {'shooting', 'collocation'}
@@ -859,11 +861,11 @@ class OptimalControlProblem():
             return res.inputs[:, 0]
 
         # Define signal names, if they are not already given
-        if not kwargs.get('inputs'):
+        if kwargs.get('inputs') is None:
             kwargs['inputs'] = self.system.state_labels
-        if not kwargs.get('outputs'):
+        if kwargs.get('outputs') is None:
             kwargs['outputs'] = self.system.input_labels
-        if not kwargs.get('states'):
+        if kwargs.get('states') is None:
             kwargs['states'] = self.system.ninputs * \
                 (self.timepts.size if self.basis is None else self.basis.N)
 
@@ -1124,6 +1126,15 @@ def create_mpc_iosystem(
         An I/O system taking the current state of the model system and
         returning the current input to be applied that minimizes the cost
         function while satisfying the constraints.
+
+    Other Parameters
+    ----------------
+    inputs, outputs, states : int or list of str, optional
+        Set the names of the inputs, outputs, and states, as described in
+        :func:`~control.InputOutputSystem`.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
 
     Notes
     -----
@@ -1676,9 +1687,9 @@ class OptimalEstimationProblem():
     # xhat, u, v, y for all previous time points.  When the system update
     # function is called,
     #
-    # TODO: change output_labels to output_fmtstr and use output instead
-    #
-    def create_mhe_iosystem(self, output_labels=None, **kwargs):
+    def create_mhe_iosystem(
+            self, estimate_labels=None, measurement_labels=None,
+            control_labels=None, inputs=None, outputs=None, **kwargs):
         """Create an I/O system implementing an MPC controller
 
         This function creates an input/output system that implements a
@@ -1688,12 +1699,24 @@ class OptimalEstimationProblem():
 
         Parameters
         ----------
-        output_labels : str, optional
-            Set the name of the estimator outputs (state estimate).  If a
-            single string is specified, it should be a format string using
-            the variable `i` as an index.  Otherwise, a list of strings
-            matching the size of the system state should be used.  Default
-            is "xhat[{i}]".
+        estimate_labels : str or list of str, optional
+            Set the name of the signals to use for the estimated state
+            (estimator outputs).  If a single string is specified, it
+            should be a format string using the variable ``i`` as an index.
+            Otherwise, a list of strings matching the size of the estimated
+            state should be used.  Default is "xhat[{i}]".  These settings
+            can also be overriden using the `outputs` keyword.
+        measurement_labels, control_labels : str or list of str, optional
+            Set the name of the measurement and control signal names
+            (estimator inputs).  If a single string is specified, it should
+            be a format string using the variable ``i`` as an index.
+            Otherwise, a list of strings matching the size of the system
+            inputs and outputs should be used.  Default is the signal names
+            for the system outputs and control inputs. These settings can
+            also be overriden using the `inputs` keyword.
+        **kwargs, optional
+            Additional keyword arguments to set system, input, and output
+            signal names; see :func:`~control.InputOutputSystem`.
 
         Returns
         -------
@@ -1721,20 +1744,24 @@ class OptimalEstimationProblem():
             _process_control_disturbance_indices(
                 self.system, self.control_indices, self.disturbance_indices)
 
-        # Figure out the labels to use
-        # TODO: allow overwrite via kwargs + change parameter name
-        if isinstance(output_labels, str):
-            # Generate labels using the argument as a format string
-            output_labels = [output_labels.format(i=i)
-                             for i in range(self.system.nstates)]
+        # Figure out the signal labels to use
+        estimate_labels = _process_labels(
+            estimate_labels, 'estimate',
+            [f'xhat[{i}]' for i in range(self.system.nstates)])
+        outputs = estimate_labels if outputs is None else outputs
 
-        # TODO: allow overwrite via kwargs
-        sensor_labels = [self.system.output_labels [i]
-                         for i in range(self.system.noutputs)]
-        input_labels = [self.system.input_labels[i] for i in self.ctrl_idx]
+        measurement_labels = _process_labels(
+            measurement_labels, 'measurement', self.system.output_labels)
+        control_labels = _process_labels(
+            control_labels, 'control',
+            [self.system.input_labels[i] for i in self.ctrl_idx])
+        inputs = measurement_labels + control_labels if inputs is None \
+            else inputs
 
         nstates = (self.system.nstates + self.system.ninputs
                    + self.system.noutputs) * self.timepts.size
+        if kwargs.get('states'):
+            raise ValueError("user-specified state signal names not allowed")
 
         # Utility function to extract elements from MHE state vector
         def _xvec_next(xvec, off, size):
@@ -1781,9 +1808,8 @@ class OptimalEstimationProblem():
             return self.system._rhs(t, xhat[:, -1], u_v[:, -1])
 
         return ct.NonlinearIOSystem(
-            _mhe_update, _mhe_output, states=nstates,
-            inputs=sensor_labels + input_labels,
-            outputs=output_labels, dt=self.system.dt, **kwargs)
+            _mhe_update, _mhe_output, dt=self.system.dt,
+            states=nstates, inputs=inputs, outputs=outputs, **kwargs)
 
 
 # Optimal estimation result

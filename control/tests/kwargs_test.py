@@ -24,8 +24,8 @@ import control.tests.frd_test as frd_test
 import control.tests.interconnect_test as interconnect_test
 import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
+import control.tests.stochsys_test as stochsys_test
 import control.tests.trdata_test as trdata_test
-
 
 @pytest.mark.parametrize("module, prefix", [
     (control, ""), (control.flatsys, "flatsys."), (control.optimal, "optimal.")
@@ -161,6 +161,7 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 kwarg_unittest = {
     'bode': test_matplotlib_kwargs,
     'bode_plot': test_matplotlib_kwargs,
+    'create_estimator_iosystem': stochsys_test.test_estimator_errors,
     'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,
     'dlqe': test_unrecognized_kwargs,

@@ -48,11 +48,12 @@ from . import statesp
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
 from .lti import LTI
-from .namedio import isdtime, isctime, _process_indices
+from .namedio import isdtime, isctime, _process_indices, _process_labels
 from .iosys import InputOutputSystem, NonlinearIOSystem, LinearIOSystem, \
     interconnect, ss
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
+from .config import _process_legacy_keyword
 
 # Make sure we have access to the right slycot routines
 try:
@@ -602,7 +603,7 @@ def dlqr(*args, **kwargs):
 # Function to create an I/O sytems representing a state feedback controller
 def create_statefbk_iosystem(
         sys, gain, integral_action=None, estimator=None, controller_type=None,
-        xd_labels='xd[{i}]', ud_labels='ud[{i}]', gainsched_indices=None,
+        xd_labels=None, ud_labels=None, gainsched_indices=None,
         gainsched_method='linear', control_indices=None, state_indices=None,
         name=None, inputs=None, outputs=None, states=None, **kwargs):
     """Create an I/O system using a (full) state feedback controller
@@ -747,14 +748,8 @@ def create_statefbk_iosystem(
         raise ControlArgument("Input system must be I/O system")
 
     # Process (legacy) keywords
-    if kwargs.get('type') is not None:
-        warnings.warn(
-            "keyword 'type' is deprecated; use 'controller_type'",
-            DeprecationWarning)
-        if controller_type is not None:
-            raise ControlArgument(
-                "duplicate keywords 'type` and 'controller_type'")
-        controller_type = kwargs.pop('type')
+    controller_type = _process_legacy_keyword(
+        kwargs, 'type', 'controller_type', controller_type)
     if kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
@@ -837,13 +832,10 @@ def create_statefbk_iosystem(
         raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Figure out the labels to use
-    if isinstance(xd_labels, str):
-        # Generate the list of labels using the argument as a format string
-        xd_labels = [xd_labels.format(i=i) for i in range(sys_nstates)]
-
-    if isinstance(ud_labels, str):
-        # Generate the list of labels using the argument as a format string
-        ud_labels = [ud_labels.format(i=i) for i in range(sys_ninputs)]
+    xd_labels = _process_labels(
+        xd_labels, 'xd', ['xd[{i}]'.format(i=i) for i in range(sys_nstates)])
+    ud_labels = _process_labels(
+        ud_labels, 'ud', ['ud[{i}]'.format(i=i) for i in range(sys_ninputs)])
 
     # Create the signal and system names
     if inputs is None:

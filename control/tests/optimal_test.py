@@ -791,3 +791,8 @@ def test_oep_argument_errors():
         sys = ct.rss(4, 2, 2, dt=True)
         oep = opt.OptimalEstimationProblem(sys, timepts, cost)
         oep.create_mhe_iosystem(unknown=True)
+
+    # Incorrect number of signals
+    with pytest.raises(ValueError, match="incorrect length"):
+        oep = opt.OptimalEstimationProblem(sys, timepts, cost)
+        mhe = oep.create_mhe_iosystem(estimate_labels=['x1', 'x2', 'x3'])
