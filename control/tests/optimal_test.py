@@ -786,3 +786,8 @@ def test_oep_argument_errors():
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
         oep = opt.OptimalEstimationProblem(sys, timepts, cost, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        sys = ct.rss(4, 2, 2, dt=True)
+        oep = opt.OptimalEstimationProblem(sys, timepts, cost)
+        oep.create_mhe_iosystem(unknown=True)

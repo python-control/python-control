@@ -587,7 +587,7 @@ def _process_signal_list(signals, prefix='s'):
 
 
 #
-# Utility function to process signal indices
+# Utility functions to process signal indices
 #
 # Signal indices can be specified in one of four ways:
 #
@@ -629,3 +629,40 @@ def _process_indices(arg, name, labels, length):
         return arg
 
     raise ValueError(f"invalid argument for {name}_indices")
+
+#
+# Process control and disturbance indices
+#
+# For systems with inputs and disturbances, the control_indices and
+# disturbance_indices keywords are used to specify which is which.  If only
+# one is given, the other is assumed to be the remaining indices in the
+# system input.  If neither is given, the disturbance inputs are assumed to
+# be the same as the control inputs.
+#
+def _process_control_disturbance_indices(
+        sys, control_indices, disturbance_indices):
+
+    if control_indices is None and disturbance_indices is None:
+        # Disturbances enter in the same place as the controls
+        dist_idx = ctrl_idx = list(range(sys.ninputs))
+
+    elif control_indices is not None:
+        # Process the control indices
+        ctrl_idx = _process_indices(
+            control_indices, 'control', sys.input_labels, sys.ninputs)
+
+        # Disturbance indices are the complement of control indices
+        dist_idx = [i for i in range(sys.ninputs) if i not in ctrl_idx]
+
+    else:  # disturbance_indices is not None
+        # If passed an integer, count from the end of the input vector
+        arg = -disturbance_indices if isinstance(disturbance_indices, int) \
+            else disturbance_indices
+
+        dist_idx = _process_indices(
+            arg, 'disturbance', sys.input_labels, sys.ninputs)
+
+        # Set control indices to complement disturbance indices
+        ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
+
+    return ctrl_idx, dist_idx

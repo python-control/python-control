@@ -430,6 +430,24 @@ def test_oep(dt):
     np.testing.assert_allclose(
         est2.states[:, -1], res1.states[:, -1], atol=1e-1, rtol=1e-2)
 
+    # Change around the inputs and disturbances
+    sys2 = ct.ss(sys.A, sys.B[:, ::-1], sys.C, sys.D[::-1], sys.dt)
+    oep2a = opt.OptimalEstimationProblem(
+        sys2, timepts, traj_cost, terminal_cost=init_cost,
+        control_indices=[1])
+    est2a = oep2a.compute_estimate(
+        Y1, U, initial_guess=(est2.states, est2.inputs))
+    np.testing.assert_allclose(
+        est2a.states[:, -1], res1.states[:, -1], atol=1e-1, rtol=1e-2)
+
+    oep2b = opt.OptimalEstimationProblem(
+        sys2, timepts, traj_cost, terminal_cost=init_cost,
+        disturbance_indices=[0])
+    est2b = oep2b.compute_estimate(
+        Y1, U, initial_guess=(est2.states, est2.inputs))
+    np.testing.assert_allclose(
+        est2b.states[:, -1], res1.states[:, -1], atol=1e-1, rtol=1e-2)
+
     #
     # Disturbance constraints
     #
@@ -483,8 +501,9 @@ def test_mhe():
     traj_cost = opt.gaussian_likelihood_cost(sys, Rv, Rw)
     init_cost = lambda xhat, x: (xhat - x) @ P0 @ (xhat - x)
     oep = opt.OptimalEstimationProblem(
-        sys, mhe_timepts, traj_cost, terminal_cost=init_cost)
-    mhe = oep.create_mhe_iosystem(1)
+        sys, mhe_timepts, traj_cost, terminal_cost=init_cost,
+        disturbance_indices=1)
+    mhe = oep.create_mhe_iosystem()
 
     # Generate system data
     U = 10 * np.sin(timepts / (4*dt))

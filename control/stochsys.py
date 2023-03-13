@@ -22,7 +22,8 @@ from math import sqrt
 
 from .iosys import InputOutputSystem, LinearIOSystem, NonlinearIOSystem
 from .lti import LTI
-from .namedio import isctime, isdtime, _process_indices
+from .namedio import isctime, isdtime
+from .namedio import _process_indices, _process_control_disturbance_indices
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
@@ -308,9 +309,8 @@ def dlqe(*args, **kwargs):
 
 # Function to create an estimator
 #
-# TODO: add `control_indices` keyword to match create_mhe_iosystem (?)
-# TODO: change name to create_kalmanestimaor_iosystem (?)
 # TODO: create predictor/corrector, UKF, and other variants (?)
+# TODO: change *_labels to *_fmtstr and use signal keywords instead
 #
 def create_estimator_iosystem(
         sys, QN, RN, P0=None, G=None, C=None,
@@ -441,35 +441,9 @@ def create_estimator_iosystem(
     # Set the state matrix for later use
     A = sys.A
 
-    # Set the disturbance matrices (indices take priority over G)
-    ctrl_idx = _process_indices(
-        control_indices, 'control', sys.input_labels, sys.ninputs)
-
-    if disturbance_indices is None and control_indices is not None:
-        # Disturbance indices are the complement of control indices
-        dist_idx = [i for i in range(sys.ninputs) if i not in ctrl_idx]
-        if G is not None:
-            warn("'control_indices' and 'G' both specified; ignoring 'G'")
-        G = sys.B[:, dist_idx]
-
-    elif disturbance_indices is not None:
-        if G is not None:
-            warn("'disturbance_indices' and 'G' both specified; ignoring 'G'")
-
-        # If passed an integer, count from the end of the input vector
-        arg = -disturbance_indices if isinstance(disturbance_indices, int) \
-            else disturbance_indices
-
-        dist_idx = _process_indices(
-            arg, 'disturbance', sys.input_labels, sys.ninputs)
-        G = sys.B[:, dist_idx]
-
-        # Set control indices to complement disturbance indices, if needed
-        if control_indices is None:
-            ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
-
-    elif G is None:
-        G = sys.B
+    # Determine the control and disturbance indices
+    ctrl_idx, dist_idx = _process_control_disturbance_indices(
+        sys, control_indices, disturbance_indices)
 
     # Set the input and direct matrices
     B = sys.B[:, ctrl_idx]
@@ -490,6 +464,10 @@ def create_estimator_iosystem(
         C = sys.C
         if sensor_labels is None:
             sensor_labels = sys.output_labels
+
+    # Generate the disturbance matrix (G)
+    if G is None:
+        G = sys.B if len(dist_idx) == 0 else sys.B[:, dist_idx]
 
     # Initialize the covariance matrix
     if P0 is None:

@@ -221,6 +221,8 @@ kwarg_unittest = {
         optimal_test.test_ocp_argument_errors,
     'optimal.OptimalEstimationProblem.__init__':
         optimal_test.test_oep_argument_errors,
+    'optimal.OptimalEstimationProblem.create_mhe_iosystem':
+        optimal_test.test_oep_argument_errors,
 }
 
 #
