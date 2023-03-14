@@ -551,6 +551,7 @@ def test_ocp_argument_errors():
             sys, time, x0, cost, solve_ivp_kwargs={'eps': 0.1})
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("basis", [
     flat.PolyFamily(4), flat.PolyFamily(6),
     flat.BezierFamily(4), flat.BSplineFamily([0, 4, 8], 6)

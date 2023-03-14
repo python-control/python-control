@@ -132,12 +132,12 @@ most consistent with our model and penalize the noise and disturbances
 according to how likely the are (based on a some sort of stochastic system
 model for each).
 
-Given a solution to this fixed horizon, optimal estimation problem, we can
-create an estimator for the state over all times by applying repeatedly
-applying the optimization problem :eq:`eq_fusion_oep` over a moving
-horizon.  At each time :math:`k`, we take the measurements for the last
-:math:`N` time steps along with the previously estimated state at the start
-of the horizon, :math:`x[k-N]` and reapply the optimization in equation
+Given a solution to this fixed-horizon optimal estimation problem, we can
+create an estimator for the state over all times by repeatedly applying the
+optimization problem :eq:`eq_fusion_oep` over a moving horizon.  At each
+time :math:`k`, we take the measurements for the last :math:`N` time steps
+along with the previously estimated state at the start of the horizon,
+:math:`x[k-N]` and reapply the optimization in equation
 :eq:`eq_fusion_oep`.  This approach is known as a \define{moving horizon
 estimator} (MHE).
 
@@ -295,9 +295,9 @@ estimate of the states over the time points can be computed using the
   xhat, v, w = estim.states, estim.inputs, estim.outputs
 
 For discrete time systems, the
-:func:`~control.optimal.OptimalEstimationProblem.compute_estimate` method
-can be used to generate an input/output system that implements a moving
-horizon estimator.
+:func:`~control.optimal.OptimalEstimationProblem.create_mhe_iosystem`
+method can be used to generate an input/output system that implements a
+moving horizon estimator.
 
 Several functions are available to help set up standard optimal estimation
 problems:
@@ -405,6 +405,11 @@ Plotting the results::
 yields
 
 .. image:: steering-optimal.png
+
+
+An example showing the use of the optimal estimation problem and moving
+horizon estimation (MHE) is given in the :doc:`mhe-pvtol Jupyter
+notebook <mhe-pvtol>`.
 
 Optimization Tips
 =================

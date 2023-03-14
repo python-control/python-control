@@ -312,7 +312,6 @@ def dlqe(*args, **kwargs):
 # Function to create an estimator
 #
 # TODO: create predictor/corrector, UKF, and other variants (?)
-# TODO: change *_labels to *_fmtstr and use signal keywords instead
 #
 def create_estimator_iosystem(
         sys, QN, RN, P0=None, G=None, C=None,
@@ -344,19 +343,17 @@ def create_estimator_iosystem(
         estim = ct.create_estimator_iosystem(sys, QN, RN)
 
     where `sys` is the process dynamics and `QN` and `RN` are the covariance
-    of the disturbance noise and sensor noise.  The function returns the
-    estimator `estim` as I/O system with a parameter `correct` that can
+    of the disturbance noise and measurement noise.  The function returns
+    the estimator `estim` as I/O system with a parameter `correct` that can
     be used to turn off the correction term in the estimation (for forward
     predictions).
 
     Parameters
     ----------
     sys : LinearIOSystem
-        The linear I/O system that represents the process dynamics.  If no
-        estimator is given, the output of this system should represent the
-        full state.
+        The linear I/O system that represents the process dynamics.
     QN, RN : ndarray
-        Process and sensor noise covariance matrices.
+        Disturbance and measurement noise covariance matrices.
     P0 : ndarray, optional
         Initial covariance matrix.  If not specified, defaults to the steady
         state covariance.
@@ -409,13 +406,13 @@ def create_estimator_iosystem(
         Set the name of the measurement and control signal names (estimator
         inputs).  If a single string is specified, it should be a format
         string using the variable ``i`` as an index.  Otherwise, a list of
-        strings matching the size of the system inputs and outputs should
-        be used.  Default is the signal names for the system outputs and
-        control inputs. These settings can also be overriden using the
+        strings matching the size of the system inputs and outputs should be
+        used.  Default is the signal names for the system measurements and
+        known control inputs. These settings can also be overriden using the
         `inputs` keyword.
     inputs, outputs, states : int or list of str, optional
         Set the names of the inputs, outputs, and states, as described in
-        :func:`~control.InputOutputSystem`.
+        :func:`~control.InputOutputSystem`.  Overrides signal labels.
     name : string, optional
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
@@ -434,7 +431,7 @@ def create_estimator_iosystem(
         resp = ct.input_output_response(est, T, [Y, U], [X0, P0])
 
     If desired, the ``correct`` parameter can be set to ``False`` to allow
-    prediction with no additional sensor information::
+    prediction with no additional measurement information::
 
         resp = ct.input_output_response(
            est, T, 0, [X0, P0], param={'correct': False)
@@ -458,7 +455,8 @@ def create_estimator_iosystem(
                 kwargs, 'state_labels', estimate_labels)
         else:
             warnings.warn(
-                "deprecated 'state_labels' ignored; use 'state' instead")
+                "deprecated 'state_labels' ignored; use 'states' instead")
+            kwargs.pop('state_labels')
 
     # Set the state matrix for later use
     A = sys.A
@@ -482,7 +480,7 @@ def create_estimator_iosystem(
         if C.shape[0] != RN.shape[0]:
             raise ValueError("System output is the wrong size for C")
     else:
-        # Use the system outputs as the sensor outputs
+        # Use the system outputs as the measurements
         C = sys.C
 
     # Generate the disturbance matrix (G)
