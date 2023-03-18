@@ -2727,12 +2727,16 @@ def interconnect(
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
 
-    check_unused : bool
+    check_unused : bool, optional
         If True, check for unused sub-system signals.  This check is
         not done if connections is False, and neither input nor output
         mappings are specified.
 
-    ignore_inputs : list of input-spec
+    add_unused : bool, optional
+        If True, subsystem signals that are not connected to other components
+        are added as inputs and outputs of the interconnected system.
+
+    ignore_inputs : list of input-spec, optional
         A list of sub-system inputs known not to be connected.  This is
         *only* used in checking for unused signals, and does not
         disable use of the input.
@@ -2742,7 +2746,7 @@ def interconnect(
         signals from all sub-systems with that base name are
         considered ignored.
 
-    ignore_outputs : list of output-spec
+    ignore_outputs : list of output-spec, optional
         A list of sub-system outputs known not to be connected.  This
         is *only* used in checking for unused signals, and does not
         disable use of the output.
@@ -2752,7 +2756,7 @@ def interconnect(
         outputs from all sub-systems with that base name are
         considered ignored.
 
-    warn_duplicate : None, True, or False
+    warn_duplicate : None, True, or False, optional
         Control how warnings are generated if duplicate objects or names are
         detected.  In `None` (default), then warnings are generated for
         systems that have non-generic names.  If `False`, warnings are not

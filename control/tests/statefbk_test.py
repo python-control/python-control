@@ -512,7 +512,7 @@ class TestStatefbk:
             K, S, E = ct.dlqr(csys, Q, R)
 
     @pytest.mark.parametrize(
-        'nstates, noutputs, ninputs, nintegrators, type',
+        'nstates, noutputs, ninputs, nintegrators, type_',
         [(2,      0,        1,       0,            None),
          (2,      1,        1,       0,            None),
          (4,      0,        2,       0,            None),
@@ -525,7 +525,7 @@ class TestStatefbk:
          (4,      3,        2,       2,            'nonlinear'),
         ])
     def test_statefbk_iosys(
-            self, nstates, ninputs, noutputs, nintegrators, type):
+            self, nstates, ninputs, noutputs, nintegrators, type_):
         # Create the system to be controlled (and estimator)
         # TODO: make sure it is controllable?
         if noutputs == 0:
@@ -571,14 +571,14 @@ class TestStatefbk:
         # Create an I/O system for the controller
         ctrl, clsys = ct.create_statefbk_iosystem(
             sys, K, integral_action=C_int, estimator=est,
-            controller_type=type, name=type)
+            controller_type=type_, name=type_)
 
         # Make sure the name got set correctly
-        if type is not None:
-            assert ctrl.name == type
+        if type_ is not None:
+            assert ctrl.name == type_
 
         # If we used a nonlinear controller, linearize it for testing
-        if type == 'nonlinear':
+        if type_ == 'nonlinear':
             clsys = clsys.linearize(0, 0)
 
         # Make sure the linear system elements are correct
