@@ -86,6 +86,7 @@ Control system analysis
     ispassive
     margin
     stability_margins
+    step_info
     phase_crossover_frequencies
     poles
     zeros

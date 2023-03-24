@@ -42,6 +42,7 @@
 # External packages and modules
 import numpy as np
 import scipy as sp
+import warnings
 
 from . import statesp
 from .mateqn import care, dare, _check_shape
@@ -337,12 +338,13 @@ def lqr(*args, **kwargs):
     N : 2D array, optional
         Cross weight matrix
     integral_action : ndarray, optional
-        If this keyword is specified, the controller includes integral action
-        in addition to state feedback.  The value of the `integral_action``
-        keyword should be an ndarray that will be multiplied by the current to
-        generate the error for the internal integrator states of the control
-        law.  The number of outputs that are to be integrated must match the
-        number of additional rows and columns in the ``Q`` matrix.
+        If this keyword is specified, the controller includes integral
+        action in addition to state feedback.  The value of the
+        `integral_action`` keyword should be an ndarray that will be
+        multiplied by the current state to generate the error for the
+        internal integrator states of the control law.  The number of
+        outputs that are to be integrated must match the number of
+        additional rows and columns in the ``Q`` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -486,12 +488,13 @@ def dlqr(*args, **kwargs):
     N : 2D array, optional
         Cross weight matrix
     integral_action : ndarray, optional
-        If this keyword is specified, the controller includes integral action
-        in addition to state feedback.  The value of the `integral_action``
-        keyword should be an ndarray that will be multiplied by the current to
-        generate the error for the internal integrator states of the control
-        law.  The number of outputs that are to be integrated must match the
-        number of additional rows and columns in the ``Q`` matrix.
+        If this keyword is specified, the controller includes integral
+        action in addition to state feedback.  The value of the
+        `integral_action`` keyword should be an ndarray that will be
+        multiplied by the current state to generate the error for the
+        internal integrator states of the control law.  The number of
+        outputs that are to be integrated must match the number of
+        additional rows and columns in the ``Q`` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -519,6 +522,7 @@ def dlqr(*args, **kwargs):
     --------
     >>> K, S, E = dlqr(dsys, Q, R, [N])
     >>> K, S, E = dlqr(A, B, Q, R, [N])
+
     """
 
     #
@@ -597,10 +601,10 @@ def dlqr(*args, **kwargs):
 
 # Function to create an I/O sytems representing a state feedback controller
 def create_statefbk_iosystem(
-        sys, gain, integral_action=None, estimator=None, type=None,
+        sys, gain, integral_action=None, estimator=None, controller_type=None,
         xd_labels='xd[{i}]', ud_labels='ud[{i}]', gainsched_indices=None,
-        gainsched_method='linear', name=None, inputs=None, outputs=None,
-        states=None):
+        gainsched_method='linear', control_indices=None, state_indices=None,
+        name=None, inputs=None, outputs=None, states=None, **kwargs):
     """Create an I/O system using a (full) state feedback controller
 
     This function creates an input/output system that implements a
@@ -653,16 +657,12 @@ def create_statefbk_iosystem(
         ud_labels.  These settings can also be overriden using the `inputs`
         keyword.
 
-    integral_action : None, ndarray, or func, optional
+    integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral
-        action in addition to state feedback.  If ``integral_action`` is a
-        matrix, it will be multiplied by the current and desired state to
-        generate the error for the internal integrator states of the control
-        law.  If ``integral_action`` is a function ``h``, that function will
-        be called with the signature h(t, x, u, params) to obtain the
-        outputs that should be integrated.  The number of outputs that are
-        to be integrated must match the number of additional columns in the
-        ``K`` matrix.
+        action in addition to state feedback.  The value of the
+        `integral_action`` keyword should be an ndarray that will be
+        multiplied by the current and desired state to generate the error
+        for the internal integrator states of the control law.
 
     estimator : InputOutputSystem, optional
         If an estimator is provided, use the states of the estimator as
@@ -684,7 +684,7 @@ def create_statefbk_iosystem(
         hull of the scheduling points, the gain at the nearest point is
         used.
 
-    type : 'linear' or 'nonlinear', optional
+    controller_type : 'linear' or 'nonlinear', optional
         Set the type of controller to create. The default for a linear gain
         is a linear controller implementing the LQR regulator. If the type
         is 'nonlinear', a :class:NonlinearIOSystem is created instead, with
@@ -714,11 +714,25 @@ def create_statefbk_iosystem(
 
     Other Parameters
     ----------------
+    control_indices : list of int or str, optional
+        Specify the indices of the system inputs that should be determined
+        by the state feedback controller.  If not specified, defaults to
+        the first `m` system inputs, where `m` is determined by the shape
+        of the gain matrix, with the remaining inputs remaining as inputs
+        to the overall closed loop system.
+
+    state_indices : list of int or str, optional
+        Specify the indices of the system (or estimator) outputs that
+        should be used by the state feedback controller.  If not specified,
+        defaults to the first `n` system/estimator outputs, where `n` is
+        determined by the shape of the gain matrix, with the remaining
+        outputs remaining as outputs to the overall closed loop system.
+
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals of the transformed
         system.  If not given, the inputs and outputs are the same as the
         original system.
-    
+
     name : string, optional
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.
@@ -728,25 +742,59 @@ def create_statefbk_iosystem(
     if not isinstance(sys, InputOutputSystem):
         raise ControlArgument("Input system must be I/O system")
 
-    # See whether we were give an estimator
-    if estimator is not None:
-        # Check to make sure the estimator is the right size
-        if estimator.noutputs != sys.nstates:
-            raise ControlArgument("Estimator output size must match state")
-    elif sys.noutputs != sys.nstates:
-        # If no estimator, make sure that the system has all states as outputs
-        # TODO: check to make sure output map is the identity
-        raise ControlArgument("System output must be the full state")
-    else:
-        # Use the system directly instead of an estimator
+    # Process (legacy) keywords
+    if kwargs.get('type') is not None:
+        warnings.warn(
+            "keyword 'type' is deprecated; use 'controller_type'",
+            DeprecationWarning)
+        if controller_type is not None:
+            raise ControlArgument(
+                "duplicate keywords 'type` and 'controller_type'")
+        controller_type = kwargs.pop('type')
+    if kwargs:
+        raise TypeError("unrecognized keywords: ", str(kwargs))
+
+    # Figure out what inputs to the system to use
+    control_indices = range(sys.ninputs) if control_indices is None \
+            else list(control_indices)
+    for i, idx in enumerate(control_indices):
+        if isinstance(idx, str):
+            control_indices[i] = sys.input_labels.index(control_indices[i])
+    sys_ninputs = len(control_indices)
+
+    # Decide what system is going to pass the states to the controller
+    if estimator is None:
         estimator = sys
+
+    # Figure out what outputs (states) from the system/estimator to use
+    state_indices = range(sys.nstates) if state_indices is None \
+            else list(state_indices)
+    for i, idx in enumerate(state_indices):
+        if isinstance(idx, str):
+            state_indices[i] = estimator.state_labels.index(state_indices[i])
+    sys_nstates = len(state_indices)
+
+    # Make sure the system/estimator states are proper dimension
+    if estimator.noutputs < sys_nstates:
+        # If no estimator, make sure that the system has all states as outputs
+        raise ControlArgument(
+            ("system" if estimator == sys else "estimator") +
+            " output must include the full state")
+    elif estimator == sys:
+        # Issue a warning if we can't verify state output
+        if (isinstance(sys, NonlinearIOSystem) and sys.outfcn is not None) or \
+           (isinstance(sys, StateSpace) and
+            not (np.all(sys.C[np.ix_(state_indices, state_indices)] ==
+                        np.eye(sys_nstates)) and
+                 np.all(sys.D[state_indices, :] == 0))):
+            warnings.warn("cannot verify system output is system state")
 
     # See whether we should implement integral action
     nintegrators = 0
     if integral_action is not None:
         if not isinstance(integral_action, np.ndarray):
             raise ControlArgument("Integral action must pass an array")
-        elif integral_action.shape[1] != sys.nstates:
+        elif integral_action.shape[1] != sys_nstates:
             raise ControlArgument(
                 "Integral gain size must match system state size")
         else:
@@ -754,15 +802,15 @@ def create_statefbk_iosystem(
             C = integral_action
     else:
         # Create a C matrix with no outputs, just in case update gets called
-        C = np.zeros((0, sys.nstates))
+        C = np.zeros((0, sys_nstates))
 
     # Check to make sure that state feedback has the right shape
     if isinstance(gain, np.ndarray):
         K = gain
-        if K.shape != (sys.ninputs, estimator.noutputs + nintegrators):
+        if K.shape != (sys_ninputs, estimator.noutputs + nintegrators):
             raise ControlArgument(
-                f'Control gain must be an array of size {sys.ninputs}'
-                f'x {sys.nstates}' +
+                f'control gain must be an array of size {sys_ninputs}'
+                f' x {sys_nstates}' +
                 (f'+{nintegrators}' if nintegrators > 0 else ''))
         gainsched = False
 
@@ -781,36 +829,41 @@ def create_statefbk_iosystem(
         raise ControlArgument("gain must be an array or a tuple")
 
     # Decide on the type of system to create
-    if gainsched and type == 'linear':
+    if gainsched and controller_type == 'linear':
         raise ControlArgument(
-            "type 'linear' not allowed for gain scheduled controller")
-    elif type is None:
-        type = 'nonlinear' if gainsched else 'linear'
-    elif type not in {'linear', 'nonlinear'}:
-        raise ControlArgument(f"unknown type '{type}'")
+            "controller_type 'linear' not allowed for"
+            " gain scheduled controller")
+    elif controller_type is None:
+        controller_type = 'nonlinear' if gainsched else 'linear'
+    elif controller_type not in {'linear', 'nonlinear'}:
+        raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Figure out the labels to use
     if isinstance(xd_labels, str):
         # Generate the list of labels using the argument as a format string
-        xd_labels = [xd_labels.format(i=i) for i in range(sys.nstates)]
+        xd_labels = [xd_labels.format(i=i) for i in range(sys_nstates)]
 
     if isinstance(ud_labels, str):
         # Generate the list of labels using the argument as a format string
-        ud_labels = [ud_labels.format(i=i) for i in range(sys.ninputs)]
+        ud_labels = [ud_labels.format(i=i) for i in range(sys_ninputs)]
 
     # Create the signal and system names
     if inputs is None:
         inputs = xd_labels + ud_labels + estimator.output_labels
     if outputs is None:
-        outputs = list(sys.input_index.keys())
+        outputs = [sys.input_labels[i] for i in control_indices]
     if states is None:
         states = nintegrators
 
     # Process gainscheduling variables, if present
     if gainsched:
         # Create a copy of the scheduling variable indices (default = xd)
-        gainsched_indices = range(sys.nstates) if gainsched_indices is None \
+        gainsched_indices = range(sys_nstates) if gainsched_indices is None \
             else list(gainsched_indices)
+
+        # If points is a 1D list, convert to 2D
+        if points.ndim == 1:
+            points = points.reshape(-1, 1)
 
         # Make sure the scheduling variable indices are the right length
         if len(gainsched_indices) != points.shape[1]:
@@ -824,7 +877,12 @@ def create_statefbk_iosystem(
                 gainsched_indices[i] = inputs.index(gainsched_indices[i])
 
         # Create interpolating function
-        if gainsched_method == 'nearest':
+        if points.shape[1] < 2:
+            _interp = sp.interpolate.interp1d(
+                points[:, 0], gains, axis=0, kind=gainsched_method)
+            _nearest = sp.interpolate.interp1d(
+                points[:, 0], gains, axis=0, kind='nearest')
+        elif gainsched_method == 'nearest':
             _interp = sp.interpolate.NearestNDInterpolator(points, gains)
             def _nearest(mu):
                 raise SystemError(f"could not find nearest gain at mu = {mu}")
@@ -845,12 +903,12 @@ def create_statefbk_iosystem(
             return K
 
     # Define the controller system
-    if type == 'nonlinear':
+    if controller_type == 'nonlinear':
         # Create an I/O system for the state feedback gains
         def _control_update(t, states, inputs, params):
             # Split input into desired state, nominal input, and current state
-            xd_vec = inputs[0:sys.nstates]
-            x_vec = inputs[-estimator.nstates:]
+            xd_vec = inputs[0:sys_nstates]
+            x_vec = inputs[-sys_nstates:]
 
             # Compute the integral error in the xy coordinates
             return C @ (x_vec - xd_vec)
@@ -863,14 +921,14 @@ def create_statefbk_iosystem(
                 K_ = params.get('K')
 
             # Split input into desired state, nominal input, and current state
-            xd_vec = inputs[0:sys.nstates]
-            ud_vec = inputs[sys.nstates:sys.nstates + sys.ninputs]
-            x_vec = inputs[-sys.nstates:]
+            xd_vec = inputs[0:sys_nstates]
+            ud_vec = inputs[sys_nstates:sys_nstates + sys_ninputs]
+            x_vec = inputs[-sys_nstates:]
 
             # Compute the control law
-            u = ud_vec - K_[:, 0:sys.nstates] @ (x_vec - xd_vec)
+            u = ud_vec - K_[:, 0:sys_nstates] @ (x_vec - xd_vec)
             if nintegrators > 0:
-                u -= K_[:, sys.nstates:] @ states
+                u -= K_[:, sys_nstates:] @ states
 
             return u
 
@@ -879,7 +937,7 @@ def create_statefbk_iosystem(
             _control_update, _control_output, name=name, inputs=inputs,
             outputs=outputs, states=states, params=params)
 
-    elif type == 'linear' or type is None:
+    elif controller_type == 'linear' or controller_type is None:
         # Create the matrices implementing the controller
         if isctime(sys):
             # Continuous time: integrator
@@ -887,10 +945,10 @@ def create_statefbk_iosystem(
         else:
             # Discrete time: summer
             A_lqr = np.eye(C.shape[0])
-        B_lqr = np.hstack([-C, np.zeros((C.shape[0], sys.ninputs)), C])
-        C_lqr = -K[:, sys.nstates:]
+        B_lqr = np.hstack([-C, np.zeros((C.shape[0], sys_ninputs)), C])
+        C_lqr = -K[:, sys_nstates:]
         D_lqr = np.hstack([
-            K[:, 0:sys.nstates], np.eye(sys.ninputs), -K[:, 0:sys.nstates]
+            K[:, 0:sys_nstates], np.eye(sys_ninputs), -K[:, 0:sys_nstates]
         ])
 
         ctrl = ss(
@@ -898,15 +956,19 @@ def create_statefbk_iosystem(
             inputs=inputs, outputs=outputs, states=states)
 
     else:
-        raise ControlArgument(f"unknown type '{type}'")
+        raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Define the closed loop system
+    inplist=inputs[:-sys.nstates]
+    input_labels=inputs[:-sys.nstates]
+    outlist=sys.output_labels + [sys.input_labels[i] for i in control_indices]
+    output_labels=sys.output_labels + \
+        [sys.input_labels[i] for i in control_indices]
     closed = interconnect(
         [sys, ctrl] if estimator == sys else [sys, ctrl, estimator],
-        name=sys.name + "_" + ctrl.name,
-        inplist=inputs[:-sys.nstates], inputs=inputs[:-sys.nstates],
-        outlist=sys.output_labels + sys.input_labels,
-        outputs=sys.output_labels + sys.input_labels
+        name=sys.name + "_" + ctrl.name, add_unused=True,
+        inplist=inplist, inputs=input_labels,
+        outlist=outlist, outputs=output_labels
     )
     return ctrl, closed
 

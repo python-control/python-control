@@ -6,6 +6,7 @@ RMM, 30 Mar 2011 (based on TestStatefbk from v0.4a)
 import numpy as np
 import pytest
 import itertools
+import warnings
 from math import pi, atan
 
 import control as ct
@@ -511,7 +512,7 @@ class TestStatefbk:
             K, S, E = ct.dlqr(csys, Q, R)
 
     @pytest.mark.parametrize(
-        'nstates, noutputs, ninputs, nintegrators, type',
+        'nstates, noutputs, ninputs, nintegrators, type_',
         [(2,      0,        1,       0,            None),
          (2,      1,        1,       0,            None),
          (4,      0,        2,       0,            None),
@@ -524,7 +525,7 @@ class TestStatefbk:
          (4,      3,        2,       2,            'nonlinear'),
         ])
     def test_statefbk_iosys(
-            self, nstates, ninputs, noutputs, nintegrators, type):
+            self, nstates, ninputs, noutputs, nintegrators, type_):
         # Create the system to be controlled (and estimator)
         # TODO: make sure it is controllable?
         if noutputs == 0:
@@ -569,10 +570,15 @@ class TestStatefbk:
 
         # Create an I/O system for the controller
         ctrl, clsys = ct.create_statefbk_iosystem(
-            sys, K, integral_action=C_int, estimator=est, type=type)
+            sys, K, integral_action=C_int, estimator=est,
+            controller_type=type_, name=type_)
+
+        # Make sure the name got set correctly
+        if type_ is not None:
+            assert ctrl.name == type_
 
         # If we used a nonlinear controller, linearize it for testing
-        if type == 'nonlinear':
+        if type_ == 'nonlinear':
             clsys = clsys.linearize(0, 0)
 
         # Make sure the linear system elements are correct
@@ -621,6 +627,54 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(clsys.B, Bc)
         np.testing.assert_array_almost_equal(clsys.C, Cc)
         np.testing.assert_array_almost_equal(clsys.D, Dc)
+
+    def test_statefbk_iosys_unused(self):
+        # Create a base system to work with
+        sys = ct.rss(2, 1, 1, strictly_proper=True)
+
+        # Create a system with extra input
+        aug = ct.rss(2, inputs=[sys.input_labels[0], 'd'],
+                     outputs=sys.output_labels, strictly_proper=True,)
+        aug.A = sys.A
+        aug.B[:, 0:1] = sys.B
+
+        # Create an estimator
+        est = ct.create_estimator_iosystem(
+            sys, np.eye(sys.ninputs), np.eye(sys.noutputs))
+
+        # Design an LQR controller
+        K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+
+        # Create a baseline I/O control system
+        ctrl0, clsys0 = ct.create_statefbk_iosystem(sys, K, estimator=est)
+        clsys0_lin = clsys0.linearize(0, 0)
+
+        # Create an I/O system with additional inputs
+        ctrl1, clsys1 = ct.create_statefbk_iosystem(
+            aug, K, estimator=est, control_indices=[0])
+        clsys1_lin = clsys1.linearize(0, 0)
+
+        # Make sure the extra inputs are there
+        assert aug.input_labels[1] not in clsys0.input_labels
+        assert aug.input_labels[1] in clsys1.input_labels
+        np.testing.assert_allclose(clsys0_lin.A, clsys1_lin.A)
+
+        # Switch around which input we use
+        aug = ct.rss(2, inputs=['d', sys.input_labels[0]],
+                     outputs=sys.output_labels, strictly_proper=True,)
+        aug.A = sys.A
+        aug.B[:, 1:2] = sys.B
+
+        # Create an I/O system with additional inputs
+        ctrl2, clsys2 = ct.create_statefbk_iosystem(
+            aug, K, estimator=est, control_indices=[1])
+        clsys2_lin = clsys2.linearize(0, 0)
+
+        # Make sure the extra inputs are there
+        assert aug.input_labels[0] not in clsys0.input_labels
+        assert aug.input_labels[0] in clsys1.input_labels
+        np.testing.assert_allclose(clsys0_lin.A, clsys2_lin.A)
+
 
     def test_lqr_integral_continuous(self):
         # Generate a continuous time system for testing
@@ -748,23 +802,43 @@ class TestStatefbk:
         sys = ct.rss(4, 4, 2, strictly_proper=True)
         K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
 
+        with pytest.warns(UserWarning, match="cannot verify system output"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
+
+        # reset the system output
+        sys.C = np.eye(sys.nstates)
+
         with pytest.raises(ControlArgument, match="must be I/O system"):
             sys_tf = ct.tf([1], [1, 1])
             ctrl, clsys = ct.create_statefbk_iosystem(sys_tf, K)
 
-        with pytest.raises(ControlArgument, match="output size must match"):
+        with pytest.raises(ControlArgument,
+                           match="estimator output must include the full"):
             est = ct.rss(3, 3, 2)
             ctrl, clsys = ct.create_statefbk_iosystem(sys, K, estimator=est)
 
-        with pytest.raises(ControlArgument, match="must be the full state"):
+        with pytest.raises(ControlArgument,
+                           match="system output must include the full state"):
             sys_nf = ct.rss(4, 3, 2, strictly_proper=True)
             ctrl, clsys = ct.create_statefbk_iosystem(sys_nf, K)
 
         with pytest.raises(ControlArgument, match="gain must be an array"):
             ctrl, clsys = ct.create_statefbk_iosystem(sys, "bad argument")
 
-        with pytest.raises(ControlArgument, match="unknown type"):
-            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, type=1)
+        with pytest.warns(DeprecationWarning, match="'type' is deprecated"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, type='nonlinear')
+
+        with pytest.raises(ControlArgument, match="duplicate keywords"):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                ctrl, clsys = ct.create_statefbk_iosystem(
+                    sys, K, type='nonlinear', controller_type='nonlinear')
+
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, typo='nonlinear')
+
+        with pytest.raises(ControlArgument, match="unknown controller_type"):
+            ctrl, clsys = ct.create_statefbk_iosystem(sys, K, controller_type=1)
 
         # Errors involving integral action
         C_int = np.eye(2, 4)
@@ -788,11 +862,8 @@ def unicycle():
     def unicycle_update(t, x, u, params):
         return np.array([np.cos(x[2]) * u[0], np.sin(x[2]) * u[0], u[1]])
 
-    def unicycle_output(t, x, u, params):
-        return x
-
     return ct.NonlinearIOSystem(
-        unicycle_update, unicycle_output,
+        unicycle_update, None,
         inputs = ['v', 'phi'],
         outputs = ['x', 'y', 'theta'],
         states = ['x_', 'y_', 'theta_'])
@@ -906,6 +977,34 @@ def test_gainsched_unicycle(unicycle, method):
         resp.states[:, -1], Xd[:, -1], atol=1e-2, rtol=1e-2)
 
 
+@pytest.mark.parametrize("method", ['nearest', 'linear', 'cubic'])
+def test_gainsched_1d(method):
+    # Define a linear system to test
+    sys = ct.ss([[-1, 0.1], [0, -2]], [[0], [1]], np.eye(2), 0)
+
+    # Define gains for the first state only
+    points = [-1, 0, 1]
+
+    # Define gain to be constant
+    K, _, _ = ct.lqr(sys, np.eye(sys.nstates), np.eye(sys.ninputs))
+    gains = [K for p in points]
+
+    # Define the paramters for the simulations
+    timepts = np.linspace(0, 10, 100)
+    X0 = np.ones(sys.nstates) * 1.1     # Start outside defined range
+
+    # Create a controller and simulate the initial response
+    gs_ctrl, gs_clsys = ct.create_statefbk_iosystem(
+        sys, (gains, points), gainsched_indices=[0])
+    gs_resp = ct.input_output_response(gs_clsys, timepts, 0, X0)
+
+    # Verify that we get the same result as a constant gain
+    ck_clsys = ct.ss(sys.A - sys.B @ K, sys.B, sys.C, 0)
+    ck_resp = ct.input_output_response(ck_clsys, timepts, 0, X0)
+
+    np.testing.assert_allclose(gs_resp.states, ck_resp.states)
+
+
 def test_gainsched_default_indices():
     # Define a linear system to test
     sys = ct.ss([[-1, 0.1], [0, -2]], [[0], [1]], np.eye(2), 0)
@@ -919,7 +1018,7 @@ def test_gainsched_default_indices():
 
     # Define the paramters for the simulations
     timepts = np.linspace(0, 10, 100)
-    X0 = np.ones(sys.nstates) * 0.9
+    X0 = np.ones(sys.nstates) * 1.1     # Start outside defined range
 
     # Create a controller and simulate the initial response
     gs_ctrl, gs_clsys = ct.create_statefbk_iosystem(sys, (gains, points))

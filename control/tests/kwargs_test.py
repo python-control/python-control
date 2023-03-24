@@ -22,12 +22,13 @@ import control.flatsys
 import control.tests.flatsys_test as flatsys_test
 import control.tests.frd_test as frd_test
 import control.tests.interconnect_test as interconnect_test
+import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.trdata_test as trdata_test
 
 
 @pytest.mark.parametrize("module, prefix", [
-    (control, ""), (control.flatsys, "flatsys.")
+    (control, ""), (control.flatsys, "flatsys."), (control.optimal, "optimal.")
 ])
 def test_kwarg_search(module, prefix):
     # Look through every object in the package
@@ -85,8 +86,8 @@ def test_kwarg_search(module, prefix):
      (control.lqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.linearize, 1, 0, (0, 0), {}),
      (control.pzmap, 1, 0, (), {}),
-     (control.rlocus, 0, 1, ( ), {}),
-     (control.root_locus, 0, 1, ( ), {}),
+     (control.rlocus, 0, 1, (), {}),
+     (control.root_locus, 0, 1, (), {}),
      (control.rss, 0, 0, (2, 1, 1), {}),
      (control.set_defaults, 0, 0, ('control',), {'default_dt': True}),
      (control.ss, 0, 0, (0, 0, 0, 0), {'dt': 1}),
@@ -100,7 +101,9 @@ def test_kwarg_search(module, prefix):
      (control.InputOutputSystem, 0, 0, (),
       {'inputs': 1, 'outputs': 1, 'states': 1}),
      (control.InputOutputSystem.linearize, 1, 0, (0, 0), {}),
-     (control.StateSpace, 0, 0, ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
+     (control.LinearIOSystem.sample, 1, 0, (0.1,), {}),
+     (control.StateSpace, 0, 0,
+      ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
      (control.TransferFunction, 0, 0, ([1], [1, 1]), {})]
 )
 def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
@@ -158,6 +161,7 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 kwarg_unittest = {
     'bode': test_matplotlib_kwargs,
     'bode_plot': test_matplotlib_kwargs,
+    'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,
     'dlqe': test_unrecognized_kwargs,
     'dlqr': test_unrecognized_kwargs,
@@ -190,6 +194,8 @@ kwarg_unittest = {
         flatsys_test.TestFlatSys.test_point_to_point_errors,
     'flatsys.solve_flat_ocp':
         flatsys_test.TestFlatSys.test_solve_flat_ocp_errors,
+    'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
+    'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
@@ -198,13 +204,20 @@ kwarg_unittest = {
         interconnect_test.test_interconnect_exceptions,
     'LinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
+    'LinearIOSystem.sample': test_unrecognized_kwargs,
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
     'StateSpace.sample': test_unrecognized_kwargs, 
     'TimeResponseData.__call__': trdata_test.test_response_copy,
     'TransferFunction.__init__': test_unrecognized_kwargs,
-    'TransferFunction.sample': test_unrecognized_kwargs, 
+    'TransferFunction.sample': test_unrecognized_kwargs,
+    'optimal.OptimalControlProblem.__init__':
+        optimal_test.test_ocp_argument_errors,
+    'optimal.OptimalControlProblem.compute_trajectory':
+        optimal_test.test_ocp_argument_errors,
+    'optimal.OptimalControlProblem.create_mpc_iosystem':
+        optimal_test.test_mpc_iosystem_rename,
 }
 
 #

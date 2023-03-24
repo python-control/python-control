@@ -564,6 +564,7 @@ def white_noise(T, Q, dt=0):
     # Return a linear combination of the noise sources
     return sp.linalg.sqrtm(Q) @ W
 
+
 def correlation(T, X, Y=None, squeeze=True):
     """Compute the correlation of time signals.
 

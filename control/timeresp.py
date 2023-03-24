@@ -1384,7 +1384,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     Parameters
     ----------
     sysdata : StateSpace or TransferFunction or array_like
-        The system data. Either LTI system to similate (StateSpace,
+        The system data. Either LTI system to simulate (StateSpace,
         TransferFunction), or a time series of step response data.
     T : array_like or float, optional
         Time vector, or simulation time duration if a number (time vector is
