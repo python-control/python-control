@@ -174,10 +174,8 @@ def bode_plot(syslist, omega=None,
 
     Examples
     --------
-    >>> from control import bode_plot, ss
-
-    >>> G = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> Gmag, Gphase, Gomega = bode_plot(G)
+    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> Gmag, Gphase, Gomega = ct.bode_plot(G)
 
     """
     # Make a copy of the kwargs dictionary since we will modify it
@@ -694,10 +692,8 @@ def nyquist_plot(
 
     Examples
     --------
-    >>> from control import nyquist_plot, zpk
-
-    >>> G = zpk([],[-1,-2,-3], gain=100)
-    >>> nyquist_plot(G)
+    >>> G = ct.zpk([],[-1,-2,-3], gain=100)
+    >>> ct.nyquist_plot(G)
     2
 
     """
@@ -1266,10 +1262,9 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 
     Examples
     --------
-    >>> from control import gangof4_plot, tf
-    >>> P = tf([1],[1, 1])
-    >>> C = tf([2],[1])
-    >>> gangof4_plot(P, C)
+    >>> P = ct.tf([1],[1, 1])
+    >>> C = ct.tf([2],[1])
+    >>> ct.gangof4_plot(P, C)
 
     """
     if not P.issiso() or not C.issiso():
@@ -1414,15 +1409,12 @@ def singular_values_plot(syslist, omega=None,
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import tf, singular_values_plot
-
     >>> omegas = np.logspace(-4, 1, 1000)
     >>> den = [75, 1]
-    >>> G = tf([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
-    >>> sigmas, omegas = singular_values_plot(G, omega=omegas, plot=False)
+    >>> G = ct.tf([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
+    >>> sigmas, omegas = ct.singular_values_plot(G, omega=omegas, plot=False)
 
-    >>> sigmas, omegas = singular_values_plot(G, 0.0, plot=False)
+    >>> sigmas, omegas = ct.singular_values_plot(G, 0.0, plot=False)
 
     """
 
@@ -1638,10 +1630,8 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
     Examples
     --------
-    >>> from control import ss
-
-    >>> G = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> omega = _default_frequency_range(G)
+    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> omega = ct._default_frequency_range(G)
     >>> omega.min(), omega.max()
     (0.1, 100.0)
 

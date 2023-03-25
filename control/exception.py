@@ -67,8 +67,7 @@ def slycot_check():
 
     Examples
     --------
-    >>> from control import slycot_check
-    >>> slycot_check()
+    >>> ct.slycot_check()
     True
 
     """
@@ -89,8 +88,7 @@ def pandas_check():
 
     Examples
     --------
-    >>> from control import pandas_check
-    >>> pandas_check()
+    >>> ct.pandas_check()
     True
 
     """
@@ -111,8 +109,7 @@ def cvxopt_check():
 
     Examples
     --------
-    >>> from control import cvxopt_check
-    >>> cvxopt_check()
+    >>> ct.cvxopt_check()
     True
 
     """

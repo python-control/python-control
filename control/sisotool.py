@@ -81,10 +81,8 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
 
     Examples
     --------
-    >>> from control import sisotool, tf
-
-    >>> G = tf([1000], [1,25,100,0])
-    >>> sisotool(G)                                             # doctest: +SKIP
+    >>> G = ct.tf([1000], [1,25,100,0])
+    >>> ct.sisotool(G)                                          # doctest: +SKIP
 
     """
     from .rlocus import root_locus

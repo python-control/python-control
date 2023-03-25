@@ -42,6 +42,23 @@
 """
 The Python Control Systems Library :mod:`control` provides common functions
 for analyzing and designing feedback control systems.
+
+Documentation is available in two forms: docstrings provided with the code,
+and the python-control users guide, available from `the python-control
+homepage <https://www.python-control.org>`_.
+
+The docstring examples assume that the following import commands::
+
+  >>> import numpy as np
+  >>> import control as ct
+
+Available subpackages
+---------------------
+flatsys
+    Differentially flat systems
+optimal
+    Optimization-based control
+
 """
 
 # Import functions from within the control system library

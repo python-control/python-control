@@ -39,21 +39,18 @@ def canonical_form(xsys, form='reachable'):
 
     Examples
     --------
-    >>> from control import canonical_form, tf, tf2ss
-
-    >>> G = tf([1],[1, 3, 2])
-    >>> Gs = tf2ss(G)
-
-    >>> Gc, T = canonical_form(Gs)  # default reachable
+    >>> G = ct.tf([1],[1, 3, 2])
+    >>> Gs = ct.tf2ss(G)
+    >>> Gc, T = ct.canonical_form(Gs)  # default reachable
     >>> Gc.B                                                    # doctest: +SKIP
     matrix([[1.],
             [0.]])
 
-    >>> Gc, T = canonical_form(Gs, 'observable')
+    >>> Gc, T = ct.canonical_form(Gs, 'observable')
     >>> Gc.C                                                    # doctest: +SKIP
     matrix([[1., 0.]])
 
-    >>> Gc, T = canonical_form(Gs, 'modal')
+    >>> Gc, T = ct.canonical_form(Gs, 'modal')
     >>> Gc.A                                                    # doctest: +SKIP
     matrix([[-2.,  0.],
             [ 0., -1.]])
@@ -90,12 +87,9 @@ def reachable_form(xsys):
 
     Examples
     --------
-    >>> from control import reachable_form, tf, tf2ss
-
-    >>> G = tf([1],[1, 3, 2])
-    >>> Gs = tf2ss(G)
-
-    >>> Gc, T = reachable_form(Gs)  # default reachable
+    >>> G = ct.tf([1],[1, 3, 2])
+    >>> Gs = ct.tf2ss(G)
+    >>> Gc, T = ct.reachable_form(Gs)  # default reachable
     >>> Gc.B                                                    # doctest: +SKIP
     matrix([[1.],
             [0.]])
@@ -157,12 +151,9 @@ def observable_form(xsys):
 
     Examples
     --------
-    >>> from control import observable_form, tf, tf2ss
-
-    >>> G = tf([1],[1, 3, 2])
-    >>> Gs = tf2ss(G)
-
-    >>> Gc, T = observable_form(Gs)
+    >>> G = ct.tf([1],[1, 3, 2])
+    >>> Gs = ct.tf2ss(G)
+    >>> Gc, T = ct.observable_form(Gs)
     >>> Gc.C                                                    # doctest: +SKIP
     matrix([[1., 0.]])
 
@@ -227,17 +218,14 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import similarity_transform, tf, tf2ss
-
-    >>> G = tf([1],[1, 3, 2])
-    >>> Gs = tf2ss(G)
+    >>> G = ct.tf([1],[1, 3, 2])
+    >>> Gs = ct.tf2ss(G)
     >>> Gs.A                                                    # doctest: +SKIP
     matrix([[-3., -2.],
             [ 1.,  0.]])
 
     >>> T = np.array([[0,1],[1,0]])
-    >>> Gt = similarity_transform(Gs, T)
+    >>> Gt = ct.similarity_transform(Gs, T)
     >>> Gt.A                                                    # doctest: +SKIP
     matrix([[ 0.,  1.],
             [-2., -3.]])
@@ -438,11 +426,9 @@ def bdschur(a, condmax=None, sort=None):
 
     Examples
     --------
-    >>> from control import bdschur, tf, tf2ss
-
-    >>> G = tf([1],[1, 3, 2])
-    >>> Gs = tf2ss(G)
-    >>> amodal, tmodal, blksizes = bdschur(Gs.A)
+    >>> G = ct.tf([1],[1, 3, 2])
+    >>> Gs = ct.tf2ss(G)
+    >>> amodal, tmodal, blksizes = ct.bdschur(Gs.A)
     >>> amodal                                                   #doctest: +SKIP
     array([[-2.,  0.],
            [ 0., -1.]])
@@ -516,12 +502,9 @@ def modal_form(xsys, condmax=None, sort=False):
 
     Examples
     --------
-    >>> from control import modal_form, tf, tf2ss
-
-    >>> G = tf([1],[1, 3, 2])
-    >>> Gs = tf2ss((G))
-
-    >>> Gc, T = modal_form(Gs)  # default reachable
+    >>> G = ct.tf([1],[1, 3, 2])
+    >>> Gs = ct.tf2ss((G))
+    >>> Gc, T = ct.modal_form(Gs)  # default reachable
     >>> Gc.A                                                    # doctest: +SKIP
     matrix([[-2.,  0.],
             [ 0., -1.]])

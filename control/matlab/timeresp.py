@@ -276,7 +276,6 @@ def lsim(sys, U=0., T=None, X0=0.):
 
     Examples
     --------
-    >>> import numpy as np
     >>> from control.matlab import rss, lsim
 
     >>> G = rss(4)

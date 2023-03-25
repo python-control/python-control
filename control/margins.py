@@ -476,10 +476,8 @@ def phase_crossover_frequencies(sys):
 
     Examples
     --------
-    >>> from control import phase_crossover_frequencies, tf
-
-    >>> G = tf([1], [1, 2, 3, 4])
-    >>> x_omega, x_gain = phase_crossover_frequencies(G)
+    >>> G = ct.tf([1], [1, 2, 3, 4])
+    >>> x_omega, x_gain = ct.phase_crossover_frequencies(G)
 
     """
     # Convert to a transfer function
@@ -539,10 +537,8 @@ def margin(*args):
 
     Examples
     --------
-    >>> from control import margin, tf
-
-    >>> G = tf(1, [1, 2, 1, 0])
-    >>> gm, pm, wcg, wcp = margin(G)
+    >>> G = ct.tf(1, [1, 2, 1, 0])
+    >>> gm, pm, wcg, wcp = ct.margin(G)
 
     """
     if len(args) == 1:

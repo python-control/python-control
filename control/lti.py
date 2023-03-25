@@ -326,9 +326,8 @@ def damp(sys, doprint=True):
 
     Examples
     --------
-    >>> from control import damp, tf
-    >>> G = tf([1],[1, 4])
-    >>> wn, damping, poles = damp(G)                            # doctest: +SKIP
+    >>> G = ct.tf([1],[1, 4])
+    >>> wn, damping, poles = ct.damp(G)                         # doctest: +SKIP
     _____Eigenvalue______ Damping___ Frequency_
             -4                     1          4
 
@@ -394,10 +393,8 @@ def evalfr(sys, x, squeeze=None):
 
     Examples
     --------
-    >>> from control import ss, evalfr
-
-    >>> G = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> fresp = evalfr(G, 1j)  # evaluate at s = 1j
+    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> fresp = ct.evalfr(G, 1j)  # evaluate at s = 1j
 
     .. todo:: Add example with MIMO system
 
@@ -457,10 +454,8 @@ def frequency_response(sys, omega, squeeze=None):
 
     Examples
     --------
-    >>> from control import ss, freqresp
-
-    >>> G = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> mag, phase, omega = freqresp(G, [0.1, 1., 10.])
+    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> mag, phase, omega = ct.freqresp(G, [0.1, 1., 10.])
 
     .. todo::
         Add example with MIMO system
@@ -494,9 +489,10 @@ def dcgain(sys):
         the origin, (nan + nanj) if there is a pole/zero cancellation at the
         origin.
 
-    >>> from control import dcgain, tf
-    >>> G = tf([1], [1, 2])
-    >>> dcgain(G)                                               # doctest: +SKIP
+    Examples
+    --------
+    >>> G = ct.tf([1], [1, 2])
+    >>> ct.dcgain(G)                                            # doctest: +SKIP
     0.5
 
     """

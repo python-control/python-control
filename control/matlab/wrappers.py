@@ -46,7 +46,7 @@ def bode(*args, **kwargs):
 
     Examples
     --------
-    >>> from control import ss, bode
+    >>> from control.matlab import ss, bode
 
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag, phase, omega = bode(sys)

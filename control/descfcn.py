@@ -122,12 +122,9 @@ def describing_function(
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import describing_function
-
     >>> F = lambda x: np.exp(-x)      # Basic diode description
     >>> A = np.logspace(-1, 1, 20)    # Amplitudes from 0.1 to 10.0
-    >>> df_values = describing_function(F, A)
+    >>> df_values = ct.describing_function(F, A)
     >>> len(df_values)
     20
 
@@ -249,13 +246,10 @@ def describing_function_plot(
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import describing_function_plot, saturation_nonlinearity, tf
-
-    >>> H_simple = tf([8], [1, 2, 2, 1])
-    >>> F_saturation = saturation_nonlinearity(1)
+    >>> H_simple = ct.tf([8], [1, 2, 2, 1])
+    >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> points = describing_function_plot(H_simple, F_saturation, amp)
+    >>> points = ct.describing_function_plot(H_simple, F_saturation, amp)
     >>> len(points)
     1
 
@@ -371,9 +365,7 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
 
     Examples
     --------
-    >>> from control import saturation_nonlinearity
-
-    >>> nl = saturation_nonlinearity(5)
+    >>> nl = ct.saturation_nonlinearity(5)
     >>> f = lambda x: round(nl(x))
     >>> f(1)
     1
@@ -437,9 +429,7 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
 
     Examples
     --------
-    >>> from control import relay_hysteresis_nonlinearity
-
-    >>> nl = relay_hysteresis_nonlinearity(1, 2)
+    >>> nl = ct.relay_hysteresis_nonlinearity(1, 2)
     >>> f = lambda x: round(nl(x))
     >>> f(0)
     -1
@@ -509,9 +499,7 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
 
     Examples
     --------
-    >>> from control import friction_backlash_nonlinearity
-
-    >>> nl = friction_backlash_nonlinearity(2)  # backlash of +/- 1
+    >>> nl = ct.friction_backlash_nonlinearity(2)  # backlash of +/- 1
     >>> f = lambda x: round(nl(x))
     >>> f(0)
     0

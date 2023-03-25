@@ -69,17 +69,15 @@ def set_defaults(module, **keywords):
 
     Examples
     --------
-    >>> from control import defaults, reset_defaults, set_defaults
-
-    >>> defaults['freqplot.number_of_samples']
+    >>> ct.defaults['freqplot.number_of_samples']
     1000
-    >>> set_defaults('freqplot', number_of_samples=100)
-    >>> defaults['freqplot.number_of_samples']
+    >>> ct.set_defaults('freqplot', number_of_samples=100)
+    >>> ct.defaults['freqplot.number_of_samples']
     100
 
     >>> # do some customized freqplotting
-    >>> reset_defaults()
-    >>> defaults['freqplot.number_of_samples']
+    >>> ct.reset_defaults()
+    >>> ct.defaults['freqplot.number_of_samples']
     1000
 
     """
@@ -97,17 +95,15 @@ def reset_defaults():
 
     Examples
     --------
-    >>> from control import defaults, reset_defaults, set_defaults
-
-    >>> defaults['freqplot.number_of_samples']
+    >>> ct.defaults['freqplot.number_of_samples']
     1000
-    >>> set_defaults('freqplot', number_of_samples=100)
-    >>> defaults['freqplot.number_of_samples']
+    >>> ct.set_defaults('freqplot', number_of_samples=100)
+    >>> ct.defaults['freqplot.number_of_samples']
     100
 
     >>> # do some customized freqplotting
-    >>> reset_defaults()
-    >>> defaults['freqplot.number_of_samples']
+    >>> ct.reset_defaults()
+    >>> ct.defaults['freqplot.number_of_samples']
     1000
 
     """
@@ -213,11 +209,9 @@ def use_matlab_defaults():
 
     Examples
     --------
-    >>> from control import use_matlab_defaults, reset_defaults
-
-    >>> use_matlab_defaults()
+    >>> ct.use_matlab_defaults()
     >>> # do some matlab style plotting
-    >>> reset_defaults()
+    >>> ct.reset_defaults()
 
     """
     set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
@@ -235,11 +229,9 @@ def use_fbs_defaults():
 
     Examples
     --------
-    >>> from control import use_fbs_defaults, reset_defaults
-
-    >>> use_fbs_defaults()
+    >>> ct.use_fbs_defaults()
     >>> # do some FBS style plotting
-    >>> reset_defaults()
+    >>> ct.reset_defaults()
 
     """
     set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
@@ -271,11 +263,9 @@ def use_numpy_matrix(flag=True, warn=True):
 
     Examples
     --------
-    >>> from control import use_numpy_matrix, reset_defaults
-
-    >>> use_numpy_matrix(True, False)
+    >>> ct.use_numpy_matrix(True, False)
     >>> # do some legacy calculations using np.matrix
-    >>> reset_defaults()
+    >>> ct.reset_defaults()
 
     """
     if flag and warn:
@@ -294,12 +284,10 @@ def use_legacy_defaults(version):
 
     Examples
     --------
-    >>> from control import use_legacy_defaults, reset_defaults
-
-    >>> use_legacy_defaults("0.9.0")
+    >>> ct.use_legacy_defaults("0.9.0")
     (0, 9, 0)
     >>> # do some legacy style plotting
-    >>> reset_defaults()
+    >>> ct.reset_defaults()
 
     """
     import re

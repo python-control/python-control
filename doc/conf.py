@@ -270,3 +270,13 @@ texinfo_documents = [
      author, 'PythonControlLibrary', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+# -- Options for doctest ----------------------------------------------
+
+# Import control as ct
+doctest_global_setup = """
+import numpy as np
+import control as ct
+import control.optimal as obc
+import control.flatsys as fs
+"""

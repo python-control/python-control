@@ -120,11 +120,9 @@ def place(A, B, p):
 
     Examples
     --------
-    >>> from control import place
-
     >>> A = [[-1, -1], [0, 1]]
     >>> B = [[0], [1]]
-    >>> K = place(A, B, [-2, -5])
+    >>> K = ct.place(A, B, [-2, -5])
 
     See Also
     --------
@@ -994,11 +992,8 @@ def ctrb(A, B):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import ctrb, tf, tf2ss
-
-    >>> G = tf2ss(tf([1],[1, 2, 3]))
-    >>> C = ctrb(G.A, G.B)
+    >>> G = ct.tf2ss(ct.tf([1],[1, 2, 3]))
+    >>> C = ct.ctrb(G.A, G.B)
     >>> np.linalg.matrix_rank(C)
     2
 
@@ -1036,11 +1031,8 @@ def obsv(A, C):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import obsv, tf, tf2ss
-
-    >>> G = tf2ss(tf([1],[1, 2, 3]))
-    >>> C = obsv(G.A, G.C)
+    >>> G = ct.tf2ss(ct.tf([1],[1, 2, 3]))
+    >>> C = ct.obsv(G.A, G.C)
     >>> np.linalg.matrix_rank(C)
     2
 
@@ -1092,13 +1084,11 @@ def gram(sys, type):
 
     Examples
     --------
-    >>> from control import gram, rss
-
-    >>> G = rss(4)
-    >>> Wc = gram(G, 'c')
-    >>> Wo = gram(G, 'o')
-    >>> Rc = gram(G, 'cf')  # where Wc = Rc' * Rc
-    >>> Ro = gram(G, 'of')  # where Wo = Ro' * Ro
+    >>> G = ct.rss(4)
+    >>> Wc = ct.gram(G, 'c')
+    >>> Wo = ct.gram(G, 'o')
+    >>> Rc = ct.gram(G, 'cf')  # where Wc = Rc' * Rc
+    >>> Ro = ct.gram(G, 'of')  # where Wo = Ro' * Ro
 
     """
 

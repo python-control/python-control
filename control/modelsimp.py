@@ -84,10 +84,8 @@ def hsvd(sys):
 
     Examples
     --------
-    >>> from control import tf, tf2ss, hsvd
-
-    >>> G = tf2ss(tf([1],[1, 2]))
-    >>> H = hsvd(G)
+    >>> G = ct.tf2ss(ct.tf([1],[1, 2]))
+    >>> H = ct.hsvd(G)
     >>> H[0]
     0.25
 
@@ -140,10 +138,8 @@ def modred(sys, ELIM, method='matchdc'):
 
     Examples
     --------
-    >>> from control import rss, modred
-
-    >>> G = rss(4)
-    >>> Gr = modred(G, [0,2], method='matchdc')
+    >>> G = ct.rss(4)
+    >>> Gr = ct.modred(G, [0,2], method='matchdc')
     >>> Gr.nstates
     2
 
@@ -266,10 +262,8 @@ def balred(sys, orders, method='truncate', alpha=None):
 
     Examples
     --------
-    >>> from control import balred, rss
-
-    >>> G = rss(4)
-    >>> Gr = balred(G, orders=2, method='matchdc')
+    >>> G = ct.rss(4)
+    >>> Gr = ct.balred(G, orders=2, method='matchdc')
     >>> Gr.nstates
     2
 
@@ -462,13 +456,10 @@ def markov(Y, U, m=None, transpose=False):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import forced_response, markov, tf
-
     >>> T = np.linspace(0, 10, 100)
     >>> U = np.ones((1, 100))
-    >>> T, Y = forced_response(tf([1], [1, 0.5], True), T, U)
-    >>> H = markov(Y, U, 3, transpose=False)
+    >>> T, Y = ct.forced_response(ct.tf([1], [1, 0.5], True), T, U)
+    >>> H = ct.markov(Y, U, 3, transpose=False)
 
     """
     # Convert input parameters to 2D arrays (if they aren't already)

@@ -77,14 +77,12 @@ def pade(T, n=1, numdeg=None):
 
     Examples
     --------
-    >>> from control import pade
-
     >>> delay = 1
-    >>> num, den = pade(delay, 5)
+    >>> num, den = ct.pade(delay, 5)
     >>> len(num), len(den)
     (6, 6)
 
-    >>> num, den = pade(delay, 5, -2)
+    >>> num, den = ct.pade(delay, 5, -2)
     >>> len(num), len(den)
     (4, 6)
 

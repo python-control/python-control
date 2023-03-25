@@ -767,17 +767,14 @@ def frd(*args):
 
     Examples
     --------
-    >>> from control import frd, tf
-
     >>> # Create from measurements
     >>> response = [1.0, 1.0, 0.5]
     >>> freqs = [1, 10, 100]
-    >>> F = frd(response, freqs)
+    >>> F = ct.frd(response, freqs)
 
-    >>> G = tf([1], [1, 1])
+    >>> G = ct.tf([1], [1, 1])
     >>> freqs = [1, 10, 100]
-    >>> F = frd(G, freqs)
-
+    >>> F = ct.frd(G, freqs)
 
     """
     return FRD(*args)

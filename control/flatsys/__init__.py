@@ -50,6 +50,12 @@ member function.  Alternatively, the :func:`~control.flatsys.solve_flat_ocp`
 function can be used to solve an optimal control problem with trajectory and
 final costs or constraints.
 
+The docstring examples assume that the following import commands::
+
+  >>> import numpy as np
+  >>> import control as ct
+  >>> import control.flatsys as fs
+
 """
 
 # Basis function families

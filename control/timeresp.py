@@ -916,12 +916,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import forced_response, rss
-
-    >>> G = rss(4)
+    >>> G = ct.rss(4)
     >>> T = np.linspace(0,10)
-    >>> T, yout = forced_response(G, T=T)
+    >>> T, yout = ct.forced_response(G, T=T)
 
     See :ref:`time-series-convention` and
     :ref:`package-configuration-parameters`.
@@ -1333,10 +1330,8 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Examples
     --------
-    >>> from control import step_response, rss
-
-    >>> G = rss(4)
-    >>> T, yout = step_response(G)
+    >>> G = ct.rss(4)
+    >>> T, yout = ct.step_response(G)
 
     """
     # Create the time and input vectors
@@ -1448,10 +1443,8 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
 
     Examples
     --------
-    >>> from control import step_info, TransferFunction
-
-    >>> sys = TransferFunction([-1, 1], [1, 1, 1])
-    >>> S = step_info(sys)
+    >>> sys = ct.TransferFunction([-1, 1], [1, 1, 1])
+    >>> S = ct.step_info(sys)
     >>> for k in S:
     ...     print(f"{k}: {S[k]:3.4}")
     ...
@@ -1469,16 +1462,14 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     characteristics for the second input and specify a 5% error until the
     signal is considered settled.
 
-    >>> from numpy import sqrt
-    >>> from control import step_info, StateSpace
-
-    >>> sys = StateSpace([[-1., -1.],
+    >>> from math import sqrt
+    >>> sys = ct.StateSpace([[-1., -1.],
     ...                   [1., 0.]],
     ...                  [[-1./sqrt(2.), 1./sqrt(2.)],
     ...                   [0, 0]],
     ...                  [[sqrt(2.), -sqrt(2.)]],
     ...                  [[0, 0]])
-    >>> S = step_info(sys, T=10., SettlingTimeThreshold=0.05)
+    >>> S = ct.step_info(sys, T=10., SettlingTimeThreshold=0.05)
     >>> for k, v in S[0][1].items():
     ...     print(f"{k}: {float(v):3.4}")
     RiseTime: 1.212
@@ -1696,10 +1687,8 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
 
     Examples
     --------
-    >>> from control import initial_response, rss
-
-    >>> G = rss(4)
-    >>> T, yout = initial_response(G)
+    >>> G = ct.rss(4)
+    >>> T, yout = ct.initial_response(G)
 
     """
     squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
@@ -1814,10 +1803,8 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
 
     Examples
     --------
-    >>> from control import impulse_response, rss
-
-    >>> G = rss(4)
-    >>> T, yout = impulse_response(G)
+    >>> G = ct.rss(4)
+    >>> T, yout = ct.impulse_response(G)
 
     """
     # Convert to state space so that we can simulate

@@ -70,23 +70,21 @@ def h2syn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> from control import h2syn, interconnect, ss, tf, feedback
-
     >>> # Unstable first order SISI system
-    >>> G = tf([1],[1,-1], inputs=['u'], outputs=['y'])
+    >>> G = ct.tf([1],[1,-1], inputs=['u'], outputs=['y'])
     >>> max(G.poles()) < 0  # Is G stable?
     False
 
     >>> # Create partitioned system with trivial unity systems
-    >>> P11 = tf([0], [1], inputs=['w'], outputs=['z'])
-    >>> P12 = tf([1], [1], inputs=['u'], outputs=['z'])
-    >>> P21 = tf([1], [1], inputs=['w'], outputs=['y'])
+    >>> P11 = ct.tf([0], [1], inputs=['w'], outputs=['z'])
+    >>> P12 = ct.tf([1], [1], inputs=['u'], outputs=['z'])
+    >>> P21 = ct.tf([1], [1], inputs=['w'], outputs=['y'])
     >>> P22 = G
-    >>> P = interconnect([P11, P12, P21, P22], inplist=['w', 'u'], outlist=['z', 'y'])
+    >>> P = ct.interconnect([P11, P12, P21, P22], inplist=['w', 'u'], outlist=['z', 'y'])
 
     >>> # Synthesize H2 optimal stabilizing controller
-    >>> K = h2syn(P, nmeas=1, ncon=1)
-    >>> T = feedback(G, K, sign=1)
+    >>> K = ct.h2syn(P, nmeas=1, ncon=1)
+    >>> T = ct.feedback(G, K, sign=1)
     >>> max(T.poles()) < 0  # Is T stable?
     True
 
@@ -152,23 +150,21 @@ def hinfsyn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> from control import hinfsyn, interconnect, ss, tf, feedback
-
     >>> # Unstable first order SISI system
-    >>> G = tf([1],[1,-1], inputs=['u'], outputs=['y'])
+    >>> G = ct.tf([1],[1,-1], inputs=['u'], outputs=['y'])
     >>> max(G.poles()) < 0
     False
 
     >>> # Create partitioned system with trivial unity systems
-    >>> P11 = tf([0], [1], inputs=['w'], outputs=['z'])
-    >>> P12 = tf([1], [1], inputs=['u'], outputs=['z'])
-    >>> P21 = tf([1], [1], inputs=['w'], outputs=['y'])
+    >>> P11 = ct.tf([0], [1], inputs=['w'], outputs=['z'])
+    >>> P12 = ct.tf([1], [1], inputs=['u'], outputs=['z'])
+    >>> P21 = ct.tf([1], [1], inputs=['w'], outputs=['y'])
     >>> P22 = G
-    >>> P = interconnect([P11, P12, P21, P22], inplist=['w', 'u'], outlist=['z', 'y'])
+    >>> P = ct.interconnect([P11, P12, P21, P22], inplist=['w', 'u'], outlist=['z', 'y'])
 
     >>> # Synthesize Hinf optimal stabilizing controller
-    >>> K, CL, gam, rcond = hinfsyn(P, nmeas=1, ncon=1)
-    >>> T = feedback(G, K, sign=1)
+    >>> K, CL, gam, rcond = ct.hinfsyn(P, nmeas=1, ncon=1)
+    >>> T = ct.feedback(G, K, sign=1)
     >>> max(T.poles()) < 0
     True
 

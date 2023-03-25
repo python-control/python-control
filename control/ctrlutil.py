@@ -65,19 +65,15 @@ def unwrap(angle, period=2*math.pi):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import unwrap
-    >>> from pprint import pprint
-
     >>> # Already continuous
     >>> theta1 = np.array([1.0, 1.5, 2.0, 2.5, 3.0]) * np.pi
-    >>> theta2 = unwrap(theta1)
+    >>> theta2 = ct.unwrap(theta1)
     >>> theta2/np.pi                                            # doctest: +SKIP
     array([1. , 1.5, 2. , 2.5, 3. ])
 
     >>> # Wrapped, discontinuous
     >>> theta1 = np.array([1.0, 1.5, 0.0, 0.5, 1.0]) * np.pi
-    >>> theta2 = unwrap(theta1)
+    >>> theta2 = ct.unwrap(theta1)
     >>> theta2/np.pi                                            # doctest: +SKIP
     array([1. , 1.5, 2. , 2.5, 3. ])
 
@@ -94,14 +90,12 @@ def issys(obj):
 
     Examples
     --------
-    >>> from control import issys, tf, InputOutputSystem, LinearIOSystem
-
-    >>> G = tf([1],[1, 1])
-    >>> issys(G)
+    >>> G = ct.tf([1],[1, 1])
+    >>> ct.issys(G)
     True
 
-    >>> K = InputOutputSystem()   # Not necessarily LTI!
-    >>> issys(K)
+    >>> K = ct.InputOutputSystem()   # Not necessarily LTI!
+    >>> ct.issys(K)
     False
 
     """
@@ -126,13 +120,10 @@ def db2mag(db):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import db2mag
-
-    >>> db2mag(-40.0)                                           # doctest: +SKIP
+    >>> ct.db2mag(-40.0)                                        # doctest: +SKIP
     0.01
 
-    >>> db2mag(np.array([0, -20]))                              # doctest: +SKIP
+    >>> ct.db2mag(np.array([0, -20]))                           # doctest: +SKIP
     array([1. , 0.1])
 
     """
@@ -157,13 +148,10 @@ def mag2db(mag):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from control import mag2db
-
-    >>> mag2db(10.0)                                            # doctest: +SKIP
+    >>> ct.mag2db(10.0)                                         # doctest: +SKIP
     20.0
 
-    >>> mag2db(np.array([1, 0.01]))                             # doctest: +SKIP
+    >>> ct.mag2db(np.array([1, 0.01]))                          # doctest: +SKIP
     array([  0., -40.])
 
     """

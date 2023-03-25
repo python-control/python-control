@@ -109,12 +109,10 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
 
     Examples
     --------
-    >>> from control import sample_system, tf
-
-    >>> Gc = tf([1], [1, 2, 1])
+    >>> Gc = ct.tf([1], [1, 2, 1])
     >>> Gc.isdtime()
     False
-    >>> Gd = sample_system(Gc, 1, method='bilinear')
+    >>> Gd = ct.sample_system(Gc, 1, method='bilinear')
     >>> Gd.isdtime()
     True
 
@@ -157,12 +155,10 @@ def c2d(sysc, Ts, method='zoh', prewarp_frequency=None):
 
     Examples
     --------
-    >>> from control import sample_system, tf
-
-    >>> Gc = tf([1], [1, 2, 1])
+    >>> Gc = ct.tf([1], [1, 2, 1])
     >>> Gc.isdtime()
     False
-    >>> Gd = sample_system(Gc, 1, method='bilinear')
+    >>> Gd = ct.sample_system(Gc, 1, method='bilinear')
     >>> Gd.isdtime()
     True
 

@@ -141,9 +141,7 @@ class TransferFunction(LTI):
     discrete time.  These can be used to create variables that allow algebraic
     creation of transfer functions.  For example,
 
-    >>> from control import TransferFunction
-
-    >>> s = TransferFunction.s
+    >>> s = ct.TransferFunction.s
     >>> G = (s + 1)/(s**2 + 2*s + 1)
 
     """
@@ -1147,9 +1145,7 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> from control import tf
-
-        >>> sys = tf(1, [1,1])
+        >>> sys = ct.tf(1, [1,1])
         >>> sysd = sys.sample(0.5, method='bilinear')
 
         """
@@ -1209,8 +1205,7 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> from control import tf
-        >>> G = tf([1],[1, 4])
+        >>> G = ct.tf([1],[1, 4])
         >>> G.dcgain()
         0.25
 
@@ -1541,22 +1536,20 @@ def tf(*args, **kwargs):
 
     Examples
     --------
-    >>> from control import tf, ss
-
     >>> # Create a MIMO transfer function object
     >>> # The transfer function from the 2nd input to the 1st output is
     >>> # (3s + 4) / (6s^2 + 5s + 4).
     >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys1 = tf(num, den)
+    >>> sys1 = ct.tf(num, den)
 
     >>> # Create a variable 's' to allow algebra operations for SISO systems
-    >>> s = tf('s')
+    >>> s = ct.tf('s')
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
 
     >>> # Convert a StateSpace to a TransferFunction object.
-    >>> sys_ss = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> sys2 = tf(sys1)
+    >>> sys_ss = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys2 = ct.tf(sys1)
 
     """
 
@@ -1696,16 +1689,14 @@ def ss2tf(*args, **kwargs):
 
     Examples
     --------
-    >>> from control import ss, ss2tf
-
     >>> A = [[1., -2], [3, -4]]
     >>> B = [[5.], [7]]
     >>> C = [[6., 8]]
     >>> D = [[9.]]
-    >>> sys1 = ss2tf(A, B, C, D)
+    >>> sys1 = ct.ss2tf(A, B, C, D)
 
-    >>> sys_ss = ss(A, B, C, D)
-    >>> sys2 = ss2tf(sys_ss)
+    >>> sys_ss = ct.ss(A, B, C, D)
+    >>> sys2 = ct.ss2tf(sys_ss)
 
     """
 
