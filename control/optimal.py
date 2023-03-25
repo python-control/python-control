@@ -1381,10 +1381,7 @@ class OptimalEstimationProblem():
         else:
             # Sum the integral cost over the time (second) indices
             # cost += self.integral_cost(xhat[:, i], u[:, i], v[:, i], w[:, i])
-            cost = sum(map(
-                self.integral_cost, np.transpose(xhat[:, :-1]),
-                np.transpose(u[:, :-1]), np.transpose(v[:, :-1]),
-                np.transpose(w[:, :-1])))
+            cost = sum(map(self.integral_cost, xhat.T, u.T, v.T, w.T))
 
         # Terminal cost
         if self.terminal_cost is not None and self.x0 is not None:

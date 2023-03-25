@@ -323,7 +323,7 @@ def test_correlation():
         tau, Rtau = ct.correlation(T, V)
 
 @pytest.mark.slow
-@pytest.mark.parametrize('dt', [0, 1])
+@pytest.mark.parametrize('dt', [0, 0.2])
 def test_oep(dt):
     # Define the system to test, with additional input
     # Use fixed system to avoid random errors (was csys = ct.rss(4, 2, 5))
@@ -336,104 +336,42 @@ def test_oep(dt):
     sys = csys if dt == 0 else dsys
 
     # Create disturbances and noise (fixed, to avoid random errors)
-    Rv = 0.1 * np.eye(1)                # scalar disturbance
-    Rw = 0.01 * np.eye(sys.noutputs)
-    timepts = np.arange(0, 10.1, 1)
+    dist_mag = 1e-1                     # disturbance magnitude
+    meas_mag = 1e-3                     # measurement noise magnitude
+    Rv = dist_mag**2 * np.eye(1)        # scalar disturbance
+    Rw = meas_mag**2 * np.eye(sys.noutputs)
+    timepts = np.arange(0, 1, 0.2)
     V = np.array(
-        [0 if t % 2 == 1 else 1 if t % 4 == 0 else -1 for t in timepts]
-    ).reshape(1, -1) * 0.1
-    W = np.vstack([np.sin(2*timepts), np.cos(3*timepts)]) * 1e-3
+        [0 if i % 2 == 1 else 1 if i % 4 == 0 else -1
+         for i in range(timepts.size)]
+    ).reshape(1, -1) * dist_mag / 10
+    W = np.vstack([
+        np.sin(10*timepts/timepts[-1]), np.cos(15*timepts)/timepts[-1]
+    ]) * meas_mag / 10
 
     # Generate system data
     U = np.sin(timepts).reshape(1, -1)
 
-    # No disturbances
-    res0 = ct.input_output_response(sys, timepts, [U, V*0])
-    Y0 = res0.outputs
-
     # With disturbances and noise
-    res1 = ct.input_output_response(sys, timepts, [U, V])
-    Y1 = res1.outputs + W
+    res = ct.input_output_response(sys, timepts, [U, V])
+    Y = res.outputs + W
 
     # Set up optimal estimation function using Gaussian likelihoods for cost
     traj_cost = opt.gaussian_likelihood_cost(sys, Rv, Rw)
     init_cost = lambda xhat, x: (xhat - x) @ (xhat - x)
-    oep = opt.OptimalEstimationProblem(
+    oep1 = opt.OptimalEstimationProblem(
         sys, timepts, traj_cost, terminal_cost=init_cost)
 
-    #
-    # Internal testing to make sure all our functions are OK (developers)
-    #
-    if False:
-        # _cost_function
-        oep.compute_estimate(Y0, U, X0=0)
-        assert oep._cost_function(np.hstack(
-            [res0.states.reshape(-1), V.reshape(-1) * 0])) == 0
-        assert oep._cost_function(np.hstack(
-            [res0.states.reshape(-1), V.reshape(-1)])) != 0
-        if sys.isdtime():
-            # Collocation contstraint should be satisified for discrete time
-            np.testing.assert_allclose(oep._collocation_constraint(
-                np.hstack([res0.states.reshape(-1), V.reshape(-1) * 0])), 0)
-
-        # _compute_states_inputs: states and inputs with no noise
-        # oep.compute_estimate(Y0, U)
-        xhat, u, v, w = oep._compute_states_inputs(
-            np.hstack([res0.states.reshape(-1), V.reshape(-1) * 0]))
-        np.testing.assert_allclose(xhat, res0.states)
-        np.testing.assert_allclose(u, U.reshape(1, -1))
-        np.testing.assert_allclose(v, 0)
-        np.testing.assert_allclose(w, 0)
-
-        # _compute_states_inputs: states and inputs with no noise
-        oep.compute_estimate(Y1, U)
-        xhat, u, v, w = oep._compute_states_inputs(
-            np.hstack([res1.states.reshape(-1), V.reshape(-1)]))
-        np.testing.assert_allclose(xhat, res1.states)
-        np.testing.assert_allclose(u, U.reshape(1, -1))
-        np.testing.assert_allclose(v, V)
-        np.testing.assert_allclose(w, W)
-
-    #
-    # oep.compute_estimate testing
-    #
-
-    # Noise free and disturbance free
-    nonoise_cost = opt.gaussian_likelihood_cost(sys, Rv, Rw/1e6)
-    oep0 = opt.OptimalEstimationProblem(
-        sys, timepts, nonoise_cost, terminal_cost=init_cost)
-    est0 = oep0.compute_estimate(Y0, U)
-    if sys.isdtime():
-         # Full state estimate should be near perfect
-        np.testing.assert_allclose(
-            est0.states[:, -1], res0.states[:, -1], atol=1e-3, rtol=1e-3)
-        np.testing.assert_allclose(est0.inputs, 0, atol=1e-2, rtol=1e-3)
-        np.testing.assert_allclose(est0.outputs, 0, atol=1e-2, rtol=1e-3)
-    else:
-        # Estimate at end of trajectory should be very close
-        assert est0.success
-        np.testing.assert_allclose(
-            est0.states[:, -1], res0.states[:, -1], atol=1e-2, rtol=1e-2)
-
-    # Noise free, but with disturbances and good initial guess
-    if False:
-        oep1 = opt.OptimalEstimationProblem(
-            sys, timepts, nonoise_cost, terminal_cost=init_cost)
-        est1 = oep1.compute_estimate(
-            res1.outputs, U, initial_guess=(res1.states, V), X0=0)
-        np.testing.assert_allclose(
-            est1.states[:, -1], res1.states[:, -1], atol=1e-2, rtol=1e-2)
-        if sys.isdtime():
-            # For discrete time, estimated disturbance and noise should be close
-            np.testing.assert_allclose(
-                est1.inputs[:-1], V[:-1], atol=1e-2, rtol=1e-2)
-            np.testing.assert_allclose(est1.outputs, 0, atol=1e-2, rtol=1e-2)
-
-    # Noise and disturbances (the standard case)
-    est2 = oep.compute_estimate(Y1, U)         # back to original OEP
-    assert est2.success
+    # Compute the optimal estimate
+    est1 = oep1.compute_estimate(Y, U)
+    assert est1.success
     np.testing.assert_allclose(
-        est2.states[:, -1], res1.states[:, -1], atol=1e-1, rtol=1e-2)
+        est1.states[:, -1], res.states[:, -1], atol=meas_mag, rtol=meas_mag)
+
+    # Recompute using initial guess (should be pretty fast)
+    est2 = oep1.compute_estimate(
+        Y, U, initial_guess=(est1.states, est1.inputs))
+    assert est2.success
 
     # Change around the inputs and disturbances
     sys2 = ct.ss(sys.A, sys.B[:, ::-1], sys.C, sys.D[::-1], sys.dt)
@@ -441,22 +379,17 @@ def test_oep(dt):
         sys2, timepts, traj_cost, terminal_cost=init_cost,
         control_indices=[1])
     est2a = oep2a.compute_estimate(
-        Y1, U, initial_guess=(est2.states, est2.inputs))
-    np.testing.assert_allclose(
-        est2a.states[:, -1], res1.states[:, -1], atol=1e-1, rtol=1e-2)
+        Y, U, initial_guess=(est1.states, est1.inputs))
+    np.testing.assert_allclose(est2a.states, est2.states)
 
     oep2b = opt.OptimalEstimationProblem(
         sys2, timepts, traj_cost, terminal_cost=init_cost,
         disturbance_indices=[0])
     est2b = oep2b.compute_estimate(
-        Y1, U, initial_guess=(est2.states, est2.inputs))
-    np.testing.assert_allclose(
-        est2b.states[:, -1], res1.states[:, -1], atol=1e-1, rtol=1e-2)
+        Y, U, initial_guess=(est1.states, est1.inputs))
+    np.testing.assert_allclose(est2b.states, est2.states)
 
-    #
-    # Disturbance constraints
-    #
-
+    # Add disturbance constraints
     V3 = np.clip(V, 0.5, 1)
     traj_constraint = opt.disturbance_range_constraint(sys, 0.5, 1)
     oep3 = opt.OptimalEstimationProblem(
@@ -466,17 +399,11 @@ def test_oep(dt):
     res3 = ct.input_output_response(sys, timepts, [U, V3])
     Y3 = res3.outputs + W
 
-    # Make sure the constraint screws up the estimation problem
-    with pytest.raises(AssertionError):
-        est3 = oep.compute_estimate(Y3, U)
-        np.testing.assert_allclose(
-            est3.states[:, -1], res3.states[:, -1], atol=1e-1, rtol=1e-2)
-
     # Make sure estimation is correct with constraint in place
     est3 = oep3.compute_estimate(Y3, U)
     assert est3.success
     np.testing.assert_allclose(
-        est3.states[:, -1], res3.states[:, -1], atol=1e-1, rtol=1e-2)
+        est3.states[:, -1], res3.states[:, -1], atol=meas_mag, rtol=meas_mag)
 
 
 @pytest.mark.slow
