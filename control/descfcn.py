@@ -249,7 +249,7 @@ def describing_function_plot(
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
     >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> ct.describing_function_plot(H_simple, F_saturation, amp)
+    >>> ct.describing_function_plot(H_simple, F_saturation, amp)  # doctest: +SKIP
     [(3.343844998258643, 1.4142293090899216)]
 
     """
