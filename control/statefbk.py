@@ -992,7 +992,7 @@ def ctrb(A, B):
 
     Examples
     --------
-    >>> G = ct.tf2ss(ct.tf([1],[1, 2, 3]))
+    >>> G = ct.tf2ss([1], [1, 2, 3])
     >>> C = ct.ctrb(G.A, G.B)
     >>> np.linalg.matrix_rank(C)
     2
@@ -1031,7 +1031,7 @@ def obsv(A, C):
 
     Examples
     --------
-    >>> G = ct.tf2ss(ct.tf([1],[1, 2, 3]))
+    >>> G = ct.tf2ss([1], [1, 2, 3])
     >>> C = ct.obsv(G.A, G.C)
     >>> np.linalg.matrix_rank(C)
     2

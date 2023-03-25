@@ -1362,7 +1362,7 @@ class StateSpace(LTI):
 
         Examples
         --------
-        >>> G = ct.StateSpace(0, 1, 1, 0)
+        >>> G = ct.ss(0, 1, 1, 0)
         >>> sysd = G.sample(0.5, method='bilinear')
 
         """

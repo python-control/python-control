@@ -672,7 +672,7 @@ def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
     a frequency response data at the specified omega. If sys is a
     scalar, then the number of inputs and outputs can be specified
     manually, as in:
-+
+
     >>> import numpy as np
     >>> from control.frdata import _convert_to_FRD
 

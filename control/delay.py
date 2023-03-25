@@ -78,13 +78,13 @@ def pade(T, n=1, numdeg=None):
     Examples
     --------
     >>> delay = 1
-    >>> num, den = ct.pade(delay, 5)
-    >>> len(num), len(den)
-    (6, 6)
+    >>> num, den = ct.pade(delay, 3)
+    >>> num, den
+    ([-1.0, 12.0, -60.0, 120.0], [1.0, 12.0, 60.0, 120.0])
 
-    >>> num, den = ct.pade(delay, 5, -2)
-    >>> len(num), len(den)
-    (4, 6)
+    >>> num, den = ct.pade(delay, 3, -2)
+    >>> num, den
+    ([-6.0, 24.0], [1.0, 6.0, 18.0, 24.0])
 
     """
     if numdeg is None:

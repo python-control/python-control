@@ -326,8 +326,8 @@ def damp(sys, doprint=True):
 
     Examples
     --------
-    >>> G = ct.tf([1],[1, 4])
-    >>> wn, damping, poles = ct.damp(G)                         # doctest: +SKIP
+    >>> G = ct.tf([1], [1, 4])
+    >>> wn, damping, poles = ct.damp(G)
     _____Eigenvalue______ Damping___ Frequency_
             -4                     1          4
 
@@ -393,7 +393,7 @@ def evalfr(sys, x, squeeze=None):
 
     Examples
     --------
-    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
     >>> fresp = ct.evalfr(G, 1j)  # evaluate at s = 1j
 
     .. todo:: Add example with MIMO system
@@ -454,7 +454,7 @@ def frequency_response(sys, omega, squeeze=None):
 
     Examples
     --------
-    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
     >>> mag, phase, omega = ct.freqresp(G, [0.1, 1., 10.])
 
     .. todo::

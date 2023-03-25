@@ -90,11 +90,11 @@ def issys(obj):
 
     Examples
     --------
-    >>> G = ct.tf([1],[1, 1])
+    >>> G = ct.tf([1], [1, 1])
     >>> ct.issys(G)
     True
 
-    >>> K = ct.InputOutputSystem()   # Not necessarily LTI!
+    >>> K = np.array([[1, 1]])
     >>> ct.issys(K)
     False
 

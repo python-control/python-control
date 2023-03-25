@@ -71,7 +71,7 @@ def h2syn(P, nmeas, ncon):
     Examples
     --------
     >>> # Unstable first order SISI system
-    >>> G = ct.tf([1],[1,-1], inputs=['u'], outputs=['y'])
+    >>> G = ct.tf([1], [1, -1], inputs=['u'], outputs=['y'])
     >>> max(G.poles()) < 0  # Is G stable?
     False
 
@@ -80,7 +80,8 @@ def h2syn(P, nmeas, ncon):
     >>> P12 = ct.tf([1], [1], inputs=['u'], outputs=['z'])
     >>> P21 = ct.tf([1], [1], inputs=['w'], outputs=['y'])
     >>> P22 = G
-    >>> P = ct.interconnect([P11, P12, P21, P22], inplist=['w', 'u'], outlist=['z', 'y'])
+    >>> P = ct.interconnect([P11, P12, P21, P22],
+    ...                     inplist=['w', 'u'], outlist=['z', 'y'])
 
     >>> # Synthesize H2 optimal stabilizing controller
     >>> K = ct.h2syn(P, nmeas=1, ncon=1)
@@ -151,7 +152,7 @@ def hinfsyn(P, nmeas, ncon):
     Examples
     --------
     >>> # Unstable first order SISI system
-    >>> G = ct.tf([1],[1,-1], inputs=['u'], outputs=['y'])
+    >>> G = ct.tf([1], [1,-1], inputs=['u'], outputs=['y'])
     >>> max(G.poles()) < 0
     False
 

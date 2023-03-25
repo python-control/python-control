@@ -2373,7 +2373,7 @@ def ss(*args, **kwargs):
     --------
     Create a Linear I/O system object from matrices.
 
-    >>> G = ct.ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
 
     Convert a TransferFunction to a StateSpace object.
 
@@ -2778,12 +2778,8 @@ def interconnect(
 
     Examples
     --------
-    >>> P = ct.LinearIOSystem(
-    ...     ct.rss(2, 2, 2, strictly_proper=True),
-    ...     name='P')
-    >>> C = ct.LinearIOSystem(
-    ...     ct.rss(2, 2, 2),
-    ...     name='C')
+    >>> P = ct.rss(2, 2, 2, strictly_proper=True, name='P')
+    >>> C = ct.rss(2, 2, 2, name='C')
     >>> T = ct.interconnect(
     ...     [P, C],
     ...     connections = [
@@ -3002,10 +2998,10 @@ def summing_junction(
 
     Examples
     --------
-    >>> P = ct.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
-    >>> C = ct.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
+    >>> P = ct.tf2io(1, [1, 0], inputs='u', outputs='y')
+    >>> C = ct.tf2io(10, [1, 1], inputs='e', outputs='u')
     >>> sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
-    >>> T = ct.interconnect((P, C, sumblk), inputs='r', outputs='y')
+    >>> T = ct.interconnect([P, C, sumblk], inputs='r', outputs='y')
     >>> T.ninputs, T.noutputs, T.nstates
     (1, 1, 2)
 

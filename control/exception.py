@@ -63,14 +63,7 @@ class ControlNotImplemented(NotImplementedError):
 # Utility function to see if slycot is installed
 slycot_installed = None
 def slycot_check():
-    """Return True if slycot is installed, otherwise False.
-
-    Examples
-    --------
-    >>> ct.slycot_check()
-    True
-
-    """
+    """Return True if slycot is installed, otherwise False."""
     global slycot_installed
     if slycot_installed is None:
         try:
@@ -84,15 +77,7 @@ def slycot_check():
 # Utility function to see if pandas is installed
 pandas_installed = None
 def pandas_check():
-    """Return True if pandas is installed, otherwise False.
-
-    Examples
-    --------
-    >>> ct.pandas_check()
-    True
-
-    """
-
+    """Return True if pandas is installed, otherwise False."""
     global pandas_installed
     if pandas_installed is None:
         try:
@@ -105,14 +90,7 @@ def pandas_check():
 # Utility function to see if cvxopt is installed
 cvxopt_installed = None
 def cvxopt_check():
-    """Return True if cvxopt is installed, otherwise False.
-
-    Examples
-    --------
-    >>> ct.cvxopt_check()
-    True
-
-    """
+    """Return True if cvxopt is installed, otherwise False."""
     global cvxopt_installed
     if cvxopt_installed is None:
         try:

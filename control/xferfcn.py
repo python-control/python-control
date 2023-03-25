@@ -1145,7 +1145,7 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> sys = ct.tf(1, [1,1])
+        >>> sys = ct.tf(1, [1, 1])
         >>> sysd = sys.sample(0.5, method='bilinear')
 
         """
@@ -1205,7 +1205,7 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> G = ct.tf([1],[1, 4])
+        >>> G = ct.tf([1], [1, 4])
         >>> G.dcgain()
         0.25
 
@@ -1689,10 +1689,10 @@ def ss2tf(*args, **kwargs):
 
     Examples
     --------
-    >>> A = [[1., -2], [3, -4]]
-    >>> B = [[5.], [7]]
-    >>> C = [[6., 8]]
-    >>> D = [[9.]]
+    >>> A = [[-1, -2], [3, -4]]
+    >>> B = [[5], [6]]
+    >>> C = [[7, 8]]
+    >>> D = [[9]]
     >>> sys1 = ct.ss2tf(A, B, C, D)
 
     >>> sys_ss = ct.ss(A, B, C, D)

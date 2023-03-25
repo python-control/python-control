@@ -190,13 +190,13 @@ def negate(sys):
 
     Examples
     --------
-    >>> G = ct.tf([2],[1, 1])
-    >>> G.dcgain() > 0
-    True
+    >>> G = ct.tf([2], [1, 1])
+    >>> G.dcgain()
+    2.0
 
     >>> Gn = ct.negate(G) # Same as sys2 = -sys1.
-    >>> Gn.dcgain() < 0
-    True
+    >>> Gn.dcgain()
+    -2.0
 
     """
     return -sys

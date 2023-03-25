@@ -84,7 +84,7 @@ def hsvd(sys):
 
     Examples
     --------
-    >>> G = ct.tf2ss(ct.tf([1],[1, 2]))
+    >>> G = ct.tf2ss([1], [1, 2])
     >>> H = ct.hsvd(G)
     >>> H[0]
     0.25
@@ -139,7 +139,7 @@ def modred(sys, ELIM, method='matchdc'):
     Examples
     --------
     >>> G = ct.rss(4)
-    >>> Gr = ct.modred(G, [0,2], method='matchdc')
+    >>> Gr = ct.modred(G, [0, 2], method='matchdc')
     >>> Gr.nstates
     2
 

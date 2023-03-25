@@ -917,7 +917,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     Examples
     --------
     >>> G = ct.rss(4)
-    >>> T = np.linspace(0,10)
+    >>> T = np.linspace(0, 10)
     >>> T, yout = ct.forced_response(G, T=T)
 
     See :ref:`time-series-convention` and

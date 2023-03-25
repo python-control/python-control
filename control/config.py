@@ -74,11 +74,8 @@ def set_defaults(module, **keywords):
     >>> ct.set_defaults('freqplot', number_of_samples=100)
     >>> ct.defaults['freqplot.number_of_samples']
     100
-
     >>> # do some customized freqplotting
     >>> ct.reset_defaults()
-    >>> ct.defaults['freqplot.number_of_samples']
-    1000
 
     """
     if not isinstance(module, str):

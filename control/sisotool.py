@@ -81,7 +81,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
 
     Examples
     --------
-    >>> G = ct.tf([1000], [1,25,100,0])
+    >>> G = ct.tf([1000], [1, 25, 100, 0])
     >>> ct.sisotool(G)                                          # doctest: +SKIP
 
     """

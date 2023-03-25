@@ -173,7 +173,6 @@ Utility functions and conversions
     augw
     bdschur
     canonical_form
-    cvxopt_check
     damp
     db2mag
     isctime
@@ -184,13 +183,11 @@ Utility functions and conversions
     modal_form
     observable_form
     pade
-    pandas_check
     reachable_form
     reset_defaults
     sample_system
     set_defaults
     similarity_transform
-    slycot_check
     ss2tf
     ssdata
     tf2ss

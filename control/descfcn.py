@@ -249,9 +249,8 @@ def describing_function_plot(
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
     >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> points = ct.describing_function_plot(H_simple, F_saturation, amp)
-    >>> len(points)
-    1
+    >>> ct.describing_function_plot(H_simple, F_saturation, amp)
+    [(3.343844998258643, 1.4142293090899216)]
 
     """
     # Decide whether to turn on warnings or not
@@ -366,12 +365,11 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
     Examples
     --------
     >>> nl = ct.saturation_nonlinearity(5)
-    >>> f = lambda x: round(nl(x))
-    >>> f(1)
+    >>> nl(1)
     1
-    >>> f(10)
+    >>> nl(10)
     5
-    >>> f(-10)
+    >>> nl(-10)
     -5
 
     """
@@ -430,16 +428,15 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
     Examples
     --------
     >>> nl = ct.relay_hysteresis_nonlinearity(1, 2)
-    >>> f = lambda x: round(nl(x))
-    >>> f(0)
+    >>> nl(0)
     -1
-    >>> f(1)  # not enough for switching on
+    >>> nl(1)  # not enough for switching on
     -1
-    >>> f(5)
+    >>> nl(5)
     1
-    >>> f(-1)  # not enough for switching off
+    >>> nl(-1)  # not enough for switching off
     1
-    >>> f(-5)
+    >>> nl(-5)
     -1
 
     """
@@ -500,19 +497,18 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
     Examples
     --------
     >>> nl = ct.friction_backlash_nonlinearity(2)  # backlash of +/- 1
-    >>> f = lambda x: round(nl(x))
-    >>> f(0)
+    >>> nl(0)
     0
-    >>> f(1)  # not enough to overcome backlash
+    >>> nl(1)  # not enough to overcome backlash
     0
-    >>> f(2)
-    1
-    >>> f(1)
-    1
-    >>> f(0)  # not enough to overcome backlash
-    1
-    >>> f(-1)
-    0
+    >>> nl(2)
+    1.0
+    >>> nl(1)
+    1.0
+    >>> nl(0)  # not enough to overcome backlash
+    1.0
+    >>> nl(-1)
+    0.0
 
     """
 

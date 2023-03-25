@@ -174,7 +174,7 @@ def bode_plot(syslist, omega=None,
 
     Examples
     --------
-    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
     >>> Gmag, Gphase, Gomega = ct.bode_plot(G)
 
     """
@@ -692,7 +692,7 @@ def nyquist_plot(
 
     Examples
     --------
-    >>> G = ct.zpk([],[-1,-2,-3], gain=100)
+    >>> G = ct.zpk([], [-1, -2, -3], gain=100)
     >>> ct.nyquist_plot(G)
     2
 
@@ -1262,8 +1262,8 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 
     Examples
     --------
-    >>> P = ct.tf([1],[1, 1])
-    >>> C = ct.tf([2],[1])
+    >>> P = ct.tf([1], [1, 1])
+    >>> C = ct.tf([2], [1])
     >>> ct.gangof4_plot(P, C)
 
     """
@@ -1411,7 +1411,8 @@ def singular_values_plot(syslist, omega=None,
     --------
     >>> omegas = np.logspace(-4, 1, 1000)
     >>> den = [75, 1]
-    >>> G = ct.tf([[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
+    >>> G = ct.tf([[[87.8], [-86.4]], [[108.2], [-109.6]]],
+    ...           [[den, den], [den, den]])
     >>> sigmas, omegas = ct.singular_values_plot(G, omega=omegas, plot=False)
 
     >>> sigmas, omegas = ct.singular_values_plot(G, 0.0, plot=False)
@@ -1630,7 +1631,7 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
     Examples
     --------
-    >>> G = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
     >>> omega = ct._default_frequency_range(G)
     >>> omega.min(), omega.max()
     (0.1, 100.0)
