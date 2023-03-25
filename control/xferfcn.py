@@ -475,7 +475,8 @@ class TransferFunction(LTI):
                     denstr = _tf_polynomial_to_string(self.den[no][ni], var=var)
                 elif self.display_format == 'zpk':
                     z, p, k = tf2zpk(self.num[no][ni], self.den[no][ni])
-                    numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
+                    numstr = _tf_factorized_polynomial_to_string(
+                        z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
                 # Figure out the length of the separating line
@@ -532,7 +533,8 @@ class TransferFunction(LTI):
                     denstr = _tf_polynomial_to_string(self.den[no][ni], var=var)
                 elif self.display_format == 'zpk':
                     z, p, k = tf2zpk(self.num[no][ni], self.den[no][ni])
-                    numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
+                    numstr = _tf_factorized_polynomial_to_string(
+                        z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
                 numstr = _tf_string_to_latex(numstr, var=var)
@@ -1707,12 +1709,13 @@ def zpk(zeros, poles, gain, *args, **kwargs):
 
     Examples
     --------
-        >>> from control import tf
-        >>> G = zpk([1],[2, 3], gain=1, display_format='zpk')
-        >>> G
-             s - 1
-        ---------------
-        (s - 2) (s - 3)
+    >>> G = ct.zpk([1], [2, 3], gain=1, display_format='zpk')
+    >>> print(G)                                                # doctest: +SKIP
+
+         s - 1
+    ---------------
+    (s - 2) (s - 3)
+
     """
     num, den = zpk2tf(zeros, poles, gain)
     return TransferFunction(num, den, *args, **kwargs)
