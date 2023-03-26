@@ -5,7 +5,7 @@ Wrappers for the MATLAB compatibility module
 import numpy as np
 from ..iosys import ss
 from ..xferfcn import tf
-from ..ctrlutil import issys
+from ..lti import LTI
 from ..exception import ControlArgument
 from scipy.signal import zpk2tf
 from warnings import warn
@@ -124,7 +124,7 @@ def _parse_freqplot_args(*args):
     i = 0
     while i < len(args):
         # Check to see if this is a system of some sort
-        if issys(args[i]):
+        if isinstance(args[i], LTI):
             # Append the system to our list of systems
             syslist.append(args[i])
             i += 1

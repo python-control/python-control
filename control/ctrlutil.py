@@ -44,6 +44,7 @@
 from . import lti
 import numpy as np
 import math
+import warnings
 
 __all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
 
@@ -99,6 +100,8 @@ def issys(obj):
     False
 
     """
+    warnings.warn("issys() is deprecated; use isinstance(obj, ct.LTI)",
+                  FutureWarning, stacklevel=2)
     return isinstance(obj, lti.LTI)
 
 def db2mag(db):
