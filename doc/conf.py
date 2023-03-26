@@ -37,11 +37,12 @@ author = u'Python Control Developers'
 import re
 import control
 
-# The short X.Y.Z version
-version = re.sub(r'(\d+\.\d+\.\d+)(.*)', r'\1', control.__version__)
+# Get the version number for this commmit (including alpha/beta/rc tags)
+release = re.sub('^v', '', os.popen('git describe').read().strip())
 
-# The full version, including alpha/beta/rc tags
-release = control.__version__
+# The short X.Y.Z version
+version = re.sub(r'(\d+\.\d+\.\d+(.post\d+)?)(.*)', r'\1', release)
+
 print("version %s, release %s" % (version, release))
 
 # -- General configuration ---------------------------------------------------
@@ -206,11 +207,10 @@ def linkcode_resolve(domain, info):
         linespec = ""
 
     base_url = "https://github.com/python-control/python-control/blob/"
-    if 'dev' in control.__version__:
+    if release != version:      # development release
         return base_url + "main/control/%s%s" % (fn, linespec)
-    else:
-        return base_url + "%s/control/%s%s" % (
-           control.__version__, fn, linespec)
+    else:                       # specific version
+        return base_url + "%s/control/%s%s" % (version, fn, linespec)
 
 # Don't automaticall show all members of class in Methods & Attributes section
 numpydoc_show_class_members = False
