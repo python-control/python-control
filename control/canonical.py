@@ -42,16 +42,16 @@ def canonical_form(xsys, form='reachable'):
     --------
     >>> Gs = ct.tf2ss([1], [1, 3, 2])
     >>> Gc, T = ct.canonical_form(Gs)  # default reachable
-    >>> Gc.B.round()
+    >>> Gc.B
     array([[1.],
            [0.]])
 
     >>> Gc, T = ct.canonical_form(Gs, 'observable')
-    >>> Gc.C.round()
+    >>> Gc.C
     array([[1., 0.]])
 
     >>> Gc, T = ct.canonical_form(Gs, 'modal')
-    >>> Gc.A.round()                                            # doctest: +SKIP
+    >>> Gc.A
     array([[-2.,  0.],
            [ 0., -1.]])
 
@@ -89,7 +89,7 @@ def reachable_form(xsys):
     --------
     >>> Gs = ct.tf2ss([1], [1, 3, 2])
     >>> Gc, T = ct.reachable_form(Gs)  # default reachable
-    >>> Gc.B.round()
+    >>> Gc.B
     array([[1.],
            [0.]])
 
@@ -152,7 +152,7 @@ def observable_form(xsys):
     --------
     >>> Gs = ct.tf2ss([1], [1, 3, 2])
     >>> Gc, T = ct.observable_form(Gs)
-    >>> Gc.C.round()
+    >>> Gc.C
     array([[1., 0.]])
 
     """
@@ -217,13 +217,13 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     Examples
     --------
     >>> Gs = ct.tf2ss([1], [1, 3, 2])
-    >>> Gs.A.round()
+    >>> Gs.A
     array([[-3., -2.],
            [ 1.,  0.]])
 
     >>> T = np.array([[0, 1], [1, 0]])
     >>> Gt = ct.similarity_transform(Gs, T)
-    >>> Gt.A.round()
+    >>> Gt.A
     array([[ 0.,  1.],
            [-2., -3.]])
 
@@ -508,7 +508,7 @@ def modal_form(xsys, condmax=None, sort=False):
     --------
     >>> Gs = ct.tf2ss([1], [1, 3, 2])
     >>> Gc, T = ct.modal_form(Gs)  # default reachable
-    >>> Gc.A.round()                                            # doctest: +SKIP
+    >>> Gc.A
     array([[-2.,  0.],
            [ 0., -1.]])
 
