@@ -156,7 +156,7 @@ def nogrid():
 
 
 def zgrid(zetas=None, wns=None, ax=None):
-    '''Draws discrete damping and frequency grid'''
+    """Draws discrete damping and frequency grid"""
 
     fig = plt.gcf()
     if ax is None:

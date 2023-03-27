@@ -108,8 +108,8 @@ def lqe(*args, **kwargs):
 
     Examples
     --------
-    >>> L, P, E = lqe(A, G, C, QN, RN)
-    >>> L, P, E = lqe(A, G, C, Q, RN, NN)
+    >>> L, P, E = lqe(A, G, C, QN, RN)                          # doctest: +SKIP
+    >>> L, P, E = lqe(A, G, C, Q, RN, NN)                       # doctest: +SKIP
 
     See Also
     --------
@@ -240,8 +240,8 @@ def dlqe(*args, **kwargs):
 
     Examples
     --------
-    >>> L, P, E = dlqe(A, G, C, QN, RN)
-    >>> L, P, E = dlqe(A, G, C, QN, RN, NN)
+    >>> L, P, E = dlqe(A, G, C, QN, RN)                         # doctest: +SKIP
+    >>> L, P, E = dlqe(A, G, C, QN, RN, NN)                     # doctest: +SKIP
 
     See Also
     --------

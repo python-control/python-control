@@ -17,6 +17,7 @@ from scipy.linalg import schur
 __all__ = ['canonical_form', 'reachable_form', 'observable_form', 'modal_form',
            'similarity_transform', 'bdschur']
 
+
 def canonical_form(xsys, form='reachable'):
     """Convert a system into canonical form
 
@@ -36,6 +37,24 @@ def canonical_form(xsys, form='reachable'):
         System in desired canonical form, with state 'z'
     T : (M, M) real ndarray
         Coordinate transformation matrix, z = T * x
+
+    Examples
+    --------
+    >>> Gs = ct.tf2ss([1], [1, 3, 2])
+    >>> Gc, T = ct.canonical_form(Gs)  # default reachable
+    >>> Gc.B
+    array([[1.],
+           [0.]])
+
+    >>> Gc, T = ct.canonical_form(Gs, 'observable')
+    >>> Gc.C
+    array([[1., 0.]])
+
+    >>> Gc, T = ct.canonical_form(Gs, 'modal')
+    >>> Gc.A                                                    # doctest: +SKIP
+    array([[-2.,  0.],
+           [ 0., -1.]])
+
     """
 
     # Call the appropriate tranformation function
@@ -65,6 +84,15 @@ def reachable_form(xsys):
         System in reachable canonical form, with state `z`
     T : (M, M) real ndarray
         Coordinate transformation: z = T * x
+
+    Examples
+    --------
+    >>> Gs = ct.tf2ss([1], [1, 3, 2])
+    >>> Gc, T = ct.reachable_form(Gs)  # default reachable
+    >>> Gc.B
+    array([[1.],
+           [0.]])
+
     """
     # Check to make sure we have a SISO system
     if not issiso(xsys):
@@ -119,6 +147,14 @@ def observable_form(xsys):
         System in observable canonical form, with state `z`
     T : (M, M) real ndarray
         Coordinate transformation: z = T * x
+
+    Examples
+    --------
+    >>> Gs = ct.tf2ss([1], [1, 3, 2])
+    >>> Gc, T = ct.observable_form(Gs)
+    >>> Gc.C
+    array([[1., 0.]])
+
     """
     # Check to make sure we have a SISO system
     if not issiso(xsys):
@@ -176,6 +212,20 @@ def similarity_transform(xsys, T, timescale=1, inverse=False):
     -------
     zsys : StateSpace object
         System in transformed coordinates, with state 'z'
+
+
+    Examples
+    --------
+    >>> Gs = ct.tf2ss([1], [1, 3, 2])
+    >>> Gs.A
+    array([[-3., -2.],
+           [ 1.,  0.]])
+
+    >>> T = np.array([[0, 1], [1, 0]])
+    >>> Gt = ct.similarity_transform(Gs, T)
+    >>> Gt.A
+    array([[ 0.,  1.],
+           [-2., -3.]])
 
     """
     # Create a new system, starting with a copy of the old one
@@ -244,7 +294,8 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
 
     Iterates mb03rd with different pmax values until:
       - result is non-defective;
-      - or condition number of similarity transform is unchanging despite large pmax;
+      - or condition number of similarity transform is unchanging
+        despite large pmax;
       - or condition number of similarity transform is close to condmax.
 
     Parameters
@@ -283,22 +334,25 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
 
     # get lower bound; try condmax ** 0.5 first
     pmaxlower = condmax ** 0.5
-    amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmaxlower)
+    amodal, tmodal, blksizes, eigvals = mb03rd(
+        aschur.shape[0], aschur, tschur, pmax=pmaxlower)
     if np.linalg.cond(tmodal) <= condmax:
         reslower = amodal, tmodal, blksizes, eigvals
     else:
         pmaxlower = 1.0
-        amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmaxlower)
+        amodal, tmodal, blksizes, eigvals = mb03rd(
+            aschur.shape[0], aschur, tschur, pmax=pmaxlower)
         cond = np.linalg.cond(tmodal)
         if cond > condmax:
-            msg = 'minimum cond={} > condmax={}; try increasing condmax'.format(cond, condmax)
+            msg = f"minimum {cond=} > {condmax=}; try increasing condmax"
             raise RuntimeError(msg)
 
     pmax = pmaxlower
 
     # phase 1: search for upper bound on pmax
     for i in range(50):
-        amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmax)
+        amodal, tmodal, blksizes, eigvals = mb03rd(
+            aschur.shape[0], aschur, tschur, pmax=pmax)
         cond = np.linalg.cond(tmodal)
         if cond < condmax:
             pmaxlower = pmax
@@ -319,7 +373,8 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
     # phase 2: bisection search
     for i in range(50):
         pmax = (pmaxlower * pmaxupper) ** 0.5
-        amodal, tmodal, blksizes, eigvals = mb03rd(aschur.shape[0], aschur, tschur, pmax=pmax)
+        amodal, tmodal, blksizes, eigvals = mb03rd(
+            aschur.shape[0], aschur, tschur, pmax=pmax)
         cond = np.linalg.cond(tmodal)
 
         if cond < condmax:
@@ -370,6 +425,15 @@ def bdschur(a, condmax=None, sort=None):
     If `sort` is 'discrete', the blocks are sorted as for
     'continuous', but applied to log of eigenvalues
     (i.e., continuous-equivalent eigenvalues).
+
+    Examples
+    --------
+    >>> Gs = ct.tf2ss([1], [1, 3, 2])
+    >>> amodal, tmodal, blksizes = ct.bdschur(Gs.A)
+    >>> amodal                                                   #doctest: +SKIP
+    array([[-2.,  0.],
+           [ 0., -1.]])
+
     """
     if condmax is None:
         condmax = np.finfo(np.float64).eps ** -0.5
@@ -382,7 +446,8 @@ def bdschur(a, condmax=None, sort=None):
         return a.copy(), np.eye(a.shape[1], a.shape[0]), np.array([])
 
     aschur, tschur = schur(a)
-    amodal, tmodal, blksizes, eigvals = _bdschur_condmax_search(aschur, tschur, condmax)
+    amodal, tmodal, blksizes, eigvals = _bdschur_condmax_search(
+        aschur, tschur, condmax)
 
     if sort in ('continuous', 'discrete'):
 
@@ -426,9 +491,11 @@ def modal_form(xsys, condmax=None, sort=False):
     xsys : StateSpace object
         System to be transformed, with state `x`
     condmax : None or float, optional
-        An upper bound on individual transformations.  If None, use `bdschur` default.
+        An upper bound on individual transformations.  If None, use
+        `bdschur` default.
     sort : bool, optional
-        If False (default), Schur blocks will not be sorted.  See `bdschur` for sort order.
+        If False (default), Schur blocks will not be sorted.  See `bdschur`
+        for sort order.
 
     Returns
     -------
@@ -436,6 +503,15 @@ def modal_form(xsys, condmax=None, sort=False):
         System in modal canonical form, with state `z`
     T : (M, M) ndarray
         Coordinate transformation: z = T * x
+
+    Examples
+    --------
+    >>> Gs = ct.tf2ss([1], [1, 3, 2])
+    >>> Gc, T = ct.modal_form(Gs)  # default reachable
+    >>> Gc.A                                                    # doctest: +SKIP
+    array([[-2.,  0.],
+           [ 0., -1.]])
+
     """
 
     if sort:

@@ -120,6 +120,14 @@ def describing_function(
     TypeError
         If A[i] < 0 or if A[i] = 0 and the function F(0) is non-zero.
 
+    Examples
+    --------
+    >>> F = lambda x: np.exp(-x)      # Basic diode description
+    >>> A = np.logspace(-1, 1, 20)    # Amplitudes from 0.1 to 10.0
+    >>> df_values = ct.describing_function(F, A)
+    >>> len(df_values)
+    20
+
     """
     # If there is an analytical solution, trying using that first
     if try_method and hasattr(F, 'describing_function'):
@@ -239,10 +247,10 @@ def describing_function_plot(
     Examples
     --------
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
-    >>> F_saturation = ct.descfcn.saturation_nonlinearity(1)
+    >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> ct.describing_function_plot(H_simple, F_saturation, amp)
-    [(3.344008947853124, 1.414213099755523)]
+    >>> ct.describing_function_plot(H_simple, F_saturation, amp)  # doctest: +SKIP
+    [(3.343844998258643, 1.4142293090899216)]
 
     """
     # Decide whether to turn on warnings or not
@@ -354,6 +362,16 @@ class saturation_nonlinearity(DescribingFunctionNonlinearity):
     functions will not have zero bias and hence care must be taken in using
     the nonlinearity for analysis.
 
+    Examples
+    --------
+    >>> nl = ct.saturation_nonlinearity(5)
+    >>> nl(1)
+    1
+    >>> nl(10)
+    5
+    >>> nl(-10)
+    -5
+
     """
     def __init__(self, ub=1, lb=None):
         # Create the describing function nonlinearity object
@@ -406,6 +424,20 @@ class relay_hysteresis_nonlinearity(DescribingFunctionNonlinearity):
     The output of this function is `b` if `x > c` and `-b` if `x < -c`.  For
     `-c <= x <= c`, the value depends on the branch of the hysteresis loop (as
     illustrated in Figure 10.20 of FBS2e).
+
+    Examples
+    --------
+    >>> nl = ct.relay_hysteresis_nonlinearity(1, 2)
+    >>> nl(0)
+    -1
+    >>> nl(1)  # not enough for switching on
+    -1
+    >>> nl(5)
+    1
+    >>> nl(-1)  # not enough for switching off
+    1
+    >>> nl(-5)
+    -1
 
     """
     def __init__(self, b, c):
@@ -461,6 +493,22 @@ class friction_backlash_nonlinearity(DescribingFunctionNonlinearity):
     mechanism with backlash.  If the new input is within `b/2` of the current
     center, the output is unchanged.  Otherwise, the output is given by the
     input shifted by `b/2`.
+
+    Examples
+    --------
+    >>> nl = ct.friction_backlash_nonlinearity(2)  # backlash of +/- 1
+    >>> nl(0)
+    0
+    >>> nl(1)  # not enough to overcome backlash
+    0
+    >>> nl(2)
+    1.0
+    >>> nl(1)
+    1.0
+    >>> nl(0)  # not enough to overcome backlash
+    1.0
+    >>> nl(-1)
+    0.0
 
     """
 

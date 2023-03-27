@@ -70,7 +70,24 @@ def h2syn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> K = h2syn(P,nmeas,ncon)
+    >>> # Unstable first order SISI system
+    >>> G = ct.tf([1], [1, -1], inputs=['u'], outputs=['y'])
+    >>> max(G.poles()) < 0  # Is G stable?
+    False
+
+    >>> # Create partitioned system with trivial unity systems
+    >>> P11 = ct.tf([0], [1], inputs=['w'], outputs=['z'])
+    >>> P12 = ct.tf([1], [1], inputs=['u'], outputs=['z'])
+    >>> P21 = ct.tf([1], [1], inputs=['w'], outputs=['y'])
+    >>> P22 = G
+    >>> P = ct.interconnect([P11, P12, P21, P22],
+    ...                     inplist=['w', 'u'], outlist=['z', 'y'])
+
+    >>> # Synthesize H2 optimal stabilizing controller
+    >>> K = ct.h2syn(P, nmeas=1, ncon=1)
+    >>> T = ct.feedback(G, K, sign=1)
+    >>> max(T.poles()) < 0  # Is T stable?
+    True
 
     """
     # Check for ss system object, need a utility for this?
@@ -134,7 +151,23 @@ def hinfsyn(P, nmeas, ncon):
 
     Examples
     --------
-    >>> K, CL, gam, rcond = hinfsyn(P,nmeas,ncon)
+    >>> # Unstable first order SISI system
+    >>> G = ct.tf([1], [1,-1], inputs=['u'], outputs=['y'])
+    >>> max(G.poles()) < 0
+    False
+
+    >>> # Create partitioned system with trivial unity systems
+    >>> P11 = ct.tf([0], [1], inputs=['w'], outputs=['z'])
+    >>> P12 = ct.tf([1], [1], inputs=['u'], outputs=['z'])
+    >>> P21 = ct.tf([1], [1], inputs=['w'], outputs=['y'])
+    >>> P22 = G
+    >>> P = ct.interconnect([P11, P12, P21, P22], inplist=['w', 'u'], outlist=['z', 'y'])
+
+    >>> # Synthesize Hinf optimal stabilizing controller
+    >>> K, CL, gam, rcond = ct.hinfsyn(P, nmeas=1, ncon=1)
+    >>> T = ct.feedback(G, K, sign=1)
+    >>> max(T.poles()) < 0
+    True
 
     """
 
@@ -221,28 +254,33 @@ def _size_as_needed(w, wname, n):
 def augw(g, w1=None, w2=None, w3=None):
     """Augment plant for mixed sensitivity problem.
 
-    Parameters
-    ----------
-    g: LTI object, ny-by-nu
-    w1: weighting on S; None, scalar, or k1-by-ny LTI object
-    w2: weighting on KS; None, scalar, or k2-by-nu LTI object
-    w3: weighting on T; None, scalar, or k3-by-ny LTI object
-    p: augmented plant; StateSpace object
-
     If a weighting is None, no augmentation is done for it.  At least
     one weighting must not be None.
 
     If a weighting w is scalar, it will be replaced by I*w, where I is
     ny-by-ny for w1 and w3, and nu-by-nu for w2.
 
+    Parameters
+    ----------
+    g: LTI object, ny-by-nu
+        Plant
+    w1: None, scalar, or k1-by-ny LTI object
+        Weighting on S
+    w2: None, scalar, or k2-by-nu LTI object
+        Weighting on KS
+    w3: None, scalar, or k3-by-ny LTI object
+        Weighting on T
+
     Returns
     -------
-    p: plant augmented with weightings, suitable for submission to hinfsyn or h2syn.
+    p: StateSpace
+        Plant augmented with weightings, suitable for submission to hinfsyn or
+        h2syn.
 
     Raises
     ------
     ValueError
-        - if all weightings are None
+        If all weightings are None
 
     See Also
     --------
@@ -331,25 +369,35 @@ def mixsyn(g, w1=None, w2=None, w3=None):
 
     Parameters
     ----------
-    g: LTI; the plant for which controller must be synthesized
-    w1: weighting on s = (1+g*k)**-1; None, or scalar or k1-by-ny LTI
-    w2: weighting on k*s; None, or scalar or k2-by-nu LTI
-    w3: weighting on t = g*k*(1+g*k)**-1; None, or scalar or k3-by-ny LTI
-    At least one of w1, w2, and w3 must not be None.
+    g: LTI
+        The plant for which controller must be synthesized
+    w1: None, or scalar or k1-by-ny LTI
+        Weighting on S = (1+G*K)**-1
+    w2: None, or scalar or k2-by-nu LTI
+        Weighting on K*S
+    w3: None, or scalar or k3-by-ny LTI
+        Weighting on T = G*K*(1+G*K)**-1;
 
     Returns
     -------
-    k: synthesized controller; StateSpace object
-    cl: closed system mapping evaluation inputs to evaluation outputs; if 
-    p is the augmented plant, with
-        [z] = [p11 p12] [w], 
-        [y]   [p21   g] [u]
-    then cl is the system from w->z with u=-k*y.  StateSpace object.
+    k: StateSpace
+        Synthesized controller;
+    cl: StateSpace
+        Closed system mapping evaluation inputs to evaluation outputs.
 
-    info: tuple with entries, in order,
-        - gamma: scalar; H-infinity norm of cl
-        - rcond: array; estimates of reciprocal condition numbers
-          computed during synthesis.  See hinfsyn for details
+        Let p be the augmented plant, with::
+
+            [z] = [p11 p12] [w]
+            [y]   [p21   g] [u]
+
+        then cl is the system from w->z with `u = -k*y`.
+
+    info: tuple
+        gamma: scalar
+            H-infinity norm of cl
+        rcond: array
+            Estimates of reciprocal condition numbers
+            computed during synthesis.  See hinfsyn for details
 
     If a weighting w is scalar, it will be replaced by I*w, where I is
     ny-by-ny for w1 and w3, and nu-by-nu for w2.

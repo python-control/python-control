@@ -65,9 +65,17 @@ def set_defaults(module, **keywords):
     """Set default values of parameters for a module.
 
     The set_defaults() function can be used to modify multiple parameter
-    values for a module at the same time, using keyword arguments:
+    values for a module at the same time, using keyword arguments.
 
-        control.set_defaults('module', param1=val, param2=val)
+    Examples
+    --------
+    >>> ct.defaults['freqplot.number_of_samples']
+    1000
+    >>> ct.set_defaults('freqplot', number_of_samples=100)
+    >>> ct.defaults['freqplot.number_of_samples']
+    100
+    >>> # do some customized freqplotting
+    >>> ct.reset_defaults()
 
     """
     if not isinstance(module, str):
@@ -80,7 +88,22 @@ def set_defaults(module, **keywords):
 
 
 def reset_defaults():
-    """Reset configuration values to their default (initial) values."""
+    """Reset configuration values to their default (initial) values.
+
+    Examples
+    --------
+    >>> ct.defaults['freqplot.number_of_samples']
+    1000
+    >>> ct.set_defaults('freqplot', number_of_samples=100)
+    >>> ct.defaults['freqplot.number_of_samples']
+    100
+
+    >>> # do some customized freqplotting
+    >>> ct.reset_defaults()
+    >>> ct.defaults['freqplot.number_of_samples']
+    1000
+
+    """
     # System level defaults
     defaults.update(_control_defaults)
 
@@ -181,6 +204,12 @@ def use_matlab_defaults():
           rad/sec, with grids
         * State space class and functions use Numpy matrix objects
 
+    Examples
+    --------
+    >>> ct.use_matlab_defaults()
+    >>> # do some matlab style plotting
+    >>> ct.reset_defaults()
+
     """
     set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
     set_defaults('statesp', use_numpy_matrix=True)
@@ -194,6 +223,12 @@ def use_fbs_defaults():
         * Bode plots plot gain in powers of ten, phase in degrees,
           frequency in rad/sec, no grid
         * Nyquist plots use dashed lines for mirror image of Nyquist curve
+
+    Examples
+    --------
+    >>> ct.use_fbs_defaults()
+    >>> # do some FBS style plotting
+    >>> ct.reset_defaults()
 
     """
     set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
@@ -222,6 +257,13 @@ def use_numpy_matrix(flag=True, warn=True):
     Prior to release 0.9.x, the default type for 2D arrays is the Numpy
     `matrix` class.  Starting in release 0.9.0, the default type for state
     space operations is a 2D array.
+
+    Examples
+    --------
+    >>> ct.use_numpy_matrix(True, False)
+    >>> # do some legacy calculations using np.matrix
+    >>> ct.reset_defaults()
+
     """
     if flag and warn:
         warnings.warn("Return type numpy.matrix is deprecated.",
@@ -236,6 +278,14 @@ def use_legacy_defaults(version):
     ----------
     version : string
         Version number of the defaults desired. Ranges from '0.1' to '0.8.4'.
+
+    Examples
+    --------
+    >>> ct.use_legacy_defaults("0.9.0")
+    (0, 9, 0)
+    >>> # do some legacy style plotting
+    >>> ct.reset_defaults()
+
     """
     import re
     (major, minor, patch) = (None, None, None)  # default values

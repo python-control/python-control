@@ -121,7 +121,7 @@ class TransferFunction(LTI):
     The attribues 'num' and 'den' are 2-D lists of arrays containing MIMO
     numerator and denominator coefficients.  For example,
 
-    >>> num[2][5] = numpy.array([1., 4., 8.])
+    >>> num[2][5] = numpy.array([1., 4., 8.])                   # doctest: +SKIP
 
     means that the numerator of the transfer function from the 6th input to
     the 3rd output is set to s^2 + 4s + 8.
@@ -152,7 +152,7 @@ class TransferFunction(LTI):
     discrete time.  These can be used to create variables that allow algebraic
     creation of transfer functions.  For example,
 
-    >>> s = TransferFunction.s
+    >>> s = ct.TransferFunction.s
     >>> G = (s + 1)/(s**2 + 2*s + 1)
 
     """
@@ -475,7 +475,8 @@ class TransferFunction(LTI):
                     denstr = _tf_polynomial_to_string(self.den[no][ni], var=var)
                 elif self.display_format == 'zpk':
                     z, p, k = tf2zpk(self.num[no][ni], self.den[no][ni])
-                    numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
+                    numstr = _tf_factorized_polynomial_to_string(
+                        z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
                 # Figure out the length of the separating line
@@ -532,7 +533,8 @@ class TransferFunction(LTI):
                     denstr = _tf_polynomial_to_string(self.den[no][ni], var=var)
                 elif self.display_format == 'zpk':
                     z, p, k = tf2zpk(self.num[no][ni], self.den[no][ni])
-                    numstr = _tf_factorized_polynomial_to_string(z, gain=k, var=var)
+                    numstr = _tf_factorized_polynomial_to_string(
+                        z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
 
                 numstr = _tf_string_to_latex(numstr, var=var)
@@ -907,8 +909,8 @@ class TransferFunction(LTI):
 
         For instance,
 
-        >>> out = tfobject.returnScipySignalLTI()
-        >>> out[3][5]
+        >>> out = tfobject.returnScipySignalLTI()               # doctest: +SKIP
+        >>> out[3][5]                                           # doctest: +SKIP
 
         is a :class:`scipy.signal.lti` object corresponding to the
         transfer function from the 6th input to the 4th output.
@@ -996,7 +998,7 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> num, den, denorder = sys._common_den()
+        >>> num, den, denorder = sys._common_den()              # doctest: +SKIP
 
         """
 
@@ -1178,7 +1180,7 @@ class TransferFunction(LTI):
 
         Examples
         --------
-        >>> sys = TransferFunction(1, [1,1])
+        >>> sys = ct.tf(1, [1, 1])
         >>> sysd = sys.sample(0.5, method='bilinear')
 
         """
@@ -1235,6 +1237,13 @@ class TransferFunction(LTI):
             For real valued systems, the empty imaginary part of the
             complex zero-frequency response is discarded and a real array or
             scalar is returned.
+
+        Examples
+        --------
+        >>> G = ct.tf([1], [1, 4])
+        >>> G.dcgain()
+        0.25
+
         """
         return self._dcgain(warn_infinite)
 
@@ -1263,8 +1272,8 @@ class TransferFunction(LTI):
     #:
     #: Example
     #: -------
-    #: >>> s = TransferFunction.s
-    #: >>> G  = (s + 1)/(s**2 + 2*s + 1)
+    #: >>> s = TransferFunction.s                               # doctest: +SKIP
+    #: >>> G  = (s + 1)/(s**2 + 2*s + 1)                        # doctest: +SKIP
     #:
     #: :meta hide-value:
     s = None
@@ -1276,8 +1285,8 @@ class TransferFunction(LTI):
     #:
     #: Example
     #: -------
-    #: >>> z = TransferFunction.z
-    #: >>> G  = 2 * z / (4 * z**3 + 3*z - 1)
+    #: >>> z = TransferFunction.z                               # doctest: +SKIP
+    #: >>> G  = 2 * z / (4 * z**3 + 3*z - 1)                    # doctest: +SKIP
     #:
     #: :meta hide-value:
     z = None
@@ -1613,15 +1622,15 @@ def tf(*args, **kwargs):
     >>> # (3s + 4) / (6s^2 + 5s + 4).
     >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys1 = tf(num, den)
+    >>> sys1 = ct.tf(num, den)
 
     >>> # Create a variable 's' to allow algebra operations for SISO systems
-    >>> s = tf('s')
-    >>> G  = (s + 1) / (s**2 + 2*s + 1)
+    >>> s = ct.tf('s')
+    >>> G  = (s + 1)/(s**2 + 2*s + 1)
 
     >>> # Convert a StateSpace to a TransferFunction object.
-    >>> sys_ss = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> sys2 = tf(sys1)
+    >>> sys_ss = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys2 = ct.tf(sys1)
 
     """
 
@@ -1700,12 +1709,13 @@ def zpk(zeros, poles, gain, *args, **kwargs):
 
     Examples
     --------
-        >>> from control import tf
-        >>> G = zpk([1],[2, 3], gain=1, display_format='zpk')
-        >>> G
-             s - 1
-        ---------------
-        (s - 2) (s - 3)
+    >>> G = ct.zpk([1], [2, 3], gain=1, display_format='zpk')
+    >>> print(G)                                                # doctest: +SKIP
+
+         s - 1
+    ---------------
+    (s - 2) (s - 3)
+
     """
     num, den = zpk2tf(zeros, poles, gain)
     return TransferFunction(num, den, *args, **kwargs)
@@ -1773,14 +1783,14 @@ def ss2tf(*args, **kwargs):
 
     Examples
     --------
-    >>> A = [[1., -2], [3, -4]]
-    >>> B = [[5.], [7]]
-    >>> C = [[6., 8]]
-    >>> D = [[9.]]
-    >>> sys1 = ss2tf(A, B, C, D)
+    >>> A = [[-1, -2], [3, -4]]
+    >>> B = [[5], [6]]
+    >>> C = [[7, 8]]
+    >>> D = [[9]]
+    >>> sys1 = ct.ss2tf(A, B, C, D)
 
-    >>> sys_ss = ss(A, B, C, D)
-    >>> sys2 = ss2tf(sys_ss)
+    >>> sys_ss = ct.ss(A, B, C, D)
+    >>> sys2 = ct.ss2tf(sys_ss)
 
     """
 

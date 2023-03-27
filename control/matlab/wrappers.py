@@ -26,11 +26,13 @@ def bode(*args, **kwargs):
         a list of systems can be entered, or several systems can be
         specified (i.e. several parameters). The sys arguments may also be
         interspersed with format strings. A frequency argument (array_like)
-        may also be added, some examples:
-        * >>> bode(sys, w)                    # one system, freq vector
-        * >>> bode(sys1, sys2, ..., sysN)     # several systems
-        * >>> bode(sys1, sys2, ..., sysN, w)
-        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # + plot formats
+        may also be added, some examples::
+
+        >>> bode(sys, w)                    # one system, freq vector              # doctest: +SKIP
+        >>> bode(sys1, sys2, ..., sysN)     # several systems                      # doctest: +SKIP
+        >>> bode(sys1, sys2, ..., sysN, w)                                         # doctest: +SKIP
+        >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # + plot formats     # doctest: +SKIP
+
     omega: freq_range
         Range of frequencies in rad/s
     dB : boolean
@@ -44,6 +46,8 @@ def bode(*args, **kwargs):
 
     Examples
     --------
+    >>> from control.matlab import ss, bode
+
     >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
     >>> mag, phase, omega = bode(sys)
 
@@ -51,10 +55,10 @@ def bode(*args, **kwargs):
 
         Document these use cases
 
-        * >>> bode(sys, w)
-        * >>> bode(sys1, sys2, ..., sysN)
-        * >>> bode(sys1, sys2, ..., sysN, w)
-        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN')
+        * >>> bode(sys, w)                                      # doctest: +SKIP
+        * >>> bode(sys1, sys2, ..., sysN)                       # doctest: +SKIP
+        * >>> bode(sys1, sys2, ..., sysN, w)                    # doctest: +SKIP
+        * >>> bode(sys1, 'plotstyle1', ..., sysN, 'plotstyleN') # doctest: +SKIP
     """
     from ..freqplot import bode_plot
 

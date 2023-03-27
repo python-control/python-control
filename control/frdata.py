@@ -102,7 +102,7 @@ class FrequencyResponseData(LTI):
     second dimension corresponding to the input index, and the 3rd dimension
     corresponding to the frequency points in omega.  For example,
 
-    >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])
+    >>> frdata[2,5,:] = numpy.array([1., 0.8-0.2j, 0.2-0.8j])   # doctest: +SKIP
 
     means that the frequency response from the 6th input to the 3rd output at
     the frequencies defined in omega is set to the array above, i.e. the rows
@@ -673,8 +673,17 @@ def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
     scalar, then the number of inputs and outputs can be specified
     manually, as in:
 
+    >>> import numpy as np
+    >>> from control.frdata import _convert_to_FRD
+
+    >>> omega = np.logspace(-1, 1)
     >>> frd = _convert_to_FRD(3., omega) # Assumes inputs = outputs = 1
-    >>> frd = _convert_to_FRD(1., omegs, inputs=3, outputs=2)
+    >>> frd.ninputs, frd.noutputs
+    (1, 1)
+
+    >>> frd = _convert_to_FRD(1., omega, inputs=3, outputs=2)
+    >>> frd.ninputs, frd.noutputs
+    (3, 2)
 
     In the latter example, sys's matrix transfer function is [[1., 1., 1.]
                                                               [1., 1., 1.]].
@@ -755,5 +764,17 @@ def frd(*args):
     See Also
     --------
     FRD, ss, tf
+
+    Examples
+    --------
+    >>> # Create from measurements
+    >>> response = [1.0, 1.0, 0.5]
+    >>> freqs = [1, 10, 100]
+    >>> F = ct.frd(response, freqs)
+
+    >>> G = ct.tf([1], [1, 1])
+    >>> freqs = [1, 10, 100]
+    >>> F = ct.frd(G, freqs)
+
     """
     return FRD(*args)

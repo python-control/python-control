@@ -324,6 +324,13 @@ def damp(sys, doprint=True):
         wn = abs(s)
         Z = -real(s)/wn.
 
+    Examples
+    --------
+    >>> G = ct.tf([1], [1, 4])
+    >>> wn, damping, poles = ct.damp(G)
+    _____Eigenvalue______ Damping___ Frequency_
+            -4                     1          4
+
     """
     wn, damping, poles = sys.damp()
     if doprint:
@@ -386,10 +393,8 @@ def evalfr(sys, x, squeeze=None):
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> evalfr(sys, 1j)
-    array([[ 44.8-21.4j]])
-    >>> # This is the transfer function matrix evaluated at s = i.
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> fresp = ct.evalfr(G, 1j)  # evaluate at s = 1j
 
     .. todo:: Add example with MIMO system
 
@@ -449,12 +454,8 @@ def frequency_response(sys, omega, squeeze=None):
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> mag, phase, omega = freqresp(sys, [0.1, 1., 10.])
-    >>> mag
-    array([[[ 58.8576682 ,  49.64876635,  13.40825927]]])
-    >>> phase
-    array([[[-0.05408304, -0.44563154, -0.66837155]]])
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> mag, phase, omega = ct.freqresp(G, [0.1, 1., 10.])
 
     .. todo::
         Add example with MIMO system
@@ -487,6 +488,12 @@ def dcgain(sys):
         The zero-frequency gain, or (inf + nanj) if the system has a pole at
         the origin, (nan + nanj) if there is a pole/zero cancellation at the
         origin.
+
+    Examples
+    --------
+    >>> G = ct.tf([1], [1, 2])
+    >>> ct.dcgain(G)                                            # doctest: +SKIP
+    0.5
 
     """
     return sys.dcgain()

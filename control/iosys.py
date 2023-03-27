@@ -2371,12 +2371,14 @@ def ss(*args, **kwargs):
 
     Examples
     --------
-    >>> # Create a Linear I/O system object from from for matrices
-    >>> sys1 = ss([[1, -2], [3 -4]], [[5], [7]], [[6, 8]], [[9]])
+    Create a Linear I/O system object from matrices.
 
-    >>> # Convert a TransferFunction to a StateSpace object.
-    >>> sys_tf = tf([2.], [1., 3])
-    >>> sys2 = ss(sys_tf)
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+
+    Convert a TransferFunction to a StateSpace object.
+
+    >>> sys_tf = ct.tf([2.], [1., 3])
+    >>> sys2 = ct.ss(sys_tf)
 
     """
     # See if this is a nonlinear I/O system
@@ -2495,6 +2497,15 @@ def drss(*args, **kwargs):
     function calls :func:`rss` using either the `dt` keyword provided by
     the user or `dt=True` if not specified.
 
+    Examples
+    --------
+    >>> G = ct.drss(states=4, outputs=2, inputs=1)
+    >>> G.ninputs, G.noutputs, G.nstates
+    (1, 2, 4)
+    >>> G.isdtime()
+    True
+
+
     """
     # Make sure the timebase makes sense
     if 'dt' in kwargs:
@@ -2585,10 +2596,12 @@ def tf2io(*args, **kwargs):
     --------
     >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys1 = tf2ss(num, den)
+    >>> sys1 = ct.tf2ss(num, den)
 
-    >>> sys_tf = tf(num, den)
-    >>> sys2 = tf2ss(sys_tf)
+    >>> sys_tf = ct.tf(num, den)
+    >>> G = ct.tf2ss(sys_tf)
+    >>> G.ninputs, G.noutputs, G.nstates
+    (2, 2, 8)
 
     """
     # Convert the system to a state space system
@@ -2765,26 +2778,25 @@ def interconnect(
 
     Examples
     --------
-    >>> P = control.LinearIOSystem(
-    >>>        control.rss(2, 2, 2, strictly_proper=True), name='P')
-    >>> C = control.LinearIOSystem(control.rss(2, 2, 2), name='C')
-    >>> T = control.interconnect(
-    >>>     [P, C],
-    >>>     connections = [
-    >>>       ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
-    >>>       ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
-    >>>     inplist = ['C.u[0]', 'C.u[1]'],
-    >>>     outlist = ['P.y[0]', 'P.y[1]'],
-    >>> )
+    >>> P = ct.rss(2, 2, 2, strictly_proper=True, name='P')
+    >>> C = ct.rss(2, 2, 2, name='C')
+    >>> T = ct.interconnect(
+    ...     [P, C],
+    ...     connections = [
+    ...         ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
+    ...         ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
+    ...     inplist = ['C.u[0]', 'C.u[1]'],
+    ...     outlist = ['P.y[0]', 'P.y[1]'],
+    ... )
 
     For a SISO system, this example can be simplified by using the
     :func:`~control.summing_block` function and the ability to automatically
     interconnect signals with the same names:
 
-    >>> P = control.tf(1, [1, 0], inputs='u', outputs='y')
-    >>> C = control.tf(10, [1, 1], inputs='e', outputs='u')
-    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
-    >>> T = control.interconnect([P, C, sumblk], inputs='r', outputs='y')
+    >>> P = ct.tf(1, [1, 0], inputs='u', outputs='y')
+    >>> C = ct.tf(10, [1, 1], inputs='e', outputs='u')
+    >>> sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = ct.interconnect([P, C, sumblk], inputs='r', outputs='y')
 
     Notes
     -----
@@ -2986,10 +2998,12 @@ def summing_junction(
 
     Examples
     --------
-    >>> P = control.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
-    >>> C = control.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
-    >>> sumblk = control.summing_junction(inputs=['r', '-y'], output='e')
-    >>> T = control.interconnect((P, C, sumblk), inputs='r', outputs='y')
+    >>> P = ct.tf2io(1, [1, 0], inputs='u', outputs='y')
+    >>> C = ct.tf2io(10, [1, 1], inputs='e', outputs='u')
+    >>> sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
+    >>> T = ct.interconnect([P, C, sumblk], inputs='r', outputs='y')
+    >>> T.ninputs, T.noutputs, T.nstates
+    (1, 1, 2)
 
     """
     # Utility function to parse input and output signal lists

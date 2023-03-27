@@ -74,6 +74,18 @@ def pade(T, n=1, numdeg=None):
          Ed. pp. 572-574
       2. M. Vajta, "Some remarks on Padé-approximations",
          3rd TEMPUS-INTCOM Symposium
+
+    Examples
+    --------
+    >>> delay = 1
+    >>> num, den = ct.pade(delay, 3)
+    >>> num, den
+    ([-1.0, 12.0, -60.0, 120.0], [1.0, 12.0, 60.0, 120.0])
+
+    >>> num, den = ct.pade(delay, 3, -2)
+    >>> num, den
+    ([-6.0, 24.0], [1.0, 6.0, 18.0, 24.0])
+
     """
     if numdeg is None:
         numdeg = n

@@ -1,0 +1,19 @@
+name: test-env
+dependencies:
+  - conda-build  # for conda index
+  - pip
+  - coverage
+  - coveralls
+  - pytest
+  - pytest-cov
+  - pytest-timeout
+  - pytest-xvfb
+  - numpy
+  - matplotlib
+  - scipy
+  - sphinx
+  - sphinx_rtd_theme
+  - ipykernel
+  - nbsphinx
+  - docutils
+  - numpydoc

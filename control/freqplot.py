@@ -174,8 +174,8 @@ def bode_plot(syslist, omega=None,
 
     Examples
     --------
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> mag, phase, omega = bode(sys)
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> Gmag, Gphase, Gomega = ct.bode_plot(G)
 
     """
     # Make a copy of the kwargs dictionary since we will modify it
@@ -692,8 +692,9 @@ def nyquist_plot(
 
     Examples
     --------
-    >>> sys = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
-    >>> count = nyquist_plot(sys)
+    >>> G = ct.zpk([], [-1, -2, -3], gain=100)
+    >>> ct.nyquist_plot(G)
+    2
 
     """
     # Check to see if legacy 'Plot' keyword was used
@@ -1258,6 +1259,13 @@ def gangof4_plot(P, C, omega=None, **kwargs):
     Returns
     -------
     None
+
+    Examples
+    --------
+    >>> P = ct.tf([1], [1, 1])
+    >>> C = ct.tf([2], [1])
+    >>> ct.gangof4_plot(P, C)
+
     """
     if not P.issiso() or not C.issiso():
         # TODO: Add MIMO go4 plots.
@@ -1401,15 +1409,13 @@ def singular_values_plot(syslist, omega=None,
 
     Examples
     --------
-    >>> import numpy as np
+    >>> omegas = np.logspace(-4, 1, 1000)
     >>> den = [75, 1]
-    >>> sys = TransferFunction(
-        [[[87.8], [-86.4]], [[108.2], [-109.6]]], [[den, den], [den, den]])
-    >>> omega = np.logspace(-4, 1, 1000)
-    >>> sigma, omega = singular_values_plot(sys, plot=True)
-    >>> singular_values_plot(sys, 0.0, plot=False)
-    (array([[197.20868123],
-           [  1.39141948]]), array([0.]))
+    >>> G = ct.tf([[[87.8], [-86.4]], [[108.2], [-109.6]]],
+    ...           [[den, den], [den, den]])
+    >>> sigmas, omegas = ct.singular_values_plot(G, omega=omegas, plot=False)
+
+    >>> sigmas, omegas = ct.singular_values_plot(G, 0.0, plot=False)
 
     """
 
@@ -1625,9 +1631,10 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
 
     Examples
     --------
-    >>> from matlab import ss
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> omega = _default_frequency_range(sys)
+    >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
+    >>> omega = ct._default_frequency_range(G)
+    >>> omega.min(), omega.max()
+    (0.1, 100.0)
 
     """
     # Set default values for options
@@ -1753,11 +1760,6 @@ def gen_prefix(pow1000):
             'a',  # atto (10^-18)
             'z',  # zepto (10^-21)
             'y'][8 - pow1000]  # yocto (10^-24)
-
-
-def find_nearest_omega(omega_list, omega):
-    omega_list = np.asarray(omega_list)
-    return omega_list[(np.abs(omega_list - omega)).argmin()]
 
 
 # Function aliases

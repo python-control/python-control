@@ -225,18 +225,18 @@ penalizes the state and input using quadratic cost functions::
   Q = np.diag([0, 0, 0.1])          # don't turn too sharply
   R = np.diag([1, 1])               # keep inputs small
   P = np.diag([1000, 1000, 1000])   # get close to final point
-  traj_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
-  term_cost = opt.quadratic_cost(vehicle, P, 0, x0=xf)
+  traj_cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+  term_cost = obc.quadratic_cost(vehicle, P, 0, x0=xf)
 
 We also constraint the maximum turning rate to 0.1 radians (about 6 degees)
 and constrain the velocity to be in the range of 9 m/s to 11 m/s::
 
-  constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+  constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
 
 Finally, we solve for the optimal inputs::
 
   timepts = np.linspace(0, Tf, 10, endpoint=True)
-  result = opt.solve_ocp(
+  result = obc.solve_ocp(
       vehicle, timepts, x0, traj_cost, constraints,
       terminal_cost=term_cost, initial_guess=u0)
 

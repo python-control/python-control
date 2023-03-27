@@ -115,9 +115,6 @@ def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
     --------
     box_grid : construct box-shaped grid of initial conditions
 
-    Examples
-    --------
-
     """
 
     #

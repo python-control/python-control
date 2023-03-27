@@ -186,6 +186,8 @@ Utility functions and conversions
     reachable_form
     reset_defaults
     sample_system
+    set_defaults
+    similarity_transform
     ss2tf
     ssdata
     tf2ss
