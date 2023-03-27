@@ -212,7 +212,7 @@ class TestFlatSys:
             elif re.match("Iteration limit.*", traj_ocp.message) and \
                  re.match(
                      "conda ubuntu-3.* Generic", os.getenv('JOBNAME', '')) and \
-                 re.match("1.24.[01]", np.__version__):
+                 re.match("1.24.[012]", np.__version__):
                 pytest.xfail("gh820: iteration limit exceeded")
 
             else:
