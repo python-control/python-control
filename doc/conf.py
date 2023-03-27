@@ -282,4 +282,5 @@ import numpy as np
 import control as ct
 import control.optimal as obc
 import control.flatsys as fs
+ct.reset_defaults()
 """
