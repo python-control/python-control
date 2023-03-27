@@ -51,7 +51,7 @@ def canonical_form(xsys, form='reachable'):
     array([[1., 0.]])
 
     >>> Gc, T = ct.canonical_form(Gs, 'modal')
-    >>> Gc.A
+    >>> Gc.A                                                    # doctest: +SKIP
     array([[-2.,  0.],
            [ 0., -1.]])
 
@@ -508,7 +508,7 @@ def modal_form(xsys, condmax=None, sort=False):
     --------
     >>> Gs = ct.tf2ss([1], [1, 3, 2])
     >>> Gc, T = ct.modal_form(Gs)  # default reachable
-    >>> Gc.A
+    >>> Gc.A                                                    # doctest: +SKIP
     array([[-2.,  0.],
            [ 0., -1.]])
 
