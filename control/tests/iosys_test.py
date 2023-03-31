@@ -2047,3 +2047,55 @@ def test_iosys_sample():
     dsys = ct.sample_system(csys, 0.1)
     assert isinstance(dsys, ct.LinearIOSystem)
     assert dsys.dt == 0.1
+
+# TODO: convert to multiple marks, to go through all possibilities
+@pytest.mark.parametrize(
+    "connections, inplist, outlist, inputs, outputs", [
+        pytest.param(
+            [['sys2', 'sys1']], 'sys1', 'sys2', None, None,
+            id="sysname only, no i/o args"),
+        pytest.param(
+            [['sys2', 'sys1']], 'sys1', 'sys2', 3, 3,
+            id="i/o signal counts"),
+        pytest.param(
+            [[('sys2', [0, 1, 2]), ('sys1', [0, 1, 2])]],
+            [('sys1', [0, 1, 2])], [('sys2', [0, 1, 2])],
+            3, 3,
+            id="signal lists, i/o counts"),
+        pytest.param(
+            [['sys2.u[0:3]', 'sys1.y[:]']],
+            'sys1.u[:]', ['sys2.y[0:3]'], None, None,
+            id="signal slices"),
+        pytest.param(
+            [[('sys2', [0, 1, 2]), ('sys1', [0, 1, 2])]],
+            [('sys1', [0, 1, 2])], [('sys2', [0, 1, 2])],
+            None, None,
+            id="signal lists, no i/o counts"),
+        pytest.param(
+            [[(1, ['u[0]', 'u[1]', 'u[2]']), (0, ['y[0]', 'y[1]', 'y[2]'])]],
+            [('sys1', [0, 1, 2])], [('sys2', [0, 1, 2])],
+            3, ['y1', 'y2', 'y3'],
+            id="mixed specs"),
+        pytest.param(
+            [[f'sys2.u[{i}]', f'sys1.y[{i}]'] for i in range(3)],
+            [f'sys1.u[{i}]' for i in range(3)],
+            [f'sys2.y[{i}]' for i in range(3)],
+            [f'u[{i}]' for i in range(3)], [f'y[{i}]' for i in range(3)],
+            id="full enumeration"),
+    ])
+
+def test_iosys_signal_spec(connections, inplist, outlist, inputs, outputs):
+    # Create an interconnected system for testing
+    sys1 = ct.rss(4, 3, 3, name='sys1')
+    sys2 = ct.rss(4, 3, 3, name='sys2')
+    series = sys2 * sys1
+
+    # Simple series interconnection
+    icsys = ct.interconnect(
+        [sys1, sys2], connections=connections,
+        inplist=inplist, outlist=outlist, inputs=inputs, outputs=outputs
+    )
+    np.testing.assert_allclose(icsys.A, series.A)
+    np.testing.assert_allclose(icsys.B, series.B)
+    np.testing.assert_allclose(icsys.C, series.C)
+    np.testing.assert_allclose(icsys.D, series.D)

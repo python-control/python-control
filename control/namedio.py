@@ -8,6 +8,7 @@
 import numpy as np
 from copy import deepcopy
 from warnings import warn
+import re
 from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
@@ -64,7 +65,6 @@ class NamedIOSystem(object):
 
     # Check if system name is generic
     def _generic_name_check(self):
-        import re
         return re.match(r'^sys\[\d*\]$', self.name) is not None
 
     #
@@ -105,6 +105,31 @@ class NamedIOSystem(object):
     # Find a signal by name
     def _find_signal(self, name, sigdict):
         return sigdict.get(name, None)
+
+    # Find a list of signals by name, index, or pattern
+    def _find_signals(self, name_list, sigdict):
+        if not isinstance(name_list, (list, tuple)):
+            name_list = [name_list]
+
+        index_list = []
+        for name in name_list:
+            # Look for signal ranges (slice-like)
+            m = re.match(r'([\w$]+)\[([\d]*):([\d]*)\]$', name)
+            if m:
+                base = m.group(1)
+                start = None if m.group(2) == '' else int(m.group(2))
+                stop = None if m.group(3) == '' else int(m.group(3))
+                for var in sigdict:
+                    # Find variables that match
+                    msig = re.match(r'([\w$]+)\[([\d]*)\]$', var)
+                    if msig.group(1) == base and \
+                       (start is None or int(msig.group(2)) >= start) and \
+                       (stop is None or int(msig.group(2)) < stop):
+                            index_list.append(int(msig.group(2)))
+            else:
+                index_list.append(sigdict.get(name, None))
+
+        return None if any([idx is None for idx in index_list]) else index_list
 
     def _copy_names(self, sys, prefix="", suffix="", prefix_suffix_name=None):
         """copy the signal and system name of sys. Name is given as a keyword
