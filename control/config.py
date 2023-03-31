@@ -10,6 +10,7 @@
 
 import collections
 import warnings
+from .exception import ControlArgument
 
 __all__ = ['defaults', 'set_defaults', 'reset_defaults',
            'use_matlab_defaults', 'use_fbs_defaults',
@@ -360,3 +361,25 @@ def use_legacy_defaults(version):
         set_defaults('nyquist', mirror_style='-')
 
     return (major, minor, patch)
+
+
+#
+# Utility function for processing legacy keywords
+#
+# Use this function to handle a legacy keyword that has been renamed.  This
+# function pops the old keyword off of the kwargs dictionary and issues a
+# warning.  if both the old and new keyword are present, a ControlArgument
+# exception is raised.
+#
+def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
+    if kwargs.get(oldkey) is not None:
+        warnings.warn(
+            f"keyworld '{oldkey}' is deprecated; use '{newkey}'",
+            DeprecationWarning)
+        if newval is not None:
+            raise ControlArgument(
+                f"duplicate keywords '{oldkey}' and '{newkey}'")
+        else:
+            return kwargs.pop(oldkey)
+    else:
+        return newval

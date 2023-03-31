@@ -24,6 +24,9 @@ import time
 
 from . import config
 from .exception import ControlNotImplemented
+from .namedio import _process_indices, _process_labels, \
+    _process_control_disturbance_indices
+
 
 # Define module default parameter values
 _optimal_trajectory_methods = {'shooting', 'collocation'}
@@ -143,8 +146,8 @@ class OptimalControlProblem():
 
     """
     def __init__(
-            self, sys, timepts, integral_cost, trajectory_constraints=[],
-            terminal_cost=None, terminal_constraints=[], initial_guess=None,
+            self, sys, timepts, integral_cost, trajectory_constraints=None,
+            terminal_cost=None, terminal_constraints=None, initial_guess=None,
             trajectory_method=None, basis=None, log=False, kwargs_check=True,
             **kwargs):
         """Set up an optimal control problem."""
@@ -864,11 +867,11 @@ class OptimalControlProblem():
             return res.inputs[:, 0]
 
         # Define signal names, if they are not already given
-        if not kwargs.get('inputs'):
+        if kwargs.get('inputs') is None:
             kwargs['inputs'] = self.system.state_labels
-        if not kwargs.get('outputs'):
+        if kwargs.get('outputs') is None:
             kwargs['outputs'] = self.system.input_labels
-        if not kwargs.get('states'):
+        if kwargs.get('states') is None:
             kwargs['states'] = self.system.ninputs * \
                 (self.timepts.size if self.basis is None else self.basis.N)
 
@@ -947,7 +950,7 @@ class OptimalControlResult(sp.optimize.OptimizeResult):
 # Compute the input for a nonlinear, (constrained) optimal control problem
 def solve_ocp(
         sys, timepts, X0, cost, trajectory_constraints=None, terminal_cost=None,
-        terminal_constraints=[], initial_guess=None, basis=None, squeeze=None,
+        terminal_constraints=None, initial_guess=None, basis=None, squeeze=None,
         transpose=None, return_states=True, print_summary=True, log=False,
         **kwargs):
 
@@ -1041,7 +1044,7 @@ def solve_ocp(
 
     Notes
     -----
-    Additional keyword parameters can be used to fine tune the behavior of
+    Additional keyword parameters can be used to fine-tune the behavior of
     the underlying optimization and integration functions.  See
     :func:`OptimalControlProblem` for more information.
 
@@ -1087,8 +1090,8 @@ def solve_ocp(
 
 # Create a model predictive controller for an optimal control problem
 def create_mpc_iosystem(
-        sys, timepts, cost, constraints=[], terminal_cost=None,
-        terminal_constraints=[], log=False, **kwargs):
+        sys, timepts, cost, constraints=None, terminal_cost=None,
+        terminal_constraints=None, log=False, **kwargs):
     """Create a model predictive I/O control system
 
     This function creates an input/output system that implements a model
@@ -1130,9 +1133,18 @@ def create_mpc_iosystem(
         returning the current input to be applied that minimizes the cost
         function while satisfying the constraints.
 
+    Other Parameters
+    ----------------
+    inputs, outputs, states : int or list of str, optional
+        Set the names of the inputs, outputs, and states, as described in
+        :func:`~control.InputOutputSystem`.
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+
     Notes
     -----
-    Additional keyword parameters can be used to fine tune the behavior of
+    Additional keyword parameters can be used to fine-tune the behavior of
     the underlying optimization and integrations functions.  See
     :func:`OptimalControlProblem` for more information.
 
@@ -1145,6 +1157,812 @@ def create_mpc_iosystem(
 
     # Return an I/O system implementing the model predictive controller
     return ocp.create_mpc_iosystem(**kwargs)
+
+
+#
+# Optimal (moving horizon) estimation problem
+#
+
+class OptimalEstimationProblem():
+    """Description of a finite horizon, optimal estimation problem.
+
+    The `OptimalEstimationProblem` class holds all of the information
+    required to specify an optimal estimation problem: the system dynamics,
+    cost function (negative of the log likelihood), and constraints.
+
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        I/O system for which the optimal input will be computed.
+    timepts: 1D array
+            Set up time points at which the inputs and outputs are given.
+    integral_cost : callable
+        Function that returns the integral cost given the estimated state,
+        system inputs, and output error.  Called as integral_cost(xhat, u,
+        v, w) where xhat is the estimated state, u is the appplied input to
+        the system, v is the estimated disturbance input, and w is the
+        difference between the measured and the estimated output.
+    trajectory_constraints : list of constraints, optional
+       List of constraints that should hold at each point in the time
+       vector.  Each element of the list should be an object of type
+       :class:`~scipy.optimize.LinearConstraint` with arguments `(A, lb,
+       ub)` or :class:`~scipy.optimize.NonlinearConstraint` with arguments
+       `(fun, lb, ub)`.  The constraints will be applied at each time point
+       along the trajectory.
+    terminal_cost : callable, optional
+        Function that returns the terminal cost given the initial estimated
+        state and expected value.  Called as terminal_cost(xhat, x0).
+    control_indices : int, slice, or list of int or string, optional
+        Specify the indices in the system input vector that correspond to
+        the control inputs.  These inputs will be used as known control
+        inputs for the estimator.  If value is an integer `m`, the first
+        `m` system inputs are used.  Otherwise, the value should be a slice
+        or a list of indices.  The list of indices can be specified as
+        either integer offsets or as system input signal names.  If not
+        specified, defaults to the complement of the disturbance indices
+        (see also notes below).
+    disturbance_indices : int, list of int, or slice, optional
+        Specify the indices in the system input vector that correspond to
+        the process disturbances.  If value is an integer `m`, the last `m`
+        system inputs are used.  Otherwise, the value should be a slice or
+        a list of indices, as describedf for `control_indices`.  If not
+        specified, defaults to the complement of the control indicies (see
+        also notes below).
+
+    Returns
+    -------
+    oep : OptimalEstimationProblem
+        Optimal estimation problem object, to be used in computing optimal
+        estimates.
+
+    Other Parameters
+    ----------------
+    terminal_constraints : list of constraints, optional
+        List of constraints that should hold at the terminal point in time,
+        in the same form as `trajectory_constraints`.
+    solve_ivp_method : str, optional
+        Set the method used by :func:`scipy.integrate.solve_ivp`.
+    solve_ivp_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.integrate.solve_ivp`.
+    minimize_method : str, optional
+        Set the method used by :func:`scipy.optimize.minimize`.
+    minimize_options : str, optional
+        Set the options keyword used by :func:`scipy.optimize.minimize`.
+    minimize_kwargs : str, optional
+        Pass additional keywords to :func:`scipy.optimize.minimize`.
+
+    Notes
+    -----
+    To describe an optimal estimation problem we need an input/output system,
+    a set of time points, applied inputs and measured outputs, a cost
+    function, and (optionally) a set of constraints on the state and/or inputs
+    along the trajectory (and at the terminal time).  This class sets up an
+    optimization over the state and disturbances at each point in time, using
+    the integral and terminal costs as well as the trajectory constraints.
+    The :func:`~control.optimal.OptimalEstimationProblem.compute_estimate`
+    method solves the underling optimization problem using
+    :func:`scipy.optimize.minimize`.
+
+    The control input and disturbance indices can be specified using the
+    `control_indices` and `disturbance_indices` keywords.  If only one is
+    given, the other is assumed to be the remaining indices in the system
+    input.  If neither is given, the disturbance inputs are assumed to be
+    the same as the control inputs.
+
+    The "cost" (e.g. negative of the log likelihood) of the estimated
+    trajectory is computed using the estimated state, the disturbances and
+    noise, and the measured output.  This is done by calling a user-defined
+    function for the integral_cost along the trajectory and then adding the
+    value of a user-defined terminal cost at the initial point in the
+    trajectory.
+
+    The constraint functions are evaluated at each point on the trajectory
+    generated by the proposed estimate and disturbances.  As in the case of
+    the cost function, the constraints are evaluated at the estimated
+    state, inputs, and measured outputs along each point on the trajectory.
+    This information is compared against the constraint upper and lower
+    bounds.  The constraint function is processed in the class initializer,
+    so that it only needs to be computed once.
+
+    The default values for ``minimize_method``, ``minimize_options``,
+    ``minimize_kwargs``, ``solve_ivp_method``, and ``solve_ivp_options``
+    can be set using config.defaults['optimal.<keyword>'].
+
+    """
+    def __init__(
+            self, sys, timepts, integral_cost, terminal_cost=None,
+            trajectory_constraints=None, control_indices=None,
+            disturbance_indices=None, **kwargs):
+        """Set up an optimal control problem."""
+        # Save the basic information for use later
+        self.system = sys
+        self.timepts = timepts
+        self.integral_cost = integral_cost
+        self.terminal_cost = terminal_cost
+
+        # Process keyword arguments
+        self.minimize_kwargs = {}
+        self.minimize_kwargs['method'] = kwargs.pop(
+            'minimize_method', config.defaults['optimal.minimize_method'])
+        self.minimize_kwargs['options'] = kwargs.pop(
+            'minimize_options', config.defaults['optimal.minimize_options'])
+        self.minimize_kwargs.update(kwargs.pop(
+            'minimize_kwargs', config.defaults['optimal.minimize_kwargs']))
+
+        # Save input and disturbance indices (and create input array)
+        self.control_indices = control_indices
+        self.disturbance_indices = disturbance_indices
+        self.ctrl_idx, self.dist_idx = None, None
+        self.inputs = np.zeros((sys.ninputs, len(timepts)))
+
+        # Make sure there were no extraneous keywords
+        if kwargs:
+            raise TypeError("unrecognized keyword(s): ", str(kwargs))
+
+        self.trajectory_constraints = _process_constraints(
+            trajectory_constraints, "trajectory")
+
+        #
+        # Compute and store constraints
+        #
+        # While the constraints are evaluated during the execution of the
+        # SciPy optimization method itself, we go ahead and pre-compute the
+        # `scipy.optimize.NonlinearConstraint` function that will be passed to
+        # the optimizer on initialization, since it doesn't change.  This is
+        # mainly a matter of computing the lower and upper bound vectors,
+        # which we need to "stack" to account for the evaluation at each
+        # trajectory time point plus any terminal constraints (in a way that
+        # is consistent with the `_constraint_function` that is used at
+        # evaluation time.
+        #
+        # TODO: when using the collocation method, linear constraints on the
+        # states and inputs can potentially maintain their linear structure
+        # rather than being converted to nonlinear constraints.
+        #
+        constraint_lb, constraint_ub, eqconst_value = [], [], []
+
+        # Go through each time point and stack the bounds
+        for t in self.timepts:
+            for type, fun, lb, ub in self.trajectory_constraints:
+                if np.all(lb == ub):
+                    # Equality constraint
+                    eqconst_value.append(lb)
+                else:
+                    # Inequality constraint
+                    constraint_lb.append(lb)
+                    constraint_ub.append(ub)
+
+        # Turn constraint vectors into 1D arrays
+        self.constraint_lb = np.hstack(constraint_lb) if constraint_lb else []
+        self.constraint_ub = np.hstack(constraint_ub) if constraint_ub else []
+        self.eqconst_value = np.hstack(eqconst_value) if eqconst_value else []
+
+        # Create the constraints (inequality and equality)
+        # TODO: keep track of linear vs nonlinear
+        self.constraints = []
+
+        if len(self.constraint_lb) != 0:
+            self.constraints.append(sp.optimize.NonlinearConstraint(
+                self._constraint_function, self.constraint_lb,
+                self.constraint_ub))
+
+        if len(self.eqconst_value) != 0:
+            self.constraints.append(sp.optimize.NonlinearConstraint(
+                self._eqconst_function, self.eqconst_value,
+                self.eqconst_value))
+
+        # Add the collocation constraints
+        colloc_zeros = np.zeros(sys.nstates * (self.timepts.size - 1))
+        self.colloc_vals = np.zeros((sys.nstates, self.timepts.size - 1))
+        self.constraints.append(sp.optimize.NonlinearConstraint(
+            self._collocation_constraint, colloc_zeros, colloc_zeros))
+
+        # Initialize run-time statistics
+        self._reset_statistics()
+
+    #
+    # Cost function
+    #
+    # We are given the estimated states, applied inputs, and measured
+    # outputs at each time point and we use a zero-order hold approximation
+    # to compute the integral cost plus the terminal (initial) cost:
+    #
+    #   cost = sum_{k=1}^{N-1} integral_cost(xhat[k], u[k], v[k], w[k]) * dt
+    #          + terminal_cost(xhat[0], x0)
+    #
+    def _cost_function(self, xvec):
+        # Compute the estimated states and disturbance inputs
+        xhat, u, v, w = self._compute_states_inputs(xvec)
+
+        # Trajectory cost
+        if ct.isctime(self.system):
+            # Evaluate the costs
+            costs = np.array([self.integral_cost(
+                xhat[:, i], u[:, i], v[:, i], w[:, i]) for
+                     i in range(self.timepts.size)])
+
+            # Compute the time intervals and integrate the cost (trapezoidal)
+            cost = 0.5 * (costs[:-1] + costs[1:]) @ np.diff(self.timepts)
+
+        else:
+            # Sum the integral cost over the time (second) indices
+            # cost += self.integral_cost(xhat[:, i], u[:, i], v[:, i], w[:, i])
+            cost = sum(map(self.integral_cost, xhat.T, u.T, v.T, w.T))
+
+        # Terminal cost
+        if self.terminal_cost is not None and self.x0 is not None:
+            cost += self.terminal_cost(xhat[:, 0], self.x0)
+
+        # Update statistics
+        self.cost_evaluations += 1
+
+        # Return the total cost for this input sequence
+        return cost
+
+    #
+    # Constraints
+    #
+    # We are given the constraints along the trajectory and the terminal
+    # constraints, which each take inputs [xhat, u, v, w] and evaluate the
+    # constraint.  How we handle these depends on the type of constraint:
+    #
+    # * For linear constraints (LinearConstraint), a combined (hstack'd)
+    #   vector of the estimate state and inputs is multiplied by the
+    #   polytope A matrix for comparison against the upper and lower
+    #   bounds.
+    #
+    # * For nonlinear constraints (NonlinearConstraint), a user-specific
+    #   constraint function having the form
+    #
+    #      constraint_fun(xhat, u, v, w)
+    #
+    #   is called at each point along the trajectory and compared against the
+    #   upper and lower bounds.
+    #
+    # * If the upper and lower bound for the constraint are identical, then
+    #   we separate out the evaluation into two different constraints, which
+    #   allows the SciPy optimizers to be more efficient (and stops them
+    #   from generating a warning about mixed constraints).  This is handled
+    #   through the use of the `_eqconst_function` and `eqconst_value`
+    #   members.
+    #
+    # In both cases, the constraint is specified at a single point, but we
+    # extend this to apply to each point in the trajectory.  This means
+    # that for N time points with m trajectory constraints and p terminal
+    # constraints we need to compute N*m + p constraints, each of which
+    # holds at a specific point in time, and implements the original
+    # constraint.
+    #
+    def _constraint_function(self, xvec):
+        # Compute the estimated states and disturbance inputs
+        xhat, u, v, w = self._compute_states_inputs(xvec)
+
+        #
+        # Evaluate the constraint function along the trajectory
+        #
+        # TODO: vectorize
+        value = []
+        for i, t in enumerate(self.timepts):
+            for ctype, fun, lb, ub in self.trajectory_constraints:
+                if np.all(lb == ub):
+                    # Skip equality constraints
+                    continue
+                elif ctype == opt.LinearConstraint:
+                    # `fun` is the A matrix associated with the polytope...
+                    value.append(fun @ np.hstack(
+                        [xhat[:, i], u[:, i], v[:, i], w[:, i]]))
+                elif ctype == opt.NonlinearConstraint:
+                    value.append(fun(xhat[:, i], u[:, i], v[:, i], w[:, i]))
+                else:      # pragma: no cover
+                    # Checked above => we should never get here
+                    raise TypeError(f"unknown constraint type {ctype}")
+
+        # Update statistics
+        self.constraint_evaluations += 1
+
+        # Return the value of the constraint function
+        return np.hstack(value)
+
+    def _eqconst_function(self, xvec):
+        # Compute the estimated states and disturbance inputs
+        xhat, u, v, w = self._compute_states_inputs(xvec)
+
+        # Evaluate the constraint function along the trajectory
+        # TODO: vectorize
+        value = []
+        for i, t in enumerate(self.timepts):
+            for ctype, fun, lb, ub in self.trajectory_constraints:
+                if np.any(lb != ub):
+                    # Skip inequality constraints
+                    continue
+                elif ctype == opt.LinearConstraint:
+                    # `fun` is the A matrix associated with the polytope...
+                    value.append(fun @ np.hstack(
+                        [xhat[:, i], u[:, i], v[:, i], w[:, i]]))
+                elif ctype == opt.NonlinearConstraint:
+                    value.append(fun(xhat[:, i], u[:, i], v[:, i], w[:, i]))
+                else:      # pragma: no cover
+                    # Checked above => we should never get here
+                    raise TypeError(f"unknown constraint type {ctype}")
+
+        # Update statistics
+        self.eqconst_evaluations += 1
+
+        # Return the value of the constraint function
+        return np.hstack(value)
+
+    def _collocation_constraint(self, xvec):
+        # Compute the estimated states and disturbance inputs
+        xhat, u, v, w = self._compute_states_inputs(xvec)
+
+        # Create the input vector for the system
+        self.inputs.fill(0.)
+        self.inputs[self.ctrl_idx, :] = u
+        self.inputs[self.dist_idx, :] += v
+
+        if self.system.isctime():
+            # Compute the collocation constraints
+            # TODO: vectorize
+            fk = self.system._rhs(
+                self.timepts[0], xhat[:, 0], self.inputs[:, 0])
+            for i, t in enumerate(self.timepts[:-1]):
+                # From M. Kelly, SIAM Review (2017), equation (3.2), i = k+1
+                # x[k+1] - x[k] = 0.5 hk (f(x[k+1], u[k+1] + f(x[k], u[k]))
+                fkp1 = self.system._rhs(t, xhat[:, i+1], self.inputs[:, i+1])
+                self.colloc_vals[:, i] = xhat[:, i+1] - xhat[:, i] - \
+                    0.5 * (self.timepts[i+1] - self.timepts[i]) * (fkp1 + fk)
+                fk = fkp1
+        else:
+            # TODO: vectorize
+            for i, t in enumerate(self.timepts[:-1]):
+                # x[k+1] = f(x[k], u[k], v[k])
+                self.colloc_vals[:, i] = xhat[:, i+1] - \
+                    self.system._rhs(t, xhat[:, i], self.inputs[:, i])
+
+        # Return the value of the constraint function
+        return self.colloc_vals.reshape(-1)
+
+    #
+    # Initial guess processing
+    #
+    def _process_initial_guess(self, initial_guess):
+        if initial_guess is None:
+            return np.zeros(
+                (self.system.nstates + self.ndisturbances) * self.timepts.size)
+        else:
+            if initial_guess[0].shape != \
+               (self.system.nstates, self.timepts.size):
+                raise ValueError(
+                    "initial guess for state estimate must have shape "
+                    f"{self.system.nstates} x {self.timepts.size}")
+
+            elif initial_guess[1].shape != \
+                 (self.ndisturbances, self.timepts.size):
+                raise ValueError(
+                    "initial guess for disturbances must have shape "
+                    f"{self.ndisturbances} x {self.timepts.size}")
+
+            return np.hstack([
+                initial_guess[0].reshape(-1),           # estimated states
+                initial_guess[1].reshape(-1)])          # disturbances
+
+    #
+    # Compute the states and inputs from the optimization parameter vector
+    # and the internally stored inputs and measured outputs.
+    #
+    # The optimization parameter vector has elements (xhat[0], ...,
+    # xhat[N-1], v[0], ..., v[N-2]) where N is the number of time
+    # points.  The system inputs u and measured outputs y are locally
+    # stored in self.u and self.y when compute_estimate() is called.
+    #
+    def _compute_states_inputs(self, xvec):
+        # Extract the state estimate and disturbances
+        xhat = xvec[:self.system.nstates * self.timepts.size].reshape(
+            self.system.nstates, -1)
+        v = xvec[self.system.nstates * self.timepts.size:].reshape(
+            self.ndisturbances, -1)
+
+        # Create the input vector for the system
+        self.inputs[self.ctrl_idx, :] = self.u
+        self.inputs[self.dist_idx, :] = v
+
+        # Compute the estimated output
+        yhat = np.vstack([
+            self.system._out(self.timepts[i], xhat[:, i], self.inputs[:, i])
+            for i in range(self.timepts.size)]).T
+
+        return xhat, self.u, v, self.y - yhat
+
+    #
+    # Optimization statistics
+    #
+    # To allow some insight into where time is being spent, we keep track
+    # of the number of times that various functions are called and (TODO)
+    # how long we spent inside each function.
+    #
+    def _reset_statistics(self):
+        """Reset counters for keeping track of statistics"""
+        self.cost_evaluations, self.cost_process_time = 0, 0
+        self.constraint_evaluations, self.constraint_process_time = 0, 0
+        self.eqconst_evaluations, self.eqconst_process_time = 0, 0
+
+    def _print_statistics(self, reset=True):
+        """Print out summary statistics from last run"""
+        print("Summary statistics:")
+        print("* Cost function calls:", self.cost_evaluations)
+        if self.constraint_evaluations:
+            print("* Constraint calls:", self.constraint_evaluations)
+        if self.eqconst_evaluations:
+            print("* Eqconst calls:", self.eqconst_evaluations)
+        if reset:
+            self._reset_statistics()
+
+    #
+    # Optimal estimate computations
+    #
+    def compute_estimate(
+            self, Y, U, X0=None, initial_guess=None,
+            squeeze=None, print_summary=True):
+        """Compute the optimal input at state x
+
+        Parameters
+        ----------
+        Y : 2D array
+            Measured outputs at each time point.
+        U : 2D array
+            Applied inputs at each time point.
+        X0 : 1D array
+            Expected initial value of the state.
+        initial_guess : 2-tuple of 2D arrays
+            A 2-tuple consisting of the estimated states and disturbance
+            values to use as a guess for the optimal estimated trajectory.
+        squeeze : bool, optional
+            If True and if the system has a single disturbance input and
+            single measured output, return the system input and output as a
+            1D array rather than a 2D array.  If False, return the system
+            output as a 2D array even if the system is SISO.  Default value
+            set by config.defaults['control.squeeze_time_response'].
+        print_summary : bool, optional
+            If `True` (default), print a short summary of the computation.
+
+        Returns
+        -------
+        res : OptimalEstimationResult
+            Bundle object with the results of the optimal estimation problem.
+        res.success : bool
+            Boolean flag indicating whether the optimization was successful.
+        res.time : array
+            Time values of the input (same as self.timepts).
+        res.inputs : array
+            Estimated disturbance inputs for the system trajectory.
+        res.states : array
+            Time evolution of the estimated state vector.
+        res.outputs: array
+            Estimated measurement noise for the system trajectory.
+
+        """
+        # Store the inputs and outputs (for use in _constraint_function)
+        self.u = np.atleast_1d(U).reshape(-1, self.timepts.size)
+        self.y = np.atleast_1d(Y).reshape(-1, self.timepts.size)
+        self.x0 = X0
+
+        # Figure out the number of disturbances
+        if self.disturbance_indices is None and self.control_indices is None:
+            self.ctrl_idx, self.dist_idx = \
+                _process_control_disturbance_indices(
+                    self.system, None, self.system.ninputs - self.u.shape[0])
+        elif self.ctrl_idx is None or self.dist_idx is None:
+            self.ctrl_idx, self.dist_idx = \
+                _process_control_disturbance_indices(
+                    self.system, self.control_indices,
+                    self.disturbance_indices)
+        self.ndisturbances = len(self.dist_idx)
+
+        # Make sure the dimensions of the inputs are OK
+        if self.u.shape[0] != len(self.ctrl_idx):
+            raise ValueError(
+                "input vector is incorrect shape; "
+                f"should be {len(self.ctrl_idx)} x {self.timepts.size}")
+        if self.y.shape[0] != self.system.noutputs:
+            raise ValueError(
+                "measurements vector is incorrect shape; "
+                f"should be {self.system.noutputs} x {self.timepts.size}")
+
+        # Process the initial guess
+        initial_guess = self._process_initial_guess(initial_guess)
+
+        # Call ScipPy optimizer
+        res = sp.optimize.minimize(
+            self._cost_function, initial_guess,
+            constraints=self.constraints, **self.minimize_kwargs)
+
+        # Process and return the results
+        return OptimalEstimationResult(
+            self, res, squeeze=squeeze, print_summary=print_summary)
+
+
+    #
+    # Create an input/output system implementing an moving horizon estimator
+    #
+    # This function creates an input/output system that has internal state
+    # xhat, u, v, y for all previous time points.  When the system update
+    # function is called,
+    #
+    def create_mhe_iosystem(
+            self, estimate_labels=None, measurement_labels=None,
+            control_labels=None, inputs=None, outputs=None, **kwargs):
+        """Create an I/O system implementing an MPC controller
+
+        This function creates an input/output system that implements a
+        moving horizon estimator for a an optimal estimation problem.  The
+        I/O system takes the system measurements and applied inputs as as
+        inputs and outputs the estimated state.
+
+        Parameters
+        ----------
+        estimate_labels : str or list of str, optional
+            Set the name of the signals to use for the estimated state
+            (estimator outputs).  If a single string is specified, it
+            should be a format string using the variable ``i`` as an index.
+            Otherwise, a list of strings matching the size of the estimated
+            state should be used.  Default is "xhat[{i}]".  These settings
+            can also be overriden using the `outputs` keyword.
+        measurement_labels, control_labels : str or list of str, optional
+            Set the name of the measurement and control signal names
+            (estimator inputs).  If a single string is specified, it should
+            be a format string using the variable ``i`` as an index.
+            Otherwise, a list of strings matching the size of the system
+            inputs and outputs should be used.  Default is the signal names
+            for the system outputs and control inputs. These settings can
+            also be overriden using the `inputs` keyword.
+        **kwargs, optional
+            Additional keyword arguments to set system, input, and output
+            signal names; see :func:`~control.InputOutputSystem`.
+
+        Returns
+        -------
+        estim : InputOutputSystem
+            An I/O system taking the measured output and applied input for
+            the model system and returning the estimated state of the
+            system, as determined by solving the optimal estimation problem.
+
+        Notes
+        -----
+        The labels for the input signals for the system are determined
+        based on the signal names for the system model used in the optimal
+        estimation problem.  The system name and signal names can be
+        overridden using the `name`, `input`, and `output` keywords, as
+        described in :func:`~control.InputOutputSystem`.
+
+        """
+        # Check to make sure we are in discrete time
+        if self.system.dt == 0:
+            raise ct.ControlNotImplemented(
+                "MHE for continuous time systems not implemented")
+
+        # Figure out the location of the disturbances
+        self.ctrl_idx, self.dist_idx = \
+            _process_control_disturbance_indices(
+                self.system, self.control_indices, self.disturbance_indices)
+
+        # Figure out the signal labels to use
+        estimate_labels = _process_labels(
+            estimate_labels, 'estimate',
+            [f'xhat[{i}]' for i in range(self.system.nstates)])
+        outputs = estimate_labels if outputs is None else outputs
+
+        measurement_labels = _process_labels(
+            measurement_labels, 'measurement', self.system.output_labels)
+        control_labels = _process_labels(
+            control_labels, 'control',
+            [self.system.input_labels[i] for i in self.ctrl_idx])
+        inputs = measurement_labels + control_labels if inputs is None \
+            else inputs
+
+        nstates = (self.system.nstates + self.system.ninputs
+                   + self.system.noutputs) * self.timepts.size
+        if kwargs.get('states'):
+            raise ValueError("user-specified state signal names not allowed")
+
+        # Utility function to extract elements from MHE state vector
+        def _xvec_next(xvec, off, size):
+            len_ = size * self.timepts.size
+            return (off + len_,
+                    xvec[off:off + len_].reshape(-1, self.timepts.size))
+
+        # Update function for the estimator
+        def _mhe_update(t, xvec, uvec, params={}):
+            # Inputs are the measurements and inputs
+            y = uvec[:self.system.noutputs].reshape(-1, 1)
+            u = uvec[self.system.noutputs:].reshape(-1, 1)
+
+            # Estimator state = [xhat, v, Y, U]
+            off, xhat = _xvec_next(xvec, 0, self.system.nstates)
+            off, U = _xvec_next(xvec, off, len(self.ctrl_idx))
+            off, V = _xvec_next(xvec, off, len(self.dist_idx))
+            off, Y = _xvec_next(xvec, off, self.system.noutputs)
+
+            # Shift the states and add the new measurements and inputs
+            # TODO: look for Numpy shift() operator
+            xhat = np.hstack([xhat[:, 1:], xhat[:, -1:]])
+            U = np.hstack([U[:, 1:], u])
+            V = np.hstack([V[:, 1:], V[:, -1:]])
+            Y = np.hstack([Y[:, 1:], y])
+
+            # Compute the new states and disturbances
+            est = self.compute_estimate(
+                Y, U, X0=xhat[:, 0], initial_guess=(xhat, V),
+                print_summary=False)
+
+            # Restack the new state
+            return np.hstack([
+                est.states.reshape(-1), U.reshape(-1),
+                est.inputs.reshape(-1), Y.reshape(-1)])
+
+        # Output function
+        def _mhe_output(t, xvec, uvec, params={}):
+            # Get the states and inputs
+            off, xhat = _xvec_next(xvec, 0, self.system.nstates)
+            off, u_v = _xvec_next(xvec, off, self.system.ninputs)
+
+            # Compute the estimate at the next time point
+            return self.system._rhs(t, xhat[:, -1], u_v[:, -1])
+
+        return ct.NonlinearIOSystem(
+            _mhe_update, _mhe_output, dt=self.system.dt,
+            states=nstates, inputs=inputs, outputs=outputs, **kwargs)
+
+
+# Optimal estimation result
+class OptimalEstimationResult(sp.optimize.OptimizeResult):
+    """Result from solving an optimal estimationproblem.
+
+    This class is a subclass of :class:`scipy.optimize.OptimizeResult` with
+    additional attributes associated with solving optimal estimation
+    problems.
+
+    Attributes
+    ----------
+    states : ndarray
+        Estimated state trajectory.
+    inputs : ndarray
+        The disturbances associated with the estimated state trajectory.
+    outputs :
+        The error between measured outputs and estiamted outputs.
+    success : bool
+        Whether or not the optimizer exited successful.
+    problem : OptimalControlProblem
+        Optimal control problem that generated this solution.
+    cost : float
+        Final cost of the return solution.
+    system_simulations, {cost, constraint, eqconst}_evaluations : int
+        Number of system simulations and evaluations of the cost function,
+        (inequality) constraint function, and equality constraint function
+        performed during the optimzation.
+    {cost, constraint, eqconst}_process_time : float
+        If logging was enabled, the amount of time spent evaluating the cost
+        and constraint functions.
+
+    """
+    def __init__(
+            self, oep, res, return_states=True, print_summary=False,
+            transpose=None, squeeze=None):
+        """Create a OptimalControlResult object"""
+
+        # Copy all of the fields we were sent by sp.optimize.minimize()
+        for key, val in res.items():
+            setattr(self, key, val)
+
+        # Remember the optimal control problem that we solved
+        self.problem = oep
+
+        # Parse the optimization variables into states and inputs
+        xhat, u, v, w = oep._compute_states_inputs(res.x)
+
+        # See if we got an answer
+        if not res.success:
+            warnings.warn(
+                "unable to solve optimal control problem\n"
+                "scipy.optimize.minimize returned " + res.message, UserWarning)
+
+        # Save the final cost
+        self.cost = res.fun
+
+        # Optionally print summary information
+        if print_summary:
+            oep._print_statistics()
+            print("* Final cost:", self.cost)
+
+        # Process data as a time response (with "outputs" = inputs)
+        response = ct.TimeResponseData(
+            oep.timepts, w, xhat, v, issiso=oep.system.issiso(),
+            squeeze=squeeze)
+
+        self.time = response.time
+        self.inputs = response.inputs
+        self.states = response.states
+        self.outputs = response.outputs
+
+
+# Compute the moving horizon estimate for a nonlinear system
+def solve_oep(
+        sys, timepts, Y, U, trajectory_cost, X0=None,
+        trajectory_constraints=None, initial_guess=None,
+        squeeze=None, print_summary=True, **kwargs):
+
+    """Compute the solution to a moving horizon estimation problem
+
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        I/O system for which the optimal input will be computed.
+    timepts : 1D array_like
+        List of times at which the optimal input should be computed.
+    Y, U: 2D array_like
+        Values of the outputs and inputs at each time point.
+    trajectory_cost : callable
+        Function that returns the cost given the current state
+        and input.  Called as `cost(y, u, x0)`.
+    X0: 1D array_like, optional
+        Mean value of the initial condition (defaults to 0).
+    trajectory_constraints : list of tuples, optional
+        List of constraints that should hold at each point in the time vector.
+        See :func:`solve_ocp` for more information.
+    control_indices : int, slice, or list of int or string, optional
+        Specify the indices in the system input vector that correspond to
+        the control inputs.  For more information on possible values, see
+        :func:`~control.optimal.OptimalEstimationProblem`
+    disturbance_indices : int, list of int, or slice, optional
+        Specify the indices in the system input vector that correspond to
+        the input disturbances.  For more information on possible values, see
+        :func:`~control.optimal.OptimalEstimationProblem`
+    initial_guess : 2D array_like, optional
+        Initial guess for the state estimate at each time point.
+    print_summary : bool, optional
+        If `True` (default), print a short summary of the computation.
+    squeeze : bool, optional
+        If True and if the system has a single output, return the system
+        output as a 1D array rather than a 2D array.  If False, return the
+        system output as a 2D array even if the system is SISO.  Default value
+        set by config.defaults['control.squeeze_time_response'].
+
+    Returns
+    -------
+    res : TimeResponseData
+        Bundle object with the estimated state and noise values.
+    res.success : bool
+        Boolean flag indicating whether the optimization was successful.
+    res.time : array
+        Time values of the input.
+    res.inputs : array
+        Disturbance values corresponding to the estimated state.  If the
+        system is SISO and squeeze is not True, the array is 1D (indexed by
+        time).  If the system is not SISO or squeeze is False, the array is
+        2D (indexed by the output number and time).
+    res.states : array
+        Estimated state vector over the given time points.
+    res.outputs : array
+        Noise values corresponding to the estimated state.  If the system
+        is SISO and squeeze is not True, the array is 1D (indexed by time).
+        If the system is not SISO or squeeze is False, the array is 2D
+        (indexed by the output number and time).
+
+    Notes
+    -----
+    Additional keyword parameters can be used to fine-tune the behavior of
+    the underlying optimization and integration functions.  See
+    :func:`~control.optimal.OptimalControlProblem` for more information.
+
+    """
+    # Set up the optimal control problem
+    oep = OptimalEstimationProblem(
+        sys, timepts, trajectory_cost,
+        trajectory_constraints=trajectory_constraints, **kwargs)
+
+    # Solve for the optimal input from the current state
+    return oep.compute_estimate(
+        Y, U, X0=X0, initial_guess=initial_guess,
+        squeeze=squeeze, print_summary=print_summary)
 
 
 #
@@ -1208,6 +2026,53 @@ def quadratic_cost(sys, Q, R, x0=0, u0=0):
     return lambda x, u: ((x-x0) @ Q @ (x-x0) + (u-u0) @ R @ (u-u0)).item()
 
 
+def gaussian_likelihood_cost(sys, Rv, Rw=None):
+    """Create cost function for Gaussian likelihoods
+
+    Returns a quadratic cost function that can be used for an optimal
+    estimation problem.  The cost function is of the form
+
+      cost = v^T R_v^{-1} v + w^T R_w^{-1} w
+
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        I/O system for which the cost function is being defined.
+    Rv : 2D array_like
+        Covariance matrix for input (or state) disturbances.
+    Rw : 2D array_like
+        Covariance matrix for sensor noise.
+
+    Returns
+    -------
+    cost_fun : callable
+        Function that can be used to evaluate the cost for a given
+        disturbance and sensor noise.  The call signature of the function
+        is cost_fun(v, w).
+
+    """
+    # Process the input arguments
+    if Rv is not None:
+        Rv = np.atleast_2d(Rv)
+
+    if Rw is not None:
+        Rw = np.atleast_2d(Rw)
+        if Rw.size == 1:         # allow scalar weights
+            Rw = np.eye(sys.noutputs) * Rw.item()
+        elif Rw.shape != (sys.noutputs, sys.noutputs):
+            raise ValueError("Rw matrix is the wrong shape")
+
+    if Rv is None:
+        return lambda xhat, u, v, w: (w @ np.linalg.inv(Rw) @ w).item()
+
+    if Rw is None:
+        return lambda xhat, u, v, w: (v @ np.linalg.inv(Rv) @ v).item()
+
+    # Received both Rv and Rw matrices
+    return lambda xhat, u, v, w: \
+        (v @ np.linalg.inv(Rv) @ v + w @ np.linalg.inv(Rw) @ w).item()
+
+
 #
 # Functions to create constraints: either polytopes (A x <= b) or ranges
 # (lb # <= x <= ub).
@@ -1259,7 +2124,7 @@ def state_poly_constraint(sys, A, b):
 
 
 def state_range_constraint(sys, lb, ub):
-    """Create state constraint from polytope
+    """Create state constraint from range
 
     Creates a linear constraint on the system state that bounds the range of
     the individual states to be between `lb` and `ub`.  The upper and lower
@@ -1457,6 +2322,46 @@ def output_range_constraint(sys, lb, ub):
     return (opt.NonlinearConstraint, _evaluate_output_range_constraint, lb, ub)
 
 #
+# Create a constraint on the disturbance input
+#
+
+def disturbance_range_constraint(sys, lb, ub):
+    """Create constraint for bounded disturbances
+
+    This function computes a constraint that puts a bound on the size of
+    input disturbances.  The output of this function can be passed as a
+    trajectory constraint for optimal estimation problems.
+
+    Parameters
+    ----------
+    sys : InputOutputSystem
+        I/O system for which the constraint is being defined.
+    lb : 1D array
+        Lower bound for each of the disturbancs.
+    ub : 1D array
+        Upper bound for each of the disturbances.
+
+    Returns
+    -------
+    constraint : tuple
+        A tuple consisting of the constraint type and parameter values.
+
+    """
+    # Convert bounds to lists and make sure they are the right dimension
+    lb = np.atleast_1d(lb).reshape(-1)
+    ub = np.atleast_1d(ub).reshape(-1)
+    if lb.shape != ub.shape:
+        raise ValueError("upper and lower bound shapes must match")
+    ndisturbances = lb.size
+
+    # Generate a linear constraint on the input disturbances
+    xvec_len = sys.nstates + sys.ninputs + sys.noutputs
+    A = np.zeros((ndisturbances, xvec_len))
+    A[:, sys.nstates + sys.ninputs - ndisturbances:-sys.noutputs] = \
+        np.eye(ndisturbances)
+    return opt.LinearConstraint(A, lb, ub)
+
+#
 # Utility functions
 #
 
@@ -1472,7 +2377,9 @@ def output_range_constraint(sys, lb, ub):
 # first element.
 #
 def _process_constraints(clist, name):
-    if isinstance(
+    if clist is None:
+        clist = []
+    elif isinstance(
             clist, (tuple, opt.LinearConstraint, opt.NonlinearConstraint)):
         clist = [clist]
     elif not isinstance(clist, list):

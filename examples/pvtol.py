@@ -14,8 +14,10 @@ import control.flatsys as fs
 from math import sin, cos
 from warnings import warn
 
+__all__ = ['pvtol', 'pvtol_windy', 'pvtol_noisy']
+
 # PVTOL dynamics
-def pvtol_update(t, x, u, params):
+def _pvtol_update(t, x, u, params):
     # Get the parameter values
     m = params.get('m', 4.)             # mass of aircraft
     J = params.get('J', 0.0475)         # inertia around pitch axis
@@ -38,11 +40,11 @@ def pvtol_update(t, x, u, params):
 
     return np.array([xdot, ydot, thetadot, xddot, yddot, thddot])
 
-def pvtol_output(t, x, u, params):
+def _pvtol_output(t, x, u, params):
     return x
 
 # PVTOL flat system mappings
-def pvtol_flat_forward(states, inputs, params={}):
+def _pvtol_flat_forward(states, inputs, params={}):
     # Get the parameter values
     m = params.get('m', 4.)             # mass of aircraft
     J = params.get('J', 0.0475)         # inertia around pitch axis
@@ -102,17 +104,13 @@ def pvtol_flat_forward(states, inputs, params={}):
 
     return zflag
 
-def pvtol_flat_reverse(zflag, params={}):
+def _pvtol_flat_reverse(zflag, params={}):
     # Get the parameter values
     m = params.get('m', 4.)             # mass of aircraft
     J = params.get('J', 0.0475)         # inertia around pitch axis
     r = params.get('r', 0.25)           # distance to center of force
     g = params.get('g', 9.8)            # gravitational constant
     c = params.get('c', 0.05)           # damping factor (estimated)
-
-    # Create a vector to store the state and inputs
-    x = np.zeros(6)
-    u = np.zeros(2)
 
     # Given the flat variables, solve for the state
     theta = np.arctan2(-zflag[0][2],  zflag[1][2] + g)
@@ -132,11 +130,8 @@ def pvtol_flat_reverse(zflag, params={}):
               + (J / (m * r)) * thdot**2)
     F1 = (J / r) * \
         (zflag[0][4] * cos(theta) + zflag[1][4] * sin(theta)
-#         - 2 * (zflag[0][3] * sin(theta) - zflag[1][3] * cos(theta)) * thdot \
          - 2 * zflag[0][3] * sin(theta) * thdot \
          + 2 * zflag[1][3] * cos(theta) * thdot \
-#         - (zflag[0][2] * cos(theta)
-#            + (zflag[1][2] + g) * sin(theta)) * thdot**2) \
          - zflag[0][2] * cos(theta) * thdot**2
          - (zflag[1][2] + g) * sin(theta) * thdot**2) \
         / (zflag[0][2] * sin(theta) - (zflag[1][2] + g) * cos(theta))
@@ -144,8 +139,8 @@ def pvtol_flat_reverse(zflag, params={}):
     return np.array([x, y, theta, xdot, ydot, thdot]), np.array([F1, F2])
 
 pvtol = fs.FlatSystem(
-    pvtol_flat_forward, pvtol_flat_reverse, name='pvtol',
-    updfcn=pvtol_update, outfcn=pvtol_output,
+    _pvtol_flat_forward, _pvtol_flat_reverse, name='pvtol',
+    updfcn=_pvtol_update, outfcn=_pvtol_output,
     states = [f'x{i}' for i in range(6)],
     inputs = ['F1', 'F2'],
     outputs = [f'x{i}' for i in range(6)],
@@ -162,13 +157,13 @@ pvtol = fs.FlatSystem(
 # PVTOL dynamics with wind
 # 
 
-def windy_update(t, x, u, params):
+def _windy_update(t, x, u, params):
     # Get the input vector
     F1, F2, d = u
 
     # Get the system response from the original dynamics
     xdot, ydot, thetadot, xddot, yddot, thddot = \
-        pvtol_update(t, x, u[0:2], params)
+        _pvtol_update(t, x, u[0:2], params)
 
     # Now add the wind term
     m = params.get('m', 4.)             # mass of aircraft
@@ -176,8 +171,8 @@ def windy_update(t, x, u, params):
 
     return np.array([xdot, ydot, thetadot, xddot, yddot, thddot])
 
-windy_pvtol = ct.NonlinearIOSystem(
-    windy_update, pvtol_output, name="windy_pvtol",
+pvtol_windy = ct.NonlinearIOSystem(
+    _windy_update, _pvtol_output, name="pvtol_windy",
     states = [f'x{i}' for i in range(6)],
     inputs = ['F1', 'F2', 'd'],
     outputs = [f'x{i}' for i in range(6)]
@@ -187,13 +182,17 @@ windy_pvtol = ct.NonlinearIOSystem(
 # PVTOL dynamics with noise and disturbances
 # 
 
-def noisy_update(t, x, u, params):
+def _noisy_update(t, x, u, params):
     # Get the inputs
-    F1, F2, Dx, Dy, Nx, Ny, Nth = u
+    F1, F2, Dx, Dy = u[:4]
+    if u.shape[0] > 4:
+        Nx, Ny, Nth = u[4:]
+    else:
+        Nx, Ny, Nth = 0, 0, 0
 
     # Get the system response from the original dynamics
     xdot, ydot, thetadot, xddot, yddot, thddot = \
-        pvtol_update(t, x, u[0:2], params)
+        _pvtol_update(t, x, u[0:2], params)
 
     # Get the parameter values we need
     m = params.get('m', 4.)             # mass of aircraft
@@ -205,26 +204,26 @@ def noisy_update(t, x, u, params):
 
     return np.array([xdot, ydot, thetadot, xddot, yddot, thddot])
 
-def noisy_output(t, x, u, params):
+def _noisy_output(t, x, u, params):
     F1, F2, dx, Dy, Nx, Ny, Nth = u
     return x + np.array([Nx, Ny, Nth, 0, 0, 0])
 
-noisy_pvtol = ct.NonlinearIOSystem(
-    noisy_update, noisy_output, name="noisy_pvtol",
+pvtol_noisy = ct.NonlinearIOSystem(
+    _noisy_update, _noisy_output, name="pvtol_noisy",
     states = [f'x{i}' for i in range(6)],
     inputs = ['F1', 'F2'] + ['Dx', 'Dy'] + ['Nx', 'Ny', 'Nth'],
     outputs = pvtol.state_labels
 )
 
-# Add the linearitizations to the dynamics as additional methods
-def noisy_pvtol_A(x, u, params={}):
+# Add the linearitizations to the dynamics as an additional method
+def pvtol_noisy_A(x, u, params={}):
     # Get the parameter values we need
     m = params.get('m', 4.)             # mass of aircraft
     J = params.get('J', 0.0475)         # inertia around pitch axis
     c = params.get('c', 0.05)           # damping factor (estimated)
 
     # Get the angle and compute sine and cosine
-    theta = x[[2]]
+    theta = x[2]
     cth, sth = cos(theta), sin(theta)
 
     # Return the linearized dynamics matrix
@@ -236,7 +235,7 @@ def noisy_pvtol_A(x, u, params={}):
         [0, 0, ( u[0] * cth - u[1] * sth)/m, 0, -c/m, 0],
         [0, 0, 0, 0, 0, 0]
     ])
-pvtol.A = noisy_pvtol_A
+pvtol.A = pvtol_noisy_A
 
 # Plot the trajectory in xy coordinates
 def plot_results(t, x, u):
@@ -302,8 +301,8 @@ def _pvtol_check_flat(test_points=None, verbose=False):
 
     for x, u in test_points:
         x, u = np.array(x), np.array(u)
-        flag = pvtol_flat_forward(x, u)
-        xc, uc = pvtol_flat_reverse(flag)
+        flag = _pvtol_flat_forward(x, u)
+        xc, uc = _pvtol_flat_reverse(flag)
         print(f'({x}, {u}): ', end='')
         if verbose:
             print(f'\n  flag: {flag}')
@@ -312,4 +311,3 @@ def _pvtol_check_flat(test_points=None, verbose=False):
             print("OK")
         else:
             print("ERR")
-    

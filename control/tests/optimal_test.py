@@ -160,6 +160,7 @@ def test_discrete_lqr():
     assert np.any(np.abs(res1.inputs - res2.inputs) > 0.1)
 
 
+@pytest.mark.slow
 def test_mpc_iosystem_aircraft():
     # model of an aircraft discretized with 0.2s sampling time
     # Source: https://www.mpt3.org/UI/RegulationProblem
@@ -528,7 +529,7 @@ def test_ocp_argument_errors():
     with pytest.raises(TypeError, match="unrecognized keyword"):
         ocp = opt.OptimalControlProblem(sys, time, cost, constraints)
         ocp.compute_trajectory(x0, unknown=None)
-            
+
     # Unrecognized trajectory constraint type
     constraints = [(None, np.eye(3), [0, 0, 0], [0, 0, 0])]
     with pytest.raises(TypeError, match="unknown trajectory constraint type"):
@@ -550,6 +551,7 @@ def test_ocp_argument_errors():
             sys, time, x0, cost, solve_ivp_kwargs={'eps': 0.1})
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("basis", [
     flat.PolyFamily(4), flat.PolyFamily(6),
     flat.BezierFamily(4), flat.BSplineFamily([0, 4, 8], 6)
@@ -652,6 +654,7 @@ def test_equality_constraints():
         res = optctrl.compute_trajectory(x0, squeeze=True, return_x=True)
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "method, npts, initial_guess, fail", [
         ('shooting', 3, None, 'xfail'),         # doesn't converge
@@ -769,3 +772,28 @@ def test_optimal_doc(method, npts, initial_guess, fail):
                     np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)
             else:
                 np.testing.assert_almost_equal(y[:,-1], xf, decimal=1)
+
+
+def test_oep_argument_errors():
+    sys = ct.rss(4, 2, 2)
+    timepts = np.linspace(0, 1, 10)
+    Y = np.zeros((2, timepts.size))
+    U = np.zeros_like(timepts)
+    cost = opt.gaussian_likelihood_cost(sys, np.eye(1), np.eye(2))
+
+    # Unrecognized arguments
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        res = opt.solve_oep(sys, timepts, Y, U, cost, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        oep = opt.OptimalEstimationProblem(sys, timepts, cost, unknown=True)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        sys = ct.rss(4, 2, 2, dt=True)
+        oep = opt.OptimalEstimationProblem(sys, timepts, cost)
+        oep.create_mhe_iosystem(unknown=True)
+
+    # Incorrect number of signals
+    with pytest.raises(ValueError, match="incorrect length"):
+        oep = opt.OptimalEstimationProblem(sys, timepts, cost)
+        mhe = oep.create_mhe_iosystem(estimate_labels=['x1', 'x2', 'x3'])

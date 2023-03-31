@@ -45,6 +45,7 @@ using running examples in FBS2e.
    cruise
    describing_functions
    kincar-fusion
+   mhe-pvtol
    mpc_aircraft
    steering
    pvtol-lqr-nested

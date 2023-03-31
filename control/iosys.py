@@ -82,7 +82,7 @@ class InputOutputSystem(NamedIOSystem):
         System name (used for specifying signals). If unspecified, a generic
         name <sys[id]> is generated with a unique integer id.
     params : dict, optional
-        Parameter values for the systems.  Passed to the evaluation functions
+        Parameter values for the system.  Passed to the evaluation functions
         for the system as default values, overriding internal defaults.
 
     Attributes

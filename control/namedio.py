@@ -22,8 +22,8 @@ _namedio_defaults = {
     'namedio.sampled_system_name_prefix': '',
     'namedio.sampled_system_name_suffix': '$sampled'
 }
-    
-    
+
+
 class NamedIOSystem(object):
     def __init__(
             self, name=None, inputs=None, outputs=None, states=None, **kwargs):
@@ -584,3 +584,103 @@ def _process_signal_list(signals, prefix='s'):
 
     else:
         raise TypeError("Can't parse signal list %s" % str(signals))
+
+
+#
+# Utility functions to process signal indices
+#
+# Signal indices can be specified in one of four ways:
+#
+# 1. As a positive integer 'm', in which case we return a list
+#    corresponding to the first 'm' elements of a range of a given length
+#
+# 2. As a negative integer '-m', in which case we return a list
+#    corresponding to the last 'm' elements of a range of a given length
+#
+# 3. As a slice, in which case we return the a list corresponding to the
+#    indices specified by the slice of a range of a given length
+#
+# 4. As a list of ints or strings specifying specific indices.  Strings are
+#    compared to a list of labels to determine the index.
+#
+def _process_indices(arg, name, labels, length):
+    # Default is to return indices up to a certain length
+    arg = length if arg is None else arg
+
+    if isinstance(arg, int):
+        # Return the start or end of the list of possible indices
+        return list(range(arg)) if arg > 0 else list(range(length))[arg:]
+
+    elif isinstance(arg, slice):
+        # Return the indices referenced by the slice
+        return list(range(length))[arg]
+
+    elif isinstance(arg, list):
+        # Make sure the length is OK
+        if len(arg) > length:
+            raise ValueError(
+                f"{name}_indices list is too long; max length = {length}")
+
+        # Return the list, replacing strings with corresponding indices
+        arg=arg.copy()
+        for i, idx in enumerate(arg):
+            if isinstance(idx, str):
+                arg[i] = labels.index(arg[i])
+        return arg
+
+    raise ValueError(f"invalid argument for {name}_indices")
+
+#
+# Process control and disturbance indices
+#
+# For systems with inputs and disturbances, the control_indices and
+# disturbance_indices keywords are used to specify which is which.  If only
+# one is given, the other is assumed to be the remaining indices in the
+# system input.  If neither is given, the disturbance inputs are assumed to
+# be the same as the control inputs.
+#
+def _process_control_disturbance_indices(
+        sys, control_indices, disturbance_indices):
+
+    if control_indices is None and disturbance_indices is None:
+        # Disturbances enter in the same place as the controls
+        dist_idx = ctrl_idx = list(range(sys.ninputs))
+
+    elif control_indices is not None:
+        # Process the control indices
+        ctrl_idx = _process_indices(
+            control_indices, 'control', sys.input_labels, sys.ninputs)
+
+        # Disturbance indices are the complement of control indices
+        dist_idx = [i for i in range(sys.ninputs) if i not in ctrl_idx]
+
+    else:  # disturbance_indices is not None
+        # If passed an integer, count from the end of the input vector
+        arg = -disturbance_indices if isinstance(disturbance_indices, int) \
+            else disturbance_indices
+
+        dist_idx = _process_indices(
+            arg, 'disturbance', sys.input_labels, sys.ninputs)
+
+        # Set control indices to complement disturbance indices
+        ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
+
+    return ctrl_idx, dist_idx
+
+
+# Process labels
+def _process_labels(labels, name, default):
+    if isinstance(labels, str):
+        labels = [labels.format(i=i) for i in range(len(default))]
+
+    if labels is None:
+        labels = default
+    elif isinstance(labels, list):
+        if len(labels) != len(default):
+            raise ValueError(
+                f"incorrect length of {name}_labels: {len(labels)}"
+                f" instead of {len(default)}")
+    else:
+        raise ValueError(f"{name}_labels should be a string or a list")
+
+    return labels

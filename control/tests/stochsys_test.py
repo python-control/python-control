@@ -6,6 +6,7 @@ import pytest
 from control.tests.conftest import asmatarrayout
 
 import control as ct
+import control.optimal as opt
 from control import lqe, dlqe, rss, drss, tf, ss, ControlArgument, slycot_check
 from math import log, pi
 
@@ -229,6 +230,9 @@ def test_estimator_errors():
     QN = np.eye(sys.ninputs)
     RN = np.eye(sys.noutputs)
 
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        estim = ct.create_estimator_iosystem(sys, QN, RN, unknown=True)
+
     with pytest.raises(ct.ControlArgument, match=".* system must be a linear"):
         sys_tf = ct.tf([1], [1, 1], dt=True)
         estim = ct.create_estimator_iosystem(sys_tf, QN, RN)
@@ -317,3 +321,188 @@ def test_correlation():
     with pytest.raises(ValueError, match="Time values must be equally"):
         T = np.logspace(0, 2, T.size)
         tau, Rtau = ct.correlation(T, V)
+
+@pytest.mark.slow
+@pytest.mark.parametrize('dt', [0, 0.2])
+def test_oep(dt):
+    # Define the system to test, with additional input
+    # Use fixed system to avoid random errors (was csys = ct.rss(4, 2, 5))
+    csys = ct.ss(
+        [[-0.5, 1, 0, 0], [0, -1, 1, 0], [0, 0, -2, 1], [0, 0, 0, -3]], # A
+        [[0, 0.1], [0, 0.1], [0, 0.1], [1, 0.1]],                       # B
+        [[1, 0, 0, 0], [0, 0, 1, 0]],                                   # C
+        0, dt=0)
+    dsys = ct.c2d(csys, dt)
+    sys = csys if dt == 0 else dsys
+
+    # Create disturbances and noise (fixed, to avoid random errors)
+    dist_mag = 1e-1                     # disturbance magnitude
+    meas_mag = 1e-3                     # measurement noise magnitude
+    Rv = dist_mag**2 * np.eye(1)        # scalar disturbance
+    Rw = meas_mag**2 * np.eye(sys.noutputs)
+    timepts = np.arange(0, 1, 0.2)
+    V = np.array(
+        [0 if i % 2 == 1 else 1 if i % 4 == 0 else -1
+         for i in range(timepts.size)]
+    ).reshape(1, -1) * dist_mag / 10
+    W = np.vstack([
+        np.sin(10*timepts/timepts[-1]), np.cos(15*timepts)/timepts[-1]
+    ]) * meas_mag / 10
+
+    # Generate system data
+    U = np.sin(timepts).reshape(1, -1)
+
+    # With disturbances and noise
+    res = ct.input_output_response(sys, timepts, [U, V])
+    Y = res.outputs + W
+
+    # Set up optimal estimation function using Gaussian likelihoods for cost
+    traj_cost = opt.gaussian_likelihood_cost(sys, Rv, Rw)
+    init_cost = lambda xhat, x: (xhat - x) @ (xhat - x)
+    oep1 = opt.OptimalEstimationProblem(
+        sys, timepts, traj_cost, terminal_cost=init_cost)
+
+    # Compute the optimal estimate
+    est1 = oep1.compute_estimate(Y, U)
+    assert est1.success
+    np.testing.assert_allclose(
+        est1.states[:, -1], res.states[:, -1], atol=meas_mag, rtol=meas_mag)
+
+    # Recompute using initial guess (should be pretty fast)
+    est2 = oep1.compute_estimate(
+        Y, U, initial_guess=(est1.states, est1.inputs))
+    assert est2.success
+
+    # Change around the inputs and disturbances
+    sys2 = ct.ss(sys.A, sys.B[:, ::-1], sys.C, sys.D[::-1], sys.dt)
+    oep2a = opt.OptimalEstimationProblem(
+        sys2, timepts, traj_cost, terminal_cost=init_cost,
+        control_indices=[1])
+    est2a = oep2a.compute_estimate(
+        Y, U, initial_guess=(est1.states, est1.inputs))
+    np.testing.assert_allclose(est2a.states, est2.states)
+
+    oep2b = opt.OptimalEstimationProblem(
+        sys2, timepts, traj_cost, terminal_cost=init_cost,
+        disturbance_indices=[0])
+    est2b = oep2b.compute_estimate(
+        Y, U, initial_guess=(est1.states, est1.inputs))
+    np.testing.assert_allclose(est2b.states, est2.states)
+
+    # Add disturbance constraints
+    V3 = np.clip(V, 0.5, 1)
+    traj_constraint = opt.disturbance_range_constraint(sys, 0.5, 1)
+    oep3 = opt.OptimalEstimationProblem(
+        sys, timepts, traj_cost, terminal_cost=init_cost,
+        trajectory_constraints=traj_constraint)
+
+    res3 = ct.input_output_response(sys, timepts, [U, V3])
+    Y3 = res3.outputs + W
+
+    # Make sure estimation is correct with constraint in place
+    est3 = oep3.compute_estimate(Y3, U)
+    assert est3.success
+    np.testing.assert_allclose(
+        est3.states[:, -1], res3.states[:, -1], atol=meas_mag, rtol=meas_mag)
+
+
+@pytest.mark.slow
+def test_mhe():
+    # Define the system to test, with additional input
+    csys = ct.ss(
+        [[-0.5, 1, 0, 0], [0, -1, 1, 0], [0, 0, -2, 1], [0, 0, 0, -3]], # A
+        [[0, 0.1], [0, 0.1], [0, 0.1], [1, 0.1]],                       # B
+        [[1, 0, 0, 0], [0, 0, 1, 0]],                                   # C
+        0, dt=0)
+    dt = 0.1
+    sys = ct.c2d(csys, dt)
+
+    # Create disturbances and noise (fixed, to avoid random errors)
+    Rv = 0.1 * np.eye(1)                # scalar disturbance
+    Rw = 1e-6 * np.eye(sys.noutputs)
+    P0 = 0.1 * np.eye(sys.nstates)
+
+    timepts = np.arange(0, 10*dt, dt)
+    mhe_timepts = np.arange(0, 5*dt, dt)
+    V = np.array(
+        [0 if i % 2 == 1 else 1 if i % 4 == 0 else -1
+         for i, t in enumerate(timepts)]).reshape(1, -1) * 0.1
+    W = np.sin(timepts / dt) * 1e-3
+
+    # Create a moving horizon estimator
+    traj_cost = opt.gaussian_likelihood_cost(sys, Rv, Rw)
+    init_cost = lambda xhat, x: (xhat - x) @ P0 @ (xhat - x)
+    oep = opt.OptimalEstimationProblem(
+        sys, mhe_timepts, traj_cost, terminal_cost=init_cost,
+        disturbance_indices=1)
+    mhe = oep.create_mhe_iosystem()
+
+    # Generate system data
+    U = 10 * np.sin(timepts / (4*dt))
+    inputs = np.vstack([U, V])
+    resp = ct.input_output_response(sys, timepts, inputs)
+
+    # Run the estimator
+    estp = ct.input_output_response(
+        mhe, timepts, [resp.outputs, resp.inputs[0:1]])
+
+    # Make sure the estimated state is close to the actual state
+    np.testing.assert_allclose(estp.outputs, resp.states, atol=1e-2, rtol=1e-4)
+
+@pytest.mark.slow
+@pytest.mark.parametrize("ctrl_indices, dist_indices", [
+    (slice(0, 3), None),
+    (3, None),
+    (None, 2),
+    ([0, 1, 4], None),
+    (['u[0]', 'u[1]', 'u[4]'], None),
+    (['u[0]', 'u[1]', 'u[4]'], ['u[1]', 'u[3]']),
+    (slice(0, 3), slice(3, 5))
+])
+def test_indices(ctrl_indices, dist_indices):
+    # Define a system with inputs (0:3), disturbances (3:5), and no noise
+    sys = ct.ss(
+        [[-1, 1, 0, 0], [0, -2, 1, 0], [0, 0, -3, 1], [0, 0, 0, -4]],
+        [[0, 0, 0, 0, 0], [1, 0, 0, 0, 0], [0, 1, 0, .1, 0], [0, 0, 1, 0, .1]],
+        [[1, 0, 0, 0], [0, 1, 0, 0]], 0)
+
+    # Create a system whose state we want to estimate
+    if ctrl_indices is not None:
+        ctrl_idx = ct.namedio._process_indices(
+            ctrl_indices, 'control', sys.input_labels, sys.ninputs)
+        dist_idx = [i for i in range(sys.ninputs) if i not in ctrl_idx]
+    else:
+        arg = -dist_indices if isinstance(dist_indices, int) else dist_indices
+        dist_idx = ct.namedio._process_indices(
+            arg, 'disturbance', sys.input_labels, sys.ninputs)
+        ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
+    sysm = ct.ss(sys.A, sys.B[:, ctrl_idx], sys.C, sys.D[:, ctrl_idx])
+
+    # Set the simulation time based on the slowest system pole
+    from math import log
+    T = 10
+
+    # Generate a system response with no disturbances
+    timepts = np.linspace(0, T, 20)
+    U = np.vstack([np.sin(timepts + i) for i in range(len(ctrl_idx))])
+    resp = ct.input_output_response(
+        sysm, timepts, U, np.zeros(sys.nstates),
+        solve_ivp_kwargs={'method': 'RK45', 'max_step': 0.01,
+                          'atol': 1, 'rtol': 1})
+    Y = resp.outputs
+
+    # Create an estimator
+    QN = np.eye(len(dist_idx))
+    RN = np.eye(sys.noutputs)
+    P0 = np.eye(sys.nstates)
+    estim = ct.create_estimator_iosystem(
+        sys, QN, RN, control_indices=ctrl_indices,
+        disturbance_indices=dist_indices)
+
+    # Run estimator (no prediction + same solve_ivp params => should be exact)
+    resp_estim = ct.input_output_response(
+        estim, timepts, [Y, U], [np.zeros(sys.nstates), P0],
+        solve_ivp_kwargs={'method': 'RK45', 'max_step': 0.01,
+                          'atol': 1, 'rtol': 1},
+            params={'correct': False})
+    np.testing.assert_allclose(resp.states, resp_estim.outputs, rtol=1e-2)

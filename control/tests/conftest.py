@@ -119,3 +119,8 @@ def mplcleanup():
         mpl.units.registry.clear()
         mpl.units.registry.update(save)
         mpl.pyplot.close("all")
+
+
+# Allow pytest.mark.slow to mark slow tests (skip with pytest -m "not slow")
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: mark test as slow to run")

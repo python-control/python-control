@@ -48,11 +48,12 @@ from . import statesp
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
 from .lti import LTI
-from .namedio import isdtime, isctime
+from .namedio import isdtime, isctime, _process_indices, _process_labels
 from .iosys import InputOutputSystem, NonlinearIOSystem, LinearIOSystem, \
     interconnect, ss
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
+from .config import _process_legacy_keyword
 
 # Make sure we have access to the right slycot routines
 try:
@@ -340,11 +341,11 @@ def lqr(*args, **kwargs):
     integral_action : ndarray, optional
         If this keyword is specified, the controller includes integral
         action in addition to state feedback.  The value of the
-        `integral_action`` keyword should be an ndarray that will be
+        `integral_action` keyword should be an ndarray that will be
         multiplied by the current state to generate the error for the
         internal integrator states of the control law.  The number of
         outputs that are to be integrated must match the number of
-        additional rows and columns in the ``Q`` matrix.
+        additional rows and columns in the `Q` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -490,11 +491,11 @@ def dlqr(*args, **kwargs):
     integral_action : ndarray, optional
         If this keyword is specified, the controller includes integral
         action in addition to state feedback.  The value of the
-        `integral_action`` keyword should be an ndarray that will be
+        `integral_action` keyword should be an ndarray that will be
         multiplied by the current state to generate the error for the
         internal integrator states of the control law.  The number of
         outputs that are to be integrated must match the number of
-        additional rows and columns in the ``Q`` matrix.
+        additional rows and columns in the `Q` matrix.
     method : str, optional
         Set the method used for computing the result.  Current methods are
         'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
@@ -601,7 +602,7 @@ def dlqr(*args, **kwargs):
 # Function to create an I/O sytems representing a state feedback controller
 def create_statefbk_iosystem(
         sys, gain, integral_action=None, estimator=None, controller_type=None,
-        xd_labels='xd[{i}]', ud_labels='ud[{i}]', gainsched_indices=None,
+        xd_labels=None, ud_labels=None, gainsched_indices=None,
         gainsched_method='linear', control_indices=None, state_indices=None,
         name=None, inputs=None, outputs=None, states=None, **kwargs):
     """Create an I/O system using a (full) state feedback controller
@@ -615,9 +616,9 @@ def create_statefbk_iosystem(
 
         ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
 
-    where ``sys`` is the process dynamics and ``K`` is the state (+ integral)
+    where `sys` is the process dynamics and `K` is the state (+ integral)
     feedback gain (eg, from LQR).  The function returns the controller
-    ``ctrl`` and the closed loop systems ``clsys``, both as I/O systems.
+    `ctrl` and the closed loop systems `clsys`, both as I/O systems.
 
     A gain scheduled controller can also be created, by passing a list of
     gains and a corresponding list of values of a set of scheduling
@@ -634,32 +635,32 @@ def create_statefbk_iosystem(
         is given, the output of this system should represent the full state.
 
     gain : ndarray or tuple
-        If a array is give, it represents the state feedback gain (K).
+        If an array is given, it represents the state feedback gain (K).
         This matrix defines the gains to be applied to the system.  If
-        ``integral_action`` is None, then the dimensions of this array
+        `integral_action` is None, then the dimensions of this array
         should be (sys.ninputs, sys.nstates).  If `integral action` is
         set to a matrix or a function, then additional columns
         represent the gains of the integral states of the controller.
 
         If a tuple is given, then it specifies a gain schedule.  The tuple
-        should be of the form ``(gains, points)`` where gains is a list of
+        should be of the form `(gains, points)` where gains is a list of
         gains :math:`K_j` and points is a list of values :math:`\\mu_j` at
         which the gains are computed.  The `gainsched_indices` parameter
         should be used to specify the scheduling variables.
 
     xd_labels, ud_labels : str or list of str, optional
-        Set the name of the signals to use for the desired state and inputs.
-        If a single string is specified, it should be a format string using
-        the variable ``i`` as an index.  Otherwise, a list of strings
-        matching the size of xd and ud, respectively, should be used.
-        Default is ``'xd[{i}]'`` for xd_labels and ``'ud[{i}]'`` for
-        ud_labels.  These settings can also be overriden using the `inputs`
-        keyword.
+        Set the name of the signals to use for the desired state and
+        inputs.  If a single string is specified, it should be a
+        format string using the variable `i` as an index.  Otherwise,
+        a list of strings matching the size of xd and ud,
+        respectively, should be used.  Default is "xd[{i}]" for
+        xd_labels and "ud[{i}]" for ud_labels.  These settings can
+        also be overriden using the `inputs` keyword.
 
     integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral
         action in addition to state feedback.  The value of the
-        `integral_action`` keyword should be an ndarray that will be
+        `integral_action` keyword should be an ndarray that will be
         multiplied by the current and desired state to generate the error
         for the internal integrator states of the control law.
 
@@ -667,14 +668,16 @@ def create_statefbk_iosystem(
         If an estimator is provided, use the states of the estimator as
         the system inputs for the controller.
 
-    gainsched_indices : list of int or str, optional
+    gainsched_indices : int, slice, or list of int or str, optional
         If a gain scheduled controller is specified, specify the indices of
         the controller input to use for scheduling the gain. The input to
         the controller is the desired state xd, the desired input ud, and
         the system state x (or state estimate xhat, if an estimator is
-        given). The indices can either be specified as integer offsets into
-        the input vector or as strings matching the signal names of the
-        input vector. The default is to use the desire state xd.
+        given). If value is an integer `q`, the first `q` values of the
+        [xd, ud, x] vector are used.  Otherwise, the value should be a
+        slice or a list of indices.  The list of indices can be specified
+        as either integer offsets or as signal names.  The default is to
+        use the desired state xd.
 
     gainsched_method : str, optional
         The method to use for gain scheduling.  Possible values are 'linear'
@@ -687,45 +690,48 @@ def create_statefbk_iosystem(
         Set the type of controller to create. The default for a linear gain
         is a linear controller implementing the LQR regulator. If the type
         is 'nonlinear', a :class:NonlinearIOSystem is created instead, with
-        the gain ``K`` as a parameter (allowing modifications of the gain at
+        the gain `K` as a parameter (allowing modifications of the gain at
         runtime). If the gain parameter is a tuple, then a nonlinear,
         gain-scheduled controller is created.
 
     Returns
     -------
     ctrl : InputOutputSystem
-        Input/output system representing the controller.  This system takes
-        as inputs the desired state ``xd``, the desired input ``ud``, and
-        either the system state ``x`` or the estimated state ``xhat``.  It
-        outputs the controller action u according to the formula :math:`u =
-        u_d - K(x - x_d)`.  If the keyword ``integral_action`` is specified,
-        then an additional set of integrators is included in the control
-        system (with the gain matrix ``K`` having the integral gains
-        appended after the state gains).  If a gain scheduled controller is
-        specified, the gain (proportional and integral) are evaluated using
-        the scheduling variables specified by ``gainsched_indices``.
+        Input/output system representing the controller.  This system
+        takes as inputs the desired state `xd`, the desired input
+        `ud`, and either the system state `x` or the estimated state
+        `xhat`.  It outputs the controller action `u` according to the
+        formula :math:`u = u_d - K(x - x_d)`.  If the keyword
+        `integral_action` is specified, then an additional set of
+        integrators is included in the control system (with the gain
+        matrix `K` having the integral gains appended after the state
+        gains).  If a gain scheduled controller is specified, the gain
+        (proportional and integral) are evaluated using the scheduling
+        variables specified by `gainsched_indices`.
 
     clsys : InputOutputSystem
         Input/output system representing the closed loop system.  This
-        systems takes as inputs the desired trajectory ``(xd, ud)`` and
-        outputs the system state ``x`` and the applied input ``u``
+        systems takes as inputs the desired trajectory `(xd, ud)` and
+        outputs the system state `x` and the applied input `u`
         (vertically stacked).
 
     Other Parameters
     ----------------
-    control_indices : list of int or str, optional
+    control_indices : int, slice, or list of int or str, optional
         Specify the indices of the system inputs that should be determined
-        by the state feedback controller.  If not specified, defaults to
-        the first `m` system inputs, where `m` is determined by the shape
-        of the gain matrix, with the remaining inputs remaining as inputs
-        to the overall closed loop system.
+        by the state feedback controller.  If value is an integer `m`, the
+        first `m` system inputs are used.  Otherwise, the value should be a
+        slice or a list of indices.  The list of indices can be specified
+        as either integer offsets or as system input signal names.  If not
+        specified, defaults to the system inputs.
 
-    state_indices : list of int or str, optional
-        Specify the indices of the system (or estimator) outputs that
-        should be used by the state feedback controller.  If not specified,
-        defaults to the first `n` system/estimator outputs, where `n` is
-        determined by the shape of the gain matrix, with the remaining
-        outputs remaining as outputs to the overall closed loop system.
+    state_indices : int, slice, or list of int or str, optional
+        Specify the indices of the system (or estimator) outputs that should
+        be used by the state feedback controller.  If value is an integer
+        `n`, the first `n` system states are used.  Otherwise, the value
+        should be a slice or a list of indices.  The list of indices can be
+        specified as either integer offsets or as estimator/system output
+        signal names.  If not specified, defaults to the system states.
 
     inputs, outputs : str, or list of str, optional
         List of strings that name the individual signals of the transformed
@@ -742,23 +748,14 @@ def create_statefbk_iosystem(
         raise ControlArgument("Input system must be I/O system")
 
     # Process (legacy) keywords
-    if kwargs.get('type') is not None:
-        warnings.warn(
-            "keyword 'type' is deprecated; use 'controller_type'",
-            DeprecationWarning)
-        if controller_type is not None:
-            raise ControlArgument(
-                "duplicate keywords 'type` and 'controller_type'")
-        controller_type = kwargs.pop('type')
+    controller_type = _process_legacy_keyword(
+        kwargs, 'type', 'controller_type', controller_type)
     if kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Figure out what inputs to the system to use
-    control_indices = range(sys.ninputs) if control_indices is None \
-            else list(control_indices)
-    for i, idx in enumerate(control_indices):
-        if isinstance(idx, str):
-            control_indices[i] = sys.input_labels.index(control_indices[i])
+    control_indices = _process_indices(
+        control_indices, 'control', sys.input_labels, sys.ninputs)
     sys_ninputs = len(control_indices)
 
     # Decide what system is going to pass the states to the controller
@@ -766,11 +763,8 @@ def create_statefbk_iosystem(
         estimator = sys
 
     # Figure out what outputs (states) from the system/estimator to use
-    state_indices = range(sys.nstates) if state_indices is None \
-            else list(state_indices)
-    for i, idx in enumerate(state_indices):
-        if isinstance(idx, str):
-            state_indices[i] = estimator.state_labels.index(state_indices[i])
+    state_indices = _process_indices(
+        state_indices, 'state', estimator.state_labels, sys.nstates)
     sys_nstates = len(state_indices)
 
     # Make sure the system/estimator states are proper dimension
@@ -838,13 +832,10 @@ def create_statefbk_iosystem(
         raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Figure out the labels to use
-    if isinstance(xd_labels, str):
-        # Generate the list of labels using the argument as a format string
-        xd_labels = [xd_labels.format(i=i) for i in range(sys_nstates)]
-
-    if isinstance(ud_labels, str):
-        # Generate the list of labels using the argument as a format string
-        ud_labels = [ud_labels.format(i=i) for i in range(sys_ninputs)]
+    xd_labels = _process_labels(
+        xd_labels, 'xd', ['xd[{i}]'.format(i=i) for i in range(sys_nstates)])
+    ud_labels = _process_labels(
+        ud_labels, 'ud', ['ud[{i}]'.format(i=i) for i in range(sys_ninputs)])
 
     # Create the signal and system names
     if inputs is None:
@@ -857,8 +848,8 @@ def create_statefbk_iosystem(
     # Process gainscheduling variables, if present
     if gainsched:
         # Create a copy of the scheduling variable indices (default = xd)
-        gainsched_indices = range(sys_nstates) if gainsched_indices is None \
-            else list(gainsched_indices)
+        gainsched_indices = _process_indices(
+            gainsched_indices, 'gainsched', inputs, sys_nstates)
 
         # If points is a 1D list, convert to 2D
         if points.ndim == 1:
@@ -869,11 +860,6 @@ def create_statefbk_iosystem(
             raise ControlArgument(
                 "length of gainsched_indices must match dimension of"
                 " scheduling variables")
-
-        # Process scheduling variables
-        for i, idx in enumerate(gainsched_indices):
-            if isinstance(idx, str):
-                gainsched_indices[i] = inputs.index(gainsched_indices[i])
 
         # Create interpolating function
         if points.shape[1] < 2:
