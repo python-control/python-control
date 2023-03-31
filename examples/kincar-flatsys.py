@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import control as ct
 import control.flatsys as fs
-import control.optimal as opt
+import control.optimal as obc
 
 #
 # System model and utility functions
@@ -147,7 +147,7 @@ timepts = np.linspace(0, Tf, 10)
 basis = fs.PolyFamily(8)
 
 # Define the cost function (penalize lateral error and steering)
-traj_cost = opt.quadratic_cost(
+traj_cost = obc.quadratic_cost(
     vehicle_flat, np.diag([0, 0.1, 0]), np.diag([0.1, 1]), x0=xf, u0=uf)
 
 # Solve for an optimal solution
@@ -168,7 +168,7 @@ plot_results(T, xd, ud)
 
 # Constraint the input values
 constraints = [
-    opt.input_range_constraint(vehicle_flat, [8, -0.1], [12, 0.1]) ]
+    obc.input_range_constraint(vehicle_flat, [8, -0.1], [12, 0.1]) ]
 
 # TEST: Change the basis to use B-splines
 basis = fs.BSplineFamily([0, Tf/2, Tf], 6)
@@ -198,11 +198,11 @@ if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
 #
 
 # Define the cost function (mainly penalize steering angle)
-traj_cost = opt.quadratic_cost(
+traj_cost = obc.quadratic_cost(
     vehicle_flat, None, np.diag([0.1, 10]), x0=xf, u0=uf)
 
 # Set terminal cost to bring us close to xf
-terminal_cost = opt.quadratic_cost(vehicle_flat, 1e3 * np.eye(3), None, x0=xf)
+terminal_cost = obc.quadratic_cost(vehicle_flat, 1e3 * np.eye(3), None, x0=xf)
 
 # Change the basis to use B-splines
 basis = fs.BSplineFamily([0, Tf/2, Tf], [4, 6], vars=2)

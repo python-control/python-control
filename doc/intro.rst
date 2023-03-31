@@ -31,22 +31,42 @@ some thing to keep in mind:
 * You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
 * Functions that return multiple arguments use tuples.  
 * You cannot use braces for collections; use tuples instead.
+* Time series data have time as the final index (see
+  :ref:`time-series-convention`).
 
 Installation
 ============
 
-The `python-control` package can be installed using pip, conda or the
-standard setuptools mechanisms.  The package requires `numpy`_ and
-`scipy`_, and the plotting routines require `matplotlib
-<https://matplotlib.org>`_.  In addition, some routines require the `slycot
-<https://github.com/python-control/Slycot>`_ library in order to implement
-more advanced features (including some MIMO functionality).
+The `python-control` package can be installed using conda or pip.  The
+package requires `NumPy`_ and `SciPy`_, and the plotting routines
+require `Matplotlib <https://matplotlib.org>`_.  In addition, some
+routines require the `Slycot
+<https://github.com/python-control/Slycot>`_ library in order to
+implement more advanced features (including some MIMO functionality).
 
+For users with the Anaconda distribution of Python, the following
+command can be used::
+
+  conda install -c conda-forge control slycot
+
+This installs `slycot` and `python-control` from conda-forge, including the
+`openblas` package.  NumPy, SciPy, and Matplotlib will also be installed if
+they are not already present.
+
+.. note::
+   Mixing packages from conda-forge and the default conda channel
+   can sometimes cause problems with dependencies, so it is usually best to
+   instally NumPy, SciPy, and Matplotlib from conda-forge as well.)
 
 To install using pip::
 
   pip install slycot   # optional
   pip install control
+
+.. note::
+   If you install Slycot using pip you'll need a development
+   environment (e.g., Python development files, C and Fortran compilers).
+   Pip installation can be particularly complicated for Windows.
 
 Many parts of `python-control` will work without `slycot`, but some
 functionality is limited or absent, and installation of `slycot` is
@@ -56,28 +76,14 @@ correctly by running the command::
   python -c "import slycot"
 
 and verifying that no error message appears. More information on the 
-slycot package can be obtained from the `slycot project page
+Slycot package can be obtained from the `Slycot project page
 <https://github.com/python-control/Slycot>`_.
 
-For users with the Anaconda distribution of Python, the following
-commands can be used::
-
-  conda install numpy scipy matplotlib    # if not yet installed
-  conda install -c conda-forge control slycot
-
-This installs `slycot` and `python-control` from conda-forge, including the
-`openblas` package.
-
-Alternatively, to use setuptools, first `download the source
+Alternatively, to install from source, first `download the source
 <https://github.com/python-control/python-control/releases>`_ and unpack it.
 To install in your home directory, use::
 
-  python setup.py install --user
-
-or to install for all users (on Linux or Mac OS)::
-
-  python setup.py build
-  sudo python setup.py install
+  pip install .
 
 Getting started
 ===============
@@ -85,7 +91,7 @@ Getting started
 There are two different ways to use the package.  For the default interface
 described in :ref:`function-ref`, simply import the control package as follows::
 
-    >>> import control
+    >>> import control as ct
 
 If you want to have a MATLAB-like environment, use the :ref:`matlab-module`::
 

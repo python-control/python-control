@@ -76,7 +76,6 @@ def set_defaults(module, **keywords):
     >>> ct.defaults['freqplot.number_of_samples']
     100
     >>> # do some customized freqplotting
-    >>> ct.reset_defaults()
 
     """
     if not isinstance(module, str):
@@ -209,7 +208,6 @@ def use_matlab_defaults():
     --------
     >>> ct.use_matlab_defaults()
     >>> # do some matlab style plotting
-    >>> ct.reset_defaults()
 
     """
     set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
@@ -229,7 +227,6 @@ def use_fbs_defaults():
     --------
     >>> ct.use_fbs_defaults()
     >>> # do some FBS style plotting
-    >>> ct.reset_defaults()
 
     """
     set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
@@ -263,7 +260,6 @@ def use_numpy_matrix(flag=True, warn=True):
     --------
     >>> ct.use_numpy_matrix(True, False)
     >>> # do some legacy calculations using np.matrix
-    >>> ct.reset_defaults()
 
     """
     if flag and warn:
@@ -285,7 +281,6 @@ def use_legacy_defaults(version):
     >>> ct.use_legacy_defaults("0.9.0")
     (0, 9, 0)
     >>> # do some legacy style plotting
-    >>> ct.reset_defaults()
 
     """
     import re

@@ -558,21 +558,21 @@ def nyquist_plot(
         List of linear input/output systems (single system is OK). Nyquist
         curves for each system are plotted on the same graph.
 
-    plot : boolean
-        If True, plot magnitude
-
-    omega : array_like
+    omega : array_like, optional
         Set of frequencies to be evaluated, in rad/sec.
 
-    omega_limits : array_like of two values
+    omega_limits : array_like of two values, optional
         Limits to the range of frequencies. Ignored if omega is provided, and
         auto-generated if omitted.
 
-    omega_num : int
+    omega_num : int, optional
         Number of frequency samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
 
-    color : string
+    plot : boolean, optional
+        If True (default), plot the Nyquist plot.
+
+    color : string, optional
         Used to specify the color of the line and arrowhead.
 
     return_contour : bool, optional
@@ -689,6 +689,13 @@ def nyquist_plot(
        used to set the direction of indentation.  Setting `indent_direction`
        to `none` will turn off indentation.  If `return_contour` is True, the
        exact contour used for evaluation is returned.
+
+    3. For those portions of the Nyquist plot in which the contour is
+       indented to avoid poles, resuling in a scaling of the Nyquist plot,
+       the line styles are according to the settings of the `primary_style`
+       and `mirror_style` keywords.  By default the scaled portions of the
+       primary curve use a dotted line style and the scaled portion of the
+       mirror image use a dashdot line style.
 
     Examples
     --------

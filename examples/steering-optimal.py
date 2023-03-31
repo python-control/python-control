@@ -8,7 +8,7 @@
 import numpy as np
 import math
 import control as ct
-import control.optimal as opt
+import control.optimal as obc
 import matplotlib.pyplot as plt
 import logging
 import time
@@ -106,7 +106,7 @@ print("Approach 1: standard quadratic cost")
 # Set up the cost functions
 Q = np.diag([.1, 10, .1])       # keep lateral error low
 R = np.diag([.1, 1])            # minimize applied inputs
-quad_cost = opt.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
+quad_cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
 
 # Define the time horizon (and spacing) for the optimization
 timepts = np.linspace(0, Tf, 20, endpoint=True)
@@ -124,7 +124,7 @@ logging.basicConfig(
 
 # Compute the optimal control, setting step size for gradient calculation (eps)
 start_time = time.process_time()
-result1 = opt.solve_ocp(
+result1 = obc.solve_ocp(
     vehicle, timepts, x0, quad_cost, initial_guess=straight_line, log=True,
     # minimize_method='trust-constr',
     # minimize_options={'finite_diff_rel_step': 0.01},
@@ -158,9 +158,9 @@ print("Final simulated state:", y1[:,-1])
 print("\nApproach 2: input cost and constraints plus terminal cost")
 
 # Add input constraint, input cost, terminal cost
-constraints = [ opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
-traj_cost = opt.quadratic_cost(vehicle, None, np.diag([0.1, 1]), u0=uf)
-term_cost = opt.quadratic_cost(vehicle, np.diag([1, 10, 10]), None, x0=xf)
+constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+traj_cost = obc.quadratic_cost(vehicle, None, np.diag([0.1, 1]), u0=uf)
+term_cost = obc.quadratic_cost(vehicle, np.diag([1, 10, 10]), None, x0=xf)
 
 # Change logging to keep less information
 logging.basicConfig(
@@ -175,7 +175,7 @@ straight_line = (state_guess, input_guess)
 
 # Compute the optimal control
 start_time = time.process_time()
-result2 = opt.solve_ocp(
+result2 = obc.solve_ocp(
     vehicle, timepts, x0, traj_cost, constraints, terminal_cost=term_cost,
     initial_guess=straight_line, log=True,
     # minimize_method='SLSQP', minimize_options={'eps': 0.01}
@@ -207,10 +207,10 @@ print("\nApproach 3: terminal constraints")
 
 # Input cost and terminal constraints
 R = np.diag([1, 1])                 # minimize applied inputs
-cost3 = opt.quadratic_cost(vehicle, np.zeros((3,3)), R, u0=uf)
+cost3 = obc.quadratic_cost(vehicle, np.zeros((3,3)), R, u0=uf)
 constraints = [
-    opt.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
-terminal = [ opt.state_range_constraint(vehicle, xf, xf) ]
+    obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
+terminal = [ obc.state_range_constraint(vehicle, xf, xf) ]
 
 # Reset logging to its default values
 logging.basicConfig(
@@ -219,7 +219,7 @@ logging.basicConfig(
 
 # Compute the optimal control
 start_time = time.process_time()
-result3 = opt.solve_ocp(
+result3 = obc.solve_ocp(
     vehicle, timepts, x0, cost3, constraints,
     terminal_constraints=terminal, initial_guess=straight_line, log=False,
     # solve_ivp_kwargs={'atol': 1e-3, 'rtol': 1e-2},
@@ -254,7 +254,7 @@ import control.flatsys as flat
 
 # Compute the optimal control
 start_time = time.process_time()
-result4 = opt.solve_ocp(
+result4 = obc.solve_ocp(
     vehicle, timepts, x0, quad_cost,
     constraints,
     terminal_constraints=terminal,

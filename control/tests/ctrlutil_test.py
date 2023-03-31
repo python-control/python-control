@@ -1,7 +1,8 @@
 """ctrlutil_test.py"""
 
 import numpy as np
-
+import pytest
+import control as ct
 from control.ctrlutil import db2mag, mag2db, unwrap
 
 class TestUtils:
@@ -58,3 +59,8 @@ class TestUtils:
     def test_mag2db_array(self):
         db_array = mag2db(self.mag)
         np.testing.assert_array_almost_equal(db_array, self.db)
+
+    def test_issys(self):
+        sys = ct.rss(2, 1, 1)
+        with pytest.warns(FutureWarning, match="deprecated; use isinstance"):
+            ct.issys(sys)

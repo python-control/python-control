@@ -6,8 +6,11 @@
 Library conventions
 *******************
 
-The python-control library uses a set of standard conventions for the way
-that different types of standard information used by the library.
+The python-control library uses a set of standard conventions for the
+way that different types of standard information used by the library.
+Throughout this manual, we assume the `control` package has been
+imported as `ct`.
+
 
 LTI system representation
 =========================
@@ -29,7 +32,7 @@ of linear time-invariant (LTI) systems:
 
 where u is the input, y is the output, and x is the state.
 
-To create a state space system, use the :func:`ss` function:
+To create a state space system, use the :func:`ss` function::
 
   sys = ct.ss(A, B, C, D)
 
@@ -51,7 +54,7 @@ transfer functions
 where n is generally greater than or equal to m (for a proper transfer
 function).
 
-To create a transfer function, use the :func:`tf` function:
+To create a transfer function, use the :func:`tf` function::
 
   sys = ct.tf(num, den)
 
@@ -77,7 +80,7 @@ performed.
 The FRD class is also used as the return type for the
 :func:`frequency_response` function (and the equivalent method for the
 :class:`StateSpace` and :class:`TransferFunction` classes).  This
-object can be assigned to a tuple using
+object can be assigned to a tuple using::
 
     mag, phase, omega = response
 
@@ -91,7 +94,7 @@ is not SISO or `squeeze` is False, the array is 3D, indexed by the
 output, input, and frequency.  If `squeeze` is True then
 single-dimensional axes are removed.  The processing of the `squeeze`
 keyword can be changed by calling the response function with a new
-argument:
+argument::
 
     mag, phase, omega = response(squeeze=False)
 
@@ -101,10 +104,10 @@ Discrete time systems
 A discrete time system is created by specifying a nonzero 'timebase', dt.
 The timebase argument can be given when a system is constructed:
 
-* dt = 0: continuous time system (default)
-* dt > 0: discrete time system with sampling period 'dt'
-* dt = True: discrete time with unspecified sampling period
-* dt = None: no timebase specified
+* `dt = 0`: continuous time system (default)
+* `dt > 0`: discrete time system with sampling period 'dt'
+* `dt = True`: discrete time with unspecified sampling period
+* `dt = None`: no timebase specified
 
 Only the :class:`StateSpace`, :class:`TransferFunction`, and
 :class:`InputOutputSystem` classes allow explicit representation of
@@ -119,8 +122,8 @@ result will have the timebase of the latter system. For continuous time
 systems, the :func:`sample_system` function or the :meth:`StateSpace.sample`
 and :meth:`TransferFunction.sample` methods can be used to create a discrete
 time system from a continuous time system.  See
-:ref:`utility-and-conversions`. The default value of 'dt' can be changed by
-changing the value of ``control.config.defaults['control.default_dt']``.
+:ref:`utility-and-conversions`. The default value of `dt` can be changed by
+changing the value of `control.config.defaults['control.default_dt']`.
 
 Conversion between representations
 ----------------------------------
@@ -165,10 +168,9 @@ points in time, rows are different components::
            ...
            [ui(t1), ui(t2), ui(t3), ..., ui(tn)]]
 
-      Same for X, Y
-
-So, U[:,2] is the system's input at the third point in time; and U[1] or U[1,:]
-is the sequence of values for the system's second input.
+(and similarly for `X`, `Y`).  So, `U[:, 2]` is the system's input at the
+third point in time; and `U[1]` or `U[1, :]` is the sequence of values for
+the system's second input.
 
 When there is only one row, a 1D object is accepted or returned, which adds
 convenience for SISO systems:
@@ -185,8 +187,10 @@ Functions that return time responses (e.g., :func:`forced_response`,
 :func:`impulse_response`, :func:`input_output_response`,
 :func:`initial_response`, and :func:`step_response`) return a
 :class:`TimeResponseData` object that contains the data for the time
-response.  These data can be accessed via the ``time``, ``outputs``,
-``states`` and ``inputs`` properties::
+response.  These data can be accessed via the
+:attr:`~TimeResponseData.time`, :attr:`~TimeResponseData.outputs`,
+:attr:`~TimeResponseData.states` and :attr:`~TimeResponseData.inputs`
+properties::
 
     sys = ct.rss(4, 1, 1)
     response = ct.step_response(sys)
@@ -213,13 +217,13 @@ The output of a MIMO LTI system can be plotted like this::
     plot(t, y[1], label='y_1')
 
 The convention also works well with the state space form of linear
-systems. If ``D`` is the feedthrough matrix (2D array) of a linear system,
-and ``U`` is its input (array), then the feedthrough part of the system's
+systems. If `D` is the feedthrough matrix (2D array) of a linear system,
+and `U` is its input (array), then the feedthrough part of the system's
 response, can be computed like this::
 
     ft = D @ U
 
-Finally, the `to_pandas()` function can be used to create a pandas dataframe:
+Finally, the `to_pandas()` function can be used to create a pandas dataframe::
 
     df = response.to_pandas()
 
@@ -242,16 +246,12 @@ for various types of plots and establishing the underlying representation for
 state space matrices.
 
 To set the default value of a configuration variable, set the appropriate
-element of the `control.config.defaults` dictionary:
-
-.. code-block:: python
+element of the `control.config.defaults` dictionary::
 
     ct.config.defaults['module.parameter'] = value
 
 The `~control.config.set_defaults` function can also be used to set multiple
-configuration parameters at the same time:
-
-.. code-block:: python
+configuration parameters at the same time::
 
     ct.config.set_defaults('module', param1=val1, param2=val2, ...]
 
