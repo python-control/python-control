@@ -129,7 +129,7 @@ The result of this optimization gives us the estimated state for the
 previous :math:`N` steps in time, including the "current" time
 :math:`x[N]`.  The basic idea is thus to compute the state estimate that is
 most consistent with our model and penalize the noise and disturbances
-according to how likely the are (based on a some sort of stochastic system
+according to how likely the are (based on the given stochastic system 
 model for each).
 
 Given a solution to this fixed-horizon optimal estimation problem, we can
