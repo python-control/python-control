@@ -297,3 +297,150 @@ def test_linear_interconnect():
         inplist=['sum.r'], inputs='r',
         outlist=['plant.y'], outputs='y')
     assert clsys.syslist[0].name == 'ctrl'
+
+@pytest.mark.parametrize(
+    "connections, inplist, outlist, inputs, outputs", [
+        pytest.param(
+            [['sys2', 'sys1']], 'sys1', 'sys2', None, None,
+            id="sysname only, no i/o args"),
+        pytest.param(
+            [['sys2', 'sys1']], 'sys1', 'sys2', 3, 3,
+            id="i/o signal counts"),
+        pytest.param(
+            [[('sys2', [0, 1, 2]), ('sys1', [0, 1, 2])]],
+            [('sys1', [0, 1, 2])], [('sys2', [0, 1, 2])],
+            3, 3,
+            id="signal lists, i/o counts"),
+        pytest.param(
+            [['sys2.u[0:3]', 'sys1.y[:]']],
+            'sys1.u[:]', ['sys2.y[0:3]'], None, None,
+            id="signal slices"),
+        pytest.param(
+            ['sys2.u', 'sys1.y'], 'sys1.u', 'sys2.y', None, None,
+            id="signal basenames"),
+        pytest.param(
+            [[('sys2', [0, 1, 2]), ('sys1', [0, 1, 2])]],
+            [('sys1', [0, 1, 2])], [('sys2', [0, 1, 2])],
+            None, None,
+            id="signal lists, no i/o counts"),
+        pytest.param(
+            [[(1, ['u[0]', 'u[1]', 'u[2]']), (0, ['y[0]', 'y[1]', 'y[2]'])]],
+            [('sys1', [0, 1, 2])], [('sys2', [0, 1, 2])],
+            3, ['y1', 'y2', 'y3'],
+            id="mixed specs"),
+        pytest.param(
+            [[f'sys2.u[{i}]', f'sys1.y[{i}]'] for i in range(3)],
+            [f'sys1.u[{i}]' for i in range(3)],
+            [f'sys2.y[{i}]' for i in range(3)],
+            [f'u[{i}]' for i in range(3)], [f'y[{i}]' for i in range(3)],
+            id="full enumeration"),
+])
+def test_interconnect_series(connections, inplist, outlist, inputs, outputs):
+    # Create an interconnected system for testing
+    sys1 = ct.rss(4, 3, 3, name='sys1')
+    sys2 = ct.rss(4, 3, 3, name='sys2')
+    series = sys2 * sys1
+
+    # Simple series interconnection
+    icsys = ct.interconnect(
+        [sys1, sys2], connections=connections,
+        inplist=inplist, outlist=outlist, inputs=inputs, outputs=outputs
+    )
+    np.testing.assert_allclose(icsys.A, series.A)
+    np.testing.assert_allclose(icsys.B, series.B)
+    np.testing.assert_allclose(icsys.C, series.C)
+    np.testing.assert_allclose(icsys.D, series.D)
+
+
+@pytest.mark.parametrize(
+    "connections, inplist, outlist", [
+    pytest.param(
+        [['P', 'C'], ['C', '-P']], 'C', 'P',
+        id="sysname only, no i/o args"),
+    pytest.param(
+        [['P.u', 'C.y'], ['C.u', '-P.y']], 'C.u', 'P.y',
+        id="sysname only, no i/o args"),
+    pytest.param(
+        [['P.u[:]', 'C.y[0:2]'],
+         [('C', 'u'), ('P', ['y[0]', 'y[1]'], -1)]],
+        ['C.u[0]', 'C.u[1]'], ('P', [0, 1]),
+        id="mixed cases"),
+])
+def test_interconnect_feedback(connections, inplist, outlist):
+    # Create an interconnected system for testing
+    P = ct.rss(4, 2, 2, name='P', strictly_proper=True)
+    C = ct.rss(4, 2, 2, name='C')
+    feedback = ct.feedback(P * C, np.eye(2))
+
+    # Simple feedback interconnection
+    icsys = ct.interconnect(
+        [C, P], connections=connections,
+        inplist=inplist, outlist=outlist
+    )
+    np.testing.assert_allclose(icsys.A, feedback.A)
+    np.testing.assert_allclose(icsys.B, feedback.B)
+    np.testing.assert_allclose(icsys.C, feedback.C)
+    np.testing.assert_allclose(icsys.D, feedback.D)
+
+
+@pytest.mark.parametrize(
+    "pinputs, poutputs, connections, inplist, outlist", [
+    pytest.param(
+        ['w[0]', 'w[1]', 'u[0]', 'u[1]'],               # pinputs
+        ['z[0]', 'z[1]', 'y[0]', 'y[1]'],               # poutputs
+        [[('P', [2, 3]), ('C', [0, 1])], [('C', [0, 1]), ('P', [2, 3], -1)]],
+        [('C', [0, 1]), ('P', [0, 1])],                 # inplist
+        [('P', [0, 1, 2, 3]), ('C', [0, 1])],           # outlist
+        id="signal indices"),
+    pytest.param(
+        ['w[0]', 'w[1]', 'u[0]', 'u[1]'],               # pinputs
+        ['z[0]', 'z[1]', 'y[0]', 'y[1]'],               # poutputs
+        [[('P', [2, 3]), ('C', [0, 1])], [('C', [0, 1]), ('P', [2, 3], -1)]],
+        ['C', ('P', [0, 1])], ['P', 'C'],               # inplist, outlist
+        id="signal indices, when needed"),
+    pytest.param(
+        4, 4,                                           # default I/O names
+        [['P.u[2:4]', 'C.y[:]'], ['C.u', '-P.y[2:]']],
+        ['C', 'P.u[:2]'], ['P.y[:]', 'P.u[2:]'],        # inplist, outlist
+        id="signal slices"),
+    pytest.param(
+        ['w[0]', 'w[1]', 'u[0]', 'u[1]'],               # pinputs
+        ['z[0]', 'z[1]', 'y[0]', 'y[1]'],               # poutputs
+        [['P.u', 'C.y'], ['C.u', '-P.y']],              # connections
+        ['C.u', 'P.w'], ['P.z', 'P.y', 'C.y'],          # inplist, outlist
+        id="basename, control output"),
+    pytest.param(
+        ['w[0]', 'w[1]', 'u[0]', 'u[1]'],               # pinputs
+        ['z[0]', 'z[1]', 'y[0]', 'y[1]'],               # poutputs
+        [['P.u', 'C.y'], ['C.u', '-P.y']],              # connections
+        ['C.u', 'P.w'], ['P.z', 'P.y', 'P.u'],          # inplist, outlist
+        id="basename, process input"),
+])
+def test_interconnect_partial_feedback(
+        pinputs, poutputs, connections, inplist, outlist):
+    P = ct.rss(
+        states=6, name='P', strictly_proper=True,
+        inputs=pinputs, outputs=poutputs)
+    C = ct.rss(4, 2, 2, name='C')
+
+    # Low level feedback connection (feedback around "lower" process I/O)
+    partial = ct.interconnect(
+        [C, P],
+        connections=[
+            [(1, 2), (0, 0)], [(1, 3), (0, 1)],
+            [(0, 0), (1, 2, -1)], [(0, 1), (1, 3, -1)]],
+        inplist=[(0, 0), (0, 1), (1, 0), (1, 1)],       # C.u, P.w
+        outlist=[(1, 0), (1, 1), (1, 2), (1, 3),
+                 (0, 0), (0, 1)],                       # P.z, P.y, C.y
+    )
+
+    # High level feedback conections
+    icsys = ct.interconnect(
+        [C, P], connections=connections,
+        inplist=inplist, outlist=outlist
+    )
+    np.testing.assert_allclose(icsys.A, partial.A)
+    np.testing.assert_allclose(icsys.B, partial.B)
+    np.testing.assert_allclose(icsys.C, partial.C)
+    np.testing.assert_allclose(icsys.D, partial.D)
+>>>>>>> 7c86239 (add/move interconnect unit tests(); clean up list/tuple; small fixes)

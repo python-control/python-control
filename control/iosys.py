@@ -889,9 +889,9 @@ class InterconnectedSystem(InputOutputSystem):
                  params=None, warn_duplicate=None, **kwargs):
         """Create an I/O system from a list of systems + connection info."""
         # Convert input and output names to lists if they aren't already
-        if inplist is not None and not isinstance(inplist, (list, tuple)):
+        if inplist is not None and not isinstance(inplist, list):
             inplist = [inplist]
-        if outlist is not None and not isinstance(outlist, (list, tuple)):
+        if outlist is not None and not isinstance(outlist, list):
             outlist = [outlist]
 
         # Check if dt argument was given; if not, pull from systems
@@ -2552,7 +2552,7 @@ def interconnect(
         subsystem are used.  If systems and signals are given names, then
         the form 'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also
         recognized, and the special form '-sys.sig' can be used to specify
-        a signal with gain -1.  Lists, slices, and base names can also be
+        a signal with gain -1.  Lists, slices, and base namess can also be
         used, as long as the number of elements for each output spec
         mataches the input spec.
 
@@ -2797,7 +2797,7 @@ def interconnect(
     #
     new_connections = []
     for connection in connections:
-        if not isinstance(connection, (list, tuple)):
+        if not isinstance(connection, list):
             raise ValueError(
                 f"invalid connection {connection}: should be a list")
         # Parse and expand the input specification
@@ -2825,7 +2825,7 @@ def interconnect(
     # number of elements in `inplist` will match the number of inputs for
     # the interconnected system.
     #
-    if not isinstance(inplist, (list, tuple)):
+    if not isinstance(inplist, list):
         inplist = [inplist]
     new_inplist = []
     for connection in inplist:
@@ -2877,7 +2877,7 @@ def interconnect(
     # additionally take into account the fact that you can list subsystem
     # inputs as system outputs.
     #
-    if not isinstance(outlist, (list, tuple)):
+    if not isinstance(outlist, list):
         outlist = [outlist]
     new_outlist = []
     for connection in outlist:
@@ -3136,7 +3136,7 @@ def _parse_spec(syslist, spec, signame, dictname=None):
         if len(namelist) > 2:
             # TODO: expand to allow nested signal names
             raise ValueError(f"couldn't parse signal reference '{spec}'")
-    elif isinstance(spec, (tuple, list)) and len(spec) <= 3:
+    elif isinstance(spec, tuple) and len(spec) <= 3:
         system_spec = spec[0]
         signal_spec = None if len(spec) < 2 else spec[1]
         gain = None if len(spec) < 3 else spec[2]
@@ -3180,7 +3180,6 @@ def _parse_spec(syslist, spec, signame, dictname=None):
     nsignals = len(signal_dict)
 
     # Figure out the signal indices
-    # TODO: move this logic to _find_signals()
     if signal_spec is None:
         # No indices given => use the entire range of signals
         signal_indices = list(range(nsignals))

@@ -132,11 +132,12 @@ class NamedIOSystem(object):
                 for var in sigdict:
                     msig = re.match(name + r'\[([\d]+)\]$', var)
                     if msig:
-                        index_list.append(int(msig.group(1)))
+                        index_list.append(sigdict.get(var))
             else:
                 index_list.append(sigdict.get(name, None))
 
-        return None if any([idx is None for idx in index_list]) else index_list
+        return None if len(index_list) == 0 or \
+            any([idx is None for idx in index_list]) else index_list
 
     def _copy_names(self, sys, prefix="", suffix="", prefix_suffix_name=None):
         """copy the signal and system name of sys. Name is given as a keyword
