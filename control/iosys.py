@@ -2724,12 +2724,13 @@ def interconnect(
       'sysname.signal[i:j]'             range of signal names, i through j-1
       'sysname.signal[:]'               all signals with given prefix
 
-    It is possible to replace lists in most of arguments with tuples
-    instead, but strictly speaking the only use of tuples should be in the
+    While in many Python functions tuples can be used in place of lists,
+    for the interconnect() function the only use of tuples should be in the
     specification of an input- or output-signal via the tuple notation
     `(subsys_i, signal_j, gain)` (where `gain` is optional).  If you get an
-    unexpected error message about a specification being of the wrong type,
-    check your use of tuples.
+    unexpected error message about a specification being of the wrong type
+    or not being found, check to make sure you are not using a tuple where
+    you should be using a list.
 
     In addition to its use for general nonlinear I/O systems, the
     :func:`~control.interconnect` function allows linear systems to be
