@@ -113,19 +113,26 @@ class NamedIOSystem(object):
 
         index_list = []
         for name in name_list:
-            # Look for signal ranges (slice-like)
-            m = re.match(r'([\w$]+)\[([\d]*):([\d]*)\]$', name)
-            if m:
-                base = m.group(1)
-                start = None if m.group(2) == '' else int(m.group(2))
-                stop = None if m.group(3) == '' else int(m.group(3))
+            # Look for signal ranges (slice-like or base name)
+            ms = re.match(r'([\w$]+)\[([\d]*):([\d]*)\]$', name)  # slice
+            mb = re.match(r'([\w$]+)$', name)                     # base
+            if ms:
+                base = ms.group(1)
+                start = None if ms.group(2) == '' else int(ms.group(2))
+                stop = None if ms.group(3) == '' else int(ms.group(3))
                 for var in sigdict:
                     # Find variables that match
-                    msig = re.match(r'([\w$]+)\[([\d]*)\]$', var)
+                    msig = re.match(r'([\w$]+)\[([\d]+)\]$', var)
                     if msig.group(1) == base and \
                        (start is None or int(msig.group(2)) >= start) and \
                        (stop is None or int(msig.group(2)) < stop):
                             index_list.append(int(msig.group(2)))
+            elif mb and sigdict.get(name, None) is None:
+                # Try to use name as a base name
+                for var in sigdict:
+                    msig = re.match(name + r'\[([\d]+)\]$', var)
+                    if msig:
+                        index_list.append(int(msig.group(1)))
             else:
                 index_list.append(sigdict.get(name, None))
 

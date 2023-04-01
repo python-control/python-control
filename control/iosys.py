@@ -29,7 +29,6 @@ __email__ = "murray@cds.caltech.edu"
 import numpy as np
 import scipy as sp
 import copy
-import itertools
 from warnings import warn
 
 from .lti import LTI
@@ -1011,7 +1010,7 @@ class InterconnectedSystem(InputOutputSystem):
                 output_indices, gain = self._parse_output_spec(output_spec)
                 if len(output_indices) != len(input_indices):
                     raise ValueError(
-                        f"inconsistent number signals in connecting"
+                        f"inconsistent number of signals in connecting"
                         f" '{output_spec}' to '{connection[0]}'")
 
                 for input_index, output_index in zip(
@@ -2541,7 +2540,8 @@ def interconnect(
         signals are given names, then the forms 'sys.sig' or ('sys', 'sig')
         are also recognized.  Finally, for multivariable systems the signal
         index can be given as a list, for example '(subsys_i, [inp_j1, ...,
-        inp_jn])' or as as a slice, for example, 'sys.sig[i:j]'.
+        inp_jn])', as as a slice, for example, 'sys.sig[i:j]', or as a base
+        name `sys.sig` (which matches `sys.sig[i]`).
 
         Similarly, each output-spec should describe an output signal from
         one of the subsystems.  The lowest level representation is a tuple
@@ -2552,9 +2552,9 @@ def interconnect(
         subsystem are used.  If systems and signals are given names, then
         the form 'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also
         recognized, and the special form '-sys.sig' can be used to specify
-        a signal with gain -1.  Lists and slices can also be used, as long
-        as the number of elements for each output spec mataches the input
-        spec.
+        a signal with gain -1.  Lists, slices, and base names can also be
+        used, as long as the number of elements for each output spec
+        mataches the input spec.
 
         If omitted, the `interconnect` function will attempt to create the
         interconnection map by connecting all signals with the same base names
@@ -2685,11 +2685,12 @@ def interconnect(
     ...     outlist=['P.y[0]', 'P.y[1]'],
     ... )
 
-    This expression can be simplified using slice notation:
+    This expression can be simplified using either slice notation or
+    just signal basenames:
 
     >>> T = ct.interconnect(
-    ...     [P, C], connections=[['P.u[:]', 'C.y[:]'], ['C.u[:]', '-P.y[:]']],
-    ...     inplist='C.u[:]', outlist='P.y[:]')
+    ...     [P, C], connections=[['P.u[:]', 'C.y[:]'], ['C.u', '-P.y']],
+    ...     inplist='C.u', outlist='P.y[:]')
 
     or further simplified by omitting the input and output signal
     specifications (since all inputs and outputs are used):
@@ -2774,6 +2775,11 @@ def interconnect(
         check_unused = False
         # Use an empty connections list
         connections = []
+
+    elif isinstance(connections, list) and \
+         all([isinstance(cnxn, (str, tuple)) for cnxn in connections]):
+        # Special case where there is a single connection
+        connections = [connections]
 
     # If inplist/outlist is not present, try using inputs/outputs instead
     if inplist is None:

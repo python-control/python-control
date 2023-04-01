@@ -2067,6 +2067,9 @@ def test_iosys_sample():
             'sys1.u[:]', ['sys2.y[0:3]'], None, None,
             id="signal slices"),
         pytest.param(
+            ['sys2.u', 'sys1.y'], 'sys1.u', 'sys2.y', None, None,
+            id="signal basenames"),
+        pytest.param(
             [[('sys2', [0, 1, 2]), ('sys1', [0, 1, 2])]],
             [('sys1', [0, 1, 2])], [('sys2', [0, 1, 2])],
             None, None,
