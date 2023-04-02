@@ -61,6 +61,9 @@ def test_interconnect_implicit(dim):
     """Test the use of implicit connections in interconnect()"""
     import random
 
+    if dim != 1 and not ct.slycot_check():
+        pytest.xfail("slycot not installed")
+
     # System definition
     P = ct.ss2io(ct.rss(2, dim, dim, strictly_proper=True), name='P')
 
