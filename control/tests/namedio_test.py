@@ -293,3 +293,36 @@ def test_duplicate_sysname():
     sys = ct.rss(4, 1, 1, name='sys')
     with pytest.warns(UserWarning, match="duplicate object found"):
         res = sys * sys
+
+
+# Finding signals
+def test_find_signals():
+    sys = ct.rss(
+        states=['x[1]', 'x[2]', 'x[3]', 'x[4]', 'x4', 'x5'],
+        inputs=['u[0]', 'u[1]', 'u[2]', 'v[0]', 'v[1]'],
+        outputs=['y[0]', 'y[1]', 'y[2]', 'z[0]', 'z1'],
+        name='sys')
+
+    # States
+    assert sys.find_states('x[1]') == [0]
+    assert sys.find_states('x') == [0, 1, 2, 3]
+    assert sys.find_states('x4') == [4]
+    assert sys.find_states(['x4', 'x5']) == [4, 5]
+    assert sys.find_states(['x', 'x5']) == [0, 1, 2, 3, 5]
+    assert sys.find_states(['x[2:]']) == [1, 2, 3]
+
+    # Inputs
+    assert sys.find_inputs('u[1]') == [1]
+    assert sys.find_inputs('u') == [0, 1, 2]
+    assert sys.find_inputs('v') == [3, 4]
+    assert sys.find_inputs(['u', 'v']) == [0, 1, 2, 3, 4]
+    assert sys.find_inputs(['u[1:]', 'v']) == [1, 2, 3, 4]
+    assert sys.find_inputs(['u', 'v[:1]']) == [0, 1, 2, 3]
+
+    # Outputs
+    assert sys.find_outputs('y[1]') == [1]
+    assert sys.find_outputs('y') == [0, 1, 2]
+    assert sys.find_outputs('z') == [3]
+    assert sys.find_outputs(['y', 'z']) == [0, 1, 2, 3]
+    assert sys.find_outputs(['y[1:]', 'z']) == [1, 2, 3]
+    assert sys.find_outputs(['y', 'z[:1]']) == [0, 1, 2, 3]

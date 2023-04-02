@@ -30,15 +30,16 @@ _namedio_defaults = {
 
 class NamedIOSystem(object):
     def __init__(
-            self, name=None, inputs=None, outputs=None, states=None, **kwargs):
+            self, name=None, inputs=None, outputs=None, states=None,
+            input_prefix='u', output_prefix='y', state_prefix='x', **kwargs):
 
         # system name
         self.name = self._name_or_default(name)
 
         # Parse and store the number of inputs and outputs
-        self.set_inputs(inputs)
-        self.set_outputs(outputs)
-        self.set_states(states)
+        self.set_inputs(inputs, prefix=input_prefix)
+        self.set_outputs(outputs, prefix=output_prefix)
+        self.set_states(states, prefix=state_prefix)
 
         # Process timebase: if not given use default, but allow None as value
         self.dt = _process_dt_keyword(kwargs)
@@ -123,10 +124,10 @@ class NamedIOSystem(object):
                 for var in sigdict:
                     # Find variables that match
                     msig = re.match(r'([\w$]+)\[([\d]+)\]$', var)
-                    if msig.group(1) == base and \
+                    if msig and msig.group(1) == base and \
                        (start is None or int(msig.group(2)) >= start) and \
                        (stop is None or int(msig.group(2)) < stop):
-                            index_list.append(int(msig.group(2)))
+                            index_list.append(sigdict.get(var))
             elif mb and sigdict.get(name, None) is None:
                 # Try to use name as a base name
                 for var in sigdict:
@@ -208,6 +209,10 @@ class NamedIOSystem(object):
         """Find the index for an input given its name (`None` if not found)"""
         return self.input_index.get(name, None)
 
+    def find_inputs(self, name_list):
+        """Return list of indices matching input spec (`None` if not found)"""
+        return self._find_signals(name_list, self.input_index)
+
     # Property for getting and setting list of input signals
     input_labels = property(
         lambda self: list(self.input_index.keys()),     # getter
@@ -237,6 +242,10 @@ class NamedIOSystem(object):
         """Find the index for an output given its name (`None` if not found)"""
         return self.output_index.get(name, None)
 
+    def find_outputs(self, name_list):
+        """Return list of indices matching output spec (`None` if not found)"""
+        return self._find_signals(name_list, self.output_index)
+
     # Property for getting and setting list of output signals
     output_labels = property(
         lambda self: list(self.output_index.keys()),     # getter
@@ -265,6 +274,10 @@ class NamedIOSystem(object):
     def find_state(self, name):
         """Find the index for a state given its name (`None` if not found)"""
         return self.state_index.get(name, None)
+
+    def find_states(self, name_list):
+        """Return list of indices matching state spec (`None` if not found)"""
+        return self._find_signals(name_list, self.state_index)
 
     # Property for getting and setting list of state signals
     state_labels = property(

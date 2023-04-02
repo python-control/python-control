@@ -56,30 +56,39 @@ def test_summation_exceptions():
         sumblk = ct.summing_junction('u', 'y', dimension=False)
 
 
-def test_interconnect_implicit():
+@pytest.mark.parametrize("dim", [1, 3])
+def test_interconnect_implicit(dim):
     """Test the use of implicit connections in interconnect()"""
     import random
 
     # System definition
-    P = ct.ss2io(
-        ct.rss(2, 1, 1, strictly_proper=True),
-        inputs='u', outputs='y', name='P')
-    kp = ct.tf(random.uniform(1, 10), [1])
-    ki = ct.tf(random.uniform(1, 10), [1, 0])
-    C = ct.tf2io(kp + ki, inputs='e', outputs='u', name='C')
+    P = ct.ss2io(ct.rss(2, dim, dim, strictly_proper=True), name='P')
+
+    # Controller defintion: PI in each input/output pair
+    kp = ct.tf(np.ones((dim, dim, 1)), np.ones((dim, dim, 1))) \
+        * random.uniform(1, 10)
+    ki = random.uniform(1, 10)
+    num, den = np.zeros((dim, dim, 1)), np.ones((dim, dim, 2))
+    for i, j in zip(range(dim), range(dim)):
+        num[i, j] = ki
+        den[i, j] = np.array([1, 0])
+    ki = ct.tf(num, den)
+    C = ct.tf2io(kp + ki, name='C',
+                 inputs=[f'e[{i}]' for i in range(dim)],
+                 outputs=[f'u[{i}]' for i in range(dim)])
 
     # same but static C2
     C2 = ct.tf(random.uniform(1, 10), 1,
         inputs='e', outputs='u', name='C2')
 
     # Block diagram computation
-    Tss = ct.feedback(P * C, 1)
-    Tss2 = ct.feedback(P * C2, 1)
+    Tss = ct.feedback(P * C, np.eye(dim))
+    Tss2 = ct.feedback(P * C2, np.eye(dim))
 
     # Construct the interconnection explicitly
     Tio_exp = ct.interconnect(
         (C, P),
-        connections = [['P.u', 'C.u'], ['C.e', '-P.y']],
+        connections=[['P.u', 'C.u'], ['C.e', '-P.y']],
         inplist='C.e', outlist='P.y')
 
     # Compare to bdalg computation
@@ -89,9 +98,10 @@ def test_interconnect_implicit():
     np.testing.assert_almost_equal(Tio_exp.D, Tss.D)
 
     # Construct the interconnection via a summing junction
-    sumblk = ct.summing_junction(inputs=['r', '-y'], output='e', name="sum")
+    sumblk = ct.summing_junction(
+        inputs=['r', '-y'], output='e', dimension=dim, name="sum")
     Tio_sum = ct.interconnect(
-        (C, P, sumblk), inplist=['r'], outlist=['y'])
+        [C, P, sumblk], inplist=['r'], outlist=['y'], debug=True)
 
     np.testing.assert_almost_equal(Tio_sum.A, Tss.A)
     np.testing.assert_almost_equal(Tio_sum.B, Tss.B)
@@ -109,14 +119,18 @@ def test_interconnect_implicit():
 
     # Setting connections to False should lead to an empty connection map
     empty = ct.interconnect(
-        (C, P, sumblk), connections=False, inplist=['r'], outlist=['y'])
-    np.testing.assert_allclose(empty.connect_map, np.zeros((4, 3)))
+        [C, P, sumblk], connections=False, inplist=['r'], outlist=['y'])
+    np.testing.assert_allclose(empty.connect_map, np.zeros((4*dim, 3*dim)))
 
-    # Implicit summation across repeated signals
-    kp_io = ct.tf2io(kp, inputs='e', outputs='u', name='kp')
-    ki_io = ct.tf2io(ki, inputs='e', outputs='u', name='ki')
+    # Implicit summation across repeated signals (using updated labels)
+    kp_io = ct.tf2io(
+        kp, inputs=dim, input_prefix='e',
+        outputs=dim, output_prefix='u', name='kp')
+    ki_io = ct.tf2io(
+        ki, inputs=dim, input_prefix='e',
+        outputs=dim, output_prefix='u', name='ki')
     Tio_sum = ct.interconnect(
-        (kp_io, ki_io, P, sumblk), inplist=['r'], outlist=['y'])
+        [kp_io, ki_io, P, sumblk], inplist=['r'], outlist=['y'])
     np.testing.assert_almost_equal(Tio_sum.A, Tss.A)
     np.testing.assert_almost_equal(Tio_sum.B, Tss.B)
     np.testing.assert_almost_equal(Tio_sum.C, Tss.C)
@@ -135,7 +149,7 @@ def test_interconnect_implicit():
 
     # Make sure that repeated inplist/outlist names work
     pi_io = ct.interconnect(
-        (kp_io, ki_io), inplist=['e'], outlist=['u'])
+        [kp_io, ki_io], inplist=['e'], outlist=['u'])
     pi_ss = ct.tf2ss(kp + ki)
     np.testing.assert_almost_equal(pi_io.A, pi_ss.A)
     np.testing.assert_almost_equal(pi_io.B, pi_ss.B)
@@ -144,7 +158,7 @@ def test_interconnect_implicit():
 
     # Default input and output lists, along with singular versions
     Tio_sum = ct.interconnect(
-        (kp_io, ki_io, P, sumblk), input='r', output='y')
+        [kp_io, ki_io, P, sumblk], input='r', output='y', debug=True)
     np.testing.assert_almost_equal(Tio_sum.A, Tss.A)
     np.testing.assert_almost_equal(Tio_sum.B, Tss.B)
     np.testing.assert_almost_equal(Tio_sum.C, Tss.C)
@@ -233,17 +247,23 @@ def test_string_inputoutput():
     P2 = ct.rss(2, 1, 1)
     P2_iosys = ct.LinearIOSystem(P2, inputs='y1', outputs='y2')
 
-    P_s1 = ct.interconnect([P1_iosys, P2_iosys], inputs='u1', outputs=['y2'])
+    P_s1 = ct.interconnect(
+        [P1_iosys, P2_iosys], inputs='u1', outputs=['y2'], debug=True)
     assert P_s1.input_index == {'u1' : 0}
+    assert P_s1.output_index == {'y2' : 0}
 
     P_s2 = ct.interconnect([P1_iosys, P2_iosys], input='u1', outputs=['y2'])
     assert P_s2.input_index == {'u1' : 0}
+    assert P_s2.output_index == {'y2' : 0}
 
     P_s1 = ct.interconnect([P1_iosys, P2_iosys], inputs=['u1'], outputs='y2')
+    assert P_s1.input_index == {'u1' : 0}
     assert P_s1.output_index == {'y2' : 0}
 
     P_s2 = ct.interconnect([P1_iosys, P2_iosys], inputs=['u1'], output='y2')
+    assert P_s2.input_index == {'u1' : 0}
     assert P_s2.output_index == {'y2' : 0}
+
 
 def test_linear_interconnect():
     tf_ctrl = ct.tf(1, (10.1, 1), inputs='e', outputs='u', name='ctrl')
@@ -443,4 +463,83 @@ def test_interconnect_partial_feedback(
     np.testing.assert_allclose(icsys.B, partial.B)
     np.testing.assert_allclose(icsys.C, partial.C)
     np.testing.assert_allclose(icsys.D, partial.D)
->>>>>>> 7c86239 (add/move interconnect unit tests(); clean up list/tuple; small fixes)
+
+
+def test_interconnect_doctest():
+    P = ct.rss(
+        states=6, name='P', strictly_proper=True,
+        inputs=['u[0]', 'u[1]', 'v[0]', 'v[1]'],
+        outputs=['y[0]', 'y[1]', 'z[0]', 'z[1]'])
+    C = ct.rss(4, 2, 2, name='C', input_prefix='e', output_prefix='u')
+    sumblk = ct.summing_junction(
+        inputs=['r', '-y'], outputs='e', dimension=2, name='sum')
+
+    clsys1 = ct.interconnect(
+        [C, P, sumblk],
+        connections=[
+            ['P.u[0]', 'C.u[0]'], ['P.u[1]', 'C.u[1]'],
+            ['C.e[0]', 'sum.e[0]'], ['C.e[1]', 'sum.e[1]'],
+            ['sum.y[0]', 'P.y[0]'], ['sum.y[1]', 'P.y[1]'],
+        ],
+        inplist=['sum.r[0]', 'sum.r[1]', 'P.v[0]', 'P.v[1]'],
+        outlist=['P.y[0]', 'P.y[1]', 'P.z[0]', 'P.z[1]', 'C.u[0]', 'C.u[1]']
+    )
+
+    clsys2 = ct.interconnect(
+        [C, P, sumblk],
+        connections=[
+            ['P.u[0:2]', 'C.u[0:2]'],
+            ['C.e[0:2]', 'sum.e[0:2]'],
+            ['sum.y[0:2]', 'P.y[0:2]']
+        ],
+        inplist=['sum.r[0:2]', 'P.v[0:2]'],
+        outlist=['P.y[0:2]', 'P.z[0:2]', 'C.u[0:2]']
+    )
+    np.testing.assert_equal(clsys2.A, clsys1.A)
+    np.testing.assert_equal(clsys2.B, clsys1.B)
+    np.testing.assert_equal(clsys2.C, clsys1.C)
+    np.testing.assert_equal(clsys2.D, clsys1.D)
+
+    clsys3 = ct.interconnect(
+        [C, P, sumblk],
+        connections=[['P.u', 'C.u'], ['C.e', 'sum.e'], ['sum.y', 'P.y']],
+        inplist=['sum.r', 'P.v'], outlist=['P.y', 'P.z', 'C.u']
+    )
+    np.testing.assert_equal(clsys3.A, clsys1.A)
+    np.testing.assert_equal(clsys3.B, clsys1.B)
+    np.testing.assert_equal(clsys3.C, clsys1.C)
+    np.testing.assert_equal(clsys3.D, clsys1.D)
+
+    clsys4 = ct.interconnect(
+        [C, P, sumblk],
+        connections=[['P.u', 'C'], ['C', 'sum'], ['sum.y', 'P.y']],
+        inplist=['sum.r', 'P.v'], outlist=['P', 'C.u']
+    )
+    np.testing.assert_equal(clsys4.A, clsys1.A)
+    np.testing.assert_equal(clsys4.B, clsys1.B)
+    np.testing.assert_equal(clsys4.C, clsys1.C)
+    np.testing.assert_equal(clsys4.D, clsys1.D)
+
+    clsys5 = ct.interconnect(
+        [C, P, sumblk],
+        inplist=['sum.r', 'P.v'], outlist=['P', 'C.u']
+    )
+    np.testing.assert_equal(clsys5.A, clsys1.A)
+    np.testing.assert_equal(clsys5.B, clsys1.B)
+    np.testing.assert_equal(clsys5.C, clsys1.C)
+    np.testing.assert_equal(clsys5.D, clsys1.D)
+
+
+def test_interconnect_rewrite():
+    sys = ct.rss(
+        states=2, name='sys', strictly_proper=True,
+        inputs=['u[0]', 'u[1]', 'v[0]', 'v[1]', 'w[0]', 'w[1]'],
+        outputs=['y[0]', 'y[1]', 'z[0]', 'z[1]', 'z[2]'])
+
+    # Create an input/output system w/out inplist, outlist
+    icsys = ct.interconnect(
+        [sys], connections=[['sys.v', 'sys.y']],
+        inputs=['u', 'w'],
+        outputs=['y', 'z'])
+
+    assert icsys.input_labels == ['u[0]', 'u[1]', 'w[0]', 'w[1]']
