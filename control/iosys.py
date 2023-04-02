@@ -142,8 +142,7 @@ class InputOutputSystem(NamedIOSystem):
 
         """
         # Store the system name, inputs, outputs, and states
-        name, inputs, outputs, states, dt = _process_namedio_keywords(
-            kwargs)
+        name, inputs, outputs, states, dt = _process_namedio_keywords(kwargs)
 
         # Initialize the data structure
         # Note: don't use super() to override LinearIOSystem/StateSpace MRO
@@ -910,8 +909,7 @@ class InterconnectedSystem(InputOutputSystem):
         dt = kwargs.pop('dt', None)
 
         # Process keyword arguments (except dt)
-        name, inputs, outputs, states, _ = _process_namedio_keywords(
-            kwargs, end=True)
+        name, inputs, outputs, states, _ = _process_namedio_keywords(kwargs)
 
         # Initialize the system list and index
         self.syslist = list(syslist) # insure modifications can be made
@@ -1012,7 +1010,7 @@ class InterconnectedSystem(InputOutputSystem):
         # Note: don't use super() to override LinearICSystem/StateSpace MRO
         InputOutputSystem.__init__(
             self, inputs=inputs, outputs=outputs,
-            states=states, params=params, dt=dt, name=name)
+            states=states, params=params, dt=dt, name=name, **kwargs)
 
         # Convert the list of interconnections to a connection map (matrix)
         self.connect_map = np.zeros((ninputs, noutputs))
@@ -1241,7 +1239,9 @@ class InterconnectedSystem(InputOutputSystem):
         ----------
         output_map : 2D array
              Specify the matrix that will be used to multiply the vector of
-             subsystem outputs to obtain the vector of system outputs.
+             subsystem outputs concatenated with subsystem inputs to obtain
+             the vector of system outputs.
+
         """
         # Figure out the number of internal inputs and outputs
         ninputs = sum(sys.ninputs for sys in self.syslist)
@@ -2552,7 +2552,7 @@ def interconnect(
         signals are given names, then the forms 'sys.sig' or ('sys', 'sig')
         are also recognized.  Finally, for multivariable systems the signal
         index can be given as a list, for example '(subsys_i, [inp_j1, ...,
-        inp_jn])', as as a slice, for example, 'sys.sig[i:j]', or as a base
+        inp_jn])'; as a slice, for example, 'sys.sig[i:j]'; or as a base
         name `sys.sig` (which matches `sys.sig[i]`).
 
         Similarly, each output-spec should describe an output signal from
@@ -2715,7 +2715,7 @@ def interconnect(
     ...     [P, C], connections=[['P', 'C'], ['C', '-P']],
     ...     inplist=['C'], outlist=['P'])
 
-    This feedback system can also be constructed using the
+    A feedback system can also be constructed using the
     :func:`~control.summing_block` function and the ability to
     automatically interconnect signals with the same names:
 
@@ -2734,7 +2734,7 @@ def interconnect(
     default being to add the suffix '$copy' to the system name.
 
     In addition to explicit lists of system signals, it is possible to
-    lists vectors of signals, using one of the following forms:
+    lists vectors of signals, using one of the following forms::
 
       (subsys, [i1, ..., iN], gain)     signals with indices i1, ..., in
       'sysname.signal[i:j]'             range of signal names, i through j-1
@@ -2760,8 +2760,7 @@ def interconnect(
 
     """
     dt = kwargs.pop('dt', None)         # by pass normal 'dt' processing
-    name, inputs, outputs, states, _ = _process_namedio_keywords(
-        kwargs, end=True)
+    name, inputs, outputs, states, _ = _process_namedio_keywords(kwargs)
 
     if not check_unused and (ignore_inputs or ignore_outputs):
         raise ValueError('check_unused is False, but either '
@@ -3017,10 +3016,21 @@ def interconnect(
     outlist, outputs = new_outlist, new_outputs
     dprint(f"  {outlist=}\n  {outputs=}")
 
+    # Make sure inputs and outputs match inplist outlist, if specified
+    if inputs and (
+            isinstance(inputs, (list, tuple)) and len(inputs) != len(inplist)
+            or isinstance(inputs, int) and inputs != len(inplist)):
+        raise ValueError("`inputs` incompatible with `inplist`")
+    if outputs and (
+            isinstance(outputs, (list, tuple)) and len(outputs) != len(outlist)
+            or isinstance(outputs, int) and outputs != len(outlist)):
+        raise ValueError("`outputs` incompatible with `outlist`")
+
     newsys = InterconnectedSystem(
         syslist, connections=connections, inplist=inplist,
         outlist=outlist, inputs=inputs, outputs=outputs, states=states,
-        params=params, dt=dt, name=name, warn_duplicate=warn_duplicate)
+        params=params, dt=dt, name=name, warn_duplicate=warn_duplicate,
+        **kwargs)
 
     # See if we should add any signals
     if add_unused:
@@ -3040,7 +3050,8 @@ def interconnect(
         newsys = InterconnectedSystem(
             syslist, connections=connections, inplist=inplist,
             outlist=outlist, inputs=inputs, outputs=outputs, states=states,
-            params=params, dt=dt, name=name, warn_duplicate=warn_duplicate)
+            params=params, dt=dt, name=name, warn_duplicate=warn_duplicate,
+            **kwargs)
 
     # check for implicitly dropped signals
     if check_unused:

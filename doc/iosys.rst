@@ -325,7 +325,7 @@ most explict would specify every signal::
     outlist=['P.y[0]', 'P.y[1]', 'P.z[0]', 'P.z[1]', 'C.u[0]', 'C.u[1]']
   )
 
-This connections can be simplified using signal ranges:
+This connections can be simplified using signal ranges::
 
   clsys2 = ct.interconnect(
     [C, P, sumblk],
@@ -348,7 +348,7 @@ when all signals with the same prefix are used::
   )
 
 A further simplification is possible when all of the inputs or outputs
-of an individual system are used in a given specification:
+of an individual system are used in a given specification::
 
   clsys4 = ct.interconnect(
     [C, P, sumblk],
@@ -358,7 +358,7 @@ of an individual system are used in a given specification:
 
 And finally, since we have named the signals throughout the system in
 a consistent way, we could let :func:`ct.interconnect` do all of the
-work:
+work::
 
   clsys5 = ct.interconnect(
     [C, P, sumblk], inplist=['sum.r', 'P.v'], outlist=['P', 'C.u']
