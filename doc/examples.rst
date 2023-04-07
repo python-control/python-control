@@ -8,7 +8,7 @@ Examples
 The source code for the examples below are available in the `examples/`
 subdirecory of the source code distribution.  The can also be accessed online
 via the [python-control GitHub repository](https://github.com/python-control/python-control/tree/master/examples).
-  
+
 
 Python scripts
 ==============
@@ -44,10 +44,12 @@ using running examples in FBS2e.
 
    cruise
    describing_functions
+   interconnect_tutorial
    kincar-fusion
    mhe-pvtol
    mpc_aircraft
-   steering
    pvtol-lqr-nested
    pvtol-outputfbk
+   simulating_sampled_data_systems
+   steering
    stochresp
