@@ -37,7 +37,10 @@ Jupyter notebooks
 
 The examples below use `python-control` in a Jupyter notebook environment.
 These notebooks demonstrate the use of modeling, anaylsis, and design tools
-using running examples in FBS2e.
+using examples from textbooks
+(`FBS <https://fbswiki.org/wiki/index.php?title=FBS>`_,
+`OBC <https://fbswiki.org/wiki/index.php?title=OBC>`_), courses, and other
+online sources.
 
 .. toctree::
    :maxdepth: 1
