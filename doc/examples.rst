@@ -53,6 +53,6 @@ online sources.
    mpc_aircraft
    pvtol-lqr-nested
    pvtol-outputfbk
-   simulating_sampled_data_systems
+   interconnected_nonlinear_and_sampled_data_systems
    steering
    stochresp
