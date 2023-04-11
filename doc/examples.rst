@@ -53,6 +53,6 @@ online sources.
    mpc_aircraft
    pvtol-lqr-nested
    pvtol-outputfbk
-   interconnected_nonlinear_and_sampled_data_systems
+   simulating_discrete_nonlinear
    steering
    stochresp
