@@ -213,8 +213,8 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     be modified at a time. `Sisotool` plots the step response, frequency
     response, and root locus.
 
-    When first run, `deltaK` is set to 0; click on a branch of the root locus
-    plot to try a different value. Each click updates plots and prints
+    When first run, `deltaK` is set to 0.001; click on a branch of the root
+    locus plot to try a different value. Each click updates plots and prints
     the corresponding `deltaK`. To tune all three PID gains, repeatedly call
     `rootlocus_pid_designer`, and select a different `gain` each time (`'P'`,
     `'I'`, or `'D'`). Make sure to add the resulting `deltaK` to your chosen
@@ -352,6 +352,6 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                             inplist=['input', input_signal],
                             outlist=['output', 'y'], check_unused=False)
     if plot:
-        sisotool(loop, kvect=(0.,))
+        sisotool(loop, initial_gain=0.001)
     cl = loop[1, 1] # closed loop transfer function with initial gains
     return StateSpace(cl.A, cl.B, cl.C, cl.D, cl.dt)
