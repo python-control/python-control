@@ -254,7 +254,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     its second input rather than being added to `u`.
 
     Remark: It may be helpful to zoom in using the magnifying glass on the
-    plot. Just ake sure to deactivate magnification mode when you are done by
+    plot. Just make sure to deactivate magnification mode when you are done by
     clicking the magnifying glass. Otherwise you will not be able to be able
     to choose a gain on the root locus plot.
 
