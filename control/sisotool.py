@@ -220,6 +220,15 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     `'I'`, or `'D'`). Make sure to add the resulting `deltaK` to your chosen
     initial gain on the next iteration.
 
+    Note: Clicking on interactive plots feature is not currently compatible
+    with in-line plots in the Jupyter Notebook including online notebooks.
+    The alternative is to iteratively explore calling this function with
+    different initial argument values `Kp0`, `Ki0`, and `Kd0`. If you are
+    running the notebook on your local computer, it may be possible to spawn
+    separate interactive plots outside of the notebook with a command, e.g.
+    `%matplotlib qt`; when you are done, `%matplotlib inline` returns to
+    inline plots.
+
     Example: to examine the effect of varying `Kp` starting from an intial
     value of 10, use the arguments `gain='P', Kp0=10`. Suppose a `deltaK`
     value of 5 gives satisfactory performance. Then on the next iteration,
@@ -254,7 +263,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     its second input rather than being added to `u`.
 
     Remark: It may be helpful to zoom in using the magnifying glass on the
-    plot. Just ake sure to deactivate magnification mode when you are done by
+    plot. Just make sure to deactivate magnification mode when you are done by
     clicking the magnifying glass. Otherwise you will not be able to be able
     to choose a gain on the root locus plot.
 
@@ -320,7 +329,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         deriv = tf([1, -1], [dt, 0], dt)
 
     # add signal names by turning into iosystems
-    prop  = tf2io(prop,        inputs='e', outputs='prop_e')
+    prop  = tf2io(prop,        )
     integ = tf2io(integ,       inputs='e', outputs='int_e')
     if derivative_in_feedback_path:
         deriv = tf2io(-deriv,  inputs='y', outputs='deriv')
