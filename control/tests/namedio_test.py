@@ -241,11 +241,26 @@ def test_init_namedif():
 
 # Test state space conversion
 def test_convert_to_statespace():
-    # Set up the initial system
-    sys = ct.tf(ct.rss(2, 1, 1))
+    # Set up the initial systems
+    sys = ct.tf(ct.rss(2, 1, 1), inputs='u', outputs='y', name='sys')
+    sys_static = ct.tf(1, 2, inputs='u', outputs='y', name='sys_static')
+
+    # check that name, inputs, and outputs passed through
+    sys_new = ct.ss(sys)
+    assert sys_new.name == 'sys'
+    assert sys_new.input_labels == ['u']
+    assert sys_new.output_labels == ['y']
+    sys_new = ct.ss(sys_static)
+    assert sys_new.name == 'sys_static'
+    assert sys_new.input_labels == ['u']
+    assert sys_new.output_labels == ['y']
 
     # Make sure we can rename system name, inputs, outputs
     sys_new = ct.ss(sys, inputs='u', outputs='y', name='new')
+    assert sys_new.name == 'new'
+    assert sys_new.input_labels == ['u']
+    assert sys_new.output_labels == ['y']
+    sys_new = ct.ss(sys_static, inputs='u', outputs='y', name='new')
     assert sys_new.name == 'new'
     assert sys_new.input_labels == ['u']
     assert sys_new.output_labels == ['y']
