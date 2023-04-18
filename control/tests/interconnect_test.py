@@ -68,8 +68,13 @@ def test_interconnect_implicit():
     ki = ct.tf(random.uniform(1, 10), [1, 0])
     C = ct.tf2io(kp + ki, inputs='e', outputs='u', name='C')
 
+    # same but static C2
+    C2 = ct.tf(random.uniform(1, 10), 1,
+        inputs='e', outputs='u', name='C2')
+
     # Block diagram computation
     Tss = ct.feedback(P * C, 1)
+    Tss2 = ct.feedback(P * C2, 1)
 
     # Construct the interconnection explicitly
     Tio_exp = ct.interconnect(
@@ -92,6 +97,15 @@ def test_interconnect_implicit():
     np.testing.assert_almost_equal(Tio_sum.B, Tss.B)
     np.testing.assert_almost_equal(Tio_sum.C, Tss.C)
     np.testing.assert_almost_equal(Tio_sum.D, Tss.D)
+
+    # test whether signal names work for static system C2
+    Tio_sum2 = ct.interconnect(
+        [C2, P, sumblk], inputs='r', outputs='y')
+
+    np.testing.assert_almost_equal(Tio_sum2.A, Tss2.A)
+    np.testing.assert_almost_equal(Tio_sum2.B, Tss2.B)
+    np.testing.assert_almost_equal(Tio_sum2.C, Tss2.C)
+    np.testing.assert_almost_equal(Tio_sum2.D, Tss2.D)
 
     # Setting connections to False should lead to an empty connection map
     empty = ct.interconnect(
@@ -237,17 +251,17 @@ def test_linear_interconnect():
     ss_ctrl = ct.ss(1, 2, 1, 2, inputs='e', outputs='u')
     ss_plant = ct.ss(1, 2, 1, 2, inputs='u', outputs='y')
     nl_ctrl = ct.NonlinearIOSystem(
-        lambda t, x, u, params: x*x, 
+        lambda t, x, u, params: x*x,
         lambda t, x, u, params: u*x, states=1, inputs='e', outputs='u')
     nl_plant = ct.NonlinearIOSystem(
-        lambda t, x, u, params: x*x, 
+        lambda t, x, u, params: x*x,
         lambda t, x, u, params: u*x, states=1, inputs='u', outputs='y')
 
     assert isinstance(ct.interconnect((tf_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
     assert isinstance(ct.interconnect((ss_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
     assert isinstance(ct.interconnect((tf_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
     assert isinstance(ct.interconnect((ss_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
-    
+
     assert ~isinstance(ct.interconnect((nl_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
     assert ~isinstance(ct.interconnect((nl_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
     assert ~isinstance(ct.interconnect((ss_ctrl, nl_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
