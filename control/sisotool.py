@@ -3,12 +3,12 @@ __all__ = ['sisotool', 'rootlocus_pid_designer']
 from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
 from .timeresp import step_response
-from .namedio import issiso, common_timebase, isctime, isdtime
+from .namedio import common_timebase, isctime, isdtime
 from .xferfcn import tf
 from .iosys import ss
 from .bdalg import append, connect
-from .iosys import tf2io, ss2io, summing_junction, interconnect
-from control.statesp import _convert_to_statespace, StateSpace
+from .iosys import ss, tf2io, summing_junction, interconnect
+from control.statesp import _convert_to_statespace
 from . import config
 import numpy as np
 import matplotlib.pyplot as plt
@@ -202,7 +202,7 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
 # contributed by Sawyer Fuller, minster@uw.edu 2021.11.02, based on
 # an implementation in Matlab by Martin Berg.
 def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
-                           Kp0=0, Ki0=0, Kd0=0, tau=0.01,
+                           Kp0=0, Ki0=0, Kd0=0, deltaK=0.001, tau=0.01,
                            C_ff=0, derivative_in_feedback_path=False,
                            plot=True):
     """Manual PID controller design based on root locus using Sisotool
@@ -211,28 +211,38 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     amount `deltaK` to the proportional, integral, or derivative (PID) gains of
     a controller. One of the PID gains, `Kp`, `Ki`, or `Kd`, respectively, can
     be modified at a time. `Sisotool` plots the step response, frequency
-    response, and root locus.
+    response, and root locus of the closed-loop system controlling the
+    dynamical system specified by `plant`. Can be used with either non-
+    interactive plots (e.g. in a Jupyter Notebook), or interactive plots.
 
-    When first run, `deltaK` is set to 0.001; click on a branch of the root
-    locus plot to try a different value. Each click updates plots and prints
-    the corresponding `deltaK`. To tune all three PID gains, repeatedly call
-    `rootlocus_pid_designer`, and select a different `gain` each time (`'P'`,
-    `'I'`, or `'D'`). Make sure to add the resulting `deltaK` to your chosen
-    initial gain on the next iteration.
-
-    Note: Clicking on interactive plots feature is not currently compatible
-    with in-line plots in the Jupyter Notebook including online notebooks.
-    The alternative is to iteratively explore calling this function with
-    different initial argument values `Kp0`, `Ki0`, and `Kd0`. If you are
-    running the notebook on your local computer, it may be possible to spawn
-    separate interactive plots outside of the notebook with a command, e.g.
-    `%matplotlib qt`; when you are done, `%matplotlib inline` returns to
-    inline plots.
+    To use non-interactively, choose starting-point PID gains `Kp0`, `Ki0`,
+    and `Kd0` (you might want to start with all zeros to begin with), select
+    which gain you would like to vary (e.g. gain=`'P'`, `'I'`, or `'D'`), and
+    choose a value of `deltaK` (default 0.001) to specify by how much you
+    would like to change that gain. Repeatedly run `rootlocus_pid_designer`
+    with different values of `deltaK` until you are satisfied with the
+    performance for that gain. Then, to tune a different gain, e.g. `'I'`,
+    make sure to add your chosen `deltaK` to the previous gain you you were
+    tuning.
 
     Example: to examine the effect of varying `Kp` starting from an intial
-    value of 10, use the arguments `gain='P', Kp0=10`. Suppose a `deltaK`
-    value of 5 gives satisfactory performance. Then on the next iteration,
-    to tune the derivative gain, use the arguments `gain='D', Kp0=15`.
+    value of 10, use the arguments `gain='P', Kp0=10` and try varying values
+    of `deltaK`. Suppose a `deltaK` of 5 gives satisfactory performance. Then,
+    to tune the derivative gain, add your selected `deltaK` to `Kp0` in the
+    next call using the arguments `gain='D', Kp0=15`, to see how adding
+    different values of `deltaK` to your derivative gain affects performance.
+
+    To use with interactive plots, you will need to enable interactive mode
+    if you are in a Jupyter Notebook, e.g. using `%matplotlib`. See
+    `Interactive Plots <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ion.html>`_
+    for more information. Click on a branch of the root locus plot to try
+    different values of `deltaK`. Each click updates plots and prints the
+    corresponding `deltaK`. It may be helpful to zoom in using the magnifying
+    glass on the plot to get more locations to click. Just make sure to
+    deactivate magnification mode when you are done by clicking the magnifying
+    glass. Otherwise you will not be able to be able to choose a gain on the
+    root locus plot. When you are done, `%matplotlib inline` returns to inline,
+    non-interactive ploting.
 
     By default, all three PID terms are in the forward path C_f in the diagram
     shown below, that is,
@@ -262,11 +272,6 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     If `plant` is a 2-input system, the disturbance `d` is fed directly into
     its second input rather than being added to `u`.
 
-    Remark: It may be helpful to zoom in using the magnifying glass on the
-    plot. Just make sure to deactivate magnification mode when you are done by
-    clicking the magnifying glass. Otherwise you will not be able to be able
-    to choose a gain on the root locus plot.
-
     Parameters
     ----------
     plant : :class:`LTI` (:class:`TransferFunction` or :class:`StateSpace` system)
@@ -282,6 +287,8 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     Kp0, Ki0, Kd0 : float (optional)
         Initial values for proportional, integral, and derivative gains,
         respectively
+    deltaK : float (optional)
+        Perturbation value for gain specified by the `gain` keywoard.
     tau : float (optional)
         The time constant associated with the pole in the continuous-time
         derivative term. This is required to make the derivative transfer
@@ -302,14 +309,13 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
 
     """
 
-    plant = _convert_to_statespace(plant)
     if plant.ninputs == 1:
-        plant = ss2io(plant, inputs='u', outputs='y')
+        plant = ss(plant, inputs='u', outputs='y')
     elif plant.ninputs == 2:
-        plant = ss2io(plant, inputs=['u', 'd'], outputs='y')
+        plant = ss(plant, inputs=['u', 'd'], outputs='y')
     else:
         raise ValueError("plant must have one or two inputs")
-    C_ff = ss2io(_convert_to_statespace(C_ff),   inputs='r', outputs='uff')
+    C_ff = ss(_convert_to_statespace(C_ff),   inputs='r', outputs='uff')
     dt = common_timebase(plant, C_ff)
 
     # create systems used for interconnections
@@ -329,7 +335,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         deriv = tf([1, -1], [dt, 0], dt)
 
     # add signal names by turning into iosystems
-    prop  = tf2io(prop,        )
+    prop  = tf2io(prop,        inputs='e', outputs='prop_e')
     integ = tf2io(integ,       inputs='e', outputs='int_e')
     if derivative_in_feedback_path:
         deriv = tf2io(-deriv,  inputs='y', outputs='deriv')
@@ -344,13 +350,13 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     # for the gain that is varied, replace gain block with a special block
     # that has an 'input' and an 'output' that creates loop transfer function
     if gain in ('P', 'p'):
-        Kpgain = ss2io(ss([],[],[],[[0, 1], [-sign, Kp0]]),
+        Kpgain = ss([],[],[],[[0, 1], [-sign, Kp0]],
             inputs=['input', 'prop_e'], outputs=['output', 'ufb'])
     elif gain in ('I', 'i'):
-        Kigain = ss2io(ss([],[],[],[[0, 1], [-sign, Ki0]]),
+        Kigain = ss([],[],[],[[0, 1], [-sign, Ki0]],
             inputs=['input', 'int_e'],  outputs=['output', 'ufb'])
     elif gain in ('D', 'd'):
-        Kdgain = ss2io(ss([],[],[],[[0, 1], [-sign, Kd0]]),
+        Kdgain = ss([],[],[],[[0, 1], [-sign, Kd0]],
             inputs=['input', 'deriv'], outputs=['output', 'ufb'])
     else:
         raise ValueError(gain + ' gain not recognized.')
@@ -361,6 +367,6 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                             inplist=['input', input_signal],
                             outlist=['output', 'y'], check_unused=False)
     if plot:
-        sisotool(loop, initial_gain=0.001)
+        sisotool(loop, initial_gain=deltaK)
     cl = loop[1, 1] # closed loop transfer function with initial gains
-    return StateSpace(cl.A, cl.B, cl.C, cl.D, cl.dt)
+    return ss(cl.A, cl.B, cl.C, cl.D, cl.dt)
