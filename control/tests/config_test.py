@@ -301,3 +301,18 @@ class TestConfig:
 
         assert ct.config._get_param(
             'config', 'second', kwargs, pop=True, last=True) == 2
+
+    def test_system_indexing(self):
+        # Default renaming
+        sys = ct.TransferFunction(
+            [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
+            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ], 0.5)
+        sys1 = sys[1:, 1:]
+        assert sys1.name == sys.name + '$indexed'
+
+        # Reset the format
+        ct.config.set_defaults(
+            'namedio', indexed_system_name_prefix='PRE',
+            indexed_system_name_suffix='POST')
+        sys2 = sys[1:, 1:]
+        assert sys2.name == 'PRE' + sys.name + 'POST'

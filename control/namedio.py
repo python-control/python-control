@@ -23,6 +23,8 @@ _namedio_defaults = {
     'namedio.linearized_system_name_suffix': '$linearized',
     'namedio.sampled_system_name_prefix': '',
     'namedio.sampled_system_name_suffix': '$sampled',
+    'namedio.indexed_system_name_prefix': '',
+    'namedio.indexed_system_name_suffix': '$indexed',
     'namedio.converted_system_name_prefix': '',
     'namedio.converted_system_name_suffix': '$converted',
 }

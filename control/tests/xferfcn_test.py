@@ -392,12 +392,20 @@ class TestXferFcn:
     def test_slice(self):
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
-            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ])
+            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ],
+            inputs=['u0', 'u1', 'u2'], outputs=['y0', 'y1'], name='sys')
+
         sys1 = sys[1:, 1:]
         assert (sys1.ninputs, sys1.noutputs) == (2, 1)
+        assert sys1.input_labels == ['u1', 'u2']
+        assert sys1.output_labels == ['y1']
+        assert sys1.name == 'sys$indexed'
 
         sys2 = sys[:2, :2]
         assert (sys2.ninputs, sys2.noutputs) == (2, 2)
+        assert sys2.input_labels == ['u0', 'u1']
+        assert sys2.output_labels == ['y0', 'y1']
+        assert sys2.name == 'sys$indexed'
 
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
@@ -405,6 +413,9 @@ class TestXferFcn:
         sys1 = sys[1:, 1:]
         assert (sys1.ninputs, sys1.noutputs) == (2, 1)
         assert sys1.dt == 0.5
+        assert sys1.input_labels == ['u[1]', 'u[2]']
+        assert sys1.output_labels == ['y[1]']
+        assert sys1.name == sys.name + '$indexed'
 
     def test__isstatic(self):
         numstatic = 1.1
