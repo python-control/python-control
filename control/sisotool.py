@@ -3,12 +3,12 @@ __all__ = ['sisotool', 'rootlocus_pid_designer']
 from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
 from .timeresp import step_response
-from .namedio import issiso, common_timebase, isctime, isdtime
+from .namedio import common_timebase, isctime, isdtime
 from .xferfcn import tf
 from .iosys import ss
 from .bdalg import append, connect
-from .iosys import tf2io, ss2io, summing_junction, interconnect
-from control.statesp import _convert_to_statespace, StateSpace
+from .iosys import ss, tf2io, summing_junction, interconnect
+from control.statesp import _convert_to_statespace
 from . import config
 import numpy as np
 import matplotlib.pyplot as plt
@@ -22,8 +22,8 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
              plotstr_rlocus='C0', rlocus_grid=False, omega=None, dB=None,
              Hz=None, deg=None, omega_limits=None, omega_num=None,
              margins_bode=True, tvect=None, kvect=None):
-    """
-    Sisotool style collection of plots inspired by MATLAB's sisotool.
+    """Sisotool style collection of plots inspired by MATLAB's sisotool.
+
     The left two plots contain the bode magnitude and phase diagrams.
     The top right plot is a clickable root locus plot, clicking on the
     root locus will change the gain of the system. The bottom left plot
@@ -32,52 +32,52 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     Parameters
     ----------
     sys : LTI object
-        Linear input/output systems. If sys is SISO, use the same
-        system for the root locus and step response. If it is desired to
-        see a different step response than feedback(K*sys,1), such as a
-        disturbance response, sys can be provided as a two-input, two-output
-        system (e.g. by using :func:`bdgalg.connect' or
-        :func:`iosys.interconnect`). For two-input, two-output
-        system, sisotool inserts the negative of the selected gain K between
-        the first output and first input and uses the second input and output
-        for computing the step response. To see the disturbance response,
-        configure your plant to have as its second input the disturbance input.
-        To view the step response with a feedforward controller, give your
-        plant two identical inputs, and sum your feedback controller and your
-        feedforward controller and multiply them into your plant's second
-        input. It is also possible to accomodate a system with a gain in the
-        feedback.
+        Linear input/output systems. If sys is SISO, use the same system for
+        the root locus and step response. If it is desired to see a different
+        step response than feedback(K*sys,1), such as a disturbance response,
+        sys can be provided as a two-input, two-output system (e.g. by using
+        :func:`bdgalg.connect' or :func:`iosys.interconnect`). For two-input,
+        two-output system, sisotool inserts the negative of the selected gain
+        K between the first output and first input and uses the second input
+        and output for computing the step response. To see the disturbance
+        response, configure your plant to have as its second input the
+        disturbance input.  To view the step response with a feedforward
+        controller, give your plant two identical inputs, and sum your
+        feedback controller and your feedforward controller and multiply them
+        into your plant's second input. It is also possible to accomodate a
+        system with a gain in the feedback.
     initial_gain : float, optional
         Initial gain to use for plotting root locus. Defaults to 1
         (config.defaults['sisotool.initial_gain']).
     xlim_rlocus : tuple or list, optional
-        control of x-axis range, normally with tuple
+        Control of x-axis range, normally with tuple
         (see :doc:`matplotlib:api/axes_api`).
     ylim_rlocus : tuple or list, optional
         control of y-axis range
     plotstr_rlocus : :func:`matplotlib.pyplot.plot` format string, optional
-        plotting style for the root locus plot(color, linestyle, etc)
+        Plotting style for the root locus plot(color, linestyle, etc).
     rlocus_grid : boolean (default = False)
         If True plot s- or z-plane grid.
     omega : array_like
-        List of frequencies in rad/sec to be used for bode plot
+        List of frequencies in rad/sec to be used for bode plot.
     dB : boolean
-        If True, plot result in dB for the bode plot
+        If True, plot result in dB for the bode plot.
     Hz : boolean
-        If True, plot frequency in Hz for the bode plot (omega must be provided in rad/sec)
+        If True, plot frequency in Hz for the bode plot (omega must be
+        provided in rad/sec).
     deg : boolean
-        If True, plot phase in degrees for the bode plot (else radians)
+        If True, plot phase in degrees for the bode plot (else radians).
     omega_limits : array_like of two values
-        Limits of the to generate frequency vector.
-        If Hz=True the limits are in Hz otherwise in rad/s. Ignored if omega
-        is provided, and auto-generated if omitted.
+        Limits of the to generate frequency vector.  If Hz=True the limits
+        are in Hz otherwise in rad/s. Ignored if omega is provided, and
+        auto-generated if omitted.
     omega_num : int
         Number of samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
     margins_bode : boolean
-        If True, plot gain and phase margin in the bode plot
+        If True, plot gain and phase margin in the bode plot.
     tvect : list or ndarray, optional
-        List of timesteps to use for closed loop step response
+        List of timesteps to use for closed loop step response.
 
     Examples
     --------
@@ -202,28 +202,47 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
 # contributed by Sawyer Fuller, minster@uw.edu 2021.11.02, based on
 # an implementation in Matlab by Martin Berg.
 def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
-                           Kp0=0, Ki0=0, Kd0=0, tau=0.01,
+                           Kp0=0, Ki0=0, Kd0=0, deltaK=0.001, tau=0.01,
                            C_ff=0, derivative_in_feedback_path=False,
                            plot=True):
     """Manual PID controller design based on root locus using Sisotool
 
-    Uses `Sisotool` to investigate the effect of adding or subtracting an
+    Uses `sisotool` to investigate the effect of adding or subtracting an
     amount `deltaK` to the proportional, integral, or derivative (PID) gains of
     a controller. One of the PID gains, `Kp`, `Ki`, or `Kd`, respectively, can
     be modified at a time. `Sisotool` plots the step response, frequency
-    response, and root locus.
+    response, and root locus of the closed-loop system controlling the
+    dynamical system specified by `plant`. Can be used with either non-
+    interactive plots (e.g. in a Jupyter Notebook), or interactive plots.
 
-    When first run, `deltaK` is set to 0; click on a branch of the root locus
-    plot to try a different value. Each click updates plots and prints
-    the corresponding `deltaK`. To tune all three PID gains, repeatedly call
-    `rootlocus_pid_designer`, and select a different `gain` each time (`'P'`,
-    `'I'`, or `'D'`). Make sure to add the resulting `deltaK` to your chosen
-    initial gain on the next iteration.
+    To use non-interactively, choose starting-point PID gains `Kp0`, `Ki0`,
+    and `Kd0` (you might want to start with all zeros to begin with), select
+    which gain you would like to vary (e.g. gain=`'P'`, `'I'`, or `'D'`), and
+    choose a value of `deltaK` (default 0.001) to specify by how much you
+    would like to change that gain. Repeatedly run `rootlocus_pid_designer`
+    with different values of `deltaK` until you are satisfied with the
+    performance for that gain. Then, to tune a different gain, e.g. `'I'`,
+    make sure to add your chosen `deltaK` to the previous gain you you were
+    tuning.
 
     Example: to examine the effect of varying `Kp` starting from an intial
-    value of 10, use the arguments `gain='P', Kp0=10`. Suppose a `deltaK`
-    value of 5 gives satisfactory performance. Then on the next iteration,
-    to tune the derivative gain, use the arguments `gain='D', Kp0=15`.
+    value of 10, use the arguments `gain='P', Kp0=10` and try varying values
+    of `deltaK`. Suppose a `deltaK` of 5 gives satisfactory performance. Then,
+    to tune the derivative gain, add your selected `deltaK` to `Kp0` in the
+    next call using the arguments `gain='D', Kp0=15`, to see how adding
+    different values of `deltaK` to your derivative gain affects performance.
+
+    To use with interactive plots, you will need to enable interactive mode
+    if you are in a Jupyter Notebook, e.g. using `%matplotlib`. See
+    `Interactive Plots <https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.ion.html>`_
+    for more information. Click on a branch of the root locus plot to try
+    different values of `deltaK`. Each click updates plots and prints the
+    corresponding `deltaK`. It may be helpful to zoom in using the magnifying
+    glass on the plot to get more locations to click. Just make sure to
+    deactivate magnification mode when you are done by clicking the magnifying
+    glass. Otherwise you will not be able to be able to choose a gain on the
+    root locus plot. When you are done, `%matplotlib inline` returns to inline,
+    non-interactive ploting.
 
     By default, all three PID terms are in the forward path C_f in the diagram
     shown below, that is,
@@ -253,26 +272,23 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     If `plant` is a 2-input system, the disturbance `d` is fed directly into
     its second input rather than being added to `u`.
 
-    Remark: It may be helpful to zoom in using the magnifying glass on the
-    plot. Just ake sure to deactivate magnification mode when you are done by
-    clicking the magnifying glass. Otherwise you will not be able to be able
-    to choose a gain on the root locus plot.
-
     Parameters
     ----------
     plant : :class:`LTI` (:class:`TransferFunction` or :class:`StateSpace` system)
-        The dynamical system to be controlled
+        The dynamical system to be controlled.
     gain : string (optional)
         Which gain to vary by `deltaK`. Must be one of `'P'`, `'I'`, or `'D'`
-        (proportional, integral, or derative)
+        (proportional, integral, or derative).
     sign : int (optional)
-        The sign of deltaK gain perturbation
+        The sign of deltaK gain perturbation.
     input : string (optional)
         The input used for the step response; must be `'r'` (reference) or
-        `'d'` (disturbance) (see figure above)
+        `'d'` (disturbance) (see figure above).
     Kp0, Ki0, Kd0 : float (optional)
         Initial values for proportional, integral, and derivative gains,
-        respectively
+        respectively.
+    deltaK : float (optional)
+        Perturbation value for gain specified by the `gain` keywoard.
     tau : float (optional)
         The time constant associated with the pole in the continuous-time
         derivative term. This is required to make the derivative transfer
@@ -291,16 +307,20 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     closedloop : class:`StateSpace` system
         The closed-loop system using initial gains.
 
+    Notes
+    -----
+    When running using iPython or Jupyter, use `%matplotlib` to configure
+    the session for interactive support.
+
     """
 
-    plant = _convert_to_statespace(plant)
     if plant.ninputs == 1:
-        plant = ss2io(plant, inputs='u', outputs='y')
+        plant = ss(plant, inputs='u', outputs='y')
     elif plant.ninputs == 2:
-        plant = ss2io(plant, inputs=['u', 'd'], outputs='y')
+        plant = ss(plant, inputs=['u', 'd'], outputs='y')
     else:
         raise ValueError("plant must have one or two inputs")
-    C_ff = ss2io(_convert_to_statespace(C_ff),   inputs='r', outputs='uff')
+    C_ff = ss(_convert_to_statespace(C_ff),   inputs='r', outputs='uff')
     dt = common_timebase(plant, C_ff)
 
     # create systems used for interconnections
@@ -335,13 +355,13 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
     # for the gain that is varied, replace gain block with a special block
     # that has an 'input' and an 'output' that creates loop transfer function
     if gain in ('P', 'p'):
-        Kpgain = ss2io(ss([],[],[],[[0, 1], [-sign, Kp0]]),
+        Kpgain = ss([],[],[],[[0, 1], [-sign, Kp0]],
             inputs=['input', 'prop_e'], outputs=['output', 'ufb'])
     elif gain in ('I', 'i'):
-        Kigain = ss2io(ss([],[],[],[[0, 1], [-sign, Ki0]]),
+        Kigain = ss([],[],[],[[0, 1], [-sign, Ki0]],
             inputs=['input', 'int_e'],  outputs=['output', 'ufb'])
     elif gain in ('D', 'd'):
-        Kdgain = ss2io(ss([],[],[],[[0, 1], [-sign, Kd0]]),
+        Kdgain = ss([],[],[],[[0, 1], [-sign, Kd0]],
             inputs=['input', 'deriv'], outputs=['output', 'ufb'])
     else:
         raise ValueError(gain + ' gain not recognized.')
@@ -352,6 +372,6 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                             inplist=['input', input_signal],
                             outlist=['output', 'y'], check_unused=False)
     if plot:
-        sisotool(loop, kvect=(0.,))
+        sisotool(loop, initial_gain=deltaK)
     cl = loop[1, 1] # closed loop transfer function with initial gains
-    return StateSpace(cl.A, cl.B, cl.C, cl.D, cl.dt)
+    return ss(cl.A, cl.B, cl.C, cl.D, cl.dt)

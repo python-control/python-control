@@ -182,22 +182,23 @@ class TestPidDesigner:
     @pytest.mark.parametrize('Kp0', (0,))
     @pytest.mark.parametrize('Ki0', (1.,))
     @pytest.mark.parametrize('Kd0', (0.1,))
+    @pytest.mark.parametrize('deltaK', (1.,))
     @pytest.mark.parametrize('tau', (0.01,))
     @pytest.mark.parametrize('C_ff', (0, 1,))
     @pytest.mark.parametrize('derivative_in_feedback_path', (True, False,))
     @pytest.mark.parametrize("kwargs", [{'plot':False},])
-    def test_pid_designer_1(self, plant, gain, sign, input_signal, Kp0, Ki0, Kd0, tau, C_ff,
+    def test_pid_designer_1(self, plant, gain, sign, input_signal, Kp0, Ki0, Kd0, deltaK, tau, C_ff,
             derivative_in_feedback_path, kwargs):
-        rootlocus_pid_designer(plant, gain, sign, input_signal, Kp0, Ki0, Kd0, tau, C_ff,
+        rootlocus_pid_designer(plant, gain, sign, input_signal, Kp0, Ki0, Kd0, deltaK, tau, C_ff,
             derivative_in_feedback_path, **kwargs)
 
     # test creation of sisotool plot
     # input from reference or disturbance
-    @pytest.mark.skip("Bode plot is incorrect; generates spurious warnings")
     @pytest.mark.parametrize('plant', ('syscont', 'syscont221'), indirect=True)
     @pytest.mark.parametrize("kwargs", [
         {'input_signal':'r', 'Kp0':0.01, 'derivative_in_feedback_path':True},
-        {'input_signal':'d', 'Kp0':0.01, 'derivative_in_feedback_path':True},])
+        {'input_signal':'d', 'Kp0':0.01, 'derivative_in_feedback_path':True},
+        {'input_signal':'r', 'Kd0':0.01, 'derivative_in_feedback_path':True}])
     def test_pid_designer_2(self, plant, kwargs):
         rootlocus_pid_designer(plant, **kwargs)
 
