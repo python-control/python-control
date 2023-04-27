@@ -164,7 +164,7 @@ def _f2s(f):
 
 
 class StateSpace(LTI):
-    """StateSpace(A, B, C, D[, dt])
+    r"""StateSpace(A, B, C, D[, dt])
 
     A class for representing state-space models.
 
