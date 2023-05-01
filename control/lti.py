@@ -210,10 +210,19 @@ class LTI(NamedIOSystem):
     def _bandwidth(self, dbdrop=-3):
         # check if system is SISO and dbdrop is a negative scalar
         if (not self.issiso()) and (dbdrop >= 0):
-            raise ValueError("NOT sure what to raise #TODO ")
+            raise ValueError("#TODO ")
 
+        # # # this will probabily fail if there is a resonant frequency larger than the bandwidth, the initial guess can be around that peak
+        #   G1 = ct.tf(0.1, [1, 0.1])
+        #   wn2 = 0.9
+        #   zeta2 = 0.001
+        #   G2 = ct.tf(wn2**2, [1, 2*zeta2*wn2, wn2**2])
+        #   ct.bandwidth(G1*G2)
+        # import scipy
         # result = scipy.optimize.root(lambda w: np.abs(self(w*1j)) - np.abs(self.dcgain())*10**(dbdrop/20), x0=1)
-        # # this will probabily fail if there is a resonant frequency larger than the bandwidth, the initial guess can be around that peak
+
+        # if result.success:
+        #     return np.abs(result.x)[0]
 
         # use bodeplot to identify the 0-crossing bracket
         from control.freqplot import _default_frequency_range
@@ -221,12 +230,12 @@ class LTI(NamedIOSystem):
         mag, phase, omega = self.frequency_response(omega)
 
         dcgain = self.dcgain()
-        idx_out = np.nonzero(mag - dcgain*10**(dbdrop/20) < 0)[0][0]
+        idx_dropped = np.nonzero(mag - dcgain*10**(dbdrop/20) < 0)[0][0]
 
         # solve for the bandwidth, use scipy.optimize.root_scalar() to solve using bisection
         import scipy
         result = scipy.optimize.root_scalar(lambda w: np.abs(self(w*1j)) - np.abs(dcgain)*10**(dbdrop/20), 
-                                            bracket=[omega[idx_out-1], omega[idx_out]],
+                                            bracket=[omega[idx_dropped-1], omega[idx_dropped]],
                                             method='bisect')
 
         # check solution
@@ -554,6 +563,13 @@ def bandwidth(sys, dbdrop=-3):
     >>> G = ct.tf([1], [1, 2])
     >>> ct.bandwidth(G)
     0.9976
+
+    >>> G1 = ct.tf(0.1, [1, 0.1])
+    >>> wn2 = 1
+    >>> zeta2 = 0.001
+    >>> G2 = ct.tf(wn2**2, [1, 2*zeta2*wn2, wn2**2])
+    >>> ct.bandwidth(G1*G2)
+    0.1018
 
     """
     return sys.bandwidth(dbdrop)
