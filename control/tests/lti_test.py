@@ -6,7 +6,7 @@ from .conftest import editsdefaults
 
 import control as ct
 from control import c2d, tf, ss, tf2ss, NonlinearIOSystem
-from control.lti import LTI, evalfr, damp, dcgain, zeros, poles
+from control.lti import LTI, evalfr, damp, dcgain, zeros, poles, bandwidth
 from control import common_timebase, isctime, isdtime, issiso, timebaseEqual
 from control.tests.conftest import slycotonly
 from control.exception import slycot_check
@@ -103,6 +103,27 @@ class TestLTI:
         sys = tf(84, [1, 2])
         np.testing.assert_allclose(sys.dcgain(), 42)
         np.testing.assert_allclose(dcgain(sys), 42)
+
+    def test_bandwidth(self):
+        # test a first-order system, compared with matlab
+        sys1 = tf(0.1, [1, 0.1])
+        np.testing.assert_allclose(sys1.bandwidth(), 0.099762834511098)
+        np.testing.assert_allclose(bandwidth(sys1), 0.099762834511098)
+
+        # test a second-order system, compared with matlab
+        wn2 = 1
+        zeta2 = 0.001
+        sys2 = sys1 * tf(wn2**2, [1, 2*zeta2*wn2, wn2**2])
+        np.testing.assert_allclose(sys2.bandwidth(), 0.101848388240241)
+        np.testing.assert_allclose(bandwidth(sys2), 0.101848388240241)
+
+        # test if raise exception given other than SISO system
+        sysMIMO = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]], 
+                     [[[1, 10], [1, 20]], [[1, 30], [1, 40]]])
+        np.testing.assert_raises(TypeError, bandwidth, sysMIMO)
+
+        # test if raise exception if dbdrop is positive scalar
+        np.testing.assert_raises(ValueError, bandwidth, sys1, 3)
 
     @pytest.mark.parametrize("dt1, dt2, expected",
                              [(None, None, True),

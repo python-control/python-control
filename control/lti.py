@@ -209,8 +209,11 @@ class LTI(NamedIOSystem):
 
     def _bandwidth(self, dbdrop=-3):
         # check if system is SISO and dbdrop is a negative scalar
-        if (not self.issiso()) and (dbdrop >= 0):
-            raise ValueError("#TODO ")
+        if not self.issiso():
+            raise TypeError("system should be a SISO system")
+        
+        if not(np.isscalar(dbdrop)) or dbdrop >= 0:
+            raise ValueError("expecting dbdrop be a negative scalar in dB")
 
         # # # this will probabily fail if there is a resonant frequency larger than the bandwidth, the initial guess can be around that peak
         #   G1 = ct.tf(0.1, [1, 0.1])
@@ -560,7 +563,7 @@ def bandwidth(sys, dbdrop=-3):
 
     Example
     -------
-    >>> G = ct.tf([1], [1, 2])
+    >>> G = ct.tf([1], [1, 1])
     >>> ct.bandwidth(G)
     0.9976
 
