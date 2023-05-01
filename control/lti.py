@@ -211,12 +211,13 @@ class LTI(NamedIOSystem):
         # check if system is SISO and dbdrop is a negative scalar
         if not self.issiso():
             raise TypeError("system should be a SISO system")
-        
-        if not(np.isscalar(dbdrop)) or dbdrop >= 0:
+
+        if (not np.isscalar(dbdrop)) or dbdrop >= 0:
             raise ValueError("expecting dbdrop be a negative scalar in dB")
 
         dcgain = self.dcgain()
         if np.isinf(dcgain):
+            # infinite dcgain, return np.nan
             return np.nan
 
         # use frequency range to identify the 0-crossing (dbdrop) bracket
@@ -226,14 +227,16 @@ class LTI(NamedIOSystem):
         idx_dropped = np.nonzero(mag - dcgain*10**(dbdrop/20) < 0)[0]
 
         if idx_dropped.shape[0] == 0:
-            # no frequency response is dbdrop below the dc gain. 
+            # no frequency response is dbdrop below the dc gain, return np.inf
             return np.inf
         else:
-            # solve for the bandwidth, use scipy.optimize.root_scalar() to solve using bisection
+            # solve for the bandwidth, use scipy.optimize.root_scalar() to
+            # solve using bisection
             import scipy
-            result = scipy.optimize.root_scalar(lambda w: np.abs(self(w*1j)) - np.abs(dcgain)*10**(dbdrop/20), 
-                                                bracket=[omega[idx_dropped[0] - 1], omega[idx_dropped[0]]],
-                                                method='bisect')
+            result = scipy.optimize.root_scalar(
+                lambda w: np.abs(self(w*1j)) - np.abs(dcgain)*10**(dbdrop/20),
+                bracket=[omega[idx_dropped[0] - 1], omega[idx_dropped[0]]],
+                method='bisect')
 
             # check solution
             if result.converged:
@@ -552,8 +555,9 @@ def bandwidth(sys, dbdrop=-3):
     Returns
     -------
     bandwidth : ndarray
-        The first frequency (rad/time-unit) where the gain drops below dbdrop of the dc gain
-        of the system, or nan if the system has infinite dc gain, inf if the gain does not drop for all frequency
+        The first frequency (rad/time-unit) where the gain drops below dbdrop
+        of the dc gain of the system, or nan if the system has infinite dc
+        gain, inf if the gain does not drop for all frequency
 
     Raises
     ------
@@ -561,7 +565,7 @@ def bandwidth(sys, dbdrop=-3):
         if 'sys' is not an SISO LTI instance
     ValueError
         if 'dbdrop' is not a negative scalar
-        
+
     Example
     -------
     >>> G = ct.tf([1], [1, 1])
