@@ -189,7 +189,7 @@ System gain and dynamics
 
 ==  ==========================  ============================================
 \*  :func:`dcgain`              steady-state (D.C.) gain
-\   lti/bandwidth               system bandwidth
+\*  :func:`bandwidth`           system bandwidth
 \   lti/norm                    h2 and Hinfinity norms of LTI models
 \*  :func:`pole`                system poles
 \*  :func:`zero`                system (transmission) zeros
