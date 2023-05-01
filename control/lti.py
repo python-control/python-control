@@ -215,37 +215,31 @@ class LTI(NamedIOSystem):
         if not(np.isscalar(dbdrop)) or dbdrop >= 0:
             raise ValueError("expecting dbdrop be a negative scalar in dB")
 
-        # # # this will probabily fail if there is a resonant frequency larger than the bandwidth, the initial guess can be around that peak
-        #   G1 = ct.tf(0.1, [1, 0.1])
-        #   wn2 = 0.9
-        #   zeta2 = 0.001
-        #   G2 = ct.tf(wn2**2, [1, 2*zeta2*wn2, wn2**2])
-        #   ct.bandwidth(G1*G2)
-        # import scipy
-        # result = scipy.optimize.root(lambda w: np.abs(self(w*1j)) - np.abs(self.dcgain())*10**(dbdrop/20), x0=1)
+        dcgain = self.dcgain()
+        if np.isinf(dcgain):
+            return np.nan
 
-        # if result.success:
-        #     return np.abs(result.x)[0]
-
-        # use bodeplot to identify the 0-crossing bracket
+        # use frequency range to identify the 0-crossing (dbdrop) bracket
         from control.freqplot import _default_frequency_range
         omega = _default_frequency_range(self)
         mag, phase, omega = self.frequency_response(omega)
+        idx_dropped = np.nonzero(mag - dcgain*10**(dbdrop/20) < 0)[0]
 
-        dcgain = self.dcgain()
-        idx_dropped = np.nonzero(mag - dcgain*10**(dbdrop/20) < 0)[0][0]
-
-        # solve for the bandwidth, use scipy.optimize.root_scalar() to solve using bisection
-        import scipy
-        result = scipy.optimize.root_scalar(lambda w: np.abs(self(w*1j)) - np.abs(dcgain)*10**(dbdrop/20), 
-                                            bracket=[omega[idx_dropped-1], omega[idx_dropped]],
-                                            method='bisect')
-
-        # check solution
-        if result.converged:
-            return np.abs(result.root)
+        if idx_dropped.shape[0] == 0:
+            # no frequency response is dbdrop below the dc gain. 
+            return np.inf
         else:
-            raise Exception(result.message)
+            # solve for the bandwidth, use scipy.optimize.root_scalar() to solve using bisection
+            import scipy
+            result = scipy.optimize.root_scalar(lambda w: np.abs(self(w*1j)) - np.abs(dcgain)*10**(dbdrop/20), 
+                                                bracket=[omega[idx_dropped[0] - 1], omega[idx_dropped[0]]],
+                                                method='bisect')
+
+            # check solution
+            if result.converged:
+                return np.abs(result.root)
+            else:
+                raise Exception(result.message)
 
     def ispassive(self):
         # importing here prevents circular dependancy
@@ -557,10 +551,17 @@ def bandwidth(sys, dbdrop=-3):
 
     Returns
     -------
-    bandwidth : #TODO data-type
-        The first frequency where the gain drops below dbdrop of the dc gain
-        of the system.
+    bandwidth : ndarray
+        The first frequency (rad/time-unit) where the gain drops below dbdrop of the dc gain
+        of the system, or nan if the system has infinite dc gain, inf if the gain does not drop for all frequency
 
+    Raises
+    ------
+    TypeError
+        if 'sys' is not an SISO LTI instance
+    ValueError
+        if 'dbdrop' is not a negative scalar
+        
     Example
     -------
     >>> G = ct.tf([1], [1, 1])
@@ -575,6 +576,9 @@ def bandwidth(sys, dbdrop=-3):
     0.1018
 
     """
+    if not isinstance(sys, LTI):
+        raise TypeError("sys must be a LTI instance.")
+
     return sys.bandwidth(dbdrop)
 
 

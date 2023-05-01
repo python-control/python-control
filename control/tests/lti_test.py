@@ -117,7 +117,18 @@ class TestLTI:
         np.testing.assert_allclose(sys2.bandwidth(), 0.101848388240241)
         np.testing.assert_allclose(bandwidth(sys2), 0.101848388240241)
 
-        # test if raise exception given other than SISO system
+        # test constant gain, bandwidth should be infinity
+        sysAP = tf(1,1)
+        np.testing.assert_allclose(bandwidth(sysAP), np.inf)
+
+        # test integrator, bandwidth should return np.nan
+        sysInt = tf(1, [1, 0])
+        np.testing.assert_allclose(bandwidth(sysInt), np.nan)
+
+        # test exception for system other than LTI
+        np.testing.assert_raises(TypeError, bandwidth, 1)
+
+        # test exception for system other than SISO system
         sysMIMO = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]], 
                      [[[1, 10], [1, 20]], [[1, 30], [1, 40]]])
         np.testing.assert_raises(TypeError, bandwidth, sysMIMO)
