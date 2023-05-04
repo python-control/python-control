@@ -1424,10 +1424,6 @@ class StateSpace(LTI):
         """
         return self._dcgain(warn_infinite)
 
-    def bandwidth(self, dbdrop=-3):
-        """Return the bandwith"""
-        return self._bandwidth(dbdrop)
-
     def dynamics(self, t, x, u=None, params=None):
         """Compute the dynamics of the system
 

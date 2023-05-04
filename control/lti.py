@@ -203,11 +203,6 @@ class LTI(NamedIOSystem):
             return zeroresp
 
     def bandwidth(self, dbdrop=-3):
-        """Return the bandwidth"""
-        raise NotImplementedError("bandwidth not implemented for %s objects" %
-                                  str(self.__class__))
-
-    def _bandwidth(self, dbdrop=-3):
         # check if system is SISO and dbdrop is a negative scalar
         if not self.issiso():
             raise TypeError("system should be a SISO system")

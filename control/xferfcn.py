@@ -1247,10 +1247,6 @@ class TransferFunction(LTI):
         """
         return self._dcgain(warn_infinite)
     
-    def bandwidth(self, dbdrop=-3):
-        """Return the bandwith"""
-        return self._bandwidth(dbdrop)
-
     def _isstatic(self):
         """returns True if and only if all of the numerator and denominator
         polynomials of the (possibly MIMO) transfer function are zeroth order,
