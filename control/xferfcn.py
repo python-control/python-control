@@ -74,6 +74,7 @@ _xferfcn_defaults = {
     'xferfcn.floating_point_format': '.4g'
 }
 
+
 def _float2str(value):
     _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
     return f"{value:{_num_format}}"
@@ -1246,7 +1247,7 @@ class TransferFunction(LTI):
 
         """
         return self._dcgain(warn_infinite)
-    
+
     def _isstatic(self):
         """returns True if and only if all of the numerator and denominator
         polynomials of the (possibly MIMO) transfer function are zeroth order,
@@ -1406,6 +1407,7 @@ def _tf_factorized_polynomial_to_string(roots, gain=1, var='s'):
         factors = [f"({factor})" for factor in factors]
 
     return multiplier + " ".join(factors)
+
 
 def _tf_string_to_latex(thestr, var='s'):
     """ make sure to superscript all digits in a polynomial string
