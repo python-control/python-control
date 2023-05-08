@@ -203,6 +203,31 @@ class LTI(NamedIOSystem):
             return zeroresp
 
     def bandwidth(self, dbdrop=-3):
+        """Evaluate the bandwidth of the LTI system for a given dB drop.
+
+        Evaluate the first frequency that the response magnitude is lower than
+        DC gain by dbdrop dB.
+
+        Parameters
+        ----------
+        dpdrop : float, optional
+            A strictly negative scalar in dB (default = -3) defines the
+            amount of gain drop for deciding bandwidth.
+
+        Returns
+        -------
+        bandwidth : ndarray
+            The first frequency (rad/time-unit) where the gain drops below
+            dbdrop of the dc gain of the system, or nan if the system has
+            infinite dc gain, inf if the gain does not drop for all frequency
+
+        Raises
+        ------
+        TypeError
+            if 'sys' is not an SISO LTI instance
+        ValueError
+            if 'dbdrop' is not a negative scalar
+        """
         # check if system is SISO and dbdrop is a negative scalar
         if not self.issiso():
             raise TypeError("system should be a SISO system")
