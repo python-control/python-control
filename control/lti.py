@@ -20,7 +20,7 @@ from . import config
 from .namedio import NamedIOSystem, isdtime
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
-           'freqresp', 'dcgain', 'pole', 'zero']
+           'freqresp', 'dcgain', 'bandwidth', 'pole', 'zero']
 
 
 class LTI(NamedIOSystem):
@@ -201,6 +201,68 @@ class LTI(NamedIOSystem):
             return zeroresp.real
         else:
             return zeroresp
+
+    def bandwidth(self, dbdrop=-3):
+        """Evaluate the bandwidth of the LTI system for a given dB drop.
+
+        Evaluate the first frequency that the response magnitude is lower than
+        DC gain by dbdrop dB.
+
+        Parameters
+        ----------
+        dpdrop : float, optional
+            A strictly negative scalar in dB (default = -3) defines the
+            amount of gain drop for deciding bandwidth.
+
+        Returns
+        -------
+        bandwidth : ndarray
+            The first frequency (rad/time-unit) where the gain drops below
+            dbdrop of the dc gain of the system, or nan if the system has
+            infinite dc gain, inf if the gain does not drop for all frequency
+
+        Raises
+        ------
+        TypeError
+            if 'sys' is not an SISO LTI instance
+        ValueError
+            if 'dbdrop' is not a negative scalar
+        """
+        # check if system is SISO and dbdrop is a negative scalar
+        if not self.issiso():
+            raise TypeError("system should be a SISO system")
+
+        if (not np.isscalar(dbdrop)) or dbdrop >= 0:
+            raise ValueError("expecting dbdrop be a negative scalar in dB")
+
+        dcgain = self.dcgain()
+        if np.isinf(dcgain):
+            # infinite dcgain, return np.nan
+            return np.nan
+
+        # use frequency range to identify the 0-crossing (dbdrop) bracket
+        from control.freqplot import _default_frequency_range
+        omega = _default_frequency_range(self)
+        mag, phase, omega = self.frequency_response(omega)
+        idx_dropped = np.nonzero(mag - dcgain*10**(dbdrop/20) < 0)[0]
+
+        if idx_dropped.shape[0] == 0:
+            # no frequency response is dbdrop below the dc gain, return np.inf
+            return np.inf
+        else:
+            # solve for the bandwidth, use scipy.optimize.root_scalar() to
+            # solve using bisection
+            import scipy
+            result = scipy.optimize.root_scalar(
+                lambda w: np.abs(self(w*1j)) - np.abs(dcgain)*10**(dbdrop/20),
+                bracket=[omega[idx_dropped[0] - 1], omega[idx_dropped[0]]],
+                method='bisect')
+
+            # check solution
+            if result.converged:
+                return np.abs(result.root)
+            else:
+                raise Exception(result.message)
 
     def ispassive(self):
         # importing here prevents circular dependancy
@@ -497,6 +559,51 @@ def dcgain(sys):
 
     """
     return sys.dcgain()
+
+
+def bandwidth(sys, dbdrop=-3):
+    """Return the first freqency where the gain drop by dbdrop of the system.
+
+    Parameters
+    ----------
+    sys: StateSpace or TransferFunction
+        Linear system
+    dbdrop : float, optional
+        By how much the gain drop in dB (default = -3) that defines the
+        bandwidth. Should be a negative scalar
+
+    Returns
+    -------
+    bandwidth : ndarray
+        The first frequency (rad/time-unit) where the gain drops below dbdrop
+        of the dc gain of the system, or nan if the system has infinite dc
+        gain, inf if the gain does not drop for all frequency
+
+    Raises
+    ------
+    TypeError
+        if 'sys' is not an SISO LTI instance
+    ValueError
+        if 'dbdrop' is not a negative scalar
+
+    Example
+    -------
+    >>> G = ct.tf([1], [1, 1])
+    >>> ct.bandwidth(G)
+    0.9976
+
+    >>> G1 = ct.tf(0.1, [1, 0.1])
+    >>> wn2 = 1
+    >>> zeta2 = 0.001
+    >>> G2 = ct.tf(wn2**2, [1, 2*zeta2*wn2, wn2**2])
+    >>> ct.bandwidth(G1*G2)
+    0.1018
+
+    """
+    if not isinstance(sys, LTI):
+        raise TypeError("sys must be a LTI instance.")
+
+    return sys.bandwidth(dbdrop)
 
 
 # Process frequency responses in a uniform way
