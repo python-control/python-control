@@ -196,15 +196,20 @@ def test_response_copy():
     with pytest.raises(ValueError, match="not enough"):
         t, y, x = response_mimo
 
-    # Labels
-    assert response_mimo.output_labels is None
-    assert response_mimo.state_labels is None
-    assert response_mimo.input_labels is None
+    # Make sure labels are transferred to the response
+    assert response_siso.output_labels == sys_siso.output_labels
+    assert response_siso.state_labels == sys_siso.state_labels
+    assert response_siso.input_labels == sys_siso.input_labels
+    assert response_mimo.output_labels == sys_mimo.output_labels
+    assert response_mimo.state_labels == sys_mimo.state_labels
+    assert response_mimo.input_labels == sys_mimo.input_labels
+
+    # Check relabelling
     response = response_mimo(
         output_labels=['y1', 'y2'], input_labels='u',
-        state_labels=["x[%d]" % i for i in range(4)])
+        state_labels=["x%d" % i for i in range(4)])
     assert response.output_labels == ['y1', 'y2']
-    assert response.state_labels == ['x[0]', 'x[1]', 'x[2]', 'x[3]']
+    assert response.state_labels == ['x0', 'x1', 'x2', 'x3']
     assert response.input_labels == ['u']
 
     # Unknown keyword
@@ -230,6 +235,17 @@ def test_trdata_labels():
         response.state_labels, ["x[%d]" % i for i in range(sys.nstates)])
     np.testing.assert_equal(
         response.input_labels, ["u[%d]" % i for i in range(sys.ninputs)])
+
+    # Make sure the selected input and output are both correctly transferred to the response
+    for nu in range(sys.ninputs):
+        for ny in range(sys.noutputs):
+            step_response = ct.step_response(sys, T, input=nu, output=ny)
+            assert step_response.input_labels == [sys.input_labels[nu]]
+            assert step_response.output_labels == [sys.output_labels[ny]]
+
+            init_response = ct.initial_response(sys, T, input=nu, output=ny)
+            assert init_response.input_labels == None
+            assert init_response.output_labels == [sys.output_labels[ny]]
 
 
 def test_trdata_multitrace():
