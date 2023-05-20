@@ -370,8 +370,23 @@ def test_nyquist_legacy():
 def test_discrete_nyquist():
     # Make sure we can handle discrete time systems with negative poles
     sys = ct.tf(1, [1, -0.1], dt=1) * ct.tf(1, [1, 0.1], dt=1)
-    ct.nyquist_plot(sys)
-    
+    ct.nyquist_plot(sys, plot=False)
+
+    # system with a pole at the origin
+    sys = ct.zpk([1,], [.3, 0], 1, dt=True)
+    ct.nyquist_plot(sys, plot=False)
+    sys = ct.zpk([1,], [0], 1, dt=True)
+    ct.nyquist_plot(sys, plot=False)
+
+    # only a pole at the origin
+    sys = ct.zpk([], [0], 2, dt=True)
+    ct.nyquist_plot(sys, plot=False)
+
+    # pole at zero (pure delay)
+    sys = ct.zpk([], [1], 1, dt=True)
+    ct.nyquist_plot(sys, plot=False)
+
+
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing
@@ -427,5 +442,5 @@ if __name__ == "__main__":
               np.array2string(sys.poles(), precision=2, separator=','))
     count = ct.nyquist_plot(sys)
 
-    
+
 
