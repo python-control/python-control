@@ -342,9 +342,9 @@ def damp(sys, doprint=True):
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
+    sys : LTI (StateSpace or TransferFunction)
         A linear system object
-    doprint:
+    doprint : bool (optional)
         if True, print table with values
 
     Returns
