@@ -1,4 +1,4 @@
-H2 synthesis, based on cherer et al. 1997 example 7
+H2 synthesis, based on Scherer et al. 1997 example 7
 ---------------------------------------------------
 
 Code
