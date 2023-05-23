@@ -380,19 +380,19 @@ def damp(sys, doprint=True):
     --------
     >>> G = ct.tf([1], [1, 4])
     >>> wn, zeta, poles = ct.damp(G)
-    Eigenvalue (pole)___ Damping___ Frequency_
-            -4                     1          4
+        Eigenvalue (pole)       Damping     Frequency
+                       -4             1             4
 
     """
     wn, zeta, poles = sys.damp()
     if doprint:
-        print('Eigenvalue (pole)___ Damping___ Frequency_')
+        print('    Eigenvalue (pole)       Damping     Frequency')
         for p, z, w in zip(poles, zeta, wn):
             if abs(p.imag) < 1e-12:
-                print("%10.4g            %10.4g %10.4g" %
+                print("           %10.4g    %10.4g    %10.4g" %
                       (p.real, 1.0, w))
             else:
-                print("%10.4g%+10.4gj %10.4g %10.4g" %
+                print("%10.4g%+10.4gj    %10.4g    %10.4g" %
                       (p.real, p.imag, z, w))
     return wn, zeta, poles
 
