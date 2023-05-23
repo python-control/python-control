@@ -27,6 +27,8 @@ other sources.
    phaseplots
    robust_siso
    robust_mimo
+   scherer_etal_ex7_H2_h2syn
+   scherer_etal_ex7_Hinf_hinfsyn
    cruise-control
    steering-gainsched
    steering-optimal
