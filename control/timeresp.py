@@ -1111,6 +1111,8 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     return TimeResponseData(
         tout, yout, xout, U, issiso=sys.issiso(),
+        output_labels=sys.output_labels, input_labels=sys.input_labels,
+        state_labels=sys.state_labels,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1374,8 +1376,16 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     # Figure out if the system is SISO or not
     issiso = sys.issiso() or (input is not None and output is not None)
 
+    # Select only the given input and output, if any
+    input_labels = sys.input_labels if input is None \
+        else sys.input_labels[input]
+    output_labels = sys.output_labels if output is None \
+        else sys.output_labels[output]
+
     return TimeResponseData(
         response.time, yout, xout, uout, issiso=issiso,
+        output_labels=output_labels, input_labels=input_labels,
+        state_labels=sys.state_labels,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1704,9 +1714,15 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     # Figure out if the system is SISO or not
     issiso = sys.issiso() or (input is not None and output is not None)
 
+    # Select only the given output, if any
+    output_labels = sys.output_labels if output is None \
+        else sys.output_labels[0]
+
     # Store the response without an input
     return TimeResponseData(
         response.t, response.y, response.x, None, issiso=issiso,
+        output_labels=output_labels, input_labels=None,
+        state_labels=sys.state_labels,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1798,7 +1814,7 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     -----
     This function uses the `forced_response` function to compute the time
     response. For continuous time systems, the initial condition is altered to
-    account for the initial impulse. For discrete-time aystems, the impulse is 
+    account for the initial impulse. For discrete-time aystems, the impulse is
     sized so that it has unit area.
 
     Examples
@@ -1869,8 +1885,16 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     # Figure out if the system is SISO or not
     issiso = sys.issiso() or (input is not None and output is not None)
 
+    # Select only the given input and output, if any
+    input_labels = sys.input_labels if input is None \
+        else sys.input_labels[input]
+    output_labels = sys.output_labels if output is None \
+        else sys.output_labels[output]
+
     return TimeResponseData(
         response.time, yout, xout, uout, issiso=issiso,
+        output_labels=output_labels, input_labels=input_labels,
+        state_labels=sys.state_labels,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
