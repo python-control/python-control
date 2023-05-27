@@ -1777,7 +1777,9 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
         new_B = sys.B[:, input]
         new_C = sys.C[output, :]
         new_D = sys.D[output, input]
-        sys = StateSpace(sys.A, new_B, new_C, new_D, sys.dt)
+        sys = StateSpace(sys.A, new_B, new_C, new_D, sys.dt,
+                         name=sys.name,
+                         inputs=sys.input_labels[input], outputs=sys.output_labels[output])
 
     return sys
 
@@ -1826,7 +1828,9 @@ def _mimo2simo(sys, input, warn_conversion=False):
         #  Y = C*X + D*U
         new_B = sys.B[:, input:input+1]
         new_D = sys.D[:, input:input+1]
-        sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt)
+        sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt,
+                         name=sys.name,
+                         inputs=sys.input_labels[input], outputs=sys.output_labels)
 
     return sys
 
