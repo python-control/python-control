@@ -1862,7 +1862,7 @@ def input_output_response(
 
         return TimeResponseData(
             t_eval, y, None, u, issiso=sys.issiso(),
-            output_labels=sys.output_index, input_labels=sys.input_index,
+            output_labels=sys.output_labels, input_labels=sys.input_labels,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # Create a lambda function for the right hand side
@@ -1941,8 +1941,8 @@ def input_output_response(
 
     return TimeResponseData(
         soln.t, y, soln.y, u, issiso=sys.issiso(),
-        output_labels=sys.output_index, input_labels=sys.input_index,
-        state_labels=sys.state_index,
+        output_labels=sys.output_labels, input_labels=sys.input_labels,
+        state_labels=sys.state_labels,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -2881,7 +2881,7 @@ def interconnect(
 
             # Look for the signal name as a system input
             for sys in syslist:
-                if signal_name in sys.input_index.keys():
+                if signal_name in sys.input_labels:
                     connection.append(sign + sys.name + "." + signal_name)
 
             # Make sure we found the name
