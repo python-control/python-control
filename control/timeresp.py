@@ -694,7 +694,10 @@ def _process_labels(labels, signal, length):
             raise ValueError("Name dictionary for %s is incomplete" % signal)
 
     # Convert labels to a list
-    labels = list(labels)
+    if isinstance(labels, str):
+        labels = [labels]
+    else:
+        labels = list(labels)
 
     # Make sure the signal list is the right length and type
     if len(labels) != length:
