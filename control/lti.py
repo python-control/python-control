@@ -2,22 +2,14 @@
 
 The lti module contains the LTI parent class to the child classes StateSpace
 and TransferFunction.  It is designed for use in the python-control library.
-
-Routines in this module:
-
-LTI.__init__
-isdtime()
-isctime()
-timebase()
-common_timebase()
 """
 
 import numpy as np
 
-from numpy import absolute, real, angle, abs
+from numpy import real, angle, abs
 from warnings import warn
 from . import config
-from .namedio import NamedIOSystem, isdtime
+from .namedio import NamedIOSystem
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
            'freqresp', 'dcgain', 'bandwidth', 'pole', 'zero']
@@ -110,11 +102,11 @@ class LTI(NamedIOSystem):
         Returns
         -------
         wn : array
-            Natural frequencies for each system pole
+            Natural frequency for each system pole
         zeta : array
             Damping ratio for each system pole
         poles : array
-            Array of system poles
+            System pole locations
         '''
         poles = self.poles()
 
@@ -122,9 +114,9 @@ class LTI(NamedIOSystem):
             splane_poles = np.log(poles.astype(complex))/self.dt
         else:
             splane_poles = poles
-        wn = absolute(splane_poles)
-        Z = -real(splane_poles)/wn
-        return wn, Z, poles
+        wn = abs(splane_poles)
+        zeta = -real(splane_poles)/wn
+        return wn, zeta, poles
 
     def frequency_response(self, omega, squeeze=None):
         """Evaluate the linear time-invariant system at an array of angular
@@ -346,25 +338,23 @@ def zero(sys):
 
 def damp(sys, doprint=True):
     """
-    Compute natural frequency, damping ratio, and poles of a system
-
-    The function takes 1 or 2 parameters
+    Compute natural frequencies, damping ratios, and poles of a system
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
+    sys : LTI (StateSpace or TransferFunction)
         A linear system object
-    doprint:
-        if true, print table with values
+    doprint : bool (optional)
+        if True, print table with values
 
     Returns
     -------
-    wn: array
-        Natural frequencies of the poles
-    damping: array
-        Damping values
-    poles: array
-        Pole locations
+    wn : array
+        Natural frequency for each system pole
+    zeta : array
+        Damping ratio for each system pole
+    poles : array
+        System pole locations
 
     See Also
     --------
@@ -374,37 +364,37 @@ def damp(sys, doprint=True):
     -----
     If the system is continuous,
         wn = abs(poles)
-        Z  = -real(poles)/poles.
+        zeta  = -real(poles)/poles
 
     If the system is discrete, the discrete poles are mapped to their
     equivalent location in the s-plane via
 
-        s = log10(poles)/dt
+        s = log(poles)/dt
 
     and
 
         wn = abs(s)
-        Z = -real(s)/wn.
+        zeta = -real(s)/wn.
 
     Examples
     --------
     >>> G = ct.tf([1], [1, 4])
-    >>> wn, damping, poles = ct.damp(G)
-    _____Eigenvalue______ Damping___ Frequency_
-            -4                     1          4
+    >>> wn, zeta, poles = ct.damp(G)
+        Eigenvalue (pole)       Damping     Frequency
+                       -4             1             4
 
     """
-    wn, damping, poles = sys.damp()
+    wn, zeta, poles = sys.damp()
     if doprint:
-        print('_____Eigenvalue______ Damping___ Frequency_')
-        for p, d, w in zip(poles, damping, wn):
+        print('    Eigenvalue (pole)       Damping     Frequency')
+        for p, z, w in zip(poles, zeta, wn):
             if abs(p.imag) < 1e-12:
-                print("%10.4g            %10.4g %10.4g" %
-                      (p.real, 1.0, -p.real))
+                print("           %10.4g    %10.4g    %10.4g" %
+                      (p.real, 1.0, w))
             else:
-                print("%10.4g%+10.4gj %10.4g %10.4g" %
-                      (p.real, p.imag, d, w))
-    return wn, damping, poles
+                print("%10.4g%+10.4gj    %10.4g    %10.4g" %
+                      (p.real, p.imag, z, w))
+    return wn, zeta, poles
 
 
 def evalfr(sys, x, squeeze=None):
