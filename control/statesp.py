@@ -170,9 +170,9 @@ class StateSpace(LTI):
 
     The StateSpace class is used to represent state-space realizations of
     linear time-invariant (LTI) systems:
-    
+
     .. math::
-    
+
           dx/dt &= A x + B u \\
               y &= C x + D u
 
@@ -1368,10 +1368,13 @@ class StateSpace(LTI):
         """
         if not self.isctime():
             raise ValueError("System must be continuous time system")
-
-        if (method == 'bilinear' or (method == 'gbt' and alpha == 0.5)) and \
-                prewarp_frequency is not None:
-            Twarp = 2 * np.tan(prewarp_frequency * Ts/2)/prewarp_frequency
+        if prewarp_frequency is not None:
+            if method in ('bilinear', 'tustin') or \
+                    (method == 'gbt' and alpha == 0.5):
+                Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+            else:
+                warn('prewarp_frequency ignored: incompatible conversion')
+                Twarp = Ts
         else:
             Twarp = Ts
         sys = (self.A, self.B, self.C, self.D)

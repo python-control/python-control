@@ -1134,7 +1134,7 @@ class TransferFunction(LTI):
             Method to use for sampling:
 
             * gbt: generalized bilinear transformation
-            * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
+            * bilinear or tustin: Tustin's approximation ("gbt" with alpha=0.5)
             * euler: Euler (or forward difference) method ("gbt" with alpha=0)
             * backward_diff: Backwards difference ("gbt" with alpha=1.0)
             * zoh: zero-order hold (default)
@@ -1192,9 +1192,13 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        if (method == 'bilinear' or (method == 'gbt' and alpha == 0.5)) and \
-                prewarp_frequency is not None:
-            Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+        if prewarp_frequency is not None:
+            if method in ('bilinear', 'tustin') or \
+                    (method == 'gbt' and alpha == 0.5):
+                Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+            else:
+                warn('prewarp_frequency ignored: incompatible conversion')
+                Twarp = Ts
         else:
             Twarp = Ts
         numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
