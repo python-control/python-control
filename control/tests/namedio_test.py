@@ -90,8 +90,10 @@ fun_notinstance = {
      (lambda t, x, u, params: -x, None),
      {'inputs': 2, 'outputs':2, 'states':2}],
     [ct.ss, ([[1, 2], [3, 4]], [[0], [1]], [[1, 0]], 0), {}],
+    [ct.ss, ([], [], [], 3), {}], # static system
     [ct.StateSpace, ([[1, 2], [3, 4]], [[0], [1]], [[1, 0]], 0), {}],
     [ct.tf, ([1, 2], [3, 4, 5]), {}],
+    [ct.tf, (2, 3), {}], # static system
     [ct.TransferFunction, ([1, 2], [3, 4, 5]), {}],
 ])
 def test_io_naming(fun, args, kwargs):
@@ -112,7 +114,7 @@ def test_io_naming(fun, args, kwargs):
     assert sys_g.name == 'sys[0]'
     assert sys_g.input_labels == [f'u[{i}]' for i in range(sys_g.ninputs)]
     assert sys_g.output_labels == [f'y[{i}]' for i in range(sys_g.noutputs)]
-    if sys_g.nstates:
+    if sys_g.nstates is not None:
         assert sys_g.state_labels == [f'x[{i}]' for i in range(sys_g.nstates)]
 
     #
@@ -128,7 +130,7 @@ def test_io_naming(fun, args, kwargs):
     sys_r.set_outputs(output_labels)
     assert sys_r.output_labels == output_labels
 
-    if sys_g.nstates:
+    if sys_g.nstates is not None:
         state_labels = [f'x{i}' for i in range(sys_g.nstates)]
         sys_r.set_states(state_labels)
         assert sys_r.state_labels == state_labels
@@ -143,7 +145,7 @@ def test_io_naming(fun, args, kwargs):
         sys_k = fun(state_labels, output_labels, input_labels, name='mysys')
 
     elif sys_g.nstates is None:
-        # Don't pass state labels
+        # Don't pass state labels if TransferFunction
         sys_k = fun(
             *args, inputs=input_labels, outputs=output_labels, name='mysys')
 
@@ -155,7 +157,7 @@ def test_io_naming(fun, args, kwargs):
     assert sys_k.name == 'mysys'
     assert sys_k.input_labels == input_labels
     assert sys_k.output_labels == output_labels
-    if sys_g.nstates:
+    if sys_g.nstates is not None:
         assert sys_k.state_labels == state_labels
 
     #
@@ -193,6 +195,24 @@ def test_io_naming(fun, args, kwargs):
         assert sys_tf.input_labels == input_labels
         assert sys_tf.output_labels == output_labels
 
+    #
+    # Convert the system to a LinearIOSystem and make sure labels transfer
+    #
+    if not isinstance(
+            sys_r, (ct.FrequencyResponseData, ct.NonlinearIOSystem)) and \
+                    ct.slycot_check():
+        sys_lio = ct.LinearIOSystem(sys_r)
+        assert sys_lio != sys_r
+        assert sys_lio.input_labels == input_labels
+        assert sys_lio.output_labels == output_labels
+
+        # Reassign system and signal names
+        sys_lio = ct.LinearIOSystem(
+            sys_g, inputs=input_labels, outputs=output_labels, name='new')
+        assert sys_lio.name == 'new'
+        assert sys_lio.input_labels == input_labels
+        assert sys_lio.output_labels == output_labels
+
 
 # Internal testing of StateSpace initialization
 def test_init_namedif():
@@ -221,11 +241,26 @@ def test_init_namedif():
 
 # Test state space conversion
 def test_convert_to_statespace():
-    # Set up the initial system
-    sys = ct.tf(ct.rss(2, 1, 1))
+    # Set up the initial systems
+    sys = ct.tf(ct.rss(2, 1, 1), inputs='u', outputs='y', name='sys')
+    sys_static = ct.tf(1, 2, inputs='u', outputs='y', name='sys_static')
+
+    # check that name, inputs, and outputs passed through
+    sys_new = ct.ss(sys)
+    assert sys_new.name == 'sys'
+    assert sys_new.input_labels == ['u']
+    assert sys_new.output_labels == ['y']
+    sys_new = ct.ss(sys_static)
+    assert sys_new.name == 'sys_static'
+    assert sys_new.input_labels == ['u']
+    assert sys_new.output_labels == ['y']
 
     # Make sure we can rename system name, inputs, outputs
     sys_new = ct.ss(sys, inputs='u', outputs='y', name='new')
+    assert sys_new.name == 'new'
+    assert sys_new.input_labels == ['u']
+    assert sys_new.output_labels == ['y']
+    sys_new = ct.ss(sys_static, inputs='u', outputs='y', name='new')
     assert sys_new.name == 'new'
     assert sys_new.input_labels == ['u']
     assert sys_new.output_labels == ['y']

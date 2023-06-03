@@ -1564,7 +1564,8 @@ def _convert_to_statespace(sys):
             return StateSpace(
                 ssout[1][:states, :states], ssout[2][:states, :sys.ninputs],
                 ssout[3][:sys.noutputs, :states], ssout[4], sys.dt,
-                inputs=sys.input_labels, outputs=sys.output_labels)
+                inputs=sys.input_labels, outputs=sys.output_labels,
+                name=sys.name)
         except ImportError:
             # No Slycot.  Scipy tf->ss can't handle MIMO, but static
             # MIMO is an easy special case we can check for here
@@ -1577,7 +1578,9 @@ def _convert_to_statespace(sys):
                 for i, j in itertools.product(range(sys.noutputs),
                                               range(sys.ninputs)):
                     D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
-                return StateSpace([], [], [], D, sys.dt)
+                return StateSpace([], [], [], D, sys.dt,
+                    inputs=sys.input_labels, outputs=sys.output_labels,
+                    name=sys.name)
             else:
                 if sys.ninputs != 1 or sys.noutputs != 1:
                     raise TypeError("No support for MIMO without slycot")
@@ -1589,7 +1592,7 @@ def _convert_to_statespace(sys):
                     sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
                 return StateSpace(
                     A, B, C, D, sys.dt, inputs=sys.input_labels,
-                    outputs=sys.output_labels)
+                    outputs=sys.output_labels, name=sys.name)
 
     elif isinstance(sys, FrequencyResponseData):
         raise TypeError("Can't convert FRD to StateSpace system.")
