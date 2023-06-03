@@ -169,6 +169,9 @@ def test_io_naming(fun, args, kwargs):
         assert sys_ss != sys_r
         assert sys_ss.input_labels == input_labels
         assert sys_ss.output_labels == output_labels
+        if not isinstance(sys_r, ct.StateSpace):
+            # System should get unique name
+            assert sys_ss.name != sys_r.name
 
         # Reassign system and signal names
         sys_ss = ct.ss(
@@ -247,11 +250,11 @@ def test_convert_to_statespace():
 
     # check that name, inputs, and outputs passed through
     sys_new = ct.ss(sys)
-    assert sys_new.name == 'sys'
+    assert sys_new.name == 'sys$converted'
     assert sys_new.input_labels == ['u']
     assert sys_new.output_labels == ['y']
     sys_new = ct.ss(sys_static)
-    assert sys_new.name == 'sys_static'
+    assert sys_new.name == 'sys_static$converted'
     assert sys_new.input_labels == ['u']
     assert sys_new.output_labels == ['y']
 

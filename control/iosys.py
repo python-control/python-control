@@ -2395,7 +2395,9 @@ def ss(*args, **kwargs):
                      "non-unique state space realization")
 
             # Create a state space system from an LTI system
-            sys = LinearIOSystem(_convert_to_statespace(sys), **kwargs)
+            sys = LinearIOSystem(
+                _convert_to_statespace(sys, use_prefix_suffix=True), **kwargs)
+
         else:
             raise TypeError("ss(sys): sys must be a StateSpace or "
                             "TransferFunction object.  It is %s." % type(sys))
