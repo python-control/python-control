@@ -376,27 +376,50 @@ class TestDiscrete:
     @pytest.mark.parametrize("plantname",
                              ["siso_ss1c",
                               "siso_tf1c"])
-    def test_sample_system_prewarp(self, tsys, plantname):
+    @pytest.mark.parametrize("wwarp",
+                             [.1, 1, 3])
+    @pytest.mark.parametrize("Ts",
+                             [.1, 1])
+    @pytest.mark.parametrize("discretization_type",
+                             ['bilinear', 'tustin', 'gbt'])
+    def test_sample_system_prewarp(self, tsys, plantname, discretization_type, wwarp, Ts):
         """bilinear approximation with prewarping test"""
-        wwarp = 50
-        Ts = 0.025
         # test state space version
         plant = getattr(tsys, plantname)
         plant_fr = plant(wwarp * 1j)
+        alpha = 0.5 if discretization_type == 'gbt' else None
 
-        plant_d_warped = plant.sample(Ts, 'bilinear', prewarp_frequency=wwarp)
+        plant_d_warped = plant.sample(Ts, discretization_type,
+            prewarp_frequency=wwarp, alpha=alpha)
         dt = plant_d_warped.dt
         plant_d_fr = plant_d_warped(np.exp(wwarp * 1.j * dt))
         np.testing.assert_array_almost_equal(plant_fr, plant_d_fr)
 
-        plant_d_warped = sample_system(plant, Ts, 'bilinear',
-                prewarp_frequency=wwarp)
+        plant_d_warped = sample_system(plant, Ts, discretization_type,
+            prewarp_frequency=wwarp, alpha=alpha)
         plant_d_fr = plant_d_warped(np.exp(wwarp * 1.j * dt))
         np.testing.assert_array_almost_equal(plant_fr, plant_d_fr)
 
-        plant_d_warped = c2d(plant, Ts, 'bilinear', prewarp_frequency=wwarp)
+        plant_d_warped = c2d(plant, Ts, discretization_type,
+            prewarp_frequency=wwarp, alpha=alpha)
         plant_d_fr = plant_d_warped(np.exp(wwarp * 1.j * dt))
         np.testing.assert_array_almost_equal(plant_fr, plant_d_fr)
+
+    @pytest.mark.parametrize("plantname",
+                             ["siso_ss1c",
+                              "siso_tf1c"])
+    @pytest.mark.parametrize("discretization_type",
+                             ['euler', 'backward_diff', 'zoh'])
+    def test_sample_system_prewarp_warning(self, tsys, plantname, discretization_type):
+        plant = getattr(tsys, plantname)
+        wwarp = 1
+        Ts = 0.1
+        with pytest.warns(UserWarning, match="prewarp_frequency ignored: incompatible conversion"):
+            plant_d_warped = plant.sample(Ts, discretization_type, prewarp_frequency=wwarp)
+        with pytest.warns(UserWarning, match="prewarp_frequency ignored: incompatible conversion"):
+            plant_d_warped = sample_system(plant, Ts, discretization_type, prewarp_frequency=wwarp)
+        with pytest.warns(UserWarning, match="prewarp_frequency ignored: incompatible conversion"):
+            plant_d_warped = c2d(plant, Ts, discretization_type, prewarp_frequency=wwarp)
 
     def test_sample_system_errors(self, tsys):
         # Check errors
@@ -446,11 +469,11 @@ class TestDiscrete:
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))
         np.testing.assert_array_almost_equal(phase_out, np.angle(H_z))
-    
+
     def test_signal_names(self, tsys):
         "test that signal names are preserved in conversion to discrete-time"
-        ssc = StateSpace(tsys.siso_ss1c, 
-            inputs='u', outputs='y', states=['a', 'b', 'c']) 
+        ssc = StateSpace(tsys.siso_ss1c,
+            inputs='u', outputs='y', states=['a', 'b', 'c'])
         ssd = ssc.sample(0.1)
         tfc = TransferFunction(tsys.siso_tf1c, inputs='u', outputs='y')
         tfd = tfc.sample(0.1)
@@ -467,7 +490,7 @@ class TestDiscrete:
         assert ssd.output_labels == ['y']
         assert tfd.input_labels == ['u']
         assert tfd.output_labels == ['y']
-    
+
         # system names and signal name override
         sysc = StateSpace(1.1, 1, 1, 1, inputs='u', outputs='y', states='a')
 
@@ -488,14 +511,14 @@ class TestDiscrete:
         assert sysd_nocopy.find_state('a') is None
 
         # if signal names are provided, they should override those of sysc
-        sysd_newnames = sample_system(sysc, 0.1, 
+        sysd_newnames = sample_system(sysc, 0.1,
             inputs='v', outputs='x', states='b')
         assert sysd_newnames.find_input('v') == 0
         assert sysd_newnames.find_input('u') is None
         assert sysd_newnames.find_output('x') == 0
         assert sysd_newnames.find_output('y') is None
         assert sysd_newnames.find_state('b') == 0
-        assert sysd_newnames.find_state('a') is None        
+        assert sysd_newnames.find_state('a') is None
         # test just one name
         sysd_newnames = sample_system(sysc, 0.1, inputs='v')
         assert sysd_newnames.find_input('v') == 0
