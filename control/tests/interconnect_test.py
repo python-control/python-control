@@ -81,8 +81,9 @@ def test_interconnect_implicit(dim):
                  outputs=[f'u[{i}]' for i in range(dim)])
 
     # same but static C2
-    C2 = ct.tf(random.uniform(1, 10), 1,
-        inputs='e', outputs='u', name='C2')
+    C2 = ct.tf2io(kp * random.uniform(1, 10), name='C2',
+        inputs=[f'e[{i}]' for i in range(dim)],
+        outputs=[f'u[{i}]' for i in range(dim)])
 
     # Block diagram computation
     Tss = ct.feedback(P * C, np.eye(dim))
@@ -113,7 +114,7 @@ def test_interconnect_implicit(dim):
 
     # test whether signal names work for static system C2
     Tio_sum2 = ct.interconnect(
-        [C2, P, sumblk], inputs='r', outputs='y')
+        [C2, P, sumblk], inplist='r', outlist='y')
 
     np.testing.assert_almost_equal(Tio_sum2.A, Tss2.A)
     np.testing.assert_almost_equal(Tio_sum2.B, Tss2.B)
@@ -138,17 +139,6 @@ def test_interconnect_implicit(dim):
     np.testing.assert_almost_equal(Tio_sum.B, Tss.B)
     np.testing.assert_almost_equal(Tio_sum.C, Tss.C)
     np.testing.assert_almost_equal(Tio_sum.D, Tss.D)
-
-    # TODO: interconnect a MIMO system using implicit connections
-    # P = control.ss2io(
-    #     control.rss(2, 2, 2, strictly_proper=True),
-    #     input_prefix='u', output_prefix='y', name='P')
-    # C = control.ss2io(
-    #     control.rss(2, 2, 2),
-    #     input_prefix='e', output_prefix='u', name='C')
-    # sumblk = control.summing_junction(
-    #     inputs=['r', '-y'], output='e', dimension=2)
-    # S = control.interconnect([P, C, sumblk], inplist='r', outlist='y')
 
     # Make sure that repeated inplist/outlist names work
     pi_io = ct.interconnect(
