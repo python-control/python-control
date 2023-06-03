@@ -1433,7 +1433,8 @@ def _add_siso(num1, den1, num2, den2):
     return num, den
 
 
-def _convert_to_transfer_function(sys, inputs=1, outputs=1):
+def _convert_to_transfer_function(
+        sys, inputs=1, outputs=1, use_prefix_suffix=False):
     """Convert a system to transfer function form (if needed).
 
     If sys is already a transfer function, then it is returned.  If sys is a
@@ -1509,7 +1510,10 @@ def _convert_to_transfer_function(sys, inputs=1, outputs=1):
                 num = squeeze(num)  # Convert to 1D array
                 den = squeeze(den)  # Probably not needed
 
-        return TransferFunction(num, den, sys.dt)
+        newsys = TransferFunction(num, den, sys.dt)
+        if use_prefix_suffix:
+            newsys._copy_names(sys, prefix_suffix_name='converted')
+        return newsys
 
     elif isinstance(sys, (int, float, complex, np.number)):
         num = [[[sys] for j in range(inputs)] for i in range(outputs)]
@@ -1809,7 +1813,8 @@ def ss2tf(*args, **kwargs):
             if not kwargs.get('outputs'):
                 kwargs['outputs'] = sys.output_labels
             return TransferFunction(
-                _convert_to_transfer_function(sys), **kwargs)
+                _convert_to_transfer_function(sys, use_prefix_suffix=True),
+                **kwargs)
         else:
             raise TypeError(
                 "ss2tf(sys): sys must be a StateSpace object.  It is %s."

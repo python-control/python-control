@@ -1262,6 +1262,12 @@ def test_copy_names(create, args, kwargs, convert):
     if cpy.nstates is not None and sys.nstates is not None:
         assert cpy.state_labels == sys.state_labels
 
+    # Make sure that names aren't the same if system changed type
+    if not isinstance(cpy, create):
+        assert cpy.name == sys.name + '$converted'
+    else:
+        assert cpy.name == sys.name
+
     # Relabel inputs and outputs
     cpy = convert(sys, inputs='myin', outputs='myout')
     assert cpy.input_labels == ['myin']

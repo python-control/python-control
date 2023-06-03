@@ -119,13 +119,11 @@ class NamedIOSystem(object):
         self.name = prefix + sys.name + suffix
 
         # Name the inputs, outputs, and states
-        self.ninputs, self.input_index = \
-            sys.ninputs, sys.input_index.copy()
-        self.noutputs, self.output_index = \
-            sys.noutputs, sys.output_index.copy()
-        if sys.nstates:         # only copy for state space systems
-            self.nstates, self.state_index = \
-                sys.nstates, sys.state_index.copy()
+        self.input_index = sys.input_index.copy()
+        self.output_index = sys.output_index.copy()
+        if self.nstates and sys.nstates:
+            # only copy state names for state space systems
+            self.state_index = sys.state_index.copy()
 
     def copy(self, name=None, use_prefix_suffix=True):
         """Make a copy of an input/output system
