@@ -591,13 +591,8 @@ class InputOutputSystem(NamedIOSystem):
                 DeprecationWarning)
 
         if copy_names:
-            linsys._copy_names(self)
-            if name is None:
-                linsys.name = \
-                    config.defaults['namedio.linearized_system_name_prefix']+\
-                    linsys.name+\
-                    config.defaults['namedio.linearized_system_name_suffix']
-            else:
+            linsys._copy_names(self, prefix_suffix_name='linearized')
+            if name is not None:
                 linsys.name = name
 
         # re-init to include desired signal names if names were provided

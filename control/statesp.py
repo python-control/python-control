@@ -1382,13 +1382,8 @@ class StateSpace(LTI):
         sysd = StateSpace(Ad, Bd, C, D, Ts)
         # copy over the system name, inputs, outputs, and states
         if copy_names:
-            sysd._copy_names(self)
-            if name is None:
-                sysd.name = \
-                    config.defaults['namedio.sampled_system_name_prefix'] +\
-                    sysd.name + \
-                    config.defaults['namedio.sampled_system_name_suffix']
-            else:
+            sysd._copy_names(self, prefix_suffix_name='sampled')
+            if name is not None:
                 sysd.name = name
         # pass desired signal names if names were provided
         return StateSpace(sysd, **kwargs)

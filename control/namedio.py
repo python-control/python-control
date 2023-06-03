@@ -12,6 +12,7 @@ from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
            'isdtime', 'isctime']
+
 # Define module default parameter values
 _namedio_defaults = {
     'namedio.state_name_delim': '_',
@@ -20,7 +21,9 @@ _namedio_defaults = {
     'namedio.linearized_system_name_prefix': '',
     'namedio.linearized_system_name_suffix': '$linearized',
     'namedio.sampled_system_name_prefix': '',
-    'namedio.sampled_system_name_suffix': '$sampled'
+    'namedio.sampled_system_name_suffix': '$sampled',
+    'namedio.converted_system_name_prefix': '',
+    'namedio.converted_system_name_suffix': '$converted',
 }
 
 
@@ -49,11 +52,15 @@ class NamedIOSystem(object):
     _idCounter = 0              # Counter for creating generic system name
 
     # Return system name
-    def _name_or_default(self, name=None):
+    def _name_or_default(self, name=None, prefix_suffix_name=None):
         if name is None:
             name = "sys[{}]".format(NamedIOSystem._idCounter)
             NamedIOSystem._idCounter += 1
-        return name
+        prefix = "" if prefix_suffix_name is None else config.defaults[
+            'namedio.' + prefix_suffix_name + '_system_name_prefix']
+        suffix = "" if prefix_suffix_name is None else config.defaults[
+            'namedio.' + prefix_suffix_name + '_system_name_suffix']
+        return prefix + name + suffix
 
     # Check if system name is generic
     def _generic_name_check(self):
@@ -99,16 +106,26 @@ class NamedIOSystem(object):
     def _find_signal(self, name, sigdict):
         return sigdict.get(name, None)
 
-    def _copy_names(self, sys):
+    def _copy_names(self, sys, prefix="", suffix="", prefix_suffix_name=None):
         """copy the signal and system name of sys. Name is given as a keyword
         in case a specific name (e.g. append 'linearized') is desired. """
-        self.name = sys.name
+        # Figure out the system name and assign it
+        if prefix == "" and prefix_suffix_name is not None:
+            prefix = config.defaults[
+                'namedio.' + prefix_suffix_name + '_system_name_prefix']
+        if suffix == "" and prefix_suffix_name is not None:
+            suffix = config.defaults[
+                'namedio.' + prefix_suffix_name + '_system_name_suffix']
+        self.name = prefix + sys.name + suffix
+
+        # Name the inputs, outputs, and states
         self.ninputs, self.input_index = \
             sys.ninputs, sys.input_index.copy()
         self.noutputs, self.output_index = \
             sys.noutputs, sys.output_index.copy()
-        self.nstates, self.state_index = \
-            sys.nstates, sys.state_index.copy()
+        if sys.nstates:         # only copy for state space systems
+            self.nstates, self.state_index = \
+                sys.nstates, sys.state_index.copy()
 
     def copy(self, name=None, use_prefix_suffix=True):
         """Make a copy of an input/output system
@@ -128,10 +145,8 @@ class NamedIOSystem(object):
         # Update the system name
         if name is None and use_prefix_suffix:
             # Get the default prefix and suffix to use
-            dup_prefix = config.defaults['namedio.duplicate_system_name_prefix']
-            dup_suffix = config.defaults['namedio.duplicate_system_name_suffix']
             newsys.name = self._name_or_default(
-                dup_prefix + self.name + dup_suffix)
+                self.name, prefix_suffix_name='duplicate')
         else:
             newsys.name = self._name_or_default(name)
 
