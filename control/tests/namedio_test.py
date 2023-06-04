@@ -326,3 +326,12 @@ def test_find_signals():
     assert sys.find_outputs(['y', 'z']) == [0, 1, 2, 3]
     assert sys.find_outputs(['y[1:]', 'z']) == [1, 2, 3]
     assert sys.find_outputs(['y', 'z[:1]']) == [0, 1, 2, 3]
+
+
+# Invalid signal names
+def test_invalid_signal_names():
+    with pytest.raises(ValueError, match="invalid signal name"):
+        sys = ct.rss(4, inputs="input.signal", outputs=1)
+
+    with pytest.raises(ValueError, match="invalid system name"):
+        sys = ct.rss(4, inputs=1, outputs=1, name="system.subsys")

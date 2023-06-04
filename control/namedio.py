@@ -60,6 +60,9 @@ class NamedIOSystem(object):
         if name is None:
             name = "sys[{}]".format(NamedIOSystem._idCounter)
             NamedIOSystem._idCounter += 1
+        elif re.match(r".*\..*", name):
+            raise ValueError(f"invalid system name '{name}' ('.' not allowed)")
+
         prefix = "" if prefix_suffix_name is None else config.defaults[
             'namedio.' + prefix_suffix_name + '_system_name_prefix']
         suffix = "" if prefix_suffix_name is None else config.defaults[
@@ -187,7 +190,6 @@ class NamedIOSystem(object):
         return newsys
 
     def set_inputs(self, inputs, prefix='u'):
-
         """Set the number/names of the system inputs.
 
         Parameters
@@ -271,7 +273,7 @@ class NamedIOSystem(object):
 
         """
         self.nstates, self.state_index = \
-            _process_signal_list(states, prefix=prefix)
+            _process_signal_list(states, prefix=prefix, allow_dot=True)
 
     def find_state(self, name):
         """Find the index for a state given its name (`None` if not found)"""
@@ -626,7 +628,7 @@ def _process_dt_keyword(keywords, defaults={}, static=False):
 
 
 # Utility function to parse a list of signals
-def _process_signal_list(signals, prefix='s'):
+def _process_signal_list(signals, prefix='s', allow_dot=False):
     if signals is None:
         # No information provided; try and make it up later
         return None, {}
@@ -637,10 +639,17 @@ def _process_signal_list(signals, prefix='s'):
 
     elif isinstance(signals, str):
         # Single string given => single signal with given name
+        if not allow_dot and re.match(r".*\..*", signals):
+            raise ValueError(
+                f"invalid signal name '{signals}' ('.' not allowed)")
         return 1, {signals: 0}
 
     elif all(isinstance(s, str) for s in signals):
         # Use the list of strings as the signal names
+        for signal in signals:
+            if not allow_dot and re.match(r".*\..*", signal):
+                raise ValueError(
+                    f"invalid signal name '{signal}' ('.' not allowed)")
         return len(signals), {signals[i]: i for i in range(len(signals))}
 
     else:
