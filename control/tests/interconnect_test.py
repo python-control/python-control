@@ -246,23 +246,54 @@ def test_string_inputoutput():
     assert P_s2.output_index == {'y2' : 0}
 
 def test_linear_interconnect():
-    tf_ctrl = ct.tf(1, (10.1, 1), inputs='e', outputs='u')
-    tf_plant = ct.tf(1, (10.1, 1), inputs='u', outputs='y')
-    ss_ctrl = ct.ss(1, 2, 1, 2, inputs='e', outputs='u')
-    ss_plant = ct.ss(1, 2, 1, 2, inputs='u', outputs='y')
+    tf_ctrl = ct.tf(1, (10.1, 1), inputs='e', outputs='u', name='ctrl')
+    tf_plant = ct.tf(1, (10.1, 1), inputs='u', outputs='y', name='plant')
+    ss_ctrl = ct.ss(1, 2, 1, 0, inputs='e', outputs='u', name='ctrl')
+    ss_plant = ct.ss(1, 2, 1, 0, inputs='u', outputs='y', name='plant')
     nl_ctrl = ct.NonlinearIOSystem(
-        lambda t, x, u, params: x*x,
-        lambda t, x, u, params: u*x, states=1, inputs='e', outputs='u')
+        lambda t, x, u, params: x*x, lambda t, x, u, params: u*x,
+        states=1, inputs='e', outputs='u', name='ctrl')
     nl_plant = ct.NonlinearIOSystem(
-        lambda t, x, u, params: x*x,
-        lambda t, x, u, params: u*x, states=1, inputs='u', outputs='y')
+        lambda t, x, u, params: x*x, lambda t, x, u, params: u*x,
+        states=1, inputs='u', outputs='y', name='plant')
+    sumblk = ct.summing_junction(inputs=['r', '-y'], outputs=['e'], name='sum')
 
-    assert isinstance(ct.interconnect((tf_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
-    assert isinstance(ct.interconnect((ss_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
-    assert isinstance(ct.interconnect((tf_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
-    assert isinstance(ct.interconnect((ss_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    # Interconnections of linear I/O systems should be linear I/O system
+    assert isinstance(
+        ct.interconnect([tf_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
+    assert isinstance(
+        ct.interconnect([ss_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
+    assert isinstance(
+        ct.interconnect([tf_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
+    assert isinstance(
+        ct.interconnect([ss_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
 
-    assert ~isinstance(ct.interconnect((nl_ctrl, ss_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
-    assert ~isinstance(ct.interconnect((nl_ctrl, tf_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
-    assert ~isinstance(ct.interconnect((ss_ctrl, nl_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
-    assert ~isinstance(ct.interconnect((tf_ctrl, nl_plant), inputs='e', outputs='y'), ct.LinearIOSystem)
+    # Interconnections with nonliner I/O systems should not be linear
+    assert ~isinstance(
+        ct.interconnect([nl_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
+    assert ~isinstance(
+        ct.interconnect([nl_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
+    assert ~isinstance(
+        ct.interconnect([ss_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
+    assert ~isinstance(
+        ct.interconnect([tf_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
+        ct.LinearIOSystem)
+
+    # Implicit converstion of transfer function should retain name
+    clsys = ct.interconnect(
+        [tf_ctrl, ss_plant, sumblk],
+        connections=[
+            ['plant.u', 'ctrl.u'],
+            ['ctrl.e', 'sum.e'],
+            ['sum.y', 'plant.y']
+        ],
+        inplist=['sum.r'], inputs='r',
+        outlist=['plant.y'], outputs='y')
+    assert clsys.syslist[0].name == 'ctrl'
