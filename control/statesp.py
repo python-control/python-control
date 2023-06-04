@@ -1572,9 +1572,7 @@ def _convert_to_statespace(sys, use_prefix_suffix=False):
                 for i, j in itertools.product(range(sys.noutputs),
                                               range(sys.ninputs)):
                     D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
-                return StateSpace([], [], [], D, sys.dt,
-                    inputs=sys.input_labels, outputs=sys.output_labels,
-                    name=sys.name)
+                newsys = StateSpace([], [], [], D, sys.dt)
             else:
                 if sys.ninputs != 1 or sys.noutputs != 1:
                     raise TypeError("No support for MIMO without slycot")
