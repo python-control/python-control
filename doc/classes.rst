@@ -58,3 +58,8 @@ Additional classes
    flatsys.SystemTrajectory
    optimal.OptimalControlProblem
    optimal.OptimalControlResult
+   optimal.OptimalEstimationProblem
+   optimal.OptimalEstimationResult
+
+The use of these classes is described in more detail in the
+:ref:`flatsys-module` module and the :ref:`optimal-module` module

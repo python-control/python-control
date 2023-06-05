@@ -820,7 +820,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 # Forced response of a linear system
 def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                     interpolate=False, return_x=None, squeeze=None):
-    """Simulate the output of a linear system.
+    """Compute the output of a linear system given the input.
 
     As a convenience for parameters `U`, `X0`:
     Numbers (scalars) are converted to constant arrays with the correct shape.
@@ -1616,7 +1616,7 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
 def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
-    """Initial condition response of a linear system
+    """Compute the initial condition response for a linear system.
 
     If the system has multiple outputs (MIMO), optionally, one output
     may be selected. If no selection is made for the output, all

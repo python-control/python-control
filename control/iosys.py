@@ -1704,6 +1704,15 @@ def input_output_response(
        start with zero initial condition since this can be specified as
        [xsys_0, 0].  A warning is issued if the initial conditions are padded
        and and the final listed initial state is not zero.
+    
+    2. If discontinuous inputs are given, the underlying SciPy numerical
+       integration algorithms can sometimes produce erroneous results due
+       to the default tolerances that are used.  The `ivp_method` and
+       `ivp_keywords` parameters can be used to tune the ODE solver and
+       produce better results.  In particular, using 'LSODA' as the
+       `ivp_method` or setting the `rtol` parameter to a smaller value
+       (e.g. using `ivp_kwargs={'rtol': 1e-4}`) can provide more accurate
+       results.
 
     """
     #
