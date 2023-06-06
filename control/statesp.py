@@ -1382,13 +1382,8 @@ class StateSpace(LTI):
         sysd = StateSpace(Ad, Bd, C, D, Ts)
         # copy over the system name, inputs, outputs, and states
         if copy_names:
-            sysd._copy_names(self)
-            if name is None:
-                sysd.name = \
-                    config.defaults['namedio.sampled_system_name_prefix'] +\
-                    sysd.name + \
-                    config.defaults['namedio.sampled_system_name_suffix']
-            else:
+            sysd._copy_names(self, prefix_suffix_name='sampled')
+            if name is not None:
                 sysd.name = name
         # pass desired signal names if names were provided
         return StateSpace(sysd, **kwargs)
@@ -1524,7 +1519,7 @@ class StateSpace(LTI):
 
 
 # TODO: add discrete time check
-def _convert_to_statespace(sys):
+def _convert_to_statespace(sys, use_prefix_suffix=False):
     """Convert a system to state space form (if needed).
 
     If sys is already a state space, then it is returned.  If sys is a
@@ -1561,11 +1556,10 @@ def _convert_to_statespace(sys):
                            denorder, den, num, tol=0)
 
             states = ssout[0]
-            return StateSpace(
+            newsys = StateSpace(
                 ssout[1][:states, :states], ssout[2][:states, :sys.ninputs],
-                ssout[3][:sys.noutputs, :states], ssout[4], sys.dt,
-                inputs=sys.input_labels, outputs=sys.output_labels,
-                name=sys.name)
+                ssout[3][:sys.noutputs, :states], ssout[4], sys.dt)
+
         except ImportError:
             # No Slycot.  Scipy tf->ss can't handle MIMO, but static
             # MIMO is an easy special case we can check for here
@@ -1578,9 +1572,7 @@ def _convert_to_statespace(sys):
                 for i, j in itertools.product(range(sys.noutputs),
                                               range(sys.ninputs)):
                     D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
-                return StateSpace([], [], [], D, sys.dt,
-                    inputs=sys.input_labels, outputs=sys.output_labels,
-                    name=sys.name)
+                newsys = StateSpace([], [], [], D, sys.dt)
             else:
                 if sys.ninputs != 1 or sys.noutputs != 1:
                     raise TypeError("No support for MIMO without slycot")
@@ -1590,9 +1582,13 @@ def _convert_to_statespace(sys):
                 # the squeeze
                 A, B, C, D = \
                     sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
-                return StateSpace(
-                    A, B, C, D, sys.dt, inputs=sys.input_labels,
-                    outputs=sys.output_labels, name=sys.name)
+                newsys = StateSpace(A, B, C, D, sys.dt)
+
+        # Copy over the signal (and system) names
+        newsys._copy_names(
+            sys,
+            prefix_suffix_name='converted' if use_prefix_suffix else None)
+        return newsys
 
     elif isinstance(sys, FrequencyResponseData):
         raise TypeError("Can't convert FRD to StateSpace system.")
@@ -1604,7 +1600,6 @@ def _convert_to_statespace(sys):
 
     except Exception:
         raise TypeError("Can't convert given type to StateSpace system.")
-
 
 # TODO: add discrete time option
 def _rss_generate(
@@ -1919,7 +1914,8 @@ def tf2ss(*args, **kwargs):
         if not isinstance(sys, TransferFunction):
             raise TypeError("tf2ss(sys): sys must be a TransferFunction "
                             "object.")
-        return StateSpace(_convert_to_statespace(sys), **kwargs)
+        return StateSpace(_convert_to_statespace(sys, use_prefix_suffix=True),
+                          **kwargs)
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
