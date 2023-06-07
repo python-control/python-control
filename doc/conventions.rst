@@ -11,7 +11,6 @@ way that different types of standard information used by the library.
 Throughout this manual, we assume the `control` package has been
 imported as `ct`.
 
-
 LTI system representation
 =========================
 
@@ -132,11 +131,40 @@ constructor for the desired data type using the original system as the sole
 argument or using the explicit conversion functions :func:`ss2tf` and
 :func:`tf2ss`.
 
+Simulating LTI systems
+======================
+
+A number of functions are available for computing the output (and
+state) response of an LTI systems:
+
+.. autosummary::
+   :toctree: generated/
+   :template: custom-class-template.rst
+
+    initial_response
+    step_response
+    impulse_response
+    forced_response
+
+Each of these functions returns a :class:`TimeResponseData` object
+that contains the data for the time response (described in more detail
+in the next section).
+
+The :func:`forced_response` system is the most general and allows by
+the zero initial state response to be simulated as well as the
+response from a non-zero intial condition.
+
+In addition the :func:`input_output_response` function, which handles
+simulation of nonlinear systems and interconnected systems, can be
+used.  For an LTI system, results are generally more accurate using
+the LTI simulation functions above.  The :func:`input_output_response`
+function is described in more detail in the :ref:`iosys-module` section.
+
 .. currentmodule:: control
 .. _time-series-convention:
 
 Time series data
-================
+----------------
 A variety of functions in the library return time series data: sequences of
 values that change over time.  A common set of conventions is used for
 returning such data: columns represent different points in time, rows are
@@ -262,16 +290,16 @@ Selected variables that can be configured, along with their default values:
 
   * freqplot.dB (False): Bode plot magnitude plotted in dB (otherwise powers
     of 10)
-    
+
   * freqplot.deg (True): Bode plot phase plotted in degrees (otherwise radians)
-    
+
   * freqplot.Hz (False): Bode plot frequency plotted in Hertz (otherwise
     rad/sec)
-    
+
   * freqplot.grid (True): Include grids for magnitude and phase plots
-    
+
   * freqplot.number_of_samples (1000): Number of frequency points in Bode plots
-    
+
   * freqplot.feature_periphery_decade (1.0): How many decades to include in
     the frequency range on both sides of features (poles, zeros).
 

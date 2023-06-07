@@ -54,10 +54,15 @@ The docstring examples assume that the following import commands::
 
 Available subpackages
 ---------------------
-flatsys
-    Differentially flat systems
-optimal
-    Optimization-based control
+
+The main control package includes the most commpon functions used in
+analysis, design, and simulation of feedback control systems.  Several
+additional subpackages are available that provide more specialized
+functionality:
+
+* :mod:`~control.flatsys`: Differentially flat systems
+* :mod:`~control.matlab`: MATLAB compatibility module
+* :mod:`~control.optimal`: Optimization-based control
 
 """
 

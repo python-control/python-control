@@ -40,7 +40,7 @@ import numpy as np
 from ..timeresp import TimeResponseData
 
 class SystemTrajectory:
-    """Class representing a system trajectory.
+    """Class representing a trajectory for a flat system.
 
     The `SystemTrajectory` class is used to represent the
     trajectory of a (differentially flat) system.  Used by the

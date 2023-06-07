@@ -3,7 +3,7 @@
 # RMM, 11 Feb 2021
 #
 
-"""The :mod:`~control.optimal` module provides support for optimization-based
+"""The :mod:`control.optimal` module provides support for optimization-based
 controllers for nonlinear systems with state and input constraints.
 
 The docstring examples assume that the following import commands::
