@@ -135,6 +135,8 @@ def test_io_naming(fun, args, kwargs):
         sys_r.set_states(state_labels)
         assert sys_r.state_labels == state_labels
 
+    sys_r.name = 'sys'          # make sure name is non-generic
+
     #
     # Set names using keywords and make sure they stick
     #
