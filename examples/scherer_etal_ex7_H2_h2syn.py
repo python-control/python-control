@@ -1,6 +1,6 @@
 """H2 design using h2syn.
 
-Demonstrate H2 desing for a SISO plant using h2syn. Based on [1], Ex. 7.
+Demonstrate H2 design for a SISO plant using h2syn. Based on [1], Ex. 7.
 
 [1] Scherer, Gahinet, & Chilali, "Multiobjective Output-Feedback Control via
 LMI Optimization", IEEE Trans. Automatic Control, Vol. 42, No. 7, July 1997.
