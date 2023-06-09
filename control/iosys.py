@@ -2405,7 +2405,10 @@ def ss(*args, **kwargs):
 
             # Create a state space system from an LTI system
             sys = LinearIOSystem(
-                _convert_to_statespace(sys, use_prefix_suffix=True), **kwargs)
+                _convert_to_statespace(
+                    sys,
+                    use_prefix_suffix=not sys._generic_name_check()),
+                **kwargs)
 
         else:
             raise TypeError("ss(sys): sys must be a StateSpace or "

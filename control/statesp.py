@@ -1914,8 +1914,11 @@ def tf2ss(*args, **kwargs):
         if not isinstance(sys, TransferFunction):
             raise TypeError("tf2ss(sys): sys must be a TransferFunction "
                             "object.")
-        return StateSpace(_convert_to_statespace(sys, use_prefix_suffix=True),
-                          **kwargs)
+        return StateSpace(
+            _convert_to_statespace(
+                sys,
+                use_prefix_suffix=not sys._generic_name_check()),
+            **kwargs)
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 

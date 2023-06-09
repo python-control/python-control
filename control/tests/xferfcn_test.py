@@ -1254,7 +1254,7 @@ def test_zpk(zeros, poles, gain, args, kwargs):
 ])
 def test_copy_names(create, args, kwargs, convert):
     # Convert a system with no renaming
-    sys = create(*args, **kwargs)
+    sys = create(*args, **kwargs, name='sys')
     cpy = convert(sys)
 
     assert cpy.input_labels == sys.input_labels

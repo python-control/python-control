@@ -1813,7 +1813,8 @@ def ss2tf(*args, **kwargs):
             if not kwargs.get('outputs'):
                 kwargs['outputs'] = sys.output_labels
             return TransferFunction(
-                _convert_to_transfer_function(sys, use_prefix_suffix=True),
+                _convert_to_transfer_function(
+                    sys, use_prefix_suffix=not sys._generic_name_check()),
                 **kwargs)
         else:
             raise TypeError(
