@@ -242,15 +242,13 @@ class TestConfig:
         assert ct.config.defaults['freqplot.feature_periphery_decades'] == 1.0
 
     def test_legacy_defaults(self):
-        with pytest.deprecated_call():
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
             ct.use_legacy_defaults('0.8.3')
-            assert(isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
-        ct.reset_defaults()
-        assert isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray)
-        assert not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix)
+            ct.reset_defaults()
 
-        ct.use_legacy_defaults('0.8.4')
-        assert ct.config.defaults['forced_response.return_x'] is True
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.use_legacy_defaults('0.8.4')
+            assert ct.config.defaults['forced_response.return_x'] is True
 
         ct.use_legacy_defaults('0.9.0')
         assert isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray)

@@ -1130,8 +1130,8 @@ class TestTimeresp:
     ])
     def test_squeeze_0_8_4(self, nstate, nout, ninp, squeeze, shape):
         # Set defaults to match release 0.8.4
-        ct.config.use_legacy_defaults('0.8.4')
-        ct.config.use_numpy_matrix(False)
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.config.use_legacy_defaults('0.8.4')
 
         # Generate system, time, and input vectors
         sys = ct.rss(nstate, nout, ninp, strictly_proper=True)

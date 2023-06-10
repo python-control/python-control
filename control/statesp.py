@@ -77,7 +77,6 @@ __all__ = ['StateSpace', 'tf2ss', 'ssdata', 'linfnorm']
 
 # Define module default parameter values
 _statesp_defaults = {
-    'statesp.use_numpy_matrix': False,  # False is default in 0.9.0 and above
     'statesp.remove_useless_states': False,
     'statesp.latex_num_format': '.3g',
     'statesp.latex_repr_type': 'partitioned',
@@ -104,11 +103,8 @@ def _ssmatrix(data, axis=1):
     arr : 2D array, with shape (0, 0) if a is empty
 
     """
-    # Convert the data into an array or matrix, as configured
-    if config.defaults['statesp.use_numpy_matrix']:
-        arr = np.matrix(data, dtype=float)
-    else:
-        arr = np.array(data, dtype=float)
+    # Convert the data into an array
+    arr = np.array(data, dtype=float)
     ndim = arr.ndim
     shape = arr.shape
 
@@ -202,12 +198,7 @@ class StateSpace(LTI):
     -----
     The main data members in the ``StateSpace`` class are the A, B, C, and D
     matrices.  The class also keeps track of the number of states (i.e.,
-    the size of A).  The data format used to store state space matrices is
-    set using the value of `config.defaults['use_numpy_matrix']`.  If True
-    (default), the state space elements are stored as `numpy.matrix` objects;
-    otherwise they are `numpy.ndarray` objects.  The
-    :func:`~control.use_numpy_matrix` function can be used to set the storage
-    type.
+    the size of A).
 
     A discrete time system is created by specifying a nonzero 'timebase', dt
     when the system is constructed:
@@ -355,10 +346,8 @@ class StateSpace(LTI):
         elif kwargs:
             raise TypeError("unrecognized keyword(s): ", str(kwargs))
 
-        # Reset shapes (may not be needed once np.matrix support is removed)
+        # Reset shape if system is static
         if self._isstatic():
-            # static gain
-            # matrix's default "empty" shape is 1x0
             A.shape = (0, 0)
             B.shape = (0, self.ninputs)
             C.shape = (self.noutputs, 0)
@@ -927,18 +916,17 @@ class StateSpace(LTI):
         x_arr = np.atleast_1d(x).astype(complex, copy=False)
 
         # return fast on systems with 0 or 1 state
-        if not config.defaults['statesp.use_numpy_matrix']:
-            if self.nstates == 0:
-                return self.D[:, :, np.newaxis] \
-                    * np.ones_like(x_arr, dtype=complex)
-            if self.nstates == 1:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    out = self.C[:, :, np.newaxis] \
-                          / (x_arr - self.A[0, 0]) \
-                          * self.B[:, :, np.newaxis] \
-                          + self.D[:, :, np.newaxis]
-                out[np.isnan(out)] = complex(np.inf, np.nan)
-                return out
+        if self.nstates == 0:
+            return self.D[:, :, np.newaxis] \
+                * np.ones_like(x_arr, dtype=complex)
+        elif self.nstates == 1:
+            with np.errstate(divide='ignore', invalid='ignore'):
+                out = self.C[:, :, np.newaxis] \
+                    / (x_arr - self.A[0, 0]) \
+                    * self.B[:, :, np.newaxis] \
+                    + self.D[:, :, np.newaxis]
+            out[np.isnan(out)] = complex(np.inf, np.nan)
+            return out
 
         try:
             out = self.slycot_laub(x_arr)
