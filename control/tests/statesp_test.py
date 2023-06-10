@@ -196,17 +196,6 @@ class TestStateSpace:
         sys = StateSpace(sysin)
         assert sys.dt is None
 
-    def test_matlab_style_constructor(self):
-        """Use (deprecated) matrix-style construction string"""
-        with pytest.deprecated_call():
-            sys = StateSpace("-1 1; 0 2", "0; 1", "1, 0", "0")
-        assert sys.A.shape == (2, 2)
-        assert sys.B.shape == (2, 1)
-        assert sys.C.shape == (1, 2)
-        assert sys.D.shape == (1, 1)
-        for X in [sys.A, sys.B, sys.C, sys.D]:
-            assert ismatarrayout(X)
-
     def test_D_broadcast(self, sys623):
         """Test broadcast of D=0 to the right shape"""
         # Giving D as a scalar 0 should broadcast to the right shape

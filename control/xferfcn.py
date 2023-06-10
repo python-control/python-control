@@ -1640,8 +1640,8 @@ def tf(*args, **kwargs):
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
 
     >>> # Convert a StateSpace to a TransferFunction object.
-    >>> sys_ss = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> sys2 = ct.tf(sys1)
+    >>> sys_ss = ct.ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], 9)
+    >>> sys_tf = ct.tf(sys_ss)
 
     """
 
@@ -1801,7 +1801,7 @@ def ss2tf(*args, **kwargs):
     >>> sys1 = ct.ss2tf(A, B, C, D)
 
     >>> sys_ss = ct.ss(A, B, C, D)
-    >>> sys2 = ct.ss2tf(sys_ss)
+    >>> sys_tf = ct.ss2tf(sys_ss)
 
     """
 
