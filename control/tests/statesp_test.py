@@ -479,22 +479,27 @@ class TestStateSpace:
 
     def test_array_access_ss(self):
 
-        sys1 = StateSpace([[1., 2.], [3., 4.]],
-                          [[5., 6.], [6., 8.]],
-                          [[9., 10.], [11., 12.]],
-                          [[13., 14.], [15., 16.]], 1)
+        sys1 = StateSpace(
+            [[1., 2.], [3., 4.]],
+            [[5., 6.], [6., 8.]],
+            [[9., 10.], [11., 12.]],
+            [[13., 14.], [15., 16.]], 1,
+            inputs=['u0', 'u1'], outputs=['y0', 'y1'])
 
-        sys1_11 = sys1[0, 1]
-        np.testing.assert_array_almost_equal(sys1_11.A,
+        sys1_01 = sys1[0, 1]
+        np.testing.assert_array_almost_equal(sys1_01.A,
                                              sys1.A)
-        np.testing.assert_array_almost_equal(sys1_11.B,
+        np.testing.assert_array_almost_equal(sys1_01.B,
                                              sys1.B[:, 1:2])
-        np.testing.assert_array_almost_equal(sys1_11.C,
+        np.testing.assert_array_almost_equal(sys1_01.C,
                                              sys1.C[0:1, :])
-        np.testing.assert_array_almost_equal(sys1_11.D,
+        np.testing.assert_array_almost_equal(sys1_01.D,
                                              sys1.D[0, 1])
 
-        assert sys1.dt == sys1_11.dt
+        assert sys1.dt == sys1_01.dt
+        assert sys1_01.input_labels == ['u1']
+        assert sys1_01.output_labels == ['y0']
+        assert sys1_01.name == sys1.name + "$indexed"
 
     def test_dc_gain_cont(self):
         """Test DC gain for continuous-time state-space systems."""
@@ -831,7 +836,7 @@ class TestStateSpace:
             sys222.dynamics(0, (1, 1), u)
         with pytest.raises(ValueError):
             sys222.output(0, (1, 1), u)
-    
+
     def test_sample_named_signals(self):
         sysc = ct.StateSpace(1.1, 1, 1, 1, inputs='u', outputs='y', states='a')
 
@@ -859,14 +864,14 @@ class TestStateSpace:
         assert sysd_newnames.find_output('x') == 0
         assert sysd_newnames.find_output('y') is None
         assert sysd_newnames.find_state('b') == 0
-        assert sysd_newnames.find_state('a') is None        
+        assert sysd_newnames.find_state('a') is None
         # test just one name
         sysd_newnames = sysc.sample(0.1, inputs='v')
         assert sysd_newnames.find_input('v') == 0
         assert sysd_newnames.find_input('u') is None
         assert sysd_newnames.find_output('y') == 0
         assert sysd_newnames.find_output('x') is None
-        
+
 class TestRss:
     """These are tests for the proper functionality of statesp.rss."""
 

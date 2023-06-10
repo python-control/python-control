@@ -8,6 +8,7 @@
 import numpy as np
 from copy import deepcopy
 from warnings import warn
+import re
 from . import config
 
 __all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
@@ -22,6 +23,8 @@ _namedio_defaults = {
     'namedio.linearized_system_name_suffix': '$linearized',
     'namedio.sampled_system_name_prefix': '',
     'namedio.sampled_system_name_suffix': '$sampled',
+    'namedio.indexed_system_name_prefix': '',
+    'namedio.indexed_system_name_suffix': '$indexed',
     'namedio.converted_system_name_prefix': '',
     'namedio.converted_system_name_suffix': '$converted',
 }
@@ -29,15 +32,16 @@ _namedio_defaults = {
 
 class NamedIOSystem(object):
     def __init__(
-            self, name=None, inputs=None, outputs=None, states=None, **kwargs):
+            self, name=None, inputs=None, outputs=None, states=None,
+            input_prefix='u', output_prefix='y', state_prefix='x', **kwargs):
 
         # system name
         self.name = self._name_or_default(name)
 
         # Parse and store the number of inputs and outputs
-        self.set_inputs(inputs)
-        self.set_outputs(outputs)
-        self.set_states(states)
+        self.set_inputs(inputs, prefix=input_prefix)
+        self.set_outputs(outputs, prefix=output_prefix)
+        self.set_states(states, prefix=state_prefix)
 
         # Process timebase: if not given use default, but allow None as value
         self.dt = _process_dt_keyword(kwargs)
@@ -56,6 +60,9 @@ class NamedIOSystem(object):
         if name is None:
             name = "sys[{}]".format(NamedIOSystem._idCounter)
             NamedIOSystem._idCounter += 1
+        elif re.match(r".*\..*", name):
+            raise ValueError(f"invalid system name '{name}' ('.' not allowed)")
+
         prefix = "" if prefix_suffix_name is None else config.defaults[
             'namedio.' + prefix_suffix_name + '_system_name_prefix']
         suffix = "" if prefix_suffix_name is None else config.defaults[
@@ -64,7 +71,6 @@ class NamedIOSystem(object):
 
     # Check if system name is generic
     def _generic_name_check(self):
-        import re
         return re.match(r'^sys\[\d*\]$', self.name) is not None
 
     #
@@ -105,6 +111,39 @@ class NamedIOSystem(object):
     # Find a signal by name
     def _find_signal(self, name, sigdict):
         return sigdict.get(name, None)
+
+    # Find a list of signals by name, index, or pattern
+    def _find_signals(self, name_list, sigdict):
+        if not isinstance(name_list, (list, tuple)):
+            name_list = [name_list]
+
+        index_list = []
+        for name in name_list:
+            # Look for signal ranges (slice-like or base name)
+            ms = re.match(r'([\w$]+)\[([\d]*):([\d]*)\]$', name)  # slice
+            mb = re.match(r'([\w$]+)$', name)                     # base
+            if ms:
+                base = ms.group(1)
+                start = None if ms.group(2) == '' else int(ms.group(2))
+                stop = None if ms.group(3) == '' else int(ms.group(3))
+                for var in sigdict:
+                    # Find variables that match
+                    msig = re.match(r'([\w$]+)\[([\d]+)\]$', var)
+                    if msig and msig.group(1) == base and \
+                       (start is None or int(msig.group(2)) >= start) and \
+                       (stop is None or int(msig.group(2)) < stop):
+                            index_list.append(sigdict.get(var))
+            elif mb and sigdict.get(name, None) is None:
+                # Try to use name as a base name
+                for var in sigdict:
+                    msig = re.match(name + r'\[([\d]+)\]$', var)
+                    if msig:
+                        index_list.append(sigdict.get(var))
+            else:
+                index_list.append(sigdict.get(name, None))
+
+        return None if len(index_list) == 0 or \
+            any([idx is None for idx in index_list]) else index_list
 
     def _copy_names(self, sys, prefix="", suffix="", prefix_suffix_name=None):
         """copy the signal and system name of sys. Name is given as a keyword
@@ -151,7 +190,6 @@ class NamedIOSystem(object):
         return newsys
 
     def set_inputs(self, inputs, prefix='u'):
-
         """Set the number/names of the system inputs.
 
         Parameters
@@ -174,6 +212,10 @@ class NamedIOSystem(object):
     def find_input(self, name):
         """Find the index for an input given its name (`None` if not found)"""
         return self.input_index.get(name, None)
+
+    def find_inputs(self, name_list):
+        """Return list of indices matching input spec (`None` if not found)"""
+        return self._find_signals(name_list, self.input_index)
 
     # Property for getting and setting list of input signals
     input_labels = property(
@@ -204,6 +246,10 @@ class NamedIOSystem(object):
         """Find the index for an output given its name (`None` if not found)"""
         return self.output_index.get(name, None)
 
+    def find_outputs(self, name_list):
+        """Return list of indices matching output spec (`None` if not found)"""
+        return self._find_signals(name_list, self.output_index)
+
     # Property for getting and setting list of output signals
     output_labels = property(
         lambda self: list(self.output_index.keys()),     # getter
@@ -227,11 +273,15 @@ class NamedIOSystem(object):
 
         """
         self.nstates, self.state_index = \
-            _process_signal_list(states, prefix=prefix)
+            _process_signal_list(states, prefix=prefix, allow_dot=True)
 
     def find_state(self, name):
         """Find the index for a state given its name (`None` if not found)"""
         return self.state_index.get(name, None)
+
+    def find_states(self, name_list):
+        """Return list of indices matching state spec (`None` if not found)"""
+        return self._find_signals(name_list, self.state_index)
 
     # Property for getting and setting list of state signals
     state_labels = property(
@@ -578,7 +628,7 @@ def _process_dt_keyword(keywords, defaults={}, static=False):
 
 
 # Utility function to parse a list of signals
-def _process_signal_list(signals, prefix='s'):
+def _process_signal_list(signals, prefix='s', allow_dot=False):
     if signals is None:
         # No information provided; try and make it up later
         return None, {}
@@ -589,10 +639,17 @@ def _process_signal_list(signals, prefix='s'):
 
     elif isinstance(signals, str):
         # Single string given => single signal with given name
+        if not allow_dot and re.match(r".*\..*", signals):
+            raise ValueError(
+                f"invalid signal name '{signals}' ('.' not allowed)")
         return 1, {signals: 0}
 
     elif all(isinstance(s, str) for s in signals):
         # Use the list of strings as the signal names
+        for signal in signals:
+            if not allow_dot and re.match(r".*\..*", signal):
+                raise ValueError(
+                    f"invalid signal name '{signal}' ('.' not allowed)")
         return len(signals), {signals[i]: i for i in range(len(signals))}
 
     else:

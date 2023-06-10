@@ -1789,7 +1789,7 @@ def test_interconnect_add_unused():
 
     # Try a normal interconnection
     G1 = ct.interconnect(
-        [P, S, C], inputs=['r', 'u2'], outputs=['y1', 'y2'])
+        [P, S, C], inputs=['r', 'u2'], outputs=['y1', 'y2'], debug=True)
 
     # Same system, but using add_unused
     G2 = ct.interconnect(

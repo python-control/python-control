@@ -1294,10 +1294,15 @@ class StateSpace(LTI):
         """Array style access"""
         if len(indices) != 2:
             raise IOError('must provide indices of length 2 for state space')
-        i = indices[0]
-        j = indices[1]
-        return StateSpace(self.A, self.B[:, j], self.C[i, :],
-                          self.D[i, j], self.dt)
+        outdx = indices[0] if isinstance(indices[0], list) else [indices[0]]
+        inpdx = indices[1] if isinstance(indices[1], list) else [indices[1]]
+        sysname = config.defaults['namedio.indexed_system_name_prefix'] + \
+            self.name + config.defaults['namedio.indexed_system_name_suffix']
+        return StateSpace(
+            self.A, self.B[:, inpdx], self.C[outdx, :], self.D[outdx, inpdx],
+            self.dt, name=sysname,
+            inputs=[self.input_labels[i] for i in list(inpdx)],
+            outputs=[self.output_labels[i] for i in list(outdx)])
 
     def sample(self, Ts, method='zoh', alpha=None, prewarp_frequency=None,
                name=None, copy_names=True, **kwargs):

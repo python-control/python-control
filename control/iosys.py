@@ -54,10 +54,9 @@ class InputOutputSystem(NamedIOSystem):
     """A class for representing input/output systems.
 
     The InputOutputSystem class allows (possibly nonlinear) input/output
-    systems to be represented in Python.  It is intended as a parent
-    class for a set of subclasses that are used to implement specific
-    structures and operations for different types of input/output
-    dynamical systems.
+    systems to be represented in Python.  It is used as a parent class for
+    a set of subclasses that are used to implement specific structures and
+    operations for different types of input/output dynamical systems.
 
     Parameters
     ----------
@@ -65,14 +64,16 @@ class InputOutputSystem(NamedIOSystem):
         Description of the system inputs.  This can be given as an integer
         count or a list of strings that name the individual signals.  If an
         integer count is specified, the names of the signal will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If this parameter
-        is not given or given as `None`, the relevant quantity will be
-        determined when possible based on other information provided to
-        functions using the system.
+        form `s[i]` (where `s` is given by the `input_prefix` parameter and
+        has default value 'u').  If this parameter is not given or given as
+        `None`, the relevant quantity will be determined when possible
+        based on other information provided to functions using the system.
     outputs : int, list of str, or None
-        Description of the system outputs.  Same format as `inputs`.
+        Description of the system outputs.  Same format as `inputs`, with
+        the prefix given by output_prefix (defaults to 'y').
     states : int, list of str, or None
-        Description of the system states.  Same format as `inputs`.
+        Description of the system states.  Same format as `inputs`, with
+        the prefix given by state_prefix (defaults to 'x').
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous time, True
         indicates discrete time with unspecified sampling time, positive
@@ -103,6 +104,15 @@ class InputOutputSystem(NamedIOSystem):
     name : string, optional
         System name (used for specifying signals)
 
+    Other Parameters
+    ----------------
+    input_prefix : string, optional
+        Set the prefix for input signals.  Default = 'u'.
+    output_prefix : string, optional
+        Set the prefix for output signals.  Default = 'y'.
+    state_prefix : string, optional
+        Set the prefix for state signals.  Default = 'x'.
+
     Notes
     -----
     The :class:`~control.InputOuputSystem` class (and its subclasses) makes
@@ -132,14 +142,13 @@ class InputOutputSystem(NamedIOSystem):
 
         """
         # Store the system name, inputs, outputs, and states
-        name, inputs, outputs, states, dt = _process_namedio_keywords(
-            kwargs, end=True)
+        name, inputs, outputs, states, dt = _process_namedio_keywords(kwargs)
 
         # Initialize the data structure
         # Note: don't use super() to override LinearIOSystem/StateSpace MRO
         NamedIOSystem.__init__(
             self, inputs=inputs, outputs=outputs,
-            states=states, name=name, dt=dt)
+            states=states, name=name, dt=dt, **kwargs)
 
         # default parameters
         self.params = {} if params is None else params.copy()
@@ -607,19 +616,13 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
     Parameters
     ----------
     linsys : StateSpace or TransferFunction
-        LTI system to be converted
+        LTI system to be converted.
     inputs : int, list of str or None, optional
-        Description of the system inputs.  This can be given as an integer
-        count or as a list of strings that name the individual signals.  If an
-        integer count is specified, the names of the signal will be of the
-        form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If this parameter
-        is not given or given as `None`, the relevant quantity will be
-        determined when possible based on other information provided to
-        functions using the system.
+        New system input labels (defaults to linsys input labels).
     outputs : int, list of str or None, optional
-        Description of the system outputs.  Same format as `inputs`.
+        New system output labels (defaults to linsys output labels).
     states : int, list of str, or None, optional
-        Description of the system states.  Same format as `inputs`.
+        New system input labels (defaults to linsys output labels).
     dt : None, True or float, optional
         System timebase. 0 (default) indicates continuous time, True indicates
         discrete time with unspecified sampling time, positive number is
@@ -640,6 +643,10 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
     A, B, C, D
         See :class:`~control.StateSpace` for inherited attributes.
 
+    See Also
+    --------
+    InputOutputSystem : Input/output system class.
+
     """
     def __init__(self, linsys, **kwargs):
         """Create an I/O system from a state space linear system.
@@ -659,13 +666,13 @@ class LinearIOSystem(InputOutputSystem, StateSpace):
 
         # Process keyword arguments
         name, inputs, outputs, states, dt = _process_namedio_keywords(
-            kwargs, linsys, end=True)
+            kwargs, linsys)
 
         # Create the I/O system object
         # Note: don't use super() to override StateSpace MRO
         InputOutputSystem.__init__(
             self, inputs=inputs, outputs=outputs, states=states,
-            params=None, dt=dt, name=name)
+            params=None, dt=dt, name=name, **kwargs)
 
         # Initalize additional state space variables
         StateSpace.__init__(
@@ -775,6 +782,10 @@ class NonlinearIOSystem(InputOutputSystem):
         functions for the system as default values, overriding internal
         defaults.
 
+    See Also
+    --------
+    InputOutputSystem : Input/output system class.
+
     """
     def __init__(self, updfcn, outfcn=None, params=None, **kwargs):
         """Create a nonlinear I/O system given update and output functions."""
@@ -880,27 +891,25 @@ class InterconnectedSystem(InputOutputSystem):
     whose inputs and outputs are connected via a connection map.  The overall
     system inputs and outputs are subsets of the subsystem inputs and outputs.
 
-    See :func:`~control.interconnect` for a list of parameters.
+    The function :func:`~control.interconnect` should be used to create an
+    interconnected I/O system since it performs additional argument
+    processing and checking.
 
     """
     def __init__(self, syslist, connections=None, inplist=None, outlist=None,
                  params=None, warn_duplicate=None, **kwargs):
         """Create an I/O system from a list of systems + connection info."""
         # Convert input and output names to lists if they aren't already
-        if inplist is not None and not isinstance(inplist, (list, tuple)):
+        if inplist is not None and not isinstance(inplist, list):
             inplist = [inplist]
-        if outlist is not None and not isinstance(outlist, (list, tuple)):
+        if outlist is not None and not isinstance(outlist, list):
             outlist = [outlist]
 
         # Check if dt argument was given; if not, pull from systems
         dt = kwargs.pop('dt', None)
 
         # Process keyword arguments (except dt)
-        defaults = {
-            'inputs': len(inplist or []),
-            'outputs': len(outlist or [])}
-        name, inputs, outputs, states, _ = _process_namedio_keywords(
-            kwargs, defaults, end=True)
+        name, inputs, outputs, states, _ = _process_namedio_keywords(kwargs)
 
         # Initialize the system list and index
         self.syslist = list(syslist) # insure modifications can be made
@@ -990,22 +999,36 @@ class InterconnectedSystem(InputOutputSystem):
                 f"construction of state labels failed; found: "
                 f"{len(states)} labels; expecting {nstates}")
 
+        # Figure out what the inputs and outputs are
+        if inputs is None and inplist is not None:
+            inputs = len(inplist)
+
+        if outputs is None and outlist is not None:
+            outputs = len(outlist)
+
         # Create the I/O system
         # Note: don't use super() to override LinearICSystem/StateSpace MRO
         InputOutputSystem.__init__(
             self, inputs=inputs, outputs=outputs,
-            states=states, params=params, dt=dt, name=name)
+            states=states, params=params, dt=dt, name=name, **kwargs)
 
         # Convert the list of interconnections to a connection map (matrix)
         self.connect_map = np.zeros((ninputs, noutputs))
         for connection in connections or []:
-            input_index = self._parse_input_spec(connection[0])
+            input_indices = self._parse_input_spec(connection[0])
             for output_spec in connection[1:]:
-                output_index, gain = self._parse_output_spec(output_spec)
-                if self.connect_map[input_index, output_index] != 0:
-                    warn("multiple connections given for input %d" %
-                         input_index + ". Combining with previous entries.")
-                self.connect_map[input_index, output_index] += gain
+                output_indices, gain = self._parse_output_spec(output_spec)
+                if len(output_indices) != len(input_indices):
+                    raise ValueError(
+                        f"inconsistent number of signals in connecting"
+                        f" '{output_spec}' to '{connection[0]}'")
+
+                for input_index, output_index in zip(
+                        input_indices, output_indices):
+                    if self.connect_map[input_index, output_index] != 0:
+                        warn("multiple connections given for input %d" %
+                             input_index + ". Combining with previous entries.")
+                    self.connect_map[input_index, output_index] += gain
 
         # Convert the input list to a matrix: maps system to subsystems
         self.input_map = np.zeros((ninputs, self.ninputs))
@@ -1016,11 +1039,12 @@ class InterconnectedSystem(InputOutputSystem):
                 raise ValueError("specifications in inplist must be of type "
                                  "int, str, tuple or list.")
             for spec in inpspec:
-                ulist_index = self._parse_input_spec(spec)
-                if self.input_map[ulist_index, index] != 0:
-                    warn("multiple connections given for input %d" %
-                         index + ". Combining with previous entries.")
-                self.input_map[ulist_index, index] += 1
+                ulist_indices = self._parse_input_spec(spec)
+                for j, ulist_index in enumerate(ulist_indices):
+                    if self.input_map[ulist_index, index] != 0:
+                        warn("multiple connections given for input %d" %
+                             index + ". Combining with previous entries.")
+                    self.input_map[ulist_index, index + j] += 1
 
         # Convert the output list to a matrix: maps subsystems to system
         self.output_map = np.zeros((self.noutputs, noutputs + ninputs))
@@ -1031,14 +1055,12 @@ class InterconnectedSystem(InputOutputSystem):
                 raise ValueError("specifications in outlist must be of type "
                                  "int, str, tuple or list.")
             for spec in outspec:
-                ylist_index, gain = self._parse_output_spec(spec)
-                if self.output_map[index, ylist_index] != 0:
-                    warn("multiple connections given for output %d" %
-                         index + ". Combining with previous entries.")
-                self.output_map[index, ylist_index] += gain
-
-        # Save the parameters for the system
-        self.params = {} if params is None else params.copy()
+                ylist_indices, gain = self._parse_output_spec(spec)
+                for j, ylist_index in enumerate(ylist_indices):
+                    if self.output_map[index, ylist_index] != 0:
+                        warn("multiple connections given for output %d" %
+                             index + ". Combining with previous entries.")
+                    self.output_map[index + j, ylist_index] += gain
 
     def _update_params(self, params, warning=False):
         for sys in self.syslist:
@@ -1142,166 +1164,35 @@ class InterconnectedSystem(InputOutputSystem):
         return ulist, ylist
 
     def _parse_input_spec(self, spec):
-        """Parse an input specification and returns the index
-
-        This function parses a specification of an input of an interconnected
-        system component and returns the index of that input in the internal
-        input vector.  Input specifications are of one of the following forms:
-
-            i               first input for the ith system
-            (i,)            first input for the ith system
-            (i, j)          jth input for the ith system
-            'sys.sig'       signal 'sig' in subsys 'sys'
-            ('sys', 'sig')  signal 'sig' in subsys 'sys'
-
-        The function returns an index into the input vector array and
-        the gain to use for that input.
-
-        """
+        """Parse an input specification and returns the indices."""
         # Parse the signal that we received
-        subsys_index, input_index, gain = self._parse_signal(spec, 'input')
+        subsys_index, input_indices, gain = _parse_spec(
+            self.syslist, spec, 'input')
         if gain != 1:
             raise ValueError("gain not allowed in spec '%s'." % str(spec))
 
-        # Return the index into the input vector list (ylist)
-        return self.input_offset[subsys_index] + input_index
+        # Return the indices into the input vector list (ylist)
+        return [self.input_offset[subsys_index] + i for i in input_indices]
 
     def _parse_output_spec(self, spec):
-        """Parse an output specification and returns the index and gain
-
-        This function parses a specification of an output of an
-        interconnected system component and returns the index of that
-        output in the internal output vector (ylist).  Output specifications
-        are of one of the following forms:
-
-            i                       first output for the ith system
-            (i,)                    first output for the ith system
-            (i, j)                  jth output for the ith system
-            (i, j, gain)            jth output for the ith system with gain
-            'sys.sig'               signal 'sig' in subsys 'sys'
-            '-sys.sig'              signal 'sig' in subsys 'sys' with gain -1
-            ('sys', 'sig', gain)    signal 'sig' in subsys 'sys' with gain
-
-        If the gain is not specified, it is taken to be 1.  Numbered outputs
-        must be chosen from the list of subsystem outputs, but named outputs
-        can also be contained in the list of subsystem inputs.
-
-        The function returns an index into the output vector array and
-        the gain to use for that output.
-
-        """
+        """Parse an output specification and returns the indices and gain."""
         # Parse the rest of the spec with standard signal parsing routine
         try:
             # Start by looking in the set of subsystem outputs
-            subsys_index, output_index, gain = \
-                self._parse_signal(spec, 'output')
-
-            # Return the index into the input vector list (ylist)
-            return self.output_offset[subsys_index] + output_index, gain
+            subsys_index, output_indices, gain = \
+                _parse_spec(self.syslist, spec, 'output')
+            output_offset = self.output_offset[subsys_index]
 
         except ValueError:
             # Try looking in the set of subsystem *inputs*
-            subsys_index, input_index, gain = self._parse_signal(
-                spec, 'input or output', dictname='input_index')
+            subsys_index, output_indices, gain = _parse_spec(
+                self.syslist, spec, 'input or output', dictname='input_index')
 
             # Return the index into the input vector list (ylist)
-            noutputs = sum(sys.noutputs for sys in self.syslist)
-            return noutputs + \
-                self.input_offset[subsys_index] + input_index, gain
+            output_offset = sum(sys.noutputs for sys in self.syslist) + \
+                self.input_offset[subsys_index]
 
-    def _parse_signal(self, spec, signame='input', dictname=None):
-        """Parse a signal specification, returning system and signal index.
-
-        Signal specifications are of one of the following forms:
-
-            i               system_index = i, signal_index = 0
-            (i,)            system_index = i, signal_index = 0
-            (i, j)          system_index = i, signal_index = j
-            'sys.sig'       signal 'sig' in subsys 'sys'
-            ('sys', 'sig')  signal 'sig' in subsys 'sys'
-            ('sys', j)      signal_index j in subsys 'sys'
-
-        The function returns an index into the input vector array and
-        the gain to use for that input.
-        """
-        import re
-
-        gain = 1                # Default gain
-
-        # Check for special forms of the input
-        if isinstance(spec, tuple) and len(spec) == 3:
-            gain = spec[2]
-            spec = spec[:2]
-        elif isinstance(spec, str) and spec[0] == '-':
-            gain = -1
-            spec = spec[1:]
-
-        # Process cases where we are given indices as integers
-        if isinstance(spec, int):
-            return spec, 0, gain
-
-        elif isinstance(spec, tuple) and len(spec) == 1 \
-             and isinstance(spec[0], int):
-            return spec[0], 0, gain
-
-        elif isinstance(spec, tuple) and len(spec) == 2 \
-             and all([isinstance(index, int) for index in spec]):
-            return spec + (gain,)
-
-        # Figure out the name of the dictionary to use
-        if dictname is None:
-            dictname = signame + '_index'
-
-        if isinstance(spec, str):
-            # If we got a dotted string, break up into pieces
-            namelist = re.split(r'\.', spec)
-
-            # For now, only allow signal level of system name
-            # TODO: expand to allow nested signal names
-            if len(namelist) != 2:
-                raise ValueError("Couldn't parse %s signal reference '%s'."
-                                 % (signame, spec))
-
-            system_index = self._find_system(namelist[0])
-            if system_index is None:
-                raise ValueError("Couldn't find system '%s'." % namelist[0])
-
-            signal_index = self.syslist[system_index]._find_signal(
-                namelist[1], getattr(self.syslist[system_index], dictname))
-            if signal_index is None:
-                raise ValueError("Couldn't find %s signal '%s.%s'." %
-                                 (signame, namelist[0], namelist[1]))
-
-            return system_index, signal_index, gain
-
-        # Handle the ('sys', 'sig'), (i, j), and mixed cases
-        elif isinstance(spec, tuple) and len(spec) == 2 and \
-             isinstance(spec[0], (str, int)) and \
-             isinstance(spec[1], (str, int)):
-            if isinstance(spec[0], int):
-                system_index = spec[0]
-                if system_index < 0 or system_index > len(self.syslist):
-                    system_index = None
-            else:
-                system_index = self._find_system(spec[0])
-            if system_index is None:
-                raise ValueError("Couldn't find system '%s'." % spec[0])
-
-            if isinstance(spec[1], int):
-                signal_index = spec[1]
-                # TODO (later): check against max length of appropriate list?
-                if signal_index < 0:
-                    system_index = None
-            else:
-                signal_index = self.syslist[system_index]._find_signal(
-                    spec[1], getattr(self.syslist[system_index], dictname))
-            if signal_index is None:
-                raise ValueError("Couldn't find signal %s.%s." % tuple(spec))
-
-            return system_index, signal_index, gain
-
-        else:
-            raise ValueError("Couldn't parse signal reference %s." % str(spec))
+        return [output_offset + i for i in output_indices], gain
 
     def _find_system(self, name):
         return self.syslist_index.get(name, None)
@@ -1348,7 +1239,9 @@ class InterconnectedSystem(InputOutputSystem):
         ----------
         output_map : 2D array
              Specify the matrix that will be used to multiply the vector of
-             subsystem outputs to obtain the vector of system outputs.
+             subsystem outputs concatenated with subsystem inputs to obtain
+             the vector of system outputs.
+
         """
         # Figure out the number of internal inputs and outputs
         ninputs = sum(sys.ninputs for sys in self.syslist)
@@ -1486,8 +1379,10 @@ class InterconnectedSystem(InputOutputSystem):
                                      f"{ignore_input} in subsystems")
                 ignore_input_map.update(ignore_idxs)
             else:
-                ignore_input_map[self._parse_signal(
-                    ignore_input, 'input')[:2]] = ignore_input
+                isys, isigs = _parse_spec(
+                    self.syslist, ignore_input, 'input')[:2]
+                for isig in isigs:
+                    ignore_input_map[(isys, isig)] = ignore_input
 
         # (osys, osig) -> signal-spec
         ignore_output_map = {}
@@ -1499,8 +1394,10 @@ class InterconnectedSystem(InputOutputSystem):
                                      f"{ignore_output} in subsystems")
                 ignore_output_map.update(ignore_found)
             else:
-                ignore_output_map[self._parse_signal(
-                    ignore_output, 'output')[:2]] = ignore_output
+                osys, osigs = _parse_spec(
+                    self.syslist, ignore_output, 'output')[:2]
+                for osig in osigs:
+                    ignore_output_map[(osys, osig)] = ignore_output
 
         dropped_inputs = set(unused_inputs) - set(ignore_input_map)
         dropped_outputs = set(unused_outputs) - set(ignore_output_map)
@@ -2461,13 +2358,13 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
 
     Returns
     -------
-    sys : StateSpace
-        The randomly created linear system
+    sys : LinearIOSystem
+        The randomly created linear system.
 
     Raises
     ------
     ValueError
-        if any input is not a positive integer
+        if any input is not a positive integer.
 
     Notes
     -----
@@ -2480,8 +2377,7 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
     """
     # Process keyword arguments
     kwargs.update({'states': states, 'outputs': outputs, 'inputs': inputs})
-    name, inputs, outputs, states, dt = _process_namedio_keywords(
-        kwargs, end=True)
+    name, inputs, outputs, states, dt = _process_namedio_keywords(kwargs)
 
     # Figure out the size of the sytem
     nstates, _ = _process_signal_list(states)
@@ -2493,7 +2389,8 @@ def rss(states=1, outputs=1, inputs=1, strictly_proper=False, **kwargs):
         strictly_proper=strictly_proper)
 
     return LinearIOSystem(
-        sys, name=name, states=states, inputs=inputs, outputs=outputs, dt=dt)
+        sys, name=name, states=states, inputs=inputs, outputs=outputs, dt=dt,
+        **kwargs)
 
 
 def drss(*args, **kwargs):
@@ -2624,7 +2521,7 @@ def tf2io(*args, **kwargs):
 def interconnect(
         syslist, connections=None, inplist=None, outlist=None, params=None,
         check_unused=True, add_unused=False, ignore_inputs=None,
-        ignore_outputs=None, warn_duplicate=None, **kwargs):
+        ignore_outputs=None, warn_duplicate=None, debug=False, **kwargs):
     """Interconnect a set of input/output systems.
 
     This function creates a new system that is an interconnection of a set of
@@ -2651,23 +2548,28 @@ def interconnect(
             [input-spec, output-spec1, output-spec2, ...]
 
         The input-spec can be in a number of different forms.  The lowest
-        level representation is a tuple of the form `(subsys_i, inp_j)` where
-        `subsys_i` is the index into `syslist` and `inp_j` is the index into
-        the input vector for the subsystem.  If `subsys_i` has a single input,
-        then the subsystem index `subsys_i` can be listed as the input-spec.
-        If systems and signals are given names, then the form 'sys.sig' or
-        ('sys', 'sig') are also recognized.
+        level representation is a tuple of the form `(subsys_i, inp_j)`
+        where `subsys_i` is the index into `syslist` and `inp_j` is the
+        index into the input vector for the subsystem.  If the signal index
+        is omitted, then all subsystem inputs are used.  If systems and
+        signals are given names, then the forms 'sys.sig' or ('sys', 'sig')
+        are also recognized.  Finally, for multivariable systems the signal
+        index can be given as a list, for example '(subsys_i, [inp_j1, ...,
+        inp_jn])'; as a slice, for example, 'sys.sig[i:j]'; or as a base
+        name `sys.sig` (which matches `sys.sig[i]`).
 
-        Similarly, each output-spec should describe an output signal from one
-        of the subsystems.  The lowest level representation is a tuple of the
-        form `(subsys_i, out_j, gain)`.  The input will be constructed by
-        summing the listed outputs after multiplying by the gain term.  If the
-        gain term is omitted, it is assumed to be 1.  If the system has a
-        single output, then the subsystem index `subsys_i` can be listed as
-        the input-spec.  If systems and signals are given names, then the form
-        'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also recognized,
-        and the special form '-sys.sig' can be used to specify a signal with
-        gain -1.
+        Similarly, each output-spec should describe an output signal from
+        one of the subsystems.  The lowest level representation is a tuple
+        of the form `(subsys_i, out_j, gain)`.  The input will be
+        constructed by summing the listed outputs after multiplying by the
+        gain term.  If the gain term is omitted, it is assumed to be 1.  If
+        the subsystem index `subsys_i` is omitted, then all outputs of the
+        subsystem are used.  If systems and signals are given names, then
+        the form 'sys.sig', ('sys', 'sig') or ('sys', 'sig', gain) are also
+        recognized, and the special form '-sys.sig' can be used to specify
+        a signal with gain -1.  Lists, slices, and base namess can also be
+        used, as long as the number of elements for each output spec
+        mataches the input spec.
 
         If omitted, the `interconnect` function will attempt to create the
         interconnection map by connecting all signals with the same base names
@@ -2691,20 +2593,20 @@ def interconnect(
 
             [input-spec1, input-spec2, ...]
 
-        Each system input is added to the input for the listed subsystem.  If
-        the system input connects to only one subsystem input, a single input
-        specification can be given (without the inner list).
+        Each system input is added to the input for the listed subsystem.
+        If the system input connects to a subsystem with a single input, a
+        single input specification can be given (without the inner list).
 
         If omitted the `input` parameter will be used to identify the list
         of input signals to the overall system.
 
     outlist : list of output connections, optional
-        List of connections for how the outputs from the subsystems are mapped
-        to overall system outputs.  The output connection description is the
-        same as the form defined in the inplist specification (including the
-        optional gain term).  Numbered outputs must be chosen from the list of
-        subsystem outputs, but named outputs can also be contained in the list
-        of subsystem inputs.
+        List of connections for how the outputs from the subsystems are
+        mapped to overall system outputs.  The output connection
+        description is the same as the form defined in the inplist
+        specification (including the optional gain term).  Numbered outputs
+        must be chosen from the list of subsystem outputs, but named
+        outputs can also be contained in the list of subsystem inputs.
 
         If an output connection contains more than one signal specification,
         then those signals are added together (multiplying by the any gain
@@ -2784,6 +2686,10 @@ def interconnect(
         systems that have non-generic names.  If `False`, warnings are not
         generated and if `True` then warnings are always generated.
 
+    debug : bool, default=False
+        Print out information about how signals are being processed that
+        may be useful in understanding why something is not working.
+
 
     Examples
     --------
@@ -2791,16 +2697,30 @@ def interconnect(
     >>> C = ct.rss(2, 2, 2, name='C')
     >>> T = ct.interconnect(
     ...     [P, C],
-    ...     connections = [
+    ...     connections=[
     ...         ['P.u[0]', 'C.y[0]'], ['P.u[1]', 'C.y[1]'],
     ...         ['C.u[0]', '-P.y[0]'], ['C.u[1]', '-P.y[1]']],
-    ...     inplist = ['C.u[0]', 'C.u[1]'],
-    ...     outlist = ['P.y[0]', 'P.y[1]'],
+    ...     inplist=['C.u[0]', 'C.u[1]'],
+    ...     outlist=['P.y[0]', 'P.y[1]'],
     ... )
 
-    For a SISO system, this example can be simplified by using the
-    :func:`~control.summing_block` function and the ability to automatically
-    interconnect signals with the same names:
+    This expression can be simplified using either slice notation or
+    just signal basenames:
+
+    >>> T = ct.interconnect(
+    ...     [P, C], connections=[['P.u[:]', 'C.y[:]'], ['C.u', '-P.y']],
+    ...     inplist='C.u', outlist='P.y[:]')
+
+    or further simplified by omitting the input and output signal
+    specifications (since all inputs and outputs are used):
+
+    >>> T = ct.interconnect(
+    ...     [P, C], connections=[['P', 'C'], ['C', '-P']],
+    ...     inplist=['C'], outlist=['P'])
+
+    A feedback system can also be constructed using the
+    :func:`~control.summing_block` function and the ability to
+    automatically interconnect signals with the same names:
 
     >>> P = ct.tf(1, [1, 0], inputs='u', outputs='y')
     >>> C = ct.tf(10, [1, 1], inputs='e', outputs='u')
@@ -2814,14 +2734,22 @@ def interconnect(
     name of the new system determined by adding the prefix and suffix
     strings in config.defaults['namedio.linearized_system_name_prefix']
     and config.defaults['namedio.linearized_system_name_suffix'], with the
-    default being to add the suffix '$copy'$ to the system name.
+    default being to add the suffix '$copy' to the system name.
 
-    It is possible to replace lists in most of arguments with tuples instead,
-    but strictly speaking the only use of tuples should be in the
+    In addition to explicit lists of system signals, it is possible to
+    lists vectors of signals, using one of the following forms::
+
+      (subsys, [i1, ..., iN], gain)     signals with indices i1, ..., in
+      'sysname.signal[i:j]'             range of signal names, i through j-1
+      'sysname.signal[:]'               all signals with given prefix
+
+    While in many Python functions tuples can be used in place of lists,
+    for the interconnect() function the only use of tuples should be in the
     specification of an input- or output-signal via the tuple notation
     `(subsys_i, signal_j, gain)` (where `gain` is optional).  If you get an
-    unexpected error message about a specification being of the wrong type,
-    check your use of tuples.
+    unexpected error message about a specification being of the wrong type
+    or not being found, check to make sure you are not using a tuple where
+    you should be using a list.
 
     In addition to its use for general nonlinear I/O systems, the
     :func:`~control.interconnect` function allows linear systems to be
@@ -2835,8 +2763,7 @@ def interconnect(
 
     """
     dt = kwargs.pop('dt', None)         # by pass normal 'dt' processing
-    name, inputs, outputs, states, _ = _process_namedio_keywords(
-        kwargs, end=True)
+    name, inputs, outputs, states, _ = _process_namedio_keywords(kwargs)
 
     if not check_unused and (ignore_inputs or ignore_outputs):
         raise ValueError('check_unused is False, but either '
@@ -2868,72 +2795,245 @@ def interconnect(
         # Use an empty connections list
         connections = []
 
+    elif isinstance(connections, list) and \
+         all([isinstance(cnxn, (str, tuple)) for cnxn in connections]):
+        # Special case where there is a single connection
+        connections = [connections]
+
     # If inplist/outlist is not present, try using inputs/outputs instead
+    inplist_none, outlist_none = False, False
     if inplist is None:
-        inplist = list(inputs or [])
+        inplist = inputs or []
+        inplist_none = True     # use to rewrite inputs below
     if outlist is None:
-        outlist = list(outputs or [])
+        outlist = outputs or []
+        outlist_none = True     # use to rewrite outputs below
 
-    # Process input list
-    if not isinstance(inplist, (list, tuple)):
+    # Define a local debugging function
+    dprint = lambda s: None if not debug else print(s)
+
+    #
+    # Pre-process connecton list
+    #
+    # Support for various "vector" forms of specifications is handled here,
+    # by expanding any specifications that refer to more than one signal.
+    # This includes signal lists such as ('sysname', ['sig1', 'sig2', ...])
+    # as well as slice-based specifications such as 'sysname.signal[i:j]'.
+    #
+    dprint(f"Pre-processing connections:")
+    new_connections = []
+    for connection in connections:
+        dprint(f"  parsing {connection=}")
+        if not isinstance(connection, list):
+            raise ValueError(
+                f"invalid connection {connection}: should be a list")
+        # Parse and expand the input specification
+        input_spec = _parse_spec(syslist, connection[0], 'input')
+        input_spec_list = [input_spec]
+
+        # Parse and expand the output specifications
+        output_specs_list = [[]] * len(input_spec_list)
+        for spec in connection[1:]:
+            output_spec = _parse_spec(syslist, spec, 'output')
+            output_specs_list[0].append(output_spec)
+
+        # Create the new connection entry
+        for input_spec, output_specs in zip(input_spec_list, output_specs_list):
+            new_connection = [input_spec] + output_specs
+            dprint(f"    adding {new_connection=}")
+            new_connections.append(new_connection)
+    connections = new_connections
+
+    #
+    # Pre-process input connections list
+    #
+    # Similar to the connections list, we now handle "vector" forms of
+    # specifications in the inplist parameter.  This needs to be handled
+    # here because the InterconnectedSystem constructor assumes that the
+    # number of elements in `inplist` will match the number of inputs for
+    # the interconnected system.
+    #
+    # If inplist_none is True then inplist is a copy of inputs and so we
+    # also have to be careful that if we encounter any multivariable
+    # signals, we need to update the input list.
+    #
+    dprint(f"Pre-processing input connections: {inplist}")
+    if not isinstance(inplist, list):
+        dprint(f"  converting inplist to list")
         inplist = [inplist]
-    new_inplist = []
-    for signal in inplist:
-        # Create an empty connection and append to inplist
-        connection = []
+    new_inplist, new_inputs = [], [] if inplist_none else inputs
 
-        # Check for signal names without a system name
-        if isinstance(signal, str) and len(signal.split('.')) == 1:
-            # Get the signal name
-            signal_name = signal[1:] if signal[0] == '-' else signal
-            sign = '-' if signal[0] == '-' else ""
+    # Go through the list of inputs and process each one
+    for iinp, connection in enumerate(inplist):
+        # Check for system name or signal names without a system name
+        if isinstance(connection, str) and len(connection.split('.')) == 1:
+            # Create an empty connections list to store matching connections
+            new_connections = []
+
+            # Get the signal/system name
+            sname = connection[1:] if connection[0] == '-' else connection
+            gain = -1 if connection[0] == '-' else 1
 
             # Look for the signal name as a system input
-            for sys in syslist:
-                if signal_name in sys.input_labels:
-                    connection.append(sign + sys.name + "." + signal_name)
+            found_system, found_signal = False, False
+            for isys, sys in enumerate(syslist):
+                # Look for matching signals (returns None if no matches
+                indices = sys._find_signals(sname, sys.input_index)
 
-            # Make sure we found the name
-            if len(connection) == 0:
-                raise ValueError("could not find signal %s" % signal_name)
-            else:
-                new_inplist.append(connection)
+                # See what types of matches we found
+                if sname == sys.name:
+                    # System name matches => use all inputs
+                    for isig in range(sys.ninputs):
+                        dprint(f"  adding input {(isys, isig, gain)}")
+                        new_inplist.append((isys, isig, gain))
+                    found_system = True
+                elif indices:
+                    # Signal name matches => store new connections
+                    new_connection = []
+                    for isig in indices:
+                        dprint(f"  collecting input {(isys, isig, gain)}")
+                        new_connection.append((isys, isig, gain))
+
+                    if len(new_connections) == 0:
+                        # First time we have seen this signal => initalize
+                        for cnx in new_connection:
+                            new_connections.append([cnx])
+                        if inplist_none:
+                            # See if we need to rewrite the inputs
+                            if len(new_connection) != 1:
+                                new_inputs += [
+                                    sys.input_labels[i] for i in indices]
+                            else:
+                                new_inputs.append(inputs[iinp])
+                    else:
+                        # Additional signal match found =. add to the list
+                        for i, cnx in enumerate(new_connection):
+                            new_connections[i].append(cnx)
+                    found_signal = True
+
+            if found_system and found_signal:
+                raise ValueError(
+                    f"signal '{sname}' is both signal and system name")
+            elif found_signal:
+                dprint(f"  adding inputs {new_connections}")
+                new_inplist += new_connections
+            elif not found_system:
+                raise ValueError("could not find signal %s" % sname)
         else:
-            new_inplist.append(signal)
-    inplist = new_inplist
+            # Regular signal specification
+            if not isinstance(connection, list):
+                dprint(f"  converting item to list")
+                connection = [connection]
+            for spec in connection:
+                isys, indices, gain = _parse_spec(syslist, spec, 'input')
+                for isig in indices:
+                    dprint(f"  adding input {(isys, isig, gain)}")
+                    new_inplist.append((isys, isig, gain))
+    inplist, inputs = new_inplist, new_inputs
+    dprint(f"  {inplist=}\n  {inputs=}")
 
-    # Process output list
-    if not isinstance(outlist, (list, tuple)):
+    #
+    # Pre-process output list
+    #
+    # This is similar to the processing of the input list, but we need to
+    # additionally take into account the fact that you can list subsystem
+    # inputs as system outputs.
+    #
+    dprint(f"Pre-processing output connections: {outlist}")
+    if not isinstance(outlist, list):
+        dprint(f"  converting outlist to list")
         outlist = [outlist]
-    new_outlist = []
-    for signal in outlist:
-        # Create an empty connection and append to inplist
-        connection = []
+    new_outlist, new_outputs = [], [] if outlist_none else outputs
+    for iout, connection in enumerate(outlist):
+        # Create an empty connection list
+        new_connections = []
 
-        # Check for signal names without a system name
-        if isinstance(signal, str) and len(signal.split('.')) == 1:
-            # Get the signal name
-            signal_name = signal[1:] if signal[0] == '-' else signal
-            sign = '-' if signal[0] == '-' else ""
+        # Check for system name or signal names without a system name
+        if isinstance(connection, str) and len(connection.split('.')) == 1:
+            # Get the signal/system name
+            sname = connection[1:] if connection[0] == '-' else connection
+            gain = -1 if connection[0] == '-' else 1
 
             # Look for the signal name as a system output
-            for sys in syslist:
-                if signal_name in sys.output_index.keys():
-                    connection.append(sign + sys.name + "." + signal_name)
+            found_system, found_signal = False, False
+            for osys, sys in enumerate(syslist):
+                indices = sys._find_signals(sname, sys.output_index)
+                if sname == sys.name:
+                    # Use all outputs
+                    for osig in range(sys.noutputs):
+                        dprint(f"  adding output {(osys, osig, gain)}")
+                        new_outlist.append((osys, osig, gain))
+                    found_system = True
+                elif indices:
+                    new_connection = []
+                    for osig in indices:
+                        dprint(f"  collecting output {(osys, osig, gain)}")
+                        new_connection.append((osys, osig, gain))
+                    if len(new_connections) == 0:
+                        for cnx in new_connection:
+                            new_connections.append([cnx])
+                        if outlist_none:
+                            # See if we need to rewrite the outputs
+                            if len(new_connection) != 1:
+                                new_outputs += [
+                                    sys.output_labels[i] for i in indices]
+                            else:
+                                new_outputs.append(outputs[iout])
+                    else:
+                        # Additional signal match found =. add to the list
+                        for i, cnx in enumerate(new_connection):
+                            new_connections[i].append(cnx)
+                    found_signal = True
 
-            # Make sure we found the name
-            if len(connection) == 0:
-                raise ValueError("could not find signal %s" % signal_name)
-            else:
-                new_outlist.append(connection)
+            if found_system and found_signal:
+                raise ValueError(
+                    f"signal '{sname}' is both signal and system name")
+            elif found_signal:
+                dprint(f"  adding outputs {new_connections}")
+                new_outlist += new_connections
+            elif not found_system:
+                raise ValueError("could not find signal %s" % sname)
         else:
-            new_outlist.append(signal)
-    outlist = new_outlist
+            # Regular signal specification
+            if not isinstance(connection, list):
+                dprint(f"  converting item to list")
+                connection = [connection]
+            for spec in connection:
+                try:
+                    # First trying looking in the output signals
+                    osys, indices, gain = _parse_spec(syslist, spec, 'output')
+                    for osig in indices:
+                        dprint(f"  adding output {(osys, osig, gain)}")
+                        new_outlist.append((osys, osig, gain))
+                except ValueError:
+                    # If not, see if we can find it in inputs
+                    isys, indices, gain = _parse_spec(
+                        syslist, spec, 'input or output',
+                        dictname='input_index')
+                    for isig in indices:
+                        # Use string form to allow searching input list
+                        dprint(f"  adding input {(isys, isig, gain)}")
+                        new_outlist.append(
+                            (syslist[isys].name,
+                             syslist[isys].input_labels[isig], gain))
+    outlist, outputs = new_outlist, new_outputs
+    dprint(f"  {outlist=}\n  {outputs=}")
+
+    # Make sure inputs and outputs match inplist outlist, if specified
+    if inputs and (
+            isinstance(inputs, (list, tuple)) and len(inputs) != len(inplist)
+            or isinstance(inputs, int) and inputs != len(inplist)):
+        raise ValueError("`inputs` incompatible with `inplist`")
+    if outputs and (
+            isinstance(outputs, (list, tuple)) and len(outputs) != len(outlist)
+            or isinstance(outputs, int) and outputs != len(outlist)):
+        raise ValueError("`outputs` incompatible with `outlist`")
 
     newsys = InterconnectedSystem(
         syslist, connections=connections, inplist=inplist,
         outlist=outlist, inputs=inputs, outputs=outputs, states=states,
-        params=params, dt=dt, name=name, warn_duplicate=warn_duplicate)
+        params=params, dt=dt, name=name, warn_duplicate=warn_duplicate,
+        **kwargs)
 
     # See if we should add any signals
     if add_unused:
@@ -2953,7 +3053,8 @@ def interconnect(
         newsys = InterconnectedSystem(
             syslist, connections=connections, inplist=inplist,
             outlist=outlist, inputs=inputs, outputs=outputs, states=states,
-            params=params, dt=dt, name=name, warn_duplicate=warn_duplicate)
+            params=params, dt=dt, name=name, warn_duplicate=warn_duplicate,
+            **kwargs)
 
     # check for implicitly dropped signals
     if check_unused:
@@ -3091,3 +3192,110 @@ def summing_junction(
     # Create a LinearIOSystem
     return LinearIOSystem(
         ss_sys, inputs=input_names, outputs=output_names, name=name)
+
+
+#
+# Utility function for parsing input/output specifications
+#
+# This function can be used to convert various forms of signal
+# specifications used in the interconnect() function and the
+# InterconnectedSystem class into a list of signals.  Signal specifications
+# are of one of the following forms (where 'n' is the number of signals in
+# the named dictionary):
+#
+#   i                    system_index = i, signal_list = [0, ..., n]
+#   (i,)                 system_index = i, signal_list = [0, ..., n]
+#   (i, j)               system_index = i, signal_list = [j]
+#   (i, [j1, ..., jn])   system_index = i, signal_list = [j1, ..., jn]
+#   'sys'                system_index = i, signal_list = [0, ..., n]
+#   'sys.sig'            signal 'sig' in subsys 'sys'
+#   ('sys', 'sig')       signal 'sig' in subsys 'sys'
+#   'sys.sig[...]'       signals 'sig[...]' (slice) in subsys 'sys'
+#   ('sys', j)           signal_index j in subsys 'sys'
+#   ('sys', 'sig[...]')  signals 'sig[...]' (slice) in subsys 'sys'
+#
+# This function returns the subsystem index, a list of indices for the
+# system signals, and the gain to use for that set of signals.
+#
+import re
+
+def _parse_spec(syslist, spec, signame, dictname=None):
+    """Parse a signal specification, returning system and signal index."""
+
+    # Parse the signal spec into a system, signal, and gain spec
+    if isinstance(spec, int):
+        system_spec, signal_spec, gain = spec, None, None
+    elif isinstance(spec, str):
+        # If we got a dotted string, break up into pieces
+        namelist = re.split(r'\.', spec)
+        system_spec, gain = namelist[0], None
+        signal_spec = None if len(namelist) < 2 else namelist[1]
+        if len(namelist) > 2:
+            # TODO: expand to allow nested signal names
+            raise ValueError(f"couldn't parse signal reference '{spec}'")
+    elif isinstance(spec, tuple) and len(spec) <= 3:
+        system_spec = spec[0]
+        signal_spec = None if len(spec) < 2 else spec[1]
+        gain = None if len(spec) < 3 else spec[2]
+    else:
+        raise ValueError(f"unrecognized signal spec format '{spec}'")
+
+    # Determine the gain
+    check_sign = lambda spec: isinstance(spec, str) and spec[0] == '-'
+    if (check_sign(system_spec) and gain is not None) or \
+       (check_sign(signal_spec) and gain is not None) or \
+       (check_sign(system_spec) and check_sign(signal_spec)):
+        # Gain is specified multiple times
+        raise ValueError(f"gain specified multiple times '{spec}'")
+    elif check_sign(system_spec):
+        gain = -1
+        system_spec = system_spec[1:]
+    elif check_sign(signal_spec):
+        gain = -1
+        signal_spec = signal_spec[1:]
+    elif gain is None:
+        gain = 1
+
+    # Figure out the subsystem index
+    if isinstance(system_spec, int):
+        system_index = system_spec
+    elif isinstance(system_spec, str):
+        syslist_index = {sys.name: i for i, sys in enumerate(syslist)}
+        system_index = syslist_index.get(system_spec, None)
+        if system_index is None:
+            raise ValueError(f"couldn't find system '{system_spec}'")
+    else:
+        raise ValueError(f"unknown system spec '{system_spec}'")
+
+    # Make sure the system index is valid
+    if system_index < 0 or system_index >= len(syslist):
+        ValueError(f"system index '{system_index}' is out of range")
+
+    # Figure out the name of the dictionary to use for signal names
+    dictname = signame + '_index' if dictname is None else dictname
+    signal_dict = getattr(syslist[system_index], dictname)
+    nsignals = len(signal_dict)
+
+    # Figure out the signal indices
+    if signal_spec is None:
+        # No indices given => use the entire range of signals
+        signal_indices = list(range(nsignals))
+    elif isinstance(signal_spec, int):
+        # Single index given
+        signal_indices = [signal_spec]
+    elif isinstance(signal_spec, list) and \
+         all([isinstance(index, int) for index in signal_spec]):
+        # Simple list of integer indices
+        signal_indices = signal_spec
+    else:
+        signal_indices = syslist[system_index]._find_signals(
+            signal_spec, signal_dict)
+        if signal_indices is None:
+            raise ValueError(f"couldn't find {signame} signal '{spec}'")
+
+    # Make sure the signal indices are valid
+    for index in signal_indices:
+        if index < 0 or index >= nsignals:
+            ValueError(f"signal index '{index}' is out of range")
+
+    return system_index, signal_indices, gain

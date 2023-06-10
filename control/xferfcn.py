@@ -791,8 +791,7 @@ class TransferFunction(LTI):
         if stop2 is None:
             stop2 = len(self.num[0])
 
-        num = []
-        den = []
+        num, den = [], []
         for i in range(start1, stop1, step1):
             num_i = []
             den_i = []
@@ -801,10 +800,17 @@ class TransferFunction(LTI):
                 den_i.append(self.den[i][j])
             num.append(num_i)
             den.append(den_i)
-        if self.isctime():
-            return TransferFunction(num, den)
-        else:
-            return TransferFunction(num, den, self.dt)
+
+        # Save the label names
+        outputs = [self.output_labels[i] for i in range(start1, stop1, step1)]
+        inputs = [self.input_labels[j] for j in range(start2, stop2, step2)]
+
+        # Create the system name
+        sysname = config.defaults['namedio.indexed_system_name_prefix'] + \
+            self.name + config.defaults['namedio.indexed_system_name_suffix']
+
+        return TransferFunction(
+            num, den, self.dt, inputs=inputs, outputs=outputs, name=sysname)
 
     def freqresp(self, omega):
         """(deprecated) Evaluate transfer function at complex frequencies.
