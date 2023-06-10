@@ -857,7 +857,7 @@ class TestTimeresp:
                                      initial_response,
                                      forced_response])
     @pytest.mark.parametrize("squeeze", [None, True, False])
-    def test_time_vector(self, tsystem, fun, squeeze, matarrayout):
+    def test_time_vector(self, tsystem, fun, squeeze):
         """Test time vector handling and correct output convention
 
         gh-239, gh-295

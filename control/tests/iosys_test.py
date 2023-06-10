@@ -17,7 +17,6 @@ from math import sqrt
 
 import control as ct
 from control import iosys as ios
-from control.tests.conftest import matrixfilter
 
 
 class TestIOSys:

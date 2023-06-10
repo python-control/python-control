@@ -21,7 +21,7 @@ from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
     _statesp_defaults, _rss_generate, linfnorm
 from control.iosys import ss, rss, drss
-from control.tests.conftest import ismatarrayout, slycotonly
+from control.tests.conftest import slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
 
@@ -1006,13 +1006,7 @@ class TestLTIConverter:
 
 class TestStateSpaceConfig:
     """Test the configuration of the StateSpace module"""
-
-    @pytest.fixture
-    def matarrayout(self):
-        """Override autoused global fixture within this class"""
-        pass
-
-    def test_statespace_defaults(self, matarrayout):
+    def test_statespace_defaults(self):
         """Make sure the tests are run with the configured defaults"""
         for k, v in _statesp_defaults.items():
             assert defaults[k] == v, \

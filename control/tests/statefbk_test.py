@@ -16,8 +16,7 @@ from control.exception import ControlDimension, ControlSlycot, \
 from control.mateqn import care, dare
 from control.statefbk import (ctrb, obsv, place, place_varga, lqr, dlqr,
                               gram, acker)
-from control.tests.conftest import (slycotonly, check_deprecated_matrix,
-                                    ismatarrayout, asmatarrayout)
+from control.tests.conftest import slycotonly
 
 
 @pytest.fixture
@@ -36,48 +35,37 @@ class TestStatefbk:
     # Set to True to print systems to the output.
     debug = False
 
-    def testCtrbSISO(self, matarrayin, matarrayout):
-        A = matarrayin([[1., 2.], [3., 4.]])
-        B = matarrayin([[5.], [7.]])
+    def testCtrbSISO(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        B = np.array([[5.], [7.]])
         Wctrue = np.array([[5., 19.], [7., 43.]])
-
-        with check_deprecated_matrix():
-            Wc = ctrb(A, B)
-        assert ismatarrayout(Wc)
-
+        Wc = ctrb(A, B)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
-    def testCtrbMIMO(self, matarrayin):
-        A = matarrayin([[1., 2.], [3., 4.]])
-        B = matarrayin([[5., 6.], [7., 8.]])
+    def testCtrbMIMO(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        B = np.array([[5., 6.], [7., 8.]])
         Wctrue = np.array([[5., 6., 19., 22.], [7., 8., 43., 50.]])
         Wc = ctrb(A, B)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
-        # Make sure default type values are correct
-        assert ismatarrayout(Wc)
-
-    def testObsvSISO(self, matarrayin):
-        A = matarrayin([[1., 2.], [3., 4.]])
-        C = matarrayin([[5., 7.]])
+    def testObsvSISO(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        C = np.array([[5., 7.]])
         Wotrue = np.array([[5., 7.], [26., 38.]])
         Wo = obsv(A, C)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
-        # Make sure default type values are correct
-        assert ismatarrayout(Wo)
-
-
-    def testObsvMIMO(self, matarrayin):
-        A = matarrayin([[1., 2.], [3., 4.]])
-        C = matarrayin([[5., 6.], [7., 8.]])
+    def testObsvMIMO(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        C = np.array([[5., 6.], [7., 8.]])
         Wotrue = np.array([[5., 6.], [7., 8.], [23., 34.], [31., 46.]])
         Wo = obsv(A, C)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
-    def testCtrbObsvDuality(self, matarrayin):
-        A = matarrayin([[1.2, -2.3], [3.4, -4.5]])
-        B = matarrayin([[5.8, 6.9], [8., 9.1]])
+    def testCtrbObsvDuality(self):
+        A = np.array([[1.2, -2.3], [3.4, -4.5]])
+        B = np.array([[5.8, 6.9], [8., 9.1]])
         Wc = ctrb(A, B)
         A = np.transpose(A)
         C = np.transpose(B)
@@ -85,59 +73,55 @@ class TestStatefbk:
         np.testing.assert_array_almost_equal(Wc,Wo)
 
     @slycotonly
-    def testGramWc(self, matarrayin, matarrayout):
-        A = matarrayin([[1., -2.], [3., -4.]])
-        B = matarrayin([[5., 6.], [7., 8.]])
-        C = matarrayin([[4., 5.], [6., 7.]])
-        D = matarrayin([[13., 14.], [15., 16.]])
+    def testGramWc(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5., 6.], [7., 8.]])
+        C = np.array([[4., 5.], [6., 7.]])
+        D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Wctrue = np.array([[18.5, 24.5], [24.5, 32.5]])
-
-        with check_deprecated_matrix():
-            Wc = gram(sys, 'c')
-
-        assert ismatarrayout(Wc)
+        Wc = gram(sys, 'c')
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
     @slycotonly
-    def testGramRc(self, matarrayin):
-        A = matarrayin([[1., -2.], [3., -4.]])
-        B = matarrayin([[5., 6.], [7., 8.]])
-        C = matarrayin([[4., 5.], [6., 7.]])
-        D = matarrayin([[13., 14.], [15., 16.]])
+    def testGramRc(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5., 6.], [7., 8.]])
+        C = np.array([[4., 5.], [6., 7.]])
+        D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Rctrue = np.array([[4.30116263, 5.6961343], [0., 0.23249528]])
         Rc = gram(sys, 'cf')
         np.testing.assert_array_almost_equal(Rc, Rctrue)
 
     @slycotonly
-    def testGramWo(self, matarrayin):
-        A = matarrayin([[1., -2.], [3., -4.]])
-        B = matarrayin([[5., 6.], [7., 8.]])
-        C = matarrayin([[4., 5.], [6., 7.]])
-        D = matarrayin([[13., 14.], [15., 16.]])
+    def testGramWo(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5., 6.], [7., 8.]])
+        C = np.array([[4., 5.], [6., 7.]])
+        D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Wotrue = np.array([[257.5, -94.5], [-94.5, 56.5]])
         Wo = gram(sys, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @slycotonly
-    def testGramWo2(self, matarrayin):
-        A = matarrayin([[1., -2.], [3., -4.]])
-        B = matarrayin([[5.], [7.]])
-        C = matarrayin([[6., 8.]])
-        D = matarrayin([[9.]])
+    def testGramWo2(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
+        C = np.array([[6., 8.]])
+        D = np.array([[9.]])
         sys = ss(A,B,C,D)
         Wotrue = np.array([[198., -72.], [-72., 44.]])
         Wo = gram(sys, 'o')
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     @slycotonly
-    def testGramRo(self, matarrayin):
-        A = matarrayin([[1., -2.], [3., -4.]])
-        B = matarrayin([[5., 6.], [7., 8.]])
-        C = matarrayin([[4., 5.], [6., 7.]])
-        D = matarrayin([[13., 14.], [15., 16.]])
+    def testGramRo(self):
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5., 6.], [7., 8.]])
+        C = np.array([[4., 5.], [6., 7.]])
+        D = np.array([[13., 14.], [15., 16.]])
         sys = ss(A, B, C, D)
         Rotrue = np.array([[16.04680654, -5.8890222], [0., 4.67112593]])
         Ro = gram(sys, 'of')
@@ -195,19 +179,18 @@ class TestStatefbk:
         P_placed.sort()
         np.testing.assert_array_almost_equal(P_expected, P_placed)
 
-    def testPlace(self, matarrayin):
+    def testPlace(self):
         # Matrices shamelessly stolen from scipy example code.
-        A = matarrayin([[1.380, -0.2077, 6.715, -5.676],
+        A = np.array([[1.380, -0.2077, 6.715, -5.676],
                         [-0.5814, -4.290, 0, 0.6750],
                         [1.067, 4.273, -6.654, 5.893],
                         [0.0480, 4.273, 1.343, -2.104]])
-        B = matarrayin([[0, 5.679],
+        B = np.array([[0, 5.679],
                         [1.136, 1.136],
                         [0, 0],
                         [-3.146, 0]])
-        P = matarrayin([-0.5 + 1j, -0.5 - 1j, -5.0566, -8.6659])
+        P = np.array([-0.5 + 1j, -0.5 - 1j, -5.0566, -8.6659])
         K = place(A, B, P)
-        assert ismatarrayout(K)
         P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
@@ -219,17 +202,17 @@ class TestStatefbk:
 
         # Check that we get an error if we ask for too many poles in the same
         # location. Here, rank(B) = 2, so lets place three at the same spot.
-        P_repeated = matarrayin([-0.5, -0.5, -0.5, -8.6659])
+        P_repeated = np.array([-0.5, -0.5, -0.5, -8.6659])
         with pytest.raises(ValueError):
             place(A, B, P_repeated)
 
     @slycotonly
-    def testPlace_varga_continuous(self, matarrayin):
+    def testPlace_varga_continuous(self):
         """
         Check that we can place eigenvalues for dtime=False
         """
-        A = matarrayin([[1., -2.], [3., -4.]])
-        B = matarrayin([[5.], [7.]])
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
 
         P = [-2., -2.]
         K = place_varga(A, B, P)
@@ -242,26 +225,26 @@ class TestStatefbk:
 
         # Regression test against bug #177
         # https://github.com/python-control/python-control/issues/177
-        A = matarrayin([[0, 1], [100, 0]])
-        B = matarrayin([[0], [1]])
-        P = matarrayin([-20 + 10*1j, -20 - 10*1j])
+        A = np.array([[0, 1], [100, 0]])
+        B = np.array([[0], [1]])
+        P = np.array([-20 + 10*1j, -20 - 10*1j])
         K = place_varga(A, B, P)
         P_placed = np.linalg.eigvals(A - B @ K)
         self.checkPlaced(P, P_placed)
 
 
     @slycotonly
-    def testPlace_varga_continuous_partial_eigs(self, matarrayin):
+    def testPlace_varga_continuous_partial_eigs(self):
         """
         Check that we are able to use the alpha parameter to only place
         a subset of the eigenvalues, for the continous time case.
         """
         # A matrix has eigenvalues at s=-1, and s=-2. Choose alpha = -1.5
         # and check that eigenvalue at s=-2 stays put.
-        A = matarrayin([[1., -2.], [3., -4.]])
-        B = matarrayin([[5.], [7.]])
+        A = np.array([[1., -2.], [3., -4.]])
+        B = np.array([[5.], [7.]])
 
-        P = matarrayin([-3.])
+        P = np.array([-3.])
         P_expected = np.array([-2.0, -3.0])
         alpha = -1.5
         K = place_varga(A, B, P, alpha=alpha)
@@ -271,30 +254,30 @@ class TestStatefbk:
         self.checkPlaced(P_expected, P_placed)
 
     @slycotonly
-    def testPlace_varga_discrete(self, matarrayin):
+    def testPlace_varga_discrete(self):
         """
         Check that we can place poles using dtime=True (discrete time)
         """
-        A = matarrayin([[1., 0], [0, 0.5]])
-        B = matarrayin([[5.], [7.]])
+        A = np.array([[1., 0], [0, 0.5]])
+        B = np.array([[5.], [7.]])
 
-        P = matarrayin([0.5, 0.5])
+        P = np.array([0.5, 0.5])
         K = place_varga(A, B, P, dtime=True)
         P_placed = np.linalg.eigvals(A - B @ K)
         # No guarantee of the ordering, so sort them
         self.checkPlaced(P, P_placed)
 
     @slycotonly
-    def testPlace_varga_discrete_partial_eigs(self, matarrayin):
+    def testPlace_varga_discrete_partial_eigs(self):
         """"
         Check that we can only assign a single eigenvalue in the discrete
         time case.
         """
         # A matrix has eigenvalues at 1.0 and 0.5. Set alpha = 0.51, and
         # check that the eigenvalue at 0.5 is not moved.
-        A = matarrayin([[1., 0], [0, 0.5]])
-        B = matarrayin([[5.], [7.]])
-        P = matarrayin([0.2, 0.6])
+        A = np.array([[1., 0], [0, 0.5]])
+        B = np.array([[5.], [7.]])
+        P = np.array([0.2, 0.6])
         P_expected = np.array([0.5, 0.6])
         alpha = 0.51
         K = place_varga(A, B, P, dtime=True, alpha=alpha)
@@ -302,49 +285,49 @@ class TestStatefbk:
         self.checkPlaced(P_expected, P_placed)
 
     def check_LQR(self, K, S, poles, Q, R):
-        S_expected = asmatarrayout(np.sqrt(Q @ R))
-        K_expected = asmatarrayout(S_expected / R)
+        S_expected = np.sqrt(Q @ R)
+        K_expected = S_expected / R
         poles_expected = -np.squeeze(np.asarray(K_expected))
         np.testing.assert_array_almost_equal(S, S_expected)
         np.testing.assert_array_almost_equal(K, K_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
     def check_DLQR(self, K, S, poles, Q, R):
-        S_expected = asmatarrayout(Q)
-        K_expected = asmatarrayout(0)
+        S_expected = Q
+        K_expected = 0
         poles_expected = -np.squeeze(np.asarray(K_expected))
         np.testing.assert_array_almost_equal(S, S_expected)
         np.testing.assert_array_almost_equal(K, K_expected)
         np.testing.assert_array_almost_equal(poles, poles_expected)
 
     @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
-    def test_LQR_integrator(self, matarrayin, matarrayout, method):
+    def test_LQR_integrator(self, method):
         if method == 'slycot' and not slycot_check():
             return
-        A, B, Q, R = (matarrayin([[X]]) for X in [0., 1., 10., 2.])
+        A, B, Q, R = (np.array([[X]]) for X in [0., 1., 10., 2.])
         K, S, poles = lqr(A, B, Q, R, method=method)
         self.check_LQR(K, S, poles, Q, R)
 
     @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
-    def test_LQR_3args(self, matarrayin, matarrayout, method):
+    def test_LQR_3args(self, method):
         if method == 'slycot' and not slycot_check():
             return
         sys = ss(0., 1., 1., 0.)
-        Q, R = (matarrayin([[X]]) for X in [10., 2.])
+        Q, R = (np.array([[X]]) for X in [10., 2.])
         K, S, poles = lqr(sys, Q, R, method=method)
         self.check_LQR(K, S, poles, Q, R)
 
     @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
-    def test_DLQR_3args(self, matarrayin, matarrayout, method):
+    def test_DLQR_3args(self, method):
         if method == 'slycot' and not slycot_check():
             return
         dsys = ss(0., 1., 1., 0., .1)
-        Q, R = (matarrayin([[X]]) for X in [10., 2.])
+        Q, R = (np.array([[X]]) for X in [10., 2.])
         K, S, poles = dlqr(dsys, Q, R, method=method)
         self.check_DLQR(K, S, poles, Q, R)
 
-    def test_DLQR_4args(self, matarrayin, matarrayout):
-        A, B, Q, R = (matarrayin([[X]]) for X in [0., 1., 10., 2.])
+    def test_DLQR_4args(self):
+        A, B, Q, R = (np.array([[X]]) for X in [0., 1., 10., 2.])
         K, S, poles = dlqr(A, B, Q, R)
         self.check_DLQR(K, S, poles, Q, R)
 
@@ -443,14 +426,14 @@ class TestStatefbk:
         with pytest.warns(UserWarning):
             (K, S, E) = dlqr(A, B, Q, R, N)
 
-    def test_care(self, matarrayin):
+    def test_care(self):
         """Test stabilizing and anti-stabilizing feedback, continuous"""
-        A = matarrayin(np.diag([1, -1]))
-        B = matarrayin(np.identity(2))
-        Q = matarrayin(np.identity(2))
-        R = matarrayin(np.identity(2))
-        S = matarrayin(np.zeros((2, 2)))
-        E = matarrayin(np.identity(2))
+        A = np.diag([1, -1])
+        B = np.identity(2)
+        Q = np.identity(2)
+        R = np.identity(2)
+        S = np.zeros((2, 2))
+        E = np.identity(2)
 
         X, L, G = care(A, B, Q, R, S, E, stabilizing=True)
         assert np.all(np.real(L) < 0)
@@ -465,14 +448,14 @@ class TestStatefbk:
     @pytest.mark.parametrize(
         "stabilizing",
         [True, pytest.param(False, marks=slycotonly)])
-    def test_dare(self, matarrayin, stabilizing):
+    def test_dare(self, stabilizing):
         """Test stabilizing and anti-stabilizing feedback, discrete"""
-        A = matarrayin(np.diag([0.5, 2]))
-        B = matarrayin(np.identity(2))
-        Q = matarrayin(np.identity(2))
-        R = matarrayin(np.identity(2))
-        S = matarrayin(np.zeros((2, 2)))
-        E = matarrayin(np.identity(2))
+        A = np.diag([0.5, 2])
+        B = np.identity(2)
+        Q = np.identity(2)
+        R = np.identity(2)
+        S = np.zeros((2, 2))
+        E = np.identity(2)
 
         X, L, G = dare(A, B, Q, R, S, E, stabilizing=stabilizing)
         sgn = {True: -1, False: 1}[stabilizing]

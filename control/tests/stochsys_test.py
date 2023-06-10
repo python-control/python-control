@@ -3,7 +3,6 @@
 
 import numpy as np
 import pytest
-from control.tests.conftest import asmatarrayout
 
 import control as ct
 import control.optimal as opt
@@ -12,8 +11,8 @@ from math import log, pi
 
 # Utility function to check LQE answer
 def check_LQE(L, P, poles, G, QN, RN):
-    P_expected = asmatarrayout(np.sqrt(G @ QN @ G @ RN))
-    L_expected = asmatarrayout(P_expected / RN)
+    P_expected = np.sqrt(G @ QN @ G @ RN)
+    L_expected = P_expected / RN
     poles_expected = -np.squeeze(np.asarray(L_expected))
     np.testing.assert_almost_equal(P, P_expected)
     np.testing.assert_almost_equal(L, L_expected)
@@ -21,19 +20,19 @@ def check_LQE(L, P, poles, G, QN, RN):
 
 # Utility function to check discrete LQE solutions
 def check_DLQE(L, P, poles, G, QN, RN):
-    P_expected = asmatarrayout(G.dot(QN).dot(G))
-    L_expected = asmatarrayout(0)
+    P_expected = G.dot(QN).dot(G)
+    L_expected = 0
     poles_expected = -np.squeeze(np.asarray(L_expected))
     np.testing.assert_almost_equal(P, P_expected)
     np.testing.assert_almost_equal(L, L_expected)
     np.testing.assert_almost_equal(poles, poles_expected)
 
 @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
-def test_LQE(matarrayin, method):
+def test_LQE(method):
     if method == 'slycot' and not slycot_check():
         return
 
-    A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
+    A, G, C, QN, RN = (np.array([[X]]) for X in [0., .1, 1., 10., 2.])
     L, P, poles = lqe(A, G, C, QN, RN, method=method)
     check_LQE(L, P, poles, G, QN, RN)
 
@@ -80,11 +79,11 @@ def test_lqe_call_format(cdlqe):
         L, P, E = cdlqe(sys_tf, Q, R)
 
 @pytest.mark.parametrize("method", [None, 'slycot', 'scipy'])
-def test_DLQE(matarrayin, method):
+def test_DLQE(method):
     if method == 'slycot' and not slycot_check():
         return
 
-    A, G, C, QN, RN = (matarrayin([[X]]) for X in [0., .1, 1., 10., 2.])
+    A, G, C, QN, RN = (np.array([[X]]) for X in [0., .1, 1., 10., 2.])
     L, P, poles = dlqe(A, G, C, QN, RN, method=method)
     check_DLQE(L, P, poles, G, QN, RN)
 

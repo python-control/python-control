@@ -33,7 +33,6 @@ jobs:
     - name: Run doctest
       shell: bash -l {0}
       env:
-        PYTHON_CONTROL_ARRAY_AND_MATRIX: ${{ matrix.array-and-matrix }}
         MPLBACKEND: ${{ matrix.mplbackend }}
       working-directory: doc
       run: |
