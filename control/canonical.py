@@ -450,9 +450,7 @@ def bdschur(a, condmax=None, sort=None):
         aschur, tschur, condmax)
 
     if sort in ('continuous', 'discrete'):
-
         idxs = np.cumsum(np.hstack([0, blksizes[:-1]]))
-
         ev_per_blk = [complex(eigvals[i].real, abs(eigvals[i].imag))
                       for i in idxs]
 
@@ -470,7 +468,7 @@ def bdschur(a, condmax=None, sort=None):
         permidx = np.hstack([blkidxs[i] for i in sortidx])
         rperm = np.eye(amodal.shape[0])[permidx]
 
-        tmodal = tmodal @ rperm
+        tmodal = tmodal @ rperm.T
         amodal = rperm @ amodal @ rperm.T
         blksizes = blksizes[sortidx]
 
