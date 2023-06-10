@@ -2002,3 +2002,41 @@ def linfnorm(sys, tol=1e-10):
         fpeak /= sys.dt
 
     return gpeak, fpeak
+
+def discrete2cont(sys, method='zoh'):
+    """ Transform a discrete state-space system to a continuous state-space system.
+    Parameters
+	------
+	sys : Discrete LTI (StateSpace or TransferFunction) system to transform
+	method: The method that was used for discretization
+
+	Returns
+	------
+	sysc : Continuous LIT (StateSpace or TransferFunction) system depending on the input form.
+    """
+    # check if system is of type state space and convert if not
+    #if sys.	
+    
+    if not(isinstance(sys, StateSpace)):
+	    sys = convert_to_statespace(sys)
+	    was_tf = true
+    if method == 'zoh':
+        Ac = scipy.linalg.logm(sys.A)/sys.dt
+        Bc = np.linalg.inv(np.linalg.inv(Ac)@(sys.A-np.eye(np.shape(sys.A)[0])))@sys.B
+		
+        # remove small  numbers
+        Ac = np.around(Ac/1e-6)*1e-6
+        Bc = np.around(Bc/1e-6)*1e-6
+        
+        # turn -0 to 0
+        Ac[np.abs(Ac)<1e-6] = 0
+        Bc[np.abs(Bc)<1e-6] = 0
+		
+        sysc = StateSpace(Ac,Bc,sys.C,sys.D,0)
+    else:
+        raise NotImplementedError("Method: " + method + " is not implemented in this function!")
+
+    if was_tf:
+        sysc = ss2tf(sysc)	
+		
+    return sysc
