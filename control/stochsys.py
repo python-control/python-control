@@ -87,9 +87,9 @@ def lqe(*args, **kwargs):
 
     Returns
     -------
-    L : 2D array (or matrix)
+    L : 2D array
         Kalman estimator gain
-    P : 2D array (or matrix)
+    P : 2D array
         Solution to Riccati equation
 
         .. math::
@@ -221,9 +221,9 @@ def dlqe(*args, **kwargs):
 
     Returns
     -------
-    L : 2D array (or matrix)
+    L : 2D array
         Kalman estimator gain
-    P : 2D array (or matrix)
+    P : 2D array
         Solution to Riccati equation
 
         .. math::

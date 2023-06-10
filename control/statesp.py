@@ -453,10 +453,6 @@ class StateSpace(LTI):
         """
 
         # Search for useless states and get indices of these states.
-        #
-        # Note: shape from np.where depends on whether we are storing state
-        # space objects as np.matrix or np.array.  Code below will work
-        # correctly in either case.
         ax1_A = np.where(~self.A.any(axis=1))[0]
         ax1_B = np.where(~self.B.any(axis=1))[0]
         ax0_A = np.where(~self.A.any(axis=0))[-1]
@@ -488,12 +484,11 @@ class StateSpace(LTI):
         return string
 
     # represent to implement a re-loadable version
-    # TODO: remove the conversion to array when matrix is no longer used
     def __repr__(self):
         """Print state-space system in loadable form."""
         return "StateSpace({A}, {B}, {C}, {D}{dt})".format(
-            A=asarray(self.A).__repr__(), B=asarray(self.B).__repr__(),
-            C=asarray(self.C).__repr__(), D=asarray(self.D).__repr__(),
+            A=self.A.__repr__(), B=self.B.__repr__(),
+            C=self.C.__repr__(), D=self.D.__repr__(),
             dt=(isdtime(self, strict=True) and ", {}".format(self.dt)) or '')
 
     def _latex_partitioned_stateless(self):

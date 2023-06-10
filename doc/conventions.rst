@@ -303,9 +303,6 @@ Selected variables that can be configured, along with their default values:
   * freqplot.feature_periphery_decade (1.0): How many decades to include in
     the frequency range on both sides of features (poles, zeros).
 
-  * statesp.use_numpy_matrix (True): set the return type for state space
-    matrices to `numpy.matrix` (verus numpy.ndarray)
-
   * statesp.default_dt and xferfcn.default_dt (None): set the default value
     of dt when constructing new LTI systems
 
@@ -322,5 +319,4 @@ Functions that can be used to set standard configurations:
     reset_defaults
     use_fbs_defaults
     use_matlab_defaults
-    use_numpy_matrix
     use_legacy_defaults

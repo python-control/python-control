@@ -202,7 +202,6 @@ def use_matlab_defaults():
     The following conventions are used:
         * Bode plots plot gain in dB, phase in degrees, frequency in
           rad/sec, with grids
-        * State space class and functions use Numpy matrix objects
 
     Examples
     --------
