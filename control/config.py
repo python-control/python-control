@@ -123,8 +123,8 @@ def reset_defaults():
     from .sisotool import _sisotool_defaults
     defaults.update(_sisotool_defaults)
 
-    from .iosys import _namedio_defaults
-    defaults.update(_namedio_defaults)
+    from .iosys import _iosys_defaults
+    defaults.update(_iosys_defaults)
 
     from .xferfcn import _xferfcn_defaults
     defaults.update(_xferfcn_defaults)
@@ -300,7 +300,7 @@ def use_legacy_defaults(version):
         set_defaults('control', default_dt=None)
 
         # changed iosys naming conventions
-        set_defaults('namedio', state_name_delim='.',
+        set_defaults('iosys', state_name_delim='.',
                      duplicate_system_name_prefix='copy of ',
                      duplicate_system_name_suffix='',
                      linearized_system_name_prefix='',

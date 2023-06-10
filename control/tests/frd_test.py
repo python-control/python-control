@@ -492,7 +492,7 @@ Freq [rad/s]  Response
 
 
 def test_named_signals():
-    ct.iosys.NamedIOSystem._idCounter = 0
+    ct.iosys.InputOutputSystem._idCounter = 0
     h1 = TransferFunction([1], [1, 2, 2])
     h2 = TransferFunction([1], [0.1, 1])
     omega = np.logspace(-1, 2, 10)

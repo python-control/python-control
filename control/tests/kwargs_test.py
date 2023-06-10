@@ -100,8 +100,8 @@ def test_kwarg_search(module, prefix):
      (control.zpk, 0, 0, ([1], [2, 3], 4), {}),
      (control.InputOutputSystem, 0, 0, (),
       {'inputs': 1, 'outputs': 1, 'states': 1}),
-     (control.InputOutputSystem.linearize, 1, 0, (0, 0), {}),
-     (control.LinearIOSystem.sample, 1, 0, (0.1,), {}),
+     (control.NonlinearIOSystem.linearize, 1, 0, (0, 0), {}),
+     (control.StateSpace.sample, 1, 0, (0.1,), {}),
      (control.StateSpace, 0, 0,
       ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
      (control.TransferFunction, 0, 0, ([1], [1, 1]), {})]
@@ -202,12 +202,12 @@ kwarg_unittest = {
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
-    'InputOutputSystem.linearize': test_unrecognized_kwargs,
+    'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
-    'LinearIOSystem.__init__':
+    'StateSpace.__init__':
         interconnect_test.test_interconnect_exceptions,
-    'LinearIOSystem.sample': test_unrecognized_kwargs,
+    'StateSpace.sample': test_unrecognized_kwargs,
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
@@ -240,7 +240,7 @@ mutable_ok = {                                          # initial and date
     control.flatsys.SystemTrajectory.__init__,          # RMM, 18 Nov 2022
     control.freqplot._add_arrows_to_line2D,             # RMM, 18 Nov 2022
     control.iosys._process_dt_keyword,                # RMM, 13 Nov 2022
-    control.iosys._process_namedio_keywords,          # RMM, 18 Nov 2022
+    control.iosys._process_iosys_keywords,          # RMM, 18 Nov 2022
 }
 
 @pytest.mark.parametrize("module", [control, control.flatsys])

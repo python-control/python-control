@@ -17,7 +17,7 @@ def sys_dict():
     sdict['tf'] = ct.TransferFunction([1],[0.5, 1])
     sdict['tfx'] = ct.TransferFunction([1, 1], [1]) # non-proper TF
     sdict['frd'] = ct.frd([10+0j, 9 + 1j, 8 + 2j, 7 + 3j], [1, 2, 3, 4])
-    sdict['lio'] = ct.LinearIOSystem(ct.ss([[-1]], [[5]], [[5]], [[0]]))
+    sdict['lio'] = ct.StateSpace(ct.ss([[-1]], [[5]], [[5]], [[0]]))
     sdict['ios'] = ct.NonlinearIOSystem(
         lambda t, x, u, params: sdict['lio']._rhs(t, x, u),
         lambda t, x, u, params: sdict['lio']._out(t, x, u),
@@ -46,7 +46,7 @@ type_dict = {
 # implemented properly).
 #
 # Note 1: some of the entries below are currently converted to to lower level
-# types than needed.  In particular, LinearIOSystems should combine with
+# types than needed.  In particular, StateSpaces should combine with
 # StateSpace and TransferFunctions in a way that preserves I/O system
 # structure when possible.
 #
@@ -62,7 +62,7 @@ rtype_list =           ['ss',  'tf', 'frd', 'lio', 'ios', 'arr', 'flt']
 conversion_table = [
     # op        left     ss     tf    frd    lio    ios    arr    flt
     ('add',     'ss',  ['ss',  'ss',  'frd', 'lio', 'ios', 'ss',  'ss' ]),
-    ('add',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
+    ('add',     'tf',  ['ss',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('add',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('add',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
     ('add',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios', 'ios']),
@@ -71,7 +71,7 @@ conversion_table = [
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
     ('sub',     'ss',  ['ss',  'ss',  'frd', 'lio', 'ios', 'ss',  'ss' ]),
-    ('sub',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
+    ('sub',     'tf',  ['ss',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('sub',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('sub',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
     ('sub',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios', 'ios']),
@@ -80,7 +80,7 @@ conversion_table = [
     
     # op        left     ss     tf    frd    lio    ios    arr    flt
     ('mul',     'ss',  ['ss',  'ss',  'frd', 'lio', 'ios', 'ss',  'ss' ]),
-    ('mul',     'tf',  ['tf',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
+    ('mul',     'tf',  ['ss',  'tf',  'frd', 'lio', 'ios', 'tf',  'tf' ]),
     ('mul',     'frd', ['frd', 'frd', 'frd', 'frd', 'E',   'frd', 'frd']),
     ('mul',     'lio', ['lio', 'lio', 'xrd', 'lio', 'ios', 'lio', 'lio']),
     ('mul',     'ios', ['ios', 'ios', 'E',   'ios', 'ios', 'ios', 'ios']),
@@ -109,8 +109,8 @@ def test_operator_type_conversion(opname, ltype, rtype, expected, sys_dict):
     leftsys = sys_dict[ltype]
     rightsys = sys_dict[rtype]
 
-    # Get rid of warnings for InputOutputSystem objects by making a copy
-    if isinstance(leftsys, ct.InputOutputSystem) and leftsys == rightsys:
+    # Get rid of warnings for NonlinearIOSystem objects by making a copy
+    if isinstance(leftsys, ct.NonlinearIOSystem) and leftsys == rightsys:
         rightsys = leftsys.copy()
             
     # Make sure we get the right result
@@ -172,8 +172,8 @@ def test_binary_op_type_conversions(opname, ltype, rtype, sys_dict):
     expected = \
         conversion_table[type_list.index(ltype)][1][type_list.index(rtype)]
 
-    # Get rid of warnings for InputOutputSystem objects by making a copy
-    if isinstance(leftsys, ct.InputOutputSystem) and leftsys == rightsys:
+    # Get rid of warnings for NonlinearIOSystem objects by making a copy
+    if isinstance(leftsys, ct.NonlinearIOSystem) and leftsys == rightsys:
         rightsys = leftsys.copy()
 
     # Make sure we get the right result

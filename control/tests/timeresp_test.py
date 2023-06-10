@@ -1070,8 +1070,8 @@ class TestTimeresp:
             # Shape should be squeezed
             assert yvec.shape == (8, )
 
-        # For InputOutputSystems, also test input/output response
-        if isinstance(sys, ct.InputOutputSystem):
+        # For NonlinearIOSystem, also test input/output response
+        if isinstance(sys, ct.NonlinearIOSystem):
             _, yvec = ct.input_output_response(sys, tvec, uvec, squeeze=squeeze)
             assert yvec.shape == shape2
 
@@ -1101,8 +1101,8 @@ class TestTimeresp:
         if squeeze is not True or sys.noutputs > 1:
             assert yvec.shape == (sys.noutputs, 8)
 
-        # For InputOutputSystems, also test input_output_response
-        if isinstance(sys, ct.InputOutputSystem):
+        # For NonlinearIOSystems, also test input_output_response
+        if isinstance(sys, ct.NonlinearIOSystem):
             _, yvec = ct.input_output_response(sys, tvec, uvec)
             if squeeze is not True or sys.noutputs > 1:
                 assert yvec.shape == (sys.noutputs, 8)

@@ -60,7 +60,7 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, _process_frequency_response
-from .iosys import common_timebase, isdtime, _process_namedio_keywords
+from .iosys import common_timebase, isdtime, _process_iosys_keywords
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from . import config
@@ -159,7 +159,7 @@ class TransferFunction(LTI):
     """
 
     # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
-    __array_priority__ = 11     # override ndarray and matrix types
+    __array_priority__ = 11     # override ndarray types
 
     def __init__(self, *args, **kwargs):
         """TransferFunction(num, den[, dt])
@@ -232,13 +232,13 @@ class TransferFunction(LTI):
         defaults = args[0] if len(args) == 1 else \
             {'inputs': len(num[0]), 'outputs': len(num)}
 
-        name, inputs, outputs, states, dt = _process_namedio_keywords(
+        name, inputs, outputs, states, dt = _process_iosys_keywords(
                 kwargs, defaults, static=static, end=True)
         if states:
             raise TypeError(
                 "states keyword not allowed for transfer functions")
 
-        # Initialize LTI (NamedIOSystem) object
+        # Initialize LTI (InputOutputSystem) object
         super().__init__(
             name=name, inputs=inputs, outputs=outputs, dt=dt)
 
@@ -806,8 +806,8 @@ class TransferFunction(LTI):
         inputs = [self.input_labels[j] for j in range(start2, stop2, step2)]
 
         # Create the system name
-        sysname = config.defaults['namedio.indexed_system_name_prefix'] + \
-            self.name + config.defaults['namedio.indexed_system_name_suffix']
+        sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
+            self.name + config.defaults['iosys.indexed_system_name_suffix']
 
         return TransferFunction(
             num, den, self.dt, inputs=inputs, outputs=outputs, name=sysname)
@@ -1158,8 +1158,8 @@ class TransferFunction(LTI):
             if `copy_names` is `False`, a generic name <sys[id]> is generated
             with a unique integer id.  If `copy_names` is `True`, the new system
             name is determined by adding the prefix and suffix strings in
-            config.defaults['namedio.sampled_system_name_prefix'] and
-            config.defaults['namedio.sampled_system_name_suffix'], with the
+            config.defaults['iosys.sampled_system_name_prefix'] and
+            config.defaults['iosys.sampled_system_name_suffix'], with the
             default being to add the suffix '$sampled'.
         copy_names : bool, Optional
             If True, copy the names of the input signals, output

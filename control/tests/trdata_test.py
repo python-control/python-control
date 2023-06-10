@@ -220,7 +220,7 @@ def test_response_copy():
 def test_trdata_labels():
     # Create an I/O system with labels
     sys = ct.rss(4, 3, 2)
-    iosys = ct.LinearIOSystem(sys)
+    iosys = ct.StateSpace(sys)
 
     T = np.linspace(1, 10, 10)
     U = [np.sin(T), np.cos(T)]

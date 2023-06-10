@@ -20,13 +20,13 @@ import numpy as np
 import scipy as sp
 from math import sqrt
 
-from .nlsys import InputOutputSystem, NonlinearIOSystem
+from .statesp import StateSpace
 from .lti import LTI
-from .iosys import isctime, isdtime
-from .iosys import _process_indices, _process_labels, \
-    _process_control_disturbance_indices
+from .iosys import InputOutputSystem, isctime, isdtime, _process_indices, \
+    _process_labels, _process_control_disturbance_indices
+from .nlsys import NonlinearIOSystem
 from .mateqn import care, dare, _check_shape
-from .statesp import StateSpace, LinearIOSystem, _ssmatrix
+from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
 from .config import _process_legacy_keyword
 
@@ -342,7 +342,7 @@ def create_estimator_iosystem(
 
     Parameters
     ----------
-    sys : LinearIOSystem
+    sys : StateSpace
         The linear I/O system that represents the process dynamics.
     QN, RN : ndarray
         Disturbance and measurement noise covariance matrices.
@@ -431,7 +431,7 @@ def create_estimator_iosystem(
     """
 
     # Make sure that we were passed an I/O system as an input
-    if not isinstance(sys, LinearIOSystem):
+    if not isinstance(sys, StateSpace):
         raise ControlArgument("Input system must be a linear I/O system")
 
     # Process legacy keywords

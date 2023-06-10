@@ -170,9 +170,9 @@ def test_interconnect_docstring():
     """Test the examples from the interconnect() docstring"""
 
     # MIMO interconnection (note: use [C, P] instead of [P, C] for state order)
-    P = ct.LinearIOSystem(
+    P = ct.StateSpace(
            ct.rss(2, 2, 2, strictly_proper=True), name='P')
-    C = ct.LinearIOSystem(ct.rss(2, 2, 2), name='C')
+    C = ct.StateSpace(ct.rss(2, 2, 2), name='C')
     T = ct.interconnect(
         [C, P],
         connections = [
@@ -208,9 +208,9 @@ def test_interconnect_exceptions():
     assert (T.ninputs, T.noutputs, T.nstates) == (1, 1, 2)
 
     # Unrecognized arguments
-    # LinearIOSystem
+    # StateSpace
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        P = ct.LinearIOSystem(ct.rss(2, 1, 1), output_name='y')
+        P = ct.StateSpace(ct.rss(2, 1, 1), output_name='y')
 
     # Interconnect
     with pytest.raises(TypeError, match="unrecognized keyword"):
@@ -236,9 +236,9 @@ def test_interconnect_exceptions():
 def test_string_inputoutput():
     # regression test for gh-692
     P1 = ct.rss(2, 1, 1)
-    P1_iosys = ct.LinearIOSystem(P1, inputs='u1', outputs='y1')
+    P1_iosys = ct.StateSpace(P1, inputs='u1', outputs='y1')
     P2 = ct.rss(2, 1, 1)
-    P2_iosys = ct.LinearIOSystem(P2, inputs='y1', outputs='y2')
+    P2_iosys = ct.StateSpace(P2, inputs='y1', outputs='y2')
 
     P_s1 = ct.interconnect(
         [P1_iosys, P2_iosys], inputs='u1', outputs=['y2'], debug=True)
@@ -274,30 +274,30 @@ def test_linear_interconnect():
     # Interconnections of linear I/O systems should be linear I/O system
     assert isinstance(
         ct.interconnect([tf_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert isinstance(
         ct.interconnect([ss_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert isinstance(
         ct.interconnect([tf_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert isinstance(
         ct.interconnect([ss_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
 
     # Interconnections with nonliner I/O systems should not be linear
     assert ~isinstance(
         ct.interconnect([nl_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert ~isinstance(
         ct.interconnect([nl_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert ~isinstance(
         ct.interconnect([ss_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert ~isinstance(
         ct.interconnect([tf_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
 
     # Implicit converstion of transfer function should retain name
     clsys = ct.interconnect(

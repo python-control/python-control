@@ -1,7 +1,7 @@
-# namedio.py - named I/O system class and helper functions
+# iosys.py - I/O system class and helper functions
 # RMM, 13 Mar 2022
 #
-# This file implements the NamedIOSystem class, which is used as a parent
+# This file implements the InputOutputSystem class, which is used as a parent
 # class for FrequencyResponseData, InputOutputSystem, LTI, TimeResponseData,
 # and other similar classes to allow naming of signals.
 
@@ -11,26 +11,105 @@ from warnings import warn
 import re
 from . import config
 
-__all__ = ['issiso', 'timebase', 'common_timebase', 'timebaseEqual',
-           'isdtime', 'isctime']
+__all__ = ['InputOutputSystem', 'issiso', 'timebase', 'common_timebase',
+           'timebaseEqual', 'isdtime', 'isctime']
 
 # Define module default parameter values
-_namedio_defaults = {
-    'namedio.state_name_delim': '_',
-    'namedio.duplicate_system_name_prefix': '',
-    'namedio.duplicate_system_name_suffix': '$copy',
-    'namedio.linearized_system_name_prefix': '',
-    'namedio.linearized_system_name_suffix': '$linearized',
-    'namedio.sampled_system_name_prefix': '',
-    'namedio.sampled_system_name_suffix': '$sampled',
-    'namedio.indexed_system_name_prefix': '',
-    'namedio.indexed_system_name_suffix': '$indexed',
-    'namedio.converted_system_name_prefix': '',
-    'namedio.converted_system_name_suffix': '$converted',
+_iosys_defaults = {
+    'iosys.state_name_delim': '_',
+    'iosys.duplicate_system_name_prefix': '',
+    'iosys.duplicate_system_name_suffix': '$copy',
+    'iosys.linearized_system_name_prefix': '',
+    'iosys.linearized_system_name_suffix': '$linearized',
+    'iosys.sampled_system_name_prefix': '',
+    'iosys.sampled_system_name_suffix': '$sampled',
+    'iosys.indexed_system_name_prefix': '',
+    'iosys.indexed_system_name_suffix': '$indexed',
+    'iosys.converted_system_name_prefix': '',
+    'iosys.converted_system_name_suffix': '$converted',
 }
 
 
-class NamedIOSystem(object):
+class InputOutputSystem(object):
+    """A class for representing input/output systems.
+
+    The InputOutputSystem class allows (possibly nonlinear) input/output
+    systems to be represented in Python.  It is used as a parent class for
+    a set of subclasses that are used to implement specific structures and
+    operations for different types of input/output dynamical systems.
+
+    Parameters
+    ----------
+    inputs : int, list of str, or None
+        Description of the system inputs.  This can be given as an integer
+        count or a list of strings that name the individual signals.  If an
+        integer count is specified, the names of the signal will be of the
+        form `s[i]` (where `s` is given by the `input_prefix` parameter and
+        has default value 'u').  If this parameter is not given or given as
+        `None`, the relevant quantity will be determined when possible
+        based on other information provided to functions using the system.
+    outputs : int, list of str, or None
+        Description of the system outputs.  Same format as `inputs`, with
+        the prefix given by output_prefix (defaults to 'y').
+    states : int, list of str, or None
+        Description of the system states.  Same format as `inputs`, with
+        the prefix given by state_prefix (defaults to 'x').
+    dt : None, True or float, optional
+        System timebase. 0 (default) indicates continuous time, True
+        indicates discrete time with unspecified sampling time, positive
+        number is discrete time with specified sampling time, None indicates
+        unspecified timebase (either continuous or discrete time).
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a generic
+        name <sys[id]> is generated with a unique integer id.
+    params : dict, optional
+        Parameter values for the system.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
+
+    Attributes
+    ----------
+    ninputs, noutputs, nstates : int
+        Number of input, output and state variables
+    input_index, output_index, state_index : dict
+        Dictionary of signal names for the inputs, outputs and states and the
+        index of the corresponding array
+    dt : None, True or float
+        System timebase. 0 (default) indicates continuous time, True indicates
+        discrete time with unspecified sampling time, positive number is
+        discrete time with specified sampling time, None indicates unspecified
+        timebase (either continuous or discrete time).
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation functions
+        for the system as default values, overriding internal defaults.
+    name : string, optional
+        System name (used for specifying signals)
+
+    Other Parameters
+    ----------------
+    input_prefix : string, optional
+        Set the prefix for input signals.  Default = 'u'.
+    output_prefix : string, optional
+        Set the prefix for output signals.  Default = 'y'.
+    state_prefix : string, optional
+        Set the prefix for state signals.  Default = 'x'.
+
+    Notes
+    -----
+    The :class:`~control.InputOuputSystem` class (and its subclasses) makes
+    use of two special methods for implementing much of the work of the class:
+
+    * _rhs(t, x, u): compute the right hand side of the differential or
+      difference equation for the system.  This must be specified by the
+      subclass for the system.
+
+    * _out(t, x, u): compute the output for the current state of the system.
+      The default is to return the entire system state.
+
+    """
+
+    # Allow ndarray * InputOutputSystem to give IOSystem._rmul_() priority
+    __array_priority__ = 13     # override ndarray, SS, TF types
+
     def __init__(
             self, name=None, inputs=None, outputs=None, states=None,
             input_prefix='u', output_prefix='y', state_prefix='x', **kwargs):
@@ -58,15 +137,15 @@ class NamedIOSystem(object):
     # Return system name
     def _name_or_default(self, name=None, prefix_suffix_name=None):
         if name is None:
-            name = "sys[{}]".format(NamedIOSystem._idCounter)
-            NamedIOSystem._idCounter += 1
+            name = "sys[{}]".format(InputOutputSystem._idCounter)
+            InputOutputSystem._idCounter += 1
         elif re.match(r".*\..*", name):
             raise ValueError(f"invalid system name '{name}' ('.' not allowed)")
 
         prefix = "" if prefix_suffix_name is None else config.defaults[
-            'namedio.' + prefix_suffix_name + '_system_name_prefix']
+            'iosys.' + prefix_suffix_name + '_system_name_prefix']
         suffix = "" if prefix_suffix_name is None else config.defaults[
-            'namedio.' + prefix_suffix_name + '_system_name_suffix']
+            'iosys.' + prefix_suffix_name + '_system_name_suffix']
         return prefix + name + suffix
 
     # Check if system name is generic
@@ -151,10 +230,10 @@ class NamedIOSystem(object):
         # Figure out the system name and assign it
         if prefix == "" and prefix_suffix_name is not None:
             prefix = config.defaults[
-                'namedio.' + prefix_suffix_name + '_system_name_prefix']
+                'iosys.' + prefix_suffix_name + '_system_name_prefix']
         if suffix == "" and prefix_suffix_name is not None:
             suffix = config.defaults[
-                'namedio.' + prefix_suffix_name + '_system_name_suffix']
+                'iosys.' + prefix_suffix_name + '_system_name_suffix']
         self.name = prefix + sys.name + suffix
 
         # Name the inputs, outputs, and states
@@ -170,8 +249,8 @@ class NamedIOSystem(object):
         A copy of the system is made, with a new name.  The `name` keyword
         can be used to specify a specific name for the system.  If no name
         is given and `use_prefix_suffix` is True, the name is constructed
-        by prepending config.defaults['namedio.duplicate_system_name_prefix']
-        and appending config.defaults['namedio.duplicate_system_name_suffix'].
+        by prepending config.defaults['iosys.duplicate_system_name_prefix']
+        and appending config.defaults['iosys.duplicate_system_name_suffix'].
         Otherwise, a generic system name of the form `sys[<id>]` is used,
         where `<id>` is based on an internal counter.
 
@@ -346,7 +425,7 @@ def issiso(sys, strict=False):
     """
     if isinstance(sys, (int, float, complex, np.number)) and not strict:
         return True
-    elif not isinstance(sys, NamedIOSystem):
+    elif not isinstance(sys, InputOutputSystem):
         raise ValueError("Object is not an I/O or LTI system")
 
     # Done with the tricky stuff...
@@ -364,7 +443,7 @@ def timebase(sys, strict=True):
     # System needs to be either a constant or an I/O or LTI system
     if isinstance(sys, (int, float, complex, np.number)):
         return None
-    elif not isinstance(sys, NamedIOSystem):
+    elif not isinstance(sys, InputOutputSystem):
         raise ValueError("Timebase not defined")
 
     # Return the sample time, with converstion to float if strict is false
@@ -469,7 +548,7 @@ def isdtime(sys, strict=False):
         return True if not strict else False
 
     # Check for a transfer function or state-space object
-    if isinstance(sys, NamedIOSystem):
+    if isinstance(sys, InputOutputSystem):
         return sys.isdtime(strict)
 
     # Check to see if object has a dt object
@@ -503,7 +582,7 @@ def isctime(sys, strict=False):
         return True if not strict else False
 
     # Check for a transfer function or state space object
-    if isinstance(sys, NamedIOSystem):
+    if isinstance(sys, InputOutputSystem):
         return sys.isctime(strict)
 
     # Check to see if object has a dt object
@@ -518,14 +597,14 @@ def isctime(sys, strict=False):
 
 
 # Utility function to parse nameio keywords
-def _process_namedio_keywords(
+def _process_iosys_keywords(
         keywords={}, defaults={}, static=False, end=False):
-    """Process namedio specification
+    """Process iosys specification
 
     This function processes the standard keywords used in initializing a named
     I/O system.  It first looks in the `keyword` dictionary to see if a value
     is specified.  If not, the `default` dictionary is used.  The `default`
-    dictionary can also be set to a NamedIOSystem object, which is useful for
+    dictionary can also be set to a InputOutputSystem object, which is useful for
     copy constructors that change system and signal names.
 
     If `end` is True, then generate an error if there are any remaining
@@ -533,7 +612,7 @@ def _process_namedio_keywords(
 
     """
     # If default is a system, redefine as a dictionary
-    if isinstance(defaults, NamedIOSystem):
+    if isinstance(defaults, InputOutputSystem):
         sys = defaults
         defaults = {
             'name': sys.name, 'inputs': sys.input_labels,
@@ -680,7 +759,7 @@ def _process_indices(arg, name, labels, length):
     if isinstance(arg, int):
         # Return the start or end of the list of possible indices
         return list(range(arg)) if arg > 0 else list(range(length))[arg:]
-
+    
     elif isinstance(arg, slice):
         # Return the indices referenced by the slice
         return list(range(length))[arg]
@@ -754,7 +833,6 @@ def _process_labels(labels, name, default):
         raise ValueError(f"{name}_labels should be a string or a list")
 
     return labels
-
 
 #
 # Utility function for parsing input/output specifications
@@ -861,3 +939,19 @@ def _parse_spec(syslist, spec, signame, dictname=None):
             ValueError(f"signal index '{index}' is out of range")
 
     return system_index, signal_indices, gain
+
+# Utility function for creating an I/O system from a scalar or array
+def _convert_static_iosystem(K, noutputs=1):
+    if isinstance(sys1, NonlinearIOSystem):
+        return sys              # no action required
+    elif isinstance(K, (int, float, np.number)):
+        return NonlinearIOSystem(
+            None, lambda t, x, u, params: K * u,
+            outputs=noutputs, inputs=noutputs)
+    elif isinstance(K, np.ndarray):
+        # Assume that K is the right shape
+        return NonlinearIOSystem(
+            None, lambda t, x, u, params: K @ u,
+            outputs=K.shape[0], inputs=K.shape[1])
+    
+    raise TypeError("Unknown I/O system object ", sys1)

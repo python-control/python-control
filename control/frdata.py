@@ -54,7 +54,7 @@ from scipy.interpolate import splprep, splev
 
 from .lti import LTI, _process_frequency_response
 from .exception import pandas_check
-from .iosys import NamedIOSystem, _process_namedio_keywords
+from .iosys import InputOutputSystem, _process_iosys_keywords
 from . import config
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -212,14 +212,14 @@ class FrequencyResponseData(LTI):
         if self.squeeze not in (None, True, False):
             raise ValueError("unknown squeeze value")
 
-        # Process namedio keywords
+        # Process iosys keywords
         defaults = {
             'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0]}
-        name, inputs, outputs, states, dt = _process_namedio_keywords(
+        name, inputs, outputs, states, dt = _process_iosys_keywords(
                 kwargs, defaults, end=True)
 
         # Process signal names
-        NamedIOSystem.__init__(
+        InputOutputSystem.__init__(
             self, name=name, inputs=inputs, outputs=outputs, dt=dt)
 
         # create interpolation functions

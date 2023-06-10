@@ -310,7 +310,7 @@ class TestConfig:
 
         # Reset the format
         ct.config.set_defaults(
-            'namedio', indexed_system_name_prefix='PRE',
+            'iosys', indexed_system_name_prefix='PRE',
             indexed_system_name_suffix='POST')
         sys2 = sys[1:, 1:]
         assert sys2.name == 'PRE' + sys.name + 'POST'

@@ -1,4 +1,4 @@
-"""namedio_test.py - test named input/output object operations
+"""iosys_test.py - test named input/output object operations
 
 RMM, 13 Mar 2022
 
@@ -28,45 +28,45 @@ def test_named_ss():
     A, B, C, D = sys.A, sys.B, sys.C, sys.D
 
     # Set up a named state space systems with default names
-    ct.iosys.NamedIOSystem._idCounter = 0
+    ct.InputOutputSystem._idCounter = 0
     sys = ct.ss(A, B, C, D)
     assert sys.name == 'sys[0]'
     assert sys.input_labels == ['u[0]', 'u[1]']
     assert sys.output_labels == ['y[0]', 'y[1]']
     assert sys.state_labels == ['x[0]', 'x[1]']
     assert repr(sys) == \
-        "<LinearIOSystem:sys[0]:['u[0]', 'u[1]']->['y[0]', 'y[1]']>"
+        "<StateSpace:sys[0]:['u[0]', 'u[1]']->['y[0]', 'y[1]']>"
 
     # Pass the names as arguments
     sys = ct.ss(
         A, B, C, D, name='system',
         inputs=['u1', 'u2'], outputs=['y1', 'y2'], states=['x1', 'x2'])
     assert sys.name == 'system'
-    assert ct.iosys.NamedIOSystem._idCounter == 1
+    assert ct.InputOutputSystem._idCounter == 1
     assert sys.input_labels == ['u1', 'u2']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2']
     assert repr(sys) == \
-        "<LinearIOSystem:system:['u1', 'u2']->['y1', 'y2']>"
+        "<StateSpace:system:['u1', 'u2']->['y1', 'y2']>"
 
     # Do the same with rss
     sys = ct.rss(['x1', 'x2', 'x3'], ['y1', 'y2'], 'u1', name='random')
     assert sys.name == 'random'
-    assert ct.iosys.NamedIOSystem._idCounter == 1
+    assert ct.InputOutputSystem._idCounter == 1
     assert sys.input_labels == ['u1']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2', 'x3']
     assert repr(sys) == \
-        "<LinearIOSystem:random:['u1']->['y1', 'y2']>"
+        "<StateSpace:random:['u1']->['y1', 'y2']>"
 
 
 # List of classes that are expected
 fun_instance = {
-    ct.rss: (ct.InputOutputSystem, ct.LinearIOSystem, ct.StateSpace),
-    ct.drss: (ct.InputOutputSystem, ct.LinearIOSystem, ct.StateSpace),
+    ct.rss: (ct.NonlinearIOSystem, ct.StateSpace, ct.StateSpace),
+    ct.drss: (ct.NonlinearIOSystem, ct.StateSpace, ct.StateSpace),
     ct.FRD: (ct.lti.LTI),
     ct.NonlinearIOSystem: (ct.InputOutputSystem),
-    ct.ss: (ct.InputOutputSystem, ct.LinearIOSystem, ct.StateSpace),
+    ct.ss: (ct.NonlinearIOSystem, ct.StateSpace, ct.StateSpace),
     ct.StateSpace: (ct.StateSpace),
     ct.tf: (ct.TransferFunction),
     ct.TransferFunction: (ct.TransferFunction),
@@ -74,9 +74,9 @@ fun_instance = {
 
 # List of classes that are not expected
 fun_notinstance = {
-    ct.FRD: (ct.InputOutputSystem, ct.LinearIOSystem, ct.StateSpace),
-    ct.StateSpace: (ct.InputOutputSystem, ct.TransferFunction),
-    ct.TransferFunction: (ct.InputOutputSystem, ct.StateSpace),
+    ct.FRD: (ct.NonlinearIOSystem, ct.StateSpace, ct.StateSpace),
+    ct.StateSpace: (ct.TransferFunction),
+    ct.TransferFunction: (ct.NonlinearIOSystem, ct.StateSpace),
 }
 
 
@@ -98,7 +98,7 @@ fun_notinstance = {
 ])
 def test_io_naming(fun, args, kwargs):
     # Reset the ID counter to get uniform generic names
-    ct.iosys.NamedIOSystem._idCounter = 0
+    ct.InputOutputSystem._idCounter = 0
 
     # Create the system w/out any names
     sys_g = fun(*args, **kwargs)
@@ -201,18 +201,18 @@ def test_io_naming(fun, args, kwargs):
         assert sys_tf.output_labels == output_labels
 
     #
-    # Convert the system to a LinearIOSystem and make sure labels transfer
+    # Convert the system to a StateSpace and make sure labels transfer
     #
     if not isinstance(
             sys_r, (ct.FrequencyResponseData, ct.NonlinearIOSystem)) and \
                     ct.slycot_check():
-        sys_lio = ct.LinearIOSystem(sys_r)
+        sys_lio = ct.StateSpace(sys_r)
         assert sys_lio != sys_r
         assert sys_lio.input_labels == input_labels
         assert sys_lio.output_labels == output_labels
 
         # Reassign system and signal names
-        sys_lio = ct.LinearIOSystem(
+        sys_lio = ct.StateSpace(
             sys_g, inputs=input_labels, outputs=output_labels, name='new')
         assert sys_lio.name == 'new'
         assert sys_lio.input_labels == input_labels
@@ -234,7 +234,7 @@ def test_init_namedif():
 
     # Call constructor without re-initialization
     sys_keep = sys.copy()
-    ct.StateSpace.__init__(sys_keep, sys, init_namedio=False)
+    ct.StateSpace.__init__(sys_keep, sys, init_iosys=False)
     assert sys_keep.name == sys_keep.name
     assert sys_keep.input_labels == sys_keep.input_labels
     assert sys_keep.output_labels == sys_keep.output_labels
@@ -242,7 +242,7 @@ def test_init_namedif():
     # Make sure that passing an unrecognized keyword generates an error
     with pytest.raises(TypeError, match="unrecognized keyword"):
         ct.StateSpace.__init__(
-            sys_keep, sys, inputs='u', outputs='y', init_namedio=False)
+            sys_keep, sys, inputs='u', outputs='y', init_iosys=False)
 
 # Test state space conversion
 def test_convert_to_statespace():
