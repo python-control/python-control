@@ -978,7 +978,7 @@ class TestTimeresp:
         assert t.shape == y.shape  # Allows direct plotting of output
 
     @pytest.mark.usefixtures("editsdefaults")
-    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf])
     @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape1, shape2", [
     #  state  out   in   squeeze  in/out      out-only
         [1,    1,    1,  None,   (8,),       (8,)],
@@ -1107,7 +1107,7 @@ class TestTimeresp:
             if squeeze is not True or sys.noutputs > 1:
                 assert yvec.shape == (sys.noutputs, 8)
 
-    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf])
     def test_squeeze_exception(self, fcn):
         sys = fcn(ct.rss(2, 1, 1))
         with pytest.raises(ValueError, match="Unknown squeeze value"):

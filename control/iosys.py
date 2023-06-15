@@ -599,13 +599,13 @@ def isctime(sys, strict=False):
 # Utility function to parse nameio keywords
 def _process_iosys_keywords(
         keywords={}, defaults={}, static=False, end=False):
-    """Process iosys specification
+    """Process iosys specification.
 
-    This function processes the standard keywords used in initializing a named
-    I/O system.  It first looks in the `keyword` dictionary to see if a value
-    is specified.  If not, the `default` dictionary is used.  The `default`
-    dictionary can also be set to a InputOutputSystem object, which is useful for
-    copy constructors that change system and signal names.
+    This function processes the standard keywords used in initializing an
+    I/O system.  It first looks in the `keyword` dictionary to see if a
+    value is specified.  If not, the `default` dictionary is used.  The
+    `default` dictionary can also be set to an InputOutputSystem object,
+    which is useful for copy constructors that change system/signal names.
 
     If `end` is True, then generate an error if there are any remaining
     keywords.

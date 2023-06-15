@@ -78,11 +78,11 @@ from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
 from copy import copy
 
+# TODO: see what is causing MRO issues with .statesp, .xferfcn
 from . import config
 from .exception import pandas_check
 from .iosys import isctime, isdtime
-from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
-from .xferfcn import TransferFunction
+    
 
 __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData']
@@ -927,6 +927,10 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     :ref:`package-configuration-parameters`.
 
     """
+    from .statesp import StateSpace, _convert_to_statespace, \
+        _mimo2simo, _mimo2siso
+    from .xferfcn import TransferFunction
+    
     if not isinstance(sys, (StateSpace, TransferFunction)):
         raise TypeError('Parameter ``sys``: must be a ``StateSpace`` or'
                         ' ``TransferFunction``)')
@@ -1211,6 +1215,9 @@ def _get_ss_simo(sys, input=None, output=None, squeeze=None):
     If the output is not specified, report on all outputs.
 
     """
+    from .statesp import _convert_to_statespace         # TODO: move to top?
+    from .statesp import _mimo2simo, _mimo2siso
+    
     # If squeeze was not specified, figure out the default
     if squeeze is None:
         squeeze = config.defaults['control.squeeze_time_response']
@@ -1339,6 +1346,9 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     >>> T, yout = ct.step_response(G)
 
     """
+    from .xferfcn import TransferFunction               # TODO: move to top?
+    from .statesp import _convert_to_statespace         # TODO: move to top?
+    
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
@@ -1495,6 +1505,10 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     PeakTime: 4.242
     SteadyStateValue: -1.0
     """
+    # TODO: See if there is a better way to do this
+    from .statesp import StateSpace
+    from .xferfcn import TransferFunction
+    
     if isinstance(sysdata, (StateSpace, TransferFunction)):
         if T is None or np.asarray(T).size == 1:
             T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=True)
@@ -1826,6 +1840,8 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     >>> T, yout = ct.impulse_response(G)
 
     """
+    from .statesp import _convert_to_statespace         # TODO: move to top?
+    
     # Convert to state space so that we can simulate
     sys = _convert_to_statespace(sys)
 
@@ -1946,7 +1962,9 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
     By Ilhan Polat, with modifications by Sawyer Fuller to integrate into
     python-control 2020.08.17
+    
     """
+    from .statesp import _convert_to_statespace         # TODO: move to top?
 
     sqrt_eps = np.sqrt(np.spacing(1.))
     default_tfinal = 5                  # Default simulation horizon

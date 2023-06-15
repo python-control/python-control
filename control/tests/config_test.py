@@ -284,11 +284,6 @@ class TestConfig:
         assert ct.tf(1, 1).dt is None
         assert ct.ss([], [], [], 1).dt is None
 
-        # Make sure static gain is preserved for the I/O system
-        sys = ct.ss([], [], [], 1)
-        sys_io = ct.ss2io(sys)
-        assert sys_io.dt is None
-
     def test_get_param_last(self):
         """Test _get_param last keyword"""
         kwargs = {'first': 1, 'second': 2}

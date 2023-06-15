@@ -65,7 +65,7 @@ def test_interconnect_implicit(dim):
         pytest.xfail("slycot not installed")
 
     # System definition
-    P = ct.ss2io(ct.rss(2, dim, dim, strictly_proper=True), name='P')
+    P = ct.rss(2, dim, dim, strictly_proper=True, name='P')
 
     # Controller defintion: PI in each input/output pair
     kp = ct.tf(np.ones((dim, dim, 1)), np.ones((dim, dim, 1))) \
@@ -76,14 +76,14 @@ def test_interconnect_implicit(dim):
         num[i, j] = ki
         den[i, j] = np.array([1, 0])
     ki = ct.tf(num, den)
-    C = ct.tf2io(kp + ki, name='C',
-                 inputs=[f'e[{i}]' for i in range(dim)],
-                 outputs=[f'u[{i}]' for i in range(dim)])
+    C = ct.tf(kp + ki, name='C',
+              inputs=[f'e[{i}]' for i in range(dim)],
+              outputs=[f'u[{i}]' for i in range(dim)])
 
     # same but static C2
-    C2 = ct.tf2io(kp * random.uniform(1, 10), name='C2',
-        inputs=[f'e[{i}]' for i in range(dim)],
-        outputs=[f'u[{i}]' for i in range(dim)])
+    C2 = ct.tf(kp * random.uniform(1, 10), name='C2',
+               inputs=[f'e[{i}]' for i in range(dim)],
+               outputs=[f'u[{i}]' for i in range(dim)])
 
     # Block diagram computation
     Tss = ct.feedback(P * C, np.eye(dim))
@@ -127,10 +127,10 @@ def test_interconnect_implicit(dim):
     np.testing.assert_allclose(empty.connect_map, np.zeros((4*dim, 3*dim)))
 
     # Implicit summation across repeated signals (using updated labels)
-    kp_io = ct.tf2io(
+    kp_io = ct.tf(
         kp, inputs=dim, input_prefix='e',
         outputs=dim, output_prefix='u', name='kp')
-    ki_io = ct.tf2io(
+    ki_io = ct.tf(
         ki, inputs=dim, input_prefix='e',
         outputs=dim, output_prefix='u', name='ki')
     Tio_sum = ct.interconnect(
@@ -188,21 +188,23 @@ def test_interconnect_docstring():
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
     # Implicit interconnection (note: use [C, P, sumblk] for proper state order)
-    P = ct.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
-    C = ct.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
+    P = ct.tf(1, [1, 0], inputs='u', outputs='y')
+    C = ct.tf(10, [1, 1], inputs='e', outputs='u')
     sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
     T = ct.interconnect([C, P, sumblk], inplist='r', outlist='y')
-    T_ss = ct.feedback(P * C, 1)
+    T_ss = ct.ss(ct.feedback(P * C, 1))
+
+    # Test in a manner that recognizes that recognizes non-unique realization
     np.testing.assert_almost_equal(T.A, T_ss.A)
-    np.testing.assert_almost_equal(T.B, T_ss.B)
-    np.testing.assert_almost_equal(T.C, T_ss.C)
+    np.testing.assert_almost_equal(T.C @ T.B, T_ss.C @ T_ss.B)
+    np.testing.assert_almost_equal(T.C @ T. A @ T.B, T_ss.C @ T_ss.A @ T_ss.B)
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
 
 def test_interconnect_exceptions():
     # First make sure the docstring example works
-    P = ct.tf2io(ct.tf(1, [1, 0]), input='u', output='y')
-    C = ct.tf2io(ct.tf(10, [1, 1]), input='e', output='u')
+    P = ct.tf(1, [1, 0], input='u', output='y')
+    C = ct.tf(10, [1, 1], input='e', output='u')
     sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
     T = ct.interconnect((P, C, sumblk), input='r', output='y')
     assert (T.ninputs, T.noutputs, T.nstates) == (1, 1, 2)

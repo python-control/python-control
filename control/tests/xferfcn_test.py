@@ -890,7 +890,7 @@ class TestXferFcn:
          ])
     def test_printing_polynomial_const(self, args, output):
         """Test _tf_polynomial_to_string for constant systems"""
-        assert str(TransferFunction(*args)) == output
+        assert str(TransferFunction(*args)).partition('\n\n')[2] == output
 
     @pytest.mark.parametrize(
         "args, outputfmt",
@@ -904,7 +904,7 @@ class TestXferFcn:
                               ("z", 1, '\ndt = 1\n')])
     def test_printing_polynomial(self, args, outputfmt, var, dt, dtstring):
         """Test _tf_polynomial_to_string for all other code branches"""
-        assert str(TransferFunction(*(args + (dt,)))) == \
+        assert str(TransferFunction(*(args + (dt,)))).partition('\n\n')[2] == \
             outputfmt.format(var=var, dtstring=dtstring)
 
     @slycotonly
@@ -976,7 +976,7 @@ class TestXferFcn:
         """Test _tf_polynomial_to_string for constant systems"""
         G = zpk(zeros, poles, gain, display_format='zpk')
         res = str(G)
-        assert res == output
+        assert res.partition('\n\n')[2] == output
 
     @pytest.mark.parametrize(
         "zeros, poles, gain, format, output",
@@ -1004,7 +1004,7 @@ class TestXferFcn:
         res = str(G)
         reset_defaults()
 
-        assert res == output
+        assert res.partition('\n\n')[2] == output
 
     @pytest.mark.parametrize(
         "num, den, output",
@@ -1034,7 +1034,7 @@ class TestXferFcn:
         """Test _tf_polynomial_to_string for constant systems"""
         G = tf(num, den, display_format='zpk')
         res = str(G)
-        assert res == output
+        assert res.partition('\n\n')[2] == output
 
     @slycotonly
     def test_size_mismatch(self):

@@ -21,28 +21,26 @@ class TestLTI:
         np.testing.assert_allclose(sys.poles(), 42)
         np.testing.assert_allclose(poles(sys), 42)
 
-        with pytest.warns(PendingDeprecationWarning):
+        with pytest.raises(AttributeError, match="no attribute 'pole'"):
             pole_list = sys.pole()
-            assert pole_list == sys.poles()
 
-        with pytest.warns(PendingDeprecationWarning):
+        with pytest.raises(AttributeError, match="no attribute 'pole'"):
             pole_list = ct.pole(sys)
-            assert pole_list == sys.poles()
 
     @pytest.mark.parametrize("fun, args", [
         [tf, (126, [-1, 42])],
         [ss, ([[42]], [[1]], [[1]], 0)]
     ])
-    def test_zero(self, fun, args):
+    def test_zeros(self, fun, args):
         sys = fun(*args)
         np.testing.assert_allclose(sys.zeros(), 42)
         np.testing.assert_allclose(zeros(sys), 42)
 
-        with pytest.warns(PendingDeprecationWarning):
-            sys.zero()
+        with pytest.raises(AttributeError, match="no attribute 'zero'"):
+            zero_list = sys.zero()
 
-        with pytest.warns(PendingDeprecationWarning):
-            ct.zero(sys)
+        with pytest.raises(AttributeError, match="no attribute 'zero'"):
+            zero_list = ct.zero(sys)
 
     def test_issiso(self):
         assert issiso(1)
@@ -91,7 +89,8 @@ class TestLTI:
         np.testing.assert_almost_equal(sys_dt.damp(), expected_dt)
         np.testing.assert_almost_equal(damp(sys_dt), expected_dt)
 
-        #also check that for a discrete system with a negative real pole the damp function can extract wn and zeta.
+        # also check that for a discrete system with a negative real pole
+        # the damp function can extract wn and zeta.
         p2_zplane = -0.2
         sys_dt2 = tf(1, [1, -p2_zplane], dt)
         wn2, zeta2, p2 = sys_dt2.damp()
@@ -129,7 +128,7 @@ class TestLTI:
         np.testing.assert_raises(TypeError, bandwidth, 1)
 
         # test exception for system other than SISO system
-        sysMIMO = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]], 
+        sysMIMO = tf([[[-1, 41], [1]], [[1, 2], [3, 4]]],
                      [[[1, 10], [1, 20]], [[1, 30], [1, 40]]])
         np.testing.assert_raises(TypeError, bandwidth, sysMIMO)
 
@@ -218,7 +217,7 @@ class TestLTI:
         assert isctime(obj, strict=True) == strictref
 
     @pytest.mark.usefixtures("editsdefaults")
-    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.ss2io])
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd])
     @pytest.mark.parametrize("nstate, nout, ninp, omega, squeeze, shape", [
         [1, 1, 1, 0.1,          None,  ()],             # SISO
         [1, 1, 1, [0.1],        None,  (1,)],
@@ -312,7 +311,7 @@ class TestLTI:
             assert ct.evalfr(sys, s).shape == \
                 (sys.noutputs, sys.ninputs, len(omega))
 
-    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd, ct.ss2io])
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.frd])
     def test_squeeze_exceptions(self, fcn):
         if fcn == ct.frd:
             sys = fcn(ct.rss(2, 1, 1), [1e-2, 1e-1, 1, 1e1, 1e2])
@@ -332,17 +331,3 @@ class TestLTI:
             sys([[0.1j, 1j], [1j, 10j]])
         with pytest.raises(ValueError, match="must be 1D"):
             evalfr(sys, [[0.1j, 1j], [1j, 10j]])
-
-        with pytest.warns(DeprecationWarning, match="LTI `inputs`"):
-            ninputs = sys.inputs
-        assert ninputs == sys.ninputs
-
-        with pytest.warns(DeprecationWarning, match="LTI `outputs`"):
-            noutputs = sys.outputs
-        assert noutputs == sys.noutputs
-
-        if isinstance(sys, ct.StateSpace):
-            with pytest.warns(
-                    DeprecationWarning, match="StateSpace `states`"):
-                nstates = sys.states
-            assert nstates == sys.nstates

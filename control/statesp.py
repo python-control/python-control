@@ -74,9 +74,8 @@ try:
 except ImportError:
     ab13dd = None
 
-__all__ = ['StateSpace', 'LinearICSystem', 'ss2io', 'tf2io', 'tf2ss',
-           'ssdata', 'linfnorm', 'ss', 'rss', 'drss',
-           'summing_junction']
+__all__ = ['StateSpace', 'LinearICSystem', 'tf2ss', 'ssdata',
+           'linfnorm', 'ss', 'rss', 'drss', 'summing_junction']
 
 # Define module default parameter values
 _statesp_defaults = {
@@ -199,6 +198,8 @@ class StateSpace(NonlinearIOSystem, LTI):
         #
         # Process positional arguments
         #
+        # TODO: Move all of this into the ss() factory function
+        # TODO: Use standard processing order for I/O systems
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
             (A, B, C, D) = args
@@ -222,6 +223,8 @@ class StateSpace(NonlinearIOSystem, LTI):
             B = args[0].B
             C = args[0].C
             D = args[0].D
+            dt = args[0].dt
+            # TODO: copy the remaining attributes
 
         else:
             raise TypeError(
@@ -275,6 +278,7 @@ class StateSpace(NonlinearIOSystem, LTI):
             updfcn, outfcn,
             name=name, inputs=inputs, outputs=outputs,
             states=states, dt=dt, **kwargs)
+        self.params = {}
 
         # Reset shapes (may not be needed once np.matrix support is removed)
         if self._isstatic():
@@ -576,12 +580,17 @@ class StateSpace(NonlinearIOSystem, LTI):
     # Negation of a system
     def __neg__(self):
         """Negate a state space system."""
-
         return StateSpace(self.A, self.B, -self.C, -self.D, self.dt)
 
     # Addition of two state space systems (parallel interconnection)
     def __add__(self, other):
         """Add two LTI systems (parallel connection)."""
+        from .xferfcn import TransferFunction
+
+        # Convert transfer functions to state space
+        if isinstance(other, TransferFunction):
+            # Convert the other argument to state space
+            other = _convert_to_statespace(other)
 
         # Check for a couple of special cases
         if isinstance(other, (int, float, complex, np.number)):
@@ -589,20 +598,24 @@ class StateSpace(NonlinearIOSystem, LTI):
             A, B, C = self.A, self.B, self.C
             D = self.D + other
             dt = self.dt
+
+        elif isinstance(other, np.ndarray):
+            other = np.atleast_2d(other)
+            if self.ninputs != other.shape[0]:
+                raise ValueError("array has incompatible shape")
+            A, B, C = self.A, self.B, self.C
+            D = self.D + other
+            dt = self.dt
+
+        elif not isinstance(other, StateSpace):
+            return NotImplemented       # let other.__rmul__ handle it
+
         else:
-            # Check to see if the right operator has priority
-            if getattr(other, '__array_priority__', None) and \
-               getattr(self, '__array_priority__', None) and \
-               other.__array_priority__ > self.__array_priority__:
-                return other.__radd__(self)
-
-            # Convert the other argument to state space
-            other = _convert_to_statespace(other)
-
             # Check to make sure the dimensions are OK
             if ((self.ninputs != other.ninputs) or
                     (self.noutputs != other.noutputs)):
-                raise ValueError("Systems have different shapes.")
+                raise ValueError(
+                    "can't add systems with incompatible inputs and outputs")
 
             dt = common_timebase(self.dt, other.dt)
 
@@ -621,47 +634,53 @@ class StateSpace(NonlinearIOSystem, LTI):
     # Right addition - just switch the arguments
     def __radd__(self, other):
         """Right add two LTI systems (parallel connection)."""
-
         return self + other
 
     # Subtraction of two state space systems (parallel interconnection)
     def __sub__(self, other):
         """Subtract two LTI systems."""
-
         return self + (-other)
 
     def __rsub__(self, other):
         """Right subtract two LTI systems."""
-
         return other + (-self)
 
     # Multiplication of two state space systems (series interconnection)
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
+        from .xferfcn import TransferFunction
+
+        # Convert transfer functions to state space
+        if isinstance(other, TransferFunction):
+            # Convert the other argument to state space
+            other = _convert_to_statespace(other)
 
         # Check for a couple of special cases
         if isinstance(other, (int, float, complex, np.number)):
             # Just multiplying by a scalar; change the output
-            A, B = self.A, self.B
-            C = self.C * other
+            A, C = self.A, self.C
+            B = self.B * other
             D = self.D * other
             dt = self.dt
+
+        elif isinstance(other, np.ndarray):
+            other = np.atleast_2d(other)
+            if self.ninputs != other.shape[0]:
+                raise ValueError("array has incompatible shape")
+            A, C = self.A, self.C
+            B = self.B @ other
+            D = self.D @ other
+            dt = self.dt
+
+        elif not isinstance(other, StateSpace):
+            return NotImplemented       # let other.__rmul__ handle it
+
         else:
-            # Check to see if the right operator has priority
-            if getattr(other, '__array_priority__', None) and \
-               getattr(self, '__array_priority__', None) and \
-               other.__array_priority__ > self.__array_priority__:
-                return other.__rmul__(self)
-
-            # Convert the other argument to state space
-            other = _convert_to_statespace(other)
-
             # Check to make sure the dimensions are OK
             if self.ninputs != other.noutputs:
                 raise ValueError(
-                    "C = A * B: A has %i column(s) (input(s)), "
-                    "but B has %i row(s)\n(output(s))." %
-                    (self.ninputs, other.noutputs))
+                    "can't multiply systems with incompatible"
+                    " inputs and outputs")
             dt = common_timebase(self.dt, other.dt)
 
             # Concatenate the various arrays
@@ -682,43 +701,37 @@ class StateSpace(NonlinearIOSystem, LTI):
     # TODO: __rmul__ only works for special cases (??)
     def __rmul__(self, other):
         """Right multiply two LTI objects (serial connection)."""
+        from .xferfcn import TransferFunction
+
+        # Convert transfer functions to state space
+        if isinstance(other, TransferFunction):
+            # Convert the other argument to state space
+            other = _convert_to_statespace(other)
 
         # Check for a couple of special cases
         if isinstance(other, (int, float, complex, np.number)):
             # Just multiplying by a scalar; change the input
-            A, C = self.A, self.C
-            B = self.B * other
-            D = self.D * other
-            return StateSpace(A, B, C, D, self.dt)
+            B = other * self.B
+            D = other * self.D
+            return StateSpace(self.A, B, self.C, D, self.dt)
 
-        # is lti, and convertible?
-        if isinstance(other, LTI):
-            return _convert_to_statespace(other) * self
-
-        # try to treat this as a matrix
-        try:
-            X = _ssmatrix(other)
-            C = X @ self.C
-            D = X @ self.D
+        elif isinstance(other, np.ndarray):
+            C = np.atleast_2d(other) @ self.C
+            D = np.atleast_2d(other) @ self.D
             return StateSpace(self.A, self.B, C, D, self.dt)
 
-        except Exception as e:
-            print(e)
-            pass
-        return NotImplemented
+        if not isinstance(other, StateSpace):
+            return NotImplemented
 
-    # TODO: general __truediv__, and  __rtruediv__; requires descriptor system support
+        return other * self
+
+    # TODO: general __truediv__ requires descriptor system support
     def __truediv__(self, other):
-        """Division of StateSpace systems
-
-        Only division by TFs, FRDs, scalars, and arrays of scalars is
-        supported.
-        """
+        """Division of state space systems byTFs, FRDs, scalars, and arrays"""
         if not isinstance(other, (LTI, InputOutputSystem)):
             return self * (1/other)
         else:
             return NotImplemented
-
 
     def __call__(self, x, squeeze=None, warn_infinite=True):
         """Evaluate system's frequency response at complex frequencies.
@@ -1480,7 +1493,6 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
         self.params = io_sys.params
 
         # If we didnt' get a state space system, linearize the full system
-        # TODO: this could be replaced with a direct computation (someday)
         if ss_sys is None:
             ss_sys = self.linearize(0, 0)
 
@@ -1629,87 +1641,6 @@ def ss(*args, **kwargs):
             "Needs 1, 4, or 5 arguments; received %i." % len(args))
 
     return sys
-
-
-# Convert a state space system into an input/output system (wrapper)
-def ss2io(*args, **kwargs):
-    return StateSpace(*args, **kwargs)
-ss2io.__doc__ = StateSpace.__init__.__doc__
-
-
-# Convert a transfer function into an input/output system (wrapper)
-def tf2io(*args, **kwargs):
-    """tf2io(sys[, ...])
-
-    Convert a transfer function into an I/O system
-
-    The function accepts either 1 or 2 parameters:
-
-    ``tf2io(sys)``
-        Convert a linear system into space space form. Always creates
-        a new system, even if sys is already a StateSpace object.
-
-    ``tf2io(num, den)``
-        Create a linear I/O system from its numerator and denominator
-        polynomial coefficients.
-
-        For details see: :func:`tf`
-
-    Parameters
-    ----------
-    sys : LTI (StateSpace or TransferFunction)
-        A linear system.
-    num : array_like, or list of list of array_like
-        Polynomial coefficients of the numerator.
-    den : array_like, or list of list of array_like
-        Polynomial coefficients of the denominator.
-
-    Returns
-    -------
-    out : LinearIOSystem
-        New I/O system (in state space form).
-
-    Other Parameters
-    ----------------
-    inputs, outputs : str, or list of str, optional
-        List of strings that name the individual signals of the transformed
-        system.  If not given, the inputs and outputs are the same as the
-        original system.
-    name : string, optional
-        System name. If unspecified, a generic name <sys[id]> is generated
-        with a unique integer id.
-
-    Raises
-    ------
-    ValueError
-        if `num` and `den` have invalid or unequal dimensions, or if an
-        invalid number of arguments is passed in.
-    TypeError
-        if `num` or `den` are of incorrect type, or if sys is not a
-        TransferFunction object.
-
-    See Also
-    --------
-    ss2io
-    tf2ss
-
-    Examples
-    --------
-    >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
-    >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
-    >>> sys1 = ct.tf2ss(num, den)
-
-    >>> sys_tf = ct.tf(num, den)
-    >>> G = ct.tf2ss(sys_tf)
-    >>> G.ninputs, G.noutputs, G.nstates
-    (2, 2, 8)
-
-    """
-    # Convert the system to a state space system
-    linsys = tf2ss(*args)
-
-    # Now convert the state space system to an I/O system
-    return StateSpace(linsys, **kwargs)
 
 
 def tf2ss(*args, **kwargs):
@@ -2440,9 +2371,10 @@ def _mimo2siso(sys, input, output, warn_conversion=False):
         new_B = sys.B[:, input]
         new_C = sys.C[output, :]
         new_D = sys.D[output, input]
-        sys = StateSpace(sys.A, new_B, new_C, new_D, sys.dt,
-                         name=sys.name,
-                         inputs=sys.input_labels[input], outputs=sys.output_labels[output])
+        sys = StateSpace(
+            sys.A, new_B, new_C, new_D, sys.dt,
+            name=sys.name,
+            inputs=sys.input_labels[input], outputs=sys.output_labels[output])
 
     return sys
 
@@ -2496,3 +2428,166 @@ def _mimo2simo(sys, input, warn_conversion=False):
                          inputs=sys.input_labels[input], outputs=sys.output_labels)
 
     return sys
+
+
+def tf2ss(*args, **kwargs):
+    """tf2ss(sys)
+
+    Transform a transfer function to a state space system.
+
+    The function accepts either 1 or 2 parameters:
+
+    ``tf2ss(sys)``
+        Convert a linear system into space space form. Always creates
+        a new system, even if sys is already a StateSpace object.
+
+    ``tf2ss(num, den)``
+        Create a state space system from its numerator and denominator
+        polynomial coefficients.
+
+        For details see: :func:`tf`
+
+    Parameters
+    ----------
+    sys : LTI (StateSpace or TransferFunction)
+        A linear system
+    num : array_like, or list of list of array_like
+        Polynomial coefficients of the numerator
+    den : array_like, or list of list of array_like
+        Polynomial coefficients of the denominator
+
+    Returns
+    -------
+    out : StateSpace
+        New linear system in state space form
+
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals of the transformed
+        system.  If not given, the inputs and outputs are the same as the
+        original system.
+    name : string, optional
+        System name. If unspecified, a generic name <sys[id]> is generated
+        with a unique integer id.
+
+    Raises
+    ------
+    ValueError
+        if `num` and `den` have invalid or unequal dimensions, or if an
+        invalid number of arguments is passed in
+    TypeError
+        if `num` or `den` are of incorrect type, or if sys is not a
+        TransferFunction object
+
+    See Also
+    --------
+    ss
+    tf
+    ss2tf
+
+    Examples
+    --------
+    >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
+    >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
+    >>> sys1 = ct.tf2ss(num, den)
+
+    >>> sys_tf = ct.tf(num, den)
+    >>> sys2 = ct.tf2ss(sys_tf)
+
+    """
+
+    from .xferfcn import TransferFunction
+    if len(args) == 2 or len(args) == 3:
+        # Assume we were given the num, den
+        return StateSpace(
+            _convert_to_statespace(TransferFunction(*args)), **kwargs)
+
+    elif len(args) == 1:
+        sys = args[0]
+        if not isinstance(sys, TransferFunction):
+            raise TypeError("tf2ss(sys): sys must be a TransferFunction "
+                            "object.")
+        return StateSpace(
+            _convert_to_statespace(
+                sys,
+                use_prefix_suffix=not sys._generic_name_check()),
+            **kwargs)
+    else:
+        raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
+
+
+def ssdata(sys):
+    """
+    Return state space data objects for a system
+
+    Parameters
+    ----------
+    sys : LTI (StateSpace, or TransferFunction)
+        LTI system whose data will be returned
+
+    Returns
+    -------
+    (A, B, C, D): list of matrices
+        State space data for the system
+    """
+    ss = _convert_to_statespace(sys)
+    return ss.A, ss.B, ss.C, ss.D
+
+
+def linfnorm(sys, tol=1e-10):
+    """L-infinity norm of a linear system
+
+    Parameters
+    ----------
+    sys : LTI (StateSpace or TransferFunction)
+      system to evalute L-infinity norm of
+    tol : real scalar
+      tolerance on norm estimate
+
+    Returns
+    -------
+    gpeak : non-negative scalar
+      L-infinity norm
+    fpeak : non-negative scalar
+      Frequency, in rad/s, at which gpeak occurs
+
+    For stable systems, the L-infinity and H-infinity norms are equal;
+    for unstable systems, the H-infinity norm is infinite, while the
+    L-infinity norm is finite if the system has no poles on the
+    imaginary axis.
+
+    See also
+    --------
+    slycot.ab13dd : the Slycot routine linfnorm that does the calculation
+    """
+
+    if ab13dd is None:
+        raise ControlSlycot("Can't find slycot module 'ab13dd'")
+
+    a, b, c, d = ssdata(_convert_to_statespace(sys))
+    e = np.eye(a.shape[0])
+
+    n = a.shape[0]
+    m = b.shape[1]
+    p = c.shape[0]
+
+    if n == 0:
+        # ab13dd doesn't accept empty A, B, C, D;
+        # static gain case is easy enough to compute
+        gpeak = scipy.linalg.svdvals(d)[0]
+        # max svd is constant with freq; arbitrarily choose 0 as peak
+        fpeak = 0
+        return gpeak, fpeak
+
+    dico = 'C' if sys.isctime() else 'D'
+    jobe = 'I'
+    equil = 'S'
+    jobd = 'Z' if all(0 == d.flat) else 'D'
+
+    gpeak, fpeak = ab13dd(dico, jobe, equil, jobd, n, m, p, a, e, b, c, d, tol)
+
+    if dico=='D':
+        fpeak /= sys.dt
+
+    return gpeak, fpeak

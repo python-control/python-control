@@ -754,7 +754,8 @@ def create_statefbk_iosystem(
             " output must include the full state")
     elif estimator == sys:
         # Issue a warning if we can't verify state output
-        if (isinstance(sys, NonlinearIOSystem) and sys.outfcn is not None) or \
+        if (isinstance(sys, NonlinearIOSystem) and
+            not isinstance(sys, StateSpace) and sys.outfcn is not None) or \
            (isinstance(sys, StateSpace) and
             not (np.all(sys.C[np.ix_(state_indices, state_indices)] ==
                         np.eye(sys_nstates)) and

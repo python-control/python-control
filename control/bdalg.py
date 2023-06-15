@@ -202,6 +202,7 @@ def negate(sys):
     return -sys
 
 #! TODO: expand to allow sys2 default to work in MIMO case?
+#! TODO: allow renaming of signals (for all bdalg operations)
 def feedback(sys1, sys2=1, sign=-1):
     """
     Feedback interconnection between two I/O systems.
@@ -254,6 +255,7 @@ def feedback(sys1, sys2=1, sign=-1):
 
     """
     # Allow anything with a feedback function to call that function
+    # TODO: rewrite to allow __rfeedback__
     try:
         return sys1.feedback(sys2, sign)
     except AttributeError:

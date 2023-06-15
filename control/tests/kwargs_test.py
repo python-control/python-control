@@ -91,11 +91,9 @@ def test_kwarg_search(module, prefix):
      (control.rss, 0, 0, (2, 1, 1), {}),
      (control.set_defaults, 0, 0, ('control',), {'default_dt': True}),
      (control.ss, 0, 0, (0, 0, 0, 0), {'dt': 1}),
-     (control.ss2io, 1, 0,  (), {}),
      (control.ss2tf, 1, 0, (), {}),
      (control.summing_junction, 0, 0, (2,), {}),
      (control.tf, 0, 0, ([1], [1, 1]), {}),
-     (control.tf2io, 0, 1, (), {}),
      (control.tf2ss, 0, 1, (), {}),
      (control.zpk, 0, 0, ([1], [2, 3], 4), {}),
      (control.InputOutputSystem, 0, 0, (),
@@ -183,11 +181,9 @@ kwarg_unittest = {
     'set_defaults': test_unrecognized_kwargs,
     'singular_values_plot': test_matplotlib_kwargs,
     'ss': test_unrecognized_kwargs,
-    'ss2io': test_unrecognized_kwargs,
     'ss2tf': test_unrecognized_kwargs,
     'summing_junction': interconnect_test.test_interconnect_exceptions,
     'tf': test_unrecognized_kwargs,
-    'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,
     'sample_system' : test_unrecognized_kwargs,
     'c2d' : test_unrecognized_kwargs,
@@ -239,8 +235,8 @@ kwarg_unittest = {
 mutable_ok = {                                          # initial and date
     control.flatsys.SystemTrajectory.__init__,          # RMM, 18 Nov 2022
     control.freqplot._add_arrows_to_line2D,             # RMM, 18 Nov 2022
-    control.iosys._process_dt_keyword,                # RMM, 13 Nov 2022
-    control.iosys._process_iosys_keywords,          # RMM, 18 Nov 2022
+    control.iosys._process_dt_keyword,                  # RMM, 13 Nov 2022
+    control.iosys._process_iosys_keywords,              # RMM, 18 Nov 2022
 }
 
 @pytest.mark.parametrize("module", [control, control.flatsys])

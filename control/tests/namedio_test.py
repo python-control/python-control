@@ -1,8 +1,8 @@
-"""iosys_test.py - test named input/output object operations
+"""namedio_test.py - test named input/output object operations
 
 RMM, 13 Mar 2022
 
-This test suite checks to make sure that named input/output class
+This test suite checks to make sure that (named) input/output class
 operations are working.  It doesn't do exhaustive testing of
 operations on input/output objects.  Separate unit tests should be
 created for that purpose.
@@ -34,7 +34,7 @@ def test_named_ss():
     assert sys.input_labels == ['u[0]', 'u[1]']
     assert sys.output_labels == ['y[0]', 'y[1]']
     assert sys.state_labels == ['x[0]', 'x[1]']
-    assert repr(sys) == \
+    assert ct.InputOutputSystem.__repr__(sys) == \
         "<StateSpace:sys[0]:['u[0]', 'u[1]']->['y[0]', 'y[1]']>"
 
     # Pass the names as arguments
@@ -46,7 +46,7 @@ def test_named_ss():
     assert sys.input_labels == ['u1', 'u2']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2']
-    assert repr(sys) == \
+    assert ct.InputOutputSystem.__repr__(sys) == \
         "<StateSpace:system:['u1', 'u2']->['y1', 'y2']>"
 
     # Do the same with rss
@@ -56,7 +56,7 @@ def test_named_ss():
     assert sys.input_labels == ['u1']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2', 'x3']
-    assert repr(sys) == \
+    assert ct.InputOutputSystem.__repr__(sys) == \
         "<StateSpace:random:['u1']->['y1', 'y2']>"
 
 
@@ -74,9 +74,9 @@ fun_instance = {
 
 # List of classes that are not expected
 fun_notinstance = {
-    ct.FRD: (ct.NonlinearIOSystem, ct.StateSpace, ct.StateSpace),
-    ct.StateSpace: (ct.TransferFunction),
-    ct.TransferFunction: (ct.NonlinearIOSystem, ct.StateSpace),
+    ct.FRD: (ct.NonlinearIOSystem, ct.StateSpace),
+    ct.StateSpace: (ct.TransferFunction, ct.FRD),
+    ct.TransferFunction: (ct.NonlinearIOSystem, ct.StateSpace, ct.FRD),
 }
 
 
@@ -206,13 +206,13 @@ def test_io_naming(fun, args, kwargs):
     if not isinstance(
             sys_r, (ct.FrequencyResponseData, ct.NonlinearIOSystem)) and \
                     ct.slycot_check():
-        sys_lio = ct.StateSpace(sys_r)
+        sys_lio = ct.ss(sys_r)
         assert sys_lio != sys_r
         assert sys_lio.input_labels == input_labels
         assert sys_lio.output_labels == output_labels
 
         # Reassign system and signal names
-        sys_lio = ct.StateSpace(
+        sys_lio = ct.ss(
             sys_g, inputs=input_labels, outputs=output_labels, name='new')
         assert sys_lio.name == 'new'
         assert sys_lio.input_labels == input_labels
@@ -232,17 +232,10 @@ def test_init_namedif():
     assert sys_new.input_labels == ['u']
     assert sys_new.output_labels == ['y']
 
-    # Call constructor without re-initialization
-    sys_keep = sys.copy()
-    ct.StateSpace.__init__(sys_keep, sys, init_iosys=False)
-    assert sys_keep.name == sys_keep.name
-    assert sys_keep.input_labels == sys_keep.input_labels
-    assert sys_keep.output_labels == sys_keep.output_labels
-
     # Make sure that passing an unrecognized keyword generates an error
     with pytest.raises(TypeError, match="unrecognized keyword"):
         ct.StateSpace.__init__(
-            sys_keep, sys, inputs='u', outputs='y', init_iosys=False)
+            sys_new, sys, inputs='u', outputs='y', init_iosys=False)
 
 # Test state space conversion
 def test_convert_to_statespace():
@@ -280,8 +273,11 @@ def test_convert_to_statespace():
 
 # Duplicate name warnings
 def test_duplicate_sysname():
-    # Start with an unnamed system
+    # Start with an unnamed (nonlinear) system
     sys = ct.rss(4, 1, 1)
+    sys = ct.NonlinearIOSystem(
+        sys.updfcn, sys.outfcn, inputs=sys.ninputs, outputs=sys.noutputs,
+        states=sys.nstates)
 
     # No warnings should be generated if we reuse an an unnamed system
     with warnings.catch_warnings():
@@ -292,7 +288,10 @@ def test_duplicate_sysname():
         res = sys * sys
 
     # Generate a warning if the system is named
-    sys = ct.rss(4, 1, 1, name='sys')
+    sys = ct.rss(4, 1, 1)
+    sys = ct.NonlinearIOSystem(
+        sys.updfcn, sys.outfcn, inputs=sys.ninputs, outputs=sys.noutputs,
+        states=sys.nstates, name='sys')
     with pytest.warns(UserWarning, match="duplicate object found"):
         res = sys * sys
 

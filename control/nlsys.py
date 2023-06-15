@@ -34,6 +34,8 @@ from warnings import warn
 from . import config
 from .iosys import InputOutputSystem, _process_signal_list, \
     _process_iosys_keywords, isctime, isdtime, common_timebase, _parse_spec
+from .timeresp import _check_convert_array, _process_time_response, \
+    TimeResponseData
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem',
            'input_output_response', 'find_eqpt', 'linearize',
@@ -174,8 +176,6 @@ class NonlinearIOSystem(InputOutputSystem):
             value set by config.defaults['control.squeeze_time_response'].
 
         """
-        from .timeresp import _process_time_response
-
         # Make sure the call makes sense
         if not sys._isstatic():
             raise TypeError(
@@ -598,7 +598,6 @@ class InterconnectedSystem(NonlinearIOSystem):
                  params=None, warn_duplicate=None, **kwargs):
         """Create an I/O system from a list of systems + connection info."""
         from .statesp import _convert_to_statespace
-        from .statesp import StateSpace, LinearICSystem
         from .xferfcn import TransferFunction
 
         # Convert input and output names to lists if they aren't already
@@ -1238,9 +1237,6 @@ def input_output_response(
        results.
 
     """
-    from .timeresp import _check_convert_array, _process_time_response, \
-        TimeResponseData
-
     #
     # Process keyword arguments
     #

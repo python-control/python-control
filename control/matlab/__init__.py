@@ -62,7 +62,6 @@ if not ('.config' in sys.modules):
 
 # Control system library
 from ..statesp import *
-from ..statesp import ss, rss, drss       # moved from .statesp
 from ..xferfcn import *
 from ..lti import *
 from ..iosys import *

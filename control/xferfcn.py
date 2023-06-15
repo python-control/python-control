@@ -60,7 +60,8 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, _process_frequency_response
-from .iosys import common_timebase, isdtime, _process_iosys_keywords
+from .iosys import InputOutputSystem, common_timebase, isdtime, \
+    _process_iosys_keywords
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from . import config
@@ -73,11 +74,6 @@ _xferfcn_defaults = {
     'xferfcn.display_format': 'poly',
     'xferfcn.floating_point_format': '.4g'
 }
-
-
-def _float2str(value):
-    _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
-    return f"{value:{_num_format}}"
 
 
 class TransferFunction(LTI):
@@ -233,14 +229,14 @@ class TransferFunction(LTI):
             {'inputs': len(num[0]), 'outputs': len(num)}
 
         name, inputs, outputs, states, dt = _process_iosys_keywords(
-                kwargs, defaults, static=static, end=True)
+                kwargs, defaults, static=static)
         if states:
             raise TypeError(
                 "states keyword not allowed for transfer functions")
 
         # Initialize LTI (InputOutputSystem) object
         super().__init__(
-            name=name, inputs=inputs, outputs=outputs, dt=dt)
+            name=name, inputs=inputs, outputs=outputs, dt=dt, **kwargs)
 
         #
         # Check to make sure everything is consistent
@@ -463,7 +459,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
-        outstr = ""
+        outstr = f"{InputOutputSystem.__str__(self)}\n"
 
         for ni in range(self.ninputs):
             for no in range(self.noutputs):
@@ -562,30 +558,26 @@ class TransferFunction(LTI):
 
     def __neg__(self):
         """Negate a transfer function."""
-
         num = deepcopy(self.num)
         for i in range(self.noutputs):
             for j in range(self.ninputs):
                 num[i][j] *= -1
-
         return TransferFunction(num, self.den, self.dt)
 
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
         from .statesp import StateSpace
 
-        # Check to see if the right operator has priority
-        if getattr(other, '__array_priority__', None) and \
-           getattr(self, '__array_priority__', None) and \
-           other.__array_priority__ > self.__array_priority__:
-            return other.__radd__(self)
-
         # Convert the second argument to a transfer function.
+        #! TODO: update processing (here and elsewhere)
         if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
-        elif not isinstance(other, TransferFunction):
+        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
             other = _convert_to_transfer_function(other, inputs=self.ninputs,
                                                   outputs=self.noutputs)
+
+        if not isinstance(other, TransferFunction):
+            return NotImplemented
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
@@ -625,18 +617,16 @@ class TransferFunction(LTI):
 
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
-        # Check to see if the right operator has priority
-        if getattr(other, '__array_priority__', None) and \
-           getattr(self, '__array_priority__', None) and \
-           other.__array_priority__ > self.__array_priority__:
-            return other.__rmul__(self)
-
+        from .statesp import StateSpace
+        
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(other, inputs=self.ninputs,
-                                                  outputs=self.ninputs)
-        else:
+        if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
+        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
+            other = _convert_to_transfer_function(other, inputs=self.ninputs,
+                                                  outputs=self.noutputs)
+        if not isinstance(other, TransferFunction):
+            return NotImplemented
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.noutputs:
@@ -1906,3 +1896,8 @@ def _clean_part(data):
 # Define constants to represent differentiation, unit delay
 TransferFunction.s = TransferFunction([1, 0], [1], 0)
 TransferFunction.z = TransferFunction([1, 0], [1], True)
+
+
+def _float2str(value):
+    _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
+    return f"{value:{_num_format}}"
