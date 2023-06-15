@@ -33,6 +33,8 @@ other sources.
    steering-gainsched
    steering-optimal
    kincar-flatsys
+   mrac_siso_mit
+   mrac_siso_lyapunov
 
 Jupyter notebooks
 =================
