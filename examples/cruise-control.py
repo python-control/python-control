@@ -131,9 +131,8 @@ vehicle = ct.NonlinearIOSystem(
 # Construct a PI controller with rolloff, as a transfer function
 Kp = 0.5                        # proportional gain
 Ki = 0.1                        # integral gain
-control_tf = ct.tf2io(
-    ct.TransferFunction([Kp, Ki], [1, 0.01*Ki/Kp]),
-    name='control', inputs='u', outputs='y')
+control_tf =ct.TransferFunction(
+    [Kp, Ki], [1, 0.01*Ki/Kp], name='control', inputs='u', outputs='y')
 
 # Construct the closed loop control system
 # Inputs: vref, gear, theta

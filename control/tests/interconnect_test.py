@@ -195,7 +195,8 @@ def test_interconnect_docstring():
     T_ss = ct.ss(ct.feedback(P * C, 1))
 
     # Test in a manner that recognizes that recognizes non-unique realization
-    np.testing.assert_almost_equal(T.A, T_ss.A)
+    np.testing.assert_almost_equal(
+        np.sort(np.linalg.eig(T.A)[0]), np.sort(np.linalg.eig(T_ss.A)[0]))
     np.testing.assert_almost_equal(T.C @ T.B, T_ss.C @ T_ss.B)
     np.testing.assert_almost_equal(T.C @ T. A @ T.B, T_ss.C @ T_ss.A @ T_ss.B)
     np.testing.assert_almost_equal(T.D, T_ss.D)

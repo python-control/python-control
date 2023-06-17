@@ -465,7 +465,6 @@ Module classes and functions
    ~control.InputOutputSystem
    ~control.InterconnectedSystem
    ~control.LinearICSystem
-   ~control.LinearIOSystem
    ~control.NonlinearIOSystem
 
 .. autosummary::
@@ -475,6 +474,4 @@ Module classes and functions
    ~control.linearize
    ~control.input_output_response
    ~control.interconnect
-   ~control.ss2io
    ~control.summing_junction
-   ~control.tf2io

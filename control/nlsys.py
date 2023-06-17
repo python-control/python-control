@@ -706,13 +706,18 @@ class InterconnectedSystem(NonlinearIOSystem):
         if outputs is None and outlist is not None:
             outputs = len(outlist)
 
-        # Create the I/O system
-        # Note: don't use super() to override LinearICSystem/StateSpace MRO
-        InputOutputSystem.__init__(
-            self, inputs=inputs, outputs=outputs,
-            states=states, dt=dt, name=name, **kwargs)
-        # TODO: this should get initialized above
-        self.params = {} if params is None else params.copy()
+        # Create updfcn and outfcn
+        def updfcn(t, x, u, params):
+            self.update_params(params)
+            return self._rhs(t, x, u)
+        def outfcn(t, x, u, params):
+            self.update_params(params)
+            return self._out(t, x, u)
+
+        # Initialize NonlinearIOSystem object
+        super().__init__(
+            updfcn, outfcn, inputs=inputs, outputs=outputs,
+            states=states, dt=dt, name=name, params=params, **kwargs)
 
         # Convert the list of interconnections to a connection map (matrix)
         self.connect_map = np.zeros((ninputs, noutputs))

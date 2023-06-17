@@ -70,8 +70,10 @@ Time domain simulation
     impulse_response
     initial_response
     input_output_response
-    step_response
     phase_plot
+    step_response
+    TimeResponseData
+	
 
 Control system analysis
 =======================
@@ -147,9 +149,7 @@ Nonlinear system support
     find_eqpt
     linearize
     input_output_response
-    ss2io
     summing_junction
-    tf2io
     flatsys.point_to_point
 
 Stochastic system support
