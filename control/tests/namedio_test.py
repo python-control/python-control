@@ -336,3 +336,30 @@ def test_invalid_signal_names():
 
     with pytest.raises(ValueError, match="invalid system name"):
         sys = ct.rss(4, inputs=1, outputs=1, name="system.subsys")
+
+
+# Negative system spect
+def test_negative_system_spec():
+    sys1 = ct.rss(2, 1, 1, strictly_proper=True, name='sys1')
+    sys2 = ct.rss(2, 1, 1, strictly_proper=True, name='sys2')
+
+    # Negative feedback via explicit signal specification
+    negfbk_negsig = ct.interconnect(
+        [sys1, sys2], inplist=('sys1', 'u[0]'), outlist=('sys2', 'y[0]'),
+        connections=[
+            [('sys2', 'u[0]'), ('sys1', 'y[0]')],
+            [('sys1', 'u[0]'), ('sys2', '-y[0]')]
+        ])
+
+    # Negative feedback via system specs
+    negfbk_negsys = ct.interconnect(
+        [sys1, sys2], inplist=['sys1'], outlist=['sys2'],
+        connections=[
+            ['sys2', 'sys1'],
+            ['sys1', '-sys2'],
+        ])
+
+    np.testing.assert_allclose(negfbk_negsig.A, negfbk_negsys.A)
+    np.testing.assert_allclose(negfbk_negsig.B, negfbk_negsys.B)
+    np.testing.assert_allclose(negfbk_negsig.C, negfbk_negsys.C)
+    np.testing.assert_allclose(negfbk_negsig.D, negfbk_negsys.D)

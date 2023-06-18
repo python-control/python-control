@@ -185,10 +185,6 @@ class InputOutputSystem(object):
             str += f"States ({self.nstates}): {self.state_labels}"
         return str
 
-    # Find a signal by name
-    def _find_signal(self, name, sigdict):
-        return sigdict.get(name, None)
-
     # Find a list of signals by name, index, or pattern
     def _find_signals(self, name_list, sigdict):
         if not isinstance(name_list, (list, tuple)):
@@ -518,22 +514,9 @@ def isdtime(sys, strict=False):
     if isinstance(sys, (int, float, complex, np.number)):
         # OK as long as strict checking is off
         return True if not strict else False
-
-    # Check for a transfer function or state-space object
-    if isinstance(sys, InputOutputSystem):
+    else:
         return sys.isdtime(strict)
 
-    # Check to see if object has a dt object
-    if hasattr(sys, 'dt'):
-        # If no timebase is given, answer depends on strict flag
-        if sys.dt == None:
-            return True if not strict else False
-
-        # Look for dt > 0 (also works if dt = True)
-        return sys.dt > 0
-
-    # Got passed something we don't recognize
-    return False
 
 # Check to see if a system is a continuous time system
 def isctime(sys, strict=False):
@@ -552,20 +535,8 @@ def isctime(sys, strict=False):
     if isinstance(sys, (int, float, complex, np.number)):
         # OK as long as strict checking is off
         return True if not strict else False
-
-    # Check for a transfer function or state space object
-    if isinstance(sys, InputOutputSystem):
+    else:
         return sys.isctime(strict)
-
-    # Check to see if object has a dt object
-    if hasattr(sys, 'dt'):
-        # If no timebase is given, answer depends on strict flag
-        if sys.dt is None:
-            return True if not strict else False
-        return sys.dt == 0
-
-    # Got passed something we don't recognize
-    return False
 
 
 # Utility function to parse nameio keywords
@@ -592,10 +563,6 @@ def _process_iosys_keywords(
 
         if sys.nstates is not None:
             defaults['states'] = sys.state_labels
-
-    elif not isinstance(defaults, dict):
-        raise TypeError("default must be dict or sys")
-
     else:
         sys = None
 
@@ -626,12 +593,12 @@ def _process_iosys_keywords(
     # If we were given a system, make sure sizes match list lengths
     if sys:
         if isinstance(inputs, list) and sys.ninputs != len(inputs):
-            raise ValueError("Wrong number of input labels given.")
+            raise ValueError("wrong number of input labels given")
         if isinstance(outputs, list) and sys.noutputs != len(outputs):
-            raise ValueError("Wrong number of output labels given.")
+            raise ValueError("wrong number of output labels given")
         if sys.nstates is not None and \
            isinstance(states, list) and sys.nstates != len(states):
-            raise ValueError("Wrong number of state labels given.")
+            raise ValueError("wrong number of state labels given")
 
     # Process timebase: if not given use default, but allow None as value
     dt = _process_dt_keyword(keywords, defaults, static=static)
@@ -911,19 +878,3 @@ def _parse_spec(syslist, spec, signame, dictname=None):
             ValueError(f"signal index '{index}' is out of range")
 
     return system_index, signal_indices, gain
-
-# Utility function for creating an I/O system from a scalar or array
-def _convert_static_iosystem(K, noutputs=1):
-    if isinstance(sys1, NonlinearIOSystem):
-        return sys              # no action required
-    elif isinstance(K, (int, float, np.number)):
-        return NonlinearIOSystem(
-            None, lambda t, x, u, params: K * u,
-            outputs=noutputs, inputs=noutputs)
-    elif isinstance(K, np.ndarray):
-        # Assume that K is the right shape
-        return NonlinearIOSystem(
-            None, lambda t, x, u, params: K @ u,
-            outputs=K.shape[0], inputs=K.shape[1])
-    
-    raise TypeError("Unknown I/O system object ", sys1)

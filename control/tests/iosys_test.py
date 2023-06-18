@@ -1354,6 +1354,12 @@ class TestIOSys:
             (2, 2, 'rss23', ct.StateSpace.__rsub__),
             (2, 3, np.array([[2]]), ct.StateSpace.__sub__),
             (2, 3, np.array([[2]]), ct.StateSpace.__rsub__),
+            (2, 2, 'rss32', ct.NonlinearIOSystem.__mul__),
+            (2, 2, 'rss23', ct.NonlinearIOSystem.__rmul__),
+            (2, 2, 'rss32', ct.NonlinearIOSystem.__add__),
+            (2, 2, 'rss23', ct.NonlinearIOSystem.__radd__),
+            (2, 2, 'rss32', ct.NonlinearIOSystem.__sub__),
+            (2, 2, 'rss23', ct.NonlinearIOSystem.__rsub__),
         ])
     def test_operand_incompatible(self, Pout, Pin, C, op):
         P = ct.StateSpace(
@@ -1362,6 +1368,7 @@ class TestIOSys:
             C = ct.rss(2, 3, 2)
         elif isinstance(C, str) and C == 'rss23':
             C = ct.rss(2, 2, 3)
+            
         with pytest.raises(ValueError, match="incompatible"):
             PC = op(P, C)
 

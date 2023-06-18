@@ -231,7 +231,7 @@ class NonlinearIOSystem(InputOutputSystem):
             return NotImplemented
 
         # Make sure systems can be interconnected
-        if other.noutputs != self.ninputs:
+        if self.noutputs != other.ninputs:
             raise ValueError("Can't multiply systems with incompatible "
                              "inputs and outputs")
 
@@ -566,11 +566,6 @@ class NonlinearIOSystem(InputOutputSystem):
         linsys = StateSpace(A, B, C, D, self.dt, remove_useless_states=False)
 
         # Set the system name, inputs, outputs, and states
-        if 'copy' in kwargs:
-            copy_names = kwargs.pop('copy')
-            warn("keyword 'copy' is deprecated. please use 'copy_names'",
-                DeprecationWarning)
-
         if copy_names:
             linsys._copy_names(self, prefix_suffix_name='linearized')
             if name is not None:
