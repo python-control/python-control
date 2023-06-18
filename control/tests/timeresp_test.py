@@ -639,7 +639,9 @@ class TestTimeresp:
         U = np.sin(T)
 
         """Make sure that legacy version of forced_response works"""
-        ct.config.use_legacy_defaults("0.8.4")
+        with pytest.warns(
+                UserWarning, match="NumPy matrix class no longer"):
+            ct.config.use_legacy_defaults("0.8.4")
         # forced_response returns x by default
         t, y = ct.step_response(sys, T)
         t, y, x = ct.forced_response(sys, T, U)

@@ -29,7 +29,7 @@ from .iosys import InputOutputSystem, _process_signal_list, \
 from .timeresp import _check_convert_array, _process_time_response, \
     TimeResponseData
 
-__all__ = ['NonlinearIOSystem', 'InterconnectedSystem',
+__all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
            'interconnect']
 
@@ -1131,6 +1131,100 @@ class InterconnectedSystem(NonlinearIOSystem):
             warn(msg)
 
         return dropped_inputs, dropped_outputs
+
+
+def nlsys(
+        updfcn, outfcn=None, inputs=None, outputs=None, states=None, **kwargs):
+    """Create a nonlinear input/output system.
+
+    Creates an :class:`~control.InputOutputSystem` for a nonlinear system by
+    specifying a state update function and an output function.  The new system
+    can be a continuous or discrete time system.
+
+    Parameters
+    ----------
+    updfcn : callable
+        Function returning the state update function
+
+            `updfcn(t, x, u, params) -> array`
+
+        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
+        with shape (ninputs,), `t` is a float representing the currrent
+        time, and `params` is a dict containing the values of parameters
+        used by the function.
+
+    outfcn : callable
+        Function returning the output at the given state
+
+            `outfcn(t, x, u, params) -> array`
+
+        where the arguments are the same as for `upfcn`.
+
+    inputs : int, list of str or None, optional
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.
+        If an integer count is specified, the names of the signal will be
+        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        this parameter is not given or given as `None`, the relevant
+        quantity will be determined when possible based on other
+        information provided to functions using the system.
+
+    outputs : int, list of str or None, optional
+        Description of the system outputs.  Same format as `inputs`.
+
+    states : int, list of str, or None, optional
+        Description of the system states.  Same format as `inputs`.
+
+    dt : timebase, optional
+        The timebase for the system, used to specify whether the system is
+        operating in continuous or discrete time.  It can have the
+        following values:
+
+        * dt = 0: continuous time system (default)
+        * dt > 0: discrete time system with sampling period 'dt'
+        * dt = True: discrete time with unspecified sampling period
+        * dt = None: no timebase specified
+
+    name : string, optional
+        System name (used for specifying signals). If unspecified, a
+        generic name <sys[id]> is generated with a unique integer id.
+
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+
+    Returns
+    -------
+    sys : :class:`NonlinearIOSystem`
+        Nonlinear input/output system.
+
+    See Also
+    --------
+    ss, tf
+
+    Example
+    -------
+    >>> def kincar_update(t, x, u, params):
+    ...     l = params.get('l', 1)  # wheelbase
+    ...     return np.array([
+    ...         np.cos(x[2]) * u[0],     # x velocity
+    ...         np.sin(x[2]) * u[0],     # y velocity
+    ...         np.tan(u[1]) * u[0] / l  # angular velocity
+    ...     ])
+    >>>
+    >>> def kincar_output(t, x, u, params):
+    ...     return x[0:2]  # x, y position
+    >>>
+    >>> kincar = ct.nlsys(
+    ...     kincar_update, kincar_output, states=3, inputs=2, outputs=2)
+    >>>
+    >>> timepts = np.linspace(0, 10)
+    >>> response = ct.input_output_response(
+    ...     kincar, timepts, [10, 0.05 * np.sin(timepts)])
+    """
+    return NonlinearIOSystem(
+        updfcn, outfcn, inputs=inputs, outputs=outputs, states=states, **kwargs)
 
 
 def input_output_response(

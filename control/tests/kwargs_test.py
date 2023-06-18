@@ -70,7 +70,11 @@ def test_kwarg_search(module, prefix):
                 source = inspect.getsource(kwarg_unittest[prefix + name])
 
             # Make sure the unit test looks for unrecognized keyword
-            if source and source.find('unrecognized keyword') < 0:
+            if kwarg_unittest[prefix + name] == test_unrecognized_kwargs:
+                # @parametrize messes up the check, but we know it is there
+                pass
+
+            elif source and source.find('unrecognized keyword') < 0:
                 warnings.warn(
                     f"'unrecognized keyword' not found in unit test "
                     f"for {name}")
@@ -85,6 +89,7 @@ def test_kwarg_search(module, prefix):
      (control.lqe, 1, 0, ([[1]], [[1]]), {}),
      (control.lqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.linearize, 1, 0, (0, 0), {}),
+     (control.nlsys, 0, 0, (lambda t, x, u, params: np.array([0]),), {}),
      (control.pzmap, 1, 0, (), {}),
      (control.rlocus, 0, 1, (), {}),
      (control.root_locus, 0, 1, (), {}),
@@ -172,6 +177,7 @@ kwarg_unittest = {
     'linearize': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
     'lqr': test_unrecognized_kwargs,
+    'nlsys': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
     'pzmap': test_unrecognized_kwargs,

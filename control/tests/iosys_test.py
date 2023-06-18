@@ -1897,8 +1897,9 @@ def test_nonuniform_timepts(nstates, noutputs, ninputs):
 
 def test_ss_nonlinear():
     """Test ss() for creating nonlinear systems"""
-    secord = ct.ss(secord_update, secord_output, inputs='u', outputs='y',
-                   states = ['x1', 'x2'], name='secord')
+    with pytest.warns(PendingDeprecationWarning, match="use nlsys()"):
+        secord = ct.ss(secord_update, secord_output, inputs='u', outputs='y',
+                       states = ['x1', 'x2'], name='secord')
     assert secord.name == 'secord'
     assert secord.input_labels == ['u']
     assert secord.output_labels == ['y']
@@ -1917,12 +1918,14 @@ def test_ss_nonlinear():
     np.testing.assert_almost_equal(ss_response.outputs, io_response.outputs)
 
     # Make sure that optional keywords are allowed
-    secord = ct.ss(secord_update, secord_output, dt=True)
+    with pytest.warns(PendingDeprecationWarning, match="use nlsys()"):
+        secord = ct.ss(secord_update, secord_output, dt=True)
     assert ct.isdtime(secord)
 
     # Make sure that state space keywords are flagged
-    with pytest.raises(TypeError, match="unrecognized keyword"):
-        ct.ss(secord_update, remove_useless_states=True)
+    with pytest.warns(PendingDeprecationWarning, match="use nlsys()"):
+        with pytest.raises(TypeError, match="unrecognized keyword"):
+            ct.ss(secord_update, remove_useless_states=True)
 
 
 def test_rss():

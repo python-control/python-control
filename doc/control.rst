@@ -21,7 +21,7 @@ System creation
     zpk
     rss
     drss
-    NonlinearIOSystem
+    nlsys
 
 
 System interconnections
@@ -193,7 +193,6 @@ Utility functions and conversions
     tf2ss
     tfdata
     timebase
-    timebaseEqual
     unwrap
     use_fbs_defaults
     use_matlab_defaults
