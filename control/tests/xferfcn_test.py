@@ -14,7 +14,7 @@ from control import isctime, isdtime, sample_system
 from control import defaults, reset_defaults, set_defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
-from control.tests.conftest import slycotonly, matrixfilter
+from control.tests.conftest import slycotonly
 
 
 class TestXferFcn:
@@ -749,20 +749,16 @@ class TestXferFcn:
         np.testing.assert_array_almost_equal(sys.num[1][1], tm.num[1][2])
         np.testing.assert_array_almost_equal(sys.den[1][1], tm.den[1][2])
 
-    @pytest.mark.parametrize(
-        "matarrayin",
-        [pytest.param(np.array,
-                      id="arrayin",
-                      marks=[pytest.mark.skip(".__matmul__ not implemented")]),
-         pytest.param(np.matrix,
-                      id="matrixin",
-                      marks=matrixfilter)],
-        indirect=True)
-    @pytest.mark.parametrize("X_, ij",
-                             [([[2., 0., ]], 0),
-                              ([[0., 2., ]], 1)])
-    def test_matrix_array_multiply(self, matarrayin, X_, ij):
-        """Test mulitplication of MIMO TF with matrix and matmul with array"""
+    @pytest.mark.parametrize("op", [
+        pytest.param('mul'),
+        pytest.param(
+            'matmul', marks=pytest.mark.skip(".__matmul__ not implemented")),
+    ])
+    @pytest.mark.parametrize("X, ij",
+                             [(np.array([[2., 0., ]]), 0),
+                              (np.array([[0., 2., ]]), 1)])
+    def test_matrix_array_multiply(self, op, X, ij):
+        """Test mulitplication of MIMO TF with matrix"""
         # 2 inputs, 2 outputs with prime zeros so they do not cancel
         n = 2
         p = [3, 5, 7, 11, 13, 17, 19, 23]
@@ -771,13 +767,12 @@ class TestXferFcn:
              for i in range(n)],
             [[[1, -1]] * n] * n)
 
-        X = matarrayin(X_)
-
-        if matarrayin is np.matrix:
+        if op == 'matmul':
+            XH = X @ H
+        elif op == 'mul':
             XH = X * H
         else:
-            # XH = X @ H
-            XH = np.matmul(X, H)
+            assert NotImplemented(f"unknown operator '{op}'")
         XH = XH.minreal()
         assert XH.ninputs == n
         assert XH.noutputs == X.shape[0]
@@ -790,11 +785,12 @@ class TestXferFcn:
         np.testing.assert_allclose(2. * H.num[ij][1], XH.num[0][1], rtol=1e-4)
         np.testing.assert_allclose(     H.den[ij][1], XH.den[0][1], rtol=1e-4)
 
-        if matarrayin is np.matrix:
+        if op == 'matmul':
+            HXt = H @ X.T
+        elif op == 'mul':
             HXt = H * X.T
         else:
-            # HXt = H @ X.T
-            HXt = np.matmul(H, X.T)
+            assert NotImplemented(f"unknown operator '{op}'")
         HXt = HXt.minreal()
         assert HXt.ninputs == X.T.shape[1]
         assert HXt.noutputs == n

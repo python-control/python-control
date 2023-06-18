@@ -126,13 +126,8 @@ def lyap(A, Q, C=None, E=None, method=None):
 
     Returns
     -------
-    X : 2D array (or matrix)
+    X : 2D array
         Solution to the Lyapunov or Sylvester equation
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use
@@ -259,11 +254,6 @@ def dlyap(A, Q, C=None, E=None, method=None):
     -------
     X : 2D array (or matrix)
         Solution to the Lyapunov or Sylvester equation
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use
@@ -394,11 +384,6 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
         Closed loop eigenvalues
     G : 2D array (or matrix)
         Gain matrix
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use
@@ -553,11 +538,6 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
         Closed loop eigenvalues
     G : 2D array (or matrix)
         Gain matrix
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use

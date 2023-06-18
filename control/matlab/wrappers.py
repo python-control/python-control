@@ -48,7 +48,7 @@ def bode(*args, **kwargs):
     --------
     >>> from control.matlab import ss, bode
 
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], 9)
     >>> mag, phase, omega = bode(sys)
 
     .. todo::

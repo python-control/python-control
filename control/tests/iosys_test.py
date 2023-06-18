@@ -17,7 +17,6 @@ from math import sqrt
 
 import control as ct
 from control import iosys as ios
-from control.tests.conftest import matrixfilter
 
 
 class TestIOSys:
@@ -253,10 +252,10 @@ class TestIOSys:
         assert linearized_newnames.find_output('y') is None
 
         # Test legacy version as well
-        ct.use_legacy_defaults('0.8.4')
-        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
-        linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
-        assert linearized.name == kincar.name + '_linearized'
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.use_legacy_defaults('0.8.4')
+            linearized = kincar.linearize([0, 0, 0], [0, 0], copy_names=True)
+            assert linearized.name == kincar.name + '_linearized'
 
     def test_connect(self, tsys):
         # Define a couple of (linear) systems to interconnection
@@ -1060,8 +1059,8 @@ class TestIOSys:
         """Enforce generic system names 'sys[i]' to be present when systems are
         created without explicit names."""
 
-        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
-        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
 
         # Create a system with a known ID
         ct.namedio.NamedIOSystem._idCounter = 0
@@ -1128,8 +1127,8 @@ class TestIOSys:
         output: 'y[i]'
         """
 
-        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
-        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
 
         # Create a system with a known ID
         ct.namedio.NamedIOSystem._idCounter = 0
@@ -1434,8 +1433,8 @@ class TestIOSys:
             ios_series = nlios * nlios
 
         # Nonduplicate objects
-        ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
-        ct.config.use_numpy_matrix(False)       # np.matrix deprecated
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
         nlios1 = nlios.copy()
         nlios2 = nlios.copy()
         with pytest.warns(UserWarning, match="duplicate name"):

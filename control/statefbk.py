@@ -110,9 +110,6 @@ def place(A, B, p):
         The algorithm will not place poles at the same location more
         than rank(B) times.
 
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
-
     References
     ----------
     .. [1] A.L. Tits and Y. Yang, "Globally convergent algorithms for robust
@@ -192,11 +189,6 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     [1] Varga A. "A Schur method for pole assignment."  IEEE Trans. Automatic
         Control, Vol. AC-26, pp. 517-519, 1981.
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -279,10 +271,6 @@ def acker(A, B, poles):
     K : 2D array (or matrix)
         Gains such that A - B K has given eigenvalues
 
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
     """
     # Convert the inputs to matrices
     a = _ssmatrix(A)
@@ -366,13 +354,10 @@ def lqr(*args, **kwargs):
 
     Notes
     -----
-    1. If the first argument is an LTI object, then this object will be used
-       to define the dynamics and input matrices.  Furthermore, if the LTI
-       object corresponds to a discrete time system, the ``dlqr()`` function
-       will be called.
-
-    2. The return type for 2D arrays depends on the default class set for
-       state space operations.  See :func:`~control.use_numpy_matrix`.
+    If the first argument is an LTI object, then this object will be used
+    to define the dynamics and input matrices.  Furthermore, if the LTI
+    object corresponds to a discrete time system, the ``dlqr()`` function
+    will be called.
 
     Examples
     --------
@@ -513,11 +498,6 @@ def dlqr(*args, **kwargs):
     See Also
     --------
     lqr, lqe, dlqe
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -971,11 +951,6 @@ def ctrb(A, B):
     C : 2D array (or matrix)
         Controllability matrix
 
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
-
     Examples
     --------
     >>> G = ct.tf2ss([1], [1, 2, 3])
@@ -1009,11 +984,6 @@ def obsv(A, C):
     -------
     O : 2D array (or matrix)
         Observability matrix
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -1062,11 +1032,6 @@ def gram(sys, type):
     ControlSlycot
         if slycot routine sb03md cannot be found
         if slycot routine sb03od cannot be found
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------

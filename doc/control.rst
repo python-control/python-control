@@ -197,6 +197,5 @@ Utility functions and conversions
     unwrap
     use_fbs_defaults
     use_matlab_defaults
-    use_numpy_matrix
 
 

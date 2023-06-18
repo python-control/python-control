@@ -14,7 +14,7 @@ from .exception import ControlArgument
 
 __all__ = ['defaults', 'set_defaults', 'reset_defaults',
            'use_matlab_defaults', 'use_fbs_defaults',
-           'use_legacy_defaults', 'use_numpy_matrix']
+           'use_legacy_defaults']
 
 # Package level default values
 _control_defaults = {
@@ -202,7 +202,6 @@ def use_matlab_defaults():
     The following conventions are used:
         * Bode plots plot gain in dB, phase in degrees, frequency in
           rad/sec, with grids
-        * State space class and functions use Numpy matrix objects
 
     Examples
     --------
@@ -211,7 +210,6 @@ def use_matlab_defaults():
 
     """
     set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
-    set_defaults('statesp', use_numpy_matrix=True)
 
 
 # Set defaults to match FBS (Astrom and Murray)
@@ -231,41 +229,6 @@ def use_fbs_defaults():
     """
     set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
     set_defaults('nyquist', mirror_style='--')
-
-
-# Decide whether to use numpy.matrix for state space operations
-def use_numpy_matrix(flag=True, warn=True):
-    """Turn on/off use of Numpy `matrix` class for state space operations.
-
-    Parameters
-    ----------
-    flag : bool
-        If flag is `True` (default), use the deprecated Numpy
-        `matrix` class to represent matrices in the `~control.StateSpace`
-        class and functions.  If flat is `False`, then matrices are
-        represented by a 2D `ndarray` object.
-
-    warn : bool
-        If flag is `True` (default), issue a warning when turning on the use
-        of the Numpy `matrix` class.  Set `warn` to false to omit display of
-        the warning message.
-
-    Notes
-    -----
-    Prior to release 0.9.x, the default type for 2D arrays is the Numpy
-    `matrix` class.  Starting in release 0.9.0, the default type for state
-    space operations is a 2D array.
-
-    Examples
-    --------
-    >>> ct.use_numpy_matrix(True, False)
-    >>> # do some legacy calculations using np.matrix
-
-    """
-    if flag and warn:
-        warnings.warn("Return type numpy.matrix is deprecated.",
-                      stacklevel=2, category=DeprecationWarning)
-    set_defaults('statesp', use_numpy_matrix=flag)
 
 
 def use_legacy_defaults(version):
@@ -331,7 +294,7 @@ def use_legacy_defaults(version):
     # Version 0.9.0:
     if major == 0 and minor < 9:
         # switched to 'array' as default for state space objects
-        set_defaults('statesp', use_numpy_matrix=True)
+        warnings.warn("NumPy matrix class no longer supported")
 
         # switched to 0 (=continuous) as default timestep
         set_defaults('control', default_dt=None)

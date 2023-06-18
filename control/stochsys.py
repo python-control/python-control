@@ -87,9 +87,9 @@ def lqe(*args, **kwargs):
 
     Returns
     -------
-    L : 2D array (or matrix)
+    L : 2D array
         Kalman estimator gain
-    P : 2D array (or matrix)
+    P : 2D array
         Solution to Riccati equation
 
         .. math::
@@ -101,13 +101,10 @@ def lqe(*args, **kwargs):
 
     Notes
     -----
-    1. If the first argument is an LTI object, then this object will be used
-       to define the dynamics, noise and output matrices.  Furthermore, if
-       the LTI object corresponds to a discrete time system, the ``dlqe()``
-       function will be called.
-
-    2. The return type for 2D arrays depends on the default class set for
-       state space operations.  See :func:`~control.use_numpy_matrix`.
+    If the first argument is an LTI object, then this object will be used
+    to define the dynamics, noise and output matrices.  Furthermore, if the
+    LTI object corresponds to a discrete time system, the ``dlqe()``
+    function will be called.
 
     Examples
     --------
@@ -224,9 +221,9 @@ def dlqe(*args, **kwargs):
 
     Returns
     -------
-    L : 2D array (or matrix)
+    L : 2D array
         Kalman estimator gain
-    P : 2D array (or matrix)
+    P : 2D array
         Solution to Riccati equation
 
         .. math::
@@ -235,11 +232,6 @@ def dlqe(*args, **kwargs):
 
     E : 1D array
         Eigenvalues of estimator poles eig(A - L C)
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------

@@ -2227,8 +2227,6 @@ def ss(*args, **kwargs):
               y[k] &= C x[k] + D u[k]
 
         The matrices can be given as *array like* data types or strings.
-        Everything that the constructor of :class:`numpy.matrix` accepts is
-        permissible here too.
 
     ``ss(args, inputs=['u1', ..., 'up'], outputs=['y1', ..., 'yq'], states=['x1', ..., 'xn'])``
         Create a system with named input, output, and state signals.

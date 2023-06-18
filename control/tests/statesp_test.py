@@ -21,7 +21,7 @@ from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
     _statesp_defaults, _rss_generate, linfnorm
 from control.iosys import ss, rss, drss
-from control.tests.conftest import ismatarrayout, slycotonly
+from control.tests.conftest import slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
 
@@ -195,17 +195,6 @@ class TestStateSpace:
         del sysin.dt            # this is a nonsensical thing to do
         sys = StateSpace(sysin)
         assert sys.dt is None
-
-    def test_matlab_style_constructor(self):
-        """Use (deprecated) matrix-style construction string"""
-        with pytest.deprecated_call():
-            sys = StateSpace("-1 1; 0 2", "0; 1", "1, 0", "0")
-        assert sys.A.shape == (2, 2)
-        assert sys.B.shape == (2, 1)
-        assert sys.C.shape == (1, 2)
-        assert sys.D.shape == (1, 1)
-        for X in [sys.A, sys.B, sys.C, sys.D]:
-            assert ismatarrayout(X)
 
     def test_D_broadcast(self, sys623):
         """Test broadcast of D=0 to the right shape"""
@@ -1017,13 +1006,7 @@ class TestLTIConverter:
 
 class TestStateSpaceConfig:
     """Test the configuration of the StateSpace module"""
-
-    @pytest.fixture
-    def matarrayout(self):
-        """Override autoused global fixture within this class"""
-        pass
-
-    def test_statespace_defaults(self, matarrayout):
+    def test_statespace_defaults(self):
         """Make sure the tests are run with the configured defaults"""
         for k, v in _statesp_defaults.items():
             assert defaults[k] == v, \
