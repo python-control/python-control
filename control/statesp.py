@@ -192,15 +192,14 @@ class StateSpace(NonlinearIOSystem, LTI):
         #
         # Process positional arguments
         #
-        # TODO: Move all of this into the ss() factory function
-        # TODO: Use standard processing order for I/O systems
+
         if len(args) == 4:
             # The user provided A, B, C, and D matrices.
-            (A, B, C, D) = args
+            A, B, C, D = args
 
         elif len(args) == 5:
             # Discrete time system
-            (A, B, C, D, dt) = args
+            A, B, C, D, dt = args
             if 'dt' in kwargs:
                 warn("received multiple dt arguments, "
                      "using positional arg dt = %s" % dt)
@@ -208,17 +207,17 @@ class StateSpace(NonlinearIOSystem, LTI):
             args = args[:-1]
 
         elif len(args) == 1:
-            # Use the copy constructor.
+            # Use the copy constructor
             if not isinstance(args[0], StateSpace):
                 raise TypeError(
-                    "The one-argument constructor can only take in a "
-                    "StateSpace object. Received %s." % type(args[0]))
+                    "the one-argument constructor can only take in a "
+                    "StateSpace object; received %s" % type(args[0]))
             A = args[0].A
             B = args[0].B
             C = args[0].C
             D = args[0].D
-            dt = args[0].dt
-            # TODO: copy the remaining attributes
+            if 'dt' not in kwargs:
+                kwargs['dt'] = args[0].dt
 
         else:
             raise TypeError(
@@ -691,7 +690,6 @@ class StateSpace(NonlinearIOSystem, LTI):
 
     # Right multiplication of two state space systems (series interconnection)
     # Just need to convert LH argument to a state space object
-    # TODO: __rmul__ only works for special cases (??)
     def __rmul__(self, other):
         """Right multiply two LTI objects (serial connection)."""
         from .xferfcn import TransferFunction
@@ -720,7 +718,7 @@ class StateSpace(NonlinearIOSystem, LTI):
 
     # TODO: general __truediv__ requires descriptor system support
     def __truediv__(self, other):
-        """Division of state space systems byTFs, FRDs, scalars, and arrays"""
+        """Division of state space systems by TFs, FRDs, scalars, and arrays"""
         if not isinstance(other, (LTI, InputOutputSystem)):
             return self * (1/other)
         else:
@@ -1522,11 +1520,6 @@ def ss(*args, **kwargs):
         Convert a linear system into space system form. Always creates a
         new system, even if sys is already a state space system.
 
-    ``ss(updfcn, outfcn)``
-        Create a nonlinear input/output system with update function ``updfcn``
-        and output function ``outfcn``.  See :class:`NonlinearIOSystem` for
-        more information.
-
     ``ss(A, B, C, D)``
         Create a state space system from the matrices of its state and
         output equations:
@@ -1585,9 +1578,7 @@ def ss(*args, **kwargs):
 
     See Also
     --------
-    tf
-    ss2tf
-    tf2ss
+    tf, ss2tf, tf2ss
 
     Examples
     --------
@@ -1601,10 +1592,12 @@ def ss(*args, **kwargs):
     >>> sys2 = ct.ss(sys_tf)
 
     """
-    # See if this is a nonlinear I/O system
+    # See if this is a nonlinear I/O system (legacy usage)
     if len(args) > 0 and (hasattr(args[0], '__call__') or args[0] is None) \
        and not isinstance(args[0], (InputOutputSystem, LTI)):
         # Function as first (or second) argument => assume nonlinear IO system
+        warn("use nlsys() to create nonlinear I/O System",
+             PendingDeprecationWarning)
         return NonlinearIOSystem(*args, **kwargs)
 
     elif len(args) == 4 or len(args) == 5:
@@ -1644,8 +1637,8 @@ def tf2ss(*args, **kwargs):
     The function accepts either 1 or 2 parameters:
 
     ``tf2ss(sys)``
-        Convert a linear system into space space form. Always creates
-        a new system, even if sys is already a StateSpace object.
+        Convert a transfer function into space space form.  Equivalent to
+        `ss(sys)`.
 
     ``tf2ss(num, den)``
         Create a state space system from its numerator and denominator
@@ -1710,15 +1703,8 @@ def tf2ss(*args, **kwargs):
             _convert_to_statespace(TransferFunction(*args)), **kwargs)
 
     elif len(args) == 1:
-        sys = args[0]
-        if not isinstance(sys, TransferFunction):
-            raise TypeError("tf2ss(sys): sys must be a TransferFunction "
-                            "object.")
-        return StateSpace(
-            _convert_to_statespace(
-                sys,
-                use_prefix_suffix=not sys._generic_name_check()),
-            **kwargs)
+        return ss(*args, **kwargs)
+
     else:
         raise ValueError("Needs 1 or 2 arguments; received %i." % len(args))
 
@@ -1946,8 +1932,8 @@ def summing_junction(
 
     Examples
     --------
-    >>> P = ct.tf2io(1, [1, 0], inputs='u', outputs='y')
-    >>> C = ct.tf2io(10, [1, 1], inputs='e', outputs='u')
+    >>> P = ct.tf(1, [1, 0], inputs='u', outputs='y')
+    >>> C = ct.tf(10, [1, 1], inputs='e', outputs='u')
     >>> sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
     >>> T = ct.interconnect([P, C, sumblk], inputs='r', outputs='y')
     >>> T.ninputs, T.noutputs, T.nstates
@@ -2031,6 +2017,9 @@ def summing_junction(
     return StateSpace(
         ss_sys, inputs=input_names, outputs=output_names, name=name)
 
+#
+# Utility functions
+#
 
 def _ssmatrix(data, axis=1):
     """Convert argument to a (possibly empty) 2D state space matrix.
@@ -2104,7 +2093,6 @@ def _f2s(f):
     return s
 
 
-# TODO: add discrete time check
 def _convert_to_statespace(sys, use_prefix_suffix=False):
     """Convert a system to state space form (if needed).
 
@@ -2126,8 +2114,8 @@ def _convert_to_statespace(sys, use_prefix_suffix=False):
         # Make sure the transfer function is proper
         if any([[len(num) for num in col] for col in sys.num] >
                [[len(num) for num in col] for col in sys.den]):
-            raise ValueError("Transfer function is non-proper; can't "
-                             "convert to StateSpace system.")
+            raise ValueError("transfer function is non-proper; can't "
+                             "convert to StateSpace system")
 
         try:
             from slycot import td04ad
@@ -2163,9 +2151,6 @@ def _convert_to_statespace(sys, use_prefix_suffix=False):
                 if sys.ninputs != 1 or sys.noutputs != 1:
                     raise TypeError("No support for MIMO without slycot")
 
-                # TODO: do we want to squeeze first and check dimenations?
-                # I think this will fail if num and den aren't 1-D after
-                # the squeeze
                 A, B, C, D = \
                     sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
                 newsys = StateSpace(A, B, C, D, sys.dt)
@@ -2187,7 +2172,7 @@ def _convert_to_statespace(sys, use_prefix_suffix=False):
     except Exception:
         raise TypeError("Can't convert given type to StateSpace system.")
 
-# TODO: add discrete time option
+
 def _rss_generate(
         states, inputs, outputs, cdtype, strictly_proper=False, name=None):
     """Generate a random state space.
@@ -2310,8 +2295,6 @@ def _rss_generate(
     return StateSpace(*ss_args, name=name)
 
 
-# Convert a MIMO system to a SISO system
-# TODO: add discrete time check
 def _mimo2siso(sys, input, output, warn_conversion=False):
     # pylint: disable=W0622
     """
@@ -2416,8 +2399,8 @@ def _mimo2simo(sys, input, warn_conversion=False):
         #  Y = C*X + D*U
         new_B = sys.B[:, input:input+1]
         new_D = sys.D[:, input:input+1]
-        sys = StateSpace(sys.A, new_B, sys.C, new_D, sys.dt,
-                         name=sys.name,
-                         inputs=sys.input_labels[input], outputs=sys.output_labels)
+        sys = StateSpace(
+            sys.A, new_B, sys.C, new_D, sys.dt, name=sys.name,
+            inputs=sys.input_labels[input], outputs=sys.output_labels)
 
     return sys
