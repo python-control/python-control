@@ -179,6 +179,56 @@ def test_binary_op_type_conversions(opname, ltype, rtype, sys_dict):
             if result.nstates is not None:
                 assert len(result.state_labels) == result.nstates
 
+
+# TODO: add in FRD, TF types (general rules seem to be tricky)
+bd_types =  ['ss',  'ios', 'arr', 'flt']
+bd_expect = [
+    ('ss',  ['ss',  'ios', 'ss',  'ss' ]),
+    ('ios', ['ios', 'ios', 'ios', 'ios']),
+    ('arr', ['ss',  'ios',  None, None]),
+    ('flt', ['ss',  'ios',  None, None])]
+
+@pytest.mark.parametrize("fun", [ct.series, ct.parallel, ct.feedback])
+@pytest.mark.parametrize("ltype", bd_types)
+@pytest.mark.parametrize("rtype", bd_types)
+def test_bdalg_type_conversions(fun, ltype, rtype, sys_dict):
+    leftsys = sys_dict[ltype]
+    rightsys = sys_dict[rtype]
+    expected = \
+        bd_expect[bd_types.index(ltype)][1][bd_types.index(rtype)]
+
+    # Skip tests if expected is None
+    if expected is None:
+        return None
+
+    # Get rid of warnings for NonlinearIOSystem objects by making a copy
+    if isinstance(leftsys, ct.NonlinearIOSystem) and leftsys == rightsys:
+        rightsys = leftsys.copy()
+
+    # Make sure we get the right result
+    if expected == 'E' or expected[0] == 'x':
+        # Exception expected
+        with pytest.raises((TypeError, ValueError)):
+            fun(leftsys, rightsys)
+    else:
+        # Operation should work and return the given type
+        if fun == ct.series:
+            # Last argument sets the type
+            result = fun(rightsys, leftsys)
+        else:
+            # First argument sets the type
+            result = fun(leftsys, rightsys)
+
+        # Print out what we are testing in case something goes wrong
+        assert isinstance(result, type_dict[expected])
+
+        # Make sure that input, output, and state names make sense
+        if isinstance(result, ct.InputOutputSystem):
+            assert len(result.input_labels) == result.ninputs
+            assert len(result.output_labels) == result.noutputs
+            if result.nstates is not None:
+                assert len(result.state_labels) == result.nstates
+
 @pytest.mark.parametrize(
     "typelist, connections, inplist, outlist, expected", [
         (['ss',  'ss'],  [[(1, 0), (0, 0)]], [[(0, 0)]], [[(1, 0)]], 'ss'),

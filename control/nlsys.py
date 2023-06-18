@@ -630,11 +630,12 @@ class InterconnectedSystem(NonlinearIOSystem):
             dt = common_timebase(dt, sys.dt)
 
             # Make sure number of inputs, outputs, states is given
-            if sys.ninputs is None or sys.noutputs is None or \
-               sys.nstates is None:
+            if sys.ninputs is None or sys.noutputs is None:
                 raise TypeError("system '%s' must define number of inputs, "
                                 "outputs, states in order to be connected" %
                                 sys.name)
+            elif sys.nstates is None:
+                raise TypeError("can't interconnect systems with no state")
 
             # Keep track of the offsets into the states, inputs, outputs
             self.input_offset.append(ninputs)
@@ -1203,8 +1204,8 @@ def nlsys(
     --------
     ss, tf
 
-    Example
-    -------
+    Examples
+    --------
     >>> def kincar_update(t, x, u, params):
     ...     l = params.get('l', 1)  # wheelbase
     ...     return np.array([
