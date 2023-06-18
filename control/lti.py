@@ -22,15 +22,6 @@ class LTI(InputOutputSystem):
     contains the number of inputs and outputs, and the timebase (dt) for the
     system.  This function is not generally called directly by the user.
 
-    The timebase for the system, dt, is used to specify whether the system
-    is operating in continuous or discrete time. It can have the following
-    values:
-
-      * dt = None       No timebase specified
-      * dt = 0          Continuous time system
-      * dt > 0          Discrete time system with sampling time dt
-      * dt = True       Discrete time system with unspecified sampling time
-
     When two LTI systems are combined, their timebases much match.  A system
     with timebase None can be combined with a system having a specified
     timebase, and the result will have the timebase of the latter system.
@@ -38,7 +29,6 @@ class LTI(InputOutputSystem):
     Note: dt processing has been moved to the InputOutputSystem class.
 
     """
-
     def __init__(self, inputs=1, outputs=1, states=None, name=None, **kwargs):
         """Assign the LTI object's numbers of inputs and ouputs."""
         super().__init__(

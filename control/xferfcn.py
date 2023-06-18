@@ -153,10 +153,6 @@ class TransferFunction(LTI):
     >>> G = (s + 1)/(s**2 + 2*s + 1)
 
     """
-
-    # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
-    __array_priority__ = 11     # override ndarray types
-
     def __init__(self, *args, **kwargs):
         """TransferFunction(num, den[, dt])
 
@@ -174,6 +170,7 @@ class TransferFunction(LTI):
         #
         # Process positional arguments
         #
+        # TODO: move to tf()
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             num, den = args

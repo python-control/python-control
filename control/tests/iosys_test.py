@@ -379,7 +379,7 @@ class TestIOSys:
             linsys_series, T, U, X0, return_x=True)
 
         # Set up multiple gainst and make sure a warning is generated
-        with pytest.warns(UserWarning, match="multiple.*Combining"):
+        with pytest.warns(UserWarning, match="multiple.*combining"):
             iosys_series = ct.InterconnectedSystem(
                 [iosys1, iosys2], connections, inplist, outlist)
         ios_t, ios_y, ios_x = ct.input_output_response(

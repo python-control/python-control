@@ -132,9 +132,6 @@ def reset_defaults():
     from .statesp import _statesp_defaults
     defaults.update(_statesp_defaults)
 
-    from .nlsys import _iosys_defaults
-    defaults.update(_iosys_defaults)
-
     from .optimal import _optimal_defaults
     defaults.update(_optimal_defaults)
 

@@ -147,8 +147,6 @@ class StateSpace(NonlinearIOSystem, LTI):
     The default value of dt can be changed by changing the value of
     ``control.config.defaults['control.default_dt']``.
 
-    Note: timebase processing has moved to iosys.
-
     A state space system is callable and returns the value of the transfer
     function evaluated at a point in the complex plane.  See
     :meth:`~control.StateSpace.__call__` for a more detailed description.
@@ -172,10 +170,6 @@ class StateSpace(NonlinearIOSystem, LTI):
     `'separate'`, the matrices are shown separately.
 
     """
-
-    # Allow ndarray * StateSpace to give StateSpace._rmul_() priority
-    __array_priority__ = 12     # override ndarray and TF types
-
     def __init__(self, *args, **kwargs):
         """StateSpace(A, B, C, D[, dt])
 
@@ -278,9 +272,8 @@ class StateSpace(NonlinearIOSystem, LTI):
             updfcn, outfcn,
             name=name, inputs=inputs, outputs=outputs,
             states=states, dt=dt, **kwargs)
-        self.params = {}
 
-        # Reset shapes (may not be needed once np.matrix support is removed)
+        # Reset shapes if the system is static
         if self._isstatic():
             A.shape = (0, 0)
             B.shape = (0, self.ninputs)

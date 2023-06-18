@@ -115,10 +115,6 @@ class FrequencyResponseData(LTI):
 
     """
 
-    # Allow NDarray * StateSpace to give StateSpace._rmul_() priority
-    # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html
-    __array_priority__ = 13     # override ndarray, StateSpace, I/O sys
-
     #
     # Class attributes
     #

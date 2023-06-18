@@ -7,7 +7,7 @@ from .conftest import editsdefaults
 import control as ct
 from control import c2d, tf, ss, tf2ss, NonlinearIOSystem
 from control.lti import LTI, evalfr, damp, dcgain, zeros, poles, bandwidth
-from control import common_timebase, isctime, isdtime, issiso, timebaseEqual
+from control import common_timebase, isctime, isdtime, issiso
 from control.tests.conftest import slycotonly
 from control.exception import slycot_check
 
@@ -134,34 +134,6 @@ class TestLTI:
 
         # test if raise exception if dbdrop is positive scalar
         np.testing.assert_raises(ValueError, bandwidth, sys1, 3)
-
-    @pytest.mark.parametrize("dt1, dt2, expected",
-                             [(None, None, True),
-                              (None, 0, True),
-                              (None, 1, True),
-                              pytest.param(None, True, True,
-                                           marks=pytest.mark.xfail(
-                                               reason="returns false")),
-                              (0, 0, True),
-                              (0, 1, False),
-                              (0, True, False),
-                              (1, 1, True),
-                              (1, 2, False),
-                              (1, True, False),
-                              (True, True, True)])
-    def test_timebaseEqual_deprecated(self, dt1, dt2, expected):
-        """Test that timbaseEqual throws a warning and returns as documented"""
-        sys1 = tf([1], [1, 2, 3], dt1)
-        sys2 = tf([1], [1, 4, 5], dt2)
-
-        print(sys1.dt)
-        print(sys2.dt)
-
-        with pytest.deprecated_call():
-            assert timebaseEqual(sys1, sys2) is expected
-        # Make sure behaviour is symmetric
-        with pytest.deprecated_call():
-            assert timebaseEqual(sys2, sys1) is expected
 
     @pytest.mark.parametrize("dt1, dt2, expected",
                              [(None, None, None),

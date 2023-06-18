@@ -1,5 +1,4 @@
 # nlsys.py - input/output system module
-#
 # RMM, 28 April 2019
 #
 # Additional features to add
@@ -19,13 +18,6 @@ points and linearizations.
 
 """
 
-__author__ = "Richard Murray"
-__copyright__ = "Copyright 2019, California Institute of Technology"
-__credits__ = ["Richard Murray"]
-__license__ = "BSD"
-__maintainer__ = "Richard Murray"
-__email__ = "murray@cds.caltech.edu"
-
 import numpy as np
 import scipy as sp
 import copy
@@ -40,9 +32,6 @@ from .timeresp import _check_convert_array, _process_time_response, \
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem',
            'input_output_response', 'find_eqpt', 'linearize',
            'interconnect']
-
-# Define module default parameter values
-_iosys_defaults = {}
 
 
 class NonlinearIOSystem(InputOutputSystem):
@@ -110,10 +99,19 @@ class NonlinearIOSystem(InputOutputSystem):
     --------
     InputOutputSystem : Input/output system class.
 
-    """
-    # Set priority for operators
-    __array_priority__ = 13     # override ndarray, SS and TF types
+    Notes
+    -----
+    The :class:`~control.InputOuputSystem` class (and its subclasses) makes
+    use of two special methods for implementing much of the work of the class:
 
+    * _rhs(t, x, u): compute the right hand side of the differential or
+      difference equation for the system.  If not specified, the system
+      has no state.
+
+    * _out(t, x, u): compute the output for the current state of the system.
+      The default is to return the entire system state.
+
+    """
     def __init__(self, updfcn, outfcn=None, params=None, **kwargs):
         """Create a nonlinear I/O system given update and output functions."""
         # Process keyword arguments
@@ -135,8 +133,9 @@ class NonlinearIOSystem(InputOutputSystem):
             if self.nstates is None:
                 self.nstates = 0
             else:
-                raise ValueError("States specified but no update function "
-                                 "given.")
+                raise ValueError(
+                    "states specified but no update function given.")
+
         if outfcn is None:
             # No output function specified => outputs = states
             if self.noutputs is None and self.nstates is not None:
@@ -145,7 +144,7 @@ class NonlinearIOSystem(InputOutputSystem):
                 # Number of outputs = number of states => all is OK
                 pass
             elif self.noutputs is not None and self.noutputs != 0:
-                raise ValueError("Outputs specified but no output function "
+                raise ValueError("outputs specified but no output function "
                                  "(and nstates not known).")
 
         # Initialize current parameters to default parameters
@@ -266,7 +265,7 @@ class NonlinearIOSystem(InputOutputSystem):
         # Make sure number of input and outputs match
         if self.ninputs != other.ninputs or self.noutputs != other.noutputs:
             raise ValueError("Can't add systems with incompatible numbers of "
-                             "inputs or outputs.")
+                             "inputs or outputs")
 
         # Create a new system to handle the composition
         inplist = [[(0, i), (1, i)] for i in range(self.ninputs)]
@@ -286,8 +285,8 @@ class NonlinearIOSystem(InputOutputSystem):
 
         # Make sure number of input and outputs match
         if self.ninputs != other.ninputs or self.noutputs != other.noutputs:
-            raise ValueError("Can't add systems with incompatible numbers of "
-                             "inputs or outputs.")
+            raise ValueError("can't add systems with incompatible numbers of "
+                             "inputs or outputs")
 
         # Create a new system to handle the composition
         inplist = [[(0, i), (1, i)] for i in range(other.ninputs)]
@@ -308,8 +307,8 @@ class NonlinearIOSystem(InputOutputSystem):
         # Make sure number of input and outputs match
         if self.ninputs != other.ninputs or self.noutputs != other.noutputs:
             raise ValueError(
-                "Can't substract systems with incompatible numbers of "
-                "inputs or outputs.")
+                "can't substract systems with incompatible numbers of "
+                "inputs or outputs")
         ninputs = self.ninputs
         noutputs = self.noutputs
 
@@ -613,7 +612,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         name, inputs, outputs, states, _ = _process_iosys_keywords(kwargs)
 
         # Initialize the system list and index
-        self.syslist = list(syslist) # insure modifications can be made
+        self.syslist = list(syslist) # ensure modifications can be made
         self.syslist_index = {}
 
         # Initialize the input, output, and state counts, indices
@@ -638,7 +637,7 @@ class InterconnectedSystem(NonlinearIOSystem):
             # Make sure number of inputs, outputs, states is given
             if sys.ninputs is None or sys.noutputs is None or \
                sys.nstates is None:
-                raise TypeError("System '%s' must define number of inputs, "
+                raise TypeError("system '%s' must define number of inputs, "
                                 "outputs, states in order to be connected" %
                                 sys.name)
 
@@ -734,7 +733,7 @@ class InterconnectedSystem(NonlinearIOSystem):
                         input_indices, output_indices):
                     if self.connect_map[input_index, output_index] != 0:
                         warn("multiple connections given for input %d" %
-                             input_index + ". Combining with previous entries.")
+                             input_index + "; combining with previous entries")
                     self.connect_map[input_index, output_index] += gain
 
         # Convert the input list to a matrix: maps system to subsystems
@@ -744,13 +743,13 @@ class InterconnectedSystem(NonlinearIOSystem):
                 inpspec = [inpspec]
             if not isinstance(inpspec, list):
                 raise ValueError("specifications in inplist must be of type "
-                                 "int, str, tuple or list.")
+                                 "int, str, tuple or list")
             for spec in inpspec:
                 ulist_indices = self._parse_input_spec(spec)
                 for j, ulist_index in enumerate(ulist_indices):
                     if self.input_map[ulist_index, index] != 0:
                         warn("multiple connections given for input %d" %
-                             index + ". Combining with previous entries.")
+                             index + "; combining with previous entries.")
                     self.input_map[ulist_index, index + j] += 1
 
         # Convert the output list to a matrix: maps subsystems to system
@@ -760,13 +759,13 @@ class InterconnectedSystem(NonlinearIOSystem):
                 outspec = [outspec]
             if not isinstance(outspec, list):
                 raise ValueError("specifications in outlist must be of type "
-                                 "int, str, tuple or list.")
+                                 "int, str, tuple or list")
             for spec in outspec:
                 ylist_indices, gain = self._parse_output_spec(spec)
                 for j, ylist_index in enumerate(ylist_indices):
                     if self.output_map[index, ylist_index] != 0:
                         warn("multiple connections given for output %d" %
-                             index + ". Combining with previous entries.")
+                             index + "; combining with previous entries")
                     self.output_map[index + j, ylist_index] += gain
 
     def _update_params(self, params, warning=False):
@@ -866,7 +865,7 @@ class InterconnectedSystem(NonlinearIOSystem):
 
         # Make sure that we stopped before detecting an algebraic loop
         if cycle_count == 0:
-            raise RuntimeError("Algebraic loop detected.")
+            raise RuntimeError("algebraic loop detected")
 
         return ulist, ylist
 
@@ -876,7 +875,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         subsys_index, input_indices, gain = _parse_spec(
             self.syslist, spec, 'input')
         if gain != 1:
-            raise ValueError("gain not allowed in spec '%s'." % str(spec))
+            raise ValueError("gain not allowed in spec '%s'" % str(spec))
 
         # Return the indices into the input vector list (ylist)
         return [self.input_offset[subsys_index] + i for i in input_indices]
@@ -1431,8 +1430,8 @@ def input_output_response(
         # Make sure the time vector is uniformly spaced
         dt = t_eval[1] - t_eval[0]
         if not np.allclose(t_eval[1:] - t_eval[:-1], dt):
-            raise ValueError("Parameter ``t_eval``: time values must be "
-                             "equally spaced.")
+            raise ValueError("parameter ``t_eval``: time values must be "
+                             "equally spaced")
 
         # Make sure the sample time matches the given time
         if sys.dt is not True:
@@ -1579,7 +1578,7 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
        (u0 is not None and len(u0) != ninputs) or \
        (y0 is not None and len(y0) != noutputs) or \
        (dx0 is not None and len(dx0) != nstates):
-        raise ValueError("Length of input arguments does not match system.")
+        raise ValueError("length of input arguments does not match system")
 
     # Update the parameter values
     sys._update_params(params)
@@ -1691,8 +1690,8 @@ def find_eqpt(sys, x0, u0=None, y0=None, t=0, params=None,
         num_freedoms = len(state_vars) + len(input_vars)
         num_constraints = len(output_vars) + len(deriv_vars)
         if num_constraints != num_freedoms:
-            warn("Number of constraints (%d) does not match number of degrees "
-                 "of freedom (%d).  Results may be meaningless." %
+            warn("number of constraints (%d) does not match number of degrees "
+                 "of freedom (%d); results may be meaningless" %
                  (num_constraints, num_freedoms))
 
         # Make copies of the state and input variables to avoid overwriting
@@ -1823,7 +1822,7 @@ def _find_size(sysval, vecval):
     elif sysval == 1:
         # (1, scalar) is also a valid combination from legacy code
         return 1
-    raise ValueError("Can't determine size of system component.")
+    raise ValueError("can't determine size of system component")
 
 
 # Function to create an interconnected system

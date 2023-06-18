@@ -1,9 +1,10 @@
 # iosys.py - I/O system class and helper functions
 # RMM, 13 Mar 2022
 #
-# This file implements the InputOutputSystem class, which is used as a parent
-# class for FrequencyResponseData, InputOutputSystem, LTI, TimeResponseData,
-# and other similar classes to allow naming of signals.
+# This file implements the InputOutputSystem class, which is used as a
+# parent class for StateSpace, TransferFunction, NonlinearIOSystem, LTI,
+# FrequencyResponseData, InterconnectedSystem and other similar classes
+# that allow naming of signals.
 
 import numpy as np
 from copy import deepcopy
@@ -12,7 +13,7 @@ import re
 from . import config
 
 __all__ = ['InputOutputSystem', 'issiso', 'timebase', 'common_timebase',
-           'timebaseEqual', 'isdtime', 'isctime']
+           'isdtime', 'isctime']
 
 # Define module default parameter values
 _iosys_defaults = {
@@ -37,6 +38,15 @@ class InputOutputSystem(object):
     systems to be represented in Python.  It is used as a parent class for
     a set of subclasses that are used to implement specific structures and
     operations for different types of input/output dynamical systems.
+
+    The timebase for the system, dt, is used to specify whether the system
+    is operating in continuous or discrete time. It can have the following
+    values:
+
+      * dt = None       No timebase specified
+      * dt = 0          Continuous time system
+      * dt > 0          Discrete time system with sampling time dt
+      * dt = True       Discrete time system with unspecified sampling time
 
     Parameters
     ----------
@@ -93,22 +103,10 @@ class InputOutputSystem(object):
     state_prefix : string, optional
         Set the prefix for state signals.  Default = 'x'.
 
-    Notes
-    -----
-    The :class:`~control.InputOuputSystem` class (and its subclasses) makes
-    use of two special methods for implementing much of the work of the class:
-
-    * _rhs(t, x, u): compute the right hand side of the differential or
-      difference equation for the system.  This must be specified by the
-      subclass for the system.
-
-    * _out(t, x, u): compute the output for the current state of the system.
-      The default is to return the entire system state.
-
     """
-
-    # Allow ndarray * InputOutputSystem to give IOSystem._rmul_() priority
-    __array_priority__ = 13     # override ndarray, SS, TF types
+    # Allow NDarray * IOSystem to give IOSystem._rmul_() priority
+    # https://docs.scipy.org/doc/numpy/reference/arrays.classes.html
+    __array_priority__ = 20
 
     def __init__(
             self, name=None, inputs=None, outputs=None, states=None,
@@ -502,32 +500,6 @@ def common_timebase(dt1, dt2):
         return dt1
     else:
         raise ValueError("Systems have incompatible timebases")
-
-# Check to see if two timebases are equal
-def timebaseEqual(sys1, sys2):
-    """
-    Check to see if two systems have the same timebase
-
-    timebaseEqual(sys1, sys2)
-
-    returns True if the timebases for the two systems are compatible.  By
-    default, systems with timebase 'None' are compatible with either
-    discrete or continuous timebase systems.  If two systems have a discrete
-    timebase (dt > 0) then their timebases must be equal.
-    """
-    warn("timebaseEqual will be deprecated in a future release of "
-         "python-control; use :func:`common_timebase` instead",
-         PendingDeprecationWarning)
-
-    if (type(sys1.dt) == bool or type(sys2.dt) == bool):
-        # Make sure both are unspecified discrete timebases
-        return type(sys1.dt) == type(sys2.dt) and sys1.dt == sys2.dt
-    elif (sys1.dt is None or sys2.dt is None):
-        # One or the other is unspecified => the other can be anything
-        return True
-    else:
-        return sys1.dt == sys2.dt
-
 
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):
