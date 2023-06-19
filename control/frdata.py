@@ -54,7 +54,7 @@ from scipy.interpolate import splprep, splev
 
 from .lti import LTI, _process_frequency_response
 from .exception import pandas_check
-from .namedio import NamedIOSystem, _process_namedio_keywords
+from .iosys import NamedIOSystem, _process_namedio_keywords
 from . import config
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']

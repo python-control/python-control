@@ -9,7 +9,7 @@ import numpy as np
 from numpy import real, angle, abs
 from warnings import warn
 from . import config
-from .namedio import NamedIOSystem
+from .iosys import NamedIOSystem
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
            'freqresp', 'dcgain', 'bandwidth', 'pole', 'zero']

@@ -48,9 +48,9 @@ from . import statesp
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
 from .lti import LTI
-from .namedio import isdtime, isctime, _process_indices, _process_labels
-from .iosys import InputOutputSystem, NonlinearIOSystem, LinearIOSystem, \
-    interconnect, ss
+from .iosys import isdtime, isctime, _process_indices, _process_labels
+from .nlsys import InputOutputSystem, NonlinearIOSystem, interconnect
+from .statesp import LinearIOSystem, ss
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
 from .config import _process_legacy_keyword

@@ -467,12 +467,12 @@ def test_indices(ctrl_indices, dist_indices):
 
     # Create a system whose state we want to estimate
     if ctrl_indices is not None:
-        ctrl_idx = ct.namedio._process_indices(
+        ctrl_idx = ct.iosys._process_indices(
             ctrl_indices, 'control', sys.input_labels, sys.ninputs)
         dist_idx = [i for i in range(sys.ninputs) if i not in ctrl_idx]
     else:
         arg = -dist_indices if isinstance(dist_indices, int) else dist_indices
-        dist_idx = ct.namedio._process_indices(
+        dist_idx = ct.iosys._process_indices(
             arg, 'disturbance', sys.input_labels, sys.ninputs)
         ctrl_idx = [i for i in range(sys.ninputs) if i not in dist_idx]
     sysm = ct.ss(sys.A, sys.B[:, ctrl_idx], sys.C, sys.D[:, ctrl_idx])

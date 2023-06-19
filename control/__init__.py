@@ -77,7 +77,7 @@ from .lti import *
 from .margins import *
 from .mateqn import *
 from .modelsimp import *
-from .namedio import *
+from .iosys import *
 from .nichols import *
 from .phaseplot import *
 from .pzmap import *
@@ -93,7 +93,7 @@ from .canonical import *
 from .robust import *
 from .config import *
 from .sisotool import *
-from .iosys import *
+from .nlsys import *
 from .passivity import *
 
 # Exceptions

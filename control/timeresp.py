@@ -80,7 +80,7 @@ from copy import copy
 
 from . import config
 from .exception import pandas_check
-from .namedio import isctime, isdtime
+from .iosys import isctime, isdtime
 from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
 from .xferfcn import TransferFunction
 

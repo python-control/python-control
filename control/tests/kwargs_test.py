@@ -239,8 +239,8 @@ kwarg_unittest = {
 mutable_ok = {                                          # initial and date
     control.flatsys.SystemTrajectory.__init__,          # RMM, 18 Nov 2022
     control.freqplot._add_arrows_to_line2D,             # RMM, 18 Nov 2022
-    control.namedio._process_dt_keyword,                # RMM, 13 Nov 2022
-    control.namedio._process_namedio_keywords,          # RMM, 18 Nov 2022
+    control.iosys._process_dt_keyword,                # RMM, 13 Nov 2022
+    control.iosys._process_namedio_keywords,          # RMM, 18 Nov 2022
 }
 
 @pytest.mark.parametrize("module", [control, control.flatsys])

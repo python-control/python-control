@@ -16,7 +16,7 @@ import numpy as np
 from math import sqrt
 
 import control as ct
-from control import iosys as ios
+from control import nlsys as ios
 
 
 class TestIOSys:
@@ -54,7 +54,7 @@ class TestIOSys:
     def test_linear_iosys(self, tsys):
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
-        iosys = ios.LinearIOSystem(linsys).copy()
+        iosys = ct.LinearIOSystem(linsys).copy()
 
         # Make sure that the right hand side matches linear system
         for x, u in (([0, 0], 0), ([1, 0], 0), ([0, 1], 0), ([0, 0], 1)):
@@ -71,8 +71,8 @@ class TestIOSys:
 
         # Make sure that a static linear system has dt=None
         # and otherwise dt is as specified
-        assert ios.LinearIOSystem(tsys.staticgain).dt is None
-        assert ios.LinearIOSystem(tsys.staticgain, dt=.1).dt == .1
+        assert ct.LinearIOSystem(tsys.staticgain).dt is None
+        assert ct.LinearIOSystem(tsys.staticgain, dt=.1).dt == .1
 
     def test_tf2io(self, tsys):
         # Create a transfer function from the state space system
@@ -194,7 +194,7 @@ class TestIOSys:
     def test_linearize(self, tsys, kincar):
         # Create a single input/single output linear system
         linsys = tsys.siso_linsys
-        iosys = ios.LinearIOSystem(linsys)
+        iosys = ct.LinearIOSystem(linsys)
 
         # Linearize it and make sure we get back what we started with
         linearized = iosys.linearize([0, 0], 0)
@@ -260,9 +260,9 @@ class TestIOSys:
     def test_connect(self, tsys):
         # Define a couple of (linear) systems to interconnection
         linsys1 = tsys.siso_linsys
-        iosys1 = ios.LinearIOSystem(linsys1, name='iosys1')
+        iosys1 = ct.LinearIOSystem(linsys1, name='iosys1')
         linsys2 = tsys.siso_linsys
-        iosys2 = ios.LinearIOSystem(linsys2, name='iosys2')
+        iosys2 = ct.LinearIOSystem(linsys2, name='iosys2')
 
         # Connect systems in different ways and compare to StateSpace
         linsys_series = linsys2 * linsys1
@@ -285,7 +285,7 @@ class TestIOSys:
         # Connect systems with different timebases
         linsys2c = tsys.siso_linsys
         linsys2c.dt = 0         # Reset the timebase
-        iosys2c = ios.LinearIOSystem(linsys2c)
+        iosys2c = ct.LinearIOSystem(linsys2c)
         iosys_series = ios.InterconnectedSystem(
             [iosys1, iosys2c],   # systems
             [[1, 0]],          # interconnection (series)
@@ -336,9 +336,9 @@ class TestIOSys:
     def test_connect_spec_variants(self, tsys, connections, inplist, outlist):
         # Define a couple of (linear) systems to interconnection
         linsys1 = tsys.siso_linsys
-        iosys1 = ios.LinearIOSystem(linsys1, name="sys1")
+        iosys1 = ct.LinearIOSystem(linsys1, name="sys1")
         linsys2 = tsys.siso_linsys
-        iosys2 = ios.LinearIOSystem(linsys2, name="sys2")
+        iosys2 = ct.LinearIOSystem(linsys2, name="sys2")
 
         # Simple series connection
         linsys_series = linsys2 * linsys1
@@ -371,9 +371,9 @@ class TestIOSys:
     def test_connect_spec_warnings(self, tsys, connections, inplist, outlist):
         # Define a couple of (linear) systems to interconnection
         linsys1 = tsys.siso_linsys
-        iosys1 = ios.LinearIOSystem(linsys1, name="sys1")
+        iosys1 = ct.LinearIOSystem(linsys1, name="sys1")
         linsys2 = tsys.siso_linsys
-        iosys2 = ios.LinearIOSystem(linsys2, name="sys2")
+        iosys2 = ct.LinearIOSystem(linsys2, name="sys2")
 
         # Simple series connection
         linsys_series = linsys2 * linsys1
@@ -396,7 +396,7 @@ class TestIOSys:
     def test_static_nonlinearity(self, tsys):
         # Linear dynamical system
         linsys = tsys.siso_linsys
-        ioslin = ios.LinearIOSystem(linsys)
+        ioslin = ct.LinearIOSystem(linsys)
 
         # Nonlinear saturation
         sat = lambda u: u if abs(u) < 1 else np.sign(u)
@@ -417,11 +417,11 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=2)
 
 
-    @pytest.mark.filterwarnings("ignore:Duplicate name::control.iosys")
+    @pytest.mark.filterwarnings("ignore:Duplicate name::control.nlsys")
     def test_algebraic_loop(self, tsys):
         # Create some linear and nonlinear systems to play with
         linsys = tsys.siso_linsys
-        lnios = ios.LinearIOSystem(linsys)
+        lnios = ct.LinearIOSystem(linsys)
         nlios =  ios.NonlinearIOSystem(None, \
             lambda t, x, u, params: u*u, inputs=1, outputs=1)
         nlios1 = nlios.copy(name='nlios1')
@@ -474,7 +474,7 @@ class TestIOSys:
         # Algebraic loop due to feedthrough term
         linsys = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[1]])
-        lnios = ios.LinearIOSystem(linsys)
+        lnios = ct.LinearIOSystem(linsys)
         iosys = ios.InterconnectedSystem(
             [nlios, lnios],         # linear system w/ nonlinear feedback
             [[0, 1],                # feedback interconnection
@@ -489,8 +489,8 @@ class TestIOSys:
     def test_summer(self, tsys):
         # Construct a MIMO system for testing
         linsys = tsys.mimo_linsys1
-        linio1 = ios.LinearIOSystem(linsys, name='linio1')
-        linio2 = ios.LinearIOSystem(linsys, name='linio2')
+        linio1 = ct.LinearIOSystem(linsys, name='linio1')
+        linio2 = ct.LinearIOSystem(linsys, name='linio2')
 
         linsys_parallel = linsys + linsys
         iosys_parallel = linio1 + linio2
@@ -513,7 +513,7 @@ class TestIOSys:
 
         # Linear system with input and output nonlinearities
         # Also creates a nested interconnected system
-        ioslin = ios.LinearIOSystem(tsys.siso_linsys)
+        ioslin = ct.LinearIOSystem(tsys.siso_linsys)
         nlios =  ios.NonlinearIOSystem(None, \
             lambda t, x, u, params: u*u, inputs=1, outputs=1)
         sys1 = nlios * ioslin
@@ -538,7 +538,7 @@ class TestIOSys:
 
         # Linear system with input nonlinearity
         # Also creates a nested interconnected system
-        ioslin = ios.LinearIOSystem(tsys.siso_linsys)
+        ioslin = ct.LinearIOSystem(tsys.siso_linsys)
         sys = (ioslin) * (-nlios)
 
         # Make sure we got the right thing (via simulation comparison)
@@ -551,7 +551,7 @@ class TestIOSys:
         T, U, X0 = tsys.T, tsys.U, tsys.X0
 
         # Linear system with constant feedback (via "nonlinear" mapping)
-        ioslin = ios.LinearIOSystem(tsys.siso_linsys)
+        ioslin = ct.LinearIOSystem(tsys.siso_linsys)
         nlios =  ios.NonlinearIOSystem(None, \
             lambda t, x, u, params: u, inputs=1, outputs=1)
         iosys = ct.feedback(ioslin, nlios)
@@ -570,9 +570,9 @@ class TestIOSys:
 
         # Set up systems to be composed
         linsys1 = tsys.mimo_linsys1
-        linio1 = ios.LinearIOSystem(linsys1)
+        linio1 = ct.LinearIOSystem(linsys1)
         linsys2 = tsys.mimo_linsys2
-        linio2 = ios.LinearIOSystem(linsys2)
+        linio2 = ct.LinearIOSystem(linsys2)
 
         # Series interconnection
         linsys_series = ct.series(linsys1, linsys2)
@@ -616,9 +616,9 @@ class TestIOSys:
 
         # Set up systems to be composed
         linsys1 = tsys.mimo_linsys1
-        linio1 = ios.LinearIOSystem(linsys1)
+        linio1 = ct.LinearIOSystem(linsys1)
         linsys2 = tsys.mimo_linsys2
-        linio2 = ios.LinearIOSystem(linsys2)
+        linio2 = ct.LinearIOSystem(linsys2)
 
         # Multiplication
         linsys_mul = linsys2 * linsys1
@@ -669,13 +669,13 @@ class TestIOSys:
         linsys_2i3o = ct.StateSpace(
             [[-1, 1, 0], [0, -2, 0], [0, 0, -3]], [[1, 0], [0, 1], [1, 1]],
             [[1, 0, 0], [0, 1, 0], [0, 0, 1]], np.zeros((3, 2)))
-        iosys_2i3o = ios.LinearIOSystem(linsys_2i3o)
+        iosys_2i3o = ct.LinearIOSystem(linsys_2i3o)
 
         linsys_3i2o = ct.StateSpace(
             [[-1, 1, 0], [0, -2, 0], [0, 0, -3]],
             [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
             [[1, 0, 1], [0, 1, -1]], np.zeros((2, 3)))
-        iosys_3i2o = ios.LinearIOSystem(linsys_3i2o)
+        iosys_3i2o = ct.LinearIOSystem(linsys_3i2o)
 
         # Multiplication
         linsys_multiply = linsys_3i2o * linsys_2i3o
@@ -713,7 +713,7 @@ class TestIOSys:
         # Create some linear and nonlinear systems to play with
         linsys = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], [[0]], True)
-        lnios = ios.LinearIOSystem(linsys)
+        lnios = ct.LinearIOSystem(linsys)
 
         # Set up parameters for simulation
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -727,7 +727,7 @@ class TestIOSys:
         # Test MIMO system, converted to discrete time
         linsys = ct.StateSpace(tsys.mimo_linsys1)
         linsys.dt = tsys.T[1] - tsys.T[0]
-        lnios = ios.LinearIOSystem(linsys)
+        lnios = ct.LinearIOSystem(linsys)
 
         # Set up parameters for simulation
         T = tsys.T
@@ -875,7 +875,7 @@ class TestIOSys:
         # Unobservable system
         linsys = ct.StateSpace(
             [[-1, 1], [0, -2]], [[0], [1]], [[0, 0]], [[0]])
-        lnios = ios.LinearIOSystem(linsys)
+        lnios = ct.LinearIOSystem(linsys)
 
         # If result is returned, user has to check
         xeq, ueq, result = ios.find_eqpt(
@@ -938,7 +938,7 @@ class TestIOSys:
 
         # Check for warning if we try to set params for LinearIOSystem
         linsys = tsys.siso_linsys
-        iosys = ios.LinearIOSystem(linsys)
+        iosys = ct.LinearIOSystem(linsys)
         T, U, X0 = tsys.T, tsys.U, tsys.X0
         lti_t, lti_y = ct.forced_response(linsys, T, U, X0)
         with pytest.warns(UserWarning, match="LinearIOSystem.*ignored"):
@@ -963,7 +963,7 @@ class TestIOSys:
             outputs = ['y[0]', 'y[1]'],
             states = tsys.mimo_linsys1.nstates,
             name = 'sys1')
-        sys2 = ios.LinearIOSystem(tsys.mimo_linsys2,
+        sys2 = ct.LinearIOSystem(tsys.mimo_linsys2,
             inputs = ['u[0]', 'u[1]'],
             outputs = ['y[0]', 'y[1]'],
             name = 'sys2')
@@ -1063,7 +1063,7 @@ class TestIOSys:
             ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
 
         # Create a system with a known ID
-        ct.namedio.NamedIOSystem._idCounter = 0
+        ct.iosys.NamedIOSystem._idCounter = 0
         sys = ct.ss(
             tsys.mimo_linsys1.A, tsys.mimo_linsys1.B,
             tsys.mimo_linsys1.C, tsys.mimo_linsys1.D)
@@ -1131,7 +1131,7 @@ class TestIOSys:
             ct.config.use_legacy_defaults('0.8.4')  # changed delims in 0.9.0
 
         # Create a system with a known ID
-        ct.namedio.NamedIOSystem._idCounter = 0
+        ct.iosys.NamedIOSystem._idCounter = 0
         sys = ct.ss(
             tsys.mimo_linsys1.A, tsys.mimo_linsys1.B,
             tsys.mimo_linsys1.C, tsys.mimo_linsys1.D)
@@ -1471,10 +1471,10 @@ class TestIOSys:
 def test_linear_interconnection():
     ss_sys1 = ct.rss(2, 2, 2, strictly_proper=True)
     ss_sys2 = ct.rss(2, 2, 2)
-    io_sys1 = ios.LinearIOSystem(
+    io_sys1 = ct.LinearIOSystem(
         ss_sys1, inputs = ('u[0]', 'u[1]'),
         outputs = ('y[0]', 'y[1]'), name = 'sys1')
-    io_sys2 = ios.LinearIOSystem(
+    io_sys2 = ct.LinearIOSystem(
         ss_sys2, inputs = ('u[0]', 'u[1]'),
         outputs = ('y[0]', 'y[1]'), name = 'sys2')
     nl_sys2 = ios.NonlinearIOSystem(
@@ -1511,11 +1511,11 @@ def test_linear_interconnection():
             ['sys2.y[1]'],
             ['sys2.u[1]']])
     assert isinstance(nl_connect, ios.InterconnectedSystem)
-    assert not isinstance(nl_connect, ios.LinearICSystem)
+    assert not isinstance(nl_connect, ct.LinearICSystem)
 
     # Now take its linearization
     ss_connect = nl_connect.linearize(0, 0)
-    assert isinstance(ss_connect, ios.LinearIOSystem)
+    assert isinstance(ss_connect, ct.LinearIOSystem)
 
     io_connect = ios.interconnect(
         (io_sys1, io_sys2),
@@ -1531,8 +1531,8 @@ def test_linear_interconnection():
             ['sys2.y[1]'],
             ['sys2.u[1]']])
     assert isinstance(io_connect, ios.InterconnectedSystem)
-    assert isinstance(io_connect, ios.LinearICSystem)
-    assert isinstance(io_connect, ios.LinearIOSystem)
+    assert isinstance(io_connect, ct.LinearICSystem)
+    assert isinstance(io_connect, ct.LinearIOSystem)
     assert isinstance(io_connect, ct.StateSpace)
 
     # Finally compare the linearization with the linear system
@@ -1543,15 +1543,15 @@ def test_linear_interconnection():
 
     # make sure interconnections of linear systems are linear and
     # if a nonlinear system is included then system is nonlinear
-    assert isinstance(ss_siso*ss_siso, ios.LinearIOSystem)
-    assert isinstance(tf_siso*ss_siso, ios.LinearIOSystem)
-    assert isinstance(ss_siso*tf_siso, ios.LinearIOSystem)
-    assert ~isinstance(ss_siso*nl_siso, ios.LinearIOSystem)
-    assert ~isinstance(nl_siso*ss_siso, ios.LinearIOSystem)
-    assert ~isinstance(nl_siso*nl_siso, ios.LinearIOSystem)
-    assert ~isinstance(tf_siso*nl_siso, ios.LinearIOSystem)
-    assert ~isinstance(nl_siso*tf_siso, ios.LinearIOSystem)
-    assert ~isinstance(nl_siso*nl_siso, ios.LinearIOSystem)
+    assert isinstance(ss_siso*ss_siso, ct.LinearIOSystem)
+    assert isinstance(tf_siso*ss_siso, ct.LinearIOSystem)
+    assert isinstance(ss_siso*tf_siso, ct.LinearIOSystem)
+    assert ~isinstance(ss_siso*nl_siso, ct.LinearIOSystem)
+    assert ~isinstance(nl_siso*ss_siso, ct.LinearIOSystem)
+    assert ~isinstance(nl_siso*nl_siso, ct.LinearIOSystem)
+    assert ~isinstance(tf_siso*nl_siso, ct.LinearIOSystem)
+    assert ~isinstance(nl_siso*tf_siso, ct.LinearIOSystem)
+    assert ~isinstance(nl_siso*nl_siso, ct.LinearIOSystem)
 
 
 def predprey(t, x, u, params={}):

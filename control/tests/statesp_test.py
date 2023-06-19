@@ -20,7 +20,7 @@ from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
     _statesp_defaults, _rss_generate, linfnorm
-from control.iosys import ss, rss, drss
+from control.statesp import ss, rss, drss
 from control.tests.conftest import slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 

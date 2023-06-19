@@ -53,7 +53,7 @@ import numpy as np
 import scipy as sp
 from . import xferfcn
 from .lti import evalfr
-from .namedio import issiso
+from .iosys import issiso
 from . import frdata
 from . import freqplot
 from .exception import ControlMIMONotImplemented

@@ -45,7 +45,7 @@ import scipy.optimize
 import warnings
 from .poly import PolyFamily
 from .systraj import SystemTrajectory
-from ..iosys import NonlinearIOSystem
+from ..nlsys import NonlinearIOSystem
 from ..timeresp import _check_convert_array
 
 

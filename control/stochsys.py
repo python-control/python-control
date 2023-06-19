@@ -20,13 +20,13 @@ import numpy as np
 import scipy as sp
 from math import sqrt
 
-from .iosys import InputOutputSystem, LinearIOSystem, NonlinearIOSystem
+from .nlsys import InputOutputSystem, NonlinearIOSystem
 from .lti import LTI
-from .namedio import isctime, isdtime
-from .namedio import _process_indices, _process_labels, \
+from .iosys import isctime, isdtime
+from .iosys import _process_indices, _process_labels, \
     _process_control_disturbance_indices
 from .mateqn import care, dare, _check_shape
-from .statesp import StateSpace, _ssmatrix
+from .statesp import StateSpace, LinearIOSystem, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
 from .config import _process_legacy_keyword
 

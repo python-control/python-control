@@ -3,11 +3,11 @@ __all__ = ['sisotool', 'rootlocus_pid_designer']
 from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
 from .timeresp import step_response
-from .namedio import common_timebase, isctime, isdtime
+from .iosys import common_timebase, isctime, isdtime
 from .xferfcn import tf
-from .iosys import ss
+from .statesp import ss, tf2io, summing_junction
 from .bdalg import append, connect
-from .iosys import ss, tf2io, summing_junction, interconnect
+from .nlsys import interconnect
 from control.statesp import _convert_to_statespace
 from . import config
 import numpy as np

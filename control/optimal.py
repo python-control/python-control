@@ -24,7 +24,7 @@ import time
 
 from . import config
 from .exception import ControlNotImplemented
-from .namedio import _process_indices, _process_labels, \
+from .iosys import _process_indices, _process_labels, \
     _process_control_disturbance_indices
 
 
