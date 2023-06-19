@@ -45,7 +45,7 @@ import numpy as np
 import warnings
 from .exception import ControlSlycot, ControlMIMONotImplemented, \
     ControlDimension
-from .namedio import isdtime, isctime
+from .iosys import isdtime, isctime
 from .statesp import StateSpace
 from .statefbk import gram
 

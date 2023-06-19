@@ -55,7 +55,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from numpy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
-from .namedio import isdtime
+from .iosys import isdtime
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate

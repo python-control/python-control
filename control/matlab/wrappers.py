@@ -3,7 +3,7 @@ Wrappers for the MATLAB compatibility module
 """
 
 import numpy as np
-from ..iosys import ss
+from ..statesp import ss
 from ..xferfcn import tf
 from ..lti import LTI
 from ..exception import ControlArgument

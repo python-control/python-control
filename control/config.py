@@ -123,7 +123,7 @@ def reset_defaults():
     from .sisotool import _sisotool_defaults
     defaults.update(_sisotool_defaults)
 
-    from .namedio import _namedio_defaults
+    from .iosys import _namedio_defaults
     defaults.update(_namedio_defaults)
 
     from .xferfcn import _xferfcn_defaults
@@ -132,7 +132,7 @@ def reset_defaults():
     from .statesp import _statesp_defaults
     defaults.update(_statesp_defaults)
 
-    from .iosys import _iosys_defaults
+    from .nlsys import _iosys_defaults
     defaults.update(_iosys_defaults)
 
     from .optimal import _optimal_defaults

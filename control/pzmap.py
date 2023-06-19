@@ -42,7 +42,7 @@
 from numpy import real, imag, linspace, exp, cos, sin, sqrt
 from math import pi
 from .lti import LTI
-from .namedio import isdtime, isctime
+from .iosys import isdtime, isctime
 from .grid import sgrid, zgrid, nogrid
 from . import config
 

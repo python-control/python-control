@@ -28,7 +28,7 @@ def test_named_ss():
     A, B, C, D = sys.A, sys.B, sys.C, sys.D
 
     # Set up a named state space systems with default names
-    ct.namedio.NamedIOSystem._idCounter = 0
+    ct.iosys.NamedIOSystem._idCounter = 0
     sys = ct.ss(A, B, C, D)
     assert sys.name == 'sys[0]'
     assert sys.input_labels == ['u[0]', 'u[1]']
@@ -42,7 +42,7 @@ def test_named_ss():
         A, B, C, D, name='system',
         inputs=['u1', 'u2'], outputs=['y1', 'y2'], states=['x1', 'x2'])
     assert sys.name == 'system'
-    assert ct.namedio.NamedIOSystem._idCounter == 1
+    assert ct.iosys.NamedIOSystem._idCounter == 1
     assert sys.input_labels == ['u1', 'u2']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2']
@@ -52,7 +52,7 @@ def test_named_ss():
     # Do the same with rss
     sys = ct.rss(['x1', 'x2', 'x3'], ['y1', 'y2'], 'u1', name='random')
     assert sys.name == 'random'
-    assert ct.namedio.NamedIOSystem._idCounter == 1
+    assert ct.iosys.NamedIOSystem._idCounter == 1
     assert sys.input_labels == ['u1']
     assert sys.output_labels == ['y1', 'y2']
     assert sys.state_labels == ['x1', 'x2', 'x3']
@@ -98,7 +98,7 @@ fun_notinstance = {
 ])
 def test_io_naming(fun, args, kwargs):
     # Reset the ID counter to get uniform generic names
-    ct.namedio.NamedIOSystem._idCounter = 0
+    ct.iosys.NamedIOSystem._idCounter = 0
 
     # Create the system w/out any names
     sys_g = fun(*args, **kwargs)

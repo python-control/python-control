@@ -273,7 +273,7 @@ class TestConfig:
         ct.set_defaults('control', default_dt=dt)
         assert ct.ss(1, 0, 0, 1).dt == dt
         assert ct.tf(1, [1, 1]).dt == dt
-        nlsys = ct.iosys.NonlinearIOSystem(
+        nlsys = ct.nlsys.NonlinearIOSystem(
             lambda t, x, u: u * x * x,
             lambda t, x, u: x, inputs=1, outputs=1)
         assert nlsys.dt == dt

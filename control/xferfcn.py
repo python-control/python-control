@@ -60,7 +60,7 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, _process_frequency_response
-from .namedio import common_timebase, isdtime, _process_namedio_keywords
+from .iosys import common_timebase, isdtime, _process_namedio_keywords
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from . import config
