@@ -411,7 +411,7 @@ class TestIOSys:
         np.testing.assert_array_almost_equal(lti_y, ios_y, decimal=2)
 
 
-    @pytest.mark.filterwarnings("ignore:Duplicate name::control.nlsys")
+    @pytest.mark.filterwarnings("ignore:Duplicate name::control.iosys")
     def test_algebraic_loop(self, tsys):
         # Create some linear and nonlinear systems to play with
         linsys = tsys.siso_linsys
@@ -1368,7 +1368,7 @@ class TestIOSys:
             C = ct.rss(2, 3, 2)
         elif isinstance(C, str) and C == 'rss23':
             C = ct.rss(2, 2, 3)
-            
+
         with pytest.raises(ValueError, match="incompatible"):
             PC = op(P, C)
 

@@ -78,7 +78,6 @@ from numpy import einsum, maximum, minimum
 from scipy.linalg import eig, eigvals, matrix_balance, norm
 from copy import copy
 
-# TODO: see what is causing MRO issues with .statesp, .xferfcn
 from . import config
 from .exception import pandas_check
 from .iosys import isctime, isdtime
@@ -933,8 +932,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     :ref:`package-configuration-parameters`.
 
     """
-    from .statesp import StateSpace, _convert_to_statespace, \
-        _mimo2simo, _mimo2siso
+    from .statesp import StateSpace, _convert_to_statespace
     from .xferfcn import TransferFunction
     from .nlsys import NonlinearIOSystem, input_output_response
 
@@ -1322,8 +1320,8 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
 
     """
     from .lti import LTI
-    from .xferfcn import TransferFunction               # TODO: move to top?
-    from .statesp import _convert_to_statespace         # TODO: move to top?
+    from .xferfcn import TransferFunction
+    from .statesp import _convert_to_statespace
 
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1 and isinstance(sys, LTI):
@@ -1486,7 +1484,6 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     PeakTime: 4.242
     SteadyStateValue: -1.0
     """
-    # TODO: See if there is a better way to do this
     from .statesp import StateSpace
     from .xferfcn import TransferFunction
     from .nlsys import NonlinearIOSystem
@@ -1818,7 +1815,7 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     >>> T, yout = ct.impulse_response(G)
 
     """
-    from .statesp import _convert_to_statespace         # TODO: move to top?
+    from .statesp import _convert_to_statespace
     from .lti import LTI
 
     # Create the time and input vectors
@@ -1941,7 +1938,7 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
     python-control 2020.08.17
 
     """
-    from .statesp import _convert_to_statespace         # TODO: move to top?
+    from .statesp import _convert_to_statespace
 
     sqrt_eps = np.sqrt(np.spacing(1.))
     default_tfinal = 5                  # Default simulation horizon

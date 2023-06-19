@@ -170,7 +170,7 @@ class TransferFunction(LTI):
         #
         # Process positional arguments
         #
-        # TODO: move to tf()
+
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             num, den = args
@@ -511,8 +511,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
 
         if var is None:
-            # ! TODO: replace with standard calls to lti functions
-            var = 's' if self.dt is None or self.dt == 0 else 'z'
+            var = 's' if self.isctime() else 'z'
 
         out = ['$$']
 
@@ -566,7 +565,6 @@ class TransferFunction(LTI):
         from .statesp import StateSpace
 
         # Convert the second argument to a transfer function.
-        #! TODO: update processing (here and elsewhere)
         if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
         elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
@@ -615,7 +613,7 @@ class TransferFunction(LTI):
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
         from .statesp import StateSpace
-        
+
         # Convert the second argument to a transfer function.
         if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)

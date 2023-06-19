@@ -20,11 +20,9 @@ from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
     _statesp_defaults, _rss_generate, linfnorm, ss, rss, drss
-from control.tests.conftest import slycotonly
 from control.xferfcn import TransferFunction, ss2tf
 
-
-from .conftest import editsdefaults
+from .conftest import editsdefaults, slycotonly
 
 
 class TestStateSpace:

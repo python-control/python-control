@@ -73,7 +73,6 @@ Time domain simulation
     phase_plot
     step_response
     TimeResponseData
-	
 
 Control system analysis
 =======================
@@ -97,8 +96,6 @@ Control system analysis
     sisotool
     StateSpace.__call__
     TransferFunction.__call__
-
-
 
 Matrix computations
 ===================

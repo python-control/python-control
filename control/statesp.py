@@ -413,7 +413,7 @@ class StateSpace(NonlinearIOSystem, LTI):
     # represent to implement a re-loadable version
     def __repr__(self):
         """Print state-space system in loadable form."""
-        # TODO: add input/output names
+        # TODO: add input/output names (?)
         return "StateSpace({A}, {B}, {C}, {D}{dt})".format(
             A=self.A.__repr__(), B=self.B.__repr__(),
             C=self.C.__repr__(), D=self.D.__repr__(),
@@ -962,6 +962,7 @@ class StateSpace(NonlinearIOSystem, LTI):
     # Feedback around a state space system
     def feedback(self, other=1, sign=-1):
         """Feedback interconnection between two LTI systems."""
+        # Convert the system to state space, if possible
         try:
             other = _convert_to_statespace(other)
         except:
@@ -2293,114 +2294,3 @@ def _rss_generate(
     else:
         ss_args = (A, B, C, D, True)
     return StateSpace(*ss_args, name=name)
-
-
-def _mimo2siso(sys, input, output, warn_conversion=False):
-    # pylint: disable=W0622
-    """
-    Convert a MIMO system to a SISO system. (Convert a system with multiple
-    inputs and/or outputs, to a system with a single input and output.)
-
-    The input and output that are used in the SISO system can be selected
-    with the parameters ``input`` and ``output``. All other inputs are set
-    to 0, all other outputs are ignored.
-
-    If ``sys`` is already a SISO system, it will be returned unaltered.
-
-    Parameters
-    ----------
-    sys : StateSpace
-        Linear (MIMO) system that should be converted.
-    input : int
-        Index of the input that will become the SISO system's only input.
-    output : int
-        Index of the output that will become the SISO system's only output.
-    warn_conversion : bool, optional
-        If `True`, print a message when sys is a MIMO system,
-        warning that a conversion will take place.  Default is False.
-
-    Returns
-    sys : StateSpace
-        The converted (SISO) system.
-    """
-    if not (isinstance(input, int) and isinstance(output, int)):
-        raise TypeError("Parameters ``input`` and ``output`` must both "
-                        "be integer numbers.")
-    if not (0 <= input < sys.ninputs):
-        raise ValueError("Selected input does not exist. "
-                         "Selected input: {sel}, "
-                         "number of system inputs: {ext}."
-                         .format(sel=input, ext=sys.ninputs))
-    if not (0 <= output < sys.noutputs):
-        raise ValueError("Selected output does not exist. "
-                         "Selected output: {sel}, "
-                         "number of system outputs: {ext}."
-                         .format(sel=output, ext=sys.noutputs))
-    # Convert sys to SISO if necessary
-    if sys.ninputs > 1 or sys.noutputs > 1:
-        if warn_conversion:
-            warn("Converting MIMO system to SISO system. "
-                 "Only input {i} and output {o} are used."
-                 .format(i=input, o=output))
-        # $X = A*X + B*U
-        #  Y = C*X + D*U
-        new_B = sys.B[:, input]
-        new_C = sys.C[output, :]
-        new_D = sys.D[output, input]
-        sys = StateSpace(
-            sys.A, new_B, new_C, new_D, sys.dt,
-            name=sys.name,
-            inputs=sys.input_labels[input], outputs=sys.output_labels[output])
-
-    return sys
-
-
-def _mimo2simo(sys, input, warn_conversion=False):
-    # pylint: disable=W0622
-    """
-    Convert a MIMO system to a SIMO system. (Convert a system with multiple
-    inputs and/or outputs, to a system with a single input but possibly
-    multiple outputs.)
-
-    The input that is used in the SIMO system can be selected with the
-    parameter ``input``. All other inputs are set to 0, all other
-    outputs are ignored.
-
-    If ``sys`` is already a SIMO system, it will be returned unaltered.
-
-    Parameters
-    ----------
-    sys: StateSpace
-        Linear (MIMO) system that should be converted.
-    input: int
-        Index of the input that will become the SIMO system's only input.
-    warn_conversion: bool
-        If True: print a warning message when sys is a MIMO system.
-        Warn that a conversion will take place.
-
-    Returns
-    -------
-    sys: StateSpace
-        The converted (SIMO) system.
-    """
-    if not (isinstance(input, int)):
-        raise TypeError("Parameter ``input`` be an integer number.")
-    if not (0 <= input < sys.ninputs):
-        raise ValueError("Selected input does not exist. "
-                         "Selected input: {sel}, "
-                         "number of system inputs: {ext}."
-                         .format(sel=input, ext=sys.ninputs))
-    # Convert sys to SISO if necessary
-    if sys.ninputs > 1:
-        if warn_conversion:
-            warn("Converting MIMO system to SIMO system. "
-                 "Only input {i} is used." .format(i=input))
-        # $X = A*X + B*U
-        #  Y = C*X + D*U
-        new_B = sys.B[:, input:input+1]
-        new_D = sys.D[:, input:input+1]
-        sys = StateSpace(
-            sys.A, new_B, sys.C, new_D, sys.dt, name=sys.name,
-            inputs=sys.input_labels[input], outputs=sys.output_labels)
-
-    return sys

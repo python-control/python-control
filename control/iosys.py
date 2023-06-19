@@ -698,7 +698,7 @@ def _process_indices(arg, name, labels, length):
     if isinstance(arg, int):
         # Return the start or end of the list of possible indices
         return list(range(arg)) if arg > 0 else list(range(length))[arg:]
-    
+
     elif isinstance(arg, slice):
         # Return the indices referenced by the slice
         return list(range(length))[arg]
