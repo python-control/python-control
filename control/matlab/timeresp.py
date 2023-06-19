@@ -6,7 +6,7 @@ Note that the return arguments are different than in the standard control packag
 
 __all__ = ['step', 'stepinfo', 'impulse', 'initial', 'lsim']
 
-def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
+def step(sys, T=None, input=0, output=None, return_x=False):
     '''Step response of a linear system
 
     If the system has multiple inputs or outputs (MIMO), one input has
@@ -22,9 +22,6 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-    X0: array-like or number, optional
-        Initial condition (default = 0)
-        Numbers are converted to constant arrays with the correct shape.
     input: int
         Index of the input that will be used in this simulation.
     output: int
@@ -55,7 +52,7 @@ def step(sys, T=None, X0=0., input=0, output=None, return_x=False):
     from ..timeresp import step_response
 
     # Switch output argument order and transpose outputs
-    out = step_response(sys, T, X0, input, output,
+    out = step_response(sys, T, input=input, output=output,
                         transpose=True, return_x=return_x)
     return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
@@ -134,7 +131,7 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
 
     return S
 
-def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
+def impulse(sys, T=None, input=0, output=None, return_x=False):
     '''Impulse response of a linear system
 
     If the system has multiple inputs or outputs (MIMO), one input has
@@ -150,10 +147,6 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     T: array-like or number, optional
         Time vector, or simulation time duration if a number (time vector is
         autocomputed if not given)
-    X0: array-like or number, optional
-        Initial condition (default = 0)
-
-        Numbers are converted to constant arrays with the correct shape.
     input: int
         Index of the input that will be used in this simulation.
     output: int
@@ -183,7 +176,7 @@ def impulse(sys, T=None, X0=0., input=0, output=None, return_x=False):
     from ..timeresp import impulse_response
 
     # Switch output argument order and transpose outputs
-    out = impulse_response(sys, T, X0, input, output,
+    out = impulse_response(sys, T, input, output,
                            transpose = True, return_x=return_x)
     return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
@@ -203,8 +196,6 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
         autocomputed if not given)
     X0: array-like object or number, optional
         Initial condition (default = 0)
-
-        Numbers are converted to constant arrays with the correct shape.
     input: int
         This input is ignored, but present for compatibility with step
         and impulse.

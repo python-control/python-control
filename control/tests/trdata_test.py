@@ -243,7 +243,7 @@ def test_trdata_labels():
             assert step_response.input_labels == [sys.input_labels[nu]]
             assert step_response.output_labels == [sys.output_labels[ny]]
 
-            init_response = ct.initial_response(sys, T, input=nu, output=ny)
+            init_response = ct.initial_response(sys, T, output=ny)
             assert init_response.input_labels == None
             assert init_response.output_labels == [sys.output_labels[ny]]
 

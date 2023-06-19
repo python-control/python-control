@@ -126,8 +126,7 @@ class TestControlMatlab:
 
         subplot2grid(plot_shape, (0, 1))
         T = linspace(0, 2, 100)
-        X0 = array([1, 1])
-        y, t = step(sys, T, X0)
+        y, t = step(sys, T)
         plot(t, y)
 
         # Test output of state vector
@@ -153,9 +152,8 @@ class TestControlMatlab:
 
         #supply time and X0
         T = linspace(0, 2, 100)
-        X0 = [0.2, 0.2]
-        t, y = impulse(sys, T, X0)
-        plot(t, y, label='t=0..2, X0=[0.2, 0.2]')
+        t, y = impulse(sys, T)
+        plot(t, y, label='t=0..2')
 
         #Test system with direct feed-though, the function should print a warning.
         D = [[0.5]]
