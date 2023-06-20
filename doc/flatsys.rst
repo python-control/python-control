@@ -39,7 +39,7 @@ Differentially flat systems are useful in situations where explicit
 trajectory generation is required. Since the behavior of a flat system
 is determined by the flat outputs, we can plan trajectories in output
 space, and then map these to appropriate inputs.  Suppose we wish to
-generate a feasible trajectory for the the nonlinear system
+generate a feasible trajectory for the nonlinear system
 
 .. math::
     \dot x = f(x, u), \qquad x(0) = x_0,\, x(T) = x_f.
@@ -181,7 +181,7 @@ solve an optimal control problem without a final state::
     traj = control.flatsys.solve_flat_ocp(
         sys, timepts, x0, u0, cost, basis=basis)
 
-The `cost` parameter is a function function with call signature
+The `cost` parameter is a function with call signature
 `cost(x, u)` and should return the (incremental) cost at the given
 state, and input.  It will be evaluated at each point in the `timepts`
 vector.  The `terminal_cost` parameter can be used to specify a cost
@@ -193,7 +193,7 @@ Example
 To illustrate how we can use a two degree-of-freedom design to improve the
 performance of the system, consider the problem of steering a car to change
 lanes on a road. We use the non-normalized form of the dynamics, which are
-derived *Feedback Systems* by Astrom and Murray, Example 3.11.
+derived in *Feedback Systems* by Astrom and Murray, Example 3.11.
 
 .. code-block:: python
 
