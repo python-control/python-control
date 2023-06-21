@@ -1363,7 +1363,7 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
         yout[:, inpidx, :] = response.y if output is None \
             else response.y[output]
         xout[:, inpidx, :] = response.x
-        uout[:, inpidx, :] = U[i]
+        uout[:, inpidx, :] = U if input is None else U[i]
 
     # Figure out if the system is SISO or not
     issiso = sys.issiso() or (input is not None and output is not None)

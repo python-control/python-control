@@ -344,6 +344,15 @@ class TestTimeresp:
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
 
+        # Make sure we get the same result using MIMO step response
+        response = step_response(sys, T=t)
+        np.testing.assert_allclose(response.y[0, 0, :], y_00)
+        np.testing.assert_allclose(response.y[1, 1, :], y_11)
+        np.testing.assert_allclose(response.u[0, 0, :], 1)
+        np.testing.assert_allclose(response.u[1, 0, :], 0)
+        np.testing.assert_allclose(response.u[0, 1, :], 0)
+        np.testing.assert_allclose(response.u[1, 1, :], 1)
+
     @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
     def test_step_response_return(self, tsystem):
         """Verify continuous and discrete time use same return conventions."""
