@@ -1,6 +1,6 @@
 .. _steering-optimal:
 
-Optimal control for vehicle steeering (lane change)
+Optimal control for vehicle steering (lane change)
 ---------------------------------------------------
 
 Code
