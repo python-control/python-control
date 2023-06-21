@@ -77,6 +77,10 @@ from .statesp import *
 from .xferfcn import *
 from .frdata import *
 
+# Time responses and plotting
+from .timeresp import *
+from .timeplot import *
+
 from .bdalg import *
 from .delay import *
 from .descfcn import *
@@ -91,7 +95,6 @@ from .pzmap import *
 from .rlocus import *
 from .statefbk import *
 from .stochsys import *
-from .timeresp import *
 from .ctrlutil import *
 from .canonical import *
 from .robust import *
