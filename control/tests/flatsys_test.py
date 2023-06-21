@@ -758,3 +758,51 @@ class TestFlatSys:
                         basis.eval(coefs, timepts)[i],
                         basis.eval_deriv(j, 0, timepts, var=i))
                     offset += 1
+
+    def test_flatsys_factory_function(self, vehicle_flat):
+        # Basic flat system
+        flatsys = fs.flatsys(
+            vehicle_flat.forward, vehicle_flat.reverse,
+            inputs=vehicle_flat.ninputs, outputs=vehicle_flat.ninputs,
+            states=vehicle_flat.nstates)
+        assert isinstance(flatsys, fs.FlatSystem)
+
+        # Flat system with update function
+        flatsys = fs.flatsys(
+            vehicle_flat.forward, vehicle_flat.reverse, vehicle_flat.updfcn,
+            inputs=vehicle_flat.ninputs, outputs=vehicle_flat.ninputs,
+            states=vehicle_flat.nstates)
+        assert isinstance(flatsys, fs.FlatSystem)
+        assert flatsys.updfcn == vehicle_flat.updfcn
+
+        # Flat system with update and output functions
+        flatsys = fs.flatsys(
+            vehicle_flat.forward, vehicle_flat.reverse, vehicle_flat.updfcn,
+            vehicle_flat.outfcn, inputs=vehicle_flat.ninputs,
+            outputs=vehicle_flat.ninputs, states=vehicle_flat.nstates)
+        assert isinstance(flatsys, fs.FlatSystem)
+        assert flatsys.updfcn == vehicle_flat.updfcn
+        assert flatsys.outfcn == vehicle_flat.outfcn
+
+        # Flat system with update and output functions via keywords
+        flatsys = fs.flatsys(
+            vehicle_flat.forward, vehicle_flat.reverse,
+            updfcn=vehicle_flat.updfcn, outfcn=vehicle_flat.outfcn,
+            inputs=vehicle_flat.ninputs, outputs=vehicle_flat.ninputs,
+            states=vehicle_flat.nstates)
+        assert isinstance(flatsys, fs.FlatSystem)
+        assert flatsys.updfcn == vehicle_flat.updfcn
+        assert flatsys.outfcn == vehicle_flat.outfcn
+
+        # Linear flat system
+        sys = ct.ss([[-1, 1], [0, -2]], [[0], [1]], [[1, 0]], 0)
+        flatsys = fs.flatsys(sys)
+        assert isinstance(flatsys, fs.FlatSystem)
+        assert isinstance(flatsys, ct.StateSpace)
+
+        # Incorrect arguments
+        with pytest.raises(TypeError, match="incorrect number or type"):
+            flatsys = fs.flatsys(vehicle_flat.forward)
+
+        with pytest.raises(TypeError, match="incorrect number or type"):
+            flatsys = fs.flatsys(1, 2, 3, 4, 5)

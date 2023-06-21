@@ -57,62 +57,6 @@ class FlatSystem(NonlinearIOSystem):
     flat systems for trajectory generation.  The output of the system does not
     need to be the differentially flat output.
 
-    Parameters
-    ----------
-    forward : callable
-        A function to compute the flat flag given the states and input.
-
-    reverse : callable
-        A function to compute the states and input given the flat flag.
-
-    updfcn : callable, optional
-        Function returning the state update function
-
-            `updfcn(t, x, u[, param]) -> array`
-
-        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
-        with shape (ninputs,), `t` is a float representing the currrent
-        time, and `param` is an optional dict containing the values of
-        parameters used by the function.  If not specified, the state
-        space update will be computed using the flat system coordinates.
-
-    outfcn : callable
-        Function returning the output at the given state
-
-            `outfcn(t, x, u[, param]) -> array`
-
-        where the arguments are the same as for `upfcn`.  If not
-        specified, the output will be the flat outputs.
-
-    inputs : int, list of str, or None
-        Description of the system inputs.  This can be given as an integer
-        count or as a list of strings that name the individual signals.
-        If an integer count is specified, the names of the signal will be
-        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
-        this parameter is not given or given as `None`, the relevant
-        quantity will be determined when possible based on other
-        information provided to functions using the system.
-
-    outputs : int, list of str, or None
-        Description of the system outputs.  Same format as `inputs`.
-
-    states : int, list of str, or None
-        Description of the system states.  Same format as `inputs`.
-
-    dt : None, True or float, optional
-        System timebase.  None (default) indicates continuous
-        time, True indicates discrete time with undefined sampling
-        time, positive number is discrete time with specified
-        sampling time.
-
-    params : dict, optional
-        Parameter values for the systems.  Passed to the evaluation
-        functions for the system as default values, overriding internal
-        defaults.
-
-    name : string, optional
-        System name (used for specifying signals)
-
     Notes
     -----
     The class must implement two functions:
@@ -140,9 +84,8 @@ class FlatSystem(NonlinearIOSystem):
     """
     def __init__(self,
                  forward, reverse,              # flat system
-                 updfcn=None, outfcn=None,      # I/O system
-                 inputs=None, outputs=None,
-                 states=None, params=None, dt=None, name=None):
+                 updfcn=None, outfcn=None,      # nonlinar I/O system
+                 **kwargs):                     # I/O system
         """Create a differentially flat I/O system.
 
         The FlatIOSystem constructor is used to create an input/output system
@@ -155,9 +98,7 @@ class FlatSystem(NonlinearIOSystem):
         if outfcn is None: outfcn = self._flat_outfcn
 
         # Initialize as an input/output system
-        NonlinearIOSystem.__init__(
-            self, updfcn, outfcn, inputs=inputs, outputs=outputs,
-            states=states, params=params, dt=dt, name=name)
+        NonlinearIOSystem.__init__(self, updfcn, outfcn, **kwargs)
 
         # Save the functions to compute forward and reverse conversions
         if forward is not None: self.forward = forward
@@ -232,6 +173,120 @@ class FlatSystem(NonlinearIOSystem):
         # Return the flat output
         zflag = self.forward(x, u, params)
         return np.array([zflag[i][0] for i in range(len(zflag))])
+
+
+def flatsys(*args, updfcn=None, outfcn=None, **kwargs):
+    """Create a differentially flat I/O system.
+
+    The flatsys() function is used to create an input/output system object
+    that also represents a differentially flat system.  It can be used in a
+    variety of forms:
+
+    ``fs.flatsys(forward, reverse)``
+        Create a flat system with mapings to/from flat flag.
+
+    ``fs.flatsys(forward, reverse, updfcn[, outfcn])``
+        Create a flat system that is also a nonlinear I/O system.
+
+    ``fs.flatsys(linsys)``
+        Create a flat system from a linear (StateSpace) system.
+
+    Parameters
+    ----------
+    forward : callable
+        A function to compute the flat flag given the states and input.
+
+    reverse : callable
+        A function to compute the states and input given the flat flag.
+
+    updfcn : callable, optional
+        Function returning the state update function
+
+            `updfcn(t, x, u[, param]) -> array`
+
+        where `x` is a 1-D array with shape (nstates,), `u` is a 1-D array
+        with shape (ninputs,), `t` is a float representing the currrent
+        time, and `param` is an optional dict containing the values of
+        parameters used by the function.  If not specified, the state
+        space update will be computed using the flat system coordinates.
+
+    outfcn : callable, optional
+        Function returning the output at the given state
+
+            `outfcn(t, x, u[, param]) -> array`
+
+        where the arguments are the same as for `upfcn`.  If not
+        specified, the output will be the flat outputs.
+
+    inputs : int, list of str, or None
+        Description of the system inputs.  This can be given as an integer
+        count or as a list of strings that name the individual signals.
+        If an integer count is specified, the names of the signal will be
+        of the form `s[i]` (where `s` is one of `u`, `y`, or `x`).  If
+        this parameter is not given or given as `None`, the relevant
+        quantity will be determined when possible based on other
+        information provided to functions using the system.
+
+    outputs : int, list of str, or None
+        Description of the system outputs.  Same format as `inputs`.
+
+    states : int, list of str, or None
+        Description of the system states.  Same format as `inputs`.
+
+    dt : None, True or float, optional
+        System timebase.  None (default) indicates continuous
+        time, True indicates discrete time with undefined sampling
+        time, positive number is discrete time with specified
+        sampling time.
+
+    params : dict, optional
+        Parameter values for the systems.  Passed to the evaluation
+        functions for the system as default values, overriding internal
+        defaults.
+
+    name : string, optional
+        System name (used for specifying signals)
+
+    Returns
+    -------
+    sys: :class:`FlatSystem`
+        Flat system.
+
+    """
+    from .linflat import LinearFlatSystem
+    from ..statesp import StateSpace
+    from ..iosys import _process_iosys_keywords
+
+    if len(args) == 1 and isinstance(args[0], StateSpace):
+        # We were passed a linear system, so call linflat
+        if updfcn is not None or outfcn is not None:
+            warnings.warn(
+                "update and output functions ignored for linear system")
+        return LinearFlatSystem(args[0], **kwargs)
+
+    elif len(args) == 2:
+        forward, reverse = args
+
+    elif len(args) == 3:
+        if updfcn is not None:
+            warnings.warn(
+                "update and output functions specified twice; using"
+                " positional arguments")
+        forward, reverse, updfcn = args
+
+    elif len(args) == 4:
+        if updfcn is not None or outfcn is not None:
+            warnings.warn(
+                "update and output functions specified twice; using"
+                " positional arguments")
+        forward, reverse, updfcn, outfcn = args
+
+    else:
+        raise TypeError("incorrect number or type of arguments")
+
+    # Create the flat system
+    return FlatSystem(
+        forward, reverse, updfcn=updfcn, outfcn=outfcn, **kwargs)
 
 
 # Utility function to compute flag matrix given a basis

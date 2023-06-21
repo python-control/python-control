@@ -77,8 +77,7 @@ class LinearFlatSystem(FlatSystem, StateSpace):
 
     """
 
-    def __init__(self, linsys, inputs=None, outputs=None, states=None,
-                 name=None):
+    def __init__(self, linsys, **kwargs):
         """Define a flat system from a SISO LTI system.
 
         Given a reachable, single-input/single-output, linear time-invariant
@@ -93,10 +92,8 @@ class LinearFlatSystem(FlatSystem, StateSpace):
             raise control.ControlNotImplemented(
                 "only single input, single output systems are supported")
 
-        # Initialize the object as a LinearIO system
-        StateSpace.__init__(
-            self, linsys, inputs=inputs, outputs=outputs, states=states,
-            name=name)
+        # Initialize the object as a StateSpace system
+        StateSpace.__init__(self, linsys, **kwargs)
 
         # Find the transformation to chain of integrators form
         # Note: store all array as ndarray, not matrix
