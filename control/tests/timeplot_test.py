@@ -9,17 +9,22 @@ import matplotlib.pyplot as plt
 # Step responses
 @pytest.mark.parametrize("nin, nout", [(1, 1), (1, 2), (2, 1), (2, 2), (2, 3)])
 @pytest.mark.parametrize("transpose", [True, False])
-@pytest.mark.parametrize("plot_inputs", [None, True, False])
+@pytest.mark.parametrize("plot_inputs", [None, True, False, 'overlay'])
 def test_simple_response(nout, nin, transpose, plot_inputs):
     sys = ct.rss(4, nout, nin)
     stepresp = ct.step_response(sys)
     stepresp.plot(plot_inputs=plot_inputs, transpose=transpose)
 
     # Add additional data (and provide infon in the title)
-    ct.step_response(ct.rss(4, nout, nin), stepresp.time[-1]).plot(
-        plot_inputs=plot_inputs, transpose=transpose,
-        title=stepresp.title + f" [{plot_inputs=}, {transpose=}]")
+    newsys = ct.rss(4, nout, nin)
+    out = ct.step_response(newsys, stepresp.time[-1]).plot(
+        plot_inputs=plot_inputs, transpose=transpose)
 
+    # Update the title so we can see what is going on
+    fig = out[0, 0][0].axes.figure
+    fig.suptitle(
+        fig._suptitle._text + f" [{nout}x{nin}, {plot_inputs=}, {transpose=}]",
+        fontsize='small')
 
 @pytest.mark.parametrize("transpose", [True, False])
 def test_combine_signals(transpose):
@@ -49,6 +54,19 @@ def test_combine_signals_traces(transpose):
         f"transpose={transpose}")
 
 
+def test_errors():
+    sys = ct.rss(2, 1, 1)
+    stepresp = ct.step_response(sys)
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        stepresp.plot(unknown=None)
+
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.ioresp_plot(stepresp, unknown=None)
+
+    with pytest.raises(ValueError, match="unrecognized value"):
+        stepresp.plot(plot_inputs='unknown')
+
+
 if __name__ == "__main__":
     #
     # Interactive mode: generate plots for manual viewing
@@ -66,7 +84,7 @@ if __name__ == "__main__":
     print ("Simple step responses")
     for size in [(1, 1), (1, 2), (2, 1), (2, 2), (2, 3)]:
         for transpose in [False, True]:
-            for plot_inputs in [None, True, False]:
+            for plot_inputs in [None, True, False, 'overlay']:
                 plt.figure()
                 test_simple_response(
                     *size, transpose=transpose, plot_inputs=plot_inputs)

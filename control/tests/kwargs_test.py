@@ -26,6 +26,7 @@ import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.stochsys_test as stochsys_test
 import control.tests.trdata_test as trdata_test
+import control.tests.timeplot_test as timeplot_test
 
 @pytest.mark.parametrize("module, prefix", [
     (control, ""), (control.flatsys, "flatsys."), (control.optimal, "optimal.")
@@ -185,6 +186,7 @@ kwarg_unittest = {
     'gangof4_plot': test_matplotlib_kwargs,
     'input_output_response': test_unrecognized_kwargs,
     'interconnect': interconnect_test.test_interconnect_exceptions,
+    'ioresp_plot': timeplot_test.test_errors,
     'linearize': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
     'lqr': test_unrecognized_kwargs,
@@ -230,6 +232,7 @@ kwarg_unittest = {
     'StateSpace.__init__': test_unrecognized_kwargs,
     'StateSpace.sample': test_unrecognized_kwargs,
     'TimeResponseData.__call__': trdata_test.test_response_copy,
+    'TimeResponseData.plot': timeplot_test.test_errors,
     'TransferFunction.__init__': test_unrecognized_kwargs,
     'TransferFunction.sample': test_unrecognized_kwargs,
     'optimal.OptimalControlProblem.__init__':

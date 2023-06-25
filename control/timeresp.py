@@ -182,6 +182,9 @@ class TimeResponseData:
         response.  If ntraces is 0 then the data represents a single trace
         with the trace index surpressed in the data.
 
+    trace_labels : array of string
+        Labels to use for traces (set to sysname it ntraces is 0)
+
     Notes
     -----
     1. For backward compatibility with earlier versions of python-control,
@@ -219,7 +222,8 @@ class TimeResponseData:
             self, time, outputs, states=None, inputs=None, issiso=None,
             output_labels=None, state_labels=None, input_labels=None,
             title=None, transpose=False, return_x=False, squeeze=None,
-            multi_trace=False, plot_inputs=True, sysname=None
+            multi_trace=False, trace_labels=None, plot_inputs=True,
+            sysname=None
     ):
         """Create an input/output time response object.
 
@@ -415,6 +419,10 @@ class TimeResponseData:
         # Check and store labels, if present
         self.input_labels = _process_labels(
             input_labels, "input", self.ninputs)
+
+        # Check and store trace labels, if present
+        self.trace_labels = _process_labels(
+            trace_labels, "trace", self.ntraces)
 
         # Figure out if the system is SISO
         if issiso is None:
@@ -1156,6 +1164,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         tout, yout, xout, U, issiso=sys.issiso(),
         output_labels=sys.output_labels, input_labels=sys.input_labels,
         state_labels=sys.state_labels, sysname=sys.name, plot_inputs=True,
+        title="Forced response for " + sys.name,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1372,10 +1381,14 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
     uout = np.empty((ninputs, ninputs, T.size))
 
     # Simulate the response for each input
+    trace_labels = []
     for i in range(sys.ninputs):
         # If input keyword was specified, only simulate for that input
         if isinstance(input, int) and i != input:
             continue
+
+        # Save a label for this plot
+        trace_labels.append(f"From {sys.input_labels[i]}")
 
         # Create a set of single inputs system for simulation
         U = np.zeros((sys.ninputs, T.size))
@@ -1402,7 +1415,7 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
         output_labels=output_labels, input_labels=input_labels,
         state_labels=sys.state_labels, title="Step response for " + sys.name,
         transpose=transpose, return_x=return_x, squeeze=squeeze,
-        sysname=sys.name, plot_inputs=False)
+        sysname=sys.name, trace_labels=trace_labels, plot_inputs=False)
 
 
 def step_info(sysdata, T=None, T_num=None, yfinal=None,
@@ -1743,6 +1756,7 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None,
         response.t, yout, response.x, None, issiso=issiso,
         output_labels=output_labels, input_labels=None,
         state_labels=sys.state_labels, sysname=sys.name,
+        title="Initial response for " + sys.name,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1869,10 +1883,14 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     uout = np.full((ninputs, ninputs, np.asarray(T).size), None)
 
     # Simulate the response for each input
+    trace_labels = []
     for i in range(sys.ninputs):
         # If input keyword was specified, only handle that case
         if isinstance(input, int) and i != input:
             continue
+
+        # Save a label for this plot
+        trace_labels.append(f"From {sys.input_labels[i]}")
 
         #
         # Compute new X0 that contains the impulse
@@ -1911,8 +1929,10 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     return TimeResponseData(
         response.time, yout, xout, uout, issiso=issiso,
         output_labels=output_labels, input_labels=input_labels,
-        state_labels=sys.state_labels, sysname=sys.name, plot_inputs=False,
-        transpose=transpose, return_x=return_x, squeeze=squeeze)
+        state_labels=sys.state_labels, trace_labels=trace_labels,
+        title="Impulse response for " + sys.name,
+        sysname=sys.name, plot_inputs=False, transpose=transpose,
+        return_x=return_x, squeeze=squeeze)
 
 
 # utility function to find time period and time increment using pole locations
