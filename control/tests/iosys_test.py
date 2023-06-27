@@ -77,7 +77,8 @@ class TestIOSys:
         # Create a transfer function from the state space system
         linsys = tsys.siso_linsys
         tfsys = ct.ss2tf(linsys)
-        iosys = ct.ss(tfsys)
+        with pytest.warns(DeprecationWarning, match="use tf2ss"):
+            iosys = ct.tf2io(tfsys)
 
         # Verify correctness via simulation
         T, U, X0 = tsys.T, tsys.U, tsys.X0
@@ -89,15 +90,23 @@ class TestIOSys:
         # Make sure that non-proper transfer functions generate an error
         tfsys = ct.tf('s')
         with pytest.raises(ValueError):
-            iosys=ct.ss(tfsys)
+            with pytest.warns(DeprecationWarning, match="use tf2ss"):
+                iosys=ct.tf2io(tfsys)
 
     def test_ss2io(self, tsys):
         # Create an input/output system from the linear system
         linsys = tsys.siso_linsys
+        with pytest.warns(DeprecationWarning, match="use ss"):
+            iosys = ct.ss2io(linsys)
+        np.testing.assert_allclose(linsys.A, iosys.A)
+        np.testing.assert_allclose(linsys.B, iosys.B)
+        np.testing.assert_allclose(linsys.C, iosys.C)
+        np.testing.assert_allclose(linsys.D, iosys.D)
 
         # Try adding names to things
-        iosys_named = ct.ss(linsys, inputs='u', outputs='y',
-                               states=['x1', 'x2'], name='iosys_named')
+        with pytest.warns(DeprecationWarning, match="use ss"):
+            iosys_named = ct.ss2io(linsys, inputs='u', outputs='y',
+                                   states=['x1', 'x2'], name='iosys_named')
         assert iosys_named.find_input('u') == 0
         assert iosys_named.find_input('x') is None
         assert iosys_named.find_output('y') == 0
@@ -109,6 +118,21 @@ class TestIOSys:
         np.testing.assert_allclose(linsys.B, iosys_named.B)
         np.testing.assert_allclose(linsys.C, iosys_named.C)
         np.testing.assert_allclose(linsys.D, iosys_named.D)
+
+    def test_sstf_rename(self):
+        # Create a state space system
+        sys = ct.rss(4, 1, 1)
+
+        sys_ss = ct.ss(sys, inputs=['u1'], outputs=['y1'])
+        assert sys_ss.input_labels == ['u1']
+        assert sys_ss.output_labels == ['y1']
+        assert sys_ss.name == sys.name
+
+        # Convert to transfer function with renaming
+        sys_tf = ct.tf(sys, inputs=['a'], outputs=['c'])
+        assert sys_tf.input_labels == ['a']
+        assert sys_tf.output_labels == ['c']
+        assert sys_tf.name != sys_ss.name
 
     def test_iosys_unspecified(self, tsys):
         """System with unspecified inputs and outputs"""

@@ -74,7 +74,7 @@ try:
 except ImportError:
     ab13dd = None
 
-__all__ = ['StateSpace', 'LinearICSystem', 'tf2ss', 'ssdata',
+__all__ = ['StateSpace', 'LinearICSystem', 'ss2io', 'tf2io', 'tf2ss', 'ssdata',
            'linfnorm', 'ss', 'rss', 'drss', 'summing_junction']
 
 # Define module default parameter values
@@ -1598,7 +1598,7 @@ def ss(*args, **kwargs):
        and not isinstance(args[0], (InputOutputSystem, LTI)):
         # Function as first (or second) argument => assume nonlinear IO system
         warn("using ss to create nonlinear I/O systems is deprecated; "
-             "use nlsys", DeprecationWarning)
+             "use nlsys()", DeprecationWarning)
         return NonlinearIOSystem(*args, **kwargs)
 
     elif len(args) == 4 or len(args) == 5:
@@ -1628,6 +1628,99 @@ def ss(*args, **kwargs):
             "Needs 1, 4, or 5 arguments; received %i." % len(args))
 
     return sys
+
+
+# Convert a state space system into an input/output system (wrapper)
+def ss2io(*args, **kwargs):
+    """ss2io(sys[, ...])
+
+    Create an I/O system from a state space linear system.
+
+    .. deprecated:: 0.10.0
+        This function will be removed in a future version of python-control.
+        The `ss` function can be used directly to produce an I/O system.
+
+    Create an :class:`~control.StateSpace` system with the given signal
+    and system names.  See :func:`~control.ss` for more details.
+    """
+    warn("ss2io is deprecated; use ss()", DeprecationWarning)
+    return StateSpace(*args, **kwargs)
+
+
+# Convert a transfer function into an input/output system (wrapper)
+def tf2io(*args, **kwargs):
+    """tf2io(sys[, ...])
+
+    Convert a transfer function into an I/O system.
+
+    .. deprecated:: 0.10.0
+        This function will be removed in a future version of python-control.
+        The `tf2ss` function can be used to produce a state space I/O system.
+
+    The function accepts either 1 or 2 parameters:
+
+    ``tf2io(sys)``
+        Convert a linear system into space space form. Always creates
+        a new system, even if sys is already a StateSpace object.
+
+    ``tf2io(num, den)``
+        Create a linear I/O system from its numerator and denominator
+        polynomial coefficients.
+
+        For details see: :func:`tf`
+
+    Parameters
+    ----------
+    sys : LTI (StateSpace or TransferFunction)
+        A linear system.
+    num : array_like, or list of list of array_like
+        Polynomial coefficients of the numerator.
+    den : array_like, or list of list of array_like
+        Polynomial coefficients of the denominator.
+
+    Returns
+    -------
+    out : StateSpace
+        New I/O system (in state space form).
+
+    Other Parameters
+    ----------------
+    inputs, outputs : str, or list of str, optional
+        List of strings that name the individual signals of the transformed
+        system.  If not given, the inputs and outputs are the same as the
+        original system.
+    name : string, optional
+        System name. If unspecified, a generic name <sys[id]> is generated
+        with a unique integer id.
+
+    Raises
+    ------
+    ValueError
+        if `num` and `den` have invalid or unequal dimensions, or if an
+        invalid number of arguments is passed in.
+    TypeError
+        if `num` or `den` are of incorrect type, or if sys is not a
+        TransferFunction object.
+
+    See Also
+    --------
+    ss2io
+    tf2ss
+
+    Examples
+    --------
+    >>> num = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
+    >>> den = [[[9., 8., 7.], [6., 5., 4.]], [[3., 2., 1.], [-1., -2., -3.]]]
+    >>> sys1 = ct.tf2ss(num, den)
+
+    >>> sys_tf = ct.tf(num, den)
+    >>> G = ct.tf2ss(sys_tf)
+    >>> G.ninputs, G.noutputs, G.nstates
+    (2, 2, 8)
+
+    """
+    warn("tf2io is deprecated; use tf2ss() or tf()", DeprecationWarning)
+    return tf2ss(*args, **kwargs)
 
 
 def tf2ss(*args, **kwargs):

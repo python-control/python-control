@@ -97,9 +97,11 @@ def test_kwarg_search(module, prefix):
      (control.rss, 0, 0, (2, 1, 1), {}),
      (control.set_defaults, 0, 0, ('control',), {'default_dt': True}),
      (control.ss, 0, 0, (0, 0, 0, 0), {'dt': 1}),
+     (control.ss2io, 1, 0,  (), {}),
      (control.ss2tf, 1, 0, (), {}),
      (control.summing_junction, 0, 0, (2,), {}),
      (control.tf, 0, 0, ([1], [1, 1]), {}),
+     (control.tf2io, 0, 1, (), {}),
      (control.tf2ss, 0, 1, (), {}),
      (control.zpk, 0, 0, ([1], [2, 3], 4), {}),
      (control.flatsys.FlatSystem, 0, 0,
@@ -122,11 +124,15 @@ def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
     args = (sssys, )*nsssys + (tfsys, )*ntfsys + moreargs
 
     # Call the function normally and make sure it works
-    function(*args, **kwargs)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")     # catch any warnings elsewhere
+        function(*args, **kwargs)
 
     # Now add an unrecognized keyword and make sure there is an error
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        function(*args, **kwargs, unknown=None)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")     # catch any warnings elsewhere
+            function(*args, **kwargs, unknown=None)
 
 
 @pytest.mark.parametrize(
@@ -192,9 +198,11 @@ kwarg_unittest = {
     'set_defaults': test_unrecognized_kwargs,
     'singular_values_plot': test_matplotlib_kwargs,
     'ss': test_unrecognized_kwargs,
+    'ss2io': test_unrecognized_kwargs,
     'ss2tf': test_unrecognized_kwargs,
     'summing_junction': interconnect_test.test_interconnect_exceptions,
     'tf': test_unrecognized_kwargs,
+    'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,
     'sample_system' : test_unrecognized_kwargs,
     'c2d' : test_unrecognized_kwargs,
