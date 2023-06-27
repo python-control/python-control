@@ -332,9 +332,9 @@ def append(*sys):
 def connect(sys, Q, inputv, outputv):
     """Index-based interconnection of an LTI system.
 
-.. deprecated:: 0.10.0
-    `connect` will be removed in a future version of python-control in
-    favor of `interconnect`, which works with named signals.
+    .. deprecated:: 0.10.0
+        `connect` will be removed in a future version of python-control in
+        favor of `interconnect`, which works with named signals.
 
     The system `sys` is a system typically constructed with `append`, with
     multiple inputs and outputs.  The inputs and outputs are connected
@@ -380,10 +380,9 @@ def connect(sys, Q, inputv, outputv):
 
     Notes
     -----
-    The :func:`~control.interconnect` function in the
-    :ref:`input/output systems <iosys-module>` module allows the use
-    of named signals and provides an alternative method for
-    interconnecting multiple systems.
+    The :func:`~control.interconnect` function in the :ref:`input/output
+    systems <iosys-module>` module allows the use of named signals and
+    provides an alternative method for interconnecting multiple systems.
 
     """
     # TODO: maintain `connect` for use in MATLAB submodule (?)

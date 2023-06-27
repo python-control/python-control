@@ -1597,8 +1597,8 @@ def ss(*args, **kwargs):
     if len(args) > 0 and (hasattr(args[0], '__call__') or args[0] is None) \
        and not isinstance(args[0], (InputOutputSystem, LTI)):
         # Function as first (or second) argument => assume nonlinear IO system
-        warn("use nlsys() to create nonlinear I/O System",
-             PendingDeprecationWarning)
+        warn("using ss to create nonlinear I/O systems is deprecated; "
+             "use nlsys", DeprecationWarning)
         return NonlinearIOSystem(*args, **kwargs)
 
     elif len(args) == 4 or len(args) == 5:

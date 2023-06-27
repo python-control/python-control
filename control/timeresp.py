@@ -1246,7 +1246,7 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
         many simulation steps.
 
     X0 : array_like or float, optional
-        Initial condition (default = 0).  This can be used for nonlinear
+        Initial condition (default = 0).  This can be used for a nonlinear
         system where the origin is not an equilibrium point.
 
     input : int, optional

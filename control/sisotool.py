@@ -341,6 +341,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
 
     if derivative_in_feedback_path:
         deriv = -deriv
+        deriv.input_labels = 'e'
 
     # create gain blocks
     Kpgain = tf(Kp0, 1, inputs='prop_e', outputs='ufb')
