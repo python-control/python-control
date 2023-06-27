@@ -3,14 +3,16 @@ Wrappers for the MATLAB compatibility module
 """
 
 import numpy as np
+from scipy.signal import zpk2tf
+import warnings
+from warnings import warn
+
 from ..statesp import ss
 from ..xferfcn import tf
 from ..lti import LTI
 from ..exception import ControlArgument
-from scipy.signal import zpk2tf
-from warnings import warn
 
-__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain']
+__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain', 'connect']
 
 def bode(*args, **kwargs):
     """bode(syslist[, omega, dB, Hz, deg, ...])
@@ -230,3 +232,56 @@ def dcgain(*args):
     else:
         raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
                          "arguments.")
+
+
+from ..bdalg import connect as ct_connect
+def connect(*args):
+    """Index-based interconnection of an LTI system.
+
+    The system `sys` is a system typically constructed with `append`, with
+    multiple inputs and outputs.  The inputs and outputs are connected
+    according to the interconnection matrix `Q`, and then the final inputs and
+    outputs are trimmed according to the inputs and outputs listed in `inputv`
+    and `outputv`.
+
+    NOTE: Inputs and outputs are indexed starting at 1 and negative values
+    correspond to a negative feedback interconnection.
+
+    Parameters
+    ----------
+    sys : :class:`InputOutputSystem`
+        System to be connected.
+    Q : 2D array
+        Interconnection matrix. First column gives the input to be connected.
+        The second column gives the index of an output that is to be fed into
+        that input. Each additional column gives the index of an additional
+        input that may be optionally added to that input. Negative
+        values mean the feedback is negative. A zero value is ignored. Inputs
+        and outputs are indexed starting at 1 to communicate sign information.
+    inputv : 1D array
+        list of final external inputs, indexed starting at 1
+    outputv : 1D array
+        list of final external outputs, indexed starting at 1
+
+    Returns
+    -------
+    out : :class:`InputOutputSystem`
+        Connected and trimmed I/O system.
+
+    See Also
+    --------
+    append, feedback, interconnect, negate, parallel, series
+
+    Examples
+    --------
+    >>> G = ct.rss(7, inputs=2, outputs=2)
+    >>> K = [[1, 2], [2, -1]]  # negative feedback interconnection
+    >>> T = ct.connect(G, K, [2], [1, 2])
+    >>> T.ninputs, T.noutputs, T.nstates
+    (1, 2, 7)
+
+    """
+    # Turn off the deprecation warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message="`connect` is deprecated")
+        return ct_connect(*args)
