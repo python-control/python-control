@@ -1356,7 +1356,7 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
     from .statesp import _convert_to_statespace
 
     # Create the time and input vectors
-    if T is None or np.asarray(T).size == 1 and isinstance(sys, LTI):
+    if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
     T = np.atleast_1d(T).reshape(-1)
     if T.ndim != 1 and len(T) < 2:
@@ -1370,7 +1370,7 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
             "with given X0.")
 
     # Convert to state space so that we can simulate
-    if sys.nstates is None:
+    if isinstance(sys, LTI) and sys.nstates is None:
         sys = _convert_to_statespace(sys)
 
     # Set up arrays to handle the output
@@ -1732,10 +1732,7 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None,
 
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
-        if isinstance(sys, LTI):
-            T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
-        elif T_num is not None:
-            T = np.linspace(0, T, T_num)
+        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
     T = np.atleast_1d(T).reshape(-1)
     if T.ndim != 1 and len(T) < 2:
         raise ValueError("invalid value of T for this type of system")
@@ -1857,7 +1854,7 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     from .lti import LTI
 
     # Create the time and input vectors
-    if T is None or np.asarray(T).size == 1 and isinstance(sys, LTI):
+    if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
     T = np.atleast_1d(T).reshape(-1)
     if T.ndim != 1 and len(T) < 2:
@@ -2106,6 +2103,20 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
     """Returns a time vector that has a reasonable number of points.
     if system is discrete-time, N is ignored """
+    from .lti import LTI
+
+    # For non-LTI system, need tfinal
+    if not isinstance(sys, LTI):
+        if tfinal is None:
+            raise ValueError(
+                "can't automatically compute T for non-LTI system")
+        elif isinstance(tfinal, (int, float, np.number)):
+            if N is None:
+                return np.linspace(0, tfinal)
+            else:
+                return np.linspace(0, tfinal, N)
+        else:
+            return tfinal       # Assume we got passed something appropriate
 
     N_max = 5000
     N_min_ct = 100    # min points for cont time systems

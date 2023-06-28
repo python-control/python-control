@@ -5,53 +5,134 @@ import pytest
 import control as ct
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Step responses
-@pytest.mark.parametrize("nin, nout", [(1, 1), (1, 2), (2, 1), (2, 2), (2, 3)])
+# Detailed test of (almost) all functionality
+# (uncomment rows for developmental testing, but otherwise takes too long)
+@pytest.mark.parametrize(
+    "sys", [
+        # ct.rss(1, 1, 1, strictly_proper=True, name="rss"),
+        ct.nlsys(
+            lambda t, x, u, params: -x + u, None,
+            inputs=1, outputs=1, states=1, name="nlsys"),
+        # ct.rss(2, 1, 2, strictly_proper=True, name="rss"),
+        ct.rss(2, 2, 1, strictly_proper=True, name="rss"),
+        # ct.drss(2, 2, 2, name="drss"),
+        # ct.rss(2, 2, 3, strictly_proper=True, name="rss"),
+    ])
 @pytest.mark.parametrize("transpose", [True, False])
 @pytest.mark.parametrize("plot_inputs", [None, True, False, 'overlay'])
-def test_simple_response(nout, nin, transpose, plot_inputs):
-    sys = ct.rss(4, nout, nin)
-    stepresp = ct.step_response(sys)
-    stepresp.plot(plot_inputs=plot_inputs, transpose=transpose)
+@pytest.mark.parametrize("plot_outputs", [True, False])
+@pytest.mark.parametrize("combine_signals", [True, False])
+@pytest.mark.parametrize("combine_traces", [True, False])
+@pytest.mark.parametrize("second_system", [False, True])
+@pytest.mark.parametrize("fcn", [
+    ct.step_response, ct.impulse_response, ct.initial_response,
+    ct.forced_response, ct.input_output_response])
+def test_response_plots(
+        fcn, sys, plot_inputs, plot_outputs, combine_signals, combine_traces,
+        transpose, second_system, clear=True):
+    # Figure out the time range to use and check some special cases
+    if not isinstance(sys, ct.lti.LTI):
+        if fcn == ct.impulse_response:
+            pytest.skip("impulse response not implemented for nlsys")
+
+        # Nonlinear systems require explicit time limits
+        T = 10
+        timepts = np.linspace(0, T)
+    else:
+        # Linear systems figure things out on their own
+        T = None
+        timepts = np.linspace(0, 10)    # for input_output_response
+
+    # Save up the keyword arguments
+    kwargs = dict(
+        plot_inputs=plot_inputs, plot_outputs=plot_outputs, transpose=transpose,
+        combine_signals=combine_signals, combine_traces=combine_traces)
+
+    # Create the response
+    if fcn is ct.input_output_response and \
+       not isinstance(sys, ct.NonlinearIOSystem):
+        # Skip transfer functions and other non-state space systems
+        return None
+    if fcn in [ct.input_output_response, ct.forced_response]:
+        U = np.zeros((sys.ninputs, timepts.size))
+        for i in range(sys.ninputs):
+            U[i] = np.cos(timepts * i + i)
+        args = [timepts, U]
+
+    elif fcn == ct.initial_response:
+        args = [T, np.ones(sys.nstates)]   # T, X0
+
+    elif not isinstance(sys, ct.lti.LTI):
+        args = [T]              # nonlinear systems require final time
+
+    else:                       # step, initial, impulse responses
+        args = []
+
+    # Create a new figure (in case previous one is of the same size) and plot
+    if not clear:
+        plt.figure()
+    response = fcn(sys, *args)
+
+    # Look for cases where there are no data to plot
+    if not plot_outputs and (
+            plot_inputs is False or response.ninputs == 0 or
+            plot_inputs is None and response.plot_inputs is False):
+        with pytest.raises(ValueError, match=".* no data to plot"):
+            out = response.plot(**kwargs)
+        return None
+    elif not plot_outputs and plot_inputs == 'overlay':
+        with pytest.raises(ValueError, match="can't overlay inputs"):
+            out = response.plot(**kwargs)
+        return None
+    elif plot_inputs in [True, 'overlay'] and response.ninputs == 0:
+        with pytest.raises(ValueError, match=".* but no inputs"):
+            out = response.plot(**kwargs)
+        return None
+
+    out = response.plot(**kwargs)
+
+    # TODO: add some basic checks here
 
     # Add additional data (and provide infon in the title)
-    newsys = ct.rss(4, nout, nin)
-    out = ct.step_response(newsys, stepresp.time[-1]).plot(
-        plot_inputs=plot_inputs, transpose=transpose)
+    if second_system:
+        newsys = ct.rss(
+            sys.nstates, sys.noutputs, sys.ninputs, strictly_proper=True)
+        if fcn not in [ct.initial_response, ct.forced_response,
+                       ct.input_output_response] and \
+           isinstance(sys, ct.lti.LTI):
+            # Reuse the previously computed time to make plots look nicer
+            fcn(newsys, *args, T=response.time[-1]).plot(**kwargs)
+        else:
+            # Compute and plot new response (time is one of the arguments)
+            fcn(newsys, *args).plot(**kwargs)
+
+    # TODO: add some basic checks here
 
     # Update the title so we can see what is going on
     fig = out[0, 0][0].axes.figure
     fig.suptitle(
-        fig._suptitle._text + f" [{nout}x{nin}, {plot_inputs=}, {transpose=}]",
+        fig._suptitle._text +
+        f" [{sys.noutputs}x{sys.ninputs}, cs={combine_signals}, "
+        f"ct={combine_traces}, pi={plot_inputs}, tr={transpose}]",
         fontsize='small')
 
-@pytest.mark.parametrize("transpose", [True, False])
-def test_combine_signals(transpose):
-    sys = ct.rss(4, 2, 3)
-    stepresp = ct.step_response(sys)
-    stepresp.plot(
-        combine_signals=True, transpose=transpose,
-        title=f"Step response: combine_signals = True; transpose={transpose}")
+    # Get rid of the figure to free up memory
+    if clear:
+        plt.clf()
 
 
-@pytest.mark.parametrize("transpose", [True, False])
-def test_combine_traces(transpose):
-    sys = ct.rss(4, 2, 3)
-    stepresp = ct.step_response(sys)
-    stepresp.plot(
-        combine_traces=True, transpose=transpose,
-        title=f"Step response: combine_traces = True; transpose={transpose}")
-
-
-@pytest.mark.parametrize("transpose", [True, False])
-def test_combine_signals_traces(transpose):
-    sys = ct.rss(4, 5, 3)
-    stepresp = ct.step_response(sys)
-    stepresp.plot(
-        combine_signals=True, combine_traces=True, transpose=transpose,
-        title=f"Step response: combine_signals/traces = True;" +
-        f"transpose={transpose}")
+def test_legend_map():
+    sys_mimo = ct.tf2ss(
+        [[[1], [0.1]], [[0.2], [1]]],
+        [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="MIMO")
+    response = ct.step_response(sys_mimo)
+    response.plot(
+        legend_map=np.array([['center', 'upper right'],
+                             [None, 'center right']]),
+        plot_inputs=True, combine_signals=True, transpose=True,
+        title='MIMO step response with custom legend placement')
 
 
 def test_errors():
@@ -81,26 +162,39 @@ if __name__ == "__main__":
     # Start by clearing existing figures
     plt.close('all')
 
-    print ("Simple step responses")
-    for size in [(1, 1), (1, 2), (2, 1), (2, 2), (2, 3)]:
-        for transpose in [False, True]:
-            for plot_inputs in [None, True, False, 'overlay']:
-                plt.figure()
-                test_simple_response(
-                    *size, transpose=transpose, plot_inputs=plot_inputs)
+    # Define a set of systems to test
+    sys_siso = ct.tf2ss([1], [1, 2, 1], name="SISO")
+    sys_mimo = ct.tf2ss(
+        [[[1], [0.1]], [[0.2], [1]]],
+        [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="MIMO")
 
-    print ("Combine signals")
-    for transpose in [False, True]:
-        plt.figure()
-        test_combine_signals(transpose)
+    # Define and run a selected set of interesting tests
+    # def test_response_plots(
+    #      fcn, sys, plot_inputs, plot_outputs, combine_signals,
+    #      combine_traces, transpose, second_system, clear=True):
+    N, T, F = None, True, False
+    test_cases = [
+        # response fcn       system    in         out cs ct tr ss
+        (ct.step_response,   sys_siso, N,         T,  F, F, F, F), # 1
+        (ct.step_response,   sys_siso, T,         F,  F, F, F, F), # 2
+        (ct.step_response,   sys_siso, T,         T,  F, F, F, T), # 3
+        (ct.step_response,   sys_siso, 'overlay', T,  F, F, F, T), # 4
+        (ct.step_response,   sys_mimo, F,         T,  F, F, F, F), # 5
+        (ct.step_response,   sys_mimo, T,         T,  F, F, F, F), # 6
+        (ct.step_response,   sys_mimo, 'overlay', T,  F, F, F, F), # 7
+        (ct.step_response,   sys_mimo, T,         T,  T, F, F, F), # 8
+        (ct.step_response,   sys_mimo, T,         T,  T, T, F, F), # 9
+        (ct.step_response,   sys_mimo, T,         T,  F, F, T, F), # 10
+        (ct.step_response,   sys_mimo, T,         T,  T, F, T, F), # 11
+        (ct.step_response,   sys_mimo, 'overlay', T,  T, F, T, F), # 12
+        (ct.forced_response, sys_mimo, N,         T,  T, F, T, F), # 13
+        (ct.forced_response, sys_mimo, 'overlay', T,  F, F, F, F), # 14
+    ]
+    for args in test_cases:
+        test_response_plots(*args, clear=F)
 
-    print ("Combine traces")
-    for transpose in [False, True]:
-        plt.figure()
-        test_combine_traces(transpose)
+    #
+    # Run a few more special cases to show off capabilities
+    #
 
-    print ("Combine signals and traces")
-    for transpose in [False, True]:
-        plt.figure()
-        test_combine_signals_traces(transpose)
-
+    test_legend_map()           # show ability to set legend location

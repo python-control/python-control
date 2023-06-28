@@ -18,7 +18,7 @@
 # [i] Multi-trace graphs using different line styles
 # [i] Plotting function return Line2D elements
 # [i] Axis labels/legends based on what is plotted (siso, mimo, multi-trace)
-# [ ] Ability to select (index) output and/or trace (and time?)
+# [x] Ability to select (index) output and/or trace (and time?)
 # [i] Legends should not contain redundant information (nor appear redundantly)
 
 import numpy as np
@@ -53,7 +53,7 @@ _timeplot_defaults = {
 # Plot the input/output response of a system
 def ioresp_plot(
         data, ax=None, plot_inputs=None, plot_outputs=True, transpose=False,
-        combine_traces=False, combine_signals=False, legend_spec=None,
+        combine_traces=False, combine_signals=False, legend_map=None,
         legend_loc=None, add_initial_zero=True, title=None, relabel=True,
         **kwargs):
     """Plot the time response of an input/output system.
@@ -111,14 +111,14 @@ def ioresp_plot(
         are added.  If set to `False`, just plot new data on existing axes.
     time_label : str, optional
         Label to use for the time axis.
-    legend_spec : array of str, option
+    legend_map : array of str, option
         Location of the legend for multi-trace plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
         each entry being either None (for no legend) or a legend location
         string (see :func:`~matplotlib.pyplot.legend`).
     legend_loc : str
         Location of the legend within the axes for which it appears.  This
-        value is used if legend_spec is None.
+        value is used if legend_map is None.
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
         inputs.  This is useful when the initial value of the input is
@@ -216,7 +216,13 @@ def ioresp_plot(
     ntraces = max(1, data.ntraces)      # treat data.ntraces == 0 as 1 trace
     if ninputs == 0 and noutputs == 0:
         raise ValueError(
-            "plot_inputs and plot_outputs both True; no data to plot")
+            "plot_inputs and plot_outputs both False; no data to plot")
+    elif plot_inputs == 'overlay' and noutputs == 0:
+        raise ValueError(
+            "can't overlay inputs with no outputs")
+    elif plot_inputs in [True, 'overlay'] and data.ninputs == 0:
+        raise ValueError(
+            "input plotting requested but no inputs in time response data")
 
     # Figure how how many rows and columns to use + offsets for inputs/outputs
     if plot_inputs == 'overlay' and not combine_signals:
@@ -226,8 +232,8 @@ def ioresp_plot(
     elif combine_signals:
         nrows = int(plot_outputs)               # Start with outputs
         nrows += int(plot_inputs == True)       # Add plot for inputs if needed
-        noutput_axes = 1 if plot_outputs else 0
-        ninput_axes = 1 if plot_inputs else 0
+        noutput_axes = 1 if plot_outputs and plot_inputs is True else 0
+        ninput_axes = 1 if plot_inputs is True else 0
     else:
         nrows = noutputs + ninputs              # Plot inputs separately
         noutput_axes = noutputs if plot_outputs else 0
@@ -321,7 +327,10 @@ def ioresp_plot(
 
     # Reshape the inputs and outputs for uniform indexing
     outputs = data.y.reshape(data.noutputs, ntraces, -1)
-    inputs = data.u.reshape(data.ninputs, ntraces, -1)
+    if data.u is None or not plot_inputs:
+        inputs = None
+    else:
+        inputs = data.u.reshape(data.ninputs, ntraces, -1)
 
     # Create a list of lines for the output
     out = np.empty((noutputs + ninputs, ntraces), dtype=object)
@@ -430,7 +439,7 @@ def ioresp_plot(
         if ntraces > 1 and not combine_traces:
             for trace in range(ntraces):
                 with plt.rc_context(_timeplot_rcParams):
-                    ax_outputs[0, trace].set_title(
+                    ax_array[0, trace].set_title(
                         f"Trace {trace}" if data.trace_labels is None
                         else data.trace_labels[trace])
 
@@ -454,7 +463,7 @@ def ioresp_plot(
     #
     # Create legends
     #
-    # Legends can be placed manually by passing a legend_spec array that
+    # Legends can be placed manually by passing a legend_map array that
     # matches the shape of the suplots, with each item being a string
     # indicating the location of the legend for that axes (or None for no
     # legend).
@@ -472,21 +481,23 @@ def ioresp_plot(
     #
 
     # Figure out where to put legends
-    if legend_spec is None:
+    if legend_map is None:
         legend_map = np.full(ax_array.shape, None, dtype=object)
         if legend_loc == None:
             legend_loc = 'center right'
         if transpose:
             if (combine_signals or plot_inputs == 'overlay') and combine_traces:
                 # Put a legend in each plot for inputs and outputs
-                legend_map[0, ninput_axes] = legend_loc
+                if plot_outputs is True:
+                    legend_map[0, ninput_axes] = legend_loc
                 if plot_inputs is True:
                     legend_map[0, 0] = legend_loc
             elif combine_signals:
                 # Put a legend in rightmost input/output plot
-                legend_map[0, ninput_axes] = legend_loc
                 if plot_inputs is True:
                     legend_map[0, 0] = legend_loc
+                if plot_outputs is True:
+                    legend_map[0, ninput_axes] = legend_loc
             elif plot_inputs == 'overlay':
                 # Put a legend on the top of each column
                 for i in range(ntraces):
@@ -500,12 +511,14 @@ def ioresp_plot(
         else:                   # regular layout
             if (combine_signals or plot_inputs == 'overlay') and combine_traces:
                 # Put a legend in each plot for inputs and outputs
-                legend_map[0, -1] = legend_loc
+                if plot_outputs is True:
+                    legend_map[0, -1] = legend_loc
                 if plot_inputs is True:
                     legend_map[noutput_axes, -1] = legend_loc
             elif combine_signals:
                 # Put a legend in rightmost input/output plot
-                legend_map[0, -1] = legend_loc
+                if plot_outputs is True:
+                    legend_map[0, -1] = legend_loc
                 if plot_inputs is True:
                     legend_map[noutput_axes, -1] = legend_loc
             elif plot_inputs == 'overlay':
