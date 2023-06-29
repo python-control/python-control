@@ -177,13 +177,17 @@ class TimeResponseData:
         Whether or not to plot the inputs by default (can be overridden in
         the plot() method)
 
-    ntraces : int
+    ntraces : int, optional
         Number of independent traces represented in the input/output
-        response.  If ntraces is 0 then the data represents a single trace
-        with the trace index surpressed in the data.
+        response.  If ntraces is 0 (default) then the data represents a
+        single trace with the trace index surpressed in the data.
 
-    trace_labels : array of string
+    trace_labels : array of string, optional
         Labels to use for traces (set to sysname it ntraces is 0)
+
+    trace_labels : array of string, optional
+        Type of trace.  Currently only 'step' is supported, which controls
+        the way in which the signal is plotted.
 
     Notes
     -----
@@ -222,7 +226,8 @@ class TimeResponseData:
             self, time, outputs, states=None, inputs=None, issiso=None,
             output_labels=None, state_labels=None, input_labels=None,
             title=None, transpose=False, return_x=False, squeeze=None,
-            multi_trace=False, trace_labels=None, plot_inputs=True,
+            multi_trace=False, trace_labels=None, trace_types=None,
+            plot_inputs=True,
             sysname=None
     ):
         """Create an input/output time response object.
@@ -423,6 +428,7 @@ class TimeResponseData:
         # Check and store trace labels, if present
         self.trace_labels = _process_labels(
             trace_labels, "trace", self.ntraces)
+        self.trace_types = trace_types
 
         # Figure out if the system is SISO
         if issiso is None:
@@ -1382,13 +1388,15 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
 
     # Simulate the response for each input
     trace_labels = []
+    trace_types = []
     for i in range(sys.ninputs):
         # If input keyword was specified, only simulate for that input
         if isinstance(input, int) and i != input:
             continue
 
-        # Save a label for this plot
+        # Save a label and type for this plot
         trace_labels.append(f"From {sys.input_labels[i]}")
+        trace_types.append('step')
 
         # Create a set of single inputs system for simulation
         U = np.zeros((sys.ninputs, T.size))
@@ -1415,7 +1423,8 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
         output_labels=output_labels, input_labels=input_labels,
         state_labels=sys.state_labels, title="Step response for " + sys.name,
         transpose=transpose, return_x=return_x, squeeze=squeeze,
-        sysname=sys.name, trace_labels=trace_labels, plot_inputs=False)
+        sysname=sys.name, trace_labels=trace_labels,
+        trace_types=trace_types, plot_inputs=False)
 
 
 def step_info(sysdata, T=None, T_num=None, yfinal=None,

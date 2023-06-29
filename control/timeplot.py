@@ -28,7 +28,7 @@ from os.path import commonprefix
 
 from . import config
 
-__all__ = ['ioresp_plot']
+__all__ = ['ioresp_plot', 'combine_traces']
 
 # Default font dictionary
 _timeplot_rcParams = mpl.rcParams.copy()
@@ -71,11 +71,11 @@ def ioresp_plot(
         The matplotlib Axes to draw the figure on.  If not specified, the
         Axes for the current figure are used or, if there is no current
         figure with the correct number and shape of Axes, a new figure is
-        created.  The default shape of the array should be (data.ntraces,
-        data.ninputs + data.inputs), but if combine_traces == True then
-        only one row is needed and if combine_signals == True then only one
-        or two columns are needed (depending on plot_inputs and
-        plot_outputs).
+        created.  The default shape of the array should be (noutputs +
+        ninputs, ntraces), but if `combine_traces` is set to `True` then
+        only one row is needed and if `combine_signals` is set to `True`
+        then only one or two columns are needed (depending on plot_inputs
+        and plot_outputs).
     plot_inputs : bool or str, optional
         Sets how and where to plot the inputs:
             * False: don't plot the inputs
@@ -121,8 +121,7 @@ def ioresp_plot(
         value is used if legend_map is None.
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
-        inputs.  This is useful when the initial value of the input is
-        nonzero (for example in a step input).  Default is True.
+        inputs with type 'step'.  Default is True.
     trace_cycler: :class:`~matplotlib.Cycler`
         Line style cycle to use for traces.  Default = ['-', '--', ':', '-.'].
 
@@ -367,7 +366,8 @@ def ioresp_plot(
         for i in range(ninputs):
             label = _make_line_label(i, data.input_labels, trace)
 
-            if add_initial_zero:            # start trace from the origin
+            if add_initial_zero and data.trace_types \
+               and data.trace_types[i] == 'step':
                 x = np.hstack([np.array([data.time[0]]), data.time])
                 y = np.hstack([np.array([0]), inputs[i][trace]])
             else:
@@ -603,3 +603,98 @@ def ioresp_plot(
             fig.suptitle(new_title)
 
     return out
+
+
+def combine_traces(trace_list, trace_labels=None, title=None):
+    """Combine multiple individual time responses into a multi-trace response.
+
+    This function combines multiple instances of :class:`TimeResponseData`
+    into a multi-trace :class:`TimeResponseData` object.
+
+    Parameters
+    ----------
+    trace_list : list of :class:`TimeResponseData` objects
+        Traces to be combined.
+    trace_labels : list of str, optional
+        List of labels for each trace.  If not specified, trace names are
+        taken from the input data or set to None.
+
+    Returns
+    -------
+    data : :class:`TimeResponseData`
+        Multi-trace input/output data.
+
+    """
+    from .timeresp import TimeResponseData
+
+    # Save the first trace as the base case
+    base = trace_list[0]
+
+    # Process keywords
+    title = base.title if title is None else title
+
+    # Figure out the size of the data (and check for consistency)
+    ntraces = max(1, base.ntraces)
+
+    # Initial pass through trace list to count things up and do error checks
+    for trace in trace_list[1:]:
+        # Make sure the time vector is the same
+        if not np.allclose(base.t, trace.t):
+            raise ValueError("all traces must have the same time vector")
+
+        # Make sure the dimensions are all the same
+        if base.ninputs != trace.ninputs or base.noutputs != trace.noutputs \
+           or base.nstates != trace.nstates:
+            raise ValuError("all traces must have the same number of "
+                            "inputs, outputs, and states")
+
+        ntraces += max(1, trace.ntraces)
+
+    # Create data structures for the new time response data object
+    inputs = np.empty((base.ninputs, ntraces, base.t.size))
+    outputs = np.empty((base.noutputs, ntraces, base.t.size))
+    states = np.empty((base.nstates, ntraces, base.t.size))
+
+    # See whether we should create labels or not
+    if trace_labels is None:
+        generate_trace_labels = True
+        trace_labels = []
+    elif len(trace_labels) != ntraces:
+        raise ValueError(
+            "number of trace labels does not match number of traces")
+    else:
+        generate_trace_labels = False
+
+    offset = 0
+    trace_types = []
+    for trace in trace_list:
+        if trace.ntraces == 0:
+            # Single trace
+            inputs[:, offset, :] = trace.u
+            outputs[:, offset, :] = trace.y
+            states[:, offset, :] = trace.x
+            if generate_trace_labels:
+                trace_labels.append(trace.title)
+            if trace.trace_types is not None:
+                trace_types.append(trace.types[0])
+            offset += 1
+        else:
+            for i in range(trace.ntraces):
+                inputs[:, offset, :] = trace.u[:, i, :]
+                outputs[:, offset, :] = trace.y[:, i, :]
+                states[:, offset, :] = trace.x[:, i, :]
+            if generate_trace_labels and trace.trace_labels is not None:
+                trace_labels.append(trace.trace_labels)
+            else:
+                trace_labels.append(trace.title, f", trace {i}")
+            if trace.trace_types is not None:
+                trace_types.append(trace.trace_types)
+            offset += trace.ntraces
+
+    return TimeResponseData(
+        base.t, outputs, states, inputs, issiso=base.issiso,
+        output_labels=base.output_labels, input_labels=base.input_labels,
+        state_labels=base.state_labels, title=title, transpose=base.transpose,
+        return_x=base.return_x, squeeze=base.squeeze, sysname=base.sysname,
+        trace_labels=trace_labels, trace_types=trace_types,
+        plot_inputs=base.plot_inputs)

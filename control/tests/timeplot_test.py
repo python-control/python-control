@@ -7,6 +7,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .conftest import slycotonly
+
 # Detailed test of (almost) all functionality
 # (uncomment rows for developmental testing, but otherwise takes too long)
 @pytest.mark.parametrize(
@@ -123,6 +125,7 @@ def test_response_plots(
         plt.clf()
 
 
+@slycotonly
 def test_legend_map():
     sys_mimo = ct.tf2ss(
         [[[1], [0.1]], [[0.2], [1]]],
@@ -194,7 +197,47 @@ if __name__ == "__main__":
         test_response_plots(*args, clear=F)
 
     #
-    # Run a few more special cases to show off capabilities
+    # Run a few more special cases to show off capabilities (and save some
+    # of them for use in the documentation).
     #
 
     test_legend_map()           # show ability to set legend location
+
+    # Basic step response
+    plt.figure()
+    ct.step_response(sys_mimo).plot()
+    plt.savefig('timeplot-mimo_step-default.png')
+
+    # Step response with plot_inputs, combine_signals
+    plt.figure()
+    ct.step_response(sys_mimo).plot(
+        plot_inputs=True, combine_signals=True,
+        title="Step response for 2x2 MIMO system " +
+        "[plot_inputs, combine_signals]")
+    plt.savefig('timeplot-mimo_step-pi_cs.png')
+
+    # Input/output response with overlaid inputs, legend_map
+    plt.figure()
+    timepts = np.linspace(0, 10, 100)
+    U = np.vstack([np.sin(timepts), np.cos(2*timepts)])
+    ct.input_output_response(sys_mimo, timepts, U).plot(
+        plot_inputs='overlay',
+        legend_map=np.array([['lower right'], ['lower right']]),
+        title="I/O response for 2x2 MIMO system " +
+        "[plot_inputs='overlay', legend_map]")
+    plt.savefig('timeplot-mimo_ioresp-ov_lm.png')
+
+    # Multi-trace plot, transpose
+    plt.figure()
+    U = np.vstack([np.sin(timepts), np.cos(2*timepts)])
+    resp1 = ct.input_output_response(sys_mimo, timepts, U)
+
+    U = np.vstack([np.cos(2*timepts), np.sin(timepts)])
+    resp2 = ct.input_output_response(sys_mimo, timepts, U)
+
+    ct.combine_traces(
+        [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"]).plot(
+            transpose=True,
+            title="I/O responses for 2x2 MIMO system, multiple traces "
+            "[transpose]")
+    plt.savefig('timeplot-mimo_ioresp-mt_tr.png')

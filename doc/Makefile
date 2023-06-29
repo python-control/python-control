@@ -15,9 +15,12 @@ help:
 .PHONY: help Makefile
 
 # Rules to create figures
-FIGS = classes.pdf
+FIGS = classes.pdf timeplot-mimo_step-pi_cs.png
 classes.pdf: classes.fig
 	fig2dev -Lpdf $< $@
+
+timeplot-mimo_step-pi_cs.png: ../control/tests/timeplot_test.py
+	PYTHONPATH=.. python $<
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
