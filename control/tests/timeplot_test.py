@@ -7,10 +7,12 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .conftest import slycotonly
+from control.tests.conftest import slycotonly
 
 # Detailed test of (almost) all functionality
-# (uncomment rows for developmental testing, but otherwise takes too long)
+#
+# The commented out rows lead to very long testing times => these should be
+# used only for developmental testing and not day-to-day testing.
 @pytest.mark.parametrize(
     "sys", [
         # ct.rss(1, 1, 1, strictly_proper=True, name="rss"),
@@ -22,18 +24,52 @@ from .conftest import slycotonly
         # ct.drss(2, 2, 2, name="drss"),
         # ct.rss(2, 2, 3, strictly_proper=True, name="rss"),
     ])
-@pytest.mark.parametrize("transpose", [True, False])
-@pytest.mark.parametrize("plot_inputs", [None, True, False, 'overlay'])
-@pytest.mark.parametrize("plot_outputs", [True, False])
-@pytest.mark.parametrize("combine_signals", [True, False])
-@pytest.mark.parametrize("combine_traces", [True, False])
-@pytest.mark.parametrize("second_system", [False, True])
-@pytest.mark.parametrize("fcn", [
-    ct.step_response, ct.impulse_response, ct.initial_response,
-    ct.forced_response, ct.input_output_response])
+# @pytest.mark.parametrize("transpose", [False, True])
+# @pytest.mark.parametrize("plot_inputs", [False, None, True, 'overlay'])
+# @pytest.mark.parametrize("plot_outputs", [True, False])
+# @pytest.mark.parametrize("combine_signals", [False, True])
+# @pytest.mark.parametrize("combine_traces", [False, True])
+# @pytest.mark.parametrize("second_system", [False, True])
+# @pytest.mark.parametrize("fcn", [
+#     ct.step_response, ct.impulse_response, ct.initial_response,
+#     ct.forced_response])
+@pytest.mark.parametrize(       # combinatorial-style test (faster)
+    "fcn,                  pltinp,    pltout, cmbsig, cmbtrc, trpose, secsys",
+    [(ct.step_response,    False,     True,   False,  False,  False,  False),
+     (ct.step_response,    None,      True,   False,  False,  False,  False),
+     (ct.step_response,    True,      True,   False,  False,  False,  False),
+     (ct.step_response,    'overlay', True,   False,  False,  False,  False),
+     (ct.step_response,    'overlay', True,   True,   False,  False,  False),
+     (ct.step_response,    'overlay', True,   False,  True,   False,  False),
+     (ct.step_response,    'overlay', True,   False,  False,  True,   False),
+     (ct.step_response,    'overlay', True,   False,  False,  False,  True),
+     (ct.step_response,    False,     False,  False,  False,  False,  False),
+     (ct.step_response,    None,      False,  False,  False,  False,  False),
+     (ct.step_response,    'overlay', False,  False,  False,  False,  False),
+     (ct.step_response,    True,      True,   False,  True,   False,  False),
+     (ct.step_response,    True,      True,   False,  False,  False,  True),
+     (ct.step_response,    True,      True,   False,  True,   False,  True),
+     (ct.step_response,    True,      True,   True,   False,   True,   True),
+     (ct.step_response,    True,      True,   False,  True,    True,   True),
+     (ct.impulse_response, False,     True,   True,   False,  False,  False),
+     (ct.initial_response, None,      True,   False,  False,  False,  False),
+     (ct.initial_response, False,     True,   False,  False,  False,  False),
+     (ct.initial_response, True,      True,   False,  False,  False,  False),
+     (ct.forced_response,  True,      True,   False,  False,  False,  False),
+     (ct.forced_response,  None,      True,   False,  False,  False,  False),
+     (ct.forced_response,  False,     True,   False,  False,  False,  False),
+     (ct.forced_response,  True,      True,   True,   False,  False,  False),
+     (ct.forced_response,  True,      True,   True,   True,   False,  False),
+     (ct.forced_response,  True,      True,   True,   True,   True,   False),
+     (ct.forced_response,  True,      True,   True,   True,   True,   True),
+     (ct.forced_response,  'overlay', True,   True,   True,   False,  True),
+     (ct.input_output_response,
+                           True,      True,   False,  False,  False,  False),
+     ])
+
 def test_response_plots(
-        fcn, sys, plot_inputs, plot_outputs, combine_signals, combine_traces,
-        transpose, second_system, clear=True):
+        fcn, sys, pltinp, pltout, cmbsig, cmbtrc,
+        trpose, secsys, clear=True):
     # Figure out the time range to use and check some special cases
     if not isinstance(sys, ct.lti.LTI):
         if fcn == ct.impulse_response:
@@ -42,6 +78,10 @@ def test_response_plots(
         # Nonlinear systems require explicit time limits
         T = 10
         timepts = np.linspace(0, T)
+
+    elif isinstance(sys, ct.TransferFunction) and fcn == ct.initial_response:
+        pytest.skip("initial response not tested for tf")
+
     else:
         # Linear systems figure things out on their own
         T = None
@@ -49,8 +89,8 @@ def test_response_plots(
 
     # Save up the keyword arguments
     kwargs = dict(
-        plot_inputs=plot_inputs, plot_outputs=plot_outputs, transpose=transpose,
-        combine_signals=combine_signals, combine_traces=combine_traces)
+        plot_inputs=pltinp, plot_outputs=pltout, transpose=trpose,
+        combine_signals=cmbsig, combine_traces=cmbtrc)
 
     # Create the response
     if fcn is ct.input_output_response and \
@@ -78,27 +118,44 @@ def test_response_plots(
     response = fcn(sys, *args)
 
     # Look for cases where there are no data to plot
-    if not plot_outputs and (
-            plot_inputs is False or response.ninputs == 0 or
-            plot_inputs is None and response.plot_inputs is False):
+    if not pltout and (
+            pltinp is False or response.ninputs == 0 or
+            pltinp is None and response.plot_inputs is False):
         with pytest.raises(ValueError, match=".* no data to plot"):
             out = response.plot(**kwargs)
         return None
-    elif not plot_outputs and plot_inputs == 'overlay':
+    elif not pltout and pltinp == 'overlay':
         with pytest.raises(ValueError, match="can't overlay inputs"):
             out = response.plot(**kwargs)
         return None
-    elif plot_inputs in [True, 'overlay'] and response.ninputs == 0:
+    elif pltinp in [True, 'overlay'] and response.ninputs == 0:
         with pytest.raises(ValueError, match=".* but no inputs"):
             out = response.plot(**kwargs)
         return None
 
     out = response.plot(**kwargs)
 
-    # TODO: add some basic checks here
+    # Make sure number of plots is correct
+    if pltinp is None:
+        if fcn in [ct.forced_response, ct.input_output_response]:
+            pltinp = True
+        else:
+            pltinp = False
+    ntraces = max(1, response.ntraces)
+    nlines = (response.ninputs if pltinp else 0) * ntraces + \
+        (response.noutputs if pltout else 0) * ntraces
+    assert out.size == nlines
 
-    # Add additional data (and provide infon in the title)
-    if second_system:
+    # Make sure all of the outputs are of the right type
+    for ax_lines in np.nditer(out, flags=["refs_ok"]):
+        for line in ax_lines.item():
+            assert isinstance(line, mpl.lines.Line2D)
+
+    # Save the old axes to compare later
+    old_axes = plt.gcf().get_axes()
+
+    # Add additional data (and provide info in the title)
+    if secsys:
         newsys = ct.rss(
             sys.nstates, sys.noutputs, sys.ninputs, strictly_proper=True)
         if fcn not in [ct.initial_response, ct.forced_response,
@@ -110,19 +167,72 @@ def test_response_plots(
             # Compute and plot new response (time is one of the arguments)
             fcn(newsys, *args).plot(**kwargs)
 
-    # TODO: add some basic checks here
+        # Make sure we have the same axes
+        new_axes = plt.gcf().get_axes()
+        assert new_axes == old_axes
+
+        # Make sure every axes has more than one line
+        for ax in new_axes:
+            assert len(ax.get_lines()) > 1
 
     # Update the title so we can see what is going on
     fig = out[0, 0][0].axes.figure
     fig.suptitle(
         fig._suptitle._text +
-        f" [{sys.noutputs}x{sys.ninputs}, cs={combine_signals}, "
-        f"ct={combine_traces}, pi={plot_inputs}, tr={transpose}]",
+        f" [{sys.noutputs}x{sys.ninputs}, cs={cmbsig}, "
+        f"ct={cmbtrc}, pi={pltinp}, tr={trpose}]",
         fontsize='small')
 
     # Get rid of the figure to free up memory
     if clear:
         plt.clf()
+
+
+def test_axes_setup():
+    get_axes = ct.timeplot.get_axes
+
+    sys_2x3 = ct.rss(4, 2, 3)
+    sys_2x3b = ct.rss(4, 2, 3)
+    sys_3x2 = ct.rss(4, 3, 2)
+    sys_3x1 = ct.rss(4, 3, 1)
+
+    # Two plots of the same size leaves axes unchanged
+    out1 = ct.step_response(sys_2x3).plot()
+    out2 = ct.step_response(sys_2x3b).plot()
+    np.testing.assert_equal(get_axes(out1), get_axes(out2))
+    plt.close()
+
+    # Two plots of same net size leaves axes unchanged (unfortunately)
+    out1 = ct.step_response(sys_2x3).plot()
+    out2 = ct.step_response(sys_3x2).plot()
+    np.testing.assert_equal(
+        get_axes(out1).reshape(-1), get_axes(out2).reshape(-1))
+    plt.close()
+
+    # Plots of different shapes generate new plots
+    out1 = ct.step_response(sys_2x3).plot()
+    out2 = ct.step_response(sys_3x1).plot()
+    ax1_list = get_axes(out1).reshape(-1).tolist()
+    ax2_list = get_axes(out2).reshape(-1).tolist()
+    for ax in ax1_list:
+        assert ax not in ax2_list
+    plt.close()
+
+    # Passing a list of axes preserves those axes
+    out1 = ct.step_response(sys_2x3).plot()
+    out2 = ct.step_response(sys_3x1).plot()
+    out3 = ct.step_response(sys_2x3b).plot(ax=get_axes(out1))
+    np.testing.assert_equal(get_axes(out1), get_axes(out3))
+    plt.close()
+
+    # Sending an axes array of the wrong size raises exception
+    with pytest.raises(ValueError, match="not the right shape"):
+        out = ct.step_response(sys_2x3).plot()
+        ct.step_response(sys_3x1).plot(ax=get_axes(out))
+    sys_2x3 = ct.rss(4, 2, 3)
+    sys_2x3b = ct.rss(4, 2, 3)
+    sys_3x2 = ct.rss(4, 3, 2)
+    sys_3x1 = ct.rss(4, 3, 1)
 
 
 @slycotonly
@@ -138,6 +248,68 @@ def test_legend_map():
         title='MIMO step response with custom legend placement')
 
 
+def test_combine_traces():
+    sys_mimo = ct.rss(4, 2, 2)
+    timepts = np.linspace(0, 10, 100)
+
+    # Combine two response with ntrace = 0
+    U = np.vstack([np.sin(timepts), np.cos(2*timepts)])
+    resp1 = ct.input_output_response(sys_mimo, timepts, U)
+
+    U = np.vstack([np.cos(2*timepts), np.sin(timepts)])
+    resp2 = ct.input_output_response(sys_mimo, timepts, U)
+
+    combresp1 = ct.combine_traces([resp1, resp2])
+    assert combresp1.ntraces == 2
+    np.testing.assert_equal(combresp1.y[:, 0, :], resp1.y)
+    np.testing.assert_equal(combresp1.y[:, 1, :], resp2.y)
+
+    # Combine two responses with ntrace != 0
+    resp3 = ct.step_response(sys_mimo, timepts)
+    resp4 = ct.step_response(sys_mimo, timepts)
+    combresp2 = ct.combine_traces([resp3, resp4])
+    assert combresp2.ntraces == resp3.ntraces + resp4.ntraces
+    np.testing.assert_equal(combresp2.y[:, 0:2, :], resp3.y)
+    np.testing.assert_equal(combresp2.y[:, 2:4, :], resp4.y)
+
+    # Mixture
+    combresp3 = ct.combine_traces([resp1, resp2, resp3])
+    assert combresp3.ntraces == resp3.ntraces + resp4.ntraces
+    np.testing.assert_equal(combresp3.y[:, 0, :], resp1.y)
+    np.testing.assert_equal(combresp3.y[:, 1, :], resp2.y)
+    np.testing.assert_equal(combresp3.y[:, 2:4, :], resp3.y)
+    assert combresp3.trace_types == [None, None] + resp3.trace_types
+    assert combresp3.trace_labels == \
+        [resp1.title, resp2.title] + resp3.trace_labels
+
+    # Rename the traces
+    labels = ["T1", "T2", "T3", "T4"]
+    combresp4 = ct.combine_traces([resp1, resp2, resp3], trace_labels=labels)
+    assert combresp4.trace_labels == labels
+
+    # Automatically generated trace label names and types
+    resp5 = ct.step_response(sys_mimo, timepts)
+    resp5.title = "test"
+    resp5.trace_labels = None
+    resp5.trace_types = None
+    combresp5 = ct.combine_traces([resp1, resp5])
+    assert combresp5.trace_labels == [resp1.title] + \
+        ["test, trace 0", "test, trace 1"]
+    assert combresp4.trace_types == [None, None, 'step', 'step']
+
+    with pytest.raises(ValueError, match="must have the same number"):
+        resp = ct.step_response(ct.rss(4, 2, 3), timepts)
+        combresp = ct.combine_traces([resp1, resp])
+
+    with pytest.raises(ValueError, match="trace labels does not match"):
+        combresp = ct.combine_traces(
+            [resp1, resp2], trace_labels=["T1", "T2", "T3"])
+
+    with pytest.raises(ValueError, match="must have the same time"):
+        resp = ct.step_response(ct.rss(4, 2, 3), timepts/2)
+        combresp6 = ct.combine_traces([resp1, resp])
+
+
 def test_errors():
     sys = ct.rss(2, 1, 1)
     stepresp = ct.step_response(sys)
@@ -149,7 +321,6 @@ def test_errors():
 
     with pytest.raises(ValueError, match="unrecognized value"):
         stepresp.plot(plot_inputs='unknown')
-
 
 if __name__ == "__main__":
     #

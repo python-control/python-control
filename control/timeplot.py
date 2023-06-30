@@ -100,9 +100,10 @@ def ioresp_plot(
 
     Returns
     -------
-    out : list of Artist or list of list of Artist
-        Array of Artist objects for each line in the plot.  The shape of
-        the array matches the plot style,
+    out : array of list of Line2D
+        Array of Line2D objects for each line in the plot.  The shape of
+        the array matches the subplots shape and the value of the array is a
+        list of Line2D objects in that subplot.
 
     Additional Parameters
     ---------------------
@@ -605,7 +606,7 @@ def ioresp_plot(
     return out
 
 
-def combine_traces(trace_list, trace_labels=None, title=None):
+def combine_traces(response_list, trace_labels=None, title=None):
     """Combine multiple individual time responses into a multi-trace response.
 
     This function combines multiple instances of :class:`TimeResponseData`
@@ -613,8 +614,8 @@ def combine_traces(trace_list, trace_labels=None, title=None):
 
     Parameters
     ----------
-    trace_list : list of :class:`TimeResponseData` objects
-        Traces to be combined.
+    response_list : list of :class:`TimeResponseData` objects
+        Reponses to be combined.
     trace_labels : list of str, optional
         List of labels for each trace.  If not specified, trace names are
         taken from the input data or set to None.
@@ -628,7 +629,7 @@ def combine_traces(trace_list, trace_labels=None, title=None):
     from .timeresp import TimeResponseData
 
     # Save the first trace as the base case
-    base = trace_list[0]
+    base = response_list[0]
 
     # Process keywords
     title = base.title if title is None else title
@@ -637,18 +638,19 @@ def combine_traces(trace_list, trace_labels=None, title=None):
     ntraces = max(1, base.ntraces)
 
     # Initial pass through trace list to count things up and do error checks
-    for trace in trace_list[1:]:
+    for response in response_list[1:]:
         # Make sure the time vector is the same
-        if not np.allclose(base.t, trace.t):
-            raise ValueError("all traces must have the same time vector")
+        if not np.allclose(base.t, response.t):
+            raise ValueError("all responses must have the same time vector")
 
         # Make sure the dimensions are all the same
-        if base.ninputs != trace.ninputs or base.noutputs != trace.noutputs \
-           or base.nstates != trace.nstates:
-            raise ValuError("all traces must have the same number of "
+        if base.ninputs != response.ninputs or \
+           base.noutputs != response.noutputs or \
+           base.nstates != response.nstates:
+            raise ValueError("all responses must have the same number of "
                             "inputs, outputs, and states")
 
-        ntraces += max(1, trace.ntraces)
+        ntraces += max(1, response.ntraces)
 
     # Create data structures for the new time response data object
     inputs = np.empty((base.ninputs, ntraces, base.t.size))
@@ -667,29 +669,41 @@ def combine_traces(trace_list, trace_labels=None, title=None):
 
     offset = 0
     trace_types = []
-    for trace in trace_list:
-        if trace.ntraces == 0:
+    for response in response_list:
+        if response.ntraces == 0:
             # Single trace
-            inputs[:, offset, :] = trace.u
-            outputs[:, offset, :] = trace.y
-            states[:, offset, :] = trace.x
-            if generate_trace_labels:
-                trace_labels.append(trace.title)
-            if trace.trace_types is not None:
-                trace_types.append(trace.types[0])
+            inputs[:, offset, :] = response.u
+            outputs[:, offset, :] = response.y
+            states[:, offset, :] = response.x
             offset += 1
+
+            # Add on trace label and trace type
+            if generate_trace_labels:
+                trace_labels.append(response.title)
+            trace_types.append(
+                None if response.trace_types is None else response.types[0])
+
         else:
-            for i in range(trace.ntraces):
-                inputs[:, offset, :] = trace.u[:, i, :]
-                outputs[:, offset, :] = trace.y[:, i, :]
-                states[:, offset, :] = trace.x[:, i, :]
-            if generate_trace_labels and trace.trace_labels is not None:
-                trace_labels.append(trace.trace_labels)
+            # Save the data
+            for i in range(response.ntraces):
+                inputs[:, offset, :] = response.u[:, i, :]
+                outputs[:, offset, :] = response.y[:, i, :]
+                states[:, offset, :] = response.x[:, i, :]
+
+                # Save the trace labels
+                if generate_trace_labels:
+                    if response.trace_labels is not None:
+                        trace_labels.append(response.trace_labels[i])
+                    else:
+                        trace_labels.append(response.title + f", trace {i}")
+
+                offset += 1
+
+            # Save the trace types
+            if response.trace_types is not None:
+                trace_types += response.trace_types
             else:
-                trace_labels.append(trace.title, f", trace {i}")
-            if trace.trace_types is not None:
-                trace_types.append(trace.trace_types)
-            offset += trace.ntraces
+                trace_types += [None] * response.ntraces
 
     return TimeResponseData(
         base.t, outputs, states, inputs, issiso=base.issiso,
@@ -698,3 +712,36 @@ def combine_traces(trace_list, trace_labels=None, title=None):
         return_x=base.return_x, squeeze=base.squeeze, sysname=base.sysname,
         trace_labels=trace_labels, trace_types=trace_types,
         plot_inputs=base.plot_inputs)
+
+
+# Create vectorized function to find axes from lines
+def get_axes(line_array):
+    """Get a list of axes from an array of lines.
+
+    This function can be used to return the set of axes corresponding to
+    the line array that is returned by `ioresp_plot`.  This is useful for
+    generating an axes array that can be passed to subsequent plotting
+    calls.
+
+    Parameters
+    ----------
+    line_array : array of list of Line2D
+        A 2D array with elements corresponding to a list of lines appearing
+        in an axes, matching the return type of a time response data plot.
+
+    Returns
+    -------
+    axes_array : arra of list of Axes
+        A 2D array with elements corresponding to the Axes assocated with
+        the lines in `line_array`.
+
+    Notes
+    -----
+    Only the first element of each array entry is used to determine the axes.
+
+    """
+    return _get_axes(line_array)
+
+
+# Utility function used by get_axes
+_get_axes = np.vectorize(lambda lines: lines[0].axes)

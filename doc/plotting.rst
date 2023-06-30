@@ -124,3 +124,4 @@ Plotting functions
 
    ~control.ioresp_plot
    ~control.combine_traces
+   control.timeplot.get_axes
