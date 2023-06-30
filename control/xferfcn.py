@@ -1889,8 +1889,8 @@ def _clean_part(data):
 
 
 # Define constants to represent differentiation, unit delay
-TransferFunction.s = TransferFunction([1, 0], [1], 0)
-TransferFunction.z = TransferFunction([1, 0], [1], True)
+TransferFunction.s = TransferFunction([1, 0], [1], 0, name='s')
+TransferFunction.z = TransferFunction([1, 0], [1], True, name='z')
 
 
 def _float2str(value):
