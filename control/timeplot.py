@@ -28,7 +28,7 @@ from os.path import commonprefix
 
 from . import config
 
-__all__ = ['ioresp_plot', 'combine_traces']
+__all__ = ['time_response_plot', 'combine_traces']
 
 # Default font dictionary
 _timeplot_rcParams = mpl.rcParams.copy()
@@ -51,7 +51,7 @@ _timeplot_defaults = {
 }
 
 # Plot the input/output response of a system
-def ioresp_plot(
+def time_response_plot(
         data, ax=None, plot_inputs=None, plot_outputs=True, transpose=False,
         combine_traces=False, combine_signals=False, legend_map=None,
         legend_loc=None, add_initial_zero=True, title=None, relabel=True,
@@ -719,7 +719,7 @@ def get_axes(line_array):
     """Get a list of axes from an array of lines.
 
     This function can be used to return the set of axes corresponding to
-    the line array that is returned by `ioresp_plot`.  This is useful for
+    the line array that is returned by `time_response_plot`.  This is useful for
     generating an axes array that can be passed to subsequent plotting
     calls.
 

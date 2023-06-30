@@ -317,7 +317,7 @@ def test_errors():
         stepresp.plot(unknown=None)
 
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        ct.ioresp_plot(stepresp, unknown=None)
+        ct.time_response_plot(stepresp, unknown=None)
 
     with pytest.raises(ValueError, match="unrecognized value"):
         stepresp.plot(plot_inputs='unknown')

@@ -186,7 +186,7 @@ kwarg_unittest = {
     'gangof4_plot': test_matplotlib_kwargs,
     'input_output_response': test_unrecognized_kwargs,
     'interconnect': interconnect_test.test_interconnect_exceptions,
-    'ioresp_plot': timeplot_test.test_errors,
+    'time_response_plot': timeplot_test.test_errors,
     'linearize': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
     'lqr': test_unrecognized_kwargs,

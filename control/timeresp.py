@@ -81,7 +81,7 @@ from copy import copy
 from . import config
 from .exception import pandas_check
 from .iosys import isctime, isdtime
-from .timeplot import ioresp_plot
+from .timeplot import time_response_plot
 
 
 __all__ = ['forced_response', 'step_response', 'step_info',
@@ -690,7 +690,7 @@ class TimeResponseData:
 
     # Plot data
     def plot(self, *args, **kwargs):
-        return ioresp_plot(self, *args, **kwargs)
+        return time_response_plot(self, *args, **kwargs)
 
 
 # Process signal labels
