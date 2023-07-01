@@ -3,6 +3,18 @@
 # Author: Richard M. Murray
 # Date: 24 May 09
 #
+# Functionality to add
+# [ ] Get rid of this long header (need some common, documented convention)
+# [ ] Add mechanisms for storing/plotting margins? (currently forces FRD)
+# [ ] Allow line colors/styles to be set in plot() command (also time plots)
+# [ ] Allow bode or nyquist style plots from plot()
+# [ ] Allow nyquist_curve() to generate the response curve (?)
+# [ ] Allow MIMO frequency plots (w/ mag/phase subplots a la MATLAB)
+# [ ] Update sisotool to use ax=
+# [ ] Create __main__ in freqplot_test to view results (a la timeplot_test)
+# [ ] Get sisotool working in iPython and document how to make it work
+
+#
 # This file contains some standard control system plots: Bode plots,
 # Nyquist plots and pole-zero diagrams.  The code for Nichols charts
 # is in nichols.py.
@@ -54,14 +66,28 @@ from .bdalg import feedback
 from .margins import stability_margins
 from .exception import ControlMIMONotImplemented
 from .statesp import StateSpace
+from .lti import frequency_response
 from .xferfcn import TransferFunction
+from .frdata import FrequencyResponseData
 from . import config
 
 __all__ = ['bode_plot', 'nyquist_plot', 'gangof4_plot', 'singular_values_plot',
            'bode', 'nyquist', 'gangof4']
 
+# Default font dictionary
+_freqplot_rcParams = mpl.rcParams.copy()
+_freqplot_rcParams.update({
+    'axes.labelsize': 'small',
+    'axes.titlesize': 'small',
+    'figure.titlesize': 'medium',
+    'legend.fontsize': 'x-small',
+    'xtick.labelsize': 'small',
+    'ytick.labelsize': 'small',
+})
+
 # Default values for module parameter variables
 _freqplot_defaults = {
+    'freqplot.rcParams': _freqplot_rcParams,
     'freqplot.feature_periphery_decades': 1,
     'freqplot.number_of_samples': 1000,
     'freqplot.dB': False,  # Plot gain in dB
@@ -90,55 +116,60 @@ _freqplot_defaults = {
 # Bode plot
 #
 
-
-def bode_plot(syslist, omega=None,
-              plot=True, omega_limits=None, omega_num=None,
-              margins=None, method='best', *args, **kwargs):
+def bode_plot(
+        data, omega=None, *fmt, ax=None, omega_limits=None, omega_num=None,
+        plot=None, margins=None, method='best', **kwargs):
     """Bode plot for a system.
 
-    Plots a Bode plot for the system over a (optional) frequency range.
+    Bode plot of a frequency response over a (optional) frequency range.
 
     Parameters
     ----------
-    syslist : linsys
-        List of linear input/output systems (single system is OK)
+    data : list of `FrequencyResponseData`
+        List of :class:`FrequencyResponseData` objects.  For backward
+        compatibility, a list of LTI systems can also be given.
     omega : array_like
-        List of frequencies in rad/sec to be used for frequency response
+        List of frequencies in rad/sec over to plot over.
     dB : bool
-        If True, plot result in dB.  Default is false.
+        If True, plot result in dB.  Default is False.
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
-        Default value (False) set by config.defaults['freqplot.Hz']
+        Default value (False) set by config.defaults['freqplot.Hz'].
     deg : bool
         If True, plot phase in degrees (else radians).  Default value (True)
-        config.defaults['freqplot.deg']
-    plot : bool
-        If True (default), plot magnitude and phase
-    omega_limits : array_like of two values
-        Limits of the to generate frequency vector.
-        If Hz=True the limits are in Hz otherwise in rad/s.
-    omega_num : int
-        Number of samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
+        set by config.defaults['freqplot.deg'].
     margins : bool
         If True, plot gain and phase margin.
-    method : method to use in computing margins (see :func:`stability_margins`)
-    *args : :func:`matplotlib.pyplot.plot` positional properties, optional
-        Additional arguments for `matplotlib` plots (color, linestyle, etc)
+    method : str, optional
+        Method to use in computing margins (see :func:`stability_margins`).
+    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+        Passed to `matplotlib` as the format string for all lines in the plot.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
-        Additional keywords (passed to `matplotlib`)
+        Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    mag : ndarray (or list of ndarray if len(syslist) > 1))
-        magnitude
-    phase : ndarray (or list of ndarray if len(syslist) > 1))
-        phase in radians
-    omega : ndarray (or list of ndarray if len(syslist) > 1))
-        frequency in rad/sec
+    out : array of Line2D
+        Array of Line2D objects for each line in the plot.  The shape of
+        the array matches the subplots shape and the value of the array is a
+        list of Line2D objects in that subplot.
+    mag : ndarray (or list of ndarray if len(data) > 1))
+        If plot=False, magnitude of the respone (deprecated).
+    phase : ndarray (or list of ndarray if len(data) > 1))
+        If plot=False, phase in radians of the respone (deprecated).
+    omega : ndarray (or list of ndarray if len(data) > 1))
+        If plot=False, frequency in rad/sec (deprecated).
 
     Other Parameters
     ----------------
+    plot : bool
+        If True (default), plot magnitude and phase.
+    omega_limits : array_like of two values
+        Limits of the to generate frequency vector. If Hz=True the limits
+        are in Hz otherwise in rad/s.
+    omega_num : int
+        Number of samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
@@ -172,22 +203,24 @@ def bode_plot(syslist, omega=None,
        is the discrete timebase.  If timebase not specified (``dt=True``),
        `dt` is set to 1.
 
+    3. The legacy version of this function is invoked if instead of passing
+       frequency response data, a system (or list of systems) is passed as
+       the first argument, or if the (deprecated) keyword `plot` is set to
+       True or False. The return value is then given as `mag`, `phase`,
+       `omega` for the plotted frequency response (SISO only).
+
     Examples
     --------
     >>> G = ct.ss([[-1, -2], [3, -4]], [[5], [7]], [[6, 8]], [[9]])
     >>> Gmag, Gphase, Gomega = ct.bode_plot(G)
 
     """
+    #
+    # Process keywords and set defaults
+    #
+
     # Make a copy of the kwargs dictionary since we will modify it
     kwargs = dict(kwargs)
-
-    # Check to see if legacy 'Plot' keyword was used
-    if 'Plot' in kwargs:
-        import warnings
-        warnings.warn("'Plot' keyword is deprecated in bode_plot; use 'plot'",
-                      FutureWarning)
-        # Map 'Plot' keyword to 'plot' keyword
-        plot = kwargs.pop('Plot')
 
     # Get values for params (and pop from list to allow keyword use in plot)
     dB = config._get_param(
@@ -206,315 +239,516 @@ def bode_plot(syslist, omega=None,
     initial_phase = config._get_param(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+    freqplot_rcParams = config._get_param(
+        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
-    # If argument was a singleton, turn it into a tuple
-    if not isinstance(syslist, (list, tuple)):
-        syslist = (syslist,)
+    if not isinstance(data, (list, tuple)):
+        data = [data]
 
-    omega, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num, Hz=Hz)
+    # For backwards compatibility, allow systems in the data list
+    if all([isinstance(
+            sys, (StateSpace, TransferFunction)) for sys in data]):
+        data = frequency_response(
+            data, omega=omega, omega_limits=omega_limits,
+            omega_num=omega_num)
+        warnings.warn(
+            "passing systems to `bode_plot` is deprecated; "
+            "use `frequency_response()`", DeprecationWarning)
+        if plot is None:
+            plot = True         # Keep track of legacy usage (see notes below)
 
-    if plot:
-        # Set up the axes with labels so that multiple calls to
-        # bode_plot will superimpose the data.  This was implicit
-        # before matplotlib 2.1, but changed after that (See
-        # https://github.com/matplotlib/matplotlib/issues/9024).
-        # The code below should work on all cases.
+    #
+    # Process the data to be plotted
+    #
+    # To maintain compatibility with legacy uses of bode_plot(), we do some
+    # initial processing on the data, specifically phase unwrapping and
+    # setting the initial value of the phase.  If bode_plot is called with
+    # plot == False, then these values are returned to the user (instead of
+    # the list of lines created, which is the new output for _plot functions.
+    #
+    # TODO: update to match timpelot inputs/outputs structure
 
-        # Get the current figure
-
-        if 'sisotool' in kwargs:
-            fig = kwargs.pop('fig')
-            ax_mag = fig.axes[0]
-            ax_phase = fig.axes[2]
-            sisotool = kwargs.pop('sisotool')
-        else:
-            fig = plt.gcf()
-            ax_mag = None
-            ax_phase = None
-            sisotool = False
-
-            # Get the current axes if they already exist
-            for ax in fig.axes:
-                if ax.get_label() == 'control-bode-magnitude':
-                    ax_mag = ax
-                elif ax.get_label() == 'control-bode-phase':
-                    ax_phase = ax
-
-            # If no axes present, create them from scratch
-            if ax_mag is None or ax_phase is None:
-                plt.clf()
-                ax_mag = plt.subplot(211, label='control-bode-magnitude')
-                ax_phase = plt.subplot(
-                    212, label='control-bode-phase', sharex=ax_mag)
-
-    mags, phases, omegas, nyquistfrqs = [], [], [], []
-    for sys in syslist:
-        if not sys.issiso():
+    mags, phases, omegas, nyquistfrqs = [], [], [], []  # TODO: remove
+    for response in data:
+        if not response.issiso():
             # TODO: Add MIMO bode plots.
             raise ControlMIMONotImplemented(
                 "Bode is currently only implemented for SISO systems.")
+
+        mag, phase, omega_sys = response
+        mag = np.atleast_1d(mag)
+        phase = np.atleast_1d(phase)
+        nyquistfrq = None if response.isctime() else math.pi / response.dt
+
+        ###
+        ### Code below can go into plotting section, but may need to
+        ### duplicate in frequency_response() ??
+        ###
+
+        #
+        # Post-process the phase to handle initial value and wrapping
+        #
+
+        if initial_phase is None:
+            # Start phase in the range 0 to -360 w/ initial phase = -180
+            # If wrap_phase is true, use 0 instead (phase \in (-pi, pi])
+            initial_phase_value = -math.pi if wrap_phase is not True else 0
+        elif isinstance(initial_phase, (int, float)):
+            # Allow the user to override the default calculation
+            if deg:
+                initial_phase_value = initial_phase/180. * math.pi
+            else:
+                initial_phase_value = initial_phase
+
         else:
-            omega_sys = np.asarray(omega)
-            if sys.isdtime(strict=True):
-                nyquistfrq = math.pi / sys.dt
-                if not omega_range_given:
-                    # limit up to and including nyquist frequency
-                    omega_sys = np.hstack((
-                        omega_sys[omega_sys < nyquistfrq], nyquistfrq))
-            else:
-                nyquistfrq = None
+            raise ValueError("initial_phase must be a number.")
 
-            mag, phase, omega_sys = sys.frequency_response(omega_sys)
-            mag = np.atleast_1d(mag)
-            phase = np.atleast_1d(phase)
+        # Shift the phase if needed
+        if abs(phase[0] - initial_phase_value) > math.pi:
+            phase -= 2*math.pi * \
+                round((phase[0] - initial_phase_value) / (2*math.pi))
 
-            #
-            # Post-process the phase to handle initial value and wrapping
-            #
+        # Phase wrapping
+        if wrap_phase is False:
+            phase = unwrap(phase)   # unwrap the phase
+        elif wrap_phase is True:
+            pass                    # default calculation OK
+        elif isinstance(wrap_phase, (int, float)):
+            phase = unwrap(phase)   # unwrap the phase first
+            if deg:
+                wrap_phase *= math.pi/180.
 
-            if initial_phase is None:
-                # Start phase in the range 0 to -360 w/ initial phase = -180
-                # If wrap_phase is true, use 0 instead (phase \in (-pi, pi])
-                initial_phase_value = -math.pi if wrap_phase is not True else 0
-            elif isinstance(initial_phase, (int, float)):
-                # Allow the user to override the default calculation
-                if deg:
-                    initial_phase_value = initial_phase/180. * math.pi
-                else:
-                    initial_phase_value = initial_phase
+            # Shift the phase if it is below the wrap_phase
+            phase += 2*math.pi * np.maximum(
+                0, np.ceil((wrap_phase - phase)/(2*math.pi)))
+        else:
+            raise ValueError("wrap_phase must be bool or float.")
 
-            else:
-                raise ValueError("initial_phase must be a number.")
+        mags.append(mag)
+        phases.append(phase)
+        omegas.append(omega_sys)
+        nyquistfrqs.append(nyquistfrq)
+        # Get the dimensions of the current axis, which we will divide up
+        # TODO: Not current implemented; just use subplot for now
 
-            # Shift the phase if needed
-            if abs(phase[0] - initial_phase_value) > math.pi:
-                phase -= 2*math.pi * \
-                    round((phase[0] - initial_phase_value) / (2*math.pi))
+    #
+    # Process `plot` keyword
+    #
+    # We use the `plot` keyword to track legacy usage of `bode_plot`.
+    # Prior to v0.10, the `bode_plot` command returned mag, phase, and
+    # omega.  Post v0.10, we return an array with the same shape as the
+    # axes we use for plotting, with each array element containing a list
+    # of lines drawn on that axes.
+    #
+    # There are three possibilities at this stage in the code:
+    #
+    # * plot == True: either set explicitly by the user or we were passed a
+    #   non-FRD system instead of data.  Return mag, phase, omega, with a
+    #   warning.
+    #
+    # * plot == False: set explicitly by the user. Return mag, phase,
+    #   omega, with a warning.
+    #
+    # * plot == None: this is the new default setting and if it hasn't been
+    #   changed, then we use the v0.10+ standard of returning an array of
+    #   lines that were drawn.
+    #
+    # The one case that can cause problems is that a user called
+    # `bode_plot` with an FRD system, didn't set the plot keyword
+    # explicitly, and expected mag, phase, omega as a return value.  This
+    # is hopefully a rare case (it wasn't in any of our unit tests nor
+    # examples at the time of v0.10.0).
+    #
+    # All of this should be removed in v0.11+ when we get rid of deprecated
+    # code.
+    #
 
-            # Phase wrapping
-            if wrap_phase is False:
-                phase = unwrap(phase)   # unwrap the phase
-            elif wrap_phase is True:
-                pass                    # default calculation OK
-            elif isinstance(wrap_phase, (int, float)):
-                phase = unwrap(phase)   # unwrap the phase first
-                if deg:
-                    wrap_phase *= math.pi/180.
+    if plot is True or plot is False:
+        warnings.warn(
+            "`bode_plot` return values of mag, phase, omega is deprecated; "
+            "use frequency_response()", DeprecationWarning)
 
-                # Shift the phase if it is below the wrap_phase
-                phase += 2*math.pi * np.maximum(
-                    0, np.ceil((wrap_phase - phase)/(2*math.pi)))
-            else:
-                raise ValueError("wrap_phase must be bool or float.")
+    if plot is False:
+        if len(data) == 1:
+            return mags[0], phases[0], omegas[0]
+        else:
+            return mags, phases, omegas
+    #
+    # Find/create axes
+    #
+    # Data are plotted in a standard subplots array, whose size depends on
+    # which signals are being plotted and how they are combined.  The
+    # baseline layout for data is to plot everything separately, with
+    # the magnitude and phase for each output making up the rows and the
+    # columns corresponding to the different inputs.
+    #
+    #      Input 0                 Input m
+    # +---------------+       +---------------+
+    # |  mag H_y0,u0  |  ...  |  mag H_y0,um  |
+    # +---------------+       +---------------+
+    # +---------------+       +---------------+
+    # | phase H_y0,u0 |  ...  | phase H_y0,um |
+    # +---------------+       +---------------+
+    #         :                       :
+    # +---------------+       +---------------+
+    # |  mag H_yp,u0  |  ...  |  mag H_yp,um  |
+    # +---------------+       +---------------+
+    # +---------------+       +---------------+
+    # | phase H_yp,u0 |  ...  | phase H_yp,um |
+    # +---------------+       +---------------+
+    #
+    # Several operations are available that change this layout.
+    #
+    # * Omitting: either the magnitude or the phase plots can be omitted
+    #   using the plot_magnitude and plot_phase keywords.
+    #
+    # * Overlay: inputs and/or outputs can be combined onto a single set of
+    #   axes using the overlay_inputs and overlay_outputs keywords.  This
+    #   basically collapses data along either the rows or columns, and a
+    #   legend is generated.
+    #
 
-            mags.append(mag)
-            phases.append(phase)
-            omegas.append(omega_sys)
-            nyquistfrqs.append(nyquistfrq)
-            # Get the dimensions of the current axis, which we will divide up
-            # TODO: Not current implemented; just use subplot for now
+    # Decide on the number of inputs and outputs
+    ninputs, noutputs = 0, 0
+    for response in data:
+        ninputs += response.ninputs
+        noutputs += response.noutputs
+    ntraces = 1                 # TODO: assume 1 trace per response for now
 
-            if plot:
-                nyquistfrq_plot = None
-                if Hz:
-                    omega_plot = omega_sys / (2. * math.pi)
-                    if nyquistfrq:
-                        nyquistfrq_plot = nyquistfrq / (2. * math.pi)
-                else:
-                    omega_plot = omega_sys
-                    if nyquistfrq:
-                        nyquistfrq_plot = nyquistfrq
-                phase_plot = phase * 180. / math.pi if deg else phase
-                mag_plot = mag
+    # Figure how how many rows and columns to use + offsets for inputs/outputs
+    nrows = noutputs * 2
+    ncols = ninputs
 
-                if nyquistfrq_plot:
-                    # append data for vertical nyquist freq indicator line.
-                    # if this extra nyquist lime is is plotted in a single plot
-                    # command then line order is preserved when
-                    # creating a legend eg. legend(('sys1', 'sys2'))
-                    omega_nyq_line = np.array(
-                        (np.nan, nyquistfrq_plot, nyquistfrq_plot))
-                    omega_plot = np.hstack((omega_plot, omega_nyq_line))
-                    mag_nyq_line = np.array((
-                        np.nan, 0.7*min(mag_plot), 1.3*max(mag_plot)))
-                    mag_plot = np.hstack((mag_plot, mag_nyq_line))
-                    phase_range = max(phase_plot) - min(phase_plot)
-                    phase_nyq_line = np.array(
-                        (np.nan,
-                         min(phase_plot) - 0.2 * phase_range,
-                         max(phase_plot) + 0.2 * phase_range))
-                    phase_plot = np.hstack((phase_plot, phase_nyq_line))
+    # See if we can use the current figure axes
+    fig = plt.gcf()         # get current figure (or create new one)
+    if ax is None and plt.get_fignums():
+        ax = fig.get_axes()
+        if len(ax) == nrows * ncols:
+            # Assume that the shape is right (no easy way to infer this)
+            ax = np.array(ax).reshape(nrows, ncols)
+        elif len(ax) != 0 and 'sisotool' not in kwargs: # TODO: remove sisotool
+            # Need to generate a new figure
+            fig, ax = plt.figure(), None
+        else:
+            # Blank figure, just need to recreate axes
+            ax = None
 
-                #
-                # Magnitude plot
-                #
+    # Create new axes, if needed, and customize them
+    if ax is None and 'sisotool' not in kwargs:         # TODO: remove sisotool
+        with plt.rc_context(_freqplot_rcParams):
+            ax_array = fig.subplots(nrows, ncols, sharex=True, squeeze=False)
+            fig.set_tight_layout(True)
+            fig.align_labels()
 
-                if dB:
-                    ax_mag.semilogx(omega_plot, 20 * np.log10(mag_plot),
-                                    *args, **kwargs)
-                else:
-                    ax_mag.loglog(omega_plot, mag_plot, *args, **kwargs)
+    elif 'sisotool' not in kwargs:                      # TODO: remove sisotool
+        # Make sure the axes are the right shape
+        if ax.shape != (nrows, ncols):
+            raise ValueError(
+                "specified axes are not the right shape; "
+                f"got {ax.shape} but expecting ({nrows}, {ncols})")
+        ax_array = ax
 
-                # Add a grid to the plot + labeling
-                ax_mag.grid(grid and not margins, which='both')
-                ax_mag.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
+    # Set up the axes with labels so that multiple calls to
+    # bode_plot will superimpose the data.  This was implicit
+    # before matplotlib 2.1, but changed after that (See
+    # https://github.com/matplotlib/matplotlib/issues/9024).
+    # The code below should work on all cases.
+    #
+    # TODO: rewrite this code to us subplot and the ax keyword to implement
+    # the same functionality.
 
-                #
-                # Phase plot
-                #
-
-                # Plot the data
-                ax_phase.semilogx(omega_plot, phase_plot, *args, **kwargs)
-
-                # Show the phase and gain margins in the plot
-                if margins:
-                    # Compute stability margins for the system
-                    margin = stability_margins(sys, method=method)
-                    gm, pm, Wcg, Wcp = (margin[i] for i in (0, 1, 3, 4))
-
-                    # Figure out sign of the phase at the first gain crossing
-                    # (needed if phase_wrap is True)
-                    phase_at_cp = phases[0][(np.abs(omegas[0] - Wcp)).argmin()]
-                    if phase_at_cp >= 0.:
-                        phase_limit = 180.
-                    else:
-                        phase_limit = -180.
-
-                    if Hz:
-                        Wcg, Wcp = Wcg/(2*math.pi), Wcp/(2*math.pi)
-
-                    # Draw lines at gain and phase limits
-                    ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':',
-                                   zorder=-20)
-                    ax_phase.axhline(y=phase_limit if deg else
-                                     math.radians(phase_limit),
-                                     color='k', linestyle=':', zorder=-20)
-                    mag_ylim = ax_mag.get_ylim()
-                    phase_ylim = ax_phase.get_ylim()
-
-                    # Annotate the phase margin (if it exists)
-                    if pm != float('inf') and Wcp != float('nan'):
-                        if dB:
-                            ax_mag.semilogx(
-                                [Wcp, Wcp], [0., -1e5],
-                                color='k', linestyle=':', zorder=-20)
-                        else:
-                            ax_mag.loglog(
-                                [Wcp, Wcp], [1., 1e-8],
-                                color='k', linestyle=':', zorder=-20)
-
-                        if deg:
-                            ax_phase.semilogx(
-                                [Wcp, Wcp], [1e5, phase_limit + pm],
-                                color='k', linestyle=':', zorder=-20)
-                            ax_phase.semilogx(
-                                [Wcp, Wcp], [phase_limit + pm, phase_limit],
-                                color='k', zorder=-20)
-                        else:
-                            ax_phase.semilogx(
-                                [Wcp, Wcp], [1e5, math.radians(phase_limit) +
-                                             math.radians(pm)],
-                                color='k', linestyle=':', zorder=-20)
-                            ax_phase.semilogx(
-                                [Wcp, Wcp], [math.radians(phase_limit) +
-                                             math.radians(pm),
-                                             math.radians(phase_limit)],
-                                color='k', zorder=-20)
-
-                    # Annotate the gain margin (if it exists)
-                    if gm != float('inf') and Wcg != float('nan'):
-                        if dB:
-                            ax_mag.semilogx(
-                                [Wcg, Wcg], [-20.*np.log10(gm), -1e5],
-                                color='k', linestyle=':', zorder=-20)
-                            ax_mag.semilogx(
-                                [Wcg, Wcg], [0, -20*np.log10(gm)],
-                                color='k', zorder=-20)
-                        else:
-                            ax_mag.loglog(
-                                [Wcg, Wcg], [1./gm, 1e-8], color='k',
-                                linestyle=':', zorder=-20)
-                            ax_mag.loglog(
-                                [Wcg, Wcg], [1., 1./gm], color='k', zorder=-20)
-
-                        if deg:
-                            ax_phase.semilogx(
-                                [Wcg, Wcg], [0, phase_limit],
-                                color='k', linestyle=':', zorder=-20)
-                        else:
-                            ax_phase.semilogx(
-                                [Wcg, Wcg], [0, math.radians(phase_limit)],
-                                color='k', linestyle=':', zorder=-20)
-
-                    ax_mag.set_ylim(mag_ylim)
-                    ax_phase.set_ylim(phase_ylim)
-
-                    if sisotool:
-                        ax_mag.text(
-                            0.04, 0.06,
-                            'G.M.: %.2f %s\nFreq: %.2f %s' %
-                            (20*np.log10(gm) if dB else gm,
-                             'dB ' if dB else '',
-                             Wcg, 'Hz' if Hz else 'rad/s'),
-                            horizontalalignment='left',
-                            verticalalignment='bottom',
-                            transform=ax_mag.transAxes,
-                            fontsize=8 if int(mpl.__version__[0]) == 1 else 6)
-                        ax_phase.text(
-                            0.04, 0.06,
-                            'P.M.: %.2f %s\nFreq: %.2f %s' %
-                            (pm if deg else math.radians(pm),
-                             'deg' if deg else 'rad',
-                             Wcp, 'Hz' if Hz else 'rad/s'),
-                            horizontalalignment='left',
-                            verticalalignment='bottom',
-                            transform=ax_phase.transAxes,
-                            fontsize=8 if int(mpl.__version__[0]) == 1 else 6)
-                    else:
-                        plt.suptitle(
-                            "Gm = %.2f %s(at %.2f %s), "
-                            "Pm = %.2f %s (at %.2f %s)" %
-                            (20*np.log10(gm) if dB else gm,
-                             'dB ' if dB else '',
-                             Wcg, 'Hz' if Hz else 'rad/s',
-                             pm if deg else math.radians(pm),
-                             'deg' if deg else 'rad',
-                             Wcp, 'Hz' if Hz else 'rad/s'))
-
-                # Add a grid to the plot + labeling
-                ax_phase.set_ylabel("Phase (deg)" if deg else "Phase (rad)")
-
-                def gen_zero_centered_series(val_min, val_max, period):
-                    v1 = np.ceil(val_min / period - 0.2)
-                    v2 = np.floor(val_max / period + 0.2)
-                    return np.arange(v1, v2 + 1) * period
-                if deg:
-                    ylim = ax_phase.get_ylim()
-                    ax_phase.set_yticks(gen_zero_centered_series(
-                        ylim[0], ylim[1], 45.))
-                    ax_phase.set_yticks(gen_zero_centered_series(
-                        ylim[0], ylim[1], 15.), minor=True)
-                else:
-                    ylim = ax_phase.get_ylim()
-                    ax_phase.set_yticks(gen_zero_centered_series(
-                        ylim[0], ylim[1], math.pi / 4.))
-                    ax_phase.set_yticks(gen_zero_centered_series(
-                        ylim[0], ylim[1], math.pi / 12.), minor=True)
-                ax_phase.grid(grid and not margins, which='both')
-                # ax_mag.grid(which='minor', alpha=0.3)
-                # ax_mag.grid(which='major', alpha=0.9)
-                # ax_phase.grid(which='minor', alpha=0.3)
-                # ax_phase.grid(which='major', alpha=0.9)
-
-                # Label the frequency axis
-                ax_phase.set_xlabel("Frequency (Hz)" if Hz
-                                    else "Frequency (rad/sec)")
-
-    if len(syslist) == 1:
-        return mags[0], phases[0], omegas[0]
+    # Get the current figure
+    if 'sisotool' in kwargs:
+        fig = kwargs.pop('fig')         # redo to use ax parameter
+        ax_mag = fig.axes[0]
+        ax_phase = fig.axes[2]
+        sisotool = kwargs.pop('sisotool')
     else:
-        return mags, phases, omegas
+        fig = plt.gcf()
+        ax_mag = None
+        ax_phase = None
+        sisotool = False
+
+        # Get the current axes if they already exist
+        for ax in fig.axes:
+            if ax.get_label() == 'control-bode-magnitude':
+                ax_mag = ax
+            elif ax.get_label() == 'control-bode-phase':
+                ax_phase = ax
+
+        # If no axes present, create them from scratch
+        if ax_mag is None or ax_phase is None:
+            plt.clf()
+            ax_mag = plt.subplot(211, label='control-bode-magnitude')
+            ax_phase = plt.subplot(
+                212, label='control-bode-phase', sharex=ax_mag)
+
+    #
+    # Plot the data
+    #
+    # The ax_magnitude and ax_phase arrays have the axes needed for making the
+    # plots.  Labels are used on each axes for later creation of legends.
+    # The generic labels if of the form:
+    #
+    #     To output label, From input label, system name
+    #
+    # The input and output labels are omitted if overlay_inputs or
+    # overlay_outputs is False, respectively.  The system name is always
+    # included, since multiple calls to plot() will require a legend that
+    # distinguishes which system signals are plotted.  The system name is
+    # stripped off later (in the legend-handling code) if it is not needed.
+    #
+
+    for mag, phase, omega_sys, nyquistfrq in \
+        zip(mags, phases, omegas, nyquistfrqs):
+
+        nyquistfrq_plot = None
+        if Hz:
+            omega_plot = omega_sys / (2. * math.pi)
+            if nyquistfrq:
+                nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+        else:
+            omega_plot = omega_sys
+            if nyquistfrq:
+                nyquistfrq_plot = nyquistfrq
+        phase_plot = phase * 180. / math.pi if deg else phase
+        mag_plot = mag
+
+        if nyquistfrq_plot:
+            # append data for vertical nyquist freq indicator line.
+            # if this extra nyquist line is is plotted in a single plot
+            # command then line order is preserved when
+            # creating a legend eg. legend(('sys1', 'sys2'))
+            omega_nyq_line = np.array(
+                (np.nan, nyquistfrq_plot, nyquistfrq_plot))
+            omega_plot = np.hstack((omega_plot, omega_nyq_line))
+            mag_nyq_line = np.array((
+                np.nan, 0.7*min(mag_plot), 1.3*max(mag_plot)))
+            mag_plot = np.hstack((mag_plot, mag_nyq_line))
+            phase_range = max(phase_plot) - min(phase_plot)
+            phase_nyq_line = np.array(
+                (np.nan,
+                 min(phase_plot) - 0.2 * phase_range,
+                 max(phase_plot) + 0.2 * phase_range))
+            phase_plot = np.hstack((phase_plot, phase_nyq_line))
+
+        # Magnitude
+        if dB:
+            ax_mag.semilogx(omega_plot, 20 * np.log10(mag_plot),
+                            *fmt, **kwargs)
+        else:
+            ax_mag.loglog(omega_plot, mag_plot, *fmt, **kwargs)
+
+        # Add a grid to the plot + labeling
+        ax_mag.grid(grid and not margins, which='both')
+        ax_mag.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
+
+        # Phase
+        ax_phase.semilogx(omega_plot, phase_plot, *fmt, **kwargs)
+
+        #
+        # Plot gain and phase margins
+        #
+
+        # Show the phase and gain margins in the plot
+        if margins:
+            # Compute stability margins for the system
+            margin = stability_margins(response, method=method)
+            gm, pm, Wcg, Wcp = (margin[i] for i in (0, 1, 3, 4))
+
+            # Figure out sign of the phase at the first gain crossing
+            # (needed if phase_wrap is True)
+            phase_at_cp = phases[0][(np.abs(omegas[0] - Wcp)).argmin()]
+            if phase_at_cp >= 0.:
+                phase_limit = 180.
+            else:
+                phase_limit = -180.
+
+            if Hz:
+                Wcg, Wcp = Wcg/(2*math.pi), Wcp/(2*math.pi)
+
+            # Draw lines at gain and phase limits
+            ax_mag.axhline(y=0 if dB else 1, color='k', linestyle=':',
+                           zorder=-20)
+            ax_phase.axhline(y=phase_limit if deg else
+                             math.radians(phase_limit),
+                             color='k', linestyle=':', zorder=-20)
+            mag_ylim = ax_mag.get_ylim()
+            phase_ylim = ax_phase.get_ylim()
+
+            # Annotate the phase margin (if it exists)
+            if pm != float('inf') and Wcp != float('nan'):
+                if dB:
+                    ax_mag.semilogx(
+                        [Wcp, Wcp], [0., -1e5],
+                        color='k', linestyle=':', zorder=-20)
+                else:
+                    ax_mag.loglog(
+                        [Wcp, Wcp], [1., 1e-8],
+                        color='k', linestyle=':', zorder=-20)
+
+                if deg:
+                    ax_phase.semilogx(
+                        [Wcp, Wcp], [1e5, phase_limit + pm],
+                        color='k', linestyle=':', zorder=-20)
+                    ax_phase.semilogx(
+                        [Wcp, Wcp], [phase_limit + pm, phase_limit],
+                        color='k', zorder=-20)
+                else:
+                    ax_phase.semilogx(
+                        [Wcp, Wcp], [1e5, math.radians(phase_limit) +
+                                     math.radians(pm)],
+                        color='k', linestyle=':', zorder=-20)
+                    ax_phase.semilogx(
+                        [Wcp, Wcp], [math.radians(phase_limit) +
+                                     math.radians(pm),
+                                     math.radians(phase_limit)],
+                        color='k', zorder=-20)
+
+            # Annotate the gain margin (if it exists)
+            if gm != float('inf') and Wcg != float('nan'):
+                if dB:
+                    ax_mag.semilogx(
+                        [Wcg, Wcg], [-20.*np.log10(gm), -1e5],
+                        color='k', linestyle=':', zorder=-20)
+                    ax_mag.semilogx(
+                        [Wcg, Wcg], [0, -20*np.log10(gm)],
+                        color='k', zorder=-20)
+                else:
+                    ax_mag.loglog(
+                        [Wcg, Wcg], [1./gm, 1e-8], color='k',
+                        linestyle=':', zorder=-20)
+                    ax_mag.loglog(
+                        [Wcg, Wcg], [1., 1./gm], color='k', zorder=-20)
+
+                if deg:
+                    ax_phase.semilogx(
+                        [Wcg, Wcg], [0, phase_limit],
+                        color='k', linestyle=':', zorder=-20)
+                else:
+                    ax_phase.semilogx(
+                        [Wcg, Wcg], [0, math.radians(phase_limit)],
+                        color='k', linestyle=':', zorder=-20)
+
+            ax_mag.set_ylim(mag_ylim)
+            ax_phase.set_ylim(phase_ylim)
+
+            if sisotool:
+                ax_mag.text(
+                    0.04, 0.06,
+                    'G.M.: %.2f %s\nFreq: %.2f %s' %
+                    (20*np.log10(gm) if dB else gm,
+                     'dB ' if dB else '',
+                     Wcg, 'Hz' if Hz else 'rad/s'),
+                    horizontalalignment='left',
+                    verticalalignment='bottom',
+                    transform=ax_mag.transAxes,
+                    fontsize=8 if int(mpl.__version__[0]) == 1 else 6)
+                ax_phase.text(
+                    0.04, 0.06,
+                    'P.M.: %.2f %s\nFreq: %.2f %s' %
+                    (pm if deg else math.radians(pm),
+                     'deg' if deg else 'rad',
+                     Wcp, 'Hz' if Hz else 'rad/s'),
+                    horizontalalignment='left',
+                    verticalalignment='bottom',
+                    transform=ax_phase.transAxes,
+                    fontsize=8 if int(mpl.__version__[0]) == 1 else 6)
+            else:
+                plt.suptitle(
+                    "Gm = %.2f %s(at %.2f %s), "
+                    "Pm = %.2f %s (at %.2f %s)" %
+                    (20*np.log10(gm) if dB else gm,
+                     'dB ' if dB else '',
+                     Wcg, 'Hz' if Hz else 'rad/s',
+                     pm if deg else math.radians(pm),
+                     'deg' if deg else 'rad',
+                     Wcp, 'Hz' if Hz else 'rad/s'))
+
+        # Add a grid to the plot + labeling
+        ax_phase.set_ylabel("Phase (deg)" if deg else "Phase (rad)")
+
+        def gen_zero_centered_series(val_min, val_max, period):
+            v1 = np.ceil(val_min / period - 0.2)
+            v2 = np.floor(val_max / period + 0.2)
+            return np.arange(v1, v2 + 1) * period
+        if deg:
+            ylim = ax_phase.get_ylim()
+            ax_phase.set_yticks(gen_zero_centered_series(
+                ylim[0], ylim[1], 45.))
+            ax_phase.set_yticks(gen_zero_centered_series(
+                ylim[0], ylim[1], 15.), minor=True)
+        else:
+            ylim = ax_phase.get_ylim()
+            ax_phase.set_yticks(gen_zero_centered_series(
+                ylim[0], ylim[1], math.pi / 4.))
+            ax_phase.set_yticks(gen_zero_centered_series(
+                ylim[0], ylim[1], math.pi / 12.), minor=True)
+        ax_phase.grid(grid and not margins, which='both')
+        # ax_mag.grid(which='minor', alpha=0.3)
+        # ax_mag.grid(which='major', alpha=0.9)
+        # ax_phase.grid(which='minor', alpha=0.3)
+        # ax_phase.grid(which='major', alpha=0.9)
+
+        # Label the frequency axis
+        ax_phase.set_xlabel("Frequency (Hz)" if Hz
+                            else "Frequency (rad/sec)")
+
+    #
+    # Label the axes (including trace labels)
+    #
+    # Once the data are plotted, we label the axes.  The horizontal axes is
+    # always frequency and this is labeled only on the bottom most row.  The
+    # vertical axes can consist either of a single signal or a combination
+    # of signals (when overlay_inputs or overlay_outputs is True)
+    #
+    # Input/output signals are give at the top of columns and left of rows
+    # when these are individually plotted.
+    #
+
+    pass
+
+    #
+    # Create legends
+    #
+    # Legends can be placed manually by passing a legend_map array that
+    # matches the shape of the suplots, with each item being a string
+    # indicating the location of the legend for that axes (or None for no
+    # legend).
+    #
+    # If no legend spec is passed, a minimal number of legends are used so
+    # that each line in each axis can be uniquely identified.  The details
+    # depends on the various plotting parameters, but the general rule is
+    # to place legends in the top row and right column.
+    #
+    # Because plots can be built up by multiple calls to plot(), the legend
+    # strings are created from the line labels manually.  Thus an initial
+    # call to plot() may not generate any legends (eg, if no signals are
+    # overlaid), but subsequent calls to plot() will need a legend for each
+    # different response (system).
+    #
+
+    pass
+
+    #
+    # Update the plot title (= figure suptitle)
+    #
+    # If plots are built up by multiple calls to plot() and the title is
+    # not given, then the title is updated to provide a list of unique text
+    # items in each successive title.  For data generated by the frequency
+    # response function this will generate a common prefix followed by a
+    # list of systems (e.g., "Step response for sys[1], sys[2]").
+    #
+
+    pass
+
+    if plot is True:            # legacy usage; remove in future release
+        if len(data) == 1:
+            return mags[0], phases[0], omegas[0]
+        else:
+            return mags, phases, omegas
+
+    return None                 # TODO: replace with ax
 
 
 #

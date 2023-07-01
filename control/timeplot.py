@@ -220,7 +220,7 @@ def time_response_plot(
     #
     # * Omitting: either the inputs or the outputs can be omitted.
     #
-    # * Combining: inputs, outputs, and traces can be combined onto a
+    # * Overlay: inputs, outputs, and traces can be combined onto a
     #   single set of axes using various keyword combinations
     #   (overlay_signals, overlay_traces, plot_inputs='overlay').  This
     #   basically collapses data along either the rows or columns, and a
@@ -340,11 +340,11 @@ def time_response_plot(
     #
     # The ax_output and ax_input arrays have the axes needed for making the
     # plots.  Labels are used on each axes for later creation of legends.
-    # The gneric labels if of the form:
+    # The generic labels if of the form:
     #
     #     signal name, trace label, system name
     #
-    # The signal name or tracel label can be omitted if they will appear on
+    # The signal name or trace label can be omitted if they will appear on
     # the axes title or ylabel.  The system name is always included, since
     # multiple calls to plot() will require a legend that distinguishes
     # which system signals are plotted.  The system name is stripped off
@@ -440,7 +440,7 @@ def time_response_plot(
     # Label the axes (including trace labels)
     #
     # Once the data are plotted, we label the axes.  The horizontal axes is
-    # always time and this is labeled only on the bottom most column.  The
+    # always time and this is labeled only on the bottom most row.  The
     # vertical axes can consist either of a single signal or a combination
     # of signals (when overlay_signal is True or plot+inputs = 'overlay'.
     #

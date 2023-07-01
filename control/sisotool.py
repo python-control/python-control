@@ -4,6 +4,7 @@ from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
 from .timeresp import step_response
 from .iosys import common_timebase, isctime, isdtime
+from .lti import frequency_response
 from .xferfcn import tf
 from .statesp import ss, summing_junction
 from .bdalg import append, connect
@@ -146,7 +147,7 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
     sys_loop = sys if sys.issiso() else sys[0,0]
 
     # Update the bodeplot
-    bode_plot_params['syslist'] = sys_loop*K.real
+    bode_plot_params['data'] = frequency_response(sys_loop*K.real)
     bode_plot(**bode_plot_params)
 
     # Set the titles and labels

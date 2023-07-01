@@ -54,7 +54,7 @@ from scipy.interpolate import splprep, splev
 
 from .lti import LTI, _process_frequency_response
 from .exception import pandas_check
-from .iosys import InputOutputSystem, _process_iosys_keywords
+from .iosys import InputOutputSystem, _process_iosys_keywords, common_timebase
 from . import config
 
 __all__ = ['FrequencyResponseData', 'FRD', 'frd']
@@ -93,6 +93,8 @@ class FrequencyResponseData(LTI):
     fresp : 3D array
         Frequency response, indexed by output index, input index, and
         frequency point.
+    dt : float, True, or None
+        System timebase.
 
     Notes
     -----
@@ -169,6 +171,7 @@ class FrequencyResponseData(LTI):
                 else:
                     z = np.exp(1j * self.omega * otherlti.dt)
                     self.fresp = otherlti(z, squeeze=False)
+                arg_dt = otherlti.dt
 
             else:
                 # The user provided a response and a freq vector
@@ -182,6 +185,7 @@ class FrequencyResponseData(LTI):
                         "The frequency data constructor needs a 1-d or 3-d"
                         " response data array and a matching frequency vector"
                         " size")
+                arg_dt = None
 
         elif len(args) == 1:
             # Use the copy constructor.
@@ -191,6 +195,8 @@ class FrequencyResponseData(LTI):
                     " an FRD object.  Received %s." % type(args[0]))
             self.omega = args[0].omega
             self.fresp = args[0].fresp
+            arg_dt = args[0].dt
+
         else:
             raise ValueError(
                 "Needs 1 or 2 arguments; received %i." % len(args))
@@ -210,9 +216,11 @@ class FrequencyResponseData(LTI):
 
         # Process iosys keywords
         defaults = {
-            'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0]}
+            'inputs': self.fresp.shape[1], 'outputs': self.fresp.shape[0],
+            'dt': None}
         name, inputs, outputs, states, dt = _process_iosys_keywords(
                 kwargs, defaults, end=True)
+        dt = common_timebase(dt, arg_dt)        # choose compatible timebase
 
         # Process signal names
         InputOutputSystem.__init__(
