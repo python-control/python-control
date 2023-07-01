@@ -5,21 +5,8 @@
 # functions can be called either as standalone functions or access from the
 # TimeDataResponse class.
 #
-# Note: Depending on how this goes, it might eventually make sense to
-# put the functions here directly into timeresp.py.
-#
-# Desired features (i = implemented but not tested, c = complete, w/ tests)
-# [i] Step/impulse response plots don't include inputs by default
-# [i] Forced/I-O response plots include inputs by default
-# [ ] Ability to start inputs at zero (step functions only?)
-# [i] Ability to plot all data on a single graph
-# [i] Ability to plot inputs with outputs on separate graphs
-# [i] Ability to plot inputs and/or outputs on selected axes
-# [i] Multi-trace graphs using different line styles
-# [i] Plotting function return Line2D elements
-# [i] Axis labels/legends based on what is plotted (siso, mimo, multi-trace)
-# [x] Ability to select (index) output and/or trace (and time?)
-# [i] Legends should not contain redundant information (nor appear redundantly)
+# Note: It might eventually make sense to put the functions here
+# directly into timeresp.py.
 
 import numpy as np
 import matplotlib as mpl
@@ -28,7 +15,7 @@ from os.path import commonprefix
 
 from . import config
 
-__all__ = ['time_response_plot', 'combine_traces']
+__all__ = ['time_response_plot', 'combine_traces', 'get_plot_axes']
 
 # Default font dictionary
 _timeplot_rcParams = mpl.rcParams.copy()
@@ -43,19 +30,25 @@ _timeplot_rcParams.update({
 
 # Default values for module parameter variables
 _timeplot_defaults = {
-    'timeplot.line_styles': ['-', '--', ':', '-.'],
-    'timeplot.line_colors': [
-        'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
-        'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'],
+    'timeplot.rcParams': _timeplot_rcParams,
+    'timeplot.trace_props': [
+        {'linestyle': s} for s in ['-', '--', ':', '-.']],
+    'timeplot.output_props': [
+        {'color': c} for c in [
+            'tab:blue', 'tab:orange', 'tab:green', 'tab:pink', 'tab:gray']],
+    'timeplot.input_props': [
+        {'color': c} for c in [
+            'tab:red', 'tab:purple', 'tab:brown', 'tab:olive', 'tab:cyan']],
     'timeplot.time_label': "Time [s]",
 }
 
 # Plot the input/output response of a system
 def time_response_plot(
-        data, ax=None, plot_inputs=None, plot_outputs=True, transpose=False,
-        combine_traces=False, combine_signals=False, legend_map=None,
-        legend_loc=None, add_initial_zero=True, title=None, relabel=True,
-        **kwargs):
+        data, *fmt, ax=None, plot_inputs=None, plot_outputs=True,
+        transpose=False, overlay_traces=False, overlay_signals=False,
+        legend_map=None, legend_loc=None, add_initial_zero=True,
+        input_props=None, output_props=None, trace_props=None,
+        title=None, relabel=True, **kwargs):
     """Plot the time response of an input/output system.
 
     This function creates a standard set of plots for the input/output
@@ -72,8 +65,8 @@ def time_response_plot(
         Axes for the current figure are used or, if there is no current
         figure with the correct number and shape of Axes, a new figure is
         created.  The default shape of the array should be (noutputs +
-        ninputs, ntraces), but if `combine_traces` is set to `True` then
-        only one row is needed and if `combine_signals` is set to `True`
+        ninputs, ntraces), but if `overlay_traces` is set to `True` then
+        only one row is needed and if `overlay_signals` is set to `True`
         then only one or two columns are needed (depending on plot_inputs
         and plot_outputs).
     plot_inputs : bool or str, optional
@@ -84,10 +77,10 @@ def time_response_plot(
             * True: plot the inputs on their own axes
     plot_outputs : bool, optional
         If False, suppress plotting of the outputs.
-    combine_traces : bool, optional
+    overlay_traces : bool, optional
         If set to True, combine all traces onto a single row instead of
         plotting a separate row for each trace.
-    combine_signals : bool, optional
+    overlay_signals : bool, optional
         If set to True, combine all input and output signals onto a single
         plot (for each).
     transpose : bool, optional
@@ -97,6 +90,10 @@ def time_response_plot(
         signals are plotted from left to right, starting with the inputs
         (if plotted) and then the outputs.  Multi-trace responses are
         stacked vertically.
+    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+        Passed to `matplotlib` as the format string for all lines in the plot.
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+        Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
@@ -107,11 +104,12 @@ def time_response_plot(
 
     Additional Parameters
     ---------------------
-    relabel : bool, optional
-        By default, existing figures and axes are relabeled when new data
-        are added.  If set to `False`, just plot new data on existing axes.
-    time_label : str, optional
-        Label to use for the time axis.
+    add_initial_zero : bool
+        Add an initial point of zero at the first time point for all
+        inputs with type 'step'.  Default is True.
+    input_props : array of dicts
+        List of line properties to use when plotting combined inputs.  The
+        default values are set by config.defaults['timeplot.input_props'].
     legend_map : array of str, option
         Location of the legend for multi-trace plots.  Specifies an array
         of legend location strings matching the shape of the subplots, with
@@ -120,14 +118,38 @@ def time_response_plot(
     legend_loc : str
         Location of the legend within the axes for which it appears.  This
         value is used if legend_map is None.
-    add_initial_zero : bool
-        Add an initial point of zero at the first time point for all
-        inputs with type 'step'.  Default is True.
-    trace_cycler: :class:`~matplotlib.Cycler`
-        Line style cycle to use for traces.  Default = ['-', '--', ':', '-.'].
+    output_props : array of dicts
+        List of line properties to use when plotting combined outputs.  The
+        default values are set by config.defaults['timeplot.output_props'].
+    relabel : bool, optional
+        By default, existing figures and axes are relabeled when new data
+        are added.  If set to `False`, just plot new data on existing axes.
+    time_label : str, optional
+        Label to use for the time axis.
+    trace_props : array of dicts
+        List of line properties to use when plotting combined outputs.  The
+        default values are set by config.defaults['timeplot.trace_props'].
+
+    Notes
+    -----
+    1. A new figure will be generated if there is no current figure or
+       the current figure has an incompatible number of axes.  To
+       force the creation of a new figures, use `plt.figure()`.  To reuse
+       a portion of an existing figure, use the `ax` keyword.
+
+    2. The line properties (color, linestyle, etc) can be set for the
+       entire plot using the `fmt` and/or `kwargs` parameter, which
+       are passed on to `matplotlib`.  When combining signals or
+       traces, the `input_props`, `output_props`, and `trace_props`
+       parameters can be used to pass a list of dictionaries
+       containing the line properties to use.  These input/output
+       properties are combined with the trace properties and finally
+       the kwarg properties to determine the final line properties.
+
+    3. The default plot properties, such as font sizes, can be set using
+       config.defaults[''timeplot.rcParams'].
 
     """
-    from cycler import cycler
     from .iosys import InputOutputSystem
     from .timeresp import TimeResponseData
 
@@ -138,10 +160,18 @@ def time_response_plot(
     # Set up defaults
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
-    line_styles = config._get_param(
-        'timeplot', 'line_styles', kwargs, _timeplot_defaults, pop=True)
-    line_colors = config._get_param(
-        'timeplot', 'line_colors', kwargs, _timeplot_defaults, pop=True)
+
+    input_props = config._get_param(
+        'timeplot', 'input_props', kwargs, _timeplot_defaults, pop=True)
+    iprop_len = len(input_props)
+
+    output_props = config._get_param(
+        'timeplot', 'output_props', kwargs, _timeplot_defaults, pop=True)
+    oprop_len = len(output_props)
+
+    trace_props = config._get_param(
+        'timeplot', 'trace_props', kwargs, _timeplot_defaults, pop=True)
+    tprop_len = len(trace_props)
 
     # Set the title for the data
     title = data.title if title == None else title
@@ -151,13 +181,6 @@ def time_response_plot(
         plot_inputs = data.plot_inputs
     if plot_inputs not in [True, False, 'overlay']:
         raise ValueError(f"unrecognized value: {plot_inputs=}")
-
-    # Configure the cycle of colors and line styles
-    my_cycler = cycler(linestyle=line_styles) * cycler(color=line_colors)
-
-    # Make sure we process alled of the optional arguments
-    if kwargs:
-        raise TypeError("unrecognized keyword(s): " + str(kwargs))
 
     #
     # Find/create axes
@@ -191,7 +214,7 @@ def time_response_plot(
     #
     # * Combining: inputs, outputs, and traces can be combined onto a
     #   single set of axes using various keyword combinations
-    #   (combine_signals, combine_traces, plot_inputs='overlay').  This
+    #   (overlay_signals, overlay_traces, plot_inputs='overlay').  This
     #   basically collapses data along either the rows or columns, and a
     #   legend is generated.
     #
@@ -225,11 +248,11 @@ def time_response_plot(
             "input plotting requested but no inputs in time response data")
 
     # Figure how how many rows and columns to use + offsets for inputs/outputs
-    if plot_inputs == 'overlay' and not combine_signals:
+    if plot_inputs == 'overlay' and not overlay_signals:
         nrows = max(ninputs, noutputs)          # Plot inputs on top of outputs
         noutput_axes = 0                        # No offset required
         ninput_axes = 0                         # No offset required
-    elif combine_signals:
+    elif overlay_signals:
         nrows = int(plot_outputs)               # Start with outputs
         nrows += int(plot_inputs == True)       # Add plot for inputs if needed
         noutput_axes = 1 if plot_outputs and plot_inputs is True else 0
@@ -239,7 +262,7 @@ def time_response_plot(
         noutput_axes = noutputs if plot_outputs else 0
         ninput_axes = ninputs if plot_inputs else 0
 
-    ncols = ntraces if not combine_traces else 1
+    ncols = ntraces if not overlay_traces else 1
     if transpose:
         nrows, ncols = ncols, nrows
 
@@ -261,10 +284,8 @@ def time_response_plot(
     if ax is None:
         with plt.rc_context(_timeplot_rcParams):
             ax_array = fig.subplots(nrows, ncols, sharex=True, squeeze=False)
-            for ax in np.nditer(ax_array, flags=["refs_ok"]):
-                ax.item().set_prop_cycle(my_cycler)
-        fig.set_tight_layout(True)
-        fig.align_labels()
+            fig.set_tight_layout(True)
+            fig.align_labels()
 
     else:
         # Make sure the axes are the right shape
@@ -284,14 +305,14 @@ def time_response_plot(
     # variations.
     #
 
-    # Create the map from trace, signal to axes, accounting for combine_*
+    # Create the map from trace, signal to axes, accounting for overlay_*
     ax_outputs = np.empty((noutputs, ntraces), dtype=object)
     ax_inputs = np.empty((ninputs, ntraces), dtype=object)
 
     for i in range(noutputs):
         for j in range(ntraces):
-            signal_index = i if not combine_signals else 0
-            trace_index = j if not combine_traces else 0
+            signal_index = i if not overlay_signals else 0
+            trace_index = j if not overlay_traces else 0
             if transpose:
                 ax_outputs[i, j] = \
                     ax_array[trace_index, signal_index + ninput_axes]
@@ -300,8 +321,8 @@ def time_response_plot(
 
     for i in range(ninputs):
         for j in range(ntraces):
-            signal_index = noutput_axes + (i if not combine_signals else 0)
-            trace_index = j if not combine_traces else 0
+            signal_index = noutput_axes + (i if not overlay_signals else 0)
+            trace_index = j if not overlay_traces else 0
             if transpose:
                 ax_inputs[i, j] = \
                     ax_array[trace_index, signal_index - noutput_axes]
@@ -340,11 +361,11 @@ def time_response_plot(
         label = ""              # start with an empty label
 
         # Add the signal name if it won't appear as an axes label
-        if combine_signals or plot_inputs == 'overlay':
+        if overlay_signals or plot_inputs == 'overlay':
             label += signal_labels[signal_index]
 
         # Add the trace label if this is a multi-trace figure
-        if combine_traces and ntraces > 1:
+        if overlay_traces and ntraces > 1:
             label += ", " if label != "" else ""
             label += f"trace {trace_index}" if data.trace_labels is None \
                 else data.trace_labels[trace_index]
@@ -360,8 +381,18 @@ def time_response_plot(
         # Plot the output
         for i in range(noutputs):
             label = _make_line_label(i, data.output_labels, trace)
+
+            # Set up line properties for this output, trace
+            if len(fmt) == 0:
+                line_props = \
+                    output_props[i % oprop_len if overlay_signals else 0] | \
+                    trace_props[trace % tprop_len if overlay_traces else 0] | \
+                    kwargs
+            else:
+                line_props = kwargs
+
             out[i, trace] = ax_outputs[i, trace].plot(
-                data.time, outputs[i][trace], label=label)
+                data.time, outputs[i][trace], *fmt, label=label, **line_props)
 
         # Plot the input
         for i in range(ninputs):
@@ -374,8 +405,17 @@ def time_response_plot(
             else:
                 x, y = data.time, inputs[i][trace]
 
+            # Set up line properties for this output, trace
+            if len(fmt) == 0:
+                line_props = \
+                    input_props[i % iprop_len if overlay_signals else 0] | \
+                    trace_props[trace % tprop_len if overlay_traces else 0] | \
+                    kwargs
+            else:
+                line_props = kwargs
+
             out[noutputs + i, trace] = ax_inputs[i, trace].plot(
-                x, y, label=label)
+                x, y, *fmt, label=label, **line_props)
 
     # Stop here if the user wants to control everything
     if not relabel:
@@ -387,7 +427,7 @@ def time_response_plot(
     # Once the data are plotted, we label the axes.  The horizontal axes is
     # always time and this is labeled only on the bottom most column.  The
     # vertical axes can consist either of a single signal or a combination
-    # of signals (when combine_signal is True or plot+inputs = 'overlay'.
+    # of signals (when overlay_signal is True or plot+inputs = 'overlay'.
     #
     # Traces are labeled at the top of the first row of plots (regular) or
     # the left edge of rows (tranpose).
@@ -403,7 +443,7 @@ def time_response_plot(
 
     if transpose:               # inputs on left, outputs on right
         # Label the inputs
-        if combine_signals and plot_inputs:
+        if overlay_signals and plot_inputs:
             label = overlaid_title if overlaid else "Inputs"
             for trace in range(ntraces):
                 ax_inputs[0, trace].set_ylabel(label)
@@ -414,7 +454,7 @@ def time_response_plot(
                     ax_inputs[i, trace].set_ylabel(label)
 
         # Label the outputs
-        if combine_signals and plot_outputs:
+        if overlay_signals and plot_outputs:
             label = overlaid_title if overlaid else "Outputs"
             for trace in range(ntraces):
                 ax_outputs[0, trace].set_ylabel(label)
@@ -425,7 +465,7 @@ def time_response_plot(
                     ax_outputs[i, trace].set_ylabel(label)
 
         # Set the trace titles, if needed
-        if ntraces > 1 and not combine_traces:
+        if ntraces > 1 and not overlay_traces:
             for trace in range(ntraces):
                 # Get the existing ylabel for left column
                 label = ax_array[trace, 0].get_ylabel()
@@ -437,7 +477,7 @@ def time_response_plot(
 
     else:                       # regular plot (outputs over inputs)
         # Set the trace titles, if needed
-        if ntraces > 1 and not combine_traces:
+        if ntraces > 1 and not overlay_traces:
             for trace in range(ntraces):
                 with plt.rc_context(_timeplot_rcParams):
                     ax_array[0, trace].set_title(
@@ -445,7 +485,7 @@ def time_response_plot(
                         else data.trace_labels[trace])
 
         # Label the outputs
-        if combine_signals and plot_outputs:
+        if overlay_signals and plot_outputs:
             ax_outputs[0, 0].set_ylabel("Outputs")
         else:
             for i in range(noutputs):
@@ -453,7 +493,7 @@ def time_response_plot(
                     overlaid_title if overlaid else data.output_labels[i])
 
         # Label the inputs
-        if combine_signals and plot_inputs:
+        if overlay_signals and plot_inputs:
             label = overlaid_title if overlaid else "Inputs"
             ax_inputs[0, 0].set_ylabel(label)
         else:
@@ -487,13 +527,13 @@ def time_response_plot(
         if legend_loc == None:
             legend_loc = 'center right'
         if transpose:
-            if (combine_signals or plot_inputs == 'overlay') and combine_traces:
+            if (overlay_signals or plot_inputs == 'overlay') and overlay_traces:
                 # Put a legend in each plot for inputs and outputs
                 if plot_outputs is True:
                     legend_map[0, ninput_axes] = legend_loc
                 if plot_inputs is True:
                     legend_map[0, 0] = legend_loc
-            elif combine_signals:
+            elif overlay_signals:
                 # Put a legend in rightmost input/output plot
                 if plot_inputs is True:
                     legend_map[0, 0] = legend_loc
@@ -503,20 +543,20 @@ def time_response_plot(
                 # Put a legend on the top of each column
                 for i in range(ntraces):
                     legend_map[0, i] = legend_loc
-            elif combine_traces:
+            elif overlay_traces:
                 # Put a legend topmost input/output plot
                 legend_map[0, -1] = legend_loc
             else:
                 # Put legend in the upper right
                 legend_map[0, -1] = legend_loc
         else:                   # regular layout
-            if (combine_signals or plot_inputs == 'overlay') and combine_traces:
+            if (overlay_signals or plot_inputs == 'overlay') and overlay_traces:
                 # Put a legend in each plot for inputs and outputs
                 if plot_outputs is True:
                     legend_map[0, -1] = legend_loc
                 if plot_inputs is True:
                     legend_map[noutput_axes, -1] = legend_loc
-            elif combine_signals:
+            elif overlay_signals:
                 # Put a legend in rightmost input/output plot
                 if plot_outputs is True:
                     legend_map[0, -1] = legend_loc
@@ -526,7 +566,7 @@ def time_response_plot(
                 # Put a legend on the right of each row
                 for i in range(max(ninputs, noutputs)):
                     legend_map[i, -1] = legend_loc
-            elif combine_traces:
+            elif overlay_traces:
                 # Put a legend topmost input/output plot
                 legend_map[0, -1] = legend_loc
             else:
@@ -715,7 +755,7 @@ def combine_traces(response_list, trace_labels=None, title=None):
 
 
 # Create vectorized function to find axes from lines
-def get_axes(line_array):
+def get_plot_axes(line_array):
     """Get a list of axes from an array of lines.
 
     This function can be used to return the set of axes corresponding to
@@ -731,7 +771,7 @@ def get_axes(line_array):
 
     Returns
     -------
-    axes_array : arra of list of Axes
+    axes_array : array of list of Axes
         A 2D array with elements corresponding to the Axes assocated with
         the lines in `line_array`.
 
@@ -740,8 +780,5 @@ def get_axes(line_array):
     Only the first element of each array entry is used to determine the axes.
 
     """
+    _get_axes = np.vectorize(lambda lines: lines[0].axes)
     return _get_axes(line_array)
-
-
-# Utility function used by get_axes
-_get_axes = np.vectorize(lambda lines: lines[0].axes)

@@ -53,24 +53,25 @@ the data from the simulation::
       for j in range(2):
           axs[i, j].plot(time, outputs[i, j])
 
-A number of options are available in the `plot` method to customize the
-appearance of input output data.  For data produced by the
+A number of options are available in the `plot` method to customize
+the appearance of input output data.  For data produced by the
 :func:`~control.impulse_response` and :func:`~control.step_response`
-commands, the inputs are not shown.  This behavior can be changed using the
-`plot_inputs` keyword.  It is also possible to combine multiple traces onto
-a single graph, using either the `combine_signals` keyword (which puts all
-outputs out a single graph and all inputs on a single graph) or the
-`combine_traces` keyword, which puts different traces (e.g., corresponding
-to step inputs in different channels) on the same graph, with appropriate
-labeling via a legend on selected axes.
+commands, the inputs are not shown.  This behavior can be changed
+using the `plot_inputs` keyword.  It is also possible to combine
+multiple lines onto a single graph, using either the `overlay_signals`
+keyword (which puts all outputs out a single graph and all inputs on a
+single graph) or the `overlay_traces` keyword, which puts different
+traces (e.g., corresponding to step inputs in different channels) on
+the same graph, with appropriate labeling via a legend on selected
+axes.
 
-For example, using `plot_input=True` and `combine_signals=True` yields the
+For example, using `plot_input=True` and `overlay_signals=True` yields the
 following plot::
 
       ct.step_response(sys_mimo).plot(
-        plot_inputs=True, combine_signals=True,
+        plot_inputs=True, overlay_signals=True,
         title="Step response for 2x2 MIMO system " + 
-        "[plot_inputs, combine_signals]")
+        "[plot_inputs, overlay_signals]")
 
 .. image:: timeplot-mimo_step-pi_cs.png
 
@@ -113,15 +114,17 @@ following figure::
 .. image:: timeplot-mimo_ioresp-mt_tr.png
 
 This figure also illustrates the ability to create "multi-trace" plots
-using the :func:`~control.combine_traces` function.
+using the :func:`~control.combine_traces` function.  The line properties
+that are used when combining signals and traces are set by the
+`input_props`, `output_props` and `trace_props` parameters for
+:func:`~control.time_response_plot`.
 
-	  
 Plotting functions
 ==================
 
 .. autosummary::
    :toctree: generated/
 
-   ~control.ioresp_plot
+   ~control.time_response_plot
    ~control.combine_traces
-   control.timeplot.get_axes
+   ~control.get_plot_axes

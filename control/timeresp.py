@@ -185,7 +185,7 @@ class TimeResponseData:
     trace_labels : array of string, optional
         Labels to use for traces (set to sysname it ntraces is 0)
 
-    trace_labels : array of string, optional
+    trace_types : array of string, optional
         Type of trace.  Currently only 'step' is supported, which controls
         the way in which the signal is plotted.
 
@@ -227,8 +227,7 @@ class TimeResponseData:
             output_labels=None, state_labels=None, input_labels=None,
             title=None, transpose=False, return_x=False, squeeze=None,
             multi_trace=False, trace_labels=None, trace_types=None,
-            plot_inputs=True,
-            sysname=None
+            plot_inputs=True, sysname=None
     ):
         """Create an input/output time response object.
 
@@ -428,7 +427,7 @@ class TimeResponseData:
         # Check and store trace labels, if present
         self.trace_labels = _process_labels(
             trace_labels, "trace", self.ntraces)
-        self.trace_types = trace_types
+        self.trace_types = trace_types  # TODO: rename to kind?
 
         # Figure out if the system is SISO
         if issiso is None:

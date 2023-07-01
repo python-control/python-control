@@ -27,8 +27,8 @@ from control.tests.conftest import slycotonly
 # @pytest.mark.parametrize("transpose", [False, True])
 # @pytest.mark.parametrize("plot_inputs", [False, None, True, 'overlay'])
 # @pytest.mark.parametrize("plot_outputs", [True, False])
-# @pytest.mark.parametrize("combine_signals", [False, True])
-# @pytest.mark.parametrize("combine_traces", [False, True])
+# @pytest.mark.parametrize("overlay_signals", [False, True])
+# @pytest.mark.parametrize("overlay_traces", [False, True])
 # @pytest.mark.parametrize("second_system", [False, True])
 # @pytest.mark.parametrize("fcn", [
 #     ct.step_response, ct.impulse_response, ct.initial_response,
@@ -90,7 +90,7 @@ def test_response_plots(
     # Save up the keyword arguments
     kwargs = dict(
         plot_inputs=pltinp, plot_outputs=pltout, transpose=trpose,
-        combine_signals=cmbsig, combine_traces=cmbtrc)
+        overlay_signals=cmbsig, overlay_traces=cmbtrc)
 
     # Create the response
     if fcn is ct.input_output_response and \
@@ -189,7 +189,7 @@ def test_response_plots(
 
 
 def test_axes_setup():
-    get_axes = ct.timeplot.get_axes
+    get_plot_axes = ct.timeplot.get_plot_axes
 
     sys_2x3 = ct.rss(4, 2, 3)
     sys_2x3b = ct.rss(4, 2, 3)
@@ -199,21 +199,21 @@ def test_axes_setup():
     # Two plots of the same size leaves axes unchanged
     out1 = ct.step_response(sys_2x3).plot()
     out2 = ct.step_response(sys_2x3b).plot()
-    np.testing.assert_equal(get_axes(out1), get_axes(out2))
+    np.testing.assert_equal(get_plot_axes(out1), get_plot_axes(out2))
     plt.close()
 
     # Two plots of same net size leaves axes unchanged (unfortunately)
     out1 = ct.step_response(sys_2x3).plot()
     out2 = ct.step_response(sys_3x2).plot()
     np.testing.assert_equal(
-        get_axes(out1).reshape(-1), get_axes(out2).reshape(-1))
+        get_plot_axes(out1).reshape(-1), get_plot_axes(out2).reshape(-1))
     plt.close()
 
     # Plots of different shapes generate new plots
     out1 = ct.step_response(sys_2x3).plot()
     out2 = ct.step_response(sys_3x1).plot()
-    ax1_list = get_axes(out1).reshape(-1).tolist()
-    ax2_list = get_axes(out2).reshape(-1).tolist()
+    ax1_list = get_plot_axes(out1).reshape(-1).tolist()
+    ax2_list = get_plot_axes(out2).reshape(-1).tolist()
     for ax in ax1_list:
         assert ax not in ax2_list
     plt.close()
@@ -221,14 +221,14 @@ def test_axes_setup():
     # Passing a list of axes preserves those axes
     out1 = ct.step_response(sys_2x3).plot()
     out2 = ct.step_response(sys_3x1).plot()
-    out3 = ct.step_response(sys_2x3b).plot(ax=get_axes(out1))
-    np.testing.assert_equal(get_axes(out1), get_axes(out3))
+    out3 = ct.step_response(sys_2x3b).plot(ax=get_plot_axes(out1))
+    np.testing.assert_equal(get_plot_axes(out1), get_plot_axes(out3))
     plt.close()
 
     # Sending an axes array of the wrong size raises exception
     with pytest.raises(ValueError, match="not the right shape"):
         out = ct.step_response(sys_2x3).plot()
-        ct.step_response(sys_3x1).plot(ax=get_axes(out))
+        ct.step_response(sys_3x1).plot(ax=get_plot_axes(out))
     sys_2x3 = ct.rss(4, 2, 3)
     sys_2x3b = ct.rss(4, 2, 3)
     sys_3x2 = ct.rss(4, 3, 2)
@@ -244,7 +244,7 @@ def test_legend_map():
     response.plot(
         legend_map=np.array([['center', 'upper right'],
                              [None, 'center right']]),
-        plot_inputs=True, combine_signals=True, transpose=True,
+        plot_inputs=True, overlay_signals=True, transpose=True,
         title='MIMO step response with custom legend placement')
 
 
@@ -310,17 +310,54 @@ def test_combine_traces():
         combresp6 = ct.combine_traces([resp1, resp])
 
 
+def test_linestyles():
+    # Check to make sure we can change line styles
+    sys_mimo = ct.tf2ss(
+        [[[1], [0.1]], [[0.2], [1]]],
+        [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="MIMO")
+    out = ct.step_response(sys_mimo).plot('k--', plot_inputs=True)
+    for ax in np.nditer(out, flags=["refs_ok"]):
+        for line in ax.item():
+            assert line.get_color() == 'k'
+            assert line.get_linestyle() == '--'
+
+
+def test_relabel():
+    sys1 = ct.rss(2, inputs='u', outputs='y')
+    sys2 = ct.rss(1, 1, 1)      # uses default i/o labels
+
+    # Generate a plot with specific labels
+    ct.step_response(sys1).plot()
+
+    # Generate a new plot, which overwrites labels
+    out = ct.step_response(sys2).plot()
+    ax = ct.get_plot_axes(out)
+    assert ax[0, 0].get_ylabel() == 'y[0]'
+
+    # Regenerate the first plot
+    plt.figure()
+    ct.step_response(sys1).plot()
+
+    # Generate a new plt, without relabeling
+    out = ct.step_response(sys2).plot(relabel=False)
+    ax = ct.get_plot_axes(out)
+    assert ax[0, 0].get_ylabel() == 'y'
+
+
 def test_errors():
     sys = ct.rss(2, 1, 1)
     stepresp = ct.step_response(sys)
-    with pytest.raises(TypeError, match="unrecognized keyword"):
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
         stepresp.plot(unknown=None)
 
-    with pytest.raises(TypeError, match="unrecognized keyword"):
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
         ct.time_response_plot(stepresp, unknown=None)
 
     with pytest.raises(ValueError, match="unrecognized value"):
         stepresp.plot(plot_inputs='unknown')
+
 
 if __name__ == "__main__":
     #
@@ -344,8 +381,8 @@ if __name__ == "__main__":
 
     # Define and run a selected set of interesting tests
     # def test_response_plots(
-    #      fcn, sys, plot_inputs, plot_outputs, combine_signals,
-    #      combine_traces, transpose, second_system, clear=True):
+    #      fcn, sys, plot_inputs, plot_outputs, overlay_signals,
+    #      overlay_traces, transpose, second_system, clear=True):
     N, T, F = None, True, False
     test_cases = [
         # response fcn       system    in         out cs ct tr ss
@@ -379,12 +416,12 @@ if __name__ == "__main__":
     ct.step_response(sys_mimo).plot()
     plt.savefig('timeplot-mimo_step-default.png')
 
-    # Step response with plot_inputs, combine_signals
+    # Step response with plot_inputs, overlay_signals
     plt.figure()
     ct.step_response(sys_mimo).plot(
-        plot_inputs=True, combine_signals=True,
+        plot_inputs=True, overlay_signals=True,
         title="Step response for 2x2 MIMO system " +
-        "[plot_inputs, combine_signals]")
+        "[plot_inputs, overlay_signals]")
     plt.savefig('timeplot-mimo_step-pi_cs.png')
 
     # Input/output response with overlaid inputs, legend_map
@@ -412,3 +449,9 @@ if __name__ == "__main__":
             title="I/O responses for 2x2 MIMO system, multiple traces "
             "[transpose]")
     plt.savefig('timeplot-mimo_ioresp-mt_tr.png')
+
+    # Reset line styles
+    plt.figure()
+    resp1.plot('g-')
+    resp2.plot('r--')
+    # plt.savefig('timeplot-mimo_step-linestyle.png')

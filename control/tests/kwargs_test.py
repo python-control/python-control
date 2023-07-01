@@ -75,7 +75,8 @@ def test_kwarg_search(module, prefix):
                 # @parametrize messes up the check, but we know it is there
                 pass
 
-            elif source and source.find('unrecognized keyword') < 0:
+            elif source and source.find('unrecognized keyword') < 0 and \
+                 source.find('unexpected keyword') < 0:
                 warnings.warn(
                     f"'unrecognized keyword' not found in unit test "
                     f"for {name}")
@@ -162,7 +163,21 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
         function(*args, **kwargs, unknown=None)
 
 
+@pytest.mark.parametrize(
+    "function", [control.time_response_plot, control.TimeResponseData.plot])
+def test_time_response_plot_kwargs(function):
+    # Create a system for testing
+    response = control.step_response(control.rss(4, 2, 2))
 
+    # Call the plotting function normally and make sure it works
+    function(response)
+
+    # Now add an unrecognized keyword and make sure there is an error
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
+        function(response, unknown=None)
+    
+    
 #
 # List of all unit tests that check for unrecognized keywords
 #
