@@ -26,7 +26,7 @@ NumPy and MATLAB can be found `here
 <https://docs.scipy.org/doc/numpy/user/numpy-for-matlab-users.html>`_.
 
 In terms of the python-control package more specifically, here are
-some thing to keep in mind:
+some things to keep in mind:
 
 * You must include commas in vectors.  So [1 2 3] must be [1, 2, 3].
 * Functions that return multiple arguments use tuples.  
@@ -56,7 +56,7 @@ they are not already present.
 .. note::
    Mixing packages from conda-forge and the default conda channel
    can sometimes cause problems with dependencies, so it is usually best to
-   instally NumPy, SciPy, and Matplotlib from conda-forge as well.)
+   instally NumPy, SciPy, and Matplotlib from conda-forge as well.
 
 To install using pip::
 

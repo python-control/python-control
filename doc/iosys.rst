@@ -250,7 +250,7 @@ will create a unity gain, negative feedback system::
 If a signal name appears in multiple outputs then that signal will be summed
 when it is interconnected.  Similarly, if a signal name appears in multiple
 inputs then all systems using that signal name will receive the same input.
-The :func:`~control.interconnect` function will generate an error if an signal
+The :func:`~control.interconnect` function will generate an error if a signal
 listed in ``inplist`` or ``outlist`` (corresponding to the inputs and outputs
 of the interconnected system) is not found, but inputs and outputs of
 individual systems that are not connected to other systems are left
@@ -403,7 +403,7 @@ The closed loop controller will include both the state feedback and
 the estimator.
 
 Integral action can be included using the `integral_action` keyword.
-The value of this keyword can either be an matrix (ndarray) or a
+The value of this keyword can either be a matrix (ndarray) or a
 function.  If a matrix :math:`C` is specified, the difference between
 the desired state and system state will be multiplied by this matrix
 and integrated.  The controller gain should then consist of a set of

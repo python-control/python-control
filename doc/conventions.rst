@@ -16,8 +16,8 @@ LTI system representation
 
 Linear time invariant (LTI) systems are represented in python-control in
 state space, transfer function, or frequency response data (FRD) form.  Most
-functions in the toolbox will operate on any of these data types and
-functions for converting between compatible types is provided.
+functions in the toolbox will operate on any of these data types, and
+functions for converting between compatible types are provided.
 
 State space systems
 -------------------
@@ -152,7 +152,7 @@ in the next section).
 
 The :func:`forced_response` system is the most general and allows by
 the zero initial state response to be simulated as well as the
-response from a non-zero intial condition.
+response from a non-zero initial condition.
 
 In addition the :func:`input_output_response` function, which handles
 simulation of nonlinear systems and interconnected systems, can be

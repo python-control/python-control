@@ -55,7 +55,7 @@ The docstring examples assume that the following import commands::
 Available subpackages
 ---------------------
 
-The main control package includes the most commpon functions used in
+The main control package includes the most common functions used in
 analysis, design, and simulation of feedback control systems.  Several
 additional subpackages are available that provide more specialized
 functionality:
