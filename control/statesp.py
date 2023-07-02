@@ -1495,7 +1495,8 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
             params=io_sys.params, remove_useless_states=False)
 
         # Use StateSpace.__call__ to evaluate at a given complex value
-        self.__call__ = StateSpace.__call__
+        def __call__(self, *args, **kwargs):
+            return StateSpace.__call__(self, *args, **kwargs)
 
     # The following text needs to be replicated from StateSpace in order for
     # this entry to show up properly in sphinx doccumentation (not sure why,

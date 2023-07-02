@@ -1561,6 +1561,13 @@ def test_linear_interconnection():
     assert isinstance(io_connect, ct.LinearICSystem)
     assert isinstance(io_connect, ct.StateSpace)
 
+    # Make sure call works properly
+    response = io_connect.frequency_response(1)
+    np.testing.assert_allclose(
+        response.fresp[:, :, 0], io_connect.C @ np.linalg.inv(
+            1j * np.eye(io_connect.nstates) - io_connect.A) @ io_connect.B + \
+            io_connect.D)
+
     # Finally compare the linearization with the linear system
     np.testing.assert_array_almost_equal(io_connect.A, ss_connect.A)
     np.testing.assert_array_almost_equal(io_connect.B, ss_connect.B)

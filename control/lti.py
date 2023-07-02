@@ -115,7 +115,7 @@ class LTI(InputOutputSystem):
 
         # Return the data as a frequency response data object
         from .frdata import FrequencyResponseData
-        response = self.__call__(s)
+        response = self(s)
         return FrequencyResponseData(
             response, omega, return_magphase=True, squeeze=squeeze)
 
@@ -365,7 +365,7 @@ def evalfr(sys, x, squeeze=None):
     .. todo:: Add example with MIMO system
 
     """
-    return sys.__call__(x, squeeze=squeeze)
+    return sys(x, squeeze=squeeze)
 
 
 def frequency_response(sys, omega, squeeze=None):
