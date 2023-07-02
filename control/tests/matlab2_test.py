@@ -15,7 +15,6 @@ import pytest
 import scipy.signal
 
 from control.matlab import ss, step, impulse, initial, lsim, dcgain, ss2tf
-from control.statesp import _mimo2siso
 from control.timeresp import _check_convert_array
 from control.tests.conftest import slycotonly
 
@@ -126,8 +125,7 @@ class TestControlMatlab:
 
         subplot2grid(plot_shape, (0, 1))
         T = linspace(0, 2, 100)
-        X0 = array([1, 1])
-        y, t = step(sys, T, X0)
+        y, t = step(sys, T)
         plot(t, y)
 
         # Test output of state vector
@@ -153,9 +151,8 @@ class TestControlMatlab:
 
         #supply time and X0
         T = linspace(0, 2, 100)
-        X0 = [0.2, 0.2]
-        t, y = impulse(sys, T, X0)
-        plot(t, y, label='t=0..2, X0=[0.2, 0.2]')
+        t, y = impulse(sys, T)
+        plot(t, y, label='t=0..2')
 
         #Test system with direct feed-though, the function should print a warning.
         D = [[0.5]]
@@ -364,10 +361,8 @@ class TestControlMatlab:
         #    t, y = step(sys_siso)
         #    plot(t, y, label='sys_siso d=0')
 
-        sys_siso_00 = _mimo2siso(sys_mimo, input=0, output=0,
-                                         warn_conversion=False)
-        sys_siso_11 = _mimo2siso(sys_mimo, input=1, output=1,
-                                         warn_conversion=False)
+        sys_siso_00 = sys_mimo[0, 0]
+        sys_siso_11 = sys_mimo[1, 1]
         #print("sys_siso_00 ---------------------------------------------")
         #print(sys_siso_00)
         #print("sys_siso_11 ---------------------------------------------")
@@ -409,10 +404,8 @@ class TestControlMatlab:
         sys_mimo = ss(Am, Bm, Cm, Dm)
 
 
-        sys_siso_01 = _mimo2siso(sys_mimo, input=0, output=1,
-                                         warn_conversion=False)
-        sys_siso_10 = _mimo2siso(sys_mimo, input=1, output=0,
-                                         warn_conversion=False)
+        sys_siso_01 = sys_mimo[0, 1]
+        sys_siso_10 = sys_mimo[1, 0]
         # print("sys_siso_01 ---------------------------------------------")
         # print(sys_siso_01)
         # print("sys_siso_10 ---------------------------------------------")

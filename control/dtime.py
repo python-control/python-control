@@ -96,8 +96,8 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
         if `copy_names` is `False`, a generic name <sys[id]> is generated
         with a unique integer id.  If `copy_names` is `True`, the new system
         name is determined by adding the prefix and suffix strings in
-        config.defaults['namedio.sampled_system_name_prefix'] and
-        config.defaults['namedio.sampled_system_name_suffix'], with the
+        config.defaults['iosys.sampled_system_name_prefix'] and
+        config.defaults['iosys.sampled_system_name_suffix'], with the
         default being to add the suffix '$sampled'.
     copy_names : bool, Optional
         If True, copy the names of the input signals, output

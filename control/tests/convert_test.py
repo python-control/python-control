@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 from control import rss, ss, ss2tf, tf, tf2ss
-from control.statesp import _mimo2siso
 from control.statefbk import ctrb, obsv
 from control.freqplot import bode
 from control.exception import slycot_check
@@ -96,7 +95,7 @@ class TestConvert:
                     print("Checking input %d, output %d"
                           % (inputNum, outputNum))
                 ssorig_mag, ssorig_phase, ssorig_omega = \
-                    bode(_mimo2siso(ssOriginal, inputNum, outputNum),
+                    bode(ssOriginal[outputNum, inputNum],
                          deg=False, plot=False)
                 ssorig_real = ssorig_mag * np.cos(ssorig_phase)
                 ssorig_imag = ssorig_mag * np.sin(ssorig_phase)
@@ -123,10 +122,8 @@ class TestConvert:
                 # Make sure xform'd SS has same frequency response
                 #
                 ssxfrm_mag, ssxfrm_phase, ssxfrm_omega = \
-                    bode(_mimo2siso(ssTransformed,
-                                    inputNum, outputNum),
-                         ssorig_omega,
-                         deg=False, plot=False)
+                    bode(ssTransformed[outputNum, inputNum],
+                         ssorig_omega, deg=False, plot=False)
                 ssxfrm_real = ssxfrm_mag * np.cos(ssxfrm_phase)
                 ssxfrm_imag = ssxfrm_mag * np.sin(ssxfrm_phase)
                 np.testing.assert_array_almost_equal(

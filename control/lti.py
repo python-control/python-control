@@ -9,92 +9,30 @@ import numpy as np
 from numpy import real, angle, abs
 from warnings import warn
 from . import config
-from .iosys import NamedIOSystem
+from .iosys import InputOutputSystem
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
-           'freqresp', 'dcgain', 'bandwidth', 'pole', 'zero']
+           'freqresp', 'dcgain', 'bandwidth']
 
 
-class LTI(NamedIOSystem):
+class LTI(InputOutputSystem):
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
     LTI is the parent to the StateSpace and TransferFunction child classes. It
     contains the number of inputs and outputs, and the timebase (dt) for the
     system.  This function is not generally called directly by the user.
 
-    The timebase for the system, dt, is used to specify whether the system
-    is operating in continuous or discrete time. It can have the following
-    values:
-
-      * dt = None       No timebase specified
-      * dt = 0          Continuous time system
-      * dt > 0          Discrete time system with sampling time dt
-      * dt = True       Discrete time system with unspecified sampling time
-
     When two LTI systems are combined, their timebases much match.  A system
     with timebase None can be combined with a system having a specified
     timebase, and the result will have the timebase of the latter system.
 
-    Note: dt processing has been moved to the NamedIOSystem class.
+    Note: dt processing has been moved to the InputOutputSystem class.
 
     """
-
     def __init__(self, inputs=1, outputs=1, states=None, name=None, **kwargs):
         """Assign the LTI object's numbers of inputs and ouputs."""
         super().__init__(
             name=name, inputs=inputs, outputs=outputs, states=states, **kwargs)
-
-    #
-    # Getter and setter functions for legacy state attributes
-    #
-    # For this iteration, generate a deprecation warning whenever the
-    # getter/setter is called.  For a future iteration, turn it into a
-    # future warning, so that users will see it.
-    #
-
-    def _get_inputs(self):
-        warn("The LTI `inputs` attribute will be deprecated in a future "
-             "release.  Use `ninputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        return self.ninputs
-
-    def _set_inputs(self, value):
-        warn("The LTI `inputs` attribute will be deprecated in a future "
-             "release.  Use `ninputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        self.ninputs = value
-
-    #: Deprecated
-    inputs = property(
-        _get_inputs, _set_inputs, doc="""
-        Deprecated attribute; use :attr:`ninputs` instead.
-
-        The ``inputs`` attribute was used to store the number of system
-        inputs.  It is no longer used.  If you need access to the number
-        of inputs for an LTI system, use :attr:`ninputs`.
-        """)
-
-    def _get_outputs(self):
-        warn("The LTI `outputs` attribute will be deprecated in a future "
-             "release.  Use `noutputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        return self.noutputs
-
-    def _set_outputs(self, value):
-        warn("The LTI `outputs` attribute will be deprecated in a future "
-             "release.  Use `noutputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        self.noutputs = value
-
-    #: Deprecated
-    outputs = property(
-        _get_outputs, _set_outputs, doc="""
-        Deprecated attribute; use :attr:`noutputs` instead.
-
-        The ``outputs`` attribute was used to store the number of system
-        outputs.  It is no longer used.  If you need access to the number of
-        outputs for an LTI system, use :attr:`noutputs`.
-        """)
 
     def damp(self):
         '''Natural frequency, damping ratio of system poles
@@ -177,7 +115,7 @@ class LTI(NamedIOSystem):
 
         # Return the data as a frequency response data object
         from .frdata import FrequencyResponseData
-        response = self.__call__(s)
+        response = self(s)
         return FrequencyResponseData(
             response, omega, return_magphase=True, squeeze=squeeze)
 
@@ -261,20 +199,6 @@ class LTI(NamedIOSystem):
         from control.passivity import ispassive
         return ispassive(self)
 
-    #
-    # Deprecated functions
-    #
-
-    def pole(self):
-        warn("pole() will be deprecated; use poles()",
-             PendingDeprecationWarning)
-        return self.poles()
-
-    def zero(self):
-        warn("zero() will be deprecated; use zeros()",
-             PendingDeprecationWarning)
-        return self.zeros()
-
 
 def poles(sys):
     """
@@ -301,11 +225,6 @@ def poles(sys):
     return sys.poles()
 
 
-def pole(sys):
-    warn("pole() will be deprecated; use poles()", PendingDeprecationWarning)
-    return poles(sys)
-
-
 def zeros(sys):
     """
     Compute system zeros.
@@ -329,11 +248,6 @@ def zeros(sys):
     """
 
     return sys.zeros()
-
-
-def zero(sys):
-    warn("zero() will be deprecated; use zeros()", PendingDeprecationWarning)
-    return zeros(sys)
 
 
 def damp(sys, doprint=True):
@@ -451,7 +365,7 @@ def evalfr(sys, x, squeeze=None):
     .. todo:: Add example with MIMO system
 
     """
-    return sys.__call__(x, squeeze=squeeze)
+    return sys(x, squeeze=squeeze)
 
 
 def frequency_response(sys, omega, squeeze=None):

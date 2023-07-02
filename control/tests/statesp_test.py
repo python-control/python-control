@@ -19,13 +19,10 @@ from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
-    _statesp_defaults, _rss_generate, linfnorm
-from control.statesp import ss, rss, drss
-from control.tests.conftest import slycotonly
+    _statesp_defaults, _rss_generate, linfnorm, ss, rss, drss
 from control.xferfcn import TransferFunction, ss2tf
 
-
-from .conftest import editsdefaults
+from .conftest import editsdefaults, slycotonly
 
 
 class TestStateSpace:
@@ -49,7 +46,7 @@ class TestStateSpace:
     @pytest.fixture
     def sys322(self, sys322ABCD):
         """3-states square system (2 inputs x 2 outputs)"""
-        return StateSpace(*sys322ABCD)
+        return StateSpace(*sys322ABCD, name='sys322')
 
     @pytest.fixture
     def sys121(self):
@@ -727,7 +724,12 @@ class TestStateSpace:
     def test_str(self, sys322):
         """Test that printing the system works"""
         tsys = sys322
-        tref = ("A = [[-3.  4.  2.]\n"
+        tref = ("<StateSpace>: sys322\n"
+                "Inputs (2): ['u[0]', 'u[1]']\n"
+                "Outputs (2): ['y[0]', 'y[1]']\n"
+                "States (3): ['x[0]', 'x[1]', 'x[2]']\n"
+                "\n"
+                "A = [[-3.  4.  2.]\n"
                 "     [-1. -3.  0.]\n"
                 "     [ 2.  5.  3.]]\n"
                 "\n"
@@ -741,9 +743,11 @@ class TestStateSpace:
                 "D = [[-2.  4.]\n"
                 "     [ 0.  1.]]\n")
         assert str(tsys) == tref
-        tsysdtunspec = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, True)
+        tsysdtunspec = StateSpace(
+            tsys.A, tsys.B, tsys.C, tsys.D, True, name=tsys.name)
         assert str(tsysdtunspec) == tref + "\ndt = True\n"
-        sysdt1 = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, 1.)
+        sysdt1 = StateSpace(
+            tsys.A, tsys.B, tsys.C, tsys.D, 1., name=tsys.name)
         assert str(sysdt1) == tref + "\ndt = {}\n".format(1.)
 
     def test_pole_static(self):

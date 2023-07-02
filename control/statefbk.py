@@ -46,11 +46,10 @@ import warnings
 
 from . import statesp
 from .mateqn import care, dare, _check_shape
-from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
+from .statesp import StateSpace, _ssmatrix, _convert_to_statespace, ss
 from .lti import LTI
 from .iosys import isdtime, isctime, _process_indices, _process_labels
-from .nlsys import InputOutputSystem, NonlinearIOSystem, interconnect
-from .statesp import LinearIOSystem, ss
+from .nlsys import NonlinearIOSystem, interconnect
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
 from .config import _process_legacy_keyword
@@ -610,7 +609,7 @@ def create_statefbk_iosystem(
 
     Parameters
     ----------
-    sys : InputOutputSystem
+    sys : NonlinearIOSystem
         The I/O system that represents the process dynamics.  If no estimator
         is given, the output of this system should represent the full state.
 
@@ -644,7 +643,7 @@ def create_statefbk_iosystem(
         multiplied by the current and desired state to generate the error
         for the internal integrator states of the control law.
 
-    estimator : InputOutputSystem, optional
+    estimator : NonlinearIOSystem, optional
         If an estimator is provided, use the states of the estimator as
         the system inputs for the controller.
 
@@ -676,7 +675,7 @@ def create_statefbk_iosystem(
 
     Returns
     -------
-    ctrl : InputOutputSystem
+    ctrl : NonlinearIOSystem
         Input/output system representing the controller.  This system
         takes as inputs the desired state `xd`, the desired input
         `ud`, and either the system state `x` or the estimated state
@@ -689,7 +688,7 @@ def create_statefbk_iosystem(
         (proportional and integral) are evaluated using the scheduling
         variables specified by `gainsched_indices`.
 
-    clsys : InputOutputSystem
+    clsys : NonlinearIOSystem
         Input/output system representing the closed loop system.  This
         systems takes as inputs the desired trajectory `(xd, ud)` and
         outputs the system state `x` and the applied input `u`
@@ -724,7 +723,7 @@ def create_statefbk_iosystem(
 
     """
     # Make sure that we were passed an I/O system as an input
-    if not isinstance(sys, InputOutputSystem):
+    if not isinstance(sys, NonlinearIOSystem):
         raise ControlArgument("Input system must be I/O system")
 
     # Process (legacy) keywords
@@ -755,7 +754,8 @@ def create_statefbk_iosystem(
             " output must include the full state")
     elif estimator == sys:
         # Issue a warning if we can't verify state output
-        if (isinstance(sys, NonlinearIOSystem) and sys.outfcn is not None) or \
+        if (isinstance(sys, NonlinearIOSystem) and
+            not isinstance(sys, StateSpace) and sys.outfcn is not None) or \
            (isinstance(sys, StateSpace) and
             not (np.all(sys.C[np.ix_(state_indices, state_indices)] ==
                         np.eye(sys_nstates)) and

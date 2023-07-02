@@ -65,7 +65,7 @@ def test_interconnect_implicit(dim):
         pytest.xfail("slycot not installed")
 
     # System definition
-    P = ct.ss2io(ct.rss(2, dim, dim, strictly_proper=True), name='P')
+    P = ct.rss(2, dim, dim, strictly_proper=True, name='P')
 
     # Controller defintion: PI in each input/output pair
     kp = ct.tf(np.ones((dim, dim, 1)), np.ones((dim, dim, 1))) \
@@ -76,14 +76,14 @@ def test_interconnect_implicit(dim):
         num[i, j] = ki
         den[i, j] = np.array([1, 0])
     ki = ct.tf(num, den)
-    C = ct.tf2io(kp + ki, name='C',
-                 inputs=[f'e[{i}]' for i in range(dim)],
-                 outputs=[f'u[{i}]' for i in range(dim)])
+    C = ct.tf(kp + ki, name='C',
+              inputs=[f'e[{i}]' for i in range(dim)],
+              outputs=[f'u[{i}]' for i in range(dim)])
 
     # same but static C2
-    C2 = ct.tf2io(kp * random.uniform(1, 10), name='C2',
-        inputs=[f'e[{i}]' for i in range(dim)],
-        outputs=[f'u[{i}]' for i in range(dim)])
+    C2 = ct.tf(kp * random.uniform(1, 10), name='C2',
+               inputs=[f'e[{i}]' for i in range(dim)],
+               outputs=[f'u[{i}]' for i in range(dim)])
 
     # Block diagram computation
     Tss = ct.feedback(P * C, np.eye(dim))
@@ -127,10 +127,10 @@ def test_interconnect_implicit(dim):
     np.testing.assert_allclose(empty.connect_map, np.zeros((4*dim, 3*dim)))
 
     # Implicit summation across repeated signals (using updated labels)
-    kp_io = ct.tf2io(
+    kp_io = ct.tf(
         kp, inputs=dim, input_prefix='e',
         outputs=dim, output_prefix='u', name='kp')
-    ki_io = ct.tf2io(
+    ki_io = ct.tf(
         ki, inputs=dim, input_prefix='e',
         outputs=dim, output_prefix='u', name='ki')
     Tio_sum = ct.interconnect(
@@ -170,9 +170,9 @@ def test_interconnect_docstring():
     """Test the examples from the interconnect() docstring"""
 
     # MIMO interconnection (note: use [C, P] instead of [P, C] for state order)
-    P = ct.LinearIOSystem(
+    P = ct.StateSpace(
            ct.rss(2, 2, 2, strictly_proper=True), name='P')
-    C = ct.LinearIOSystem(ct.rss(2, 2, 2), name='C')
+    C = ct.StateSpace(ct.rss(2, 2, 2), name='C')
     T = ct.interconnect(
         [C, P],
         connections = [
@@ -188,29 +188,32 @@ def test_interconnect_docstring():
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
     # Implicit interconnection (note: use [C, P, sumblk] for proper state order)
-    P = ct.tf2io(ct.tf(1, [1, 0]), inputs='u', outputs='y')
-    C = ct.tf2io(ct.tf(10, [1, 1]), inputs='e', outputs='u')
+    P = ct.tf(1, [1, 0], inputs='u', outputs='y')
+    C = ct.tf(10, [1, 1], inputs='e', outputs='u')
     sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
     T = ct.interconnect([C, P, sumblk], inplist='r', outlist='y')
-    T_ss = ct.feedback(P * C, 1)
-    np.testing.assert_almost_equal(T.A, T_ss.A)
-    np.testing.assert_almost_equal(T.B, T_ss.B)
-    np.testing.assert_almost_equal(T.C, T_ss.C)
+    T_ss = ct.ss(ct.feedback(P * C, 1))
+
+    # Test in a manner that recognizes that recognizes non-unique realization
+    np.testing.assert_almost_equal(
+        np.sort(np.linalg.eig(T.A)[0]), np.sort(np.linalg.eig(T_ss.A)[0]))
+    np.testing.assert_almost_equal(T.C @ T.B, T_ss.C @ T_ss.B)
+    np.testing.assert_almost_equal(T.C @ T. A @ T.B, T_ss.C @ T_ss.A @ T_ss.B)
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
 
 def test_interconnect_exceptions():
     # First make sure the docstring example works
-    P = ct.tf2io(ct.tf(1, [1, 0]), input='u', output='y')
-    C = ct.tf2io(ct.tf(10, [1, 1]), input='e', output='u')
+    P = ct.tf(1, [1, 0], input='u', output='y')
+    C = ct.tf(10, [1, 1], input='e', output='u')
     sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
     T = ct.interconnect((P, C, sumblk), input='r', output='y')
     assert (T.ninputs, T.noutputs, T.nstates) == (1, 1, 2)
 
     # Unrecognized arguments
-    # LinearIOSystem
+    # StateSpace
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        P = ct.LinearIOSystem(ct.rss(2, 1, 1), output_name='y')
+        P = ct.StateSpace(ct.rss(2, 1, 1), output_name='y')
 
     # Interconnect
     with pytest.raises(TypeError, match="unrecognized keyword"):
@@ -236,9 +239,9 @@ def test_interconnect_exceptions():
 def test_string_inputoutput():
     # regression test for gh-692
     P1 = ct.rss(2, 1, 1)
-    P1_iosys = ct.LinearIOSystem(P1, inputs='u1', outputs='y1')
+    P1_iosys = ct.StateSpace(P1, inputs='u1', outputs='y1')
     P2 = ct.rss(2, 1, 1)
-    P2_iosys = ct.LinearIOSystem(P2, inputs='y1', outputs='y2')
+    P2_iosys = ct.StateSpace(P2, inputs='y1', outputs='y2')
 
     P_s1 = ct.interconnect(
         [P1_iosys, P2_iosys], inputs='u1', outputs=['y2'], debug=True)
@@ -274,30 +277,30 @@ def test_linear_interconnect():
     # Interconnections of linear I/O systems should be linear I/O system
     assert isinstance(
         ct.interconnect([tf_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert isinstance(
         ct.interconnect([ss_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert isinstance(
         ct.interconnect([tf_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert isinstance(
         ct.interconnect([ss_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
 
     # Interconnections with nonliner I/O systems should not be linear
     assert ~isinstance(
         ct.interconnect([nl_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert ~isinstance(
         ct.interconnect([nl_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert ~isinstance(
         ct.interconnect([ss_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
     assert ~isinstance(
         ct.interconnect([tf_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
-        ct.LinearIOSystem)
+        ct.StateSpace)
 
     # Implicit converstion of transfer function should retain name
     clsys = ct.interconnect(

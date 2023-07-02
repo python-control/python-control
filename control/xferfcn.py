@@ -60,7 +60,8 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, _process_frequency_response
-from .iosys import common_timebase, isdtime, _process_namedio_keywords
+from .iosys import InputOutputSystem, common_timebase, isdtime, \
+    _process_iosys_keywords
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from . import config
@@ -73,11 +74,6 @@ _xferfcn_defaults = {
     'xferfcn.display_format': 'poly',
     'xferfcn.floating_point_format': '.4g'
 }
-
-
-def _float2str(value):
-    _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
-    return f"{value:{_num_format}}"
 
 
 class TransferFunction(LTI):
@@ -157,10 +153,6 @@ class TransferFunction(LTI):
     >>> G = (s + 1)/(s**2 + 2*s + 1)
 
     """
-
-    # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
-    __array_priority__ = 11     # override ndarray and matrix types
-
     def __init__(self, *args, **kwargs):
         """TransferFunction(num, den[, dt])
 
@@ -178,6 +170,7 @@ class TransferFunction(LTI):
         #
         # Process positional arguments
         #
+
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             num, den = args
@@ -232,15 +225,15 @@ class TransferFunction(LTI):
         defaults = args[0] if len(args) == 1 else \
             {'inputs': len(num[0]), 'outputs': len(num)}
 
-        name, inputs, outputs, states, dt = _process_namedio_keywords(
-                kwargs, defaults, static=static, end=True)
+        name, inputs, outputs, states, dt = _process_iosys_keywords(
+                kwargs, defaults, static=static)
         if states:
             raise TypeError(
                 "states keyword not allowed for transfer functions")
 
-        # Initialize LTI (NamedIOSystem) object
+        # Initialize LTI (InputOutputSystem) object
         super().__init__(
-            name=name, inputs=inputs, outputs=outputs, dt=dt)
+            name=name, inputs=inputs, outputs=outputs, dt=dt, **kwargs)
 
         #
         # Check to make sure everything is consistent
@@ -463,7 +456,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
-        outstr = ""
+        outstr = f"{InputOutputSystem.__str__(self)}\n"
 
         for ni in range(self.ninputs):
             for no in range(self.noutputs):
@@ -518,8 +511,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
 
         if var is None:
-            # ! TODO: replace with standard calls to lti functions
-            var = 's' if self.dt is None or self.dt == 0 else 'z'
+            var = 's' if self.isctime() else 'z'
 
         out = ['$$']
 
@@ -562,30 +554,25 @@ class TransferFunction(LTI):
 
     def __neg__(self):
         """Negate a transfer function."""
-
         num = deepcopy(self.num)
         for i in range(self.noutputs):
             for j in range(self.ninputs):
                 num[i][j] *= -1
-
         return TransferFunction(num, self.den, self.dt)
 
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
         from .statesp import StateSpace
 
-        # Check to see if the right operator has priority
-        if getattr(other, '__array_priority__', None) and \
-           getattr(self, '__array_priority__', None) and \
-           other.__array_priority__ > self.__array_priority__:
-            return other.__radd__(self)
-
         # Convert the second argument to a transfer function.
         if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
-        elif not isinstance(other, TransferFunction):
+        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
             other = _convert_to_transfer_function(other, inputs=self.ninputs,
                                                   outputs=self.noutputs)
+
+        if not isinstance(other, TransferFunction):
+            return NotImplemented
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
@@ -625,18 +612,16 @@ class TransferFunction(LTI):
 
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
-        # Check to see if the right operator has priority
-        if getattr(other, '__array_priority__', None) and \
-           getattr(self, '__array_priority__', None) and \
-           other.__array_priority__ > self.__array_priority__:
-            return other.__rmul__(self)
+        from .statesp import StateSpace
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(other, inputs=self.ninputs,
-                                                  outputs=self.ninputs)
-        else:
+        if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
+        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
+            other = _convert_to_transfer_function(other, inputs=self.ninputs,
+                                                  outputs=self.noutputs)
+        if not isinstance(other, TransferFunction):
+            return NotImplemented
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.noutputs:
@@ -806,8 +791,8 @@ class TransferFunction(LTI):
         inputs = [self.input_labels[j] for j in range(start2, stop2, step2)]
 
         # Create the system name
-        sysname = config.defaults['namedio.indexed_system_name_prefix'] + \
-            self.name + config.defaults['namedio.indexed_system_name_suffix']
+        sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
+            self.name + config.defaults['iosys.indexed_system_name_suffix']
 
         return TransferFunction(
             num, den, self.dt, inputs=inputs, outputs=outputs, name=sysname)
@@ -1158,8 +1143,8 @@ class TransferFunction(LTI):
             if `copy_names` is `False`, a generic name <sys[id]> is generated
             with a unique integer id.  If `copy_names` is `True`, the new system
             name is determined by adding the prefix and suffix strings in
-            config.defaults['namedio.sampled_system_name_prefix'] and
-            config.defaults['namedio.sampled_system_name_suffix'], with the
+            config.defaults['iosys.sampled_system_name_prefix'] and
+            config.defaults['iosys.sampled_system_name_suffix'], with the
             default being to add the suffix '$sampled'.
         copy_names : bool, Optional
             If True, copy the names of the input signals, output
@@ -1904,5 +1889,10 @@ def _clean_part(data):
 
 
 # Define constants to represent differentiation, unit delay
-TransferFunction.s = TransferFunction([1, 0], [1], 0)
-TransferFunction.z = TransferFunction([1, 0], [1], True)
+TransferFunction.s = TransferFunction([1, 0], [1], 0, name='s')
+TransferFunction.z = TransferFunction([1, 0], [1], True, name='z')
+
+
+def _float2str(value):
+    _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
+    return f"{value:{_num_format}}"

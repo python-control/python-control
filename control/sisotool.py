@@ -5,7 +5,7 @@ from .freqplot import bode_plot
 from .timeresp import step_response
 from .iosys import common_timebase, isctime, isdtime
 from .xferfcn import tf
-from .statesp import ss, tf2io, summing_junction
+from .statesp import ss, summing_junction
 from .bdalg import append, connect
 from .nlsys import interconnect
 from control.statesp import _convert_to_statespace
@@ -331,26 +331,22 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         u_summer = summing_junction(['ufb', 'uff', 'd'], 'u')
 
     if isctime(plant):
-        prop  = tf(1, 1)
-        integ = tf(1, [1, 0])
-        deriv = tf([1, 0], [tau, 1])
+        prop  = tf(1, 1, inputs='e', outputs='prop_e')
+        integ = tf(1, [1, 0], inputs='e', outputs='int_e')
+        deriv = tf([1, 0], [tau, 1], inputs='y', outputs='deriv')
     else: # discrete-time
-        prop  = tf(1, 1, dt)
-        integ = tf([dt/2, dt/2], [1, -1], dt)
-        deriv = tf([1, -1], [dt, 0], dt)
+        prop  = tf(1, 1, dt, inputs='e', outputs='prop_e')
+        integ = tf([dt/2, dt/2], [1, -1], dt, inputs='e', outputs='int_e')
+        deriv = tf([1, -1], [dt, 0], dt, inputs='y', outputs='deriv')
 
-    # add signal names by turning into iosystems
-    prop  = tf2io(prop,        inputs='e', outputs='prop_e')
-    integ = tf2io(integ,       inputs='e', outputs='int_e')
     if derivative_in_feedback_path:
-        deriv = tf2io(-deriv,  inputs='y', outputs='deriv')
-    else:
-        deriv = tf2io(deriv,   inputs='e', outputs='deriv')
+        deriv = -deriv
+        deriv.input_labels = 'e'
 
     # create gain blocks
-    Kpgain = tf2io(tf(Kp0, 1),            inputs='prop_e',  outputs='ufb')
-    Kigain = tf2io(tf(Ki0, 1),            inputs='int_e',   outputs='ufb')
-    Kdgain = tf2io(tf(Kd0, 1),            inputs='deriv',  outputs='ufb')
+    Kpgain = tf(Kp0, 1, inputs='prop_e', outputs='ufb')
+    Kigain = tf(Ki0, 1, inputs='int_e', outputs='ufb')
+    Kdgain = tf(Kd0, 1, inputs='deriv', outputs='ufb')
 
     # for the gain that is varied, replace gain block with a special block
     # that has an 'input' and an 'output' that creates loop transfer function

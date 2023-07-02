@@ -254,12 +254,11 @@ class TestConfig:
         assert isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray)
         assert not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix)
 
-        # test that old versions don't raise a problem
-        ct.use_legacy_defaults('REL-0.1')
-        ct.use_legacy_defaults('control-0.3a')
-        ct.use_legacy_defaults('0.6c')
-        ct.use_legacy_defaults('0.8.2')
-        ct.use_legacy_defaults('0.1')
+        # test that old versions don't raise a problem (besides Numpy warning)
+        for ver in ['REL-0.1', 'control-0.3a', '0.6c', '0.8.2', '0.1']:
+            with pytest.warns(
+                    UserWarning, match="NumPy matrix class no longer"):
+                ct.use_legacy_defaults(ver)
 
         # Make sure that nonsense versions generate an error
         with pytest.raises(ValueError):
@@ -273,7 +272,7 @@ class TestConfig:
         ct.set_defaults('control', default_dt=dt)
         assert ct.ss(1, 0, 0, 1).dt == dt
         assert ct.tf(1, [1, 1]).dt == dt
-        nlsys = ct.nlsys.NonlinearIOSystem(
+        nlsys = ct.NonlinearIOSystem(
             lambda t, x, u: u * x * x,
             lambda t, x, u: x, inputs=1, outputs=1)
         assert nlsys.dt == dt
@@ -283,11 +282,6 @@ class TestConfig:
         ct.set_defaults('control', default_dt=0)
         assert ct.tf(1, 1).dt is None
         assert ct.ss([], [], [], 1).dt is None
-
-        # Make sure static gain is preserved for the I/O system
-        sys = ct.ss([], [], [], 1)
-        sys_io = ct.ss2io(sys)
-        assert sys_io.dt is None
 
     def test_get_param_last(self):
         """Test _get_param last keyword"""
@@ -310,7 +304,7 @@ class TestConfig:
 
         # Reset the format
         ct.config.set_defaults(
-            'namedio', indexed_system_name_prefix='PRE',
+            'iosys', indexed_system_name_prefix='PRE',
             indexed_system_name_suffix='POST')
         sys2 = sys[1:, 1:]
         assert sys2.name == 'PRE' + sys.name + 'POST'

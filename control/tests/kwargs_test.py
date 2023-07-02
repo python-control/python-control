@@ -70,7 +70,11 @@ def test_kwarg_search(module, prefix):
                 source = inspect.getsource(kwarg_unittest[prefix + name])
 
             # Make sure the unit test looks for unrecognized keyword
-            if source and source.find('unrecognized keyword') < 0:
+            if kwarg_unittest[prefix + name] == test_unrecognized_kwargs:
+                # @parametrize messes up the check, but we know it is there
+                pass
+
+            elif source and source.find('unrecognized keyword') < 0:
                 warnings.warn(
                     f"'unrecognized keyword' not found in unit test "
                     f"for {name}")
@@ -81,10 +85,12 @@ def test_kwarg_search(module, prefix):
     [(control.dlqe, 1, 0, ([[1]], [[1]]), {}),
      (control.dlqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.drss, 0, 0, (2, 1, 1), {}),
+     (control.flatsys.flatsys, 1, 0, (), {}),
      (control.input_output_response, 1, 0, ([0, 1, 2], [1, 1, 1]), {}),
      (control.lqe, 1, 0, ([[1]], [[1]]), {}),
      (control.lqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.linearize, 1, 0, (0, 0), {}),
+     (control.nlsys, 0, 0, (lambda t, x, u, params: np.array([0]),), {}),
      (control.pzmap, 1, 0, (), {}),
      (control.rlocus, 0, 1, (), {}),
      (control.root_locus, 0, 1, (), {}),
@@ -98,10 +104,13 @@ def test_kwarg_search(module, prefix):
      (control.tf2io, 0, 1, (), {}),
      (control.tf2ss, 0, 1, (), {}),
      (control.zpk, 0, 0, ([1], [2, 3], 4), {}),
+     (control.flatsys.FlatSystem, 0, 0,
+      (lambda x, u, params: None, lambda zflag, params: None), {}),
      (control.InputOutputSystem, 0, 0, (),
       {'inputs': 1, 'outputs': 1, 'states': 1}),
-     (control.InputOutputSystem.linearize, 1, 0, (0, 0), {}),
-     (control.LinearIOSystem.sample, 1, 0, (0.1,), {}),
+     (control.flatsys.LinearFlatSystem, 1, 0, (), {}),
+     (control.NonlinearIOSystem.linearize, 1, 0, (0, 0), {}),
+     (control.StateSpace.sample, 1, 0, (0.1,), {}),
      (control.StateSpace, 0, 0,
       ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
      (control.TransferFunction, 0, 0, ([1], [1, 1]), {})]
@@ -115,11 +124,15 @@ def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
     args = (sssys, )*nsssys + (tfsys, )*ntfsys + moreargs
 
     # Call the function normally and make sure it works
-    function(*args, **kwargs)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")     # catch any warnings elsewhere
+        function(*args, **kwargs)
 
     # Now add an unrecognized keyword and make sure there is an error
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        function(*args, **kwargs, unknown=None)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")     # catch any warnings elsewhere
+            function(*args, **kwargs, unknown=None)
 
 
 @pytest.mark.parametrize(
@@ -167,6 +180,7 @@ kwarg_unittest = {
     'dlqe': test_unrecognized_kwargs,
     'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
+    'flatsys.flatsys': test_unrecognized_kwargs,
     'gangof4': test_matplotlib_kwargs,
     'gangof4_plot': test_matplotlib_kwargs,
     'input_output_response': test_unrecognized_kwargs,
@@ -174,6 +188,7 @@ kwarg_unittest = {
     'linearize': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
     'lqr': test_unrecognized_kwargs,
+    'nlsys': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
     'pzmap': test_unrecognized_kwargs,
@@ -199,15 +214,17 @@ kwarg_unittest = {
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
     'optimal.solve_oep': optimal_test.test_oep_argument_errors,
+    'flatsys.FlatSystem.__init__': test_unrecognized_kwargs,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
-    'InputOutputSystem.linearize': test_unrecognized_kwargs,
+    'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
+    'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
-    'LinearIOSystem.__init__':
+    'StateSpace.__init__':
         interconnect_test.test_interconnect_exceptions,
-    'LinearIOSystem.sample': test_unrecognized_kwargs,
+    'StateSpace.sample': test_unrecognized_kwargs,
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
@@ -239,8 +256,8 @@ kwarg_unittest = {
 mutable_ok = {                                          # initial and date
     control.flatsys.SystemTrajectory.__init__,          # RMM, 18 Nov 2022
     control.freqplot._add_arrows_to_line2D,             # RMM, 18 Nov 2022
-    control.iosys._process_dt_keyword,                # RMM, 13 Nov 2022
-    control.iosys._process_namedio_keywords,          # RMM, 18 Nov 2022
+    control.iosys._process_dt_keyword,                  # RMM, 13 Nov 2022
+    control.iosys._process_iosys_keywords,              # RMM, 18 Nov 2022
 }
 
 @pytest.mark.parametrize("module", [control, control.flatsys])

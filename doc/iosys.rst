@@ -26,12 +26,12 @@ a :class:`~control.StateSpace` linear system.  Use the
 
 Input/output systems are automatically created for state space LTI systems
 when using the :func:`ss` function.  Nonlinear input/output systems can be
-created using the :class:`~control.NonlinearIOSystem` class, which requires
+created using the :func:`~control.nlsys` function, which requires
 the definition of an update function (for the right hand side of the
 differential or different equation) and an output function (computes the
 outputs from the state)::
 
-  io_sys = NonlinearIOSystem(updfcn, outfcn, inputs=M, outputs=P, states=N)
+  io_sys = ct.nlsys(updfcn, outfcn, inputs=M, outputs=P, states=N)
 
 More complex input/output systems can be constructed by using the
 :func:`~control.interconnect` function, which allows a collection of
@@ -92,7 +92,7 @@ We now create an input/output system using these dynamics:
 
 .. code-block:: python
 
-  io_predprey = ct.NonlinearIOSystem(
+  io_predprey = ct.nlsys(
       predprey_rhs, None, inputs=('u'), outputs=('H', 'L'),
       states=('H', 'L'), name='predprey')
 
@@ -141,11 +141,11 @@ lynxes as the desired output (following FBS2e, Example 7.5):
 To construct the control law, we build a simple input/output system that
 applies a corrective input based on deviations from the equilibrium point.
 This system has no dynamics, since it is a static (affine) map, and can
-constructed using the `~control.ios.NonlinearIOSystem` class:
+constructed using :func:`~control.nlsys` with no update function:
 
 .. code-block:: python
 
-  io_controller = ct.NonlinearIOSystem(
+  io_controller = ct.nlsys(
     None,
     lambda t, x, u, params: -K @ (u[1:] - xeq) + kf * (u[0] - xeq[1]),
     inputs=('Ld', 'u1', 'u2'), outputs=1, name='control')
@@ -153,9 +153,8 @@ constructed using the `~control.ios.NonlinearIOSystem` class:
 The input to the controller is `u`, consisting of the vector of hare and lynx
 populations followed by the desired lynx population.
 
-To connect the controller to the predatory-prey model, we create an
-:class:`~control.InterconnectedSystem` using the :func:`~control.interconnect`
-function:
+To connect the controller to the predatory-prey model, we use the
+:func:`~control.interconnect` function:
 
 .. code-block:: python
 
@@ -243,8 +242,8 @@ interconnecting systems, especially when combined with the
 :func:`~control.summing_junction` function.  For example, the following code
 will create a unity gain, negative feedback system::
 
-  P = ct.tf2io([1], [1, 0], inputs='u', outputs='y')
-  C = ct.tf2io([10], [1, 1], inputs='e', outputs='u')
+  P = ct.tf([1], [1, 0], inputs='u', outputs='y')
+  C = ct.tf([10], [1, 1], inputs='e', outputs='u')
   sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
   T = ct.interconnect([P, C, sumblk], inplist='r', outlist='y')
 
@@ -465,16 +464,14 @@ Module classes and functions
    ~control.InputOutputSystem
    ~control.InterconnectedSystem
    ~control.LinearICSystem
-   ~control.LinearIOSystem
    ~control.NonlinearIOSystem
 
 .. autosummary::
    :toctree: generated/
 
    ~control.find_eqpt
-   ~control.linearize
-   ~control.input_output_response
    ~control.interconnect
-   ~control.ss2io
+   ~control.input_output_response
+   ~control.linearize
+   ~control.nlsys
    ~control.summing_junction
-   ~control.tf2io

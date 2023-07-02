@@ -14,11 +14,13 @@ user should normally not need to instantiate these directly.
    :toctree: generated/
    :template: custom-class-template.rst
 
+   InputOutputSystem
    StateSpace
    TransferFunction
-   InputOutputSystem
    FrequencyResponseData
-   TimeResponseData
+   NonlinearIOSystem
+   InterconnectedSystem
+   LinearICSystem
 
 The following figure illustrates the relationship between the classes and
 some of the functions that can be used to convert objects from one class to
@@ -26,23 +28,6 @@ another:
 
 .. image:: classes.pdf
   :width: 800
-
-|
-	
-Input/output system subclasses
-==============================
-Input/output systems are accessed primarily via a set of subclasses
-that allow for linear, nonlinear, and interconnected elements:
-
-.. autosummary::
-   :template: custom-class-template.rst
-   :nosignatures:
-
-   InputOutputSystem
-   InterconnectedSystem
-   LinearICSystem
-   LinearIOSystem
-   NonlinearIOSystem
 
 Additional classes
 ==================

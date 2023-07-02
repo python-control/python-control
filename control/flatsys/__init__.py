@@ -66,7 +66,7 @@ from .bspline import BSplineFamily
 
 # Classes
 from .systraj import SystemTrajectory
-from .flatsys import FlatSystem
+from .flatsys import FlatSystem, flatsys
 from .linflat import LinearFlatSystem
 
 # Package functions
