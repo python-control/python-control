@@ -48,7 +48,6 @@ def time_response_plot(
         data, *fmt, ax=None, plot_inputs=None, plot_outputs=True,
         transpose=False, overlay_traces=False, overlay_signals=False,
         legend_map=None, legend_loc=None, add_initial_zero=True,
-        input_props=None, output_props=None, trace_props=None,
         trace_labels=None, title=None, relabel=True, **kwargs):
     """Plot the time response of an input/output system.
 
@@ -162,19 +161,19 @@ def time_response_plot(
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
 
-    if input_props and len(fmt) > 0:
+    if kwargs.get('input_props', None) and len(fmt) > 0:
         warn("input_props ignored since fmt string was present")
     input_props = config._get_param(
         'timeplot', 'input_props', kwargs, _timeplot_defaults, pop=True)
     iprop_len = len(input_props)
 
-    if output_props and len(fmt) > 0:
+    if kwargs.get('output_props', None) and len(fmt) > 0:
         warn("output_props ignored since fmt string was present")
     output_props = config._get_param(
         'timeplot', 'output_props', kwargs, _timeplot_defaults, pop=True)
     oprop_len = len(output_props)
 
-    if trace_props and len(fmt) > 0:
+    if kwargs.get('trace_props', None) and len(fmt) > 0:
         warn("trace_props ignored since fmt string was present")
     trace_props = config._get_param(
         'timeplot', 'trace_props', kwargs, _timeplot_defaults, pop=True)
@@ -306,35 +305,33 @@ def time_response_plot(
     # Map inputs/outputs and traces to axes
     #
     # This set of code takes care of all of the various options for how to
-    # plot the data.  The arrays ax_outputs and ax_inputs are used to map
+    # plot the data.  The arrays output_map and input_map are used to map
     # the different signals that are plotted onto the axes created above.
     # This code is complicated because it has to handle lots of different
     # variations.
     #
 
     # Create the map from trace, signal to axes, accounting for overlay_*
-    ax_outputs = np.empty((noutputs, ntraces), dtype=object)
-    ax_inputs = np.empty((ninputs, ntraces), dtype=object)
+    output_map = np.empty((noutputs, ntraces), dtype=tuple)
+    input_map = np.empty((ninputs, ntraces), dtype=tuple)
 
     for i in range(noutputs):
         for j in range(ntraces):
             signal_index = i if not overlay_signals else 0
             trace_index = j if not overlay_traces else 0
             if transpose:
-                ax_outputs[i, j] = \
-                    ax_array[trace_index, signal_index + ninput_axes]
+                output_map[i, j] = (trace_index, signal_index + ninput_axes)
             else:
-                ax_outputs[i, j] = ax_array[signal_index, trace_index]
+                output_map[i, j] = (signal_index, trace_index)
 
     for i in range(ninputs):
         for j in range(ntraces):
             signal_index = noutput_axes + (i if not overlay_signals else 0)
             trace_index = j if not overlay_traces else 0
             if transpose:
-                ax_inputs[i, j] = \
-                    ax_array[trace_index, signal_index - noutput_axes]
+                input_map[i, j] = (trace_index, signal_index - noutput_axes)
             else:
-                ax_inputs[i, j] = ax_array[signal_index, trace_index]
+                input_map[i, j] = (signal_index, trace_index)
 
     #
     # Plot the data
@@ -361,7 +358,10 @@ def time_response_plot(
         inputs = data.u.reshape(data.ninputs, ntraces, -1)
 
     # Create a list of lines for the output
-    out = np.empty((noutputs + ninputs, ntraces), dtype=object)
+    out = np.empty((nrows, ncols), dtype=object)
+    for i in range(nrows):
+        for j in range(ncols):
+            out[i, j] = []      # unique list in each element
 
     # Utility function for creating line label
     def _make_line_label(signal_index, signal_labels, trace_index):
@@ -402,7 +402,7 @@ def time_response_plot(
             else:
                 line_props = kwargs
 
-            out[i, trace] = ax_outputs[i, trace].plot(
+            out[output_map[i, trace]] += ax_array[output_map[i, trace]].plot(
                 data.time, outputs[i][trace], *fmt, label=label, **line_props)
 
         # Plot the input
@@ -425,7 +425,7 @@ def time_response_plot(
             else:
                 line_props = kwargs
 
-            out[noutputs + i, trace] = ax_inputs[i, trace].plot(
+            out[input_map[i, trace]] += ax_array[input_map[i, trace]].plot(
                 x, y, *fmt, label=label, **line_props)
 
     # Stop here if the user wants to control everything
@@ -457,23 +457,23 @@ def time_response_plot(
         if overlay_signals and plot_inputs:
             label = overlaid_title if overlaid else "Inputs"
             for trace in range(ntraces):
-                ax_inputs[0, trace].set_ylabel(label)
+                ax_array[input_map[0, trace]].set_ylabel(label)
         else:
             for i in range(ninputs):
                 label = overlaid_title if overlaid else data.input_labels[i]
                 for trace in range(ntraces):
-                    ax_inputs[i, trace].set_ylabel(label)
+                    ax_array[input_map[i, trace]].set_ylabel(label)
 
         # Label the outputs
         if overlay_signals and plot_outputs:
             label = overlaid_title if overlaid else "Outputs"
             for trace in range(ntraces):
-                ax_outputs[0, trace].set_ylabel(label)
+                ax_array[output_map[0, trace]].set_ylabel(label)
         else:
             for i in range(noutputs):
                 label = overlaid_title if overlaid else data.output_labels[i]
                 for trace in range(ntraces):
-                    ax_outputs[i, trace].set_ylabel(label)
+                    ax_array[output_map[i, trace]].set_ylabel(label)
 
         # Set the trace titles, if needed
         if ntraces > 1 and not overlay_traces:
@@ -507,20 +507,20 @@ def time_response_plot(
 
         # Label the outputs
         if overlay_signals and plot_outputs:
-            ax_outputs[0, 0].set_ylabel("Outputs")
+            ax_array[output_map[0, 0]].set_ylabel("Outputs")
         else:
             for i in range(noutputs):
-                ax_outputs[i, 0].set_ylabel(
+                ax_array[output_map[i, 0]].set_ylabel(
                     overlaid_title if overlaid else data.output_labels[i])
 
         # Label the inputs
         if overlay_signals and plot_inputs:
             label = overlaid_title if overlaid else "Inputs"
-            ax_inputs[0, 0].set_ylabel(label)
+            ax_array[input_map[0, 0]].set_ylabel(label)
         else:
             for i in range(ninputs):
                 label = overlaid_title if overlaid else data.input_labels[i]
-                ax_inputs[i, 0].set_ylabel(label)
+                ax_array[input_map[i, 0]].set_ylabel(label)
 
     #
     # Create legends

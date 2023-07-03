@@ -135,6 +135,13 @@ def test_response_plots(
 
     out = response.plot(**kwargs)
 
+    # Make sure all of the outputs are of the right type
+    nlines_plotted = 0
+    for ax_lines in np.nditer(out, flags=["refs_ok"]):
+        for line in ax_lines.item():
+            assert isinstance(line, mpl.lines.Line2D)
+            nlines_plotted += 1
+
     # Make sure number of plots is correct
     if pltinp is None:
         if fcn in [ct.forced_response, ct.input_output_response]:
@@ -142,14 +149,9 @@ def test_response_plots(
         else:
             pltinp = False
     ntraces = max(1, response.ntraces)
-    nlines = (response.ninputs if pltinp else 0) * ntraces + \
+    nlines_expected = (response.ninputs if pltinp else 0) * ntraces + \
         (response.noutputs if pltout else 0) * ntraces
-    assert out.size == nlines
-
-    # Make sure all of the outputs are of the right type
-    for ax_lines in np.nditer(out, flags=["refs_ok"]):
-        for line in ax_lines.item():
-            assert isinstance(line, mpl.lines.Line2D)
+    assert nlines_plotted == nlines_expected
 
     # Save the old axes to compare later
     old_axes = plt.gcf().get_axes()
@@ -326,17 +328,17 @@ def test_linestyles():
         output_props=[{'color': c} for c in ['blue', 'orange']],
         input_props=[{'color': c} for c in ['red', 'green']],
         trace_props=[{'linestyle': s} for s in ['-', '--']])
-    return None
-    # assert out.shape == (1, 1)                # TODO: fix
-    assert out[0,0].get_color() == 'blue' and lines[0].get_linestyle() == '-'
-    assert out[0,1].get_color() == 'blue' and lines[0].get_linestyle() == '--'
-    assert out[1,0].get_color() == 'orange' and lines[0].get_linestyle() == '-'
-    assert out[1,1].get_color() == 'orange' and lines[0].get_linestyle() == '--'
-    assert out[2,0].get_color() == 'red' and lines[0].get_linestyle() == '-'
-    assert out[2,1].get_color() == 'red' and lines[0].get_linestyle() == '--'
-    assert out[3,0].get_color() == 'green' and lines[0].get_linestyle() == '-'
-    assert out[3,1].get_color() == 'green' and lines[0].get_linestyle() == '--'
 
+    assert out.shape == (1, 1)
+    lines = out[0, 0]
+    assert lines[0].get_color() == 'blue' and lines[0].get_linestyle() == '-'
+    assert lines[1].get_color() == 'orange' and lines[1].get_linestyle() == '-'
+    assert lines[2].get_color() == 'red' and lines[2].get_linestyle() == '-'
+    assert lines[3].get_color() == 'green' and lines[3].get_linestyle() == '-'
+    assert lines[4].get_color() == 'blue' and lines[4].get_linestyle() == '--'
+    assert lines[5].get_color() == 'orange' and lines[5].get_linestyle() == '--'
+    assert lines[6].get_color() == 'red' and lines[6].get_linestyle() == '--'
+    assert lines[7].get_color() == 'green' and lines[7].get_linestyle() == '--'
 
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
