@@ -395,10 +395,11 @@ def time_response_plot(
 
             # Set up line properties for this output, trace
             if len(fmt) == 0:
-                line_props = \
-                    output_props[i % oprop_len if overlay_signals else 0] | \
-                    trace_props[trace % tprop_len if overlay_traces else 0] | \
-                    kwargs
+                line_props = output_props[
+                    i % oprop_len if overlay_signals else 0].copy()
+                line_props.update(
+                    trace_props[trace % tprop_len if overlay_traces else 0])
+                line_props.update(kwargs)
             else:
                 line_props = kwargs
 
@@ -418,10 +419,11 @@ def time_response_plot(
 
             # Set up line properties for this output, trace
             if len(fmt) == 0:
-                line_props = \
-                    input_props[i % iprop_len if overlay_signals else 0] | \
-                    trace_props[trace % tprop_len if overlay_traces else 0] | \
-                    kwargs
+                line_props = input_props[
+                    i % iprop_len if overlay_signals else 0].copy()
+                line_props.update(
+                    trace_props[trace % tprop_len if overlay_traces else 0])
+                line_props.update(kwargs)
             else:
                 line_props = kwargs
 

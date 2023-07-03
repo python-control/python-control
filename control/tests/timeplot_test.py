@@ -312,6 +312,7 @@ def test_combine_traces():
         combresp6 = ct.combine_traces([resp1, resp])
 
 
+@slycotonly
 def test_linestyles():
     # Check to make sure we can change line styles
     sys_mimo = ct.tf2ss(
