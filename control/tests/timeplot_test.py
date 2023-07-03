@@ -341,6 +341,33 @@ def test_linestyles():
     assert lines[6].get_color() == 'red' and lines[6].get_linestyle() == '--'
     assert lines[7].get_color() == 'green' and lines[7].get_linestyle() == '--'
 
+
+def test_rcParams():
+    sys = ct.rss(2, 2, 2)
+
+    # Create new set of rcParams
+    my_rcParams = {
+        'axes.labelsize': 10,
+        'axes.titlesize': 10,
+        'figure.titlesize': 12,
+        'legend.fontsize': 10,
+        'xtick.labelsize': 10,
+        'ytick.labelsize': 10,
+    }
+
+    # Generate a figure with the new rcParams
+    out = ct.step_response(sys).plot(rcParams=my_rcParams)
+    ax = out[0, 0][0].axes
+    fig = ax.figure
+
+    # Check to make sure new settings were used
+    assert ax.xaxis.get_label().get_fontsize() == 10
+    assert ax.yaxis.get_label().get_fontsize() == 10
+    assert ax.title.get_fontsize() == 10
+    assert ax.xaxis._get_tick_label_size('x') == 10
+    assert ax.yaxis._get_tick_label_size('y') == 10
+    assert fig._suptitle.get_fontsize() == 12
+
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
     sys2 = ct.rss(1, 1, 1)      # uses default i/o labels

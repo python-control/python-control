@@ -160,6 +160,8 @@ def time_response_plot(
     # Set up defaults
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
+    timeplot_rcParams = config._get_param(
+        'timeplot', 'rcParams', kwargs, _timeplot_defaults, pop=True)
 
     if kwargs.get('input_props', None) and len(fmt) > 0:
         warn("input_props ignored since fmt string was present")
@@ -288,7 +290,7 @@ def time_response_plot(
 
     # Create new axes, if needed, and customize them
     if ax is None:
-        with plt.rc_context(_timeplot_rcParams):
+        with plt.rc_context(timeplot_rcParams):
             ax_array = fig.subplots(nrows, ncols, sharex=True, squeeze=False)
             fig.set_tight_layout(True)
             fig.align_labels()
@@ -504,7 +506,7 @@ def time_response_plot(
                 else:
                     label = f"Trace {trace}"
 
-                with plt.rc_context(_timeplot_rcParams):
+                with plt.rc_context(timeplot_rcParams):
                     ax_array[0, trace].set_title(label)
 
         # Label the outputs
@@ -629,7 +631,7 @@ def time_response_plot(
 
             # Update the labels to remove common strings
             if len(labels) > 1 and legend_map[i, j] != None:
-                with plt.rc_context(_timeplot_rcParams):
+                with plt.rc_context(timeplot_rcParams):
                     ax.legend(labels, loc=legend_map[i, j])
 
     #
@@ -663,7 +665,7 @@ def time_response_plot(
                 new_title = old_title + separator + new_title[common_len:]
 
         # Add the title
-        with plt.rc_context(_timeplot_rcParams):
+        with plt.rc_context(timeplot_rcParams):
             fig.suptitle(new_title)
 
     return out
