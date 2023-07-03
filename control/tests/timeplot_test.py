@@ -321,6 +321,22 @@ def test_linestyles():
             assert line.get_color() == 'k'
             assert line.get_linestyle() == '--'
 
+    out = ct.step_response(sys_mimo).plot(
+        plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
+        output_props=[{'color': c} for c in ['blue', 'orange']],
+        input_props=[{'color': c} for c in ['red', 'green']],
+        trace_props=[{'linestyle': s} for s in ['-', '--']])
+    return None
+    # assert out.shape == (1, 1)                # TODO: fix
+    assert out[0,0].get_color() == 'blue' and lines[0].get_linestyle() == '-'
+    assert out[0,1].get_color() == 'blue' and lines[0].get_linestyle() == '--'
+    assert out[1,0].get_color() == 'orange' and lines[0].get_linestyle() == '-'
+    assert out[1,1].get_color() == 'orange' and lines[0].get_linestyle() == '--'
+    assert out[2,0].get_color() == 'red' and lines[0].get_linestyle() == '-'
+    assert out[2,1].get_color() == 'red' and lines[0].get_linestyle() == '--'
+    assert out[3,0].get_color() == 'green' and lines[0].get_linestyle() == '-'
+    assert out[3,1].get_color() == 'green' and lines[0].get_linestyle() == '--'
+
 
 def test_relabel():
     sys1 = ct.rss(2, inputs='u', outputs='y')
@@ -358,6 +374,11 @@ def test_errors():
     with pytest.raises(ValueError, match="unrecognized value"):
         stepresp.plot(plot_inputs='unknown')
 
+    for kw in ['input_props', 'output_props', 'trace_props']:
+        propkw = {kw: {'color': 'green'}}
+        with pytest.warns(UserWarning, match="ignored since fmt string"):
+            out = stepresp.plot('k-', **propkw)
+            assert out[0, 0][0].get_color() == 'k'
 
 if __name__ == "__main__":
     #
@@ -450,8 +471,10 @@ if __name__ == "__main__":
             "[transpose]")
     plt.savefig('timeplot-mimo_ioresp-mt_tr.png')
 
-    # Reset line styles
     plt.figure()
-    resp1.plot('g-')
-    resp2.plot('r--')
-    # plt.savefig('timeplot-mimo_step-linestyle.png')
+    out = ct.step_response(sys_mimo).plot(
+    plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
+    output_props=[{'color': c} for c in ['blue', 'orange']],
+    input_props=[{'color': c} for c in ['red', 'green']],
+    trace_props=[{'linestyle': s} for s in ['-', '--']])
+    plt.savefig('timeplot-mimo_step-linestyle.png')

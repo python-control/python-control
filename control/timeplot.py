@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from os.path import commonprefix
+from warnings import warn
 
 from . import config
 
@@ -48,7 +49,7 @@ def time_response_plot(
         transpose=False, overlay_traces=False, overlay_signals=False,
         legend_map=None, legend_loc=None, add_initial_zero=True,
         input_props=None, output_props=None, trace_props=None,
-        title=None, relabel=True, **kwargs):
+        trace_labels=None, title=None, relabel=True, **kwargs):
     """Plot the time response of an input/output system.
 
     This function creates a standard set of plots for the input/output
@@ -161,14 +162,20 @@ def time_response_plot(
     time_label = config._get_param(
         'timeplot', 'time_label', kwargs, _timeplot_defaults, pop=True)
 
+    if input_props and len(fmt) > 0:
+        warn("input_props ignored since fmt string was present")
     input_props = config._get_param(
         'timeplot', 'input_props', kwargs, _timeplot_defaults, pop=True)
     iprop_len = len(input_props)
 
+    if output_props and len(fmt) > 0:
+        warn("output_props ignored since fmt string was present")
     output_props = config._get_param(
         'timeplot', 'output_props', kwargs, _timeplot_defaults, pop=True)
     oprop_len = len(output_props)
 
+    if trace_props and len(fmt) > 0:
+        warn("trace_props ignored since fmt string was present")
     trace_props = config._get_param(
         'timeplot', 'trace_props', kwargs, _timeplot_defaults, pop=True)
     tprop_len = len(trace_props)
@@ -365,10 +372,14 @@ def time_response_plot(
             label += signal_labels[signal_index]
 
         # Add the trace label if this is a multi-trace figure
-        if overlay_traces and ntraces > 1:
+        if overlay_traces and ntraces > 1 or trace_labels:
             label += ", " if label != "" else ""
-            label += f"trace {trace_index}" if data.trace_labels is None \
-                else data.trace_labels[trace_index]
+            if trace_labels:
+                label += trace_labels[trace_index]
+            elif data.trace_labels:
+                label += data.trace_labels[trace_index]
+            else:
+                label += f"trace {trace_index}"
 
         # Add the system name (will strip off later if redundant)
         label += ", " if label != "" else ""
@@ -471,18 +482,28 @@ def time_response_plot(
                 label = ax_array[trace, 0].get_ylabel()
 
                 # Add on the trace title
-                label = f"Trace {trace}" if data.trace_labels is None \
-                    else data.trace_labels[trace] + "\n" + label
+                if trace_labels:
+                    label = trace_labels[trace] + "\n" + label
+                elif data.trace_labels:
+                    label = data.trace_labels[trace] + "\n" + label
+                else:
+                    label = f"Trace {trace}" + "\n" + label
+
                 ax_array[trace, 0].set_ylabel(label)
 
     else:                       # regular plot (outputs over inputs)
         # Set the trace titles, if needed
         if ntraces > 1 and not overlay_traces:
             for trace in range(ntraces):
+                if trace_labels:
+                    label = trace_labels[trace]
+                elif data.trace_labels:
+                    label = data.trace_labels[trace]
+                else:
+                    label = f"Trace {trace}"
+
                 with plt.rc_context(_timeplot_rcParams):
-                    ax_array[0, trace].set_title(
-                        f"Trace {trace}" if data.trace_labels is None
-                        else data.trace_labels[trace])
+                    ax_array[0, trace].set_title(label)
 
         # Label the outputs
         if overlay_signals and plot_outputs:
@@ -622,22 +643,22 @@ def time_response_plot(
     if fig is not None and title is not None:
         # Get the current title, if it exists
         old_title = None if fig._suptitle is None else fig._suptitle._text
+        new_title = title
 
         if old_title is not None:
             # Find the common part of the titles
-            common_prefix = commonprefix([old_title, title])
+            common_prefix = commonprefix([old_title, new_title])
 
             # Back up to the last space
             last_space = common_prefix.rfind(' ')
             if last_space > 0:
                 common_prefix = common_prefix[:last_space]
-            title_suffix = title[len(common_prefix):]
+            common_len = len(common_prefix)
 
             # Add the new part of the title (usually the system name)
-            separator = ',' if len(common_prefix) > 0 else ';'
-            new_title = old_title + separator + title_suffix
-        else:
-            new_title = title
+            if old_title[common_len:] != new_title[common_len:]:
+                separator = ',' if len(common_prefix) > 0 else ';'
+                new_title = old_title + separator + new_title[common_len:]
 
         # Add the title
         with plt.rc_context(_timeplot_rcParams):

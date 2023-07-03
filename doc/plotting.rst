@@ -77,7 +77,7 @@ following plot::
 
 Input/output response plots created with either the
 :func:`~control.forced_response` or the
-:func:`~control.input_output_response` include the input signals by
+:func:`~control.input_output_response` functions include the input signals by
 default. These can be plotted on separate axes, but also "overlaid" on the
 output axes (useful when the input and output signals are being compared to
 each other).  The following plot shows the use of `plot_inputs='overlay'`
@@ -118,6 +118,18 @@ using the :func:`~control.combine_traces` function.  The line properties
 that are used when combining signals and traces are set by the
 `input_props`, `output_props` and `trace_props` parameters for
 :func:`~control.time_response_plot`.
+
+Additional customization is possible using the `input_props`,
+`output_props`, and `trace_props` keywords to set complementary line colors
+and styles for various signals and traces::
+
+    out = ct.step_response(sys_mimo).plot(
+        plot_inputs='overlay', overlay_signals=True, overlay_traces=True,
+        output_props=[{'color': c} for c in ['blue', 'orange']],
+        input_props=[{'color': c} for c in ['red', 'green']],
+        trace_props=[{'linestyle': s} for s in ['-', '--']])
+
+.. image:: timeplot-mimo_step-linestyle.png
 
 Plotting functions
 ==================
