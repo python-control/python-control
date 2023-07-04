@@ -604,34 +604,13 @@ def time_response_plot(
             ax = ax_array[i, j]
             # Get the labels to use
             labels = [line.get_label() for line in ax.get_lines()]
-
-            # Look for a common prefix (up to a space)
-            common_prefix = commonprefix(labels)
-            last_space = common_prefix.rfind(', ')
-            if last_space < 0 or plot_inputs == 'overlay':
-                common_prefix = ''
-            elif last_space > 0:
-                common_prefix = common_prefix[:last_space]
-            prefix_len = len(common_prefix)
-
-            # Look for a common suffice (up to a space)
-            common_suffix = commonprefix(
-                [label[::-1] for label in labels])[::-1]
-            suffix_len = len(common_suffix)
-            # Only chop things off after a comma or space
-            while suffix_len > 0 and common_suffix[-suffix_len] != ',':
-                suffix_len -= 1
-
-            # Strip the labels of common information
-            if suffix_len > 0:
-                labels = [label[prefix_len:-suffix_len] for label in labels]
-            else:
-                labels = [label[prefix_len:] for label in labels]
+            labels = _make_legend_labels(labels, plot_inputs == 'overlay')
 
             # Update the labels to remove common strings
             if len(labels) > 1 and legend_map[i, j] != None:
                 with plt.rc_context(timeplot_rcParams):
                     ax.legend(labels, loc=legend_map[i, j])
+
 
     #
     # Update the plot title (= figure suptitle)
@@ -806,3 +785,32 @@ def get_plot_axes(line_array):
     """
     _get_axes = np.vectorize(lambda lines: lines[0].axes)
     return _get_axes(line_array)
+
+
+# Utility function to make legend labels
+def _make_legend_labels(labels, ignore_common=False):
+
+    # Look for a common prefix (up to a space)
+    common_prefix = commonprefix(labels)
+    last_space = common_prefix.rfind(', ')
+    if last_space < 0 or ignore_common:
+        common_prefix = ''
+    elif last_space > 0:
+        common_prefix = common_prefix[:last_space]
+    prefix_len = len(common_prefix)
+
+    # Look for a common suffice (up to a space)
+    common_suffix = commonprefix(
+        [label[::-1] for label in labels])[::-1]
+    suffix_len = len(common_suffix)
+    # Only chop things off after a comma or space
+    while suffix_len > 0 and common_suffix[-suffix_len] != ',':
+        suffix_len -= 1
+
+    # Strip the labels of common information
+    if suffix_len > 0:
+        labels = [label[prefix_len:-suffix_len] for label in labels]
+    else:
+        labels = [label[prefix_len:] for label in labels]
+
+    return labels

@@ -164,18 +164,22 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 
 
 @pytest.mark.parametrize(
-    "function", [control.time_response_plot, control.TimeResponseData.plot])
-def test_time_response_plot_kwargs(function):
+    "data_fcn, plot_fcn", [
+        (control.step_response, control.time_response_plot),
+        (control.step_response, control.TimeResponseData.plot),
+        (control.frequency_response, control.FrequencyResponseData.plot),
+    ])
+def test_response_plot_kwargs(data_fcn, plot_fcn):
     # Create a system for testing
-    response = control.step_response(control.rss(4, 2, 2))
+    response = data_fcn(control.rss(4, 2, 2))
 
     # Call the plotting function normally and make sure it works
-    function(response)
+    plot_fcn(response)
 
     # Now add an unrecognized keyword and make sure there is an error
     with pytest.raises(AttributeError,
                        match="(has no property|unexpected keyword)"):
-        function(response, unknown=None)
+        plot_fcn(response, unknown=None)
     
     
 #
@@ -234,6 +238,7 @@ kwarg_unittest = {
     'flatsys.FlatSystem.__init__': test_unrecognized_kwargs,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
+    'FrequencyResponseData.plot': test_response_plot_kwargs,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
     'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
     'NonlinearIOSystem.linearize': test_unrecognized_kwargs,

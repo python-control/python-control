@@ -119,7 +119,8 @@ class LTI(InputOutputSystem):
         # Return the data as a frequency response data object
         response = self(s)
         return FrequencyResponseData(
-            response, omega, return_magphase=True, squeeze=squeeze, dt=self.dt)
+            response, omega, return_magphase=True, squeeze=squeeze, dt=self.dt,
+            sysname=self.name)
 
     def dcgain(self):
         """Return the zero-frequency gain"""
