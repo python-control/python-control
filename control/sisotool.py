@@ -100,6 +100,8 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         plt.close(fig)
         fig,axes = plt.subplots(2, 2)
         fig.canvas.manager.set_window_title('Sisotool')
+    else:
+        axes = np.array(fig.get_axes()).reshape(2, 2)
 
     # Extract bode plot parameters
     bode_plot_params = {
@@ -109,9 +111,9 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         'deg': deg,
         'omega_limits': omega_limits,
         'omega_num' : omega_num,
-        'sisotool': True,
-        'fig': fig,
-        'margins': margins_bode
+        'ax': axes[:, 0:1],
+        'margins': margins_bode,
+        'margin_info': True,
     }
 
     # Check to see if legacy 'PrintGain' keyword was used

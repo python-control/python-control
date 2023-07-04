@@ -118,7 +118,7 @@ _freqplot_defaults = {
 
 def bode_plot(
         data, omega=None, *fmt, ax=None, omega_limits=None, omega_num=None,
-        plot=None, margins=None, method='best', **kwargs):
+        plot=None, margins=None, margin_info=False, method='best', **kwargs):
     """Bode plot for a system.
 
     Bode plot of a frequency response over a (optional) frequency range.
@@ -139,7 +139,9 @@ def bode_plot(
         If True, plot phase in degrees (else radians).  Default value (True)
         set by config.defaults['freqplot.deg'].
     margins : bool
-        If True, plot gain and phase margin.
+        If True, plot gain and phase margin.  (TODO: merge with margin_info)
+    margin_info : bool
+        If True, plot information about gain and phase margin.
     method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
@@ -410,9 +412,9 @@ def bode_plot(
 
     # Decide on the number of inputs and outputs
     ninputs, noutputs = 0, 0
-    for response in data:
-        ninputs += response.ninputs
-        noutputs += response.noutputs
+    for response in data:       # TODO: make more pythonic/numpic
+        ninputs = max(ninputs, response.ninputs)
+        noutputs = max(noutputs, response.noutputs)
     ntraces = 1                 # TODO: assume 1 trace per response for now
 
     # Figure how how many rows and columns to use + offsets for inputs/outputs
@@ -426,7 +428,7 @@ def bode_plot(
         if len(ax) == nrows * ncols:
             # Assume that the shape is right (no easy way to infer this)
             ax = np.array(ax).reshape(nrows, ncols)
-        elif len(ax) != 0 and 'sisotool' not in kwargs: # TODO: remove sisotool
+        elif len(ax) != 0:
             # Need to generate a new figure
             fig, ax = plt.figure(), None
         else:
@@ -434,13 +436,13 @@ def bode_plot(
             ax = None
 
     # Create new axes, if needed, and customize them
-    if ax is None and 'sisotool' not in kwargs:         # TODO: remove sisotool
+    if ax is None:
         with plt.rc_context(_freqplot_rcParams):
             ax_array = fig.subplots(nrows, ncols, sharex=True, squeeze=False)
             fig.set_tight_layout(True)
             fig.align_labels()
 
-    elif 'sisotool' not in kwargs:                      # TODO: remove sisotool
+    else:
         # Make sure the axes are the right shape
         if ax.shape != (nrows, ncols):
             raise ValueError(
@@ -457,31 +459,8 @@ def bode_plot(
     # TODO: rewrite this code to us subplot and the ax keyword to implement
     # the same functionality.
 
-    # Get the current figure
-    if 'sisotool' in kwargs:
-        fig = kwargs.pop('fig')         # redo to use ax parameter
-        ax_mag = fig.axes[0]
-        ax_phase = fig.axes[2]
-        sisotool = kwargs.pop('sisotool')
-    else:
-        fig = plt.gcf()
-        ax_mag = None
-        ax_phase = None
-        sisotool = False
-
-        # Get the current axes if they already exist
-        for ax in fig.axes:
-            if ax.get_label() == 'control-bode-magnitude':
-                ax_mag = ax
-            elif ax.get_label() == 'control-bode-phase':
-                ax_phase = ax
-
-        # If no axes present, create them from scratch
-        if ax_mag is None or ax_phase is None:
-            plt.clf()
-            ax_mag = plt.subplot(211, label='control-bode-magnitude')
-            ax_phase = plt.subplot(
-                212, label='control-bode-phase', sharex=ax_mag)
+    ax_mag = ax_array[0, 0]
+    ax_phase = ax_array[1, 0]
 
     #
     # Plot the data
@@ -633,7 +612,7 @@ def bode_plot(
             ax_mag.set_ylim(mag_ylim)
             ax_phase.set_ylim(phase_ylim)
 
-            if sisotool:
+            if margin_info:
                 ax_mag.text(
                     0.04, 0.06,
                     'G.M.: %.2f %s\nFreq: %.2f %s' %
