@@ -250,7 +250,7 @@ def test_legend_map():
         title='MIMO step response with custom legend placement')
 
 
-def test_combine_traces():
+def test_combine_time_responses():
     sys_mimo = ct.rss(4, 2, 2)
     timepts = np.linspace(0, 10, 100)
 
@@ -261,7 +261,7 @@ def test_combine_traces():
     U = np.vstack([np.cos(2*timepts), np.sin(timepts)])
     resp2 = ct.input_output_response(sys_mimo, timepts, U)
 
-    combresp1 = ct.combine_traces([resp1, resp2])
+    combresp1 = ct.combine_time_responses([resp1, resp2])
     assert combresp1.ntraces == 2
     np.testing.assert_equal(combresp1.y[:, 0, :], resp1.y)
     np.testing.assert_equal(combresp1.y[:, 1, :], resp2.y)
@@ -269,13 +269,13 @@ def test_combine_traces():
     # Combine two responses with ntrace != 0
     resp3 = ct.step_response(sys_mimo, timepts)
     resp4 = ct.step_response(sys_mimo, timepts)
-    combresp2 = ct.combine_traces([resp3, resp4])
+    combresp2 = ct.combine_time_responses([resp3, resp4])
     assert combresp2.ntraces == resp3.ntraces + resp4.ntraces
     np.testing.assert_equal(combresp2.y[:, 0:2, :], resp3.y)
     np.testing.assert_equal(combresp2.y[:, 2:4, :], resp4.y)
 
     # Mixture
-    combresp3 = ct.combine_traces([resp1, resp2, resp3])
+    combresp3 = ct.combine_time_responses([resp1, resp2, resp3])
     assert combresp3.ntraces == resp3.ntraces + resp4.ntraces
     np.testing.assert_equal(combresp3.y[:, 0, :], resp1.y)
     np.testing.assert_equal(combresp3.y[:, 1, :], resp2.y)
@@ -286,7 +286,8 @@ def test_combine_traces():
 
     # Rename the traces
     labels = ["T1", "T2", "T3", "T4"]
-    combresp4 = ct.combine_traces([resp1, resp2, resp3], trace_labels=labels)
+    combresp4 = ct.combine_time_responses(
+        [resp1, resp2, resp3], trace_labels=labels)
     assert combresp4.trace_labels == labels
 
     # Automatically generated trace label names and types
@@ -294,22 +295,22 @@ def test_combine_traces():
     resp5.title = "test"
     resp5.trace_labels = None
     resp5.trace_types = None
-    combresp5 = ct.combine_traces([resp1, resp5])
+    combresp5 = ct.combine_time_responses([resp1, resp5])
     assert combresp5.trace_labels == [resp1.title] + \
         ["test, trace 0", "test, trace 1"]
     assert combresp4.trace_types == [None, None, 'step', 'step']
 
     with pytest.raises(ValueError, match="must have the same number"):
         resp = ct.step_response(ct.rss(4, 2, 3), timepts)
-        combresp = ct.combine_traces([resp1, resp])
+        combresp = ct.combine_time_responses([resp1, resp])
 
     with pytest.raises(ValueError, match="trace labels does not match"):
-        combresp = ct.combine_traces(
+        combresp = ct.combine_time_responses(
             [resp1, resp2], trace_labels=["T1", "T2", "T3"])
 
     with pytest.raises(ValueError, match="must have the same time"):
         resp = ct.step_response(ct.rss(4, 2, 3), timepts/2)
-        combresp6 = ct.combine_traces([resp1, resp])
+        combresp6 = ct.combine_time_responses([resp1, resp])
 
 
 @slycotonly
@@ -494,7 +495,7 @@ if __name__ == "__main__":
     U = np.vstack([np.cos(2*timepts), np.sin(timepts)])
     resp2 = ct.input_output_response(sys_mimo, timepts, U)
 
-    ct.combine_traces(
+    ct.combine_time_responses(
         [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"]).plot(
             transpose=True,
             title="I/O responses for 2x2 MIMO system, multiple traces "

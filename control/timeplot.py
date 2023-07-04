@@ -16,7 +16,7 @@ from warnings import warn
 
 from . import config
 
-__all__ = ['time_response_plot', 'combine_traces', 'get_plot_axes']
+__all__ = ['time_response_plot', 'combine_time_responses', 'get_plot_axes']
 
 # Default font dictionary
 _timeplot_rcParams = mpl.rcParams.copy()
@@ -412,7 +412,7 @@ def time_response_plot(
         for i in range(ninputs):
             label = _make_line_label(i, data.input_labels, trace)
 
-            if add_initial_zero and data.trace_types \
+            if add_initial_zero and data.ntraces > i \
                and data.trace_types[i] == 'step':
                 x = np.hstack([np.array([data.time[0]]), data.time])
                 y = np.hstack([np.array([0]), inputs[i][trace]])
@@ -606,7 +606,6 @@ def time_response_plot(
             labels = [line.get_label() for line in ax.get_lines()]
 
             # Look for a common prefix (up to a space)
-            # TODO: fix error in 1x2, overlay, transpose (Fig 24)
             common_prefix = commonprefix(labels)
             last_space = common_prefix.rfind(', ')
             if last_space < 0 or plot_inputs == 'overlay':
@@ -671,7 +670,7 @@ def time_response_plot(
     return out
 
 
-def combine_traces(response_list, trace_labels=None, title=None):
+def combine_time_responses(response_list, trace_labels=None, title=None):
     """Combine multiple individual time responses into a multi-trace response.
 
     This function combines multiple instances of :class:`TimeResponseData`

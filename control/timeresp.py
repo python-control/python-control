@@ -427,7 +427,7 @@ class TimeResponseData:
         # Check and store trace labels, if present
         self.trace_labels = _process_labels(
             trace_labels, "trace", self.ntraces)
-        self.trace_types = trace_types  # TODO: rename to kind?
+        self.trace_types = trace_types
 
         # Figure out if the system is SISO
         if issiso is None:
@@ -1169,7 +1169,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
         tout, yout, xout, U, issiso=sys.issiso(),
         output_labels=sys.output_labels, input_labels=sys.input_labels,
         state_labels=sys.state_labels, sysname=sys.name, plot_inputs=True,
-        title="Forced response for " + sys.name,
+        title="Forced response for " + sys.name, trace_types=['forced'],
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1386,8 +1386,7 @@ def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
     uout = np.empty((ninputs, ninputs, T.size))
 
     # Simulate the response for each input
-    trace_labels = []
-    trace_types = []
+    trace_labels, trace_types = [], []
     for i in range(sys.ninputs):
         # If input keyword was specified, only simulate for that input
         if isinstance(input, int) and i != input:
@@ -1761,7 +1760,7 @@ def initial_response(sys, T=None, X0=0, output=None, T_num=None,
         response.t, yout, response.x, None, issiso=issiso,
         output_labels=output_labels, input_labels=None,
         state_labels=sys.state_labels, sysname=sys.name,
-        title="Initial response for " + sys.name,
+        title="Initial response for " + sys.name, trace_types=['initial'],
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1888,7 +1887,7 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
     uout = np.full((ninputs, ninputs, np.asarray(T).size), None)
 
     # Simulate the response for each input
-    trace_labels = []
+    trace_labels, trace_types = [], []
     for i in range(sys.ninputs):
         # If input keyword was specified, only handle that case
         if isinstance(input, int) and i != input:
@@ -1896,6 +1895,7 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
 
         # Save a label for this plot
         trace_labels.append(f"From {sys.input_labels[i]}")
+        trace_types.append('impulse')
 
         #
         # Compute new X0 that contains the impulse
@@ -1935,7 +1935,7 @@ def impulse_response(sys, T=None, input=None, output=None, T_num=None,
         response.time, yout, xout, uout, issiso=issiso,
         output_labels=output_labels, input_labels=input_labels,
         state_labels=sys.state_labels, trace_labels=trace_labels,
-        title="Impulse response for " + sys.name,
+        trace_types=trace_types, title="Impulse response for " + sys.name,
         sysname=sys.name, plot_inputs=False, transpose=transpose,
         return_x=return_x, squeeze=squeeze)
 

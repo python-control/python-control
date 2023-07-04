@@ -105,7 +105,7 @@ following figure::
     U2 = np.vstack([np.cos(2*timepts), np.sin(timepts)])
     resp2 = ct.input_output_response(sys_mimo, timepts, U2)
 
-    ct.combine_traces(
+    ct.combine_time_responses(
         [resp1, resp2], trace_labels=["Scenario #1", "Scenario #2"]).plot(
             transpose=True,
             title="I/O responses for 2x2 MIMO system, multiple traces "
@@ -114,9 +114,9 @@ following figure::
 .. image:: timeplot-mimo_ioresp-mt_tr.png
 
 This figure also illustrates the ability to create "multi-trace" plots
-using the :func:`~control.combine_traces` function.  The line properties
-that are used when combining signals and traces are set by the
-`input_props`, `output_props` and `trace_props` parameters for
+using the :func:`~control.combine_time_responses` function.  The line
+properties that are used when combining signals and traces are set by
+the `input_props`, `output_props` and `trace_props` parameters for
 :func:`~control.time_response_plot`.
 
 Additional customization is possible using the `input_props`,
@@ -138,5 +138,5 @@ Plotting functions
    :toctree: generated/
 
    ~control.time_response_plot
-   ~control.combine_traces
+   ~control.combine_time_responses
    ~control.get_plot_axes
