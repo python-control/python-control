@@ -88,7 +88,7 @@ __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
 
 def lyap(A, Q, C=None, E=None, method=None):
-    """Solves the continuous-time Lyapunov equation
+    """Solves the continuous-time Lyapunov equation.
 
     X = lyap(A, Q) solves
 
@@ -214,7 +214,7 @@ def lyap(A, Q, C=None, E=None, method=None):
 
 
 def dlyap(A, Q, C=None, E=None, method=None):
-    """Solves the discrete-time Lyapunov equation
+    """Solves the discrete-time Lyapunov equation.
 
     X = dlyap(A, Q) solves
 
@@ -342,7 +342,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
 
 def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
          A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
-    """Solves the continuous-time algebraic Riccati equation
+    """Solves the continuous-time algebraic Riccati equation.
 
     X, L, G = care(A, B, Q, R=None) solves
 
@@ -496,7 +496,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
          A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
     """Solves the discrete-time algebraic Riccati
-    equation
+    equation.
 
     X, L, G = dare(A, B, Q, R) solves
 

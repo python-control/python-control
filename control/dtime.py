@@ -56,7 +56,7 @@ __all__ = ['sample_system', 'c2d']
 def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
         name=None, copy_names=True, **kwargs):
     """
-    Convert a continuous time system to discrete time by sampling
+    Convert a continuous time system to discrete time by sampling.
 
     Parameters
     ----------

@@ -79,7 +79,7 @@ __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr',
 
 # Pole placement
 def place(A, B, p):
-    """Place closed loop eigenvalues
+    """Place closed loop eigenvalues.
 
     K = place(A, B, p)
 
@@ -147,7 +147,7 @@ def place(A, B, p):
 
 
 def place_varga(A, B, p, dtime=False, alpha=None):
-    """Place closed loop eigenvalues
+    """Place closed loop eigenvalues.
     K = place_varga(A, B, p, dtime=False, alpha=None)
 
     Required Parameters
@@ -253,7 +253,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
-    """Pole placement using Ackermann method
+    """Pole placement using Ackermann method.
 
     Call:
     K = acker(A, B, poles)
@@ -298,7 +298,7 @@ def acker(A, B, poles):
 def lqr(*args, **kwargs):
     """lqr(A, B, Q, R[, N])
 
-    Linear quadratic regulator design
+    Linear quadratic regulator design.
 
     The lqr() function computes the optimal state feedback controller
     u = -K x that minimizes the quadratic cost
@@ -444,7 +444,7 @@ def lqr(*args, **kwargs):
 def dlqr(*args, **kwargs):
     """dlqr(A, B, Q, R[, N])
 
-    Discrete-time linear quadratic regulator design
+    Discrete-time linear quadratic regulator design.
 
     The dlqr() function computes the optimal state feedback controller
     u[n] = - K x[n] that minimizes the quadratic cost
@@ -584,7 +584,7 @@ def create_statefbk_iosystem(
         xd_labels=None, ud_labels=None, gainsched_indices=None,
         gainsched_method='linear', control_indices=None, state_indices=None,
         name=None, inputs=None, outputs=None, states=None, **kwargs):
-    """Create an I/O system using a (full) state feedback controller
+    """Create an I/O system using a (full) state feedback controller.
 
     This function creates an input/output system that implements a
     state feedback controller of the form
@@ -939,7 +939,7 @@ def create_statefbk_iosystem(
 
 
 def ctrb(A, B):
-    """Controllabilty matrix
+    """Controllabilty matrix.
 
     Parameters
     ----------
@@ -973,7 +973,7 @@ def ctrb(A, B):
 
 
 def obsv(A, C):
-    """Observability matrix
+    """Observability matrix.
 
     Parameters
     ----------
@@ -1006,7 +1006,7 @@ def obsv(A, C):
 
 
 def gram(sys, type):
-    """Gramian (controllability or observability)
+    """Gramian (controllability or observability).
 
     Parameters
     ----------

@@ -363,7 +363,7 @@ class InputOutputSystem(object):
 
     def isctime(self, strict=False):
         """
-        Check to see if a system is a continuous-time system
+        Check to see if a system is a continuous-time system.
 
         Parameters
         ----------
@@ -397,7 +397,7 @@ class InputOutputSystem(object):
         return self.dt > 0
 
     def issiso(self):
-        """Check to see if a system is single input, single output"""
+        """Check to see if a system is single input, single output."""
         return self.ninputs == 1 and self.noutputs == 1
 
     def _isstatic(self):
@@ -408,7 +408,7 @@ class InputOutputSystem(object):
 # Test to see if a system is SISO
 def issiso(sys, strict=False):
     """
-    Check to see if a system is single input, single output
+    Check to see if a system is single input, single output.
 
     Parameters
     ----------
@@ -427,7 +427,7 @@ def issiso(sys, strict=False):
 
 # Return the timebase (with conversion if unspecified)
 def timebase(sys, strict=True):
-    """Return the timebase for a system
+    """Return the timebase for a system.
 
     dt = timebase(sys)
 
@@ -500,7 +500,7 @@ def common_timebase(dt1, dt2):
 # Check to see if a system is a discrete time system
 def isdtime(sys, strict=False):
     """
-    Check to see if a system is a discrete time system
+    Check to see if a system is a discrete time system.
 
     Parameters
     ----------
@@ -521,7 +521,7 @@ def isdtime(sys, strict=False):
 # Check to see if a system is a continuous time system
 def isctime(sys, strict=False):
     """
-    Check to see if a system is a continuous-time system
+    Check to see if a system is a continuous-time system.
 
     Parameters
     ----------

@@ -17,7 +17,7 @@ __all__ = ['bode', 'nyquist', 'ngrid', 'dcgain', 'connect']
 def bode(*args, **kwargs):
     """bode(syslist[, omega, dB, Hz, deg, ...])
 
-    Bode plot of the frequency response
+    Bode plot of the frequency response.
 
     Plots a bode gain and phase diagram
 
@@ -79,7 +79,7 @@ def bode(*args, **kwargs):
 def nyquist(*args, **kwargs):
     """nyquist(syslist[, omega])
 
-    Nyquist plot of the frequency response
+    Nyquist plot of the frequency response.
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
@@ -184,7 +184,7 @@ ngrid.__doc__ = nichols_grid.__doc__
 
 
 def dcgain(*args):
-    '''Compute the gain of the system in steady state
+    '''Compute the gain of the system in steady state.
 
     The function takes either 1, 2, 3, or 4 parameters:
 

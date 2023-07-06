@@ -94,7 +94,7 @@ _freqplot_defaults = {
 def bode_plot(syslist, omega=None,
               plot=True, omega_limits=None, omega_num=None,
               margins=None, method='best', *args, **kwargs):
-    """Bode plot for a system
+    """Bode plot for a system.
 
     Plots a Bode plot for the system over a (optional) frequency range.
 
@@ -542,7 +542,7 @@ def nyquist_plot(
         syslist, omega=None, plot=True, omega_limits=None, omega_num=None,
         label_freq=0, color=None, return_contour=False,
         warn_encirclements=True, warn_nyquist=True, **kwargs):
-    """Nyquist plot for a system
+    """Nyquist plot for a system.
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
     The curve is computed by evaluating the Nyqist segment along the positive
@@ -1251,7 +1251,7 @@ def _compute_curve_offset(resp, mask, max_offset):
 #
 # TODO: think about how (and whether) to handle lists of systems
 def gangof4_plot(P, C, omega=None, **kwargs):
-    """Plot the "Gang of 4" transfer functions for a system
+    """Plot the "Gang of 4" transfer functions for a system.
 
     Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
     [T, PS; CS, S]

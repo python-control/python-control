@@ -50,7 +50,7 @@ __all__ = ['unwrap', 'issys', 'db2mag', 'mag2db']
 
 # Utility function to unwrap an angle measurement
 def unwrap(angle, period=2*math.pi):
-    """Unwrap a phase angle to give a continuous curve
+    """Unwrap a phase angle to give a continuous curve.
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def unwrap(angle, period=2*math.pi):
 
 def issys(obj):
     """Return True if an object is a Linear Time Invariant (LTI) system,
-    otherwise False
+    otherwise False.
 
     Examples
     --------
@@ -105,7 +105,7 @@ def issys(obj):
     return isinstance(obj, lti.LTI)
 
 def db2mag(db):
-    """Convert a gain in decibels (dB) to a magnitude
+    """Convert a gain in decibels (dB) to a magnitude.
 
     If A is magnitude,
 
@@ -133,7 +133,7 @@ def db2mag(db):
     return 10. ** (db / 20.)
 
 def mag2db(mag):
-    """Convert a magnitude to decibels (dB)
+    """Convert a magnitude to decibels (dB).
 
     If A is magnitude,
 
