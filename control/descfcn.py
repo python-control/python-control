@@ -74,7 +74,7 @@ class DescribingFunctionNonlinearity():
 
 def describing_function(
         F, A, num_points=100, zero_check=True, try_method=True):
-    """Numerically compute the describing function of a nonlinear function
+    """Numerically compute the describing function of a nonlinear function.
 
     The describing function of a nonlinearity is given by magnitude and phase
     of the first harmonic of the function when evaluated along a sinusoidal

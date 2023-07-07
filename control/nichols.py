@@ -66,7 +66,7 @@ _nichols_defaults = {
 
 
 def nichols_plot(sys_list, omega=None, grid=None):
-    """Nichols plot for a system
+    """Nichols plot for a system.
 
     Plots a Nichols plot for the system over a (optional) frequency range.
 
@@ -133,7 +133,7 @@ def _inner_extents(ax):
 
 def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
                  label_cl_phases=True):
-    """Nichols chart grid
+    """Nichols chart grid.
 
     Plots a Nichols chart grid on the current axis, or creates a new chart
     if no plot already exists.

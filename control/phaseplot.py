@@ -53,7 +53,7 @@ def _find(condition):
 def phase_plot(odefun, X=None, Y=None, scale=1, X0=None, T=None,
               lingrid=None, lintime=None, logtime=None, timepts=None,
               parms=(), verbose=True):
-    """Phase plot for 2D dynamical systems
+    """Phase plot for 2D dynamical systems.
 
     Produces a vector field or stream line plot for a planar system.
 

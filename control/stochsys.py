@@ -311,7 +311,7 @@ def create_estimator_iosystem(
         estimate_labels='xhat[{i}]', covariance_labels='P[{i},{j}]',
         measurement_labels=None, control_labels=None,
         inputs=None, outputs=None, states=None, **kwargs):
-    r"""Create an I/O system implementing a linear quadratic estimator
+    r"""Create an I/O system implementing a linear quadratic estimator.
 
     This function creates an input/output system that implements a
     continuous time state estimator of the form

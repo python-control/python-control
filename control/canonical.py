@@ -19,7 +19,7 @@ __all__ = ['canonical_form', 'reachable_form', 'observable_form', 'modal_form',
 
 
 def canonical_form(xsys, form='reachable'):
-    """Convert a system into canonical form
+    """Convert a system into canonical form.
 
     Parameters
     ----------
@@ -71,7 +71,7 @@ def canonical_form(xsys, form='reachable'):
 
 # Reachable canonical form
 def reachable_form(xsys):
-    """Convert a system into reachable canonical form
+    """Convert a system into reachable canonical form.
 
     Parameters
     ----------
@@ -134,7 +134,7 @@ def reachable_form(xsys):
 
 
 def observable_form(xsys):
-    """Convert a system into observable canonical form
+    """Convert a system into observable canonical form.
 
     Parameters
     ----------
@@ -255,7 +255,7 @@ _PMAX_SEARCH_TOL = 1.001
 
 
 def _bdschur_defective(blksizes, eigvals):
-    """Check  for defective modal decomposition
+    """Check  for defective modal decomposition.
 
     Parameters
     ----------
@@ -290,7 +290,7 @@ def _bdschur_defective(blksizes, eigvals):
 
 
 def _bdschur_condmax_search(aschur, tschur, condmax):
-    """Block-diagonal Schur decomposition search up to condmax
+    """Block-diagonal Schur decomposition search up to condmax.
 
     Iterates mb03rd with different pmax values until:
       - result is non-defective;
@@ -393,7 +393,7 @@ def _bdschur_condmax_search(aschur, tschur, condmax):
 
 
 def bdschur(a, condmax=None, sort=None):
-    """Block-diagonal Schur decomposition
+    """Block-diagonal Schur decomposition.
 
     Parameters
     ----------
@@ -482,7 +482,7 @@ def bdschur(a, condmax=None, sort=None):
 
 
 def modal_form(xsys, condmax=None, sort=False):
-    """Convert a system into modal canonical form
+    """Convert a system into modal canonical form.
 
     Parameters
     ----------

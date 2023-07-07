@@ -729,7 +729,7 @@ def _convert_to_FRD(sys, omega, inputs=1, outputs=1):
 def frd(*args):
     """frd(d, w)
 
-    Construct a frequency response data model
+    Construct a frequency response data model.
 
     frd models store the (measured) frequency response of a system.
 

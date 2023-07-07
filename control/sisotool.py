@@ -205,7 +205,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                            Kp0=0, Ki0=0, Kd0=0, deltaK=0.001, tau=0.01,
                            C_ff=0, derivative_in_feedback_path=False,
                            plot=True):
-    """Manual PID controller design based on root locus using Sisotool
+    """Manual PID controller design based on root locus using Sisotool.
 
     Uses `sisotool` to investigate the effect of adding or subtracting an
     amount `deltaK` to the proportional, integral, or derivative (PID) gains of

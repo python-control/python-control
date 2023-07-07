@@ -7,7 +7,7 @@ Note that the return arguments are different than in the standard control packag
 __all__ = ['step', 'stepinfo', 'impulse', 'initial', 'lsim']
 
 def step(sys, T=None, input=0, output=None, return_x=False):
-    '''Step response of a linear system
+    '''Step response of a linear system.
 
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation.  Optionally, one output may be
@@ -132,7 +132,7 @@ def stepinfo(sysdata, T=None, yfinal=None, SettlingTimeThreshold=0.02,
     return S
 
 def impulse(sys, T=None, input=0, output=None, return_x=False):
-    '''Impulse response of a linear system
+    '''Impulse response of a linear system.
 
     If the system has multiple inputs or outputs (MIMO), one input has
     to be selected for the simulation.  Optionally, one output may be
@@ -181,7 +181,7 @@ def impulse(sys, T=None, input=0, output=None, return_x=False):
     return (out[1], out[0], out[2]) if return_x else (out[1], out[0])
 
 def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
-    '''Initial condition response of a linear system
+    '''Initial condition response of a linear system.
 
     If the system has multiple outputs (?IMO), optionally, one output
     may be selected. If no selection is made for the output, all
@@ -232,7 +232,7 @@ def initial(sys, T=None, X0=0., input=None, output=None, return_x=False):
 
 
 def lsim(sys, U=0., T=None, X0=0.):
-    '''Simulate the output of a linear system
+    '''Simulate the output of a linear system.
 
     As a convenience for parameters `U`, `X0`:
     Numbers (scalars) are converted to constant arrays with the correct shape.

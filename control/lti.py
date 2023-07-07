@@ -252,7 +252,7 @@ def zeros(sys):
 
 def damp(sys, doprint=True):
     """
-    Compute natural frequencies, damping ratios, and poles of a system
+    Compute natural frequencies, damping ratios, and poles of a system.
 
     Parameters
     ----------
@@ -446,7 +446,7 @@ freqresp = frequency_response
 
 
 def dcgain(sys):
-    """Return the zero-frequency (or DC) gain of the given system
+    """Return the zero-frequency (or DC) gain of the given system.
 
     Returns
     -------

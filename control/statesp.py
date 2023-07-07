@@ -1806,7 +1806,7 @@ def tf2ss(*args, **kwargs):
 
 def ssdata(sys):
     """
-    Return state space data objects for a system
+    Return state space data objects for a system.
 
     Parameters
     ----------
@@ -1947,7 +1947,7 @@ def drss(*args, **kwargs):
     """
     drss([states, outputs, inputs, strictly_proper])
 
-    Create a stable, discrete-time, random state space system
+    Create a stable, discrete-time, random state space system.
 
     Create a stable *discrete time* random state space object.  This
     function calls :func:`rss` using either the `dt` keyword provided by
