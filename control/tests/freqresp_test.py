@@ -40,16 +40,26 @@ def ss_mimo():
     return StateSpace(A, B, C, D)
 
 
+@pytest.mark.filterwarnings("ignore:freqresp is deprecated")
+def test_freqresp_siso_legacy(ss_siso):
+    """Test SISO frequency response"""
+    omega = np.linspace(10e-2, 10e2, 1000)
+
+    # test frequency response
+    ctrl.frequency_response(ss_siso, omega)
+
+
 def test_freqresp_siso(ss_siso):
     """Test SISO frequency response"""
     omega = np.linspace(10e-2, 10e2, 1000)
 
     # test frequency response
-    ctrl.freqresp(ss_siso, omega)
+    ctrl.frequency_response(ss_siso, omega)
 
 
+@pytest.mark.filterwarnings("ignore:freqresp is deprecated")
 @slycotonly
-def test_freqresp_mimo(ss_mimo):
+def test_freqresp_mimo_legacy(ss_mimo):
     """Test MIMO frequency response calls"""
     omega = np.linspace(10e-2, 10e2, 1000)
     ctrl.freqresp(ss_mimo, omega)
@@ -57,6 +67,16 @@ def test_freqresp_mimo(ss_mimo):
     ctrl.freqresp(tf_mimo, omega)
 
 
+@slycotonly
+def test_freqresp_mimo(ss_mimo):
+    """Test MIMO frequency response calls"""
+    omega = np.linspace(10e-2, 10e2, 1000)
+    ctrl.frequency_response(ss_mimo, omega)
+    tf_mimo = tf(ss_mimo)
+    ctrl.frequency_response(tf_mimo, omega)
+
+
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_bode_basic(ss_siso):
     """Test bode plot call (Very basic)"""
     # TODO: proper test
@@ -92,6 +112,7 @@ def test_nyquist_basic(ss_siso):
     assert len(contour) == 10
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.filterwarnings("ignore:.*non-positive left xlim:UserWarning")
 def test_superimpose():
     """Test superimpose multiple calls.
@@ -144,6 +165,7 @@ def test_superimpose():
     assert len(ax.get_lines()) == 2
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_doubleint():
     """Test typcast bug with double int
 
@@ -157,6 +179,7 @@ def test_doubleint():
     bode(sys)
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize(
     "Hz, Wcp, Wcg",
     [pytest.param(False, 6.0782869, 10., id="omega"),
@@ -241,6 +264,7 @@ def dsystem_type(request, dsystem_dt):
     return dsystem_dt[systype]
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize("dsystem_dt", [0.1, True], indirect=True)
 @pytest.mark.parametrize("dsystem_type", ['sssiso', 'ssmimo', 'tf'],
                          indirect=True)
@@ -278,6 +302,7 @@ def test_discrete(dsystem_type):
         bode((dsys,))
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_options(editsdefaults):
     """Test ability to set parameter values"""
     # Generate a Bode plot of a transfer function
@@ -310,6 +335,7 @@ def test_options(editsdefaults):
     assert numpoints1 != numpoints3
     assert numpoints3 == 13
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize(
     "TF, initial_phase, default_phase, expected_phase",
     [pytest.param(ctrl.tf([1], [1, 0]),
@@ -349,6 +375,7 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
         assert(abs(phase[0] - expected_phase) < 0.1)
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize(
     "TF, wrap_phase, min_phase, max_phase",
     [pytest.param(ctrl.tf([1], [1, 0]),
@@ -376,6 +403,7 @@ def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
     assert(max(phase) <= max_phase)
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_phase_wrap_multiple_systems():
     sys_unstable = ctrl.zpk([],[1,1], gain=1)
 

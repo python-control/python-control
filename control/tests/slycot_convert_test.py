@@ -124,6 +124,7 @@ class TestSlycot:
         # np.testing.assert_array_almost_equal(
         #    tfOriginal_dcoeff, tfTransformed_dcoeff, decimal=3)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     @pytest.mark.parametrize("testNum", np.arange(numTests) + 1)
     @pytest.mark.parametrize("inputs", np.arange(1) + 1) # SISO only
     @pytest.mark.parametrize("outputs", np.arange(1) + 1) # SISO only

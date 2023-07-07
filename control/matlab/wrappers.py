@@ -64,16 +64,27 @@ def bode(*args, **kwargs):
     """
     from ..freqplot import bode_plot
 
-    # If first argument is a list, assume python-control calling format
-    if hasattr(args[0], '__iter__'):
-        return bode_plot(*args, **kwargs)
+    # Turn off deprecation warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', message='passing systems .* is deprecated',
+            category=DeprecationWarning)
+        warnings.filterwarnings(
+            'ignore', message='.* return values of .* is deprecated',
+            category=DeprecationWarning)
 
-    # Parse input arguments
-    syslist, omega, args, other = _parse_freqplot_args(*args)
-    kwargs.update(other)
+        # If first argument is a list, assume python-control calling format
+        if hasattr(args[0], '__iter__'):
+            retval = bode_plot(*args, **kwargs)
+        else:
+            # Parse input arguments
+            syslist, omega, args, other = _parse_freqplot_args(*args)
+            kwargs.update(other)
 
-    # Call the bode command
-    return bode_plot(syslist, omega, *args, **kwargs)
+            # Call the bode command
+            retval = bode_plot(syslist, omega, *args, **kwargs)
+
+    return retval
 
 
 def nyquist(*args, **kwargs):

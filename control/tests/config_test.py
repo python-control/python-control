@@ -89,6 +89,7 @@ class TestConfig:
             assert ct.config.defaults['bode.Hz'] \
                 == ct.config.defaults['freqplot.Hz']
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_fbs_bode(self, mplcleanup):
         ct.use_fbs_defaults()
 
@@ -133,6 +134,7 @@ class TestConfig:
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_matlab_bode(self, mplcleanup):
         ct.use_matlab_defaults()
 
@@ -177,6 +179,7 @@ class TestConfig:
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_custom_bode_default(self, mplcleanup):
         ct.config.defaults['freqplot.dB'] = True
         ct.config.defaults['freqplot.deg'] = True
@@ -198,6 +201,7 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_bode_number_of_samples(self, mplcleanup):
         # Set the number of samples (default is 50, from np.logspace)
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
@@ -212,6 +216,7 @@ class TestConfig:
         mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
         assert len(mag_ret) == 87
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_bode_feature_periphery_decade(self, mplcleanup):
         # Generate a sample Bode plot to figure out the range it uses
         ct.reset_defaults()     # Make sure starting state is correct

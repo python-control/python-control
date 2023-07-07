@@ -9,8 +9,6 @@ import pytest
 
 import control
 
-TEST_MATRIX_AND_ARRAY = os.getenv("PYTHON_CONTROL_ARRAY_AND_MATRIX") == "1"
-
 # some common pytest marks. These can be used as test decorators or in
 # pytest.param(marks=)
 slycotonly = pytest.mark.skipif(
@@ -59,6 +57,20 @@ def mplcleanup():
         mpl.units.registry.clear()
         mpl.units.registry.update(save)
         mpl.pyplot.close("all")
+
+
+@pytest.fixture(scope="function")
+def legacy_plot_signature():
+    """Turn off warnings for calls to plotting functions with old signatures"""
+    import warnings
+    warnings.filterwarnings(
+        'ignore', message='passing systems .* is deprecated',
+        category=DeprecationWarning)
+    warnings.filterwarnings(
+        'ignore', message='.* return values of .* is deprecated',
+        category=DeprecationWarning)
+    yield
+    warnings.resetwarnings()
 
 
 # Allow pytest.mark.slow to mark slow tests (skip with pytest -m "not slow")

@@ -139,9 +139,7 @@ def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
 
 @pytest.mark.parametrize(
     "function, nsysargs, moreargs, kwargs",
-    [(control.bode, 1, (), {}),
-     (control.bode_plot, 1, (), {}),
-     (control.describing_function_plot, 1,
+    [(control.describing_function_plot, 1,
       (control.descfcn.saturation_nonlinearity(1), [1, 2, 3, 4]), {}),
      (control.gangof4, 2, (), {}),
      (control.gangof4_plot, 2, (), {}),
@@ -168,10 +166,17 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
         (control.step_response, control.time_response_plot),
         (control.step_response, control.TimeResponseData.plot),
         (control.frequency_response, control.FrequencyResponseData.plot),
+        (control.frequency_response, control.bode),
+        (control.frequency_response, control.bode_plot),
     ])
 def test_response_plot_kwargs(data_fcn, plot_fcn):
     # Create a system for testing
     response = data_fcn(control.rss(4, 2, 2))
+
+    # Make sure that calling the data function with unknown keyword errs
+    with pytest.raises((AttributeError, TypeError),
+                       match="(has no property|unexpected keyword)"):
+        data_fcn(control.rss(2, 1, 1), unknown=None)
 
     # Call the plotting function normally and make sure it works
     plot_fcn(response)
@@ -192,8 +197,8 @@ def test_response_plot_kwargs(data_fcn, plot_fcn):
 #
 
 kwarg_unittest = {
-    'bode': test_matplotlib_kwargs,
-    'bode_plot': test_matplotlib_kwargs,
+    'bode': test_response_plot_kwargs,
+    'bode_plot': test_response_plot_kwargs,
     'create_estimator_iosystem': stochsys_test.test_estimator_errors,
     'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,

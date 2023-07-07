@@ -87,6 +87,7 @@ from ..stochsys import lqe, dlqe
 
 # Functions that are renamed in MATLAB
 pole, zero = poles, zeros
+freqresp = frequency_response
 
 # Import functions specific to Matlab compatibility package
 from .timeresp import *
