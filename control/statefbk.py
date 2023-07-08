@@ -589,7 +589,7 @@ def create_statefbk_iosystem(
     This function creates an input/output system that implements a
     state feedback controller of the form
 
-        u = ud - K_p (x - xd) - K_i integral(C x - C x_d)
+    .. math :: u = u_d - K_p (x - x_d) - K_i \int(C x - C x_d)
 
     It can be called in the form
 
@@ -603,9 +603,9 @@ def create_statefbk_iosystem(
     gains and a corresponding list of values of a set of scheduling
     variables.  In this case, the controller has the form
 
-        u = ud - K_p(mu) (x - xd) - K_i(mu) integral(C x - C x_d)
+    .. math :: u = u_d - K_p(\mu) (x - x_d) - K_i(\mu) \int(C x - C x_d)
 
-    where mu represents the scheduling variable.
+    where :math:`\mu` represents the scheduling variable.
 
     Parameters
     ----------
@@ -623,7 +623,7 @@ def create_statefbk_iosystem(
 
         If a tuple is given, then it specifies a gain schedule.  The tuple
         should be of the form `(gains, points)` where gains is a list of
-        gains :math:`K_j` and points is a list of values :math:`\\mu_j` at
+        gains :math:`K_j` and points is a list of values :math:`\mu_j` at
         which the gains are computed.  The `gainsched_indices` parameter
         should be used to specify the scheduling variables.
 
