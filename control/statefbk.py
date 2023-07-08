@@ -591,7 +591,7 @@ def create_statefbk_iosystem(
 
     .. math :: u = u_d - K_p (x - x_d) - K_i \int(C x - C x_d)
 
-    It can be called in the form
+    It can be called in the form::
 
         ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
 
