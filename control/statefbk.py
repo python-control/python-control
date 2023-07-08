@@ -614,7 +614,7 @@ def create_statefbk_iosystem(
         is given, the output of this system should represent the full state.
 
     gain : ndarray or tuple
-        If an array is given, it represents the state feedback gain (K).
+        If an array is given, it represents the state feedback gain (`K`).
         This matrix defines the gains to be applied to the system.  If
         `integral_action` is None, then the dimensions of this array
         should be (sys.ninputs, sys.nstates).  If `integral action` is
@@ -631,10 +631,10 @@ def create_statefbk_iosystem(
         Set the name of the signals to use for the desired state and
         inputs.  If a single string is specified, it should be a
         format string using the variable `i` as an index.  Otherwise,
-        a list of strings matching the size of xd and ud,
+        a list of strings matching the size of :math:`x_d` and :math:`u_d`,
         respectively, should be used.  Default is "xd[{i}]" for
         xd_labels and "ud[{i}]" for ud_labels.  These settings can
-        also be overriden using the `inputs` keyword.
+        also be overridden using the `inputs` keyword.
 
     integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral
@@ -650,13 +650,13 @@ def create_statefbk_iosystem(
     gainsched_indices : int, slice, or list of int or str, optional
         If a gain scheduled controller is specified, specify the indices of
         the controller input to use for scheduling the gain. The input to
-        the controller is the desired state xd, the desired input ud, and
-        the system state x (or state estimate xhat, if an estimator is
+        the controller is the desired state :math:`x_d`, the desired input :math:`u_d`, and
+        the system state :math:`x` (or state estimate :math:`\hat{x}`, if an estimator is
         given). If value is an integer `q`, the first `q` values of the
-        [xd, ud, x] vector are used.  Otherwise, the value should be a
+        :math:`[x_d, u_d, x]` vector are used.  Otherwise, the value should be a
         slice or a list of indices.  The list of indices can be specified
-        as either integer offsets or as signal names.  The default is to
-        use the desired state xd.
+        as either integer offsets or as signal names. The default is to
+        use the desired state :math:`x_d`.
 
     gainsched_method : str, optional
         The method to use for gain scheduling.  Possible values are 'linear'
@@ -677,9 +677,9 @@ def create_statefbk_iosystem(
     -------
     ctrl : NonlinearIOSystem
         Input/output system representing the controller.  This system
-        takes as inputs the desired state `xd`, the desired input
-        `ud`, and either the system state `x` or the estimated state
-        `xhat`.  It outputs the controller action `u` according to the
+        takes as inputs the desired state :math:`x_d`, the desired input
+        :math:`u_d`, and either the system state :math:`x` or the estimated state
+        :math:`\hat{x}`.  It outputs the controller action :math:`u` according to the
         formula :math:`u = u_d - K(x - x_d)`.  If the keyword
         `integral_action` is specified, then an additional set of
         integrators is included in the control system (with the gain
@@ -690,8 +690,8 @@ def create_statefbk_iosystem(
 
     clsys : NonlinearIOSystem
         Input/output system representing the closed loop system.  This
-        systems takes as inputs the desired trajectory `(xd, ud)` and
-        outputs the system state `x` and the applied input `u`
+        system takes as inputs the desired trajectory :math:`(x_d, u_d)` and
+        outputs the system state :math:`x` and the applied input :math:`u`
         (vertically stacked).
 
     Other Parameters
