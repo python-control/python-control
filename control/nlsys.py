@@ -1877,8 +1877,8 @@ def linearize(sys, xeq, ueq=None, t=0, params=None, **kw):
     Returns
     -------
     ss_sys : StateSpace
-        The linearization of the system, as a :class:`~control.LinearIOSystem`
-        object (which is also a :class:`~control.StateSpace` object.
+        The linearization of the system, as a :class:`~control.StateSpace`
+        object.
 
     Other Parameters
     ----------------
@@ -1924,7 +1924,7 @@ def interconnect(
 
     This function creates a new system that is an interconnection of a set of
     input/output systems.  If all of the input systems are linear I/O systems
-    (type :class:`~control.LinearIOSystem`) then the resulting system will be
+    (type :class:`~control.StateSpace`) then the resulting system will be
     a linear interconnected I/O system (type :class:`~control.LinearICSystem`)
     with the appropriate inputs, outputs, and states.  Otherwise, an
     interconnected I/O system (type :class:`~control.InterconnectedSystem`)
