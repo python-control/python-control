@@ -1488,6 +1488,7 @@ def input_output_response(
         return TimeResponseData(
             t_eval, y, None, u, issiso=sys.issiso(),
             output_labels=sys.output_labels, input_labels=sys.input_labels,
+            title="Input/output response for " + sys.name, sysname=sys.name,
             transpose=transpose, return_x=return_x, squeeze=squeeze)
 
     # Create a lambda function for the right hand side
@@ -1567,7 +1568,8 @@ def input_output_response(
     return TimeResponseData(
         soln.t, y, soln.y, u, issiso=sys.issiso(),
         output_labels=sys.output_labels, input_labels=sys.input_labels,
-        state_labels=sys.state_labels,
+        state_labels=sys.state_labels, sysname=sys.name,
+        title="Input/output response for " + sys.name,
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 

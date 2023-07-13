@@ -135,6 +135,9 @@ def reset_defaults():
     from .optimal import _optimal_defaults
     defaults.update(_optimal_defaults)
 
+    from .timeplot import _timeplot_defaults
+    defaults.update(_timeplot_defaults)
+
 
 def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
     """Return the default value for a configuration option.
