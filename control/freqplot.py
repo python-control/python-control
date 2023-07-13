@@ -20,6 +20,7 @@
 # [ ] Add line labels to gangof4
 # [ ] Update FRD to allow nyquist_response contours
 # [ ] Allow frequency range to be overridden in bode_plot
+# [ ] Unit tests for discrete time systems with different sample times
 
 #
 # This file contains some standard control system plots: Bode plots,
@@ -615,9 +616,6 @@ def bode_plot(
         phase = phase_data[index].reshape((noutputs, ninputs, -1))
         omega_sys, sysname = response.omega, response.sysname
 
-        # Keep track of Nyquist frequency for discrete time systems
-        nyq_freq = None if response.isctime() else math.pi / response.dt
-
         for i, j in itertools.product(range(noutputs), range(ninputs)):
             # Get the axes to use for magnitude and phase
             ax_mag = ax_array[mag_map[i, j]]
@@ -625,8 +623,8 @@ def bode_plot(
 
             # Get the frequencies and convert to Hz, if needed
             omega_plot = omega_sys / (2 * math.pi) if Hz else omega_sys
-            if nyq_freq is not None and Hz:
-                nyq_freq = nyq_freq / (2 * math.pi)
+            if response.isdtime(strict=True):
+                nyq_freq = 0.5 /response.dt if Hz else math.pi / response.dt
 
             # Save the magnitude and phase to plot
             mag_plot = 20 * np.log10(mag[i, j]) if dB else mag[i, j]
@@ -642,14 +640,13 @@ def bode_plot(
                     omega_plot, mag_plot, *fmt, label=sysname, **kwargs)
                 out[mag_map[i, j]] += lines
 
-                # Plot vertical line at Nyquist frequency
-                # TODO: move this until after all data are plotted
-                if nyq_freq:
-                    pltfcn(
-                        [nyq_freq, nyq_freq], ax_mag.get_ylim(),
-                        color=lines[0].get_color(), linestyle='--')
+                # Save the information needed for the Nyquist line
+                if response.isdtime(strict=True):
+                    ax_mag.axvline(
+                        nyq_freq, color=lines[0].get_color(), linestyle='--',
+                        label='_nyq_mag_' + sysname)
 
-                # Add a grid to the plot + labeling
+                # Add a grid to the plot + labeling (TODO? move to later?)
                 ax_mag.grid(grid and not margins, which='both')
 
             # Phase
@@ -658,12 +655,11 @@ def bode_plot(
                     omega_plot, phase_plot, *fmt, label=sysname, **kwargs)
                 out[phase_map[i, j]] += lines
 
-                # Plot vertical line at Nyquist frequency
-                # TODO: move this until after all data are plotted
-                if nyq_freq:
-                    ax_phase.semilogx(
-                        [nyq_freq, nyq_freq], ax_phase.get_ylim(),
-                        color=lines[0].get_color(), linestyle='--')
+                # Save the information needed for the Nyquist line
+                if response.isdtime(strict=True):
+                    ax_phase.axvline(
+                        nyq_freq, color=lines[0].get_color(), linestyle='--',
+                        label='_nyq_phase_' + sysname)
 
                 # Add a grid to the plot + labeling
                 ax_phase.grid(grid and not margins, which='both')
@@ -1015,14 +1011,14 @@ def bode_plot(
         for j in range(ncols):
             ax = ax_array[i, j]
             # Get the labels to use, removing common strings
-            labels = _make_legend_labels(
-                [line.get_label() for line in ax.get_lines()
-                 if line.get_label()[0] != '_'])
+            lines = [line for line in ax.get_lines()
+                     if line.get_label()[0] != '_']
+            labels = _make_legend_labels([line.get_label() for line in lines])
 
             # Generate the label, if needed
             if len(labels) > 1 and legend_map[i, j] != None:
                 with plt.rc_context(freqplot_rcParams):
-                    ax.legend(labels, loc=legend_map[i, j])
+                    ax.legend(lines, labels, loc=legend_map[i, j])
 
     #
     # Legacy return pocessing
