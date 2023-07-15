@@ -24,8 +24,9 @@
 
 #
 # This file contains some standard control system plots: Bode plots,
-# Nyquist plots and pole-zero diagrams.  The code for Nichols charts
-# is in nichols.py.
+# Nyquist plots and other frequency response plots.  The code for Nichols
+# charts is in nichols.py.  The code for pole-zero diagrams is in pzmap.py
+# and rlocus.py.
 #
 # Copyright (c) 2010 by California Institute of Technology
 # All rights reserved.
@@ -59,33 +60,29 @@
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# $Id$
 
-# TODO: clean up imports
-import math
-from os.path import commonprefix
-
+import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
+import math
 import warnings
-from math import nan
 import itertools
+from os.path import commonprefix
 
 from .ctrlutil import unwrap
 from .bdalg import feedback
 from .margins import stability_margins
 from .exception import ControlMIMONotImplemented
 from .statesp import StateSpace
-from .lti import frequency_response, _process_frequency_response
+from .lti import LTI, frequency_response, _process_frequency_response
 from .xferfcn import TransferFunction
 from .frdata import FrequencyResponseData
 from .timeplot import _make_legend_labels
 from . import config
 
-__all__ = ['bode_plot', 'nyquist_plot', 'singular_values_plot',
-           'gangof4_plot', 'gangof4_response', 'bode', 'nyquist',
-           'gangof4']
+__all__ = ['bode_plot', 'nyquist_plot', 'singular_values_response',
+           'singular_values_plot', 'gangof4_plot', 'gangof4_response',
+           'bode', 'nyquist', 'gangof4']
 
 # Default font dictionary
 _freqplot_rcParams = mpl.rcParams.copy()
@@ -112,22 +109,7 @@ _freqplot_defaults = {
     'freqplot.share_magnitude': 'row',
     'freqplot.share_phase': 'row',
     'freqplot.share_frequency': 'col',
-
-    # deprecations
-    'deprecated.bode.dB': 'freqplot.dB',
-    'deprecated.bode.deg': 'freqplot.deg',
-    'deprecated.bode.Hz': 'freqplot.Hz',
-    'deprecated.bode.grid': 'freqplot.grid',
-    'deprecated.bode.wrap_phase': 'freqplot.wrap_phase',
 }
-
-
-#
-# Main plotting functions
-#
-# This section of the code contains the functions for generating
-# frequency domain plots
-#
 
 #
 # Bode plot
@@ -136,6 +118,8 @@ _freqplot_defaults = {
 def bode_plot(
         data, omega=None, *fmt, ax=None, omega_limits=None, omega_num=None,
         plot=None, plot_magnitude=True, plot_phase=None, margins=None,
+        overlay_outputs=None, overlay_inputs=None, phase_label=None,
+        magnitude_label=None,
         margin_info=False, method='best', legend_map=None, legend_loc=None,
         sharex=None, sharey=None, title=None, relabel=True, **kwargs):
     """Bode plot for a system.
@@ -165,6 +149,7 @@ def bode_plot(
         Method to use in computing margins (see :func:`stability_margins`).
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
+        The `omega` parameter must be present (use omega=None if needed).
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -175,9 +160,9 @@ def bode_plot(
         the array matches the subplots shape and the value of the array is a
         list of Line2D objects in that subplot.
     mag : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, magnitude of the respone (deprecated).
+        If plot=False, magnitude of the response (deprecated).
     phase : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, phase in radians of the respone (deprecated).
+        If plot=False, phase in radians of the response (deprecated).
     omega : ndarray (or list of ndarray if len(data) > 1))
         If plot=False, frequency in rad/sec (deprecated).
 
@@ -261,8 +246,14 @@ def bode_plot(
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     freqplot_rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+
+    # Set the default labels
     freq_label = config._get_param(
         'freqplot', 'freq_label', kwargs, _freqplot_defaults, pop=True)
+    if magnitude_label is None:
+        magnitude_label = "Magnitude [dB]" if dB else "Magnitude"
+    if phase_label is None:
+        phase_label = "Phase [deg]" if deg else "Phase [rad]"
 
     # Use sharex and sharey as proxies for share_{magnitude, phase, frequency}
     if sharey is not None:
@@ -454,9 +445,20 @@ def bode_plot(
         noutputs = max(noutputs, response.noutputs)
 
     # Figure how how many rows and columns to use + offsets for inputs/outputs
-    nrows = (noutputs if plot_magnitude else 0) + \
-        (noutputs if plot_phase else 0)
-    ncols = ninputs
+    if overlay_outputs and overlay_inputs:
+        nrows = plot_magnitude + plot_phase
+        ncols = 1
+    elif overlay_outputs:
+        nrows = plot_magnitude + plot_phase
+        ncols = ninputs
+    elif overlay_inputs:
+        nrows = (noutputs if plot_magnitude else 0) + \
+            (noutputs if plot_phase else 0)
+        ncols = 1
+    else:
+        nrows = (noutputs if plot_magnitude else 0) + \
+            (noutputs if plot_phase else 0)
+        ncols = ninputs
 
     # See if we can use the current figure axes
     fig = plt.gcf()         # get current figure (or create new one)
@@ -510,7 +512,14 @@ def bode_plot(
         mag_map = np.empty((noutputs, ninputs), dtype=tuple)
         for i in range(noutputs):
             for j in range(ninputs):
-                mag_map[i, j] = (i, j)
+                if overlay_outputs and overlay_inputs:
+                    mag_map[i, j] = (0, 0)
+                elif overlay_outputs:
+                    mag_map[i, j] = (0, j)
+                elif overlay_inputs:
+                    mag_map[i, j] = (i, 0)
+                else:
+                    mag_map[i, j] = (i, j)
         phase_map = np.full((noutputs, ninputs), None)
         share_phase = False
 
@@ -518,7 +527,14 @@ def bode_plot(
         phase_map = np.empty((noutputs, ninputs), dtype=tuple)
         for i in range(noutputs):
             for j in range(ninputs):
-                phase_map[i, j] = (i, j)
+                if overlay_outputs and overlay_inputs:
+                    phase_map[i, j] = (0, 0)
+                elif overlay_outputs:
+                    phase_map[i, j] = (0, j)
+                elif overlay_inputs:
+                    phase_map[i, j] = (i, 0)
+                else:
+                    phase_map[i, j] = (i, j)
         mag_map = np.full((noutputs, ninputs), None)
         share_magnitude = False
 
@@ -527,8 +543,18 @@ def bode_plot(
         phase_map = np.empty((noutputs, ninputs), dtype=tuple)
         for i in range(noutputs):
             for j in range(ninputs):
-                mag_map[i, j] = (i*2, j)
-                phase_map[i, j] = (i*2 + 1, j)
+                if overlay_outputs and overlay_inputs:
+                    mag_map[i, j] = (0, 0)
+                    phase_map[i, j] = (1, 0)
+                elif overlay_outputs:
+                    mag_map[i, j] = (0, j)
+                    phase_map[i, j] = (1, j)
+                elif overlay_inputs:
+                    mag_map[i, j] = (i*2, 0)
+                    phase_map[i, j] = (i*2 + 1, 0)
+                else:
+                    mag_map[i, j] = (i*2, j)
+                    phase_map[i, j] = (i*2 + 1, j)
 
     # Identity map needed for setting up shared axes
     ax_map = np.empty((nrows, ncols), dtype=tuple)
@@ -563,18 +589,18 @@ def bode_plot(
 
     # Process magnitude, phase, and frequency axes
     for name, value, map, axis in zip(
-            ['share_magnitude', 'shape_phase', 'share_frequency'],
+            ['share_magnitude', 'share_phase', 'share_frequency'],
             [ share_magnitude,   share_phase,   share_frequency],
             [ mag_map,           phase_map,     ax_map],
             [ 'y',               'y',           'x']):
         if value in [True, 'all']:
             _share_axes(map[0 if axis == 'y' else -1, 0], map, axis)
         elif axis == 'y' and value in ['row']:
-            for i in range(noutputs):
+            for i in range(noutputs if not overlay_outputs else 1):
                 _share_axes(map[i, 0], map[i], 'y')
         elif axis == 'x' and value in ['col']:
             for j in range(ncols):
-                _share_axes(map[-1, j], map[j], 'x')
+                _share_axes(map[-1, j], map[:, j], 'x')
         elif value in [False, 'none']:
             # TODO: turn off any sharing that is on
             pass
@@ -610,6 +636,26 @@ def bode_plot(
         for j in range(ncols):
             out[i, j] = []      # unique list in each element
 
+    # Utility function for creating line label
+    def _make_line_label(response, output_index, input_index):
+        label = ""              # start with an empty label
+
+        # Add the output name if it won't appear as an axes label
+        if noutputs > 1 and overlay_outputs:
+            label += response.output_labels[output_index]
+
+        # Add the input name if it won't appear as a column label
+        if ninputs > 1 and overlay_inputs:
+            label += ", " if label != "" else ""
+            label += response.input_labels[input_index]
+
+        # Add the system name (will strip off later if redundant)
+        label += ", " if label != "" else ""
+        label += f"{response.sysname}"
+
+        print(label)
+        return label
+
     for index, response in enumerate(data):
         # Get the (pre-processed) data in fully indexed form
         mag = mag_data[index].reshape((noutputs, ninputs, -1))
@@ -630,14 +676,16 @@ def bode_plot(
             mag_plot = 20 * np.log10(mag[i, j]) if dB else mag[i, j]
             phase_plot = phase[i, j] * 180. / math.pi if deg else phase[i, j]
 
+            # Generate a label
+            label = _make_line_label(response, i, j)
+
             # Magnitude
             if plot_magnitude:
                 pltfcn = ax_mag.semilogx if dB else ax_mag.loglog
-                convert = (lambda x: 20 * np.log10(x)) if dB else (lambda x: x)
 
                 # Plot the main data
                 lines = pltfcn(
-                    omega_plot, mag_plot, *fmt, label=sysname, **kwargs)
+                    omega_plot, mag_plot, *fmt, label=label, **kwargs)
                 out[mag_map[i, j]] += lines
 
                 # Save the information needed for the Nyquist line
@@ -652,7 +700,7 @@ def bode_plot(
             # Phase
             if plot_phase:
                 lines = ax_phase.semilogx(
-                    omega_plot, phase_plot, *fmt, label=sysname, **kwargs)
+                    omega_plot, phase_plot, *fmt, label=label, **kwargs)
                 out[phase_map[i, j]] += lines
 
                 # Save the information needed for the Nyquist line
@@ -907,7 +955,7 @@ def bode_plot(
             fig.suptitle(new_title)
 
     #
-    # Label the axes (including trace labels)
+    # Label the axes (including header labels)
     #
     # Once the data are plotted, we label the axes.  The horizontal axes is
     # always frequency and this is labeled only on the bottom most row.  The
@@ -919,9 +967,10 @@ def bode_plot(
     #
 
     # Label the columns (do this first to get row labels in the right spot)
-    for j in range(ninputs):
+    for j in range(ncols):
         # If we have more than one column, label the individual responses
-        if noutputs > 1 or ninputs > 1:
+        if (noutputs > 1 and not overlay_outputs or ninputs > 1) \
+           and not overlay_inputs:
             with plt.rc_context(_freqplot_rcParams):
                 ax_array[0, j].set_title(f"From {data[0].input_labels[j]}")
 
@@ -929,15 +978,15 @@ def bode_plot(
         ax_array[-1, j].set_xlabel(freq_label % ("Hz" if Hz else "rad/s",))
 
     # Label the rows
-    for i in range(noutputs):
+    for i in range(noutputs if not overlay_outputs else 1):
         if plot_magnitude:
-            ax_mag = ax_array[i*2 if plot_phase else i, 0]
-            ax_mag.set_ylabel("Magnitude (dB)" if dB else "Magnitude")
+            ax_mag = ax_array[mag_map[i, 0]]
+            ax_mag.set_ylabel(magnitude_label)
         if plot_phase:
-            ax_phase = ax_array[i*2 + 1 if plot_magnitude else i, 0]
-            ax_phase.set_ylabel("Phase [deg]" if deg else "Phase [rad]")
+            ax_phase = ax_array[phase_map[i, 0]]
+            ax_phase.set_ylabel(phase_label)
 
-        if noutputs > 1 or ninputs > 1:
+        if (noutputs > 1 or ninputs > 1) and not overlay_outputs:
             if plot_magnitude and plot_phase:
                 # Get existing ylabel for left column and add a blank line
                 ax_mag.set_ylabel("\n" + ax_mag.get_ylabel())
@@ -1226,30 +1275,6 @@ def nyquist_plot(
     2
 
     """
-    # Check to see if legacy 'Plot' keyword was used
-    if 'Plot' in kwargs:
-        warnings.warn("'Plot' keyword is deprecated in nyquist_plot; "
-                      "use 'plot'", FutureWarning)
-        # Map 'Plot' keyword to 'plot' keyword
-        plot = kwargs.pop('Plot')
-
-    # Check to see if legacy 'labelFreq' keyword was used
-    if 'labelFreq' in kwargs:
-        warnings.warn("'labelFreq' keyword is deprecated in nyquist_plot; "
-                      "use 'label_freq'", FutureWarning)
-        # Map 'labelFreq' keyword to 'label_freq' keyword
-        label_freq = kwargs.pop('labelFreq')
-
-    # Check to see if legacy 'arrow_width' or 'arrow_length' were used
-    if 'arrow_width' in kwargs or 'arrow_length' in kwargs:
-        warnings.warn(
-            "'arrow_width' and 'arrow_length' keywords are deprecated in "
-            "nyquist_plot; use `arrow_size` instead", FutureWarning)
-        kwargs['arrow_size'] = \
-            (kwargs.get('arrow_width', 0) + kwargs.get('arrow_length', 0)) / 2
-        kwargs.pop('arrow_width', False)
-        kwargs.pop('arrow_length', False)
-
     # Get values for params (and pop from list to allow keyword use in plot)
     omega_num_given = omega_num is not None
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
@@ -1839,47 +1864,36 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 #
 # Singular values plot
 #
-def singular_values_plot(syslist, omega=None,
-                         plot=True, omega_limits=None, omega_num=None,
-                         *args, **kwargs):
-    """Singular value plot for a system
+def singular_values_response(
+        sys, omega=None, omega_limits=None, omega_num=None, Hz=False):
+    """Singular value response for a system.
 
-    Plots a singular value plot for the system over a (optional) frequency
-    range.
+    Computes the singular values for a system or list of systems over
+    a (optional) frequency range.
 
     Parameters
     ----------
-    syslist : linsys
+    sys : (list of) LTI systems
         List of linear systems (single system is OK).
     omega : array_like
         List of frequencies in rad/sec to be used for frequency response.
     plot : bool
         If True (default), generate the singular values plot.
     omega_limits : array_like of two values
-        Limits of the frequency vector to generate.
-        If Hz=True the limits are in Hz otherwise in rad/s.
+        Limits of the frequency vector to generate.  If Hz=True the
+        limits are in Hz otherwise in rad/s.
     omega_num : int
         Number of samples to plot. Default value (1000) set by
         config.defaults['freqplot.number_of_samples'].
-    dB : bool
-        If True, plot result in dB. Default value (False) set by
-        config.defaults['freqplot.dB'].
     Hz : bool
-        If True, plot frequency in Hz (omega must be provided in rad/sec).
-        Default value (False) set by config.defaults['freqplot.Hz']
+        If True, assume frequencies are given in Hz.  Default value
+        (False) set by config.defaults['freqplot.Hz']
 
     Returns
     -------
-    sigma : ndarray (or list of ndarray if len(syslist) > 1))
-        singular values
-    omega : ndarray (or list of ndarray if len(syslist) > 1))
-        frequency in rad/sec
-
-    Other Parameters
-    ----------------
-    grid : bool
-        If True, plot grid lines on gain and phase plots.  Default is set by
-        `config.defaults['freqplot.grid']`.
+    response : FrequencyResponseData
+        Frequency response with the number of outputs equal to the
+        number of singular values in the response, and a single input.
 
     Examples
     --------
@@ -1887,119 +1901,251 @@ def singular_values_plot(syslist, omega=None,
     >>> den = [75, 1]
     >>> G = ct.tf([[[87.8], [-86.4]], [[108.2], [-109.6]]],
     ...           [[den, den], [den, den]])
-    >>> sigmas, omegas = ct.singular_values_plot(G, omega=omegas, plot=False)
-
-    >>> sigmas, omegas = ct.singular_values_plot(G, 0.0, plot=False)
+    >>> response = ct.singular_values_response(G, omega=omegas)
 
     """
+    # If argument was a singleton, turn it into a tuple
+    syslist = sys if isinstance(sys, (list, tuple)) else (sys,)
 
-    # Make a copy of the kwargs dictionary since we will modify it
-    kwargs = dict(kwargs)
+    if any([not isinstance(sys, LTI) for sys in syslist]):
+        ValueError("singular values can only be computed for LTI systems")
 
-    # Get values for params (and pop from list to allow keyword use in plot)
+    # Compute the frequency responses for the systems
+    responses = frequency_response(
+        syslist, omega=omega, omega_limits=omega_limits,
+        omega_num=omega_num, Hz=Hz, squeeze=False)
+
+    # Calculate the singular values for each system in the list
+    svd_responses = []
+    for response in responses:
+        # Compute the singular values (permute indices to make things work)
+        fresp_permuted = response.fresp.transpose((2, 0, 1))
+        sigma = np.linalg.svd(fresp_permuted, compute_uv=False).transpose()
+        sigma_fresp = sigma.reshape(sigma.shape[0], 1, sigma.shape[1])
+
+        # Save the singular values as an FRD object
+        svd_responses.append(
+            FrequencyResponseData(
+                sigma_fresp, response.omega, _return_singvals=True,
+                outputs=[f'$\\sigma_{k}$' for k in range(sigma.shape[0])],
+                inputs='inputs', dt=response.dt, plot_phase=False,
+                sysname=response.sysname,
+                title=f"Singular values for {response.sysname}"))
+
+    # Return the responses in the same form that we received the systems
+    if isinstance(sys, (list, tuple)):
+        return svd_responses
+    else:
+        return svd_responses[0]
+
+
+def singular_values_plot(
+        data, omega=None, *fmt, plot=None, omega_limits=None, omega_num=None,
+        title=None, legend_loc='center right', **kwargs):
+    """Plot the singular values for a system.
+
+    Plot the singular values for a system or list of systems.  If
+    multiple systems are plotted, each system in the list is plotted
+    in a different color.
+
+    Parameters
+    ----------
+    data : list of `FrequencyResponseData`
+        List of :class:`FrequencyResponseData` objects.  For backward
+        compatibility, a list of LTI systems can also be given.
+    omega : array_like
+        List of frequencies in rad/sec over to plot over.
+    dB : bool
+        If True, plot result in dB.  Default is False.
+    Hz : bool
+        If True, plot frequency in Hz (omega must be provided in rad/sec).
+        Default value (False) set by config.defaults['freqplot.Hz'].
+    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+        Passed to `matplotlib` as the format string for all lines in the plot.
+        The `omega` parameter must be present (use omega=None if needed).
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+        Additional keywords passed to `matplotlib` to specify line properties.
+
+    Returns
+    -------
+    out : array of Line2D
+        1-D array of Line2D objects.  The size of the array matches
+        the number of systems and the value of the array is a list of
+        Line2D objects for that system.
+    mag : ndarray (or list of ndarray if len(data) > 1))
+        If plot=False, magnitude of the response (deprecated).
+    phase : ndarray (or list of ndarray if len(data) > 1))
+        If plot=False, phase in radians of the response (deprecated).
+    omega : ndarray (or list of ndarray if len(data) > 1))
+        If plot=False, frequency in rad/sec (deprecated).
+
+    """
+    # If argument was a singleton, turn it into a tuple
+    data = data if isinstance(data, (list, tuple)) else (data,)
+
+    # Keyword processing
     dB = config._get_param(
         'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
     Hz = config._get_param(
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    plot = config._get_param(
-        'freqplot', 'plot', plot, True)
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+    freqplot_rcParams = config._get_param(
+        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
-    # If argument was a singleton, turn it into a tuple
-    if not isinstance(syslist, (list, tuple)):
-        syslist = (syslist,)
+    # Process legacy system arguments
+    if any([isinstance(response, (StateSpace, TransferFunction))
+            for response in data]):
+        warnings.warn(
+            "passing systems to `singular_values_plot` is deprecated; "
+            "use `singular_values_response()`", DeprecationWarning)
+        responses = singular_values_response(
+                    data, omega=omega, omega_limits=omega_limits,
+                    omega_num=omega_num)
+        legacy_usage = True
+    else:
+        responses = data
+        legacy_usage = False
 
-    omega, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num, Hz=Hz)
+    # Process (legacy) plot keyword
+    if plot is not None:
+        warnings.warn(
+            "`singular_values_plot` return values of sigma, omega is "
+            "deprecated; use singular_values_response()", DeprecationWarning)
+        legacy_usage = True
+    else:
+        plot = True
 
-    omega = np.atleast_1d(omega)
+    # Extract the data we need for plotting
+    sigmas = [np.real(response.fresp[:, 0, :]) for response in responses]
+    omegas = [response.omega for response in responses]
 
-    if plot:
-        fig = plt.gcf()
-        ax_sigma = None
+    # Legacy processing for no plotting case
+    if plot is False:
+        if len(data) == 1:
+            return sigmas[0], omegas[0]
+        else:
+            return sigmas, omegas
 
-        # Get the current axes if they already exist
-        for ax in fig.axes:
-            if ax.get_label() == 'control-sigma':
-                ax_sigma = ax
+    fig = plt.gcf()             # get current figure (or create new one)
+    ax_sigma = None             # axes for plotting singular values
 
-        # If no axes present, create them from scratch
-        if ax_sigma is None:
-            plt.clf()
+    # Get the current axes if they already exist
+    for ax in fig.axes:
+        if ax.get_label() == 'control-sigma':
+            ax_sigma = ax
+
+    # If no axes present, create them from scratch
+    if ax_sigma is None:
+        if len(fig.axes) > 0:
+            # Create a new figure to avoid overwriting in the old one
+            fig = plt.figure()
+
+        with plt.rc_context(_freqplot_rcParams):
             ax_sigma = plt.subplot(111, label='control-sigma')
 
-        # color cycle handled manually as all singular values
-        # of the same systems are expected to be of the same color
-        color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        color_offset = 0
-        if len(ax_sigma.lines) > 0:
-            last_color = ax_sigma.lines[-1].get_color()
-            if last_color in color_cycle:
-                color_offset = color_cycle.index(last_color) + 1
+    # Handle color cycle manually as all singular values
+    # of the same systems are expected to be of the same color
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    color_offset = 0
+    if len(ax_sigma.lines) > 0:
+        last_color = ax_sigma.lines[-1].get_color()
+        if last_color in color_cycle:
+            color_offset = color_cycle.index(last_color) + 1
 
-    sigmas, omegas, nyquistfrqs = [], [], []
-    for idx_sys, sys in enumerate(syslist):
-        omega_sys = np.asarray(omega)
-        if sys.isdtime(strict=True):
-            nyquistfrq = math.pi / sys.dt
-            if not omega_range_given:
-                # limit up to and including nyquist frequency
-                omega_sys = np.hstack((
-                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+    # Create a list of lines for the output
+    out = np.empty(len(data), dtype=object)
 
-            omega_complex = np.exp(1j * omega_sys * sys.dt)
+    for idx_sys, response in enumerate(responses):
+        sigma = sigmas[idx_sys].transpose()     # frequency first for plotting
+        omega_sys = omegas[idx_sys]
+        if response.isdtime(strict=True):
+            nyquistfrq = math.pi / response.dt
         else:
             nyquistfrq = None
-            omega_complex = 1j*omega_sys
 
-        fresp = sys(omega_complex, squeeze=False)
+        color = color_cycle[(idx_sys + color_offset) % len(color_cycle)]
+        color = kwargs.pop('color', color)
 
-        fresp = fresp.transpose((2, 0, 1))
-        sigma = np.linalg.svd(fresp, compute_uv=False)
+        # TODO: copy from above
+        nyquistfrq_plot = None
+        if Hz:
+            omega_plot = omega_sys / (2. * math.pi)
+            if nyquistfrq:
+                nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+        else:
+            omega_plot = omega_sys
+            if nyquistfrq:
+                nyquistfrq_plot = nyquistfrq
+        sigma_plot = sigma
 
-        sigmas.append(sigma.transpose())  # return shape is "channel first"
-        omegas.append(omega_sys)
-        nyquistfrqs.append(nyquistfrq)
+        # Decide on the system name
+        sysname = response.sysname if response.sysname is not None \
+            else f"Unknown-{idx_sys}"
 
-        if plot:
-            color = color_cycle[(idx_sys + color_offset) % len(color_cycle)]
-            color = kwargs.pop('color', color)
+        if dB:
+            with plt.rc_context(freqplot_rcParams):
+                out[idx_sys] = ax_sigma.semilogx(
+                    omega_plot, 20 * np.log10(sigma_plot), color=color,
+                    label=sysname, *fmt, **kwargs)
+        else:
+            with plt.rc_context(freqplot_rcParams):
+                out[idx_sys] = ax_sigma.loglog(
+                    omega_plot, sigma_plot, color=color, label=sysname,
+                    *fmt, **kwargs)
 
-            # TODO: copy from above
-            nyquistfrq_plot = None
-            if Hz:
-                omega_plot = omega_sys / (2. * math.pi)
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq / (2. * math.pi)
-            else:
-                omega_plot = omega_sys
-                if nyquistfrq:
-                    nyquistfrq_plot = nyquistfrq
-            sigma_plot = sigma
-
-            if dB:
-                ax_sigma.semilogx(omega_plot, 20 * np.log10(sigma_plot),
-                                  color=color, *args, **kwargs)
-            else:
-                ax_sigma.loglog(omega_plot, sigma_plot,
-                                color=color, *args, **kwargs)
-
-            if nyquistfrq_plot is not None:
-                ax_sigma.axvline(x=nyquistfrq_plot, color=color)
+        if nyquistfrq_plot is not None:
+            ax_sigma.axvline(
+                nyquistfrq_plot, color=color, linestyle='--',
+                label='_nyq_freq_' + sysname)
 
     # Add a grid to the plot + labeling
-    if plot:
+    if grid:
         ax_sigma.grid(grid, which='both')
+    with plt.rc_context(freqplot_rcParams):
         ax_sigma.set_ylabel(
-            "Singular Values (dB)" if dB else "Singular Values")
-        ax_sigma.set_xlabel("Frequency (Hz)" if Hz else "Frequency (rad/sec)")
+            "Singular Values [dB]" if dB else "Singular Values")
+        ax_sigma.set_xlabel("Frequency [Hz]" if Hz else "Frequency [rad/sec]")
 
-    if len(syslist) == 1:
-        return sigmas[0], omegas[0]
-    else:
-        return sigmas, omegas
+    # List of systems that are included in this plot
+    labels, lines = [], []
+    last_color, counter = None, 0       # label unknown systems
+    for i, line in enumerate(ax_sigma.get_lines()):
+        label = line.get_label()
+        if label.startswith("Unknown"):
+            label = f"Unknown-{counter}"
+            if last_color is None:
+                last_color = line.get_color()
+            elif last_color != line.get_color():
+                counter += 1
+                last_color = line.get_color()
+        elif label[0] == '_':
+            continue
+
+        if label not in labels:
+            lines.append(line)
+            labels.append(label)
+
+    # Add legend if there is more than one system plotted
+    if len(labels) > 1:
+        with plt.rc_context(freqplot_rcParams):
+            ax_sigma.legend(lines, labels, loc=legend_loc)
+
+    # Add the title
+    if title is None:
+        title = "Singular values for " + ", ".join(labels)
+    with plt.rc_context(freqplot_rcParams):
+        fig.suptitle(title)
+
+    if legacy_usage:
+        if len(responses) == 1:
+            return sigmas[0], omegas[0]
+        else:
+            return sigmas, omegas
+
+    return out
+
 #
 # Utility functions
 #

@@ -84,8 +84,7 @@ class TestConfig:
 
         # assert that reset defaults keeps the custom type
         ct.config.reset_defaults()
-        with pytest.warns(FutureWarning,
-                          match='bode.* has been renamed to.*freqplot'):
+        with pytest.raises(KeyError):
             assert ct.config.defaults['bode.Hz'] \
                 == ct.config.defaults['freqplot.Hz']
 

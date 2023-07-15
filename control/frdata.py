@@ -218,6 +218,7 @@ class FrequencyResponseData(LTI):
         self.return_magphase=kwargs.pop('return_magphase', False)
         if self.return_magphase not in (True, False):
             raise ValueError("unknown return_magphase value")
+        self._return_singvals=kwargs.pop('_return_singvals', False)
 
         # Determine whether to squeeze the output
         self.squeeze=kwargs.pop('squeeze', None)
@@ -601,7 +602,10 @@ class FrequencyResponseData(LTI):
     def __iter__(self):
         fresp = _process_frequency_response(
             self, self.omega, self.fresp, squeeze=self.squeeze)
-        if not self.return_magphase:
+        if self._return_singvals:
+            # Legacy processing for singular values
+            return iter((self.fresp[:, 0, :], self.omega))
+        elif not self.return_magphase:
             return iter((self.omega, fresp))
         return iter((np.abs(fresp), np.angle(fresp), self.omega))
 

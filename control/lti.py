@@ -372,7 +372,8 @@ def evalfr(sys, x, squeeze=None):
 
 
 def frequency_response(
-        sys, omega=None, omega_limits=None, omega_num=None, squeeze=None):
+        sys, omega=None, omega_limits=None, omega_num=None,
+        Hz=None, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
 
     In general the system may be multiple input, multiple output (MIMO), where
@@ -453,7 +454,7 @@ def frequency_response(
 
     # Get the common set of frequencies to use
     omega_syslist, omega_range_given = _determine_omega_vector(
-        syslist, omega, omega_limits, omega_num)
+        syslist, omega, omega_limits, omega_num, Hz=Hz)
 
     responses = []
     for sys_ in syslist:

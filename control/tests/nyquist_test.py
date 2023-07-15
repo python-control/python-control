@@ -317,9 +317,9 @@ def test_nyquist_exceptions():
             match="only supports SISO"):
         ct.nyquist_plot(sys)
 
-    # Legacy keywords for arrow size
+    # Legacy keywords for arrow size (no longer supported)
     sys = ct.rss(2, 1, 1)
-    with pytest.warns(FutureWarning, match="use `arrow_size` instead"):
+    with pytest.raises(AttributeError):
         ct.nyquist_plot(sys, arrow_width=8, arrow_length=6)
 
     # Unknown arrow keyword
