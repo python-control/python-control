@@ -211,8 +211,9 @@ class FrequencyResponseData(LTI):
         self.sysname = kwargs.pop('sysname', None)
 
         # Keep track of default properties for plotting
-        self.plot_phase=kwargs.pop('plot_phase', None)
-        self.title=kwargs.pop('title', None)
+        self.plot_phase = kwargs.pop('plot_phase', None)
+        self.title = kwargs.pop('title', None)
+        self.plot_type = kwargs.pop('plot_type', 'bode')
 
         # Keep track of return type
         self.return_magphase=kwargs.pop('return_magphase', False)

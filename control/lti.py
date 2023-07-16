@@ -119,8 +119,8 @@ class LTI(InputOutputSystem):
         # Return the data as a frequency response data object
         response = self(s)
         return FrequencyResponseData(
-            response, omega, return_magphase=True, squeeze=squeeze, dt=self.dt,
-            sysname=self.name)
+            response, omega, return_magphase=True, squeeze=squeeze,
+            dt=self.dt, sysname=self.name, plot_type='bode')
 
     def dcgain(self):
         """Return the zero-frequency gain"""
@@ -470,8 +470,12 @@ def frequency_response(
 
         # Compute the frequency response
         responses.append(sys_.frequency_response(omega_sys, squeeze=squeeze))
-        
-    return responses if isinstance(sys, (list, tuple)) else responses[0]
+
+    if isinstance(sys, (list, tuple)):
+        from .freqplot import FrequencyResponseList
+        return FrequencyResponseList(responses)
+    else:
+        return responses[0]
 
 # Alternative name (legacy)
 def freqresp(sys, omega):

@@ -112,7 +112,39 @@ _freqplot_defaults = {
 }
 
 #
+# Frequency response data list class
+#
+# This class is a subclass of list that adds a plot() method, enabling
+# direct plotting from routines returning a list of FrequencyResponseData
+# objects.
+#
+
+class FrequencyResponseList(list):
+    def plot(self, *args, plot_type=None, **kwargs):
+        if plot_type == None:
+            for response in self:
+                if plot_type is not None and response.plot_type != plot_type:
+                    raise TypeError(
+                        "inconsistent plot_types in data; set plot_type "
+                        "to 'bode', 'svplot', or 'nyquist'")
+                plot_type = response.plot_type
+
+        if plot_type == 'bode':
+            bode_plot(self, *args, **kwargs)
+        elif plot_type == 'svplot':
+            singular_values_plot(self, *args, **kwargs)
+        elif plot_type == 'nyquist':
+            # nyquist_plot(self, *args, **kwargs)
+            raise NotImplementedError("Nyquist plots not yet supported")
+        else:
+            raise ValueError(f"unknown plot type '{plot_type}'")
+
+#
 # Bode plot
+#
+# This is the default method for plotting frequency responses.  There are
+# lots of options available for tuning the format of the plot, (hopefully)
+# covering most of the common use cases.
 #
 
 def bode_plot(
@@ -653,7 +685,6 @@ def bode_plot(
         label += ", " if label != "" else ""
         label += f"{response.sysname}"
 
-        print(label)
         return label
 
     for index, response in enumerate(data):
@@ -1927,14 +1958,14 @@ def singular_values_response(
         svd_responses.append(
             FrequencyResponseData(
                 sigma_fresp, response.omega, _return_singvals=True,
-                outputs=[f'$\\sigma_{k}$' for k in range(sigma.shape[0])],
+                outputs=[f'$\\sigma_{{{k+1}}}$' for k in range(sigma.shape[0])],
                 inputs='inputs', dt=response.dt, plot_phase=False,
-                sysname=response.sysname,
+                sysname=response.sysname, plot_type='svplot',
                 title=f"Singular values for {response.sysname}"))
 
     # Return the responses in the same form that we received the systems
     if isinstance(sys, (list, tuple)):
-        return svd_responses
+        return FrequencyResponseList(svd_responses)
     else:
         return svd_responses[0]
 
@@ -2016,6 +2047,11 @@ def singular_values_plot(
         legacy_usage = True
     else:
         plot = True
+
+    # Warn the user if we got past something that is not real-valued
+    if any([not np.allclose(np.imag(response.fresp[:, 0, :]), 0)
+            for response in responses]):
+        warnings.warn("data has non-zero imaginary component")
 
     # Extract the data we need for plotting
     sigmas = [np.real(response.fresp[:, 0, :]) for response in responses]
