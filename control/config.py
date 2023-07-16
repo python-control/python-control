@@ -326,13 +326,13 @@ def use_legacy_defaults(version):
 #
 # Use this function to handle a legacy keyword that has been renamed.  This
 # function pops the old keyword off of the kwargs dictionary and issues a
-# warning.  if both the old and new keyword are present, a ControlArgument
+# warning.  If both the old and new keyword are present, a ControlArgument
 # exception is raised.
 #
 def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
     if kwargs.get(oldkey) is not None:
         warnings.warn(
-            f"keyworld '{oldkey}' is deprecated; use '{newkey}'",
+            f"keyword '{oldkey}' is deprecated; use '{newkey}'",
             DeprecationWarning)
         if newval is not None:
             raise ControlArgument(

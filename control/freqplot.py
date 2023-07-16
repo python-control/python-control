@@ -149,10 +149,10 @@ class FrequencyResponseList(list):
 
 def bode_plot(
         data, omega=None, *fmt, ax=None, omega_limits=None, omega_num=None,
-        plot=None, plot_magnitude=True, plot_phase=None, margins=None,
+        plot=None, plot_magnitude=True, plot_phase=None,
         overlay_outputs=None, overlay_inputs=None, phase_label=None,
-        magnitude_label=None,
-        margin_info=False, method='best', legend_map=None, legend_loc=None,
+        magnitude_label=None, display_margins=None,
+        margins_method='best', legend_map=None, legend_loc=None,
         sharex=None, sharey=None, title=None, relabel=True, **kwargs):
     """Bode plot for a system.
 
@@ -173,11 +173,12 @@ def bode_plot(
     deg : bool
         If True, plot phase in degrees (else radians).  Default value (True)
         set by config.defaults['freqplot.deg'].
-    margins : bool
-        If True, plot gain and phase margin.  (TODO: merge with margin_info)
-    margin_info : bool
-        If True, plot information about gain and phase margin.
-    method : str, optional
+    display_margins : bool or str
+        If True, draw gain and phase margin lines on the magnitude and phase
+        graphs and display the margins at the top of the graph.  If set to
+        'overlay', the values for the gain and phase margin are placed on
+        the graph.  Setting display_margins turns off the axes grid.
+    margins_method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
@@ -269,8 +270,6 @@ def bode_plot(
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    margins = config._get_param(
-        'freqplot', 'margins', margins, False)
     wrap_phase = config._get_param(
         'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
@@ -299,6 +298,19 @@ def bode_plot(
             ValueError(
                 "sharex cannot be present with share_frequency")
         kwargs['share_frequency'] = sharex
+
+    # Legacy keywords for margins
+    display_margins = config._process_legacy_keyword(
+        kwargs, 'margins', 'display_margins', display_margins)
+    if kwargs.pop('margin_info', False):
+        warnings.warn(
+            "keyword 'margin_info' is deprecated; "
+            "use 'display_margins='overlay'")
+        if display_margins is False:
+            raise ValueError(
+                "conflicting_keywords: `display_margins` and `margin_info`")
+    margins_method = config._process_legacy_keyword(
+        kwargs, 'method', 'margins_method', margins_method)
 
     if not isinstance(data, (list, tuple)):
         data = [data]
@@ -725,8 +737,8 @@ def bode_plot(
                         nyq_freq, color=lines[0].get_color(), linestyle='--',
                         label='_nyq_mag_' + sysname)
 
-                # Add a grid to the plot + labeling (TODO? move to later?)
-                ax_mag.grid(grid and not margins, which='both')
+                # Add a grid to the plot
+                ax_mag.grid(grid and not display_margins, which='both')
 
             # Phase
             if plot_phase:
@@ -740,22 +752,22 @@ def bode_plot(
                         nyq_freq, color=lines[0].get_color(), linestyle='--',
                         label='_nyq_phase_' + sysname)
 
-                # Add a grid to the plot + labeling
-                ax_phase.grid(grid and not margins, which='both')
+                # Add a grid to the plot
+                ax_phase.grid(grid and not display_margins, which='both')
+                print(f"phase_ylim={ax_phase.get_ylim()}")
 
         #
-        # Plot gain and phase margins (SISO only)
+        # Display gain and phase margins (SISO only)
         #
 
-        # Show the phase and gain margins in the plot
-        if margins:
+        if display_margins:
             if ninputs > 1 or noutputs > 1:
                 raise NotImplementedError(
                     "margins are not available for MIMO systems")
 
             # Compute stability margins for the system
-            margin = stability_margins(response, method=method)
-            gm, pm, Wcg, Wcp = (margin[i] for i in [0, 1, 3, 4])
+            margins = stability_margins(response, method=margins_method)
+            gm, pm, Wcg, Wcp = (margins[i] for i in [0, 1, 3, 4])
 
             # Figure out sign of the phase at the first gain crossing
             # (needed if phase_wrap is True)
@@ -780,69 +792,47 @@ def bode_plot(
                                  math.radians(phase_limit),
                                  color='k', linestyle=':', zorder=-20)
                 phase_ylim = ax_phase.get_ylim()
+                print(f"{phase_ylim=}")
 
             # Annotate the phase margin (if it exists)
             if plot_phase and pm != float('inf') and Wcp != float('nan'):
-                if dB:
-                    ax_mag.semilogx(
-                        [Wcp, Wcp], [0., -1e5],
-                        color='k', linestyle=':', zorder=-20)
-                else:
-                    ax_mag.loglog(
-                        [Wcp, Wcp], [1., 1e-8],
-                        color='k', linestyle=':', zorder=-20)
+                # Draw dotted lines marking the gain crossover frequencies
+                if plot_magnitude:
+                    ax_mag.axvline(Wcp, color='k', linestyle=':', zorder=-30)
+                ax_phase.axvline(Wcp, color='k', linestyle=':', zorder=-30)
 
+                # Draw solid segments indicating the margins
                 if deg:
-                    ax_phase.semilogx(
-                        [Wcp, Wcp], [1e5, phase_limit + pm],
-                        color='k', linestyle=':', zorder=-20)
                     ax_phase.semilogx(
                         [Wcp, Wcp], [phase_limit + pm, phase_limit],
                         color='k', zorder=-20)
                 else:
-                    ax_phase.semilogx(
-                        [Wcp, Wcp], [1e5, math.radians(phase_limit) +
-                                     math.radians(pm)],
-                        color='k', linestyle=':', zorder=-20)
                     ax_phase.semilogx(
                         [Wcp, Wcp], [math.radians(phase_limit) +
                                      math.radians(pm),
                                      math.radians(phase_limit)],
                         color='k', zorder=-20)
 
-                ax_phase.set_ylim(phase_ylim)
-
             # Annotate the gain margin (if it exists)
             if plot_magnitude and gm != float('inf') and \
                Wcg != float('nan'):
+                # Draw dotted lines marking the phase crossover frequencies
+                ax_mag.axvline(Wcg, color='k', linestyle=':', zorder=-30)
+                if plot_phase:
+                    ax_phase.axvline(Wcg, color='k', linestyle=':', zorder=-30)
+
+                # Draw solid segments indicating the margins
                 if dB:
-                    ax_mag.semilogx(
-                        [Wcg, Wcg], [-20.*np.log10(gm), -1e5],
-                        color='k', linestyle=':', zorder=-20)
                     ax_mag.semilogx(
                         [Wcg, Wcg], [0, -20*np.log10(gm)],
                         color='k', zorder=-20)
                 else:
                     ax_mag.loglog(
-                        [Wcg, Wcg], [1./gm, 1e-8], color='k',
-                        linestyle=':', zorder=-20)
-                    ax_mag.loglog(
                         [Wcg, Wcg], [1., 1./gm], color='k', zorder=-20)
 
-                if plot_phase:
-                    if deg:
-                        ax_phase.semilogx(
-                            [Wcg, Wcg], [0, phase_limit],
-                            color='k', linestyle=':', zorder=-20)
-                    else:
-                        ax_phase.semilogx(
-                            [Wcg, Wcg], [0, math.radians(phase_limit)],
-                            color='k', linestyle=':', zorder=-20)
-
-                ax_mag.set_ylim(mag_ylim)
-                ax_phase.set_ylim(phase_ylim)
-
-            if margin_info:
+            if display_margins == 'overlay':
+                # TODO: figure out how to handle case of multiple lines
+                # Put the margin information in the lower left corner
                 if plot_magnitude:
                     ax_mag.text(
                         0.04, 0.06,
@@ -854,6 +844,7 @@ def bode_plot(
                         verticalalignment='bottom',
                         transform=ax_mag.transAxes,
                         fontsize=8 if int(mpl.__version__[0]) == 1 else 6)
+
                 if plot_phase:
                     ax_phase.text(
                         0.04, 0.06,
@@ -865,17 +856,24 @@ def bode_plot(
                         verticalalignment='bottom',
                         transform=ax_phase.transAxes,
                         fontsize=8 if int(mpl.__version__[0]) == 1 else 6)
+
             else:
-                # TODO: gets overwritten below
-                plt.suptitle(
-                "Gm = %.2f %s(at %.2f %s), "
-                    "Pm = %.2f %s (at %.2f %s)" %
-                    (20*np.log10(gm) if dB else gm,
-                     'dB ' if dB else '',
-                     Wcg, 'Hz' if Hz else 'rad/s',
-                     pm if deg else math.radians(pm),
-                     'deg' if deg else 'rad',
-                     Wcp, 'Hz' if Hz else 'rad/s'))
+                # Put the title underneath the suptitle (one line per system)
+                ax = ax_mag if ax_mag else ax_phase
+                axes_title = ax.get_title()
+                if axes_title is not None and axes_title != "":
+                    axes_title += "\n"
+                with plt.rc_context(_freqplot_rcParams):
+                    ax.set_title(
+                        axes_title + f"{sysname}: "
+                        "Gm = %.2f %s(at %.2f %s), "
+                        "Pm = %.2f %s (at %.2f %s)" %
+                        (20*np.log10(gm) if dB else gm,
+                         'dB ' if dB else '',
+                         Wcg, 'Hz' if Hz else 'rad/s',
+                         pm if deg else math.radians(pm),
+                         'deg' if deg else 'rad',
+                         Wcp, 'Hz' if Hz else 'rad/s'))
 
     #
     # Finishing handling axes limit sharing
@@ -887,12 +885,12 @@ def bode_plot(
     # * manually generated labels and grids need to reflect the limts for
     #   shared axes, which we don't know until we have plotted everything;
     #
-    # * the use of loglog and semilog regenerate the labels (not quite sure
-    #   why, since using sharex and sharey in subplots does not have this
-    #   behavior).
+    # * the loglog and semilog functions regenerate the labels (not quite
+    #   sure why, since using sharex and sharey in subplots does not have
+    #   this behavior).
     #
     # Note: as before, if the various share_* keywords are None then a
-    # previous set of axes are available and no updates are made.
+    # previous set of axes are available and no updates are made. (TODO: true?)
     #
 
     for i in range(noutputs):

@@ -204,27 +204,28 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
     fig = plt.gcf()
     allaxes = fig.get_axes()
 
+    # TODO: update with better tests for new margin plots
     mag_to_infinity = (np.array([Wcp, Wcp]),
                        np.array([maginfty1, maginfty2]))
-    assert_allclose(mag_to_infinity,
-                    allaxes[0].lines[2].get_data(),
+    assert_allclose(mag_to_infinity[0],
+                    allaxes[0].lines[2].get_data()[0],
                     rtol=1e-5)
 
     gm_to_infinty = (np.array([Wcg, Wcg]),
                      np.array([gminv, maginfty2]))
-    assert_allclose(gm_to_infinty,
-                    allaxes[0].lines[3].get_data(),
+    assert_allclose(gm_to_infinty[0],
+                    allaxes[0].lines[3].get_data()[0],
                     rtol=1e-5)
 
     one_to_gm = (np.array([Wcg, Wcg]),
                  np.array([maginfty1, gminv]))
-    assert_allclose(one_to_gm, allaxes[0].lines[4].get_data(),
+    assert_allclose(one_to_gm[0], allaxes[0].lines[4].get_data()[0],
                     rtol=1e-5)
 
     pm_to_infinity = (np.array([Wcp, Wcp]),
                       np.array([1e5, pm]))
-    assert_allclose(pm_to_infinity,
-                    allaxes[1].lines[2].get_data(),
+    assert_allclose(pm_to_infinity[0],
+                    allaxes[1].lines[2].get_data()[0],
                     rtol=1e-5)
 
     pm_to_phase = (np.array([Wcp, Wcp]),
@@ -234,7 +235,7 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
 
     phase_to_infinity = (np.array([Wcg, Wcg]),
                          np.array([0, p0]))
-    assert_allclose(phase_to_infinity, allaxes[1].lines[4].get_data(),
+    assert_allclose(phase_to_infinity[0], allaxes[1].lines[4].get_data()[0],
                     rtol=1e-5)
 
 

@@ -112,8 +112,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         'omega_limits': omega_limits,
         'omega_num' : omega_num,
         'ax': axes[:, 0:1],
-        'margins': margins_bode,
-        'margin_info': True,
+        'display_margins': 'overlay' if margins_bode else False,
     }
 
     # Check to see if legacy 'PrintGain' keyword was used
