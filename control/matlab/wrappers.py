@@ -64,11 +64,14 @@ def bode(*args, **kwargs):
     """
     from ..freqplot import bode_plot
 
+    # Use the plot keyword to get legacy behavior
+    # TODO: update to call frequency_response and then bode_plot
+    kwargs = dict(kwargs)       # make a copy since we modify this
+    if 'plot' not in kwargs:
+        kwargs['plot'] = True
+
     # Turn off deprecation warning
     with warnings.catch_warnings():
-        warnings.filterwarnings(
-            'ignore', message='passing systems .* is deprecated',
-            category=DeprecationWarning)
         warnings.filterwarnings(
             'ignore', message='.* return values of .* is deprecated',
             category=DeprecationWarning)

@@ -360,11 +360,11 @@ def test_options(editsdefaults):
      ])
 def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
     # Check initial phase of standard transfer functions
-    mag, phase, omega = ctrl.bode(TF)
+    mag, phase, omega = ctrl.bode(TF, plot=True)
     assert(abs(phase[0] - default_phase) < 0.1)
 
     # Now reset the initial phase to +180 and see if things work
-    mag, phase, omega = ctrl.bode(TF, initial_phase=initial_phase)
+    mag, phase, omega = ctrl.bode(TF, initial_phase=initial_phase, plot=True)
     assert(abs(phase[0] - expected_phase) < 0.1)
 
     # Make sure everything works in rad/sec as well
@@ -372,7 +372,8 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
         plt.xscale('linear')  # avoids xlim warning on next line
         plt.clf()  # clear previous figure (speeds things up)
         mag, phase, omega = ctrl.bode(
-            TF, initial_phase=initial_phase/180. * math.pi, deg=False)
+            TF, initial_phase=initial_phase/180. * math.pi,
+            deg=False, plot=True)
         assert(abs(phase[0] - expected_phase) < 0.1)
 
 
@@ -399,7 +400,7 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
                   -270, -3*math.pi/2, math.pi/2,    id="order5, -270"),
     ])
 def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
-    mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
+    mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase, plot=True)
     assert(min(phase) >= min_phase)
     assert(max(phase) <= max_phase)
 

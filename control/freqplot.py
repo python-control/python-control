@@ -201,8 +201,10 @@ def bode_plot(
 
     Other Parameters
     ----------------
-    plot : bool
-        If True (default), plot magnitude and phase.
+    plot : bool, optional
+        (legacy) If given, `bode_plot` returns the legacy return values
+        of magnitude, phase, and frequency.  If False, just return the
+        values with no plot.
     omega_limits : array_like of two values
         Limits of the to generate frequency vector. If Hz=True the limits
         are in Hz otherwise in rad/s.
@@ -232,21 +234,19 @@ def bode_plot(
 
     Notes
     -----
-    1. Alternatively, you may use the lower-level methods
-       :meth:`LTI.frequency_response` or ``sys(s)`` or ``sys(z)`` or to
-       generate the frequency response for a single system.
+    1. Starting with python-control version 0.10, `bode_plot`returns an
+       array of lines instead of magnitude, phase, and frequency. To
+       recover the # old behavior, call `bode_plot` with `plot=True`, which
+       will force the legacy return values to be used (with a warning).  To
+       obtain just the frequency response of a system (or list of systems)
+       without plotting, use the :func:`~control.frequency_response`
+       command.
 
     2. If a discrete time model is given, the frequency response is plotted
        along the upper branch of the unit circle, using the mapping ``z =
        exp(1j * omega * dt)`` where `omega` ranges from 0 to `pi/dt` and `dt`
        is the discrete timebase.  If timebase not specified (``dt=True``),
        `dt` is set to 1.
-
-    3. The legacy version of this function is invoked if instead of passing
-       frequency response data, a system (or list of systems) is passed as
-       the first argument, or if the (deprecated) keyword `plot` is set to
-       True or False. The return value is then given as `mag`, `phase`,
-       `omega` for the plotted frequency response (SISO only).
 
     Examples
     --------
@@ -315,18 +315,6 @@ def bode_plot(
     if not isinstance(data, (list, tuple)):
         data = [data]
 
-    # For backwards compatibility, allow systems in the data list
-    if all([isinstance(
-            sys, (StateSpace, TransferFunction)) for sys in data]):
-        data = frequency_response(
-            data, omega=omega, omega_limits=omega_limits,
-            omega_num=omega_num)
-        warnings.warn(
-            "passing systems to `bode_plot` is deprecated; "
-            "use `frequency_response()`", DeprecationWarning)
-        if plot is None:
-            plot = True         # Keep track of legacy usage (see notes below)
-
     #
     # Pre-process the data to be plotted (unwrap phase)
     #
@@ -336,6 +324,13 @@ def bode_plot(
     # plot == False, then these values are returned to the user (instead of
     # the list of lines created, which is the new output for _plot functions.
     #
+
+    # If we were passed a list of systems, convert to data
+    if all([isinstance(
+            sys, (StateSpace, TransferFunction)) for sys in data]):
+        data = frequency_response(
+            data, omega=omega, omega_limits=omega_limits,
+            omega_num=omega_num, Hz=Hz)
 
     # If plot_phase is not specified, check the data first, otherwise true
     if plot_phase is None:
@@ -409,28 +404,25 @@ def bode_plot(
     #
     # There are three possibilities at this stage in the code:
     #
-    # * plot == True: either set explicitly by the user or we were passed a
-    #   non-FRD system instead of data.  Return mag, phase, omega, with a
-    #   warning.
+    # * plot == True: set explicitly by the user. Return mag, phase, omega,
+    #   with a warning.
     #
     # * plot == False: set explicitly by the user. Return mag, phase,
     #   omega, with a warning.
     #
-    # * plot == None: this is the new default setting and if it hasn't been
-    #   changed, then we use the v0.10+ standard of returning an array of
+    # * plot == None: this is the new default setting.  Return an array of
     #   lines that were drawn.
     #
-    # The one case that can cause problems is that a user called
-    # `bode_plot` with an FRD system, didn't set the plot keyword
-    # explicitly, and expected mag, phase, omega as a return value.  This
-    # is hopefully a rare case (it wasn't in any of our unit tests nor
-    # examples at the time of v0.10.0).
+    # If `bode_plot` was called with no `plot` argument and the return
+    # values were used, the new code will cause problems (you get an array
+    # of lines instead of magnitude, phase, and frequency).  To recover the
+    # old behavior, call `bode_plot` with `plot=True`.
     #
     # All of this should be removed in v0.11+ when we get rid of deprecated
     # code.
     #
 
-    if plot is True or plot is False:
+    if plot is not None:
         warnings.warn(
             "`bode_plot` return values of mag, phase, omega is deprecated; "
             "use frequency_response()", DeprecationWarning)
@@ -1828,8 +1820,8 @@ def _compute_curve_offset(resp, mask, max_offset):
 def gangof4_response(P, C, omega=None, Hz=False):
     """Compute the response of the "Gang of 4" transfer functions for a system.
 
-    Generates a 2x2 plot showing the "Gang of 4" sensitivity functions
-    [T, PS; CS, S].
+    Generates a 2x2 frequency response for the "Gang of 4" sensitivity
+    functions [T, PS; CS, S].
 
     Parameters
     ----------
@@ -1840,7 +1832,9 @@ def gangof4_response(P, C, omega=None, Hz=False):
 
     Returns
     -------
-    None
+    response : :class:`~control.FrequencyResponseData`
+        Frequency response with inputs 'r' and 'd' and outputs 'y', and 'u'
+        representing the 2x2 matrix of transfer functions in the Gang of 4.
 
     Examples
     --------
@@ -1989,6 +1983,10 @@ def singular_values_plot(
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
         Default value (False) set by config.defaults['freqplot.Hz'].
+    plot : bool, optional
+        (legacy) If given, `singular_values_plot` returns the legacy return
+        values of magnitude, phase, and frequency.  If False, just return
+        the values with no plot.
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
@@ -2023,28 +2021,20 @@ def singular_values_plot(
     freqplot_rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
-    # Process legacy system arguments
+    # Convert systems into frequency responses
     if any([isinstance(response, (StateSpace, TransferFunction))
             for response in data]):
-        warnings.warn(
-            "passing systems to `singular_values_plot` is deprecated; "
-            "use `singular_values_response()`", DeprecationWarning)
         responses = singular_values_response(
                     data, omega=omega, omega_limits=omega_limits,
                     omega_num=omega_num)
-        legacy_usage = True
     else:
         responses = data
-        legacy_usage = False
 
     # Process (legacy) plot keyword
     if plot is not None:
         warnings.warn(
             "`singular_values_plot` return values of sigma, omega is "
             "deprecated; use singular_values_response()", DeprecationWarning)
-        legacy_usage = True
-    else:
-        plot = True
 
     # Warn the user if we got past something that is not real-valued
     if any([not np.allclose(np.imag(response.fresp[:, 0, :]), 0)
@@ -2172,7 +2162,8 @@ def singular_values_plot(
     with plt.rc_context(freqplot_rcParams):
         fig.suptitle(title)
 
-    if legacy_usage:
+    # Legacy return processing
+    if plot is not None:
         if len(responses) == 1:
             return sigmas[0], omegas[0]
         else:

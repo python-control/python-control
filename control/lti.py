@@ -424,8 +424,11 @@ def frequency_response(
 
     Notes
     -----
-    This function is a wrapper for :meth:`StateSpace.frequency_response` and
-    :meth:`TransferFunction.frequency_response`.
+    1. This function is a wrapper for :meth:`StateSpace.frequency_response`
+       and :meth:`TransferFunction.frequency_response`.
+
+    2. You can also use the lower-level methods ``sys(s)`` or ``sys(z)`` to
+       generate the frequency response for a single system.
 
     Examples
     --------
