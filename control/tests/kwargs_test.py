@@ -110,6 +110,8 @@ def test_kwarg_search(module, prefix):
       (lambda x, u, params: None, lambda zflag, params: None), {}),
      (control.InputOutputSystem, 0, 0, (),
       {'inputs': 1, 'outputs': 1, 'states': 1}),
+     (control.LTI, 0, 0, (),
+      {'inputs': 1, 'outputs': 1, 'states': 1}),
      (control.flatsys.LinearFlatSystem, 1, 0, (), {}),
      (control.NonlinearIOSystem.linearize, 1, 0, (0, 0), {}),
      (control.StateSpace.sample, 1, 0, (0.1,), {}),
@@ -156,26 +158,32 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
     function(*args, **kwargs)
 
     # Now add an unrecognized keyword and make sure there is an error
-    with pytest.raises(AttributeError,
-                       match="(has no property|unexpected keyword)"):
+    with pytest.raises(
+            (AttributeError, TypeError),
+            match="(has no property|unexpected keyword|unrecognized keyword)"):
         function(*args, **kwargs, unknown=None)
 
 
 @pytest.mark.parametrize(
-    "data_fcn, plot_fcn", [
-        (control.step_response, control.time_response_plot),
-        (control.step_response, control.TimeResponseData.plot),
-        (control.frequency_response, control.FrequencyResponseData.plot),
-        (control.frequency_response, control.bode),
-        (control.frequency_response, control.bode_plot),
+    "data_fcn, plot_fcn, mimo", [
+        (control.step_response, control.time_response_plot, True),
+        (control.step_response, control.TimeResponseData.plot, True),
+        (control.frequency_response, control.FrequencyResponseData.plot, True),
+        (control.frequency_response, control.bode, True),
+        (control.frequency_response, control.bode_plot, True),
+        (control.nyquist_response, control.nyquist_plot, False),
     ])
-def test_response_plot_kwargs(data_fcn, plot_fcn):
+def test_response_plot_kwargs(data_fcn, plot_fcn, mimo):
     # Create a system for testing
-    response = data_fcn(control.rss(4, 2, 2))
+    if mimo:
+        response = data_fcn(control.rss(4, 2, 2))
+    else:
+        response = data_fcn(control.rss(4, 1, 1))
 
     # Make sure that calling the data function with unknown keyword errs
-    with pytest.raises((AttributeError, TypeError),
-                       match="(has no property|unexpected keyword)"):
+    with pytest.raises(
+            (AttributeError, TypeError),
+            match="(has no property|unexpected keyword|unrecognized keyword)"):
         data_fcn(control.rss(2, 1, 1), unknown=None)
 
     # Call the plotting function normally and make sure it works
@@ -216,6 +224,7 @@ kwarg_unittest = {
     'lqr': test_unrecognized_kwargs,
     'nlsys': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
+    'nyquist_response': test_response_plot_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
     'pzmap': test_unrecognized_kwargs,
     'rlocus': test_unrecognized_kwargs,
@@ -245,6 +254,7 @@ kwarg_unittest = {
         frd_test.TestFRD.test_unrecognized_keyword,
     'FrequencyResponseData.plot': test_response_plot_kwargs,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
+    'LTI.__init__': test_unrecognized_kwargs,
     'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
     'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
     'InterconnectedSystem.__init__':

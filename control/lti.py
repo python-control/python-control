@@ -13,7 +13,7 @@ from . import config
 from .iosys import InputOutputSystem
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
-           'freqresp', 'dcgain', 'bandwidth']
+           'freqresp', 'dcgain', 'bandwidth', 'LTI']
 
 
 class LTI(InputOutputSystem):
@@ -466,10 +466,8 @@ def frequency_response(
         if sys_.isdtime(strict=True):
             nyquistfrq = math.pi / sys_.dt
             if not omega_range_given:
-                # limit up to and including nyquist frequency
-                # TODO: make this optional?
-                omega_sys = np.hstack((
-                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+                # Limit up to the Nyquist frequency
+                omega_sys = omega_sys[omega_sys < nyquistfrq]
 
         # Compute the frequency response
         responses.append(sys_.frequency_response(omega_sys, squeeze=squeeze))

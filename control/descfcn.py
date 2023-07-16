@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import scipy
 from warnings import warn
 
-from .freqplot import nyquist_plot
+from .freqplot import nyquist_response
 
 __all__ = ['describing_function', 'describing_function_plot',
            'DescribingFunctionNonlinearity', 'friction_backlash_nonlinearity',
@@ -259,10 +259,11 @@ def describing_function_plot(
         warn = omega is None
 
     # Start by drawing a Nyquist curve
-    count, contour = nyquist_plot(
-        H, omega, plot=True, return_contour=True,
-        warn_encirclements=warn, warn_nyquist=warn, **kwargs)
-    H_omega, H_vals = contour.imag, H(contour)
+    response = nyquist_response(
+        H, omega, warn_encirclements=warn, warn_nyquist=warn,
+        check_kwargs=False, **kwargs)
+    response.plot(**kwargs)
+    H_omega, H_vals = response.contour.imag, H(response.contour)
 
     # Compute the describing function
     df = describing_function(F, A)

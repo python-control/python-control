@@ -90,7 +90,7 @@ def bode(*args, **kwargs):
     return retval
 
 
-def nyquist(*args, **kwargs):
+def nyquist(*args, plot=True, **kwargs):
     """nyquist(syslist[, omega])
 
     Nyquist plot of the frequency response.
@@ -114,7 +114,7 @@ def nyquist(*args, **kwargs):
         frequencies in rad/s
 
     """
-    from ..freqplot import nyquist_plot
+    from ..freqplot import nyquist_response, nyquist_plot
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
@@ -125,8 +125,10 @@ def nyquist(*args, **kwargs):
     kwargs.update(other)
 
     # Call the nyquist command
-    kwargs['return_contour'] = True
-    _, contour = nyquist_plot(syslist, omega, *args, **kwargs)
+    response = nyquist_response(syslist, omega, *args, **kwargs)
+    contour = response.contour
+    if plot:
+        nyquist_plot(response, *args, **kwargs)
 
     # Create the MATLAB output arguments
     freqresp = syslist(contour)
