@@ -12,6 +12,7 @@ import pytest
 import numpy as np
 import control as ct
 import math
+import matplotlib.pyplot as plt
 from control.descfcn import saturation_nonlinearity, \
     friction_backlash_nonlinearity, relay_hysteresis_nonlinearity
 
@@ -137,7 +138,7 @@ def test_describing_function(fcn, amin, amax):
         ct.describing_function(fcn, -1)
 
 
-def test_describing_function_plot():
+def test_describing_function_response():
     # Simple linear system with at most 1 intersection
     H_simple = ct.tf([1], [1, 2, 2, 1])
     omega = np.logspace(-1, 2, 100)
@@ -147,12 +148,12 @@ def test_describing_function_plot():
     amp = np.linspace(1, 4, 10)
 
     # No intersection
-    xsects = ct.describing_function_plot(H_simple, F_saturation, amp, omega)
-    assert xsects == []
+    xsects = ct.describing_function_response(H_simple, F_saturation, amp, omega)
+    assert len(xsects) == 0
 
     # One intersection
     H_larger = H_simple * 8
-    xsects = ct.describing_function_plot(H_larger, F_saturation, amp, omega)
+    xsects = ct.describing_function_response(H_larger, F_saturation, amp, omega)
     for a, w in xsects:
         np.testing.assert_almost_equal(
             H_larger(1j*w),
@@ -163,11 +164,37 @@ def test_describing_function_plot():
     omega = np.logspace(-1, 3, 50)
     F_backlash = ct.descfcn.friction_backlash_nonlinearity(1)
     amp = np.linspace(0.6, 5, 50)
-    xsects = ct.describing_function_plot(H_multiple, F_backlash, amp, omega)
+    xsects = ct.describing_function_response(H_multiple, F_backlash, amp, omega)
     for a, w in xsects:
         np.testing.assert_almost_equal(
             -1/ct.describing_function(F_backlash, a),
             H_multiple(1j*w), decimal=5)
+
+
+def test_describing_function_plot():
+    # Simple linear system with at most 1 intersection
+    H_larger = ct.tf([1], [1, 2, 2, 1]) * 8
+    omega = np.logspace(-1, 2, 100)
+
+    # Saturation nonlinearity
+    F_saturation = ct.descfcn.saturation_nonlinearity(1)
+    amp = np.linspace(1, 4, 10)
+
+    # Plot via response
+    plt.clf()                                   # clear axes
+    response = ct.describing_function_response(
+        H_larger, F_saturation, amp, omega)
+    assert len(response.intersections) == 1
+    assert len(plt.gcf().get_axes()) == 0       # make sure there is no plot
+
+    out = response.plot()
+    assert len(plt.gcf().get_axes()) == 1       # make sure there is a plot
+    assert len(out[0]) == 4 and len(out[1]) == 1
+
+    # Call plot directly
+    out = ct.describing_function_plot(H_larger, F_saturation, amp, omega)
+    assert len(out[0]) == 4 and len(out[1]) == 1
+
 
 def test_describing_function_exceptions():
     # Describing function with non-zero bias
@@ -194,3 +221,8 @@ def test_describing_function_exceptions():
     amp = np.linspace(1, 4, 10)
     with pytest.raises(ValueError, match="formatting string"):
         ct.describing_function_plot(H_simple, F_saturation, amp, label=1)
+
+    # Unrecognized keyword
+    with pytest.raises(TypeError, match="unrecognized keyword"):
+        ct.describing_function_response(
+            H_simple, F_saturation, amp, None, unknown=None)

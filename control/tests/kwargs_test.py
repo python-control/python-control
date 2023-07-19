@@ -27,6 +27,7 @@ import control.tests.statefbk_test as statefbk_test
 import control.tests.stochsys_test as stochsys_test
 import control.tests.trdata_test as trdata_test
 import control.tests.timeplot_test as timeplot_test
+import control.tests.descfcn_test as descfcn_test
 
 @pytest.mark.parametrize("module, prefix", [
     (control, ""), (control.flatsys, "flatsys."), (control.optimal, "optimal.")
@@ -210,6 +211,8 @@ kwarg_unittest = {
     'create_estimator_iosystem': stochsys_test.test_estimator_errors,
     'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,
+    'describing_function_response':
+        descfcn_test.test_describing_function_exceptions,
     'dlqe': test_unrecognized_kwargs,
     'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
