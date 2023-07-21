@@ -372,7 +372,7 @@ def evalfr(sys, x, squeeze=None):
 
 
 def frequency_response(
-        sys, omega=None, omega_limits=None, omega_num=None,
+        sysdata, omega=None, omega_limits=None, omega_num=None,
         Hz=None, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
 
@@ -382,7 +382,7 @@ def frequency_response(
 
     Parameters
     ----------
-    sys: LTI system or list of LTI systems
+    sysdata: LTI system or list of LTI systems
         Linear system(s) for which frequency response is computed.
     omega : float or 1D array_like, optional
         A list of frequencies in radians/sec at which the system should be
@@ -452,8 +452,11 @@ def frequency_response(
     """
     from .freqplot import _determine_omega_vector
 
+    # Process keyword arguments
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+
     # Convert the first argument to a list
-    syslist = sys if isinstance(sys, (list, tuple)) else [sys]
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
 
     # Get the common set of frequencies to use
     omega_syslist, omega_range_given = _determine_omega_vector(
@@ -472,7 +475,7 @@ def frequency_response(
         # Compute the frequency response
         responses.append(sys_.frequency_response(omega_sys, squeeze=squeeze))
 
-    if isinstance(sys, (list, tuple)):
+    if isinstance(sysdata, (list, tuple)):
         from .freqplot import FrequencyResponseList
         return FrequencyResponseList(responses)
     else:

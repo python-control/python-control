@@ -179,6 +179,30 @@ def test_gangof4_plots(savefigs=False):
     if savefigs:
         plt.savefig('freqplot-gangof4.png')
 
+@pytest.mark.parametrize("response_cmd, return_type", [
+    (ct.frequency_response, ct.FrequencyResponseData),
+    (ct.nyquist_response, ct.freqplot.NyquistResponseData),
+    (ct.singular_values_response, ct.FrequencyResponseData),
+])
+def test_first_arg_listable(response_cmd, return_type):
+    sys = ct.rss(2, 1, 1)
+
+    # If we pass a single system, should get back a single system
+    result = response_cmd(sys)
+    assert isinstance(result, return_type)
+
+    # If we pass a list of systems, we should get back a list
+    result = response_cmd([sys, sys, sys])
+    assert isinstance(result, list)
+    assert len(result) == 3
+    assert all([isinstance(item, return_type) for item in result])
+
+    # If we pass a singleton list, we should get back a list
+    result = response_cmd([sys])
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], return_type)
+
 
 if __name__ == "__main__":
     #

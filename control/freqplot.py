@@ -5,10 +5,10 @@
 #
 # Functionality to add
 # [ ] Get rid of this long header (need some common, documented convention)
-# [ ] Add mechanisms for storing/plotting margins? (currently forces FRD)
-# [ ] Allow line colors/styles to be set in plot() command (also time plots)
-# [ ] Allow bode or nyquist style plots from plot()
-# [ ] Allow nyquist_response() to generate the response curve (?)
+# [x] Add mechanisms for storing/plotting margins? (currently forces FRD)
+# [?] Allow line colors/styles to be set in plot() command (also time plots)
+# [x] Allow bode or nyquist style plots from plot()
+# [i] Allow nyquist_response() to generate the response curve (?)
 # [i] Allow MIMO frequency plots (w/ mag/phase subplots a la MATLAB)
 # [i] Update sisotool to use ax=
 # [i] Create __main__ in freqplot_test to view results (a la timeplot_test)
@@ -17,11 +17,11 @@
 # [i] Re-implement including of gain/phase margin in the title (?)
 # [i] Change gangof4 to use bode_plot(plot_phase=False) w/ proper labels
 # [ ] Allow use of subplot labels instead of output/input subtitles
-# [ ] Add line labels to gangof4
-# [ ] Update FRD to allow nyquist_response contours
-# [ ] Allow frequency range to be overridden in bode_plot
-# [ ] Unit tests for discrete time systems with different sample times
-# [ ] Check examples/bode-and-nyquist-plots.ipynb for differences
+# [i] Add line labels to gangof4 [done by via bode_plot()]
+# [i] Allow frequency range to be overridden in bode_plot
+# [i] Unit tests for discrete time systems with different sample times
+# [c] Check examples/bode-and-nyquist-plots.ipynb for differences
+# [ ] Add unit tests for ct.config.defaults['freqplot_number_of_samples']
 
 #
 # This file contains some standard control system plots: Bode plots,
@@ -704,7 +704,7 @@ def bode_plot(
             # Get the frequencies and convert to Hz, if needed
             omega_plot = omega_sys / (2 * math.pi) if Hz else omega_sys
             if response.isdtime(strict=True):
-                nyq_freq = 0.5 /response.dt if Hz else math.pi / response.dt
+                nyq_freq = (0.5/response.dt) if Hz else (math.pi/response.dt)
 
             # Save the magnitude and phase to plot
             mag_plot = 20 * np.log10(mag[i, j]) if dB else mag[i, j]
@@ -1163,7 +1163,7 @@ class NyquistResponseList(list):
 
 
 def nyquist_response(
-        syslist, omega=None, plot=None, omega_limits=None, omega_num=None,
+        sysdata, omega=None, plot=None, omega_limits=None, omega_num=None,
         label_freq=0, color=None, return_contour=False, check_kwargs=True,
         warn_encirclements=True, warn_nyquist=True, **kwargs):
     """Nyquist response for a system.
@@ -1179,7 +1179,7 @@ def nyquist_response(
 
     Parameters
     ----------
-    syslist : list of LTI
+    sysdata : LTI or list of LTI
         List of linear input/output systems (single system is OK). Nyquist
         curves for each system are plotted on the same graph.
 
@@ -1283,9 +1283,8 @@ def nyquist_response(
     if check_kwargs and kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
-    # If argument was a singleton, turn it into a tuple
-    if not isinstance(syslist, (list, tuple)):
-        syslist = (syslist,)
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
 
     # Determine the range of frequencies to use, based on args/features
     omega, omega_range_given = _determine_omega_vector(
@@ -1499,17 +1498,15 @@ def nyquist_response(
             count, contour, resp, sys.dt, sysname=sysname,
             return_contour=return_contour))
 
-    # Return response
-    if len(responses) == 1:     # TODO: update to match input type
-        return responses[0]
-    else:
+    if isinstance(sysdata, (list, tuple)):
         return NyquistResponseList(responses)
+    else:
+        return responses[0]
 
 
 def nyquist_plot(
-        data, omega=None, plot=None, omega_limits=None, omega_num=None,
-        label_freq=0, color=None, return_contour=None, title=None,
-        legend_loc='upper right', **kwargs):
+        data, omega=None, plot=None, label_freq=0, color=None,
+        return_contour=None, title=None, legend_loc='upper right', **kwargs):
     """Nyquist plot for a system.
 
     Generates a Nyquist plot for the system over a (optional) frequency
@@ -1677,8 +1674,6 @@ def nyquist_plot(
 
     """
     # Get values for params (and pop from list to allow keyword use in plot)
-    omega_num_given = omega_num is not None
-    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     arrows = config._get_param(
         'nyquist', 'arrows', kwargs, _nyquist_defaults, pop=True)
     arrow_size = config._get_param(
@@ -1724,18 +1719,21 @@ def nyquist_plot(
     else:
         raise ValueError("unknown or unsupported arrow location")
 
+    # Set the arrow style
+    if arrow_style is None:
+        arrow_style = mpl.patches.ArrowStyle(
+            'simple', head_width=arrow_size, head_length=arrow_size)
+
     # If argument was a singleton, turn it into a tuple
     if not isinstance(data, (list, tuple)):
         data = (data,)
 
     # If we are passed a list of systems, compute response first
-    # If we were passed a list of systems, convert to data
     if all([isinstance(
             sys, (StateSpace, TransferFunction, FrequencyResponseData))
             for sys in data]):
         nyquist_responses = nyquist_response(
-            data, omega=omega, omega_limits=omega_limits, omega_num=omega_num,
-            check_kwargs=False, **kwargs)
+            data, omega=omega, check_kwargs=False, **kwargs)
         if not isinstance(nyquist_responses, list):
             nyquist_responses = [nyquist_responses]
     else:
@@ -1762,11 +1760,6 @@ def nyquist_plot(
     out = np.empty(len(nyquist_responses), dtype=object)
     for i in range(out.shape[0]):
         out[i] = []             # unique list in each element
-
-    # Set the arrow style
-    if arrow_style is None:
-        arrow_style = mpl.patches.ArrowStyle(
-            'simple', head_width=arrow_size, head_length=arrow_size)
 
     for idx, response in enumerate(nyquist_responses):
         resp = response.response
@@ -1919,6 +1912,7 @@ def nyquist_plot(
         title = "Nyquist plot for " + ", ".join(labels)
     fig.suptitle(title)
 
+    # Legacy return pocessing
     if plot is True or return_contour is not None:
         if len(data) == 1:
             counts, contours = counts[0], contours[0]
@@ -2134,7 +2128,7 @@ def gangof4_plot(P, C, omega=None, **kwargs):
 # Singular values plot
 #
 def singular_values_response(
-        sys, omega=None, omega_limits=None, omega_num=None, Hz=False):
+        sysdata, omega=None, omega_limits=None, omega_num=None, Hz=False):
     """Singular value response for a system.
 
     Computes the singular values for a system or list of systems over
@@ -2173,8 +2167,8 @@ def singular_values_response(
     >>> response = ct.singular_values_response(G, omega=omegas)
 
     """
-    # If argument was a singleton, turn it into a tuple
-    syslist = sys if isinstance(sys, (list, tuple)) else (sys,)
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
 
     if any([not isinstance(sys, LTI) for sys in syslist]):
         ValueError("singular values can only be computed for LTI systems")
@@ -2201,8 +2195,7 @@ def singular_values_response(
                 sysname=response.sysname, plot_type='svplot',
                 title=f"Singular values for {response.sysname}"))
 
-    # Return the responses in the same form that we received the systems
-    if isinstance(sys, (list, tuple)):
+    if isinstance(sysdata, (list, tuple)):
         return FrequencyResponseList(svd_responses)
     else:
         return svd_responses[0]
@@ -2554,20 +2547,20 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
                 if np.any(toreplace):
                     features_ = features_[~toreplace]
             elif sys.isdtime(strict=True):
-                fn = math.pi * 1. / sys.dt
+                fn = math.pi / sys.dt
                 # TODO: What distance to the Nyquist frequency is appropriate?
                 freq_interesting.append(fn * 0.9)
 
                 features_ = np.concatenate((sys.poles(), sys.zeros()))
                 # Get rid of poles and zeros on the real axis (imag==0)
-               # * origin and real < 0
+                # * origin and real < 0
                 # * at 1.: would result in omega=0. (logaritmic plot!)
                 toreplace = np.isclose(features_.imag, 0.0) & (
                                     (features_.real <= 0.) |
                                     (np.abs(features_.real - 1.0) < 1.e-10))
                 if np.any(toreplace):
                     features_ = features_[~toreplace]
-                # TODO: improve
+                # TODO: improve (mapping pack to continuous time)
                 features_ = np.abs(np.log(features_) / (1.j * sys.dt))
             else:
                 # TODO
