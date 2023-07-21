@@ -2132,8 +2132,8 @@ def interconnect(
     If a system is duplicated in the list of systems to be connected,
     a warning is generated and a copy of the system is created with the
     name of the new system determined by adding the prefix and suffix
-    strings in config.defaults['iosys.linearized_system_name_prefix']
-    and config.defaults['iosys.linearized_system_name_suffix'], with the
+    strings in config.defaults['iosys.duplicate_system_name_prefix']
+    and config.defaults['iosys.duplicate_system_name_suffix'], with the
     default being to add the suffix '$copy' to the system name.
 
     In addition to explicit lists of system signals, it is possible to
