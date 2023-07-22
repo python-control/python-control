@@ -1,66 +1,20 @@
 # freqplot.py - frequency domain plots for control systems
 #
-# Author: Richard M. Murray
+# Initial author: Richard M. Murray
 # Date: 24 May 09
-#
-# Functionality to add
-# [ ] Get rid of this long header (need some common, documented convention)
-# [x] Add mechanisms for storing/plotting margins? (currently forces FRD)
-# [?] Allow line colors/styles to be set in plot() command (also time plots)
-# [x] Allow bode or nyquist style plots from plot()
-# [i] Allow nyquist_response() to generate the response curve (?)
-# [i] Allow MIMO frequency plots (w/ mag/phase subplots a la MATLAB)
-# [i] Update sisotool to use ax=
-# [i] Create __main__ in freqplot_test to view results (a la timeplot_test)
-# [ ] Get sisotool working in iPython and document how to make it work
-# [i] Allow share_magnitude, share_phase, share_frequency keywords for units
-# [i] Re-implement including of gain/phase margin in the title (?)
-# [i] Change gangof4 to use bode_plot(plot_phase=False) w/ proper labels
-# [ ] Allow use of subplot labels instead of output/input subtitles
-# [i] Add line labels to gangof4 [done by via bode_plot()]
-# [i] Allow frequency range to be overridden in bode_plot
-# [i] Unit tests for discrete time systems with different sample times
-# [c] Check examples/bode-and-nyquist-plots.ipynb for differences
-# [ ] Add unit tests for ct.config.defaults['freqplot_number_of_samples']
-
 #
 # This file contains some standard control system plots: Bode plots,
 # Nyquist plots and other frequency response plots.  The code for Nichols
 # charts is in nichols.py.  The code for pole-zero diagrams is in pzmap.py
 # and rlocus.py.
 #
-# Copyright (c) 2010 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
+# Functionality to add/check (Jul 2023, working list)
+# [?] Allow line colors/styles to be set in plot() command (also time plots)
+# [ ] Get sisotool working in iPython and document how to make it work
+# [ ] Allow use of subplot labels instead of output/input subtitles
+# [i] Allow frequency range to be overridden in bode_plot
+# [i] Unit tests for discrete time systems with different sample times
+# [ ] Add unit tests for ct.config.defaults['freqplot_number_of_samples']
 
 import numpy as np
 import matplotlib as mpl
@@ -128,15 +82,12 @@ class FrequencyResponseList(list):
                 if plot_type is not None and response.plot_type != plot_type:
                     raise TypeError(
                         "inconsistent plot_types in data; set plot_type "
-                        "to 'bode' or 'svplot'")
+                        "to 'bode', 'nichols', or 'svplot'")
                 plot_type = response.plot_type
 
-        if plot_type == 'bode':
-            return bode_plot(self, *args, **kwargs)
-        elif plot_type == 'svplot':
-            return singular_values_plot(self, *args, **kwargs)
-        else:
-            raise ValueError(f"unknown plot type '{plot_type}'")
+        # Use FRD plot method, which can handle lists via plot functions
+        return FrequencyResponseData.plot(
+            self, plot_type=plot_type, *args, **kwargs)
 
 #
 # Bode plot
@@ -1936,23 +1887,7 @@ def nyquist_plot(
     ax.grid(color="lightgray")
 
     # List of systems that are included in this plot
-    labels, lines = [], []
-    last_color, counter = None, 0       # label unknown systems
-    for i, line in enumerate(ax.get_lines()):
-        label = line.get_label()
-        if label.startswith("Unknown"):
-            label = f"Unknown-{counter}"
-            if last_color is None:
-                last_color = line.get_color()
-            elif last_color != line.get_color():
-                counter += 1
-                last_color = line.get_color()
-        elif label[0] == '_':
-            continue
-
-        if label not in labels:
-            lines.append(line)
-            labels.append(label)
+    lines, labels = _get_line_labels(ax)
 
     # Add legend if there is more than one system plotted
     if len(labels) > 1:
@@ -2279,6 +2214,9 @@ def singular_values_plot(
         (legacy) If given, `singular_values_plot` returns the legacy return
         values of magnitude, phase, and frequency.  If False, just return
         the values with no plot.
+    legend_loc : str, optional
+        For plots with multiple lines, a legend will be included in the
+        given location.  Default is 'center right'.  Use False to supress.
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
@@ -2400,8 +2338,8 @@ def singular_values_plot(
         if dB:
             with plt.rc_context(freqplot_rcParams):
                 out[idx_sys] = ax_sigma.semilogx(
-                    omega_plot, 20 * np.log10(sigma_plot), color=color,
-                    label=sysname, *fmt, **kwargs)
+                    omega_plot, 20 * np.log10(sigma_plot), *fmt, color=color,
+                    label=sysname, **kwargs)
         else:
             with plt.rc_context(freqplot_rcParams):
                 out[idx_sys] = ax_sigma.loglog(
@@ -2422,26 +2360,10 @@ def singular_values_plot(
         ax_sigma.set_xlabel("Frequency [Hz]" if Hz else "Frequency [rad/sec]")
 
     # List of systems that are included in this plot
-    labels, lines = [], []
-    last_color, counter = None, 0       # label unknown systems
-    for i, line in enumerate(ax_sigma.get_lines()):
-        label = line.get_label()
-        if label.startswith("Unknown"):
-            label = f"Unknown-{counter}"
-            if last_color is None:
-                last_color = line.get_color()
-            elif last_color != line.get_color():
-                counter += 1
-                last_color = line.get_color()
-        elif label[0] == '_':
-            continue
-
-        if label not in labels:
-            lines.append(line)
-            labels.append(label)
+    lines, labels = _get_line_labels(ax_sigma)
 
     # Add legend if there is more than one system plotted
-    if len(labels) > 1:
+    if len(labels) > 1 and legend_loc is not False:
         with plt.rc_context(freqplot_rcParams):
             ax_sigma.legend(lines, labels, loc=legend_loc)
 
@@ -2648,6 +2570,28 @@ def _default_frequency_range(syslist, Hz=None, number_of_samples=None,
         omega = np.logspace(lsp_min, lsp_max, endpoint=True)
     return omega
 
+
+# Get labels for all lines in an axes
+def _get_line_labels(ax, use_color=True):
+    labels, lines = [], []
+    last_color, counter = None, 0       # label unknown systems
+    for i, line in enumerate(ax.get_lines()):
+        label = line.get_label()
+        if use_color and label.startswith("Unknown"):
+            label = f"Unknown-{counter}"
+            if last_color is None:
+                last_color = line.get_color()
+            elif last_color != line.get_color():
+                counter += 1
+                last_color = line.get_color()
+        elif label[0] == '_':
+            continue
+
+        if label not in labels:
+            lines.append(line)
+            labels.append(label)
+
+    return lines, labels
 
 #
 # Utility functions to create nice looking labels (KLD 5/23/11)

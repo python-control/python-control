@@ -667,12 +667,15 @@ class FrequencyResponseData(LTI):
 
         """
         from .freqplot import bode_plot, singular_values_plot
+        from .nichols import nichols_plot
 
         if plot_type is None:
             plot_type = self.plot_type
 
         if plot_type == 'bode':
             return bode_plot(self, *args, **kwargs)
+        elif plot_type == 'nichols':
+            return nichols_plot(self, *args, **kwargs)
         elif plot_type == 'svplot':
             return singular_values_plot(self, *args, **kwargs)
         else:

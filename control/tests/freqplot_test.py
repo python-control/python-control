@@ -56,8 +56,8 @@ manual_response = ct.FrequencyResponseData(
      (True,  True,   'row',  None,   None,   False,  False,  True),
      ])
 def test_response_plots(
-        sys, pltmag, pltphs, shrmag, shrphs, shrfrq, ovlout, ovlinp,
-        secsys, clear=True):
+        sys, pltmag, pltphs, shrmag, shrphs, shrfrq, secsys,
+        ovlout, ovlinp, clear=True):
 
     # Save up the keyword arguments
     kwargs = dict(
@@ -186,6 +186,12 @@ def test_basic_freq_plots(savefigs=False):
     if savefigs:
         plt.savefig('freqplot-mimo_svplot-default.png')
 
+    # Nichols chart
+    plt.figure()
+    ct.nichols_plot(response)
+    if savefigs:
+        plt.savefig('freqplot-siso_nichols-default.png')
+
 
 def test_gangof4_plots(savefigs=False):
     proc = ct.tf([1], [1, 1, 1], name="process")
@@ -280,6 +286,19 @@ def test_bode_share_options():
     # TODO: figure out what to check
 
 
+@pytest.mark.parametrize("plot_type", ['bode', 'svplot', 'nichols'])
+def test_freqplot_plot_type(plot_type):
+    if plot_type == 'svplot':
+        response = ct.singular_values_response(ct.rss(2, 1, 1))
+    else:
+        response = ct.frequency_response(ct.rss(2, 1, 1))
+    lines = response.plot(plot_type=plot_type)
+    if plot_type == 'bode':
+        assert lines.shape == (2, 1)
+    else:
+        assert lines.shape == (1, )
+
+
 def test_bode_errors():
     # Turning off both magnitude and phase
     with pytest.raises(ValueError, match="no data to plot"):
@@ -323,7 +342,7 @@ if __name__ == "__main__":
         (sys_test, True,  True,  'row',  None,   'col',  True),
     ]
     for args in test_cases:
-        test_response_plots(*args, clear=False)
+        test_response_plots(*args, ovlinp=False, ovlout=False, clear=False)
 
     # Define and run a selected set of interesting tests
     # TODO: TBD (see timeplot_test.py for format)

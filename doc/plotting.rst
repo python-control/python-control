@@ -202,6 +202,14 @@ function::
 
 .. image:: freqplot-mimo_svplot-default.png
 
+Different types of plots can also be specified for a given frequency
+response.  For example, to plot the frequency response using a a Nichols
+plot, use `plot_type='nichols'`::
+
+  response.plot(plot_type='nichols')
+
+.. image:: freqplot-siso_nichols-default.png
+
 Another response function that can be used to generate Bode plots is
 the :func:`~ct.gangof4` function, which computes the four primary
 sensitivity functions for a feedback control system in standard form::
@@ -247,7 +255,7 @@ Plotting functions
 
    ~control.bode_plot
    ~control.describing_function_plot
-   ~control.nyquist_plot
+   ~control.nichols_plot
    ~control.singular_values_plot
    ~control.time_response_plot
 
