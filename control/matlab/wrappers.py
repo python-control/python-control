@@ -124,10 +124,12 @@ def nyquist(*args, plot=True, **kwargs):
     syslist, omega, args, other = _parse_freqplot_args(*args)
     kwargs.update(other)
 
-    # Call the nyquist command
-    response = nyquist_response(syslist, omega, *args, **kwargs)
+    # Get the Nyquist response (and pop keywords used there)
+    response = nyquist_response(
+        syslist, omega, *args, omega_limits=kwargs.pop('omega_limits', None))
     contour = response.contour
     if plot:
+        # Plot the result
         nyquist_plot(response, *args, **kwargs)
 
     # Create the MATLAB output arguments

@@ -42,13 +42,18 @@ amplitudes :math:`a` and frequencies :math`\omega` such that
 
    H(j\omega) = \frac{-1}{N(A)}
 
-These points can be determined by generating a Nyquist plot in which the
-transfer function :math:`H(j\omega)` intersections the negative
+These points can be determined by generating a Nyquist plot in which
+the transfer function :math:`H(j\omega)` intersections the negative
 reciprocal of the describing function :math:`N(A)`.  The
-:func:`~control.describing_function_plot` function generates this plot
-and returns the amplitude and frequency of any points of intersection::
+:func:`~control.describing_function_response` function computes the
+amplitude and frequency of any points of intersection::
 
-    ct.describing_function_plot(H, F, amp_range[, omega_range])
+    response = ct.describing_function_response(H, F, amp_range[, omega_range])
+    response.intersections	# frequency, amplitude pairs
+
+A Nyquist plot showing the describing function and the intersections
+with the Nyquist curve can be generated using `response.plot()`, which
+calls the :func:`~control.describing_function_plot` function.
 
 
 Pre-defined nonlinearities

@@ -12,6 +12,8 @@ import os
 import matplotlib.pyplot as plt  # MATLAB plotting functions
 from control.matlab import *    # MATLAB-like functions
 import numpy as np
+import math
+import control as ct
 
 # System parameters
 m = 4           # mass of aircraft
@@ -73,7 +75,6 @@ Hi = parallel(feedback(Ci, Pi), -m*g*feedback(Ci*Pi, 1))
 
 plt.figure(4)
 plt.clf()
-plt.subplot(221)
 bode(Hi)
 
 # Now design the lateral control system
@@ -87,7 +88,7 @@ Co = tf2ss(Co)
 Lo = -m*g*Po*Co
 
 plt.figure(5)
-bode(Lo)  # margin(Lo)
+bode(Lo, display_margins=True)  # margin(Lo)
 
 # Finally compute the real outer-loop loop gain + responses
 L = Co*Hi*Po
@@ -100,48 +101,17 @@ T = feedback(L, 1)
 
 plt.figure(6)
 plt.clf()
-bode(L, logspace(-4, 3))
+out = ct.bode(L, logspace(-4, 3), initial_phase=-math.pi/2)
+axs = ct.get_plot_axes(out)
 
 # Add crossover line to magnitude plot
-for ax in plt.gcf().axes:
-    if ax.get_label() == 'control-bode-magnitude':
-        break
-ax.semilogx([1e-4, 1e3], 20*np.log10([1, 1]), 'k-')
-
-# Re-plot phase starting at -90 degrees
-mag, phase, w = freqresp(L, logspace(-4, 3))
-phase = phase - 360
-
-for ax in plt.gcf().axes:
-    if ax.get_label() == 'control-bode-phase':
-        break
-ax.semilogx([1e-4, 1e3], [-180, -180], 'k-')
-ax.semilogx(w, np.squeeze(phase), 'b-')
-ax.axis([1e-4, 1e3, -360, 0])
-plt.xlabel('Frequency [deg]')
-plt.ylabel('Phase [deg]')
-# plt.set(gca, 'YTick', [-360, -270, -180, -90, 0])
-# plt.set(gca, 'XTick', [10^-4, 10^-2, 1, 100])
+axs[0, 0].semilogx([1e-4, 1e3], 20*np.log10([1, 1]), 'k-')
 
 #
 # Nyquist plot for complete design
 #
 plt.figure(7)
-plt.clf()
-plt.axis([-700, 5300, -3000, 3000])
-nyquist(L, (0.0001, 1000))
-plt.axis([-700, 5300, -3000, 3000])
-
-# Add a box in the region we are going to expand
-plt.plot([-400, -400, 200, 200, -400], [-100, 100, 100, -100, -100], 'r-')
-
-# Expanded region  
-plt.figure(8)
-plt.clf()
-plt.subplot(231)
-plt.axis([-10, 5, -20, 20])
 nyquist(L)
-plt.axis([-10, 5, -20, 20])
 
 # set up the color
 color = 'b'
@@ -163,10 +133,11 @@ Yvec, Tvec = step(Co*S, linspace(1, 20))
 plt.plot(Tvec.T, Yvec.T)
 
 #TODO: PZmap for statespace systems has not yet been implemented.
-plt.figure(10)
-plt.clf()
+# plt.figure(10)
+# plt.clf()
 # P, Z = pzmap(T, Plot=True)
 # print("Closed loop poles and zeros: ", P, Z)
+# plt.suptitle("This figure intentionally blank")
 
 # Gang of Four
 plt.figure(11)

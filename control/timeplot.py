@@ -102,8 +102,8 @@ def time_response_plot(
         the array matches the subplots shape and the value of the array is a
         list of Line2D objects in that subplot.
 
-    Additional Parameters
-    ---------------------
+    Other Parameters
+    ----------------
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
         inputs with type 'step'.  Default is True.

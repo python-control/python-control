@@ -194,8 +194,15 @@ def test_response_plot_kwargs(data_fcn, plot_fcn, mimo):
     with pytest.raises(AttributeError,
                        match="(has no property|unexpected keyword)"):
         plot_fcn(response, unknown=None)
-    
-    
+
+    # Call the plotting function via the response and make sure it works
+    response.plot()
+
+    # Now add an unrecognized keyword and make sure there is an error
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
+        response.plot(unknown=None)
+
 #
 # List of all unit tests that check for unrecognized keywords
 #
@@ -256,10 +263,13 @@ kwarg_unittest = {
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
     'FrequencyResponseData.plot': test_response_plot_kwargs,
+    'DescribingFunctionResponse.plot':
+        descfcn_test.test_describing_function_exceptions,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
     'LTI.__init__': test_unrecognized_kwargs,
     'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
     'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
+    'NyquistResponseData.plot': test_response_plot_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__':

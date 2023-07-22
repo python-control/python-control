@@ -310,8 +310,8 @@ def test_nyquist_indent_im():
 
     # Imaginary poles with indentation to the left
     plt.figure();
-    response = ct.nyquist_response(sys, indent_direction='left', label_freq=300)
-    response.plot()
+    response = ct.nyquist_response(sys, indent_direction='left')
+    response.plot(label_freq=300)
     plt.title(
         "Imaginary poles; indent_direction='left'; encirclements = %d" %
         response.count)

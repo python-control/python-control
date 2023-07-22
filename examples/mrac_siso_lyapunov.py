@@ -12,6 +12,7 @@
 import numpy as np
 import scipy.signal as signal
 import matplotlib.pyplot as plt
+import os
 
 import control as ct
 
@@ -154,7 +155,6 @@ plt.plot(tout2, yout2[1,:], label=r'$u_{\gamma = 1.0}$')
 plt.plot(tout3, yout3[1,:], label=r'$u_{\gamma = 5.0}$')
 plt.legend(loc=4, fontsize=14)
 plt.title(r'control $u$')
-plt.show()
 
 plt.figure(figsize=(16,8))
 plt.subplot(2,1,1)
@@ -171,4 +171,5 @@ plt.plot(tout3, xout3[3,:], label=r'$k_{x, \gamma = 5.0}$')
 plt.hlines(kx_star, 0, Tend, label=r'$k_x^{\ast}$', color='black', linestyle='--')
 plt.legend(loc=4, fontsize=14)
 plt.title(r'control gain $k_x$ (feedback)')
-plt.show()
+if 'PYCONTROL_TEST_EXAMPLES' not in os.environ:
+    plt.show()

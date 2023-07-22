@@ -22,9 +22,9 @@ from .freqplot import nyquist_response
 from . import config
 
 __all__ = ['describing_function', 'describing_function_plot',
-           'describing_function_response', 'DescribingFunctionNonlinearity',
-           'friction_backlash_nonlinearity', 'relay_hysteresis_nonlinearity',
-           'saturation_nonlinearity']
+           'describing_function_response', 'DescribingFunctionResponse',
+           'DescribingFunctionNonlinearity', 'friction_backlash_nonlinearity',
+           'relay_hysteresis_nonlinearity', 'saturation_nonlinearity']
 
 # Class for nonlinearities with a built-in describing function
 class DescribingFunctionNonlinearity():
@@ -213,13 +213,46 @@ def describing_function(
 
 # Simple class to store the describing function response
 class DescribingFunctionResponse:
+    """Results of describing function analysis.
+
+    Describing functions allow analysis of a linear I/O systems with a
+    static nonlinear feedback function.  The DescribingFunctionResponse
+    class is used by the :func:`~control.describing_function_response`
+    function to return the results of a describing function analysis.  The
+    response object can be used to obtain information about the describing
+    function analysis or generate a Nyquist plot showing the frequency
+    response of the linear systems and the describing function for the
+    nonlinear element.
+
+    Attributes
+    ----------
+    response : :class:`~control.FrequencyResponseData`
+        Frequency response of the linear system component of the system.
+    intersections : 1D array of 2-tuples or None
+        A list of all amplitudes and frequencies in which
+        :math:`H(j\\omega) N(a) = -1`, where :math:`N(a)` is the describing
+        function associated with `F`, or `None` if there are no such
+        points.  Each pair represents a potential limit cycle for the
+        closed loop system with amplitude given by the first value of the
+        tuple and frequency given by the second value.
+    N_vals : complex array
+        Complex value of the describing function.
+    positions : list of complex
+        Location of the intersections in the complex plane.
+
+    """
     def __init__(self, response, N_vals, positions, intersections):
+        """Create a describing function response data object."""
         self.response = response
         self.N_vals = N_vals
         self.positions = positions
         self.intersections = intersections
 
     def plot(self, **kwargs):
+        """Plot the results of a describing function analysis.
+
+        See :func:`~control.describing_function_plot` for details.
+        """
         return describing_function_plot(self, **kwargs)
 
     # Implement iter, getitem, len to allow recovering the intersections
@@ -262,21 +295,27 @@ def describing_function_response(
 
     Returns
     -------
-    intersections : 1D array of 2-tuples or None
-        A list of all amplitudes and frequencies in which :math:`H(j\\omega)
-        N(a) = -1`, where :math:`N(a)` is the describing function associated
-        with `F`, or `None` if there are no such points.  Each pair represents
-        a potential limit cycle for the closed loop system with amplitude
-        given by the first value of the tuple and frequency given by the
-        second value.
+    response : :class:`~control.DescribingFunctionResponse` object
+        Response object that contains the result of the describing function
+        analysis.  The following information can be retrieved from this
+        object:
+    response.intersections : 1D array of 2-tuples or None
+        A list of all amplitudes and frequencies in which
+        :math:`H(j\\omega) N(a) = -1`, where :math:`N(a)` is the describing
+        function associated with `F`, or `None` if there are no such
+        points.  Each pair represents a potential limit cycle for the
+        closed loop system with amplitude given by the first value of the
+        tuple and frequency given by the second value.
 
     Examples
     --------
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
     >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> ct.describing_function_response(H_simple, F_saturation, amp)  # doctest: +SKIP
+    >>> response = ct.describing_function_response(H_simple, F_saturation, amp)
+    >>> response.intersections  # doctest: +SKIP
     [(3.343844998258643, 1.4142293090899216)]
+    >>> lines = response.plot()
 
     """
     # Decide whether to turn on warnings or not
@@ -340,14 +379,29 @@ def describing_function_response(
 
 def describing_function_plot(
         *sysdata, label="%5.2g @ %-5.2g", **kwargs):
-    """Plot a Nyquist plot with a describing function for a nonlinear system.
+    """describing_function_plot(data, *args, **kwargs)
+
+    Plot a Nyquist plot with a describing function for a nonlinear system.
 
     This function generates a Nyquist plot for a closed loop system
     consisting of a linear system with a static nonlinear function in the
     feedback path.
 
+    The function may be called in one of two forms:
+
+        describing_function_plot(response[, options])
+
+        describing_function_plot(H, F, A[, omega[, options]])
+
+    In the first form, the response should be generated using the
+    :func:`~control.describing_function_response` function.  In the second
+    form, that function is called internally, with the listed arguments.
+
     Parameters
     ----------
+    data : :class:`~control.DescribingFunctionData`
+        A describing function response data object created by
+        :func:`~control.describing_function_response`.
     H : LTI system
         Linear time-invariant (LTI) system (state space, transfer function, or
         FRD)
@@ -357,7 +411,9 @@ def describing_function_plot(
     A : list
         List of amplitudes to be used for the describing function plot.
     omega : list, optional
-        List of frequencies to be used for the linear system Nyquist curve.
+        List of frequencies to be used for the linear system Nyquist
+        curve. If not specified (or None), frequencies are computed
+        automatically based on the properties of the linear system.
     refine : bool, optional
         If True (default), refine the location of the intersection of the
         Nyquist curve for the linear system and the describing function to
@@ -368,21 +424,19 @@ def describing_function_plot(
 
     Returns
     -------
-    intersections : 1D array of 2-tuples or None
-        A list of all amplitudes and frequencies in which :math:`H(j\\omega)
-        N(a) = -1`, where :math:`N(a)` is the describing function associated
-        with `F`, or `None` if there are no such points.  Each pair represents
-        a potential limit cycle for the closed loop system with amplitude
-        given by the first value of the tuple and frequency given by the
-        second value.
+    lines : 1D array of Line2D
+        Arrray of Line2D objects for each line in the plot.  The first
+        element of the array is a list of lines (typically only one) for
+        the Nyquist plot of the linear I/O styem.  The second element of
+        the array is a list of lines (typically only one) for the
+        describing function curve.
 
     Examples
     --------
     >>> H_simple = ct.tf([8], [1, 2, 2, 1])
     >>> F_saturation = ct.saturation_nonlinearity(1)
     >>> amp = np.linspace(1, 4, 10)
-    >>> ct.describing_function_plot(H_simple, F_saturation, amp)  # doctest: +SKIP
-    [(3.343844998258643, 1.4142293090899216)]
+    >>> lines = ct.describing_function_plot(H_simple, F_saturation, amp)
 
     """
     # Process keywords

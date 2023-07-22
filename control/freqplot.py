@@ -81,10 +81,10 @@ from .frdata import FrequencyResponseData
 from .timeplot import _make_legend_labels
 from . import config
 
-__all__ = ['bode_plot', 'nyquist_response', 'nyquist_plot',
-           'singular_values_response', 'singular_values_plot',
-           'gangof4_plot', 'gangof4_response', 'bode', 'nyquist',
-           'gangof4']
+__all__ = ['bode_plot', 'NyquistResponseData', 'nyquist_response',
+           'nyquist_plot', 'singular_values_response',
+           'singular_values_plot', 'gangof4_plot', 'gangof4_response',
+           'bode', 'nyquist', 'gangof4']
 
 # Default font dictionary
 _freqplot_rcParams = mpl.rcParams.copy()
@@ -132,9 +132,9 @@ class FrequencyResponseList(list):
                 plot_type = response.plot_type
 
         if plot_type == 'bode':
-            bode_plot(self, *args, **kwargs)
+            return bode_plot(self, *args, **kwargs)
         elif plot_type == 'svplot':
-            singular_values_plot(self, *args, **kwargs)
+            return singular_values_plot(self, *args, **kwargs)
         else:
             raise ValueError(f"unknown plot type '{plot_type}'")
 
@@ -155,15 +155,20 @@ def bode_plot(
         sharex=None, sharey=None, title=None, relabel=True, **kwargs):
     """Bode plot for a system.
 
-    Bode plot of a frequency response over a (optional) frequency range.
+    Plot the magnitude and phase of the frequency response over a
+    (optional) frequency range.
 
     Parameters
     ----------
-    data : list of `FrequencyResponseData`
-        List of :class:`FrequencyResponseData` objects.  For backward
-        compatibility, a list of LTI systems can also be given.
-    omega : array_like
-        List of frequencies in rad/sec over to plot over.
+    data : list of `FrequencyResponseData` or `LTI`
+        List of LTI systems or :class:`FrequencyResponseData` objects.  A
+        single system or frequency response can also be passed.
+    omega : array_like, optoinal
+        List of frequencies in rad/sec over to plot over.  If not specified,
+        this will be determined from the proporties of the systems.
+    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+        Passed to `matplotlib` as the format string for all lines in the plot.
+        The `omega` parameter must be present (use omega=None if needed).
     dB : bool
         If True, plot result in dB.  Default is False.
     Hz : bool
@@ -179,24 +184,15 @@ def bode_plot(
         the graph.  Setting display_margins turns off the axes grid.
     margins_method : str, optional
         Method to use in computing margins (see :func:`stability_margins`).
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
-        Passed to `matplotlib` as the format string for all lines in the plot.
-        The `omega` parameter must be present (use omega=None if needed).
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    out : array of Line2D
+    lines : array of Line2D
         Array of Line2D objects for each line in the plot.  The shape of
         the array matches the subplots shape and the value of the array is a
         list of Line2D objects in that subplot.
-    mag : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, magnitude of the response (deprecated).
-    phase : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, phase in radians of the response (deprecated).
-    omega : ndarray (or list of ndarray if len(data) > 1))
-        If plot=False, frequency in rad/sec (deprecated).
 
     Other Parameters
     ----------------
@@ -235,11 +231,11 @@ def bode_plot(
     -----
     1. Starting with python-control version 0.10, `bode_plot`returns an
        array of lines instead of magnitude, phase, and frequency. To
-       recover the # old behavior, call `bode_plot` with `plot=True`, which
-       will force the legacy return values to be used (with a warning).  To
-       obtain just the frequency response of a system (or list of systems)
-       without plotting, use the :func:`~control.frequency_response`
-       command.
+       recover the old behavior, call `bode_plot` with `plot=True`, which
+       will force the legacy values (mag, phase, omega) to be returned
+       (with a warning).  To obtain just the frequency response of a system
+       (or list of systems) without plotting, use the
+       :func:`~control.frequency_response` command.
 
     2. If a discrete time model is given, the frequency response is plotted
        along the upper branch of the unit circle, using the mapping ``z =
@@ -1128,6 +1124,36 @@ _nyquist_defaults = {
 
 
 class NyquistResponseData:
+    """Nyquist response data object.
+
+    Nyquist contour analysis allows the stability and robustness of a
+    closed loop linear system to be evaluated using the open loop response
+    of the loop transfer function.  The NyquistResponseData class is used
+    by the :func:`~control.nyquist_response` function to return the
+    response of a linear system along the Nyquist 'D' contour.  The
+    response object can be used to obtain information about the Nyquist
+    response or to generate a Nyquist plot.
+
+    Attributes
+    ----------
+    count : integer
+        Number of encirclements of the -1 point by the Nyquist curve for
+        a system evaluated along the Nyquist contour.
+    contour : complex array
+        The Nyquist 'D' contour, with appropriate indendtations to avoid
+        open loop poles and zeros near/on the imaginary axis.
+    response : complex array
+        The value of the linear system under study along the Nyquist contour.
+    dt : None or float
+        The system timebase.
+    sysname : str
+        The name of the system being analyzed.
+    return_contour: bool
+        If true, when the object is accessed as an iterable return two
+        elements": `count` (number of encirlements) and `contour`.  If
+        false (default), then return only `count`.
+
+    """
     def __init__(
             self, count, contour, response, dt, sysname=None,
             return_contour=False):
@@ -1164,8 +1190,8 @@ class NyquistResponseList(list):
 
 def nyquist_response(
         sysdata, omega=None, plot=None, omega_limits=None, omega_num=None,
-        label_freq=0, color=None, return_contour=False, check_kwargs=True,
-        warn_encirclements=True, warn_nyquist=True, **kwargs):
+        return_contour=False, warn_encirclements=True, warn_nyquist=True,
+        check_kwargs=True, **kwargs):
     """Nyquist response for a system.
 
     Computes a Nyquist contour for the system over a (optional) frequency
@@ -1194,19 +1220,18 @@ def nyquist_response(
         Number of frequency samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
 
-    return_contour : bool, optional
-        If 'True', return the contour used to evaluate the Nyquist plot.
-
     Returns
     -------
-    count : int (or list of int if len(syslist) > 1)
+    responses : list of :class:`~control.NyquistResponseData`
+        For each system, a Nyquist response data object is returned.  If
+        sysdata is a single system, a single elemeent is returned (not a list).
+        For each response, the following information is available:
+    response.count : int
         Number of encirclements of the point -1 by the Nyquist curve.  If
         multiple systems are given, an array of counts is returned.
-
-    contour : ndarray (or list of ndarray if len(syslist) > 1)), optional
-        The contour used to create the primary Nyquist curve segment, returned
-        if `return_contour` is Tue.  To obtain the Nyquist curve values,
-        evaluate system(s) along contour.
+    response.contour : ndarray
+        The contour used to create the primary Nyquist curve segment.  To
+        obtain the Nyquist curve values, evaluate system(s) along contour.
 
     Other Parameters
     ----------------
@@ -1259,15 +1284,19 @@ def nyquist_response(
        primary curve use a dotted line style and the scaled portion of the
        mirror image use a dashdot line style.
 
+    4. If the legacy keyword `return_contour` is specified as True, the
+       response object can be iterated over to return `count, contour`.
+       This behavior is deprecated and will be removed in a future release.
+
     Examples
     --------
     >>> G = ct.zpk([], [-1, -2, -3], gain=100)
     >>> response = ct.nyquist_response(G)
     >>> count = response.count
-    >>> response.plot()
+    >>> lines = response.plot()
 
     """
-    # Get values for params (and pop from list to allow keyword use in plot)
+    # Get values for params
     omega_num_given = omega_num is not None
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     indent_radius = config._get_param(
@@ -1546,16 +1575,16 @@ def nyquist_plot(
 
     Returns
     -------
-    out : array of Line2D
+    lines : array of Line2D
         2D array of Line2D objects for each line in the plot.  The shape of
         the array is given by (nsys, 4) where nsys is the number of systems
         or Nyquist responses passed to the function.  The second index
         specifies the segment type:
 
-            0: unscaled portion of the primary curve
-            1: scaled portion of the primary curve
-            2: unscaled portion of the mirror curve
-            3: scaled portion of the mirror curve
+        * lines[idx, 0]: unscaled portion of the primary curve
+        * lines[idx, 1]: scaled portion of the primary curve
+        * lines[idx, 2]: unscaled portion of the mirror curve
+        * lines[idx, 3]: scaled portion of the mirror curve
 
     Other Parameters
     ----------------
@@ -1673,6 +1702,21 @@ def nyquist_plot(
     >>> out = ct.nyquist_plot(G)
 
     """
+    #
+    # Keyword processing
+    #
+    # Keywords for the nyquist_plot function can either be keywords that
+    # are unique to this function, keywords that are intended for use by
+    # nyquist_response (if data is a list of systems), or keywords that
+    # are intended for the plotting commands.
+    #
+    # We first pop off all keywords that are used directly by this
+    # function.  If data is a list of systems, when then pop off keywords
+    # that correspond to nyquist_response() keywords.  The remaining
+    # keywords are passed to matplotlib (and will generate an error if
+    # unrecognized).
+    #
+
     # Get values for params (and pop from list to allow keyword use in plot)
     arrows = config._get_param(
         'nyquist', 'arrows', kwargs, _nyquist_defaults, pop=True)
@@ -1726,18 +1770,21 @@ def nyquist_plot(
 
     # If argument was a singleton, turn it into a tuple
     if not isinstance(data, (list, tuple)):
-        data = (data,)
+        data = [data]
 
     # If we are passed a list of systems, compute response first
     if all([isinstance(
             sys, (StateSpace, TransferFunction, FrequencyResponseData))
             for sys in data]):
+        # Get the response, popping off keywords used there
         nyquist_responses = nyquist_response(
-            data, omega=omega, check_kwargs=False, **kwargs)
-        if not isinstance(nyquist_responses, list):
-            nyquist_responses = [nyquist_responses]
-    else:
-        nyquist_responses = data
+            data, omega=omega, return_contour=return_contour,
+            omega_limits=kwargs.pop('omega_limits', None),
+            omega_num=kwargs.pop('omega_num', None),
+            warn_encirclements=kwargs.pop('warn_encirclements', True),
+            warn_nyquist=kwargs.pop('warn_nyquist', True),
+            check_kwargs=False, **kwargs)
+    else: nyquist_responses = data
 
     # Legacy return value processing
     if plot is not None or return_contour is not None:
@@ -1750,6 +1797,10 @@ def nyquist_plot(
         contours = [response.contour for response in nyquist_responses]
 
     if plot is False:
+        # Make sure we used all of the keywrods
+        if kwargs:
+            raise TypeError("unrecognized keywords: ", str(kwargs))
+
         if len(data) == 1:
             counts, contours = counts[0], contours[0]
 
@@ -2080,7 +2131,8 @@ def gangof4_response(P, C, omega=None, Hz=False):
     --------
     >>> P = ct.tf([1], [1, 1])
     >>> C = ct.tf([2], [1])
-    >>> ct.gangof4_plot(P, C)
+    >>> response = ct.gangof4_response(P, C)
+    >>> lines = response.plot()
 
     """
     if not P.issiso() or not C.issiso():
@@ -2140,17 +2192,15 @@ def singular_values_response(
         List of linear systems (single system is OK).
     omega : array_like
         List of frequencies in rad/sec to be used for frequency response.
-    plot : bool
-        If True (default), generate the singular values plot.
     omega_limits : array_like of two values
-        Limits of the frequency vector to generate.  If Hz=True the
-        limits are in Hz otherwise in rad/s.
+        Limits of the frequency vector to generate, in rad/s.
     omega_num : int
         Number of samples to plot. Default value (1000) set by
         config.defaults['freqplot.number_of_samples'].
-    Hz : bool
-        If True, assume frequencies are given in Hz.  Default value
-        (False) set by config.defaults['freqplot.Hz']
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s. Omega is always
+        returned in rad/sec.
 
     Returns
     -------
@@ -2206,9 +2256,9 @@ def singular_values_plot(
         title=None, legend_loc='center right', **kwargs):
     """Plot the singular values for a system.
 
-    Plot the singular values for a system or list of systems.  If
-    multiple systems are plotted, each system in the list is plotted
-    in a different color.
+    Plot the singular values as a function of frequency for a system or
+    list of systems.  If multiple systems are plotted, each system in the
+    list is plotted in a different color.
 
     Parameters
     ----------
@@ -2217,6 +2267,9 @@ def singular_values_plot(
         compatibility, a list of LTI systems can also be given.
     omega : array_like
         List of frequencies in rad/sec over to plot over.
+    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+        Passed to `matplotlib` as the format string for all lines in the plot.
+        The `omega` parameter must be present (use omega=None if needed).
     dB : bool
         If True, plot result in dB.  Default is False.
     Hz : bool
@@ -2226,15 +2279,12 @@ def singular_values_plot(
         (legacy) If given, `singular_values_plot` returns the legacy return
         values of magnitude, phase, and frequency.  If False, just return
         the values with no plot.
-    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
-        Passed to `matplotlib` as the format string for all lines in the plot.
-        The `omega` parameter must be present (use omega=None if needed).
     **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
         Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    out : array of Line2D
+    lines : array of Line2D
         1-D array of Line2D objects.  The size of the array matches
         the number of systems and the value of the array is a list of
         Line2D objects for that system.
@@ -2246,9 +2296,6 @@ def singular_values_plot(
         If plot=False, frequency in rad/sec (deprecated).
 
     """
-    # If argument was a singleton, turn it into a tuple
-    data = data if isinstance(data, (list, tuple)) else (data,)
-
     # Keyword processing
     dB = config._get_param(
         'freqplot', 'dB', kwargs, _freqplot_defaults, pop=True)
@@ -2259,6 +2306,9 @@ def singular_values_plot(
     omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     freqplot_rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
+
+    # If argument was a singleton, turn it into a tuple
+    data = data if isinstance(data, (list, tuple)) else (data,)
 
     # Convert systems into frequency responses
     if any([isinstance(response, (StateSpace, TransferFunction))

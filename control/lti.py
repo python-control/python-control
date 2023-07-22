@@ -106,7 +106,7 @@ class LTI(InputOutputSystem):
 
         """
         from .frdata import FrequencyResponseData
-        
+
         omega = np.sort(np.array(omega, ndmin=1))
         if self.isdtime(strict=True):
             # Convert the frequency to discrete time
@@ -388,13 +388,13 @@ def frequency_response(
         A list of frequencies in radians/sec at which the system should be
         evaluated. The list can be either a Python list or a numpy array
         and will be sorted before evaluation.  If None (default), a common
-        set of frequencies that works across all systems is computed.
-    squeeze : bool, optional
-        If squeeze=True, remove single-dimensional entries from the shape of
-        the output even if the system is not SISO. If squeeze=False, keep all
-        indices (output, input and, if omega is array_like, frequency) even if
-        the system is SISO. The default value can be set using
-        config.defaults['control.squeeze_frequency_response'].
+        set of frequencies that works across all given systems is computed.
+    omega_limits : array_like of two values, optional
+        Limits to the range of frequencies, in rad/sec. Ignored if
+        omega is provided, and auto-generated if omitted.
+    omega_num : int, optional
+        Number of frequency samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
 
     Returns
     -------
@@ -417,10 +417,23 @@ def frequency_response(
         Returns a list of :class:`FrequencyResponseData` objects if sys is
         a list of systems.
 
+    Other Parameters
+    ----------------
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s. Omega is always
+        returned in rad/sec.
+    squeeze : bool, optional
+        If squeeze=True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If squeeze=False, keep all
+        indices (output, input and, if omega is array_like, frequency) even if
+        the system is SISO. The default value can be set using
+        config.defaults['control.squeeze_frequency_response'].
+
     See Also
     --------
     evalfr
-    bode
+    bode_plot
 
     Notes
     -----
@@ -429,6 +442,15 @@ def frequency_response(
 
     2. You can also use the lower-level methods ``sys(s)`` or ``sys(z)`` to
        generate the frequency response for a single system.
+
+    3. All frequency data should be given in rad/sec.  If frequency limits
+       are computed automatically, the `Hz` keyword can be used to ensure
+       that limits are in factors of decades in Hz, so that Bode plots with
+       `Hz=True` look better.
+
+    4. The frequency response data can be plotted by calling the
+       :func:`~control_bode_plot` function or using the `plot` method of
+       the :class:`~control.FrequencyResponseData` class.
 
     Examples
     --------

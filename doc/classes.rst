@@ -15,6 +15,7 @@ user should normally not need to instantiate these directly.
    :template: custom-class-template.rst
 
    InputOutputSystem
+   LTI
    StateSpace
    TransferFunction
    FrequencyResponseData
@@ -36,6 +37,7 @@ Additional classes
    :nosignatures:
 
    DescribingFunctionNonlinearity
+   DescribingFunctionResponse
    flatsys.BasisFamily
    flatsys.FlatSystem
    flatsys.LinearFlatSystem

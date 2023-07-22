@@ -82,7 +82,7 @@ def test_response_plots(
     # Make sure all of the outputs are of the right type
     nlines_plotted = 0
     for ax_lines in np.nditer(out, flags=["refs_ok"]):
-        for line in ax_lines.item():
+        for line in ax_lines.item() or []:
             assert isinstance(line, mpl.lines.Line2D)
             nlines_plotted += 1
 
@@ -142,10 +142,10 @@ def test_basic_freq_plots(savefigs=False):
     # Basic SISO Bode plot
     plt.figure()
     # ct.frequency_response(sys_siso).plot()
-    sys1 = ct.tf([1], [1, 2, 1], name='System 1')
-    sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='System 2')
+    sys1 = ct.tf([1], [1, 2, 1], name='sys1')
+    sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
     response = ct.frequency_response([sys1, sys2])
-    ct.bode_plot(response)
+    ct.bode_plot(response, initial_phase=0)
     if savefigs:
         plt.savefig('freqplot-siso_bode-default.png')
 
@@ -153,20 +153,27 @@ def test_basic_freq_plots(savefigs=False):
     plt.figure()
     sys_mimo = ct.tf(
         [[[1], [0.1]], [[0.2], [1]]],
-        [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="MIMO")
+        [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="sys_mimo")
     ct.frequency_response(sys_mimo).plot()
     if savefigs:
         plt.savefig('freqplot-mimo_bode-default.png')
 
-    # Magnitude only plot
+    # Magnitude only plot, with overlayed inputs and outputs
     plt.figure()
-    ct.frequency_response(sys_mimo).plot(plot_phase=False)
+    ct.frequency_response(sys_mimo).plot(
+        plot_phase=False, overlay_inputs=True, overlay_outputs=True)
     if savefigs:
         plt.savefig('freqplot-mimo_bode-magonly.png')
 
     # Phase only plot
     plt.figure()
     ct.frequency_response(sys_mimo).plot(plot_magnitude=False)
+
+    # Singular values plot
+    plt.figure()
+    ct.singular_values_response(sys_mimo).plot()
+    if savefigs:
+        plt.savefig('freqplot-mimo_svplot-default.png')
 
 
 def test_gangof4_plots(savefigs=False):

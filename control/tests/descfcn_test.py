@@ -226,3 +226,8 @@ def test_describing_function_exceptions():
     with pytest.raises(TypeError, match="unrecognized keyword"):
         ct.describing_function_response(
             H_simple, F_saturation, amp, None, unknown=None)
+
+    # Unrecognized keyword
+    with pytest.raises(AttributeError, match="no property|unexpected keyword"):
+        response = ct.describing_function_response(H_simple, F_saturation, amp)
+        response.plot(unknown=None)

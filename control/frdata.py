@@ -66,7 +66,9 @@ class FrequencyResponseData(LTI):
     A class for models defined by frequency response data (FRD).
 
     The FrequencyResponseData (FRD) class is used to represent systems in
-    frequency response data form.
+    frequency response data form.  It can be created manually using the
+    class constructor, using the :func:~~control.frd` factory function
+    (preferred), or via the :func:`~control.frequency_response` function.
 
     Parameters
     ----------
@@ -654,12 +656,27 @@ class FrequencyResponseData(LTI):
         return FRD(fresp, other.omega, smooth=(self.ifunc is not None))
 
     # Plotting interface
-    def plot(self, *args, **kwargs):
-        from .freqplot import bode_plot
+    def plot(self, plot_type=None, *args, **kwargs):
+        """Plot the frequency response using a Bode plot.
 
-        # For now, only support Bode plots
-        # TODO: add 'kind' keyword and Nyquist plots (?)
-        return bode_plot(self, *args, **kwargs)
+        Plot the frequency response using either a standard Bode plot
+        (default) or using a singular values plot (by setting `plot_type`
+        to 'svplot').  See :func:`~control.bode_plot` and
+        :func:`~control.singular_values_plot` for more detailed
+        descriptions.
+
+        """
+        from .freqplot import bode_plot, singular_values_plot
+
+        if plot_type is None:
+            plot_type = self.plot_type
+
+        if plot_type == 'bode':
+            return bode_plot(self, *args, **kwargs)
+        elif plot_type == 'svplot':
+            return singular_values_plot(self, *args, **kwargs)
+        else:
+            raise ValueError(f"unknown plot type '{plot_type}'")
 
     # Convert to pandas
     def to_pandas(self):
