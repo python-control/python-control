@@ -1185,7 +1185,7 @@ class NyquistResponseData:
 
 class NyquistResponseList(list):
     def plot(self, *args, **kwargs):
-        nyquist_plot(self, *args, **kwargs)
+        return nyquist_plot(self, *args, **kwargs)
 
 
 def nyquist_response(

@@ -31,7 +31,7 @@ manual_response = ct.FrequencyResponseData(
 @pytest.mark.parametrize(
     "sys", [
         ct.tf([1], [1, 2, 1], name='System 1'),         # SISO
-        manual_response,                                   # simple MIMO
+        manual_response,                                # simple MIMO
     ])
 # @pytest.mark.parametrize("pltmag", [True, False])
 # @pytest.mark.parametrize("pltphs", [True, False])
@@ -40,29 +40,30 @@ manual_response = ct.FrequencyResponseData(
 # @pytest.mark.parametrize("shrfrq", ['col', 'all', False, None])
 # @pytest.mark.parametrize("secsys", [False, True])
 @pytest.mark.parametrize(       # combinatorial-style test (faster)
-    "pltmag, pltphs, shrmag, shrphs, shrfrq, secsys",
-    [(True,  True,   None,   None,   None,   False),
-     (True,  False,  None,   None,   None,   False),
-     (False, True,   None,   None,   None,   False),
-     (True,  True,   None,   None,   None,   True),
-     (True,  True,   'row',  'row',  'col',  False),
-     (True,  True,   'row',  'row',  'all',  True),
-     (True,  True,   'all',  'row',  None,  False),
-     (True,  True,   'row',  'all',  None,  True),
-     (True,  True,   'none', 'none', None,  True),
-     (True,  False,  'all',  'row',  None,  False),
-     (True,  True,   True,   'row',  None,  True),
-     (True,  True,   None,   'row',  True,  False),
-     (True,  True,   'row',  None,   None,  True),
+    "pltmag, pltphs, shrmag, shrphs, shrfrq, ovlout, ovlinp, secsys",
+    [(True,  True,   None,   None,   None,   False,  False,  False),
+     (True,  False,  None,   None,   None,   True,   False,  False),
+     (False, True,   None,   None,   None,   False,  True,   False),
+     (True,  True,   None,   None,   None,   False,  False,  True),
+     (True,  True,   'row',  'row',  'col',  False,  False,  False),
+     (True,  True,   'row',  'row',  'all',  False,  False,  True),
+     (True,  True,   'all',  'row',  None,   False,  False,  False),
+     (True,  True,   'row',  'all',  None,   False,  False,  True),
+     (True,  True,   'none', 'none', None,   False,  False,  True),
+     (True,  False,  'all',  'row',  None,   False,  False,  False),
+     (True,  True,   True,   'row',  None,   False,  False,  True),
+     (True,  True,   None,   'row',  True,   False,  False,  False),
+     (True,  True,   'row',  None,   None,   False,  False,  True),
      ])
 def test_response_plots(
-        sys, pltmag, pltphs, shrmag, shrphs, shrfrq, secsys, clear=True):
+        sys, pltmag, pltphs, shrmag, shrphs, shrfrq, ovlout, ovlinp,
+        secsys, clear=True):
 
     # Save up the keyword arguments
     kwargs = dict(
         plot_magnitude=pltmag, plot_phase=pltphs,
         share_magnitude=shrmag, share_phase=shrphs, share_frequency=shrfrq,
-        # overlay_outputs=ovlout, overlay_inputs=ovlinp
+        overlay_outputs=ovlout, overlay_inputs=ovlinp
     )
 
     # Create the response
@@ -78,6 +79,16 @@ def test_response_plots(
     # Plot the frequency response
     plt.figure()
     out = response.plot(**kwargs)
+
+    # Check the shape
+    if ovlout and ovlinp:
+        assert out.shape == (pltmag + pltphs, 1)
+    elif ovlout:
+        assert out.shape == (pltmag + pltphs, sys.ninputs)
+    elif ovlinp:
+        assert out.shape == (sys.noutputs * (pltmag + pltphs), 1)
+    else:
+        assert out.shape == (sys.noutputs * (pltmag + pltphs), sys.ninputs)
 
     # Make sure all of the outputs are of the right type
     nlines_plotted = 0
@@ -198,17 +209,81 @@ def test_first_arg_listable(response_cmd, return_type):
     result = response_cmd(sys)
     assert isinstance(result, return_type)
 
+    # Save the results from a single plot
+    lines_single = result.plot()
+
     # If we pass a list of systems, we should get back a list
     result = response_cmd([sys, sys, sys])
     assert isinstance(result, list)
     assert len(result) == 3
     assert all([isinstance(item, return_type) for item in result])
 
+    # Make sure that plot works
+    lines_list = result.plot()
+    if response_cmd == ct.frequency_response:
+        assert lines_list.shape == lines_single.shape
+        assert len(lines_list.reshape(-1)[0]) == \
+            3 * len(lines_single.reshape(-1)[0])
+    else:
+        assert lines_list.shape[0] == 3 * lines_single.shape[0]
+
     # If we pass a singleton list, we should get back a list
     result = response_cmd([sys])
     assert isinstance(result, list)
     assert len(result) == 1
     assert isinstance(result[0], return_type)
+
+
+def test_bode_share_options():
+    # Default sharing should share along rows and cols for mag and phase
+    lines = ct.bode_plot(manual_response)
+    axs = ct.get_plot_axes(lines)
+    for i in range(axs.shape[0]):
+        for j in range(axs.shape[1]):
+            # Share y limits along rows
+            assert axs[i, j].get_ylim() == axs[i, 0].get_ylim()
+
+            # Share x limits along columns
+            assert axs[i, j].get_xlim() == axs[-1, j].get_xlim()
+
+    # Sharing along y axis for mag but not phase
+    plt.figure()
+    lines = ct.bode_plot(manual_response, share_phase='none')
+    axs = ct.get_plot_axes(lines)
+    for i in range(int(axs.shape[0] / 2)):
+        for j in range(axs.shape[1]):
+            if i != 0:
+                # Different rows are different
+                assert axs[i*2 + 1, 0].get_ylim() != axs[1, 0].get_ylim()
+            elif j != 0:
+                # Different columns are different
+                assert axs[i*2 + 1, j].get_ylim() != axs[i*2 + 1, 0].get_ylim()
+
+    # Turn off sharing for magnitude and phase
+    plt.figure()
+    lines = ct.bode_plot(manual_response, sharey='none')
+    axs = ct.get_plot_axes(lines)
+    for i in range(int(axs.shape[0] / 2)):
+        for j in range(axs.shape[1]):
+            if i != 0:
+                # Different rows are different
+                assert axs[i*2, 0].get_ylim() != axs[0, 0].get_ylim()
+                assert axs[i*2 + 1, 0].get_ylim() != axs[1, 0].get_ylim()
+            elif j != 0:
+                # Different columns are different
+                assert axs[i*2, j].get_ylim() != axs[i*2, 0].get_ylim()
+                assert axs[i*2 + 1, j].get_ylim() != axs[i*2 + 1, 0].get_ylim()
+
+    # Turn off sharing in x axes
+    plt.figure()
+    lines = ct.bode_plot(manual_response, sharex='none')
+    # TODO: figure out what to check
+
+
+def test_bode_errors():
+    # Turning off both magnitude and phase
+    with pytest.raises(ValueError, match="no data to plot"):
+        ct.bode_plot(manual_response, plot_magnitude=False, plot_phase=False)
 
 
 if __name__ == "__main__":
