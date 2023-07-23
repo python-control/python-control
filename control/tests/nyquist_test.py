@@ -359,11 +359,20 @@ def test_nyquist_exceptions():
 
 
 def test_linestyle_checks():
-    sys = ct.rss(2, 1, 1)
+    sys = ct.tf([100], [1, 1, 1])
 
-    # Things that should work
-    ct.nyquist_plot(sys, primary_style=['-', '-'], mirror_style=['-', '-'])
-    ct.nyquist_plot(sys, mirror_style=None)
+    # Set the line styles
+    lines = ct.nyquist_plot(
+        sys, primary_style=[':', ':'], mirror_style=[':', ':'])
+    assert all([line.get_linestyle() == ':' for line in lines[0]])
+
+    # Set the line colors
+    lines = ct.nyquist_plot(sys, color='g')
+    assert all([line.get_color() == 'g' for line in lines[0]])
+
+    # Turn off the mirror image
+    lines = ct.nyquist_plot(sys, mirror_style=False)
+    assert lines[0][2:] == [None, None]
 
     with pytest.raises(ValueError, match="invalid 'primary_style'"):
         ct.nyquist_plot(sys, primary_style=False)

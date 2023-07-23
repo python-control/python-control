@@ -7,14 +7,6 @@
 # Nyquist plots and other frequency response plots.  The code for Nichols
 # charts is in nichols.py.  The code for pole-zero diagrams is in pzmap.py
 # and rlocus.py.
-#
-# Functionality to add/check (Jul 2023, working list)
-# [?] Allow line colors/styles to be set in plot() command (also time plots)
-# [ ] Get sisotool working in iPython and document how to make it work
-# [ ] Allow use of subplot labels instead of output/input subtitles
-# [i] Allow frequency range to be overridden in bode_plot
-# [i] Unit tests for discrete time systems with different sample times
-# [ ] Add unit tests for ct.config.defaults['freqplot_number_of_samples']
 
 import numpy as np
 import matplotlib as mpl
@@ -103,7 +95,7 @@ def bode_plot(
         overlay_outputs=None, overlay_inputs=None, phase_label=None,
         magnitude_label=None, display_margins=None,
         margins_method='best', legend_map=None, legend_loc=None,
-        sharex=None, sharey=None, title=None, relabel=True, **kwargs):
+        sharex=None, sharey=None, title=None, **kwargs):
     """Bode plot for a system.
 
     Plot the magnitude and phase of the frequency response over a
@@ -116,7 +108,8 @@ def bode_plot(
         single system or frequency response can also be passed.
     omega : array_like, optoinal
         List of frequencies in rad/sec over to plot over.  If not specified,
-        this will be determined from the proporties of the systems.
+        this will be determined from the proporties of the systems.  Ignored
+        if `data` is not a list of systems.
     *fmt : :func:`matplotlib.pyplot.plot` format string, optional
         Passed to `matplotlib` as the format string for all lines in the plot.
         The `omega` parameter must be present (use omega=None if needed).
@@ -147,16 +140,6 @@ def bode_plot(
 
     Other Parameters
     ----------------
-    plot : bool, optional
-        (legacy) If given, `bode_plot` returns the legacy return values
-        of magnitude, phase, and frequency.  If False, just return the
-        values with no plot.
-    omega_limits : array_like of two values
-        Limits of the to generate frequency vector. If Hz=True the limits
-        are in Hz otherwise in rad/s.
-    omega_num : int
-        Number of samples to plot.  Defaults to
-        config.defaults['freqplot.number_of_samples'].
     grid : bool
         If True, plot grid lines on gain and phase plots.  Default is set by
         `config.defaults['freqplot.grid']`.
@@ -166,6 +149,20 @@ def bode_plot(
         value specified.  Units are in either degrees or radians, depending on
         the `deg` parameter. Default is -180 if wrap_phase is False, 0 if
         wrap_phase is True.
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits
+        are in Hz otherwise in rad/s.
+    omega_num : int
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignore if data is
+        not a list of systems.
+    plot : bool, optional
+        (legacy) If given, `bode_plot` returns the legacy return values
+        of magnitude, phase, and frequency.  If False, just return the
+        values with no plot.
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set up config.default['freqplot.rcParams'].
     wrap_phase : bool or float
         If wrap_phase is `False` (default), then the phase will be unwrapped
         so that it is continuously increasing or decreasing.  If wrap_phase is
@@ -220,7 +217,6 @@ def bode_plot(
         'freqplot', 'wrap_phase', kwargs, _freqplot_defaults, pop=True)
     initial_phase = config._get_param(
         'freqplot', 'initial_phase', kwargs, None, pop=True)
-    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     freqplot_rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
@@ -262,7 +258,7 @@ def bode_plot(
         data = [data]
 
     #
-    # Pre-process the data to be plotted (unwrap phase)
+    # Pre-process the data to be plotted (unwrap phase, limit frequencies)
     #
     # To maintain compatibility with legacy uses of bode_plot(), we do some
     # initial processing on the data, specifically phase unwrapping and
@@ -277,6 +273,17 @@ def bode_plot(
         data = frequency_response(
             data, omega=omega, omega_limits=omega_limits,
             omega_num=omega_num, Hz=Hz)
+    else:
+        # Generate warnings if frequency keywords were given
+        if omega_num is not None:
+            warnings.warn("`omega_num` ignored when passed response data")
+        elif omega is not None:
+            warnings.warn("`omega` ignored when passed response data")
+
+        # Check to make sure omega_limits is sensible
+        if omega_limits is not None and \
+           (len(omega_limits) != 2 or omega_limits[1] <= omega_limits[0]):
+            raise ValueError(f"invalid limits: {omega_limits=}")
 
     # If plot_phase is not specified, check the data first, otherwise true
     if plot_phase is None:
@@ -288,7 +295,6 @@ def bode_plot(
 
     mag_data, phase_data, omega_data = [], [], []
     for response in data:
-        phase = response.phase.copy()
         noutputs, ninputs = response.noutputs, response.ninputs
 
         if initial_phase is None:
@@ -306,9 +312,9 @@ def bode_plot(
             raise ValueError("initial_phase must be a number.")
 
         # Reshape the phase to allow standard indexing
-        phase = phase.reshape((noutputs, ninputs, -1))
+        phase = response.phase.copy().reshape((noutputs, ninputs, -1))
 
-        # Shift and wrap
+        # Shift and wrap the phase
         for i, j in itertools.product(range(noutputs), range(ninputs)):
             # Shift the phase if needed
             if abs(phase[i, j, 0] - initial_phase_value) > math.pi:
@@ -641,7 +647,7 @@ def bode_plot(
         # Get the (pre-processed) data in fully indexed form
         mag = mag_data[index].reshape((noutputs, ninputs, -1))
         phase = phase_data[index].reshape((noutputs, ninputs, -1))
-        omega_sys, sysname = response.omega, response.sysname
+        omega_sys, sysname = omega_data[index], response.sysname
 
         for i, j in itertools.product(range(noutputs), range(ninputs)):
             # Get the axes to use for magnitude and phase
@@ -831,21 +837,17 @@ def bode_plot(
 
     for i in range(noutputs):
         for j in range(ninputs):
+            # Utility function to generate phase labels
             def gen_zero_centered_series(val_min, val_max, period):
                 v1 = np.ceil(val_min / period - 0.2)
                 v2 = np.floor(val_max / period + 0.2)
                 return np.arange(v1, v2 + 1) * period
 
-            # TODO: put Nyquist lines here?
-
-            # TODO: what is going on here
-            # TODO: fix to use less dense labels, when needed
-            # TODO: make sure turning sharey on and off makes labels come/go
+            # Label the phase axes using multiples of 45 degrees
             if plot_phase:
                 ax_phase = ax_array[phase_map[i, j]]
 
                 # Set the labels
-                # TODO: tighten up code
                 if deg:
                     ylim = ax_phase.get_ylim()
                     num = np.floor((ylim[1] - ylim[0]) / 45)
@@ -877,6 +879,11 @@ def bode_plot(
             if share_frequency in [True, 'all', 'col']:
                 ax_array[i, j].tick_params(labelbottom=False)
 
+    # If specific omega_limits were given, use them
+    if omega_limits is not None:
+        for i, j in itertools.product(range(nrows), range(ncols)):
+            ax_array[i, j].set_xlim(omega_limits)
+
     #
     # Update the plot title (= figure suptitle)
     #
@@ -895,7 +902,7 @@ def bode_plot(
         else:
             title = data[0].title
 
-    if fig is not None and title is not None:
+    if fig is not None and isinstance(title, str):
         # Get the current title, if it exists
         old_title = None if fig._suptitle is None else fig._suptitle._text
         new_title = title
@@ -1294,11 +1301,11 @@ def nyquist_response(
         # Determine the contour used to evaluate the Nyquist curve
         if sys.isdtime(strict=True):
             # Restrict frequencies for discrete-time systems
-            nyquistfrq = math.pi / sys.dt
+            nyq_freq = math.pi / sys.dt
             if not omega_range_given:
                 # limit up to and including Nyquist frequency
                 omega_sys = np.hstack((
-                    omega_sys[omega_sys < nyquistfrq], nyquistfrq))
+                    omega_sys[omega_sys < nyq_freq], nyq_freq))
 
             # Issue a warning if we are sampling above Nyquist
             if np.any(omega_sys * sys.dt > np.pi) and warn_nyquist:
@@ -1817,7 +1824,7 @@ def nyquist_plot(
         x, y = resp.real.copy(), resp.imag.copy()
         x[reg_mask] *= (1 + curve_offset[reg_mask])
         y[reg_mask] *= (1 + curve_offset[reg_mask])
-        p = plt.plot(x, y, linestyle='None', color=c, **kwargs)
+        p = plt.plot(x, y, linestyle='None', color=c)
 
         # Add arrows
         ax = plt.gca()
@@ -2210,10 +2217,6 @@ def singular_values_plot(
     Hz : bool
         If True, plot frequency in Hz (omega must be provided in rad/sec).
         Default value (False) set by config.defaults['freqplot.Hz'].
-    plot : bool, optional
-        (legacy) If given, `singular_values_plot` returns the legacy return
-        values of magnitude, phase, and frequency.  If False, just return
-        the values with no plot.
     legend_loc : str, optional
         For plots with multiple lines, a legend will be included in the
         given location.  Default is 'center right'.  Use False to supress.
@@ -2233,6 +2236,26 @@ def singular_values_plot(
     omega : ndarray (or list of ndarray if len(data) > 1))
         If plot=False, frequency in rad/sec (deprecated).
 
+    Other Parameters
+    ----------------
+    grid : bool
+        If True, plot grid lines on gain and phase plots.  Default is set by
+        `config.defaults['freqplot.grid']`.
+    omega_limits : array_like of two values
+        Set limits for plotted frequency range. If Hz=True the limits
+        are in Hz otherwise in rad/s.
+    omega_num : int
+        Number of samples to use for the frequeny range.  Defaults to
+        config.defaults['freqplot.number_of_samples'].  Ignore if data is
+        not a list of systems.
+    plot : bool, optional
+        (legacy) If given, `singular_values_plot` returns the legacy return
+        values of magnitude, phase, and frequency.  If False, just return
+        the values with no plot.
+    rcParams : dict
+        Override the default parameters used for generating plots.
+        Default is set up config.default['freqplot.rcParams'].
+
     """
     # Keyword processing
     dB = config._get_param(
@@ -2241,7 +2264,6 @@ def singular_values_plot(
         'freqplot', 'Hz', kwargs, _freqplot_defaults, pop=True)
     grid = config._get_param(
         'freqplot', 'grid', kwargs, _freqplot_defaults, pop=True)
-    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
     freqplot_rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
@@ -2255,6 +2277,17 @@ def singular_values_plot(
                     data, omega=omega, omega_limits=omega_limits,
                     omega_num=omega_num)
     else:
+        # Generate warnings if frequency keywords were given
+        if omega_num is not None:
+            warnings.warn("`omega_num` ignored when passed response data")
+        elif omega is not None:
+            warnings.warn("`omega` ignored when passed response data")
+
+        # Check to make sure omega_limits is sensible
+        if omega_limits is not None and \
+           (len(omega_limits) != 2 or omega_limits[1] <= omega_limits[0]):
+            raise ValueError(f"invalid limits: {omega_limits=}")
+
         responses = data
 
     # Process (legacy) plot keyword
@@ -2308,48 +2341,49 @@ def singular_values_plot(
     # Create a list of lines for the output
     out = np.empty(len(data), dtype=object)
 
+    # Plot the singular values for each response
     for idx_sys, response in enumerate(responses):
         sigma = sigmas[idx_sys].transpose()     # frequency first for plotting
-        omega_sys = omegas[idx_sys]
+        omega = omegas[idx_sys] / (2 * math.pi) if Hz else  omegas[idx_sys]
+
         if response.isdtime(strict=True):
-            nyquistfrq = math.pi / response.dt
+            nyq_freq = (0.5/response.dt) if Hz else (math.pi/response.dt)
         else:
-            nyquistfrq = None
+            nyq_freq = None
 
-        color = color_cycle[(idx_sys + color_offset) % len(color_cycle)]
-        color = kwargs.pop('color', color)
-
-        # TODO: copy from above
-        nyquistfrq_plot = None
-        if Hz:
-            omega_plot = omega_sys / (2. * math.pi)
-            if nyquistfrq:
-                nyquistfrq_plot = nyquistfrq / (2. * math.pi)
+        # See if the color was specified, otherwise rotate
+        if kwargs.get('color', None) or any(
+                [isinstance(arg, str) and
+                 any([c in arg for c in "bgrcmykw#"]) for arg in fmt]):
+            color_arg = {}                      # color set by *fmt, **kwargs
         else:
-            omega_plot = omega_sys
-            if nyquistfrq:
-                nyquistfrq_plot = nyquistfrq
-        sigma_plot = sigma
+            color_arg = {'color': color_cycle[
+                (idx_sys + color_offset) % len(color_cycle)]}
 
         # Decide on the system name
         sysname = response.sysname if response.sysname is not None \
             else f"Unknown-{idx_sys}"
 
+        # Plot the data
         if dB:
             with plt.rc_context(freqplot_rcParams):
                 out[idx_sys] = ax_sigma.semilogx(
-                    omega_plot, 20 * np.log10(sigma_plot), *fmt, color=color,
-                    label=sysname, **kwargs)
+                    omega, 20 * np.log10(sigma), *fmt,
+                    label=sysname, **color_arg, **kwargs)
         else:
             with plt.rc_context(freqplot_rcParams):
                 out[idx_sys] = ax_sigma.loglog(
-                    omega_plot, sigma_plot, color=color, label=sysname,
-                    *fmt, **kwargs)
+                    omega, sigma, label=sysname, *fmt, **color_arg, **kwargs)
 
-        if nyquistfrq_plot is not None:
+        # Plot the Nyquist frequency
+        if nyq_freq is not None:
             ax_sigma.axvline(
-                nyquistfrq_plot, color=color, linestyle='--',
-                label='_nyq_freq_' + sysname)
+                nyq_freq, linestyle='--', label='_nyq_freq_' + sysname,
+                **color_arg)
+
+    # If specific omega_limits were given, use them
+    if omega_limits is not None:
+        ax_sigma.set_xlim(omega_limits)
 
     # Add a grid to the plot + labeling
     if grid:

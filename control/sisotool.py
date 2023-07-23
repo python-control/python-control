@@ -149,7 +149,7 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
 
     # Update the bodeplot
     bode_plot_params['data'] = frequency_response(sys_loop*K.real)
-    bode_plot(**bode_plot_params)
+    bode_plot(**bode_plot_params, title=False)
 
     # Set the titles and labels
     ax_mag.set_title('Bode magnitude',fontsize = title_font_size)

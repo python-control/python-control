@@ -147,7 +147,28 @@ def test_manual_response_limits():
     assert axs[0, 0].get_ylim() != axs[2, 0].get_ylim()
     assert axs[1, 0].get_ylim() != axs[3, 0].get_ylim()
 
-    # TODO: finish writing tests
+
+@pytest.mark.parametrize(
+    "plt_fcn", [ct.bode_plot, ct.nichols_plot, ct.singular_values_plot])
+def test_line_styles(plt_fcn):
+    # Define a couple of systems for testing
+    sys1 = ct.tf([1], [1, 2, 1], name='sys1')
+    sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+    sys3 = ct.tf([0.2, 0.1], [1, 0.1, 0.3, 0.1, 0.1], name='sys3')
+
+    # Create a plot for the first system, with custom styles
+    lines_default = plt_fcn(sys1)
+
+    # Now create a plot using *fmt customization
+    lines_fmt = plt_fcn(sys2, None, 'r--')
+    assert lines_fmt.reshape(-1)[0][0].get_color() == 'r'
+    assert lines_fmt.reshape(-1)[0][0].get_linestyle() == '--'
+
+    # Add a third plot using keyword customization
+    lines_kwargs = plt_fcn(sys3, color='g', linestyle=':')
+    assert lines_kwargs.reshape(-1)[0][0].get_color() == 'g'
+    assert lines_kwargs.reshape(-1)[0][0].get_linestyle() == ':'
+
 
 def test_basic_freq_plots(savefigs=False):
     # Basic SISO Bode plot
@@ -202,6 +223,7 @@ def test_gangof4_plots(savefigs=False):
 
     if savefigs:
         plt.savefig('freqplot-gangof4.png')
+
 
 @pytest.mark.parametrize("response_cmd, return_type", [
     (ct.frequency_response, ct.FrequencyResponseData),
@@ -298,11 +320,50 @@ def test_freqplot_plot_type(plot_type):
     else:
         assert lines.shape == (1, )
 
+@pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
+def test_freqplot_omega_limits(plt_fcn):
+    # Utility function to check visible limits
+    def _get_visible_limits(ax):
+        xticks = np.array(ax.get_xticks())
+        limits = ax.get_xlim()
+        return np.array([min(xticks[xticks >= limits[0]]),
+                         max(xticks[xticks <= limits[1]])])
 
-def test_bode_errors():
-    # Turning off both magnitude and phase
-    with pytest.raises(ValueError, match="no data to plot"):
-        ct.bode_plot(manual_response, plot_magnitude=False, plot_phase=False)
+    # Generate a test response with a fixed set of limits
+    response = ct.singular_values_response(
+        ct.tf([1], [1, 2, 1]), np.logspace(-1, 1))
+
+    # Generate a plot without overridding the limits
+    lines = plt_fcn(response)
+    ax = ct.get_plot_axes(lines)
+    np.testing.assert_allclose(
+        _get_visible_limits(ax.reshape(-1)[0]), np.array([0.1, 10]))
+
+    # Now reset the limits
+    lines = plt_fcn(response, omega_limits=(1, 100))
+    ax = ct.get_plot_axes(lines)
+    np.testing.assert_allclose(
+        _get_visible_limits(ax.reshape(-1)[0]), np.array([1, 100]))
+
+
+@pytest.mark.parametrize("plt_fcn", [ct.bode_plot, ct.singular_values_plot])
+def test_freqplot_errors(plt_fcn):
+    if plt_fcn == ct.bode_plot:
+        # Turning off both magnitude and phase
+        with pytest.raises(ValueError, match="no data to plot"):
+            ct.bode_plot(
+                manual_response, plot_magnitude=False, plot_phase=False)
+
+    # Specifying frequency parameters with response data
+    response = ct.singular_values_response(ct.rss(2, 1, 1))
+    with pytest.warns(UserWarning, match="`omega_num` ignored "):
+        plt_fcn(response, omega_num=100)
+    with pytest.warns(UserWarning, match="`omega` ignored "):
+        plt_fcn(response, omega=np.logspace(-2, 2))
+
+    # Bad frequency limits
+    with pytest.raises(ValueError, match="invalid limits"):
+        plt_fcn(response, omega_limits=[1e2, 1e-2])
 
 
 if __name__ == "__main__":
