@@ -201,24 +201,37 @@ def test_interconnect_docstring():
     np.testing.assert_almost_equal(T.C @ T. A @ T.B, T_ss.C @ T_ss.A @ T_ss.B)
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
-def test_signal_table(capsys):
-    P = ct.ss(1,1,1,0, inputs='u', outputs='y')
-    C = ct.tf(10, [.1, 1], inputs='e', outputs='u')
+@pytest.mark.parametrize("show_names", (True, False))
+def test_signal_table(capsys, show_names):
+    P = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P')
+    C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
     L = ct.interconnect([C, P], inputs='e', outputs='y')
-    L.signal_table()
-    captured = capsys.readouterr().out
+    L.signal_table(show_names=show_names)
+    captured_from_method = capsys.readouterr().out
+
+    ct.signal_table(L, show_names=show_names)
+    captured_from_function = capsys.readouterr().out
 
     # break the following strings separately because the printout order varies
-    # because signals are stored as a dict
+    # because signal names are stored as a set
     mystrings = \
     ["signal    | source                  | destination",
-     "-------------------------------------------------------------",
-     "e         | input                   | system 0",
-     "u         | system 0                | system 1",
-     "y         | system 1                | output"]
+     "-------------------------------------------------------------"]
+    if show_names:
+        mystrings += \
+            ["e         | input                   | C",
+             "u         | C                       | P",
+             "y         | P                       | output"]
+    else:
+        mystrings += \
+            ["e         | input                   | system 0",
+             "u         | system 0                | system 1",
+             "y         | system 1                | output"]
 
     for str_ in mystrings:
-        assert str_ in captured
+        assert str_ in captured_from_method
+        assert str_ in captured_from_function
+
 
 def test_interconnect_exceptions():
     # First make sure the docstring example works

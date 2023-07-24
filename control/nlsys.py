@@ -31,7 +31,7 @@ from .timeresp import _check_convert_array, _process_time_response, \
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
-           'interconnect']
+           'interconnect', 'signal_table']
 
 
 class NonlinearIOSystem(InputOutputSystem):
@@ -1020,7 +1020,7 @@ class InterconnectedSystem(NonlinearIOSystem):
         >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y')
         >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u')
         >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
-        >>> L.signal_table()
+        >>> L.signal_table() # doctest: +SKIP
         signal    | source                  | destination
         --------------------------------------------------------------
         e         | input                   | system 0
@@ -2563,3 +2563,36 @@ def _convert_static_iosystem(sys):
         return NonlinearIOSystem(
             None, lambda t, x, u, params: sys @ u,
             outputs=sys.shape[0], inputs=sys.shape[1])
+
+def signal_table(sys, **kwargs):
+    """Print table of signal names, sources, and destinations.
+
+    Intended primarily for systems that have been connected implicitly
+    using signal names.
+
+    Parameters
+    ----------
+    sys : :class:`InterconnectedSystem`
+        Interconnected system object
+    show_names : bool (optional)
+        Instead of printing out the system number, print out the name of
+        each system. Default is False because system name is not usually
+        specified when performing implicit interconnection using
+        :func:`interconnect`.
+
+    Examples
+    --------
+    >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y')
+    >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u')
+    >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
+    >>> ct.signal_table(L) # doctest: +SKIP
+    signal    | source                  | destination
+    --------------------------------------------------------------
+    e         | input                   | system 0
+    u         | system 0                | system 1
+    y         | system 1                | output
+    """
+    assert isinstance(sys, InterconnectedSystem), "system must be"\
+        "an InterconnectedSystem."
+
+    sys.signal_table(**kwargs)
