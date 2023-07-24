@@ -1001,6 +1001,69 @@ class InterconnectedSystem(NonlinearIOSystem):
         return ({inputs[i][:2]: inputs[i][2] for i in unused_sysinp},
                 {outputs[i][:2]: outputs[i][2] for i in unused_sysout})
 
+    def signal_table(self, show_names=False):
+        """Print table of signal names, sources, and destinations.
+
+        Intended primarily for systems that have been connected implicitly
+        using signal names.
+
+        Parameters
+        ----------
+        show_names : bool (optional)
+            Instead of printing out the system number, print out the name of
+            each system. Default is False because system name is not usually
+            specified when performing implicit interconnection using
+            :func:`interconnect`.
+
+        Examples
+        --------
+        >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y')
+        >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u')
+        >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
+        >>> L.signal_table()
+        signal    | source                  | destination
+        --------------------------------------------------------------
+        e         | input                   | system 0
+        u         | system 0                | system 1
+        y         | system 1                | output
+        """
+
+        spacing = 26
+        print('signal'.ljust(10) + '| source'.ljust(spacing) + '| destination')
+        print('-'*(10 + spacing * 2))
+
+        # collect signal labels
+        signal_labels = []
+        for sys in self.syslist:
+            signal_labels += sys.input_labels + sys.output_labels
+        signal_labels = set(signal_labels)
+
+        for signal_label in signal_labels:
+            print(signal_label.ljust(10), end='')
+            sources = '| '
+            dests = '| '
+
+            #  overall interconnected system inputs and outputs
+            if self.find_input(signal_label) is not None:
+                sources += 'input'
+            if self.find_output(signal_label) is not None:
+                dests += 'output'
+
+            # internal connections
+            for idx, sys in enumerate(self.syslist):
+                loc = sys.find_output(signal_label)
+                if loc is not None:
+                    if not sources.endswith(' '):
+                        sources += ', '
+                    sources += sys.name if show_names else 'system ' + str(idx)
+                loc = sys.find_input(signal_label)
+                if loc is not None:
+                    if not dests.endswith(' '):
+                        dests += ', '
+                    dests += sys.name if show_names else 'system ' + str(idx)
+            print(sources.ljust(spacing), end='')
+            print(dests.ljust(spacing), end='\n')
+
     def _find_inputs_by_basename(self, basename):
         """Find all subsystem inputs matching basename
 
