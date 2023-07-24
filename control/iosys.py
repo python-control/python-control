@@ -539,7 +539,7 @@ def isctime(sys, strict=False):
         return sys.isctime(strict)
 
 
-# Utility function to parse nameio keywords
+# Utility function to parse iosys keywords
 def _process_iosys_keywords(
         keywords={}, defaults={}, static=False, end=False):
     """Process iosys specification.
@@ -611,7 +611,7 @@ def _process_iosys_keywords(
     return name, inputs, outputs, states, dt
 
 #
-# Parse 'dt' in for named I/O system
+# Parse 'dt' for I/O system
 #
 # The 'dt' keyword is used to set the timebase for a system.  Its
 # processing is a bit unusual: if it is not specified at all, then the
