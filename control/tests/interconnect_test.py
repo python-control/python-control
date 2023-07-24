@@ -201,6 +201,24 @@ def test_interconnect_docstring():
     np.testing.assert_almost_equal(T.C @ T. A @ T.B, T_ss.C @ T_ss.A @ T_ss.B)
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
+def test_signal_table(capsys):
+    P = ct.ss(1,1,1,0, inputs='u', outputs='y')
+    C = ct.tf(10, [.1, 1], inputs='e', outputs='u')
+    L = ct.interconnect([C, P], inputs='e', outputs='y')
+    L.signal_table()
+    captured = capsys.readouterr().out
+
+    # break the following strings separately because the printout order varies
+    # because signals are stored as a dict
+    mystrings = \
+    ["signal    | source                  | destination",
+     "-------------------------------------------------------------",
+     "e         | input                   | system 0",
+     "u         | system 0                | system 1",
+     "y         | system 1                | output"]
+
+    for str_ in mystrings:
+        assert str_ in captured
 
 def test_interconnect_exceptions():
     # First make sure the docstring example works
