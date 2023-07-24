@@ -2564,7 +2564,7 @@ def _convert_static_iosystem(sys):
             None, lambda t, x, u, params: sys @ u,
             outputs=sys.shape[0], inputs=sys.shape[1])
 
-def signal_table(sys, **kwargs):
+def signal_table(sys, show_names=False):
     """Print table of signal names, sources, and destinations.
 
     Intended primarily for systems that have been connected implicitly
@@ -2595,4 +2595,4 @@ def signal_table(sys, **kwargs):
     assert isinstance(sys, InterconnectedSystem), "system must be"\
         "an InterconnectedSystem."
 
-    sys.signal_table(**kwargs)
+    sys.signal_table(show_names=show_names)
