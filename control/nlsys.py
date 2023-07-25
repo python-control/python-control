@@ -1021,14 +1021,14 @@ class InterconnectedSystem(NonlinearIOSystem):
         >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
         >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
         >>> L.signal_table(show_names=True) # doctest: +SKIP
-        signal    | source                  | destination
-        --------------------------------------------------------------
-        e         | input                   | C
-        u         | C                       | P
-        y         | P                       | output
+        signal    | source                        | destination
+        --------------------------------------------------------------------
+        e         | input                         | C
+        u         | C                             | P
+        y         | P                             | output
         """
 
-        spacing = 26
+        spacing = 32
         print('signal'.ljust(10) + '| source'.ljust(spacing) + '| destination')
         print('-'*(10 + spacing * 2))
 
@@ -1053,12 +1053,12 @@ class InterconnectedSystem(NonlinearIOSystem):
             for idx, sys in enumerate(self.syslist):
                 loc = sys.find_output(signal_label)
                 if loc is not None:
-                    if not sources.endswith(', '):
+                    if not sources.endswith(' '):
                         sources += ', '
                     sources += sys.name if show_names else 'system ' + str(idx)
                 loc = sys.find_input(signal_label)
                 if loc is not None:
-                    if not dests.endswith(', '):
+                    if not dests.endswith(' '):
                         dests += ', '
                     dests += sys.name if show_names else 'system ' + str(idx)
             print(sources.ljust(spacing), end='')
