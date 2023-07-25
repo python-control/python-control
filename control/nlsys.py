@@ -1017,15 +1017,15 @@ class InterconnectedSystem(NonlinearIOSystem):
 
         Examples
         --------
-        >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y')
-        >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u')
+        >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P')
+        >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
         >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
-        >>> L.signal_table() # doctest: +SKIP
+        >>> L.signal_table(show_names=True) # doctest: +SKIP
         signal    | source                  | destination
         --------------------------------------------------------------
-        e         | input                   | system 0
-        u         | system 0                | system 1
-        y         | system 1                | output
+        e         | input                   | C
+        u         | C                       | P
+        y         | P                       | output
         """
 
         spacing = 26
@@ -1053,12 +1053,12 @@ class InterconnectedSystem(NonlinearIOSystem):
             for idx, sys in enumerate(self.syslist):
                 loc = sys.find_output(signal_label)
                 if loc is not None:
-                    if not sources.endswith(' '):
+                    if not sources.endswith(', '):
                         sources += ', '
                     sources += sys.name if show_names else 'system ' + str(idx)
                 loc = sys.find_input(signal_label)
                 if loc is not None:
-                    if not dests.endswith(' '):
+                    if not dests.endswith(', '):
                         dests += ', '
                     dests += sys.name if show_names else 'system ' + str(idx)
             print(sources.ljust(spacing), end='')
@@ -2582,15 +2582,15 @@ def signal_table(sys, show_names=False):
 
     Examples
     --------
-    >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y')
-    >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u')
+    >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P')
+    >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
     >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
-    >>> ct.signal_table(L) # doctest: +SKIP
+    >>> L.signal_table(show_names=True) # doctest: +SKIP
     signal    | source                  | destination
     --------------------------------------------------------------
-    e         | input                   | system 0
-    u         | system 0                | system 1
-    y         | system 1                | output
+    e         | input                   | C
+    u         | C                       | P
+    y         | P                       | output
     """
     assert isinstance(sys, InterconnectedSystem), "system must be"\
         "an InterconnectedSystem."
