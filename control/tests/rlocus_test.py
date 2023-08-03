@@ -78,13 +78,6 @@ class TestRootLocus:
             assert n_gridlines > 2
         # TODO check validity of grid
 
-    def test_root_locus_warnings(self):
-        sys = TransferFunction([1000], [1, 25, 100, 0])
-        with pytest.warns(FutureWarning, match="Plot.*deprecated"):
-            rlist, klist = root_locus(sys, Plot=True)
-        with pytest.warns(FutureWarning, match="PrintGain.*deprecated"):
-            rlist, klist = root_locus(sys, PrintGain=True)
-
     def test_root_locus_neg_false_gain_nonproper(self):
         """ Non proper TranferFunction with negative gain: Not implemented"""
         with pytest.raises(ValueError, match="with equal order"):

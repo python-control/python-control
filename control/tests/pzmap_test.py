@@ -44,20 +44,23 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
 
     pzkwargs = kwargs.copy()
     if setdefaults:
-        for k in ['plot', 'grid']:
+        for k in ['grid']:
             if k in pzkwargs:
                 v = pzkwargs.pop(k)
                 config.set_defaults('pzmap', **{k: v})
 
+    if kwargs.get('plot', None) is None:
+        pzkwargs['plot'] = True         # use to get legacy return values
     P, Z = pzmap(T, **pzkwargs)
 
     np.testing.assert_allclose(P, Pref, rtol=1e-3)
     np.testing.assert_allclose(Z, Zref, rtol=1e-3)
 
     if kwargs.get('plot', True):
-        ax = plt.gca()
+        fig, ax = plt.gcf(), plt.gca()
 
-        assert ax.get_title() == kwargs.get('title', 'Pole Zero Map')
+        assert fig._suptitle.get_text().startswith(
+            kwargs.get('title', 'Pole/zero map'))
 
         # FIXME: This won't work when zgrid and sgrid are unified
         children = ax.get_children()
@@ -76,11 +79,6 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
             assert not has_sgrid
     else:
         assert not plt.get_fignums()
-
-
-def test_pzmap_warns():
-    with pytest.warns(FutureWarning):
-        pzmap(TransferFunction([1], [1, 2]), Plot=True)
 
 
 def test_pzmap_raises():

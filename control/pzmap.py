@@ -1,85 +1,118 @@
 # pzmap.py - computations involving poles and zeros
 #
-# Author: Richard M. Murray
+# Original author: Richard M. Murray
 # Date: 7 Sep 2009
 #
 # This file contains functions that compute poles, zeros and related
 # quantities for a linear system.
 #
-# Copyright (c) 2009 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
 
+import numpy as np
 from numpy import real, imag, linspace, exp, cos, sin, sqrt
+import matplotlib.pyplot as plt
 from math import pi
+import itertools
+import warnings
+
 from .lti import LTI
 from .iosys import isdtime, isctime
 from .grid import sgrid, zgrid, nogrid
+from .statesp import StateSpace
+from .xferfcn import TransferFunction
+from .freqplot import _freqplot_defaults, _get_line_labels
 from . import config
 
-__all__ = ['pzmap']
+__all__ = ['pzmap_response', 'pzmap_plot', 'pzmap']
 
 
 # Define default parameter values for this module
 _pzmap_defaults = {
     'pzmap.grid': False,       # Plot omega-damping grid
-    'pzmap.plot': True,        # Generate plot using Matplotlib
+    'pzmap.marker_size': 6,    # Size of the markers
+    'pzmap.marker_width': 1.5, # Width of the markers
 }
 
 
+# Classes for keeping track of pzmap plots
+class PoleZeroResponseList(list):
+    def plot(self, *args, **kwargs):
+        return pzmap_plot(self, *args, **kwargs)
+
+
+class PoleZeroResponseData:
+    def __init__(
+            self, poles, zeros, gains=None, loci=None, dt=None, sysname=None):
+        self.poles = poles
+        self.zeros = zeros
+        self.gains = gains
+        self.loci = loci
+        self.dt = dt
+        self.sysname = sysname
+
+    # Implement functions to allow legacy assignment to tuple
+    def __iter__(self):
+        return iter((self.poles, self.zeros))
+
+    def plot(self, *args, **kwargs):
+        return pzmap_plot(self, *args, **kwargs)
+
+
+# pzmap response funciton
+def pzmap_response(sysdata):
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    responses = []
+    for idx, sys in enumerate(syslist):
+        responses.append(
+            PoleZeroResponseData(
+                sys.poles(), sys.zeros(), dt=sys.dt, sysname=sys.name))
+
+    if isinstance(sysdata, (list, tuple)):
+        return PoleZeroResponseList(responses)
+    else:
+        return responses[0]
+
+
 # TODO: Implement more elegant cross-style axes. See:
-#    http://matplotlib.sourceforge.net/examples/axes_grid/demo_axisline_style.html
-#    http://matplotlib.sourceforge.net/examples/axes_grid/demo_curvelinear_grid.html
-def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
+#    https://matplotlib.org/2.0.2/examples/axes_grid/demo_axisline_style.html
+#    https://matplotlib.org/2.0.2/examples/axes_grid/demo_curvelinear_grid.html
+def pzmap_plot(
+        data, plot=None, grid=None, title=None, marker_color=None,
+        marker_size=None, marker_width=None, legend_loc='upper right',
+        **kwargs):
     """Plot a pole/zero map for a linear system.
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
-        Linear system for which poles and zeros are computed.
-    plot: bool, optional
-        If ``True`` a graph is generated with Matplotlib,
-        otherwise the poles and zeros are only computed and returned.
+    sysdata: List of PoleZeroResponseData objects or LTI systems
+        List of pole/zero response data objects generated by pzmap_response
+        or rootlocus_response() that are to be plotted.  If a list of systems
+        is given, the poles and zeros of those systems will be plotted.
     grid: boolean (default = False)
         If True plot omega-damping grid.
+    plot: bool, optional
+        (legacy) If ``True`` a graph is generated with Matplotlib,
+        otherwise the poles and zeros are only computed and returned.
+        If this argument is present, the legacy value of poles and
+        zero is returned.
 
     Returns
     -------
-    poles: array
-        The systems poles
-    zeros: array
-        The system's zeros.
+    lines : List of Line2D
+        Array of Line2D objects for each set of markers in the plot. The
+        shape of the array is given by (nsys, 2) where nsys is the number
+        of systems or Nyquist responses passed to the function.  The second
+        index specifies the pzmap object type:
 
-    Notes
+        * lines[idx, 0]: poles
+        * lines[idx, 1]: zeros
+
+    poles, zeros: list of arrays
+        (legacy) If the `plot` keyword is given, the system poles and zeros
+        are returned.
+
+    Notes (TODO: update)
     -----
     The pzmap function calls matplotlib.pyplot.axis('equal'), which means
     that trying to reset the axis limits may not behave as expected.  To
@@ -87,47 +120,143 @@ def pzmap(sys, plot=None, grid=None, title='Pole Zero Map', **kwargs):
     then set the axis limits to the desired values.
 
     """
-    # Check to see if legacy 'Plot' keyword was used
-    if 'Plot' in kwargs:
-        import warnings
-        warnings.warn("'Plot' keyword is deprecated in pzmap; use 'plot'",
-                      FutureWarning)
-        plot = kwargs.pop('Plot')
-
-    # Make sure there were no extraneous keywords
-    if kwargs:
-        raise TypeError("unrecognized keywords: ", str(kwargs))
-
     # Get parameter values
-    plot = config._get_param('pzmap', 'plot', plot, True)
     grid = config._get_param('pzmap', 'grid', grid, False)
+    marker_size = config._get_param('pzmap', 'marker_size', marker_size, 6)
+    marker_width = config._get_param('pzmap', 'marker_width', marker_width, 1.5)
+    freqplot_rcParams = config._get_param(
+        'freqplot', 'rcParams', kwargs, _freqplot_defaults,
+        pop=True, last=True)
 
-    if not isinstance(sys, LTI):
-        raise TypeError('Argument ``sys``: must be a linear system.')
+    # If argument was a singleton, turn it into a tuple
+    if not isinstance(data, (list, tuple)):
+        data = [data]
 
-    poles = sys.poles()
-    zeros = sys.zeros()
+    # If we are passed a list of systems, compute response first
+    if all([isinstance(
+            sys, (StateSpace, TransferFunction)) for sys in data]):
+        # Get the response, popping off keywords used there
+        pzmap_responses = pzmap_response(data)
+    elif all([isinstance(d, PoleZeroResponseData) for d in data]):
+        pzmap_responses = data
+    else:
+        raise TypeError("unknown system data type")
 
-    if (plot):
-        import matplotlib.pyplot as plt
+    # Legacy return value processing
+    if plot is not None:
+        warnings.warn(
+            "`pzmap_plot` return values of poles, zeros is deprecated; "
+            "use pzmap_response()", DeprecationWarning)
 
+        # Extract out the values that we will eventually return
+        poles = [response.poles for response in pzmap_responses]
+        zeros = [response.zeros for response in pzmap_responses]
+
+    if plot is False:
+        if len(data) == 1:
+            return poles[0], zeros[0]
+        else:
+            return poles, zeros
+
+    # Initialize the figure
+    # TODO: turn into standard utility function
+    fig = plt.gcf()
+    axs = fig.get_axes()
+    if len(axs) > 1:
+        # Need to generate a new figure
+        fig, axs = plt.figure(), []
+
+    with plt.rc_context(freqplot_rcParams):
         if grid:
-            if isdtime(sys, strict=True):
+            plt.clf()
+            if all([response.isctime() for response in data]):
+                ax, fig = sgrid()
+            elif all([response.isdtime() for response in data]):
                 ax, fig = zgrid()
             else:
-                ax, fig = sgrid()
-        else:
+                ValueError(
+                    "incompatible time responses; don't know how to grid")
+        elif len(axs) == 0:
             ax, fig = nogrid()
+        else:
+            # Use the existing axes
+            ax = axs[0]
+
+    # Handle color cycle manually as all singular values
+    # of the same systems are expected to be of the same color
+    color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    color_offset = 0
+    if len(ax.lines) > 0:
+        last_color = ax.lines[-1].get_color()
+        if last_color in color_cycle:
+            color_offset = color_cycle.index(last_color) + 1
+
+    # Create a list of lines for the output
+    out = np.empty((len(pzmap_responses), 2), dtype=object)
+    for i, j in itertools.product(range(out.shape[0]), range(out.shape[1])):
+        out[i, j] = []          # unique list in each element
+
+    for idx, response in enumerate(pzmap_responses):
+        poles = response.poles
+        zeros = response.zeros
+
+        # Get the color to use for this system
+        if marker_color is None:
+            color = color_cycle[(color_offset + idx) % len(color_cycle)]
+        else:
+            color = maker_color
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
-            ax.scatter(real(poles), imag(poles), s=50, marker='x',
-                       facecolors='k')
+            out[idx, 0] = ax.plot(
+                real(poles), imag(poles), marker='x', linestyle='',
+                markeredgecolor=color, markerfacecolor=color,
+                markersize=marker_size, markeredgewidth=marker_width,
+                label=response.sysname)
         if len(zeros) > 0:
-            ax.scatter(real(zeros), imag(zeros), s=50, marker='o',
-                       facecolors='none', edgecolors='k')
+            out[idx, 1] = ax.plot(
+                real(zeros), imag(zeros), marker='o', linestyle='',
+                markeredgecolor=color, markerfacecolor='none',
+                markersize=marker_size, markeredgewidth=marker_width)
 
-        plt.title(title)
+    # List of systems that are included in this plot
+    lines, labels = _get_line_labels(ax)
 
-    # Return locations of poles and zeros as a tuple
-    return poles, zeros
+    # Update the lines to use tuples for poles and zeros
+    from matplotlib.lines import Line2D
+    from matplotlib.legend_handler import HandlerTuple
+    line_tuples = []
+    for pole_line in lines:
+        zero_line = Line2D(
+            [0], [0], marker='o', linestyle='',
+            markeredgecolor=pole_line.get_markerfacecolor(),
+            markerfacecolor='none', markersize=marker_size,
+            markeredgewidth=marker_width)
+        handle = (pole_line, zero_line)
+        line_tuples.append(handle)
+    print(line_tuples)
+
+    # Add legend if there is more than one system plotted
+    if len(labels) > 1 and legend_loc is not False:
+        with plt.rc_context(freqplot_rcParams):
+            ax.legend(
+                line_tuples, labels, loc=legend_loc,
+                handler_map={tuple: HandlerTuple(ndivide=None)})
+
+    # Add the title
+    if title is None:
+        title = "Pole/zero map for " + ", ".join(labels)
+    with plt.rc_context(freqplot_rcParams):
+        fig.suptitle(title)
+
+    # Legacy processing: return locations of poles and zeros as a tuple
+    if plot is True:
+        if len(data) == 1:
+            return poles, zeros
+        else:
+            TypeError("system lists not supported with legacy return values")
+
+    return out
+
+
+pzmap = pzmap_plot

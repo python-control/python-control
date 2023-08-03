@@ -1,38 +1,6 @@
 # rlocus.py - code for computing a root locus plot
 # Code contributed by Ryan Krauss, 2010
 #
-# Copyright (c) 2010 by Ryan Krauss
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
 # RMM, 17 June 2010: modified to be a standalone piece of code
 #   * Added BSD copyright info to file (per Ryan)
 #   * Added code to convert (num, den) to poly1d's if they aren't already.
@@ -46,7 +14,6 @@
 # Sawyer B. Fuller (minster@uw.edu) 21 May 2020:
 #   * added compatibility with discrete-time systems.
 #
-# $Id$
 
 # Packages used by this module
 from functools import partial
@@ -127,20 +94,6 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     then set the axis limits to the desired values.
 
     """
-    # Check to see if legacy 'Plot' keyword was used
-    if 'Plot' in kwargs:
-        warnings.warn("'Plot' keyword is deprecated in root_locus; "
-                      "use 'plot'", FutureWarning)
-        # Map 'Plot' keyword to 'plot' keyword
-        plot = kwargs.pop('Plot')
-
-    # Check to see if legacy 'PrintGain' keyword was used
-    if 'PrintGain' in kwargs:
-        warnings.warn("'PrintGain' keyword is deprecated in root_locus; "
-                      "use 'print_gain'", FutureWarning)
-        # Map 'PrintGain' keyword to 'print_gain' keyword
-        print_gain = kwargs.pop('PrintGain')
-
     # Get parameter values
     plotstr = config._get_param('rlocus', 'plotstr', plotstr, _rlocus_defaults)
     grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
