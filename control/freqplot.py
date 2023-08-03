@@ -1166,14 +1166,11 @@ def nyquist_response(
     sysdata : LTI or list of LTI
         List of linear input/output systems (single system is OK). Nyquist
         curves for each system are plotted on the same graph.
-
     omega : array_like, optional
         Set of frequencies to be evaluated, in rad/sec.
-
     omega_limits : array_like of two values, optional
         Limits to the range of frequencies. Ignored if omega is provided, and
         auto-generated if omitted.
-
     omega_num : int, optional
         Number of frequency samples to plot.  Defaults to
         config.defaults['freqplot.number_of_samples'].
@@ -1182,8 +1179,8 @@ def nyquist_response(
     -------
     responses : list of :class:`~control.NyquistResponseData`
         For each system, a Nyquist response data object is returned.  If
-        sysdata is a single system, a single elemeent is returned (not a list).
-        For each response, the following information is available:
+        `sysdata` is a single system, a single elemeent is returned (not a
+        list).  For each response, the following information is available:
     response.count : int
         Number of encirclements of the point -1 by the Nyquist curve.  If
         multiple systems are given, an array of counts is returned.
@@ -1742,7 +1739,8 @@ def nyquist_plot(
             warn_encirclements=kwargs.pop('warn_encirclements', True),
             warn_nyquist=kwargs.pop('warn_nyquist', True),
             check_kwargs=False, **kwargs)
-    else: nyquist_responses = data
+    else:
+        nyquist_responses = data
 
     # Legacy return value processing
     if plot is not None or return_contour is not None:
@@ -2130,8 +2128,8 @@ def singular_values_response(
 
     Parameters
     ----------
-    sys : (list of) LTI systems
-        List of linear systems (single system is OK).
+    sysdata : LTI or list of LTI
+        List of linear input/output systems (single system is OK).
     omega : array_like
         List of frequencies in rad/sec to be used for frequency response.
     omega_limits : array_like of two values

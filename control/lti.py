@@ -382,7 +382,7 @@ def frequency_response(
 
     Parameters
     ----------
-    sysdata: LTI system or list of LTI systems
+    sysdata : LTI system or list of LTI systems
         Linear system(s) for which frequency response is computed.
     omega : float or 1D array_like, optional
         A list of frequencies in radians/sec at which the system should be
