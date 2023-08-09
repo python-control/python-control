@@ -241,7 +241,7 @@ kwarg_unittest = {
     'nyquist_response': test_response_plot_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
     'pzmap': test_unrecognized_kwargs,
-    'pzmap_plot': test_unrecognized_kwargs,
+    'pole_zero_plot': test_unrecognized_kwargs,
     'rlocus': test_unrecognized_kwargs,
     'root_locus': test_unrecognized_kwargs,
     'rss': test_unrecognized_kwargs,
