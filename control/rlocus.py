@@ -25,7 +25,6 @@ import scipy.signal             # signal processing toolbox
 from .iosys import isdtime
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
-from .sisotool import _SisotoolUpdate
 from .grid import sgrid, zgrid
 from . import config
 import warnings
@@ -76,7 +75,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     ax : :class:`matplotlib.axes.Axes`
         Axes on which to create root locus plot
     initial_gain : float, optional
-        Used by :func:`sisotool` to indicate initial gain.
+        Specify the initial gain to use when marking current gain. [TODO: update]
 
     Returns
     -------
@@ -100,17 +99,12 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     print_gain = config._get_param(
         'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
-    # Check for sisotool mode
-    sisotool = kwargs.get('sisotool', False)
-
-    # make sure siso. sisotool has different requirements
-    if not sys.issiso() and not sisotool:
+    if not sys.issiso():
         raise ControlMIMONotImplemented(
             'sys must be single-input single-output (SISO)')
 
-    sys_loop = sys[0,0]
     # Convert numerator and denominator to polynomials if they aren't
-    (nump, denp) = _systopoly1d(sys_loop)
+    nump, denp = _systopoly1d(sys)
 
     # if discrete-time system and if xlim and ylim are not given,
     #  that we a view of the unit circle
@@ -128,31 +122,30 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         root_array = _RLSortRoots(root_array)
         recompute_on_zoom = False
 
-    if sisotool:
-        start_roots = _RLFindRoots(nump, denp, initial_gain)
-
     # Make sure there were no extraneous keywords
-    if not sisotool and kwargs:
+    if kwargs:
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Create the Plot
     if plot:
-        if sisotool:
-            fig = kwargs['fig']
-            ax = fig.axes[1]
-        else:
-            if ax is None:
-                ax = plt.gca()
-            fig = ax.figure
+        if ax is None:
+            ax = plt.gca()
             ax.set_title('Root Locus')
+        fig = ax.figure
 
-        if print_gain and not sisotool:
+        # TODO: get rid of extra variable start_roots
+        if initial_gain is not None:
+            start_roots = _RLFindRoots(nump, denp, initial_gain)
+        else:
+            start_roots = None
+
+        if print_gain and start_roots is None:
             fig.canvas.mpl_connect(
                 'button_release_event',
                 partial(_RLClickDispatcher, sys=sys, fig=fig,
-                        ax_rlocus=fig.axes[0], plotstr=plotstr))
-        elif sisotool:
-            fig.axes[1].plot(
+                        ax_rlocus=ax, plotstr=plotstr))
+        elif start_roots is not None:
+            ax.plot(
                 [root.real for root in start_roots],
                 [root.imag for root in start_roots],
                 marker='s', markersize=6, zorder=20, color='k', label='gain_point')
@@ -165,14 +158,6 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                 "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
                 (s.real, s.imag, initial_gain, zeta),
                 fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
-            fig.canvas.mpl_connect(
-                'button_release_event',
-                partial(_RLClickDispatcher, sys=sys, fig=fig,
-                        ax_rlocus=fig.axes[1], plotstr=plotstr,
-                        sisotool=sisotool,
-                        bode_plot_params=kwargs['bode_plot_params'],
-                        tvect=kwargs['tvect']))
-
 
         if recompute_on_zoom:
             # update gains and roots when xlim/ylim change. Only then are
@@ -526,7 +511,7 @@ def _RLZoomDispatcher(event, sys, ax_rlocus, plotstr):
                        scalex=False, scaley=False)
 
 
-def _RLClickDispatcher(event, sys, fig, ax_rlocus, plotstr, sisotool=False,
+def _RLClickDispatcher(event, sys, fig, ax_rlocus, plotstr,
                        bode_plot_params=None, tvect=None):
     """Rootlocus plot click dispatcher"""
 
@@ -536,15 +521,14 @@ def _RLClickDispatcher(event, sys, fig, ax_rlocus, plotstr, sisotool=False,
        {'zoom rect', 'pan/zoom'}:
 
         # if a point is clicked on the rootlocus plot visually emphasize it
-        K = _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool)
-        if sisotool and K is not None:
-            _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect)
+        K = _RLFeedbackClicksPoint(
+            event, sys, fig, ax_rlocus, show_clicked=False)
 
     # Update the canvas
     fig.canvas.draw()
 
 
-def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
+def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, show_clicked=False):
     """Display root-locus gain feedback point for clicks on root-locus plot"""
     sys_loop = sys[0,0]
     (nump, denp) = _systopoly1d(sys_loop)
@@ -591,16 +575,20 @@ def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, sisotool=False):
         # Remove the previous line
         _removeLine(label='gain_point', ax=ax_rlocus)
 
-        # Visualise clicked point, display all roots for sisotool mode
-        if sisotool:
+        if show_clicked:
+            # Visualise clicked point, display all roots
             root_array = _RLFindRoots(nump, denp, K.real)
             ax_rlocus.plot(
                 [root.real for root in root_array],
                 [root.imag for root in root_array],
-                marker='s', markersize=6, zorder=20, label='gain_point', color='k')
+                marker='s', markersize=6, zorder=20, label='gain_point',
+                color='k')
         else:
-            ax_rlocus.plot(s.real, s.imag, 'k.', marker='s', markersize=8,
-                           zorder=20, label='gain_point')
+            # Just show the clicked point
+            # TODO: should we keep this?
+            ax_rlocus.plot(
+                s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20,
+                label='gain_point')
 
         return K.real
 

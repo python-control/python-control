@@ -273,8 +273,12 @@ def pole_zero_plot(
                     label=response.sysname)
 
         # Compute the axis limits to use
-        xlim = (min(xlim[0], response.xlim[0]), max(xlim[1], response.xlim[1]))
-        ylim = (min(ylim[0], response.ylim[0]), max(ylim[1], response.ylim[1]))
+        if response.xlim is not None:
+            xlim = (min(xlim[0], response.xlim[0]),
+                    max(xlim[1], response.xlim[1]))
+        if response.ylim is not None:
+            ylim = (min(ylim[0], response.ylim[0]),
+                    max(ylim[1], response.ylim[1]))
 
     # Set up the limits for the plot
     ax.set_xlim(xlim if xlim_user is None else xlim_user)

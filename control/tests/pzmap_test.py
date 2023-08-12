@@ -60,7 +60,7 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
         fig, ax = plt.gcf(), plt.gca()
 
         assert fig._suptitle.get_text().startswith(
-            kwargs.get('title', 'Pole/zero map'))
+            kwargs.get('title', 'Pole/zero plot'))
 
         # FIXME: This won't work when zgrid and sgrid are unified
         children = ax.get_children()

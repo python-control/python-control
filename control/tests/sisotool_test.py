@@ -7,7 +7,7 @@ from numpy.testing import assert_array_almost_equal
 import pytest
 
 from control.sisotool import sisotool, rootlocus_pid_designer
-from control.rlocus import _RLClickDispatcher
+from control.sisotool import _click_dispatcher
 from control.xferfcn import TransferFunction
 from control.statesp import StateSpace
 from control import c2d
@@ -93,8 +93,8 @@ class TestSisotool:
         event = type('test', (object,), {'xdata': 2.31206868287,
                                          'ydata': 15.5983051046,
                                          'inaxes': ax_rlocus.axes})()
-        _RLClickDispatcher(event=event, sys=tsys, fig=fig,
-                           ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
+        _click_dispatcher(event=event, sys=tsys, fig=fig,
+                           ax_rlocus=ax_rlocus, plotstr='-',
                            bode_plot_params=bode_plot_params, tvect=None)
 
         # Check the moved root locus plot points
@@ -143,8 +143,8 @@ class TestSisotool:
         event = type('test', (object,), {'xdata': 2.31206868287,
                                          'ydata': 15.5983051046,
                                          'inaxes': ax_rlocus.axes})()
-        _RLClickDispatcher(event=event, sys=tsys, fig=fig,
-                           ax_rlocus=ax_rlocus, sisotool=True, plotstr='-',
+        _click_dispatcher(event=event, sys=tsys, fig=fig,
+                           ax_rlocus=ax_rlocus, plotstr='-',
                            bode_plot_params=dict(), tvect=tvect)
         assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 

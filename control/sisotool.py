@@ -1,5 +1,10 @@
 __all__ = ['sisotool', 'rootlocus_pid_designer']
 
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+from functools import partial
+
 from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
 from .timeresp import step_response
@@ -11,9 +16,6 @@ from .bdalg import append, connect
 from .nlsys import interconnect
 from control.statesp import _convert_to_statespace
 from . import config
-import numpy as np
-import matplotlib.pyplot as plt
-import warnings
 
 _sisotool_defaults = {
     'sisotool.initial_gain': 1
@@ -123,13 +125,39 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     initial_gain = config._get_param('sisotool', 'initial_gain',
             initial_gain, _sisotool_defaults)
 
-    # First time call to setup the bode and step response plots
+    # First time call to setup the Bode and step response plots
     _SisotoolUpdate(sys, fig, initial_gain, bode_plot_params)
 
-    # Setup the root-locus plot window
-    root_locus(sys, initial_gain=initial_gain, xlim=xlim_rlocus,
+    root_locus(
+        sys[0, 0], initial_gain=initial_gain, xlim=xlim_rlocus,
         ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
-        fig=fig, bode_plot_params=bode_plot_params, tvect=tvect, sisotool=True)
+        ax=fig.axes[1])
+
+    # Reset the button release callback so that we can update all plots
+    fig.canvas.mpl_connect(
+        'button_release_event',
+        partial(_click_dispatcher, sys=sys, fig=fig,
+                ax_rlocus=fig.axes[1], plotstr=plotstr_rlocus,
+                bode_plot_params=bode_plot_params, tvect=tvect))
+
+
+def _click_dispatcher(event, sys, fig, ax_rlocus, plotstr,
+                      bode_plot_params=None, tvect=None):
+    from .rlocus import _RLFeedbackClicksPoint
+
+    # Zoom is handled by specialized callback in rlocus, only handle gain plot
+    if event.inaxes == ax_rlocus.axes and \
+       plt.get_current_fig_manager().toolbar.mode not in \
+       {'zoom rect', 'pan/zoom'}:
+        # if a point is clicked on the rootlocus plot visually emphasize it
+        K = _RLFeedbackClicksPoint(
+            event, sys, fig, ax_rlocus, show_clicked=True)
+        if K is not None:
+            _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect)
+
+    # Update the canvas
+    fig.canvas.draw()
+
 
 def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
 
