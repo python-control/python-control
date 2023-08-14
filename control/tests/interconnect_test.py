@@ -202,14 +202,14 @@ def test_interconnect_docstring():
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
 @pytest.mark.parametrize("show_names", (True, False))
-def test_signal_table(capsys, show_names):
+def test_connection_table(capsys, show_names):
     P = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P')
     C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
     L = ct.interconnect([C, P], inputs='e', outputs='y')
-    L.signal_table(show_names=show_names)
+    L.connection_table(show_names=show_names)
     captured_from_method = capsys.readouterr().out
 
-    ct.signal_table(L, show_names=show_names)
+    ct.connection_table(L, show_names=show_names)
     captured_from_function = capsys.readouterr().out
 
     # break the following strings separately because the printout order varies
@@ -237,10 +237,10 @@ def test_signal_table(capsys, show_names):
     P2 = ct.tf(10, [.1, 1], inputs='e', outputs='y', name='P2')
     P3 = ct.tf(10, [.1, 1], inputs='x', outputs='y', name='P3')
     P = ct.interconnect([P1, P2, P3], inputs=['e', 'u', 'x'], outputs='y')
-    P.signal_table(show_names=show_names)
+    P.connection_table(show_names=show_names)
     captured_from_method = capsys.readouterr().out
 
-    ct.signal_table(P, show_names=show_names)
+    ct.connection_table(P, show_names=show_names)
     captured_from_function = capsys.readouterr().out
 
     mystrings = \
@@ -268,10 +268,10 @@ def test_signal_table(capsys, show_names):
     P2 = ct.tf(10, [.1, 1], inputs='u', outputs='y', name='P2')
     P3 = ct.tf(10, [.1, 1], inputs='u', outputs='z', name='P3')
     P = ct.interconnect([P1, P2, P3], inputs=['u'], outputs=['x','y','z'])
-    P.signal_table(show_names=show_names)
+    P.connection_table(show_names=show_names)
     captured_from_method = capsys.readouterr().out
 
-    ct.signal_table(P, show_names=show_names)
+    ct.connection_table(P, show_names=show_names)
     captured_from_function = capsys.readouterr().out
 
     mystrings = \

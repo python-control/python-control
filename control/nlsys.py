@@ -31,7 +31,7 @@ from .timeresp import _check_convert_array, _process_time_response, \
 
 __all__ = ['NonlinearIOSystem', 'InterconnectedSystem', 'nlsys',
            'input_output_response', 'find_eqpt', 'linearize',
-           'interconnect', 'signal_table']
+           'interconnect', 'connection_table']
 
 
 class NonlinearIOSystem(InputOutputSystem):
@@ -1001,11 +1001,11 @@ class InterconnectedSystem(NonlinearIOSystem):
         return ({inputs[i][:2]: inputs[i][2] for i in unused_sysinp},
                 {outputs[i][:2]: outputs[i][2] for i in unused_sysout})
 
-    def signal_table(self, show_names=False):
-        """Print table of signal names, sources, and destinations.
+    def connection_table(self, show_names=False, column_width=32):
+        """Print table of connections inside an interconnected system model.
 
-        Intended primarily for systems that have been connected implicitly
-        using signal names.
+        Intended primarily for :class:`InterconnectedSystems` that have been
+        connected implicitly using signal names.
 
         Parameters
         ----------
@@ -1014,13 +1014,15 @@ class InterconnectedSystem(NonlinearIOSystem):
             each system. Default is False because system name is not usually
             specified when performing implicit interconnection using
             :func:`interconnect`.
+        column_width : int (optional)
+            Character width of printed columns
 
         Examples
         --------
         >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P')
         >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
         >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
-        >>> L.signal_table(show_names=True) # doctest: +SKIP
+        >>> L.connection_table(show_names=True) # doctest: +SKIP
         signal    | source                        | destination
         --------------------------------------------------------------------
         e         | input                         | C
@@ -1028,9 +1030,12 @@ class InterconnectedSystem(NonlinearIOSystem):
         y         | P                             | output
         """
 
-        spacing = 32
-        print('signal'.ljust(10) + '| source'.ljust(spacing) + '| destination')
-        print('-'*(10 + spacing * 2))
+        print('signal'.ljust(10) + '| source'.ljust(column_width) + \
+            '| destination')
+        print('-'*(10 + column_width * 2))
+
+        # TODO: version of this method that is better suited
+        # to explicitly-connected systems
 
         # collect signal labels
         signal_labels = []
@@ -1061,8 +1066,12 @@ class InterconnectedSystem(NonlinearIOSystem):
                     if not dests.endswith(' '):
                         dests += ', '
                     dests += sys.name if show_names else 'system ' + str(idx)
-            print(sources.ljust(spacing), end='')
-            print(dests.ljust(spacing), end='\n')
+            if len(sources) >= column_width:
+                sources = sources[:column_width - 3] + '.. '
+            print(sources.ljust(column_width), end='')
+            if len(dests) > column_width:
+                dests = dests[:column_width - 3] + '.. '
+            print(dests.ljust(column_width), end='\n')
 
     def _find_inputs_by_basename(self, basename):
         """Find all subsystem inputs matching basename
@@ -2018,7 +2027,7 @@ def interconnect(
         signals are given names, then the forms 'sys.sig' or ('sys', 'sig')
         are also recognized.  Finally, for multivariable systems the signal
         index can be given as a list, for example '(subsys_i, [inp_j1, ...,
-        inp_jn])'; as a slice, for example, 'sys.sig[i:j]'; or as a base
+        inp_jn])'; or as a slice, for example, 'sys.sig[i:j]'; or as a base
         name `sys.sig` (which matches `sys.sig[i]`).
 
         Similarly, each output-spec should describe an output signal from
@@ -2235,8 +2244,7 @@ def interconnect(
         raise ValueError('check_unused is False, but either '
                          + 'ignore_inputs or ignore_outputs non-empty')
 
-    if connections is False and not inplist and not outlist \
-       and not inputs and not outputs:
+    if connections is False and not any((inplist, outlist, inputs, outputs)):
         # user has disabled auto-connect, and supplied neither input
         # nor output mappings; assume they know what they're doing
         check_unused = False
@@ -2564,11 +2572,11 @@ def _convert_static_iosystem(sys):
             None, lambda t, x, u, params: sys @ u,
             outputs=sys.shape[0], inputs=sys.shape[1])
 
-def signal_table(sys, show_names=False):
-    """Print table of signal names, sources, and destinations.
+def connection_table(sys, show_names=False, column_width=32):
+    """Print table of connections inside an interconnected system model.
 
-    Intended primarily for systems that have been connected implicitly
-    using signal names.
+    Intended primarily for :class:`InterconnectedSystems` that have been
+    connected implicitly using signal names.
 
     Parameters
     ----------
@@ -2579,13 +2587,16 @@ def signal_table(sys, show_names=False):
         each system. Default is False because system name is not usually
         specified when performing implicit interconnection using
         :func:`interconnect`.
+    column_width : int (optional)
+        Character width of printed columns
+
 
     Examples
     --------
     >>> P = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P')
     >>> C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
     >>> L = ct.interconnect([C, P], inputs='e', outputs='y')
-    >>> L.signal_table(show_names=True) # doctest: +SKIP
+    >>> L.connection_table(show_names=True) # doctest: +SKIP
     signal    | source                  | destination
     --------------------------------------------------------------
     e         | input                   | C
@@ -2595,4 +2606,4 @@ def signal_table(sys, show_names=False):
     assert isinstance(sys, InterconnectedSystem), "system must be"\
         "an InterconnectedSystem."
 
-    sys.signal_table(show_names=show_names)
+    sys.connection_table(show_names=show_names)
