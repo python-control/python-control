@@ -276,7 +276,7 @@ def test_connection_table(capsys, show_names):
 
     mystrings = \
             ["signal    | source                        | destination",
-     "-------------------------------------------------------------------"]
+             "-------------------------------------------------------------------"]
     if show_names:
         mystrings += \
             ["u         | input                         | P1, P2, P3",
@@ -293,6 +293,34 @@ def test_connection_table(capsys, show_names):
     for str_ in mystrings:
         assert str_ in captured_from_method
         assert str_ in captured_from_function
+
+    # check change column width
+    P.connection_table(show_names=show_names, column_width=20)
+    captured_from_method = capsys.readouterr().out
+
+    ct.connection_table(P, show_names=show_names, column_width=20)
+    captured_from_function = capsys.readouterr().out
+
+    mystrings = \
+            ["signal    | source            | destination",
+             "------------------------------------------------"]
+    if show_names:
+        mystrings += \
+            ["u         | input             | P1, P2, P3",
+             "x         | P1                | output  ",
+             "y         | P2                | output",
+             "z         | P3                | output"]
+    else:
+        mystrings += \
+            ["u         | input             | system 0, syste.. ",
+             "x         | system 0          | output  ",
+             "y         | system 1          | output",
+             "z         | system 2          | output"]
+
+    for str_ in mystrings:
+        assert str_ in captured_from_method
+        assert str_ in captured_from_function
+
 
 def test_interconnect_exceptions():
     # First make sure the docstring example works

@@ -589,10 +589,13 @@ class InterconnectedSystem(NonlinearIOSystem):
 
     """
     def __init__(self, syslist, connections=None, inplist=None, outlist=None,
-                 params=None, warn_duplicate=None, **kwargs):
+                 params=None, warn_duplicate=None, connection_type=None,
+                 **kwargs):
         """Create an I/O system from a list of systems + connection info."""
         from .statesp import _convert_to_statespace
         from .xferfcn import TransferFunction
+
+        self.connection_type = connection_type # explicit, implicit, or None
 
         # Convert input and output names to lists if they aren't already
         if inplist is not None and not isinstance(inplist, list):
@@ -1034,8 +1037,10 @@ class InterconnectedSystem(NonlinearIOSystem):
             '| destination')
         print('-'*(10 + column_width * 2))
 
-        # TODO: version of this method that is better suited
-        # to explicitly-connected systems
+        # TODO: update this method for explicitly-connected systems
+        if not self.connection_type == 'implicit':
+            warn('connection_table only gives useful output for implicitly-'\
+                'connected systems')
 
         # collect signal labels
         signal_labels = []
@@ -2239,6 +2244,7 @@ def interconnect(
 
     dt = kwargs.pop('dt', None)         # bypass normal 'dt' processing
     name, inputs, outputs, states, _ = _process_iosys_keywords(kwargs)
+    connection_type = None # explicit, implicit, or None
 
     if not check_unused and (ignore_inputs or ignore_outputs):
         raise ValueError('check_unused is False, but either '
@@ -2249,8 +2255,10 @@ def interconnect(
         # nor output mappings; assume they know what they're doing
         check_unused = False
 
-    # If connections was not specified, set up default connection list
+    # If connections was not specified, assume implicit interconnection.
+    # set up default connection list
     if connections is None:
+        connection_type = 'implicit'
         # For each system input, look for outputs with the same name
         connections = []
         for input_sys in syslist:
@@ -2262,17 +2270,17 @@ def interconnect(
                 if len(connect) > 1:
                     connections.append(connect)
 
-        auto_connect = True
-
     elif connections is False:
         check_unused = False
         # Use an empty connections list
         connections = []
 
-    elif isinstance(connections, list) and \
-         all([isinstance(cnxn, (str, tuple)) for cnxn in connections]):
-        # Special case where there is a single connection
-        connections = [connections]
+    else:
+        connection_type = 'explicit'
+        if isinstance(connections, list) and \
+                all([isinstance(cnxn, (str, tuple)) for cnxn in connections]):
+            # Special case where there is a single connection
+            connections = [connections]
 
     # If inplist/outlist is not present, try using inputs/outputs instead
     inplist_none, outlist_none = False, False
@@ -2507,7 +2515,7 @@ def interconnect(
         syslist, connections=connections, inplist=inplist,
         outlist=outlist, inputs=inputs, outputs=outputs, states=states,
         params=params, dt=dt, name=name, warn_duplicate=warn_duplicate,
-        **kwargs)
+        connection_type=connection_type, **kwargs)
 
     # See if we should add any signals
     if add_unused:
@@ -2528,7 +2536,7 @@ def interconnect(
             syslist, connections=connections, inplist=inplist,
             outlist=outlist, inputs=inputs, outputs=outputs, states=states,
             params=params, dt=dt, name=name, warn_duplicate=warn_duplicate,
-            **kwargs)
+            connection_type=connection_type, **kwargs)
 
     # check for implicitly dropped signals
     if check_unused:
@@ -2536,7 +2544,7 @@ def interconnect(
 
     # If all subsystems are linear systems, maintain linear structure
     if all([isinstance(sys, StateSpace) for sys in newsys.syslist]):
-        return LinearICSystem(newsys, None)
+        newsys = LinearICSystem(newsys, None, connection_type=connection_type)
 
     return newsys
 
@@ -2606,4 +2614,4 @@ def connection_table(sys, show_names=False, column_width=32):
     assert isinstance(sys, InterconnectedSystem), "system must be"\
         "an InterconnectedSystem."
 
-    sys.connection_table(show_names=show_names)
+    sys.connection_table(show_names=show_names, column_width=column_width)

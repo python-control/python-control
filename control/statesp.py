@@ -1459,7 +1459,7 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
 
     """
 
-    def __init__(self, io_sys, ss_sys=None):
+    def __init__(self, io_sys, ss_sys=None, connection_type=None):
         #
         # Because this is a "hybrid" object, the initialization proceeds in
         # stages.  We first create an empty InputOutputSystem of the
@@ -1483,6 +1483,7 @@ class LinearICSystem(InterconnectedSystem, StateSpace):
         self.input_map = io_sys.input_map
         self.output_map = io_sys.output_map
         self.params = io_sys.params
+        self.connection_type = connection_type
 
         # If we didnt' get a state space system, linearize the full system
         if ss_sys is None:
