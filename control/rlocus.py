@@ -32,6 +32,7 @@ import warnings
 __all__ = ['root_locus', 'rlocus']
 
 # Default values for module parameters
+# TODO: merge these with pzmap parameters (?)
 _rlocus_defaults = {
     'rlocus.grid': True,
     'rlocus.plotstr': 'b' if int(mpl.__version__[0]) == 1 else 'C0',
@@ -41,15 +42,16 @@ _rlocus_defaults = {
 
 
 # Main function: compute a root locus diagram
+# TODO: update to use pzmap data structures and plotting
 def root_locus(sys, kvect=None, xlim=None, ylim=None,
                plotstr=None, plot=True, print_gain=None, grid=None, ax=None,
                initial_gain=None, **kwargs):
 
     """Root locus plot.
 
-    Calculate the root locus by finding the roots of 1+k*TF(s)
-    where TF is self.num(s)/self.den(s) and each k is an element
-    of kvect.
+    Calculate the root locus by finding the roots of 1 + k * G(s) where G
+    is a linear system with transfer function num(s)/den(s) and each k is
+    an element of kvect.
 
     Parameters
     ----------
@@ -127,6 +129,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         raise TypeError("unrecognized keywords: ", str(kwargs))
 
     # Create the Plot
+    # TODO: replace with pole_zero_plot and move additional functionality there
     if plot:
         if ax is None:
             ax = plt.gca()
@@ -139,6 +142,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
         else:
             start_roots = None
 
+        # TODO: don't rely on `start_roots` (sisotool holdover)
         if print_gain and start_roots is None:
             fig.canvas.mpl_connect(
                 'button_release_event',
@@ -148,7 +152,8 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
             ax.plot(
                 [root.real for root in start_roots],
                 [root.imag for root in start_roots],
-                marker='s', markersize=6, zorder=20, color='k', label='gain_point')
+                marker='s', markersize=6, zorder=20, color='k',
+                label='gain_point')
             s = start_roots[0][0]
             if isdtime(sys, strict=True):
                 zeta = -np.cos(np.angle(np.log(s)))
@@ -219,16 +224,23 @@ def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
     Saddle River, NJ : New Delhi: Prentice Hall..
 
     """
+    # Compute the break points on the real axis for the root locus plot
     k_break, real_break = _break_points(num, den)
+
+    # Decide on the maximum gain to use and create the gain vector
     kmax = _k_max(num, den, real_break, k_break)
     kvect = np.hstack((np.linspace(0, kmax, 50), np.real(k_break)))
     kvect.sort()
 
+    # Find the roots for all of the gains and sort them
     root_array = _RLFindRoots(num, den, kvect)
     root_array = _RLSortRoots(root_array)
+
+    # Keep track of the open loop poles and zeros
     open_loop_poles = den.roots
     open_loop_zeros = num.roots
 
+    # ???
     if open_loop_zeros.size != 0 and \
        open_loop_zeros.size < open_loop_poles.size:
         open_loop_zeros_xl = np.append(
@@ -283,7 +295,8 @@ def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
         tolerance = x_tolerance
     else:
         tolerance = np.min([x_tolerance, y_tolerance])
-    indexes_too_far = _indexes_filt(root_array, tolerance, zoom_xlim, zoom_ylim)
+    indexes_too_far = _indexes_filt(
+        root_array, tolerance, zoom_xlim, zoom_ylim)
 
     # Add more points into the root locus for points that are too far apart
     while len(indexes_too_far) > 0 and kvect.size < 5000:
@@ -295,7 +308,8 @@ def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
             root_array = np.insert(root_array, index + 1, new_points, axis=0)
 
         root_array = _RLSortRoots(root_array)
-        indexes_too_far = _indexes_filt(root_array, tolerance, zoom_xlim, zoom_ylim)
+        indexes_too_far = _indexes_filt(
+            root_array, tolerance, zoom_xlim, zoom_ylim)
 
     new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
     new_points = _RLFindRoots(num, den, new_gains[1:4])
@@ -601,6 +615,7 @@ def _removeLine(label, ax):
             del line
 
 
+# TODO: remove and replace with sgid()?
 def _sgrid_func(ax, zeta=None, wn=None):
     # Get locator function for x-axis, y-axis tick marks
     xlocator = ax.get_xaxis().get_major_locator()

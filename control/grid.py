@@ -8,6 +8,8 @@ import mpl_toolkits.axisartist.angle_helper as angle_helper
 from matplotlib.projections import PolarAxes
 from matplotlib.transforms import Affine2D
 
+from .iosys import isdtime
+
 
 class FormatterDMS(object):
     '''Transforms angle ticks to damping ratios'''
@@ -142,17 +144,22 @@ def sgrid():
 def _final_setup(ax):
     ax.set_xlabel('Real')
     ax.set_ylabel('Imaginary')
-    ax.axhline(y=0, color='black', lw=1)
-    ax.axvline(x=0, color='black', lw=1)
+    ax.axhline(y=0, color='black', lw=0.5)
+    ax.axvline(x=0, color='black', lw=0.5)
     plt.axis('equal')
 
 
-def nogrid():
-    f = plt.gcf()
+def nogrid(dt=None):
+    fig = plt.gcf()
     ax = plt.axes()
 
+    # Draw the unit circle for discrete time systems
+    if isdtime(dt=dt, strict=True):
+        s = np.linspace(0, 2*pi, 100)
+        ax.plot(np.cos(s), np.sin(s), 'k--', lw=0.5, dashes=(5, 5))
+
     _final_setup(ax)
-    return ax, f
+    return ax, fig
 
 
 def zgrid(zetas=None, wns=None, ax=None):

@@ -134,3 +134,64 @@ class TestRootLocus:
             [-1e-2, 1-1e7j, 1+1e7j], [0, -1e7j, 1e7j], 1))
 
         ct.root_locus(sys)
+
+
+# TODO: add additional test cases
+@pytest.mark.parametrize(
+    "sys, grid, xlim, ylim", [
+        (ct.tf([1], [1, 2, 1]), None, None, None),
+    ])
+def test_root_locus_plots(sys, grid, xlim, ylim):
+    ct.root_locus_map(sys).plot(grid=grid, xlim=xlim, ylim=ylim)
+    # TODO: add tests to make sure everything "looks" OK
+
+
+if __name__ == "__main__":
+    #
+    # Interactive mode: generate plots for manual viewing
+    #
+    # Running this script in python (or better ipython) will show a
+    # collection of figures that should all look OK on the screeen.
+    #
+
+    # In interactive mode, turn on ipython interactive graphics
+    plt.ion()
+
+    # Start by clearing existing figures
+    plt.close('all')
+
+    # Define systems to be tested
+    sys_secord = ct.tf([1], [1, 1, 1], name="2P")
+    sys_seczero = ct.tf([1, 0, -1], [1, 1, 1], name="2P, 2Z")
+    sys_fbs_a = ct.tf([1, 1], [1, 0, 0], name="FBS 12_19a")
+    sys_fbs_b = ct.tf(
+        ct.tf([1, 1], [1, 2, 0]) * ct.tf([1], [1, 2 ,4]), name="FBS 12_19b")
+    sys_fbs_c = ct.tf([1, 1], [1, 0, 1, 0], name="FBS 12_19c")
+    sys_fbs_d = ct.tf([1, 2, 2], [1, 0, 1, 0], name="FBS 12_19d")
+    sys_poles = sys_fbs_d.poles()
+    sys_zeros = sys_fbs_d.zeros()
+    sys_discrete = ct.zpk(
+        sys_zeros / 3, sys_poles / 3, 1, dt=True, name="discrete")
+
+    # Run through a large number of test cases
+    test_cases = [
+        # sys          grid   xlim     ylim
+        (sys_secord,   None,  None,    None),
+        (sys_seczero,  None,  None,    None),
+        (sys_fbs_a,    None,  None,    None),
+        (sys_fbs_b,    None,  None,    None),
+        (sys_fbs_c,    None,  None,    None),
+        (sys_fbs_c,    None,  None,    [-2, 2]),
+        (sys_fbs_c,    True,  [-3, 3], None),
+        (sys_fbs_d,    None,  None,    None),
+        (ct.zpk(sys_zeros * 10, sys_poles * 10, 1, name="12_19d * 10"),
+                       None,  None,    None),
+        (ct.zpk(sys_zeros / 10, sys_poles / 10, 1, name="12_19d / 10"),
+                       True,  None,    None),
+        (sys_discrete, None,  None,    None),
+        (sys_discrete, True,  None,    None),
+    ]
+
+    for sys, grid, xlim, ylim in test_cases:
+        plt.figure()
+        test_root_locus_plots(sys, grid=grid, xlim=xlim, ylim=ylim)

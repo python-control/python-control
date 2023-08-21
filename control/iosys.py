@@ -503,42 +503,64 @@ def common_timebase(dt1, dt2):
         raise ValueError("Systems have incompatible timebases")
 
 # Check to see if a system is a discrete time system
-def isdtime(sys, strict=False):
+def isdtime(sys=None, dt=None, strict=False):
     """
     Check to see if a system is a discrete time system.
 
     Parameters
     ----------
-    sys : I/O or LTI system
-        System to be checked
+    sys : I/O system, optional
+        System to be checked.
+    dt : None or number, optional
+        Timebase to be checked.
     strict: bool (default = False)
-        If strict is True, make sure that timebase is not None
+        If strict is True, make sure that timebase is not None.
     """
 
-    # Check to see if this is a constant
+    # See if we were passed a timebase instead of a system
+    if sys is None:
+        if dt is None:
+            return True if not strict else False
+        else:
+            return dt > 0
+    elif dt is not None:
+        raise TypeError("passing both system and timebase not allowed")
+
+    # Check timebase of the system
     if isinstance(sys, (int, float, complex, np.number)):
-        # OK as long as strict checking is off
+        # Constants OK as long as strict checking is off
         return True if not strict else False
     else:
         return sys.isdtime(strict)
 
 
 # Check to see if a system is a continuous time system
-def isctime(sys, strict=False):
+def isctime(sys=None, dt=None, strict=False):
     """
     Check to see if a system is a continuous-time system.
 
     Parameters
     ----------
-    sys : I/O or LTI system
-        System to be checked
+    sys : I/O system, optional
+        System to be checked.
+    dt : None or number, optional
+        Timebase to be checked.
     strict: bool (default = False)
-        If strict is True, make sure that timebase is not None
+        If strict is True, make sure that timebase is not None.
     """
 
-    # Check to see if this is a constant
+    # See if we were passed a timebase instead of a system
+    if sys is None:
+        if dt is None:
+            return True if not strict else False
+        else:
+            return dt == 0
+    elif dt is not None:
+        raise TypeError("passing both system and timebase not allowed")
+
+    # Check timebase of the system
     if isinstance(sys, (int, float, complex, np.number)):
-        # OK as long as strict checking is off
+        # Constants OK as long as strict checking is off
         return True if not strict else False
     else:
         return sys.isctime(strict)

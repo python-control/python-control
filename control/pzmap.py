@@ -4,7 +4,9 @@
 # Date: 7 Sep 2009
 #
 # This file contains functions that compute poles, zeros and related
-# quantities for a linear system.
+# quantities for a linear system, as well as the main functions for
+# storing and plotting pole/zero and root locus diagrams.  (The actual
+# computation of root locus diagrams is in rlocus.py.)
 #
 
 import numpy as np
@@ -41,14 +43,11 @@ class RootLocusList(list):
 
 class RootLocusData:
     def __init__(
-            self, poles, zeros, gains=None, loci=None, xlim=None, ylim=None,
-            dt=None, sysname=None):
+            self, poles, zeros, gains=None, loci=None, dt=None, sysname=None):
         self.poles = poles
         self.zeros = zeros
         self.gains = gains
         self.loci = loci
-        self.xlim = xlim
-        self.ylim = ylim
         self.dt = dt
         self.sysname = sysname
 
@@ -78,7 +77,8 @@ def pole_zero_map(sysdata):
 
 
 # Root locus map
-def root_locus_map(sysdata, gains=None, xlim=None, ylim=None):
+# TODO: use rlocus.py computation instead
+def root_locus_map(sysdata, gains=None):
     # Convert the first argument to a list
     syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
 
@@ -94,14 +94,8 @@ def root_locus_map(sysdata, gains=None, xlim=None, ylim=None):
         # Convert numerator and denominator to polynomials if they aren't
         nump, denp = _systopoly1d(sys[0, 0])
 
-        if xlim is None and sys.isdtime(strict=True):
-            xlim = (-1.2, 1.2)
-        if ylim is None and sys.isdtime(strict=True):
-            xlim = (-1.3, 1.3)
-
         if gains is None:
-            kvect, root_array, xlim, ylim = _default_gains(
-                nump, denp, xlim, ylim)
+            kvect, root_array, _, _ = _default_gains(nump, denp, None, None)
         else:
             kvect = np.atleast_1d(gains)
             root_array = _RLFindRoots(nump, denp, kvect)
@@ -109,7 +103,7 @@ def root_locus_map(sysdata, gains=None, xlim=None, ylim=None):
 
         responses.append(RootLocusData(
             sys.poles(), sys.zeros(), kvect, root_array,
-            dt=sys.dt, sysname=sys.name, xlim=xlim, ylim=ylim))
+            dt=sys.dt, sysname=sys.name))
 
     if isinstance(sysdata, (list, tuple)):
         return RootLocusList(responses)
@@ -203,7 +197,7 @@ def pole_zero_plot(
             return poles, zeros
 
     # Initialize the figure
-    # TODO: turn into standard utility function
+    # TODO: turn into standard utility function (from plotutil.py?)
     fig = plt.gcf()
     axs = fig.get_axes()
     if len(axs) > 1:
@@ -213,21 +207,22 @@ def pole_zero_plot(
     with plt.rc_context(freqplot_rcParams):
         if grid:
             plt.clf()
-            if all([response.dt in [0, None] for response in data]):
+            if all([isctime(dt=response.dt) for response in data]):
                 ax, fig = sgrid()
-            elif all([response.dt > 0 for response in data]):
+            elif all([isdtime(dt=response.dt) for response in data]):
                 ax, fig = zgrid()
             else:
                 ValueError(
                     "incompatible time responses; don't know how to grid")
         elif len(axs) == 0:
-            ax, fig = nogrid()
+            ax, fig = nogrid(data[0].dt)        # use first response timebase
         else:
-            # Use the existing axes
+            # Use the existing axes and any grid that is there
+            # TODO: allow axis to be overriden via parameter
             ax = axs[0]
 
-    # Handle color cycle manually as all singular values
-    # of the same systems are expected to be of the same color
+    # Handle color cycle manually as all root locus segments
+    # of the same system are expected to be of the same color
     color_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
     color_offset = 0
     if len(ax.lines) > 0:
@@ -240,6 +235,7 @@ def pole_zero_plot(
     for i, j in itertools.product(range(out.shape[0]), range(out.shape[1])):
         out[i, j] = []          # unique list in each element
 
+    # Plot the responses (and keep track of axes limits)
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
     for idx, response in enumerate(pzmap_responses):
         poles = response.poles
@@ -272,13 +268,14 @@ def pole_zero_plot(
                     real(locus), imag(locus), color=color,
                     label=response.sysname)
 
-        # Compute the axis limits to use
-        if response.xlim is not None:
-            xlim = (min(xlim[0], response.xlim[0]),
-                    max(xlim[1], response.xlim[1]))
-        if response.ylim is not None:
-            ylim = (min(ylim[0], response.ylim[0]),
-                    max(ylim[1], response.ylim[1]))
+            # Compute the axis limits to use based on the response
+            resp_xlim, resp_ylim = _compute_root_locus_limits(response.loci)
+
+            # Keep track of the current limits
+            xlim = [min(xlim[0], resp_xlim[0]), max(xlim[1], resp_xlim[1])]
+            ylim = [min(ylim[0], resp_ylim[0]), max(ylim[1], resp_ylim[1])]
+
+            # TODO: add arrows to root loci (reuse Nyquist arrow code?)
 
     # Set up the limits for the plot
     ax.set_xlim(xlim if xlim_user is None else xlim_user)
@@ -327,6 +324,33 @@ def pole_zero_plot(
             TypeError("system lists not supported with legacy return values")
 
     return out
+
+
+# Utility function to compute limits for root loci
+def _compute_root_locus_limits(loci):
+    # Go through each locus
+    xlim, ylim = [0, 0], 0
+    for locus in loci.transpose():
+        # Include all starting points
+        xlim = [min(xlim[0], locus[0].real), max(xlim[1], locus[0].real)]
+        ylim = max(ylim, locus[0].imag)
+
+        # Find the local maxima of root locus curve
+        xpeaks = np.where(
+            np.diff(np.abs(locus.real)) < 0, locus.real[0:-1], 0)
+        xlim = [min(xlim[0], np.min(xpeaks)), max(xlim[1], np.max(xpeaks))]
+
+        ypeaks = np.where(
+            np.diff(np.abs(locus.imag)) < 0, locus.imag[0:-1], 0)
+        ylim = max(ylim, np.max(ypeaks))
+
+    # Adjust the limits to include some space around features
+    rho = 1.5
+    xlim[0] = rho * xlim[0] if xlim[0] < 0 else 0
+    xlim[1] = rho * xlim[1] if xlim[1] > 0 else 0
+    ylim = rho * ylim if ylim > 0 else np.max(np.abs(xlim))
+
+    return xlim, [-ylim, ylim]
 
 
 pzmap = pole_zero_plot
