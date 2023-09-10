@@ -507,6 +507,7 @@ class TestStatefbk:
          (4,      0,        2,       2,            'nonlinear'),
          (4,      3,        2,       2,            'nonlinear'),
          (2,      0,        1,       0,            'iosystem'),
+         (2,      0,        1,       1,            'iosystem'),
         ])
     def test_statefbk_iosys(
             self, nstates, ninputs, noutputs, nintegrators, type_):
