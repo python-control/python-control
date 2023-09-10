@@ -613,7 +613,7 @@ def create_statefbk_iosystem(
         The I/O system that represents the process dynamics.  If no estimator
         is given, the output of this system should represent the full state.
 
-    gain : ndarray or tuple
+    gain : ndarray, tuple, or I/O system
         If an array is given, it represents the state feedback gain (`K`).
         This matrix defines the gains to be applied to the system.  If
         `integral_action` is None, then the dimensions of this array
@@ -626,6 +626,9 @@ def create_statefbk_iosystem(
         gains `K_j` and points is a list of values `mu_j` at which the
         gains are computed.  The `gainsched_indices` parameter should be
         used to specify the scheduling variables.
+
+        If an I/O system is given, the error e = x - xd is passed to the
+        system and the output is used as the feedback compensation term.
 
     xd_labels, ud_labels : str or list of str, optional
         Set the name of the signals to use for the desired state and
@@ -813,7 +816,15 @@ def create_statefbk_iosystem(
         # Stack gains and points if past as a list
         gains = np.stack(gains)
         points = np.stack(points)
-        gainsched=True
+        gainsched = True
+
+    elif isinstance(gain, NonlinearIOSystem):
+        if controller_type not in ['iosystem', None]:
+            raise ControlArgument(
+                f"incompatible controller type '{controller_type}'")
+        fbkctrl = gain
+        controller_type = 'iosystem'
+        gainsched = False
 
     else:
         raise ControlArgument("gain must be an array or a tuple")
@@ -825,7 +836,7 @@ def create_statefbk_iosystem(
             " gain scheduled controller")
     elif controller_type is None:
         controller_type = 'nonlinear' if gainsched else 'linear'
-    elif controller_type not in {'linear', 'nonlinear'}:
+    elif controller_type not in {'linear', 'nonlinear', 'iosystem'}:
         raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Figure out the labels to use
@@ -918,6 +929,30 @@ def create_statefbk_iosystem(
         ctrl = NonlinearIOSystem(
             _control_update, _control_output, name=name, inputs=inputs,
             outputs=outputs, states=states, params=params)
+
+    elif controller_type == 'iosystem':
+        # Use the passed system to compute feedback compensation
+        def _control_update(t, states, inputs, params):
+            # Split input into desired state, nominal input, and current state
+            xd_vec = inputs[0:sys_nstates]
+            x_vec = inputs[-sys_nstates:]
+
+            # Compute the integral error in the xy coordinates
+            return fbkctrl.updfcn(t, states, (x_vec - xd_vec), params)
+
+        def _control_output(t, states, inputs, params):
+            # Split input into desired state, nominal input, and current state
+            xd_vec = inputs[0:sys_nstates]
+            ud_vec = inputs[sys_nstates:sys_nstates + sys_ninputs]
+            x_vec = inputs[-sys_nstates:]
+
+            # Compute the control law
+            return ud_vec + fbkctrl.outfcn(t, states, (x_vec - xd_vec), params)
+
+        # TODO: add a way to pass parameters
+        ctrl = NonlinearIOSystem(
+            _control_update, _control_output, name=name, inputs=inputs,
+            outputs=outputs, states=fbkctrl.state_labels, dt=fbkctrl.dt)
 
     elif controller_type == 'linear' or controller_type is None:
         # Create the matrices implementing the controller

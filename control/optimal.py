@@ -1123,8 +1123,9 @@ def create_mpc_iosystem(
         List of constraints that should hold at the end of the trajectory.
         Same format as `constraints`.
 
-    kwargs : dict, optional
-        Additional parameters (passed to :func:`scipy.optimal.minimize`).
+    **kwargs
+        Additional parameters, passed to :func:`scipy.optimal.minimize` and
+        :class:`NonlinearIOSystem`.
 
     Returns
     -------
@@ -1149,14 +1150,22 @@ def create_mpc_iosystem(
     :func:`OptimalControlProblem` for more information.
 
     """
+    from .iosys import InputOutputSystem
+
+    # Grab the keyword arguments known by this function
+    iosys_kwargs = {}
+    for kw in InputOutputSystem.kwargs_list:
+        if kw in kwargs:
+            iosys_kwargs[kw] = kwargs.pop(kw)
+
     # Set up the optimal control problem
     ocp = OptimalControlProblem(
         sys, timepts, cost, trajectory_constraints=constraints,
         terminal_cost=terminal_cost, terminal_constraints=terminal_constraints,
-        log=log, kwargs_check=False, **kwargs)
+        log=log, **kwargs)
 
     # Return an I/O system implementing the model predictive controller
-    return ocp.create_mpc_iosystem(**kwargs)
+    return ocp.create_mpc_iosystem(**iosys_kwargs)
 
 
 #
