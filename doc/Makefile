@@ -15,11 +15,15 @@ help:
 .PHONY: help Makefile
 
 # Rules to create figures
-FIGS = classes.pdf timeplot-mimo_step-pi_cs.png
+FIGS = classes.pdf timeplot-mimo_step-default.png \
+  freqplot-siso_bode-default.png
 classes.pdf: classes.fig
 	fig2dev -Lpdf $< $@
 
-timeplot-mimo_step-pi_cs.png: ../control/tests/timeplot_test.py
+timeplot-mimo_step-default.png: ../control/tests/timeplot_test.py
+	PYTHONPATH=.. python $<
+
+freqplot-siso_bode-default.png: ../control/tests/freqplot_test.py
 	PYTHONPATH=.. python $<
 
 # Catch-all target: route all unknown targets to Sphinx using the new

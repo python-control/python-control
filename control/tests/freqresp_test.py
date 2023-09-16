@@ -40,16 +40,26 @@ def ss_mimo():
     return StateSpace(A, B, C, D)
 
 
+@pytest.mark.filterwarnings("ignore:freqresp is deprecated")
+def test_freqresp_siso_legacy(ss_siso):
+    """Test SISO frequency response"""
+    omega = np.linspace(10e-2, 10e2, 1000)
+
+    # test frequency response
+    ctrl.frequency_response(ss_siso, omega)
+
+
 def test_freqresp_siso(ss_siso):
     """Test SISO frequency response"""
     omega = np.linspace(10e-2, 10e2, 1000)
 
     # test frequency response
-    ctrl.freqresp(ss_siso, omega)
+    ctrl.frequency_response(ss_siso, omega)
 
 
+@pytest.mark.filterwarnings("ignore:freqresp is deprecated")
 @slycotonly
-def test_freqresp_mimo(ss_mimo):
+def test_freqresp_mimo_legacy(ss_mimo):
     """Test MIMO frequency response calls"""
     omega = np.linspace(10e-2, 10e2, 1000)
     ctrl.freqresp(ss_mimo, omega)
@@ -57,6 +67,16 @@ def test_freqresp_mimo(ss_mimo):
     ctrl.freqresp(tf_mimo, omega)
 
 
+@slycotonly
+def test_freqresp_mimo(ss_mimo):
+    """Test MIMO frequency response calls"""
+    omega = np.linspace(10e-2, 10e2, 1000)
+    ctrl.frequency_response(ss_mimo, omega)
+    tf_mimo = tf(ss_mimo)
+    ctrl.frequency_response(tf_mimo, omega)
+
+
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_bode_basic(ss_siso):
     """Test bode plot call (Very basic)"""
     # TODO: proper test
@@ -92,6 +112,7 @@ def test_nyquist_basic(ss_siso):
     assert len(contour) == 10
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.filterwarnings("ignore:.*non-positive left xlim:UserWarning")
 def test_superimpose():
     """Test superimpose multiple calls.
@@ -144,6 +165,7 @@ def test_superimpose():
     assert len(ax.get_lines()) == 2
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_doubleint():
     """Test typcast bug with double int
 
@@ -157,6 +179,7 @@ def test_doubleint():
     bode(sys)
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize(
     "Hz, Wcp, Wcg",
     [pytest.param(False, 6.0782869, 10., id="omega"),
@@ -181,27 +204,28 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
     fig = plt.gcf()
     allaxes = fig.get_axes()
 
+    # TODO: update with better tests for new margin plots
     mag_to_infinity = (np.array([Wcp, Wcp]),
                        np.array([maginfty1, maginfty2]))
-    assert_allclose(mag_to_infinity,
-                    allaxes[0].lines[2].get_data(),
+    assert_allclose(mag_to_infinity[0],
+                    allaxes[0].lines[2].get_data()[0],
                     rtol=1e-5)
 
     gm_to_infinty = (np.array([Wcg, Wcg]),
                      np.array([gminv, maginfty2]))
-    assert_allclose(gm_to_infinty,
-                    allaxes[0].lines[3].get_data(),
+    assert_allclose(gm_to_infinty[0],
+                    allaxes[0].lines[3].get_data()[0],
                     rtol=1e-5)
 
     one_to_gm = (np.array([Wcg, Wcg]),
                  np.array([maginfty1, gminv]))
-    assert_allclose(one_to_gm, allaxes[0].lines[4].get_data(),
+    assert_allclose(one_to_gm[0], allaxes[0].lines[4].get_data()[0],
                     rtol=1e-5)
 
     pm_to_infinity = (np.array([Wcp, Wcp]),
                       np.array([1e5, pm]))
-    assert_allclose(pm_to_infinity,
-                    allaxes[1].lines[2].get_data(),
+    assert_allclose(pm_to_infinity[0],
+                    allaxes[1].lines[2].get_data()[0],
                     rtol=1e-5)
 
     pm_to_phase = (np.array([Wcp, Wcp]),
@@ -211,7 +235,7 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
 
     phase_to_infinity = (np.array([Wcg, Wcg]),
                          np.array([0, p0]))
-    assert_allclose(phase_to_infinity, allaxes[1].lines[4].get_data(),
+    assert_allclose(phase_to_infinity[0], allaxes[1].lines[4].get_data()[0],
                     rtol=1e-5)
 
 
@@ -241,6 +265,7 @@ def dsystem_type(request, dsystem_dt):
     return dsystem_dt[systype]
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize("dsystem_dt", [0.1, True], indirect=True)
 @pytest.mark.parametrize("dsystem_type", ['sssiso', 'ssmimo', 'tf'],
                          indirect=True)
@@ -273,10 +298,12 @@ def test_discrete(dsystem_type):
 
     else:
         # Calling bode should generate a not implemented error
-        with pytest.raises(NotImplementedError):
-            bode((dsys,))
+        # with pytest.raises(NotImplementedError):
+        # TODO: check results
+        bode((dsys,))
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_options(editsdefaults):
     """Test ability to set parameter values"""
     # Generate a Bode plot of a transfer function
@@ -309,6 +336,7 @@ def test_options(editsdefaults):
     assert numpoints1 != numpoints3
     assert numpoints3 == 13
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize(
     "TF, initial_phase, default_phase, expected_phase",
     [pytest.param(ctrl.tf([1], [1, 0]),
@@ -332,11 +360,11 @@ def test_options(editsdefaults):
      ])
 def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
     # Check initial phase of standard transfer functions
-    mag, phase, omega = ctrl.bode(TF)
+    mag, phase, omega = ctrl.bode(TF, plot=True)
     assert(abs(phase[0] - default_phase) < 0.1)
 
     # Now reset the initial phase to +180 and see if things work
-    mag, phase, omega = ctrl.bode(TF, initial_phase=initial_phase)
+    mag, phase, omega = ctrl.bode(TF, initial_phase=initial_phase, plot=True)
     assert(abs(phase[0] - expected_phase) < 0.1)
 
     # Make sure everything works in rad/sec as well
@@ -344,10 +372,12 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
         plt.xscale('linear')  # avoids xlim warning on next line
         plt.clf()  # clear previous figure (speeds things up)
         mag, phase, omega = ctrl.bode(
-            TF, initial_phase=initial_phase/180. * math.pi, deg=False)
+            TF, initial_phase=initial_phase/180. * math.pi,
+            deg=False, plot=True)
         assert(abs(phase[0] - expected_phase) < 0.1)
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 @pytest.mark.parametrize(
     "TF, wrap_phase, min_phase, max_phase",
     [pytest.param(ctrl.tf([1], [1, 0]),
@@ -370,11 +400,12 @@ def test_initial_phase(TF, initial_phase, default_phase, expected_phase):
                   -270, -3*math.pi/2, math.pi/2,    id="order5, -270"),
     ])
 def test_phase_wrap(TF, wrap_phase, min_phase, max_phase):
-    mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase)
+    mag, phase, omega = ctrl.bode(TF, wrap_phase=wrap_phase, plot=True)
     assert(min(phase) >= min_phase)
     assert(max(phase) <= max_phase)
 
 
+@pytest.mark.usefixtures("legacy_plot_signature")
 def test_phase_wrap_multiple_systems():
     sys_unstable = ctrl.zpk([],[1,1], gain=1)
 

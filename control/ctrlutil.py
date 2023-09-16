@@ -86,18 +86,9 @@ def unwrap(angle, period=2*math.pi):
     return angle
 
 def issys(obj):
-    """Return True if an object is a Linear Time Invariant (LTI) system,
-    otherwise False.
+    """Deprecated function to check if an object is an LTI system.
 
-    Examples
-    --------
-    >>> G = ct.tf([1], [1, 1])
-    >>> ct.issys(G)
-    True
-
-    >>> K = np.array([[1, 1]])
-    >>> ct.issys(K)
-    False
+    Use isinstance(obj, ct.LTI)
 
     """
     warnings.warn("issys() is deprecated; use isinstance(obj, ct.LTI)",

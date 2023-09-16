@@ -102,8 +102,8 @@ def time_response_plot(
         the array matches the subplots shape and the value of the array is a
         list of Line2D objects in that subplot.
 
-    Additional Parameters
-    ---------------------
+    Other Parameters
+    ----------------
     add_initial_zero : bool
         Add an initial point of zero at the first time point for all
         inputs with type 'step'.  Default is True.
@@ -220,7 +220,7 @@ def time_response_plot(
     #
     # * Omitting: either the inputs or the outputs can be omitted.
     #
-    # * Combining: inputs, outputs, and traces can be combined onto a
+    # * Overlay: inputs, outputs, and traces can be combined onto a
     #   single set of axes using various keyword combinations
     #   (overlay_signals, overlay_traces, plot_inputs='overlay').  This
     #   basically collapses data along either the rows or columns, and a
@@ -340,11 +340,11 @@ def time_response_plot(
     #
     # The ax_output and ax_input arrays have the axes needed for making the
     # plots.  Labels are used on each axes for later creation of legends.
-    # The gneric labels if of the form:
+    # The generic labels if of the form:
     #
     #     signal name, trace label, system name
     #
-    # The signal name or tracel label can be omitted if they will appear on
+    # The signal name or trace label can be omitted if they will appear on
     # the axes title or ylabel.  The system name is always included, since
     # multiple calls to plot() will require a legend that distinguishes
     # which system signals are plotted.  The system name is stripped off
@@ -440,7 +440,7 @@ def time_response_plot(
     # Label the axes (including trace labels)
     #
     # Once the data are plotted, we label the axes.  The horizontal axes is
-    # always time and this is labeled only on the bottom most column.  The
+    # always time and this is labeled only on the bottom most row.  The
     # vertical axes can consist either of a single signal or a combination
     # of signals (when overlay_signal is True or plot+inputs = 'overlay'.
     #
@@ -604,34 +604,13 @@ def time_response_plot(
             ax = ax_array[i, j]
             # Get the labels to use
             labels = [line.get_label() for line in ax.get_lines()]
-
-            # Look for a common prefix (up to a space)
-            common_prefix = commonprefix(labels)
-            last_space = common_prefix.rfind(', ')
-            if last_space < 0 or plot_inputs == 'overlay':
-                common_prefix = ''
-            elif last_space > 0:
-                common_prefix = common_prefix[:last_space]
-            prefix_len = len(common_prefix)
-
-            # Look for a common suffice (up to a space)
-            common_suffix = commonprefix(
-                [label[::-1] for label in labels])[::-1]
-            suffix_len = len(common_suffix)
-            # Only chop things off after a comma or space
-            while suffix_len > 0 and common_suffix[-suffix_len] != ',':
-                suffix_len -= 1
-
-            # Strip the labels of common information
-            if suffix_len > 0:
-                labels = [label[prefix_len:-suffix_len] for label in labels]
-            else:
-                labels = [label[prefix_len:] for label in labels]
+            labels = _make_legend_labels(labels, plot_inputs == 'overlay')
 
             # Update the labels to remove common strings
             if len(labels) > 1 and legend_map[i, j] != None:
                 with plt.rc_context(timeplot_rcParams):
                     ax.legend(labels, loc=legend_map[i, j])
+
 
     #
     # Update the plot title (= figure suptitle)
@@ -806,3 +785,32 @@ def get_plot_axes(line_array):
     """
     _get_axes = np.vectorize(lambda lines: lines[0].axes)
     return _get_axes(line_array)
+
+
+# Utility function to make legend labels
+def _make_legend_labels(labels, ignore_common=False):
+
+    # Look for a common prefix (up to a space)
+    common_prefix = commonprefix(labels)
+    last_space = common_prefix.rfind(', ')
+    if last_space < 0 or ignore_common:
+        common_prefix = ''
+    elif last_space > 0:
+        common_prefix = common_prefix[:last_space]
+    prefix_len = len(common_prefix)
+
+    # Look for a common suffice (up to a space)
+    common_suffix = commonprefix(
+        [label[::-1] for label in labels])[::-1]
+    suffix_len = len(common_suffix)
+    # Only chop things off after a comma or space
+    while suffix_len > 0 and common_suffix[-suffix_len] != ',':
+        suffix_len -= 1
+
+    # Strip the labels of common information
+    if suffix_len > 0:
+        labels = [label[prefix_len:-suffix_len] for label in labels]
+    else:
+        labels = [label[prefix_len:] for label in labels]
+
+    return labels

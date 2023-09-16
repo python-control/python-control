@@ -460,11 +460,12 @@ class TestDiscrete:
             np.testing.assert_array_almost_equal(numd, numd_expected)
             np.testing.assert_array_almost_equal(dend, dend_expected)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_discrete_bode(self, tsys):
         # Create a simple discrete time system and check the calculation
         sys = TransferFunction([1], [1, 0.5], 1)
         omega = [1, 2, 3]
-        mag_out, phase_out, omega_out = bode(sys, omega)
+        mag_out, phase_out, omega_out = bode(sys, omega, plot=True)
         H_z = list(map(lambda w: 1./(np.exp(1.j * w) + 0.5), omega))
         np.testing.assert_array_almost_equal(omega, omega_out)
         np.testing.assert_array_almost_equal(mag_out, np.absolute(H_z))

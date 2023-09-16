@@ -78,9 +78,9 @@ class TestSisotool:
             'deg': True,
             'omega_limits': None,
             'omega_num': None,
-            'sisotool': True,
-            'fig': fig,
-            'margins': True
+            'ax': np.array([[ax_mag], [ax_phase]]),
+            'margins': True,
+            'margin_info': True,
         }
 
         # Check that the xaxes of the bode plot are shared before the rlocus click

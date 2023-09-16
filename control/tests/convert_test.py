@@ -48,6 +48,7 @@ class TestConvert:
         print("sys%i:\n" % ind)
         print(sys)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     @pytest.mark.parametrize("states", range(1, maxStates))
     @pytest.mark.parametrize("inputs", range(1, maxIO))
     @pytest.mark.parametrize("outputs", range(1, maxIO))

@@ -6,19 +6,40 @@ Plotting data
 
 The Python Control Toolbox contains a number of functions for plotting
 input/output responses in the time and frequency domain, root locus
-diagrams, and other standard charts used in control system analysis.  While
-some legacy functions do both analysis and plotting, the standard pattern
-used in the toolbox is to provide a function that performs the basic
-computation (e.g., time or frequency response) and returns and object
-representing the output data.  A separate plotting function, typically
-ending in `_plot` is then used to plot the data.  The plotting function is
-also available via the `plot()` method of the analysis object, allowing the
-following type of calls::
+diagrams, and other standard charts used in control system analysis, for
+example::
+
+  bode_plot(sys)
+  nyquist_plot([sys1, sys2])
+
+.. root_locus_plot(sys)		# not yet implemented
+
+While plotting functions can be called directly, the standard pattern used
+in the toolbox is to provide a function that performs the basic computation
+or analysis (e.g., computation of the time or frequency response) and
+returns and object representing the output data.  A separate plotting
+function, typically ending in `_plot` is then used to plot the data,
+resulting in the following standard pattern::
+
+  response = nyquist_response([sys1, sys2])
+  count = response.count          # number of encirclements of -1
+  lines = nyquist_plot(response)  # Nyquist plot
+
+The returned value `lines` provides access to the individual lines in the
+generated plot, allowing various aspects of the plot to be modified to suit
+specific needs.
+
+The plotting function is also available via the `plot()` method of the
+analysis object, allowing the following type of calls::
 
   step_response(sys).plot()
-  frequency_response(sys).plot()  # implementation pending
-  nyquist_curve(sys).plot()       # implementation pending
-  rootlocus_curve(sys).plot()     # implementation pending
+  frequency_response(sys).plot()
+  nyquist_response(sys).plot()
+  rootlocus_response(sys).plot()     # implementation pending
+
+The remainder of this chapter provides additional documentation on how
+these response and plotting functions can be customized.
+
 
 Time response data
 ==================
@@ -36,7 +57,7 @@ response for a two-input, two-output can be plotted using the commands::
 
   sys_mimo = ct.tf2ss(
       [[[1], [0.1]], [[0.2], [1]]],
-      [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="MIMO")
+      [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="sys_mimo")
   response = step_response(sys)
   response.plot()
 
@@ -70,7 +91,7 @@ following plot::
 
       ct.step_response(sys_mimo).plot(
         plot_inputs=True, overlay_signals=True,
-        title="Step response for 2x2 MIMO system " + 
+        title="Step response for 2x2 MIMO system " +
         "[plot_inputs, overlay_signals]")
 
 .. image:: timeplot-mimo_step-pi_cs.png
@@ -91,7 +112,7 @@ keyword::
         legend_map=np.array([['lower right'], ['lower right']]),
         title="I/O response for 2x2 MIMO system " +
         "[plot_inputs='overlay', legend_map]")
-  
+
 .. image:: timeplot-mimo_ioresp-ov_lm.png
 
 Another option that is available is to use the `transpose` keyword so that
@@ -110,7 +131,7 @@ following figure::
             transpose=True,
             title="I/O responses for 2x2 MIMO system, multiple traces "
             "[transpose]")
-	    
+
 .. image:: timeplot-mimo_ioresp-mt_tr.png
 
 This figure also illustrates the ability to create "multi-trace" plots
@@ -131,12 +152,136 @@ and styles for various signals and traces::
 
 .. image:: timeplot-mimo_step-linestyle.png
 
-Plotting functions
-==================
+Frequency response data
+=======================
+
+Linear time invariant (LTI) systems can be analyzed in terms of their
+frequency response and python-control provides a variety of tools for
+carrying out frequency response analysis.  The most basic of these is
+the :func:`~control.frequency_response` function, which will compute
+the frequency response for one or more linear systems::
+
+  sys1 = ct.tf([1], [1, 2, 1], name='sys1')
+  sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+  response = ct.frequency_response([sys1, sys2])
+
+A Bode plot provide a graphical view of the response an LTI system and can
+be generated using the :func:`~control.bode_plot` function::
+
+  ct.bode_plot(response, initial_phase=0)
+
+.. image:: freqplot-siso_bode-default.png
+
+Computing the response for multiple systems at the same time yields a
+common frequency range that covers the features of all listed systems.
+
+Bode plots can also be created directly using the
+:meth:`~control.FrequencyResponseData.plot` method::
+
+  sys_mimo = ct.tf(
+      [[[1], [0.1]], [[0.2], [1]]],
+      [[[1, 0.6, 1], [1, 1, 1]], [[1, 0.4, 1], [1, 2, 1]]], name="sys_mimo")
+  ct.frequency_response(sys_mimo).plot()
+
+.. image:: freqplot-mimo_bode-default.png
+
+A variety of options are available for customizing Bode plots, for
+example allowing the display of the phase to be turned off or
+overlaying the inputs or outputs::
+
+  ct.frequency_response(sys_mimo).plot(
+      plot_phase=False, overlay_inputs=True, overlay_outputs=True)
+
+.. image:: freqplot-mimo_bode-magonly.png
+
+The :func:`~ct.singular_values_response` function can be used to
+generate Bode plots that show the singular values of a transfer
+function::
+
+  ct.singular_values_response(sys_mimo).plot()
+
+.. image:: freqplot-mimo_svplot-default.png
+
+Different types of plots can also be specified for a given frequency
+response.  For example, to plot the frequency response using a a Nichols
+plot, use `plot_type='nichols'`::
+
+  response.plot(plot_type='nichols')
+
+.. image:: freqplot-siso_nichols-default.png
+
+Another response function that can be used to generate Bode plots is
+the :func:`~ct.gangof4` function, which computes the four primary
+sensitivity functions for a feedback control system in standard form::
+
+    proc = ct.tf([1], [1, 1, 1], name="process")
+    ctrl = ct.tf([100], [1, 5], name="control")
+    response = rect.gangof4_response(proc, ctrl)
+    ct.bode_plot(response)	# or response.plot()
+
+.. image:: freqplot-gangof4.png
+
+
+Response and plotting functions
+===============================
+
+Response functions
+------------------
+
+Response functions take a system or list of systems and return a response
+object that can be used to retrieve information about the system (e.g., the
+number of encirclements for a Nyquist plot) as well as plotting (via the
+`plot` method).
 
 .. autosummary::
    :toctree: generated/
 
+   ~control.describing_function_response
+   ~control.frequency_response
+   ~control.forced_response
+   ~control.gangof4_response
+   ~control.impulse_response
+   ~control.initial_response
+   ~control.input_output_response
+   ~control.nyquist_response
+   ~control.singular_values_response
+   ~control.step_response
+
+Plotting functions
+------------------
+
+.. autosummary::
+   :toctree: generated/
+
+   ~control.bode_plot
+   ~control.describing_function_plot
+   ~control.nichols_plot
+   ~control.singular_values_plot
    ~control.time_response_plot
+
+
+Utility functions
+-----------------
+
+These additional functions can be used to manipulate response data or
+returned values from plotting routines.
+
+.. autosummary::
+   :toctree: generated/
+
    ~control.combine_time_responses
    ~control.get_plot_axes
+
+
+Response classes
+----------------
+
+The following classes are used in generating response data.
+
+.. autosummary::
+   :toctree: generated/
+
+   ~control.DescribingFunctionResponse
+   ~control.FrequencyResponseData
+   ~control.NyquistResponseData
+   ~control.TimeResponseData

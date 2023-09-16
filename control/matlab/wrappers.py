@@ -64,19 +64,33 @@ def bode(*args, **kwargs):
     """
     from ..freqplot import bode_plot
 
-    # If first argument is a list, assume python-control calling format
-    if hasattr(args[0], '__iter__'):
-        return bode_plot(*args, **kwargs)
+    # Use the plot keyword to get legacy behavior
+    # TODO: update to call frequency_response and then bode_plot
+    kwargs = dict(kwargs)       # make a copy since we modify this
+    if 'plot' not in kwargs:
+        kwargs['plot'] = True
 
-    # Parse input arguments
-    syslist, omega, args, other = _parse_freqplot_args(*args)
-    kwargs.update(other)
+    # Turn off deprecation warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', message='.* return values of .* is deprecated',
+            category=DeprecationWarning)
 
-    # Call the bode command
-    return bode_plot(syslist, omega, *args, **kwargs)
+        # If first argument is a list, assume python-control calling format
+        if hasattr(args[0], '__iter__'):
+            retval = bode_plot(*args, **kwargs)
+        else:
+            # Parse input arguments
+            syslist, omega, args, other = _parse_freqplot_args(*args)
+            kwargs.update(other)
+
+            # Call the bode command
+            retval = bode_plot(syslist, omega, *args, **kwargs)
+
+    return retval
 
 
-def nyquist(*args, **kwargs):
+def nyquist(*args, plot=True, **kwargs):
     """nyquist(syslist[, omega])
 
     Nyquist plot of the frequency response.
@@ -100,7 +114,7 @@ def nyquist(*args, **kwargs):
         frequencies in rad/s
 
     """
-    from ..freqplot import nyquist_plot
+    from ..freqplot import nyquist_response, nyquist_plot
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
@@ -110,9 +124,13 @@ def nyquist(*args, **kwargs):
     syslist, omega, args, other = _parse_freqplot_args(*args)
     kwargs.update(other)
 
-    # Call the nyquist command
-    kwargs['return_contour'] = True
-    _, contour = nyquist_plot(syslist, omega, *args, **kwargs)
+    # Get the Nyquist response (and pop keywords used there)
+    response = nyquist_response(
+        syslist, omega, *args, omega_limits=kwargs.pop('omega_limits', None))
+    contour = response.contour
+    if plot:
+        # Plot the result
+        nyquist_plot(response, *args, **kwargs)
 
     # Create the MATLAB output arguments
     freqresp = syslist(contour)

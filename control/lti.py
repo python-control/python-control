@@ -5,6 +5,7 @@ and TransferFunction.  It is designed for use in the python-control library.
 """
 
 import numpy as np
+import math
 
 from numpy import real, angle, abs
 from warnings import warn
@@ -12,7 +13,7 @@ from . import config
 from .iosys import InputOutputSystem
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
-           'freqresp', 'dcgain', 'bandwidth']
+           'freqresp', 'dcgain', 'bandwidth', 'LTI']
 
 
 class LTI(InputOutputSystem):
@@ -56,16 +57,16 @@ class LTI(InputOutputSystem):
         zeta = -real(splane_poles)/wn
         return wn, zeta, poles
 
-    def frequency_response(self, omega, squeeze=None):
+    def frequency_response(self, omega=None, squeeze=None):
         """Evaluate the linear time-invariant system at an array of angular
         frequencies.
 
-        Reports the frequency response of the system,
+        For continuous time systems, computes the frequency response as
 
              G(j*omega) = mag * exp(j*phase)
 
-        for continuous time systems. For discrete time systems, the response
-        is evaluated around the unit circle such that
+        For discrete time systems, the response is evaluated around the
+        unit circle such that
 
              G(exp(j*omega*dt)) = mag * exp(j*phase).
 
@@ -87,23 +88,25 @@ class LTI(InputOutputSystem):
 
         Returns
         -------
-        response : :class:`FrequencyReponseData`
+        response : :class:`FrequencyResponseData`
             Frequency response data object representing the frequency
             response.  This object can be assigned to a tuple using
 
                 mag, phase, omega = response
 
-            where ``mag`` is the magnitude (absolute value, not dB or
-            log10) of the system frequency response, ``phase`` is the wrapped
-            phase in radians of the system frequency response, and ``omega``
-            is the (sorted) frequencies at which the response was evaluated.
+            where ``mag`` is the magnitude (absolute value, not dB or log10)
+            of the system frequency response, ``phase`` is the wrapped phase
+            in radians of the system frequency response, and ``omega`` is
+            the (sorted) frequencies at which the response was evaluated.
             If the system is SISO and squeeze is not True, ``magnitude`` and
-            ``phase`` are 1D, indexed by frequency.  If the system is not SISO
-            or squeeze is False, the array is 3D, indexed by the output,
-            input, and frequency.  If ``squeeze`` is True then
-            single-dimensional axes are removed.
+            ``phase`` are 1D, indexed by frequency.  If the system is not
+            SISO or squeeze is False, the array is 3D, indexed by the
+            output, input, and, if omega is array_like, frequency.  If
+            ``squeeze`` is True then single-dimensional axes are removed.
 
         """
+        from .frdata import FrequencyResponseData
+
         omega = np.sort(np.array(omega, ndmin=1))
         if self.isdtime(strict=True):
             # Convert the frequency to discrete time
@@ -114,10 +117,10 @@ class LTI(InputOutputSystem):
             s = 1j * omega
 
         # Return the data as a frequency response data object
-        from .frdata import FrequencyResponseData
         response = self(s)
         return FrequencyResponseData(
-            response, omega, return_magphase=True, squeeze=squeeze)
+            response, omega, return_magphase=True, squeeze=squeeze,
+            dt=self.dt, sysname=self.name, plot_type='bode')
 
     def dcgain(self):
         """Return the zero-frequency gain"""
@@ -368,7 +371,9 @@ def evalfr(sys, x, squeeze=None):
     return sys(x, squeeze=squeeze)
 
 
-def frequency_response(sys, omega, squeeze=None):
+def frequency_response(
+        sysdata, omega=None, omega_limits=None, omega_num=None,
+        Hz=None, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
 
     In general the system may be multiple input, multiple output (MIMO), where
@@ -377,22 +382,23 @@ def frequency_response(sys, omega, squeeze=None):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
-        Linear system
-    omega : float or 1D array_like
+    sysdata : LTI system or list of LTI systems
+        Linear system(s) for which frequency response is computed.
+    omega : float or 1D array_like, optional
         A list of frequencies in radians/sec at which the system should be
-        evaluated. The list can be either a python list or a numpy array
-        and will be sorted before evaluation.
-    squeeze : bool, optional
-        If squeeze=True, remove single-dimensional entries from the shape of
-        the output even if the system is not SISO. If squeeze=False, keep all
-        indices (output, input and, if omega is array_like, frequency) even if
-        the system is SISO. The default value can be set using
-        config.defaults['control.squeeze_frequency_response'].
+        evaluated. The list can be either a Python list or a numpy array
+        and will be sorted before evaluation.  If None (default), a common
+        set of frequencies that works across all given systems is computed.
+    omega_limits : array_like of two values, optional
+        Limits to the range of frequencies, in rad/sec. Ignored if
+        omega is provided, and auto-generated if omitted.
+    omega_num : int, optional
+        Number of frequency samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
 
     Returns
     -------
-    response : FrequencyResponseData
+    response : :class:`FrequencyResponseData`
         Frequency response data object representing the frequency response.
         This object can be assigned to a tuple using
 
@@ -402,21 +408,49 @@ def frequency_response(sys, omega, squeeze=None):
         the system frequency response, ``phase`` is the wrapped phase in
         radians of the system frequency response, and ``omega`` is the
         (sorted) frequencies at which the response was evaluated.  If the
-        system is SISO and squeeze is not True, ``magnitude`` and ``phase``
+        system is SISO and squeeze is not False, ``magnitude`` and ``phase``
         are 1D, indexed by frequency.  If the system is not SISO or squeeze
         is False, the array is 3D, indexed by the output, input, and
         frequency.  If ``squeeze`` is True then single-dimensional axes are
         removed.
 
+        Returns a list of :class:`FrequencyResponseData` objects if sys is
+        a list of systems.
+
+    Other Parameters
+    ----------------
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s. Omega is always
+        returned in rad/sec.
+    squeeze : bool, optional
+        If squeeze=True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If squeeze=False, keep all
+        indices (output, input and, if omega is array_like, frequency) even if
+        the system is SISO. The default value can be set using
+        config.defaults['control.squeeze_frequency_response'].
+
     See Also
     --------
     evalfr
-    bode
+    bode_plot
 
     Notes
     -----
-    This function is a wrapper for :meth:`StateSpace.frequency_response` and
-    :meth:`TransferFunction.frequency_response`.
+    1. This function is a wrapper for :meth:`StateSpace.frequency_response`
+       and :meth:`TransferFunction.frequency_response`.
+
+    2. You can also use the lower-level methods ``sys(s)`` or ``sys(z)`` to
+       generate the frequency response for a single system.
+
+    3. All frequency data should be given in rad/sec.  If frequency limits
+       are computed automatically, the `Hz` keyword can be used to ensure
+       that limits are in factors of decades in Hz, so that Bode plots with
+       `Hz=True` look better.
+
+    4. The frequency response data can be plotted by calling the
+       :func:`~control_bode_plot` function or using the `plot` method of
+       the :class:`~control.FrequencyResponseData` class.
 
     Examples
     --------
@@ -438,11 +472,42 @@ def frequency_response(sys, omega, squeeze=None):
         #>>> # s = 0.1i, i, 10i.
 
     """
-    return sys.frequency_response(omega, squeeze=squeeze)
+    from .freqplot import _determine_omega_vector
 
+    # Process keyword arguments
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    # Get the common set of frequencies to use
+    omega_syslist, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num, Hz=Hz)
+
+    responses = []
+    for sys_ in syslist:
+        # Add the Nyquist frequency for discrete time systems
+        omega_sys = omega_syslist.copy()
+        if sys_.isdtime(strict=True):
+            nyquistfrq = math.pi / sys_.dt
+            if not omega_range_given:
+                # Limit up to the Nyquist frequency
+                omega_sys = omega_sys[omega_sys < nyquistfrq]
+
+        # Compute the frequency response
+        responses.append(sys_.frequency_response(omega_sys, squeeze=squeeze))
+
+    if isinstance(sysdata, (list, tuple)):
+        from .freqplot import FrequencyResponseList
+        return FrequencyResponseList(responses)
+    else:
+        return responses[0]
 
 # Alternative name (legacy)
-freqresp = frequency_response
+def freqresp(sys, omega):
+    """Legacy version of frequency_response."""
+    warn("freqresp is deprecated; use frequency_response", DeprecationWarning)
+    return frequency_response(sys, omega)
 
 
 def dcgain(sys):

@@ -415,6 +415,12 @@ class TestMatlab:
         # Not yet implemented
         #  bode(siso.ss1, '-', siso.tf1, 'b--', siso.tf2, 'k.')
 
+        # Pass frequency range as a tuple
+        mag, phase, freq = bode(siso.ss1, (0.2e-2, 0.2e2))
+        assert np.isclose(min(freq), 0.2e-2)
+        assert np.isclose(max(freq), 0.2e2)
+        assert len(freq) > 2
+
     @pytest.mark.parametrize("subsys", ["ss1", "tf1", "tf2"])
     def testRlocus(self, siso, subsys, mplcleanup):
         """Call rlocus()"""
