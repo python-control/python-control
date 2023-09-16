@@ -395,7 +395,7 @@ class NonlinearIOSystem(InputOutputSystem):
             current state
         u : array_like
             input
-        params : dict (optional)
+        params : dict, optional
             system parameter values
 
         Returns
@@ -436,7 +436,7 @@ class NonlinearIOSystem(InputOutputSystem):
             current state
         u : array_like
             input
-        params : dict (optional)
+        params : dict, optional
             system parameter values
 
         Returns
@@ -1012,13 +1012,13 @@ class InterconnectedSystem(NonlinearIOSystem):
 
         Parameters
         ----------
-        show_names : bool (optional)
+        show_names : bool, optional
             Instead of printing out the system number, print out the name of
             each system. Default is False because system name is not usually
             specified when performing implicit interconnection using
             :func:`interconnect`.
-        column_width : int (optional)
-            Character width of printed columns
+        column_width : int, optional
+            Character width of printed columns.
 
         Examples
         --------
@@ -2590,13 +2590,13 @@ def connection_table(sys, show_names=False, column_width=32):
     ----------
     sys : :class:`InterconnectedSystem`
         Interconnected system object
-    show_names : bool (optional)
+    show_names : bool, optional
         Instead of printing out the system number, print out the name of
         each system. Default is False because system name is not usually
         specified when performing implicit interconnection using
         :func:`interconnect`.
-    column_width : int (optional)
-        Character width of printed columns
+    column_width : int, optional
+        Character width of printed columns.
 
 
     Examples
