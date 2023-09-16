@@ -36,24 +36,24 @@ __all__ = ['lqe', 'dlqe', 'create_estimator_iosystem', 'white_noise',
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def lqe(*args, **kwargs):
-    """lqe(A, G, C, QN, RN, [, NN])
+    r"""lqe(A, G, C, QN, RN, [, NN])
 
     Linear quadratic estimator design (Kalman filter) for continuous-time
     systems. Given the system
 
     .. math::
 
-        x &= Ax + Bu + Gw \\\\
+        dx/dt &= Ax + Bu + Gw \\
         y &= Cx + Du + v
 
     with unbiased process noise w and measurement noise v with covariances
 
-    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+    .. math::  E\{w w^T\} = QN,  E\{v v^T\} = RN,  E\{w v^T\} = NN
 
     The lqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
 
-    .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
+    .. math:: dx_e/dt = A x_e + B u + L(y - C x_e - D u)
 
     produces a state estimate x_e that minimizes the expected squared error
     using the sensor measurements y. The noise cross-correlation `NN` is
@@ -195,7 +195,7 @@ def dlqe(*args, **kwargs):
 
     with unbiased process noise w and measurement noise v with covariances
 
-    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+    .. math::  E\{w w^T\} = QN,  E\{v v^T\} = RN,  E\{w v^T\} = NN
 
     The dlqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
