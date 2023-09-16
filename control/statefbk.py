@@ -296,14 +296,14 @@ def acker(A, B, poles):
 
 
 def lqr(*args, **kwargs):
-    """lqr(A, B, Q, R[, N])
+    r"""lqr(A, B, Q, R[, N])
 
     Linear quadratic regulator design.
 
     The lqr() function computes the optimal state feedback controller
     u = -K x that minimizes the quadratic cost
 
-    .. math:: J = \\int_0^\\infty (x' Q x + u' R u + 2 x' N u) dt
+    .. math:: J = \int_0^\infty (x' Q x + u' R u + 2 x' N u) dt
 
     The function can be called with either 3, 4, or 5 arguments:
 
@@ -442,14 +442,14 @@ def lqr(*args, **kwargs):
 
 
 def dlqr(*args, **kwargs):
-    """dlqr(A, B, Q, R[, N])
+    r"""dlqr(A, B, Q, R[, N])
 
     Discrete-time linear quadratic regulator design.
 
     The dlqr() function computes the optimal state feedback controller
     u[n] = - K x[n] that minimizes the quadratic cost
 
-    .. math:: J = \\sum_0^\\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
+    .. math:: J = \sum_0^\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
 
     The function can be called with either 3, 4, or 5 arguments:
 
@@ -584,12 +584,12 @@ def create_statefbk_iosystem(
         xd_labels=None, ud_labels=None, gainsched_indices=None,
         gainsched_method='linear', control_indices=None, state_indices=None,
         name=None, inputs=None, outputs=None, states=None, **kwargs):
-    """Create an I/O system using a (full) state feedback controller.
+    r"""Create an I/O system using a (full) state feedback controller.
 
     This function creates an input/output system that implements a
     state feedback controller of the form
 
-    .. math :: u = u_d - K_p (x - x_d) - K_i \int(C x - C x_d)
+    .. math:: u = u_d - K_p (x - x_d) - K_i \int(C x - C x_d)
 
     It can be called in the form::
 
@@ -603,7 +603,7 @@ def create_statefbk_iosystem(
     gains and a corresponding list of values of a set of scheduling
     variables.  In this case, the controller has the form
 
-    .. math :: u = u_d - K_p(\mu) (x - x_d) - K_i(\mu) \int(C x - C x_d)
+    .. math:: u = u_d - K_p(\mu) (x - x_d) - K_i(\mu) \int(C x - C x_d)
 
     where :math:`\mu` represents the scheduling variable.
 
@@ -623,18 +623,18 @@ def create_statefbk_iosystem(
 
         If a tuple is given, then it specifies a gain schedule.  The tuple
         should be of the form `(gains, points)` where gains is a list of
-        gains :math:`K_j` and points is a list of values :math:`\mu_j` at
-        which the gains are computed.  The `gainsched_indices` parameter
-        should be used to specify the scheduling variables.
+        gains `K_j` and points is a list of values `mu_j` at which the
+        gains are computed.  The `gainsched_indices` parameter should be
+        used to specify the scheduling variables.
 
     xd_labels, ud_labels : str or list of str, optional
         Set the name of the signals to use for the desired state and
-        inputs.  If a single string is specified, it should be a
-        format string using the variable `i` as an index.  Otherwise,
-        a list of strings matching the size of :math:`x_d` and :math:`u_d`,
-        respectively, should be used.  Default is "xd[{i}]" for
-        xd_labels and "ud[{i}]" for ud_labels.  These settings can
-        also be overridden using the `inputs` keyword.
+        inputs.  If a single string is specified, it should be a format
+        string using the variable `i` as an index.  Otherwise, a list of
+        strings matching the size of `x_d` and `u_d`, respectively, should
+        be used.  Default is "xd[{i}]" for xd_labels and "ud[{i}]" for
+        ud_labels.  These settings can also be overridden using the
+        `inputs` keyword.
 
     integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral
@@ -650,13 +650,13 @@ def create_statefbk_iosystem(
     gainsched_indices : int, slice, or list of int or str, optional
         If a gain scheduled controller is specified, specify the indices of
         the controller input to use for scheduling the gain. The input to
-        the controller is the desired state :math:`x_d`, the desired input :math:`u_d`, and
-        the system state :math:`x` (or state estimate :math:`\hat{x}`, if an estimator is
-        given). If value is an integer `q`, the first `q` values of the
-        :math:`[x_d, u_d, x]` vector are used.  Otherwise, the value should be a
-        slice or a list of indices.  The list of indices can be specified
-        as either integer offsets or as signal names. The default is to
-        use the desired state :math:`x_d`.
+        the controller is the desired state `x_d`, the desired input `u_d`,
+        and the system state `x` (or state estimate `xhat`, if an
+        estimator is given). If value is an integer `q`, the first `q`
+        values of the `[x_d, u_d, x]` vector are used.  Otherwise, the
+        value should be a slice or a list of indices.  The list of indices
+        can be specified as either integer offsets or as signal names. The
+        default is to use the desired state `x_d`.
 
     gainsched_method : str, optional
         The method to use for gain scheduling.  Possible values are 'linear'
@@ -677,10 +677,10 @@ def create_statefbk_iosystem(
     -------
     ctrl : NonlinearIOSystem
         Input/output system representing the controller.  This system
-        takes as inputs the desired state :math:`x_d`, the desired input
-        :math:`u_d`, and either the system state :math:`x` or the estimated state
-        :math:`\hat{x}`.  It outputs the controller action :math:`u` according to the
-        formula :math:`u = u_d - K(x - x_d)`.  If the keyword
+        takes as inputs the desired state `x_d`, the desired input
+        `u_d`, and either the system state `x` or the estimated state
+        `xhat`.  It outputs the controller action `u` according to the
+        formula `u = u_d - K(x - x_d)`.  If the keyword
         `integral_action` is specified, then an additional set of
         integrators is included in the control system (with the gain
         matrix `K` having the integral gains appended after the state
@@ -690,8 +690,8 @@ def create_statefbk_iosystem(
 
     clsys : NonlinearIOSystem
         Input/output system representing the closed loop system.  This
-        system takes as inputs the desired trajectory :math:`(x_d, u_d)` and
-        outputs the system state :math:`x` and the applied input :math:`u`
+        system takes as inputs the desired trajectory `(x_d, u_d)` and
+        outputs the system state `x` and the applied input `u`
         (vertically stacked).
 
     Other Parameters
