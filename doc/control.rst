@@ -36,6 +36,7 @@ System interconnections
     negate
     parallel
     series
+    connection_table
 
 
 Frequency domain plotting

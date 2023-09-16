@@ -201,6 +201,126 @@ def test_interconnect_docstring():
     np.testing.assert_almost_equal(T.C @ T. A @ T.B, T_ss.C @ T_ss.A @ T_ss.B)
     np.testing.assert_almost_equal(T.D, T_ss.D)
 
+@pytest.mark.parametrize("show_names", (True, False))
+def test_connection_table(capsys, show_names):
+    P = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P')
+    C = ct.tf(10, [.1, 1], inputs='e', outputs='u', name='C')
+    L = ct.interconnect([C, P], inputs='e', outputs='y')
+    L.connection_table(show_names=show_names)
+    captured_from_method = capsys.readouterr().out
+
+    ct.connection_table(L, show_names=show_names)
+    captured_from_function = capsys.readouterr().out
+
+    # break the following strings separately because the printout order varies
+    # because signal names are stored as a set
+    mystrings = \
+            ["signal    | source                        | destination",
+             "------------------------------------------------------------------"]
+    if show_names:
+        mystrings += \
+            ["e         | input                         | C",
+             "u         | C                             | P",
+             "y         | P                             | output"]
+    else:
+        mystrings += \
+            ["e         | input                         | system 0",
+             "u         | system 0                      | system 1",
+             "y         | system 1                      | output"]
+
+    for str_ in mystrings:
+        assert str_ in captured_from_method
+        assert str_ in captured_from_function
+
+    # check auto-sum
+    P1 = ct.ss(1,1,1,0, inputs='u', outputs='y', name='P1')
+    P2 = ct.tf(10, [.1, 1], inputs='e', outputs='y', name='P2')
+    P3 = ct.tf(10, [.1, 1], inputs='x', outputs='y', name='P3')
+    P = ct.interconnect([P1, P2, P3], inputs=['e', 'u', 'x'], outputs='y')
+    P.connection_table(show_names=show_names)
+    captured_from_method = capsys.readouterr().out
+
+    ct.connection_table(P, show_names=show_names)
+    captured_from_function = capsys.readouterr().out
+
+    mystrings = \
+            ["signal    | source                        | destination",
+     "-------------------------------------------------------------------"]
+    if show_names:
+        mystrings += \
+            ["u         | input                         | P1",
+             "e         | input                         | P2",
+             "x         | input                         | P3",
+             "y         | P1, P2, P3                    | output"]
+    else:
+        mystrings += \
+            ["u         | input                         | system 0",
+             "e         | input                         | system 1",
+             "x         | input                         | system 2",
+             "y         | system 0, system 1, system 2  | output"]
+
+    for str_ in mystrings:
+        assert str_ in captured_from_method
+        assert str_ in captured_from_function
+
+    # check auto-split
+    P1 = ct.ss(1,1,1,0, inputs='u', outputs='x', name='P1')
+    P2 = ct.tf(10, [.1, 1], inputs='u', outputs='y', name='P2')
+    P3 = ct.tf(10, [.1, 1], inputs='u', outputs='z', name='P3')
+    P = ct.interconnect([P1, P2, P3], inputs=['u'], outputs=['x','y','z'])
+    P.connection_table(show_names=show_names)
+    captured_from_method = capsys.readouterr().out
+
+    ct.connection_table(P, show_names=show_names)
+    captured_from_function = capsys.readouterr().out
+
+    mystrings = \
+            ["signal    | source                        | destination",
+             "-------------------------------------------------------------------"]
+    if show_names:
+        mystrings += \
+            ["u         | input                         | P1, P2, P3",
+             "x         | P1                            | output  ",
+             "y         | P2                            | output",
+             "z         | P3                            | output"]
+    else:
+        mystrings += \
+            ["u         | input                         | system 0, system 1, system 2",
+             "x         | system 0                      | output  ",
+             "y         | system 1                      | output",
+             "z         | system 2                      | output"]
+
+    for str_ in mystrings:
+        assert str_ in captured_from_method
+        assert str_ in captured_from_function
+
+    # check change column width
+    P.connection_table(show_names=show_names, column_width=20)
+    captured_from_method = capsys.readouterr().out
+
+    ct.connection_table(P, show_names=show_names, column_width=20)
+    captured_from_function = capsys.readouterr().out
+
+    mystrings = \
+            ["signal    | source            | destination",
+             "------------------------------------------------"]
+    if show_names:
+        mystrings += \
+            ["u         | input             | P1, P2, P3",
+             "x         | P1                | output  ",
+             "y         | P2                | output",
+             "z         | P3                | output"]
+    else:
+        mystrings += \
+            ["u         | input             | system 0, syste.. ",
+             "x         | system 0          | output  ",
+             "y         | system 1          | output",
+             "z         | system 2          | output"]
+
+    for str_ in mystrings:
+        assert str_ in captured_from_method
+        assert str_ in captured_from_function
+
 
 def test_interconnect_exceptions():
     # First make sure the docstring example works
