@@ -503,7 +503,7 @@ def common_timebase(dt1, dt2):
         raise ValueError("Systems have incompatible timebases")
 
 # Check to see if a system is a discrete time system
-def isdtime(sys=None, dt=None, strict=False):
+def isdtime(sys=None, strict=False, dt=None):
     """
     Check to see if a system is a discrete time system.
 
@@ -513,7 +513,7 @@ def isdtime(sys=None, dt=None, strict=False):
         System to be checked.
     dt : None or number, optional
         Timebase to be checked.
-    strict: bool (default = False)
+    strict: bool, default=False
         If strict is True, make sure that timebase is not None.
     """
 
