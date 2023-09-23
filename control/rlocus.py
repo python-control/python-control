@@ -18,7 +18,6 @@
 # Packages used by this module
 from functools import partial
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 from numpy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
@@ -29,24 +28,54 @@ from .grid import sgrid, zgrid
 from . import config
 import warnings
 
-__all__ = ['root_locus', 'rlocus']
+__all__ = ['root_locus_map', 'root_locus_plot', 'root_locus', 'rlocus']
 
 # Default values for module parameters
 # TODO: merge these with pzmap parameters (?)
 _rlocus_defaults = {
     'rlocus.grid': True,
-    'rlocus.plotstr': 'b' if int(mpl.__version__[0]) == 1 else 'C0',
+    'rlocus.plotstr': 'C0',     # default color cycle [TODO: not used?]
     'rlocus.print_gain': True,
     'rlocus.plot': True
 }
 
 
-# Main function: compute a root locus diagram
-# TODO: update to use pzmap data structures and plotting
-def root_locus(sys, kvect=None, xlim=None, ylim=None,
-               plotstr=None, plot=True, print_gain=None, grid=None, ax=None,
-               initial_gain=None, **kwargs):
+# Root locus map
+# TODO: add docstring
+def root_locus_map(sysdata, gains=None):
+    from .pzmap import PoleZeroData, PoleZeroList
 
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    responses = []
+    for idx, sys in enumerate(syslist):
+        if not sys.issiso():
+            raise ControlMIMONotImplemented(
+                "sys must be single-input single-output (SISO)")
+
+        # Convert numerator and denominator to polynomials if they aren't
+        nump, denp = _systopoly1d(sys[0, 0])
+
+        if gains is None:
+            kvect, root_array, _, _ = _default_gains(nump, denp, None, None)
+        else:
+            kvect = np.atleast_1d(gains)
+            root_array = _RLFindRoots(nump, denp, kvect)
+            root_array = _RLSortRoots(root_array)
+
+        responses.append(PoleZeroData(
+            sys.poles(), sys.zeros(), kvect, root_array,
+            dt=sys.dt, sysname=sys.name, sys=sys))
+
+    if isinstance(sysdata, (list, tuple)):
+        return PoleZeroList(responses)
+    else:
+        return responses[0]
+
+
+def root_locus_plot(
+        sysdata, kvect=None, grid=None, plot=True, **kwargs):
     """Root locus plot.
 
     Calculate the root locus by finding the roots of 1 + k * G(s) where G
@@ -95,126 +124,22 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
     then set the axis limits to the desired values.
 
     """
-    # Get parameter values
-    plotstr = config._get_param('rlocus', 'plotstr', plotstr, _rlocus_defaults)
+    from .pzmap import pole_zero_plot
+
+    # Set default parameters
+    # TODO: move this to pole_zero_plot()
     grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
-    print_gain = config._get_param(
-        'rlocus', 'print_gain', print_gain, _rlocus_defaults)
 
-    if not sys.issiso():
-        raise ControlMIMONotImplemented(
-            'sys must be single-input single-output (SISO)')
-
-    # Convert numerator and denominator to polynomials if they aren't
-    nump, denp = _systopoly1d(sys)
-
-    # if discrete-time system and if xlim and ylim are not given,
-    #  that we a view of the unit circle
-    if xlim is None and isdtime(sys, strict=True):
-        xlim = (-1.2, 1.2)
-    if ylim is None and isdtime(sys, strict=True):
-        xlim = (-1.3, 1.3)
-
-    if kvect is None:
-        kvect, root_array, xlim, ylim = _default_gains(nump, denp, xlim, ylim)
-        recompute_on_zoom = True
-    else:
-        kvect = np.atleast_1d(kvect)
-        root_array = _RLFindRoots(nump, denp, kvect)
-        root_array = _RLSortRoots(root_array)
-        recompute_on_zoom = False
-
-    # Make sure there were no extraneous keywords
-    if kwargs:
-        raise TypeError("unrecognized keywords: ", str(kwargs))
-
-    # Create the Plot
-    # TODO: replace with pole_zero_plot and move additional functionality there
+    responses = root_locus_map(sysdata, gains=kvect)
+    # TODO: update to include legacy keyword processing (use pole_zero_plot?)
     if plot:
-        if ax is None:
-            ax = plt.gca()
-            ax.set_title('Root Locus')
-        fig = ax.figure
+        responses.plot(grid=grid, **kwargs)
 
-        # TODO: get rid of extra variable start_roots
-        if initial_gain is not None:
-            start_roots = _RLFindRoots(nump, denp, initial_gain)
-        else:
-            start_roots = None
-
-        # TODO: don't rely on `start_roots` (sisotool holdover)
-        if print_gain and start_roots is None:
-            fig.canvas.mpl_connect(
-                'button_release_event',
-                partial(_RLClickDispatcher, sys=sys, fig=fig,
-                        ax_rlocus=ax, plotstr=plotstr))
-        elif start_roots is not None:
-            ax.plot(
-                [root.real for root in start_roots],
-                [root.imag for root in start_roots],
-                marker='s', markersize=6, zorder=20, color='k',
-                label='gain_point')
-            s = start_roots[0][0]
-            if isdtime(sys, strict=True):
-                zeta = -np.cos(np.angle(np.log(s)))
-            else:
-                zeta = -1 * s.real / abs(s)
-            fig.suptitle(
-                "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-                (s.real, s.imag, initial_gain, zeta),
-                fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
-
-        if recompute_on_zoom:
-            # update gains and roots when xlim/ylim change. Only then are
-            # data on available. I.e., cannot combine with _RLClickDispatcher
-            dpfun = partial(
-                _RLZoomDispatcher, sys=sys, ax_rlocus=ax, plotstr=plotstr)
-            # TODO: the next too lines seem to take a long time to execute
-            # TODO: is there a way to speed them up?  (RMM, 6 Jun 2019)
-            ax.callbacks.connect('xlim_changed', dpfun)
-            ax.callbacks.connect('ylim_changed', dpfun)
-
-        # plot open loop poles
-        poles = array(denp.r)
-        ax.plot(real(poles), imag(poles), 'x')
-
-        # plot open loop zeros
-        zeros = array(nump.r)
-        if zeros.size > 0:
-            ax.plot(real(zeros), imag(zeros), 'o')
-
-        # Now plot the loci
-        for index, col in enumerate(root_array.T):
-            ax.plot(real(col), imag(col), plotstr, label='rootlocus')
-
-        # Set up plot axes and labels
-        ax.set_xlabel('Real')
-        ax.set_ylabel('Imaginary')
-
-        # Set up the limits for the plot
-        # Note: need to do this before computing grid lines
-        if xlim:
-            ax.set_xlim(xlim)
-        if ylim:
-            ax.set_ylim(ylim)
-
-        # Draw the grid
-        if grid:
-            if isdtime(sys, strict=True):
-                zgrid(ax=ax)
-            else:
-                _sgrid_func(ax)
-        else:
-            ax.axhline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
-            ax.axvline(0., linestyle=':', color='k', linewidth=.75, zorder=-20)
-            if isdtime(sys, strict=True):
-                ax.add_patch(plt.Circle(
-                    (0, 0), radius=1.0, linestyle=':', edgecolor='k',
-                    linewidth=0.75, fill=False, zorder=-20))
-
-    return root_array, kvect
+    # TODO: legacy return value; update
+    return responses.loci, responses.gains
 
 
+# TODO: get rid of zoom functionality?
 def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
     """Unsupervised gains calculation for root locus plot.
 
@@ -320,7 +245,7 @@ def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
 
 
 def _indexes_filt(root_array, tolerance, zoom_xlim=None, zoom_ylim=None):
-    """Calculate the distance between points and return the indexes.
+    """Calculate the distance between points and return the indices.
 
     Filter the indexes so only the resolution of points within the xlim and
     ylim is improved when zoom is used.
@@ -510,253 +435,6 @@ def _RLSortRoots(roots):
     return sorted
 
 
-def _RLZoomDispatcher(event, sys, ax_rlocus, plotstr):
-    """Rootlocus plot zoom dispatcher"""
-    sys_loop = sys[0,0]
-    nump, denp = _systopoly1d(sys_loop)
-    xlim, ylim = ax_rlocus.get_xlim(), ax_rlocus.get_ylim()
-
-    kvect, root_array, xlim, ylim = _default_gains(
-        nump, denp, xlim=None, ylim=None, zoom_xlim=xlim, zoom_ylim=ylim)
-    _removeLine('rootlocus', ax_rlocus)
-
-    for i, col in enumerate(root_array.T):
-        ax_rlocus.plot(real(col), imag(col), plotstr, label='rootlocus',
-                       scalex=False, scaley=False)
-
-
-def _RLClickDispatcher(event, sys, fig, ax_rlocus, plotstr,
-                       bode_plot_params=None, tvect=None):
-    """Rootlocus plot click dispatcher"""
-
-    # Zoom is handled by specialized callback above, only do gain plot
-    if event.inaxes == ax_rlocus.axes and \
-       plt.get_current_fig_manager().toolbar.mode not in \
-       {'zoom rect', 'pan/zoom'}:
-
-        # if a point is clicked on the rootlocus plot visually emphasize it
-        K = _RLFeedbackClicksPoint(
-            event, sys, fig, ax_rlocus, show_clicked=False)
-
-    # Update the canvas
-    fig.canvas.draw()
-
-
-def _RLFeedbackClicksPoint(event, sys, fig, ax_rlocus, show_clicked=False):
-    """Display root-locus gain feedback point for clicks on root-locus plot"""
-    sys_loop = sys[0,0]
-    (nump, denp) = _systopoly1d(sys_loop)
-
-    xlim = ax_rlocus.get_xlim()
-    ylim = ax_rlocus.get_ylim()
-    x_tolerance = 0.1 * abs((xlim[1] - xlim[0]))
-    y_tolerance = 0.1 * abs((ylim[1] - ylim[0]))
-    gain_tolerance = np.mean([x_tolerance, y_tolerance])*0.1
-
-    # Catch type error when event click is in the figure but not in an axis
-    try:
-        s = complex(event.xdata, event.ydata)
-        K = -1. / sys_loop(s)
-        K_xlim = -1. / sys_loop(
-            complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
-        K_ylim = -1. / sys_loop(
-            complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
-
-    except TypeError:
-        K = float('inf')
-        K_xlim = float('inf')
-        K_ylim = float('inf')
-
-    gain_tolerance += 0.1 * max([abs(K_ylim.imag/K_ylim.real),
-                                 abs(K_xlim.imag/K_xlim.real)])
-
-    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and \
-       event.inaxes == ax_rlocus.axes and K.real > 0.:
-
-        if isdtime(sys, strict=True):
-            zeta = -np.cos(np.angle(np.log(s)))
-        else:
-            zeta = -1 * s.real / abs(s)
-
-        # Display the parameters in the output window and figure
-        print("Clicked at %10.4g%+10.4gj gain %10.4g damp %10.4g" %
-              (s.real, s.imag, K.real, zeta))
-        fig.suptitle(
-            "Clicked at: %10.4g%+10.4gj  gain: %10.4g  damp: %10.4g" %
-            (s.real, s.imag, K.real, zeta),
-            fontsize=12 if int(mpl.__version__[0]) == 1 else 10)
-
-        # Remove the previous line
-        _removeLine(label='gain_point', ax=ax_rlocus)
-
-        if show_clicked:
-            # Visualise clicked point, display all roots
-            root_array = _RLFindRoots(nump, denp, K.real)
-            ax_rlocus.plot(
-                [root.real for root in root_array],
-                [root.imag for root in root_array],
-                marker='s', markersize=6, zorder=20, label='gain_point',
-                color='k')
-        else:
-            # Just show the clicked point
-            # TODO: should we keep this?
-            ax_rlocus.plot(
-                s.real, s.imag, 'k.', marker='s', markersize=8, zorder=20,
-                label='gain_point')
-
-        return K.real
-
-
-def _removeLine(label, ax):
-    """Remove a line from the ax when a label is specified"""
-    for line in reversed(ax.lines):
-        if line.get_label() == label:
-            line.remove()
-            del line
-
-
-# TODO: remove and replace with sgid()?
-def _sgrid_func(ax, zeta=None, wn=None):
-    # Get locator function for x-axis, y-axis tick marks
-    xlocator = ax.get_xaxis().get_major_locator()
-    ylocator = ax.get_yaxis().get_major_locator()
-
-    # Decide on the location for the labels (?)
-    ylim = ax.get_ylim()
-    ytext_pos_lim = ylim[1] - (ylim[1] - ylim[0]) * 0.03
-    xlim = ax.get_xlim()
-    xtext_pos_lim = xlim[0] + (xlim[1] - xlim[0]) * 0.0
-
-    # Create a list of damping ratios, if needed
-    if zeta is None:
-        zeta = _default_zetas(xlim, ylim)
-
-    # Figure out the angles for the different damping ratios
-    angles = []
-    for z in zeta:
-        if (z >= 1e-4) and (z <= 1):
-            angles.append(np.pi/2 + np.arcsin(z))
-        else:
-            zeta.remove(z)
-    y_over_x = np.tan(angles)
-
-    # zeta-constant lines
-    for index, yp in enumerate(y_over_x):
-        ax.plot([0, xlocator()[0]], [0, yp * xlocator()[0]], color='gray',
-                linestyle='dashed', linewidth=0.5)
-        ax.plot([0, xlocator()[0]], [0, -yp * xlocator()[0]], color='gray',
-                linestyle='dashed', linewidth=0.5)
-        an = "%.2f" % zeta[index]
-        if yp < 0:
-            xtext_pos = 1/yp * ylim[1]
-            ytext_pos = yp * xtext_pos_lim
-            if np.abs(xtext_pos) > np.abs(xtext_pos_lim):
-                xtext_pos = xtext_pos_lim
-            else:
-                ytext_pos = ytext_pos_lim
-            ax.annotate(an, textcoords='data', xy=[xtext_pos, ytext_pos],
-                        fontsize=8)
-    ax.plot([0, 0], [ylim[0], ylim[1]],
-            color='gray', linestyle='dashed', linewidth=0.5)
-
-    # omega-constant lines
-    angles = np.linspace(-90, 90, 20) * np.pi/180
-    if wn is None:
-        wn = _default_wn(xlocator(), ylocator())
-
-    for om in wn:
-        if om < 0:
-            # Generate the lines for natural frequency curves
-            yp = np.sin(angles) * np.abs(om)
-            xp = -np.cos(angles) * np.abs(om)
-
-            # Plot the natural frequency contours
-            ax.plot(xp, yp, color='gray', linestyle='dashed', linewidth=0.5)
-
-            # Annotate the natural frequencies by listing on x-axis
-            # Note: need to filter values for proper plotting in Jupyter
-            if (om > xlim[0]):
-                an = "%.2f" % -om
-                ax.annotate(an, textcoords='data', xy=[om, 0], fontsize=8)
-
-
-def _default_zetas(xlim, ylim):
-    """Return default list of damping coefficients
-
-    This function computes a list of damping coefficients based on the limits
-    of the graph.  A set of 4 damping coefficients are computed for the x-axis
-    and a set of three damping coefficients are computed for the y-axis
-    (corresponding to the normal 4:3 plot aspect ratio in `matplotlib`?).
-
-    Parameters
-    ----------
-    xlim : array_like
-        List of x-axis limits [min, max]
-    ylim : array_like
-        List of y-axis limits [min, max]
-
-    Returns
-    -------
-    zeta : list
-        List of default damping coefficients for the plot
-
-    """
-    # Damping coefficient lines that intersect the x-axis
-    sep1 = -xlim[0] / 4
-    ang1 = [np.arctan((sep1*i)/ylim[1]) for i in np.arange(1, 4, 1)]
-
-    # Damping coefficient lines that intersection the y-axis
-    sep2 = ylim[1] / 3
-    ang2 = [np.arctan(-xlim[0]/(ylim[1]-sep2*i)) for i in np.arange(1, 3, 1)]
-
-    # Put the lines together and add one at -pi/2 (negative real axis)
-    angles = np.concatenate((ang1, ang2))
-    angles = np.insert(angles, len(angles), np.pi/2)
-
-    # Return the damping coefficients corresponding to these angles
-    zeta = np.sin(angles)
-    return zeta.tolist()
-
-
-def _default_wn(xloc, yloc, max_lines=7):
-    """Return default wn for root locus plot
-
-    This function computes a list of natural frequencies based on the grid
-    parameters of the graph.
-
-    Parameters
-    ----------
-    xloc : array_like
-        List of x-axis tick values
-    ylim : array_like
-        List of y-axis limits [min, max]
-    max_lines : int, optional
-        Maximum number of frequencies to generate (default = 7)
-
-    Returns
-    -------
-    wn : list
-        List of default natural frequencies for the plot
-
-    """
-    sep = xloc[1]-xloc[0]       # separation between x-ticks
-
-    # Decide whether to use the x or y axis for determining wn
-    if yloc[-1] / sep > max_lines*10:
-        # y-axis scale >> x-axis scale
-        wn = yloc                   # one frequency per y-axis tick mark
-    else:
-        wn = xloc                   # one frequency per x-axis tick mark
-
-        # Insert additional frequencies to span the y-axis
-        while np.abs(wn[0]) < yloc[-1]:
-            wn = np.insert(wn, 0, wn[0]-sep)
-
-    # If there are too many values, cut them in half
-    while len(wn) > max_lines:
-        wn = wn[0:-1:2]
-
-    return wn
-
-
-rlocus = root_locus
+# Alternative ways to call these functions
+root_locus = root_locus_plot
+rlocus = root_locus_plot

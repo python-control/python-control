@@ -99,15 +99,19 @@ def sgrid():
     ax.axis[:].major_ticklabels.set_visible(visible)
     ax.axis[:].major_ticks.set_visible(False)
     ax.axis[:].invert_ticklabel_direction()
+    ax.axis[:].major_ticklabels.set_color('gray')
 
     ax.axis["wnxneg"] = axis = ax.new_floating_axis(0, 180)
     axis.set_ticklabel_direction("-")
     axis.label.set_visible(False)
+
     ax.axis["wnxpos"] = axis = ax.new_floating_axis(0, 0)
     axis.label.set_visible(False)
+
     ax.axis["wnypos"] = axis = ax.new_floating_axis(0, 90)
     axis.label.set_visible(False)
-    axis.set_axis_direction("left")
+    axis.set_axis_direction("right")
+
     ax.axis["wnyneg"] = axis = ax.new_floating_axis(0, 270)
     axis.label.set_visible(False)
     axis.set_axis_direction("left")
@@ -149,9 +153,10 @@ def _final_setup(ax):
     plt.axis('equal')
 
 
-def nogrid(dt=None):
+def nogrid(dt=None, ax=None):
     fig = plt.gcf()
-    ax = plt.axes()
+    if ax is None:
+        ax = fig.gca()
 
     # Draw the unit circle for discrete time systems
     if isdtime(dt=dt, strict=True):

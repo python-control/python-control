@@ -88,7 +88,7 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     >>> ct.sisotool(G)                                          # doctest: +SKIP
 
     """
-    from .rlocus import root_locus
+    from .rlocus import root_locus_map
 
     # sys as loop transfer function if SISO
     if not sys.issiso():
@@ -128,35 +128,47 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
     # First time call to setup the Bode and step response plots
     _SisotoolUpdate(sys, fig, initial_gain, bode_plot_params)
 
-    root_locus(
-        sys[0, 0], initial_gain=initial_gain, xlim=xlim_rlocus,
-        ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
-        ax=fig.axes[1])
+    # root_locus(
+    #     sys[0, 0], initial_gain=initial_gain, xlim=xlim_rlocus,
+    #     ylim=ylim_rlocus, plotstr=plotstr_rlocus, grid=rlocus_grid,
+    #     ax=fig.axes[1])
+    ax_rlocus = fig.axes[1]
+    root_locus_map(sys[0, 0]).plot(
+        xlim=xlim_rlocus, ylim=ylim_rlocus, grid=rlocus_grid,
+        initial_gain=initial_gain, ax=ax_rlocus)
+    if rlocus_grid is False:
+        # Need to generate grid manually, since root_locus_plot() won't
+        from .grid import nogrid
+        nogrid(sys.dt, ax=ax_rlocus)
 
     # Reset the button release callback so that we can update all plots
     fig.canvas.mpl_connect(
-        'button_release_event',
-        partial(_click_dispatcher, sys=sys, fig=fig,
-                ax_rlocus=fig.axes[1], plotstr=plotstr_rlocus,
-                bode_plot_params=bode_plot_params, tvect=tvect))
+        'button_release_event', partial(
+            _click_dispatcher, sys=sys, ax=fig.axes[1],
+            bode_plot_params=bode_plot_params, tvect=tvect))
 
 
-def _click_dispatcher(event, sys, fig, ax_rlocus, plotstr,
-                      bode_plot_params=None, tvect=None):
-    from .rlocus import _RLFeedbackClicksPoint
-
-    # Zoom is handled by specialized callback in rlocus, only handle gain plot
-    if event.inaxes == ax_rlocus.axes and \
+def _click_dispatcher(event, sys, ax, bode_plot_params, tvect):
+    # Zoom handled by specialized callback in rlocus, only handle gain plot
+    if event.inaxes == ax.axes and \
        plt.get_current_fig_manager().toolbar.mode not in \
        {'zoom rect', 'pan/zoom'}:
+        fig = ax.figure
+
         # if a point is clicked on the rootlocus plot visually emphasize it
-        K = _RLFeedbackClicksPoint(
-            event, sys, fig, ax_rlocus, show_clicked=True)
+        # K = _RLFeedbackClicksPoint(
+        #     event, sys, fig, ax_rlocus, show_clicked=True)
+        from .pzmap import _find_root_locus_gain, _mark_root_locus_gain, \
+            _create_root_locus_label
+
+        K, s = _find_root_locus_gain(event, sys, ax)
         if K is not None:
+            _mark_root_locus_gain(ax, sys, K)
+            fig.suptitle(_create_root_locus_label(sys, K, s), fontsize=10)
             _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect)
 
-    # Update the canvas
-    fig.canvas.draw()
+        # Update the canvas
+        fig.canvas.draw()
 
 
 def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):

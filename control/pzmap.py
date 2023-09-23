@@ -8,6 +8,16 @@
 # storing and plotting pole/zero and root locus diagrams.  (The actual
 # computation of root locus diagrams is in rlocus.py.)
 #
+# TODO (Sep 2023):
+#   * Test out ability to set line styles
+#     - Make compatible with other plotting (and refactor?)
+#     -  Allow line fmt to be overwritten (including color=CN for different
+#        colors for each segment?)
+#   * Add ability to set style of root locus click point
+#     - Sort out where default parameter values should live (pzmap vs rlocus)
+#   * Decide whether click functionality should be in rlocus.py
+#   * Add back print_gain option to sisotool (and any other options)
+#
 
 import numpy as np
 from numpy import real, imag, linspace, exp, cos, sin, sqrt
@@ -24,32 +34,44 @@ from .xferfcn import TransferFunction
 from .freqplot import _freqplot_defaults, _get_line_labels
 from . import config
 
-__all__ = ['pole_zero_map', 'root_locus_map', 'pole_zero_plot', 'pzmap']
+__all__ = ['pole_zero_map', 'pole_zero_plot', 'pzmap']
 
 
 # Define default parameter values for this module
 _pzmap_defaults = {
-    'pzmap.grid': False,       # Plot omega-damping grid
-    'pzmap.marker_size': 6,    # Size of the markers
-    'pzmap.marker_width': 1.5, # Width of the markers
+    'pzmap.grid': False,                # Plot omega-damping grid
+    'pzmap.marker_size': 6,             # Size of the markers
+    'pzmap.marker_width': 1.5,          # Width of the markers
+    'pzmap.expansion_factor': 2,        # Amount to scale plots beyond features
 }
 
-
+#
 # Classes for keeping track of pzmap plots
-class RootLocusList(list):
-    def plot(self, *args, **kwargs):
-        return pole_zero_plot(self, *args, **kwargs)
-
-
-class RootLocusData:
+#
+# The PoleZeroData class keeps track of the information that is on a
+# pole-zero plot.
+#
+# In addition to the locations of poles and zeros, you can also save a set
+# of gains and loci for use in generating a root locus plot.  The gain
+# variable is a 1D array consisting of a list of increasing gains.  The
+# loci variable is a 2D array indexed by [gain_idx, root_idx] that can be
+# plotted using the `pole_zero_plot` function.
+#
+# The PoleZeroList class is used to return a list of pole-zero plots.  It
+# is a lightweight wrapper on the built-in list class that includes a
+# `plot` method, allowing plotting a set of root locus diagrams.
+#
+class PoleZeroData:
     def __init__(
-            self, poles, zeros, gains=None, loci=None, dt=None, sysname=None):
+            self, poles, zeros, gains=None, loci=None, dt=None, sysname=None,
+            sys=None):
         self.poles = poles
         self.zeros = zeros
         self.gains = gains
         self.loci = loci
         self.dt = dt
         self.sysname = sysname
+        self.sys = sys
 
     # Implement functions to allow legacy assignment to tuple
     def __iter__(self):
@@ -59,54 +81,25 @@ class RootLocusData:
         return pole_zero_plot(self, *args, **kwargs)
 
 
+class PoleZeroList(list):
+    def plot(self, *args, **kwargs):
+        return pole_zero_plot(self, *args, **kwargs)
+
+
 # Pole/zero map
 def pole_zero_map(sysdata):
+    # TODO: add docstring (from old pzmap?)
     # Convert the first argument to a list
     syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
 
     responses = []
     for idx, sys in enumerate(syslist):
         responses.append(
-            RootLocusData(
+            PoleZeroData(
                 sys.poles(), sys.zeros(), dt=sys.dt, sysname=sys.name))
 
     if isinstance(sysdata, (list, tuple)):
-        return RootLocusList(responses)
-    else:
-        return responses[0]
-
-
-# Root locus map
-# TODO: use rlocus.py computation instead
-def root_locus_map(sysdata, gains=None):
-    # Convert the first argument to a list
-    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
-
-    responses = []
-    for idx, sys in enumerate(syslist):
-        from .rlocus import _systopoly1d, _default_gains
-        from .rlocus import _RLFindRoots, _RLSortRoots
-
-        if not sys.issiso():
-            raise ControlMIMONotImplemented(
-                "sys must be single-input single-output (SISO)")
-
-        # Convert numerator and denominator to polynomials if they aren't
-        nump, denp = _systopoly1d(sys[0, 0])
-
-        if gains is None:
-            kvect, root_array, _, _ = _default_gains(nump, denp, None, None)
-        else:
-            kvect = np.atleast_1d(gains)
-            root_array = _RLFindRoots(nump, denp, kvect)
-            root_array = _RLSortRoots(root_array)
-
-        responses.append(RootLocusData(
-            sys.poles(), sys.zeros(), kvect, root_array,
-            dt=sys.dt, sysname=sys.name))
-
-    if isinstance(sysdata, (list, tuple)):
-        return RootLocusList(responses)
+        return PoleZeroList(responses)
     else:
         return responses[0]
 
@@ -117,12 +110,14 @@ def root_locus_map(sysdata, gains=None):
 def pole_zero_plot(
         data, plot=None, grid=None, title=None, marker_color=None,
         marker_size=None, marker_width=None, legend_loc='upper right',
-        xlim=None, ylim=None, **kwargs):
+        xlim=None, ylim=None, interactive=False, ax=None,
+        initial_gain=None, **kwargs):
+    # TODO: update docstring (see other response/plot functions for style)
     """Plot a pole/zero map for a linear system.
 
     Parameters
     ----------
-    sysdata: List of RootLocusData objects or LTI systems
+    sysdata: List of PoleZeroData objects or LTI systems
         List of pole/zero response data objects generated by pzmap_response
         or rootlocus_response() that are to be plotted.  If a list of systems
         is given, the poles and zeros of those systems will be plotted.
@@ -165,6 +160,7 @@ def pole_zero_plot(
     freqplot_rcParams = config._get_param(
         'freqplot', 'rcParams', kwargs, _freqplot_defaults,
         pop=True, last=True)
+    user_ax = ax
 
     # If argument was a singleton, turn it into a tuple
     if not isinstance(data, (list, tuple)):
@@ -175,7 +171,7 @@ def pole_zero_plot(
             sys, (StateSpace, TransferFunction)) for sys in data]):
         # Get the response, popping off keywords used there
         pzmap_responses = pole_zero_map(data)
-    elif all([isinstance(d, RootLocusData) for d in data]):
+    elif all([isinstance(d, PoleZeroData) for d in data]):
         pzmap_responses = data
     else:
         raise TypeError("unknown system data type")
@@ -198,8 +194,13 @@ def pole_zero_plot(
 
     # Initialize the figure
     # TODO: turn into standard utility function (from plotutil.py?)
-    fig = plt.gcf()
-    axs = fig.get_axes()
+    if user_ax is None:
+        fig = plt.gcf()
+        axs = fig.get_axes()
+    else:
+        fig = ax.figure
+        axs = [ax]
+
     if len(axs) > 1:
         # Need to generate a new figure
         fig, axs = plt.figure(), []
@@ -275,6 +276,10 @@ def pole_zero_plot(
             xlim = [min(xlim[0], resp_xlim[0]), max(xlim[1], resp_xlim[1])]
             ylim = [min(ylim[0], resp_ylim[0]), max(ylim[1], resp_ylim[1])]
 
+            # Plot the initial gain, if given
+            if initial_gain is not None:
+                _mark_root_locus_gain(ax, response.sys, initial_gain)
+
             # TODO: add arrows to root loci (reuse Nyquist arrow code?)
 
     # Set up the limits for the plot
@@ -313,8 +318,36 @@ def pole_zero_plot(
     # Add the title
     if title is None:
         title = "Pole/zero plot for " + ", ".join(labels)
-    with plt.rc_context(freqplot_rcParams):
-        fig.suptitle(title)
+    if user_ax is None:
+        with plt.rc_context(freqplot_rcParams):
+            fig.suptitle(title)
+
+    # Add dispather to handle choosing a point on the diagram
+    if interactive:
+        if len(pzmap_responses) > 1:
+            raise NotImplementedError(
+                "interactive mode only allowed for single system")
+        elif pzmap_responses[0].sys == None:
+            raise SystemError("missing system information")
+        else:
+            sys = pzmap_responses[0].sys
+
+        # Define function to handle mouse clicks
+        def _click_dispatcher(event):
+            # Find the gain corresponding to the clicked point
+            K, s = _find_root_locus_gain(event, sys, ax)
+
+            if K is not None:
+                # Mark the gain on the root locus diagram
+                _mark_root_locus_gain(ax, sys, K)
+
+                # Display the parameters in the axes title
+                with plt.rc_context(freqplot_rcParams):
+                    ax.set_title(_create_root_locus_label(sys, K, s))
+
+            ax.figure.canvas.draw()
+
+        fig.canvas.mpl_connect('button_release_event', _click_dispatcher)
 
     # Legacy processing: return locations of poles and zeros as a tuple
     if plot is True:
@@ -326,7 +359,82 @@ def pole_zero_plot(
     return out
 
 
+# Utility function to find gain corresponding to a click event
+# TODO: project onto the root locus plot (here or above?)
+def _find_root_locus_gain(event, sys, ax):
+    # Get the current axis limits to set various thresholds
+    xlim, ylim = ax.get_xlim(), ax.get_ylim()
+
+    # Catch type error when event click is in the figure but not in an axis
+    try:
+        s = complex(event.xdata, event.ydata)
+        K = -1. / sys(s)
+        K_xlim = -1. / sys(
+            complex(event.xdata + 0.05 * abs(xlim[1] - xlim[0]), event.ydata))
+        K_ylim = -1. / sys(
+            complex(event.xdata, event.ydata + 0.05 * abs(ylim[1] - ylim[0])))
+
+    except TypeError:
+        K = float('inf')
+        K_xlim = float('inf')
+        K_ylim = float('inf')
+
+    #
+    # Compute tolerances for deciding if we clicked on the root locus
+    #
+    # This is a bit of black magic that sets some limits for how close we
+    # need to be to the root locus in order to consider it a click on the
+    # actual curve.  Otherwise, we will just ignore the click.
+
+    x_tolerance = 0.1 * abs((xlim[1] - xlim[0]))
+    y_tolerance = 0.1 * abs((ylim[1] - ylim[0]))
+    gain_tolerance = np.mean([x_tolerance, y_tolerance]) * 0.1 + \
+        0.1 * max([abs(K_ylim.imag/K_ylim.real), abs(K_xlim.imag/K_xlim.real)])
+
+    # Decide whether to pay attention to this event
+    if abs(K.real) > 1e-8 and abs(K.imag / K.real) < gain_tolerance and \
+       event.inaxes == ax.axes and K.real > 0.:
+        return K.real, s
+
+    else:
+        return None, s
+
+
+# Mark points corresponding to a given gain on root locus plot
+def _mark_root_locus_gain(ax, sys, K):
+    from .rlocus import _systopoly1d, _RLFindRoots
+
+    # Remove any previous gain points
+    for line in reversed(ax.lines):
+        if line.get_label() == '_gain_point':
+            line.remove()
+            del line
+
+    # Visualise clicked point, displaying all roots
+    # TODO: allow marker parameters to be set
+    nump, denp = _systopoly1d(sys)
+    root_array = _RLFindRoots(nump, denp, K.real)
+    ax.plot(
+        [root.real for root in root_array], [root.imag for root in root_array],
+        marker='s', markersize=6, zorder=20, label='_gain_point', color='k')
+
+
+# Return a string identifying a clicked point
+# TODO: project onto the root locus plot (here or above?)
+def _create_root_locus_label(sys, K, s):
+    # Figure out the damping ratio
+    if isdtime(sys, strict=True):
+        zeta = -np.cos(np.angle(np.log(s)))
+    else:
+        zeta = -1 * s.real / abs(s)
+
+    return "Clicked at: %.4g%+.4gj   gain = %.4g  damping = %.4g" % \
+        (s.real, s.imag, K.real, zeta)
+
+
 # Utility function to compute limits for root loci
+# TODO: compare to old code and recapture functionality (especially asymptotes)
+# TODO: (note that sys is now available => code here may not be needed)
 def _compute_root_locus_limits(loci):
     # Go through each locus
     xlim, ylim = [0, 0], 0
@@ -345,7 +453,8 @@ def _compute_root_locus_limits(loci):
         ylim = max(ylim, np.max(ypeaks))
 
     # Adjust the limits to include some space around features
-    rho = 1.5
+    # TODO: use _k_max and project out to max k for all value?
+    rho = config._get_param('pzmap', 'expansion_factor')
     xlim[0] = rho * xlim[0] if xlim[0] < 0 else 0
     xlim[1] = rho * xlim[1] if xlim[1] > 0 else 0
     ylim = rho * ylim if ylim > 0 else np.max(np.abs(xlim))

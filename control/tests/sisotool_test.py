@@ -57,11 +57,11 @@ class TestSisotool:
         initial_point_0 = (np.array([-22.53155977]), np.array([0.]))
         initial_point_1 = (np.array([-1.23422011]), np.array([-6.54667031]))
         initial_point_2 = (np.array([-1.23422011]), np.array([6.54667031]))
-        assert_array_almost_equal(ax_rlocus.lines[0].get_data(),
+        assert_array_almost_equal(ax_rlocus.lines[4].get_data(),
                                   initial_point_0, 4)
-        assert_array_almost_equal(ax_rlocus.lines[1].get_data(),
+        assert_array_almost_equal(ax_rlocus.lines[5].get_data(),
                                   initial_point_1, 4)
-        assert_array_almost_equal(ax_rlocus.lines[2].get_data(),
+        assert_array_almost_equal(ax_rlocus.lines[6].get_data(),
                                   initial_point_2, 4)
 
         # Check the step response before moving the point
@@ -93,9 +93,8 @@ class TestSisotool:
         event = type('test', (object,), {'xdata': 2.31206868287,
                                          'ydata': 15.5983051046,
                                          'inaxes': ax_rlocus.axes})()
-        _click_dispatcher(event=event, sys=tsys, fig=fig,
-                           ax_rlocus=ax_rlocus, plotstr='-',
-                           bode_plot_params=bode_plot_params, tvect=None)
+        _click_dispatcher(event=event, sys=tsys, ax=ax_rlocus,
+                          bode_plot_params=bode_plot_params, tvect=None)
 
         # Check the moved root locus plot points
         moved_point_0 = (np.array([-29.91742755]), np.array([0.]))
@@ -143,9 +142,8 @@ class TestSisotool:
         event = type('test', (object,), {'xdata': 2.31206868287,
                                          'ydata': 15.5983051046,
                                          'inaxes': ax_rlocus.axes})()
-        _click_dispatcher(event=event, sys=tsys, fig=fig,
-                           ax_rlocus=ax_rlocus, plotstr='-',
-                           bode_plot_params=dict(), tvect=tvect)
+        _click_dispatcher(event=event, sys=tsys, ax=ax_rlocus,
+                          bode_plot_params=dict(), tvect=tvect)
         assert_array_almost_equal(tvect, ax_step.lines[0].get_data()[0])
 
     @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
@@ -202,3 +200,21 @@ class TestPidDesigner:
     def test_pid_designer_2(self, plant, kwargs):
         rootlocus_pid_designer(plant, **kwargs)
 
+
+if __name__ == "__main__":
+    #
+    # Interactive mode: generate plots for manual viewing
+    #
+    # Running this script in python (or better ipython) will show a
+    # collection of figures that should all look OK on the screeen.
+    #
+    import control as ct
+
+    # In interactive mode, turn on ipython interactive graphics
+    plt.ion()
+
+    # Start by clearing existing figures
+    plt.close('all')
+
+    tsys = ct.tf([1000], [1, 25, 100, 0])
+    ct.sisotool(tsys)
