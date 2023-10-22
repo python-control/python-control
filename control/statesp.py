@@ -60,7 +60,7 @@ from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
 
-from .exception import ControlSlycot
+from .exception import ControlSlycot, slycot_check
 from .frdata import FrequencyResponseData
 from .lti import LTI, _process_frequency_response
 from .iosys import InputOutputSystem, common_timebase, isdtime, \
@@ -1615,10 +1615,13 @@ def ss(*args, **kwargs):
                 warn("state labels specified for "
                      "non-unique state space realization")
 
+            # Allow method to be specified (eg, tf2ss)
+            method = kwargs.pop('method', None)
+
             # Create a state space system from an LTI system
             sys = StateSpace(
                 _convert_to_statespace(
-                    sys,
+                    sys, method=method,
                     use_prefix_suffix=not sys._generic_name_check()),
                 **kwargs)
 
@@ -2189,7 +2192,7 @@ def _f2s(f):
     return s
 
 
-def _convert_to_statespace(sys, use_prefix_suffix=False):
+def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
     """Convert a system to state space form (if needed).
 
     If sys is already a state space, then it is returned.  If sys is a
@@ -2213,13 +2216,17 @@ def _convert_to_statespace(sys, use_prefix_suffix=False):
             raise ValueError("transfer function is non-proper; can't "
                              "convert to StateSpace system")
 
-        try:
+        if method is None and slycot_check() or method == 'slycot':
+            if not slycot_check():
+                raise ValueError("method='slycot' requires slycot")
+
             from slycot import td04ad
 
             # Change the numerator and denominator arrays so that the transfer
             # function matrix has a common denominator.
             # matrices are also sized/padded to fit td04ad
             num, den, denorder = sys.minreal()._common_den()
+            num, den, denorder = sys._common_den()
 
             # transfer function to state space conversion now should work!
             ssout = td04ad('C', sys.ninputs, sys.noutputs,
@@ -2230,9 +2237,8 @@ def _convert_to_statespace(sys, use_prefix_suffix=False):
                 ssout[1][:states, :states], ssout[2][:states, :sys.ninputs],
                 ssout[3][:sys.noutputs, :states], ssout[4], sys.dt)
 
-        except ImportError:
-            # No Slycot.  Scipy tf->ss can't handle MIMO, but static
-            # MIMO is an easy special case we can check for here
+        elif method in [None, 'scipy']:
+            # Scipy tf->ss can't handle MIMO, but SISO is OK
             maxn = max(max(len(n) for n in nrow)
                        for nrow in sys.num)
             maxd = max(max(len(d) for d in drow)
@@ -2250,6 +2256,8 @@ def _convert_to_statespace(sys, use_prefix_suffix=False):
                 A, B, C, D = \
                     sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))
                 newsys = StateSpace(A, B, C, D, sys.dt)
+        else:
+            raise ValueError(f"unknown {method=}")
 
         # Copy over the signal (and system) names
         newsys._copy_names(
