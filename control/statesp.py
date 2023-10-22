@@ -1583,6 +1583,13 @@ def ss(*args, **kwargs):
     --------
     tf, ss2tf, tf2ss
 
+    Notes
+    -----
+    If a transfer function is passed as the sole positional argument, the
+    system will be converted to state space form in the same way as calling
+    :func:`~control.tf2ss`.  The `method` keyword can be used to select the
+    method for conversion.
+
     Examples
     --------
     Create a Linear I/O system object from matrices.
@@ -1768,6 +1775,10 @@ def tf2ss(*args, **kwargs):
     name : string, optional
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'.  If set to None (default), try 'slycot' first
+        and then 'scipy' (SISO only).
 
     Raises
     ------
@@ -1783,6 +1794,13 @@ def tf2ss(*args, **kwargs):
     ss
     tf
     ss2tf
+
+    Notes
+    -----
+    The ``slycot`` routine used to convert a transfer function into state
+    space form appears to have a bug and in some (rare) instances may not
+    return a system with the same poles as the input transfer function.
+    For SISO systems, setting ``method=scipy`` can be used as an alternative.
 
     Examples
     --------
