@@ -127,6 +127,11 @@ class InputOutputSystem(object):
         if kwargs:
             raise TypeError("unrecognized keywords: ", str(kwargs))
 
+    # Keep track of the keywords that we recognize
+    kwargs_list = [
+        'name', 'inputs', 'outputs', 'states', 'input_prefix',
+        'output_prefix', 'state_prefix', 'dt']
+
     #
     # Functions to manipulate the system name
     #

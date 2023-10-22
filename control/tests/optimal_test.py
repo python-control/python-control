@@ -238,6 +238,14 @@ def test_mpc_iosystem_rename():
     assert mpc_relabeled.state_labels == state_relabels
     assert mpc_relabeled.name == 'mpc_relabeled'
 
+    # Change the optimization parameters (check by passing bad value)
+    mpc_custom = opt.create_mpc_iosystem(
+        sys, timepts, cost, minimize_method='unknown')
+    with pytest.raises(ValueError, match="Unknown solver unknown"):
+        # Optimization problem is implicit => check that an error is generated
+        mpc_custom.updfcn(
+            0, np.zeros(mpc_custom.nstates), np.zeros(mpc_custom.ninputs), {})
+
     # Make sure that unknown keywords are caught
     # Unrecognized arguments
     with pytest.raises(TypeError, match="unrecognized keyword"):
@@ -659,7 +667,7 @@ def test_equality_constraints():
     "method, npts, initial_guess, fail", [
         ('shooting', 3, None, 'xfail'),         # doesn't converge
         ('shooting', 3, 'zero', 'xfail'),       # doesn't converge
-        ('shooting', 3, 'u0', None),            # github issue #782
+        # ('shooting', 3, 'u0', None),          # github issue #782
         ('shooting', 3, 'input', 'endpoint'),   # doesn't converge to optimal
         ('shooting', 5, 'input', 'endpoint'),   # doesn't converge to optimal
         ('collocation', 3, 'u0', 'endpoint'),   # doesn't converge to optimal

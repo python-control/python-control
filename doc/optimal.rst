@@ -65,6 +65,13 @@ can be on the input, the state, or combinations of input and state,
 depending on the form of :math:`g_i`.  Furthermore, these constraints are
 intended to hold at all instants in time along the trajectory.
 
+For a discrete time system, the same basic formulation applies except
+that the cost function is given by
+
+.. math::
+
+  J(x, u) = \sum_{k=0}^{N-1} L(x_k, u_k)\, dt + V(x_N).
+
 A common use of optimization-based control techniques is the implementation
 of model predictive control (also called receding horizon control).  In
 model predictive control, a finite horizon optimal control problem is solved,

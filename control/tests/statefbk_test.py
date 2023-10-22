@@ -506,6 +506,8 @@ class TestStatefbk:
          (2,      0,        1,       0,            'nonlinear'),
          (4,      0,        2,       2,            'nonlinear'),
          (4,      3,        2,       2,            'nonlinear'),
+         (2,      0,        1,       0,            'iosystem'),
+         (2,      0,        1,       1,            'iosystem'),
         ])
     def test_statefbk_iosys(
             self, nstates, ninputs, noutputs, nintegrators, type_):
@@ -551,17 +553,26 @@ class TestStatefbk:
         K, _, _ = ct.lqr(aug, np.eye(nstates + nintegrators), np.eye(ninputs))
         Kp, Ki = K[:, :nstates], K[:, nstates:]
 
-        # Create an I/O system for the controller
-        ctrl, clsys = ct.create_statefbk_iosystem(
-            sys, K, integral_action=C_int, estimator=est,
-            controller_type=type_, name=type_)
+        if type_ == 'iosystem':
+            # Create an I/O system for the controller
+            A_fbk = np.zeros((nintegrators, nintegrators))
+            B_fbk = np.eye(nintegrators, sys.nstates)
+            fbksys = ct.ss(A_fbk, B_fbk, -Ki, -Kp)
+            ctrl, clsys = ct.create_statefbk_iosystem(
+                sys, fbksys, integral_action=C_int, estimator=est,
+                controller_type=type_, name=type_)
+
+        else:
+            ctrl, clsys = ct.create_statefbk_iosystem(
+                sys, K, integral_action=C_int, estimator=est,
+                controller_type=type_, name=type_)
 
         # Make sure the name got set correctly
         if type_ is not None:
             assert ctrl.name == type_
 
         # If we used a nonlinear controller, linearize it for testing
-        if type_ == 'nonlinear':
+        if type_ == 'nonlinear' or type_ == 'iosystem':
             clsys = clsys.linearize(0, 0)
 
         # Make sure the linear system elements are correct
