@@ -70,7 +70,7 @@ that the cost function is given by
 
 .. math::
 
-  J(x, u) = \sum_{k=0}^{N-1} L(x_k, u_k)\, dt + V \bigl( x_N \bigr).
+  J(x, u) = \sum_{k=0}^{N-1} L(x_k, u_k)\, dt + V(x_N).
 
 A common use of optimization-based control techniques is the implementation
 of model predictive control (also called receding horizon control).  In
