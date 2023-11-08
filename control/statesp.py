@@ -60,10 +60,10 @@ from scipy.signal import cont2discrete
 from scipy.signal import StateSpace as signalStateSpace
 from warnings import warn
 
-from .exception import ControlSlycot, slycot_check
+from .exception import ControlSlycot, slycot_check, ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from .lti import LTI, _process_frequency_response
-from .iosys import InputOutputSystem, common_timebase, isdtime, \
+from .iosys import InputOutputSystem, common_timebase, isdtime, issiso, \
     _process_iosys_keywords, _process_dt_keyword, _process_signal_list
 from .nlsys import NonlinearIOSystem, InterconnectedSystem
 from . import config
@@ -2268,8 +2268,9 @@ def _convert_to_statespace(sys, use_prefix_suffix=False, method=None):
                     D[i, j] = sys.num[i][j][0] / sys.den[i][j][0]
                 newsys = StateSpace([], [], [], D, sys.dt)
             else:
-                if sys.ninputs != 1 or sys.noutputs != 1:
-                    raise TypeError("No support for MIMO without slycot")
+                if not issiso(sys):
+                    raise ControlMIMONotImplemented(
+                        "MIMO system conversion not supported without Slycot")
 
                 A, B, C, D = \
                     sp.signal.tf2ss(squeeze(sys.num), squeeze(sys.den))

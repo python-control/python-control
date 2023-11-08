@@ -1237,3 +1237,15 @@ def test_tf2ss_unstable(method):
     tf_poles = np.sort(tf_sys.poles())
     ss_poles = np.sort(ss_sys.poles())
     np.testing.assert_allclose(tf_poles, ss_poles, rtol=1e-4)
+
+
+def test_tf2ss_mimo():
+    sys_tf = ct.tf([[[1], [1, 1, 1]]], [[[1, 1, 1], [1, 2, 1]]])
+
+    if ct.slycot_check():
+        sys_ss = ct.ss(sys_tf)
+        np.testing.assert_allclose(
+            np.sort(sys_tf.poles()), np.sort(sys_ss.poles()))
+    else:
+        with pytest.raises(ct.ControlMIMONotImplemented):
+            sys_ss = ct.ss(sys_tf)

@@ -21,7 +21,7 @@ import pytest
 from control import rss, ss, ss2tf, tf, tf2ss
 from control.statefbk import ctrb, obsv
 from control.freqplot import bode
-from control.exception import slycot_check
+from control.exception import slycot_check, ControlMIMONotImplemented
 from control.tests.conftest import slycotonly
 
 
@@ -167,7 +167,7 @@ class TestConvert:
 
         # Convert to state space and look for an error
         if (not slycot_check()):
-            with pytest.raises(TypeError):
+            with pytest.raises(ControlMIMONotImplemented):
                 tf2ss(tsys)
         else:
             ssys = tf2ss(tsys)
