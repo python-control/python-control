@@ -319,11 +319,9 @@ class OptimalControlProblem():
             dt = np.diff(self.timepts)
 
             # Integrate the cost
-            # TODO: vectorize
-            cost = 0
-            for i in range(self.timepts.size-1):
-                # Approximate the integral using trapezoidal rule
-                cost += 0.5 * (costs[i] + costs[i+1]) * dt[i]
+            costs = np.array(costs)
+           # Approximate the integral using trapezoidal rule
+            cost = np.sum(0.5 * (costs[:-1] + costs[1:]) * dt)
 
         else:
             # Sum the integral cost over the time (second) indices
