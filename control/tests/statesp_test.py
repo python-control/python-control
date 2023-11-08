@@ -1203,3 +1203,49 @@ def test_params_warning():
         sys.output(0, [0], [0], {'k': 5})
 
 
+# Check that tf2ss returns stable system (see issue #935)
+@pytest.mark.parametrize("method", [
+    # pytest.param(None),       # use this one when SLICOT bug is sorted out
+    pytest.param(               # remove this one when SLICOT bug is sorted out
+        None, marks=pytest.mark.xfail(
+            ct.slycot_check(), reason="tf2ss SLICOT bug")),
+    pytest.param(
+        'slycot', marks=[
+            pytest.mark.xfail(
+                not ct.slycot_check(), reason="slycot not installed"),
+            pytest.mark.xfail(  # remove this one when SLICOT bug is sorted out
+                ct.slycot_check(), reason="tf2ss SLICOT bug")]),
+    pytest.param('scipy')
+])
+def test_tf2ss_unstable(method):
+    num = np.array([
+        9.94004350e-13, 2.67602795e-11, 2.31058712e-10, 1.15119493e-09,
+        5.04635153e-09, 1.34066064e-08, 2.11938725e-08, 2.39940325e-08,
+        2.05897777e-08, 1.17092854e-08, 4.71236875e-09, 1.19497537e-09,
+        1.90815347e-10, 1.00655454e-11, 1.47388887e-13, 8.40314881e-16,
+        1.67195685e-18])
+    den = np.array([
+        9.43513863e-11, 6.05312352e-08, 7.92752628e-07, 5.23764693e-06,
+        1.82502556e-05, 1.24355899e-05, 8.68206174e-06, 2.73818482e-06,
+        4.29133144e-07, 3.85554417e-08, 1.62631575e-09, 8.41098151e-12,
+        9.85278302e-15, 4.07646645e-18, 5.55496497e-22, 3.06560494e-26,
+        5.98908988e-31])
+
+    tf_sys = ct.tf(num, den)
+    ss_sys = ct.tf2ss(tf_sys, method=method)
+
+    tf_poles = np.sort(tf_sys.poles())
+    ss_poles = np.sort(ss_sys.poles())
+    np.testing.assert_allclose(tf_poles, ss_poles, rtol=1e-4)
+
+
+def test_tf2ss_mimo():
+    sys_tf = ct.tf([[[1], [1, 1, 1]]], [[[1, 1, 1], [1, 2, 1]]])
+
+    if ct.slycot_check():
+        sys_ss = ct.ss(sys_tf)
+        np.testing.assert_allclose(
+            np.sort(sys_tf.poles()), np.sort(sys_ss.poles()))
+    else:
+        with pytest.raises(ct.ControlMIMONotImplemented):
+            sys_ss = ct.ss(sys_tf)
