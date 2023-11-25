@@ -1024,7 +1024,7 @@ def ctrb(A, B):
     return _ssmatrix(ctrb)
 
 
-def obsv(A, C):
+def obsv(A, C, t=None):
     """Observability matrix.
 
     Parameters
@@ -1050,10 +1050,17 @@ def obsv(A, C):
     amat = _ssmatrix(A)
     cmat = _ssmatrix(C)
     n = np.shape(amat)[0]
+    
+    if t is None:
+        t = n
 
     # Construct the observability matrix
-    obsv = np.vstack([cmat] + [cmat @ np.linalg.matrix_power(amat, i)
-                               for i in range(1, n)])
+    obsv = np.zeros((t * ny, n))
+    obsv[:ny, :] = c
+        
+    for k in range(1, t):
+        obsv[k * ny:(k + 1) * ny, :] = np.dot(obsv[(k - 1) * ny:k * ny, :], a)
+
     return _ssmatrix(obsv)
 
 
