@@ -990,13 +990,15 @@ def create_statefbk_iosystem(
     return ctrl, closed
 
 
-def ctrb(A, B):
+def ctrb(A, B, t=None):
     """Controllabilty matrix.
 
     Parameters
     ----------
     A, B : array_like or string
         Dynamics and input matrix of the system
+    t : None or integer
+        maximum time horizon of the controllability matrix, max = n
 
     Returns
     -------
@@ -1016,11 +1018,17 @@ def ctrb(A, B):
     amat = _ssmatrix(A)
     bmat = _ssmatrix(B)
     n = np.shape(amat)[0]
+    m = np.shape(bmat)[1]
+    
+    if t is None or t > n:
+        t = n
 
     # Construct the controllability matrix
-    ctrb = np.hstack(
-        [bmat] + [np.linalg.matrix_power(amat, i) @ bmat
-                  for i in range(1, n)])
+    ctrb = np.zeros((n, t * m))
+    ctrb[:, :m] = cmat
+    for k in range(1, t):
+        ctrb[:, k * m:(k + 1) * m] = np.dot(amat, obsv[:, (k - 1) * m:k * m])
+
     return _ssmatrix(ctrb)
 
 
@@ -1031,7 +1039,9 @@ def obsv(A, C, t=None):
     ----------
     A, C : array_like or string
         Dynamics and output matrix of the system
-
+    t : None or integer
+        maximum time horizon of the controllability matrix, max = n
+        
     Returns
     -------
     O : 2D array (or matrix)
@@ -1050,16 +1060,17 @@ def obsv(A, C, t=None):
     amat = _ssmatrix(A)
     cmat = _ssmatrix(C)
     n = np.shape(amat)[0]
+    p = np.shape(cmat)[0]
     
-    if t is None:
+    if t is None or t > n:
         t = n
 
     # Construct the observability matrix
-    obsv = np.zeros((t * ny, n))
-    obsv[:ny, :] = c
+    obsv = np.zeros((t * p, n))
+    obsv[:p, :] = cmat
         
     for k in range(1, t):
-        obsv[k * ny:(k + 1) * ny, :] = np.dot(obsv[(k - 1) * ny:k * ny, :], a)
+        obsv[k * p:(k + 1) * p, :] = np.dot(obsv[(k - 1) * p:k * p, :], amat)
 
     return _ssmatrix(obsv)
 
