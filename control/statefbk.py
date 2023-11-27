@@ -1027,7 +1027,7 @@ def ctrb(A, B, t=None):
     ctrb = np.zeros((n, t * m))
     ctrb[:, :m] = bmat
     for k in range(1, t):
-        ctrb[:, k * m:(k + 1) * m] = np.dot(amat, ctrb[:, (k - 1) * m:k * m])
+        ctrb[:, k * m:(k + 1) * m] = amat @ ctrb[:, (k - 1) * m:k * m]
 
     return _ssmatrix(ctrb)
 
