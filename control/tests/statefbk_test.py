@@ -49,6 +49,14 @@ class TestStatefbk:
         Wc = ctrb(A, B)
         np.testing.assert_array_almost_equal(Wc, Wctrue)
 
+    def testCtrbT(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        B = np.array([[5., 6.], [7., 8.]])
+        t = 1
+        Wctrue = np.array([[5., 6.], [7., 8.]])
+        Wc = ctrb(A, B, t=t)
+        np.testing.assert_array_almost_equal(Wc, Wctrue)
+        
     def testObsvSISO(self):
         A = np.array([[1., 2.], [3., 4.]])
         C = np.array([[5., 7.]])
@@ -61,6 +69,14 @@ class TestStatefbk:
         C = np.array([[5., 6.], [7., 8.]])
         Wotrue = np.array([[5., 6.], [7., 8.], [23., 34.], [31., 46.]])
         Wo = obsv(A, C)
+        np.testing.assert_array_almost_equal(Wo, Wotrue)
+        
+    def testObsvT(self):
+        A = np.array([[1., 2.], [3., 4.]])
+        C = np.array([[5., 6.], [7., 8.]])
+        t = 1
+        Wotrue = np.array([[5., 6.], [7., 8.]])
+        Wo = obsv(A, C, t=t)
         np.testing.assert_array_almost_equal(Wo, Wotrue)
 
     def testCtrbObsvDuality(self):
