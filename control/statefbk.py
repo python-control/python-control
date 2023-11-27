@@ -998,7 +998,7 @@ def ctrb(A, B, t=None):
     A, B : array_like or string
         Dynamics and input matrix of the system
     t : None or integer
-        maximum time horizon of the controllability matrix, max = n
+        maximum time horizon of the controllability matrix, max = A.shape[0]
 
     Returns
     -------
@@ -1040,7 +1040,7 @@ def obsv(A, C, t=None):
     A, C : array_like or string
         Dynamics and output matrix of the system
     t : None or integer
-        maximum time horizon of the controllability matrix, max = n
+        maximum time horizon of the controllability matrix, max = A.shape[0]
         
     Returns
     -------
