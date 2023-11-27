@@ -1070,7 +1070,7 @@ def obsv(A, C, t=None):
     obsv[:p, :] = cmat
         
     for k in range(1, t):
-        obsv[k * p:(k + 1) * p, :] = np.dot(obsv[(k - 1) * p:k * p, :], amat)
+        obsv[k * p:(k + 1) * p, :] = obsv[(k - 1) * p:k * p, :] @ amat
 
     return _ssmatrix(obsv)
 
