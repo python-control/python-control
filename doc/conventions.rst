@@ -139,7 +139,6 @@ state) response of an LTI systems:
 
 .. autosummary::
    :toctree: generated/
-   :template: custom-class-template.rst
 
     initial_response
     step_response
