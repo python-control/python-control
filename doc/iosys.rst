@@ -13,7 +13,8 @@ The dynamics of the system can be in continuous or discrete time.  To simulate
 an input/output system, use the :func:`~control.input_output_response`
 function::
 
-  t, y = ct.input_output_response(io_sys, T, U, X0, params)
+  resp = ct.input_output_response(io_sys, T, U, X0, params)
+  t, y, x = resp.time, resp.outputs, resp.states
 
 An input/output system can be linearized around an equilibrium point to obtain
 a :class:`~control.StateSpace` linear system.  Use the
@@ -25,12 +26,12 @@ a :class:`~control.StateSpace` linear system.  Use the
 
 Input/output systems are automatically created for state space LTI systems
 when using the :func:`ss` function.  Nonlinear input/output systems can be
-created using the :class:`~control.NonlinearIOSystem` class, which requires
+created using the :func:`~control.nlsys` function, which requires
 the definition of an update function (for the right hand side of the
 differential or different equation) and an output function (computes the
 outputs from the state)::
 
-  io_sys = NonlinearIOSystem(updfcn, outfcn, inputs=M, outputs=P, states=N)
+  io_sys = ct.nlsys(updfcn, outfcn, inputs=M, outputs=P, states=N)
 
 More complex input/output systems can be constructed by using the
 :func:`~control.interconnect` function, which allows a collection of
@@ -91,7 +92,7 @@ We now create an input/output system using these dynamics:
 
 .. code-block:: python
 
-  io_predprey = ct.NonlinearIOSystem(
+  io_predprey = ct.nlsys(
       predprey_rhs, None, inputs=('u'), outputs=('H', 'L'),
       states=('H', 'L'), name='predprey')
 
@@ -140,11 +141,11 @@ lynxes as the desired output (following FBS2e, Example 7.5):
 To construct the control law, we build a simple input/output system that
 applies a corrective input based on deviations from the equilibrium point.
 This system has no dynamics, since it is a static (affine) map, and can
-constructed using the `~control.ios.NonlinearIOSystem` class:
+constructed using :func:`~control.nlsys` with no update function:
 
 .. code-block:: python
 
-  io_controller = ct.NonlinearIOSystem(
+  io_controller = ct.nlsys(
     None,
     lambda t, x, u, params: -K @ (u[1:] - xeq) + kf * (u[0] - xeq[1]),
     inputs=('Ld', 'u1', 'u2'), outputs=1, name='control')
@@ -152,9 +153,8 @@ constructed using the `~control.ios.NonlinearIOSystem` class:
 The input to the controller is `u`, consisting of the vector of hare and lynx
 populations followed by the desired lynx population.
 
-To connect the controller to the predatory-prey model, we create an
-:class:`~control.InterconnectedSystem` using the :func:`~control.interconnect`
-function:
+To connect the controller to the predatory-prey model, we use the
+:func:`~control.interconnect` function:
 
 .. code-block:: python
 
@@ -242,19 +242,132 @@ interconnecting systems, especially when combined with the
 :func:`~control.summing_junction` function.  For example, the following code
 will create a unity gain, negative feedback system::
 
-  P = ct.tf2io([1], [1, 0], inputs='u', outputs='y')
-  C = ct.tf2io([10], [1, 1], inputs='e', outputs='u')
+  P = ct.tf([1], [1, 0], inputs='u', outputs='y')
+  C = ct.tf([10], [1, 1], inputs='e', outputs='u')
   sumblk = ct.summing_junction(inputs=['r', '-y'], output='e')
   T = ct.interconnect([P, C, sumblk], inplist='r', outlist='y')
 
 If a signal name appears in multiple outputs then that signal will be summed
 when it is interconnected.  Similarly, if a signal name appears in multiple
 inputs then all systems using that signal name will receive the same input.
-The :func:`~control.interconnect` function will generate an error if an signal
+The :func:`~control.interconnect` function will generate an error if a signal
 listed in ``inplist`` or ``outlist`` (corresponding to the inputs and outputs
 of the interconnected system) is not found, but inputs and outputs of
 individual systems that are not connected to other systems are left
 unconnected (so be careful!).
+
+Advanced specification of signal names
+--------------------------------------
+
+In addition to manual specification of signal names and automatic
+connection of signals with the same name, the
+:func:`~control.interconnect` has a variety of other mechanisms
+available for specifying signal names.  The following forms are
+recognized for the `connections`, `inplist`, and `outlist`
+parameters::
+
+  (subsys, index, gain)             tuple form with integer indices
+  ('sysname', 'signal', gain)	    tuple form with name lookup
+  'sysname.signal[i]'		    string form (gain = 1)
+  '-sysname.signal[i]'		    set gain to -1
+  (subsys, [i1, ..., iN], gain)     signals with indices i1, ..., in
+  'sysname.signal[i:j]'             range of signal names, i through j-1
+  'sysname'			    all input or outputs of system
+  'signal'			    all matching signals (in any subsystem)
+
+For tuple forms, mixed specifications using integer indices and
+strings are possible.
+
+For the index range form `sysname.signal[i:j]`, if either `i` or `j`
+is not specified, then it defaults to the minimum or maximum value of
+the signal range.  Note that despite the similarity to slice notation,
+negative indices and step specifications are not supported.
+
+Using   these  various   forms  can   simplfy  the   specification  of
+interconnections.  For example, consider a process with inputs 'u' and
+'v',  each of  dimension  2, and  two  outputs 'w'  and  'y', each  of
+dimension 2::
+
+  P = ct.rss(
+        states=6, name='P', strictly_proper=True,
+        inputs=['u[0]', 'u[1]', 'v[0]', 'v[1]'],
+        outputs=['y[0]', 'y[1]', 'z[0]', 'z[1]'])
+
+Suppose we construct a controller with 2 inputs and 2 outputs that
+takes the (2-dimensional) error `e` and outputs and control signal `u`::
+
+  C = ct.rss(4, 2, 2, name='C', input_prefix='e', output_prefix='u')
+
+Finally, we include a summing block that will take the difference between
+the reference input `r` and the measured output `y`::
+
+  sumblk = ct.summing_junction(
+    inputs=['r', '-y'], outputs='e', dimension=2, name='sum')
+
+The closed loop system should close the loop around the process
+outputs `y` and inputs `u`, leaving the process inputs `v` and outputs
+'w', as well as the reference input `r`.  We would like the output of
+the closed loop system to consist of all system outputs `y` and `z`,
+as well as the controller input `u`.
+
+This collection of systems can be combined in a variety of ways.  The
+most explict would specify every signal::
+
+  clsys1 = ct.interconnect(
+    [C, P, sumblk],
+    connections=[
+      ['P.u[0]', 'C.u[0]'], ['P.u[1]', 'C.u[1]'],
+      ['C.e[0]', 'sum.e[0]'], ['C.e[1]', 'sum.e[1]'],
+      ['sum.y[0]', 'P.y[0]'], ['sum.y[1]', 'P.y[1]'],
+    ],
+    inplist=['sum.r[0]', 'sum.r[1]', 'P.v[0]', 'P.v[1]'],
+    outlist=['P.y[0]', 'P.y[1]', 'P.z[0]', 'P.z[1]', 'C.u[0]', 'C.u[1]']
+  )
+
+This connections can be simplified using signal ranges::
+
+  clsys2 = ct.interconnect(
+    [C, P, sumblk],
+    connections=[
+      ['P.u[0:2]', 'C.u[0:2]'],
+      ['C.e[0:2]', 'sum.e[0:2]'],
+      ['sum.y[0:2]', 'P.y[0:2]']
+    ],
+    inplist=['sum.r[0:2]', 'P.v[0:2]'],
+    outlist=['P.y[0:2]', 'P.z[0:2]', 'C.u[0:2]']
+  )
+
+An even simpler form can be used by omitting the range specification
+when all signals with the same prefix are used::
+
+  clsys3 = ct.interconnect(
+    [C, P, sumblk],
+    connections=[['P.u', 'C.u'], ['C.e', 'sum.e'], ['sum.y', 'P.y']],
+    inplist=['sum.r', 'P.v'], outlist=['P.y', 'P.z', 'C.u']
+  )
+
+A further simplification is possible when all of the inputs or outputs
+of an individual system are used in a given specification::
+
+  clsys4 = ct.interconnect(
+    [C, P, sumblk],
+    connections=[['P.u', 'C'], ['C', 'sum'], ['sum.y', 'P.y']],
+    inplist=['sum.r', 'P.v'], outlist=['P', 'C.u']
+  )
+
+And finally, since we have named the signals throughout the system in
+a consistent way, we could let :func:`ct.interconnect` do all of the
+work::
+
+  clsys5 = ct.interconnect(
+    [C, P, sumblk], inplist=['sum.r', 'P.v'], outlist=['P', 'C.u']
+  )
+
+Various other simplifications are possible, but it can sometimes be
+complicated to debug error message when things go wrong.  Setting
+`debug=True` when calling :func:`~control.interconnect` prints out
+information about how the arguments are processed that may be helpful
+in understanding what is going wrong.
 
 Automated creation of state feedback systems
 --------------------------------------------
@@ -290,7 +403,7 @@ The closed loop controller will include both the state feedback and
 the estimator.
 
 Integral action can be included using the `integral_action` keyword.
-The value of this keyword can either be an matrix (ndarray) or a
+The value of this keyword can either be a matrix (ndarray) or a
 function.  If a matrix :math:`C` is specified, the difference between
 the desired state and system state will be multiplied by this matrix
 and integrated.  The controller gain should then consist of a set of
@@ -351,16 +464,14 @@ Module classes and functions
    ~control.InputOutputSystem
    ~control.InterconnectedSystem
    ~control.LinearICSystem
-   ~control.LinearIOSystem
    ~control.NonlinearIOSystem
 
 .. autosummary::
    :toctree: generated/
 
    ~control.find_eqpt
-   ~control.linearize
-   ~control.input_output_response
    ~control.interconnect
-   ~control.ss2io
+   ~control.input_output_response
+   ~control.linearize
+   ~control.nlsys
    ~control.summing_junction
-   ~control.tf2io

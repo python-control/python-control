@@ -20,11 +20,11 @@ import numpy as np
 import scipy as sp
 from math import sqrt
 
-from .iosys import InputOutputSystem, LinearIOSystem, NonlinearIOSystem
+from .statesp import StateSpace
 from .lti import LTI
-from .namedio import isctime, isdtime
-from .namedio import _process_indices, _process_labels, \
-    _process_control_disturbance_indices
+from .iosys import InputOutputSystem, isctime, isdtime, _process_indices, \
+    _process_labels, _process_control_disturbance_indices
+from .nlsys import NonlinearIOSystem
 from .mateqn import care, dare, _check_shape
 from .statesp import StateSpace, _ssmatrix
 from .exception import ControlArgument, ControlNotImplemented
@@ -36,24 +36,24 @@ __all__ = ['lqe', 'dlqe', 'create_estimator_iosystem', 'white_noise',
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def lqe(*args, **kwargs):
-    """lqe(A, G, C, QN, RN, [, NN])
+    r"""lqe(A, G, C, QN, RN, [, NN])
 
     Linear quadratic estimator design (Kalman filter) for continuous-time
     systems. Given the system
 
     .. math::
 
-        x &= Ax + Bu + Gw \\\\
+        dx/dt &= Ax + Bu + Gw \\
         y &= Cx + Du + v
 
     with unbiased process noise w and measurement noise v with covariances
 
-    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+    .. math::  E\{w w^T\} = QN,  E\{v v^T\} = RN,  E\{w v^T\} = NN
 
     The lqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
 
-    .. math:: x_e = A x_e + B u + L(y - C x_e - D u)
+    .. math:: dx_e/dt = A x_e + B u + L(y - C x_e - D u)
 
     produces a state estimate x_e that minimizes the expected squared error
     using the sensor measurements y. The noise cross-correlation `NN` is
@@ -87,9 +87,9 @@ def lqe(*args, **kwargs):
 
     Returns
     -------
-    L : 2D array (or matrix)
+    L : 2D array
         Kalman estimator gain
-    P : 2D array (or matrix)
+    P : 2D array
         Solution to Riccati equation
 
         .. math::
@@ -101,13 +101,10 @@ def lqe(*args, **kwargs):
 
     Notes
     -----
-    1. If the first argument is an LTI object, then this object will be used
-       to define the dynamics, noise and output matrices.  Furthermore, if
-       the LTI object corresponds to a discrete time system, the ``dlqe()``
-       function will be called.
-
-    2. The return type for 2D arrays depends on the default class set for
-       state space operations.  See :func:`~control.use_numpy_matrix`.
+    If the first argument is an LTI object, then this object will be used
+    to define the dynamics, noise and output matrices.  Furthermore, if the
+    LTI object corresponds to a discrete time system, the ``dlqe()``
+    function will be called.
 
     Examples
     --------
@@ -198,7 +195,7 @@ def dlqe(*args, **kwargs):
 
     with unbiased process noise w and measurement noise v with covariances
 
-    .. math::       E{ww'} = QN,    E{vv'} = RN,    E{wv'} = NN
+    .. math::  E\{w w^T\} = QN,  E\{v v^T\} = RN,  E\{w v^T\} = NN
 
     The dlqe() function computes the observer gain matrix L such that the
     stationary (non-time-varying) Kalman filter
@@ -224,9 +221,9 @@ def dlqe(*args, **kwargs):
 
     Returns
     -------
-    L : 2D array (or matrix)
+    L : 2D array
         Kalman estimator gain
-    P : 2D array (or matrix)
+    P : 2D array
         Solution to Riccati equation
 
         .. math::
@@ -235,11 +232,6 @@ def dlqe(*args, **kwargs):
 
     E : 1D array
         Eigenvalues of estimator poles eig(A - L C)
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -319,7 +311,7 @@ def create_estimator_iosystem(
         estimate_labels='xhat[{i}]', covariance_labels='P[{i},{j}]',
         measurement_labels=None, control_labels=None,
         inputs=None, outputs=None, states=None, **kwargs):
-    r"""Create an I/O system implementing a linear quadratic estimator
+    r"""Create an I/O system implementing a linear quadratic estimator.
 
     This function creates an input/output system that implements a
     continuous time state estimator of the form
@@ -350,7 +342,7 @@ def create_estimator_iosystem(
 
     Parameters
     ----------
-    sys : LinearIOSystem
+    sys : StateSpace
         The linear I/O system that represents the process dynamics.
     QN, RN : ndarray
         Disturbance and measurement noise covariance matrices.
@@ -439,7 +431,7 @@ def create_estimator_iosystem(
     """
 
     # Make sure that we were passed an I/O system as an input
-    if not isinstance(sys, LinearIOSystem):
+    if not isinstance(sys, StateSpace):
         raise ControlArgument("Input system must be a linear I/O system")
 
     # Process legacy keywords

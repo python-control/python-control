@@ -3,19 +3,21 @@ Wrappers for the MATLAB compatibility module
 """
 
 import numpy as np
-from ..iosys import ss
+from scipy.signal import zpk2tf
+import warnings
+from warnings import warn
+
+from ..statesp import ss
 from ..xferfcn import tf
 from ..lti import LTI
 from ..exception import ControlArgument
-from scipy.signal import zpk2tf
-from warnings import warn
 
-__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain']
+__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain', 'connect']
 
 def bode(*args, **kwargs):
     """bode(syslist[, omega, dB, Hz, deg, ...])
 
-    Bode plot of the frequency response
+    Bode plot of the frequency response.
 
     Plots a bode gain and phase diagram
 
@@ -48,7 +50,7 @@ def bode(*args, **kwargs):
     --------
     >>> from control.matlab import ss, bode
 
-    >>> sys = ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
+    >>> sys = ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], 9)
     >>> mag, phase, omega = bode(sys)
 
     .. todo::
@@ -62,22 +64,36 @@ def bode(*args, **kwargs):
     """
     from ..freqplot import bode_plot
 
-    # If first argument is a list, assume python-control calling format
-    if hasattr(args[0], '__iter__'):
-        return bode_plot(*args, **kwargs)
+    # Use the plot keyword to get legacy behavior
+    # TODO: update to call frequency_response and then bode_plot
+    kwargs = dict(kwargs)       # make a copy since we modify this
+    if 'plot' not in kwargs:
+        kwargs['plot'] = True
 
-    # Parse input arguments
-    syslist, omega, args, other = _parse_freqplot_args(*args)
-    kwargs.update(other)
+    # Turn off deprecation warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', message='.* return values of .* is deprecated',
+            category=DeprecationWarning)
 
-    # Call the bode command
-    return bode_plot(syslist, omega, *args, **kwargs)
+        # If first argument is a list, assume python-control calling format
+        if hasattr(args[0], '__iter__'):
+            retval = bode_plot(*args, **kwargs)
+        else:
+            # Parse input arguments
+            syslist, omega, args, other = _parse_freqplot_args(*args)
+            kwargs.update(other)
+
+            # Call the bode command
+            retval = bode_plot(syslist, omega, *args, **kwargs)
+
+    return retval
 
 
-def nyquist(*args, **kwargs):
+def nyquist(*args, plot=True, **kwargs):
     """nyquist(syslist[, omega])
 
-    Nyquist plot of the frequency response
+    Nyquist plot of the frequency response.
 
     Plots a Nyquist plot for the system over a (optional) frequency range.
 
@@ -98,7 +114,7 @@ def nyquist(*args, **kwargs):
         frequencies in rad/s
 
     """
-    from ..freqplot import nyquist_plot
+    from ..freqplot import nyquist_response, nyquist_plot
 
     # If first argument is a list, assume python-control calling format
     if hasattr(args[0], '__iter__'):
@@ -108,9 +124,13 @@ def nyquist(*args, **kwargs):
     syslist, omega, args, other = _parse_freqplot_args(*args)
     kwargs.update(other)
 
-    # Call the nyquist command
-    kwargs['return_contour'] = True
-    _, contour = nyquist_plot(syslist, omega, *args, **kwargs)
+    # Get the Nyquist response (and pop keywords used there)
+    response = nyquist_response(
+        syslist, omega, *args, omega_limits=kwargs.pop('omega_limits', None))
+    contour = response.contour
+    if plot:
+        # Plot the result
+        nyquist_plot(response, *args, **kwargs)
 
     # Create the MATLAB output arguments
     freqresp = syslist(contour)
@@ -182,7 +202,7 @@ ngrid.__doc__ = nichols_grid.__doc__
 
 
 def dcgain(*args):
-    '''Compute the gain of the system in steady state
+    '''Compute the gain of the system in steady state.
 
     The function takes either 1, 2, 3, or 4 parameters:
 
@@ -230,3 +250,56 @@ def dcgain(*args):
     else:
         raise ValueError("Function ``dcgain`` needs either 1, 2, 3 or 4 "
                          "arguments.")
+
+
+from ..bdalg import connect as ct_connect
+def connect(*args):
+    """Index-based interconnection of an LTI system.
+
+    The system `sys` is a system typically constructed with `append`, with
+    multiple inputs and outputs.  The inputs and outputs are connected
+    according to the interconnection matrix `Q`, and then the final inputs and
+    outputs are trimmed according to the inputs and outputs listed in `inputv`
+    and `outputv`.
+
+    NOTE: Inputs and outputs are indexed starting at 1 and negative values
+    correspond to a negative feedback interconnection.
+
+    Parameters
+    ----------
+    sys : :class:`InputOutputSystem`
+        System to be connected.
+    Q : 2D array
+        Interconnection matrix. First column gives the input to be connected.
+        The second column gives the index of an output that is to be fed into
+        that input. Each additional column gives the index of an additional
+        input that may be optionally added to that input. Negative
+        values mean the feedback is negative. A zero value is ignored. Inputs
+        and outputs are indexed starting at 1 to communicate sign information.
+    inputv : 1D array
+        list of final external inputs, indexed starting at 1
+    outputv : 1D array
+        list of final external outputs, indexed starting at 1
+
+    Returns
+    -------
+    out : :class:`InputOutputSystem`
+        Connected and trimmed I/O system.
+
+    See Also
+    --------
+    append, feedback, interconnect, negate, parallel, series
+
+    Examples
+    --------
+    >>> G = ct.rss(7, inputs=2, outputs=2)
+    >>> K = [[1, 2], [2, -1]]  # negative feedback interconnection
+    >>> T = ct.connect(G, K, [2], [1, 2])
+    >>> T.ninputs, T.noutputs, T.nstates
+    (1, 2, 7)
+
+    """
+    # Turn off the deprecation warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message="`connect` is deprecated")
+        return ct_connect(*args)

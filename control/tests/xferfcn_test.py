@@ -14,7 +14,7 @@ from control import isctime, isdtime, sample_system
 from control import defaults, reset_defaults, set_defaults
 from control.statesp import _convert_to_statespace
 from control.xferfcn import _convert_to_transfer_function
-from control.tests.conftest import slycotonly, matrixfilter
+from control.tests.conftest import slycotonly
 
 
 class TestXferFcn:
@@ -392,12 +392,20 @@ class TestXferFcn:
     def test_slice(self):
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
-            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ])
+            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ],
+            inputs=['u0', 'u1', 'u2'], outputs=['y0', 'y1'], name='sys')
+
         sys1 = sys[1:, 1:]
         assert (sys1.ninputs, sys1.noutputs) == (2, 1)
+        assert sys1.input_labels == ['u1', 'u2']
+        assert sys1.output_labels == ['y1']
+        assert sys1.name == 'sys$indexed'
 
         sys2 = sys[:2, :2]
         assert (sys2.ninputs, sys2.noutputs) == (2, 2)
+        assert sys2.input_labels == ['u0', 'u1']
+        assert sys2.output_labels == ['y0', 'y1']
+        assert sys2.name == 'sys$indexed'
 
         sys = TransferFunction(
             [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
@@ -405,6 +413,9 @@ class TestXferFcn:
         sys1 = sys[1:, 1:]
         assert (sys1.ninputs, sys1.noutputs) == (2, 1)
         assert sys1.dt == 0.5
+        assert sys1.input_labels == ['u[1]', 'u[2]']
+        assert sys1.output_labels == ['y[1]']
+        assert sys1.name == sys.name + '$indexed'
 
     def test__isstatic(self):
         numstatic = 1.1
@@ -738,20 +749,16 @@ class TestXferFcn:
         np.testing.assert_array_almost_equal(sys.num[1][1], tm.num[1][2])
         np.testing.assert_array_almost_equal(sys.den[1][1], tm.den[1][2])
 
-    @pytest.mark.parametrize(
-        "matarrayin",
-        [pytest.param(np.array,
-                      id="arrayin",
-                      marks=[pytest.mark.skip(".__matmul__ not implemented")]),
-         pytest.param(np.matrix,
-                      id="matrixin",
-                      marks=matrixfilter)],
-        indirect=True)
-    @pytest.mark.parametrize("X_, ij",
-                             [([[2., 0., ]], 0),
-                              ([[0., 2., ]], 1)])
-    def test_matrix_array_multiply(self, matarrayin, X_, ij):
-        """Test mulitplication of MIMO TF with matrix and matmul with array"""
+    @pytest.mark.parametrize("op", [
+        pytest.param('mul'),
+        pytest.param(
+            'matmul', marks=pytest.mark.skip(".__matmul__ not implemented")),
+    ])
+    @pytest.mark.parametrize("X, ij",
+                             [(np.array([[2., 0., ]]), 0),
+                              (np.array([[0., 2., ]]), 1)])
+    def test_matrix_array_multiply(self, op, X, ij):
+        """Test mulitplication of MIMO TF with matrix"""
         # 2 inputs, 2 outputs with prime zeros so they do not cancel
         n = 2
         p = [3, 5, 7, 11, 13, 17, 19, 23]
@@ -760,13 +767,12 @@ class TestXferFcn:
              for i in range(n)],
             [[[1, -1]] * n] * n)
 
-        X = matarrayin(X_)
-
-        if matarrayin is np.matrix:
+        if op == 'matmul':
+            XH = X @ H
+        elif op == 'mul':
             XH = X * H
         else:
-            # XH = X @ H
-            XH = np.matmul(X, H)
+            assert NotImplemented(f"unknown operator '{op}'")
         XH = XH.minreal()
         assert XH.ninputs == n
         assert XH.noutputs == X.shape[0]
@@ -779,11 +785,12 @@ class TestXferFcn:
         np.testing.assert_allclose(2. * H.num[ij][1], XH.num[0][1], rtol=1e-4)
         np.testing.assert_allclose(     H.den[ij][1], XH.den[0][1], rtol=1e-4)
 
-        if matarrayin is np.matrix:
+        if op == 'matmul':
+            HXt = H @ X.T
+        elif op == 'mul':
             HXt = H * X.T
         else:
-            # HXt = H @ X.T
-            HXt = np.matmul(H, X.T)
+            assert NotImplemented(f"unknown operator '{op}'")
         HXt = HXt.minreal()
         assert HXt.ninputs == X.T.shape[1]
         assert HXt.noutputs == n
@@ -883,7 +890,7 @@ class TestXferFcn:
          ])
     def test_printing_polynomial_const(self, args, output):
         """Test _tf_polynomial_to_string for constant systems"""
-        assert str(TransferFunction(*args)) == output
+        assert str(TransferFunction(*args)).partition('\n\n')[2] == output
 
     @pytest.mark.parametrize(
         "args, outputfmt",
@@ -897,7 +904,7 @@ class TestXferFcn:
                               ("z", 1, '\ndt = 1\n')])
     def test_printing_polynomial(self, args, outputfmt, var, dt, dtstring):
         """Test _tf_polynomial_to_string for all other code branches"""
-        assert str(TransferFunction(*(args + (dt,)))) == \
+        assert str(TransferFunction(*(args + (dt,)))).partition('\n\n')[2] == \
             outputfmt.format(var=var, dtstring=dtstring)
 
     @slycotonly
@@ -969,7 +976,7 @@ class TestXferFcn:
         """Test _tf_polynomial_to_string for constant systems"""
         G = zpk(zeros, poles, gain, display_format='zpk')
         res = str(G)
-        assert res == output
+        assert res.partition('\n\n')[2] == output
 
     @pytest.mark.parametrize(
         "zeros, poles, gain, format, output",
@@ -997,7 +1004,7 @@ class TestXferFcn:
         res = str(G)
         reset_defaults()
 
-        assert res == output
+        assert res.partition('\n\n')[2] == output
 
     @pytest.mark.parametrize(
         "num, den, output",
@@ -1027,7 +1034,7 @@ class TestXferFcn:
         """Test _tf_polynomial_to_string for constant systems"""
         G = tf(num, den, display_format='zpk')
         res = str(G)
-        assert res == output
+        assert res.partition('\n\n')[2] == output
 
     @slycotonly
     def test_size_mismatch(self):
@@ -1254,13 +1261,19 @@ def test_zpk(zeros, poles, gain, args, kwargs):
 ])
 def test_copy_names(create, args, kwargs, convert):
     # Convert a system with no renaming
-    sys = create(*args, **kwargs)
+    sys = create(*args, **kwargs, name='sys')
     cpy = convert(sys)
 
     assert cpy.input_labels == sys.input_labels
     assert cpy.input_labels == sys.input_labels
     if cpy.nstates is not None and sys.nstates is not None:
         assert cpy.state_labels == sys.state_labels
+
+    # Make sure that names aren't the same if system changed type
+    if not isinstance(cpy, create):
+        assert cpy.name == sys.name + '$converted'
+    else:
+        assert cpy.name == sys.name
 
     # Relabel inputs and outputs
     cpy = convert(sys, inputs='myin', outputs='myout')

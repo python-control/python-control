@@ -54,41 +54,52 @@ The docstring examples assume that the following import commands::
 
 Available subpackages
 ---------------------
-flatsys
-    Differentially flat systems
-optimal
-    Optimization-based control
+
+The main control package includes the most common functions used in
+analysis, design, and simulation of feedback control systems.  Several
+additional subpackages are available that provide more specialized
+functionality:
+
+* :mod:`~control.flatsys`: Differentially flat systems
+* :mod:`~control.matlab`: MATLAB compatibility module
+* :mod:`~control.optimal`: Optimization-based control
 
 """
 
 # Import functions from within the control system library
 # Note: the functions we use are specified as __all__ variables in the modules
+
+# Input/output system modules
+from .iosys import *
+from .nlsys import *
+from .lti import *
+from .statesp import *
+from .xferfcn import *
+from .frdata import *
+
+# Time responses and plotting
+from .timeresp import *
+from .timeplot import *
+
 from .bdalg import *
 from .delay import *
 from .descfcn import *
 from .dtime import *
 from .freqplot import *
-from .lti import *
 from .margins import *
 from .mateqn import *
 from .modelsimp import *
-from .namedio import *
 from .nichols import *
 from .phaseplot import *
 from .pzmap import *
 from .rlocus import *
 from .statefbk import *
-from .statesp import *
 from .stochsys import *
-from .timeresp import *
-from .xferfcn import *
 from .ctrlutil import *
-from .frdata import *
 from .canonical import *
 from .robust import *
 from .config import *
 from .sisotool import *
-from .iosys import *
 from .passivity import *
 
 # Exceptions

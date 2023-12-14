@@ -19,13 +19,10 @@ from control.config import defaults
 from control.dtime import sample_system
 from control.lti import evalfr
 from control.statesp import StateSpace, _convert_to_statespace, tf2ss, \
-    _statesp_defaults, _rss_generate, linfnorm
-from control.iosys import ss, rss, drss
-from control.tests.conftest import ismatarrayout, slycotonly
+    _statesp_defaults, _rss_generate, linfnorm, ss, rss, drss
 from control.xferfcn import TransferFunction, ss2tf
 
-
-from .conftest import editsdefaults
+from .conftest import editsdefaults, slycotonly
 
 
 class TestStateSpace:
@@ -49,7 +46,7 @@ class TestStateSpace:
     @pytest.fixture
     def sys322(self, sys322ABCD):
         """3-states square system (2 inputs x 2 outputs)"""
-        return StateSpace(*sys322ABCD)
+        return StateSpace(*sys322ABCD, name='sys322')
 
     @pytest.fixture
     def sys121(self):
@@ -195,17 +192,6 @@ class TestStateSpace:
         del sysin.dt            # this is a nonsensical thing to do
         sys = StateSpace(sysin)
         assert sys.dt is None
-
-    def test_matlab_style_constructor(self):
-        """Use (deprecated) matrix-style construction string"""
-        with pytest.deprecated_call():
-            sys = StateSpace("-1 1; 0 2", "0; 1", "1, 0", "0")
-        assert sys.A.shape == (2, 2)
-        assert sys.B.shape == (2, 1)
-        assert sys.C.shape == (1, 2)
-        assert sys.D.shape == (1, 1)
-        for X in [sys.A, sys.B, sys.C, sys.D]:
-            assert ismatarrayout(X)
 
     def test_D_broadcast(self, sys623):
         """Test broadcast of D=0 to the right shape"""
@@ -479,22 +465,27 @@ class TestStateSpace:
 
     def test_array_access_ss(self):
 
-        sys1 = StateSpace([[1., 2.], [3., 4.]],
-                          [[5., 6.], [6., 8.]],
-                          [[9., 10.], [11., 12.]],
-                          [[13., 14.], [15., 16.]], 1)
+        sys1 = StateSpace(
+            [[1., 2.], [3., 4.]],
+            [[5., 6.], [6., 8.]],
+            [[9., 10.], [11., 12.]],
+            [[13., 14.], [15., 16.]], 1,
+            inputs=['u0', 'u1'], outputs=['y0', 'y1'])
 
-        sys1_11 = sys1[0, 1]
-        np.testing.assert_array_almost_equal(sys1_11.A,
+        sys1_01 = sys1[0, 1]
+        np.testing.assert_array_almost_equal(sys1_01.A,
                                              sys1.A)
-        np.testing.assert_array_almost_equal(sys1_11.B,
+        np.testing.assert_array_almost_equal(sys1_01.B,
                                              sys1.B[:, 1:2])
-        np.testing.assert_array_almost_equal(sys1_11.C,
+        np.testing.assert_array_almost_equal(sys1_01.C,
                                              sys1.C[0:1, :])
-        np.testing.assert_array_almost_equal(sys1_11.D,
+        np.testing.assert_array_almost_equal(sys1_01.D,
                                              sys1.D[0, 1])
 
-        assert sys1.dt == sys1_11.dt
+        assert sys1.dt == sys1_01.dt
+        assert sys1_01.input_labels == ['u1']
+        assert sys1_01.output_labels == ['y0']
+        assert sys1_01.name == sys1.name + "$indexed"
 
     def test_dc_gain_cont(self):
         """Test DC gain for continuous-time state-space systems."""
@@ -733,7 +724,12 @@ class TestStateSpace:
     def test_str(self, sys322):
         """Test that printing the system works"""
         tsys = sys322
-        tref = ("A = [[-3.  4.  2.]\n"
+        tref = ("<StateSpace>: sys322\n"
+                "Inputs (2): ['u[0]', 'u[1]']\n"
+                "Outputs (2): ['y[0]', 'y[1]']\n"
+                "States (3): ['x[0]', 'x[1]', 'x[2]']\n"
+                "\n"
+                "A = [[-3.  4.  2.]\n"
                 "     [-1. -3.  0.]\n"
                 "     [ 2.  5.  3.]]\n"
                 "\n"
@@ -747,9 +743,11 @@ class TestStateSpace:
                 "D = [[-2.  4.]\n"
                 "     [ 0.  1.]]\n")
         assert str(tsys) == tref
-        tsysdtunspec = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, True)
+        tsysdtunspec = StateSpace(
+            tsys.A, tsys.B, tsys.C, tsys.D, True, name=tsys.name)
         assert str(tsysdtunspec) == tref + "\ndt = True\n"
-        sysdt1 = StateSpace(tsys.A, tsys.B, tsys.C, tsys.D, 1.)
+        sysdt1 = StateSpace(
+            tsys.A, tsys.B, tsys.C, tsys.D, 1., name=tsys.name)
         assert str(sysdt1) == tref + "\ndt = {}\n".format(1.)
 
     def test_pole_static(self):
@@ -831,7 +829,7 @@ class TestStateSpace:
             sys222.dynamics(0, (1, 1), u)
         with pytest.raises(ValueError):
             sys222.output(0, (1, 1), u)
-    
+
     def test_sample_named_signals(self):
         sysc = ct.StateSpace(1.1, 1, 1, 1, inputs='u', outputs='y', states='a')
 
@@ -859,14 +857,14 @@ class TestStateSpace:
         assert sysd_newnames.find_output('x') == 0
         assert sysd_newnames.find_output('y') is None
         assert sysd_newnames.find_state('b') == 0
-        assert sysd_newnames.find_state('a') is None        
+        assert sysd_newnames.find_state('a') is None
         # test just one name
         sysd_newnames = sysc.sample(0.1, inputs='v')
         assert sysd_newnames.find_input('v') == 0
         assert sysd_newnames.find_input('u') is None
         assert sysd_newnames.find_output('y') == 0
         assert sysd_newnames.find_output('x') is None
-        
+
 class TestRss:
     """These are tests for the proper functionality of statesp.rss."""
 
@@ -1012,13 +1010,7 @@ class TestLTIConverter:
 
 class TestStateSpaceConfig:
     """Test the configuration of the StateSpace module"""
-
-    @pytest.fixture
-    def matarrayout(self):
-        """Override autoused global fixture within this class"""
-        pass
-
-    def test_statespace_defaults(self, matarrayout):
+    def test_statespace_defaults(self):
         """Make sure the tests are run with the configured defaults"""
         for k, v in _statesp_defaults.items():
             assert defaults[k] == v, \
@@ -1211,3 +1203,49 @@ def test_params_warning():
         sys.output(0, [0], [0], {'k': 5})
 
 
+# Check that tf2ss returns stable system (see issue #935)
+@pytest.mark.parametrize("method", [
+    # pytest.param(None),       # use this one when SLICOT bug is sorted out
+    pytest.param(               # remove this one when SLICOT bug is sorted out
+        None, marks=pytest.mark.xfail(
+            ct.slycot_check(), reason="tf2ss SLICOT bug")),
+    pytest.param(
+        'slycot', marks=[
+            pytest.mark.xfail(
+                not ct.slycot_check(), reason="slycot not installed"),
+            pytest.mark.xfail(  # remove this one when SLICOT bug is sorted out
+                ct.slycot_check(), reason="tf2ss SLICOT bug")]),
+    pytest.param('scipy')
+])
+def test_tf2ss_unstable(method):
+    num = np.array([
+        9.94004350e-13, 2.67602795e-11, 2.31058712e-10, 1.15119493e-09,
+        5.04635153e-09, 1.34066064e-08, 2.11938725e-08, 2.39940325e-08,
+        2.05897777e-08, 1.17092854e-08, 4.71236875e-09, 1.19497537e-09,
+        1.90815347e-10, 1.00655454e-11, 1.47388887e-13, 8.40314881e-16,
+        1.67195685e-18])
+    den = np.array([
+        9.43513863e-11, 6.05312352e-08, 7.92752628e-07, 5.23764693e-06,
+        1.82502556e-05, 1.24355899e-05, 8.68206174e-06, 2.73818482e-06,
+        4.29133144e-07, 3.85554417e-08, 1.62631575e-09, 8.41098151e-12,
+        9.85278302e-15, 4.07646645e-18, 5.55496497e-22, 3.06560494e-26,
+        5.98908988e-31])
+
+    tf_sys = ct.tf(num, den)
+    ss_sys = ct.tf2ss(tf_sys, method=method)
+
+    tf_poles = np.sort(tf_sys.poles())
+    ss_poles = np.sort(ss_sys.poles())
+    np.testing.assert_allclose(tf_poles, ss_poles, rtol=1e-4)
+
+
+def test_tf2ss_mimo():
+    sys_tf = ct.tf([[[1], [1, 1, 1]]], [[[1, 1, 1], [1, 2, 1]]])
+
+    if ct.slycot_check():
+        sys_ss = ct.ss(sys_tf)
+        np.testing.assert_allclose(
+            np.sort(sys_tf.poles()), np.sort(sys_ss.poles()))
+    else:
+        with pytest.raises(ct.ControlMIMONotImplemented):
+            sys_ss = ct.ss(sys_tf)

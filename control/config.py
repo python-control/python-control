@@ -14,7 +14,7 @@ from .exception import ControlArgument
 
 __all__ = ['defaults', 'set_defaults', 'reset_defaults',
            'use_matlab_defaults', 'use_fbs_defaults',
-           'use_legacy_defaults', 'use_numpy_matrix']
+           'use_legacy_defaults']
 
 # Package level default values
 _control_defaults = {
@@ -123,8 +123,8 @@ def reset_defaults():
     from .sisotool import _sisotool_defaults
     defaults.update(_sisotool_defaults)
 
-    from .namedio import _namedio_defaults
-    defaults.update(_namedio_defaults)
+    from .iosys import _iosys_defaults
+    defaults.update(_iosys_defaults)
 
     from .xferfcn import _xferfcn_defaults
     defaults.update(_xferfcn_defaults)
@@ -132,11 +132,11 @@ def reset_defaults():
     from .statesp import _statesp_defaults
     defaults.update(_statesp_defaults)
 
-    from .iosys import _iosys_defaults
-    defaults.update(_iosys_defaults)
-
     from .optimal import _optimal_defaults
     defaults.update(_optimal_defaults)
+
+    from .timeplot import _timeplot_defaults
+    defaults.update(_timeplot_defaults)
 
 
 def _get_param(module, param, argval=None, defval=None, pop=False, last=False):
@@ -202,7 +202,6 @@ def use_matlab_defaults():
     The following conventions are used:
         * Bode plots plot gain in dB, phase in degrees, frequency in
           rad/sec, with grids
-        * State space class and functions use Numpy matrix objects
 
     Examples
     --------
@@ -211,7 +210,6 @@ def use_matlab_defaults():
 
     """
     set_defaults('freqplot', dB=True, deg=True, Hz=False, grid=True)
-    set_defaults('statesp', use_numpy_matrix=True)
 
 
 # Set defaults to match FBS (Astrom and Murray)
@@ -231,41 +229,6 @@ def use_fbs_defaults():
     """
     set_defaults('freqplot', dB=False, deg=True, Hz=False, grid=False)
     set_defaults('nyquist', mirror_style='--')
-
-
-# Decide whether to use numpy.matrix for state space operations
-def use_numpy_matrix(flag=True, warn=True):
-    """Turn on/off use of Numpy `matrix` class for state space operations.
-
-    Parameters
-    ----------
-    flag : bool
-        If flag is `True` (default), use the deprecated Numpy
-        `matrix` class to represent matrices in the `~control.StateSpace`
-        class and functions.  If flat is `False`, then matrices are
-        represented by a 2D `ndarray` object.
-
-    warn : bool
-        If flag is `True` (default), issue a warning when turning on the use
-        of the Numpy `matrix` class.  Set `warn` to false to omit display of
-        the warning message.
-
-    Notes
-    -----
-    Prior to release 0.9.x, the default type for 2D arrays is the Numpy
-    `matrix` class.  Starting in release 0.9.0, the default type for state
-    space operations is a 2D array.
-
-    Examples
-    --------
-    >>> ct.use_numpy_matrix(True, False)
-    >>> # do some legacy calculations using np.matrix
-
-    """
-    if flag and warn:
-        warnings.warn("Return type numpy.matrix is deprecated.",
-                      stacklevel=2, category=DeprecationWarning)
-    set_defaults('statesp', use_numpy_matrix=flag)
 
 
 def use_legacy_defaults(version):
@@ -331,13 +294,13 @@ def use_legacy_defaults(version):
     # Version 0.9.0:
     if major == 0 and minor < 9:
         # switched to 'array' as default for state space objects
-        set_defaults('statesp', use_numpy_matrix=True)
+        warnings.warn("NumPy matrix class no longer supported")
 
         # switched to 0 (=continuous) as default timestep
         set_defaults('control', default_dt=None)
 
         # changed iosys naming conventions
-        set_defaults('namedio', state_name_delim='.',
+        set_defaults('iosys', state_name_delim='.',
                      duplicate_system_name_prefix='copy of ',
                      duplicate_system_name_suffix='',
                      linearized_system_name_prefix='',
@@ -363,13 +326,13 @@ def use_legacy_defaults(version):
 #
 # Use this function to handle a legacy keyword that has been renamed.  This
 # function pops the old keyword off of the kwargs dictionary and issues a
-# warning.  if both the old and new keyword are present, a ControlArgument
+# warning.  If both the old and new keyword are present, a ControlArgument
 # exception is raised.
 #
 def _process_legacy_keyword(kwargs, oldkey, newkey, newval):
     if kwargs.get(oldkey) is not None:
         warnings.warn(
-            f"keyworld '{oldkey}' is deprecated; use '{newkey}'",
+            f"keyword '{oldkey}' is deprecated; use '{newkey}'",
             DeprecationWarning)
         if newval is not None:
             raise ControlArgument(

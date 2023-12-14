@@ -21,7 +21,7 @@ System creation
     zpk
     rss
     drss
-    NonlinearIOSystem
+    nlsys
 
 
 System interconnections
@@ -36,6 +36,7 @@ System interconnections
     negate
     parallel
     series
+    connection_table
 
 
 Frequency domain plotting
@@ -70,8 +71,9 @@ Time domain simulation
     impulse_response
     initial_response
     input_output_response
-    step_response
     phase_plot
+    step_response
+    TimeResponseData
 
 Control system analysis
 =======================
@@ -95,8 +97,6 @@ Control system analysis
     sisotool
     StateSpace.__call__
     TransferFunction.__call__
-
-
 
 Matrix computations
 ===================
@@ -147,9 +147,7 @@ Nonlinear system support
     find_eqpt
     linearize
     input_output_response
-    ss2io
     summing_junction
-    tf2io
     flatsys.point_to_point
 
 Stochastic system support
@@ -193,10 +191,8 @@ Utility functions and conversions
     tf2ss
     tfdata
     timebase
-    timebaseEqual
     unwrap
     use_fbs_defaults
     use_matlab_defaults
-    use_numpy_matrix
 
 

@@ -287,6 +287,8 @@ def test_bdschur_sort(eigvals, sorted_blk_eigvals, sort):
 
     b, t, blksizes = bdschur(a, sort=sort)
     assert len(blksizes) == len(sorted_blk_eigvals)
+    np.testing.assert_allclose(a, t @ b @ t.T)
+    np.testing.assert_allclose(t.T, np.linalg.inv(t))
 
     blocks = extract_bdiag(b, blksizes)
     for block, blk_eigval in zip(blocks, sorted_blk_eigvals):

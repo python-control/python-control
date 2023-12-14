@@ -60,7 +60,7 @@ def test_finite_horizon_simple(method):
     # Source: https://www.mpt3.org/UI/RegulationProblem
 
     # LTI prediction model (discrete time)
-    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+    sys = ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1)
 
     # State and input constraints
     constraints = [
@@ -113,7 +113,7 @@ def test_discrete_lqr():
     D = [[0]]
 
     # Linear discrete-time model with sample time 1
-    sys = ct.ss2io(ct.ss(A, B, C, D, 1))
+    sys = ct.ss(A, B, C, D, 1)
 
     # Include weights on states/inputs
     Q = np.eye(2)
@@ -125,7 +125,7 @@ def test_discrete_lqr():
     terminal_cost = opt.quadratic_cost(sys, S, None)
 
     # Solve the LQR problem
-    lqr_sys = ct.ss2io(ct.ss(A - B @ K, B, C, D, 1))
+    lqr_sys = ct.ss(A - B @ K, B, C, D, 1)
 
     # Generate a simulation of the LQR controller
     time = np.arange(0, 5, 1)
@@ -178,10 +178,10 @@ def test_mpc_iosystem_aircraft():
          [0, 0, 1, 0,  0],
          [0, 0, 0, 1,  0],
          [1, 0, 0, 0,  0]]
-    model = ct.ss2io(ct.ss(A, B, C, 0, 0.2))
+    model = ct.ss(A, B, C, 0, 0.2)
 
     # For the simulation we need the full state output
-    sys = ct.ss2io(ct.ss(A, B, np.eye(5), 0, 0.2))
+    sys = ct.ss(A, B, np.eye(5), 0, 0.2)
 
     # compute the steady state values for a particular value of the input
     ud = np.array([0.8, -0.3])
@@ -238,6 +238,14 @@ def test_mpc_iosystem_rename():
     assert mpc_relabeled.state_labels == state_relabels
     assert mpc_relabeled.name == 'mpc_relabeled'
 
+    # Change the optimization parameters (check by passing bad value)
+    mpc_custom = opt.create_mpc_iosystem(
+        sys, timepts, cost, minimize_method='unknown')
+    with pytest.raises(ValueError, match="Unknown solver unknown"):
+        # Optimization problem is implicit => check that an error is generated
+        mpc_custom.updfcn(
+            0, np.zeros(mpc_custom.nstates), np.zeros(mpc_custom.ninputs), {})
+
     # Make sure that unknown keywords are caught
     # Unrecognized arguments
     with pytest.raises(TypeError, match="unrecognized keyword"):
@@ -279,7 +287,7 @@ def test_mpc_iosystem_continuous():
       lambda x, u: np.array([x[0], x[1], u[0]]), [-5, -5, -1], [5, 5, 1])],
 ])
 def test_constraint_specification(constraint_list):
-    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+    sys = ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1)
 
     """Test out different forms of constraints on a simple problem"""
     # Parse out the constraint
@@ -326,7 +334,7 @@ def test_constraint_specification(constraint_list):
 def test_terminal_constraints(sys_args):
     """Test out the ability to handle terminal constraints"""
     # Create the system
-    sys = ct.ss2io(ct.ss(*sys_args))
+    sys = ct.ss(*sys_args)
 
     # Shortest path to a point is a line
     Q = np.zeros((2, 2))
@@ -427,7 +435,7 @@ def test_terminal_constraints(sys_args):
 
 def test_optimal_logging(capsys):
     """Test logging functions (mainly for code coverage)"""
-    sys = ct.ss2io(ct.ss(np.eye(2), np.eye(2), np.eye(2), 0, 1))
+    sys = ct.ss(np.eye(2), np.eye(2), np.eye(2), 0, 1)
 
     # Set up the optimal control problem
     cost = opt.quadratic_cost(sys, 1, 1)
@@ -481,13 +489,13 @@ def test_optimal_logging(capsys):
 ])
 def test_constraint_constructor_errors(fun, args, exception, match):
     """Test various error conditions for constraint constructors"""
-    sys = ct.ss2io(ct.rss(2, 2, 2))
+    sys = ct.rss(2, 2, 2)
     with pytest.raises(exception, match=match):
         fun(sys, *args)
 
 
 def test_ocp_argument_errors():
-    sys = ct.ss2io(ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1))
+    sys = ct.ss([[1, 1], [0, 1]], [[1], [0.5]], np.eye(2), 0, 1)
 
     # State and input constraints
     constraints = [
@@ -603,7 +611,7 @@ def test_optimal_basis_simple(basis):
 def test_equality_constraints():
     """Test out the ability to handle equality constraints"""
     # Create the system (double integrator, continuous time)
-    sys = ct.ss2io(ct.ss(np.zeros((2, 2)), np.eye(2), np.eye(2), 0))
+    sys = ct.ss(np.zeros((2, 2)), np.eye(2), np.eye(2), 0)
 
     # Shortest path to a point is a line
     Q = np.zeros((2, 2))
@@ -659,7 +667,7 @@ def test_equality_constraints():
     "method, npts, initial_guess, fail", [
         ('shooting', 3, None, 'xfail'),         # doesn't converge
         ('shooting', 3, 'zero', 'xfail'),       # doesn't converge
-        ('shooting', 3, 'u0', None),            # github issue #782
+        # ('shooting', 3, 'u0', None),          # github issue #782
         ('shooting', 3, 'input', 'endpoint'),   # doesn't converge to optimal
         ('shooting', 5, 'input', 'endpoint'),   # doesn't converge to optimal
         ('collocation', 3, 'u0', 'endpoint'),   # doesn't converge to optimal

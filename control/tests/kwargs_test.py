@@ -26,6 +26,8 @@ import control.tests.optimal_test as optimal_test
 import control.tests.statefbk_test as statefbk_test
 import control.tests.stochsys_test as stochsys_test
 import control.tests.trdata_test as trdata_test
+import control.tests.timeplot_test as timeplot_test
+import control.tests.descfcn_test as descfcn_test
 
 @pytest.mark.parametrize("module, prefix", [
     (control, ""), (control.flatsys, "flatsys."), (control.optimal, "optimal.")
@@ -70,7 +72,12 @@ def test_kwarg_search(module, prefix):
                 source = inspect.getsource(kwarg_unittest[prefix + name])
 
             # Make sure the unit test looks for unrecognized keyword
-            if source and source.find('unrecognized keyword') < 0:
+            if kwarg_unittest[prefix + name] == test_unrecognized_kwargs:
+                # @parametrize messes up the check, but we know it is there
+                pass
+
+            elif source and source.find('unrecognized keyword') < 0 and \
+                 source.find('unexpected keyword') < 0:
                 warnings.warn(
                     f"'unrecognized keyword' not found in unit test "
                     f"for {name}")
@@ -81,10 +88,12 @@ def test_kwarg_search(module, prefix):
     [(control.dlqe, 1, 0, ([[1]], [[1]]), {}),
      (control.dlqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.drss, 0, 0, (2, 1, 1), {}),
+     (control.flatsys.flatsys, 1, 0, (), {}),
      (control.input_output_response, 1, 0, ([0, 1, 2], [1, 1, 1]), {}),
      (control.lqe, 1, 0, ([[1]], [[1]]), {}),
      (control.lqr, 1, 0, ([[1, 0], [0, 1]], [[1]]), {}),
      (control.linearize, 1, 0, (0, 0), {}),
+     (control.nlsys, 0, 0, (lambda t, x, u, params: np.array([0]),), {}),
      (control.pzmap, 1, 0, (), {}),
      (control.rlocus, 0, 1, (), {}),
      (control.root_locus, 0, 1, (), {}),
@@ -98,10 +107,15 @@ def test_kwarg_search(module, prefix):
      (control.tf2io, 0, 1, (), {}),
      (control.tf2ss, 0, 1, (), {}),
      (control.zpk, 0, 0, ([1], [2, 3], 4), {}),
+     (control.flatsys.FlatSystem, 0, 0,
+      (lambda x, u, params: None, lambda zflag, params: None), {}),
      (control.InputOutputSystem, 0, 0, (),
       {'inputs': 1, 'outputs': 1, 'states': 1}),
-     (control.InputOutputSystem.linearize, 1, 0, (0, 0), {}),
-     (control.LinearIOSystem.sample, 1, 0, (0.1,), {}),
+     (control.LTI, 0, 0, (),
+      {'inputs': 1, 'outputs': 1, 'states': 1}),
+     (control.flatsys.LinearFlatSystem, 1, 0, (), {}),
+     (control.NonlinearIOSystem.linearize, 1, 0, (0, 0), {}),
+     (control.StateSpace.sample, 1, 0, (0.1,), {}),
      (control.StateSpace, 0, 0,
       ([[-1, 0], [0, -1]], [[1], [1]], [[1, 1]], 0), {}),
      (control.TransferFunction, 0, 0, ([1], [1, 1]), {})]
@@ -115,21 +129,25 @@ def test_unrecognized_kwargs(function, nsssys, ntfsys, moreargs, kwargs,
     args = (sssys, )*nsssys + (tfsys, )*ntfsys + moreargs
 
     # Call the function normally and make sure it works
-    function(*args, **kwargs)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")     # catch any warnings elsewhere
+        function(*args, **kwargs)
 
     # Now add an unrecognized keyword and make sure there is an error
     with pytest.raises(TypeError, match="unrecognized keyword"):
-        function(*args, **kwargs, unknown=None)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")     # catch any warnings elsewhere
+            function(*args, **kwargs, unknown=None)
 
 
 @pytest.mark.parametrize(
     "function, nsysargs, moreargs, kwargs",
-    [(control.bode, 1, (), {}),
-     (control.bode_plot, 1, (), {}),
-     (control.describing_function_plot, 1,
+    [(control.describing_function_plot, 1,
       (control.descfcn.saturation_nonlinearity(1), [1, 2, 3, 4]), {}),
      (control.gangof4, 2, (), {}),
      (control.gangof4_plot, 2, (), {}),
+     (control.nichols, 1, (), {}),
+     (control.nichols_plot, 1, (), {}),
      (control.nyquist, 1, (), {}),
      (control.nyquist_plot, 1, (), {}),
      (control.singular_values_plot, 1, (), {})]
@@ -143,11 +161,49 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
     function(*args, **kwargs)
 
     # Now add an unrecognized keyword and make sure there is an error
-    with pytest.raises(AttributeError,
-                       match="(has no property|unexpected keyword)"):
+    with pytest.raises(
+            (AttributeError, TypeError),
+            match="(has no property|unexpected keyword|unrecognized keyword)"):
         function(*args, **kwargs, unknown=None)
 
 
+@pytest.mark.parametrize(
+    "data_fcn, plot_fcn, mimo", [
+        (control.step_response, control.time_response_plot, True),
+        (control.step_response, control.TimeResponseData.plot, True),
+        (control.frequency_response, control.FrequencyResponseData.plot, True),
+        (control.frequency_response, control.bode, True),
+        (control.frequency_response, control.bode_plot, True),
+        (control.nyquist_response, control.nyquist_plot, False),
+    ])
+def test_response_plot_kwargs(data_fcn, plot_fcn, mimo):
+    # Create a system for testing
+    if mimo:
+        response = data_fcn(control.rss(4, 2, 2))
+    else:
+        response = data_fcn(control.rss(4, 1, 1))
+
+    # Make sure that calling the data function with unknown keyword errs
+    with pytest.raises(
+            (AttributeError, TypeError),
+            match="(has no property|unexpected keyword|unrecognized keyword)"):
+        data_fcn(control.rss(2, 1, 1), unknown=None)
+
+    # Call the plotting function normally and make sure it works
+    plot_fcn(response)
+
+    # Now add an unrecognized keyword and make sure there is an error
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
+        plot_fcn(response, unknown=None)
+
+    # Call the plotting function via the response and make sure it works
+    response.plot()
+
+    # Now add an unrecognized keyword and make sure there is an error
+    with pytest.raises(AttributeError,
+                       match="(has no property|unexpected keyword)"):
+        response.plot(unknown=None)
 
 #
 # List of all unit tests that check for unrecognized keywords
@@ -159,22 +215,30 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
 #
 
 kwarg_unittest = {
-    'bode': test_matplotlib_kwargs,
-    'bode_plot': test_matplotlib_kwargs,
+    'bode': test_response_plot_kwargs,
+    'bode_plot': test_response_plot_kwargs,
     'create_estimator_iosystem': stochsys_test.test_estimator_errors,
     'create_statefbk_iosystem': statefbk_test.TestStatefbk.test_statefbk_errors,
     'describing_function_plot': test_matplotlib_kwargs,
+    'describing_function_response':
+        descfcn_test.test_describing_function_exceptions,
     'dlqe': test_unrecognized_kwargs,
     'dlqr': test_unrecognized_kwargs,
     'drss': test_unrecognized_kwargs,
+    'flatsys.flatsys': test_unrecognized_kwargs,
     'gangof4': test_matplotlib_kwargs,
     'gangof4_plot': test_matplotlib_kwargs,
     'input_output_response': test_unrecognized_kwargs,
     'interconnect': interconnect_test.test_interconnect_exceptions,
+    'time_response_plot': timeplot_test.test_errors,
     'linearize': test_unrecognized_kwargs,
     'lqe': test_unrecognized_kwargs,
     'lqr': test_unrecognized_kwargs,
+    'nichols_plot': test_matplotlib_kwargs,
+    'nichols': test_matplotlib_kwargs,
+    'nlsys': test_unrecognized_kwargs,
     'nyquist': test_matplotlib_kwargs,
+    'nyquist_response': test_response_plot_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
     'pzmap': test_unrecognized_kwargs,
     'rlocus': test_unrecognized_kwargs,
@@ -190,6 +254,7 @@ kwarg_unittest = {
     'tf2io' : test_unrecognized_kwargs,
     'tf2ss' : test_unrecognized_kwargs,
     'sample_system' : test_unrecognized_kwargs,
+    'c2d' : test_unrecognized_kwargs,
     'zpk': test_unrecognized_kwargs,
     'flatsys.point_to_point':
         flatsys_test.TestFlatSys.test_point_to_point_errors,
@@ -198,20 +263,28 @@ kwarg_unittest = {
     'optimal.create_mpc_iosystem': optimal_test.test_mpc_iosystem_rename,
     'optimal.solve_ocp': optimal_test.test_ocp_argument_errors,
     'optimal.solve_oep': optimal_test.test_oep_argument_errors,
+    'flatsys.FlatSystem.__init__': test_unrecognized_kwargs,
     'FrequencyResponseData.__init__':
         frd_test.TestFRD.test_unrecognized_keyword,
+    'FrequencyResponseData.plot': test_response_plot_kwargs,
+    'DescribingFunctionResponse.plot':
+        descfcn_test.test_describing_function_exceptions,
     'InputOutputSystem.__init__': test_unrecognized_kwargs,
-    'InputOutputSystem.linearize': test_unrecognized_kwargs,
+    'LTI.__init__': test_unrecognized_kwargs,
+    'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
+    'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
+    'NyquistResponseData.plot': test_response_plot_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
-    'LinearIOSystem.__init__':
+    'StateSpace.__init__':
         interconnect_test.test_interconnect_exceptions,
-    'LinearIOSystem.sample': test_unrecognized_kwargs,
+    'StateSpace.sample': test_unrecognized_kwargs,
     'NonlinearIOSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__': test_unrecognized_kwargs,
-    'StateSpace.sample': test_unrecognized_kwargs, 
+    'StateSpace.sample': test_unrecognized_kwargs,
     'TimeResponseData.__call__': trdata_test.test_response_copy,
+    'TimeResponseData.plot': timeplot_test.test_errors,
     'TransferFunction.__init__': test_unrecognized_kwargs,
     'TransferFunction.sample': test_unrecognized_kwargs,
     'optimal.OptimalControlProblem.__init__':
@@ -238,8 +311,8 @@ kwarg_unittest = {
 mutable_ok = {                                          # initial and date
     control.flatsys.SystemTrajectory.__init__,          # RMM, 18 Nov 2022
     control.freqplot._add_arrows_to_line2D,             # RMM, 18 Nov 2022
-    control.namedio._process_dt_keyword,                # RMM, 13 Nov 2022
-    control.namedio._process_namedio_keywords,          # RMM, 18 Nov 2022
+    control.iosys._process_dt_keyword,                  # RMM, 13 Nov 2022
+    control.iosys._process_iosys_keywords,              # RMM, 18 Nov 2022
 }
 
 @pytest.mark.parametrize("module", [control, control.flatsys])

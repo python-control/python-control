@@ -84,11 +84,11 @@ class TestConfig:
 
         # assert that reset defaults keeps the custom type
         ct.config.reset_defaults()
-        with pytest.warns(FutureWarning,
-                          match='bode.* has been renamed to.*freqplot'):
+        with pytest.raises(KeyError):
             assert ct.config.defaults['bode.Hz'] \
                 == ct.config.defaults['freqplot.Hz']
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_fbs_bode(self, mplcleanup):
         ct.use_fbs_defaults()
 
@@ -133,6 +133,7 @@ class TestConfig:
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_matlab_bode(self, mplcleanup):
         ct.use_matlab_defaults()
 
@@ -177,6 +178,7 @@ class TestConfig:
         phase_x, phase_y = (((plt.gcf().axes[1]).get_lines())[0]).get_data()
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_custom_bode_default(self, mplcleanup):
         ct.config.defaults['freqplot.dB'] = True
         ct.config.defaults['freqplot.deg'] = True
@@ -198,37 +200,45 @@ class TestConfig:
         np.testing.assert_almost_equal(mag_y[0], 20*log10(10), decimal=3)
         np.testing.assert_almost_equal(phase_y[-1], -pi, decimal=2)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_bode_number_of_samples(self, mplcleanup):
         # Set the number of samples (default is 50, from np.logspace)
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
+        mag_ret, phase_ret, omega_ret = ct.bode_plot(
+            self.sys, omega_num=87, plot=True)
         assert len(mag_ret) == 87
 
         # Change the default number of samples
         ct.config.defaults['freqplot.number_of_samples'] = 76
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys)
+        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, plot=True)
         assert len(mag_ret) == 76
 
         # Override the default number of samples
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, omega_num=87)
+        mag_ret, phase_ret, omega_ret = ct.bode_plot(
+            self.sys, omega_num=87, plot=True)
         assert len(mag_ret) == 87
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     def test_bode_feature_periphery_decade(self, mplcleanup):
         # Generate a sample Bode plot to figure out the range it uses
         ct.reset_defaults()     # Make sure starting state is correct
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=False)
+        mag_ret, phase_ret, omega_ret = ct.bode_plot(
+            self.sys, Hz=False, plot=True)
         omega_min, omega_max = omega_ret[[0,  -1]]
 
         # Reset the periphery decade value (should add one decade on each end)
         ct.config.defaults['freqplot.feature_periphery_decades'] = 2
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=False)
+        mag_ret, phase_ret, omega_ret = ct.bode_plot(
+            self.sys, Hz=False, plot=True)
         np.testing.assert_almost_equal(omega_ret[0], omega_min/10)
         np.testing.assert_almost_equal(omega_ret[-1], omega_max * 10)
 
         # Make sure it also works in rad/sec, in opposite direction
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=True)
+        mag_ret, phase_ret, omega_ret = ct.bode_plot(
+            self.sys, Hz=True, plot=True)
         omega_min, omega_max = omega_ret[[0,  -1]]
         ct.config.defaults['freqplot.feature_periphery_decades'] = 1
-        mag_ret, phase_ret, omega_ret = ct.bode_plot(self.sys, Hz=True)
+        mag_ret, phase_ret, omega_ret = ct.bode_plot(
+            self.sys, Hz=True, plot=True)
         np.testing.assert_almost_equal(omega_ret[0], omega_min*10)
         np.testing.assert_almost_equal(omega_ret[-1], omega_max/10)
 
@@ -242,26 +252,23 @@ class TestConfig:
         assert ct.config.defaults['freqplot.feature_periphery_decades'] == 1.0
 
     def test_legacy_defaults(self):
-        with pytest.deprecated_call():
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
             ct.use_legacy_defaults('0.8.3')
-            assert(isinstance(ct.ss(0, 0, 0, 1).D, np.matrix))
-        ct.reset_defaults()
-        assert isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray)
-        assert not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix)
+            ct.reset_defaults()
 
-        ct.use_legacy_defaults('0.8.4')
-        assert ct.config.defaults['forced_response.return_x'] is True
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.use_legacy_defaults('0.8.4')
+            assert ct.config.defaults['forced_response.return_x'] is True
 
         ct.use_legacy_defaults('0.9.0')
         assert isinstance(ct.ss(0, 0, 0, 1).D, np.ndarray)
         assert not isinstance(ct.ss(0, 0, 0, 1).D, np.matrix)
 
-        # test that old versions don't raise a problem
-        ct.use_legacy_defaults('REL-0.1')
-        ct.use_legacy_defaults('control-0.3a')
-        ct.use_legacy_defaults('0.6c')
-        ct.use_legacy_defaults('0.8.2')
-        ct.use_legacy_defaults('0.1')
+        # test that old versions don't raise a problem (besides Numpy warning)
+        for ver in ['REL-0.1', 'control-0.3a', '0.6c', '0.8.2', '0.1']:
+            with pytest.warns(
+                    UserWarning, match="NumPy matrix class no longer"):
+                ct.use_legacy_defaults(ver)
 
         # Make sure that nonsense versions generate an error
         with pytest.raises(ValueError):
@@ -275,7 +282,7 @@ class TestConfig:
         ct.set_defaults('control', default_dt=dt)
         assert ct.ss(1, 0, 0, 1).dt == dt
         assert ct.tf(1, [1, 1]).dt == dt
-        nlsys = ct.iosys.NonlinearIOSystem(
+        nlsys = ct.NonlinearIOSystem(
             lambda t, x, u: u * x * x,
             lambda t, x, u: x, inputs=1, outputs=1)
         assert nlsys.dt == dt
@@ -285,11 +292,6 @@ class TestConfig:
         ct.set_defaults('control', default_dt=0)
         assert ct.tf(1, 1).dt is None
         assert ct.ss([], [], [], 1).dt is None
-
-        # Make sure static gain is preserved for the I/O system
-        sys = ct.ss([], [], [], 1)
-        sys_io = ct.ss2io(sys)
-        assert sys_io.dt is None
 
     def test_get_param_last(self):
         """Test _get_param last keyword"""
@@ -301,3 +303,18 @@ class TestConfig:
 
         assert ct.config._get_param(
             'config', 'second', kwargs, pop=True, last=True) == 2
+
+    def test_system_indexing(self):
+        # Default renaming
+        sys = ct.TransferFunction(
+            [ [   [1],    [2],    [3]], [   [3],    [4],    [5]] ],
+            [ [[1, 2], [1, 3], [1, 4]], [[1, 4], [1, 5], [1, 6]] ], 0.5)
+        sys1 = sys[1:, 1:]
+        assert sys1.name == sys.name + '$indexed'
+
+        # Reset the format
+        ct.config.set_defaults(
+            'iosys', indexed_system_name_prefix='PRE',
+            indexed_system_name_suffix='POST')
+        sys2 = sys[1:, 1:]
+        assert sys2.name == 'PRE' + sys.name + 'POST'

@@ -19,10 +19,9 @@ import numpy as np
 import pytest
 
 from control import rss, ss, ss2tf, tf, tf2ss
-from control.statesp import _mimo2siso
 from control.statefbk import ctrb, obsv
 from control.freqplot import bode
-from control.exception import slycot_check
+from control.exception import slycot_check, ControlMIMONotImplemented
 from control.tests.conftest import slycotonly
 
 
@@ -49,6 +48,7 @@ class TestConvert:
         print("sys%i:\n" % ind)
         print(sys)
 
+    @pytest.mark.usefixtures("legacy_plot_signature")
     @pytest.mark.parametrize("states", range(1, maxStates))
     @pytest.mark.parametrize("inputs", range(1, maxIO))
     @pytest.mark.parametrize("outputs", range(1, maxIO))
@@ -96,7 +96,7 @@ class TestConvert:
                     print("Checking input %d, output %d"
                           % (inputNum, outputNum))
                 ssorig_mag, ssorig_phase, ssorig_omega = \
-                    bode(_mimo2siso(ssOriginal, inputNum, outputNum),
+                    bode(ssOriginal[outputNum, inputNum],
                          deg=False, plot=False)
                 ssorig_real = ssorig_mag * np.cos(ssorig_phase)
                 ssorig_imag = ssorig_mag * np.sin(ssorig_phase)
@@ -123,10 +123,8 @@ class TestConvert:
                 # Make sure xform'd SS has same frequency response
                 #
                 ssxfrm_mag, ssxfrm_phase, ssxfrm_omega = \
-                    bode(_mimo2siso(ssTransformed,
-                                    inputNum, outputNum),
-                         ssorig_omega,
-                         deg=False, plot=False)
+                    bode(ssTransformed[outputNum, inputNum],
+                         ssorig_omega, deg=False, plot=False)
                 ssxfrm_real = ssxfrm_mag * np.cos(ssxfrm_phase)
                 ssxfrm_imag = ssxfrm_mag * np.sin(ssxfrm_phase)
                 np.testing.assert_array_almost_equal(
@@ -169,7 +167,7 @@ class TestConvert:
 
         # Convert to state space and look for an error
         if (not slycot_check()):
-            with pytest.raises(TypeError):
+            with pytest.raises(ControlMIMONotImplemented):
                 tf2ss(tsys)
         else:
             ssys = tf2ss(tsys)

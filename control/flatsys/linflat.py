@@ -38,10 +38,10 @@
 import numpy as np
 import control
 from .flatsys import FlatSystem
-from ..iosys import LinearIOSystem
+from ..statesp import StateSpace
 
 
-class LinearFlatSystem(FlatSystem, LinearIOSystem):
+class LinearFlatSystem(FlatSystem, StateSpace):
     """Base class for a linear, differentially flat system.
 
     This class is used to create a differentially flat system representation
@@ -77,8 +77,7 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
 
     """
 
-    def __init__(self, linsys, inputs=None, outputs=None, states=None,
-                 name=None):
+    def __init__(self, linsys, **kwargs):
         """Define a flat system from a SISO LTI system.
 
         Given a reachable, single-input/single-output, linear time-invariant
@@ -93,10 +92,8 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
             raise control.ControlNotImplemented(
                 "only single input, single output systems are supported")
 
-        # Initialize the object as a LinearIO system
-        LinearIOSystem.__init__(
-            self, linsys, inputs=inputs, outputs=outputs, states=states,
-            name=name)
+        # Initialize the object as a StateSpace system
+        StateSpace.__init__(self, linsys, **kwargs)
 
         # Find the transformation to chain of integrators form
         # Note: store all array as ndarray, not matrix
@@ -143,10 +140,10 @@ class LinearFlatSystem(FlatSystem, LinearIOSystem):
 
     # Update function
     def _rhs(self, t, x, u):
-        # Use LinearIOSystem._rhs instead of default (MRO) NonlinearIOSystem
-        return LinearIOSystem._rhs(self, t, x, u)
+        # Use StateSpace._rhs instead of default (MRO) NonlinearIOSystem
+        return StateSpace._rhs(self, t, x, u)
 
     # output function
     def _out(self, t, x, u):
-        # Use LinearIOSystem._out instead of default (MRO) NonlinearIOSystem
-        return LinearIOSystem._out(self, t, x, u)
+        # Use StateSpace._out instead of default (MRO) NonlinearIOSystem
+        return StateSpace._out(self, t, x, u)

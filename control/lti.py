@@ -2,107 +2,38 @@
 
 The lti module contains the LTI parent class to the child classes StateSpace
 and TransferFunction.  It is designed for use in the python-control library.
-
-Routines in this module:
-
-LTI.__init__
-isdtime()
-isctime()
-timebase()
-common_timebase()
 """
 
 import numpy as np
+import math
 
-from numpy import absolute, real, angle, abs
+from numpy import real, angle, abs
 from warnings import warn
 from . import config
-from .namedio import NamedIOSystem, isdtime
+from .iosys import InputOutputSystem
 
 __all__ = ['poles', 'zeros', 'damp', 'evalfr', 'frequency_response',
-           'freqresp', 'dcgain', 'bandwidth', 'pole', 'zero']
+           'freqresp', 'dcgain', 'bandwidth', 'LTI']
 
 
-class LTI(NamedIOSystem):
+class LTI(InputOutputSystem):
     """LTI is a parent class to linear time-invariant (LTI) system objects.
 
     LTI is the parent to the StateSpace and TransferFunction child classes. It
     contains the number of inputs and outputs, and the timebase (dt) for the
     system.  This function is not generally called directly by the user.
 
-    The timebase for the system, dt, is used to specify whether the system
-    is operating in continuous or discrete time. It can have the following
-    values:
-
-      * dt = None       No timebase specified
-      * dt = 0          Continuous time system
-      * dt > 0          Discrete time system with sampling time dt
-      * dt = True       Discrete time system with unspecified sampling time
-
     When two LTI systems are combined, their timebases much match.  A system
     with timebase None can be combined with a system having a specified
     timebase, and the result will have the timebase of the latter system.
 
-    Note: dt processing has been moved to the NamedIOSystem class.
+    Note: dt processing has been moved to the InputOutputSystem class.
 
     """
-
     def __init__(self, inputs=1, outputs=1, states=None, name=None, **kwargs):
         """Assign the LTI object's numbers of inputs and ouputs."""
         super().__init__(
             name=name, inputs=inputs, outputs=outputs, states=states, **kwargs)
-
-    #
-    # Getter and setter functions for legacy state attributes
-    #
-    # For this iteration, generate a deprecation warning whenever the
-    # getter/setter is called.  For a future iteration, turn it into a
-    # future warning, so that users will see it.
-    #
-
-    def _get_inputs(self):
-        warn("The LTI `inputs` attribute will be deprecated in a future "
-             "release.  Use `ninputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        return self.ninputs
-
-    def _set_inputs(self, value):
-        warn("The LTI `inputs` attribute will be deprecated in a future "
-             "release.  Use `ninputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        self.ninputs = value
-
-    #: Deprecated
-    inputs = property(
-        _get_inputs, _set_inputs, doc="""
-        Deprecated attribute; use :attr:`ninputs` instead.
-
-        The ``inputs`` attribute was used to store the number of system
-        inputs.  It is no longer used.  If you need access to the number
-        of inputs for an LTI system, use :attr:`ninputs`.
-        """)
-
-    def _get_outputs(self):
-        warn("The LTI `outputs` attribute will be deprecated in a future "
-             "release.  Use `noutputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        return self.noutputs
-
-    def _set_outputs(self, value):
-        warn("The LTI `outputs` attribute will be deprecated in a future "
-             "release.  Use `noutputs` instead.",
-             DeprecationWarning, stacklevel=2)
-        self.noutputs = value
-
-    #: Deprecated
-    outputs = property(
-        _get_outputs, _set_outputs, doc="""
-        Deprecated attribute; use :attr:`noutputs` instead.
-
-        The ``outputs`` attribute was used to store the number of system
-        outputs.  It is no longer used.  If you need access to the number of
-        outputs for an LTI system, use :attr:`noutputs`.
-        """)
 
     def damp(self):
         '''Natural frequency, damping ratio of system poles
@@ -110,11 +41,11 @@ class LTI(NamedIOSystem):
         Returns
         -------
         wn : array
-            Natural frequencies for each system pole
+            Natural frequency for each system pole
         zeta : array
             Damping ratio for each system pole
         poles : array
-            Array of system poles
+            System pole locations
         '''
         poles = self.poles()
 
@@ -122,20 +53,20 @@ class LTI(NamedIOSystem):
             splane_poles = np.log(poles.astype(complex))/self.dt
         else:
             splane_poles = poles
-        wn = absolute(splane_poles)
-        Z = -real(splane_poles)/wn
-        return wn, Z, poles
+        wn = abs(splane_poles)
+        zeta = -real(splane_poles)/wn
+        return wn, zeta, poles
 
-    def frequency_response(self, omega, squeeze=None):
+    def frequency_response(self, omega=None, squeeze=None):
         """Evaluate the linear time-invariant system at an array of angular
         frequencies.
 
-        Reports the frequency response of the system,
+        For continuous time systems, computes the frequency response as
 
              G(j*omega) = mag * exp(j*phase)
 
-        for continuous time systems. For discrete time systems, the response
-        is evaluated around the unit circle such that
+        For discrete time systems, the response is evaluated around the
+        unit circle such that
 
              G(exp(j*omega*dt)) = mag * exp(j*phase).
 
@@ -157,23 +88,25 @@ class LTI(NamedIOSystem):
 
         Returns
         -------
-        response : :class:`FrequencyReponseData`
+        response : :class:`FrequencyResponseData`
             Frequency response data object representing the frequency
             response.  This object can be assigned to a tuple using
 
                 mag, phase, omega = response
 
-            where ``mag`` is the magnitude (absolute value, not dB or
-            log10) of the system frequency response, ``phase`` is the wrapped
-            phase in radians of the system frequency response, and ``omega``
-            is the (sorted) frequencies at which the response was evaluated.
+            where ``mag`` is the magnitude (absolute value, not dB or log10)
+            of the system frequency response, ``phase`` is the wrapped phase
+            in radians of the system frequency response, and ``omega`` is
+            the (sorted) frequencies at which the response was evaluated.
             If the system is SISO and squeeze is not True, ``magnitude`` and
-            ``phase`` are 1D, indexed by frequency.  If the system is not SISO
-            or squeeze is False, the array is 3D, indexed by the output,
-            input, and frequency.  If ``squeeze`` is True then
-            single-dimensional axes are removed.
+            ``phase`` are 1D, indexed by frequency.  If the system is not
+            SISO or squeeze is False, the array is 3D, indexed by the
+            output, input, and, if omega is array_like, frequency.  If
+            ``squeeze`` is True then single-dimensional axes are removed.
 
         """
+        from .frdata import FrequencyResponseData
+
         omega = np.sort(np.array(omega, ndmin=1))
         if self.isdtime(strict=True):
             # Convert the frequency to discrete time
@@ -184,10 +117,10 @@ class LTI(NamedIOSystem):
             s = 1j * omega
 
         # Return the data as a frequency response data object
-        from .frdata import FrequencyResponseData
-        response = self.__call__(s)
+        response = self(s)
         return FrequencyResponseData(
-            response, omega, return_magphase=True, squeeze=squeeze)
+            response, omega, return_magphase=True, squeeze=squeeze,
+            dt=self.dt, sysname=self.name, plot_type='bode')
 
     def dcgain(self):
         """Return the zero-frequency gain"""
@@ -269,20 +202,6 @@ class LTI(NamedIOSystem):
         from control.passivity import ispassive
         return ispassive(self)
 
-    #
-    # Deprecated functions
-    #
-
-    def pole(self):
-        warn("pole() will be deprecated; use poles()",
-             PendingDeprecationWarning)
-        return self.poles()
-
-    def zero(self):
-        warn("zero() will be deprecated; use zeros()",
-             PendingDeprecationWarning)
-        return self.zeros()
-
 
 def poles(sys):
     """
@@ -307,11 +226,6 @@ def poles(sys):
     """
 
     return sys.poles()
-
-
-def pole(sys):
-    warn("pole() will be deprecated; use poles()", PendingDeprecationWarning)
-    return poles(sys)
 
 
 def zeros(sys):
@@ -339,32 +253,25 @@ def zeros(sys):
     return sys.zeros()
 
 
-def zero(sys):
-    warn("zero() will be deprecated; use zeros()", PendingDeprecationWarning)
-    return zeros(sys)
-
-
 def damp(sys, doprint=True):
     """
-    Compute natural frequency, damping ratio, and poles of a system
-
-    The function takes 1 or 2 parameters
+    Compute natural frequencies, damping ratios, and poles of a system.
 
     Parameters
     ----------
-    sys: LTI (StateSpace or TransferFunction)
+    sys : LTI (StateSpace or TransferFunction)
         A linear system object
-    doprint:
-        if true, print table with values
+    doprint : bool (optional)
+        if True, print table with values
 
     Returns
     -------
-    wn: array
-        Natural frequencies of the poles
-    damping: array
-        Damping values
-    poles: array
-        Pole locations
+    wn : array
+        Natural frequency for each system pole
+    zeta : array
+        Damping ratio for each system pole
+    poles : array
+        System pole locations
 
     See Also
     --------
@@ -374,37 +281,37 @@ def damp(sys, doprint=True):
     -----
     If the system is continuous,
         wn = abs(poles)
-        Z  = -real(poles)/poles.
+        zeta  = -real(poles)/poles
 
     If the system is discrete, the discrete poles are mapped to their
     equivalent location in the s-plane via
 
-        s = log10(poles)/dt
+        s = log(poles)/dt
 
     and
 
         wn = abs(s)
-        Z = -real(s)/wn.
+        zeta = -real(s)/wn.
 
     Examples
     --------
     >>> G = ct.tf([1], [1, 4])
-    >>> wn, damping, poles = ct.damp(G)
-    _____Eigenvalue______ Damping___ Frequency_
-            -4                     1          4
+    >>> wn, zeta, poles = ct.damp(G)
+        Eigenvalue (pole)       Damping     Frequency
+                       -4             1             4
 
     """
-    wn, damping, poles = sys.damp()
+    wn, zeta, poles = sys.damp()
     if doprint:
-        print('_____Eigenvalue______ Damping___ Frequency_')
-        for p, d, w in zip(poles, damping, wn):
+        print('    Eigenvalue (pole)       Damping     Frequency')
+        for p, z, w in zip(poles, zeta, wn):
             if abs(p.imag) < 1e-12:
-                print("%10.4g            %10.4g %10.4g" %
-                      (p.real, 1.0, -p.real))
+                print("           %10.4g    %10.4g    %10.4g" %
+                      (p.real, 1.0, w))
             else:
-                print("%10.4g%+10.4gj %10.4g %10.4g" %
-                      (p.real, p.imag, d, w))
-    return wn, damping, poles
+                print("%10.4g%+10.4gj    %10.4g    %10.4g" %
+                      (p.real, p.imag, z, w))
+    return wn, zeta, poles
 
 
 def evalfr(sys, x, squeeze=None):
@@ -461,10 +368,12 @@ def evalfr(sys, x, squeeze=None):
     .. todo:: Add example with MIMO system
 
     """
-    return sys.__call__(x, squeeze=squeeze)
+    return sys(x, squeeze=squeeze)
 
 
-def frequency_response(sys, omega, squeeze=None):
+def frequency_response(
+        sysdata, omega=None, omega_limits=None, omega_num=None,
+        Hz=None, squeeze=None):
     """Frequency response of an LTI system at multiple angular frequencies.
 
     In general the system may be multiple input, multiple output (MIMO), where
@@ -473,22 +382,23 @@ def frequency_response(sys, omega, squeeze=None):
 
     Parameters
     ----------
-    sys: StateSpace or TransferFunction
-        Linear system
-    omega : float or 1D array_like
+    sysdata : LTI system or list of LTI systems
+        Linear system(s) for which frequency response is computed.
+    omega : float or 1D array_like, optional
         A list of frequencies in radians/sec at which the system should be
-        evaluated. The list can be either a python list or a numpy array
-        and will be sorted before evaluation.
-    squeeze : bool, optional
-        If squeeze=True, remove single-dimensional entries from the shape of
-        the output even if the system is not SISO. If squeeze=False, keep all
-        indices (output, input and, if omega is array_like, frequency) even if
-        the system is SISO. The default value can be set using
-        config.defaults['control.squeeze_frequency_response'].
+        evaluated. The list can be either a Python list or a numpy array
+        and will be sorted before evaluation.  If None (default), a common
+        set of frequencies that works across all given systems is computed.
+    omega_limits : array_like of two values, optional
+        Limits to the range of frequencies, in rad/sec. Ignored if
+        omega is provided, and auto-generated if omitted.
+    omega_num : int, optional
+        Number of frequency samples to plot.  Defaults to
+        config.defaults['freqplot.number_of_samples'].
 
     Returns
     -------
-    response : FrequencyResponseData
+    response : :class:`FrequencyResponseData`
         Frequency response data object representing the frequency response.
         This object can be assigned to a tuple using
 
@@ -498,21 +408,49 @@ def frequency_response(sys, omega, squeeze=None):
         the system frequency response, ``phase`` is the wrapped phase in
         radians of the system frequency response, and ``omega`` is the
         (sorted) frequencies at which the response was evaluated.  If the
-        system is SISO and squeeze is not True, ``magnitude`` and ``phase``
+        system is SISO and squeeze is not False, ``magnitude`` and ``phase``
         are 1D, indexed by frequency.  If the system is not SISO or squeeze
         is False, the array is 3D, indexed by the output, input, and
         frequency.  If ``squeeze`` is True then single-dimensional axes are
         removed.
 
+        Returns a list of :class:`FrequencyResponseData` objects if sys is
+        a list of systems.
+
+    Other Parameters
+    ----------------
+    Hz : bool, optional
+        If True, when computing frequency limits automatically set
+        limits to full decades in Hz instead of rad/s. Omega is always
+        returned in rad/sec.
+    squeeze : bool, optional
+        If squeeze=True, remove single-dimensional entries from the shape of
+        the output even if the system is not SISO. If squeeze=False, keep all
+        indices (output, input and, if omega is array_like, frequency) even if
+        the system is SISO. The default value can be set using
+        config.defaults['control.squeeze_frequency_response'].
+
     See Also
     --------
     evalfr
-    bode
+    bode_plot
 
     Notes
     -----
-    This function is a wrapper for :meth:`StateSpace.frequency_response` and
-    :meth:`TransferFunction.frequency_response`.
+    1. This function is a wrapper for :meth:`StateSpace.frequency_response`
+       and :meth:`TransferFunction.frequency_response`.
+
+    2. You can also use the lower-level methods ``sys(s)`` or ``sys(z)`` to
+       generate the frequency response for a single system.
+
+    3. All frequency data should be given in rad/sec.  If frequency limits
+       are computed automatically, the `Hz` keyword can be used to ensure
+       that limits are in factors of decades in Hz, so that Bode plots with
+       `Hz=True` look better.
+
+    4. The frequency response data can be plotted by calling the
+       :func:`~control_bode_plot` function or using the `plot` method of
+       the :class:`~control.FrequencyResponseData` class.
 
     Examples
     --------
@@ -534,15 +472,46 @@ def frequency_response(sys, omega, squeeze=None):
         #>>> # s = 0.1i, i, 10i.
 
     """
-    return sys.frequency_response(omega, squeeze=squeeze)
+    from .freqplot import _determine_omega_vector
 
+    # Process keyword arguments
+    omega_num = config._get_param('freqplot', 'number_of_samples', omega_num)
+
+    # Convert the first argument to a list
+    syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
+
+    # Get the common set of frequencies to use
+    omega_syslist, omega_range_given = _determine_omega_vector(
+        syslist, omega, omega_limits, omega_num, Hz=Hz)
+
+    responses = []
+    for sys_ in syslist:
+        # Add the Nyquist frequency for discrete time systems
+        omega_sys = omega_syslist.copy()
+        if sys_.isdtime(strict=True):
+            nyquistfrq = math.pi / sys_.dt
+            if not omega_range_given:
+                # Limit up to the Nyquist frequency
+                omega_sys = omega_sys[omega_sys < nyquistfrq]
+
+        # Compute the frequency response
+        responses.append(sys_.frequency_response(omega_sys, squeeze=squeeze))
+
+    if isinstance(sysdata, (list, tuple)):
+        from .freqplot import FrequencyResponseList
+        return FrequencyResponseList(responses)
+    else:
+        return responses[0]
 
 # Alternative name (legacy)
-freqresp = frequency_response
+def freqresp(sys, omega):
+    """Legacy version of frequency_response."""
+    warn("freqresp is deprecated; use frequency_response", DeprecationWarning)
+    return frequency_response(sys, omega)
 
 
 def dcgain(sys):
-    """Return the zero-frequency (or DC) gain of the given system
+    """Return the zero-frequency (or DC) gain of the given system.
 
     Returns
     -------

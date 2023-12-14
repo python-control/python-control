@@ -55,7 +55,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from numpy import array, poly1d, row_stack, zeros_like, real, imag
 import scipy.signal             # signal processing toolbox
-from .namedio import isdtime
+from .iosys import isdtime
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from .sisotool import _SisotoolUpdate
@@ -79,7 +79,7 @@ def root_locus(sys, kvect=None, xlim=None, ylim=None,
                plotstr=None, plot=True, print_gain=None, grid=None, ax=None,
                initial_gain=None, **kwargs):
 
-    """Root locus plot
+    """Root locus plot.
 
     Calculate the root locus by finding the roots of 1+k*TF(s)
     where TF is self.num(s)/self.den(s) and each k is an element

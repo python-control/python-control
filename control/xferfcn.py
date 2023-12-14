@@ -60,7 +60,8 @@ from warnings import warn
 from itertools import chain
 from re import sub
 from .lti import LTI, _process_frequency_response
-from .namedio import common_timebase, isdtime, _process_namedio_keywords
+from .iosys import InputOutputSystem, common_timebase, isdtime, \
+    _process_iosys_keywords
 from .exception import ControlMIMONotImplemented
 from .frdata import FrequencyResponseData
 from . import config
@@ -73,11 +74,6 @@ _xferfcn_defaults = {
     'xferfcn.display_format': 'poly',
     'xferfcn.floating_point_format': '.4g'
 }
-
-
-def _float2str(value):
-    _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
-    return f"{value:{_num_format}}"
 
 
 class TransferFunction(LTI):
@@ -157,10 +153,6 @@ class TransferFunction(LTI):
     >>> G = (s + 1)/(s**2 + 2*s + 1)
 
     """
-
-    # Give TransferFunction._rmul_() priority for ndarray * TransferFunction
-    __array_priority__ = 11     # override ndarray and matrix types
-
     def __init__(self, *args, **kwargs):
         """TransferFunction(num, den[, dt])
 
@@ -178,6 +170,7 @@ class TransferFunction(LTI):
         #
         # Process positional arguments
         #
+
         if len(args) == 2:
             # The user provided a numerator and a denominator.
             num, den = args
@@ -232,15 +225,15 @@ class TransferFunction(LTI):
         defaults = args[0] if len(args) == 1 else \
             {'inputs': len(num[0]), 'outputs': len(num)}
 
-        name, inputs, outputs, states, dt = _process_namedio_keywords(
-                kwargs, defaults, static=static, end=True)
+        name, inputs, outputs, states, dt = _process_iosys_keywords(
+                kwargs, defaults, static=static)
         if states:
             raise TypeError(
                 "states keyword not allowed for transfer functions")
 
-        # Initialize LTI (NamedIOSystem) object
+        # Initialize LTI (InputOutputSystem) object
         super().__init__(
-            name=name, inputs=inputs, outputs=outputs, dt=dt)
+            name=name, inputs=inputs, outputs=outputs, dt=dt, **kwargs)
 
         #
         # Check to make sure everything is consistent
@@ -463,7 +456,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
         if var is None:
             var = 's' if self.isctime() else 'z'
-        outstr = ""
+        outstr = f"{InputOutputSystem.__str__(self)}\n"
 
         for ni in range(self.ninputs):
             for no in range(self.noutputs):
@@ -518,8 +511,7 @@ class TransferFunction(LTI):
         mimo = not self.issiso()
 
         if var is None:
-            # ! TODO: replace with standard calls to lti functions
-            var = 's' if self.dt is None or self.dt == 0 else 'z'
+            var = 's' if self.isctime() else 'z'
 
         out = ['$$']
 
@@ -562,30 +554,25 @@ class TransferFunction(LTI):
 
     def __neg__(self):
         """Negate a transfer function."""
-
         num = deepcopy(self.num)
         for i in range(self.noutputs):
             for j in range(self.ninputs):
                 num[i][j] *= -1
-
         return TransferFunction(num, self.den, self.dt)
 
     def __add__(self, other):
         """Add two LTI objects (parallel connection)."""
         from .statesp import StateSpace
 
-        # Check to see if the right operator has priority
-        if getattr(other, '__array_priority__', None) and \
-           getattr(self, '__array_priority__', None) and \
-           other.__array_priority__ > self.__array_priority__:
-            return other.__radd__(self)
-
         # Convert the second argument to a transfer function.
         if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
-        elif not isinstance(other, TransferFunction):
+        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
             other = _convert_to_transfer_function(other, inputs=self.ninputs,
                                                   outputs=self.noutputs)
+
+        if not isinstance(other, TransferFunction):
+            return NotImplemented
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.ninputs:
@@ -625,18 +612,16 @@ class TransferFunction(LTI):
 
     def __mul__(self, other):
         """Multiply two LTI objects (serial connection)."""
-        # Check to see if the right operator has priority
-        if getattr(other, '__array_priority__', None) and \
-           getattr(self, '__array_priority__', None) and \
-           other.__array_priority__ > self.__array_priority__:
-            return other.__rmul__(self)
+        from .statesp import StateSpace
 
         # Convert the second argument to a transfer function.
-        if isinstance(other, (int, float, complex, np.number)):
-            other = _convert_to_transfer_function(other, inputs=self.ninputs,
-                                                  outputs=self.ninputs)
-        else:
+        if isinstance(other, StateSpace):
             other = _convert_to_transfer_function(other)
+        elif isinstance(other, (int, float, complex, np.number, np.ndarray)):
+            other = _convert_to_transfer_function(other, inputs=self.ninputs,
+                                                  outputs=self.noutputs)
+        if not isinstance(other, TransferFunction):
+            return NotImplemented
 
         # Check that the input-output sizes are consistent.
         if self.ninputs != other.noutputs:
@@ -791,8 +776,7 @@ class TransferFunction(LTI):
         if stop2 is None:
             stop2 = len(self.num[0])
 
-        num = []
-        den = []
+        num, den = [], []
         for i in range(start1, stop1, step1):
             num_i = []
             den_i = []
@@ -801,10 +785,17 @@ class TransferFunction(LTI):
                 den_i.append(self.den[i][j])
             num.append(num_i)
             den.append(den_i)
-        if self.isctime():
-            return TransferFunction(num, den)
-        else:
-            return TransferFunction(num, den, self.dt)
+
+        # Save the label names
+        outputs = [self.output_labels[i] for i in range(start1, stop1, step1)]
+        inputs = [self.input_labels[j] for j in range(start2, stop2, step2)]
+
+        # Create the system name
+        sysname = config.defaults['iosys.indexed_system_name_prefix'] + \
+            self.name + config.defaults['iosys.indexed_system_name_suffix']
+
+        return TransferFunction(
+            num, den, self.dt, inputs=inputs, outputs=outputs, name=sysname)
 
     def freqresp(self, omega):
         """(deprecated) Evaluate transfer function at complex frequencies.
@@ -1134,7 +1125,7 @@ class TransferFunction(LTI):
             Method to use for sampling:
 
             * gbt: generalized bilinear transformation
-            * bilinear: Tustin's approximation ("gbt" with alpha=0.5)
+            * bilinear or tustin: Tustin's approximation ("gbt" with alpha=0.5)
             * euler: Euler (or forward difference) method ("gbt" with alpha=0)
             * backward_diff: Backwards difference ("gbt" with alpha=1.0)
             * zoh: zero-order hold (default)
@@ -1152,8 +1143,8 @@ class TransferFunction(LTI):
             if `copy_names` is `False`, a generic name <sys[id]> is generated
             with a unique integer id.  If `copy_names` is `True`, the new system
             name is determined by adding the prefix and suffix strings in
-            config.defaults['namedio.sampled_system_name_prefix'] and
-            config.defaults['namedio.sampled_system_name_suffix'], with the
+            config.defaults['iosys.sampled_system_name_prefix'] and
+            config.defaults['iosys.sampled_system_name_suffix'], with the
             default being to add the suffix '$sampled'.
         copy_names : bool, Optional
             If True, copy the names of the input signals, output
@@ -1192,9 +1183,13 @@ class TransferFunction(LTI):
         if method == "matched":
             return _c2d_matched(self, Ts)
         sys = (self.num[0][0], self.den[0][0])
-        if (method == 'bilinear' or (method == 'gbt' and alpha == 0.5)) and \
-                prewarp_frequency is not None:
-            Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+        if prewarp_frequency is not None:
+            if method in ('bilinear', 'tustin') or \
+                    (method == 'gbt' and alpha == 0.5):
+                Twarp = 2*np.tan(prewarp_frequency*Ts/2)/prewarp_frequency
+            else:
+                warn('prewarp_frequency ignored: incompatible conversion')
+                Twarp = Ts
         else:
             Twarp = Ts
         numd, dend, _ = cont2discrete(sys, Twarp, method, alpha)
@@ -1202,19 +1197,14 @@ class TransferFunction(LTI):
         sysd = TransferFunction(numd[0, :], dend, Ts)
         # copy over the system name, inputs, outputs, and states
         if copy_names:
-            sysd._copy_names(self)
-            if name is None:
-                sysd.name = \
-                    config.defaults['namedio.sampled_system_name_prefix'] +\
-                    sysd.name + \
-                    config.defaults['namedio.sampled_system_name_suffix']
-            else:
+            sysd._copy_names(self, prefix_suffix_name='sampled')
+            if name is not None:
                 sysd.name = name
         # pass desired signal names if names were provided
         return TransferFunction(sysd, name=name, **kwargs)
 
     def dcgain(self, warn_infinite=False):
-        """Return the zero-frequency (or DC) gain
+        """Return the zero-frequency (or DC) gain.
 
         For a continous-time transfer function G(s), the DC gain is G(0)
         For a discrete-time transfer function G(z), the DC gain is G(1)
@@ -1434,7 +1424,8 @@ def _add_siso(num1, den1, num2, den2):
     return num, den
 
 
-def _convert_to_transfer_function(sys, inputs=1, outputs=1):
+def _convert_to_transfer_function(
+        sys, inputs=1, outputs=1, use_prefix_suffix=False):
     """Convert a system to transfer function form (if needed).
 
     If sys is already a transfer function, then it is returned.  If sys is a
@@ -1510,7 +1501,10 @@ def _convert_to_transfer_function(sys, inputs=1, outputs=1):
                 num = squeeze(num)  # Convert to 1D array
                 den = squeeze(den)  # Probably not needed
 
-        return TransferFunction(num, den, sys.dt)
+        newsys = TransferFunction(num, den, sys.dt)
+        if use_prefix_suffix:
+            newsys._copy_names(sys, prefix_suffix_name='converted')
+        return newsys
 
     elif isinstance(sys, (int, float, complex, np.number)):
         num = [[[sys] for j in range(inputs)] for i in range(outputs)]
@@ -1631,8 +1625,8 @@ def tf(*args, **kwargs):
     >>> G  = (s + 1)/(s**2 + 2*s + 1)
 
     >>> # Convert a StateSpace to a TransferFunction object.
-    >>> sys_ss = ct.ss("1. -2; 3. -4", "5.; 7", "6. 8", "9.")
-    >>> sys2 = ct.tf(sys1)
+    >>> sys_ss = ct.ss([[1, -2], [3, -4]], [[5], [7]], [[6, 8]], 9)
+    >>> sys_tf = ct.tf(sys_ss)
 
     """
 
@@ -1792,7 +1786,7 @@ def ss2tf(*args, **kwargs):
     >>> sys1 = ct.ss2tf(A, B, C, D)
 
     >>> sys_ss = ct.ss(A, B, C, D)
-    >>> sys2 = ct.ss2tf(sys_ss)
+    >>> sys_tf = ct.ss2tf(sys_ss)
 
     """
 
@@ -1810,7 +1804,9 @@ def ss2tf(*args, **kwargs):
             if not kwargs.get('outputs'):
                 kwargs['outputs'] = sys.output_labels
             return TransferFunction(
-                _convert_to_transfer_function(sys), **kwargs)
+                _convert_to_transfer_function(
+                    sys, use_prefix_suffix=not sys._generic_name_check()),
+                **kwargs)
         else:
             raise TypeError(
                 "ss2tf(sys): sys must be a StateSpace object.  It is %s."
@@ -1821,7 +1817,7 @@ def ss2tf(*args, **kwargs):
 
 def tfdata(sys):
     """
-    Return transfer function data objects for a system
+    Return transfer function data objects for a system.
 
     Parameters
     ----------
@@ -1893,5 +1889,10 @@ def _clean_part(data):
 
 
 # Define constants to represent differentiation, unit delay
-TransferFunction.s = TransferFunction([1, 0], [1], 0)
-TransferFunction.z = TransferFunction([1, 0], [1], True)
+TransferFunction.s = TransferFunction([1, 0], [1], 0, name='s')
+TransferFunction.z = TransferFunction([1, 0], [1], True, name='z')
+
+
+def _float2str(value):
+    _num_format = config.defaults.get('xferfcn.floating_point_format', ':.4g')
+    return f"{value:{_num_format}}"

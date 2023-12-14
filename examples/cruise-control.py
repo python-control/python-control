@@ -131,22 +131,21 @@ vehicle = ct.NonlinearIOSystem(
 # Construct a PI controller with rolloff, as a transfer function
 Kp = 0.5                        # proportional gain
 Ki = 0.1                        # integral gain
-control_tf = ct.tf2io(
-    ct.TransferFunction([Kp, Ki], [1, 0.01*Ki/Kp]),
-    name='control', inputs='u', outputs='y')
+control_tf =ct.TransferFunction(
+    [Kp, Ki], [1, 0.01*Ki/Kp], name='control', inputs='u', outputs='y')
 
 # Construct the closed loop control system
 # Inputs: vref, gear, theta
 # Outputs: v (vehicle velocity)
 cruise_tf = ct.InterconnectedSystem(
     (control_tf, vehicle), name='cruise',
-    connections=(
+    connections=[
         ['control.u', '-vehicle.v'],
-        ['vehicle.u', 'control.y']),
-    inplist=('control.u', 'vehicle.gear', 'vehicle.theta'),
-    inputs=('vref', 'gear', 'theta'),
-    outlist=('vehicle.v', 'vehicle.u'),
-    outputs=('v', 'u'))
+        ['vehicle.u', 'control.y']],
+    inplist=['control.u', 'vehicle.gear', 'vehicle.theta'],
+    inputs=['vref', 'gear', 'theta'],
+    outlist=['vehicle.v', 'vehicle.u'],
+    outputs=['v', 'u'])
 
 # Define the time and input vectors
 T = np.linspace(0, 25, 101)
@@ -280,11 +279,11 @@ control_pi = ct.NonlinearIOSystem(
 # Create the closed loop system
 cruise_pi = ct.InterconnectedSystem(
     (vehicle, control_pi), name='cruise',
-    connections=(
+    connections=[
         ['vehicle.u', 'control.u'],
-        ['control.v', 'vehicle.v']),
-    inplist=('control.vref', 'vehicle.gear', 'vehicle.theta'),
-    outlist=('control.u', 'vehicle.v'), outputs=['u', 'v'])
+        ['control.v', 'vehicle.v']],
+    inplist=['control.vref', 'vehicle.gear', 'vehicle.theta'],
+    outlist=['control.u', 'vehicle.v'], outputs=['u', 'v'])
 
 # Figure 4.3b shows the response of the closed loop system.  The figure shows
 # that even if the hill is so steep that the throttle changes from 0.17 to
@@ -409,12 +408,12 @@ control_sf = ct.NonlinearIOSystem(
 # Create the closed loop system for the state space controller
 cruise_sf = ct.InterconnectedSystem(
     (vehicle, control_sf), name='cruise',
-    connections=(
+    connections=[
         ['vehicle.u', 'control.u'],
         ['control.x', 'vehicle.v'],
-        ['control.y', 'vehicle.v']),
-    inplist=('control.r', 'vehicle.gear', 'vehicle.theta'),
-    outlist=('control.u', 'vehicle.v'), outputs=['u', 'v'])
+        ['control.y', 'vehicle.v']],
+    inplist=['control.r', 'vehicle.gear', 'vehicle.theta'],
+    outlist=['control.u', 'vehicle.v'], outputs=['u', 'v'])
 
 # Compute the linearization of the dynamics around the equilibrium point
 

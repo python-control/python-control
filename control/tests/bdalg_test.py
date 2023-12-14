@@ -269,49 +269,50 @@ class TestFeedback:
     def testConnect(self, tsys):
         sys = append(tsys.sys2, tsys.sys3)  # two siso systems
 
-        # should not raise error
-        connect(sys, [[1, 2], [2, -2]], [2], [1, 2])
-        connect(sys, [[1, 2], [2, 0]], [2], [1, 2])
-        connect(sys, [[1, 2, 0], [2, -2, 1]], [2], [1, 2])
-        connect(sys, [[1, 2], [2, -2]], [2, 1], [1])
-        sys3x3 = append(sys, tsys.sys3)  # 3x3 mimo
-        connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [2], [1, 2])
-        connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [1, 2, 3], [3])
-        connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [2, 3], [2, 1])
+        with pytest.warns(DeprecationWarning, match="use `interconnect`"):
+            # should not raise error
+            connect(sys, [[1, 2], [2, -2]], [2], [1, 2])
+            connect(sys, [[1, 2], [2, 0]], [2], [1, 2])
+            connect(sys, [[1, 2, 0], [2, -2, 1]], [2], [1, 2])
+            connect(sys, [[1, 2], [2, -2]], [2, 1], [1])
+            sys3x3 = append(sys, tsys.sys3)  # 3x3 mimo
+            connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [2], [1, 2])
+            connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [1, 2, 3], [3])
+            connect(sys3x3, [[1, 2, 0], [2, -2, 1], [3, -3, 0]], [2, 3], [2, 1])
 
-        # feedback interconnection out of bounds: input too high
-        Q = [[1, 3], [2, -2]]
-        with pytest.raises(IndexError):
-            connect(sys, Q, [2], [1, 2])
-        # feedback interconnection out of bounds: input too low
-        Q = [[0, 2], [2, -2]]
-        with pytest.raises(IndexError):
-            connect(sys, Q, [2], [1, 2])
+            # feedback interconnection out of bounds: input too high
+            Q = [[1, 3], [2, -2]]
+            with pytest.raises(IndexError):
+                connect(sys, Q, [2], [1, 2])
+            # feedback interconnection out of bounds: input too low
+            Q = [[0, 2], [2, -2]]
+            with pytest.raises(IndexError):
+                connect(sys, Q, [2], [1, 2])
 
-        # feedback interconnection out of bounds: output too high
-        Q = [[1, 2], [2, -3]]
-        with pytest.raises(IndexError):
-            connect(sys, Q, [2], [1, 2])
-        Q = [[1, 2], [2, 4]]
-        with pytest.raises(IndexError):
-            connect(sys, Q, [2], [1, 2])
+            # feedback interconnection out of bounds: output too high
+            Q = [[1, 2], [2, -3]]
+            with pytest.raises(IndexError):
+                connect(sys, Q, [2], [1, 2])
+            Q = [[1, 2], [2, 4]]
+            with pytest.raises(IndexError):
+                connect(sys, Q, [2], [1, 2])
 
-        # input/output index testing
-        Q = [[1, 2], [2, -2]]  # OK interconnection
+            # input/output index testing
+            Q = [[1, 2], [2, -2]]  # OK interconnection
 
-        # input index is out of bounds: too high
-        with pytest.raises(IndexError):
-            connect(sys, Q, [3], [1, 2])
-        # input index is out of bounds: too low
-        with pytest.raises(IndexError):
-            connect(sys, Q, [0], [1, 2])
-        with pytest.raises(IndexError):
-            connect(sys, Q, [-2], [1, 2])
-        # output index is out of bounds: too high
-        with pytest.raises(IndexError):
-            connect(sys, Q, [2], [1, 3])
-        # output index is out of bounds: too low
-        with pytest.raises(IndexError):
-            connect(sys, Q, [2], [1, 0])
-        with pytest.raises(IndexError):
-            connect(sys, Q, [2], [1, -1])
+            # input index is out of bounds: too high
+            with pytest.raises(IndexError):
+                connect(sys, Q, [3], [1, 2])
+            # input index is out of bounds: too low
+            with pytest.raises(IndexError):
+                connect(sys, Q, [0], [1, 2])
+            with pytest.raises(IndexError):
+                connect(sys, Q, [-2], [1, 2])
+            # output index is out of bounds: too high
+            with pytest.raises(IndexError):
+                connect(sys, Q, [2], [1, 3])
+            # output index is out of bounds: too low
+            with pytest.raises(IndexError):
+                connect(sys, Q, [2], [1, 0])
+            with pytest.raises(IndexError):
+                connect(sys, Q, [2], [1, -1])

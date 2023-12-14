@@ -195,16 +195,7 @@ class TestMatlab:
         np.testing.assert_array_almost_equal(tout, t)
 
         # Play with arguments
-        yout, tout = step(sys, T=t, X0=0)
-        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
-        np.testing.assert_array_almost_equal(tout, t)
-
-        X0 = np.array([0, 0])
-        yout, tout = step(sys, T=t, X0=X0)
-        np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
-        np.testing.assert_array_almost_equal(tout, t)
-
-        yout, tout, xout = step(sys, T=t, X0=0, return_x=True)
+        yout, tout, xout = step(sys, T=t, return_x=True)
         np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
         np.testing.assert_array_almost_equal(tout, t)
 
@@ -249,20 +240,19 @@ class TestMatlab:
         # produce a warning for a system with direct feedthrough
         with pytest.warns(UserWarning, match="System has direct feedthrough"):
             # Play with arguments
-            yout, tout = impulse(sys, T=t, X0=0)
+            yout, tout = impulse(sys, T=t)
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
         # produce a warning for a system with direct feedthrough
         with pytest.warns(UserWarning, match="System has direct feedthrough"):
-            X0 = np.array([0, 0])
-            yout, tout = impulse(sys, T=t, X0=X0)
+            yout, tout = impulse(sys, T=t)
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
         # produce a warning for a system with direct feedthrough
         with pytest.warns(UserWarning, match="System has direct feedthrough"):
-            yout, tout, xout = impulse(sys, T=t, X0=0, return_x=True)
+            yout, tout, xout = impulse(sys, T=t, return_x=True)
             np.testing.assert_array_almost_equal(yout, youttrue, decimal=4)
             np.testing.assert_array_almost_equal(tout, t)
 
@@ -424,6 +414,12 @@ class TestMatlab:
         bode(siso.ss1, siso.tf2, w)
         # Not yet implemented
         #  bode(siso.ss1, '-', siso.tf1, 'b--', siso.tf2, 'k.')
+
+        # Pass frequency range as a tuple
+        mag, phase, freq = bode(siso.ss1, (0.2e-2, 0.2e2))
+        assert np.isclose(min(freq), 0.2e-2)
+        assert np.isclose(max(freq), 0.2e2)
+        assert len(freq) > 2
 
     @pytest.mark.parametrize("subsys", ["ss1", "tf1", "tf2"])
     def testRlocus(self, siso, subsys, mplcleanup):

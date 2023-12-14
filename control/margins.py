@@ -53,7 +53,7 @@ import numpy as np
 import scipy as sp
 from . import xferfcn
 from .lti import evalfr
-from .namedio import issiso
+from .iosys import issiso
 from . import frdata
 from . import freqplot
 from .exception import ControlMIMONotImplemented
@@ -505,7 +505,7 @@ def phase_crossover_frequencies(sys):
 def margin(*args):
     """margin(sysdata)
 
-    Calculate gain and phase margins and associated crossover frequencies
+    Calculate gain and phase margins and associated crossover frequencies.
 
     Parameters
     ----------

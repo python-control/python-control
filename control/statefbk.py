@@ -46,11 +46,10 @@ import warnings
 
 from . import statesp
 from .mateqn import care, dare, _check_shape
-from .statesp import StateSpace, _ssmatrix, _convert_to_statespace
+from .statesp import StateSpace, _ssmatrix, _convert_to_statespace, ss
 from .lti import LTI
-from .namedio import isdtime, isctime, _process_indices, _process_labels
-from .iosys import InputOutputSystem, NonlinearIOSystem, LinearIOSystem, \
-    interconnect, ss
+from .iosys import isdtime, isctime, _process_indices, _process_labels
+from .nlsys import NonlinearIOSystem, interconnect
 from .exception import ControlSlycot, ControlArgument, ControlDimension, \
     ControlNotImplemented
 from .config import _process_legacy_keyword
@@ -80,7 +79,7 @@ __all__ = ['ctrb', 'obsv', 'gram', 'place', 'place_varga', 'lqr',
 
 # Pole placement
 def place(A, B, p):
-    """Place closed loop eigenvalues
+    """Place closed loop eigenvalues.
 
     K = place(A, B, p)
 
@@ -109,9 +108,6 @@ def place(A, B, p):
     Limitations
         The algorithm will not place poles at the same location more
         than rank(B) times.
-
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     References
     ----------
@@ -151,7 +147,7 @@ def place(A, B, p):
 
 
 def place_varga(A, B, p, dtime=False, alpha=None):
-    """Place closed loop eigenvalues
+    """Place closed loop eigenvalues.
     K = place_varga(A, B, p, dtime=False, alpha=None)
 
     Required Parameters
@@ -192,11 +188,6 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
     [1] Varga A. "A Schur method for pole assignment."  IEEE Trans. Automatic
         Control, Vol. AC-26, pp. 517-519, 1981.
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -262,7 +253,7 @@ def place_varga(A, B, p, dtime=False, alpha=None):
 
 # Contributed by Roberto Bucher <roberto.bucher@supsi.ch>
 def acker(A, B, poles):
-    """Pole placement using Ackermann method
+    """Pole placement using Ackermann method.
 
     Call:
     K = acker(A, B, poles)
@@ -279,10 +270,6 @@ def acker(A, B, poles):
     K : 2D array (or matrix)
         Gains such that A - B K has given eigenvalues
 
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
     """
     # Convert the inputs to matrices
     a = _ssmatrix(A)
@@ -309,14 +296,14 @@ def acker(A, B, poles):
 
 
 def lqr(*args, **kwargs):
-    """lqr(A, B, Q, R[, N])
+    r"""lqr(A, B, Q, R[, N])
 
-    Linear quadratic regulator design
+    Linear quadratic regulator design.
 
     The lqr() function computes the optimal state feedback controller
     u = -K x that minimizes the quadratic cost
 
-    .. math:: J = \\int_0^\\infty (x' Q x + u' R u + 2 x' N u) dt
+    .. math:: J = \int_0^\infty (x' Q x + u' R u + 2 x' N u) dt
 
     The function can be called with either 3, 4, or 5 arguments:
 
@@ -366,13 +353,10 @@ def lqr(*args, **kwargs):
 
     Notes
     -----
-    1. If the first argument is an LTI object, then this object will be used
-       to define the dynamics and input matrices.  Furthermore, if the LTI
-       object corresponds to a discrete time system, the ``dlqr()`` function
-       will be called.
-
-    2. The return type for 2D arrays depends on the default class set for
-       state space operations.  See :func:`~control.use_numpy_matrix`.
+    If the first argument is an LTI object, then this object will be used
+    to define the dynamics and input matrices.  Furthermore, if the LTI
+    object corresponds to a discrete time system, the ``dlqr()`` function
+    will be called.
 
     Examples
     --------
@@ -458,14 +442,14 @@ def lqr(*args, **kwargs):
 
 
 def dlqr(*args, **kwargs):
-    """dlqr(A, B, Q, R[, N])
+    r"""dlqr(A, B, Q, R[, N])
 
-    Discrete-time linear quadratic regulator design
+    Discrete-time linear quadratic regulator design.
 
     The dlqr() function computes the optimal state feedback controller
     u[n] = - K x[n] that minimizes the quadratic cost
 
-    .. math:: J = \\sum_0^\\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
+    .. math:: J = \sum_0^\infty (x[n]' Q x[n] + u[n]' R u[n] + 2 x[n]' N u[n])
 
     The function can be called with either 3, 4, or 5 arguments:
 
@@ -513,11 +497,6 @@ def dlqr(*args, **kwargs):
     See Also
     --------
     lqr, lqe, dlqe
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -605,14 +584,14 @@ def create_statefbk_iosystem(
         xd_labels=None, ud_labels=None, gainsched_indices=None,
         gainsched_method='linear', control_indices=None, state_indices=None,
         name=None, inputs=None, outputs=None, states=None, **kwargs):
-    """Create an I/O system using a (full) state feedback controller
+    r"""Create an I/O system using a (full) state feedback controller.
 
     This function creates an input/output system that implements a
     state feedback controller of the form
 
-        u = ud - K_p (x - xd) - K_i integral(C x - C x_d)
+    .. math:: u = u_d - K_p (x - x_d) - K_i \int(C x - C x_d)
 
-    It can be called in the form
+    It can be called in the form::
 
         ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
 
@@ -624,18 +603,18 @@ def create_statefbk_iosystem(
     gains and a corresponding list of values of a set of scheduling
     variables.  In this case, the controller has the form
 
-        u = ud - K_p(mu) (x - xd) - K_i(mu) integral(C x - C x_d)
+    .. math:: u = u_d - K_p(\mu) (x - x_d) - K_i(\mu) \int(C x - C x_d)
 
-    where mu represents the scheduling variable.
+    where :math:`\mu` represents the scheduling variable.
 
     Parameters
     ----------
-    sys : InputOutputSystem
+    sys : NonlinearIOSystem
         The I/O system that represents the process dynamics.  If no estimator
         is given, the output of this system should represent the full state.
 
-    gain : ndarray or tuple
-        If an array is given, it represents the state feedback gain (K).
+    gain : ndarray, tuple, or I/O system
+        If an array is given, it represents the state feedback gain (`K`).
         This matrix defines the gains to be applied to the system.  If
         `integral_action` is None, then the dimensions of this array
         should be (sys.ninputs, sys.nstates).  If `integral action` is
@@ -644,18 +623,21 @@ def create_statefbk_iosystem(
 
         If a tuple is given, then it specifies a gain schedule.  The tuple
         should be of the form `(gains, points)` where gains is a list of
-        gains :math:`K_j` and points is a list of values :math:`\\mu_j` at
-        which the gains are computed.  The `gainsched_indices` parameter
-        should be used to specify the scheduling variables.
+        gains `K_j` and points is a list of values `mu_j` at which the
+        gains are computed.  The `gainsched_indices` parameter should be
+        used to specify the scheduling variables.
+
+        If an I/O system is given, the error e = x - xd is passed to the
+        system and the output is used as the feedback compensation term.
 
     xd_labels, ud_labels : str or list of str, optional
         Set the name of the signals to use for the desired state and
-        inputs.  If a single string is specified, it should be a
-        format string using the variable `i` as an index.  Otherwise,
-        a list of strings matching the size of xd and ud,
-        respectively, should be used.  Default is "xd[{i}]" for
-        xd_labels and "ud[{i}]" for ud_labels.  These settings can
-        also be overriden using the `inputs` keyword.
+        inputs.  If a single string is specified, it should be a format
+        string using the variable `i` as an index.  Otherwise, a list of
+        strings matching the size of `x_d` and `u_d`, respectively, should
+        be used.  Default is "xd[{i}]" for xd_labels and "ud[{i}]" for
+        ud_labels.  These settings can also be overridden using the
+        `inputs` keyword.
 
     integral_action : ndarray, optional
         If this keyword is specified, the controller can include integral
@@ -664,20 +646,20 @@ def create_statefbk_iosystem(
         multiplied by the current and desired state to generate the error
         for the internal integrator states of the control law.
 
-    estimator : InputOutputSystem, optional
+    estimator : NonlinearIOSystem, optional
         If an estimator is provided, use the states of the estimator as
         the system inputs for the controller.
 
     gainsched_indices : int, slice, or list of int or str, optional
         If a gain scheduled controller is specified, specify the indices of
         the controller input to use for scheduling the gain. The input to
-        the controller is the desired state xd, the desired input ud, and
-        the system state x (or state estimate xhat, if an estimator is
-        given). If value is an integer `q`, the first `q` values of the
-        [xd, ud, x] vector are used.  Otherwise, the value should be a
-        slice or a list of indices.  The list of indices can be specified
-        as either integer offsets or as signal names.  The default is to
-        use the desired state xd.
+        the controller is the desired state `x_d`, the desired input `u_d`,
+        and the system state `x` (or state estimate `xhat`, if an
+        estimator is given). If value is an integer `q`, the first `q`
+        values of the `[x_d, u_d, x]` vector are used.  Otherwise, the
+        value should be a slice or a list of indices.  The list of indices
+        can be specified as either integer offsets or as signal names. The
+        default is to use the desired state `x_d`.
 
     gainsched_method : str, optional
         The method to use for gain scheduling.  Possible values are 'linear'
@@ -696,12 +678,12 @@ def create_statefbk_iosystem(
 
     Returns
     -------
-    ctrl : InputOutputSystem
+    ctrl : NonlinearIOSystem
         Input/output system representing the controller.  This system
-        takes as inputs the desired state `xd`, the desired input
-        `ud`, and either the system state `x` or the estimated state
+        takes as inputs the desired state `x_d`, the desired input
+        `u_d`, and either the system state `x` or the estimated state
         `xhat`.  It outputs the controller action `u` according to the
-        formula :math:`u = u_d - K(x - x_d)`.  If the keyword
+        formula `u = u_d - K(x - x_d)`.  If the keyword
         `integral_action` is specified, then an additional set of
         integrators is included in the control system (with the gain
         matrix `K` having the integral gains appended after the state
@@ -709,9 +691,9 @@ def create_statefbk_iosystem(
         (proportional and integral) are evaluated using the scheduling
         variables specified by `gainsched_indices`.
 
-    clsys : InputOutputSystem
+    clsys : NonlinearIOSystem
         Input/output system representing the closed loop system.  This
-        systems takes as inputs the desired trajectory `(xd, ud)` and
+        system takes as inputs the desired trajectory `(x_d, u_d)` and
         outputs the system state `x` and the applied input `u`
         (vertically stacked).
 
@@ -742,9 +724,26 @@ def create_statefbk_iosystem(
         System name. If unspecified, a generic name <sys[id]> is generated
         with a unique integer id.
 
+    Examples
+    --------
+    >>> import control as ct
+    >>> import numpy as np
+    >>>
+    >>> A = [[0, 1], [-0.5, -0.1]]
+    >>> B = [[0], [1]]
+    >>> C = np.eye(2)
+    >>> D = np.zeros((2, 1))
+    >>> sys = ct.ss(A, B, C, D)
+    >>>
+    >>> Q = np.eye(2)
+    >>> R = np.eye(1)
+    >>>
+    >>> K, _, _ = ct.lqr(sys,Q,R)
+    >>> ctrl, clsys = ct.create_statefbk_iosystem(sys, K)
+
     """
     # Make sure that we were passed an I/O system as an input
-    if not isinstance(sys, InputOutputSystem):
+    if not isinstance(sys, NonlinearIOSystem):
         raise ControlArgument("Input system must be I/O system")
 
     # Process (legacy) keywords
@@ -775,7 +774,8 @@ def create_statefbk_iosystem(
             " output must include the full state")
     elif estimator == sys:
         # Issue a warning if we can't verify state output
-        if (isinstance(sys, NonlinearIOSystem) and sys.outfcn is not None) or \
+        if (isinstance(sys, NonlinearIOSystem) and
+            not isinstance(sys, StateSpace) and sys.outfcn is not None) or \
            (isinstance(sys, StateSpace) and
             not (np.all(sys.C[np.ix_(state_indices, state_indices)] ==
                         np.eye(sys_nstates)) and
@@ -816,7 +816,15 @@ def create_statefbk_iosystem(
         # Stack gains and points if past as a list
         gains = np.stack(gains)
         points = np.stack(points)
-        gainsched=True
+        gainsched = True
+
+    elif isinstance(gain, NonlinearIOSystem):
+        if controller_type not in ['iosystem', None]:
+            raise ControlArgument(
+                f"incompatible controller type '{controller_type}'")
+        fbkctrl = gain
+        controller_type = 'iosystem'
+        gainsched = False
 
     else:
         raise ControlArgument("gain must be an array or a tuple")
@@ -828,7 +836,7 @@ def create_statefbk_iosystem(
             " gain scheduled controller")
     elif controller_type is None:
         controller_type = 'nonlinear' if gainsched else 'linear'
-    elif controller_type not in {'linear', 'nonlinear'}:
+    elif controller_type not in {'linear', 'nonlinear', 'iosystem'}:
         raise ControlArgument(f"unknown controller_type '{controller_type}'")
 
     # Figure out the labels to use
@@ -922,6 +930,30 @@ def create_statefbk_iosystem(
             _control_update, _control_output, name=name, inputs=inputs,
             outputs=outputs, states=states, params=params)
 
+    elif controller_type == 'iosystem':
+        # Use the passed system to compute feedback compensation
+        def _control_update(t, states, inputs, params):
+            # Split input into desired state, nominal input, and current state
+            xd_vec = inputs[0:sys_nstates]
+            x_vec = inputs[-sys_nstates:]
+
+            # Compute the integral error in the xy coordinates
+            return fbkctrl.updfcn(t, states, (x_vec - xd_vec), params)
+
+        def _control_output(t, states, inputs, params):
+            # Split input into desired state, nominal input, and current state
+            xd_vec = inputs[0:sys_nstates]
+            ud_vec = inputs[sys_nstates:sys_nstates + sys_ninputs]
+            x_vec = inputs[-sys_nstates:]
+
+            # Compute the control law
+            return ud_vec + fbkctrl.outfcn(t, states, (x_vec - xd_vec), params)
+
+        # TODO: add a way to pass parameters
+        ctrl = NonlinearIOSystem(
+            _control_update, _control_output, name=name, inputs=inputs,
+            outputs=outputs, states=fbkctrl.state_labels, dt=fbkctrl.dt)
+
     elif controller_type == 'linear' or controller_type is None:
         # Create the matrices implementing the controller
         if isctime(sys):
@@ -958,23 +990,20 @@ def create_statefbk_iosystem(
     return ctrl, closed
 
 
-def ctrb(A, B):
-    """Controllabilty matrix
+def ctrb(A, B, t=None):
+    """Controllabilty matrix.
 
     Parameters
     ----------
     A, B : array_like or string
         Dynamics and input matrix of the system
+    t : None or integer
+        maximum time horizon of the controllability matrix, max = A.shape[0]
 
     Returns
     -------
     C : 2D array (or matrix)
         Controllability matrix
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -989,31 +1018,34 @@ def ctrb(A, B):
     amat = _ssmatrix(A)
     bmat = _ssmatrix(B)
     n = np.shape(amat)[0]
+    m = np.shape(bmat)[1]
+    
+    if t is None or t > n:
+        t = n
 
     # Construct the controllability matrix
-    ctrb = np.hstack(
-        [bmat] + [np.linalg.matrix_power(amat, i) @ bmat
-                  for i in range(1, n)])
+    ctrb = np.zeros((n, t * m))
+    ctrb[:, :m] = bmat
+    for k in range(1, t):
+        ctrb[:, k * m:(k + 1) * m] = np.dot(amat, ctrb[:, (k - 1) * m:k * m])
+
     return _ssmatrix(ctrb)
 
 
-def obsv(A, C):
-    """Observability matrix
+def obsv(A, C, t=None):
+    """Observability matrix.
 
     Parameters
     ----------
     A, C : array_like or string
         Dynamics and output matrix of the system
-
+    t : None or integer
+        maximum time horizon of the controllability matrix, max = A.shape[0]
+        
     Returns
     -------
     O : 2D array (or matrix)
         Observability matrix
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------
@@ -1028,15 +1060,23 @@ def obsv(A, C):
     amat = _ssmatrix(A)
     cmat = _ssmatrix(C)
     n = np.shape(amat)[0]
+    p = np.shape(cmat)[0]
+    
+    if t is None or t > n:
+        t = n
 
     # Construct the observability matrix
-    obsv = np.vstack([cmat] + [cmat @ np.linalg.matrix_power(amat, i)
-                               for i in range(1, n)])
+    obsv = np.zeros((t * p, n))
+    obsv[:p, :] = cmat
+        
+    for k in range(1, t):
+        obsv[k * p:(k + 1) * p, :] = np.dot(obsv[(k - 1) * p:k * p, :], amat)
+
     return _ssmatrix(obsv)
 
 
 def gram(sys, type):
-    """Gramian (controllability or observability)
+    """Gramian (controllability or observability).
 
     Parameters
     ----------
@@ -1062,11 +1102,6 @@ def gram(sys, type):
     ControlSlycot
         if slycot routine sb03md cannot be found
         if slycot routine sb03od cannot be found
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     Examples
     --------

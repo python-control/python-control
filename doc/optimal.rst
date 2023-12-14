@@ -65,6 +65,13 @@ can be on the input, the state, or combinations of input and state,
 depending on the form of :math:`g_i`.  Furthermore, these constraints are
 intended to hold at all instants in time along the trajectory.
 
+For a discrete time system, the same basic formulation applies except
+that the cost function is given by
+
+.. math::
+
+  J(x, u) = \sum_{k=0}^{N-1} L(x_k, u_k)\, dt + V(x_N).
+
 A common use of optimization-based control techniques is the implementation
 of model predictive control (also called receding horizon control).  In
 model predictive control, a finite horizon optimal control problem is solved,
@@ -129,7 +136,7 @@ The result of this optimization gives us the estimated state for the
 previous :math:`N` steps in time, including the "current" time
 :math:`x[N]`.  The basic idea is thus to compute the state estimate that is
 most consistent with our model and penalize the noise and disturbances
-according to how likely the are (based on the given stochastic system 
+according to how likely they are (based on the given stochastic system 
 model for each).
 
 Given a solution to this fixed-horizon optimal estimation problem, we can
@@ -344,7 +351,7 @@ following code::
 
 We consider an optimal control problem that consists of "changing lanes" by
 moving from the point x = 0 m, y = -2 m, :math:`\theta` = 0 to the point x =
-100 m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and with a
+100 m, y = 2 m, :math:`\theta` = 0) over a period of 10 seconds and
 with a starting and ending velocity of 10 m/s::
 
   x0 = np.array([0., -2., 0.]); u0 = np.array([10., 0.])
@@ -360,7 +367,7 @@ penalizes the state and input using quadratic cost functions::
   traj_cost = obc.quadratic_cost(vehicle, Q, R, x0=xf, u0=uf)
   term_cost = obc.quadratic_cost(vehicle, P, 0, x0=xf)
 
-We also constraint the maximum turning rate to 0.1 radians (about 6 degees)
+We also constrain the maximum turning rate to 0.1 radians (about 6 degrees)
 and constrain the velocity to be in the range of 9 m/s to 11 m/s::
 
   constraints = [ obc.input_range_constraint(vehicle, [8, -0.1], [12, 0.1]) ]
@@ -431,7 +438,7 @@ solutions do not seem close to optimal, here are a few things to try:
   good solutions with a small number of free variables (the example above
   uses 3 time points for 2 inputs, so a total of 6 optimization variables).
   Note that you can "resample" the optimal trajectory by running a
-  simulation of the sytem and using the `t_eval` keyword in
+  simulation of the system and using the `t_eval` keyword in
   `input_output_response` (as done above).
 
 * Use a smooth basis: as an alternative to parameterizing the optimal
@@ -445,14 +452,14 @@ solutions do not seem close to optimal, here are a few things to try:
   and `minimize_kwargs` keywords in :func:`~control.solve_ocp`, you can
   choose the SciPy optimization function that you use and set many
   parameters.  See :func:`scipy.optimize.minimize` for more information on
-  the optimzers that are available and the options and keywords that they
+  the optimizers that are available and the options and keywords that they
   accept.
 
 * Walk before you run: try setting up a simpler version of the optimization,
   remove constraints or simplifying the cost to get a simple version of the
   problem working and then add complexity.  Sometimes this can help you find
   the right set of options or identify situations in which you are being too
-  aggressive in what your are trying to get the system to do.
+  aggressive in what you are trying to get the system to do.
 
 See :ref:`steering-optimal` for some examples of different problem
 formulations.

@@ -88,7 +88,7 @@ __all__ = ['lyap', 'dlyap', 'dare', 'care']
 
 
 def lyap(A, Q, C=None, E=None, method=None):
-    """Solves the continuous-time Lyapunov equation
+    """Solves the continuous-time Lyapunov equation.
 
     X = lyap(A, Q) solves
 
@@ -126,13 +126,8 @@ def lyap(A, Q, C=None, E=None, method=None):
 
     Returns
     -------
-    X : 2D array (or matrix)
+    X : 2D array
         Solution to the Lyapunov or Sylvester equation
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use
@@ -219,7 +214,7 @@ def lyap(A, Q, C=None, E=None, method=None):
 
 
 def dlyap(A, Q, C=None, E=None, method=None):
-    """Solves the discrete-time Lyapunov equation
+    """Solves the discrete-time Lyapunov equation.
 
     X = dlyap(A, Q) solves
 
@@ -259,11 +254,6 @@ def dlyap(A, Q, C=None, E=None, method=None):
     -------
     X : 2D array (or matrix)
         Solution to the Lyapunov or Sylvester equation
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use
@@ -352,7 +342,7 @@ def dlyap(A, Q, C=None, E=None, method=None):
 
 def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
          A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
-    """Solves the continuous-time algebraic Riccati equation
+    """Solves the continuous-time algebraic Riccati equation.
 
     X, L, G = care(A, B, Q, R=None) solves
 
@@ -394,11 +384,6 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
         Closed loop eigenvalues
     G : 2D array (or matrix)
         Gain matrix
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use
@@ -511,7 +496,7 @@ def care(A, B, Q, R=None, S=None, E=None, stabilizing=True, method=None,
 def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
          A_s="A", B_s="B", Q_s="Q", R_s="R", S_s="S", E_s="E"):
     """Solves the discrete-time algebraic Riccati
-    equation
+    equation.
 
     X, L, G = dare(A, B, Q, R) solves
 
@@ -553,11 +538,6 @@ def dare(A, B, Q, R, S=None, E=None, stabilizing=True, method=None,
         Closed loop eigenvalues
     G : 2D array (or matrix)
         Gain matrix
-
-    Notes
-    -----
-    The return type for 2D arrays depends on the default class set for
-    state space operations.  See :func:`~control.use_numpy_matrix`.
 
     """
     # Decide what method to use

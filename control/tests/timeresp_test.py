@@ -344,6 +344,15 @@ class TestTimeresp:
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
 
+        # Make sure we get the same result using MIMO step response
+        response = step_response(sys, T=t)
+        np.testing.assert_allclose(response.y[0, 0, :], y_00)
+        np.testing.assert_allclose(response.y[1, 1, :], y_11)
+        np.testing.assert_allclose(response.u[0, 0, :], 1)
+        np.testing.assert_allclose(response.u[1, 0, :], 0)
+        np.testing.assert_allclose(response.u[0, 1, :], 0)
+        np.testing.assert_allclose(response.u[1, 1, :], 1)
+
     @pytest.mark.parametrize("tsystem", ["mimo_ss1"], indirect=True)
     def test_step_response_return(self, tsystem):
         """Verify continuous and discrete time use same return conventions."""
@@ -486,9 +495,7 @@ class TestTimeresp:
     @pytest.mark.parametrize(
         "tsystem, kwargs",
         [("siso_ss2", {}),
-         ("siso_ss2", {'X0': 0}),
-         ("siso_ss2", {'X0': np.array([0, 0])}),
-         ("siso_ss2", {'X0': 0, 'return_x': True}),
+         ("siso_ss2", {'return_x': True}),
          ("siso_dtf0", {})],
         indirect=["tsystem"])
     def test_impulse_response_siso(self, tsystem, kwargs):
@@ -567,9 +574,9 @@ class TestTimeresp:
         yref = tsystem.yinitial
         yref_notrim = np.broadcast_to(yref, (2, len(t)))
 
-        _t, y_00 = initial_response(sys, T=t, X0=x0, input=0, output=0)
+        _t, y_00 = initial_response(sys, T=t, X0=x0, output=0)
         np.testing.assert_array_almost_equal(y_00, yref, decimal=4)
-        _t, y_11 = initial_response(sys, T=t, X0=x0, input=0, output=1)
+        _t, y_11 = initial_response(sys, T=t, X0=x0, output=1)
         np.testing.assert_array_almost_equal(y_11, yref, decimal=4)
         _t, yy = initial_response(sys, T=t, X0=x0)
         np.testing.assert_array_almost_equal(yy, yref_notrim, decimal=4)
@@ -639,7 +646,9 @@ class TestTimeresp:
         U = np.sin(T)
 
         """Make sure that legacy version of forced_response works"""
-        ct.config.use_legacy_defaults("0.8.4")
+        with pytest.warns(
+                UserWarning, match="NumPy matrix class no longer"):
+            ct.config.use_legacy_defaults("0.8.4")
         # forced_response returns x by default
         t, y = ct.step_response(sys, T)
         t, y, x = ct.forced_response(sys, T, U)
@@ -857,7 +866,7 @@ class TestTimeresp:
                                      initial_response,
                                      forced_response])
     @pytest.mark.parametrize("squeeze", [None, True, False])
-    def test_time_vector(self, tsystem, fun, squeeze, matarrayout):
+    def test_time_vector(self, tsystem, fun, squeeze):
         """Test time vector handling and correct output convention
 
         gh-239, gh-295
@@ -872,7 +881,8 @@ class TestTimeresp:
                 kw['U'] = np.vstack([np.sin(t) for i in range(sys.ninputs)])
         elif fun == forced_response and isctime(sys, strict=True):
             pytest.skip("No continuous forced_response without time vector.")
-        if hasattr(sys, "nstates") and sys.nstates is not None:
+        if hasattr(sys, "nstates") and sys.nstates is not None and \
+           fun != impulse_response:
             kw['X0'] = np.arange(sys.nstates) + 1
         if sys.ninputs > 1 and fun in [step_response, impulse_response]:
             kw['input'] = 1
@@ -978,7 +988,7 @@ class TestTimeresp:
         assert t.shape == y.shape  # Allows direct plotting of output
 
     @pytest.mark.usefixtures("editsdefaults")
-    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf])
     @pytest.mark.parametrize("nstate, nout, ninp, squeeze, shape1, shape2", [
     #  state  out   in   squeeze  in/out      out-only
         [1,    1,    1,  None,   (8,),       (8,)],
@@ -1045,8 +1055,9 @@ class TestTimeresp:
             _, yvec, xvec = ct.initial_response(
                 sys, tvec, 1, squeeze=squeeze, return_x=True)
             assert xvec.shape == (sys.nstates, 8)
-        else:
-            _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
+        elif isinstance(sys, TransferFunction):
+            with pytest.warns(UserWarning, match="may not be consistent"):
+                _, yvec = ct.initial_response(sys, tvec, 1, squeeze=squeeze)
         assert yvec.shape == shape2
 
         # Forced response (only indexed by output)
@@ -1070,8 +1081,8 @@ class TestTimeresp:
             # Shape should be squeezed
             assert yvec.shape == (8, )
 
-        # For InputOutputSystems, also test input/output response
-        if isinstance(sys, ct.InputOutputSystem):
+        # For NonlinearIOSystem, also test input/output response
+        if isinstance(sys, ct.NonlinearIOSystem):
             _, yvec = ct.input_output_response(sys, tvec, uvec, squeeze=squeeze)
             assert yvec.shape == shape2
 
@@ -1088,7 +1099,11 @@ class TestTimeresp:
         if squeeze is not True or sys.ninputs > 1 or sys.noutputs > 1:
             assert yvec.shape == (sys.noutputs, sys.ninputs, 8)
 
-        _, yvec = ct.initial_response(sys, tvec, 1)
+        if isinstance(sys, TransferFunction):
+            with pytest.warns(UserWarning, match="may not be consistent"):
+                _, yvec = ct.initial_response(sys, tvec, 1)
+        else:
+            _, yvec = ct.initial_response(sys, tvec, 1)
         if squeeze is not True or sys.noutputs > 1:
             assert yvec.shape == (sys.noutputs, 8)
 
@@ -1101,13 +1116,13 @@ class TestTimeresp:
         if squeeze is not True or sys.noutputs > 1:
             assert yvec.shape == (sys.noutputs, 8)
 
-        # For InputOutputSystems, also test input_output_response
-        if isinstance(sys, ct.InputOutputSystem):
+        # For NonlinearIOSystems, also test input_output_response
+        if isinstance(sys, ct.NonlinearIOSystem):
             _, yvec = ct.input_output_response(sys, tvec, uvec)
             if squeeze is not True or sys.noutputs > 1:
                 assert yvec.shape == (sys.noutputs, 8)
 
-    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf, ct.ss2io])
+    @pytest.mark.parametrize("fcn", [ct.ss, ct.tf])
     def test_squeeze_exception(self, fcn):
         sys = fcn(ct.rss(2, 1, 1))
         with pytest.raises(ValueError, match="Unknown squeeze value"):
@@ -1130,8 +1145,8 @@ class TestTimeresp:
     ])
     def test_squeeze_0_8_4(self, nstate, nout, ninp, squeeze, shape):
         # Set defaults to match release 0.8.4
-        ct.config.use_legacy_defaults('0.8.4')
-        ct.config.use_numpy_matrix(False)
+        with pytest.warns(UserWarning, match="NumPy matrix class no longer"):
+            ct.config.use_legacy_defaults('0.8.4')
 
         # Generate system, time, and input vectors
         sys = ct.rss(nstate, nout, ninp, strictly_proper=True)

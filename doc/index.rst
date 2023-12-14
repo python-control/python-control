@@ -26,6 +26,7 @@ implements basic operations for analysis and design of feedback control systems.
    conventions
    control
    classes
+   plotting
    matlab
    flatsys
    iosys

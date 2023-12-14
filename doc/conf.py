@@ -30,7 +30,7 @@ if not on_rtd:  # only import and set the theme if we're building docs locally
 # -- Project information -----------------------------------------------------
 
 project = u'Python Control Systems Library'
-copyright = u'2022, python-control.org'
+copyright = u'2023, python-control.org'
 author = u'Python Control Developers'
 
 # Version information - read from the source code

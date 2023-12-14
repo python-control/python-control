@@ -1,3 +1,8 @@
+# nichols.py - Nichols plot
+#
+# Contributed by Allan McInnes <Allan.McInnes@canterbury.ac.nz>
+#
+
 """nichols.py
 
 Functions for plotting Black-Nichols charts.
@@ -8,53 +13,16 @@ nichols.nichols_plot aliased as nichols.nichols
 nichols.nichols_grid
 """
 
-# nichols.py - Nichols plot
-#
-# Contributed by Allan McInnes <Allan.McInnes@canterbury.ac.nz>
-#
-# This file contains some standard control system plots: Bode plots,
-# Nyquist plots, Nichols plots and pole-zero diagrams
-#
-# Copyright (c) 2010 by California Institute of Technology
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# 3. Neither the name of the California Institute of Technology nor
-#    the names of its contributors may be used to endorse or promote
-#    products derived from this software without specific prior
-#    written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-# FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CALTECH
-# OR THE CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# $Id: freqplot.py 139 2011-03-30 16:19:59Z murrayrm $
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.transforms
 
 from .ctrlutil import unwrap
-from .freqplot import _default_frequency_range
+from .freqplot import _default_frequency_range, _freqplot_defaults, \
+    _get_line_labels
+from .lti import frequency_response
+from .statesp import StateSpace
+from .xferfcn import TransferFunction
 from . import config
 
 __all__ = ['nichols_plot', 'nichols', 'nichols_grid']
@@ -65,53 +33,81 @@ _nichols_defaults = {
 }
 
 
-def nichols_plot(sys_list, omega=None, grid=None):
-    """Nichols plot for a system
+def nichols_plot(
+        data, omega=None, *fmt, grid=None, title=None,
+        legend_loc='upper left', **kwargs):
+    """Nichols plot for a system.
 
     Plots a Nichols plot for the system over a (optional) frequency range.
 
     Parameters
     ----------
-    sys_list : list of LTI, or LTI
-        List of linear input/output systems (single system is OK)
+    data : list of `FrequencyResponseData` or `LTI`
+        List of LTI systems or :class:`FrequencyResponseData` objects.  A
+        single system or frequency response can also be passed.
     omega : array_like
         Range of frequencies (list or bounds) in rad/sec
+    *fmt : :func:`matplotlib.pyplot.plot` format string, optional
+        Passed to `matplotlib` as the format string for all lines in the plot.
+        The `omega` parameter must be present (use omega=None if needed).
     grid : boolean, optional
         True if the plot should include a Nichols-chart grid. Default is True.
+    legend_loc : str, optional
+        For plots with multiple lines, a legend will be included in the
+        given location.  Default is 'upper left'.  Use False to supress.
+    **kwargs : :func:`matplotlib.pyplot.plot` keyword properties, optional
+        Additional keywords passed to `matplotlib` to specify line properties.
 
     Returns
     -------
-    None
+    lines : array of Line2D
+        1-D array of Line2D objects.  The size of the array matches
+        the number of systems and the value of the array is a list of
+        Line2D objects for that system.
     """
     # Get parameter values
     grid = config._get_param('nichols', 'grid', grid, True)
-
+    freqplot_rcParams = config._get_param(
+        'freqplot', 'rcParams', kwargs, _freqplot_defaults, pop=True)
 
     # If argument was a singleton, turn it into a list
-    if not getattr(sys_list, '__iter__', False):
-        sys_list = (sys_list,)
+    if not isinstance(data, (tuple, list)):
+        data = [data]
 
-    # Select a default range if none is provided
-    if omega is None:
-        omega = _default_frequency_range(sys_list)
+    # If we were passed a list of systems, convert to data
+    if all([isinstance(
+            sys, (StateSpace, TransferFunction)) for sys in data]):
+        data = frequency_response(data, omega=omega)
 
-    for sys in sys_list:
+    # Make sure that all systems are SISO
+    if any([resp.ninputs > 1 or resp.noutputs > 1 for resp in data]):
+        raise NotImplementedError("MIMO Nichols plots not implemented")
+
+    # Create a list of lines for the output
+    out = np.empty(len(data), dtype=object)
+
+    for idx, response in enumerate(data):
         # Get the magnitude and phase of the system
-        mag_tmp, phase_tmp, omega = sys.frequency_response(omega)
-        mag = np.squeeze(mag_tmp)
-        phase = np.squeeze(phase_tmp)
+        mag = np.squeeze(response.magnitude)
+        phase = np.squeeze(response.phase)
+        omega = response.omega
 
         # Convert to Nichols-plot format (phase in degrees,
         # and magnitude in dB)
         x = unwrap(np.degrees(phase), 360)
         y = 20*np.log10(mag)
 
-        # Generate the plot
-        plt.plot(x, y)
+        # Decide on the system name
+        sysname = response.sysname if response.sysname is not None \
+            else f"Unknown-{idx_sys}"
 
-    plt.xlabel('Phase (deg)')
-    plt.ylabel('Magnitude (dB)')
-    plt.title('Nichols Plot')
+        # Generate the plot
+        with plt.rc_context(freqplot_rcParams):
+            out[idx] = plt.plot(x, y, *fmt, label=sysname, **kwargs)
+
+    # Label the plot axes
+    plt.xlabel('Phase [deg]')
+    plt.ylabel('Magnitude [dB]')
 
     # Mark the -180 point
     plt.plot([-180], [0], 'r+')
@@ -119,6 +115,23 @@ def nichols_plot(sys_list, omega=None, grid=None):
     # Add grid
     if grid:
         nichols_grid()
+
+    # List of systems that are included in this plot
+    ax_nichols = plt.gca()
+    lines, labels = _get_line_labels(ax_nichols)
+
+    # Add legend if there is more than one system plotted
+    if len(labels) > 1 and legend_loc is not False:
+        with plt.rc_context(freqplot_rcParams):
+            ax_nichols.legend(lines, labels, loc=legend_loc)
+
+    # Add the title
+    if title is None:
+        title = "Nichols plot for " + ", ".join(labels)
+    with plt.rc_context(freqplot_rcParams):
+        plt.suptitle(title)
+
+    return out
 
 
 def _inner_extents(ax):
@@ -133,7 +146,7 @@ def _inner_extents(ax):
 
 def nichols_grid(cl_mags=None, cl_phases=None, line_style='dotted', ax=None,
                  label_cl_phases=True):
-    """Nichols chart grid
+    """Nichols chart grid.
 
     Plots a Nichols chart grid on the current axis, or creates a new chart
     if no plot already exists.

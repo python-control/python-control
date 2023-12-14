@@ -80,9 +80,9 @@ from copy import copy
 
 from . import config
 from .exception import pandas_check
-from .namedio import isctime, isdtime
-from .statesp import StateSpace, _convert_to_statespace, _mimo2simo, _mimo2siso
-from .xferfcn import TransferFunction
+from .iosys import isctime, isdtime
+from .timeplot import time_response_plot
+
 
 __all__ = ['forced_response', 'step_response', 'step_info',
            'initial_response', 'impulse_response', 'TimeResponseData']
@@ -170,10 +170,24 @@ class TimeResponseData:
     input_labels, output_labels, state_labels : array of str
         Names for the input, output, and state variables.
 
-    ntraces : int
+    sysname : str, optional
+        Name of the system that created the data.
+
+    plot_inputs : bool, optional
+        Whether or not to plot the inputs by default (can be overridden in
+        the plot() method)
+
+    ntraces : int, optional
         Number of independent traces represented in the input/output
-        response.  If ntraces is 0 then the data represents a single trace
-        with the trace index surpressed in the data.
+        response.  If ntraces is 0 (default) then the data represents a
+        single trace with the trace index surpressed in the data.
+
+    trace_labels : array of string, optional
+        Labels to use for traces (set to sysname it ntraces is 0)
+
+    trace_types : array of string, optional
+        Type of trace.  Currently only 'step' is supported, which controls
+        the way in which the signal is plotted.
 
     Notes
     -----
@@ -211,7 +225,9 @@ class TimeResponseData:
     def __init__(
             self, time, outputs, states=None, inputs=None, issiso=None,
             output_labels=None, state_labels=None, input_labels=None,
-            transpose=False, return_x=False, squeeze=None, multi_trace=False
+            title=None, transpose=False, return_x=False, squeeze=None,
+            multi_trace=False, trace_labels=None, trace_types=None,
+            plot_inputs=True, sysname=None
     ):
         """Create an input/output time response object.
 
@@ -242,9 +258,8 @@ class TimeResponseData:
             single-input, multi-trace response), or a 3D array indexed by
             input, trace, and time.
 
-        sys : LTI or InputOutputSystem, optional
-            System that generated the data.  If desired, the system used to
-            generate the data can be stored along with the data.
+        title : str, optonal
+            Title of the data set (used as figure title in plotting).
 
         squeeze : bool, optional
             By default, if a system is single-input, single-output (SISO)
@@ -268,6 +283,9 @@ class TimeResponseData:
             Optional labels for the inputs, outputs, and states, given as a
             list of strings matching the appropriate signal dimension.
 
+        sysname : str, optional
+            Name of the system that created the data.
+
         transpose : bool, optional
             If True, transpose all input and output arrays (for backward
             compatibility with MATLAB and :func:`scipy.signal.lsim`).
@@ -276,6 +294,10 @@ class TimeResponseData:
         return_x : bool, optional
             If True, return the state vector when enumerating result by
             assigning to a tuple (default = False).
+
+        plot_inputs : bool, optional
+            Whether or not to plot the inputs by default (can be overridden
+            in the plot() method)
 
         multi_trace : bool, optional
             If ``True``, then 2D input array represents multiple traces.  For
@@ -291,6 +313,8 @@ class TimeResponseData:
         self.t = np.atleast_1d(time)
         if self.t.ndim != 1:
             raise ValueError("Time vector must be 1D array")
+        self.title = title
+        self.sysname = sysname
 
         #
         # Output vector (and number of traces)
@@ -364,9 +388,11 @@ class TimeResponseData:
         if inputs is None:
             self.u = None
             self.ninputs = 0
+            self.plot_inputs = False
 
         else:
             self.u = np.array(inputs)
+            self.plot_inputs = plot_inputs
 
             # Make sure the shape is OK and figure out the nuumber of inputs
             if multi_trace and self.u.ndim == 3 and \
@@ -397,6 +423,11 @@ class TimeResponseData:
         # Check and store labels, if present
         self.input_labels = _process_labels(
             input_labels, "input", self.ninputs)
+
+        # Check and store trace labels, if present
+        self.trace_labels = _process_labels(
+            trace_labels, "trace", self.ntraces)
+        self.trace_types = trace_types
 
         # Figure out if the system is SISO
         if issiso is None:
@@ -656,6 +687,10 @@ class TimeResponseData:
 
         return pandas.DataFrame(data)
 
+    # Plot data
+    def plot(self, *args, **kwargs):
+        return time_response_plot(self, *args, **kwargs)
+
 
 # Process signal labels
 def _process_labels(labels, signal, length):
@@ -694,7 +729,10 @@ def _process_labels(labels, signal, length):
             raise ValueError("Name dictionary for %s is incomplete" % signal)
 
     # Convert labels to a list
-    labels = list(labels)
+    if isinstance(labels, str):
+        labels = [labels]
+    else:
+        labels = list(labels)
 
     # Make sure the signal list is the right length and type
     if len(labels) != length:
@@ -817,7 +855,7 @@ def _check_convert_array(in_obj, legal_shapes, err_msg_start, squeeze=False,
 # Forced response of a linear system
 def forced_response(sys, T=None, U=0., X0=0., transpose=False,
                     interpolate=False, return_x=None, squeeze=None):
-    """Simulate the output of a linear system.
+    """Compute the output of a linear system given the input.
 
     As a convenience for parameters `U`, `X0`:
     Numbers (scalars) are converted to constant arrays with the correct shape.
@@ -903,16 +941,22 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     See Also
     --------
-    step_response, initial_response, impulse_response
+    step_response, initial_response, impulse_response, input_output_response
 
     Notes
     -----
-    For discrete time systems, the input/output response is computed using the
-    :func:`scipy.signal.dlsim` function.
+    1. For discrete time systems, the input/output response is computed
+       using the :func:`scipy.signal.dlsim` function.
 
-    For continuous time systems, the output is computed using the matrix
-    exponential `exp(A t)` and assuming linear interpolation of the inputs
-    between time points.
+    2. For continuous time systems, the output is computed using the matrix
+       exponential `exp(A t)` and assuming linear interpolation of the
+       inputs between time points.
+
+    3. If a nonlinear I/O system is passed to `forced_response`, the
+       `input_output_response` function is called instead.  The main
+       difference between `input_output_response` and `forced_response` is
+       that `forced_response` is specialized (and optimized) for linear
+       systems.
 
     Examples
     --------
@@ -924,9 +968,21 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
     :ref:`package-configuration-parameters`.
 
     """
+    from .statesp import StateSpace, _convert_to_statespace
+    from .xferfcn import TransferFunction
+    from .nlsys import NonlinearIOSystem, input_output_response
+
     if not isinstance(sys, (StateSpace, TransferFunction)):
-        raise TypeError('Parameter ``sys``: must be a ``StateSpace`` or'
-                        ' ``TransferFunction``)')
+        if isinstance(sys, NonlinearIOSystem):
+            if interpolate:
+                warnings.warn(
+                    "interpolation not supported for nonlinear I/O systems")
+            return input_output_response(
+                sys, T, U, X0, transpose=transpose,
+                return_x=return_x, squeeze=squeeze)
+        else:
+            raise TypeError('Parameter ``sys``: must be a ``StateSpace`` or'
+                            ' ``TransferFunction``)')
 
     # If return_x was not specified, figure out the default
     if return_x is None:
@@ -1111,6 +1167,9 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
 
     return TimeResponseData(
         tout, yout, xout, U, issiso=sys.issiso(),
+        output_labels=sys.output_labels, input_labels=sys.input_labels,
+        state_labels=sys.state_labels, sysname=sys.name, plot_inputs=True,
+        title="Forced response for " + sys.name, trace_types=['forced'],
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
@@ -1193,44 +1252,7 @@ def _process_time_response(
     return tout, yout
 
 
-def _get_ss_simo(sys, input=None, output=None, squeeze=None):
-    """Return a SISO or SIMO state-space version of sys.
-
-    This function converts the given system to a state space system in
-    preparation for simulation and sets the system matrixes to match the
-    desired input and output.
-
-    If input is not specified, select first input and issue warning (legacy
-    behavior that should eventually not be used).
-
-    If the output is not specified, report on all outputs.
-
-    """
-    # If squeeze was not specified, figure out the default
-    if squeeze is None:
-        squeeze = config.defaults['control.squeeze_time_response']
-
-    sys_ss = _convert_to_statespace(sys)
-    if sys_ss.issiso():
-        return squeeze, sys_ss
-    elif squeeze is None and (input is None or output is None):
-        # Don't squeeze outputs if resulting system turns out to be siso
-        # Note: if we expand input to allow a tuple, need to update this check
-        squeeze = False
-
-    warn = False
-    if input is None:
-        # issue warning if input is not given
-        warn = True
-        input = 0
-
-    if output is None:
-        return squeeze, _mimo2simo(sys_ss, input, warn_conversion=warn)
-    else:
-        return squeeze, _mimo2siso(sys_ss, input, output, warn_conversion=warn)
-
-
-def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
+def step_response(sys, T=None, X0=0, input=None, output=None, T_num=None,
                   transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Compute the step response for a linear system.
@@ -1261,8 +1283,8 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         many simulation steps.
 
     X0 : array_like or float, optional
-        Initial condition (default = 0). Numbers are converted to constant
-        arrays with the correct shape.
+        Initial condition (default = 0).  This can be used for a nonlinear
+        system where the origin is not an equilibrium point.
 
     input : int, optional
         Only compute the step response for the listed input.  If not
@@ -1334,10 +1356,16 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     >>> T, yout = ct.step_response(G)
 
     """
+    from .lti import LTI
+    from .xferfcn import TransferFunction
+    from .statesp import _convert_to_statespace
+
     # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=True)
-    U = np.ones_like(T)
+    T = np.atleast_1d(T).reshape(-1)
+    if T.ndim != 1 and len(T) < 2:
+        raise ValueError("invalid value of T for this type of system")
 
     # If we are passed a transfer function and X0 is non-zero, warn the user
     if isinstance(sys, TransferFunction) and np.any(X0 != 0):
@@ -1347,36 +1375,54 @@ def step_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
             "with given X0.")
 
     # Convert to state space so that we can simulate
-    sys = _convert_to_statespace(sys)
+    if isinstance(sys, LTI) and sys.nstates is None:
+        sys = _convert_to_statespace(sys)
 
     # Set up arrays to handle the output
     ninputs = sys.ninputs if input is None else 1
     noutputs = sys.noutputs if output is None else 1
-    yout = np.empty((noutputs, ninputs, np.asarray(T).size))
-    xout = np.empty((sys.nstates, ninputs, np.asarray(T).size))
-    uout = np.empty((ninputs, ninputs, np.asarray(T).size))
+    yout = np.empty((noutputs, ninputs, T.size))
+    xout = np.empty((sys.nstates, ninputs, T.size))
+    uout = np.empty((ninputs, ninputs, T.size))
 
     # Simulate the response for each input
+    trace_labels, trace_types = [], []
     for i in range(sys.ninputs):
         # If input keyword was specified, only simulate for that input
         if isinstance(input, int) and i != input:
             continue
 
-        # Create a set of single inputs system for simulation
-        squeeze, simo = _get_ss_simo(sys, i, output, squeeze=squeeze)
+        # Save a label and type for this plot
+        trace_labels.append(f"From {sys.input_labels[i]}")
+        trace_types.append('step')
 
-        response = forced_response(simo, T, U, X0, squeeze=True)
+        # Create a set of single inputs system for simulation
+        U = np.zeros((sys.ninputs, T.size))
+        U[i, :] = np.ones_like(T)
+
+        response = forced_response(sys, T, U, X0, squeeze=True)
         inpidx = i if input is None else 0
-        yout[:, inpidx, :] = response.y
+        yout[:, inpidx, :] = response.y if output is None \
+            else response.y[output]
         xout[:, inpidx, :] = response.x
-        uout[:, inpidx, :] = U
+        uout[:, inpidx, :] = U if input is None else U[i]
 
     # Figure out if the system is SISO or not
     issiso = sys.issiso() or (input is not None and output is not None)
 
+    # Select only the given input and output, if any
+    input_labels = sys.input_labels if input is None \
+        else sys.input_labels[input]
+    output_labels = sys.output_labels if output is None \
+        else sys.output_labels[output]
+
     return TimeResponseData(
         response.time, yout, xout, uout, issiso=issiso,
-        transpose=transpose, return_x=return_x, squeeze=squeeze)
+        output_labels=output_labels, input_labels=input_labels,
+        state_labels=sys.state_labels, title="Step response for " + sys.name,
+        transpose=transpose, return_x=return_x, squeeze=squeeze,
+        sysname=sys.name, trace_labels=trace_labels,
+        trace_types=trace_types, plot_inputs=False)
 
 
 def step_info(sysdata, T=None, T_num=None, yfinal=None,
@@ -1482,9 +1528,11 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     PeakTime: 4.242
     SteadyStateValue: -1.0
     """
-    if isinstance(sysdata, (StateSpace, TransferFunction)):
-        if T is None or np.asarray(T).size == 1:
-            T = _default_time_vector(sysdata, N=T_num, tfinal=T, is_step=True)
+    from .statesp import StateSpace
+    from .xferfcn import TransferFunction
+    from .nlsys import NonlinearIOSystem
+
+    if isinstance(sysdata, (StateSpace, TransferFunction, NonlinearIOSystem)):
         T, Yout = step_response(sysdata, T, squeeze=False)
         if yfinal:
             InfValues = np.atleast_2d(yfinal)
@@ -1600,10 +1648,10 @@ def step_info(sysdata, T=None, T_num=None, yfinal=None,
     return ret[0][0] if retsiso else ret
 
 
-def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
+def initial_response(sys, T=None, X0=0, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
-    """Initial condition response of a linear system
+    """Compute the initial condition response for a linear system.
 
     If the system has multiple outputs (MIMO), optionally, one output
     may be selected. If no selection is made for the output, all
@@ -1624,10 +1672,6 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     X0 : array_like or float, optional
         Initial condition (default = 0).  Numbers are converted to constant
         arrays with the correct shape.
-
-    input : int
-        Ignored, has no meaning in initial condition calculation. Parameter
-        ensures compatibility with step_response and impulse_response.
 
     output : int
         Index of the output that will be used in this simulation. Set to None
@@ -1691,26 +1735,36 @@ def initial_response(sys, T=None, X0=0., input=0, output=None, T_num=None,
     >>> T, yout = ct.initial_response(G)
 
     """
-    squeeze, sys = _get_ss_simo(sys, input, output, squeeze=squeeze)
+    from .lti import LTI
 
-    # Create time and input vectors; checking is done in forced_response(...)
-    # The initial vector X0 is created in forced_response(...) if necessary
+    # Create the time and input vectors
     if T is None or np.asarray(T).size == 1:
         T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
+    T = np.atleast_1d(T).reshape(-1)
+    if T.ndim != 1 and len(T) < 2:
+        raise ValueError("invalid value of T for this type of system")
 
     # Compute the forced response
     response = forced_response(sys, T, 0, X0)
 
     # Figure out if the system is SISO or not
-    issiso = sys.issiso() or (input is not None and output is not None)
+    issiso = sys.issiso() or output is not None
+
+    # Select only the given output, if any
+    yout = response.y if output is None else response.y[output]
+    output_labels = sys.output_labels if output is None \
+        else sys.output_labels[output]
 
     # Store the response without an input
     return TimeResponseData(
-        response.t, response.y, response.x, None, issiso=issiso,
+        response.t, yout, response.x, None, issiso=issiso,
+        output_labels=output_labels, input_labels=None,
+        state_labels=sys.state_labels, sysname=sys.name,
+        title="Initial response for " + sys.name, trace_types=['initial'],
         transpose=transpose, return_x=return_x, squeeze=squeeze)
 
 
-def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
+def impulse_response(sys, T=None, input=None, output=None, T_num=None,
                      transpose=False, return_x=False, squeeze=None):
     # pylint: disable=W0622
     """Compute the impulse response for a linear system.
@@ -1732,11 +1786,6 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     T : array_like or float, optional
         Time vector, or simulation time duration if a scalar (time vector is
         autocomputed if not given; see :func:`step_response` for more detail)
-
-    X0 : array_like or float, optional
-        Initial condition (default = 0)
-
-        Numbers are converted to constant arrays with the correct shape.
 
     input : int, optional
         Only compute the impulse response for the listed input.  If not
@@ -1797,9 +1846,10 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     Notes
     -----
     This function uses the `forced_response` function to compute the time
-    response. For continuous time systems, the initial condition is altered to
-    account for the initial impulse. For discrete-time aystems, the impulse is 
-    sized so that it has unit area.
+    response. For continuous time systems, the initial condition is altered
+    to account for the initial impulse. For discrete-time aystems, the
+    impulse is sized so that it has unit area.  Response for nonlinear
+    systems is computed using `input_output_response`.
 
     Examples
     --------
@@ -1807,8 +1857,19 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     >>> T, yout = ct.impulse_response(G)
 
     """
+    from .statesp import _convert_to_statespace
+    from .lti import LTI
+
+    # Create the time and input vectors
+    if T is None or np.asarray(T).size == 1:
+        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
+    T = np.atleast_1d(T).reshape(-1)
+    if T.ndim != 1 and len(T) < 2:
+        raise ValueError("invalid value of T for this type of system")
+
     # Convert to state space so that we can simulate
-    sys = _convert_to_statespace(sys)
+    if sys.nstates is None:
+        sys = _convert_to_statespace(sys)
 
     # Check to make sure there is not a direct term
     if np.any(sys.D != 0) and isctime(sys):
@@ -1817,16 +1878,6 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
                       "output.\n"
                       "Results may be meaningless!")
 
-    # create X0 if not given, test if X0 has correct shape.
-    # Must be done here because it is used for computations below.
-    n_states = sys.A.shape[0]
-    X0 = _check_convert_array(X0, [(n_states,), (n_states, 1)],
-                              'Parameter ``X0``: \n', squeeze=True)
-
-    # Compute T and U, no checks necessary, will be checked in forced_response
-    if T is None or np.asarray(T).size == 1:
-        T = _default_time_vector(sys, N=T_num, tfinal=T, is_step=False)
-    U = np.zeros_like(T)
 
     # Set up arrays to handle the output
     ninputs = sys.ninputs if input is None else 1
@@ -1836,13 +1887,15 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
     uout = np.full((ninputs, ninputs, np.asarray(T).size), None)
 
     # Simulate the response for each input
+    trace_labels, trace_types = [], []
     for i in range(sys.ninputs):
         # If input keyword was specified, only handle that case
         if isinstance(input, int) and i != input:
             continue
 
-        # Get the system we need to simulate
-        squeeze, simo = _get_ss_simo(sys, i, output, squeeze=squeeze)
+        # Save a label for this plot
+        trace_labels.append(f"From {sys.input_labels[i]}")
+        trace_types.append('impulse')
 
         #
         # Compute new X0 that contains the impulse
@@ -1851,27 +1904,40 @@ def impulse_response(sys, T=None, X0=0., input=None, output=None, T_num=None,
         # representation for it (infinitesimally short, infinitely high).
         # See also: http://www.mathworks.com/support/tech-notes/1900/1901.html
         #
-        if isctime(simo):
-            B = np.asarray(simo.B).squeeze()
-            new_X0 = B + X0
+        if isctime(sys):
+            X0 = sys.B[:, i]
+            U = np.zeros((sys.ninputs, T.size))
         else:
-            new_X0 = X0
-            U[0] = 1./simo.dt           # unit area impulse
+            X0 = 0
+            U = np.zeros((sys.ninputs, T.size))
+            U[i, 0] = 1./sys.dt         # unit area impulse
 
         # Simulate the impulse response fo this input
-        response = forced_response(simo, T, U, new_X0)
+        response = forced_response(sys, T, U, X0)
 
         # Store the output (and states)
         inpidx = i if input is None else 0
-        yout[:, inpidx, :] = response.y
+        yout[:, inpidx, :] = response.y if output is None \
+            else response.y[output]
         xout[:, inpidx, :] = response.x
+        uout[:, inpidx, :] = U[i]
 
     # Figure out if the system is SISO or not
     issiso = sys.issiso() or (input is not None and output is not None)
 
+    # Select only the given input and output, if any
+    input_labels = sys.input_labels if input is None \
+        else sys.input_labels[input]
+    output_labels = sys.output_labels if output is None \
+        else sys.output_labels[output]
+
     return TimeResponseData(
         response.time, yout, xout, uout, issiso=issiso,
-        transpose=transpose, return_x=return_x, squeeze=squeeze)
+        output_labels=output_labels, input_labels=input_labels,
+        state_labels=sys.state_labels, trace_labels=trace_labels,
+        trace_types=trace_types, title="Impulse response for " + sys.name,
+        sysname=sys.name, plot_inputs=False, transpose=transpose,
+        return_x=return_x, squeeze=squeeze)
 
 
 # utility function to find time period and time increment using pole locations
@@ -1919,7 +1985,9 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 
     By Ilhan Polat, with modifications by Sawyer Fuller to integrate into
     python-control 2020.08.17
+
     """
+    from .statesp import _convert_to_statespace
 
     sqrt_eps = np.sqrt(np.spacing(1.))
     default_tfinal = 5                  # Default simulation horizon
@@ -2043,6 +2111,20 @@ def _ideal_tfinal_and_dt(sys, is_step=True):
 def _default_time_vector(sys, N=None, tfinal=None, is_step=True):
     """Returns a time vector that has a reasonable number of points.
     if system is discrete-time, N is ignored """
+    from .lti import LTI
+
+    # For non-LTI system, need tfinal
+    if not isinstance(sys, LTI):
+        if tfinal is None:
+            raise ValueError(
+                "can't automatically compute T for non-LTI system")
+        elif isinstance(tfinal, (int, float, np.number)):
+            if N is None:
+                return np.linspace(0, tfinal)
+            else:
+                return np.linspace(0, tfinal, N)
+        else:
+            return tfinal       # Assume we got passed something appropriate
 
     N_max = 5000
     N_min_ct = 100    # min points for cont time systems

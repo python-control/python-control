@@ -3,11 +3,12 @@ __all__ = ['sisotool', 'rootlocus_pid_designer']
 from control.exception import ControlMIMONotImplemented
 from .freqplot import bode_plot
 from .timeresp import step_response
-from .namedio import common_timebase, isctime, isdtime
+from .iosys import common_timebase, isctime, isdtime
+from .lti import frequency_response
 from .xferfcn import tf
-from .iosys import ss
+from .statesp import ss, summing_junction
 from .bdalg import append, connect
-from .iosys import ss, tf2io, summing_junction, interconnect
+from .nlsys import interconnect
 from control.statesp import _convert_to_statespace
 from . import config
 import numpy as np
@@ -99,6 +100,8 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         plt.close(fig)
         fig,axes = plt.subplots(2, 2)
         fig.canvas.manager.set_window_title('Sisotool')
+    else:
+        axes = np.array(fig.get_axes()).reshape(2, 2)
 
     # Extract bode plot parameters
     bode_plot_params = {
@@ -108,9 +111,8 @@ def sisotool(sys, initial_gain=None, xlim_rlocus=None, ylim_rlocus=None,
         'deg': deg,
         'omega_limits': omega_limits,
         'omega_num' : omega_num,
-        'sisotool': True,
-        'fig': fig,
-        'margins': margins_bode
+        'ax': axes[:, 0:1],
+        'display_margins': 'overlay' if margins_bode else False,
     }
 
     # Check to see if legacy 'PrintGain' keyword was used
@@ -146,8 +148,8 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
     sys_loop = sys if sys.issiso() else sys[0,0]
 
     # Update the bodeplot
-    bode_plot_params['syslist'] = sys_loop*K.real
-    bode_plot(**bode_plot_params)
+    bode_plot_params['data'] = frequency_response(sys_loop*K.real)
+    bode_plot(**bode_plot_params, title=False)
 
     # Set the titles and labels
     ax_mag.set_title('Bode magnitude',fontsize = title_font_size)
@@ -205,7 +207,7 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
                            Kp0=0, Ki0=0, Kd0=0, deltaK=0.001, tau=0.01,
                            C_ff=0, derivative_in_feedback_path=False,
                            plot=True):
-    """Manual PID controller design based on root locus using Sisotool
+    """Manual PID controller design based on root locus using Sisotool.
 
     Uses `sisotool` to investigate the effect of adding or subtracting an
     amount `deltaK` to the proportional, integral, or derivative (PID) gains of
@@ -331,26 +333,22 @@ def rootlocus_pid_designer(plant, gain='P', sign=+1, input_signal='r',
         u_summer = summing_junction(['ufb', 'uff', 'd'], 'u')
 
     if isctime(plant):
-        prop  = tf(1, 1)
-        integ = tf(1, [1, 0])
-        deriv = tf([1, 0], [tau, 1])
+        prop  = tf(1, 1, inputs='e', outputs='prop_e')
+        integ = tf(1, [1, 0], inputs='e', outputs='int_e')
+        deriv = tf([1, 0], [tau, 1], inputs='y', outputs='deriv')
     else: # discrete-time
-        prop  = tf(1, 1, dt)
-        integ = tf([dt/2, dt/2], [1, -1], dt)
-        deriv = tf([1, -1], [dt, 0], dt)
+        prop  = tf(1, 1, dt, inputs='e', outputs='prop_e')
+        integ = tf([dt/2, dt/2], [1, -1], dt, inputs='e', outputs='int_e')
+        deriv = tf([1, -1], [dt, 0], dt, inputs='y', outputs='deriv')
 
-    # add signal names by turning into iosystems
-    prop  = tf2io(prop,        inputs='e', outputs='prop_e')
-    integ = tf2io(integ,       inputs='e', outputs='int_e')
     if derivative_in_feedback_path:
-        deriv = tf2io(-deriv,  inputs='y', outputs='deriv')
-    else:
-        deriv = tf2io(deriv,   inputs='e', outputs='deriv')
+        deriv = -deriv
+        deriv.input_labels = 'e'
 
     # create gain blocks
-    Kpgain = tf2io(tf(Kp0, 1),            inputs='prop_e',  outputs='ufb')
-    Kigain = tf2io(tf(Ki0, 1),            inputs='int_e',   outputs='ufb')
-    Kdgain = tf2io(tf(Kd0, 1),            inputs='deriv',  outputs='ufb')
+    Kpgain = tf(Kp0, 1, inputs='prop_e', outputs='ufb')
+    Kigain = tf(Ki0, 1, inputs='int_e', outputs='ufb')
+    Kdgain = tf(Kd0, 1, inputs='deriv', outputs='ufb')
 
     # for the gain that is varied, replace gain block with a special block
     # that has an 'input' and an 'output' that creates loop transfer function
