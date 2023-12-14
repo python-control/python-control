@@ -1,6 +1,6 @@
 """Hinf design using hinfsyn.
 
-Demonstrate Hinf design for a SISO plant using h2syn. Based on [1], Ex. 7.
+Demonstrate Hinf design for a SISO plant using hinfsyn. Based on [1], Ex. 7.
 
 [1] Scherer, Gahinet, & Chilali, "Multiobjective Output-Feedback Control via
 LMI Optimization", IEEE Trans. Automatic Control, Vol. 42, No. 7, July 1997.
