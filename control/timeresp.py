@@ -1084,7 +1084,7 @@ def forced_response(sys, T=None, U=0., X0=0., transpose=False,
             if U.ndim == 1:
                 U = U.reshape(1, -1)  # pylint: disable=E1103
 
-        # Algorithm: to integrate from time 0 to time dt, with linear
+            # Algorithm: to integrate from time 0 to time dt, with linear
             # interpolation between inputs u(0) = u0 and u(dt) = u1, we solve
             #   xdot = A x + B u,        x(0) = x0
             #   udot = (u1 - u0) / dt,   u(0) = u0.
