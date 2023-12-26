@@ -1288,8 +1288,7 @@ class TransferFunction(LTI):
 # c2d function contributed by Benjamin White, Oct 2012
 def _c2d_matched(sysC, Ts, **kwargs):
     if not sysC.issiso():
-            raise ControlMIMONotImplemented("Not implemented for MIMO systems")
-        raise ValueError("MIMO transfer functions not supported")
+        raise ControlMIMONotImplemented("Not implemented for MIMO systems")
 
     # Pole-zero match method of continuous to discrete time conversion
     szeros, spoles, _ = tf2zpk(sysC.num[0][0], sysC.den[0][0])
