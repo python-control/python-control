@@ -42,7 +42,8 @@ _pzmap_defaults = {
     'pzmap.grid': False,                # Plot omega-damping grid
     'pzmap.marker_size': 6,             # Size of the markers
     'pzmap.marker_width': 1.5,          # Width of the markers
-    'pzmap.expansion_factor': 2,        # Amount to scale plots beyond features
+    'pzmap.expansion_factor': 1.8,      # Amount to scale plots beyond features
+    'pzmap.buffer_factor': 1.05,        # Buffer to leave around plot peaks
 }
 
 #
@@ -110,7 +111,7 @@ def pole_zero_map(sysdata):
 def pole_zero_plot(
         data, plot=None, grid=None, title=None, marker_color=None,
         marker_size=None, marker_width=None, legend_loc='upper right',
-        xlim=None, ylim=None, interactive=False, ax=None,
+        xlim=None, ylim=None, interactive=False, ax=None, scaling=None,
         initial_gain=None, **kwargs):
     # TODO: update docstring (see other response/plot functions for style)
     """Plot a pole/zero map for a linear system.
@@ -144,7 +145,7 @@ def pole_zero_plot(
         (legacy) If the `plot` keyword is given, the system poles and zeros
         are returned.
 
-    Notes (TODO: update)
+    Notes (TODO: update, including scaling)
     -----
     The pzmap function calls matplotlib.pyplot.axis('equal'), which means
     that trying to reset the axis limits may not behave as expected.  To
@@ -209,14 +210,15 @@ def pole_zero_plot(
         if grid:
             plt.clf()
             if all([isctime(dt=response.dt) for response in data]):
-                ax, fig = sgrid()
+                ax, fig = sgrid(scaling=scaling)
             elif all([isdtime(dt=response.dt) for response in data]):
-                ax, fig = zgrid()
+                ax, fig = zgrid(scaling=scaling)
             else:
                 ValueError(
                     "incompatible time responses; don't know how to grid")
         elif len(axs) == 0:
-            ax, fig = nogrid(data[0].dt)        # use first response timebase
+            # use first response timebase
+            ax, fig = nogrid(data[0].dt, scaling=scaling)
         else:
             # Use the existing axes and any grid that is there
             # TODO: allow axis to be overriden via parameter
@@ -270,7 +272,7 @@ def pole_zero_plot(
                     label=response.sysname)
 
             # Compute the axis limits to use based on the response
-            resp_xlim, resp_ylim = _compute_root_locus_limits(response.loci)
+            resp_xlim, resp_ylim = _compute_root_locus_limits(response)
 
             # Keep track of the current limits
             xlim = [min(xlim[0], resp_xlim[0]), max(xlim[1], resp_xlim[1])]
@@ -433,11 +435,22 @@ def _create_root_locus_label(sys, K, s):
 
 
 # Utility function to compute limits for root loci
-# TODO: compare to old code and recapture functionality (especially asymptotes)
 # TODO: (note that sys is now available => code here may not be needed)
-def _compute_root_locus_limits(loci):
-    # Go through each locus
-    xlim, ylim = [0, 0], 0
+def _compute_root_locus_limits(response):
+    loci = response.loci
+
+    # Start with information about zeros, if present
+    if response.sys is not None and response.sys.zeros().size > 0:
+        xlim = [
+            min(0, np.min(response.sys.zeros().real)),
+            max(0, np.max(response.sys.zeros().real))
+        ]
+        ylim = max(0, np.max(response.sys.zeros().imag))
+    else:
+        xlim, ylim = [0, 0], 0
+
+    # Go through each locus and look for features
+    rho = config._get_param('pzmap', 'buffer_factor')
     for locus in loci.transpose():
         # Include all starting points
         xlim = [min(xlim[0], locus[0].real), max(xlim[1], locus[0].real)]
@@ -446,18 +459,22 @@ def _compute_root_locus_limits(loci):
         # Find the local maxima of root locus curve
         xpeaks = np.where(
             np.diff(np.abs(locus.real)) < 0, locus.real[0:-1], 0)
-        xlim = [min(xlim[0], np.min(xpeaks)), max(xlim[1], np.max(xpeaks))]
+        xlim = [
+            min(xlim[0], np.min(xpeaks) * rho),
+            max(xlim[1], np.max(xpeaks) * rho)
+        ]
 
         ypeaks = np.where(
             np.diff(np.abs(locus.imag)) < 0, locus.imag[0:-1], 0)
-        ylim = max(ylim, np.max(ypeaks))
+        ylim = max(ylim, np.max(ypeaks) * rho)
 
-    # Adjust the limits to include some space around features
-    # TODO: use _k_max and project out to max k for all value?
-    rho = config._get_param('pzmap', 'expansion_factor')
-    xlim[0] = rho * xlim[0] if xlim[0] < 0 else 0
-    xlim[1] = rho * xlim[1] if xlim[1] > 0 else 0
-    ylim = rho * ylim if ylim > 0 else np.max(np.abs(xlim))
+    if isctime(dt=response.dt):
+        # Adjust the limits to include some space around features
+        # TODO: use _k_max and project out to max k for all value?
+        rho = config._get_param('pzmap', 'expansion_factor')
+        xlim[0] = rho * xlim[0] if xlim[0] < 0 else 0
+        xlim[1] = rho * xlim[1] if xlim[1] > 0 else 0
+        ylim = rho * ylim if ylim > 0 else np.max(np.abs(xlim))
 
     return xlim, [-ylim, ylim]
 

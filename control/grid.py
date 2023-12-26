@@ -1,6 +1,14 @@
+# grid.py - code to add gridlines to root locus and pole-zero diagrams
+#
+# This code generates grids for pole-zero diagrams (including root locus
+# diagrams).  Rather than just draw a grid in place, it uses the AxisArtist
+# package to generate a custom grid that will scale with the figure.
+#
+
 import numpy as np
 from numpy import cos, sin, sqrt, linspace, pi, exp
 import matplotlib.pyplot as plt
+
 from mpl_toolkits.axisartist import SubplotHost
 from mpl_toolkits.axisartist.grid_helper_curvelinear \
     import GridHelperCurveLinear
@@ -67,14 +75,15 @@ class ModifiedExtremeFinderCycle(angle_helper.ExtremeFinderCycle):
         return lon_min, lon_max, lat_min, lat_max
 
 
-def sgrid():
+def sgrid(scaling=None):
     # From matplotlib demos:
     # https://matplotlib.org/gallery/axisartist/demo_curvelinear_grid.html
     # https://matplotlib.org/gallery/axisartist/demo_floating_axis.html
 
     # PolarAxes.PolarTransform takes radian. However, we want our coordinate
-    # system in degree
+    # system in degrees
     tr = Affine2D().scale(np.pi/180., 1.) + PolarAxes.PolarTransform()
+
     # polar projection, which involves cycle, and also has limits in
     # its coordinates, needs a special method to find the extremes
     # (min, max of the coordinate within the view).
@@ -91,6 +100,7 @@ def sgrid():
         tr, extreme_finder=extreme_finder, grid_locator1=grid_locator1,
         tick_formatter1=tick_formatter1)
 
+    # Set up an axes with a specialized grid helper
     fig = plt.gcf()
     ax = SubplotHost(fig, 1, 1, 1, grid_helper=grid_helper)
 
@@ -101,6 +111,7 @@ def sgrid():
     ax.axis[:].invert_ticklabel_direction()
     ax.axis[:].major_ticklabels.set_color('gray')
 
+    # Set up internal tickmarks and labels along the real/imag axes
     ax.axis["wnxneg"] = axis = ax.new_floating_axis(0, 180)
     axis.set_ticklabel_direction("-")
     axis.label.set_visible(False)
@@ -125,35 +136,26 @@ def sgrid():
     ax.axis["bottom"].get_helper().nth_coord_ticks = 0
 
     fig.add_subplot(ax)
-
-    # RECTANGULAR X Y AXES WITH SCALE
-    # par2 = ax.twiny()
-    # par2.axis["top"].toggle(all=False)
-    # par2.axis["right"].toggle(all=False)
-    # new_fixed_axis = par2.get_grid_helper().new_fixed_axis
-    # par2.axis["left"] = new_fixed_axis(loc="left",
-    #                                   axes=par2,
-    #                                   offset=(0, 0))
-    # par2.axis["bottom"] = new_fixed_axis(loc="bottom",
-    #                                     axes=par2,
-    #                                     offset=(0, 0))
-    # FINISH RECTANGULAR
-
     ax.grid(True, zorder=0, linestyle='dotted')
 
-    _final_setup(ax)
+    _final_setup(ax, scaling=scaling)
     return ax, fig
 
 
-def _final_setup(ax):
+# Utility function used by all grid code
+def _final_setup(ax, scaling=None):
     ax.set_xlabel('Real')
     ax.set_ylabel('Imaginary')
     ax.axhline(y=0, color='black', lw=0.5)
     ax.axvline(x=0, color='black', lw=0.5)
-    plt.axis('equal')
+
+    # Set up the scaling for the axes
+    scaling = 'equal' if scaling is None else scaling
+    plt.axis(scaling)
 
 
-def nogrid(dt=None, ax=None):
+# If not grid is given, at least separate stable/unstable regions
+def nogrid(dt=None, ax=None, scaling=None):
     fig = plt.gcf()
     if ax is None:
         ax = fig.gca()
@@ -163,11 +165,12 @@ def nogrid(dt=None, ax=None):
         s = np.linspace(0, 2*pi, 100)
         ax.plot(np.cos(s), np.sin(s), 'k--', lw=0.5, dashes=(5, 5))
 
-    _final_setup(ax)
+    _final_setup(ax, scaling=scaling)
     return ax, fig
 
-
-def zgrid(zetas=None, wns=None, ax=None):
+# Grid for discrete time system (drawn, not rendered by AxisArtist)
+# TODO (at some point): think about using customized grid generator?
+def zgrid(zetas=None, wns=None, ax=None, scaling=None):
     """Draws discrete damping and frequency grid"""
 
     fig = plt.gcf()
@@ -218,5 +221,9 @@ def zgrid(zetas=None, wns=None, ax=None):
         ax.annotate(r"$\frac{"+num+r"\pi}{T}$", xy=(an_x, an_y),
                     xytext=(an_x, an_y), size=9)
 
-    _final_setup(ax)
+    # Set default axes to allow some room around the unit circle
+    ax.set_xlim([-1.1, 1.1])
+    ax.set_ylim([-1.1, 1.1])
+
+    _final_setup(ax, scaling=scaling)
     return ax, fig
