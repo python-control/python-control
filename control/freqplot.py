@@ -894,8 +894,10 @@ def bode_plot(
     # list of systems (e.g., "Step response for sys[1], sys[2]").
     #
 
-    # Set the initial title for the data (unique system names)
-    sysnames = list(set([response.sysname for response in data]))
+    # Set the initial title for the data (unique system names, preserving order)
+    seen = set()
+    sysnames = [response.sysname for response in data \
+                if not (response.sysname in seen or seen.add(response.sysname))]
     if title is None:
         if data[0].title is None:
             title = "Bode plot for " + ", ".join(sysnames)

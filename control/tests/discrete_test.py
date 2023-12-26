@@ -5,11 +5,12 @@ RMM, 9 Sep 2012
 
 import numpy as np
 import pytest
+import cmath
 
-from control import (StateSpace, TransferFunction, bode, common_timebase,
-                     feedback, forced_response, impulse_response,
-                     isctime, isdtime, rss, c2d, sample_system, step_response,
-                     timebase)
+import control as ct
+from control import StateSpace, TransferFunction, bode, common_timebase, \
+    feedback, forced_response, impulse_response, isctime, isdtime, rss, \
+    c2d, sample_system, step_response, timebase
 
 
 class TestDiscrete:
@@ -526,3 +527,33 @@ class TestDiscrete:
         assert sysd_newnames.find_input('u') is None
         assert sysd_newnames.find_output('y') == 0
         assert sysd_newnames.find_output('x') is None
+
+
+@pytest.mark.parametrize("num, den", [
+    ([1], [1, 1]),
+    ([1, 2], [1, 3]),
+    ([1, 2], [3, 4, 5])
+])
+@pytest.mark.parametrize("dt", [True, 0.1, 2])
+@pytest.mark.parametrize("method", ['zoh', 'bilinear', 'matched'])
+def test_c2d_matched(num, den, dt, method):
+    sys_ct = ct.tf(num, den)
+    sys_dt = ct.sample_system(sys_ct, dt, method=method)
+    assert sys_dt.dt == dt                      # make sure sampling time is OK
+    assert cmath.isclose(sys_ct(0), sys_dt(1))  # check zero frequency gain
+    assert cmath.isclose(
+        sys_ct.dcgain(), sys_dt.dcgain())       # another way to check
+
+    if method in ['zoh', 'matched']:
+        # Make sure that poles were properly matched
+        zpoles = sys_dt.poles()
+        for cpole in sys_ct.poles():
+            zpole = zpoles[(np.abs(zpoles - cmath.exp(cpole * dt))).argmin()]
+            assert cmath.isclose(cmath.exp(cpole * dt), zpole)
+
+    if method in ['matched']:
+        # Make sure that zeros were properly matched
+        zzeros = sys_dt.zeros()
+        for czero in sys_ct.zeros():
+            zzero = zzeros[(np.abs(zzeros - cmath.exp(czero * dt))).argmin()]
+            assert cmath.isclose(cmath.exp(czero * dt), zzero)

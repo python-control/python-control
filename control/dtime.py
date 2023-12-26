@@ -55,8 +55,7 @@ __all__ = ['sample_system', 'c2d']
 # Sample a continuous time system
 def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
         name=None, copy_names=True, **kwargs):
-    """
-    Convert a continuous time system to discrete time by sampling.
+    """Convert a continuous time system to discrete time by sampling.
 
     Parameters
     ----------
@@ -67,9 +66,9 @@ def sample_system(sysc, Ts, method='zoh', alpha=None, prewarp_frequency=None,
     method : string
         Method to use for conversion, e.g. 'bilinear', 'zoh' (default)
     alpha : float within [0, 1]
-            The generalized bilinear transformation weighting parameter, which
-            should only be specified with method="gbt", and is ignored
-            otherwise. See :func:`scipy.signal.cont2discrete`.
+        The generalized bilinear transformation weighting parameter, which
+        should only be specified with method="gbt", and is ignored
+        otherwise. See :func:`scipy.signal.cont2discrete`.
     prewarp_frequency : float within [0, infinity)
         The frequency [rad/s] at which to match with the input continuous-
         time system's magnitude and phase (only valid for method='bilinear',
