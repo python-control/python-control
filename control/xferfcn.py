@@ -1181,7 +1181,9 @@ class TransferFunction(LTI):
         if not self.issiso():
             raise ControlMIMONotImplemented("Not implemented for MIMO systems")
         if method == "matched":
-            return _c2d_matched(self, Ts)
+            if prewarp_frequency is not None:
+                warn('prewarp_frequency ignored: incompatible conversion')
+            return _c2d_matched(self, Ts, name=name, **kwargs)
         sys = (self.num[0][0], self.den[0][0])
         if prewarp_frequency is not None:
             if method in ('bilinear', 'tustin') or \
@@ -1284,9 +1286,12 @@ class TransferFunction(LTI):
 
 
 # c2d function contributed by Benjamin White, Oct 2012
-def _c2d_matched(sysC, Ts):
+def _c2d_matched(sysC, Ts, **kwargs):
+    if sysC.ninputs > 1 or sysC.noutputs > 1:
+        raise ValueError("MIMO transfer functions not supported")
+
     # Pole-zero match method of continuous to discrete time conversion
-    szeros, spoles, sgain = tf2zpk(sysC.num[0][0], sysC.den[0][0])
+    szeros, spoles, _ = tf2zpk(sysC.num[0][0], sysC.den[0][0])
     zzeros = [0] * len(szeros)
     zpoles = [0] * len(spoles)
     pregainnum = [0] * len(szeros)
@@ -1302,9 +1307,9 @@ def _c2d_matched(sysC, Ts):
         zpoles[idx] = z
         pregainden[idx] = 1 - z
     zgain = np.multiply.reduce(pregainnum) / np.multiply.reduce(pregainden)
-    gain = sgain / zgain
+    gain = sysC.dcgain() / zgain
     sysDnum, sysDden = zpk2tf(zzeros, zpoles, gain)
-    return TransferFunction(sysDnum, sysDden, Ts)
+    return TransferFunction(sysDnum, sysDden, Ts, **kwargs)
 
 
 # Utility function to convert a transfer function polynomial to a string
