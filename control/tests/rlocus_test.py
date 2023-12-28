@@ -66,20 +66,38 @@ class TestRootLocus:
         roots, kvect = root_locus(sys, plot=False)
         self.check_cl_poles(sys, roots, kvect)
 
-    @pytest.mark.skip("TODO: update test for rlocus gridlines")
-    @pytest.mark.slow
-    @pytest.mark.parametrize('grid', [None, True, False])
+    @pytest.mark.parametrize("grid", [None, True, False, 'empty'])
     def test_root_locus_plot_grid(self, sys, grid):
-        rlist, klist = root_locus(sys, plot=True, grid=grid)
+        import mpl_toolkits.axisartist as AA
+
+        # Generate the root locus plot
+        plt.clf()
+        ct.root_locus_plot(sys, grid=grid)
+
+        # Count the number of dotted/dashed lines in the plot
         ax = plt.gca()
-        n_gridlines = sum([int(line.get_linestyle() in [':', 'dotted',
-                                                        '--', 'dashed'])
-                           for line in ax.lines])
-        if grid is False:
-            assert n_gridlines == 2
-        else:
+        n_gridlines = sum([int(
+            line.get_linestyle() in [':', 'dotted', '--', 'dashed'] or
+            line.get_linewidth() < 1
+        ) for line in ax.lines])
+
+        # Make sure they line up with what we expect
+        if grid == 'empty':
+            assert n_gridlines == 0
+            assert not isinstance(ax, AA.Axes)
+        elif grid is False:
+            assert n_gridlines == 2 if sys.isctime() else 3
+            assert not isinstance(ax, AA.Axes)
+        elif sys.isdtime(strict=True):
             assert n_gridlines > 2
-        # TODO check validity of grid
+            assert not isinstance(ax, AA.Axes)
+        else:
+            # Continuous time, with grid => check that AxisArtist was used
+            assert isinstance(ax, AA.Axes)
+            for spine in ['wnxneg', 'wnxpos', 'wnyneg', 'wnypos']:
+                assert spine in ax.axis
+
+        # TODO: check validity of grid
 
     @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
     def test_root_locus_neg_false_gain_nonproper(self):
@@ -89,7 +107,7 @@ class TestRootLocus:
 
     # TODO: cover and validate negative false_gain branch in _default_gains()
 
-    @pytest.mark.skip("TODO: update test to check click dispatcher")
+    @pytest.mark.skip("Zooming functionality no longer implemented")
     @pytest.mark.skipif(plt.get_current_fig_manager().toolbar is None,
                         reason="Requires the zoom toolbar")
     def test_root_locus_zoom(self):

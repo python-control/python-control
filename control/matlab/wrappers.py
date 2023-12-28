@@ -195,6 +195,7 @@ def _parse_freqplot_args(*args):
     return syslist, omega, plotstyle, other
 
 
+# TODO: rewrite to call root_locus_map, without using legacy plot keyword
 def rlocus(*args, **kwargs):
     """rlocus(sys[, klist, xlim, ylim, ...])
 
@@ -248,6 +249,7 @@ def rlocus(*args, **kwargs):
     return retval
 
 
+# TODO: rewrite to call pole_zero_map, without using legacy plot keyword
 def pzmap(*args, **kwargs):
     """pzmap(sys[, grid, plot])
 

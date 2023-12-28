@@ -24,7 +24,6 @@ import scipy.signal             # signal processing toolbox
 from .iosys import isdtime
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
-from .grid import sgrid, zgrid
 from . import config
 import warnings
 
@@ -96,19 +95,25 @@ def root_locus_plot(
         (see :doc:`matplotlib:api/axes_api`).
     plotstr : :func:`matplotlib.pyplot.plot` format string, optional
         plotting style specification
+        TODO: check
     plot : boolean, optional
         If True (default), plot root locus diagram.
+        TODO: legacy
     print_gain : bool
         If True (default), report mouse clicks when close to the root locus
         branches, calculate gain, damping and print.
-    grid : bool
-        If True plot omega-damping grid.  Default is False.
+        TODO: update
+    grid : bool or str, optional
+        If `True` plot omega-damping grid, if `False` show imaginary axis
+        for continuous time systems, unit circle for discrete time systems.
+        If `empty`, do not draw any additonal lines.  Default value is set
+        by config.default['rlocus.grid'].
     ax : :class:`matplotlib.axes.Axes`
         Axes on which to create root locus plot
     initial_gain : float, optional
         Specify the initial gain to use when marking current gain. [TODO: update]
 
-    Returns
+    Returns (TODO: update)
     -------
     roots : ndarray
         Closed-loop root locations, arranged in which each row corresponds
@@ -156,8 +161,7 @@ def root_locus_plot(
     return out
 
 
-# TODO: get rid of zoom functionality?
-def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
+def _default_gains(num, den, xlim, ylim):
     """Unsupervised gains calculation for root locus plot.
 
     References
@@ -237,8 +241,7 @@ def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
         tolerance = x_tolerance
     else:
         tolerance = np.min([x_tolerance, y_tolerance])
-    indexes_too_far = _indexes_filt(
-        root_array, tolerance, zoom_xlim, zoom_ylim)
+    indexes_too_far = _indexes_filt(root_array, tolerance)
 
     # Add more points into the root locus for points that are too far apart
     while len(indexes_too_far) > 0 and kvect.size < 5000:
@@ -250,8 +253,7 @@ def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
             root_array = np.insert(root_array, index + 1, new_points, axis=0)
 
         root_array = _RLSortRoots(root_array)
-        indexes_too_far = _indexes_filt(
-            root_array, tolerance, zoom_xlim, zoom_ylim)
+        indexes_too_far = _indexes_filt(root_array, tolerance)
 
     new_gains = kvect[-1] * np.hstack((np.logspace(0, 3, 4)))
     new_points = _RLFindRoots(num, den, new_gains[1:4])
@@ -261,7 +263,7 @@ def _default_gains(num, den, xlim, ylim, zoom_xlim=None, zoom_ylim=None):
     return kvect, root_array, xlim, ylim
 
 
-def _indexes_filt(root_array, tolerance, zoom_xlim=None, zoom_ylim=None):
+def _indexes_filt(root_array, tolerance):
     """Calculate the distance between points and return the indices.
 
     Filter the indexes so only the resolution of points within the xlim and
@@ -270,48 +272,6 @@ def _indexes_filt(root_array, tolerance, zoom_xlim=None, zoom_ylim=None):
     """
     distance_points = np.abs(np.diff(root_array, axis=0))
     indexes_too_far = list(np.unique(np.where(distance_points > tolerance)[0]))
-
-    if zoom_xlim is not None and zoom_ylim is not None:
-        x_tolerance_zoom = 0.05 * (zoom_xlim[1] - zoom_xlim[0])
-        y_tolerance_zoom = 0.05 * (zoom_ylim[1] - zoom_ylim[0])
-        tolerance_zoom = np.min([x_tolerance_zoom, y_tolerance_zoom])
-        indexes_too_far_zoom = list(
-            np.unique(np.where(distance_points > tolerance_zoom)[0]))
-        indexes_too_far_filtered = []
-
-        for index in indexes_too_far_zoom:
-            for point in root_array[index]:
-                if (zoom_xlim[0] <= point.real <= zoom_xlim[1]) and \
-                   (zoom_ylim[0] <= point.imag <= zoom_ylim[1]):
-                    indexes_too_far_filtered.append(index)
-                    break
-
-        # Check if zoom box is not overshot & insert points where neccessary
-        if len(indexes_too_far_filtered) == 0 and len(root_array) < 500:
-            limits = [zoom_xlim[0], zoom_xlim[1], zoom_ylim[0], zoom_ylim[1]]
-            for index, limit in enumerate(limits):
-                if index <= 1:
-                    asign = np.sign(real(root_array)-limit)
-                else:
-                    asign = np.sign(imag(root_array) - limit)
-                signchange = ((np.roll(asign, 1, axis=0)
-                               - asign) != 0).astype(int)
-                signchange[0] = np.zeros((len(root_array[0])))
-                if len(np.where(signchange == 1)[0]) > 0:
-                    indexes_too_far_filtered.append(
-                        np.where(signchange == 1)[0][0]-1)
-
-        if len(indexes_too_far_filtered) > 0:
-            if indexes_too_far_filtered[0] != 0:
-                indexes_too_far_filtered.insert(
-                    0, indexes_too_far_filtered[0]-1)
-            if not indexes_too_far_filtered[-1] + 1 >= len(root_array) - 2:
-                indexes_too_far_filtered.append(
-                    indexes_too_far_filtered[-1] + 1)
-
-        indexes_too_far.extend(indexes_too_far_filtered)
-
-    indexes_too_far = list(np.unique(indexes_too_far))
     indexes_too_far.sort()
     return indexes_too_far
 
