@@ -75,7 +75,7 @@ def root_locus_map(sysdata, gains=None):
 
 
 def root_locus_plot(
-        sysdata, kvect=None, grid=None, plot=True, **kwargs):
+        sysdata, kvect=None, grid=None, plot=None, **kwargs):
     """Root locus plot.
 
     Calculate the root locus by finding the roots of 1 + k * G(s) where G
@@ -131,12 +131,29 @@ def root_locus_plot(
     grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
 
     responses = root_locus_map(sysdata, gains=kvect)
-    # TODO: update to include legacy keyword processing (use pole_zero_plot?)
-    if plot:
-        responses.plot(grid=grid, **kwargs)
 
-    # TODO: legacy return value; update
-    return responses.loci, responses.gains
+    #
+    # Process `plot` keyword
+    #
+    # See bode_plot for a description of how this keyword is handled to
+    # support legacy implementatoins of root_locus.
+    #
+    if plot is not None:
+        warnings.warn(
+            "`root_locus` return values of loci, gains is deprecated; "
+            "use root_locus_map()", DeprecationWarning)
+
+    if plot is False:
+        return responses.loci, responses.gains
+
+    # Plot the root loci
+    out = responses.plot(grid=grid, **kwargs)
+
+    # Legacy processing: return locations of poles and zeros as a tuple
+    if plot is True:
+        return responses.loci, responses.gains
+
+    return out
 
 
 # TODO: get rid of zoom functionality?

@@ -55,7 +55,7 @@ class TestRootLocus:
         self.check_cl_poles(sys, roots, klist)
 
         # now check with plotting
-        roots, k_out = root_locus(sys, klist)
+        roots, k_out = root_locus(sys, klist, plot=True)
         np.testing.assert_equal(len(roots), len(klist))
         np.testing.assert_allclose(klist, k_out)
         self.check_cl_poles(sys, roots, klist)
@@ -68,7 +68,7 @@ class TestRootLocus:
     @pytest.mark.slow
     @pytest.mark.parametrize('grid', [None, True, False])
     def test_root_locus_plot_grid(self, sys, grid):
-        rlist, klist = root_locus(sys, grid=grid)
+        rlist, klist = root_locus(sys, plot=True, grid=grid)
         ax = plt.gca()
         n_gridlines = sum([int(line.get_linestyle() in [':', 'dotted',
                                                         '--', 'dashed'])
@@ -82,7 +82,7 @@ class TestRootLocus:
     def test_root_locus_neg_false_gain_nonproper(self):
         """ Non proper TranferFunction with negative gain: Not implemented"""
         with pytest.raises(ValueError, match="with equal order"):
-            root_locus(TransferFunction([-1, 2], [1, 2]))
+            root_locus(TransferFunction([-1, 2], [1, 2]), plot=True)
 
     # TODO: cover and validate negative false_gain branch in _default_gains()
 
@@ -93,7 +93,7 @@ class TestRootLocus:
         """Check the zooming functionality of the Root locus plot"""
         system = TransferFunction([1000], [1, 25, 100, 0])
         plt.figure()
-        root_locus(system)
+        root_locus(system, plot=True)
         fig = plt.gcf()
         ax_rlocus = fig.axes[0]
 
@@ -135,7 +135,7 @@ class TestRootLocus:
         sys = ct.tf(*sp.signal.zpk2tf(
             [-1e-2, 1-1e7j, 1+1e7j], [0, -1e7j, 1e7j], 1))
 
-        ct.root_locus(sys)
+        ct.root_locus(sys, plot=True)
 
 
 # TODO: add additional test cases
