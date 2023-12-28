@@ -15,6 +15,7 @@ from mpl_toolkits.axisartist import Axes as mpltAxes
 from control import TransferFunction, config, pzmap
 
 
+@pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
 @pytest.mark.parametrize("kwargs",
                          [pytest.param(dict(), id="default"),
                           pytest.param(dict(plot=False), id="plot=False"),

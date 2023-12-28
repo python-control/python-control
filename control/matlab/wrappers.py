@@ -12,14 +12,14 @@ from ..xferfcn import tf
 from ..lti import LTI
 from ..exception import ControlArgument
 
-__all__ = ['bode', 'nyquist', 'ngrid', 'dcgain', 'connect']
+__all__ = ['bode', 'nyquist', 'ngrid', 'rlocus', 'pzmap', 'dcgain', 'connect']
 
 def bode(*args, **kwargs):
     """bode(syslist[, omega, dB, Hz, deg, ...])
 
     Bode plot of the frequency response.
 
-    Plots a bode gain and phase diagram
+    Plots a bode gain and phase diagram.
 
     Parameters
     ----------
@@ -195,6 +195,104 @@ def _parse_freqplot_args(*args):
     return syslist, omega, plotstyle, other
 
 
+def rlocus(*args, **kwargs):
+    """rlocus(sys[, klist, xlim, ylim, ...])
+
+    Root locus diagram.
+
+    Calculate the root locus by finding the roots of 1 + k * G(s) where G
+    is a linear system with transfer function num(s)/den(s) and each k is
+    an element of kvect.
+
+    Parameters
+    ----------
+    sys : LTI object
+        Linear input/output systems (SISO only, for now).
+    kvect : array_like, optional
+        Gains to use in computing plot of closed-loop poles.
+    xlim : tuple or list, optional
+        Set limits of x axis, normally with tuple
+        (see :doc:`matplotlib:api/axes_api`).
+    ylim : tuple or list, optional
+        Set limits of y axis, normally with tuple
+        (see :doc:`matplotlib:api/axes_api`).
+
+    Returns
+    -------
+    roots : ndarray
+        Closed-loop root locations, arranged in which each row corresponds
+        to a gain in gains.
+    gains : ndarray
+        Gains used.  Same as kvect keyword argument if provided.
+
+    Notes
+    -----
+    This function is a wrapper for :func:`~control.root_locus_plot`,
+    with legacy return arguments.
+
+    """
+    from ..rlocus import root_locus_plot
+
+    # Use the plot keyword to get legacy behavior
+    kwargs = dict(kwargs)       # make a copy since we modify this
+    if 'plot' not in kwargs:
+        kwargs['plot'] = True
+
+    # Turn off deprecation warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', message='.* return values of .* is deprecated',
+            category=DeprecationWarning)
+        retval = root_locus_plot(*args, **kwargs)
+
+    return retval
+
+
+def pzmap(*args, **kwargs):
+    """pzmap(sys[, grid, plot])
+
+    Plot a pole/zero map for a linear system.
+
+    Parameters
+    ----------
+    sys: LTI (StateSpace or TransferFunction)
+        Linear system for which poles and zeros are computed.
+    plot: bool, optional
+        If ``True`` a graph is generated with Matplotlib,
+        otherwise the poles and zeros are only computed and returned.
+    grid: boolean (default = False)
+        If True plot omega-damping grid.
+
+    Returns
+    -------
+    poles: array
+        The system's poles.
+    zeros: array
+        The system's zeros.
+
+    Notes
+    -----
+    This function is a wrapper for :func:`~control.pole_zero_plot`,
+    with legacy return arguments.
+
+    """
+    from ..pzmap import pole_zero_plot
+
+    # Use the plot keyword to get legacy behavior
+    kwargs = dict(kwargs)       # make a copy since we modify this
+    if 'plot' not in kwargs:
+        kwargs['plot'] = True
+
+    # Turn off deprecation warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', message='.* return values of .* is deprecated',
+            category=DeprecationWarning)
+        retval = pole_zero_plot(*args, **kwargs)
+
+    return retval
+
+
 from ..nichols import nichols_grid
 def ngrid():
     return nichols_grid()
@@ -254,6 +352,7 @@ def dcgain(*args):
 
 from ..bdalg import connect as ct_connect
 def connect(*args):
+
     """Index-based interconnection of an LTI system.
 
     The system `sys` is a system typically constructed with `append`, with

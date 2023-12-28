@@ -424,7 +424,8 @@ class TestMatlab:
     @pytest.mark.parametrize("subsys", ["ss1", "tf1", "tf2"])
     def testRlocus(self, siso, subsys, mplcleanup):
         """Call rlocus()"""
-        rlocus(getattr(siso, subsys))
+        rlist, klist = rlocus(getattr(siso, subsys))
+        np.testing.assert_equal(len(rlist), len(klist))
 
     def testRlocus_list(self, siso, mplcleanup):
         """Test rlocus() with list"""

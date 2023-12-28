@@ -112,7 +112,7 @@ def root_locus_plot(
     -------
     roots : ndarray
         Closed-loop root locations, arranged in which each row corresponds
-        to a gain in gains
+        to a gain in gains.
     gains : ndarray
         Gains used.  Same as kvect keyword argument if provided.
 
@@ -140,7 +140,7 @@ def root_locus_plot(
     #
     if plot is not None:
         warnings.warn(
-            "`root_locus` return values of loci, gains is deprecated; "
+            "`root_locus` return values of roots, gains is deprecated; "
             "use root_locus_map()", DeprecationWarning)
 
     if plot is False:

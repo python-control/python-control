@@ -45,6 +45,7 @@ class TestRootLocus:
             poles = np.sort(poles)
             np.testing.assert_array_almost_equal(poles, poles_expected)
 
+    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
     def testRootLocus(self, sys):
         """Basic root locus (no plot)"""
         klist = [-1, 0, 1]
@@ -60,6 +61,7 @@ class TestRootLocus:
         np.testing.assert_allclose(klist, k_out)
         self.check_cl_poles(sys, roots, klist)
 
+    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
     def test_without_gains(self, sys):
         roots, kvect = root_locus(sys, plot=False)
         self.check_cl_poles(sys, roots, kvect)
@@ -79,6 +81,7 @@ class TestRootLocus:
             assert n_gridlines > 2
         # TODO check validity of grid
 
+    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
     def test_root_locus_neg_false_gain_nonproper(self):
         """ Non proper TranferFunction with negative gain: Not implemented"""
         with pytest.raises(ValueError, match="with equal order"):
@@ -116,6 +119,7 @@ class TestRootLocus:
         assert_array_almost_equal(zoom_x, zoom_x_valid)
         assert_array_almost_equal(zoom_y, zoom_y_valid)
 
+    @pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
     @pytest.mark.timeout(2)
     def test_rlocus_default_wn(self):
         """Check that default wn calculation works properly"""
