@@ -146,8 +146,8 @@ def sgrid(scaling=None):
 def _final_setup(ax, scaling=None):
     ax.set_xlabel('Real')
     ax.set_ylabel('Imaginary')
-    ax.axhline(y=0, color='black', lw=0.5)
-    ax.axvline(x=0, color='black', lw=0.5)
+    ax.axhline(y=0, color='black', lw=0.25)
+    ax.axvline(x=0, color='black', lw=0.25)
 
     # Set up the scaling for the axes
     scaling = 'equal' if scaling is None else scaling
