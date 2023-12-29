@@ -8,16 +8,6 @@
 # storing and plotting pole/zero and root locus diagrams.  (The actual
 # computation of root locus diagrams is in rlocus.py.)
 #
-# TODO (Sep 2023):
-#   * Test out ability to set line styles
-#     - Make compatible with other plotting (and refactor?)
-#     -  Allow line fmt to be overwritten (including color=CN for different
-#        colors for each segment?)
-#   * Add ability to set style of root locus click point
-#     - Sort out where default parameter values should live (pzmap vs rlocus)
-#   * Decide whether click functionality should be in rlocus.py
-#   * Add back print_gain option to sisotool (and any other options)
-#
 
 import numpy as np
 from numpy import real, imag, linspace, exp, cos, sin, sqrt
@@ -34,7 +24,7 @@ from .xferfcn import TransferFunction
 from .freqplot import _freqplot_defaults, _get_line_labels
 from . import config
 
-__all__ = ['pole_zero_map', 'pole_zero_plot', 'pzmap']
+__all__ = ['pole_zero_map', 'pole_zero_plot', 'pzmap', 'PoleZeroData']
 
 
 # Define default parameter values for this module
@@ -50,7 +40,7 @@ _pzmap_defaults = {
 # Classes for keeping track of pzmap plots
 #
 # The PoleZeroData class keeps track of the information that is on a
-# pole-zero plot.
+# pole/zero plot.
 #
 # In addition to the locations of poles and zeros, you can also save a set
 # of gains and loci for use in generating a root locus plot.  The gain
@@ -58,14 +48,55 @@ _pzmap_defaults = {
 # loci variable is a 2D array indexed by [gain_idx, root_idx] that can be
 # plotted using the `pole_zero_plot` function.
 #
-# The PoleZeroList class is used to return a list of pole-zero plots.  It
+# The PoleZeroList class is used to return a list of pole/zero plots.  It
 # is a lightweight wrapper on the built-in list class that includes a
 # `plot` method, allowing plotting a set of root locus diagrams.
 #
 class PoleZeroData:
+    """Pole/zero data object.
+
+    This class is used as the return type for computing pole/zero responses
+    and root locus diagrams.  It contains information on the location of
+    system poles and zeros, as well as the gains and loci for root locus
+    diagrams.
+
+    Attributes
+    ----------
+    poles : ndarray
+        1D array of system poles.
+    zeros : ndarray
+        1D array of system zeros.
+    gains : ndarray, optional
+        1D array of gains for root locus plots.
+    loci : ndarray, optiona
+        2D array of poles, with each row corresponding to a gain.
+    sysname : str, optional
+        System name.
+    sys : StateSpace or TransferFunction
+        System corresponding to the data.
+
+    """
     def __init__(
             self, poles, zeros, gains=None, loci=None, dt=None, sysname=None,
             sys=None):
+        """Create a pole/zero map object.
+
+        Parameters
+        ----------
+        poles : ndarray
+            1D array of system poles.
+        zeros : ndarray
+            1D array of system zeros.
+        gains : ndarray, optional
+            1D array of gains for root locus plots.
+        loci : ndarray, optiona
+            2D array of poles, with each row corresponding to a gain.
+        sysname : str, optional
+            System name.
+        sys : StateSpace or TransferFunction
+            System corresponding to the data.
+
+        """
         self.poles = poles
         self.zeros = zeros
         self.gains = gains
@@ -79,17 +110,51 @@ class PoleZeroData:
         return iter((self.poles, self.zeros))
 
     def plot(self, *args, **kwargs):
+        """Plot the pole/zero data.
+
+        See :func:`~control.pole_zero_plot` for description of arguments
+        and keywords.
+
+        """
+        # If this is a root locus plot, use rlocus defaults for grid
+        if self.loci is not None:
+            from .rlocus import _rlocus_defaults
+            kwargs = kwargs.copy()
+            kwargs['grid'] = config._get_param(
+                'rlocus', 'grid', kwargs.get('grid', None), _rlocus_defaults)
+
         return pole_zero_plot(self, *args, **kwargs)
 
 
 class PoleZeroList(list):
+    """List of PoleZeroData objects."""
     def plot(self, *args, **kwargs):
+        """Plot pole/zero data.
+
+        See :func:`~control.pole_zero_plot` for description of arguments
+        and keywords.
+
+        """
         return pole_zero_plot(self, *args, **kwargs)
 
 
 # Pole/zero map
 def pole_zero_map(sysdata):
-    # TODO: add docstring (from old pzmap?)
+    """Compute the pole/zero map for an LTI system.
+
+    Parameters
+    ----------
+    sys : LTI system (StateSpace or TransferFunction)
+        Linear system for which poles and zeros are computed.
+
+    Returns
+    -------
+    pzmap_data : PoleZeroMap
+        Pole/zero map containing the poles and zeros of the system.  Use
+        `pzmap_data.plot()` or `pole_zero_plot(pzmap_data)` to plot the
+        pole/zero map.
+
+    """
     # Convert the first argument to a list
     syslist = sysdata if isinstance(sysdata, (list, tuple)) else [sysdata]
 
@@ -113,7 +178,6 @@ def pole_zero_plot(
         marker_size=None, marker_width=None, legend_loc='upper right',
         xlim=None, ylim=None, interactive=None, ax=None, scaling=None,
         initial_gain=None, **kwargs):
-    # TODO: update docstring (see other response/plot functions for style)
     """Plot a pole/zero map for a linear system.
 
     If the system data include root loci, a root locus diagram for the
@@ -137,7 +201,7 @@ def pole_zero_plot(
         (legacy) If ``True`` a graph is generated with Matplotlib,
         otherwise the poles and zeros are only computed and returned.
         If this argument is present, the legacy value of poles and
-        zero is returned.
+        zeros is returned.
 
     Returns
     -------
@@ -287,6 +351,7 @@ def pole_zero_plot(
 
     # Plot the responses (and keep track of axes limits)
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
+    loci_count = 0
     for idx, response in enumerate(pzmap_responses):
         poles = response.poles
         zeros = response.zeros
@@ -331,9 +396,17 @@ def pole_zero_plot(
 
             # TODO: add arrows to root loci (reuse Nyquist arrow code?)
 
-    # Set up the limits for the plot
-    ax.set_xlim(xlim if xlim_user is None else xlim_user)
-    ax.set_ylim(ylim if ylim_user is None else ylim_user)
+    # Set the axis limits to something reasonable
+    if any([response.loci is not None for response in pzmap_responses]):
+        # Set up the limits for the plot using information from loci
+        ax.set_xlim(xlim if xlim_user is None else xlim_user)
+        ax.set_ylim(ylim if ylim_user is None else ylim_user)
+    else:
+        # No root loci => only set axis limits if users specified them
+        if xlim_user is not None:
+            ax.set_xlim(xlim_user)
+        if ylim_user is not None:
+            ax.set_ylim(ylim_user)
 
     # List of systems that are included in this plot
     lines, labels = _get_line_labels(ax)
@@ -409,7 +482,6 @@ def pole_zero_plot(
 
 
 # Utility function to find gain corresponding to a click event
-# TODO: project onto the root locus plot (here or above?)
 def _find_root_locus_gain(event, sys, ax):
     # Get the current axis limits to set various thresholds
     xlim, ylim = ax.get_xlim(), ax.get_ylim()
@@ -469,7 +541,6 @@ def _mark_root_locus_gain(ax, sys, K):
 
 
 # Return a string identifying a clicked point
-# TODO: project onto the root locus plot (here or above?)
 def _create_root_locus_label(sys, K, s):
     # Figure out the damping ratio
     if isdtime(sys, strict=True):
@@ -482,7 +553,6 @@ def _create_root_locus_label(sys, K, s):
 
 
 # Utility function to compute limits for root loci
-# TODO: (note that sys is now available => code here may not be needed)
 def _compute_root_locus_limits(response):
     loci = response.loci
 

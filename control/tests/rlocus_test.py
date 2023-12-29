@@ -160,7 +160,6 @@ class TestRootLocus:
         ct.root_locus(sys, plot=True)
 
 
-# TODO: add additional test cases
 @pytest.mark.parametrize(
     "sys, grid, xlim, ylim, interactive", [
         (ct.tf([1], [1, 2, 1]), None, None, None, False),
@@ -169,6 +168,40 @@ def test_root_locus_plots(sys, grid, xlim, ylim, interactive):
     ct.root_locus_map(sys).plot(
         grid=grid, xlim=xlim, ylim=ylim, interactive=interactive)
     # TODO: add tests to make sure everything "looks" OK
+
+
+# Generate plots used in documentation
+def test_root_locus_documentation(savefigs=False):
+    plt.figure()
+    sys = ct.tf([1, 2], [1, 2, 3], name='SISO transfer function')
+    response = ct.pole_zero_map(sys)
+    ct.pole_zero_plot(response)
+    plt.savefig('pzmap-siso_ctime-default.png')
+
+    plt.figure()
+    ct.root_locus_map(sys).plot()
+    plt.savefig('rlocus-siso_ctime-default.png')
+
+    # TODO: generate event in order to generate real title
+    plt.figure()
+    out = ct.root_locus_map(sys).plot(initial_gain=2)
+    ax = ct.get_plot_axes(out)[0, 0]
+    freqplot_rcParams = ct.config._get_param('freqplot', 'rcParams')
+    with plt.rc_context(freqplot_rcParams):
+        ax.set_title(
+            "Clicked at: -2.729+1.511j  gain = 3.506  damping = 0.8748")
+    plt.savefig('rlocus-siso_ctime-clicked.png')
+
+    plt.figure()
+    sysd = sys.sample(0.1)
+    ct.root_locus_plot(sysd)
+    plt.savefig('rlocus-siso_dtime-default.png')
+
+    plt.figure()
+    sys1 = ct.tf([1, 2], [1, 2, 3], name='sys1')
+    sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+    ct.root_locus_plot([sys1, sys2], grid=False)
+    plt.savefig('rlocus-siso_multiple-nogrid.png')
 
 
 if __name__ == "__main__":
@@ -204,7 +237,7 @@ if __name__ == "__main__":
         (sys_secord,   None,  None,     None,     None),
         (sys_seczero,  None,  None,     None,     None),
         (sys_fbs_a,    None,  None,     None,     None),
-        (sys_fbs_b,    None,  None,     None,     None),
+        (sys_fbs_b,    None,  None,     None,     False),
         (sys_fbs_c,    None,  None,     None,     None),
         (sys_fbs_c,    None,  None,     [-2, 2],  None),
         (sys_fbs_c,    True,  [-3, 3],  None,     None),
@@ -222,3 +255,6 @@ if __name__ == "__main__":
         plt.figure()
         test_root_locus_plots(
             sys, grid=grid, xlim=xlim, ylim=ylim, interactive=interactive)
+
+    # Run tests that generate plots for the documentation
+    test_root_locus_documentation(savefigs=True)

@@ -25,23 +25,46 @@ from .iosys import isdtime
 from .xferfcn import _convert_to_transfer_function
 from .exception import ControlMIMONotImplemented
 from . import config
+from .lti import LTI
 import warnings
 
 __all__ = ['root_locus_map', 'root_locus_plot', 'root_locus', 'rlocus']
 
 # Default values for module parameters
-# TODO: merge these with pzmap parameters (?)
 _rlocus_defaults = {
     'rlocus.grid': True,
-    'rlocus.plotstr': 'C0',     # default color cycle [TODO: not used?]
-    'rlocus.print_gain': True,
-    'rlocus.plot': True
 }
 
 
 # Root locus map
-# TODO: add docstring
 def root_locus_map(sysdata, gains=None):
+    """Compute the root locus map for an LTI system.
+
+    Calculate the root locus by finding the roots of 1 + k * G(s) where G
+    is a linear system with transfer function num(s)/den(s) and each k is
+    an element of kvect.
+
+    Parameters
+    ----------
+    sys : LTI system or list of LTI systems
+        Linear input/output systems (SISO only, for now).
+    kvect : array_like, optional
+        Gains to use in computing plot of closed-loop poles.
+
+    Returns
+    -------
+    rldata : PoleZeroData or list of PoleZeroData
+        Root locus data object(s) corresponding to the .  The loci of
+        the root locus diagram are available in the array
+        `rldata.loci`, indexed by the gain index and the locus index,
+        and the gains are in the array `rldata.gains`.
+
+    Notes
+    -----
+    For backward compatibility, the `rldata` return object can be
+    assigned to the tuple `roots, gains`.
+
+    """
     from .pzmap import PoleZeroData, PoleZeroList
 
     # Convert the first argument to a list
@@ -75,6 +98,7 @@ def root_locus_map(sysdata, gains=None):
 
 def root_locus_plot(
         sysdata, kvect=None, grid=None, plot=None, **kwargs):
+
     """Root locus plot.
 
     Calculate the root locus by finding the roots of 1 + k * G(s) where G
@@ -83,7 +107,7 @@ def root_locus_plot(
 
     Parameters
     ----------
-    sys : LTI object
+    sysdata : PoleZeroMap or LTI object or list
         Linear input/output systems (SISO only, for now).
     kvect : array_like, optional
         Gains to use in computing plot of closed-loop poles.
@@ -93,16 +117,9 @@ def root_locus_plot(
     ylim : tuple or list, optional
         Set limits of y axis, normally with tuple
         (see :doc:`matplotlib:api/axes_api`).
-    plotstr : :func:`matplotlib.pyplot.plot` format string, optional
-        plotting style specification
-        TODO: check
-    plot : boolean, optional
-        If True (default), plot root locus diagram.
-        TODO: legacy
-    print_gain : bool
-        If True (default), report mouse clicks when close to the root locus
-        branches, calculate gain, damping and print.
-        TODO: update
+    plot : bool, optional
+        (legacy) If given, `root_locus_plot` returns the legacy return values
+        of roots and gains.  If False, just return the values with no plot.
     grid : bool or str, optional
         If `True` plot omega-damping grid, if `False` show imaginary axis
         for continuous time systems, unit circle for discrete time systems.
@@ -111,19 +128,29 @@ def root_locus_plot(
     ax : :class:`matplotlib.axes.Axes`
         Axes on which to create root locus plot
     initial_gain : float, optional
-        Specify the initial gain to use when marking current gain. [TODO: update]
+        Mark the point on the root locus diagram corresponding to the
+        given gain.
 
-    Returns (TODO: update)
+    Returns
     -------
-    roots : ndarray
-        Closed-loop root locations, arranged in which each row corresponds
-        to a gain in gains.
-    gains : ndarray
-        Gains used.  Same as kvect keyword argument if provided.
+    lines : List of Line2D
+        Array of Line2D objects for each set of markers in the plot. The
+        shape of the array is given by (nsys, 2) where nsys is the number
+        of systems or Nyquist responses passed to the function.  The second
+        index specifies the pzmap object type:
+
+        * lines[idx, 0]: poles
+        * lines[idx, 1]: zeros
+
+    roots, gains : ndarray
+        (legacy) If the `plot` keyword is given, returns the
+        closed-loop root locations, arranged such that each row
+        corresponds to a gain in gains, and the array of gains (ame as
+        kvect keyword argument if provided).
 
     Notes
     -----
-    The root_locus function calls matplotlib.pyplot.axis('equal'), which
+    The root_locus_plot function calls matplotlib.pyplot.axis('equal'), which
     means that trying to reset the axis limits may not behave as expected.
     To change the axis limits, use matplotlib.pyplot.gca().axis('auto') and
     then set the axis limits to the desired values.
@@ -132,10 +159,14 @@ def root_locus_plot(
     from .pzmap import pole_zero_plot
 
     # Set default parameters
-    # TODO: move this to pole_zero_plot()
     grid = config._get_param('rlocus', 'grid', grid, _rlocus_defaults)
 
-    responses = root_locus_map(sysdata, gains=kvect)
+    if isinstance(sysdata, list) and all(
+            [isinstance(sys, LTI) for sys in sysdata]) or \
+            isinstance(sysdata, LTI):
+        responses = root_locus_map(sysdata, gains=kvect)
+    else:
+        responses = sysdata
 
     #
     # Process `plot` keyword
