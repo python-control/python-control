@@ -67,12 +67,22 @@ class TestRootLocus:
         self.check_cl_poles(sys, roots, kvect)
 
     @pytest.mark.parametrize("grid", [None, True, False, 'empty'])
-    def test_root_locus_plot_grid(self, sys, grid):
+    @pytest.mark.parametrize("method", ['plot', 'map', 'response', 'pzmap'])
+    def test_root_locus_plot_grid(self, sys, grid, method):
         import mpl_toolkits.axisartist as AA
 
         # Generate the root locus plot
         plt.clf()
-        ct.root_locus_plot(sys, grid=grid)
+        if method == 'plot':
+            ct.root_locus_plot(sys, grid=grid)
+        elif method == 'map':
+            ct.root_locus_map(sys).plot(grid=grid)
+        elif method == 'response':
+            response = ct.root_locus_map(sys)
+            ct.root_locus_plot(response, grid=grid)
+        elif method == 'pzmap':
+            response = ct.root_locus_map(sys)
+            ct.pole_zero_plot(response, grid=grid)
 
         # Count the number of dotted/dashed lines in the plot
         ax = plt.gca()
@@ -85,7 +95,7 @@ class TestRootLocus:
         if grid == 'empty':
             assert n_gridlines == 0
             assert not isinstance(ax, AA.Axes)
-        elif grid is False:
+        elif grid is False or method == 'pzmap' and grid is None:
             assert n_gridlines == 2 if sys.isctime() else 3
             assert not isinstance(ax, AA.Axes)
         elif sys.isdtime(strict=True):

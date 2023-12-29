@@ -205,11 +205,11 @@ def pole_zero_plot(
 
     Returns
     -------
-    lines : List of Line2D
+    lines : array of list of Line2D
         Array of Line2D objects for each set of markers in the plot. The
         shape of the array is given by (nsys, 2) where nsys is the number
-        of systems or Nyquist responses passed to the function.  The second
-        index specifies the pzmap object type:
+        of systems or responses passed to the function.  The second index
+        specifies the pzmap object type:
 
         * lines[idx, 0]: poles
         * lines[idx, 1]: zeros
@@ -276,8 +276,11 @@ def pole_zero_plot(
     else:
         raise TypeError("unknown system data type")
 
+    # Decide whether we are plotting any root loci
+    rlocus_plot = any([resp.loci is not None for resp in pzmap_responses])
+
     # Turn on interactive mode by default, if allowed
-    if interactive is None and len(pzmap_responses) == 1 \
+    if interactive is None and rlocus_plot and len(pzmap_responses) == 1 \
        and pzmap_responses[0].sys is not None:
         interactive = True
 
@@ -318,18 +321,25 @@ def pole_zero_plot(
             elif all([isdtime(dt=response.dt) for response in data]):
                 ax, fig = zgrid(scaling=scaling)
             else:
-                ValueError(
-                    "incompatible time responses; don't know how to grid")
+                raise ValueError(
+                    "incompatible time bases; don't know how to grid")
+            # Store the limits for later use
+            xlim, ylim = ax.get_xlim(), ax.get_ylim()
         elif len(axs) == 0:
             if grid == 'empty':
                 # Leave off grid entirely
                 ax = plt.axes()
+                xlim = ylim = [0, 0]    # use data to set limits
             else:
                 # draw stability boundary; use first response timebase
                 ax, fig = nogrid(data[0].dt, scaling=scaling)
+                xlim, ylim = ax.get_xlim(), ax.get_ylim()
         else:
             # Use the existing axes and any grid that is there
             ax = axs[0]
+
+            # Store the limits for later use
+            xlim, ylim = ax.get_xlim(), ax.get_ylim()
 
             # Issue a warning if the user tried to set the grid type
             if grid:
@@ -345,13 +355,12 @@ def pole_zero_plot(
             color_offset = color_cycle.index(last_color) + 1
 
     # Create a list of lines for the output
-    out = np.empty((len(pzmap_responses), 3), dtype=object)
+    out = np.empty(
+        (len(pzmap_responses), 3 if rlocus_plot else 2), dtype=object)
     for i, j in itertools.product(range(out.shape[0]), range(out.shape[1])):
         out[i, j] = []          # unique list in each element
 
     # Plot the responses (and keep track of axes limits)
-    xlim, ylim = ax.get_xlim(), ax.get_ylim()
-    loci_count = 0
     for idx, response in enumerate(pzmap_responses):
         poles = response.poles
         zeros = response.zeros
@@ -397,7 +406,7 @@ def pole_zero_plot(
             # TODO: add arrows to root loci (reuse Nyquist arrow code?)
 
     # Set the axis limits to something reasonable
-    if any([response.loci is not None for response in pzmap_responses]):
+    if rlocus_plot:
         # Set up the limits for the plot using information from loci
         ax.set_xlim(xlim if xlim_user is None else xlim_user)
         ax.set_ylim(ylim if ylim_user is None else ylim_user)

@@ -12,6 +12,7 @@ import pytest
 from matplotlib import pyplot as plt
 from mpl_toolkits.axisartist import Axes as mpltAxes
 
+import control as ct
 from control import TransferFunction, config, pzmap
 
 
@@ -82,7 +83,47 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
         assert not plt.get_fignums()
 
 
+def test_polezerodata():
+    sys = ct.rss(4, 1, 1)
+    pzdata = ct.pole_zero_map(sys)
+    np.testing.assert_equal(pzdata.poles, sys.poles())
+    np.testing.assert_equal(pzdata.zeros, sys.zeros())
+
+    # Extract data from PoleZeroData
+    poles, zeros = pzdata
+    np.testing.assert_equal(poles, sys.poles())
+    np.testing.assert_equal(zeros, sys.zeros())
+
+    # Legacy return format
+    with pytest.warns(DeprecationWarning, match=".* values .* deprecated"):
+        poles, zeros = ct.pole_zero_plot(pzdata, plot=False)
+    np.testing.assert_equal(poles, sys.poles())
+    np.testing.assert_equal(zeros, sys.zeros())
+
+    with pytest.warns(DeprecationWarning, match=".* values .* deprecated"):
+        poles, zeros = ct.pole_zero_plot(pzdata, plot=True)
+    np.testing.assert_equal(poles, sys.poles())
+    np.testing.assert_equal(zeros, sys.zeros())
+
+
 def test_pzmap_raises():
     with pytest.raises(TypeError):
         # not an LTI system
-        pzmap(([1], [1,2]))
+        pzmap(([1], [1, 2]))
+
+    sys1 = ct.rss(2, 1, 1)
+    sys2 = sys1.sample(0.1)
+    with pytest.raises(ValueError, match="incompatible time bases"):
+        pzdata = ct.pole_zero_plot([sys1, sys2], grid=True)
+
+    with pytest.warns(UserWarning, match="axis already exists"):
+        fig, ax = plt.figure(), plt.axes()
+        ct.pole_zero_plot(sys1, ax=ax, grid='empty')
+
+
+def test_pzmap_limits():
+    sys = ct.tf([1, 2], [1, 2, 3])
+    out = ct.pole_zero_plot(sys, xlim=[-1, 1], ylim=[-1, 1])
+    ax = ct.get_plot_axes(out)[0, 0]
+    assert ax.get_xlim() == (-1, 1)
+    assert ax.get_ylim() == (-1, 1)

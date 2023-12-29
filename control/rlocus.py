@@ -133,14 +133,15 @@ def root_locus_plot(
 
     Returns
     -------
-    lines : List of Line2D
+    lines : array of list of Line2D
         Array of Line2D objects for each set of markers in the plot. The
-        shape of the array is given by (nsys, 2) where nsys is the number
-        of systems or Nyquist responses passed to the function.  The second
-        index specifies the pzmap object type:
+        shape of the array is given by (nsys, 3) where nsys is the number
+        of systems or responses passed to the function.  The second index
+        specifies the object type:
 
         * lines[idx, 0]: poles
         * lines[idx, 1]: zeros
+        * lines[idx, 2]: loci
 
     roots, gains : ndarray
         (legacy) If the `plot` keyword is given, returns the
