@@ -16,7 +16,8 @@ import control as ctrl
 from control.statesp import StateSpace
 from control.xferfcn import TransferFunction
 from control.matlab import ss, tf, bode, rss
-from control.freqplot import bode_plot, nyquist_plot, singular_values_plot
+from control.freqplot import bode_plot, nyquist_plot, nyquist_response, \
+    singular_values_plot, singular_values_response
 from control.tests.conftest import slycotonly
 
 pytestmark = pytest.mark.usefixtures("mplcleanup")
@@ -97,9 +98,8 @@ def test_nyquist_basic(ss_siso):
     tf_siso = tf(ss_siso)
     nyquist_plot(ss_siso)
     nyquist_plot(tf_siso)
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, return_contour=True, omega_num=20)
-    assert len(contour) == 20
+    response = nyquist_response(tf_siso, omega_num=20)
+    assert len(response.contour) == 20
 
     with pytest.warns(UserWarning, match="encirclements was a non-integer"):
         count, contour = nyquist_plot(
@@ -107,9 +107,8 @@ def test_nyquist_basic(ss_siso):
     assert_allclose(contour[0], 1j)
     assert_allclose(contour[-1], 100j)
 
-    count, contour = nyquist_plot(
-        tf_siso, plot=False, omega=np.logspace(-1, 1, 10), return_contour=True)
-    assert len(contour) == 10
+    response = nyquist_response(tf_siso, omega=np.logspace(-1, 1, 10))
+    assert len(response.contour) == 10
 
 
 @pytest.mark.usefixtures("legacy_plot_signature")
@@ -200,7 +199,7 @@ def test_bode_margin(dB, maginfty1, maginfty2, gminv,
     den = [1, 25, 100, 0]
     sys = ctrl.tf(num, den)
     plt.figure()
-    ctrl.bode_plot(sys, margins=True, dB=dB, deg=deg, Hz=Hz)
+    ctrl.bode_plot(sys, display_margins=True, dB=dB, deg=deg, Hz=Hz)
     fig = plt.gcf()
     allaxes = fig.get_axes()
 
@@ -655,7 +654,8 @@ def tsystem(request, ss_mimo_ct, ss_miso_ct, ss_simo_ct, ss_siso_ct, ss_mimo_dt)
 def test_singular_values_plot(tsystem):
     sys = tsystem.sys
     for omega_ref, sigma_ref in zip(tsystem.omegas, tsystem.sigmas):
-        sigma, _ = singular_values_plot(sys, omega_ref, plot=False)
+        response = singular_values_response(sys, omega_ref)
+        sigma = np.real(response.fresp[:, 0, :])
         np.testing.assert_almost_equal(sigma, sigma_ref)
 
 
@@ -663,13 +663,13 @@ def test_singular_values_plot_mpl_base(ss_mimo_ct, ss_mimo_dt):
     sys_ct = ss_mimo_ct.sys
     sys_dt = ss_mimo_dt.sys
     plt.figure()
-    singular_values_plot(sys_ct, plot=True)
+    singular_values_plot(sys_ct)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)
     assert(allaxes[0].get_label() == 'control-sigma')
     plt.figure()
-    singular_values_plot([sys_ct, sys_dt], plot=True, Hz=True, dB=True, grid=False)
+    singular_values_plot([sys_ct, sys_dt], Hz=True, dB=True, grid=False)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)
@@ -679,10 +679,10 @@ def test_singular_values_plot_mpl_base(ss_mimo_ct, ss_mimo_dt):
 def test_singular_values_plot_mpl_superimpose_nyq(ss_mimo_ct, ss_mimo_dt):
     sys_ct = ss_mimo_ct.sys
     sys_dt = ss_mimo_dt.sys
-    omega_all = np.logspace(-3, 2, 1000)
+    omega_all = np.logspace(-3, int(math.log10(2 * math.pi/sys_dt.dt)), 1000)
     plt.figure()
-    singular_values_plot(sys_ct, omega_all, plot=True)
-    singular_values_plot(sys_dt, omega_all, plot=True)
+    singular_values_plot(sys_ct, omega_all)
+    singular_values_plot(sys_dt, omega_all)
     fig = plt.gcf()
     allaxes = fig.get_axes()
     assert(len(allaxes) == 1)

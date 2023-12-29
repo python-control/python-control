@@ -194,14 +194,17 @@ class TestFlatSys:
         else:
             initial_guess = None
 
-        # Solve the optimal trajectory
-        traj_ocp = fs.solve_flat_ocp(
-            vehicle_flat, timepts, x0, u0,
-            cost=traj_cost, constraints=input_constraints,
-            terminal_cost=terminal_cost, basis=basis,
-            initial_guess=initial_guess,
-            minimize_kwargs={'method': method},
-        )
+        # Solve the optimal trajectory (allow warnings)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore', message="unable to solve", category=UserWarning)
+            traj_ocp = fs.solve_flat_ocp(
+                vehicle_flat, timepts, x0, u0,
+                cost=traj_cost, constraints=input_constraints,
+                terminal_cost=terminal_cost, basis=basis,
+                initial_guess=initial_guess,
+                minimize_kwargs={'method': method},
+            )
         xd, ud = traj_ocp.eval(timepts)
 
         if not traj_ocp.success:

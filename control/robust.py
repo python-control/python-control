@@ -41,6 +41,7 @@
 
 # External packages and modules
 import numpy as np
+import warnings
 from .exception import *
 from .statesp import StateSpace
 from .statefbk import *
@@ -357,7 +358,12 @@ def augw(g, w1=None, w2=None, w3=None):
     # output indices
     oi = np.arange(1, 1 + now1 + now2 + now3 + ny)
 
-    p = connect(sysall, q, ii, oi)
+    # Filter out known warning due to use of connect
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', message="`connect`", category=DeprecationWarning)
+
+        p = connect(sysall, q, ii, oi)
 
     return p
 
