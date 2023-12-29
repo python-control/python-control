@@ -468,7 +468,13 @@ class TransferFunction(LTI):
                     numstr = _tf_polynomial_to_string(self.num[no][ni], var=var)
                     denstr = _tf_polynomial_to_string(self.den[no][ni], var=var)
                 elif self.display_format == 'zpk':
-                    z, p, k = tf2zpk(self.num[no][ni], self.den[no][ni])
+                    num = self.num[no][ni]
+                    if num.size == 1 and num.item() == 0:
+                        # Catch a special case taht SciPy doesn't handle
+                        z, p, k = tf2zpk([1.], self.den[no][ni])
+                        k = 0
+                    else:
+                        z, p, k = tf2zpk(self.num[no][ni], self.den[no][ni])
                     numstr = _tf_factorized_polynomial_to_string(
                         z, gain=k, var=var)
                     denstr = _tf_factorized_polynomial_to_string(p, var=var)
