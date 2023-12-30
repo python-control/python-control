@@ -470,7 +470,7 @@ class TransferFunction(LTI):
                 elif self.display_format == 'zpk':
                     num = self.num[no][ni]
                     if num.size == 1 and num.item() == 0:
-                        # Catch a special case taht SciPy doesn't handle
+                        # Catch a special case that SciPy doesn't handle
                         z, p, k = tf2zpk([1.], self.den[no][ni])
                         k = 0
                     else:
