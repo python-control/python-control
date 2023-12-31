@@ -194,7 +194,7 @@ def test_root_locus_documentation(savefigs=False):
 
     # TODO: generate event in order to generate real title
     plt.figure()
-    out = ct.root_locus_map(sys).plot(initial_gain=2)
+    out = ct.root_locus_map(sys).plot(initial_gain=3.506)
     ax = ct.get_plot_axes(out)[0, 0]
     freqplot_rcParams = ct.config._get_param('freqplot', 'rcParams')
     with plt.rc_context(freqplot_rcParams):
