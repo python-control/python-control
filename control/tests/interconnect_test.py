@@ -409,16 +409,16 @@ def test_linear_interconnect():
         ct.StateSpace)
 
     # Interconnections with nonliner I/O systems should not be linear
-    assert ~isinstance(
+    assert not isinstance(
         ct.interconnect([nl_ctrl, ss_plant, sumblk], inputs='r', outputs='y'),
         ct.StateSpace)
-    assert ~isinstance(
+    assert not isinstance(
         ct.interconnect([nl_ctrl, tf_plant, sumblk], inputs='r', outputs='y'),
         ct.StateSpace)
-    assert ~isinstance(
+    assert not isinstance(
         ct.interconnect([ss_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
         ct.StateSpace)
-    assert ~isinstance(
+    assert not isinstance(
         ct.interconnect([tf_ctrl, nl_plant, sumblk], inputs='r', outputs='y'),
         ct.StateSpace)
 

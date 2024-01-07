@@ -1579,12 +1579,12 @@ def test_linear_interconnection():
     assert isinstance(ss_siso*ss_siso, ct.StateSpace)
     assert isinstance(tf_siso*ss_siso, ct.TransferFunction)
     assert isinstance(ss_siso*tf_siso, ct.StateSpace)
-    assert ~isinstance(ss_siso*nl_siso, ct.StateSpace)
-    assert ~isinstance(nl_siso*ss_siso, ct.StateSpace)
-    assert ~isinstance(nl_siso*nl_siso, ct.StateSpace)
-    assert ~isinstance(tf_siso*nl_siso, ct.StateSpace)
-    assert ~isinstance(nl_siso*tf_siso, ct.StateSpace)
-    assert ~isinstance(nl_siso*nl_siso, ct.StateSpace)
+    assert not isinstance(ss_siso*nl_siso, ct.StateSpace)
+    assert not isinstance(nl_siso*ss_siso, ct.StateSpace)
+    assert not isinstance(nl_siso*nl_siso, ct.StateSpace)
+    assert not isinstance(tf_siso*nl_siso, ct.StateSpace)
+    assert not isinstance(nl_siso*tf_siso, ct.StateSpace)
+    assert not isinstance(nl_siso*nl_siso, ct.StateSpace)
 
 
 def predprey(t, x, u, params={}):
