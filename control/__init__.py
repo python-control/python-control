@@ -101,6 +101,7 @@ from .robust import *
 from .config import *
 from .sisotool import *
 from .passivity import *
+from .sysnorm import *
 
 # Exceptions
 from .exception import *
