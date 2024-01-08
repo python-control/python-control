@@ -31,6 +31,9 @@ TAGS
 # Files created by Spyder
 .spyproject/
 
+# Files created by or for VS Code (HS, 13 Jan, 2024)
+.vscode/
+
 # Environments
 .env
 .venv
