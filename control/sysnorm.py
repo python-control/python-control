@@ -20,8 +20,6 @@ import control as ct
 
 __all__ = ['norm']
 
-__all__ = ['norm']
-
 #------------------------------------------------------------------------------
 
 def _slycot_or_scipy(method):
