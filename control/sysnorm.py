@@ -20,6 +20,8 @@ import control as ct
 
 __all__ = ['norm']
 
+__all__ = ['norm']
+
 #------------------------------------------------------------------------------
 
 def _h2norm_slycot(sys, print_warning=True):
