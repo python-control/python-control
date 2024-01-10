@@ -678,12 +678,15 @@ class TimeResponseData:
 
         # Create a dict for setting up the data frame
         data = {'time': self.time}
-        data.update(
-            {name: self.u[i] for i, name in enumerate(self.input_labels)})
-        data.update(
-            {name: self.y[i] for i, name in enumerate(self.output_labels)})
-        data.update(
-            {name: self.x[i] for i, name in enumerate(self.state_labels)})
+        if self.ninputs > 0:
+            data.update(
+                {name: self.u[i] for i, name in enumerate(self.input_labels)})
+        if self.noutputs > 0:
+            data.update(
+                {name: self.y[i] for i, name in enumerate(self.output_labels)})
+        if self.nstates > 0:
+            data.update(
+                {name: self.x[i] for i, name in enumerate(self.state_labels)})
 
         return pandas.DataFrame(data)
 
