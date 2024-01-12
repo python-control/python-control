@@ -48,6 +48,20 @@ class DefaultDict(collections.UserDict):
         else:
             raise KeyError(key)
 
+    # New get function for Python 3.12+ to replicate old behavior
+    def get(self, key, defval=None):
+        # If the key exists, return it
+        if self.__contains__(key):
+            return self[key]
+
+        # If not, see if it is deprecated
+        repl = self._check_deprecation(key)
+        if self.__contains__(repl):
+            return self.get(repl, defval)
+
+        # Otherwise, call the usual dict.get() method
+        return super().get(key, defval)
+
     def _check_deprecation(self, key):
         if self.__contains__(f"deprecated.{key}"):
             repl = self[f"deprecated.{key}"]
