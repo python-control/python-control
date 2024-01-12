@@ -5,16 +5,15 @@
 # package to generate a custom grid that will scale with the figure.
 #
 
-import numpy as np
-from numpy import cos, sin, sqrt, linspace, pi, exp
 import matplotlib.pyplot as plt
-
-from mpl_toolkits.axisartist import SubplotHost
-from mpl_toolkits.axisartist.grid_helper_curvelinear \
-    import GridHelperCurveLinear
 import mpl_toolkits.axisartist.angle_helper as angle_helper
+import numpy as np
 from matplotlib.projections import PolarAxes
 from matplotlib.transforms import Affine2D
+from mpl_toolkits.axisartist import SubplotHost
+from mpl_toolkits.axisartist.grid_helper_curvelinear import \
+    GridHelperCurveLinear
+from numpy import cos, exp, linspace, pi, sin, sqrt
 
 from .iosys import isdtime
 

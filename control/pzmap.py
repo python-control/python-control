@@ -9,20 +9,21 @@
 # computation of root locus diagrams is in rlocus.py.)
 #
 
-import numpy as np
-from numpy import real, imag, linspace, exp, cos, sin, sqrt
-import matplotlib.pyplot as plt
-from math import pi
 import itertools
 import warnings
+from math import pi
 
+import matplotlib.pyplot as plt
+import numpy as np
+from numpy import cos, exp, imag, linspace, real, sin, sqrt
+
+from . import config
+from .freqplot import _freqplot_defaults, _get_line_labels
+from .grid import nogrid, sgrid, zgrid
+from .iosys import isctime, isdtime
 from .lti import LTI
-from .iosys import isdtime, isctime
-from .grid import sgrid, zgrid, nogrid
 from .statesp import StateSpace
 from .xferfcn import TransferFunction
-from .freqplot import _freqplot_defaults, _get_line_labels
-from . import config
 
 __all__ = ['pole_zero_map', 'pole_zero_plot', 'pzmap', 'PoleZeroData']
 
@@ -424,8 +425,8 @@ def pole_zero_plot(
     if len(labels) > 1 and legend_loc is not False:
         if response.loci is None:
             # Use "x o" for the system label, via matplotlib tuple handler
-            from matplotlib.lines import Line2D
             from matplotlib.legend_handler import HandlerTuple
+            from matplotlib.lines import Line2D
 
             line_tuples = []
             for pole_line in lines:
@@ -532,7 +533,7 @@ def _find_root_locus_gain(event, sys, ax):
 
 # Mark points corresponding to a given gain on root locus plot
 def _mark_root_locus_gain(ax, sys, K):
-    from .rlocus import _systopoly1d, _RLFindRoots
+    from .rlocus import _RLFindRoots, _systopoly1d
 
     # Remove any previous gain points
     for line in reversed(ax.lines):

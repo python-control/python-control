@@ -15,18 +15,19 @@
 #   * added compatibility with discrete-time systems.
 #
 
-# Packages used by this module
-from functools import partial
-import numpy as np
-import matplotlib.pyplot as plt
-from numpy import array, poly1d, row_stack, zeros_like, real, imag
-import scipy.signal             # signal processing toolbox
-from .iosys import isdtime
-from .xferfcn import _convert_to_transfer_function
-from .exception import ControlMIMONotImplemented
-from . import config
-from .lti import LTI
 import warnings
+from functools import partial
+
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.signal  # signal processing toolbox
+from numpy import array, imag, poly1d, real, row_stack, zeros_like
+
+from . import config
+from .exception import ControlMIMONotImplemented
+from .iosys import isdtime
+from .lti import LTI
+from .xferfcn import _convert_to_transfer_function
 
 __all__ = ['root_locus_map', 'root_locus_plot', 'root_locus', 'rlocus']
 

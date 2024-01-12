@@ -1,21 +1,23 @@
 __all__ = ['sisotool', 'rootlocus_pid_designer']
 
-import numpy as np
-import matplotlib.pyplot as plt
 import warnings
 from functools import partial
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 from control.exception import ControlMIMONotImplemented
+from control.statesp import _convert_to_statespace
+
+from . import config
+from .bdalg import append, connect
 from .freqplot import bode_plot
-from .timeresp import step_response
 from .iosys import common_timebase, isctime, isdtime
 from .lti import frequency_response
-from .xferfcn import tf
-from .statesp import ss, summing_junction
-from .bdalg import append, connect
 from .nlsys import interconnect
-from control.statesp import _convert_to_statespace
-from . import config
+from .statesp import ss, summing_junction
+from .timeresp import step_response
+from .xferfcn import tf
 
 _sisotool_defaults = {
     'sisotool.initial_gain': 1
@@ -158,8 +160,8 @@ def _click_dispatcher(event, sys, ax, bode_plot_params, tvect):
         # if a point is clicked on the rootlocus plot visually emphasize it
         # K = _RLFeedbackClicksPoint(
         #     event, sys, fig, ax_rlocus, show_clicked=True)
-        from .pzmap import _find_root_locus_gain, _mark_root_locus_gain, \
-            _create_root_locus_label
+        from .pzmap import _create_root_locus_label, _find_root_locus_gain, \
+            _mark_root_locus_gain
 
         K, s = _find_root_locus_gain(event, sys, ax)
         if K is not None:
