@@ -16,7 +16,7 @@ jobs:
       max-parallel: 5
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.12']
+        python-version: ['3.10', '3.12']
         slycot: ["", "conda"]
         pandas: [""]
         cvxopt: ["", "conda"]
@@ -61,20 +61,27 @@ jobs:
       shell: bash -l {0}
       env:
         MPLBACKEND: ${{ matrix.mplbackend }}
-      run: pytest -v --cov=control --cov-config=.coveragerc control/tests
+      run: |
+        pytest -v --cov=control --cov-config=.coveragerc control/tests
+        coverage xml
 
-    - name: Coveralls parallel
-      # https://github.com/coverallsapp/github-action
-      uses: AndreMiras/coveralls-python-action@develop
+    - name: report coverage
+      uses: coverallsapp/github-action@v2
       with:
+        flag-name: conda-pytest_py${{ matrix.python-version }}_${{ matrix.slycot || 'no' }}-Slycot_${{ matrix.pandas || 'no' }}-Pandas_${{ matrix.cvxopt || 'no' }}_CVXOPT-${{ matrix.mplbackend && format('; {0}', matrix.mplbackend) }}
         parallel: true
+        file: coverage.xml
 
-  coveralls:
-    name: coveralls completion
-    needs: test-linux-conda
+  coveralls-final:
+    name: Finalize parallel coveralls
+    if: always()
+    needs:
+      - test-linux-conda
     runs-on: ubuntu-latest
     steps:
     - name: Coveralls Finished
-      uses: AndreMiras/coveralls-python-action@develop
+      uses: coverallsapp/github-action@v2
       with:
-        parallel-finished: true
+        parallel-finished: true  
+
+
