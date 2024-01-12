@@ -119,10 +119,10 @@ class LinearFlatSystem(FlatSystem, StateSpace):
         x = np.reshape(x, (-1, 1))
         u = np.reshape(u, (1, -1))
         zflag = [np.zeros(self.nstates + 1)]
-        zflag[0][0] = self.Cf @ x
+        zflag[0][0] = (self.Cf @ x).item()
         H = self.Cf                     # initial state transformation
         for i in range(1, self.nstates + 1):
-            zflag[0][i] = H @ (self.A @ x + self.B @ u)
+            zflag[0][i] = (H @ (self.A @ x + self.B @ u)).item()
             H = H @ self.A       # derivative for next iteration
         return zflag
 

@@ -956,7 +956,7 @@ def solve_ocp(
         transpose=None, return_states=True, print_summary=True, log=False,
         **kwargs):
 
-    """Compute the solution to an optimal control problem.
+    r"""Compute the solution to an optimal control problem.
 
     The optimal trajectory (states and inputs) is computed so as to
     approximately mimimize a cost function of the following form (for

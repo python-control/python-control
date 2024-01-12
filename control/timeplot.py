@@ -292,7 +292,7 @@ def time_response_plot(
     if ax is None:
         with plt.rc_context(timeplot_rcParams):
             ax_array = fig.subplots(nrows, ncols, sharex=True, squeeze=False)
-            fig.set_tight_layout(True)
+            fig.set_layout_engine('tight')
             fig.align_labels()
 
     else:

@@ -745,12 +745,15 @@ def test_optimal_doc(method, npts, initial_guess, fail):
         initial_guess = (state_guess, input_guess)
 
     # Solve the optimal control problem
-    result = opt.solve_ocp(
-        vehicle, timepts, x0, traj_cost, constraints,
-        terminal_cost=term_cost, initial_guess=initial_guess,
-        trajectory_method=method,
-        # minimize_method='COBYLA', # SLSQP',
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore', message="unable to solve", category=UserWarning)
+        result = opt.solve_ocp(
+            vehicle, timepts, x0, traj_cost, constraints,
+            terminal_cost=term_cost, initial_guess=initial_guess,
+            trajectory_method=method,
+            # minimize_method='COBYLA', # SLSQP',
+        )
 
     if fail == 'xfail':
         assert not result.success

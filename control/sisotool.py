@@ -228,7 +228,11 @@ def _SisotoolUpdate(sys, fig, K, bode_plot_params, tvect=None):
         sys_closed = append(sys, -K)
         connects = [[1, 3],
                     [3, 1]]
-        sys_closed = connect(sys_closed, connects, 2, 2)
+        # Filter out known warning due to use of connect
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                'ignore', message="`connect`", category=DeprecationWarning)
+            sys_closed = connect(sys_closed, connects, 2, 2)
     if tvect is None:
         tvect, yout = step_response(sys_closed, T_num=100)
     else:
