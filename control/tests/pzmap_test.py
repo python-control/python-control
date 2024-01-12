@@ -95,15 +95,11 @@ def test_polezerodata():
     np.testing.assert_equal(zeros, sys.zeros())
 
     # Legacy return format
-    with pytest.warns(DeprecationWarning, match=".* values .* deprecated"):
-        poles, zeros = ct.pole_zero_plot(pzdata, plot=False)
-    np.testing.assert_equal(poles, sys.poles())
-    np.testing.assert_equal(zeros, sys.zeros())
-
-    with pytest.warns(DeprecationWarning, match=".* values .* deprecated"):
-        poles, zeros = ct.pole_zero_plot(pzdata, plot=True)
-    np.testing.assert_equal(poles, sys.poles())
-    np.testing.assert_equal(zeros, sys.zeros())
+    for plot in [True, False]:
+        with pytest.warns(DeprecationWarning, match=".* values .* deprecated"):
+            poles, zeros = ct.pole_zero_plot(pzdata, plot=False)
+        np.testing.assert_equal(poles, sys.poles())
+        np.testing.assert_equal(zeros, sys.zeros())
 
 
 def test_pzmap_raises():
