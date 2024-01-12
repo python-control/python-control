@@ -15,8 +15,8 @@ jobs:
     - name: Setup Conda
       uses: conda-incubator/setup-miniconda@v2
       with:
-        python-version: 3.11
-        activate-environment: test-env
+        python-version: 3.12
+        activate-environment: doctest-env
         environment-file: .github/conda-env/doctest-env.yml
         miniforge-version: latest
         miniforge-variant: Mambaforge
@@ -32,8 +32,6 @@ jobs:
 
     - name: Run doctest
       shell: bash -l {0}
-      env:
-        MPLBACKEND: ${{ matrix.mplbackend }}
       working-directory: doc
       run: |
         make html
