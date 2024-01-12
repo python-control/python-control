@@ -12,9 +12,11 @@ import pytest
 from matplotlib import pyplot as plt
 from mpl_toolkits.axisartist import Axes as mpltAxes
 
+import control as ct
 from control import TransferFunction, config, pzmap
 
 
+@pytest.mark.filterwarnings("ignore:.*return values.*:DeprecationWarning")
 @pytest.mark.parametrize("kwargs",
                          [pytest.param(dict(), id="default"),
                           pytest.param(dict(plot=False), id="plot=False"),
@@ -44,20 +46,23 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
 
     pzkwargs = kwargs.copy()
     if setdefaults:
-        for k in ['plot', 'grid']:
+        for k in ['grid']:
             if k in pzkwargs:
                 v = pzkwargs.pop(k)
                 config.set_defaults('pzmap', **{k: v})
 
+    if kwargs.get('plot', None) is None:
+        pzkwargs['plot'] = True         # use to get legacy return values
     P, Z = pzmap(T, **pzkwargs)
 
     np.testing.assert_allclose(P, Pref, rtol=1e-3)
     np.testing.assert_allclose(Z, Zref, rtol=1e-3)
 
     if kwargs.get('plot', True):
-        ax = plt.gca()
+        fig, ax = plt.gcf(), plt.gca()
 
-        assert ax.get_title() == kwargs.get('title', 'Pole Zero Map')
+        assert fig._suptitle.get_text().startswith(
+            kwargs.get('title', 'Pole/zero plot'))
 
         # FIXME: This won't work when zgrid and sgrid are unified
         children = ax.get_children()
@@ -78,12 +83,43 @@ def test_pzmap(kwargs, setdefaults, dt, editsdefaults, mplcleanup):
         assert not plt.get_fignums()
 
 
-def test_pzmap_warns():
-    with pytest.warns(FutureWarning):
-        pzmap(TransferFunction([1], [1, 2]), Plot=True)
+def test_polezerodata():
+    sys = ct.rss(4, 1, 1)
+    pzdata = ct.pole_zero_map(sys)
+    np.testing.assert_equal(pzdata.poles, sys.poles())
+    np.testing.assert_equal(pzdata.zeros, sys.zeros())
+
+    # Extract data from PoleZeroData
+    poles, zeros = pzdata
+    np.testing.assert_equal(poles, sys.poles())
+    np.testing.assert_equal(zeros, sys.zeros())
+
+    # Legacy return format
+    for plot in [True, False]:
+        with pytest.warns(DeprecationWarning, match=".* values .* deprecated"):
+            poles, zeros = ct.pole_zero_plot(pzdata, plot=False)
+        np.testing.assert_equal(poles, sys.poles())
+        np.testing.assert_equal(zeros, sys.zeros())
 
 
 def test_pzmap_raises():
     with pytest.raises(TypeError):
         # not an LTI system
-        pzmap(([1], [1,2]))
+        pzmap(([1], [1, 2]))
+
+    sys1 = ct.rss(2, 1, 1)
+    sys2 = sys1.sample(0.1)
+    with pytest.raises(ValueError, match="incompatible time bases"):
+        pzdata = ct.pole_zero_plot([sys1, sys2], grid=True)
+
+    with pytest.warns(UserWarning, match="axis already exists"):
+        fig, ax = plt.figure(), plt.axes()
+        ct.pole_zero_plot(sys1, ax=ax, grid='empty')
+
+
+def test_pzmap_limits():
+    sys = ct.tf([1, 2], [1, 2, 3])
+    out = ct.pole_zero_plot(sys, xlim=[-1, 1], ylim=[-1, 1])
+    ax = ct.get_plot_axes(out)[0, 0]
+    assert ax.get_xlim() == (-1, 1)
+    assert ax.get_ylim() == (-1, 1)

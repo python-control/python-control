@@ -4,15 +4,15 @@
 Plotting data
 *************
 
-The Python Control Toolbox contains a number of functions for plotting
-input/output responses in the time and frequency domain, root locus
-diagrams, and other standard charts used in control system analysis, for
-example::
+The Python Control Systems Toolbox contains a number of functions for
+plotting input/output responses in the time and frequency domain, root
+locus diagrams, and other standard charts used in control system analysis,
+for example::
 
   bode_plot(sys)
   nyquist_plot([sys1, sys2])
-
-.. root_locus_plot(sys)		# not yet implemented
+  pole_zero_plot(sys)
+  root_locus_plot(sys)
 
 While plotting functions can be called directly, the standard pattern used
 in the toolbox is to provide a function that performs the basic computation
@@ -35,7 +35,7 @@ analysis object, allowing the following type of calls::
   step_response(sys).plot()
   frequency_response(sys).plot()
   nyquist_response(sys).plot()
-  rootlocus_response(sys).plot()     # implementation pending
+  root_locus_map(sys).plot()
 
 The remainder of this chapter provides additional documentation on how
 these response and plotting functions can be customized.
@@ -222,6 +222,58 @@ sensitivity functions for a feedback control system in standard form::
 .. image:: freqplot-gangof4.png
 
 
+Pole/zero data
+==============
+
+Pole/zero maps and root locus diagrams provide insights into system
+response based on the locations of system poles and zeros in the complex
+plane.  The :func:`~control.pole_zero_map` function returns the poles and
+zeros and can be used to generate a pole/zero plot::
+
+  sys = ct.tf([1, 2], [1, 2, 3], name='SISO transfer function')
+  response = ct.pole_zero_map(sys)
+  ct.pole_zero_plot(response)
+
+.. image:: pzmap-siso_ctime-default.png
+
+A root locus plot shows the location of the closed loop poles of a system
+as a function of the loop gain::
+
+  ct.root_locus_map(sys).plot()
+
+.. image:: rlocus-siso_ctime-default.png
+
+The grid in the left hand plane shows lines of constant damping ratio as
+well as arcs corresponding to the frequency of the complex pole.  The grid
+can be turned off using the `grid` keyword.  Setting `grid` to `False` will
+turn off the grid but show the real and imaginary axis.  To completely
+remove all lines except the root loci, use `grid='empty'`.
+
+On systems that support interactive plots, clicking on a location on the
+root locus diagram will mark the pole locations on all branches of the
+diagram and display the gain and damping ratio for the clicked point below
+the plot title:
+
+.. image:: rlocus-siso_ctime-clicked.png
+
+Root locus diagrams are also supported for discrete time systems, in which
+case the grid is show inside the unit circle::
+
+  sysd = sys.sample(0.1)
+  ct.root_locus_plot(sysd)
+
+.. image:: rlocus-siso_dtime-default.png
+
+Lists of systems can also be given, in which case the root locus diagram
+for each system is plotted in different colors::
+
+  sys1 = ct.tf([1], [1, 2, 1], name='sys1')
+  sys2 = ct.tf([1, 0.2], [1, 1, 3, 1, 1], name='sys2')
+  ct.root_locus_plot([sys1, sys2], grid=False)
+
+.. image:: rlocus-siso_multiple-nogrid.png
+
+
 Response and plotting functions
 ===============================
 
@@ -244,6 +296,8 @@ number of encirclements for a Nyquist plot) as well as plotting (via the
    ~control.initial_response
    ~control.input_output_response
    ~control.nyquist_response
+   ~control.pole_zero_map
+   ~control.root_locus_map
    ~control.singular_values_response
    ~control.step_response
 
@@ -256,6 +310,8 @@ Plotting functions
    ~control.bode_plot
    ~control.describing_function_plot
    ~control.nichols_plot
+   ~control.pole_zero_plot
+   ~control.root_locus_plot
    ~control.singular_values_plot
    ~control.time_response_plot
 
@@ -284,4 +340,5 @@ The following classes are used in generating response data.
    ~control.DescribingFunctionResponse
    ~control.FrequencyResponseData
    ~control.NyquistResponseData
+   ~control.PoleZeroData
    ~control.TimeResponseData
