@@ -228,7 +228,7 @@ def pole_zero_plot(
         Set the title of the plot.  Defaults plot type and system name(s).
     marker_color : str, optional
         Set the color of the markers used for poles and zeros.
-    marker_color : int, optional
+    marker_size : int, optional
         Set the size of the markers used for poles and zeros.
     marker_width : int, optional
         Set the line width of the markers used for poles and zeros.
@@ -370,7 +370,7 @@ def pole_zero_plot(
         if marker_color is None:
             color = color_cycle[(color_offset + idx) % len(color_cycle)]
         else:
-            color = maker_color
+            color = marker_color
 
         # Plot the locations of the poles and zeros
         if len(poles) > 0:
