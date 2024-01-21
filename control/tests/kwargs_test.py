@@ -97,6 +97,7 @@ def test_kwarg_search(module, prefix):
      (control.pzmap, 1, 0, (), {}),
      (control.rlocus, 0, 1, (), {}),
      (control.root_locus, 0, 1, (), {}),
+     (control.root_locus_plot, 0, 1, (), {}),
      (control.rss, 0, 0, (2, 1, 1), {}),
      (control.set_defaults, 0, 0, ('control',), {'default_dt': True}),
      (control.ss, 0, 0, (0, 0, 0, 0), {'dt': 1}),
@@ -175,6 +176,8 @@ def test_matplotlib_kwargs(function, nsysargs, moreargs, kwargs, mplcleanup):
         (control.frequency_response, control.bode, True),
         (control.frequency_response, control.bode_plot, True),
         (control.nyquist_response, control.nyquist_plot, False),
+        (control.pole_zero_map, control.pole_zero_plot, False),
+        (control.root_locus_map, control.root_locus_plot, False),
     ])
 def test_response_plot_kwargs(data_fcn, plot_fcn, mimo):
     # Create a system for testing
@@ -193,16 +196,18 @@ def test_response_plot_kwargs(data_fcn, plot_fcn, mimo):
     plot_fcn(response)
 
     # Now add an unrecognized keyword and make sure there is an error
-    with pytest.raises(AttributeError,
-                       match="(has no property|unexpected keyword)"):
+    with pytest.raises(
+            (AttributeError, TypeError),
+            match="(has no property|unexpected keyword|unrecognized keyword)"):
         plot_fcn(response, unknown=None)
 
     # Call the plotting function via the response and make sure it works
     response.plot()
 
     # Now add an unrecognized keyword and make sure there is an error
-    with pytest.raises(AttributeError,
-                       match="(has no property|unexpected keyword)"):
+    with pytest.raises(
+            (AttributeError, TypeError),
+            match="(has no property|unexpected keyword|unrecognized keyword)"):
         response.plot(unknown=None)
 
 #
@@ -241,8 +246,10 @@ kwarg_unittest = {
     'nyquist_response': test_response_plot_kwargs,
     'nyquist_plot': test_matplotlib_kwargs,
     'pzmap': test_unrecognized_kwargs,
+    'pole_zero_plot': test_unrecognized_kwargs,
     'rlocus': test_unrecognized_kwargs,
     'root_locus': test_unrecognized_kwargs,
+    'root_locus_plot': test_unrecognized_kwargs,
     'rss': test_unrecognized_kwargs,
     'set_defaults': test_unrecognized_kwargs,
     'singular_values_plot': test_matplotlib_kwargs,
@@ -274,6 +281,7 @@ kwarg_unittest = {
     'flatsys.LinearFlatSystem.__init__': test_unrecognized_kwargs,
     'NonlinearIOSystem.linearize': test_unrecognized_kwargs,
     'NyquistResponseData.plot': test_response_plot_kwargs,
+    'PoleZeroData.plot': test_response_plot_kwargs,
     'InterconnectedSystem.__init__':
         interconnect_test.test_interconnect_exceptions,
     'StateSpace.__init__':

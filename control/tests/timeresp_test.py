@@ -1230,6 +1230,14 @@ def test_to_pandas():
     np.testing.assert_equal(df['x[0]'], resp.states[0])
     np.testing.assert_equal(df['x[1]'], resp.states[1])
 
+    # System with no states
+    sys = ct.ss([], [], [], 5)
+    resp = ct.input_output_response(sys, timepts, np.sin(timepts), t_eval=T)
+    df = resp.to_pandas()
+    np.testing.assert_equal(df['time'], resp.time)
+    np.testing.assert_equal(df['u[0]'], resp.inputs)
+    np.testing.assert_equal(df['y[0]'], resp.inputs * 5)
+
 
 @pytest.mark.skipif(pandas_check(), reason="pandas installed")
 def test_no_pandas():

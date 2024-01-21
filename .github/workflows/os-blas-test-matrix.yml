@@ -21,24 +21,24 @@ jobs:
               - 'ubuntu'
               - 'macos'
             python:
-              - '3.8'
-              - '3.11'
+              - '3.10'
+              - '3.12'
             bla_vendor: [ 'unset' ]
             include:
               - os: 'ubuntu'
-                python: '3.11'
+                python: '3.12'
                 bla_vendor: 'Generic'
               - os: 'ubuntu'
-                python: '3.11'
+                python: '3.12'
                 bla_vendor: 'OpenBLAS'
               - os: 'macos'
-                python: '3.11'
+                python: '3.12'
                 bla_vendor: 'Apple'
               - os: 'macos'
-                python: '3.11'
+                python: '3.12'
                 bla_vendor: 'Generic'
               - os: 'macos'
-                python: '3.11'
+                python: '3.12'
                 bla_vendor: 'OpenBLAS'
 
     steps:
@@ -108,7 +108,7 @@ jobs:
             - 'macos'
             - 'windows'
           python:
-            - '3.9'
+            # build on one, expand matrix in conda-build from the Sylcot/conda-recipe/conda_build_config.yaml
             - '3.11'
 
     steps:
@@ -133,14 +133,14 @@ jobs:
         shell: bash -l {0}
         run: |
           set -e
-          numpyversion=$(python -c 'import numpy; print(numpy.version.version)')
-          conda mambabuild --python "${{ matrix.python }}" --numpy $numpyversion conda-recipe
+          conda mambabuild conda-recipe
           # preserve directory structure for custom conda channel
           find "${CONDA_PREFIX}/conda-bld" -maxdepth 2 -name 'slycot*.tar.bz2' | while read -r conda_pkg; do
             conda_platform=$(basename $(dirname "${conda_pkg}"))
             mkdir -p "slycot-conda-pkgs/${conda_platform}"
             cp "${conda_pkg}" "slycot-conda-pkgs/${conda_platform}/"
           done
+          conda index --no-progress ./slycot-conda-pkgs
       - name: Save to local conda pkg channel
         uses: actions/upload-artifact@v3
         with:
@@ -247,7 +247,7 @@ jobs:
       - name: Install Wheel
         run: |
           python -m pip install --upgrade pip
-          pip install matplotlib scipy pytest pytest-cov pytest-timeout coverage coveralls
+          pip install matplotlib scipy pytest pytest-cov pytest-timeout coverage
           pip install slycot-wheels/${{ matrix.packagekey }}/slycot*.whl
           pip show slycot
       - name: Test with pytest
@@ -316,7 +316,6 @@ jobs:
               echo "libblas * *mkl" >> $CONDA_PREFIX/conda-meta/pinned
               ;;
           esac
-          conda index --no-progress ./slycot-conda-pkgs
           mamba install -c ./slycot-conda-pkgs slycot
           conda list
       - name: Test with pytest

@@ -162,7 +162,7 @@ def bode_plot(
         values with no plot.
     rcParams : dict
         Override the default parameters used for generating plots.
-        Default is set up config.default['freqplot.rcParams'].
+        Default is set by config.default['freqplot.rcParams'].
     wrap_phase : bool or float
         If wrap_phase is `False` (default), then the phase will be unwrapped
         so that it is continuously increasing or decreasing.  If wrap_phase is
@@ -473,7 +473,7 @@ def bode_plot(
     if ax is None:
         with plt.rc_context(_freqplot_rcParams):
             ax_array = fig.subplots(nrows, ncols, squeeze=False)
-            fig.set_tight_layout(True)
+            fig.set_layout_engine('tight')
             fig.align_labels()
 
         # Set up default sharing of axis limits if not specified

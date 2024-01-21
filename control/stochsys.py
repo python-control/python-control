@@ -183,14 +183,14 @@ def lqe(*args, **kwargs):
 
 # contributed by Sawyer B. Fuller <minster@uw.edu>
 def dlqe(*args, **kwargs):
-    """dlqe(A, G, C, QN, RN, [, N])
+    r"""dlqe(A, G, C, QN, RN, [, N])
 
     Linear quadratic estimator design (Kalman filter) for discrete-time
     systems. Given the system
 
     .. math::
 
-        x[n+1] &= Ax[n] + Bu[n] + Gw[n] \\\\
+        x[n+1] &= Ax[n] + Bu[n] + Gw[n] \\
         y[n] &= Cx[n] + Du[n] + v[n]
 
     with unbiased process noise w and measurement noise v with covariances

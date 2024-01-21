@@ -18,7 +18,7 @@ jobs:
            --channel conda-forge \
            --strict-channel-priority \
            --quiet --yes \
-           python=3.11 pip \
+           python=3.12 pip \
            numpy matplotlib scipy \
            slycot pmw jupyter
 

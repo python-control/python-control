@@ -1,11 +1,7 @@
-name: test-env
+name: doctest-env
 dependencies:
-  - conda-build  # for conda index
   - pip
-  - coverage
-  - coveralls
   - pytest
-  - pytest-cov
   - pytest-timeout
   - pytest-xvfb
   - numpy
