@@ -13,23 +13,23 @@ def test_norm_1st_order_stable_system():
     """First-order stable continuous-time system"""
     s = ct.tf('s')
     G1 = 1/(s+1)
-    assert np.allclose(ct.norm(G1, p='inf', tol=1e-9), 1.0, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
-    assert np.allclose(ct.norm(G1, p=2), 0.707106781186547, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(G1, p='inf', tol=1e-9), 1.0) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(G1, p=2), 0.707106781186547) # Comparison to norm computed in MATLAB
     
     Gd1 = ct.sample_system(G1, 0.1)
-    assert np.allclose(ct.norm(Gd1, p='inf', tol=1e-9), 1.0, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
-    assert np.allclose(ct.norm(Gd1, p=2), 0.223513699524858, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(Gd1, p='inf', tol=1e-9), 1.0) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(Gd1, p=2), 0.223513699524858) # Comparison to norm computed in MATLAB
 
 
 def test_norm_1st_order_unstable_system():
     """First-order unstable continuous-time system"""
     s = ct.tf('s')
     G2 = 1/(1-s)
-    assert np.allclose(ct.norm(G2, p='inf', tol=1e-9), 1.0, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(G2, p='inf', tol=1e-9), 1.0) # Comparison to norm computed in MATLAB
     assert ct.norm(G2, p=2) == float('inf') # Comparison to norm computed in MATLAB
     
     Gd2 = ct.sample_system(G2, 0.1)
-    assert np.allclose(ct.norm(Gd2, p='inf', tol=1e-9), 1.0, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(Gd2, p='inf', tol=1e-9), 1.0) # Comparison to norm computed in MATLAB
     assert ct.norm(Gd2, p=2) == float('inf') # Comparison to norm computed in MATLAB
 
 def test_norm_2nd_order_system_imag_poles():
@@ -55,9 +55,9 @@ def test_norm_3rd_order_mimo_system():
                   [-0.863652821988714,  -1.214117043615409,  -0.006849328103348]])
     D = np.zeros((2,2))
     G4 = ct.ss(A,B,C,D) # Random system generated in MATLAB
-    assert np.allclose(ct.norm(G4, p='inf', tol=1e-9), 4.276759162964244, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
-    assert np.allclose(ct.norm(G4, p=2), 2.237461821810309, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(G4, p='inf', tol=1e-9), 4.276759162964244) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(G4, p=2), 2.237461821810309) # Comparison to norm computed in MATLAB
     
     Gd4 = ct.sample_system(G4, 0.1)
-    assert np.allclose(ct.norm(Gd4, p='inf', tol=1e-9), 4.276759162964228, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
-    assert np.allclose(ct.norm(Gd4, p=2), 0.707434962289554, rtol=1e-09, atol=1e-08) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(Gd4, p='inf', tol=1e-9), 4.276759162964228) # Comparison to norm computed in MATLAB
+    assert np.allclose(ct.norm(Gd4, p=2), 0.707434962289554) # Comparison to norm computed in MATLAB
