@@ -43,6 +43,7 @@ packages = ["control"]
 test = ["pytest", "pytest-timeout"]
 slycot = [ "slycot>=0.4.0" ]
 cvxopt = [ "cvxopt>=1.2.0" ]
+pandas = [ "pandas>=1.5.0" ]
 
 [project.urls]
 homepage = "https://python-control.org"
