@@ -100,8 +100,8 @@ def plot_results(t, x, ud, rescale=True):
 
     plt.subplot(2, 4, 8)
     plt.plot(t, ud[1])
-    plt.xlabel('Ttime t [sec]')
-    plt.ylabel('$\delta$ [rad]')
+    plt.xlabel('Time t [sec]')
+    plt.ylabel('$\\delta$ [rad]')
     plt.tight_layout()
 
 #

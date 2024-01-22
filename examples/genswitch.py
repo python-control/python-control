@@ -60,7 +60,7 @@ plt.plot(tim2, sol2[:, 0], 'b-', tim2, sol2[:, 1], 'g--')
 # set(pl, 'LineWidth', AM_data_linewidth)
 plt.axis([0, 25, 0, 5])
 
-plt.xlabel('Time {\itt} [scaled]')
+plt.xlabel('Time {\\itt} [scaled]')
 plt.ylabel('Protein concentrations [scaled]')
 plt.legend(('z1 (A)', 'z2 (B)'))  # 'Orientation', 'horizontal')
 # legend(legh, 'boxoff')
