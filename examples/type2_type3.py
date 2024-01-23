@@ -5,7 +5,7 @@
 import os
 import matplotlib.pyplot as plt  # Grab MATLAB plotting functions
 from control.matlab import *     # MATLAB-like functions
-from scipy import pi
+from numpy import pi
 integrator = tf([0, 1], [1, 0])  # 1/s
 
 # Parameters defining the system
