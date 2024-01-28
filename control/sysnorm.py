@@ -27,19 +27,19 @@ def _h2norm_slycot(sys, print_warning=True):
 
     See also
     --------
-    slycot.ab13bd : the Slycot routine that does the calculation
-    https://github.com/python-control/Slycot/issues/199 : Post on issue with ab13bf
+    ``slycot.ab13bd`` : the Slycot routine that does the calculation
+    https://github.com/python-control/Slycot/issues/199 : Post on issue with ``ab13bf``
     """
     
     try:
         from slycot import ab13bd
     except ImportError:
-        ct.ControlSlycot("Can't find slycot module 'ab13bd'!")
+        ct.ControlSlycot("Can't find slycot module ``ab13bd``!")
 
     try:
         from slycot.exceptions import SlycotArithmeticError
     except ImportError: 
-        raise ct.ControlSlycot("Can't find slycot class 'SlycotArithmeticError'!")
+        raise ct.ControlSlycot("Can't find slycot class ``SlycotArithmeticError``!")
 
     A, B, C, D = ct.ssdata(ct.ss(sys))
 
@@ -83,7 +83,7 @@ def _h2norm_slycot(sys, print_warning=True):
 
 #------------------------------------------------------------------------------
 
-def norm(system, p=2, tol=1e-10, print_warning=True, use_slycot=True):
+def norm(system, p=2, tol=1e-10, print_warning=True, method=None):
     """Computes norm of system.
     
     Parameters
@@ -97,13 +97,15 @@ def norm(system, p=2, tol=1e-10, print_warning=True, use_slycot=True):
         unless p='inf'.
     print_warning : bool
         Print warning message in case norm value may be uncertain.
-    use_slycot : bool
-        Use Slycot routines if available.
+    method : str, optional
+        Set the method used for computing the result.  Current methods are
+        'slycot' and 'scipy'. If set to None (default), try 'slycot' first
+        and then 'scipy'.
     
     Returns
     -------
-    norm_value : float or NoneType
-        Norm value of system (float) or None if computation could not be completed.
+    norm_value : float
+        Norm value of system.
    
     Notes
     -----
@@ -112,16 +114,23 @@ def norm(system, p=2, tol=1e-10, print_warning=True, use_slycot=True):
     Examples
     --------
     >>> Gc = ct.tf([1], [1, 2, 1])
-    >>> ct.norm(Gc,2)
+    >>> ct.norm(Gc, 2)
     0.5000000000000001
-    >>> ct.norm(Gc,'inf',tol=1e-10)
-    1.0000000000582077
+    >>> ct.norm(Gc, 'inf', tol=1e-11, method='scipy')
+    1.000000000007276
     """
+           
+    if not isinstance(system, (ct.StateSpace, ct.TransferFunction)):
+        raise TypeError('Parameter ``system``: must be a ``StateSpace`` or ``TransferFunction``')
+    
     G = ct.ss(system)
     A = G.A
     B = G.B
     C = G.C
     D = G.D
+    
+    # Decide what method to use
+    method = ct.mateqn._slycot_or_scipy(method)
     
     # -------------------
     # H2 norm computation
@@ -149,12 +158,12 @@ def norm(system, p=2, tol=1e-10, print_warning=True, use_slycot=True):
             
             else:      
                 # Use slycot, if available, to compute (finite) norm
-                if ct.slycot_check() and use_slycot:
+                if method == 'slycot':
                     return _h2norm_slycot(G, print_warning)  
                 
                 # Else use scipy 
                 else:
-                    P = ct.lyap(A, B@B.T)  # Solve for controllability Gramian
+                    P = ct.lyap(A, B@B.T, method=method)  # Solve for controllability Gramian
                                         
                     # System is stable to reach this point, and P should be positive semi-definite. 
                     # Test next is a precaution in case the Lyapunov equation is ill conditioned.
@@ -187,12 +196,12 @@ def norm(system, p=2, tol=1e-10, print_warning=True, use_slycot=True):
             
             else:
                 # Use slycot, if available, to compute (finite) norm
-                if ct.slycot_check() and use_slycot:
+                if method == 'slycot':
                     return _h2norm_slycot(G, print_warning)  
                 
                 # Else use scipy 
                 else:
-                    P = ct.dlyap(A, B@B.T)
+                    P = ct.dlyap(A, B@B.T, method=method)
                 
                 # System is stable to reach this point, and P should be positive semi-definite. 
                 # Test next is a precaution in case the Lyapunov equation is ill conditioned.
@@ -226,7 +235,7 @@ def norm(system, p=2, tol=1e-10, print_warning=True, use_slycot=True):
                 return float('inf')
     
         # Use slycot, if available, to compute (finite) norm
-        if ct.slycot_check() and use_slycot:
+        if method == 'slycot':
             return ct.linfnorm(G, tol)[0]
         
         # Else use scipy
